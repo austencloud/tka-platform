@@ -968,43 +968,6 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
   let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }, animate?: boolean) => void) | null = null;
 
-  // When a hand is newly assigned to a non-wall plane, auto-add that
-  // plane to visiblePlanes as a one-time convenience. Uses a tracking
-  // set so toggling the plane off afterward is respected — the effect
-  // won't re-add a plane the user explicitly hid.
-  let _lastSeenBlue = $state<Plane | null>(null);
-  let _lastSeenRed = $state<Plane | null>(null);
-
-  $effect(() => {
-    const primary = performerManager.performers[0];
-    if (!primary) return;
-    const blue = primary.customBluePlane;
-    const red = primary.customRedPlane;
-
-    let changed = false;
-    const next = new Set(visiblePlanes);
-
-    if (blue !== _lastSeenBlue) {
-      _lastSeenBlue = blue;
-      if (blue !== Plane.WALL && !next.has(blue)) {
-        next.add(blue);
-        changed = true;
-      }
-    }
-    if (red !== _lastSeenRed) {
-      _lastSeenRed = red;
-      if (red !== Plane.WALL && !next.has(red)) {
-        next.add(red);
-        changed = true;
-      }
-    }
-
-    if (changed) {
-      visiblePlanes = next;
-      persistPlanes(visiblePlanes);
-    }
-  });
-
   // ---------------------------------------------------------------
   // Persistence effects - serialize state to localStorage reactively.
   // ---------------------------------------------------------------

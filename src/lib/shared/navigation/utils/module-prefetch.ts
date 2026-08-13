@@ -62,6 +62,7 @@ const MODULE_PATHS: Record<string, string> = {
   settings: "/src/lib/features/settings/SettingsModule.svelte",
   feedback: "/src/lib/features/feedback/components/FeedbackModule.svelte",
   admin: "/src/lib/features/admin/components/AdminDashboard.svelte",
+  museum: "/src/lib/features/museum/MuseumModule.svelte",
 };
 
 // Track which modules have been prefetched to avoid duplicates

@@ -52,6 +52,15 @@ describe("stage coordinate frame", () => {
     expect(frame.environmentYOffset).toBe(0);
   });
 
+  it("moves Cloudbreak's raised terrace under the fixed performer anchor", () => {
+    const frame = getStageCoordinateFrame(BackgroundType.CELESTIAL, true);
+
+    expect(frame.nativeSurfaceY).toBe(0.225);
+    expect(frame.nativeSurfaceY + frame.environmentYOffset).toBeCloseTo(
+      CANONICAL_PERFORMER_ANCHOR_Y
+    );
+  });
+
   it.each(BACKGROUNDS)(
     "recognizes %s as a 3D environment",
     (backgroundType) => {

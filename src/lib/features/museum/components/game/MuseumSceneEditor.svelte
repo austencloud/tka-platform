@@ -37,6 +37,7 @@
   import { onMount, onDestroy } from "svelte";
   import { museum3dEditorState } from "../../state/museum-3d-editor-state.svelte";
   import { museumEditorOverrides } from "../../state/museum-editor-overrides";
+  import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
 
   interface Props {
     /** Called after any editor drag/undo/redo so the parent can sync grid data */
@@ -220,6 +221,7 @@
   const PAN_SPEED = 8; // units/sec
 
   function handleKeyDown(event: KeyboardEvent) {
+    if (isEditableKeyboardTarget(event.target)) return;
     const key = event.key.toLowerCase();
 
     // Gizmo mode

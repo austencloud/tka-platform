@@ -269,14 +269,16 @@
                 />
               {:else}
                 <h2 class="detail-name" title={selected.name}>{selected.name}</h2>
-                <button
-                  type="button"
-                  class="rename-btn"
-                  onclick={startRename}
-                  aria-label="Rename tunnel"
-                >
-                  <i class="fas fa-pen" aria-hidden="true"></i>
-                </button>
+                {#if !tunnelCollectionState.isReadOnlyPreview}
+                  <button
+                    type="button"
+                    class="rename-btn"
+                    onclick={startRename}
+                    aria-label="Rename tunnel"
+                  >
+                    <i class="fas fa-pen" aria-hidden="true"></i>
+                  </button>
+                {/if}
               {/if}
             </div>
             <span class="detail-date">{dateLabel}</span>
@@ -320,23 +322,25 @@
             </button>
           </div>
 
-          <div class="detail-footer">
-            <button
-              type="button"
-              class="action-btn delete-btn"
-              class:confirming={confirmingDelete === selected.id}
-              onclick={() => del(selected!.id)}
-              aria-live="polite"
-            >
-              {#if confirmingDelete === selected.id}
-                <i class="fas fa-check" aria-hidden="true"></i>
-                <span>Press again to confirm</span>
-              {:else}
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                <span>Delete</span>
-              {/if}
-            </button>
-          </div>
+          {#if !tunnelCollectionState.isReadOnlyPreview}
+            <div class="detail-footer">
+              <button
+                type="button"
+                class="action-btn delete-btn"
+                class:confirming={confirmingDelete === selected.id}
+                onclick={() => del(selected!.id)}
+                aria-live="polite"
+              >
+                {#if confirmingDelete === selected.id}
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                  <span>Press again to confirm</span>
+                {:else}
+                  <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                  <span>Delete</span>
+                {/if}
+              </button>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}

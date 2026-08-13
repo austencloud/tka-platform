@@ -252,13 +252,18 @@
           <EffectOrchestrator3D
             {bluePropState}
             {redPropState}
+            bluePropType={toScenePropType(bluePropType)}
+            redPropType={toScenePropType(redPropType)}
             isPlaying={rigPlaying}
             {staffHalfLength}
             {tipEffectMap}
             {blueHandPos}
             {redHandPos}
             {effectsParentRef}
-            currentStep={performerState.currentStepIndex + performerState.progress}
+            currentStep={performerState.currentStepIndex +
+              performerState.progress}
+            totalSteps={performerState.totalSteps}
+            seamlesslyLoopable={performerState.isCircular}
           />
         {/if}
       {/snippet}

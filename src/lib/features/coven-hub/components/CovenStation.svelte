@@ -1,6 +1,5 @@
 <script lang="ts">
-
-// propInterpolator and sequenceConverter are now module-level functions
+  // propInterpolator and sequenceConverter are now module-level functions
   /**
    * CovenStation
    *
@@ -26,7 +25,10 @@
   import { Plane } from "@austencloud/scene-3d";
   import { PlaneMode } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { createAvatarInstanceState, makeStandaloneDeps } from "$lib/shared/3d/state/avatar-instance-state.svelte";
+  import {
+    createAvatarInstanceState,
+    makeStandaloneDeps,
+  } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildTipEffectMap } from "$lib/features/coven-hub/domain/coven-effect-map";
@@ -86,8 +88,11 @@
   // Avatar3D in "stage mode" positions feet at groundY (≈ -1.4m below rig origin).
   // In the museum the floor is at y=0, so we offset by -groundY + PLATFORM_HEIGHT.
   // Both center rigs AND acolyte rigs use this so grids/props align with shoulder height.
-  const presentationFloorOffset = presentation === "ritual" ? PLATFORM_HEIGHT : 0;
-  const museumGroundOffset = $derived(-userProportionsState.groundY + presentationFloorOffset);
+  const presentationFloorOffset =
+    presentation === "ritual" ? PLATFORM_HEIGHT : 0;
+  const museumGroundOffset = $derived(
+    -userProportionsState.groundY + presentationFloorOffset
+  );
 
   // 6 acolytes evenly spaced around a circle at 60° intervals.
   // Each faces inward toward center.
@@ -147,19 +152,28 @@
   try {
     centerInstances = CENTER_PLANES.map((cfg, i) =>
       createAvatarInstanceState(
-        { id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? 'mirror' : 'orig'}`, positionX: 0, positionZ: 0 },
+        {
+          id: `formation-${stationId}-center-${cfg.plane}-${cfg.mirror ? "mirror" : "orig"}`,
+          positionX: 0,
+          positionZ: 0,
+        },
         makeStandaloneDeps()
       )
     );
 
-    acolyteInstances = presentation === "ritual"
-      ? ACOLYTE_POSITIONS.map((_, i) =>
-          createAvatarInstanceState(
-            { id: `formation-${stationId}-acolyte-${i}`, positionX: 0, positionZ: 0 },
-            makeStandaloneDeps()
+    acolyteInstances =
+      presentation === "ritual"
+        ? ACOLYTE_POSITIONS.map((_, i) =>
+            createAvatarInstanceState(
+              {
+                id: `formation-${stationId}-acolyte-${i}`,
+                positionX: 0,
+                positionZ: 0,
+              },
+              makeStandaloneDeps()
+            )
           )
-        )
-      : [];
+        : [];
   } catch (err) {
     console.warn(`[CovenStation] Failed to init ${stationId}:`, err);
     initFailed = true;
@@ -175,7 +189,9 @@
   );
   const showAcolytes = $derived(presentation === "ritual" && lod === "hero");
   const stationPlaying = $derived(lod !== "frozen");
-  const stageGltf = $derived(props.stageModel ? useGltf(props.stageModel) : null);
+  const stageGltf = $derived(
+    props.stageModel ? useGltf(props.stageModel) : null
+  );
 
   // Load sequence into center instances and set planes
   $effect(() => {
@@ -236,12 +252,16 @@
       // No sequence playing yet - arms reach forward at rest
       return ACOLYTE_POSITIONS.map(() => ({
         blue: {
-          centerPathAngle: 0, staffRotationAngle: 0, plane: Plane.WALL,
+          centerPathAngle: 0,
+          staffRotationAngle: 0,
+          plane: Plane.WALL,
           worldPosition: new Vector3(0.15, -0.1, 0.5),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
         red: {
-          centerPathAngle: 0, staffRotationAngle: 0, plane: Plane.WALL,
+          centerPathAngle: 0,
+          staffRotationAngle: 0,
+          plane: Plane.WALL,
           worldPosition: new Vector3(-0.15, -0.1, 0.5),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
@@ -275,13 +295,25 @@
 
       return {
         blue: {
-          centerPathAngle: 0, staffRotationAngle: 0, plane: Plane.WALL,
-          worldPosition: new Vector3(blueLocalX, wallBlue.worldPosition.y, blueLocalZ),
+          centerPathAngle: 0,
+          staffRotationAngle: 0,
+          plane: Plane.WALL,
+          worldPosition: new Vector3(
+            blueLocalX,
+            wallBlue.worldPosition.y,
+            blueLocalZ
+          ),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
         red: {
-          centerPathAngle: 0, staffRotationAngle: 0, plane: Plane.WALL,
-          worldPosition: new Vector3(redLocalX, wallRed.worldPosition.y, redLocalZ),
+          centerPathAngle: 0,
+          staffRotationAngle: 0,
+          plane: Plane.WALL,
+          worldPosition: new Vector3(
+            redLocalX,
+            wallRed.worldPosition.y,
+            redLocalZ
+          ),
           worldRotation: IDENTITY_QUAT,
         } as PropState3D,
       };
@@ -292,12 +324,16 @@
   const bluePropType = $derived.by((): PropType => {
     try {
       return settingsService.settings.bluePropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
   const redPropType = $derived.by((): PropType => {
     try {
       return settingsService.settings.redPropType ?? PropType.STAFF;
-    } catch { return PropType.STAFF; }
+    } catch {
+      return PropType.STAFF;
+    }
   });
 </script>
 
@@ -308,7 +344,6 @@
   position.z={worldZ}
   scale={formationScale}
 >
-
   <!-- Ritual platform: bespoke GLB stage when stageModel is set, otherwise the
        original stone disc (keeps the museum exhibit identical until GLBs land). -->
   {#if presentation === "ritual"}
@@ -317,15 +352,24 @@
         <!-- GLB stage still streaming in: show a dim placeholder disc so the slot
              isn't visually empty while the model resolves. -->
         <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
-          <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
-          <T.MeshStandardMaterial color={platformColor} roughness={0.95} transparent opacity={0.35} />
+          <T.CylinderGeometry
+            args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]}
+          />
+          <T.MeshStandardMaterial
+            color={platformColor}
+            roughness={0.95}
+            transparent
+            opacity={0.35}
+          />
         </T.Mesh>
       {:then gltf}
         <T is={gltf.scene} position.y={PLATFORM_HEIGHT} />
       {/await}
     {:else}
       <T.Mesh position.y={PLATFORM_HEIGHT / 2} receiveShadow>
-        <T.CylinderGeometry args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]} />
+        <T.CylinderGeometry
+          args={[PLATFORM_RADIUS, PLATFORM_RADIUS + 0.1, PLATFORM_HEIGHT, 32]}
+        />
         <T.MeshStandardMaterial color={platformColor} roughness={0.9} />
       </T.Mesh>
     {/if}
@@ -337,13 +381,19 @@
          the empty station is observable rather than silently blank. -->
     <T.Mesh position.y={presentationFloorOffset + 0.75}>
       <T.BoxGeometry args={[0.25, 1.5, 0.25]} />
-      <T.MeshStandardMaterial color="#a01818" emissive="#5a0000" roughness={0.6} />
+      <T.MeshStandardMaterial
+        color="#a01818"
+        emissive="#5a0000"
+        roughness={0.6}
+      />
     </T.Mesh>
   {/if}
   <!-- Decorative ring at acolyte circle -->
   {#if presentation === "ritual"}
     <T.Mesh position.y={PLATFORM_HEIGHT + 0.005} rotation.x={-Math.PI / 2}>
-      <T.RingGeometry args={[ACOLYTE_DISTANCE - 0.15, ACOLYTE_DISTANCE + 0.15, 48]} />
+      <T.RingGeometry
+        args={[ACOLYTE_DISTANCE - 0.15, ACOLYTE_DISTANCE + 0.15, 48]}
+      />
       <T.MeshStandardMaterial
         color={platformRingColor}
         roughness={0.7}
@@ -371,31 +421,45 @@
       <PerformerRig
         position={{ x: 0, z: planeCfg.mirror ? 2 * GRID_OFFSET : 0 }}
         facingAngle={planeCfg.mirror ? Math.PI : 0}
-        planeMode={planeCfg.plane === Plane.WALL ? PlaneMode.WALL : PlaneMode.CUSTOM}
+        planeMode={planeCfg.plane === Plane.WALL
+          ? PlaneMode.WALL
+          : PlaneMode.CUSTOM}
         avatarState={instance}
         showAvatar={false}
         showGrid={!planeCfg.mirror}
         showProps={showCenterProps}
         showEffects={true}
         isPlaying={instance.isPlaying && stationPlaying}
-        tipEffectMap={tipEffectMap}
+        {tipEffectMap}
         visiblePlanes={new Set([planeCfg.plane])}
         gridMode={"diamond"}
         bluePropType={toScenePropType(bluePropType)}
         redPropType={toScenePropType(redPropType)}
         groundOffset={museumGroundOffset}
       >
-        {#snippet effectsSlot({ bluePropState, redPropState, blueHandPos, redHandPos, isPlaying: rigPlaying, staffHalfLength, effectsParentRef })}
+        {#snippet effectsSlot({
+          bluePropState,
+          redPropState,
+          blueHandPos,
+          redHandPos,
+          isPlaying: rigPlaying,
+          staffHalfLength,
+          effectsParentRef,
+        })}
           <EffectOrchestrator3D
             {bluePropState}
             {redPropState}
+            bluePropType={toScenePropType(bluePropType)}
+            redPropType={toScenePropType(redPropType)}
             isPlaying={rigPlaying}
             {staffHalfLength}
-            tipEffectMap={tipEffectMap}
+            {tipEffectMap}
             {blueHandPos}
             {redHandPos}
             {effectsParentRef}
             currentStep={instance.currentStepIndex + instance.progress}
+            totalSteps={instance.totalSteps}
+            seamlesslyLoopable={instance.isCircular}
           />
         {/snippet}
       </PerformerRig>

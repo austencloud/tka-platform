@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 import { createViewer3DStateForTest } from "./viewer3d-test-helpers.svelte";
 import { __resetWebGL2CapabilityForTests } from "$lib/shared/3d/capabilities/webgl-capabilities";
+import { Plane } from "@austencloud/scene-3d";
+import { tick } from "svelte";
 
 // The global test setup replaces document.createElement with a generic stub
 // that returns plain objects lacking getContext. The viewer3d factory's
@@ -76,5 +78,48 @@ describe("viewer-3d-state: selection scope", () => {
     expect(state.selectedPerformerIndex).toBe(0);
     state.selectPerformerScope(null);
     expect(state.selectedPerformerIndex).toBeNull();
+  });
+
+  it("setHandPlaneScoped updates every performer when All is selected", () => {
+    const state = makeState();
+    state.performerManager.initialize();
+    state.performerManager.addPerformer();
+    state.performerManager.addPerformer();
+
+    state.setHandPlaneScoped("blue", Plane.FLOOR);
+
+    expect(
+      state.performerManager.performers.map(
+        (performer) => performer.rawBluePlane
+      )
+    ).toEqual([Plane.FLOOR, Plane.FLOOR, Plane.FLOOR]);
+  });
+
+  it("setHandPlaneScoped updates only the selected performer in single mode", () => {
+    const state = makeState();
+    state.performerManager.initialize();
+    state.performerManager.addPerformer();
+    state.performerManager.addPerformer();
+    state.selectPerformerScope(1);
+
+    state.setHandPlaneScoped("red", Plane.WHEEL);
+
+    expect(
+      state.performerManager.performers.map(
+        (performer) => performer.rawRedPlane
+      )
+    ).toEqual([null, Plane.WHEEL, null]);
+  });
+
+  it("does not show a grid plane when a performer starts using it", async () => {
+    localStorage.removeItem("tka-viewer3d-visiblePlanes");
+    const state = makeState();
+    state.performerManager.initialize();
+    state.selectPerformerScope(0);
+
+    state.setHandPlaneScoped("blue", Plane.WHEEL);
+    await tick();
+
+    expect([...state.visiblePlanes]).toEqual([]);
   });
 });

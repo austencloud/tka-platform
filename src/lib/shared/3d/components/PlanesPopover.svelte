@@ -20,6 +20,7 @@
     if (selectedIndex === null) return null;
     return viewer.performerManager.performers[selectedIndex] ?? null;
   });
+  const allPerformers = $derived(viewer.performerManager.performers);
 
   const PLANES: { plane: Plane; label: string }[] = [
     { plane: Plane.WALL, label: "Wall" },
@@ -27,16 +28,33 @@
     { plane: Plane.FLOOR, label: "Floor" },
   ];
 
+  function sharedPlane(hand: "blue" | "red"): Plane | null {
+    const defaultPlane =
+      hand === "blue"
+        ? viewer.defaultSettings.customBluePlane
+        : viewer.defaultSettings.customRedPlane;
+    const first =
+      hand === "blue"
+        ? allPerformers[0]?.effectiveBluePlane
+        : allPerformers[0]?.effectiveRedPlane;
+    if (!first) return defaultPlane;
+
+    const everyoneMatches = allPerformers.every((performer) =>
+      hand === "blue"
+        ? performer.effectiveBluePlane === first
+        : performer.effectiveRedPlane === first
+    );
+    return everyoneMatches ? first : null;
+  }
+
   const bluePlane = $derived(
     isAllMode
-      ? viewer.defaultSettings.customBluePlane
+      ? sharedPlane("blue")
       : (selected?.effectiveBluePlane ?? Plane.WALL)
   );
 
   const redPlane = $derived(
-    isAllMode
-      ? viewer.defaultSettings.customRedPlane
-      : (selected?.effectiveRedPlane ?? Plane.WALL)
+    isAllMode ? sharedPlane("red") : (selected?.effectiveRedPlane ?? Plane.WALL)
   );
 
   const isOverridden = $derived(
@@ -54,7 +72,11 @@
     return viewer.visiblePlanes.has(plane);
   }
 
-  const hasStepOverrides = $derived(selected?.hasStepOverrides ?? false);
+  const hasStepOverrides = $derived(
+    isAllMode
+      ? allPerformers.some((performer) => performer.hasStepOverrides)
+      : (selected?.hasStepOverrides ?? false)
+  );
 
   const isPlaneStateNonDefault = $derived(
     bluePlane !== Plane.WALL ||
@@ -85,11 +107,7 @@
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
     if (currentPlane === plane) return;
 
-    if (isAllMode) {
-      viewer.setDefaultHandPlane(hand, plane);
-    } else {
-      viewer.setHandPlaneScoped(hand, plane);
-    }
+    viewer.setHandPlaneScoped(hand, plane);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_planes",
@@ -104,6 +122,10 @@
     if (isAllMode) {
       viewer.setDefaultHandPlane("blue", Plane.WALL);
       viewer.setDefaultHandPlane("red", Plane.WALL);
+      viewer.resetAllPerformersPlanes();
+      for (const performer of allPerformers) {
+        performer.clearBeatPlaneOverrides();
+      }
       viewer.hideAllPlanes();
     } else if (selected) {
       selected.resetPlanes();

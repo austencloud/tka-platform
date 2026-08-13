@@ -101,8 +101,9 @@
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  // Provide adaptive quality (DPR/shadows step down when FPS sags) to the scene
-  // subtree. PerfMonitor drives it; ScenePostProcessing/scenes read it back.
+  // Provide one stable, hardware-detected visual tier plus adaptive DPR to the
+  // scene subtree. Frame pressure may reduce resolution, but it must not swap
+  // effects, lighting, or environment detail for a cheaper look mid-session.
   const adaptiveQuality = createAdaptiveQualityState(getQualityTierDetector());
   setAdaptiveQualityContext(adaptiveQuality);
   const environmentTransitionVisual = createEnvironmentTransitionVisualState();
@@ -221,6 +222,14 @@
   function handleRendererReadyChange(ready: boolean): void {
     rendererReady = ready;
     environmentTransitionVisual.setRendererReady(ready);
+    if (ready) adaptiveQuality.armSettleWindow();
+  }
+
+  function handleEnvironmentTransitionChange(
+    observation: EnvironmentTransitionObservation<BackgroundType>
+  ): void {
+    if (!observation.settled) adaptiveQuality.armSettleWindow();
+    onEnvironmentTransitionChange?.(observation);
   }
 
   // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
@@ -300,7 +309,7 @@
               {avatarState}
               bluePropTypeOverride={bluePropType}
               redPropTypeOverride={redPropType}
-              {onEnvironmentTransitionChange}
+              onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
             />
           </ScenePostProcessing>
         {/if}

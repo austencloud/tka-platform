@@ -169,8 +169,8 @@ export function createDefaultCelestialConfig(): CelestialSceneConfig {
     sunLight: {
       enabled: true,
       color: "#ffe1ad",
-      intensity: 4.1,
-      position: [0, 14, -115],
+      intensity: 4.6,
+      position: [-12, 30, -115],
     },
   };
 }

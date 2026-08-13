@@ -15,7 +15,12 @@
   import { T, useThrelte, useTask } from "@threlte/core";
   import { Vector3 } from "three";
   import GridPlane from "./GridPlane.svelte";
-  import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
+  import {
+    Plane,
+    PlaneMode,
+    PLANE_COLORS,
+    PLANE_MODE_CONFIGS,
+  } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
 
@@ -34,6 +39,8 @@
     planeOpacity?: number;
     /** Grid mode: diamond or box */
     gridMode?: GridMode;
+    /** Performer layout used to place plane geometry */
+    planeMode?: PlaneMode;
     /** Optional label for this grid (e.g., "Avatar 1") */
     label?: string;
   }
@@ -46,10 +53,16 @@
     showLabels = true,
     planeOpacity = 0.15,
     gridMode = "diamond",
+    planeMode = PlaneMode.WALL,
     label,
   }: Props = $props();
 
   const effectiveSize = $derived(size ?? userProportionsState.gridSize);
+  const wheelPlaneOffsets = $derived.by(() => {
+    if (planeMode !== PlaneMode.DUAL_WHEEL) return [0];
+    const config = PLANE_MODE_CONFIGS[PlaneMode.DUAL_WHEEL];
+    return [config.blueLateralOffset, config.redLateralOffset];
+  });
 
   const { camera } = useThrelte();
 
@@ -105,16 +118,20 @@
 
 <!-- Wheel plane (blue) -->
 {#if visiblePlanes.has(Plane.WHEEL)}
-  <GridPlane
-    plane={Plane.WHEEL}
-    color={PLANE_COLORS[Plane.WHEEL]}
-    opacity={planeOpacity}
-    showLabels={labelPlane === Plane.WHEEL}
-    size={effectiveSize}
-    handRadius={handPointRadius}
-    outerRadius={outerPointRadius}
-    {gridMode}
-  />
+  {#each wheelPlaneOffsets as lateralOffset, index}
+    <T.Group position.x={lateralOffset}>
+      <GridPlane
+        plane={Plane.WHEEL}
+        color={PLANE_COLORS[Plane.WHEEL]}
+        opacity={planeOpacity}
+        showLabels={labelPlane === Plane.WHEEL && index === 0}
+        size={effectiveSize}
+        handRadius={handPointRadius}
+        outerRadius={outerPointRadius}
+        {gridMode}
+      />
+    </T.Group>
+  {/each}
 {/if}
 
 <!-- Floor plane (green) -->

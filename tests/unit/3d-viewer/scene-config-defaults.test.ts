@@ -42,7 +42,7 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultBlossomConfig:
     "3383f8c98507979b92b92c71c2287a362090ae1b5e90f1e8f3eb64862b484fbb",
   createDefaultCelestialConfig:
-    "1c24ee80a538e3131858e1c32719b94d3da17a7b26e1c2f23c4963c0713b2966",
+    "e9a9024f696ca5d692eececc3625d01914e5e99690b91356ebd7aa04f10fe164",
   createDefaultCosmicAuroraConfig:
     "0bd38acd71a42d1944bcdf0d61b9998b5bbed1800bc4f5cc0fe7e30a6d5763b4",
   createDefaultCosmicNightConfig:
@@ -66,7 +66,7 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultVoidConfig:
     "b10ed0531f8504ea86366957b22e713b80aeb1b03a6b4f33fd485e395d6b42b2",
   createDefaultWinterConfig:
-    "ca001318c24be406fefcdd5232c5682fca900da8f1a00f19ee321d6f25dfd39e",
+    "0a2b40a57b19487b1d8d9d07f836a2eebf296da6e4935ce215e62be8013f5e83",
 };
 
 describe("scene configuration defaults", () => {

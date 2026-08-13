@@ -1,3 +1,451 @@
+diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df9d97a72b 100644
+--- a/dist/lib/components/Avatar3D.svelte
++++ b/dist/lib/components/Avatar3D.svelte
+@@ -23,19 +23,19 @@
+   import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
+   import type { PropState3D } from "../domain/models/PropState3D";
+   import { cmToUnits } from "../config/avatar-proportions";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../layers/layer-constants";
+   import {
+     getAvatarModelPath,
+     type AvatarId,
+     DEFAULT_AVATAR_ID,
+   } from "../config/avatar-definitions";
++  import {
++    checkSharedAssetAvailability,
++    schedulePerformerInitialization,
++  } from "../services/shared-gltf-cache";
+
+   import { userProportionsState } from "../state/user-proportions-state.svelte";
+   import IKFigure3D from "./IKFigure3D.svelte";
+-  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
+   const toast = { warning(_msg: string) {} };
+
+   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
+@@ -51,7 +51,11 @@
+   import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
+   import { GripType } from "../domain/models/GripPose";
+   import { CollisionDetector } from "../services/implementations/CollisionDetector";
+-  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
++  import type {
++    BodySnapshot,
++    CollisionEvent,
++    PropSegment,
++  } from "../services/contracts/ICollisionDetector";
+   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
+   import {
+@@ -115,7 +119,11 @@
+     enableRootMotion?: boolean;
+     /** Called each frame with the world-space XZ delta from root motion.
+      *  The parent applies this to physics for collision-aware movement. */
+-    onRootMotion?: (worldDelta: { x: number; z: number; yawDelta: number }) => void;
++    onRootMotion?: (worldDelta: {
++      x: number;
++      z: number;
++      yawDelta: number;
++    }) => void;
+     /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
+     bluePropAnchorRef?: import("three").Group;
+     /** PropAnchor group ref for red hand IK target (from PerformerRig) */
+@@ -210,11 +218,18 @@
+   // Collision detection - logs when props/arms clip through the avatar body
+   const collisionDetector = new CollisionDetector();
+   const _boneVecs = {
+-    head: new Vector3(), face: new Vector3(), neck: new Vector3(),
+-    spine2: new Vector3(), spine1: new Vector3(), hips: new Vector3(),
+-    leftShoulder: new Vector3(), rightShoulder: new Vector3(),
+-    leftElbow: new Vector3(), rightElbow: new Vector3(),
+-    leftHand: new Vector3(), rightHand: new Vector3(),
++    head: new Vector3(),
++    face: new Vector3(),
++    neck: new Vector3(),
++    spine2: new Vector3(),
++    spine1: new Vector3(),
++    hips: new Vector3(),
++    leftShoulder: new Vector3(),
++    rightShoulder: new Vector3(),
++    leftElbow: new Vector3(),
++    rightElbow: new Vector3(),
++    leftHand: new Vector3(),
++    rightHand: new Vector3(),
+   };
+   // Scratch vectors for deriving the face center from the shoulder line.
+   // The Mixamo Head bone is at the base of the skull, so we push the face
+@@ -224,7 +239,7 @@
+   const _faceRight = new Vector3();
+   const _faceForward = new Vector3();
+   const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
+-  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
++  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
+
+   /**
+    * Base rotation from the staff's local-Y axis to the "horizontal" axis
+@@ -280,7 +295,7 @@
+
+   let servicesReady = $state(false);
+   let modelLoaded = $state(false);
+-  let useProceduralFallback = $state(true);
++  let useProceduralFallback = $state(!useGLTF);
+   let currentLoadedAvatarId = $state<string | null>(null);
+   let isLoading = $state(false);
+   let hasShownFallbackToast = $state(false);
+@@ -302,8 +317,8 @@
+   // feetOffset adjusts so feet touch the ground (it's negative)
+   const baseGroupY = $derived(
+     position.y !== undefined && position.y !== 0
+-      ? position.y - feetOffset  // Use provided Y (terrain mode)
+-      : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
++      ? position.y - feetOffset // Use provided Y (terrain mode)
++      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
+   );
+
+   // No mesh offset needed - the crouch animation's Hips position track (scaled
+@@ -324,7 +339,9 @@
+
+     try {
+       // Load new model (skeleton service handles internal swap)
+-      await skeletonService.loadModel(url);
++      await schedulePerformerInitialization(() =>
++        skeletonService!.loadModel(url)
++      );
+
+       // Scale model to match user's height
+       // setHeight() calculates proper scale and stores feet offset
+@@ -363,8 +380,14 @@
+       const rightUpLeg = skState.bones.get("RightUpLeg");
+       if (leftUpLeg && rightUpLeg) {
+         const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
+-        const leftTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), stanceAngle);
+-        const rightTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -stanceAngle);
++        const leftTilt = new Quaternion().setFromAxisAngle(
++          new Vector3(0, 0, 1),
++          stanceAngle
++        );
++        const rightTilt = new Quaternion().setFromAxisAngle(
++          new Vector3(0, 0, 1),
++          -stanceAngle
++        );
+         leftUpLeg.quaternion.multiply(leftTilt);
+         rightUpLeg.quaternion.multiply(rightTilt);
+         leftUpLeg.updateMatrixWorld(true);
+@@ -398,7 +421,11 @@
+         locomotionAnimator.initialize(cachedRoot);
+
+         // Initialize root motion extractor with the Hips bone
+-        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
++        if (
++          enableRootMotion &&
++          rootMotionExtractor &&
++          locomotionAnimator.getHipsBone
++        ) {
+           const hipsBone = locomotionAnimator.getHipsBone();
+           if (hipsBone) {
+             rootMotionExtractor.initialize(hipsBone);
+@@ -418,9 +445,15 @@
+             backward: `${animBase}walk-backward${rmSuffix}.glb`,
+             strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
+             strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
+-            jump: enableRootMotion ? `${animBase}jump-up-rm.glb` : "/animations/jump-up.glb",
+-            fall: enableRootMotion ? `${animBase}falling-idle-rm.glb` : "/animations/falling-idle.glb",
+-            land: enableRootMotion ? `${animBase}falling-to-landing-rm.glb` : "/animations/hard-landing.glb",
++            jump: enableRootMotion
++              ? `${animBase}jump-up-rm.glb`
++              : "/animations/jump-up.glb",
++            fall: enableRootMotion
++              ? `${animBase}falling-idle-rm.glb`
++              : "/animations/falling-idle.glb",
++            land: enableRootMotion
++              ? `${animBase}falling-to-landing-rm.glb`
++              : "/animations/hard-landing.glb",
+             crouch: "/animations/crouch-idle.glb",
+           })
+           .catch((err) => {
+@@ -444,18 +477,35 @@
+         const turnsBase = "/animations/turns/";
+         const probeUrl = `${turnsBase}turn-left-90.glb`;
+         const rootForTurns = cachedRoot;
+-        fetch(probeUrl, { method: "HEAD" })
+-          .then((res) => {
+-            const contentType = res.headers.get("content-type") ?? "";
+-            const assetsPresent =
+-              res.ok && !contentType.includes("text/html");
++        checkSharedAssetAvailability(probeUrl)
++          .then((assetsPresent) => {
+             if (!assetsPresent || !turnAnimator) return;
+             return turnAnimator
+               .initialize(rootForTurns, [
+-                { angleDeg: 90, glbUrl: `${turnsBase}turn-left-90.glb`, contactUrl: `${turnsBase}turn-left-90.contact.json`, clipName: "turn-left-90" },
+-                { angleDeg: -90, glbUrl: `${turnsBase}turn-right-90.glb`, contactUrl: `${turnsBase}turn-right-90.contact.json`, clipName: "turn-right-90" },
+-                { angleDeg: 180, glbUrl: `${turnsBase}turn-left-180.glb`, contactUrl: `${turnsBase}turn-left-180.contact.json`, clipName: "turn-left-180" },
+-                { angleDeg: -180, glbUrl: `${turnsBase}turn-right-180.glb`, contactUrl: `${turnsBase}turn-right-180.contact.json`, clipName: "turn-right-180" },
++                {
++                  angleDeg: 90,
++                  glbUrl: `${turnsBase}turn-left-90.glb`,
++                  contactUrl: `${turnsBase}turn-left-90.contact.json`,
++                  clipName: "turn-left-90",
++                },
++                {
++                  angleDeg: -90,
++                  glbUrl: `${turnsBase}turn-right-90.glb`,
++                  contactUrl: `${turnsBase}turn-right-90.contact.json`,
++                  clipName: "turn-right-90",
++                },
++                {
++                  angleDeg: 180,
++                  glbUrl: `${turnsBase}turn-left-180.glb`,
++                  contactUrl: `${turnsBase}turn-left-180.contact.json`,
++                  clipName: "turn-left-180",
++                },
++                {
++                  angleDeg: -180,
++                  glbUrl: `${turnsBase}turn-right-180.glb`,
++                  contactUrl: `${turnsBase}turn-right-180.contact.json`,
++                  clipName: "turn-right-180",
++                },
+               ])
+               .then(() => {
+                 // Register turn clip contact curves so FootPlanter can query them
+@@ -476,7 +526,13 @@
+       // ikSolver, which is still used by arm IK elsewhere in this file).
+       // Gated on enableFootPlanting - off by default so the museum FPS player
+       // (which wants responsive code-driven movement) isn't affected.
+-      if (enableFootPlanting && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
++      if (
++        enableFootPlanting &&
++        footPlanter &&
++        skeletonService &&
++        legIKSolver &&
++        contactCurveCache
++      ) {
+         footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
+       }
+
+@@ -587,7 +643,7 @@
+
+     // Disable spine twist in dual-wheel mode - wide lateral IK targets
+     // twist the torso and shift the feet on the ground.
+-    if ('setSpineTwistEnabled' in animationService) {
++    if ("setSpineTwistEnabled" in animationService) {
+       (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
+     }
+
+@@ -596,16 +652,19 @@
+     if (enableLocomotion && locomotionAnimator) {
+       if (stateMachine) {
+         // State machine decides what state we're in based on physics signals
+-        const stateOutput = stateMachine.update({
+-          hasMovementInput: isMoving,
+-          horizontalSpeed: moveSpeed,
+-          verticalVelocity,
+-          isGrounded,
+-          isCrouching,
+-          isJumpRequested,
+-          moveDirection,
+-          facingAngle,
+-        }, delta);
++        const stateOutput = stateMachine.update(
++          {
++            hasMovementInput: isMoving,
++            horizontalSpeed: moveSpeed,
++            verticalVelocity,
++            isGrounded,
++            isCrouching,
++            isJumpRequested,
++            moveDirection,
++            facingAngle,
++          },
++          delta
++        );
+
+         // Feed state to LocomotionAnimator for clip selection
+         locomotionAnimator.setActiveState?.(stateOutput.state);
+@@ -642,7 +701,9 @@
+
+         // Apply bone rotations - overwrite animation pose for lower body
+         for (const [boneName, quat] of sample.boneRotations) {
+-          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
++          const bone = bones.get(
++            boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName
++          );
+           if (bone) {
+             bone.quaternion.copy(quat);
+           }
+@@ -681,7 +742,11 @@
+       // displacement needs the same conversion.
+       if (rootMotionExtractor?.isReady() && onRootMotion) {
+         const localDelta = rootMotionExtractor.extract();
+-        if (localDelta.x !== 0 || localDelta.forward !== 0 || localDelta.yawDelta !== 0) {
++        if (
++          localDelta.x !== 0 ||
++          localDelta.forward !== 0 ||
++          localDelta.yawDelta !== 0
++        ) {
+           // Convert Mixamo centimeters to scene units.
+           // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
+           // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
+@@ -716,7 +781,6 @@
+           currentClipPhase: currentTurnPhase,
+         });
+       }
+-
+     }
+
+     // 2. IK post-process (blends per-arm based on prop presence)
+@@ -748,7 +812,7 @@
+
+     animationService.setPropsAndBlend(
+       blueVisible ? blueWorldProp : null,
+-      redVisible ? redWorldProp : null,
++      redVisible ? redWorldProp : null
+     );
+     // Push optional external spine pitch (e.g., lean-forward stance variants)
+     // before the animator runs IK so the arms solve against the leaned torso.
+@@ -871,7 +935,9 @@
+     const transparent = o < 1;
+     cachedRoot.traverse((child: any) => {
+       if (!child.isMesh || !child.material) return;
+-      const materials = Array.isArray(child.material) ? child.material : [child.material];
++      const materials = Array.isArray(child.material)
++        ? child.material
++        : [child.material];
+       for (const material of materials) {
+         material.transparent = transparent;
+         material.opacity = o;
+@@ -913,13 +979,10 @@
+ </script>
+
+ {#if visible}
+-  <!-- Loading indicator while avatar model loads -->
+-  {#if isLoading}
+-    <AvatarLoadingIndicator {position} />
+-  {/if}
+-
+-  {#if useProceduralFallback}
+-    <!-- Procedural fallback (used when GLTF loading fails) -->
++  {#if !useGLTF || useProceduralFallback}
++    <!-- The procedural figure is an explicit fallback. GLTF avatars remain
++         hidden until their intended model is ready, so a new performer never
++         appears as one body and immediately changes into another. -->
+     <T.Group
+       name={`PERFORMER_${id}`}
+       position={[position.x, position.y ?? 0, position.z]}
+diff --git a/dist/lib/components/PerformerRig.svelte b/dist/lib/components/PerformerRig.svelte
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce908d9d404 100644
+--- a/dist/lib/components/PerformerRig.svelte
++++ b/dist/lib/components/PerformerRig.svelte
+@@ -16,7 +16,7 @@
+    */
+
+   import { T } from "@threlte/core";
+-  import { untrack } from "svelte";
++  import { onMount, untrack } from "svelte";
+   import type { Snippet } from "svelte";
+   import type { Group } from "three";
+   import Avatar3D from "./Avatar3D.svelte";
+@@ -36,6 +36,7 @@
+   import type { TurnRequest } from "../services/contracts/ITurnAnimator";
+   import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
+   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
++  import { schedulePerformerMount } from "../services/shared-gltf-cache";
+
+   // Constant sets to avoid allocating new Set objects on every reactive update.
+   const WHEEL_ONLY = new Set([Plane.WHEEL]);
+@@ -294,6 +295,44 @@
+   // Effects group ref - imperative renderers add meshes here so they
+   // inherit the rig's transform.
+   let effectsGroupRef = $state<Group | undefined>(undefined);
++
++  // Opening every subtree in the same Svelte flush forces avatar services,
++  // prop geometry, grid materials, and effects to initialize in one blocking
++  // task. Keep the rig's transform available immediately, then reveal one
++  // expensive subtree at a time after a paint. A global queue spreads batch
++  // adds across performers as well as across their individual parts.
++  let avatarMounted = $state(false);
++  let propsMounted = $state(false);
++  let gridMounted = $state(false);
++  let effectsMounted = $state(false);
++
++  onMount(() => {
++    let cancelled = false;
++
++    const mountStage = (mount: () => void) =>
++      schedulePerformerMount(() => {
++        if (!cancelled) mount();
++      });
++
++    void (async () => {
++      await mountStage(() => {
++        avatarMounted = true;
++      });
++      await mountStage(() => {
++        propsMounted = true;
++      });
++      await mountStage(() => {
++        gridMounted = true;
++      });
++      await mountStage(() => {
++        effectsMounted = true;
++      });
++    })();
++
++    return () => {
++      cancelled = true;
++    };
++  });
+ </script>
+
+ <!-- Root: position in world space, apply facing rotation -->
+@@ -305,7 +344,7 @@
+ >
+   <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
+        so shoulders end up near y=0 in rig space. -->
+-  {#if showAvatar}
++  {#if showAvatar && avatarMounted}
+     <Avatar3D
+       id={avatarState.id}
+       {avatarId}
+@@ -339,7 +378,7 @@
+   {/if}
+
+   <!-- Grid (consumer-provided via gridSlot) -->
+-  {#if showGrid && gridSlot}
++  {#if showGrid && gridSlot && gridMounted}
+     {@render gridSlot()}
+   {/if}
+
+@@ -355,7 +394,7 @@
+         position.y={bluePropState.worldPosition.y}
+         position.z={bluePropState.worldPosition.z}
+       >
+-        {#if showProps}
++        {#if showProps && propsMounted}
+           <Prop3D
+             propType={bluePropType}
+             propState={bluePropState}
+@@ -379,7 +418,7 @@
+         position.y={redPropState.worldPosition.y}
+         position.z={redPropState.worldPosition.z}
+       >
+-        {#if showProps}
++        {#if showProps && propsMounted}
+           <Prop3D
+             propType={redPropType}
+             propState={redPropState}
+@@ -392,7 +431,7 @@
+   </T.Group>
+
+   <!-- Effects (consumer-provided via effectsSlot) -->
+-  {#if showEffects && effectsSlot}
++  {#if showEffects && effectsSlot && effectsMounted}
+     <T.Group bind:ref={effectsGroupRef}>
+       {@render effectsSlot({
+         bluePropState,
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c3c16e4a6 100644
 --- a/dist/lib/components/props/Prop3D.svelte
@@ -5,14 +453,14 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
 @@ -50,8 +50,11 @@
      length,
    }: Props = $props();
- 
+
 -  // "Big" variants use a 1.4x scale on the base prop.
 +  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
 +  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
 +  // span makes the grip-to-rim reach 30/13 of the standard fan.
    const BIG_SCALE = 1.4;
 +  const BIG_FAN_SCALE = 30 / 13;
- 
+
    // Check if a GLTF model is available for this prop type.
    // resolvePropModel handles big variant → base type resolution.
 @@ -84,7 +87,7 @@
@@ -21,7 +469,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
- 
+
    {:else if propType === PropType.TRIAD}
      <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
@@ -37,6 +485,525 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..c88c7695b8f5cf0ad199c957d6dc5941
      [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
      [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
      [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
+index b6c16afd1233f1d026941e108cf2912a86e92d03..69924c963c14862e563bf6f0528f2f560d68a3cb 100644
+--- a/dist/lib/index.d.ts
++++ b/dist/lib/index.d.ts
+@@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
+ export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
+ export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
+ export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
+ export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
+ export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
+ export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
+diff --git a/dist/lib/index.js b/dist/lib/index.js
+index 10260a02337aeff1c9a1b880aff958088813053b..949a8ad21d64343d9483bdcabbf7f760262d9c67 100644
+--- a/dist/lib/index.js
++++ b/dist/lib/index.js
+@@ -39,6 +39,7 @@ export { calculateFacingAngle } from "./domain/formation";
+ export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
+ // Config
+ export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
+ export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
+ export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
+ export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
+diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
+index 6f6a49b79156198141ac54620228b885cb8425fd..17ca4c6171dca63e9258e8480035d6b1a35094d7 100644
+--- a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
++++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
+@@ -8,7 +8,6 @@ import type { Object3D, Bone } from "three";
+ import type { IAvatarSkeletonBuilder, BoneName, BoneChain, SkeletonState } from "../contracts/IAvatarSkeletonBuilder";
+ export declare class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     private state;
+-    private loader;
+     private originalHeight;
+     private skeleton;
+     /** Offset from model origin to feet (negative value - feet are below origin) */
+@@ -68,6 +67,7 @@ export declare class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+      */
+     setHeight(height: number): void;
+     getGroundOffset(): number;
++    private disposeInstanceResources;
+     dispose(): void;
+ }
+ //# sourceMappingURL=AvatarSkeletonBuilder.d.ts.map
+\ No newline at end of file
+diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d736b1098 100644
+--- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
++++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
+@@ -5,8 +5,8 @@
+  * Provides access to bones for IK solving and animation.
+  */
+ import { Vector3, Box3 } from "three";
+-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+ import { FINGER_BONES, } from "../../domain/models/GripPose";
++import { cloneSharedSkinnedScene, loadSharedGltf, } from "../shared-gltf-cache";
+ /**
+  * Mapping of standard bone names to common variations
+  * GLTF models from different sources use different naming conventions
+@@ -84,7 +84,6 @@ export class AvatarSkeletonBuilder {
+         rightLegChain: null,
+         fingerChains: null,
+     };
+-    loader = new GLTFLoader();
+     originalHeight = 0;
+     skeleton = null;
+     /** Offset from model origin to feet (negative value - feet are below origin) */
+@@ -92,17 +91,16 @@ export class AvatarSkeletonBuilder {
+     /** Original bounding box min Y (in unscaled model space) - computed once at load time */
+     originalMinY = 0;
+     async loadModel(url) {
+-        return new Promise((resolve, reject) => {
+-            this.loader.load(url, (gltf) => {
+-                this.processGLTF(gltf);
+-                resolve();
+-            }, undefined, (error) => {
+-                console.error("Failed to load avatar model:", error);
+-                reject(error);
+-            });
+-        });
++        try {
++            const gltf = await loadSharedGltf(url);
++            this.processGLTF(cloneSharedSkinnedScene(gltf.scene));
++        }
++        catch (error) {
++            console.error("Failed to load avatar model:", error);
++            throw error;
++        }
+     }
+-    processGLTF(gltf) {
++    processGLTF(root) {
+         // Hot-swap: keep old arm chains valid until new ones are ready
+         // This ensures animation continues smoothly during the swap
+         const oldRoot = this.state.root;
+@@ -111,7 +109,7 @@ export class AvatarSkeletonBuilder {
+         const newBones = new Map();
+         let newSkeleton = null;
+         // Find all skinned meshes and bones in the new model
+-        gltf.scene.traverse((child) => {
++        root.traverse((child) => {
+             if (child.isSkinnedMesh) {
+                 const skinnedMesh = child;
+                 newMeshes.push(skinnedMesh);
+@@ -129,38 +127,22 @@ export class AvatarSkeletonBuilder {
+         });
+         // Compute original bounding box of new model (before any transforms)
+         // This is done ONCE at load time, before the model is added to the scene
+-        const box = new Box3().setFromObject(gltf.scene);
++        const box = new Box3().setFromObject(root);
+         this.originalHeight = box.max.y - box.min.y;
+         this.originalMinY = box.min.y; // Store original feet position for scaling
+         // Now atomically swap everything at once
+-        this.state.root = gltf.scene;
++        this.state.root = root;
+         this.state.meshes = newMeshes;
+         this.state.bones = newBones;
+         this.skeleton = newSkeleton;
+         // Build IK chains (uses the new bones map)
+         this.buildArmChains();
+         this.buildLegChains();
+-        this.state.fingerChains = this.buildFingerChains(gltf.scene);
++        this.state.fingerChains = this.buildFingerChains(root);
+         this.state.isLoaded = true;
+         // Dispose old model resources after swap is complete
+-        if (oldRoot) {
+-            queueMicrotask(() => {
+-                oldRoot.traverse((child) => {
+-                    const mesh = child;
+-                    if (mesh.geometry) {
+-                        mesh.geometry.dispose();
+-                    }
+-                    if (mesh.material) {
+-                        if (Array.isArray(mesh.material)) {
+-                            mesh.material.forEach((m) => m.dispose());
+-                        }
+-                        else {
+-                            mesh.material.dispose();
+-                        }
+-                    }
+-                });
+-            });
+-        }
++        if (oldRoot)
++            queueMicrotask(() => this.disposeInstanceResources(oldRoot));
+     }
+     /**
+      * Map a bone to a bones map (used during hot-swap)
+@@ -452,23 +434,30 @@ export class AvatarSkeletonBuilder {
+         // The model is already positioned with feet at Y=0
+         return 0;
+     }
++    /**
++     * Cloned performers own their skeleton GPU data and materials. Geometry and
++     * textures belong to the page-level parsed GLTF cache and stay shared.
++     */
++    disposeInstanceResources(root) {
++        const skeletons = new Set();
++        root.traverse((child) => {
++            const mesh = child;
++            if (mesh.isSkinnedMesh && mesh.skeleton)
++                skeletons.add(mesh.skeleton);
++            if (!mesh.material)
++                return;
++            if (Array.isArray(mesh.material)) {
++                mesh.material.forEach((material) => material.dispose());
++            }
++            else {
++                mesh.material.dispose();
++            }
++        });
++        skeletons.forEach((skeleton) => skeleton.dispose());
++    }
+     dispose() {
+-        if (this.state.root) {
+-            this.state.root.traverse((child) => {
+-                const mesh = child;
+-                if (mesh.geometry) {
+-                    mesh.geometry.dispose();
+-                }
+-                if (mesh.material) {
+-                    if (Array.isArray(mesh.material)) {
+-                        mesh.material.forEach((m) => m.dispose());
+-                    }
+-                    else {
+-                        mesh.material.dispose();
+-                    }
+-                }
+-            });
+-        }
++        if (this.state.root)
++            this.disposeInstanceResources(this.state.root);
+         this.state = {
+             isLoaded: false,
+             root: null,
+diff --git a/dist/lib/services/implementations/ClipBasedTurnAnimator.js b/dist/lib/services/implementations/ClipBasedTurnAnimator.js
+index 5cb91c6048b30298d298d923213fcf3037dda852..1989b6783709edde7c9d6d214b4c8a3fc2692bd7 100644
+--- a/dist/lib/services/implementations/ClipBasedTurnAnimator.js
++++ b/dist/lib/services/implementations/ClipBasedTurnAnimator.js
+@@ -18,7 +18,7 @@
+  * returns yawDelta only (no bone data).
+  */
+ import { Quaternion, Euler, Vector3 } from "three";
+-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
++import { loadSharedAnimation } from "../shared-gltf-cache";
+ // ---------------------------------------------------------------------------
+ // Constants
+ // ---------------------------------------------------------------------------
+@@ -90,7 +90,7 @@ function detectModelPrefix(root) {
+  * Samples bone rotations at BAKE_FPS intervals and reads the Hips position
+  * track for root motion. Strips the model/clip prefix from bone names.
+  */
+-function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight) {
++function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight, clipName = clip.name) {
+     const clipPrefix = detectClipPrefix(clip);
+     const frameCount = Math.max(2, Math.ceil(clip.duration * BAKE_FPS) + 1);
+     const boneFrames = new Map();
+@@ -108,7 +108,9 @@ function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight) {
+             continue;
+         const rawBoneName = track.name.slice(0, dotIdx);
+         const property = track.name.slice(dotIdx + 1);
+-        const coreName = clipPrefix ? rawBoneName.slice(clipPrefix.length) : rawBoneName;
++        const coreName = clipPrefix
++            ? rawBoneName.slice(clipPrefix.length)
++            : rawBoneName;
+         if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
+             const frames = boneFrames.get(coreName);
+             // QuaternionKeyframeTrack stores interleaved [x,y,z,w] values
+@@ -153,7 +155,7 @@ function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight) {
+                 const tLo = times[lo] ?? 0;
+                 const tHi = times[hi] ?? lastTime;
+                 const blend = tHi > tLo ? (t - tLo) / (tHi - tLo) : 0;
+-                hipsPositions[f].set((values[lo * 3] * (1 - blend)) + values[hi * 3] * blend, (values[lo * 3 + 1] * (1 - blend)) + values[hi * 3 + 1] * blend, (values[lo * 3 + 2] * (1 - blend)) + values[hi * 3 + 2] * blend);
++                hipsPositions[f].set(values[lo * 3] * (1 - blend) + values[hi * 3] * blend, values[lo * 3 + 1] * (1 - blend) + values[hi * 3 + 1] * blend, values[lo * 3 + 2] * (1 - blend) + values[hi * 3 + 2] * blend);
+             }
+         }
+     }
+@@ -166,7 +168,7 @@ function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight) {
+     };
+     return {
+         angleDeg,
+-        clipName: clip.name,
++        clipName,
+         duration: clip.duration,
+         frameCount,
+         boneFrames,
+@@ -175,6 +177,53 @@ function bakeClip(clip, modelPrefix, angleDeg, contactLeft, contactRight) {
+         contactRight: padArray(contactRight, frameCount),
+     };
+ }
++const contactSidecarLoads = new Map();
++const bakedTurnLoads = new Map();
++function loadContactSidecar(url) {
++    const existing = contactSidecarLoads.get(url);
++    if (existing)
++        return existing;
++    const pending = fetch(url).then(async (response) => {
++        if (!response.ok)
++            throw new Error(`HTTP ${response.status}`);
++        return (await response.json());
++    });
++    contactSidecarLoads.set(url, pending);
++    void pending.catch(() => {
++        if (contactSidecarLoads.get(url) === pending) {
++            contactSidecarLoads.delete(url);
++        }
++    });
++    return pending;
++}
++function loadSharedBakedTurnClips(modelPrefix, manifest) {
++    const cacheKey = JSON.stringify({ modelPrefix, manifest });
++    const existing = bakedTurnLoads.get(cacheKey);
++    if (existing)
++        return existing;
++    const pending = Promise.all(manifest.map(async (entry) => {
++        const rawClip = await loadSharedAnimation(entry.glbUrl);
++        let contactLeft = [];
++        let contactRight = [];
++        if (entry.contactUrl) {
++            try {
++                const contact = await loadContactSidecar(entry.contactUrl);
++                contactLeft = contact.leftFoot;
++                contactRight = contact.rightFoot;
++            }
++            catch {
++                console.warn(`[ClipBasedTurnAnimator] Could not load contact sidecar: ${entry.contactUrl}`);
++            }
++        }
++        return bakeClip(rawClip, modelPrefix, entry.angleDeg, contactLeft, contactRight, entry.clipName);
++    }));
++    bakedTurnLoads.set(cacheKey, pending);
++    void pending.catch(() => {
++        if (bakedTurnLoads.get(cacheKey) === pending)
++            bakedTurnLoads.delete(cacheKey);
++    });
++    return pending;
++}
+ // ---------------------------------------------------------------------------
+ // Sampling helpers
+ // ---------------------------------------------------------------------------
+@@ -216,28 +265,7 @@ export class ClipBasedTurnAnimator {
+     // -------------------------------------------------------------------------
+     async initialize(modelRoot, manifest) {
+         const modelPrefix = detectModelPrefix(modelRoot);
+-        const loader = new GLTFLoader();
+-        const bakedClips = await Promise.all(manifest.map(async (entry) => {
+-            const gltf = await new Promise((resolve, reject) => loader.load(entry.glbUrl, resolve, undefined, reject));
+-            const rawClip = gltf.animations[0];
+-            if (!rawClip)
+-                throw new Error(`[ClipBasedTurnAnimator] No animation in ${entry.glbUrl}`);
+-            rawClip.name = entry.clipName;
+-            let contactLeft = [];
+-            let contactRight = [];
+-            if (entry.contactUrl) {
+-                try {
+-                    const res = await fetch(entry.contactUrl);
+-                    const json = (await res.json());
+-                    contactLeft = json.leftFoot;
+-                    contactRight = json.rightFoot;
+-                }
+-                catch {
+-                    console.warn(`[ClipBasedTurnAnimator] Could not load contact sidecar: ${entry.contactUrl}`);
+-                }
+-            }
+-            return bakeClip(rawClip, modelPrefix, entry.angleDeg, contactLeft, contactRight);
+-        }));
++        const bakedClips = await loadSharedBakedTurnClips(modelPrefix, manifest);
+         this.initializeFromData(bakedClips);
+     }
+     // -------------------------------------------------------------------------
+@@ -345,7 +373,8 @@ export class ClipBasedTurnAnimator {
+             // Break ties by preferring the clip whose raw angle is closer to totalAngle
+             // (avoids the +π / -π ambiguity where wrapAngle collapses both to 0 distance)
+             const absRaw = Math.abs(rawDiff);
+-            const tieBreaker = absRaw < Math.abs(totalAngle - (best ? (best.angleDeg * Math.PI) / 180 : Infinity));
++            const tieBreaker = absRaw <
++                Math.abs(totalAngle - (best ? (best.angleDeg * Math.PI) / 180 : Infinity));
+             if (dist < bestDist || (dist === bestDist && tieBreaker)) {
+                 bestDist = dist;
+                 best = clip;
+diff --git a/dist/lib/services/implementations/LocomotionAnimator.js b/dist/lib/services/implementations/LocomotionAnimator.js
+index 56279f173c47d912a9cb02a35e4e27abc07c41d6..77b398b9add30cfb2b52630de93b4819381e9a68 100644
+--- a/dist/lib/services/implementations/LocomotionAnimator.js
++++ b/dist/lib/services/implementations/LocomotionAnimator.js
+@@ -12,8 +12,9 @@
+  * State machine: idle <-> walk (4-way directional) <-> jump/fall/land/crouch.
+  */
+ import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
+-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+ import { LocomotionState } from "../contracts/IAnimationStateMachine";
++import { loadSharedAnimation } from "../shared-gltf-cache";
++const preparedClipCache = new WeakMap();
+ /**
+  * Known Mixamo bone prefixes. Animation files may use a different
+  * variant than the model (e.g., "mixamorig:" vs "mixamorig").
+@@ -65,8 +66,14 @@ function detectClipPrefix(clip) {
+  * Exhibit performers don't need leg animation - feet stay planted.
+  */
+ const LEG_BONE_NAMES = new Set([
+-    "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
+-    "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
++    "LeftUpLeg",
++    "LeftLeg",
++    "LeftFoot",
++    "LeftToeBase",
++    "RightUpLeg",
++    "RightLeg",
++    "RightFoot",
++    "RightToeBase",
+ ]);
+ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBones = false) {
+     const clipPrefix = detectClipPrefix(clip);
+@@ -77,7 +84,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+             return false;
+         const boneName = track.name.slice(0, dotIdx);
+         const property = track.name.slice(dotIdx + 1);
+-        const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++        const coreName = clipPrefix
++            ? boneName.slice(clipPrefix.length)
++            : boneName;
+         // Skip bones that don't exist on our models
+         if (coreName.endsWith("_End"))
+             return false;
+@@ -92,7 +101,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+         if (coreName === "Hips" && property === "quaternion")
+             return false;
+         // Keep Hips position track when needed for root motion or crouch pose.
+-        if (coreName === "Hips" && property === "position" && hipsMode !== "strip")
++        if (coreName === "Hips" &&
++            property === "position" &&
++            hipsMode !== "strip")
+             return true;
+         // Keep all other quaternion tracks - bone rotations are the animation.
+         // Filter out position/scale tracks (position teleports, scale vanishes).
+@@ -104,7 +115,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+         const dotIdx = track.name.indexOf(".");
+         const boneName = track.name.slice(0, dotIdx);
+         const property = track.name.slice(dotIdx);
+-        const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++        const coreName = clipPrefix
++            ? boneName.slice(clipPrefix.length)
++            : boneName;
+         const cloned = track.clone();
+         // Remap bone prefix if needed
+         if (clipPrefix !== modelPrefix) {
+@@ -115,7 +128,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+         // first keyframe's Z preserves the natural vertical bob (hips go up
+         // and down ~2-3cm per step) while removing the absolute offset that
+         // would slam the avatar underground.
+-        if (coreName === "Hips" && property.includes("position") && hipsMode === "rootMotion") {
++        if (coreName === "Hips" &&
++            property.includes("position") &&
++            hipsMode === "rootMotion") {
+             const values = cloned.values;
+             const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
+             for (let i = 2; i < values.length; i += 3) {
+@@ -128,7 +143,9 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+         // up by 0.04m - measured via foot bone world-Y logging: the grounded
+         // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
+         // correction centers it at +0.035m (flush with floor surface).
+-        if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
++        if (coreName === "Hips" &&
++            property.includes("position") &&
++            hipsMode === "pose") {
+             const values = cloned.values;
+             for (let i = 0; i < values.length; i++) {
+                 values[i] *= 0.01;
+@@ -145,7 +162,6 @@ function remapClipToSkeleton(clip, modelPrefix, hipsMode = "strip", stripLegBone
+ export class LocomotionAnimator {
+     mixer = null;
+     root = null;
+-    loader = new GLTFLoader();
+     modelPrefix = "mixamorig";
+     // Actions - created from raw clips, no processing
+     idleAction = null;
+@@ -231,15 +247,7 @@ export class LocomotionAnimator {
+         if (urls.crouch)
+             entries.push({ key: "crouch", url: urls.crouch });
+         const results = await Promise.allSettled(entries.map(async ({ key, url }) => {
+-            const gltf = await this.loadGltf(url);
+-            const clip = gltf.animations[0];
+-            if (!clip)
+-                throw new Error(`No animation in ${url}`);
+-            // Blender exports all Mixamo clips with the same name
+-            // ("Armature|mixamo.com|Layer0"). AnimationMixer caches actions
+-            // by clip name, so duplicate names cause all actions to share
+-            // the same clip. Give each a unique name.
+-            clip.name = key;
++            const clip = await loadSharedAnimation(url);
+             return { key, clip };
+         }));
+         for (const result of results) {
+@@ -280,7 +288,21 @@ export class LocomotionAnimator {
+         // Strip leg bones from idle clip for exhibit performers so feet
+         // stay perfectly planted during sequence playback.
+         const stripLegs = this.config.stripLegBones && key === "idle";
+-        return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
++        const cacheKey = `${key}|${this.modelPrefix}|${hipsMode}|${stripLegs}`;
++        let variants = preparedClipCache.get(raw);
++        if (!variants) {
++            variants = new Map();
++            preparedClipCache.set(raw, variants);
++        }
++        const existing = variants.get(cacheKey);
++        if (existing)
++            return existing;
++        const prepared = remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
++        // Blender exports all Mixamo clips with the same name. AnimationMixer
++        // caches actions by clip name, so each behavior needs a stable identity.
++        prepared.name = key;
++        variants.set(cacheKey, prepared);
++        return prepared;
+     }
+     /**
+      * Create actions from clips - only bone prefix remapping, no track filtering.
+@@ -299,7 +321,12 @@ export class LocomotionAnimator {
+             this.idleAction.play();
+         }
+         // Walk directions - start at weight 0
+-        for (const key of ["forward", "backward", "strafeLeft", "strafeRight"]) {
++        for (const key of [
++            "forward",
++            "backward",
++            "strafeLeft",
++            "strafeRight",
++        ]) {
+             const clip = this.prepareClip(key);
+             if (clip && !this.walkActions[key]) {
+                 const action = this.mixer.clipAction(clip);
+@@ -423,11 +450,6 @@ export class LocomotionAnimator {
+         }
+     }
+     // --- Private helpers ---
+-    loadGltf(url) {
+-        return new Promise((resolve, reject) => {
+-            this.loader.load(url, resolve, undefined, reject);
+-        });
+-    }
+     updateDirectionalTargets(input) {
+         const dir = input.moveDirection ?? { x: 0, z: 1 };
+         const fw = Math.max(0, dir.z);
+@@ -483,7 +505,7 @@ export class LocomotionAnimator {
+         // "hunched walk" without needing a dedicated crouch-walk animation clip.
+         // Without movement, 100% crouch-idle plays normally.
+         const isCrouching = state === LocomotionState.CROUCHING;
+-        const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
++        const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
+         const crouchWalking = isCrouching && hasMovement;
+         const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
+         const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
+@@ -506,7 +528,8 @@ export class LocomotionAnimator {
+         // On state entry: snap weights for instant transitions on one-shot clips.
+         if (state !== this.currentActiveState) {
+             // Zero out ground animations instantly when entering any airborne state
+-            if (state === LocomotionState.JUMPING || state === LocomotionState.FALLING) {
++            if (state === LocomotionState.JUMPING ||
++                state === LocomotionState.FALLING) {
+                 this.idleAction?.setEffectiveWeight(0);
+                 this.currentIdleWeight = 0;
+                 for (const key of Object.keys(this.walkActions)) {
 diff --git a/dist/lib/services/implementations/SpineTwister.js b/dist/lib/services/implementations/SpineTwister.js
 index 29809adb0b6cd2e639a532bc3c7794224d7bc79c..8ea2643e9726eacfd9d46e37875b55f7a5612848 100644
 --- a/dist/lib/services/implementations/SpineTwister.js
@@ -127,6 +1094,748 @@ index 29809adb0b6cd2e639a532bc3c7794224d7bc79c..8ea2643e9726eacfd9d46e37875b55f7
          q.setFromEuler(euler);
          return q;
      }
+diff --git a/dist/lib/services/shared-gltf-cache.d.ts b/dist/lib/services/shared-gltf-cache.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..8cc909a2c6ca161a664663ccfed5ae8d20a9dd7c
+--- /dev/null
++++ b/dist/lib/services/shared-gltf-cache.d.ts
+@@ -0,0 +1,18 @@
++import type { AnimationClip, Object3D } from "three";
++import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
++/** Parse a GLTF URL once for the lifetime of the page. */
++export declare function loadSharedGltf(url: string): Promise<GLTF>;
++/** Parse an avatar before another performer needs it. */
++export declare function prepareSharedGltf(url: string): Promise<void>;
++/** Parse an animation GLB once and retain only its reusable clip. */
++export declare function loadSharedAnimation(url: string): Promise<AnimationClip>;
++/** Share existence probes used before optional animation packs are loaded. */
++export declare function checkSharedAssetAvailability(url: string): Promise<boolean>;
++/** Spread independent performer setup across frames in mount order. */
++export declare function schedulePerformerInitialization<T>(initialize: () => Promise<T>): Promise<T>;
++/** Mount one expensive performer subtree after the browser has painted. */
++export declare function schedulePerformerMount(mount: () => void): Promise<void>;
++/** Clone a parsed skinned scene with performer-owned materials. */
++export declare function cloneSharedSkinnedScene(source: Object3D): Object3D;
++/** Test-only reset for proving retry and deduplication behavior. */
++export declare function clearSharedGltfCache(): void;
+diff --git a/dist/lib/services/shared-gltf-cache.js b/dist/lib/services/shared-gltf-cache.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae737c894b2350b9e61223a7ce2a0d0555f64811
+--- /dev/null
++++ b/dist/lib/services/shared-gltf-cache.js
+@@ -0,0 +1,154 @@
++import { GLTFLoader, } from "three/examples/jsm/loaders/GLTFLoader.js";
++import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
++const loader = new GLTFLoader();
++const loads = new Map();
++const animationLoads = new Map();
++const availabilityChecks = new Map();
++function yieldToNextFrame() {
++    if (typeof requestAnimationFrame !== "function")
++        return Promise.resolve();
++    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
++}
++async function yieldUntilAfterPaint() {
++    await yieldToNextFrame();
++    await yieldToNextFrame();
++}
++/**
++ * Parse a GLTF URL once for the lifetime of the page.
++ *
++ * Performer rigs frequently use the same avatar and locomotion files. Browser
++ * caching avoids another download, but GLTFLoader would still parse the same
++ * binary again for every performer. Keeping the parsed result here removes
++ * that repeated main-thread work. A failed request is evicted so retry still
++ * works after a temporary network problem.
++ */
++export function loadSharedGltf(url) {
++    const existing = loads.get(url);
++    if (existing)
++        return existing;
++    const pending = loader.loadAsync(url);
++    loads.set(url, pending);
++    void pending.catch(() => {
++        if (loads.get(url) === pending)
++            loads.delete(url);
++    });
++    return pending;
++}
++/** Parse an avatar before another performer needs it. */
++export function prepareSharedGltf(url) {
++    return loadSharedGltf(url).then(() => undefined);
++}
++/**
++ * Parse an animation GLB once without retaining the file's embedded scene.
++ *
++ * Mixamo animation exports often include a complete character alongside the
++ * clip. Keeping the entire GLTF for every locomotion asset costs hundreds of
++ * megabytes. This cache retains only the immutable AnimationClip shared by
++ * every performer and lets the unused scene graph be collected.
++ */
++export function loadSharedAnimation(url) {
++    const existing = animationLoads.get(url);
++    if (existing)
++        return existing;
++    const pending = loader.loadAsync(url).then((gltf) => {
++        const clip = gltf.animations[0];
++        if (!clip)
++            throw new Error(`No animation in ${url}`);
++        return clip;
++    });
++    animationLoads.set(url, pending);
++    void pending.catch(() => {
++        if (animationLoads.get(url) === pending)
++            animationLoads.delete(url);
++    });
++    return pending;
++}
++/** Share existence probes used before optional animation packs are loaded. */
++export function checkSharedAssetAvailability(url) {
++    const existing = availabilityChecks.get(url);
++    if (existing)
++        return existing;
++    const pending = fetch(url, { method: "HEAD" }).then((response) => {
++        const contentType = response.headers.get("content-type") ?? "";
++        return response.ok && !contentType.includes("text/html");
++    });
++    availabilityChecks.set(url, pending);
++    void pending.catch(() => {
++        if (availabilityChecks.get(url) === pending)
++            availabilityChecks.delete(url);
++    });
++    return pending;
++}
++/**
++ * Spread independent performer setup across frames in mount order.
++ *
++ * Svelte mounts every new rig synchronously. Serializing the heavy clone and
++ * mixer setup keeps a batch add from becoming one long main-thread task while
++ * the light state change and formation motion remain immediate.
++ */
++let performerInitializationQueue = Promise.resolve();
++export async function schedulePerformerInitialization(initialize) {
++    const predecessor = performerInitializationQueue;
++    let release;
++    performerInitializationQueue = new Promise((resolve) => {
++        release = resolve;
++    });
++    try {
++        await predecessor;
++        await yieldUntilAfterPaint();
++        return await initialize();
++    }
++    finally {
++        release();
++    }
++}
++/**
++ * Mount one expensive performer subtree after the browser has painted.
++ *
++ * The callback is intentionally synchronous: it only opens a Svelte render
++ * gate. Avatar parsing has its own async initialization queue above. Keeping
++ * these queues separate prevents a network request from delaying the next
++ * performer's lightweight shell while still limiting WebGL setup to one
++ * subtree per painted frame.
++ */
++let performerMountQueue = Promise.resolve();
++export async function schedulePerformerMount(mount) {
++    const predecessor = performerMountQueue;
++    let release;
++    performerMountQueue = new Promise((resolve) => {
++        release = resolve;
++    });
++    try {
++        await predecessor;
++        await yieldUntilAfterPaint();
++        mount();
++    }
++    finally {
++        release();
++    }
++}
++/**
++ * Give one performer an independently animatable skeleton while sharing the
++ * immutable geometry and textures from the parsed model. Materials are cloned
++ * because performer fades and customization mutate opacity and color.
++ */
++export function cloneSharedSkinnedScene(source) {
++    const scene = cloneSkinned(source);
++    scene.traverse((child) => {
++        const mesh = child;
++        if (!mesh.isMesh || !mesh.material)
++            return;
++        mesh.material = Array.isArray(mesh.material)
++            ? mesh.material.map((material) => material.clone())
++            : mesh.material.clone();
++    });
++    return scene;
++}
++/** Test-only reset for proving retry and deduplication behavior. */
++export function clearSharedGltfCache() {
++    loads.clear();
++    animationLoads.clear();
++    availabilityChecks.clear();
++    performerInitializationQueue = Promise.resolve();
++    performerMountQueue = Promise.resolve();
++}
+diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df9d97a72b 100644
+--- a/src/lib/components/Avatar3D.svelte
++++ b/src/lib/components/Avatar3D.svelte
+@@ -23,19 +23,19 @@
+   import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
+   import type { PropState3D } from "../domain/models/PropState3D";
+   import { cmToUnits } from "../config/avatar-proportions";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../layers/layer-constants";
+   import {
+     getAvatarModelPath,
+     type AvatarId,
+     DEFAULT_AVATAR_ID,
+   } from "../config/avatar-definitions";
++  import {
++    checkSharedAssetAvailability,
++    schedulePerformerInitialization,
++  } from "../services/shared-gltf-cache";
+
+   import { userProportionsState } from "../state/user-proportions-state.svelte";
+   import IKFigure3D from "./IKFigure3D.svelte";
+-  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
+   const toast = { warning(_msg: string) {} };
+
+   import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
+@@ -51,7 +51,11 @@
+   import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
+   import { GripType } from "../domain/models/GripPose";
+   import { CollisionDetector } from "../services/implementations/CollisionDetector";
+-  import type { BodySnapshot, CollisionEvent, PropSegment } from "../services/contracts/ICollisionDetector";
++  import type {
++    BodySnapshot,
++    CollisionEvent,
++    PropSegment,
++  } from "../services/contracts/ICollisionDetector";
+   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
+   import {
+@@ -115,7 +119,11 @@
+     enableRootMotion?: boolean;
+     /** Called each frame with the world-space XZ delta from root motion.
+      *  The parent applies this to physics for collision-aware movement. */
+-    onRootMotion?: (worldDelta: { x: number; z: number; yawDelta: number }) => void;
++    onRootMotion?: (worldDelta: {
++      x: number;
++      z: number;
++      yawDelta: number;
++    }) => void;
+     /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
+     bluePropAnchorRef?: import("three").Group;
+     /** PropAnchor group ref for red hand IK target (from PerformerRig) */
+@@ -210,11 +218,18 @@
+   // Collision detection - logs when props/arms clip through the avatar body
+   const collisionDetector = new CollisionDetector();
+   const _boneVecs = {
+-    head: new Vector3(), face: new Vector3(), neck: new Vector3(),
+-    spine2: new Vector3(), spine1: new Vector3(), hips: new Vector3(),
+-    leftShoulder: new Vector3(), rightShoulder: new Vector3(),
+-    leftElbow: new Vector3(), rightElbow: new Vector3(),
+-    leftHand: new Vector3(), rightHand: new Vector3(),
++    head: new Vector3(),
++    face: new Vector3(),
++    neck: new Vector3(),
++    spine2: new Vector3(),
++    spine1: new Vector3(),
++    hips: new Vector3(),
++    leftShoulder: new Vector3(),
++    rightShoulder: new Vector3(),
++    leftElbow: new Vector3(),
++    rightElbow: new Vector3(),
++    leftHand: new Vector3(),
++    rightHand: new Vector3(),
+   };
+   // Scratch vectors for deriving the face center from the shoulder line.
+   // The Mixamo Head bone is at the base of the skull, so we push the face
+@@ -224,7 +239,7 @@
+   const _faceRight = new Vector3();
+   const _faceForward = new Vector3();
+   const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
+-  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
++  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
+
+   /**
+    * Base rotation from the staff's local-Y axis to the "horizontal" axis
+@@ -280,7 +295,7 @@
+
+   let servicesReady = $state(false);
+   let modelLoaded = $state(false);
+-  let useProceduralFallback = $state(true);
++  let useProceduralFallback = $state(!useGLTF);
+   let currentLoadedAvatarId = $state<string | null>(null);
+   let isLoading = $state(false);
+   let hasShownFallbackToast = $state(false);
+@@ -302,8 +317,8 @@
+   // feetOffset adjusts so feet touch the ground (it's negative)
+   const baseGroupY = $derived(
+     position.y !== undefined && position.y !== 0
+-      ? position.y - feetOffset  // Use provided Y (terrain mode)
+-      : defaultGroundY - feetOffset  // Use stage groundY (stage mode)
++      ? position.y - feetOffset // Use provided Y (terrain mode)
++      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
+   );
+
+   // No mesh offset needed - the crouch animation's Hips position track (scaled
+@@ -324,7 +339,9 @@
+
+     try {
+       // Load new model (skeleton service handles internal swap)
+-      await skeletonService.loadModel(url);
++      await schedulePerformerInitialization(() =>
++        skeletonService!.loadModel(url)
++      );
+
+       // Scale model to match user's height
+       // setHeight() calculates proper scale and stores feet offset
+@@ -363,8 +380,14 @@
+       const rightUpLeg = skState.bones.get("RightUpLeg");
+       if (leftUpLeg && rightUpLeg) {
+         const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
+-        const leftTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), stanceAngle);
+-        const rightTilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -stanceAngle);
++        const leftTilt = new Quaternion().setFromAxisAngle(
++          new Vector3(0, 0, 1),
++          stanceAngle
++        );
++        const rightTilt = new Quaternion().setFromAxisAngle(
++          new Vector3(0, 0, 1),
++          -stanceAngle
++        );
+         leftUpLeg.quaternion.multiply(leftTilt);
+         rightUpLeg.quaternion.multiply(rightTilt);
+         leftUpLeg.updateMatrixWorld(true);
+@@ -398,7 +421,11 @@
+         locomotionAnimator.initialize(cachedRoot);
+
+         // Initialize root motion extractor with the Hips bone
+-        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
++        if (
++          enableRootMotion &&
++          rootMotionExtractor &&
++          locomotionAnimator.getHipsBone
++        ) {
+           const hipsBone = locomotionAnimator.getHipsBone();
+           if (hipsBone) {
+             rootMotionExtractor.initialize(hipsBone);
+@@ -418,9 +445,15 @@
+             backward: `${animBase}walk-backward${rmSuffix}.glb`,
+             strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
+             strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
+-            jump: enableRootMotion ? `${animBase}jump-up-rm.glb` : "/animations/jump-up.glb",
+-            fall: enableRootMotion ? `${animBase}falling-idle-rm.glb` : "/animations/falling-idle.glb",
+-            land: enableRootMotion ? `${animBase}falling-to-landing-rm.glb` : "/animations/hard-landing.glb",
++            jump: enableRootMotion
++              ? `${animBase}jump-up-rm.glb`
++              : "/animations/jump-up.glb",
++            fall: enableRootMotion
++              ? `${animBase}falling-idle-rm.glb`
++              : "/animations/falling-idle.glb",
++            land: enableRootMotion
++              ? `${animBase}falling-to-landing-rm.glb`
++              : "/animations/hard-landing.glb",
+             crouch: "/animations/crouch-idle.glb",
+           })
+           .catch((err) => {
+@@ -444,18 +477,35 @@
+         const turnsBase = "/animations/turns/";
+         const probeUrl = `${turnsBase}turn-left-90.glb`;
+         const rootForTurns = cachedRoot;
+-        fetch(probeUrl, { method: "HEAD" })
+-          .then((res) => {
+-            const contentType = res.headers.get("content-type") ?? "";
+-            const assetsPresent =
+-              res.ok && !contentType.includes("text/html");
++        checkSharedAssetAvailability(probeUrl)
++          .then((assetsPresent) => {
+             if (!assetsPresent || !turnAnimator) return;
+             return turnAnimator
+               .initialize(rootForTurns, [
+-                { angleDeg: 90, glbUrl: `${turnsBase}turn-left-90.glb`, contactUrl: `${turnsBase}turn-left-90.contact.json`, clipName: "turn-left-90" },
+-                { angleDeg: -90, glbUrl: `${turnsBase}turn-right-90.glb`, contactUrl: `${turnsBase}turn-right-90.contact.json`, clipName: "turn-right-90" },
+-                { angleDeg: 180, glbUrl: `${turnsBase}turn-left-180.glb`, contactUrl: `${turnsBase}turn-left-180.contact.json`, clipName: "turn-left-180" },
+-                { angleDeg: -180, glbUrl: `${turnsBase}turn-right-180.glb`, contactUrl: `${turnsBase}turn-right-180.contact.json`, clipName: "turn-right-180" },
++                {
++                  angleDeg: 90,
++                  glbUrl: `${turnsBase}turn-left-90.glb`,
++                  contactUrl: `${turnsBase}turn-left-90.contact.json`,
++                  clipName: "turn-left-90",
++                },
++                {
++                  angleDeg: -90,
++                  glbUrl: `${turnsBase}turn-right-90.glb`,
++                  contactUrl: `${turnsBase}turn-right-90.contact.json`,
++                  clipName: "turn-right-90",
++                },
++                {
++                  angleDeg: 180,
++                  glbUrl: `${turnsBase}turn-left-180.glb`,
++                  contactUrl: `${turnsBase}turn-left-180.contact.json`,
++                  clipName: "turn-left-180",
++                },
++                {
++                  angleDeg: -180,
++                  glbUrl: `${turnsBase}turn-right-180.glb`,
++                  contactUrl: `${turnsBase}turn-right-180.contact.json`,
++                  clipName: "turn-right-180",
++                },
+               ])
+               .then(() => {
+                 // Register turn clip contact curves so FootPlanter can query them
+@@ -476,7 +526,13 @@
+       // ikSolver, which is still used by arm IK elsewhere in this file).
+       // Gated on enableFootPlanting - off by default so the museum FPS player
+       // (which wants responsive code-driven movement) isn't affected.
+-      if (enableFootPlanting && footPlanter && skeletonService && legIKSolver && contactCurveCache) {
++      if (
++        enableFootPlanting &&
++        footPlanter &&
++        skeletonService &&
++        legIKSolver &&
++        contactCurveCache
++      ) {
+         footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
+       }
+
+@@ -587,7 +643,7 @@
+
+     // Disable spine twist in dual-wheel mode - wide lateral IK targets
+     // twist the torso and shift the feet on the ground.
+-    if ('setSpineTwistEnabled' in animationService) {
++    if ("setSpineTwistEnabled" in animationService) {
+       (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
+     }
+
+@@ -596,16 +652,19 @@
+     if (enableLocomotion && locomotionAnimator) {
+       if (stateMachine) {
+         // State machine decides what state we're in based on physics signals
+-        const stateOutput = stateMachine.update({
+-          hasMovementInput: isMoving,
+-          horizontalSpeed: moveSpeed,
+-          verticalVelocity,
+-          isGrounded,
+-          isCrouching,
+-          isJumpRequested,
+-          moveDirection,
+-          facingAngle,
+-        }, delta);
++        const stateOutput = stateMachine.update(
++          {
++            hasMovementInput: isMoving,
++            horizontalSpeed: moveSpeed,
++            verticalVelocity,
++            isGrounded,
++            isCrouching,
++            isJumpRequested,
++            moveDirection,
++            facingAngle,
++          },
++          delta
++        );
+
+         // Feed state to LocomotionAnimator for clip selection
+         locomotionAnimator.setActiveState?.(stateOutput.state);
+@@ -642,7 +701,9 @@
+
+         // Apply bone rotations - overwrite animation pose for lower body
+         for (const [boneName, quat] of sample.boneRotations) {
+-          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
++          const bone = bones.get(
++            boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName
++          );
+           if (bone) {
+             bone.quaternion.copy(quat);
+           }
+@@ -681,7 +742,11 @@
+       // displacement needs the same conversion.
+       if (rootMotionExtractor?.isReady() && onRootMotion) {
+         const localDelta = rootMotionExtractor.extract();
+-        if (localDelta.x !== 0 || localDelta.forward !== 0 || localDelta.yawDelta !== 0) {
++        if (
++          localDelta.x !== 0 ||
++          localDelta.forward !== 0 ||
++          localDelta.yawDelta !== 0
++        ) {
+           // Convert Mixamo centimeters to scene units.
+           // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
+           // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
+@@ -716,7 +781,6 @@
+           currentClipPhase: currentTurnPhase,
+         });
+       }
+-
+     }
+
+     // 2. IK post-process (blends per-arm based on prop presence)
+@@ -748,7 +812,7 @@
+
+     animationService.setPropsAndBlend(
+       blueVisible ? blueWorldProp : null,
+-      redVisible ? redWorldProp : null,
++      redVisible ? redWorldProp : null
+     );
+     // Push optional external spine pitch (e.g., lean-forward stance variants)
+     // before the animator runs IK so the arms solve against the leaned torso.
+@@ -871,7 +935,9 @@
+     const transparent = o < 1;
+     cachedRoot.traverse((child: any) => {
+       if (!child.isMesh || !child.material) return;
+-      const materials = Array.isArray(child.material) ? child.material : [child.material];
++      const materials = Array.isArray(child.material)
++        ? child.material
++        : [child.material];
+       for (const material of materials) {
+         material.transparent = transparent;
+         material.opacity = o;
+@@ -913,13 +979,10 @@
+ </script>
+
+ {#if visible}
+-  <!-- Loading indicator while avatar model loads -->
+-  {#if isLoading}
+-    <AvatarLoadingIndicator {position} />
+-  {/if}
+-
+-  {#if useProceduralFallback}
+-    <!-- Procedural fallback (used when GLTF loading fails) -->
++  {#if !useGLTF || useProceduralFallback}
++    <!-- The procedural figure is an explicit fallback. GLTF avatars remain
++         hidden until their intended model is ready, so a new performer never
++         appears as one body and immediately changes into another. -->
+     <T.Group
+       name={`PERFORMER_${id}`}
+       position={[position.x, position.y ?? 0, position.z]}
+diff --git a/src/lib/components/PerformerRig.svelte b/src/lib/components/PerformerRig.svelte
+index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550aee0a5385 100644
+--- a/src/lib/components/PerformerRig.svelte
++++ b/src/lib/components/PerformerRig.svelte
+@@ -16,7 +16,7 @@
+    */
+
+   import { T } from "@threlte/core";
+-  import { untrack } from "svelte";
++  import { onMount, untrack } from "svelte";
+   import type { Snippet } from "svelte";
+   import type { Group } from "three";
+   import Avatar3D from "./Avatar3D.svelte";
+@@ -36,6 +36,7 @@
+   import type { TurnRequest } from "../services/contracts/ITurnAnimator";
+   import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
+   import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
++  import { schedulePerformerMount } from "../services/shared-gltf-cache";
+
+   // Constant sets to avoid allocating new Set objects on every reactive update.
+   const WHEEL_ONLY = new Set([Plane.WHEEL]);
+@@ -119,16 +120,20 @@
+      * effect orchestrator can place tip-tracking effects (trails, LED, etc.)
+      * in the correct rig-root-local frame without duplicating rig internals.
+      */
+-    effectsSlot?: Snippet<[{
+-      bluePropState: PropState3D | null;
+-      redPropState: PropState3D | null;
+-      blueHandPos: { x: number; z: number };
+-      redHandPos: { x: number; z: number };
+-      isPlaying: boolean;
+-      tipEffectMap: TipEffectMap;
+-      staffHalfLength: number;
+-      effectsParentRef: Group | undefined;
+-    }]>;
++    effectsSlot?: Snippet<
++      [
++        {
++          bluePropState: PropState3D | null;
++          redPropState: PropState3D | null;
++          blueHandPos: { x: number; z: number };
++          redHandPos: { x: number; z: number };
++          isPlaying: boolean;
++          tipEffectMap: TipEffectMap;
++          staffHalfLength: number;
++          effectsParentRef: Group | undefined;
++        },
++      ]
++    >;
+
+     /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
+      *  1 = fully opaque (default). */
+@@ -174,7 +179,8 @@
+   }: Props = $props();
+
+   const staffHalfLength = $derived(
+-    staffHalfLengthProp ?? (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
++    staffHalfLengthProp ??
++      (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
+   );
+
+   // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
+@@ -185,8 +191,12 @@
+   let accumulatedYaw = $state(untrack(() => facingAngle));
+
+   // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
+-  const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
+-  const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
++  const bluePropState = $derived(
++    bluePropStateOverride ?? avatarState.bluePropState
++  );
++  const redPropState = $derived(
++    redPropStateOverride ?? avatarState.redPropState
++  );
+
+   // Derive mode config and grid offset from the current plane mode
+   const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
+@@ -247,7 +257,9 @@
+
+   // When a turn is active, enable animation-driven yaw so the rig
+   // rotates from the turn clip's root motion rather than snapping.
+-  const effectiveAnimDrivenYaw = $derived(animationDrivenYaw || turnRequest !== null);
++  const effectiveAnimDrivenYaw = $derived(
++    animationDrivenYaw || turnRequest !== null
++  );
+
+   // Turn completion snap: when turnRequest goes null after being active,
+   // snap avatarState to the post-turn heading so the sync effect below
+@@ -294,6 +306,44 @@
+   // Effects group ref - imperative renderers add meshes here so they
+   // inherit the rig's transform.
+   let effectsGroupRef = $state<Group | undefined>(undefined);
++
++  // Opening every subtree in the same Svelte flush forces avatar services,
++  // prop geometry, grid materials, and effects to initialize in one blocking
++  // task. Keep the rig's transform available immediately, then reveal one
++  // expensive subtree at a time after a paint. A global queue spreads batch
++  // adds across performers as well as across their individual parts.
++  let avatarMounted = $state(false);
++  let propsMounted = $state(false);
++  let gridMounted = $state(false);
++  let effectsMounted = $state(false);
++
++  onMount(() => {
++    let cancelled = false;
++
++    const mountStage = (mount: () => void) =>
++      schedulePerformerMount(() => {
++        if (!cancelled) mount();
++      });
++
++    void (async () => {
++      await mountStage(() => {
++        avatarMounted = true;
++      });
++      await mountStage(() => {
++        propsMounted = true;
++      });
++      await mountStage(() => {
++        gridMounted = true;
++      });
++      await mountStage(() => {
++        effectsMounted = true;
++      });
++    })();
++
++    return () => {
++      cancelled = true;
++    };
++  });
+ </script>
+
+ <!-- Root: position in world space, apply facing rotation -->
+@@ -305,14 +355,14 @@
+ >
+   <!-- Avatar3D uses groundY (~-1.56) internally to position its mesh,
+        so shoulders end up near y=0 in rig space. -->
+-  {#if showAvatar}
++  {#if showAvatar && avatarMounted}
+     <Avatar3D
+       id={avatarState.id}
+       {avatarId}
+       opacity={avatarOpacity}
+       onModelSwapped={onAvatarSwapped}
+-      bluePropState={bluePropState}
+-      redPropState={redPropState}
++      {bluePropState}
++      {redPropState}
+       facingAngle={0}
+       position={{ x: 0, z: 0 }}
+       isActive={false}
+@@ -321,9 +371,9 @@
+       {enableLocomotion}
+       {enableRootMotion}
+       {enableFootPlanting}
+-      turnRequest={turnRequest}
+-      bluePropAnchorRef={bluePropAnchorRef}
+-      redPropAnchorRef={redPropAnchorRef}
++      {turnRequest}
++      {bluePropAnchorRef}
++      {redPropAnchorRef}
+       disableSpineTwist={isDualWheel}
+       stepNumber={avatarState.currentStepIndex}
+       beatProgress={avatarState.progress}
+@@ -339,15 +389,12 @@
+   {/if}
+
+   <!-- Grid (consumer-provided via gridSlot) -->
+-  {#if showGrid && gridSlot}
++  {#if showGrid && gridSlot && gridMounted}
+     {@render gridSlot()}
+   {/if}
+
+   <!-- Blue HandAnchor + PropAnchor -->
+-  <T.Group
+-    position.x={blueHandPos.x}
+-    position.z={blueHandPos.z}
+-  >
++  <T.Group position.x={blueHandPos.x} position.z={blueHandPos.z}>
+     {#if bluePropState && blueVisible}
+       <T.Group
+         bind:ref={bluePropAnchorRef}
+@@ -355,7 +402,7 @@
+         position.y={bluePropState.worldPosition.y}
+         position.z={bluePropState.worldPosition.z}
+       >
+-        {#if showProps}
++        {#if showProps && propsMounted}
+           <Prop3D
+             propType={bluePropType}
+             propState={bluePropState}
+@@ -368,10 +415,7 @@
+   </T.Group>
+
+   <!-- Red HandAnchor + PropAnchor -->
+-  <T.Group
+-    position.x={redHandPos.x}
+-    position.z={redHandPos.z}
+-  >
++  <T.Group position.x={redHandPos.x} position.z={redHandPos.z}>
+     {#if redPropState && redVisible}
+       <T.Group
+         bind:ref={redPropAnchorRef}
+@@ -379,7 +423,7 @@
+         position.y={redPropState.worldPosition.y}
+         position.z={redPropState.worldPosition.z}
+       >
+-        {#if showProps}
++        {#if showProps && propsMounted}
+           <Prop3D
+             propType={redPropType}
+             propState={redPropState}
+@@ -392,7 +436,7 @@
+   </T.Group>
+
+   <!-- Effects (consumer-provided via effectsSlot) -->
+-  {#if showEffects && effectsSlot}
++  {#if showEffects && effectsSlot && effectsMounted}
+     <T.Group bind:ref={effectsGroupRef}>
+       {@render effectsSlot({
+         bluePropState,
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c3c16e4a6 100644
 --- a/src/lib/components/props/Prop3D.svelte
@@ -134,14 +1843,14 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
 @@ -50,8 +50,11 @@
      length,
    }: Props = $props();
- 
+
 -  // "Big" variants use a 1.4x scale on the base prop.
 +  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
 +  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
 +  // span makes the grip-to-rim reach 30/13 of the standard fan.
    const BIG_SCALE = 1.4;
 +  const BIG_FAN_SCALE = 30 / 13;
- 
+
    // Check if a GLTF model is available for this prop type.
    // resolvePropModel handles big variant → base type resolution.
 @@ -84,7 +87,7 @@
@@ -150,7 +1859,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
- 
+
    {:else if propType === PropType.TRIAD}
      <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
@@ -166,6 +1875,828 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..40127c182b5cb020e9890d51948cdb23
    [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
    [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
    [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+diff --git a/src/lib/index.ts b/src/lib/index.ts
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e3fa168a5 100644
+--- a/src/lib/index.ts
++++ b/src/lib/index.ts
+@@ -26,25 +26,50 @@ export { default as Triquetra3D } from "./components/props/Triquetra3D.svelte";
+
+ // Domain enums
+ export { PropType } from "./domain/enums/PropType";
+-export { Plane, PLANE_LABELS, PLANE_COLORS, PRIMARY_PLANES } from "./domain/enums/Plane";
++export {
++  Plane,
++  PLANE_LABELS,
++  PLANE_COLORS,
++  PRIMARY_PLANES,
++} from "./domain/enums/Plane";
+ export { PlaneMode } from "./domain/enums/PlaneMode";
+ export { RotationDirection } from "./domain/enums/RotationDirection";
+
+ // Domain models & types
+-export type { PropState3D, PropState2D, PropStates3D, InterpolationResult3D } from "./domain/models/PropState3D";
++export type {
++  PropState3D,
++  PropState2D,
++  PropStates3D,
++  InterpolationResult3D,
++} from "./domain/models/PropState3D";
+ export type { GripPose, FingerBoneName } from "./domain/models/GripPose";
+ export { GripType, FINGER_BONES } from "./domain/models/GripPose";
+-export type { AvatarInstanceState, BeatPlaneOverride } from "./domain/types/AvatarInstanceState";
+-export type { TipEffectMap, TipEffectAssignment } from "./domain/types/TipEffectTypes";
++export type {
++  AvatarInstanceState,
++  BeatPlaneOverride,
++} from "./domain/types/AvatarInstanceState";
++export type {
++  TipEffectMap,
++  TipEffectAssignment,
++} from "./domain/types/TipEffectTypes";
+ export type { CameraStateSnapshot } from "./domain/types/CameraStateSnapshot";
+ export type { GridMode } from "./domain/constants/grid-layout";
+
+ // Domain constants
+-export { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "./domain/constants/plane-mode-configs";
++export {
++  PLANE_MODE_CONFIGS,
++  GRID_OFFSETS,
++} from "./domain/constants/plane-mode-configs";
+ export type { PlaneModeConfig } from "./domain/constants/plane-mode-configs";
+
+ // Performer positions
+-export { getDefaultPositions, getPerformerPosition, WALL_OFFSET, MAX_PERFORMERS, PERFORMER_GRID_SPACING } from "./domain/constants/performer-positions";
++export {
++  getDefaultPositions,
++  getPerformerPosition,
++  WALL_OFFSET,
++  MAX_PERFORMERS,
++  PERFORMER_GRID_SPACING,
++} from "./domain/constants/performer-positions";
+ export type { PerformerPosition } from "./domain/constants/performer-positions";
+
+ // Domain utilities
+@@ -55,31 +80,78 @@ export { calculateFacingAngle } from "./domain/formation";
+ export type { FormationPreset } from "./domain/formation";
+
+ // Camera choreography
+-export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
+-export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
++export type {
++  CameraChoreography,
++  CameraKeyframe,
++  CameraState,
++  CameraPosition,
++  CameraInterpolation,
++} from "./domain/camera-choreography";
++export {
++  createCameraChoreography,
++  createDefaultCameraState,
++  easingFunctions,
++  lerpCameraPosition,
++  lerpCameraState,
++} from "./domain/camera-choreography";
+
+ // Config
+-export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
++export {
++  AVATAR_DEFINITIONS,
++  DEFAULT_AVATAR_ID,
++  getAvatarModelPath,
++} from "./config/avatar-definitions";
+ export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
+-export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
+-export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
+-export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
++export {
++  cmToUnits,
++  deriveSceneProportions,
++  AUSTEN_STAFF,
++} from "./config/avatar-proportions";
++export {
++  DEFAULT_SCENE_DIMENSIONS,
++  inchesToCm,
++  COMMON_HEIGHTS,
++  COMMON_STAFF_LENGTHS,
++} from "./config/user-proportions";
++export {
++  PRESET_VALID_COUNTS,
++  createFormationFromPreset,
++  FORMATION_PRESET_INFO,
++} from "./config/formation-presets";
+
+ // Scale & layers
+ export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
+-export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
++export {
++  LAYER_WORLD,
++  LAYER_PLAYER_BODY,
++  LAYER_VIEWMODEL,
++  getCameraLayers,
++  shouldUsePlayerBodyLayer,
++} from "./layers/layer-constants";
+
+ // State
+ export { userProportionsState } from "./state/user-proportions-state.svelte";
+
+ // Context
+-export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
+-export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
++export {
++  setViewer3DContext,
++  getViewer3DContext,
++  tryGetViewer3DContext,
++} from "./context/viewer-3d-context";
++export {
++  setViewerVisibilityContext,
++  getViewerVisibilityContext,
++  tryGetViewerVisibilityContext,
++} from "./context/viewer-visibility-context";
+ export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
+
+ // Services - contracts
+ export type { IAvatarAnimator } from "./services/contracts/IAvatarAnimator";
+-export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
++export type {
++  IAvatarSkeletonBuilder,
++  BoneName,
++} from "./services/contracts/IAvatarSkeletonBuilder";
+ export type { IIKSolver } from "./services/contracts/IIKSolver";
+ export type { ILocomotionAnimator } from "./services/contracts/ILocomotionAnimator";
+ export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
+@@ -91,18 +163,40 @@ export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
+ export type { ISpineTwister } from "./services/contracts/ISpineTwister";
+ export type { IElbowPoleComputer } from "./services/contracts/IElbowPoleComputer";
+ export type { IAngleMathCalculator } from "./services/contracts/IAngleMathCalculator";
+-export type { ICollisionDetector, CollisionEvent, BodySnapshot, PropSegment } from "./services/contracts/ICollisionDetector";
+-export type { ICameraChoreographer, PerformerPositionProvider } from "./services/contracts/ICameraChoreographer";
++export type {
++  ICollisionDetector,
++  CollisionEvent,
++  BodySnapshot,
++  PropSegment,
++} from "./services/contracts/ICollisionDetector";
++export type {
++  ICameraChoreographer,
++  PerformerPositionProvider,
++} from "./services/contracts/ICameraChoreographer";
+ export type { IFormationManager } from "./services/contracts/IFormationManager";
+ export type { IContactCurveCache } from "./services/contracts/IContactCurveCache";
+ export type { ILegAnimator } from "./services/contracts/ILegAnimator";
+-export type { ILegIKSolver, LegIKInput } from "./services/contracts/ILegIKSolver";
+-export type { ITurnAnimator, TurnRequest } from "./services/contracts/ITurnAnimator";
+-export type { IAvatarCustomizer, BodyType } from "./services/contracts/IAvatarCustomizer";
++export type {
++  ILegIKSolver,
++  LegIKInput,
++} from "./services/contracts/ILegIKSolver";
++export type {
++  ITurnAnimator,
++  TurnRequest,
++} from "./services/contracts/ITurnAnimator";
++export type {
++  IAvatarCustomizer,
++  BodyType,
++} from "./services/contracts/IAvatarCustomizer";
+ export type { IPerformerSynchronizer } from "./services/contracts/IPerformerSynchronizer";
+ export type { ISceneOrchestrator } from "./services/contracts/ISceneOrchestrator";
+ export type { IViewer3DEffectPlugin } from "./services/contracts/IViewer3DEffectPlugin";
+-export type { IViewer3DUndoManager, PerformerSnapshot, ViewerSnapshot, ViewerOperationType } from "./services/contracts/IViewer3DUndoManager";
++export type {
++  IViewer3DUndoManager,
++  PerformerSnapshot,
++  ViewerSnapshot,
++  ViewerOperationType,
++} from "./services/contracts/IViewer3DUndoManager";
+
+ // Services - implementations
+ export { createAvatarServices } from "./services/implementations/AvatarServicesFactory";
+@@ -131,7 +225,10 @@ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolv
+ export type { GraspResult } from "./services/implementations/CylinderGraspSolver";
+ export { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
+ export { Viewer3DUndoManager } from "./services/implementations/Viewer3DUndoManager";
+-export { SeatedAudienceLoader, seatedAudienceLoader } from "./services/implementations/SeatedAudienceLoader";
++export {
++  SeatedAudienceLoader,
++  seatedAudienceLoader,
++} from "./services/implementations/SeatedAudienceLoader";
+ export type { PreparedFigure } from "./services/implementations/SeatedAudienceLoader";
+
+ // Utilities
+diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
+index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a127915f6 100644
+--- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
++++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
+@@ -5,9 +5,8 @@
+  * Provides access to bones for IK solving and animation.
+  */
+
+-import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
++import type { Object3D, Bone, SkinnedMesh, Skeleton } from "three";
+ import { Vector3, Box3 } from "three";
+-import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+ import type {
+   IAvatarSkeletonBuilder,
+   BoneName,
+@@ -19,6 +18,10 @@ import {
+   type FingerBoneName,
+   type FingerChains,
+ } from "../../domain/models/GripPose";
++import {
++  cloneSharedSkinnedScene,
++  loadSharedGltf,
++} from "../shared-gltf-cache";
+
+ /**
+  * Mapping of standard bone names to common variations
+@@ -101,7 +104,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     fingerChains: null,
+   };
+
+-  private loader = new GLTFLoader();
+   private originalHeight: number = 0;
+   private skeleton: Skeleton | null = null;
+
+@@ -112,23 +114,16 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   private originalMinY: number = 0;
+
+   async loadModel(url: string): Promise<void> {
+-    return new Promise((resolve, reject) => {
+-      this.loader.load(
+-        url,
+-        (gltf: GLTF) => {
+-          this.processGLTF(gltf);
+-          resolve();
+-        },
+-        undefined,
+-        (error) => {
+-          console.error("Failed to load avatar model:", error);
+-          reject(error);
+-        }
+-      );
+-    });
++    try {
++      const gltf = await loadSharedGltf(url);
++      this.processGLTF(cloneSharedSkinnedScene(gltf.scene));
++    } catch (error) {
++      console.error("Failed to load avatar model:", error);
++      throw error;
++    }
+   }
+
+-  private processGLTF(gltf: GLTF): void {
++  private processGLTF(root: Object3D): void {
+     // Hot-swap: keep old arm chains valid until new ones are ready
+     // This ensures animation continues smoothly during the swap
+     const oldRoot = this.state.root;
+@@ -139,7 +134,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     let newSkeleton: Skeleton | null = null;
+
+     // Find all skinned meshes and bones in the new model
+-    gltf.scene.traverse((child) => {
++    root.traverse((child) => {
+       if ((child as SkinnedMesh).isSkinnedMesh) {
+         const skinnedMesh = child as SkinnedMesh;
+         newMeshes.push(skinnedMesh);
+@@ -160,12 +155,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+
+     // Compute original bounding box of new model (before any transforms)
+     // This is done ONCE at load time, before the model is added to the scene
+-    const box = new Box3().setFromObject(gltf.scene);
++    const box = new Box3().setFromObject(root);
+     this.originalHeight = box.max.y - box.min.y;
+     this.originalMinY = box.min.y; // Store original feet position for scaling
+
+     // Now atomically swap everything at once
+-    this.state.root = gltf.scene;
++    this.state.root = root;
+     this.state.meshes = newMeshes;
+     this.state.bones = newBones;
+     this.skeleton = newSkeleton;
+@@ -173,28 +168,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     // Build IK chains (uses the new bones map)
+     this.buildArmChains();
+     this.buildLegChains();
+-    this.state.fingerChains = this.buildFingerChains(gltf.scene);
++    this.state.fingerChains = this.buildFingerChains(root);
+
+     this.state.isLoaded = true;
+
+     // Dispose old model resources after swap is complete
+-    if (oldRoot) {
+-      queueMicrotask(() => {
+-        oldRoot.traverse((child) => {
+-          const mesh = child as SkinnedMesh;
+-          if (mesh.geometry) {
+-            mesh.geometry.dispose();
+-          }
+-          if (mesh.material) {
+-            if (Array.isArray(mesh.material)) {
+-              mesh.material.forEach((m) => m.dispose());
+-            } else {
+-              mesh.material.dispose();
+-            }
+-          }
+-        });
+-      });
+-    }
++    if (oldRoot) queueMicrotask(() => this.disposeInstanceResources(oldRoot));
+   }
+
+   /**
+@@ -535,22 +514,28 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     return 0;
+   }
+
++  /**
++   * Cloned performers own their skeleton GPU data and materials. Geometry and
++   * textures belong to the page-level parsed GLTF cache and stay shared.
++   */
++  private disposeInstanceResources(root: Object3D): void {
++    const skeletons = new Set<Skeleton>();
++    root.traverse((child) => {
++      const mesh = child as SkinnedMesh;
++      if (mesh.isSkinnedMesh && mesh.skeleton) skeletons.add(mesh.skeleton);
++      if (!mesh.material) return;
++
++      if (Array.isArray(mesh.material)) {
++        mesh.material.forEach((material) => material.dispose());
++      } else {
++        mesh.material.dispose();
++      }
++    });
++    skeletons.forEach((skeleton) => skeleton.dispose());
++  }
++
+   dispose(): void {
+-    if (this.state.root) {
+-      this.state.root.traverse((child) => {
+-        const mesh = child as SkinnedMesh;
+-        if (mesh.geometry) {
+-          mesh.geometry.dispose();
+-        }
+-        if (mesh.material) {
+-          if (Array.isArray(mesh.material)) {
+-            mesh.material.forEach((m) => m.dispose());
+-          } else {
+-            mesh.material.dispose();
+-          }
+-        }
+-      });
+-    }
++    if (this.state.root) this.disposeInstanceResources(this.state.root);
+
+     this.state = {
+       isLoaded: false,
+diff --git a/src/lib/services/implementations/ClipBasedTurnAnimator.ts b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
+index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1b76b4f39 100644
+--- a/src/lib/services/implementations/ClipBasedTurnAnimator.ts
++++ b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
+@@ -19,10 +19,14 @@
+  */
+
+ import { Quaternion, Euler, Vector3 } from "three";
+-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+ import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
+-import type { ITurnAnimator, TurnRequest, TurnSample } from "../contracts/ITurnAnimator";
++import type {
++  ITurnAnimator,
++  TurnRequest,
++  TurnSample,
++} from "../contracts/ITurnAnimator";
+ import type { ContactCurveData } from "../contracts/IContactCurveCache";
++import { loadSharedAnimation } from "../shared-gltf-cache";
+
+ // ---------------------------------------------------------------------------
+ // Constants
+@@ -148,7 +152,8 @@ function bakeClip(
+   modelPrefix: string,
+   angleDeg: number,
+   contactLeft: number[],
+-  contactRight: number[]
++  contactRight: number[],
++  clipName: string = clip.name
+ ): BakedTurnClip {
+   const clipPrefix = detectClipPrefix(clip);
+   const frameCount = Math.max(2, Math.ceil(clip.duration * BAKE_FPS) + 1);
+@@ -157,7 +162,10 @@ function bakeClip(
+
+   // Build empty frame arrays for each wanted bone
+   for (const bone of TURN_BONE_NAMES) {
+-    boneFrames.set(bone, Array.from({ length: frameCount }, () => new Quaternion()));
++    boneFrames.set(
++      bone,
++      Array.from({ length: frameCount }, () => new Quaternion())
++    );
+   }
+   for (let i = 0; i < frameCount; i++) {
+     hipsPositions.push(new Vector3());
+@@ -169,7 +177,9 @@ function bakeClip(
+
+     const rawBoneName = track.name.slice(0, dotIdx);
+     const property = track.name.slice(dotIdx + 1);
+-    const coreName = clipPrefix ? rawBoneName.slice(clipPrefix.length) : rawBoneName;
++    const coreName = clipPrefix
++      ? rawBoneName.slice(clipPrefix.length)
++      : rawBoneName;
+
+     if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
+       const frames = boneFrames.get(coreName)!;
+@@ -230,9 +240,9 @@ function bakeClip(
+         const tHi = times[hi] ?? lastTime;
+         const blend = tHi > tLo ? (t - tLo) / (tHi - tLo) : 0;
+         hipsPositions[f]!.set(
+-          (values[lo * 3]! * (1 - blend)) + values[hi * 3]! * blend,
+-          (values[lo * 3 + 1]! * (1 - blend)) + values[hi * 3 + 1]! * blend,
+-          (values[lo * 3 + 2]! * (1 - blend)) + values[hi * 3 + 2]! * blend
++          values[lo * 3]! * (1 - blend) + values[hi * 3]! * blend,
++          values[lo * 3 + 1]! * (1 - blend) + values[hi * 3 + 1]! * blend,
++          values[lo * 3 + 2]! * (1 - blend) + values[hi * 3 + 2]! * blend
+         );
+       }
+     }
+@@ -247,7 +257,7 @@ function bakeClip(
+
+   return {
+     angleDeg,
+-    clipName: clip.name,
++    clipName,
+     duration: clip.duration,
+     frameCount,
+     boneFrames,
+@@ -257,6 +267,75 @@ function bakeClip(
+   };
+ }
+
++interface ContactSidecar {
++  leftFoot: number[];
++  rightFoot: number[];
++}
++
++const contactSidecarLoads = new Map<string, Promise<ContactSidecar>>();
++const bakedTurnLoads = new Map<string, Promise<BakedTurnClip[]>>();
++
++function loadContactSidecar(url: string): Promise<ContactSidecar> {
++  const existing = contactSidecarLoads.get(url);
++  if (existing) return existing;
++
++  const pending = fetch(url).then(async (response) => {
++    if (!response.ok) throw new Error(`HTTP ${response.status}`);
++    return (await response.json()) as ContactSidecar;
++  });
++  contactSidecarLoads.set(url, pending);
++  void pending.catch(() => {
++    if (contactSidecarLoads.get(url) === pending) {
++      contactSidecarLoads.delete(url);
++    }
++  });
++  return pending;
++}
++
++function loadSharedBakedTurnClips(
++  modelPrefix: string,
++  manifest: TurnClipManifestEntry[]
++): Promise<BakedTurnClip[]> {
++  const cacheKey = JSON.stringify({ modelPrefix, manifest });
++  const existing = bakedTurnLoads.get(cacheKey);
++  if (existing) return existing;
++
++  const pending = Promise.all(
++    manifest.map(async (entry) => {
++      const rawClip = await loadSharedAnimation(entry.glbUrl);
++
++      let contactLeft: number[] = [];
++      let contactRight: number[] = [];
++      if (entry.contactUrl) {
++        try {
++          const contact = await loadContactSidecar(entry.contactUrl);
++          contactLeft = contact.leftFoot;
++          contactRight = contact.rightFoot;
++        } catch {
++          console.warn(
++            `[ClipBasedTurnAnimator] Could not load contact sidecar: ${entry.contactUrl}`
++          );
++        }
++      }
++
++      return bakeClip(
++        rawClip,
++        modelPrefix,
++        entry.angleDeg,
++        contactLeft,
++        contactRight,
++        entry.clipName
++      );
++    })
++  );
++  bakedTurnLoads.set(cacheKey, pending);
++  void pending.catch(() => {
++    if (bakedTurnLoads.get(cacheKey) === pending)
++      bakedTurnLoads.delete(cacheKey);
++  });
++  return pending;
++}
++
+ // ---------------------------------------------------------------------------
+ // Sampling helpers
+ // ---------------------------------------------------------------------------
+@@ -313,34 +392,7 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+     manifest: TurnClipManifestEntry[]
+   ): Promise<void> {
+     const modelPrefix = detectModelPrefix(modelRoot);
+-    const loader = new GLTFLoader();
+-
+-    const bakedClips = await Promise.all(
+-      manifest.map(async (entry) => {
+-        const gltf = await new Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF>(
+-          (resolve, reject) => loader.load(entry.glbUrl, resolve, undefined, reject)
+-        );
+-        const rawClip = gltf.animations[0];
+-        if (!rawClip) throw new Error(`[ClipBasedTurnAnimator] No animation in ${entry.glbUrl}`);
+-        rawClip.name = entry.clipName;
+-
+-        let contactLeft: number[] = [];
+-        let contactRight: number[] = [];
+-
+-        if (entry.contactUrl) {
+-          try {
+-            const res = await fetch(entry.contactUrl);
+-            const json = (await res.json()) as { leftFoot: number[]; rightFoot: number[] };
+-            contactLeft = json.leftFoot;
+-            contactRight = json.rightFoot;
+-          } catch {
+-            console.warn(`[ClipBasedTurnAnimator] Could not load contact sidecar: ${entry.contactUrl}`);
+-          }
+-        }
+-
+-        return bakeClip(rawClip, modelPrefix, entry.angleDeg, contactLeft, contactRight);
+-      })
+-    );
++    const bakedClips = await loadSharedBakedTurnClips(modelPrefix, manifest);
+
+     this.initializeFromData(bakedClips);
+   }
+@@ -410,8 +462,14 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+       );
+     }
+
+-    const leftFootContact = sampleContactAtPhase(clip.contactLeft, clampedPhase);
+-    const rightFootContact = sampleContactAtPhase(clip.contactRight, clampedPhase);
++    const leftFootContact = sampleContactAtPhase(
++      clip.contactLeft,
++      clampedPhase
++    );
++    const rightFootContact = sampleContactAtPhase(
++      clip.contactRight,
++      clampedPhase
++    );
+
+     return {
+       yawDelta,
+@@ -471,7 +529,11 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
+       // Break ties by preferring the clip whose raw angle is closer to totalAngle
+       // (avoids the +π / -π ambiguity where wrapAngle collapses both to 0 distance)
+       const absRaw = Math.abs(rawDiff);
+-      const tieBreaker = absRaw < Math.abs(totalAngle - (best ? (best.angleDeg * Math.PI) / 180 : Infinity));
++      const tieBreaker =
++        absRaw <
++        Math.abs(
++          totalAngle - (best ? (best.angleDeg * Math.PI) / 180 : Infinity)
++        );
+       if (dist < bestDist || (dist === bestDist && tieBreaker)) {
+         bestDist = dist;
+         best = clip;
+diff --git a/src/lib/services/implementations/LocomotionAnimator.ts b/src/lib/services/implementations/LocomotionAnimator.ts
+index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f6791bb3ed4 100644
+--- a/src/lib/services/implementations/LocomotionAnimator.ts
++++ b/src/lib/services/implementations/LocomotionAnimator.ts
+@@ -14,7 +14,6 @@
+
+ import type { AnimationAction, Object3D, Bone } from "three";
+ import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
+-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+ import type {
+   ILocomotionAnimator,
+   LocomotionInput,
+@@ -22,9 +21,15 @@ import type {
+   LocomotionConfig,
+ } from "../contracts/ILocomotionAnimator";
+ import { LocomotionState } from "../contracts/IAnimationStateMachine";
++import { loadSharedAnimation } from "../shared-gltf-cache";
+
+ type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
+
++const preparedClipCache = new WeakMap<
++  AnimationClip,
++  Map<string, AnimationClip>
++>();
++
+ /**
+  * Known Mixamo bone prefixes. Animation files may use a different
+  * variant than the model (e.g., "mixamorig:" vs "mixamorig").
+@@ -76,8 +81,14 @@ function detectClipPrefix(clip: AnimationClip): string {
+  * Exhibit performers don't need leg animation - feet stay planted.
+  */
+ const LEG_BONE_NAMES = new Set([
+-  "LeftUpLeg", "LeftLeg", "LeftFoot", "LeftToeBase",
+-  "RightUpLeg", "RightLeg", "RightFoot", "RightToeBase",
++  "LeftUpLeg",
++  "LeftLeg",
++  "LeftFoot",
++  "LeftToeBase",
++  "RightUpLeg",
++  "RightLeg",
++  "RightFoot",
++  "RightToeBase",
+ ]);
+
+ function remapClipToSkeleton(
+@@ -95,7 +106,9 @@ function remapClipToSkeleton(
+
+       const boneName = track.name.slice(0, dotIdx);
+       const property = track.name.slice(dotIdx + 1);
+-      const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++      const coreName = clipPrefix
++        ? boneName.slice(clipPrefix.length)
++        : boneName;
+
+       // Skip bones that don't exist on our models
+       if (coreName.endsWith("_End")) return false;
+@@ -110,7 +123,12 @@ function remapClipToSkeleton(
+       if (coreName === "Hips" && property === "quaternion") return false;
+
+       // Keep Hips position track when needed for root motion or crouch pose.
+-      if (coreName === "Hips" && property === "position" && hipsMode !== "strip") return true;
++      if (
++        coreName === "Hips" &&
++        property === "position" &&
++        hipsMode !== "strip"
++      )
++        return true;
+
+       // Keep all other quaternion tracks - bone rotations are the animation.
+       // Filter out position/scale tracks (position teleports, scale vanishes).
+@@ -122,7 +140,9 @@ function remapClipToSkeleton(
+       const dotIdx = track.name.indexOf(".");
+       const boneName = track.name.slice(0, dotIdx);
+       const property = track.name.slice(dotIdx);
+-      const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
++      const coreName = clipPrefix
++        ? boneName.slice(clipPrefix.length)
++        : boneName;
+
+       const cloned = track.clone();
+
+@@ -136,7 +156,11 @@ function remapClipToSkeleton(
+       // first keyframe's Z preserves the natural vertical bob (hips go up
+       // and down ~2-3cm per step) while removing the absolute offset that
+       // would slam the avatar underground.
+-      if (coreName === "Hips" && property.includes("position") && hipsMode === "rootMotion") {
++      if (
++        coreName === "Hips" &&
++        property.includes("position") &&
++        hipsMode === "rootMotion"
++      ) {
+         const values = cloned.values as Float32Array;
+         const baseZ = values[2] ?? 0; // First keyframe's Z = rest height
+         for (let i = 2; i < values.length; i += 3) {
+@@ -150,7 +174,11 @@ function remapClipToSkeleton(
+       // up by 0.04m - measured via foot bone world-Y logging: the grounded
+       // foot's toeBase averaged -0.005m (slightly below floor). The 0.04m
+       // correction centers it at +0.035m (flush with floor surface).
+-      if (coreName === "Hips" && property.includes("position") && hipsMode === "pose") {
++      if (
++        coreName === "Hips" &&
++        property.includes("position") &&
++        hipsMode === "pose"
++      ) {
+         const values = cloned.values as Float32Array;
+         for (let i = 0; i < values.length; i++) {
+           values[i]! *= 0.01;
+@@ -170,7 +198,6 @@ function remapClipToSkeleton(
+ export class LocomotionAnimator implements ILocomotionAnimator {
+   private mixer: AnimationMixer | null = null;
+   private root: Object3D | null = null;
+-  private loader = new GLTFLoader();
+   private modelPrefix = "mixamorig";
+
+   // Actions - created from raw clips, no processing
+@@ -262,14 +289,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+
+     const results = await Promise.allSettled(
+       entries.map(async ({ key, url }) => {
+-        const gltf = await this.loadGltf(url);
+-        const clip = gltf.animations[0];
+-        if (!clip) throw new Error(`No animation in ${url}`);
+-        // Blender exports all Mixamo clips with the same name
+-        // ("Armature|mixamo.com|Layer0"). AnimationMixer caches actions
+-        // by clip name, so duplicate names cause all actions to share
+-        // the same clip. Give each a unique name.
+-        clip.name = key;
++        const clip = await loadSharedAnimation(url);
+         return { key, clip };
+       })
+     );
+@@ -309,14 +329,35 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     // (Mixamo FBX→GLB values are in centimeters, skeleton is in meters).
+     // This lets the Hips bone drop to the correct crouched height.
+     let hipsMode: "strip" | "rootMotion" | "pose" = "strip";
+-    if (this.config.enableRootMotion && isLocomotionClip) hipsMode = "rootMotion";
++    if (this.config.enableRootMotion && isLocomotionClip)
++      hipsMode = "rootMotion";
+     if (key === "crouch") hipsMode = "pose";
+
+     // Strip leg bones from idle clip for exhibit performers so feet
+     // stay perfectly planted during sequence playback.
+     const stripLegs = this.config.stripLegBones && key === "idle";
+
+-    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
++    const cacheKey = `${key}|${this.modelPrefix}|${hipsMode}|${stripLegs}`;
++    let variants = preparedClipCache.get(raw);
++    if (!variants) {
++      variants = new Map();
++      preparedClipCache.set(raw, variants);
++    }
++
++    const existing = variants.get(cacheKey);
++    if (existing) return existing;
++
++    const prepared = remapClipToSkeleton(
++      raw,
++      this.modelPrefix,
++      hipsMode,
++      stripLegs
++    );
++    // Blender exports all Mixamo clips with the same name. AnimationMixer
++    // caches actions by clip name, so each behavior needs a stable identity.
++    prepared.name = key;
++    variants.set(cacheKey, prepared);
++    return prepared;
+   }
+
+   /**
+@@ -327,7 +368,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+   private createActions(): void {
+     if (!this.mixer) return;
+
+-
+     // Idle - starts at weight 1
+     const idleClip = this.prepareClip("idle");
+     if (idleClip && !this.idleAction) {
+@@ -338,7 +378,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     }
+
+     // Walk directions - start at weight 0
+-    for (const key of ["forward", "backward", "strafeLeft", "strafeRight"] as DirectionKey[]) {
++    for (const key of [
++      "forward",
++      "backward",
++      "strafeLeft",
++      "strafeRight",
++    ] as DirectionKey[]) {
+       const clip = this.prepareClip(key);
+       if (clip && !this.walkActions[key]) {
+         const action = this.mixer.clipAction(clip);
+@@ -475,12 +520,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+
+   // --- Private helpers ---
+
+-  private loadGltf(url: string): Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF> {
+-    return new Promise((resolve, reject) => {
+-      this.loader.load(url, resolve, undefined, reject);
+-    });
+-  }
+-
+   private updateDirectionalTargets(input: LocomotionInput): void {
+     const dir = input.moveDirection ?? { x: 0, z: 1 };
+     const fw = Math.max(0, dir.z);
+@@ -545,10 +584,11 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     // "hunched walk" without needing a dedicated crouch-walk animation clip.
+     // Without movement, 100% crouch-idle plays normally.
+     const isCrouching = state === LocomotionState.CROUCHING;
+-    const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
++    const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
+     const crouchWalking = isCrouching && hasMovement;
+
+-    const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
++    const wantWalk =
++      state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
+     const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
+
+     // Idle
+@@ -573,7 +613,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
+     // On state entry: snap weights for instant transitions on one-shot clips.
+     if (state !== this.currentActiveState) {
+       // Zero out ground animations instantly when entering any airborne state
+-      if (state === LocomotionState.JUMPING || state === LocomotionState.FALLING) {
++      if (
++        state === LocomotionState.JUMPING ||
++        state === LocomotionState.FALLING
++      ) {
+         this.idleAction?.setEffectiveWeight(0);
+         this.currentIdleWeight = 0;
+         for (const key of Object.keys(this.walkActions) as DirectionKey[]) {
 diff --git a/src/lib/services/implementations/SpineTwister.ts b/src/lib/services/implementations/SpineTwister.ts
 index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f174ed0c1d 100644
 --- a/src/lib/services/implementations/SpineTwister.ts
@@ -187,13 +2718,13 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 @@ -41,6 +43,9 @@ const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
  /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
  const MAX_TILT = (25 * Math.PI) / 180;
- 
+
 +/** Maximum forward shoulder carry for a fully crossed two-hand pose. */
 +const MAX_FORWARD_PITCH = (10 * Math.PI) / 180;
 +
  /** Half shoulder width for normalizing lateral offset */
  const SHOULDER_HALF_WIDTH = 0.2;
- 
+
 @@ -123,12 +128,15 @@ export class SpineTwister implements ISpineTwister {
      // Cross-body tension: how much each hand crosses its natural side
      // Left hand's natural side is -X, so crossing = positive X.
@@ -205,20 +2736,20 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 +    const rightCross = Math.max(0, -rightX);
 +    const directionalCross =
 +      (leftCross - rightCross) * CROSS_TENSION_WEIGHT;
- 
+
 -    // Combined yaw signal
 -    const yawSignal = lateralBias + Math.sign(lateralBias || 1) * crossTension;
 +    // Crossing with one hand turns the torso toward that hand. A symmetric
 +    // two-hand cross has no arbitrary left/right winner, so it stays centered
 +    // and uses forward pitch below to carry both shoulders toward the props.
 +    const yawSignal = lateralBias + directionalCross;
- 
+
      // Normalize to [-1, 1] range
      const normalizedYaw = Math.max(-1, Math.min(1,
 @@ -155,6 +163,11 @@ export class SpineTwister implements ISpineTwister {
        (leftCross + rightCross) / SHOULDER_HALF_WIDTH
      ));
- 
+
 +    // Pull the upper body toward crossed targets before arm IK runs. This is
 +    // the local equivalent of a full-body IK chain pre-pull: the shoulders
 +    // contribute to the reach rather than leaving the two arm bones alone.
@@ -229,7 +2760,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
      const totalTilt = tiltSignal * MAX_TILT;
 @@ -163,11 +176,11 @@ export class SpineTwister implements ISpineTwister {
      const weights = this.redistributeWeights(availableBones);
- 
+
      return {
 -      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0)),
 -      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0)),
@@ -243,7 +2774,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 +      hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5, 0),
      };
    }
- 
+
 @@ -258,11 +271,19 @@ export class SpineTwister implements ISpineTwister {
     * Create a quaternion combining Y-axis yaw and Z-axis lateral tilt.
     * Order matters: tilt first (local Z), then yaw (local Y).
@@ -268,3 +2799,183 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
      q.setFromEuler(euler);
      return q;
    }
+diff --git a/src/lib/services/shared-gltf-cache.ts b/src/lib/services/shared-gltf-cache.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb28945496310
+--- /dev/null
++++ b/src/lib/services/shared-gltf-cache.ts
+@@ -0,0 +1,174 @@
++import type { AnimationClip, Material, Mesh, Object3D } from "three";
++import {
++  GLTFLoader,
++  type GLTF,
++} from "three/examples/jsm/loaders/GLTFLoader.js";
++import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
++
++const loader = new GLTFLoader();
++const loads = new Map<string, Promise<GLTF>>();
++const animationLoads = new Map<string, Promise<AnimationClip>>();
++const availabilityChecks = new Map<string, Promise<boolean>>();
++
++function yieldToNextFrame(): Promise<void> {
++  if (typeof requestAnimationFrame !== "function") return Promise.resolve();
++  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
++}
++
++async function yieldUntilAfterPaint(): Promise<void> {
++  await yieldToNextFrame();
++  await yieldToNextFrame();
++}
++
++/**
++ * Parse a GLTF URL once for the lifetime of the page.
++ *
++ * Performer rigs frequently use the same avatar and locomotion files. Browser
++ * caching avoids another download, but GLTFLoader would still parse the same
++ * binary again for every performer. Keeping the parsed result here removes
++ * that repeated main-thread work. A failed request is evicted so retry still
++ * works after a temporary network problem.
++ */
++export function loadSharedGltf(url: string): Promise<GLTF> {
++  const existing = loads.get(url);
++  if (existing) return existing;
++
++  const pending = loader.loadAsync(url);
++  loads.set(url, pending);
++  void pending.catch(() => {
++    if (loads.get(url) === pending) loads.delete(url);
++  });
++  return pending;
++}
++
++/**
++ * Parse an avatar before another performer needs it.
++ *
++ * The first visible performer starts this work. Later performers then clone
++ * the prepared scene instead of briefly showing a stand-in while the same
++ * model is parsed again.
++ */
++export function prepareSharedGltf(url: string): Promise<void> {
++  return loadSharedGltf(url).then(() => undefined);
++}
++
++/**
++ * Parse an animation GLB once without retaining the file's embedded scene.
++ *
++ * Mixamo animation exports often include a complete character alongside the
++ * clip. Keeping the entire GLTF for every locomotion asset costs hundreds of
++ * megabytes. This cache retains only the immutable AnimationClip shared by
++ * every performer and lets the unused scene graph be collected.
++ */
++export function loadSharedAnimation(url: string): Promise<AnimationClip> {
++  const existing = animationLoads.get(url);
++  if (existing) return existing;
++
++  const pending = loader.loadAsync(url).then((gltf) => {
++    const clip = gltf.animations[0];
++    if (!clip) throw new Error(`No animation in ${url}`);
++    return clip;
++  });
++  animationLoads.set(url, pending);
++  void pending.catch(() => {
++    if (animationLoads.get(url) === pending) animationLoads.delete(url);
++  });
++  return pending;
++}
++
++/** Share existence probes used before optional animation packs are loaded. */
++export function checkSharedAssetAvailability(url: string): Promise<boolean> {
++  const existing = availabilityChecks.get(url);
++  if (existing) return existing;
++
++  const pending = fetch(url, { method: "HEAD" }).then((response) => {
++    const contentType = response.headers.get("content-type") ?? "";
++    return response.ok && !contentType.includes("text/html");
++  });
++  availabilityChecks.set(url, pending);
++  void pending.catch(() => {
++    if (availabilityChecks.get(url) === pending) availabilityChecks.delete(url);
++  });
++  return pending;
++}
++
++/**
++ * Spread independent performer setup across frames in mount order.
++ *
++ * Svelte mounts every new rig synchronously. Serializing the heavy clone and
++ * mixer setup keeps a batch add from becoming one long main-thread task while
++ * the light state change and formation motion remain immediate.
++ */
++let performerInitializationQueue: Promise<void> = Promise.resolve();
++
++export async function schedulePerformerInitialization<T>(
++  initialize: () => Promise<T>
++): Promise<T> {
++  const predecessor = performerInitializationQueue;
++  let release!: () => void;
++  performerInitializationQueue = new Promise<void>((resolve) => {
++    release = resolve;
++  });
++
++  try {
++    await predecessor;
++    await yieldUntilAfterPaint();
++    return await initialize();
++  } finally {
++    release();
++  }
++}
++
++/**
++ * Mount one expensive performer subtree after the browser has painted.
++ *
++ * The callback is intentionally synchronous: it only opens a Svelte render
++ * gate. Avatar parsing has its own async initialization queue above. Keeping
++ * these queues separate prevents a network request from delaying the next
++ * performer's lightweight shell while still limiting WebGL setup to one
++ * subtree per painted frame.
++ */
++let performerMountQueue: Promise<void> = Promise.resolve();
++
++export async function schedulePerformerMount(mount: () => void): Promise<void> {
++  const predecessor = performerMountQueue;
++  let release!: () => void;
++  performerMountQueue = new Promise<void>((resolve) => {
++    release = resolve;
++  });
++
++  try {
++    await predecessor;
++    await yieldUntilAfterPaint();
++    mount();
++  } finally {
++    release();
++  }
++}
++
++/**
++ * Give one performer an independently animatable skeleton while sharing the
++ * immutable geometry and textures from the parsed model. Materials are cloned
++ * because performer fades and customization mutate opacity and color.
++ */
++export function cloneSharedSkinnedScene(source: Object3D): Object3D {
++  const scene = cloneSkinned(source);
++  scene.traverse((child) => {
++    const mesh = child as Mesh;
++    if (!mesh.isMesh || !mesh.material) return;
++
++    mesh.material = Array.isArray(mesh.material)
++      ? mesh.material.map((material) => material.clone())
++      : (mesh.material as Material).clone();
++  });
++  return scene;
++}
++
++/** Test-only reset for proving retry and deduplication behavior. */
++export function clearSharedGltfCache(): void {
++  loads.clear();
++  animationLoads.clear();
++  availabilityChecks.clear();
++  performerInitializationQueue = Promise.resolve();
++  performerMountQueue = Promise.resolve();
++}

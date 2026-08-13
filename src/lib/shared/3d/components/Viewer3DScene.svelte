@@ -17,6 +17,7 @@
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2, AdditiveBlending } from "three";
   import type { Object3D, Scene } from "three";
@@ -32,6 +33,7 @@
   import SceneEffectsCoordinator3D from "../effects/scene-effects/SceneEffectsCoordinator3D.svelte";
   import { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
   import { setSceneEffectsContext } from "../effects/scene-effects/scene-effects-context";
+  import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
@@ -81,6 +83,9 @@
   });
 
   const viewer3DState = getViewer3DContext();
+  const sequenceIsSeamless = $derived(
+    sequenceData ? isSeamlesslyLoopable(sequenceData) : false
+  );
   const sceneFeatures = getSceneFeatureContext();
   const sceneEffectsManager = setSceneEffectsContext(
     new SceneEffectsManager3D()
@@ -356,10 +361,29 @@
       backgroundType === BackgroundType.OCEAN
   );
 
+  const petalEnvironmentProfile = $derived(
+    resolvePetalEnvironmentProfile(backgroundType)
+  );
+
   const stageCoordinateFrame = $derived(
     getStageCoordinateFrame(backgroundType, sceneFeatures.isEnabled("stage"))
   );
   const stageGroundOffset = $derived(stageCoordinateFrame.performerAnchorY);
+
+  // Keep the scene's light count stable as performers enter and leave.
+  // WebGL keys material programs by light count, so one light per performer
+  // forced every scene material to synchronously recompile on count changes.
+  // A single movable light preserves the selected-performer highlight without
+  // invalidating the shader program cache.
+  const selectedPerformer = $derived.by(() => {
+    const index = viewer3DState.selectedPerformerIndex;
+    return index === null ? null : (performerManager.performers[index] ?? null);
+  });
+  const selectedPerformerLightPosition = $derived([
+    selectedPerformer?.position.x ?? 0,
+    stageGroundOffset + 2.5,
+    (selectedPerformer?.position.z ?? 0) + 0.3,
+  ] as [number, number, number]);
 
   const performerCount = $derived(performerManager.performers.length);
 
@@ -397,6 +421,7 @@
 <SceneEffectsCoordinator3D
   manager={sceneEffectsManager}
   parent={sceneEffectsLayerRoot}
+  {petalEnvironmentProfile}
 />
 
 <!-- Environment (gated by scene feature toggle) -->
@@ -447,6 +472,14 @@
   position.z={stageZOffset}
   layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
 >
+  <T.PointLight
+    position={selectedPerformerLightPosition}
+    intensity={selectedPerformer ? 6 : 0}
+    color={0xfff5e6}
+    distance={5}
+    decay={1.5}
+  />
+
   {#each performerManager.performers as performer, i (performer.id)}
     <T.Group userData={{ performerIndex: i }}>
       {@const performerGridMode = (sequenceData?.gridMode ??
@@ -500,6 +533,7 @@
                 <Grid3D
                   visiblePlanes={explicitPlanes}
                   gridMode={performerGridMode}
+                  planeMode={performer.planeMode}
                   showLabels={viewer3DState.showGridLabels}
                 />
               </T.Group>
@@ -516,6 +550,12 @@
               <EffectOrchestrator3D
                 {bluePropState}
                 {redPropState}
+                bluePropType={toScenePropType(
+                  resolvePerformerProp(performer, bluePropType)
+                )}
+                redPropType={toScenePropType(
+                  resolvePerformerProp(performer, redPropType)
+                )}
                 isPlaying={rigPlaying}
                 {staffHalfLength}
                 tipEffectMap={perfTipMap}
@@ -523,6 +563,8 @@
                 {redHandPos}
                 {effectsParentRef}
                 {currentStep}
+                totalSteps={sequenceData?.steps.length ?? 0}
+                seamlesslyLoopable={sequenceIsSeamless}
               />
             {/snippet}
           </PerformerRig>
@@ -533,18 +575,6 @@
       {@const isAllMode = viewer3DState.selectedPerformerIndex === null}
       {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
       {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
-
-      <T.PointLight
-        position={[
-          performer.position.x,
-          stageGroundOffset + 2.5,
-          performer.position.z + 0.3,
-        ]}
-        intensity={isSelected ? 6 : 0}
-        color={0xfff5e6}
-        distance={5}
-        decay={1.5}
-      />
 
       <T.Group
         position={[

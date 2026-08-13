@@ -49,7 +49,10 @@ export interface ForestSceneConfig {
 
 export interface ForestMaterialResponseConfig {
   terrainTint: string;
+  forestFloorTint: string;
   foliageTint: string;
+  /** Time-of-day grade for bark, trunks, and woody branches. */
+  woodyTint: string;
   /** Re-hues green-dominant canopy pixels while preserving bark in shared atlases. */
   foliageHighlightTint: string;
   foliageHighlightStrength: number;

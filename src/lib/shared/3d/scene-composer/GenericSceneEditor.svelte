@@ -21,9 +21,11 @@
   import type {
     ComposerPlacement,
     SceneComposerPlugin,
+    SceneObjectAdapter,
     SceneObjectHandle,
   } from "./types";
   import { validateComposerPlacement } from "./validate-composer-placement";
+  import { isEditableKeyboardTarget } from "$lib/shared/keyboard/domain/shortcut-target-resolution";
 
   interface Props {
     editorState: ComposerEditorState;
@@ -204,15 +206,19 @@
     return false;
   }
 
-  function isTransformControlsObject(obj: Object3D): boolean {
+  function isTransformControlsGizmoObject(obj: Object3D): boolean {
     let current: Object3D | null = obj;
     while (current) {
-      if (
-        current.type === "TransformControlsGizmo" ||
-        current.type === "TransformControlsPlane"
-      ) {
-        return true;
-      }
+      if (current.type === "TransformControlsGizmo") return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
+  function isTransformControlsPlaneObject(obj: Object3D): boolean {
+    let current: Object3D | null = obj;
+    while (current) {
+      if (current.type === "TransformControlsPlane") return true;
       current = current.parent;
     }
     return false;
@@ -249,7 +255,15 @@
   hoverOverlay.renderOrder = 1000;
   hoverOverlay.frustumCulled = false;
   hoverOverlay.userData.__isComposerHover = true;
+  type HoveredEditable =
+    | { kind: "composer"; object: Object3D }
+    | {
+        kind: "native";
+        adapter: SceneObjectAdapter;
+        handle: SceneObjectHandle;
+      };
   let hoveredKey: string | null = null;
+  let hoveredEditable: HoveredEditable | null = null;
 
   function canvasElement(): HTMLCanvasElement | null {
     return (
@@ -261,6 +275,7 @@
 
   function clearHoverFeedback(): void {
     hoveredKey = null;
+    hoveredEditable = null;
     hoverOverlay.visible = false;
     hoverOverlay.clear();
     const canvas = canvasElement();
@@ -301,17 +316,22 @@
 
   function setObjectHoverFeedback(object: Object3D): void {
     const composerId = findComposerId(object) ?? object.uuid;
+    hoveredEditable = { kind: "composer", object };
     if (hoveredKey === composerId && hoverOverlay.visible) return;
     hoverOverlay.clear();
     addObjectHoverMeshes(object);
     showHoverFeedback(composerId);
   }
 
-  function setHandleHoverFeedback(handle: SceneObjectHandle): void {
+  function setHandleHoverFeedback(
+    adapter: SceneObjectAdapter,
+    handle: SceneObjectHandle
+  ): void {
     if (handle.locked) {
       clearHoverFeedback();
       return;
     }
+    hoveredEditable = { kind: "native", adapter, handle };
     if (hoveredKey === handle.id && hoverOverlay.visible) return;
 
     hoverOverlay.clear();
@@ -408,6 +428,21 @@
     }
   });
 
+  function selectHoveredEditable(event: PointerEvent): boolean {
+    const hovered = hoveredEditable;
+    if (!hovered) return false;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    clearHoverFeedback();
+    if (hovered.kind === "composer") {
+      editorState.select(hovered.object);
+    } else {
+      editorState.selectNative(hovered.adapter, hovered.handle);
+    }
+    return true;
+  }
+
   function handleScenePointerDown(event: PointerEvent): void {
     const adapter = plugin.nativeObjects;
     if (editorState.activeCatalogItem || editorState.gizmoDragging) return;
@@ -426,11 +461,25 @@
     adapter?.enumerate(activeScene);
 
     const hits = nativeRaycaster.intersectObjects(activeScene.children, true);
+    const firstActionableHit = hits.find(
+      (hit) =>
+        !isHoverFeedbackObject(hit.object) &&
+        !isTransformControlsPlaneObject(hit.object)
+    );
+    if (
+      firstActionableHit &&
+      isTransformControlsGizmoObject(firstActionableHit.object)
+    ) {
+      return;
+    }
+    if (selectHoveredEditable(event)) return;
+
     for (const hit of hits) {
       // TransformControls owns presses on its handles. Everything else that
       // can be edited claims the press before the camera starts an orbit.
-      if (isTransformControlsObject(hit.object)) return;
       if (isHoverFeedbackObject(hit.object)) continue;
+      if (isTransformControlsPlaneObject(hit.object)) continue;
+      if (isTransformControlsGizmoObject(hit.object)) return;
       if (isComposerToolObject(hit.object)) return;
 
       const composerRoot = findComposerRoot(hit.object);
@@ -473,7 +522,16 @@
     const adapter = plugin.nativeObjects;
     const hits = nativeRaycaster.intersectObjects(activeScene.children, true);
     for (const hit of hits) {
-      if (isComposerToolObject(hit.object)) continue;
+      if (isHoverFeedbackObject(hit.object)) continue;
+      if (isTransformControlsPlaneObject(hit.object)) continue;
+      if (isTransformControlsGizmoObject(hit.object)) {
+        clearHoverFeedback();
+        return;
+      }
+      if (isComposerToolObject(hit.object)) {
+        clearHoverFeedback();
+        return;
+      }
 
       const composerRoot = findComposerRoot(hit.object);
       if (composerRoot) {
@@ -481,9 +539,10 @@
         return;
       }
 
-      const handle = adapter?.resolveHit(hit);
+      if (!adapter) continue;
+      const handle = adapter.resolveHit(hit);
       if (!handle) continue;
-      setHandleHoverFeedback(handle);
+      setHandleHoverFeedback(adapter, handle);
       return;
     }
     clearHoverFeedback();
@@ -496,6 +555,7 @@
   }
 
   function handleKeyDown(event: KeyboardEvent) {
+    if (isEditableKeyboardTarget(event.target)) return;
     const key = event.key.toLowerCase();
 
     if (key === "1") {

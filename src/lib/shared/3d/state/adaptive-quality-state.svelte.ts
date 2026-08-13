@@ -4,8 +4,7 @@ import { QualityTier, TIER_CONFIGS } from "../effects/types";
 import type { QualityTierConfig } from "../effects/types";
 import type { QualityTierDetector } from "../effects/quality/quality-tier-detector";
 
-interface AdaptiveQualityLevel {
-  tier: QualityTier;
+interface AdaptiveResolutionLevel {
   maxPixelRatio: number;
 }
 
@@ -13,12 +12,12 @@ interface AdaptiveQualityOptions {
   devicePixelRatio?: number;
 }
 
-const QUALITY_LEVELS: readonly AdaptiveQualityLevel[] = [
-  { tier: QualityTier.LOW, maxPixelRatio: 0.5 },
-  { tier: QualityTier.LOW, maxPixelRatio: 1 },
-  { tier: QualityTier.MEDIUM, maxPixelRatio: 1.25 },
-  { tier: QualityTier.MEDIUM, maxPixelRatio: 1.5 },
-  { tier: QualityTier.HIGH, maxPixelRatio: 2 },
+const RESOLUTION_LEVELS: readonly AdaptiveResolutionLevel[] = [
+  { maxPixelRatio: 0.5 },
+  { maxPixelRatio: 1 },
+  { maxPixelRatio: 1.25 },
+  { maxPixelRatio: 1.5 },
+  { maxPixelRatio: 2 },
 ];
 
 const INITIAL_LEVEL: Record<QualityTier, number> = {
@@ -52,6 +51,9 @@ const UPGRADE_VOTES = 21;
 const SEVERE_RECOVERY_DELAY_SECONDS = 60;
 const SUSTAINED_RECOVERY_DELAY_SECONDS = 15;
 
+export const ADAPTIVE_QUALITY_SETTLE_SECONDS = 3;
+export const ADAPTIVE_QUALITY_SETTLE_FRAMES = 30;
+
 export function createAdaptiveQualityState(
   detector: QualityTierDetector,
   options: AdaptiveQualityOptions = {}
@@ -75,6 +77,9 @@ export function createAdaptiveQualityState(
   let recentSamples: number[] = [];
   let baselineReported = false;
   let upgradeDelaySeconds = 0;
+  let settleSecondsRemaining = 0;
+  let settleFramesRemaining = 0;
+  let wasActive = false;
 
   function resetSamples(): void {
     sampleElapsed = 0;
@@ -82,16 +87,22 @@ export function createAdaptiveQualityState(
     recentSamples = [];
   }
 
+  function armSettleWindow(): void {
+    settleSecondsRemaining = ADAPTIVE_QUALITY_SETTLE_SECONDS;
+    settleFramesRemaining = ADAPTIVE_QUALITY_SETTLE_FRAMES;
+    resetSamples();
+  }
+
   function setLevel(nextLevel: number, reason: string): void {
     const clamped = Math.max(minimumLevel, Math.min(maximumLevel, nextLevel));
     if (clamped === levelIndex) return;
 
     levelIndex = clamped;
-    resetSamples();
+    armSettleWindow();
 
-    const level = QUALITY_LEVELS[levelIndex]!;
+    const level = RESOLUTION_LEVELS[levelIndex]!;
     console.info(
-      `[AdaptiveQuality] ${reason}: ${level.tier} at ${Math.min(nativePixelRatio, level.maxPixelRatio).toFixed(2)} DPR (${fps} fps)`
+      `[AdaptiveQuality] ${reason}: ${Math.min(nativePixelRatio, level.maxPixelRatio).toFixed(2)} DPR at ${contentTier} visual fidelity (${fps} fps)`
     );
   }
 
@@ -105,11 +116,12 @@ export function createAdaptiveQualityState(
     maximumLevel = detector.hasOverride ? levelIndex : MAX_LEVEL[detectedTier];
     initialized = true;
     baselineReported = false;
-    resetSamples();
+    armSettleWindow();
+    wasActive = false;
 
-    const level = QUALITY_LEVELS[levelIndex]!;
+    const level = RESOLUTION_LEVELS[levelIndex]!;
     console.info(
-      `[AdaptiveQuality] initialized: ${level.tier} at ${Math.min(nativePixelRatio, level.maxPixelRatio).toFixed(2)} DPR`
+      `[AdaptiveQuality] initialized: ${contentTier} visual fidelity at ${Math.min(nativePixelRatio, level.maxPixelRatio).toFixed(2)} DPR`
     );
   }
 
@@ -171,15 +183,38 @@ export function createAdaptiveQualityState(
   }
 
   function observeFrame(deltaSeconds: number, active: boolean): void {
-    if (!active || !Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
+    if (!active) {
+      resetSamples();
+      wasActive = false;
+      return;
+    }
+
+    if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) return;
+
+    if (!wasActive) {
+      wasActive = true;
+      armSettleWindow();
+    }
+
+    // Starting or resuming playback wakes lazy scene work that is unrelated to
+    // steady-state rendering cost. Let those uploads and allocations settle so
+    // a capable machine is not judged by its first few frames.
+    if (settleSecondsRemaining > 0 || settleFramesRemaining > 0) {
+      settleSecondsRemaining = Math.max(
+        0,
+        settleSecondsRemaining - deltaSeconds
+      );
+      settleFramesRemaining = Math.max(0, settleFramesRemaining - 1);
       resetSamples();
       return;
     }
 
     // A background/resume gap is not a rendering-quality signal. Browser
     // visibility normally filters it, and this catches the remaining cases.
+    // Keep the settling tail out too; uploads queued behind the stall can make
+    // the next few frames just as misleading as the gap itself.
     if (deltaSeconds > 1) {
-      resetSamples();
+      armSettleWindow();
       return;
     }
 
@@ -200,31 +235,34 @@ export function createAdaptiveQualityState(
   return {
     initialize,
     observeFrame,
+    armSettleWindow,
     get initialized(): boolean {
       return initialized;
     },
     get fps(): number {
       return fps;
     },
+    // This is the stable visual-fidelity tier detected from the renderer. It
+    // does not follow resolutionLevel when frame pressure changes DPR.
     get tier(): QualityTier {
-      return QUALITY_LEVELS[levelIndex]!.tier;
+      return contentTier;
     },
-    // Scene assets are chosen once after renderer detection. Live frame
-    // pressure may lower resolution and effect budgets, but it must not remove
-    // the environment or fauna while someone is using the viewer.
+    // Renderer detection owns visual fidelity for the whole session. Live
+    // frame pressure may lower pixel density, but it must not silently replace
+    // authored effects, lighting, or environment detail with a cheaper look.
     get contentTier(): QualityTier {
       return contentTier;
     },
     get config(): QualityTierConfig {
-      return TIER_CONFIGS[QUALITY_LEVELS[levelIndex]!.tier];
+      return TIER_CONFIGS[contentTier];
     },
     get pixelRatio(): number {
       return Math.min(
         nativePixelRatio,
-        QUALITY_LEVELS[levelIndex]!.maxPixelRatio
+        RESOLUTION_LEVELS[levelIndex]!.maxPixelRatio
       );
     },
-    get level(): number {
+    get resolutionLevel(): number {
       return levelIndex;
     },
   };

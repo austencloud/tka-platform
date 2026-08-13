@@ -1,3 +1,22 @@
+<script module lang="ts">
+  import { getAvatarModelPath, prepareSharedGltf } from "@austencloud/scene-3d";
+
+  const preparedModels = new Map<string, Promise<void>>();
+
+  function prepareAvatar(avatarId: string): Promise<void> {
+    const url = getAvatarModelPath(avatarId);
+    const existing = preparedModels.get(url);
+    if (existing) return existing;
+
+    const pending = prepareSharedGltf(url).catch((error) => {
+      if (preparedModels.get(url) === pending) preparedModels.delete(url);
+      throw error;
+    });
+    preparedModels.set(url, pending);
+    return pending;
+  }
+</script>
+
 <script lang="ts">
   import { useTask } from "@threlte/core";
   import { T } from "@threlte/core";
@@ -12,10 +31,6 @@
     AdditiveBlending,
     Group,
   } from "three";
-  import {
-    AVATAR_DEFINITIONS,
-    getAvatarModelPath,
-  } from "@austencloud/scene-3d";
   import type { AvatarInstanceState } from "../state/avatar-instance-state.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
 
@@ -30,7 +45,9 @@
     performer: AvatarInstanceState;
     performerIndex: number;
     groundOffset: number;
-    children: Snippet<[{ onAvatarSwapped: (id: string) => void; avatarOpacity: number }]>;
+    children: Snippet<
+      [{ onAvatarSwapped: (id: string) => void; avatarOpacity: number }]
+    >;
   }
 
   let { performer, performerIndex, groundOffset, children }: Props = $props();
@@ -53,20 +70,11 @@
     modelReady = true;
   }
 
-  // ── Background preloader ──
-  const preloadCache = new Set<string>();
-
-  function preloadAvatar(id: string) {
-    const url = getAvatarModelPath(id);
-    if (preloadCache.has(url)) return;
-    preloadCache.add(url);
-    fetch(url, { priority: "low" } as RequestInit).catch(() => {});
-  }
-
+  // The first rig parses the active avatar into the package's shared cache.
+  // New performers can then clone the intended body without ever showing the
+  // procedural fallback as an intermediate frame.
   onMount(() => {
-    for (const def of AVATAR_DEFINITIONS) {
-      preloadAvatar(def.id);
-    }
+    void prepareAvatar(performer.avatarModelId).catch(() => {});
   });
 
   // ── Particles ──
@@ -104,13 +112,15 @@
       vel[i]!.set(
         Math.sin(phi) * Math.cos(theta) * speed,
         Math.sin(phi) * Math.sin(theta) * speed * 0.6 + 1.0,
-        Math.cos(phi) * speed,
+        Math.cos(phi) * speed
       );
       life[i] = 1.0;
     }
   }
 
-  function easeOut(t: number) { return 1 - (1 - t) ** 2; }
+  function easeOut(t: number) {
+    return 1 - (1 - t) ** 2;
+  }
 
   $effect(() => {
     const id = performer.avatarModelId;
@@ -122,7 +132,9 @@
     }
   });
 
-  $effect(() => { mat.color.set(performerColor); });
+  $effect(() => {
+    mat.color.set(performerColor);
+  });
 
   function tickParticles(delta: number, decayRate: number, gravity: number) {
     if (!instMesh) return;

@@ -11,6 +11,8 @@ export interface RootedWindUniforms {
   strength: { value: number };
   direction: { value: Vector2 };
   spatialVariation: { value: number };
+  rootDarkening: { value: number };
+  colorVariation: { value: number };
 }
 
 interface RootedWindOptions {
@@ -19,6 +21,14 @@ interface RootedWindOptions {
   cacheKey: string;
   storageKey: string;
   spatialVariation?: number;
+  rootDarkening?: number;
+  colorVariation?: number;
+}
+
+interface RootedWindPatchState {
+  uniforms: RootedWindUniforms;
+  onBeforeCompile: MeshStandardMaterial["onBeforeCompile"];
+  customProgramCacheKey: MeshStandardMaterial["customProgramCacheKey"];
 }
 
 export function expandBoundsForRootedWind(
@@ -41,15 +51,17 @@ export function patchRootedWindMaterial(
   options: RootedWindOptions
 ): RootedWindUniforms {
   const existing = material.userData[options.storageKey] as
-    | RootedWindUniforms
+    | RootedWindPatchState
     | undefined;
-  if (existing) return existing;
+  if (existing) return existing.uniforms;
 
   const uniforms: RootedWindUniforms = {
     time: { value: 0 },
     strength: { value: options.strength },
     direction: { value: options.direction.clone() },
     spatialVariation: { value: options.spatialVariation ?? 0 },
+    rootDarkening: { value: options.rootDarkening ?? 0 },
+    colorVariation: { value: options.colorVariation ?? 0 },
   };
   const previousCompile = material.onBeforeCompile.bind(material);
   const previousCacheKey = material.customProgramCacheKey.bind(material);
@@ -63,13 +75,17 @@ export function patchRootedWindMaterial(
     shader.uniforms.uRootedWindStrength = uniforms.strength;
     shader.uniforms.uRootedWindDirection = uniforms.direction;
     shader.uniforms.uRootedWindSpatialVariation = uniforms.spatialVariation;
+    shader.uniforms.uRootedWindRootDarkening = uniforms.rootDarkening;
+    shader.uniforms.uRootedWindColorVariation = uniforms.colorVariation;
     shader.vertexShader = shader.vertexShader.replace(
       "#include <common>",
       /* glsl */ `#include <common>
         uniform float uRootedWindTime;
         uniform float uRootedWindStrength;
         uniform vec2 uRootedWindDirection;
-        uniform float uRootedWindSpatialVariation;`
+        uniform float uRootedWindSpatialVariation;
+        varying float vRootedWindWeight;
+        varying vec3 vRootedWindWorldPosition;`
     );
     shader.vertexShader = shader.vertexShader.replace(
       "#include <begin_vertex>",
@@ -78,6 +94,8 @@ export function patchRootedWindMaterial(
           vec3 rootedWindWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
           float rootedWindWeight = smoothstep(0.02, 0.96, uv.y);
           rootedWindWeight *= rootedWindWeight;
+          vRootedWindWeight = rootedWindWeight;
+          vRootedWindWorldPosition = rootedWindWorldPos;
           float rootedWindPhase = dot(rootedWindWorldPos.xz, uRootedWindDirection);
           vec2 rootedWindCrossDirection = vec2(
             -uRootedWindDirection.y,
@@ -128,14 +146,76 @@ export function patchRootedWindMaterial(
           transformed += (transpose(rootedWindBasis) * rootedWindWorldOffset) * rootedWindInvSq;
         }`
     );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        /* glsl */ `#include <common>
+          uniform float uRootedWindRootDarkening;
+          uniform float uRootedWindColorVariation;
+          varying float vRootedWindWeight;
+          varying vec3 vRootedWindWorldPosition;
+
+          float rootedWindHash(vec2 value) {
+            return fract(sin(dot(value, vec2(127.1, 311.7))) * 43758.5453123);
+          }`
+      )
+      .replace(
+        "#include <map_fragment>",
+        /* glsl */ `#include <map_fragment>
+          float rootedWindRootShade = mix(
+            1.0 - uRootedWindRootDarkening,
+            1.0,
+            smoothstep(0.0, 0.48, vRootedWindWeight)
+          );
+          float rootedWindColorNoise = rootedWindHash(
+            floor(vRootedWindWorldPosition.xz * 1.7)
+          );
+          float rootedWindColorScale = mix(
+            1.0 - uRootedWindColorVariation,
+            1.0 + uRootedWindColorVariation,
+            rootedWindColorNoise
+          );
+          diffuseColor.rgb *= rootedWindRootShade * rootedWindColorScale;`
+      );
   };
   material.customProgramCacheKey = () =>
     `${previousCacheKey()}|${options.cacheKey}`;
-  material.userData[options.storageKey] = uniforms;
+  material.userData[options.storageKey] = {
+    uniforms,
+    onBeforeCompile: material.onBeforeCompile,
+    customProgramCacheKey: material.customProgramCacheKey,
+  } satisfies RootedWindPatchState;
   material.side = DoubleSide;
   // Rooted wind is used on thin grass cards. Rendering their transparent back
   // faces in a separate pass adds cost but no useful depth ordering.
   material.forceSinglePass = true;
   material.needsUpdate = true;
   return uniforms;
+}
+
+export function inheritRootedWindPatch(
+  source: MeshStandardMaterial,
+  target: MeshStandardMaterial
+): void {
+  const patch = Object.values(source.userData).find(
+    (value): value is RootedWindPatchState =>
+      Boolean(
+        value &&
+          typeof value === "object" &&
+          "uniforms" in value &&
+          "onBeforeCompile" in value &&
+          "customProgramCacheKey" in value
+      )
+  );
+  if (!patch) return;
+
+  target.onBeforeCompile = patch.onBeforeCompile;
+  target.customProgramCacheKey = patch.customProgramCacheKey;
+  const storageKey = Object.keys(source.userData).find(
+    (key) => source.userData[key] === patch
+  );
+  if (storageKey) target.userData[storageKey] = patch;
+  target.side = DoubleSide;
+  target.forceSinglePass = true;
+  target.needsUpdate = true;
 }

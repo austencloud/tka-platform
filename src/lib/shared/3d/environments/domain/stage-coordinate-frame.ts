@@ -44,7 +44,9 @@ export function getNativeStageSurfaceY(
     case BackgroundType.PRIDE:
       return 0.4;
     case BackgroundType.CELESTIAL:
-      return 0.01;
+      // Olive Cloudbreak owns a raised dry terrace. Moving the environment by
+      // this authored surface height keeps every performer's feet on its top.
+      return 0.225;
     case BackgroundType.VOID:
       return 0.35;
     default:

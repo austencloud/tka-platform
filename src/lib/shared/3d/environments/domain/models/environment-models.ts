@@ -59,6 +59,10 @@ export interface SkyCloudConfig {
   opacity: number;
   /** Size of the dominant cloud cells. Higher values create smaller forms. */
   scale?: number;
+  /** Stable sky-space UV phase used to compose clouds around authored cameras. */
+  offset?: [number, number];
+  /** Existing visual system used to author the cloud layer. */
+  visualSource?: "procedural" | "celestial-2d";
   /** Lowest sky latitude at which the field becomes visible. */
   horizonFade?: number;
   /** Keeps the cloud ceiling from becoming a solid cap above the camera. */

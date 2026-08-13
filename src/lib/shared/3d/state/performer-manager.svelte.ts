@@ -15,16 +15,22 @@ import {
   createAvatarSyncState,
   type AvatarSyncState,
 } from "./avatar-sync-state.svelte";
-import {
-  getDefaultPositions,
-  MAX_PERFORMERS,
-} from "@austencloud/scene-3d";
+import { getDefaultPositions, MAX_PERFORMERS } from "@austencloud/scene-3d";
 // propInterpolator / sequenceConverter injected as module functions; no imports needed here
-import type { AvatarId, FormationPreset } from "@austencloud/scene-3d";
-import {
-  createFormationManager,
+import type {
+  AvatarId,
+  Formation,
+  FormationPreset,
 } from "@austencloud/scene-3d";
+import { createFormationManager } from "@austencloud/scene-3d";
 // FormationManager type inferred from createFormationManager return
+
+const COUNT_CHANGE_TRANSITION_MS = 320;
+
+interface PerformerLayoutSnapshot {
+  position: { x: number; z: number };
+  facingAngle: number;
+}
 
 /**
  * Dependencies for performer manager
@@ -107,6 +113,101 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
     return initialPerformer;
   }
 
+  function captureLayout(): Map<string, PerformerLayoutSnapshot> {
+    return new Map(
+      performerStates.map((performer) => [
+        performer.id,
+        {
+          position: { ...performer.position },
+          facingAngle: performer.facingAngle,
+        },
+      ])
+    );
+  }
+
+  /**
+   * Resolve every performer's destination under the active formation.
+   * Presets with a smaller fixed cast fall back to the same centered layout
+   * used before this transition work, so counts five through eight remain
+   * deterministic.
+   */
+  function resolveLayoutTargets(): PerformerLayoutSnapshot[] {
+    formationManager.setPerformerCount(performerStates.length);
+
+    const positions = formationManager.getAllPerformerPositions();
+    const defaults = getDefaultPositions(performerStates.length);
+    const coversAll = positions.length >= performerStates.length;
+
+    return performerStates.map((performer, index) => {
+      if (coversAll) {
+        const target = positions.find((position) => position.index === index);
+        if (target) {
+          return {
+            position: { ...target.position },
+            facingAngle: target.facingAngle,
+          };
+        }
+      }
+
+      const fallback = defaults[index] ?? performer.position;
+      return {
+        position: { ...fallback },
+        facingAngle: performer.facingAngle,
+      };
+    });
+  }
+
+  /**
+   * A new performer appears directly in its destination while the existing
+   * cast glides out of the way. On removal, the remaining cast starts from
+   * the exact positions visible in the previous frame and closes the gap.
+   */
+  function transitionAfterCountChange(
+    previousLayout: Map<string, PerformerLayoutSnapshot>
+  ): void {
+    formationManager.cancelTransition();
+    const targets = resolveLayoutTargets();
+    const targetBase = formationManager.currentFormation;
+
+    performerStates.forEach((performer, index) => {
+      if (previousLayout.has(performer.id)) return;
+      const target = targets[index];
+      if (!target) return;
+      performer.position.x = target.position.x;
+      performer.position.z = target.position.z;
+      performer.setFacingAngle(target.facingAngle);
+    });
+
+    const from: Formation = {
+      ...targetBase,
+      id: `${targetBase.id}-count-from`,
+      name: `${targetBase.name} count transition start`,
+      facingMode: "custom",
+      slots: performerStates.map((performer, index) => {
+        const snapshot = previousLayout.get(performer.id) ?? targets[index];
+        return {
+          index,
+          position: { ...(snapshot?.position ?? performer.position) },
+          facingAngle: snapshot?.facingAngle ?? performer.facingAngle,
+        };
+      }),
+    };
+    const to: Formation = {
+      ...targetBase,
+      id: `${targetBase.id}-count-to`,
+      name: `${targetBase.name} count transition target`,
+      facingMode: "custom",
+      slots: targets.map((target, index) => ({
+        index,
+        position: { ...target.position },
+        facingAngle: target.facingAngle,
+      })),
+    };
+
+    formationManager.applyFormation(from);
+    formationManager.transitionTo(to, COUNT_CHANGE_TRANSITION_MS);
+  }
+
   /**
    * Update all performer positions based on formation.
    *
@@ -120,30 +221,14 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * with rows 0-1 of the row-pair default).
    */
   function updatePositions() {
-    formationManager.setPerformerCount(performerStates.length);
-
-    const positions = formationManager.getAllPerformerPositions();
-    const defaults = getDefaultPositions(performerStates.length);
-    const coversAll = positions.length >= performerStates.length;
-
+    formationManager.cancelTransition();
+    const targets = resolveLayoutTargets();
     performerStates.forEach((performer, i) => {
-      if (coversAll) {
-        const pos = positions.find((p) => p.index === i);
-        if (pos) {
-          performer.position.x = pos.position.x;
-          performer.position.z = pos.position.z;
-          performer.setFacingAngle(pos.facingAngle);
-          return;
-        }
-      }
-      // Formation doesn't cover all performers — use default grid for
-      // everyone so spacing is consistent (formation and defaults use
-      // different coordinate centering).
-      const fallback = defaults[i];
-      if (fallback) {
-        performer.position.x = fallback.x;
-        performer.position.z = fallback.z;
-      }
+      const target = targets[i];
+      if (!target) return;
+      performer.position.x = target.position.x;
+      performer.position.z = target.position.z;
+      performer.setFacingAngle(target.facingAngle);
     });
   }
 
@@ -158,7 +243,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   /**
    * Transition to a formation preset (smooth animation)
    */
-  function transitionToFormation(preset: FormationPreset, durationMs: number = 500) {
+  function transitionToFormation(
+    preset: FormationPreset,
+    durationMs: number = 500
+  ) {
     formationManager.transitionToPreset(preset, durationMs);
   }
 
@@ -200,9 +288,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   function addPerformer() {
     if (performerStates.length >= maxPerformers) return;
 
+    const previousLayout = captureLayout();
     const newPerformer = createPerformer(performerStates.length);
     performerStates = [...performerStates, newPerformer];
-    updatePositions();
+    transitionAfterCountChange(previousLayout);
 
     // Create sync state when we have exactly 2 performers
     if (performerStates.length === 2) {
@@ -221,12 +310,13 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   function removePerformer() {
     if (performerStates.length <= 1) return;
 
+    const previousLayout = captureLayout();
     const removed = performerStates[performerStates.length - 1];
     if (!removed) return;
     removed.destroy();
 
     performerStates = performerStates.slice(0, -1);
-    updatePositions();
+    transitionAfterCountChange(previousLayout);
 
     // Adjust active index if needed
     if (activePerformerIndex >= performerStates.length) {
@@ -271,7 +361,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Ensure we have at least N performers
    */
   function ensurePerformerCount(count: number) {
-    while (performerStates.length < count && performerStates.length < maxPerformers) {
+    while (
+      performerStates.length < count &&
+      performerStates.length < maxPerformers
+    ) {
       addPerformer();
     }
   }

@@ -21,7 +21,12 @@
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
-  import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import {
+    EFFECTS,
+    getRegistration,
+  } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+  import EffectPresetsSection from "$lib/shared/animation-engine/components/effects-panel/EffectPresetsSection.svelte";
+  import { matchPresetId } from "$lib/shared/animation-engine/components/effects-panel/presets/match-preset";
   import { isEffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import { advancedControls } from "$lib/shared/effects/domain/effect-control-manifest";
@@ -207,6 +212,20 @@
       ? (activeEffectKey as EffectId)
       : null
   );
+  const activeRegistration = $derived(
+    activeEffectId ? getRegistration(activeEffectId) : undefined
+  );
+  const activePresetId = $derived.by(() => {
+    if (!activeEffectId || !activeRegistration) return null;
+    const effectConfig = config.effect(activeEffectId) as unknown as Record<
+      string,
+      unknown
+    >;
+    return matchPresetId(activeRegistration.presetGroup, effectConfig);
+  });
+  const presetSummary = $derived(
+    activeRegistration?.presetGroup.getSummary(config) ?? ""
+  );
   const controlOverrides = $derived(
     activeEffectId
       ? createEffectControlOverrides(activeEffectId, config, animationSettings)
@@ -316,6 +335,31 @@
       { coalesce }
     );
   }
+
+  function selectPreset(presetId: string): void {
+    if (!activeRegistration) return;
+    const preset = activeRegistration.presetGroup.presets.find(
+      (candidate) => candidate.id === presetId
+    );
+    if (!preset) return;
+
+    const previous = activePresetId ?? "customized";
+    const patch = preset.resolvePatch
+      ? preset.resolvePatch()
+      : (preset.patch ?? {});
+    config.applyPreset(
+      activeRegistration.presetGroup.effectType,
+      preset.id,
+      patch
+    );
+    reportViewerControlChange(
+      onSettingChange,
+      `viewer_3d_effect_${activeRegistration.presetGroup.effectType}`,
+      "preset",
+      previous,
+      preset.id
+    );
+  }
 </script>
 
 <section class="effects-settings">
@@ -347,7 +391,9 @@
       class:active={motionEnabled}
       style="--color: {motionChip.color}"
       onclick={() => toggle(motionChip.key)}
-      aria-label={motionEnabled ? motionChip.label : `Enable ${motionChip.label}`}
+      aria-label={motionEnabled
+        ? motionChip.label
+        : `Enable ${motionChip.label}`}
       aria-pressed={motionEnabled}
       title={motionEnabled ? motionChip.label : "Click to enable"}
     >
@@ -355,6 +401,21 @@
       <span>{motionChip.label}</span>
     </button>
   </div>
+
+  {#if activeRegistration}
+    <div class="effect-presets">
+      <EffectPresetsSection
+        presetGroup={activeRegistration.presetGroup}
+        {activePresetId}
+        onSelectPreset={selectPreset}
+        effectLabel={activeRegistration.meta.label}
+        accentColor={activeRegistration.meta.color}
+        summary={presetSummary}
+        showSummary={false}
+        showCustomize={false}
+      />
+    </div>
+  {/if}
 
   <!-- Active effect's controls, from the shared manifest (same controls 2D
        renders). Shown automatically while that effect is on — no double-click. -->
@@ -544,6 +605,10 @@
   .modifier-chip {
     width: 64px;
     flex: 0 0 64px;
+  }
+
+  .effect-presets {
+    margin-top: 0.2rem;
   }
 
   /* Active effect's control stack, rendered above the chip grid. */

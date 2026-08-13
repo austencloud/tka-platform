@@ -113,32 +113,14 @@
   // Register cache clearing callback for HMR
   // When Vite does an HMR update, clear our cache to prevent stale chunk issues
   let deregisterCacheClear: (() => void) | undefined;
-  let preloadTimer: ReturnType<typeof setTimeout> | undefined;
-
   onMount(() => {
     deregisterCacheClear = registerModuleCacheClear(() => {
       moduleCache.clear();
     });
-
-    // Preload heavy modules (museum = Three.js/Threlte) during idle time.
-    // Skip when museum is disabled at compile time (prod builds without museum).
-    if (typeof __FEATURE_MUSEUM__ === "undefined" || __FEATURE_MUSEUM__) {
-      preloadTimer = setTimeout(() => {
-        const idle =
-          (window as any).requestIdleCallback ??
-          ((cb: () => void) => setTimeout(cb, 100));
-        idle(() => {
-          if (activeModule !== "museum" && !moduleCache.has("museum")) {
-            loadModule("museum").catch(() => {});
-          }
-        });
-      }, 3000);
-    }
   });
 
   onDestroy(() => {
     deregisterCacheClear?.();
-    clearTimeout(preloadTimer);
     keepAlive.dispose();
   });
 
