@@ -89,6 +89,11 @@
   // Long-press for mobile
   function handleTouchStart(event: TouchEvent) {
     if (!isMobile) return;
+    if (isSelectableTarget(event.target)) {
+      clearLongPress();
+      resetSwipe();
+      return;
+    }
     const touch = event.touches[0];
     if (!touch || message.isDeleted) return;
 
@@ -205,6 +210,10 @@
     // Don't toggle if clicking inside the reaction bar itself
     const target = event.target as HTMLElement;
     if (target.closest(".reaction-bar")) return;
+    if (target.closest("[data-message-link='true']")) return;
+    if (isSelectableTarget(target) && !window.getSelection()?.isCollapsed) {
+      return;
+    }
 
     showReactions = !showReactions;
     if (!showReactions) showMoreMenu = false;
@@ -212,10 +221,18 @@
 
   // Prevent native context menu (right-click / long-press)
   function handleContextMenu(event: MouseEvent) {
+    if (isSelectableTarget(event.target)) return;
     event.preventDefault();
     hapticService?.trigger("selection");
     showReactions = true;
     showMoreMenu = true;
+  }
+
+  function isSelectableTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      Boolean(target.closest("[data-message-selectable='true']"))
+    );
   }
 
   // Copy message text to clipboard
@@ -670,6 +687,12 @@
     -webkit-user-select: none;
     user-select: none;
     touch-action: pan-y pinch-zoom;
+  }
+
+  .message-wrapper :global([data-message-selectable="true"]) {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   .swipe-content {

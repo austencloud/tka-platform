@@ -19,6 +19,10 @@
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { decodeLegacySequenceAttachment } from "../../domain/message-attachment-builders";
+  import { buildSequenceSharePayload } from "../../domain/build-sequence-share-payload";
+  import type { SequenceSharePayload } from "../../domain/models/sequence-share-payload";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     attachment: MessageAttachment;
@@ -31,6 +35,7 @@
   // Instead we trust the attachment metadata and handle "not found" at navigation time
   let isDeleted = $state(false);
   let isChecking = $state(false);
+  let resolvedPreview = $state<SequenceSharePayload | null>(null);
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
@@ -38,23 +43,48 @@
   // Extract sequence metadata
   const sequenceId = $derived(attachment.metadata?.sequenceId);
   const sequenceShortCode = $derived(attachment.metadata?.sequenceShortCode);
-  const shortCodeRoute = $derived(
-    attachment.url?.startsWith("/q/")
+  const attachedRoute = $derived(
+    attachment.url?.startsWith("/q/") ||
+      attachment.url?.startsWith("/sequence/")
       ? attachment.url
-      : sequenceShortCode
+      : null
+  );
+  const shortCodeRoute = $derived(
+    attachedRoute?.startsWith("/q/")
+      ? attachedRoute
+      : sequenceShortCode && !attachedRoute
         ? `/q/${encodeURIComponent(sequenceShortCode)}`
         : null
   );
   const sequenceWord = $derived(
-    attachment.metadata?.sequenceWord ||
-      attachment.metadata?.title ||
-      "Sequence"
+    simplifyRepeatedWord(
+      resolvedPreview?.sequenceWord ||
+        attachment.metadata?.sequenceWord ||
+        attachment.metadata?.title ||
+        "Sequence"
+    )
   );
-  const sequenceName = $derived(attachment.metadata?.sequenceName);
+  const sequenceGlyphWord = $derived(
+    attachment.metadata?.sequenceWord ||
+      (resolvedPreview?.sequenceCloudWord
+        ? resolvedPreview.sequenceWord
+        : undefined)
+  );
+  const sequenceName = $derived(
+    resolvedPreview?.sequenceName || attachment.metadata?.sequenceName
+      ? simplifyRepeatedWord(
+          resolvedPreview?.sequenceName ||
+            attachment.metadata?.sequenceName ||
+            ""
+        )
+      : undefined
+  );
   // sequenceCloudWord is the raw sequence.word used as the cloud storage filename.
   // New messages include this explicitly. Old messages don't have it, so we fall
   // back to sequenceName (which is seq.name) then sequenceWord (display name).
-  const sequenceCloudWord = $derived(attachment.metadata?.sequenceCloudWord);
+  const sequenceCloudWord = $derived(
+    resolvedPreview?.sequenceCloudWord || attachment.metadata?.sequenceCloudWord
+  );
 
   // Build an ordered list of thumbnail URLs to try. The <img> onerror handler
   // cycles through these so old messages (which may have mismatched keys) still
@@ -70,6 +100,12 @@
         seen.add(url);
         candidates.push(url);
       }
+    }
+
+    const resolvedThumbnail = resolvedPreview?.sequenceThumbnail;
+    if (resolvedThumbnail) {
+      seen.add(resolvedThumbnail);
+      candidates.push(resolvedThumbnail);
     }
 
     // Best: explicit cloud word (new messages)
@@ -94,13 +130,73 @@
   // Index into the candidates list - incremented by onerror
   let candidateIndex = $state(0);
   const thumbnailUrl = $derived(thumbnailCandidates[candidateIndex] ?? null);
-  const authorName = $derived(attachment.metadata?.sequenceAuthor);
-  const stepCount = $derived(attachment.metadata?.sequenceStepCount);
+  const authorName = $derived(
+    resolvedPreview?.sequenceAuthor || attachment.metadata?.sequenceAuthor
+  );
+  const stepCount = $derived(
+    resolvedPreview?.sequenceStepCount || attachment.metadata?.sequenceStepCount
+  );
 
   // Initialize haptic service
   onMount(() => {
     hapticService = getHapticFeedback();
+
+    let cancelled = false;
+    const needsPreviewResolution =
+      !attachment.metadata?.sequenceWord &&
+      !attachment.metadata?.sequenceThumbnail &&
+      !attachment.thumbnailUrl;
+
+    if (needsPreviewResolution) {
+      void resolvePreviewMetadata().then((payload) => {
+        if (!cancelled) resolvedPreview = payload;
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
   });
+
+  async function resolvePreviewMetadata(): Promise<SequenceSharePayload | null> {
+    try {
+      const embeddedSequence = decodeLegacySequenceAttachment(attachment);
+      if (embeddedSequence) return buildSequenceSharePayload(embeddedSequence);
+    } catch (caught) {
+      console.debug(
+        "[SequenceMessageCard] Embedded preview could not be decoded:",
+        caught
+      );
+    }
+
+    const identifier = sequenceShortCode || sequenceId;
+    if (!identifier) return null;
+
+    let sequence: SequenceData | null = null;
+    try {
+      sequence = await getShortCodeManager().resolveShortCode(identifier);
+    } catch (caught) {
+      console.debug(
+        "[SequenceMessageCard] Short-link preview lookup was unavailable:",
+        caught
+      );
+    }
+
+    if (!sequence && !sequenceShortCode) {
+      try {
+        const { loadByIdentifier } =
+          await import("$lib/shared/sequence-viewer/services/sequence-data-provider");
+        sequence = await loadByIdentifier(identifier);
+      } catch (caught) {
+        console.debug(
+          "[SequenceMessageCard] Sequence preview lookup was unavailable:",
+          caught
+        );
+      }
+    }
+
+    return sequence ? buildSequenceSharePayload(sequence) : null;
+  }
 
   async function resolveSequenceRoute(): Promise<string | null> {
     if (shortCodeRoute) return shortCodeRoute;
@@ -113,6 +209,8 @@
       );
       return `/q/${encodeURIComponent(code)}`;
     }
+
+    if (attachedRoute) return attachedRoute;
 
     return sequenceId ? `/sequence/${encodeURIComponent(sequenceId)}` : null;
   }
@@ -209,12 +307,8 @@
 
       <div class="card-info">
         <h4 class="sequence-title">
-          {#if attachment.metadata?.sequenceWord}
-            <TKAWordGlyph
-              word={attachment.metadata.sequenceWord}
-              height={16}
-              darkMode
-            />
+          {#if sequenceGlyphWord}
+            <TKAWordGlyph word={sequenceGlyphWord} height={16} darkMode />
           {:else}
             {sequenceWord}
           {/if}

@@ -13,7 +13,11 @@
   const SELF = "self-user";
   const OTHER = "other-user";
 
-  function msg(id: string, content: string, over: Partial<Message> = {}): Message {
+  function msg(
+    id: string,
+    content: string,
+    over: Partial<Message> = {}
+  ): Message {
     return {
       id,
       conversationId: "harness",
@@ -28,9 +32,13 @@
 
   const singleBreak = msg("m1", "Line one\nLine two");
   const blankLine = msg("m2", "First paragraph.\n\nSecond paragraph.");
-  const edited = msg("m3", "First paragraph.\n\nSecond paragraph.\n\nAdded later.", {
-    editedAt: new Date("2026-08-02T12:05:00Z"),
-  });
+  const edited = msg(
+    "m3",
+    "First paragraph.\n\nSecond paragraph.\n\nAdded later.",
+    {
+      editedAt: new Date("2026-08-02T12:05:00Z"),
+    }
+  );
   const received = msg("m4", "Line one\nLine two", {
     senderId: OTHER,
     senderName: "Paul",
@@ -43,30 +51,66 @@
     "m6",
     "Wrapping check: supercalifragilisticexpialidociousandthensomemoreletters_to_force_overflow_behavior"
   );
-  const markup = msg("m7", "<b>bold?</b>\n<script>alert(1)<\/script>\n& < > \" '");
+  const markup = msg(
+    "m7",
+    "<b>bold?</b>\n<script>alert(1)<\/script>\n& < > \" '"
+  );
 
-  const caption = msg("m8", "Caption line one\nCaption line two", {
-    attachments: [
-      {
-        type: "image",
-        url: "/favicon.png",
-        width: 240,
-        height: 240,
-      } as never,
-    ],
-  });
+  const externalLink = msg(
+    "m8",
+    "Documentation: linkify.js.org/docs/. You can select this whole sentence."
+  );
+
+  const sequenceLink = msg(
+    "m9",
+    "This Fuse result is cool: https://tkaflowarts.com/sequence/O263"
+  );
+
+  const caption = msg(
+    "m10",
+    "Caption line one\nhttps://example.com/reference",
+    {
+      attachments: [
+        {
+          type: "image",
+          url: "/favicon.png",
+          width: 240,
+          height: 240,
+        } as never,
+      ],
+    }
+  );
 
   let narrow = $state(false);
 
-  const cases: Array<{ label: string; m: Message; own: boolean; group?: boolean }> = [
-    { label: "1. Single Shift+Enter → one line break", m: singleBreak, own: true },
+  const cases: Array<{
+    label: string;
+    m: Message;
+    own: boolean;
+    group?: boolean;
+  }> = [
+    {
+      label: "1. Single Shift+Enter → one line break",
+      m: singleBreak,
+      own: true,
+    },
     { label: "2. Blank line between paragraphs", m: blankLine, own: true },
     { label: "3. Edited message renders identically", m: edited, own: true },
     { label: "4. Received bubble", m: received, own: false },
     { label: "5. Group bubble", m: group, own: false, group: true },
     { label: "6. Long unbroken text wraps", m: longWord, own: true },
     { label: "7. Markup shown literally (escaped)", m: markup, own: true },
-    { label: "8. Attachment caption preserves breaks", m: caption, own: true },
+    { label: "8. External URL becomes a link", m: externalLink, own: false },
+    {
+      label: "9. TKA URL gains a sequence preview",
+      m: sequenceLink,
+      own: false,
+    },
+    {
+      label: "10. Attachment caption links and preserves breaks",
+      m: caption,
+      own: true,
+    },
   ];
 </script>
 

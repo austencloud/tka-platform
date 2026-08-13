@@ -27,6 +27,11 @@
   import RobustAvatar from "../../../components/avatar/RobustAvatar.svelte";
   import { toast } from "../../../toast/state/toast-state.svelte";
   import { getMessagePreviewText } from "$lib/shared/messaging/domain/message-preview";
+  import RichMessageText from "./RichMessageText.svelte";
+  import {
+    buildDetectedSequenceAttachment,
+    findMessageSequenceLink,
+  } from "../../domain/message-link-parts";
 
   interface Props {
     message: Message;
@@ -74,12 +79,27 @@
   const collectionAttachment = $derived(
     message.attachments?.find((a) => a.type === "collection")
   );
+  const detectedSequenceAttachment = $derived.by(() => {
+    if (
+      message.isDeleted ||
+      feedbackAttachment ||
+      sequenceAttachment ||
+      imageAttachment ||
+      collectionAttachment
+    ) {
+      return null;
+    }
+
+    const link = findMessageSequenceLink(message.content);
+    return link ? buildDetectedSequenceAttachment(link) : null;
+  });
   const hasAttachment = $derived(
     Boolean(
       feedbackAttachment ||
       sequenceAttachment ||
       imageAttachment ||
-      collectionAttachment
+      collectionAttachment ||
+      detectedSequenceAttachment
     )
   );
   const accessibleMessage = $derived(
@@ -127,16 +147,16 @@
   {/if}
 
   {#if message.isDeleted}
-    <p class="content">{message.content}</p>
+    <RichMessageText content={message.content} {isOwn} linkify={false} />
   {:else if imageAttachment}
     <ImageMessageCard attachment={imageAttachment} caption={message.content} />
     {#if message.content}
-      <p class="content attachment-content">{message.content}</p>
+      <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
   {:else if sequenceAttachment}
     <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
     {#if message.content && !message.content.startsWith("Check out this sequence")}
-      <p class="content attachment-content">{message.content}</p>
+      <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
   {:else if collectionAttachment}
     <CollectionMessageCard
@@ -146,15 +166,20 @@
       recipientId={isOwn ? otherParticipantId : currentUserId}
     />
     {#if message.content}
-      <p class="content attachment-content">{message.content}</p>
+      <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
   {:else if feedbackAttachment}
     <FeedbackMessageCard attachment={feedbackAttachment} {isOwn} />
     {#if message.content && message.content !== "[Feedback submitted]"}
-      <p class="content attachment-content">{message.content}</p>
+      <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
   {:else}
-    <p class="content">{message.content}</p>
+    <RichMessageText content={message.content} {isOwn} />
+    {#if detectedSequenceAttachment}
+      <div class="detected-sequence-preview">
+        <SequenceMessageCard attachment={detectedSequenceAttachment} {isOwn} />
+      </div>
+    {/if}
   {/if}
 
   <div class="meta">
@@ -404,23 +429,8 @@
     opacity: 0.7;
   }
 
-  .content {
-    margin: 0 0 4px;
-    font-size: var(--font-size-sm);
-    line-height: 1.4;
-    white-space: pre-wrap;
-    word-break: break-word;
-    color: var(--theme-text);
-  }
-
-  .own .content {
-    color: white;
-  }
-
-  .attachment-content {
+  .detected-sequence-preview {
     margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--theme-stroke);
   }
 
   .has-attachment .bubble {
