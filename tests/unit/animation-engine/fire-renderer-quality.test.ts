@@ -1,0 +1,233 @@
+import { describe, expect, it } from "vitest";
+import {
+  computeFireEmissionMultiplier,
+  computeFireCoolingRate,
+  computeFireStepDissipation,
+  computeFireTemperatureDissipation,
+  computeFireVisualCacheKey,
+  computeFirePresentationResolution,
+  shouldUseMacCormackScalars,
+} from "$lib/shared/animation-engine/services/fire/web-gl-fire-renderer";
+import {
+  computeFireFrameCacheCapacity,
+  hasReachedFireFrameCacheCapacity,
+} from "$lib/shared/animation-engine/services/fire/fire-frame-cache";
+import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/fire-types";
+import { DISPLAY_FRAG } from "$lib/shared/animation-engine/services/fire/fluid-shader-sources";
+import { computeFireTipPresentation } from "$lib/shared/animation-engine/services/fire/fire-tip-presentation";
+import type { PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
+
+function createTip(overrides: Partial<PropTipData> = {}): PropTipData {
+  return {
+    x: 475,
+    y: 475,
+    prevX: 475,
+    prevY: 475,
+    velocityX: 0,
+    velocityY: 0,
+    speed: 0,
+    accelerationX: 0,
+    accelerationY: 0,
+    propIndex: 0,
+    tipIndex: 0,
+    flameScale: 1,
+    jerk: 0,
+    ...overrides,
+  };
+}
+
+describe("2D fire quality controls", () => {
+  it("reconstructs HDR fire above the simulation grid without unbounded targets", () => {
+    expect(computeFirePresentationResolution(840, 840)).toEqual([896, 896]);
+    expect(computeFirePresentationResolution(1900, 1900)).toEqual([1024, 1024]);
+    expect(computeFirePresentationResolution(950, 475)).toEqual([960, 512]);
+    expect(computeFirePresentationResolution(950, 950, 128)).toEqual([
+      512, 512,
+    ]);
+    expect(computeFirePresentationResolution(950, 950, 128, "legacy")).toEqual([
+      128, 128,
+    ]);
+  });
+
+  it("normalizes dissipation to elapsed time instead of frame count", () => {
+    expect(computeFireStepDissipation(0.95, 1 / 60)).toBeCloseTo(0.95, 8);
+    expect(computeFireStepDissipation(0.95, 1 / 120)).toBeCloseTo(
+      Math.sqrt(0.95),
+      8
+    );
+    expect(computeFireStepDissipation(0.95, 2 / 60)).toBeCloseTo(0.95 ** 2, 8);
+  });
+
+  it("maps the semantic brightness midpoint to legacy emission", () => {
+    expect(computeFireEmissionMultiplier(0.5)).toBeCloseTo(1, 8);
+    expect(computeFireEmissionMultiplier(0)).toBeCloseTo(0.35, 8);
+    expect(computeFireEmissionMultiplier(1)).toBeCloseTo(1.65, 8);
+    expect(computeFireEmissionMultiplier(99)).toBeCloseTo(1.65, 8);
+  });
+
+  it("keeps corrected scalar transport adaptive and preserves the legacy profile", () => {
+    expect(shouldUseMacCormackScalars(undefined, 1)).toBe(true);
+    expect(shouldUseMacCormackScalars("cinematic", 4)).toBe(true);
+    expect(shouldUseMacCormackScalars("cinematic", 5)).toBe(false);
+    expect(shouldUseMacCormackScalars("legacy", 1)).toBe(false);
+  });
+
+  it("lets cinematic heat form a wake without changing Liquid Fire's decay", () => {
+    expect(computeFireTemperatureDissipation(0.93, "legacy")).toBe(0.93);
+    expect(computeFireTemperatureDissipation(0.93, "cinematic")).toBe(0.972);
+    expect(computeFireTemperatureDissipation(0.99, "cinematic")).toBe(0.99);
+    expect(computeFireCoolingRate(4, false)).toBe(4);
+    expect(computeFireCoolingRate(4, true)).toBe(1.6);
+  });
+
+  it("keeps the transported white-hot interior narrower than the orange body", () => {
+    const transportedCoreIndex = DISPLAY_FRAG.indexOf("float transportedCore");
+    const coreIndex = DISPLAY_FRAG.indexOf("float whiteCore");
+    expect(transportedCoreIndex).toBeGreaterThan(-1);
+    expect(coreIndex).toBeGreaterThan(transportedCoreIndex);
+    expect(DISPLAY_FRAG).toContain(
+      "float colorHeat = u_useReaction > 0.5 ? fireIntensity * 1.18"
+    );
+    expect(DISPLAY_FRAG).toContain(
+      "float hotVolume = smoothstep(1.15, 2.8, fireIntensity)"
+    );
+    expect(
+      DISPLAY_FRAG.indexOf(
+        "hotVolume * hotVolume * hotVolume",
+        transportedCoreIndex
+      )
+    ).toBeGreaterThan(transportedCoreIndex);
+    expect(
+      DISPLAY_FRAG.indexOf("deepInterior * deepInterior", transportedCoreIndex)
+    ).toBeGreaterThan(transportedCoreIndex);
+    expect(
+      DISPLAY_FRAG.indexOf("coreTint * whiteCore * 2.3", coreIndex)
+    ).toBeGreaterThan(coreIndex);
+    expect(DISPLAY_FRAG.indexOf("fragColor", coreIndex)).toBeGreaterThan(
+      coreIndex
+    );
+  });
+
+  it("retains a dense, field-advected ember envelope around the hot core", () => {
+    const envelopeIndex = DISPLAY_FRAG.indexOf("float emberEnvelope");
+    expect(envelopeIndex).toBeGreaterThan(-1);
+    expect(
+      DISPLAY_FRAG.indexOf("transportedDetail", envelopeIndex)
+    ).toBeGreaterThan(envelopeIndex);
+    expect(DISPLAY_FRAG).toContain("float opticalAlpha = 1.0 - exp(");
+    expect(DISPLAY_FRAG).toContain(
+      "trailAlpha = max(trailAlpha, opticalAlpha)"
+    );
+    expect(DISPLAY_FRAG).toContain("float edgeDensity");
+    expect(DISPLAY_FRAG).toContain("opticalAlpha *= edgeDensity");
+    expect(DISPLAY_FRAG).not.toContain(
+      "trailAlpha *= mix(0.58, 0.76, thermalBoundary)"
+    );
+  });
+
+  it("turns tip motion into a tapered wake direction and stretch", () => {
+    const resting = computeFireTipPresentation(createTip(), 950, 950);
+    expect(resting.directionX).toBeCloseTo(0, 8);
+    expect(resting.directionY).toBeCloseTo(1, 8);
+    expect(resting.stretch).toBeCloseTo(1, 8);
+
+    const movingRight = computeFireTipPresentation(
+      createTip({ velocityX: 1400, speed: 1400 }),
+      950,
+      950
+    );
+    expect(movingRight.directionX).toBeLessThan(-0.45);
+    expect(movingRight.stretch).toBeGreaterThan(1.8);
+    expect(movingRight.breakup).toBeGreaterThan(resting.breakup);
+
+    const movingDown = computeFireTipPresentation(
+      createTip({ velocityY: 1400, speed: 1400 }),
+      950,
+      950
+    );
+    expect(movingDown.directionY).toBeGreaterThan(0.9);
+  });
+
+  it("limits independent wick geometry to Liquid Fire", () => {
+    const wickLayer = DISPLAY_FRAG.slice(
+      DISPLAY_FRAG.indexOf("// --- Layer 2: Liquid Fire wick cores ---")
+    );
+
+    expect(wickLayer).toContain("if (u_useReaction < 0.5) {");
+    expect(wickLayer).toContain(
+      "// Liquid Fire keeps the original circular source presentation intact."
+    );
+    expect(wickLayer).not.toContain("vec4 tipShape");
+    expect(wickLayer).not.toContain("float tongueLength");
+    expect(wickLayer).not.toContain("float flameCore");
+  });
+
+  it("gates Natural Fire's motion-shaped ignition core by transported fluid", () => {
+    const coreIndex = DISPLAY_FRAG.indexOf("float ignitionCore");
+    const liquidIndex = DISPLAY_FRAG.indexOf(
+      "// --- Layer 2: Liquid Fire wick cores ---"
+    );
+
+    expect(coreIndex).toBeGreaterThan(-1);
+    expect(coreIndex).toBeLessThan(liquidIndex);
+    expect(DISPLAY_FRAG.indexOf("vec4 tipShape", coreIndex)).toBeGreaterThan(
+      coreIndex
+    );
+    expect(DISPLAY_FRAG.indexOf("float fieldSupport", coreIndex)).toBeGreaterThan(
+      coreIndex
+    );
+    expect(
+      DISPLAY_FRAG.indexOf(
+        "taperedSpine * fieldSupport * mix(0.42, 1.0, youngFlame)",
+        coreIndex
+      )
+    ).toBeGreaterThan(coreIndex);
+  });
+});
+
+describe("2D fire frame-cache budget", () => {
+  it("reserves the recording target and caps HDR frame allocation", () => {
+    const budget = 64 * 1024 * 1024;
+    expect(computeFireFrameCacheCapacity(128, 128, budget)).toBe(511);
+    expect(computeFireFrameCacheCapacity(192, 192, budget)).toBe(226);
+    expect(computeFireFrameCacheCapacity(256, 256, budget)).toBe(127);
+  });
+
+  it("bypasses recording at the exact capacity boundary", () => {
+    expect(hasReachedFireFrameCacheCapacity(126, 127)).toBe(false);
+    expect(hasReachedFireFrameCacheCapacity(127, 127)).toBe(true);
+    expect(hasReachedFireFrameCacheCapacity(0, 0)).toBe(true);
+  });
+
+  it("invalidates when every renderer-visible control changes", () => {
+    const base = {
+      ...DEFAULT_FIRE_CONFIG,
+      brightness: 0.5,
+      colorBlend: 0,
+      turbulence: 0.5,
+      bloomStrength: 0.08,
+    };
+    const input = {
+      playbackSpeed: 1,
+      sequenceContentHash: "sequence-a",
+      propColors: [{ r: 1, g: 0.25, b: 0.1 }],
+    };
+    const key = computeFireVisualCacheKey(base, input);
+
+    expect(
+      computeFireVisualCacheKey({ ...base, brightness: 0.7 }, input)
+    ).not.toBe(key);
+    expect(
+      computeFireVisualCacheKey({ ...base, turbulence: 0.7 }, input)
+    ).not.toBe(key);
+    expect(
+      computeFireVisualCacheKey({ ...base, bloomStrength: 0.12 }, input)
+    ).not.toBe(key);
+    expect(
+      computeFireVisualCacheKey(base, {
+        ...input,
+        propColors: [{ r: 0.1, g: 0.25, b: 1 }],
+      })
+    ).not.toBe(key);
+  });
+});

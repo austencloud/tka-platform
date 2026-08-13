@@ -5,8 +5,10 @@
  * that the WebGL fire renderer uses in its display shader. The curve controls
  * what the flames actually look like - cold embers through hot core.
  *
- * Presets are COLOR ONLY - they don't touch intensity, turbulence, or blend.
- * Those settings are controlled by the sliders and apply uniformly to all presets.
+ * Classic, Blue Flame, and Spirit use the natural flame profile. Liquid Fire
+ * restores the broad flowing renderer with its intended classic palette.
+ * Presets don't touch intensity, turbulence, or blend. Those settings are
+ * controlled by the sliders and apply uniformly to all presets.
  * Custom prop colours are edited in the Fire Customize panel (which sets
  * `propColors` + `colorBlend`), not via a preset chip.
  */
@@ -43,19 +45,42 @@ export const FIRE_PRESETS: EffectPreset<"fire">[] = [
     id: "fire-classic",
     name: "Classic",
     previewColor: "#f97316",
-    patch: { colorCurve: CLASSIC_CURVE, propColors: null },
+    patch: {
+      renderingStyle: "natural",
+      colorCurve: CLASSIC_CURVE,
+      propColors: null,
+    },
   },
   {
     id: "fire-blue-flame",
     name: "Blue Flame",
     previewColor: "#60a5fa",
-    patch: { colorCurve: BLUE_CURVE, propColors: null },
+    patch: {
+      renderingStyle: "natural",
+      colorCurve: BLUE_CURVE,
+      propColors: null,
+    },
   },
   {
     id: "fire-spirit",
     name: "Spirit",
     previewColor: "#a855f7",
-    patch: { colorCurve: SPIRIT_CURVE, propColors: null },
+    patch: {
+      renderingStyle: "natural",
+      colorCurve: SPIRIT_CURVE,
+      propColors: null,
+    },
+  },
+  {
+    id: "fire-liquid",
+    name: "Liquid Fire",
+    previewColor: "#ea580c",
+    patch: {
+      renderingStyle: "liquid",
+      colorBlend: 0,
+      colorCurve: CLASSIC_CURVE,
+      propColors: null,
+    },
   },
 ];
 
@@ -63,9 +88,12 @@ export const FIRE_PRESET_GROUP: EffectPresetGroup = {
   effectType: "fire",
   presets: FIRE_PRESETS,
   getSummary: (state): string => {
+    const style =
+      state.fire.renderingStyle === "liquid" ? "Liquid Fire" : "Natural Fire";
     const intensityPct = Math.round(state.fire.intensity * 100);
     const blend = state.fire.colorBlend;
-    const colorMode = blend < 0.15 ? "Natural" : blend < 0.5 ? "Tinted" : "Prop-colored";
-    return `Intensity ${intensityPct}% · ${colorMode}`;
+    const colorMode =
+      blend < 0.15 ? "Natural" : blend < 0.5 ? "Tinted" : "Prop-colored";
+    return `${style} · Intensity ${intensityPct}% · ${colorMode}`;
   },
 };

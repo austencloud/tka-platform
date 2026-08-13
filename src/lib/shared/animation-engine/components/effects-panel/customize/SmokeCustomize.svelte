@@ -21,7 +21,7 @@
     { value: "genie", label: "Genie", swatch: "#a060ff" },
     { value: "cursed", label: "Cursed", swatch: "#202020" },
     { value: "spirit", label: "Spirit", swatch: "#80c8ff" },
-    { value: "campfire", label: "Campfire", swatch: "#805040" },
+    { value: "campfire", label: "Fire smoke", swatch: "#dc6b24" },
     { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 

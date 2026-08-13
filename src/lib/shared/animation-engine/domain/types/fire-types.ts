@@ -1,4 +1,4 @@
-import type { CharcoalSparkParams } from './charcoal-spark-types';
+import type { CharcoalSparkParams } from "./charcoal-spark-types";
 /**
  * Fire Overlay Types
  *
@@ -9,6 +9,10 @@ import type { CharcoalSparkParams } from './charcoal-spark-types';
 
 /** Renderer type determines which WebGL pipeline handles this fuel */
 export type FuelRendererType = "fluid";
+
+/** Natural Fire uses the cinematic profile. The preserved legacy profile powers
+ * the user-facing Liquid Fire preset and the visual comparison harness. */
+export type FireRenderingProfile = "cinematic" | "legacy";
 
 /** Color curve for the fluid renderer's display pass.
  *  Maps normalized temperature through 4 color stops
@@ -52,6 +56,10 @@ export interface PropTipData {
   velocityY: number;
   /** Speed magnitude (viewbox units/second) */
   speed: number;
+  /** Horizontal acceleration (viewbox units/second squared) */
+  accelerationX?: number;
+  /** Vertical acceleration (viewbox units/second squared) */
+  accelerationY?: number;
   /** 0 = base blue prop, 1 = base red prop; >= 2 = overlaid tunnel-layer props
    *  (2+2*layer = layer blue, 3+2*layer = layer red). Effects filter by this. */
   propIndex: number;
@@ -157,6 +165,9 @@ export interface FirePhysicsParams {
 export interface FireOverlayConfig {
   /** Display intensity multiplier (0.1 - 3.0, default 1.0) */
   intensity: number;
+  /** HDR emission control (0-1). Changes how hot the flame photographs without
+   * changing the amount of fuel, heat, or simulated flame volume. */
+  brightness?: number;
   /** Flame height / buoyancy strength multiplier (0.3 - 3.0, default 1.0) */
   flameHeight: number;
   /** Whether fire reacts to spin velocity */
@@ -198,6 +209,8 @@ export interface FireOverlayConfig {
    *   10 = 5+ simultaneous instances
    */
   jacobiIterations?: number;
+  /** Renderer-quality profile. Omitted means the production cinematic path. */
+  renderingProfile?: FireRenderingProfile;
 }
 
 /** Default physics parameters - tuned for fire spinning (shorter trails, wick-focused) */
@@ -222,6 +235,7 @@ export const DEFAULT_PHYSICS: FirePhysicsParams = {
 /** Default fire overlay config */
 export const DEFAULT_FIRE_CONFIG: FireOverlayConfig = {
   intensity: 1.0,
+  brightness: 0.5,
   flameHeight: 1.0,
   velocityReactive: true,
   quality: 2, // 128×128 grid - fire is inherently noisy, higher resolution is imperceptible
@@ -327,7 +341,9 @@ function lerp(a: number, b: number, t: number): number {
  * Map user-facing intensity (0-1) to physics overrides.
  * 1.0 = "normal fire" (white gas baseline). 0.0 = barely visible embers.
  */
-export function intensityToPhysics(intensity: number): Partial<FirePhysicsParams> {
+export function intensityToPhysics(
+  intensity: number
+): Partial<FirePhysicsParams> {
   return {
     fuelAmount: lerp(0.2, 1.6, intensity),
     temperatureInjection: lerp(0.4, 2.2, intensity),
@@ -336,4 +352,3 @@ export function intensityToPhysics(intensity: number): Partial<FirePhysicsParams
     burnRate: lerp(2.0, 7.0, intensity),
   };
 }
-

@@ -3,7 +3,7 @@
  *
  * During the first loop of a fire-enabled sequence, the full Navier-Stokes
  * simulation runs normally. This cache captures the display shader output
- * at simulation resolution (128-256px) into a ring of RGBA8 textures.
+ * at simulation resolution (128-256px) into a bounded ring of RGBA16F textures.
  *
  * Once one complete loop is recorded, subsequent loops blit from cache:
  * 1 draw call per frame instead of ~30 simulation passes.
@@ -13,6 +13,22 @@
  */
 
 import { VERTEX_SHADER } from "./fluid-shader-sources";
+
+export const DEFAULT_FIRE_FRAME_CACHE_BUDGET_BYTES = 64 * 1024 * 1024;
+const HDR_BYTES_PER_PIXEL = 8;
+
+/** Number of HDR frames that fit after reserving one frame for the recording
+ * target. Returning zero makes the renderer stay live instead of allocating a
+ * cache that cannot hold even one reusable frame. */
+export function computeFireFrameCacheCapacity(width: number, height: number, budgetBytes = DEFAULT_FIRE_FRAME_CACHE_BUDGET_BYTES): number {
+  const bytesPerFrame = Math.max(0, Math.floor(width)) * Math.max(0, Math.floor(height)) * HDR_BYTES_PER_PIXEL;
+  if (bytesPerFrame <= 0 || budgetBytes <= bytesPerFrame) return 0;
+  return Math.max(0, Math.floor(budgetBytes / bytesPerFrame) - 1);
+}
+
+export function hasReachedFireFrameCacheCapacity(frameIndex: number, capacity: number): boolean {
+  return capacity <= 0 || frameIndex >= capacity;
+}
 
 // ============================================================
 // Blit shader: draw a cached texture to the screen
@@ -31,7 +47,7 @@ void main() {
 }
 `;
 
-type CacheState = "idle" | "recording" | "warm";
+type CacheState = "idle" | "recording" | "warm" | "bypassed";
 
 interface ShaderProgram {
   program: WebGLProgram;
@@ -54,6 +70,7 @@ export class FireFrameCache {
   // Pre-allocated texture pool to avoid per-frame GPU resource creation
   private texturePool: WebGLTexture[] = [];
   private texturePoolSize = 0;
+  private maxFrames = 0;
   private static readonly TEXTURE_BATCH_SIZE = 120;
 
   // Recording FBO: display shader renders here during recording
@@ -75,7 +92,10 @@ export class FireFrameCache {
   private displayWidth = 0;
   private displayHeight = 0;
 
-  constructor(gl: WebGL2RenderingContext) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    private readonly budgetBytes = DEFAULT_FIRE_FRAME_CACHE_BUDGET_BYTES
+  ) {
     this.gl = gl;
     this.blitProgram = this.compileBlitProgram();
   }
@@ -88,13 +108,7 @@ export class FireFrameCache {
    * @param displayHeight - Actual canvas height (for blit viewport)
    * @param configHash - Hash of fire config for invalidation
    */
-  startRecording(
-    width: number,
-    height: number,
-    displayWidth: number,
-    displayHeight: number,
-    configHash: string
-  ): void {
+  startRecording(width: number, height: number, displayWidth: number, displayHeight: number, configHash: string): boolean {
     // Clean up any previous recording
     this.releaseFrames();
 
@@ -105,14 +119,20 @@ export class FireFrameCache {
     this.configHash = configHash;
     this.frameIndex = 0;
     this.totalFrames = 0;
+    this.maxFrames = computeFireFrameCacheCapacity(width, height, this.budgetBytes);
+    if (this.maxFrames === 0) {
+      this.state = "bypassed";
+      return false;
+    }
     this.state = "recording";
 
     // Create the recording FBO at cache resolution
     this.createRecordingFBO();
 
     // Pre-allocate texture pool and persistent copy FBO to avoid per-frame GPU resource creation
-    this.ensureTexturePool(FireFrameCache.TEXTURE_BATCH_SIZE);
+    this.ensureTexturePool(Math.min(FireFrameCache.TEXTURE_BATCH_SIZE, this.maxFrames));
     this.ensureCopyFBO();
+    return true;
   }
 
   /**
@@ -127,6 +147,28 @@ export class FireFrameCache {
    */
   isRecording(): boolean {
     return this.state === "recording";
+  }
+
+  /** The loop exceeded the memory budget and should keep simulating live until
+   * a visual input changes and invalidates the cache. */
+  isBypassed(): boolean {
+    return this.state === "bypassed";
+  }
+
+  getDiagnostics(): {
+    state: CacheState;
+    totalFrames: number;
+    maxFrames: number;
+    allocatedBytes: number;
+    budgetBytes: number;
+  } {
+    return {
+      state: this.state,
+      totalFrames: this.totalFrames,
+      maxFrames: this.maxFrames,
+      allocatedBytes: (this.texturePoolSize + (this.recordingTexture ? 1 : 0)) * this.cacheWidth * this.cacheHeight * HDR_BYTES_PER_PIXEL,
+      budgetBytes: this.budgetBytes,
+    };
   }
 
   /**
@@ -147,18 +189,26 @@ export class FireFrameCache {
     return this.cacheHeight;
   }
 
+  getRecordingTexture(): WebGLTexture | null {
+    return this.recordingTexture;
+  }
+
   /**
    * Called after the display pass renders to the recording FBO.
-   * Copies the recording FBO content into a new cache texture,
-   * then blits the recording to the screen.
+   * Copies the recording FBO content into a reusable HDR cache texture.
    */
-  commitFrame(relativeTime: number): void {
-    if (this.state !== "recording") return;
+  commitFrame(relativeTime: number): boolean {
+    if (this.state !== "recording") return false;
     const gl = this.gl;
+
+    if (hasReachedFireFrameCacheCapacity(this.frameIndex, this.maxFrames)) {
+      this.bypassCurrentRecording();
+      return false;
+    }
 
     // Grow texture pool if needed (amortized O(1) - only allocates every BATCH_SIZE frames)
     if (this.frameIndex >= this.texturePoolSize) {
-      this.ensureTexturePool(this.texturePoolSize + FireFrameCache.TEXTURE_BATCH_SIZE);
+      this.ensureTexturePool(Math.min(this.texturePoolSize + FireFrameCache.TEXTURE_BATCH_SIZE, this.maxFrames));
     }
 
     // Grab pre-allocated texture from pool (zero GPU allocation this frame)
@@ -167,15 +217,8 @@ export class FireFrameCache {
     // Blit recording FBO → cache texture using persistent copy FBO
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.recordingFBO);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, this.copyFBO);
-    gl.framebufferTexture2D(
-      gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D, cacheTex, 0
-    );
-    gl.blitFramebuffer(
-      0, 0, this.cacheWidth, this.cacheHeight,
-      0, 0, this.cacheWidth, this.cacheHeight,
-      gl.COLOR_BUFFER_BIT, gl.NEAREST
-    );
+    gl.framebufferTexture2D(gl.DRAW_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, cacheTex, 0);
+    gl.blitFramebuffer(0, 0, this.cacheWidth, this.cacheHeight, 0, 0, this.cacheWidth, this.cacheHeight, gl.COLOR_BUFFER_BIT, gl.NEAREST);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
 
@@ -184,8 +227,7 @@ export class FireFrameCache {
     this.frameIndex++;
     this.totalFrames = this.frameIndex;
 
-    // Blit the recording FBO to screen
-    this.blitToScreen(this.recordingTexture!);
+    return true;
   }
 
   /**
@@ -215,7 +257,17 @@ export class FireFrameCache {
    * @returns true if a frame was blitted
    */
   blitCachedFrame(relativeTime?: number): boolean {
-    if (this.state !== "warm" || this.totalFrames === 0) return false;
+    const texture = this.getCachedFrameTexture(relativeTime);
+    if (!texture) return false;
+    this.blitTextureToScreen(texture);
+    return true;
+  }
+
+  /** Retrieve the timestamp-matched HDR frame without presenting it. The fire
+   * renderer uses this to run cached and live frames through the same bloom and
+   * tone-mapping pipeline. */
+  getCachedFrameTexture(relativeTime?: number): WebGLTexture | null {
+    if (this.state !== "warm" || this.totalFrames === 0) return null;
 
     let idx: number;
 
@@ -229,11 +281,7 @@ export class FireFrameCache {
       this.frameIndex++;
     }
 
-    const tex = this.frames[idx];
-    if (!tex) return false;
-
-    this.blitToScreen(tex);
-    return true;
+    return this.frames[idx] ?? null;
   }
 
   /**
@@ -288,6 +336,7 @@ export class FireFrameCache {
     this.state = "idle";
     this.frameIndex = 0;
     this.totalFrames = 0;
+    this.maxFrames = 0;
     this.configHash = "";
     this.loopDuration = 0;
   }
@@ -311,7 +360,7 @@ export class FireFrameCache {
   // Internal
   // ============================================================
 
-  private blitToScreen(texture: WebGLTexture): void {
+  blitTextureToScreen(texture: WebGLTexture): void {
     const gl = this.gl;
     if (!this.blitProgram) return;
 
@@ -337,18 +386,11 @@ export class FireFrameCache {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA,
-      this.cacheWidth, this.cacheHeight, 0,
-      gl.RGBA, gl.UNSIGNED_BYTE, null
-    );
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, this.cacheWidth, this.cacheHeight, 0, gl.RGBA, gl.HALF_FLOAT, null);
 
     this.recordingFBO = gl.createFramebuffer()!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.recordingFBO);
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0,
-      gl.TEXTURE_2D, this.recordingTexture, 0
-    );
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.recordingTexture, 0);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
@@ -371,6 +413,17 @@ export class FireFrameCache {
     this.frameTimes.length = 0;
   }
 
+  private bypassCurrentRecording(): void {
+    this.releaseFrames();
+    this.destroyRecordingFBO();
+    this.destroyCopyFBO();
+    this.releaseTexturePool();
+    this.state = "bypassed";
+    this.frameIndex = 0;
+    this.totalFrames = 0;
+    this.loopDuration = 0;
+  }
+
   /**
    * Pre-allocate textures up to the target size. Only allocates the delta.
    * Called once at recording start and again if recording exceeds initial estimate.
@@ -384,11 +437,7 @@ export class FireFrameCache {
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA,
-        this.cacheWidth, this.cacheHeight, 0,
-        gl.RGBA, gl.UNSIGNED_BYTE, null
-      );
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, this.cacheWidth, this.cacheHeight, 0, gl.RGBA, gl.HALF_FLOAT, null);
       this.texturePool.push(tex);
     }
     this.texturePoolSize = targetSize;
