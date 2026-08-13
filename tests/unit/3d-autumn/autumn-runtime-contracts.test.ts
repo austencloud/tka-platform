@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { Mesh, MeshStandardMaterial } from "three";
 
-import { resolveAutumnShadowRole } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-shadow-roles";
+import {
+  configureAutumnShadowMesh,
+  resolveAutumnShadowRole,
+} from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-shadow-roles";
 import { AUTUMN_MOON_DIRECTION } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-moon";
 import { resolveMotionScale } from "$lib/shared/3d/environments/primitives/motion-preference";
 import { allocateAutumnFireflies } from "$lib/shared/3d/environments/scenes/autumn/runtime/atmosphere/autumn-ground-life-layout";
 
 describe("Autumn shadow budget", () => {
-  it("casts only from compact near-field silhouettes", () => {
+  it("casts from authored near-field geometry", () => {
     for (const name of [
       "FallenLog_01",
       "Fern_12",
@@ -21,13 +25,48 @@ describe("Autumn shadow budget", () => {
     }
   });
 
-  it("keeps broad low-poly tree crowns out of the shadow pass", () => {
-    for (const name of ["HeroTreeA_01", "HeroTreeB_03", "Sapling_02"]) {
+  it("keeps named depth trees out of the shadow pass", () => {
+    for (const name of ["Sapling_02", "DistantBirch_02"]) {
       expect(resolveAutumnShadowRole(name)).toEqual({
         cast: false,
-        receive: true,
+        receive: name.startsWith("Sapling"),
       });
     }
+  });
+
+  it("casts from the actual named Hero A mesh", () => {
+    const material = new MeshStandardMaterial();
+    const heroTree = new Mesh(undefined, material);
+    heroTree.name = "HeroTreeA_01_0";
+
+    expect(resolveAutumnShadowRole(heroTree.name)).toEqual({
+      cast: true,
+      receive: true,
+    });
+
+    configureAutumnShadowMesh(heroTree, true);
+    expect(heroTree.castShadow).toBe(true);
+    expect(heroTree.receiveShadow).toBe(true);
+    expect(heroTree.material).toBe(material);
+    expect(material.colorWrite).toBe(true);
+    expect(material.depthWrite).toBe(true);
+
+    configureAutumnShadowMesh(heroTree, false);
+    expect(heroTree.castShadow).toBe(false);
+  });
+
+  it("recognizes the optimizer's unnamed Hero B and sapling batch by material", () => {
+    const material = new MeshStandardMaterial();
+    material.name = "Autumn Hero B PBR";
+    const heroTreeBatch = new Mesh(undefined, material);
+
+    expect(resolveAutumnShadowRole("", [material.name])).toEqual({
+      cast: true,
+      receive: true,
+    });
+    configureAutumnShadowMesh(heroTreeBatch, true);
+    expect(heroTreeBatch.castShadow).toBe(true);
+    expect(heroTreeBatch.receiveShadow).toBe(true);
   });
 
   it("keeps ground surfaces as receivers so contact reads without a depth pass", () => {
@@ -54,7 +93,7 @@ describe("Autumn shadow budget", () => {
   });
 
   it("excludes every distant tree layer and the wind-owned grass entirely", () => {
-    // Every depth tier sits outside the +/-12 shadow camera, so casting from it
+    // Every depth tier sits outside the +/-20 shadow camera, so casting from it
     // would pay a depth pass that can never darken a performance-space pixel.
     for (const name of [
       "DistantBirch_02",

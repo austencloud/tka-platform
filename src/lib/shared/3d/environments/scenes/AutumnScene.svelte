@@ -13,15 +13,12 @@
   import { FogExp2, Color } from "three";
   import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
-  import {
-    detectAutumnQuality,
-    getAutumnQualityConfig,
-  } from "./autumn/quality/autumn-quality";
+  import { getAutumnQualityConfig } from "./autumn/quality/autumn-quality";
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
   import AutumnRuntimeSystems from "./autumn/runtime/AutumnRuntimeSystems.svelte";
   import { AUTUMN_POND_LAYOUT } from "./autumn/runtime/water/autumn-pond-layout";
   import { AUTUMN_MOON_VISUAL_DIRECTION } from "./autumn/runtime/lighting/autumn-moon";
-  import { resolveAutumnShadowRole } from "./autumn/runtime/lighting/autumn-shadow-roles";
+  import { configureAutumnShadowMesh } from "./autumn/runtime/lighting/autumn-shadow-roles";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import Starfield from "../primitives/Starfield.svelte";
   import Stage3D from "../../components/Stage3D.svelte";
@@ -45,16 +42,16 @@
 
   // ── Quality detection ─────────────────────────────────────────────────
 
-  // `scene` and `renderer` are plain objects on the Threlte context; only
-  // `camera` is a CurrentWritable. Every other scene destructures this without
-  // a cast, so this one does too.
-  const { scene, renderer } = useThrelte();
+  // The shared viewer owns capability detection and live frame-pressure
+  // adaptation. A standalone preview without that context starts at medium,
+  // which is the same safe server/test fallback the viewer uses.
+  const { scene } = useThrelte();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
 
   const tier = $derived(
     autumnQualityOverride.tier !== "auto"
       ? autumnQualityOverride.tier
-      : (adaptiveQuality?.tier ?? detectAutumnQuality(renderer))
+      : (adaptiveQuality?.tier ?? "medium")
   );
   const quality = $derived(getAutumnQualityConfig(tier));
 
@@ -99,9 +96,7 @@
     loaded.traverse((child) => {
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
-      const role = resolveAutumnShadowRole(child.name);
-      mesh.castShadow = shadowsOn && role.cast;
-      mesh.receiveShadow = shadowsOn && role.receive;
+      configureAutumnShadowMesh(mesh, shadowsOn);
     });
   });
 

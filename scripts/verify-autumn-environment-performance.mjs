@@ -3,6 +3,8 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { AUTUMN_DEPTH_MATERIAL_GRADES } from "./autumn-depth-material-grades.mjs";
+import { AUTUMN_HERO_MATERIAL_GRADES } from "./autumn-hero-material-grades.mjs";
 
 const glbPath = resolve("static/models/autumn/autumn-environment.glb");
 const groundDetailPath = resolve(
@@ -128,12 +130,34 @@ const owlTreeNode = meshNodes.find((node) => node.name === "HeroTreeA_03_0");
 const groundMaterial = (gltf.materials ?? []).find(
   (material) => material.name === "Autumn Living Forest Floor"
 );
+const importedTreeMaterialPrefixes = [
+  ...Object.values(AUTUMN_HERO_MATERIAL_GRADES),
+  ...Object.values(AUTUMN_DEPTH_MATERIAL_GRADES),
+].map((profile) => profile.prefix);
+const importedTreeMaterialMatches = Object.fromEntries(
+  importedTreeMaterialPrefixes.map((prefix) => [
+    prefix,
+    (gltf.materials ?? [])
+      .map((material) => material.name ?? "")
+      .filter((name) => name.startsWith(prefix)),
+  ])
+);
 
 invariant(terrainNode, "Autumn terrain node is missing");
 invariant(owlTreeNode, "Owl tree node HeroTreeA_03_0 is missing");
 invariant(groundMaterial, "Autumn living forest floor material is missing");
-const groundTextureIndex = groundMaterial.pbrMetallicRoughness?.baseColorTexture?.index;
-invariant(Number.isInteger(groundTextureIndex), "Ground base-color texture is missing");
+for (const prefix of importedTreeMaterialPrefixes) {
+  invariant(
+    importedTreeMaterialMatches[prefix].length > 0,
+    `Optimized Autumn GLB lost material family ${prefix}`
+  );
+}
+const groundTextureIndex =
+  groundMaterial.pbrMetallicRoughness?.baseColorTexture?.index;
+invariant(
+  Number.isInteger(groundTextureIndex),
+  "Ground base-color texture is missing"
+);
 const groundImage = textureImage(gltf, gltf.textures[groundTextureIndex]);
 const groundTextureDimensions = ktx2Dimensions(
   buffer,
@@ -232,11 +256,13 @@ console.log(
       meshes: gltf.meshes?.length ?? 0,
       nodes: gltf.nodes?.length ?? 0,
       textures: gltf.textures?.length ?? 0,
+      importedTreeMaterialMatches,
       ground: {
         treatment: terrainNode.extras.tka_ground_treatment,
         texture: groundImage.name,
         dimensions: groundTextureDimensions,
-        colorTexCoord: groundMaterial.pbrMetallicRoughness.baseColorTexture.texCoord,
+        colorTexCoord:
+          groundMaterial.pbrMetallicRoughness.baseColorTexture.texCoord,
         detailTexCoord: groundMaterial.normalTexture?.texCoord ?? 0,
         tiledColorDetail: {
           path: groundDetailPath,
@@ -247,8 +273,7 @@ console.log(
         strategy: owlTreeNode.extras.tka_grounding_strategy,
         depth: owlTreeNode.extras.tka_grounding_depth,
         samples: owlTreeNode.extras.tka_root_contact_samples,
-        maximumClearanceAfter:
-          owlTreeNode.extras.tka_root_max_clearance_after,
+        maximumClearanceAfter: owlTreeNode.extras.tka_root_max_clearance_after,
       },
       fern: {
         instances: fernInstances,

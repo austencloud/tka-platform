@@ -81,7 +81,9 @@ TREE_PLACEMENTS = (
     ("HeroTreeA_04", "HeroA", -20.5, -0.4, 10.4, 0.72, 1.0, True, 2.25),
     ("HeroTreeB_01", "HeroB", -18.2, -9.2, 10.8, -0.58, 1.0, False, 2.45),
     ("HeroTreeB_02", "HeroB", 16.0, -6.8, 8.4, 1.94, 0.86, False, 1.95),
-    ("HeroTreeB_03", "HeroB", -10.4, 16.8, 9.6, 2.66, 1.0, True, 2.20),
+    # HeroTreeB_03 was removed after exact-view review. Its pale photographic
+    # atlas never shared the foreground grove's material language, and its
+    # back-left placement made that mismatch a focal point from the stage.
     ("HeroTreeB_04", "HeroB", 20.4, 14.6, 12.2, -1.05, 1.08, True, 2.45),
 )
 
@@ -97,7 +99,6 @@ HERO_TREE_SHAPE_VARIANTS = {
     "HeroTreeA_04": ((0.92, 1.05), (-0.022, -0.041)),
     "HeroTreeB_01": ((1.08, 0.94), (0.032, -0.018)),
     "HeroTreeB_02": ((0.94, 1.08), (-0.041, 0.024)),
-    "HeroTreeB_03": ((1.05, 0.93), (0.019, 0.043)),
     "HeroTreeB_04": ((0.95, 1.06), (-0.028, -0.035)),
 }
 
@@ -2975,7 +2976,10 @@ def verify_ecology(
         if math.hypot(x, y) < CLEARING_RADIUS + 0.20 or in_pond(x, y, margin=0.30)
     ]
     expected_grass = {"base": 500, "medium": 600, "high": 900}
-    leaf_expected = 3504
+    # Every hero root drift authors 64 placements and doubles them into two
+    # depth layers. Keep the contract joined to TREE_PLACEMENTS so an approved
+    # tree removal cannot leave the asset builder expecting an orphaned drift.
+    leaf_expected = 2480 + len(TREE_PLACEMENTS) * 128
     count_errors = {
         tier: len(grass_positions[tier])
         for tier, expected in expected_grass.items()

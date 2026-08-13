@@ -175,6 +175,7 @@
 <div class="page">
   <Canvas
     dpr={renderDpr}
+    shadows
     createRenderer={(canvas) =>
       new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
   >

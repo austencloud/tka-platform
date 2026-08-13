@@ -5,13 +5,11 @@
  * caster set is deliberate. A caster costs a second depth rasterisation every
  * frame, so the list is limited to things whose silhouette actually lands
  * inside the clearing-sized shadow camera and reads at performance distance:
- * logs, boulders, ferns and the owl.
+ * the eleven imported foreground trees, logs, boulders, ferns and the owl.
  *
- * The imported hero-tree crowns are intentionally receive-only. Their broad,
- * low-poly leaf clusters project metre-wide polygon islands onto the terrain,
- * making the shadow pass look like broken ground texturing. The trunks and
- * roots still receive the moon key and every smaller prop keeps its contact
- * shadow, while the authored floor remains legible across the clearing.
+ * Hero trees cast from their loaded GLB geometry. That costs more than an
+ * approximation, but it keeps every trunk, branch, root, and crown projection
+ * joined to the object the viewer can actually see.
  *
  * The near belt and the new middle/far depth groves are excluded on purpose.
  * They begin outside the clearing-sized shadow camera and continue beyond the
@@ -27,9 +25,13 @@
  * small procedural fungi, birches, snags, the Poly Haven rocks) into unnamed
  * InstancedMesh batches. Those hit the receive-only default rather than the
  * caster list. That is the right outcome anyway - they are small understory and
- * far-belt geometry - but it does mean the caster prefixes below only ever
- * match the individually-named hero geometry that survives instancing.
+ * far-belt geometry. Hero B is the exception: its three hero placements and
+ * four saplings collapse into one unnamed InstancedMesh. Shadow participation
+ * applies to the whole batch, so its authored material name is part of the
+ * role contract alongside the individually named Hero A meshes.
  */
+
+import type { Mesh } from "three";
 
 export interface AutumnShadowRole {
   cast: boolean;
@@ -39,6 +41,9 @@ export interface AutumnShadowRole {
 const NEITHER: AutumnShadowRole = { cast: false, receive: false };
 const RECEIVE_ONLY: AutumnShadowRole = { cast: false, receive: true };
 const CAST_AND_RECEIVE: AutumnShadowRole = { cast: true, receive: true };
+
+const HERO_TREE_PREFIXES = ["HeroTreeA_", "HeroTreeB_"];
+const HERO_TREE_MATERIAL_PREFIXES = ["Autumn Hero A PBR", "Autumn Hero B PBR"];
 
 /** Owned by AutumnWind, or too far out to reach the shadow camera. */
 const EXCLUDED_PREFIXES = [
@@ -88,10 +93,37 @@ function hasPrefix(name: string, prefixes: readonly string[]): boolean {
  * object picks up contact darkening from its neighbours without silently
  * adding another full-geometry depth pass.
  */
-export function resolveAutumnShadowRole(name: string): AutumnShadowRole {
+export function resolveAutumnShadowRole(
+  name: string,
+  materialNames: readonly string[] = []
+): AutumnShadowRole {
+  if (
+    hasPrefix(name, HERO_TREE_PREFIXES) ||
+    materialNames.some((materialName) =>
+      hasPrefix(materialName, HERO_TREE_MATERIAL_PREFIXES)
+    )
+  ) {
+    return CAST_AND_RECEIVE;
+  }
   if (!name) return RECEIVE_ONLY;
   if (hasPrefix(name, EXCLUDED_PREFIXES)) return NEITHER;
   if (hasPrefix(name, RECEIVER_PREFIXES)) return RECEIVE_ONLY;
   if (hasPrefix(name, CASTER_PREFIXES)) return CAST_AND_RECEIVE;
   return RECEIVE_ONLY;
+}
+
+/** Applies the authored role to one loaded mesh. */
+export function configureAutumnShadowMesh(
+  mesh: Mesh,
+  shadowsOn: boolean
+): void {
+  const materials = Array.isArray(mesh.material)
+    ? mesh.material
+    : [mesh.material];
+  const role = resolveAutumnShadowRole(
+    mesh.name,
+    materials.map((material) => material.name)
+  );
+  mesh.castShadow = shadowsOn && role.cast;
+  mesh.receiveShadow = shadowsOn && role.receive;
 }

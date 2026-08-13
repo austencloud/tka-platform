@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { MeshStandardMaterial, Texture, Vector2 } from "three";
 
-import { patchRootedWindMaterial } from "$lib/shared/3d/environments/primitives/rooted-wind-material";
+import {
+  inheritRootedWindPatch,
+  patchRootedWindMaterial,
+} from "$lib/shared/3d/environments/primitives/rooted-wind-material";
 import { sampleAutumnLanternFlicker } from "$lib/shared/3d/environments/scenes/autumn/runtime/lighting/autumn-lantern-flicker";
 import { patchAutumnGroundDetailMaterial } from "$lib/shared/3d/environments/scenes/autumn/runtime/ground/autumn-ground-detail";
 import {
@@ -39,7 +42,7 @@ describe("Autumn finish systems", () => {
     const shader = {
       uniforms: {},
       vertexShader: "#include <common>\n#include <begin_vertex>",
-      fragmentShader: "",
+      fragmentShader: "#include <common>\n#include <map_fragment>",
     };
 
     material.onBeforeCompile(shader as never, {} as never);
@@ -48,6 +51,15 @@ describe("Autumn finish systems", () => {
     expect(material.forceSinglePass).toBe(true);
     expect(shader.vertexShader).toContain("uRootedWindSpatialVariation");
     expect(shader.vertexShader).toContain("rootedWindZoneStrength");
+    expect(shader.fragmentShader).toContain("uRootedWindRootDarkening");
+    expect(shader.fragmentShader).toContain("rootedWindColorNoise");
+    expect(uniforms.rootDarkening.value).toBe(0);
+    expect(uniforms.colorVariation.value).toBe(0);
+
+    const clone = material.clone();
+    inheritRootedWindPatch(material, clone);
+    expect(clone.onBeforeCompile).toBe(material.onBeforeCompile);
+    expect(clone.customProgramCacheKey()).toBe(material.customProgramCacheKey());
   });
 
   it("combines leaf-scale colour with the authored ground atlas", () => {

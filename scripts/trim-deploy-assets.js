@@ -15,6 +15,10 @@ import {
 } from "fs";
 import { join } from "path";
 import { normalizeCloudflareRouteRules } from "./cloudflare-route-rules.js";
+import {
+  DEPLOY_DIRECTORY_FILE_ALLOWLISTS,
+  getDisallowedDeployEntries,
+} from "./deploy-asset-trim-policy.js";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 const OUTPUT_DIR = ".svelte-kit/cloudflare";
@@ -57,12 +61,7 @@ const DIRS_TO_REMOVE = [
 // Individual dev-only files that live in static/ and would otherwise ship.
 // Same reasoning as the sketches directory above.
 //
-// The Autumn entries are Blender/forest BUILD INPUTS, not runtime assets. Grep
-// proof: the only runtime fetch under models/autumn is
-// `/models/autumn/autumn-environment.glb` (AutumnScene.svelte), and nothing
-// fetches textures/autumn-floor at all — those PNGs are bake inputs for
-// build-autumn-floor-textures.mjs and build-autumn-environment.py.
-//
+// The Autumn model entries are Blender/forest BUILD INPUTS, not runtime assets.
 // They are trimmed from the deploy output rather than deleted from the repo
 // because three of them are still needed on disk: forest-tree-layout.json
 // consumes autumn-snag.glb, golden-larch.glb and autumn-willow.glb as
@@ -80,12 +79,6 @@ const FILES_TO_REMOVE = [
   "models/autumn/autumn-snag.glb",
   "models/autumn/autumn-willow.glb",
   "models/autumn/golden-larch.glb",
-  // Floor bake inputs. The shipped GLB carries these baked into its own
-  // KTX2 textures; the source maps are never requested by the browser.
-  "textures/autumn-floor/albedo-source.png",
-  "textures/autumn-floor/albedo.png",
-  "textures/autumn-floor/normal.png",
-  "textures/autumn-floor/roughness.png",
 ];
 
 // Raw Meshy/Blender source GLBs. These are gitignored, but .gitignore does not
@@ -112,7 +105,9 @@ function walk(dir) {
         rawRemovedBytes += size;
         unlinkSync(fullPath);
       } else if (size > MAX_BYTES) {
-        console.log(`  Removing ${fullPath} (${(size / 1024 / 1024).toFixed(1)} MiB)`);
+        console.log(
+          `  Removing ${fullPath} (${(size / 1024 / 1024).toFixed(1)} MiB)`
+        );
         unlinkSync(fullPath);
       }
     }
@@ -137,6 +132,39 @@ for (const file of FILES_TO_REMOVE) {
     unlinkSync(fullPath);
     console.log(`  Removed ${fullPath}`);
   }
+}
+
+// Autumn's floor directory is a texture workshop, not a runtime bundle. The
+// GLB carries the baked macro atlas, and the browser fetches exactly one loose
+// detail map. An allowlist prevents future bake outputs from silently shipping
+// just because Vite copied `static/` into the Cloudflare artifact.
+for (const [directory, allowedEntries] of Object.entries(
+  DEPLOY_DIRECTORY_FILE_ALLOWLISTS
+)) {
+  const fullPath = join(OUTPUT_DIR, directory);
+  if (!existsSync(fullPath)) continue;
+
+  const entries = readdirSync(fullPath, { withFileTypes: true });
+  const entriesByName = new Map(entries.map((entry) => [entry.name, entry]));
+  const disallowed = getDisallowedDeployEntries(
+    entries.map((entry) => entry.name),
+    allowedEntries
+  );
+  let removedBytes = 0;
+  for (const entryName of disallowed) {
+    const entry = entriesByName.get(entryName);
+    if (!entry) continue;
+    const entryPath = join(fullPath, entryName);
+    if (entry.isDirectory()) {
+      rmSync(entryPath, { recursive: true, force: true });
+    } else {
+      removedBytes += statSync(entryPath).size;
+      unlinkSync(entryPath);
+    }
+  }
+  console.log(
+    `  Kept ${allowedEntries.length} runtime file${allowedEntries.length === 1 ? "" : "s"} in ${fullPath}; removed ${disallowed.length} build entr${disallowed.length === 1 ? "y" : "ies"} (${(removedBytes / 1024 / 1024).toFixed(1)} MiB)`
+  );
 }
 
 console.log("Trimming raw source models and files > 25 MiB...");

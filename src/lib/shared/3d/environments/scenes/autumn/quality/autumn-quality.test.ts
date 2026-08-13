@@ -5,8 +5,8 @@ describe("getAutumnQualityConfig", () => {
   it("scales detail down with tier", () => {
     const high = getAutumnQualityConfig("high");
     const low = getAutumnQualityConfig("low");
-    expect(low.fillTreeCount).toBeLessThan(high.fillTreeCount);
     expect(low.leafCount).toBeLessThan(high.leafCount);
+    expect(low.wispCount).toBeLessThan(high.wispCount);
   });
 
   it("spends the shadow pass only where the GPU can afford it", () => {

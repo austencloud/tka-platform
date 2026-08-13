@@ -22,7 +22,7 @@ describe("Autumn scene layout", () => {
     expect(high.shadows).toBe(true);
     expect(medium.shadows).toBe(true);
     expect(low.shadows).toBe(false);
-    expect(medium.fillTreeCount).toBeLessThan(high.fillTreeCount);
+    expect(medium.leafCount).toBeLessThan(high.leafCount);
   });
 
   it("keeps the authored pond outside the protected performance clearing", () => {

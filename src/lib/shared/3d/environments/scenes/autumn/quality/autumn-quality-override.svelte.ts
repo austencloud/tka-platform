@@ -1,9 +1,9 @@
 import type { AutumnQualityTier } from "./autumn-quality";
 
-// Dev-only manual override of the auto-detected autumn quality tier. "auto"
-// defers to detectAutumnQuality(); any concrete tier forces that tier. Written
-// by the right-rail Dev Tools pill group, read by AutumnScene. In-memory only —
-// resets to "auto" on reload.
+// Dev-only manual override of the shared adaptive quality tier. "auto" follows
+// the renderer capability and live frame-pressure owner; any concrete tier
+// forces that tier. Written by the right-rail Dev Tools pill group, read by
+// AutumnScene. In-memory only, so it resets to "auto" on reload.
 let _tierOverride = $state<AutumnQualityTier | "auto">("auto");
 
 export const autumnQualityOverride = {

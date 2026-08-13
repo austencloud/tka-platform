@@ -1,9 +1,6 @@
-import type { WebGLRenderer } from "three";
-
 export type AutumnQualityTier = "low" | "medium" | "high";
 
 export interface AutumnQualityConfig {
-  fillTreeCount: number;
   leafCount: number;
   sporeCount: number;
   fireflyCount: number;
@@ -23,7 +20,6 @@ export interface AutumnQualityConfig {
 
 const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
   high: {
-    fillTreeCount: 36,
     leafCount: 140,
     sporeCount: 60,
     fireflyCount: 36,
@@ -32,7 +28,6 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
     shadowMapSize: 2048,
   },
   medium: {
-    fillTreeCount: 28,
     leafCount: 90,
     sporeCount: 40,
     fireflyCount: 24,
@@ -41,7 +36,6 @@ const CONFIGS: Record<AutumnQualityTier, AutumnQualityConfig> = {
     shadowMapSize: 1024,
   },
   low: {
-    fillTreeCount: 18,
     leafCount: 50,
     sporeCount: 20,
     fireflyCount: 12,
@@ -55,32 +49,4 @@ export function getAutumnQualityConfig(
   tier: AutumnQualityTier
 ): AutumnQualityConfig {
   return CONFIGS[tier];
-}
-
-/**
- * Detects the appropriate quality tier for the current device.
- *
- *   - null renderer → "medium" (SSR / test environment, assume mid-range)
- *   - mobile UA, known low-end GPU string, or <= 4 cores → "low"
- *   - integrated GPU (Intel/UHD/Iris) → "medium"
- *   - everything else (discrete GPU, high core count) → "high"
- */
-export function detectAutumnQuality(
-  renderer: WebGLRenderer | null
-): AutumnQualityTier {
-  if (!renderer) return "medium";
-
-  const gl = renderer.getContext();
-  const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-  const gpuRenderer: string = debugInfo
-    ? (gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) as string)
-    : "";
-
-  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  const isLowEnd = /SwiftShader|llvmpipe|Mali-4|Adreno [23]/i.test(gpuRenderer);
-  const cores = navigator.hardwareConcurrency ?? 4;
-
-  if (isMobile || isLowEnd || cores <= 4) return "low";
-  if (/Intel|integrated|UHD|Iris/i.test(gpuRenderer)) return "medium";
-  return "high";
 }
