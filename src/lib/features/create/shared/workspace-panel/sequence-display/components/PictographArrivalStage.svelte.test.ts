@@ -1,8 +1,15 @@
 import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { describe, expect, it, vi } from "vitest";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import {
+  MotionColor,
+  MotionType,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 vi.mock(
   "$lib/shared/pictograph/shared/components/PictographContainer.svelte",
@@ -36,6 +43,44 @@ const sequence = {
 } satisfies SequenceData;
 
 describe("PictographArrivalStage audition", () => {
+  it("uses the candidate's effective rotation to expose the preview clock", async () => {
+    const highTurnStep = createStepData({
+      id: "high-turn-step",
+      stepNumber: 2,
+      motions: {
+        blue: createMotionData({
+          color: MotionColor.BLUE,
+          motionType: MotionType.STATIC,
+          rotationDirection: RotationDirection.CLOCKWISE,
+          turns: 3,
+        }),
+      },
+    });
+
+    render(PictographArrivalStage, {
+      request: {
+        intent: "audition",
+        stepIndex: 1,
+        requestId: 6,
+        owner: "stage",
+        phase: "preview",
+      },
+      sequence: { ...sequence, steps: [firstStep, highTurnStep] },
+      getDestinationRect: () => null,
+      onBeginLanding: vi.fn(),
+      onBeginHandoff: vi.fn(),
+      onComplete: vi.fn(),
+    });
+
+    const pictograph = page
+      .getByTestId("arrival-pictograph")
+      .element() as HTMLElement;
+    expect(
+      pictograph.closest<HTMLElement>("[data-arrival-intent='audition']")
+        ?.dataset.propMotionDurationMs
+    ).toBe("1500");
+  });
+
   it("animates from the preceding beat and holds without landing", async () => {
     const onBeginLanding = vi.fn();
     const onBeginHandoff = vi.fn();
@@ -86,5 +131,41 @@ describe("PictographArrivalStage audition", () => {
     expect(onBeginLanding).not.toHaveBeenCalled();
     expect(onBeginHandoff).not.toHaveBeenCalled();
     expect(onComplete).not.toHaveBeenCalled();
+  });
+});
+
+describe("PictographArrivalStage commit", () => {
+  it("releases the final grid before measuring the landing destination", async () => {
+    const landingOrder: string[] = [];
+    const onBeginLanding = vi.fn(() => landingOrder.push("release-grid"));
+    const getDestinationRect = vi.fn(() => {
+      landingOrder.push("measure-destination");
+      return { left: 24, top: 24, width: 96, height: 96 };
+    });
+
+    render(PictographArrivalStage, {
+      request: {
+        intent: "commit",
+        stepIndex: 1,
+        requestId: 8,
+        owner: "stage",
+        phase: "preview",
+      },
+      sequence,
+      getDestinationRect,
+      onBeginLanding,
+      onBeginHandoff: vi.fn(),
+      onComplete: vi.fn(),
+    });
+
+    await vi.waitFor(
+      () => {
+        expect(getDestinationRect).toHaveBeenCalledOnce();
+      },
+      { timeout: 3000 }
+    );
+
+    expect(onBeginLanding).toHaveBeenCalledWith(8);
+    expect(landingOrder).toEqual(["release-grid", "measure-destination"]);
   });
 });

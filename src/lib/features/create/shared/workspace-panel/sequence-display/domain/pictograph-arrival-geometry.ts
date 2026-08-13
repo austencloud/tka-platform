@@ -12,19 +12,6 @@ export interface PictographArrivalTransform {
   scaleY: number;
 }
 
-export function translateArrivalRect(
-  rect: ArrivalRect,
-  translateX: number,
-  translateY: number
-): ArrivalRect {
-  return {
-    left: rect.left + translateX,
-    top: rect.top + translateY,
-    width: rect.width,
-    height: rect.height,
-  };
-}
-
 export function hasUsableArrivalRect(rect: ArrivalRect): boolean {
   return (
     Number.isFinite(rect.left) &&

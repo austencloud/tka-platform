@@ -1,6 +1,6 @@
 # Pictograph Arrival Stage
 
-**Status:** Implemented; browser verification pending
+**Status:** Implemented and browser-verified 2026-08-12
 
 **Date:** 2026-08-06
 
@@ -31,8 +31,9 @@ idle -> preparing -> entering -> moving -> holding -> landing -> handing-off -> 
    during this focus pull.
 2. The glyph is visible at bottom-left and the step number at top-left. Arrows
    begin hidden.
-3. The props animate to the committed step's ending pose while the arrow layer
-   fades from hidden to fully visible on the same progress clock.
+3. The props animate to the committed step's ending pose at a rate derived from
+   the larger Blue or Red effective staff rotation. The arrow layer fades from
+   hidden to fully visible on the same progress clock.
 4. The completed pictograph remains still long enough to read.
 5. The entire pictograph shrinks and moves into the measured destination slot
    while the scrim fades out.
@@ -45,7 +46,7 @@ The stage never renders a mandala.
 
 - Card focus pull: 280ms
 - Vignette fade: 350ms after a 50ms delay, peaking at 58% opacity
-- Prop motion and arrow fade: 850ms
+- Prop motion and arrow fade: 850ms to 2000ms, based on effective rotation
 - Completed-pictograph hold: 120ms
 - Landing: 280ms
 - Stage-to-cell overlap: one painted frame
@@ -54,6 +55,27 @@ The start pose remains visible throughout the focus pull. The card uses a
 decelerating scale with no bounce, blur, or directional slide because this
 animation repeats after every committed option. These values are tuning targets
 and may move after frame review, but the phase ordering is fixed.
+
+### Prop-rate contract
+
+The instructional prop motion uses linear progress. Card entrance, scrim, and
+grid landing retain their own easing because they describe interface geometry,
+not the authored prop rotation.
+
+The preview gives Blue and Red one shared clock. Its duration is calculated from
+the larger absolute `staffRotationDelta` returned by the canonical animation
+endpoint calculator:
+
+```text
+duration = clamp(max(850ms, effectiveDegrees / 360° per second), 850ms, 2000ms)
+```
+
+Raw turn count is not the timing input. A zero-turn shift still contains base
+rotation, while a zero-turn dash or static can contain no staff rotation. Using
+the effective delta keeps the preview aligned with the renderer's actual path.
+The 850ms floor keeps ordinary options readable, and the 2000ms cap keeps the
+frequent option-selection interaction responsive. This clock affects only the
+arrival preview. It does not write or reinterpret the step's authored duration.
 
 ### Expert-speed behavior
 
@@ -101,24 +123,31 @@ step does not make every existing pictograph jump to a newly optimized table:
 - Workspaces below the existing narrow breakpoint retain the responsive
   readability policy. Timeline mode retains its duration-based row contract.
 
-When an intentional structural change remains, persistent standard-grid items
-use Svelte's size-aware FLIP animation for 280ms. The Start tile, existing step
-cells, and retained mandalas translate and scale from their previous rectangles.
-The grid's vertical centering uses an explicit pixel offset rather than `auto`
-margins.
+When an intentional structural change remains outside an arrival, persistent
+standard-grid items use Svelte's size-aware FLIP animation. Arrival owns a
+stronger coordinated transaction that works in both the standard grid and the
+duration-based timeline layout.
 
-An append that creates a row establishes its arrival request before the grid DOM
-updates. The grid holds the previous row count's center offset throughout the
-preview. The landing phase then releases that offset in the same state flush that
-starts the card's contraction. Grid movement, card contraction, and scrim fade
-share one 280ms duration and one easing curve. Before that release, the landing
-target is measured and translated by the difference between the held and final
-center offsets, so the card flies to the grid's final slot rather than chasing a
-moving destination. Once the grid exceeds the available height, the final offset
-reaches zero and the scroll surface stays pinned to the top.
+The document commits the new step immediately, but the grid's presentation list
+omits that staged final step throughout preview. At the start of landing, the
+workspace captures the real rectangles of the Start tile, every retained step,
+and retained mandala cells. The same synchronous state flush changes the arrival
+request to `landing`, which inserts the complete final layout. Auto-scroll is
+applied before the final rectangles are read.
+
+Each retained grid item then receives an inverse translate-and-scale transform
+from its captured rectangle to its final rectangle. The transform origin is the
+top-left corner so the first animated frame exactly matches the held geometry,
+including simultaneous movement and resizing. The incoming card targets the
+new cell's real final rectangle. Grid movement, card contraction, and scrim fade
+share the same 280ms duration and `cubic-bezier(0.4, 0, 0.2, 1)` easing. No
+predicted or center-offset-adjusted target rectangle is used.
+
 The arriving destination stays hidden because the arrival stage owns its entry.
-Deletion and clear workflows keep their existing motion and suppress this FLIP.
-Reduced motion collapses the duration to zero.
+Svelte's declarative FLIP and the grid surface transition are disabled during
+this transaction so transforms cannot compound. Deletion and clear workflows
+keep their existing motion. Reduced motion collapses the geometric duration to
+zero.
 
 ## Ownership and Reuse
 
@@ -190,6 +219,28 @@ flight has finished.
 - Exercise 3 to 4 steps, 4 to 5 steps, and a non-LOOP to LOOP column change.
 - Capture and inspect 1920x1080, 2560x1440, 3840x2160, 1440x900,
   820x1180, 960x412, and 375x667.
+
+### 2026-08-12 verification record
+
+- A 4-to-5 step arrival was sampled throughout landing. An existing step began
+  at its exact held rectangle (`396.54, 236.63, 302.00`) and progressed through
+  seven distinct translated and scaled frames before settling at
+  (`276.05, 357.63, 180.99`).
+- The Start tile was sampled independently. It began at its exact held rectangle
+  (`94.55, 236.63, 302.00`) and progressed through six distinct frames before
+  settling at (`95.06, 357.63, 180.99`).
+- The stage card and all retained grid items used a 280ms landing with
+  `cubic-bezier(0.4, 0, 0.2, 1)`.
+- The required viewport set was captured and inspected. The page reported no
+  console warnings or errors after the responsive sweep.
+- Focused unit coverage passed 14 tests across arrival presentation, geometry,
+  rate calculation, and state ownership. Chromium component coverage passed all
+  3 arrival-stage tests, including release-before-destination-measure ordering.
+- On 2026-08-12, prop timing was changed from fixed 850ms cubic easing to a
+  linear, effective-rotation-aware clock. Runtime sampling measured a 3-turn
+  shift at 1750ms with progress `0.0000, 0.1333, 0.2762, 0.4095, 0.5619,
+0.6953, 0.8476, 0.9714` across roughly 250ms intervals. A zero-turn option
+  retained the 850ms floor. The console reported no warnings or errors.
 
 ## Acceptance Criteria
 

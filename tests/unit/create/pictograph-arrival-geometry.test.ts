@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   calculatePictographArrivalTransform,
   hasUsableArrivalRect,
-  translateArrivalRect,
 } from "$lib/features/create/shared/workspace-panel/sequence-display/domain/pictograph-arrival-geometry";
 
 describe("pictograph arrival geometry", () => {
@@ -30,15 +29,5 @@ describe("pictograph arrival geometry", () => {
         { left: Number.NaN, top: 20, width: 50, height: 50 }
       )
     ).toBeNull();
-  });
-
-  it("targets the cell's final center while the grid is still held", () => {
-    expect(
-      translateArrivalRect(
-        { left: 120, top: 500, width: 96, height: 96 },
-        0,
-        -80
-      )
-    ).toEqual({ left: 120, top: 420, width: 96, height: 96 });
   });
 });

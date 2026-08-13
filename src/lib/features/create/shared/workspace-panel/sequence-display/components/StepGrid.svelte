@@ -35,10 +35,8 @@
     clampTimelineUnitSizeToHeight,
   } from "$lib/shared/create/utils/grid-calculations";
   import { formatDurationCompact } from "../../../domain/models/duration-pattern-data";
-  import {
-    translateArrivalRect,
-    type ArrivalRect,
-  } from "../domain/pictograph-arrival-geometry";
+  import type { ArrivalRect } from "../domain/pictograph-arrival-geometry";
+  import { getArrivalPresentedStepCount } from "../domain/pictograph-arrival-layout";
   import PictographArrivalStage from "./PictographArrivalStage.svelte";
   import WorkspaceGrid from "./WorkspaceGrid.svelte";
   import {
@@ -139,6 +137,12 @@
   let containerHeight = $state(0);
   let containerRef: HTMLElement | undefined = $state();
   let scrollContainerRef: HTMLElement | undefined = $state();
+  let workspaceGridRef:
+    | {
+        captureArrivalLayout: () => void;
+        playArrivalLayout: () => void;
+      }
+    | undefined = $state();
 
   const activeArrivalRequest = $derived<PictographArrivalRequest | null>(
     activeMode === "construct" ? displayState.arrivalRequest : null
@@ -166,6 +170,18 @@
     activeArrivalRequest
       ? arrivalSequence
       : (activeOptionAudition?.sequence ?? null)
+  );
+
+  // Committing an option updates the document immediately so undo, saving, and
+  // the next option load stay responsive. The grid keeps presenting the prior
+  // step list until the staged pictograph begins its landing gesture.
+  const presentedStepCount = $derived(
+    getArrivalPresentedStepCount(steps.length, activeArrivalRequest)
+  );
+  const presentedSteps = $derived.by(() =>
+    presentedStepCount === steps.length
+      ? steps
+      : steps.slice(0, presentedStepCount)
   );
 
   // Breathing room (px, each side) reserved around the grid so a selected or
@@ -203,7 +219,7 @@
 
   // Computed grid layout - must use $derived.by for reactive recalculation
   const gridLayout = $derived.by(() =>
-    calculateResponsiveGridLayout(steps.length)
+    calculateResponsiveGridLayout(presentedSteps.length)
   );
 
   const standardGridCenterOffset = $derived(
@@ -263,13 +279,16 @@
   });
   const timelineRows = $derived.by(() => {
     if (!isTimelineMode) return [];
-    return calculateTimelineRowsByBeatCount(steps, timelineBeatsPerRow);
+    return calculateTimelineRowsByBeatCount(
+      presentedSteps,
+      timelineBeatsPerRow
+    );
   });
 
   const timelineUnitSize = $derived.by(() => {
     if (!isTimelineMode) return 0;
     const hasStart = startPosition && !startPosition.isBlank;
-    const actualCellCount = steps.length + (hasStart ? 1 : 0);
+    const actualCellCount = presentedSteps.length + (hasStart ? 1 : 0);
 
     // Find the widest row's duration to use as the sizing denominator.
     // Add 1 for start position if present.
@@ -337,6 +356,14 @@
   // jump upward before the landing gesture begins.
   $effect.pre(() => {
     const currentStepCount = steps.length;
+    const currentArrival = displayState.arrivalRequest;
+    if (currentArrival && currentArrival.stepIndex >= currentStepCount) {
+      // Undo or replacement removed the staged step. Release the presentation
+      // hold before the replacement grid paints so no stale request can keep
+      // suppressing its normal layout motion.
+      displayState.cancelArrival();
+    }
+
     if (
       isFirstRender ||
       activeMode !== "construct" ||
@@ -464,7 +491,13 @@
     // Scroll behavior based on how steps were added
     if (currentStepCount > previousStepCount) {
       const stepsAdded = currentStepCount - previousStepCount;
-      if (stepsAdded === 1) {
+      if (
+        stepsAdded === 1 &&
+        !(
+          activeMode === "construct" &&
+          displayState.arrivalRequest?.owner === "stage"
+        )
+      ) {
         // Single step added (constructor/assemble) - scroll to see the new step
         scrollState.scrollToBottom();
       } else if (
@@ -611,17 +644,29 @@
   }
 
   function getArrivalDestinationRect(stepIndex: number): ArrivalRect | null {
+    // The destination does not exist during preview. Landing inserts it in the
+    // final grid, then this synchronous scroll becomes part of the same FLIP
+    // measurement so long sequences glide into view instead of landing below
+    // the viewport.
+    if (scrollContainerRef && scrollState.autoScrollEnabled) {
+      scrollContainerRef.scrollTop = scrollContainerRef.scrollHeight;
+    }
+    workspaceGridRef?.playArrivalLayout();
+
     const destination =
       containerRef?.querySelector<HTMLElement>(
         `[data-step-index="${stepIndex}"]`
       ) ?? null;
     if (!destination) return null;
 
-    return translateArrivalRect(
-      destination.getBoundingClientRect(),
-      0,
-      standardGridCenterOffset - displayedStandardGridCenterOffset
-    );
+    return destination.getBoundingClientRect();
+  }
+
+  function handleBeginArrivalLanding(requestId: number): void {
+    // Capture while the grid is still presenting the prior sequence. The state
+    // change then releases the final layout inside the stage's flushSync.
+    workspaceGridRef?.captureArrivalLayout();
+    displayState.beginArrivalLanding(requestId);
   }
 
   function handleStageComplete(requestId: number) {
@@ -642,7 +687,8 @@
     </div>
   {:else}
     <WorkspaceGrid
-      {steps}
+      bind:this={workspaceGridRef}
+      steps={presentedSteps}
       {startPosition}
       {isTimelineMode}
       {gridLayout}
@@ -682,7 +728,7 @@
           request={activeStageRequest}
           sequence={activeStageSequence}
           getDestinationRect={getArrivalDestinationRect}
-          onBeginLanding={displayState.beginArrivalLanding}
+          onBeginLanding={handleBeginArrivalLanding}
           onBeginHandoff={displayState.beginArrivalHandoff}
           onComplete={handleStageComplete}
           onReady={onAuditionReady}

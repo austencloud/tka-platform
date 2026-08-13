@@ -275,8 +275,24 @@
     return motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
   }
 
+  function getDeclarativeLayoutFlipDuration(): number {
+    // Arrival owns the complete before/after geometry change. Letting Svelte's
+    // keyed-list FLIP or the surface translate transition run at the same time
+    // would apply a second transform and make the landing wobble.
+    return arrivalRequest ? 0 : getLayoutFlipDuration();
+  }
+
   let gridSurfaceRef: HTMLDivElement | null = null;
   let gridHistoryAnimation: Animation | null = null;
+  let arrivalLayoutAnimations: Animation[] = [];
+
+  interface ArrivalLayoutSnapshot {
+    stepRects: Map<string, DOMRect>;
+    startRect: DOMRect | null;
+    mandalaRects: Map<string, DOMRect>;
+  }
+
+  let pendingArrivalLayoutSnapshot: ArrivalLayoutSnapshot | null = null;
 
   function getHistoryMembershipDuration(identity: string): number {
     if (!historyTransition) return 0;
@@ -290,7 +306,7 @@
     return historyTransition?.startPositionChanged ? motionDuration(180) : 0;
   }
 
-  function getHistoryStepElements(): Map<string, HTMLElement> {
+  function getStepLayoutElements(): Map<string, HTMLElement> {
     if (!gridSurfaceRef) return new Map();
     return new Map(
       Array.from(
@@ -301,13 +317,73 @@
     );
   }
 
-  function cancelHistoryAnimations(element: HTMLElement): void {
-    const shell = element.querySelector<HTMLElement>(".history-step-shell");
+  function getStartLayoutElement(): HTMLElement | null {
+    return (
+      gridSurfaceRef?.querySelector<HTMLElement>(
+        "[data-history-start-position]"
+      ) ?? null
+    );
+  }
+
+  function getMandalaLayoutElements(): Map<string, HTMLElement> {
+    if (!gridSurfaceRef) return new Map();
+    return new Map(
+      Array.from(
+        gridSurfaceRef.querySelectorAll<HTMLElement>(
+          "[data-layout-mandala-key]"
+        )
+      ).map((element) => [element.dataset.layoutMandalaKey!, element])
+    );
+  }
+
+  function cancelLayoutAnimations(element: HTMLElement): void {
+    element.getAnimations().forEach((animation) => animation.cancel());
+    const shell = element.querySelector<HTMLElement>(".history-layout-shell");
     shell?.getAnimations().forEach((animation) => animation.cancel());
     element
       .querySelector<HTMLElement>(".step-cell")
       ?.getAnimations()
       .forEach((animation) => animation.cancel());
+  }
+
+  function animateLayoutGeometry(
+    element: HTMLElement,
+    beforeRect: DOMRect,
+    duration: number
+  ): Animation | null {
+    const animationTarget =
+      element.querySelector<HTMLElement>(".history-layout-shell") ?? element;
+    if (duration <= 0) return null;
+
+    const afterRect = element.getBoundingClientRect();
+    const deltaX = beforeRect.left - afterRect.left;
+    const deltaY = beforeRect.top - afterRect.top;
+    const scaleX = afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
+    const scaleY =
+      afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
+    const geometryChanged =
+      Math.abs(deltaX) > 0.5 ||
+      Math.abs(deltaY) > 0.5 ||
+      Math.abs(scaleX - 1) > 0.005 ||
+      Math.abs(scaleY - 1) > 0.005;
+    if (!geometryChanged) return null;
+
+    const animation = animationTarget.animate(
+      [
+        {
+          transformOrigin: "top left",
+          transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
+        },
+        { transformOrigin: "top left", transform: "none" },
+      ],
+      {
+        duration,
+        easing: PICTOGRAPH_ARRIVAL_LANDING_EASING,
+        fill: "both",
+      }
+    );
+    animation.onfinish = () => animation.cancel();
+    return animation;
   }
 
   $effect.pre(() => {
@@ -318,19 +394,23 @@
     gridHistoryAnimation?.cancel();
     gridHistoryAnimation = null;
 
-    const beforeElements = getHistoryStepElements();
+    const beforeElements = getStepLayoutElements();
     const beforeRects = new Map<string, DOMRect>();
     for (const [identity, element] of beforeElements) {
       beforeRects.set(identity, element.getBoundingClientRect());
-      cancelHistoryAnimations(element);
+      cancelLayoutAnimations(element);
     }
+    const beforeStartElement = getStartLayoutElement();
+    const beforeStartRect = beforeStartElement?.getBoundingClientRect() ?? null;
+    if (beforeStartElement) cancelLayoutAnimations(beforeStartElement);
 
     void tick().then(() => {
       if (epoch !== historyTransitionEpoch || plan !== historyTransition)
         return;
 
       const duration = motionDuration(300);
-      const currentElements = getHistoryStepElements();
+      const currentElements = getStepLayoutElements();
+      const currentStartElement = getStartLayoutElement();
 
       if (
         duration > 0 &&
@@ -361,6 +441,10 @@
         }
       }
 
+      if (beforeStartRect && currentStartElement) {
+        animateLayoutGeometry(currentStartElement, beforeStartRect, duration);
+      }
+
       for (const transition of plan.steps) {
         if (transition.fromIndex === null || transition.toIndex === null) {
           continue;
@@ -368,40 +452,9 @@
 
         const beforeRect = beforeRects.get(transition.identity);
         const element = currentElements.get(transition.identity);
-        const shell = element?.querySelector<HTMLElement>(
-          ".history-step-shell"
-        );
-        if (!beforeRect || !element || !shell) continue;
+        if (!beforeRect || !element) continue;
 
-        const afterRect = element.getBoundingClientRect();
-        const deltaX = beforeRect.left - afterRect.left;
-        const deltaY = beforeRect.top - afterRect.top;
-        const scaleX =
-          afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
-        const scaleY =
-          afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
-        const geometryChanged =
-          Math.abs(deltaX) > 0.5 ||
-          Math.abs(deltaY) > 0.5 ||
-          Math.abs(scaleX - 1) > 0.005 ||
-          Math.abs(scaleY - 1) > 0.005;
-
-        if (duration > 0 && geometryChanged) {
-          const animation = shell.animate(
-            [
-              {
-                transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
-              },
-              { transform: "none" },
-            ],
-            {
-              duration,
-              easing: PICTOGRAPH_ARRIVAL_LANDING_EASING,
-              fill: "both",
-            }
-          );
-          animation.onfinish = () => animation.cancel();
-        }
+        animateLayoutGeometry(element, beforeRect, duration);
 
         const selectionAffected =
           plan.selectionChanged &&
@@ -426,6 +479,74 @@
       }
     });
   });
+
+  export function captureArrivalLayout(): void {
+    for (const animation of arrivalLayoutAnimations) animation.cancel();
+    arrivalLayoutAnimations = [];
+    pendingArrivalLayoutSnapshot = null;
+    if (historyTransition || !gridSurfaceRef) return;
+
+    const beforeSteps = getStepLayoutElements();
+    const beforeStepRects = new Map<string, DOMRect>();
+    for (const [identity, element] of beforeSteps) {
+      beforeStepRects.set(identity, element.getBoundingClientRect());
+      cancelLayoutAnimations(element);
+    }
+
+    const beforeStart = getStartLayoutElement();
+    const beforeStartRect = beforeStart?.getBoundingClientRect() ?? null;
+    if (beforeStart) cancelLayoutAnimations(beforeStart);
+
+    const beforeMandalas = getMandalaLayoutElements();
+    const beforeMandalaRects = new Map<string, DOMRect>();
+    for (const [identity, element] of beforeMandalas) {
+      beforeMandalaRects.set(identity, element.getBoundingClientRect());
+      cancelLayoutAnimations(element);
+    }
+
+    pendingArrivalLayoutSnapshot = {
+      stepRects: beforeStepRects,
+      startRect: beforeStartRect,
+      mandalaRects: beforeMandalaRects,
+    };
+  }
+
+  export function playArrivalLayout(): void {
+    const snapshot = pendingArrivalLayoutSnapshot;
+    pendingArrivalLayoutSnapshot = null;
+    if (!snapshot) return;
+
+    const duration = motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
+    const animations: Animation[] = [];
+    const currentSteps = getStepLayoutElements();
+    const currentStart = getStartLayoutElement();
+    const currentMandalas = getMandalaLayoutElements();
+
+    if (snapshot.startRect && currentStart) {
+      const animation = animateLayoutGeometry(
+        currentStart,
+        snapshot.startRect,
+        duration
+      );
+      if (animation) animations.push(animation);
+    }
+
+    for (const [identity, beforeRect] of snapshot.stepRects) {
+      const element = currentSteps.get(identity);
+      if (!element) continue;
+      const animation = animateLayoutGeometry(element, beforeRect, duration);
+      if (animation) animations.push(animation);
+    }
+
+    for (const [identity, beforeRect] of snapshot.mandalaRects) {
+      const element = currentMandalas.get(identity);
+      if (!element) continue;
+      const animation = animateLayoutGeometry(element, beforeRect, duration);
+      if (animation) animations.push(animation);
+    }
+
+    arrivalLayoutAnimations = animations;
+  }
 
   const timelineStartMandalas = $derived.by(() => {
     if (!isTimelineMode) return [];
@@ -544,11 +665,11 @@
     class:timeline={isTimelineMode}
     class:assemble-surface={activeMode === "assemble"}
     class:clearing={isClearing || displayState.isClearingForGeneration}
-    class:layout-motion-enabled={getLayoutFlipDuration() > 0}
+    class:layout-motion-enabled={getDeclarativeLayoutFlipDuration() > 0}
     data-arrival-phase={arrivalRequest?.phase}
     style:--cell-size="{cellSize}px"
     style:--grid-center-offset="{standardGridCenterOffset}px"
-    style:--grid-layout-duration="{getLayoutFlipDuration()}ms"
+    style:--grid-layout-duration="{getDeclarativeLayoutFlipDuration()}ms"
     style:--grid-layout-easing={PICTOGRAPH_ARRIVAL_LANDING_EASING}
     style:--grid-rows={gridLayout.rows}
     style:--grid-cols={gridLayout.totalColumns}
@@ -562,23 +683,26 @@
             class="timeline-cell"
             class:cell-selected={selectedStepNumber === 0}
             class:cell-practice={practiceStepNumber === 0}
+            data-history-start-position
             in:fade={{ duration: getHistoryStartDuration() }}
             out:fade={{ duration: getHistoryStartDuration() }}
           >
-            <StartTile
-              {startPosition}
-              shouldAnimate={displayState.shouldAnimateStartPosition}
-              isSelected={selectedStepNumber === 0}
-              isPracticeStep={practiceStepNumber === 0}
-              {activeMode}
-              {onStartClick}
-              onLongPress={onStepLongPress}
-              onDelete={onStepDelete}
-              animationEpoch={displayState.animationEpoch}
-              isTimelineMode={true}
-              {bluePropTypeOverride}
-              {redPropTypeOverride}
-            />
+            <div class="history-layout-shell">
+              <StartTile
+                {startPosition}
+                shouldAnimate={displayState.shouldAnimateStartPosition}
+                isSelected={selectedStepNumber === 0}
+                isPracticeStep={practiceStepNumber === 0}
+                {activeMode}
+                {onStartClick}
+                onLongPress={onStepLongPress}
+                onDelete={onStepDelete}
+                animationEpoch={displayState.animationEpoch}
+                isTimelineMode={true}
+                {bluePropTypeOverride}
+                {redPropTypeOverride}
+              />
+            </div>
           </div>
           {#each timelineStartMandalas as cell (cell.index)}
             {#if cell.show !== null}
@@ -587,6 +711,7 @@
                   type="button"
                   class="timeline-cell mandala-cell viewer-enabled"
                   class:light-bg={isLightBackground}
+                  data-layout-mandala-key={`timeline-start:${cell.index}`}
                   onclick={() => onMandalaClick(cell.show!, mandalaPathShape)}
                   oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
                   aria-label="Open mandala"
@@ -599,13 +724,17 @@
                 <div
                   class="timeline-cell mandala-cell"
                   class:light-bg={isLightBackground}
+                  data-layout-mandala-key={`timeline-start:${cell.index}`}
                   oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
                 >
                   {@render mandalaArtwork(cell.show)}
                 </div>
               {/if}
             {:else}
-              <div class="timeline-cell"></div>
+              <div
+                class="timeline-cell"
+                data-layout-mandala-key={`timeline-start:${cell.index}`}
+              ></div>
             {/if}
           {/each}
         </div>
@@ -659,7 +788,7 @@
                 in:fade={{ duration: getHistoryMembershipDuration(identity) }}
                 out:fade={{ duration: getHistoryMembershipDuration(identity) }}
               >
-                <div class="history-step-shell">
+                <div class="history-layout-shell">
                   <StepCell
                     {step}
                     index={stepIndex}
@@ -702,28 +831,33 @@
       {#each standardStartCells as startCell (startCell.key)}
         <div
           class="step-container"
+          data-history-start-position
           style:grid-row="1"
           style:grid-column="1"
           animate:flip={{
-            duration: getLayoutFlipDuration(),
+            duration: historyTransition
+              ? 0
+              : getDeclarativeLayoutFlipDuration(),
             easing: cubicOut,
           }}
           in:fade={{ duration: getHistoryStartDuration() }}
           out:fade={{ duration: getHistoryStartDuration() }}
         >
-          <StartTile
-            startPosition={startCell.startPosition}
-            shouldAnimate={displayState.shouldAnimateStartPosition}
-            isSelected={selectedStepNumber === 0}
-            isPracticeStep={practiceStepNumber === 0}
-            {activeMode}
-            {onStartClick}
-            onLongPress={onStepLongPress}
-            onDelete={onStepDelete}
-            animationEpoch={displayState.animationEpoch}
-            {bluePropTypeOverride}
-            {redPropTypeOverride}
-          />
+          <div class="history-layout-shell">
+            <StartTile
+              startPosition={startCell.startPosition}
+              shouldAnimate={displayState.shouldAnimateStartPosition}
+              isSelected={selectedStepNumber === 0}
+              isPracticeStep={practiceStepNumber === 0}
+              {activeMode}
+              {onStartClick}
+              onLongPress={onStepLongPress}
+              onDelete={onStepDelete}
+              animationEpoch={displayState.animationEpoch}
+              {bluePropTypeOverride}
+              {redPropTypeOverride}
+            />
+          </div>
         </div>
       {/each}
 
@@ -758,13 +892,15 @@
             ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
             : "0ms"}
           animate:flip={{
-            duration: historyTransition ? 0 : getLayoutFlipDuration(),
+            duration: historyTransition
+              ? 0
+              : getDeclarativeLayoutFlipDuration(),
             easing: cubicOut,
           }}
           in:fade={{ duration: getHistoryMembershipDuration(identity) }}
           out:fade={{ duration: getHistoryMembershipDuration(identity) }}
         >
-          <div class="history-step-shell">
+          <div class="history-layout-shell">
             <StepCell
               {step}
               {index}
@@ -789,10 +925,11 @@
       {#each standardMandalaCells as cell (cell.key)}
         <div
           class="mandala-layout-item"
+          data-layout-mandala-key={cell.key}
           style:grid-row={cell.row}
           style:grid-column={cell.column}
           animate:flip={{
-            duration: getLayoutFlipDuration(),
+            duration: getDeclarativeLayoutFlipDuration(),
             easing: cubicOut,
           }}
         >
@@ -961,7 +1098,7 @@
     min-height: 0;
   }
 
-  .history-step-shell {
+  .history-layout-shell {
     width: 100%;
     height: 100%;
     min-width: 0;

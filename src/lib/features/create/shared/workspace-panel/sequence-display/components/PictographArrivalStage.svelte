@@ -11,8 +11,10 @@
     type ArrivalRect,
   } from "../domain/pictograph-arrival-geometry";
   import {
+    getPictographArrivalPropMotionDurationMs,
     PICTOGRAPH_ARRIVAL_LANDING_EASING,
     PICTOGRAPH_ARRIVAL_LANDING_MS,
+    PICTOGRAPH_ARRIVAL_PROP_MOTION_MIN_MS,
   } from "../domain/pictograph-arrival-motion";
   import type { PictographStageRequest } from "../state/step-grid-display-state.svelte";
 
@@ -31,7 +33,6 @@
   const SCRIM_PEAK_OPACITY = 0.58;
   const REDUCED_MOTION_ENTER_MS = DURATION.fast;
   const PROP_MOTION_START_DELAY_MS = DURATION.fast;
-  const PROP_MOTION_MS = 850;
   const FINISHED_HOLD_MS = 120;
   const REDUCED_MOTION_HOLD_MS = DURATION.dramatic;
   const STAGE_ENTER_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -61,6 +62,11 @@
   } = $props();
 
   const step = $derived(sequence.steps[request.stepIndex] ?? null);
+  const propMotionDurationMs = $derived(
+    step
+      ? getPictographArrivalPropMotionDurationMs(step)
+      : PICTOGRAPH_ARRIVAL_PROP_MOTION_MIN_MS
+  );
   const motionStartData = $derived.by(() => {
     if (request.stepIndex > 0) {
       return sequence.steps[request.stepIndex - 1] ?? null;
@@ -109,12 +115,6 @@
     clearAnimationFrame();
     cancelActiveAnimations();
     motionStartedAt = null;
-  }
-
-  function easeInOutCubic(progress: number): number {
-    return progress < 0.5
-      ? 4 * progress * progress * progress
-      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
   }
 
   function handOffToCell(requestId: number, preserveLandedFrame = false) {
@@ -243,18 +243,22 @@
 
     const card = cardElement;
     const sourceRect = card?.getBoundingClientRect() ?? null;
-    const destinationRect = getDestinationRect(request.stepIndex);
-    const transform =
-      sourceRect && destinationRect
-        ? calculatePictographArrivalTransform(sourceRect, destinationRect)
-        : null;
 
+    // Landing is one transaction. Capture the large card first, release the
+    // grid's final layout synchronously, then measure the real destination.
+    // This gives the card and every retained grid cell the same start frame.
     flushSync(() => {
       phase = "landing";
       motionProgress = 1;
       arrowOpacity = 1;
       onBeginLanding(requestId);
     });
+
+    const destinationRect = getDestinationRect(request.stepIndex);
+    const transform =
+      sourceRect && destinationRect
+        ? calculatePictographArrivalTransform(sourceRect, destinationRect)
+        : null;
 
     if (reducedMotionEnabled) {
       handOffToCell(requestId);
@@ -339,11 +343,10 @@
     motionStartedAt ??= timestamp;
     const linearProgress = Math.min(
       1,
-      (timestamp - motionStartedAt) / PROP_MOTION_MS
+      (timestamp - motionStartedAt) / propMotionDurationMs
     );
-    const easedProgress = easeInOutCubic(linearProgress);
-    motionProgress = easedProgress;
-    arrowOpacity = easedProgress;
+    motionProgress = linearProgress;
+    arrowOpacity = linearProgress;
 
     if (linearProgress >= 1) {
       animationFrame = null;
@@ -436,6 +439,7 @@
     data-arrival-request-id={request.requestId}
     data-arrival-intent={request.intent}
     data-arrival-phase={phase}
+    data-prop-motion-duration-ms={propMotionDurationMs}
     data-motion-progress={motionProgress === null
       ? undefined
       : motionProgress.toFixed(4)}
