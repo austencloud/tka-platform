@@ -14,7 +14,10 @@
       "L4o1RiMAIOlmGihZjYGg",
       "ZIy3eIKYhqXkcrXffhik",
       "Uc9pWzGSfjfWI25LVQt7",
-      "Mu1MpX08ohPIVqCOj1fL"
+      "Mu1MpX08ohPIVqCOj1fL",
+      "UqfWNQNxU7qvJ6Hd6bC4",
+      "1nNPHYyfv99O05EnKOJG",
+      "ZVQIdFDEi2UBYa0hvorN"
     ]
   },
   "sequenceFingerprints": [],
@@ -34,7 +37,7 @@
     {
       "id": "C-009",
       "class": "literal",
-      "statement": "The live Winter terrain continues the flat central clearing beneath the shallow fire-court inset so the gathering is grounded rather than buried in snow.",
+      "statement": "The live Winter terrain continues the zero-metre clearing grade beneath the court and complete audience crescent while excluding trees and authored scenery from the occupied footprint.",
       "evidence": ["scripts/build-winter-environment.py"]
     },
     {
@@ -44,6 +47,24 @@
       "evidence": [
         "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtPerformer.svelte",
         "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performers-court.png"
+      ]
+    },
+    {
+      "id": "C-011",
+      "class": "literal",
+      "statement": "Seven detailed audience avatars stand in a loose furniture-free perimeter and face the performers; no chair, bench, prop rack, or rack-tender remains.",
+      "evidence": [
+        "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtAudience.svelte",
+        "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-audience-r2/winter-fire-court-audience-standing-r1.png"
+      ]
+    },
+    {
+      "id": "C-012",
+      "class": "literal",
+      "statement": "All three performer stations share the court's 270-degree west-facing stage front toward the audience rather than using independent headings.",
+      "evidence": [
+        "scripts/winter-fire-court-graybox-r1.json",
+        "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performer-facing-r1.png"
       ]
     }
   ],
@@ -56,12 +77,12 @@
         {
           "kind": "canon-audit",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
+          "sha256": "227948ff81ccf2ae650abe7ccc382f2eeea2bf48368a7e38996b41c9e7c44103"
         },
         {
           "kind": "room-shell",
           "path": "scripts/winter-fire-court-graybox-r1.json",
-          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
+          "sha256": "30a88ff122409f4b8394074dcb49e1a3e4a334ea29a87e5803e8073be569467e"
         }
       ],
       "checks": [
@@ -90,22 +111,22 @@
         {
           "kind": "floor-plan",
           "path": "scripts/winter-fire-court-graybox-r1.json",
-          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
+          "sha256": "30a88ff122409f4b8394074dcb49e1a3e4a334ea29a87e5803e8073be569467e"
         },
         {
           "kind": "vertical-section",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
+          "sha256": "227948ff81ccf2ae650abe7ccc382f2eeea2bf48368a7e38996b41c9e7c44103"
         },
         {
           "kind": "route-storyboard",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
+          "sha256": "227948ff81ccf2ae650abe7ccc382f2eeea2bf48368a7e38996b41c9e7c44103"
         },
         {
           "kind": "sightline-study",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/scene-development.md",
-          "sha256": "92363081a49c14894f92c77aecdf4354ef2c1fd7cdf065c32447e4b15342d92a"
+          "sha256": "227948ff81ccf2ae650abe7ccc382f2eeea2bf48368a7e38996b41c9e7c44103"
         },
         {
           "kind": "review-board",
@@ -115,7 +136,7 @@
         {
           "kind": "review-presentation",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-plan.png",
-          "sha256": "00645f74ce4e171c1db0a7469aef4111ea218c48735f217d4f6ef7fb65bd8f90"
+          "sha256": "fa857537d2ae7066444866598b037ac6602585b176193b112d3fcf3fd45b7db1"
         }
       ],
       "checks": [
@@ -156,17 +177,17 @@
         {
           "kind": "blender-source",
           "path": "blender/winter_fire_court_graybox.blend",
-          "sha256": "e27d49352c2bbe1fa1486ee3d18ab83b150325e6edbe624097d936f3f2ce98cc"
+          "sha256": "d3df1ac9afa4af1f9dc5aad2e5d502d55f1f5f2b445ed8dfcd9cc4d5eedb530b"
         },
         {
           "kind": "coordinate-manifest",
           "path": "scripts/winter-fire-court-graybox-r1.json",
-          "sha256": "ca403912a35078bfc30494e357bea03b39293b69ce56e829a8dbdcb7e29fa743"
+          "sha256": "30a88ff122409f4b8394074dcb49e1a3e4a334ea29a87e5803e8073be569467e"
         },
         {
           "kind": "graybox-glb",
           "path": "static/models/winter/review/winter-fire-court-graybox-r1.glb",
-          "sha256": "d534bd390f3423ea2a0fba29bae5536e384e6e89726d185a08c9cebe20aea0c4"
+          "sha256": "3ebd3cccf0d44b79993f9a89d9d92768276c25ddc7d8cf505b6fb08f6b11a318"
         },
         {
           "kind": "locked-camera-set",
@@ -176,7 +197,7 @@
         {
           "kind": "runtime-overlay",
           "path": "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtGraybox.svelte",
-          "sha256": "b62b96d49eb4607372e2ac28f16271fd1425f933403b23e193a44ff40f5771de"
+          "sha256": "c920acf635c0ca71772db7e46e4169cc48baa2f119b08736cf8a6b89730f9c7c"
         },
         {
           "kind": "runtime-performers",
@@ -184,19 +205,34 @@
           "sha256": "907d46aa6bcc2e3d3591685a5f2c819fc6847802a0528c0794e376d2224e3469"
         },
         {
+          "kind": "runtime-audience",
+          "path": "src/lib/shared/3d/environments/scenes/winter/graybox/WinterFireCourtAudience.svelte",
+          "sha256": "0b9e8b1b4da3db712d393b939943bfc0781b85adb04e5a4546b921db06082d97"
+        },
+        {
           "kind": "terrain-builder",
           "path": "scripts/build-winter-environment.py",
-          "sha256": "155a29e5d7678242b994f378e31cdf0fdb473f08bb5d292fb354816bccc006d0"
+          "sha256": "97e6d6434295bb558428d453b38b40c0165de0b62b6399c4e93c0337cb443f75"
+        },
+        {
+          "kind": "settlement-layout",
+          "path": "scripts/winter-settlement-layout.json",
+          "sha256": "5016c7531e56a112c1c94aa42b08c41d7e0ec4f45236b0150e6b2120e0ecfb50"
         },
         {
           "kind": "production-blender-source",
           "path": "blender/winter_environment.blend",
-          "sha256": "68bf0e3dd8ceaf6c41854db664ebc7d20b5f68f38d29e4e1fe1565afdf3f7a30"
+          "sha256": "948bed56d0e7a6cbbf0c31f9bfd8d6281e3cc60fc4e6156145b85f4132de7edb"
         },
         {
           "kind": "production-environment-glb",
           "path": "static/models/winter/winter-environment.glb",
-          "sha256": "2ecbe50dabd347ee6f7eccdc5648579e045588668365f73e325b9a1cba844a5f"
+          "sha256": "4158edf21deedefa93541f95e98d43873015e8241120647f38a0d07a55b66e91"
+        },
+        {
+          "kind": "audience-court-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-audience-r2/winter-fire-court-audience-standing-r1.png",
+          "sha256": "1de23412fd6a8fde54cda4f2ce80073ca292240f7125b4da6e773cd6cf71c539"
         },
         {
           "kind": "world-view",
@@ -204,39 +240,44 @@
           "sha256": "c664f46db946b263fcd0b603cce9e7f7285de301d7c471b034ba3ab59e9e7d2b"
         },
         {
-          "kind": "court-view",
+          "kind": "performer-court-view",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performers-court.png",
           "sha256": "731698f533403d5672ea6769fc86b9478f3898e556b49a656955a2de2c86226e"
         },
         {
+          "kind": "performer-facing-view",
+          "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-performers-r1/winter-fire-court-performer-facing-r1.png",
+          "sha256": "7c15d189415d3fc55c5bfcd54d11157c668ea926fc8108b5b4cbb79cfe51ccf1"
+        },
+        {
           "kind": "build-report",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-report.json",
-          "sha256": "dcfdc74423e04d1634ba91d8f2a71ced3c7d9951396c2da38be480bb7682ab90"
+          "sha256": "60ae113b3195bba36ee037e47536ccb97c1b54b6d8ed7db665841a74a98e3e42"
         },
         {
           "kind": "artifact-verification",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-verification.json",
-          "sha256": "ff2d42a2b8161e93cc445bc78d557c28711e431923ee6a4c6ab04150628811c1"
+          "sha256": "863709dbb088903aa761311163527b990fef2a7eb6aa6ccba97c7f645cd75134"
         },
         {
           "kind": "hero-view",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-hero.png",
-          "sha256": "547750de5d3355df505aa0e8026a86a468e20fdd8f00c6e7099c994a4e9dbe13"
+          "sha256": "c20c1d1a39feb0405f4748cce5e3d9635cf10d0e3d4c326dfddb851cad9d5c0f"
         },
         {
           "kind": "first-person-walk",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-walk.png",
-          "sha256": "d606198f98e5acdcf8526e02db3025ea6b62f5414a6a0fc320efd950166edc5e"
+          "sha256": "d60a6ba355e0350143a6a5b62309922ac77585243f58414a9f678c7850ea6153"
         },
         {
           "kind": "court-view",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-court.png",
-          "sha256": "b52e69c71105932fefa6f4819a6e11e21ae00dbda9412d70858c117528a89c64"
+          "sha256": "7393e30b62e159bbaaf250bf44f022d6bf0a2ed6d5675a61660a88379a77744b"
         },
         {
           "kind": "plan-view",
           "path": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-plan.png",
-          "sha256": "00645f74ce4e171c1db0a7469aef4111ea218c48735f217d4f6ef7fb65bd8f90"
+          "sha256": "fa857537d2ae7066444866598b037ac6602585b176193b112d3fcf3fd45b7db1"
         },
         {
           "kind": "review-contact-sheet",
@@ -248,7 +289,7 @@
         {
           "name": "artifact-digest",
           "status": "passed",
-          "evidence": "The coordinate contract, isolated graybox, regraded production terrain, runtime performer composition, and current world and court captures carry SHA-256 digests."
+          "evidence": "The coordinate contract, isolated graybox, regraded production terrain, ten-avatar runtime composition, and current court capture carry SHA-256 digests."
         },
         {
           "name": "walkability",
@@ -258,7 +299,7 @@
         {
           "name": "collision",
           "status": "passed",
-          "evidence": "Focused geometry tests hold spinners inside the court, all seven audience proxies outside its edge, and the primary route outside the fire-safety envelope."
+          "evidence": "Focused geometry tests hold spinners inside the court, all seven audience anchors outside its edge, and the primary route outside the fire-safety envelope. The production builder also rejects trees or authored scenery entering the complete social footprint."
         },
         {
           "name": "route-duration",
@@ -278,12 +319,12 @@
         {
           "name": "population-and-clearance",
           "status": "passed",
-          "evidence": "Three proxy spinners are replaced after load by detailed avatars using poi, staff, and fans; four seated, two standing, and one rack-tender audience proxies retain the exact ten-friend layout and 2.4 m minimum spinner spacing."
+          "evidence": "All ten proxies are replaced only after their detailed replacements are ready: three active prop performers share the 270-degree west-facing stage front, and seven standing friends form a loose perimeter facing the court. No audience furniture or rack-tender role remains. The measured 2.4 m minimum spinner spacing remains intact."
         },
         {
           "name": "runtime-delivery",
           "status": "passed",
-          "evidence": "The live 5173 court view loaded all three detailed avatars, three distinct physical props, and canonical fire effects with no browser warnings or errors. The regraded 13.32 MiB production GLB passed the Winter verifier; focused geometry tests passed 5/5."
+          "evidence": "The live 5173 court view loaded all ten detailed avatars, three distinct physical props, and canonical fire effects with no chair, bench, prop rack, rack-tender, or prone audience pose visible. One unrelated Firestore listen transport warning remained outside scene rendering. The 561.0 KiB review GLB passed verification and focused geometry tests passed 7/7, including the shared performer-facing contract."
         }
       ],
       "approval": null

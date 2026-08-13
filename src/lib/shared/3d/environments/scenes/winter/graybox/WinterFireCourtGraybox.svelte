@@ -58,13 +58,13 @@
   ];
   const friendIds = [
     ...spinnerProfiles.map(({ id }) => id),
-    "seated-1",
-    "seated-2",
-    "seated-3",
-    "seated-4",
+    "observer-1",
+    "observer-2",
+    "observer-3",
+    "observer-4",
     "standing-1",
     "standing-2",
-    "rack-tender",
+    "standing-3",
   ];
   let readyFriendIds = $state<string[]>([]);
 
@@ -83,6 +83,9 @@
         z: child.position.z,
         facingAngle:
           ((child.userData.tka_facing_degrees as number) * Math.PI) / 180,
+        surfaceElevation:
+          (child.userData.tka_surface_elevation as number | undefined) ??
+          courtSurfaceElevation,
       });
     });
     return placements.sort((left, right) => left.id.localeCompare(right.id));
@@ -140,7 +143,6 @@
 
 <WinterFireCourtAudience
   placements={audiencePlacements}
-  surfaceElevation={courtSurfaceElevation}
   onReady={markFriendReady}
 />
 

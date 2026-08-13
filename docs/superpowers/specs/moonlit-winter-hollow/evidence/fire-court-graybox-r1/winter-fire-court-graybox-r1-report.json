@@ -1,20 +1,18 @@
 {
   "sceneId": "moonlit-winter-hollow",
   "revisionId": "fire-court-graybox-r1",
-  "sourceDigest": "16a046ac859b19221b37683770662c8bdf1022b9256e495168d2572535ede073",
+  "sourceDigest": "bcb8104a087dbcc1625783c382242d1e21ee902cf1fd7a6b07cdd5eb0f6d758f",
   "contractPath": "scripts/winter-fire-court-graybox-r1.json",
   "blendPath": "blender/winter_fire_court_graybox.blend",
   "glbPath": "static/models/winter/review/winter-fire-court-graybox-r1.glb",
   "blenderVersion": "5.0.1",
-  "exportMeshCount": 92,
+  "exportMeshCount": 62,
   "exportedCameraCount": 0,
   "exportedLightCount": 0,
   "friendCount": 10,
   "friendRoleCounts": {
     "spinner": 3,
-    "seated": 4,
-    "standing": 2,
-    "rack-tender": 1
+    "standing": 7
   },
   "courtCenter": [
     -13,
@@ -24,10 +22,11 @@
     16,
     -10
   ],
-  "practiceWingCenter": [
-    -29.2,
-    -39
+  "lodgeCenter": [
+    -24,
+    -38
   ],
+  "routeLanternCount": 3,
   "renders": {
     "hero": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-hero.png",
     "walk": "docs/superpowers/specs/moonlit-winter-hollow/evidence/fire-court-graybox-r1/winter-fire-court-graybox-r1-walk.png",

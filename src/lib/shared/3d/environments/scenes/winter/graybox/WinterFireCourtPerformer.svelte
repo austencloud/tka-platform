@@ -89,6 +89,8 @@
     <EffectOrchestrator3D
       {bluePropState}
       {redPropState}
+      bluePropType={toScenePropType(props.propType)}
+      redPropType={toScenePropType(props.propType)}
       {isPlaying}
       {staffHalfLength}
       tipEffectMap={fireTipMap}

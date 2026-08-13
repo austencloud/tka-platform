@@ -19,11 +19,19 @@ import sharp from "sharp";
 const INPUT = resolve("static/models/winter/winter-environment_raw.glb");
 const OUTPUT = resolve("static/models/winter/winter-environment.glb");
 const TMP_SLIM = resolve("static/models/winter/_winter-slim.glb");
+const TMP_SELECTIVE = resolve("static/models/winter/_winter-selective.glb");
 const TMP_INSTANCED = resolve("static/models/winter/_winter-instanced.glb");
 const TMP_PNG = resolve("static/models/winter/_winter-png.glb");
 const TMP_UASTC = resolve("static/models/winter/_winter-uastc.glb");
 const TMP_ETC = resolve("static/models/winter/_winter-etc.glb");
-const TEMPORARIES = [TMP_SLIM, TMP_INSTANCED, TMP_PNG, TMP_UASTC, TMP_ETC];
+const TEMPORARIES = [
+  TMP_SLIM,
+  TMP_SELECTIVE,
+  TMP_INSTANCED,
+  TMP_PNG,
+  TMP_UASTC,
+  TMP_ETC,
+];
 const KEEP_INTERMEDIATES =
   process.env.TKA_KEEP_WINTER_OPTIMIZATION_INTERMEDIATES === "1";
 const GLTF_TRANSFORM = resolve("node_modules/@gltf-transform/cli/bin/cli.js");
@@ -44,8 +52,11 @@ const { NodeIO } = await import(
 const { ALL_EXTENSIONS } = await import(
   pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))
 );
-const { instance, textureCompress } = await import(
+const { compressTexture, instance, simplifyPrimitive } = await import(
   pathToFileURL(requireFromCli.resolve("@gltf-transform/functions"))
+);
+const { MeshoptSimplifier } = await import(
+  pathToFileURL(requireFromCli.resolve("meshoptimizer"))
 );
 
 const EDITABLE_COMPOSER_ROLES = new Set([
@@ -59,6 +70,8 @@ const EDITABLE_COMPOSER_ROLES = new Set([
   "settlement-hearth-ember",
   "lodge-woodpile-log",
 ]);
+
+const HERO_GEOMETRY_ROLES = new Set(["settlement-lodge", "settlement-seat"]);
 
 function size(path) {
   return `${(statSync(path).size / 1024 / 1024).toFixed(2)} MiB`;
@@ -161,6 +174,94 @@ async function createComposerInstanceBatches(input, output) {
   await io.write(output, document);
 }
 
+function meshesForRoles(document, roles) {
+  const meshes = new Set();
+  for (const scene of document.getRoot().listScenes()) {
+    scene.traverse((node) => {
+      if (!roles.has(node.getExtras()?.tka_role)) return;
+      const mesh = node.getMesh();
+      if (mesh) meshes.add(mesh);
+    });
+  }
+  return meshes;
+}
+
+async function simplifyBackgroundGeometry(input, output) {
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const document = await io.read(input);
+  const protectedMeshes = meshesForRoles(document, HERO_GEOMETRY_ROLES);
+  await MeshoptSimplifier.ready;
+
+  for (const mesh of document.getRoot().listMeshes()) {
+    if (protectedMeshes.has(mesh)) continue;
+    for (const primitive of mesh.listPrimitives()) {
+      simplifyPrimitive(primitive, {
+        simplifier: MeshoptSimplifier,
+        ratio: 0.1,
+        error: 0.05,
+      });
+    }
+  }
+
+  await io.write(output, document);
+  console.log(
+    `Preserved ${protectedMeshes.size} lodge/chair hero meshes from global simplification.`
+  );
+}
+
+async function normalizeTextureDelivery(input, output) {
+  const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
+  const document = await io.read(input);
+  const protectedMeshes = meshesForRoles(document, HERO_GEOMETRY_ROLES);
+  const protectedMaterials = new Set();
+  for (const mesh of protectedMeshes) {
+    for (const primitive of mesh.listPrimitives()) {
+      const material = primitive.getMaterial();
+      if (material) protectedMaterials.add(material);
+    }
+  }
+
+  const detailTextures = new Set();
+  const protectedTextures = new Set();
+  for (const material of document.getRoot().listMaterials()) {
+    const details = [
+      material.getNormalTexture(),
+      material.getMetallicRoughnessTexture(),
+      material.getOcclusionTexture(),
+    ].filter(Boolean);
+    const colors = [
+      material.getBaseColorTexture(),
+      material.getEmissiveTexture(),
+    ].filter(Boolean);
+    for (const texture of details) detailTextures.add(texture);
+    if (protectedMaterials.has(material)) {
+      for (const texture of [...details, ...colors])
+        protectedTextures.add(texture);
+    }
+  }
+
+  for (const texture of document.getRoot().listTextures()) {
+    const isDetail = detailTextures.has(texture);
+    const isProtected = protectedTextures.has(texture);
+    await compressTexture(texture, {
+      encoder: sharp,
+      targetFormat: "png",
+      resize: isProtected
+        ? isDetail
+          ? [1024, 1024]
+          : [2048, 2048]
+        : isDetail
+          ? [512, 512]
+          : [1024, 1024],
+    });
+  }
+
+  await io.write(output, document);
+  console.log(
+    `Preserved ${protectedTextures.size} lodge/chair textures at hero resolution.`
+  );
+}
+
 if (!existsSync(INPUT)) {
   throw new Error(`Winter source GLB does not exist: ${INPUT}`);
 }
@@ -174,22 +275,16 @@ if (
 console.log(`Input: ${INPUT} (${size(INPUT)})`);
 clean();
 try {
-  run("Simplify, deduplicate, resize, and preserve linked scenery", [
+  run("Deduplicate and preserve linked scenery", [
     "optimize",
     INPUT,
     TMP_SLIM,
     "--compress",
     "false",
     "--texture-compress",
-    "webp",
-    "--texture-size",
-    "1024",
+    "false",
     "--simplify",
-    "true",
-    "--simplify-ratio",
-    "0.10",
-    "--simplify-error",
-    "0.05",
+    "false",
     "--instance",
     "false",
     "--flatten",
@@ -197,27 +292,16 @@ try {
     "--join",
     "false",
   ]);
+  console.log(
+    "\nSimplify background geometry while preserving lodge and chairs"
+  );
+  await simplifyBackgroundGeometry(TMP_SLIM, TMP_SELECTIVE);
   console.log("\nConvert repeated meshes to ID-preserving GPU instances");
-  await createComposerInstanceBatches(TMP_SLIM, TMP_INSTANCED);
+  await createComposerInstanceBatches(TMP_SELECTIVE, TMP_INSTANCED);
 
-  console.log("\nNormalize textures to PNG; detail maps to 512px");
-  {
-    const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
-    const document = await io.read(TMP_INSTANCED);
-    await document.transform(
-      textureCompress({ encoder: sharp, targetFormat: "png" })
-    );
-    await document.transform(
-      textureCompress({
-        encoder: sharp,
-        targetFormat: "png",
-        slots: /^(normalTexture|metallicRoughnessTexture|occlusionTexture)$/,
-        resize: [512, 512],
-      })
-    );
-    await io.write(TMP_PNG, document);
-    console.log(`PNG intermediate: ${size(TMP_PNG)}`);
-  }
+  console.log("\nNormalize textures; retain hero lodge/chair resolution");
+  await normalizeTextureDelivery(TMP_INSTANCED, TMP_PNG);
+  console.log(`PNG intermediate: ${size(TMP_PNG)}`);
 
   run("Encode normal, metallic-roughness, and occlusion maps as KTX2 UASTC", [
     "uastc",

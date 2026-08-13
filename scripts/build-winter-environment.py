@@ -213,10 +213,10 @@ CLEARING_RADIUS = 8.0
 FIRE_COURT_LAYOUT = FIRE_COURT_CONTRACT["court"]
 FIRE_COURT_X = FIRE_COURT_LAYOUT["center"][0]
 FIRE_COURT_Y = -FIRE_COURT_LAYOUT["center"][1]
-# The social clearing includes the court, every friend, both benches, the prop
-# rack, and the lantern-marked entrance. Deriving the envelope from the same
-# contract prevents a later seating adjustment from leaving somebody standing
-# on the sloped snow just outside the fire-safe surface.
+# The social clearing includes the court, every friend, and the lantern-marked
+# entrance. Deriving the envelope from the same contract prevents a later
+# audience adjustment from leaving somebody standing on the sloped snow just
+# outside the fire-safe surface.
 FIRE_COURT_SOCIAL_RUNTIME_POINTS = [
     (
         FIRE_COURT_LAYOUT["center"][0]
@@ -233,15 +233,8 @@ FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
     tuple(friend["position"]) for friend in FIRE_COURT_CONTRACT["friends"]
 )
 FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
-    tuple(bench["center"])
-    for bench in FIRE_COURT_CONTRACT["furnishings"]["benchSegments"]
-)
-FIRE_COURT_SOCIAL_RUNTIME_POINTS.extend(
     tuple(lantern["position"])
     for lantern in FIRE_COURT_CONTRACT["furnishings"]["entryLanterns"]
-)
-FIRE_COURT_SOCIAL_RUNTIME_POINTS.append(
-    tuple(FIRE_COURT_CONTRACT["furnishings"]["propRack"]["position"])
 )
 FIRE_COURT_SOCIAL_MARGIN = 1.5
 FIRE_COURT_SOCIAL_MIN_X = min(
@@ -348,7 +341,7 @@ ROCK_PLACEMENTS = (
 
 DEADWOOD_PLACEMENTS = (
     ("Winter_Base_FallenLog_East", "fallen_log", 29.0, 13.5, 5.6, 1.65, 1.20, 0.34, 0.06, -0.10, 0.20, "base"),
-    ("Winter_Base_DeadTrunk_West", "dead_trunk", -20.0, 8.5, 4.8, 1.45, 1.15, -0.55, -0.08, 0.05, 0.24, "base"),
+    ("Winter_Base_DeadTrunk_West", "dead_trunk", -28.0, 9.5, 4.8, 1.45, 1.15, -0.55, -0.08, 0.05, 0.24, "base"),
     ("Winter_Medium_FallenLog_Front", "fallen_log", 11.5, -15.5, 5.0, 1.50, 1.08, 1.08, 0.04, 0.08, 0.22, "medium"),
     ("Winter_Medium_PathLog_West", "fallen_log", -12.5, -36.0, 3.7, 1.08, 0.82, -0.72, 0.03, -0.07, 0.24, "medium"),
     ("Winter_High_PathTrunk_East", "dead_trunk", 12.8, -40.0, 3.4, 1.02, 0.78, 0.64, -0.05, 0.06, 0.24, "high"),
@@ -484,7 +477,7 @@ def hearth_soil_material():
 SNOW = snow_material()
 ICE = ice_material()
 SETTLEMENT_PATH = snow_material(
-    "Winter Settlement Packed Snow", (0.82, 0.88, 0.94), 0.12
+    "Winter Settlement Packed Snow", (0.72, 0.79, 0.86), 0.1
 )
 SETTLEMENT_TIMBER = principled_material(
     "Winter Settlement Graybox Timber", (0.22, 0.15, 0.11), 0.88
@@ -811,13 +804,27 @@ def sample_cluster_point(rng, cluster):
     )
 
 
+def enters_fire_court_social_exclusion(x, y, padding=0.0):
+    """Return whether a Blender-plan footprint intrudes on the live gathering."""
+    social_min_y = -FIRE_COURT_SOCIAL_MAX_Z
+    social_max_y = -FIRE_COURT_SOCIAL_MIN_Z
+    return (
+        FIRE_COURT_SOCIAL_MIN_X - padding
+        <= x
+        <= FIRE_COURT_SOCIAL_MAX_X + padding
+        and social_min_y - padding <= y <= social_max_y + padding
+    )
+
+
 def tree_enters_settlement_exclusion(x, y, asset):
     margin = SETTLEMENT_LAYOUT["requirements"][
         "minimumTreeExclusionMarginMetres"
     ]
+    padding = asset["footprintRadius"] + margin
+    if enters_fire_court_social_exclusion(x, y, padding):
+        return True
     for exclusion in SETTLEMENT_LAYOUT["treeExclusions"]:
         center = runtime_point_to_blender(exclusion["center"])
-        padding = asset["footprintRadius"] + margin
         if exclusion["shape"] == "circle":
             if math.hypot(x - center[0], y - center[1]) < exclusion["radius"] + padding:
                 return True
@@ -1464,7 +1471,8 @@ def create_lodge_production():
     annotate_settlement(chimney_anchor, "settlement-chimney")
     chimney_anchor["tka_runtime_smoke_anchor"] = True
 
-    create_lodge_woodpile(LODGE_PAD_HEIGHT, burial)
+    if not asset.get("integratedWoodBay", False):
+        create_lodge_woodpile(LODGE_PAD_HEIGHT, burial)
     hide_source(source)
     return lodge
 
@@ -2536,6 +2544,10 @@ def verify_layout(tree_records):
     prop_placements = [*ROCK_PLACEMENTS, *DEADWOOD_PLACEMENTS]
     for placement in prop_placements:
         name, _family, x, y, sx, sy, _sz, _yaw, _tilt_x, _tilt_y, burial, _tier = placement
+        if enters_fire_court_social_exclusion(x, y, max(sx, sy) * 0.5):
+            raise RuntimeError(
+                f"Authored scenery intrudes on the fire-court audience clearing: {name}"
+            )
         nearest_edge = math.hypot(x, y) - max(sx, sy) * 0.5
         if nearest_edge < CLEARING_RADIUS + 1.0:
             raise RuntimeError(f"Prop entered the performance buffer: {name}")

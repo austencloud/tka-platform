@@ -1,17 +1,18 @@
 {
-  "version": 1,
+  "version": 3,
   "sceneId": "moonlit-winter-hollow",
   "asset": {
-    "id": "winter-keeper-lodge",
-    "source": "static/models/winter/settlement/winter-keeper-lodge_raw.glb",
-    "targetDimensions": [7.8, 6.4, 5.2],
-    "burialDepth": 0.16,
-    "decimationRatio": 0.82,
-    "yawCorrectionDegrees": 0,
+    "id": "winter-keeper-lodge-meshy7-r1",
+    "source": "static/models/winter/settlement/meshy7-candidates/winter-keeper-lodge-meshy7-r1_raw.glb",
+    "targetDimensions": [12, 9.8, 8],
+    "burialDepth": 0.2,
+    "decimationRatio": 1,
+    "yawCorrectionDegrees": 180,
+    "integratedWoodBay": true,
     "textureBudgetContribution": 4
   },
   "chimney": {
-    "local": [2.15, 0.95, 5.05],
+    "local": [3.3076923077, -1.4546875, 7.7692307692],
     "smokeArea": [1.2, 4.8, 1.2],
     "smokeCount": 18,
     "smokeColors": ["#87909a", "#a7b0ba", "#c5cbd1"],
@@ -22,22 +23,22 @@
   "windows": [
     {
       "id": "front-west",
-      "local": [-1.72, -3.12, 1.72],
+      "local": [-2.6461538462, 4.7775, 2.6461538462],
       "dimensions": [0.92, 0.08, 0.82],
       "yawDegrees": 0
     },
     {
-      "id": "east-side",
-      "local": [3.93, -0.82, 1.68],
+      "id": "rear-door",
+      "local": [0, -4.83875, 2.5846153846],
       "dimensions": [0.08, 0.9, 0.78],
       "yawDegrees": 0
     }
   ],
   "windowLight": {
-    "local": [-0.35, -3.8, 1.6],
+    "local": [0, 5.81875, 2.5384615385],
     "color": "#ff8a3d",
-    "intensity": 16,
-    "distance": 9,
+    "intensity": 28,
+    "distance": 12,
     "decay": 1.7
   },
   "woodpile": {
@@ -51,7 +52,10 @@
   },
   "requirements": {
     "windowCount": 2,
-    "minimumWoodpileLogs": 10,
+    "minimumWoodpileLogs": 0,
+    "referenceAvatarHeightMetres": 1.8,
+    "sourceDoorToRidgeRatio": 0.2625,
+    "minimumDoorHeightMetres": 2.05,
     "maximumEnvelopeErrorMetres": 0.03
   }
 }

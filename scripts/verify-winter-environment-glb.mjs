@@ -285,26 +285,50 @@ const settlementByRole = Object.groupBy(
   settlementNodes,
   (node) => node.extras.tka_role
 );
+const heroDeliveryRoles = new Set(["settlement-lodge", "settlement-seat"]);
+const heroMeshIndices = new Set(
+  (gltf.nodes ?? [])
+    .filter(
+      (node) =>
+        node.mesh !== undefined && heroDeliveryRoles.has(node.extras?.tka_role)
+    )
+    .map((node) => node.mesh)
+);
+const heroMaterialIndices = new Set(
+  [...heroMeshIndices].flatMap((meshIndex) =>
+    (gltf.meshes?.[meshIndex]?.primitives ?? [])
+      .map((primitive) => primitive.material)
+      .filter((materialIndex) => materialIndex !== undefined)
+  )
+);
 const woodpileLogs = semanticNodes.filter(
   (node) => node.extras.tka_role === "lodge-woodpile-log"
 );
 const detailTextureIndices = new Set();
 const colorTextureIndices = new Set();
-for (const material of gltf.materials ?? []) {
+const heroDetailTextureIndices = new Set();
+const heroColorTextureIndices = new Set();
+for (const [materialIndex, material] of (gltf.materials ?? []).entries()) {
   for (const textureInfo of [
     material.normalTexture,
     material.occlusionTexture,
     material.pbrMetallicRoughness?.metallicRoughnessTexture,
   ]) {
-    if (textureInfo?.index !== undefined)
+    if (textureInfo?.index !== undefined) {
       detailTextureIndices.add(textureInfo.index);
+      if (heroMaterialIndices.has(materialIndex))
+        heroDetailTextureIndices.add(textureInfo.index);
+    }
   }
   for (const textureInfo of [
     material.emissiveTexture,
     material.pbrMetallicRoughness?.baseColorTexture,
   ]) {
-    if (textureInfo?.index !== undefined)
+    if (textureInfo?.index !== undefined) {
       colorTextureIndices.add(textureInfo.index);
+      if (heroMaterialIndices.has(materialIndex))
+        heroColorTextureIndices.add(textureInfo.index);
+    }
   }
 }
 const textureDimensions = (gltf.textures ?? []).map((_, textureIndex) => {
@@ -406,17 +430,52 @@ invariant(
   `Winter upload vertex budget exceeded: ${uploadedPositionVertexCount}`
 );
 invariant(
-  textureDimensions.every(
-    ({ width, height }) => width <= 1024 && height <= 1024
-  ),
-  "A Winter texture exceeds the 1024px delivery ceiling"
+  textureDimensions.every(({ textureIndex, width, height }) => {
+    const heroTexture =
+      heroColorTextureIndices.has(textureIndex) ||
+      heroDetailTextureIndices.has(textureIndex);
+    const ceiling = heroTexture ? 2048 : 1024;
+    return width <= ceiling && height <= ceiling;
+  }),
+  "A Winter texture exceeds its role-specific delivery ceiling"
 );
 invariant(
-  [...detailTextureIndices].every((textureIndex) => {
+  [...heroDetailTextureIndices].every((textureIndex) => {
     const dimensions = textureDimensions[textureIndex];
-    return dimensions.width <= 512 && dimensions.height <= 512;
+    return dimensions.width <= 1024 && dimensions.height <= 1024;
   }),
-  "A Winter detail texture exceeds the 512px delivery ceiling"
+  "A lodge/chair detail texture exceeds the 1024px hero ceiling"
+);
+invariant(
+  [...detailTextureIndices]
+    .filter((textureIndex) => !heroDetailTextureIndices.has(textureIndex))
+    .every((textureIndex) => {
+      const dimensions = textureDimensions[textureIndex];
+      return dimensions.width <= 512 && dimensions.height <= 512;
+    }),
+  "A background Winter detail texture exceeds the 512px delivery ceiling"
+);
+invariant(
+  [...heroColorTextureIndices].every((textureIndex) => {
+    const dimensions = textureDimensions[textureIndex];
+    return dimensions.width <= 2048 && dimensions.height <= 2048;
+  }),
+  "A lodge/chair color texture exceeds the 2048px hero ceiling"
+);
+invariant(
+  [...colorTextureIndices]
+    .filter((textureIndex) => !heroColorTextureIndices.has(textureIndex))
+    .every((textureIndex) => {
+      const dimensions = textureDimensions[textureIndex];
+      return dimensions.width <= 1024 && dimensions.height <= 1024;
+    }),
+  "A background Winter color texture exceeds the 1024px delivery ceiling"
+);
+invariant(
+  heroMeshIndices.size > 0 &&
+    heroColorTextureIndices.size > 0 &&
+    heroDetailTextureIndices.size > 0,
+  "The lodge/chair hero-delivery texture set is empty"
 );
 invariant((tiers.base?.length ?? 0) > 0, "Base detail tier is missing");
 invariant((tiers.medium?.length ?? 0) > 0, "Medium detail tier is missing");

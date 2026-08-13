@@ -1,0 +1,32 @@
+{
+  "assetId": "winter-keeper-lodge-meshy7-r1",
+  "source": "static/models/winter/settlement/meshy7-candidates/winter-keeper-lodge-meshy7-r1_raw.glb",
+  "sourceDimensions": [
+    9.603311538696289,
+    10.934144973754883,
+    6.0
+  ],
+  "reviewDimensions": [
+    9.0,
+    7.0,
+    5.400000095367432
+  ],
+  "targetDimensions": [
+    9.0,
+    7.0,
+    5.400000095367432
+  ],
+  "meshCount": 1,
+  "triangleCount": 29294,
+  "materialCount": 1,
+  "renders": [
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-01-000.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-02-045.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-03-090.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-04-135.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-05-180.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-06-225.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-07-270.png",
+    "docs/superpowers/specs/moonlit-winter-hollow/evidence/lodge-meshy7-r1/winter-keeper-lodge-meshy7-r1-orbit-08-315.png"
+  ]
+}

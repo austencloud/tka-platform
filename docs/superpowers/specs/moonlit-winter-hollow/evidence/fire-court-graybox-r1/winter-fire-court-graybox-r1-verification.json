@@ -1,24 +1,24 @@
 {
   "sceneId": "moonlit-winter-hollow",
   "revisionId": "fire-court-graybox-r1",
-  "contractSha256": "16a046ac859b19221b37683770662c8bdf1022b9256e495168d2572535ede073",
-  "glbSha256": "dd9982d85a877e004e702fcf954439ef63a6ec3216a94350a8f291bf29c3e531",
-  "glbBytes": 658196,
+  "contractSha256": "bcb8104a087dbcc1625783c382242d1e21ee902cf1fd7a6b07cdd5eb0f6d758f",
+  "glbSha256": "e12ed0c1458dcc67390047b4bd30f0f47790a14aed16ce1719242bf47c5f681c",
+  "glbBytes": 434760,
   "glbVersion": 2,
-  "exportedNodeCount": 92,
+  "exportedNodeCount": 62,
   "exportedCameraCount": 0,
   "qaNodeCount": 0,
   "friendCount": 10,
   "friendRoleCounts": {
     "spinner": 3,
-    "seated": 4,
-    "standing": 2,
-    "rack-tender": 1
+    "standing": 7
   },
   "checks": {
     "exactTenFriends": true,
+    "noAudienceFurniture": true,
     "courtPresent": true,
-    "practiceWingPresent": true,
+    "noPracticeWingProxy": true,
+    "lodgeRouteLanternsPresent": true,
     "noQaContextExported": true,
     "noCameraExported": true,
     "underReviewAssetBudget": true,

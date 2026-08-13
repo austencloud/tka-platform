@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "sceneId": "moonlit-winter-hollow",
   "status": "approved",
   "approval": {
@@ -7,11 +7,10 @@
     "approver": "Austen",
     "approvedAt": "2026-08-10T12:09:23.7844481-05:00",
     "quote": "Sounds glorious to me, full send",
-    "museumTrackerItem": "nXwi8yYiKJRSBi3rgAZs",
     "visualComprehensionConfirmed": true
   },
   "coordinateFrame": "Runtime x/z in metres; north and upstage are negative z",
-  "intent": "One cinematic winter-retreat composition: performance ice first, inhabited lodge second, natural frozen pond third",
+  "intent": "One cinematic winter-retreat composition: intimate fire court first, inhabited warming lodge second, natural frozen pond third",
   "currentArrangement": {
     "lodgeCenter": [-16, -28],
     "hearthCenter": [-11, -15],
@@ -37,15 +36,15 @@
     },
     "lodge": {
       "center": [-24, -38],
-      "footprint": [7.8, 6.4],
+      "footprint": [12, 9.8],
       "targetPadElevation": 2.6,
       "role": "warm secondary anchor",
       "treatment": "Partly nested into the upstage-left tree line with the porch and windows facing the stage route"
     },
     "hearth": {
       "center": [-34, -30],
-      "clearedRadius": 3.1,
-      "seatRadius": 3.05,
+      "clearedRadius": 3.4,
+      "seatRadius": 3.25,
       "targetPadElevation": 2.45,
       "role": "lodge-side social pocket",
       "treatment": "A lateral spur beside the lodge, never a checkpoint between lodge and stage"

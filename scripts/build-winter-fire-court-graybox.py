@@ -62,7 +62,6 @@ COLLECTIONS = {
     "ROUTES": collection("WF_02_Routes"),
     "FRIENDS": collection("WF_03_Ten_Friends"),
     "FURNISHINGS": collection("WF_04_Furnishings"),
-    "WING": collection("WF_05_Practice_Wing"),
     "QA": collection("QA_Context_Not_Exported"),
     "CAMERAS": collection("QA_Cameras_Not_Exported"),
 }
@@ -96,19 +95,10 @@ def material(
 COURT = material("WF_Mat_FireSafeStone", (0.055, 0.065, 0.075, 1), 0.92)
 APRON = material("WF_Mat_AshSafetyApron", (0.12, 0.13, 0.14, 1), 1)
 CURB = material("WF_Mat_SnowBankedCurb", (0.46, 0.52, 0.57, 1), 0.88)
-PATH = material("WF_Mat_PackedSnowRoute", (0.62, 0.72, 0.82, 1), 0.95)
+PATH = material("WF_Mat_PackedSnowRoute", (0.5, 0.58, 0.66, 1), 0.98)
 TIMBER = material("WF_Mat_DarkTimber", (0.16, 0.075, 0.035, 1), 0.82)
-ROOF = material("WF_Mat_SnowRoof", (0.64, 0.72, 0.8, 1), 0.9)
-GLASS = material(
-    "WF_Mat_WarmWindow",
-    (0.85, 0.32, 0.07, 1),
-    0.35,
-    emission=(1, 0.22, 0.025, 1),
-    emission_strength=2.8,
-)
 PROXY_ACTIVE = material("WF_Mat_ActiveFriend", (0.11, 0.36, 0.54, 1), 0.72)
 PROXY_GUEST = material("WF_Mat_GuestFriend", (0.28, 0.18, 0.36, 1), 0.76)
-PROXY_TENDER = material("WF_Mat_RackTender", (0.2, 0.39, 0.26, 1), 0.76)
 FIRE = material(
     "WF_Mat_SpinnerFire",
     (1, 0.13, 0.01, 1),
@@ -333,15 +323,15 @@ def add_friend(friend: dict) -> None:
     blender_y = -runtime_z
     role = friend["role"]
     seated = role == "seated"
+    surface_elevation = friend.get("surfaceElevation", court["surfaceElevation"])
+    proxy_lift = surface_elevation - court["surfaceElevation"]
     body_height = 0.82 if seated else 1.12
     body_center = 0.7 if seated else 0.86
     head_height = 1.24 if seated else 1.62
-    friend_material = (
-        PROXY_ACTIVE if role == "spinner" else PROXY_TENDER if role == "rack-tender" else PROXY_GUEST
-    )
+    friend_material = PROXY_ACTIVE if role == "spinner" else PROXY_GUEST
     body = add_cylinder(
         f"WF_Friend_{friend['id']}_Body",
-        (runtime_x, blender_y, body_center),
+        (runtime_x, blender_y, body_center + proxy_lift),
         0.22,
         body_height,
         friend_material,
@@ -355,10 +345,11 @@ def add_friend(friend: dict) -> None:
         tka_friend_id=friend["id"],
         tka_friend_role=role,
         tka_facing_degrees=friend["facingDegrees"],
+        tka_surface_elevation=surface_elevation,
     )
     add_sphere(
         f"WF_Friend_{friend['id']}_Head",
-        (runtime_x, blender_y, head_height),
+        (runtime_x, blender_y, head_height + proxy_lift),
         0.21,
         friend_material,
         COLLECTIONS["FRIENDS"],
@@ -367,8 +358,8 @@ def add_friend(friend: dict) -> None:
     if seated:
         add_segment(
             f"WF_Friend_{friend['id']}_Legs",
-            (runtime_x, blender_y, 0.58),
-            (runtime_x + 0.32, blender_y - 0.05, 0.32),
+            (runtime_x, blender_y, 0.58 + proxy_lift),
+            (runtime_x + 0.32, blender_y - 0.05, 0.32 + proxy_lift),
             0.13,
             0.13,
             friend_material,
@@ -405,30 +396,6 @@ def add_friend(friend: dict) -> None:
 for friend in CONTRACT["friends"]:
     add_friend(friend)
 
-for index, bench in enumerate(CONTRACT["furnishings"]["benchSegments"]):
-    x, runtime_z = bench["center"]
-    rotation = math.radians(-bench["rotationDegrees"])
-    add_box(
-        f"WF_Bench_Seat_{index + 1}",
-        (x, -runtime_z, 0.48),
-        (bench["length"], 0.56, 0.18),
-        TIMBER,
-        COLLECTIONS["FURNISHINGS"],
-        rotation=(0, 0, rotation),
-        bevel=0.08,
-        role="informal-bench",
-    )
-    add_box(
-        f"WF_Bench_Back_{index + 1}",
-        (x - 0.04, -runtime_z + 0.22, 0.88),
-        (bench["length"], 0.16, 0.62),
-        TIMBER,
-        COLLECTIONS["FURNISHINGS"],
-        rotation=(0, 0, rotation),
-        bevel=0.06,
-        role="informal-bench",
-    )
-
 for index, lantern in enumerate(CONTRACT["furnishings"]["entryLanterns"]):
     x, runtime_z = lantern["position"]
     add_cylinder(
@@ -450,82 +417,26 @@ for index, lantern in enumerate(CONTRACT["furnishings"]["entryLanterns"]):
         "entry-lantern",
     )
 
-rack = CONTRACT["furnishings"]["propRack"]
-rack_x, rack_z = rack["position"]
-add_box(
-    "WF_PropRack_Base",
-    (rack_x, -rack_z, 0.9),
-    (2.0, 0.45, 1.8),
-    TIMBER,
-    COLLECTIONS["FURNISHINGS"],
-    rotation=(0, 0, math.radians(-rack["rotationDegrees"])),
-    bevel=0.05,
-    role="fire-prop-rack",
-)
-for index in range(5):
-    offset = (index - 2) * 0.32
+for index, lantern in enumerate(CONTRACT["furnishings"]["routeLanterns"]):
+    x, runtime_z = lantern["position"]
+    surface = lantern["surfaceElevation"]
     add_cylinder(
-        f"WF_PropRack_Prop_{index + 1}",
-        (rack_x + offset, -rack_z - 0.28, 1.35),
-        0.045,
-        1.55,
-        FIRE if index in {1, 3} else CURB,
+        f"WF_RouteLantern_Post_{index + 1}",
+        (x, -runtime_z, surface + 0.72),
+        0.08,
+        1.44,
+        TIMBER,
         COLLECTIONS["FURNISHINGS"],
-        8,
-        "stored-fire-prop",
+        10,
+        "route-lantern",
     )
-
-wood = CONTRACT["furnishings"]["woodStack"]
-wood_x, wood_z = wood["position"]
-for row in range(2):
-    for index in range(4 - row):
-        add_box(
-            f"WF_WoodStack_{row}_{index}",
-            (wood_x + (index - 1.5 + row * 0.5) * 0.52, -wood_z, 0.22 + row * 0.34),
-            (0.46, 1.15, 0.28),
-            TIMBER,
-            COLLECTIONS["FURNISHINGS"],
-            rotation=(0, 0, math.radians(-wood["rotationDegrees"])),
-            bevel=0.08,
-            role="lodge-wood-stack",
-        )
-
-wing = CONTRACT["practiceWing"]
-wing_x, wing_z = wing["center"]
-base = wing["targetPadElevation"]
-width, depth = wing["footprint"]
-add_box(
-    "WF_PracticeWing_Walls",
-    (wing_x, -wing_z, base + wing["wallHeight"] / 2),
-    (width, depth, wing["wallHeight"]),
-    TIMBER,
-    COLLECTIONS["WING"],
-    bevel=0.12,
-    role="attached-indoor-practice-wing",
-)
-roof_rise = wing["ridgeHeight"] - wing["wallHeight"]
-roof_angle = math.atan2(roof_rise, width / 2)
-roof_length = math.hypot(width / 2, roof_rise) + 0.42
-for side in (-1, 1):
-    add_box(
-        f"WF_PracticeWing_Roof_{'L' if side < 0 else 'R'}",
-        (wing_x + side * width * 0.23, -wing_z, base + wing["wallHeight"] + roof_rise * 0.5),
-        (roof_length, depth + 0.5, 0.3),
-        ROOF,
-        COLLECTIONS["WING"],
-        rotation=(0, -side * roof_angle, 0),
-        bevel=0.08,
-        role="attached-indoor-practice-wing",
-    )
-for window_index, window_z_offset in enumerate((-1.35, 0, 1.35)):
-    add_box(
-        f"WF_PracticeWing_Window_{window_index + 1}",
-        (wing_x + width / 2 + 0.016, -wing_z + window_z_offset, base + 2.35),
-        (0.045, 0.82, 1.45),
-        GLASS,
-        COLLECTIONS["WING"],
-        bevel=0.03,
-        role="practice-wing-window",
+    add_sphere(
+        f"WF_RouteLantern_Glow_{index + 1}",
+        (x, -runtime_z, surface + 1.48),
+        0.2,
+        LANTERN,
+        COLLECTIONS["FURNISHINGS"],
+        "route-lantern",
     )
 
 # QA-only context makes the Blender cameras useful without duplicating the
@@ -660,7 +571,8 @@ report = {
     "friendRoleCounts": friend_counts,
     "courtCenter": court["center"],
     "pondCenter": pond["center"],
-    "practiceWingCenter": wing["center"],
+    "lodgeCenter": lodge["center"],
+    "routeLanternCount": len(CONTRACT["furnishings"]["routeLanterns"]),
     "renders": render_paths,
 }
 REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

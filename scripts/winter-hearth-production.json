@@ -1,12 +1,12 @@
 {
-  "version": 3,
+  "version": 4,
   "sceneId": "moonlit-winter-hollow",
   "intent": "A maintained five-person fireside pocket beside the warming lodge and clear of the stage route",
   "chair": {
     "id": "winter-cedar-adirondack-chair",
     "source": "static/models/winter/settlement/winter-cedar-adirondack-chair_raw.glb",
-    "targetDimensions": [0.86, 0.98, 1.04],
-    "burialDepth": 0.07,
+    "targetDimensions": [1.04, 1.18, 1.25],
+    "burialDepth": 0.08,
     "decimationRatio": 0.82,
     "yawCorrectionDegrees": 0,
     "textureBudgetContribution": 4,
@@ -35,6 +35,7 @@
   },
   "requirements": {
     "chairCount": 5,
+    "minimumChairDimensions": [1, 1.1, 1.2],
     "minimumStoneCount": 10,
     "minimumFuelLogCount": 4,
     "minimumEmberCount": 10,

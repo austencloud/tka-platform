@@ -48,7 +48,10 @@ assert.equal(glb.readUInt32LE(8), glb.byteLength);
 const jsonChunkLength = glb.readUInt32LE(12);
 assert.equal(glb.readUInt32LE(16), 0x4e4f534a);
 const document = JSON.parse(
-  glb.subarray(20, 20 + jsonChunkLength).toString("utf8").trim()
+  glb
+    .subarray(20, 20 + jsonChunkLength)
+    .toString("utf8")
+    .trim()
 );
 
 const nodes = document.nodes ?? [];
@@ -71,19 +74,34 @@ assert.ok(
 assert.equal(friendBodies.length, contract.requirements.friendCount);
 assert.deepEqual(roleCounts, {
   spinner: contract.requirements.spinnerCount,
-  seated: contract.requirements.seatedCount,
   standing: contract.requirements.standingCount,
-  "rack-tender": contract.requirements.rackTenderCount,
 });
+assert.ok(
+  exportedNames.every(
+    (name) => !name.startsWith("WF_Bench_") && !name.startsWith("WF_PropRack_")
+  ),
+  "Rejected audience furniture remains in the GLB"
+);
 assert.ok(
   exportedNames.includes("WF_Court_Surface"),
   "The fire-court surface is missing"
 );
 assert.ok(
-  exportedNames.includes("WF_PracticeWing_Walls"),
-  "The attached practice wing is missing"
+  exportedNames.every((name) => !name.startsWith("WF_PracticeWing_")),
+  "The rejected practice-wing graybox remains in the GLB"
 );
-assert.ok(glb.byteLength < 1_500_000, "The review GLB exceeds its 1.5 MB budget");
+const routeLanternPosts = exportedNames.filter((name) =>
+  name.startsWith("WF_RouteLantern_Post_")
+);
+assert.equal(
+  routeLanternPosts.length,
+  contract.furnishings.routeLanterns.length,
+  "The lodge route lost one of its lantern markers"
+);
+assert.ok(
+  glb.byteLength < 1_500_000,
+  "The review GLB exceeds its 1.5 MB budget"
+);
 assert.equal(builderReport.sourceDigest, digest(contractBytes));
 assert.equal(builderReport.exportedCameraCount, 0);
 assert.equal(builderReport.exportedLightCount, 0);
@@ -102,8 +120,10 @@ const verification = {
   friendRoleCounts: roleCounts,
   checks: {
     exactTenFriends: true,
+    noAudienceFurniture: true,
     courtPresent: true,
-    practiceWingPresent: true,
+    noPracticeWingProxy: true,
+    lodgeRouteLanternsPresent: true,
     noQaContextExported: true,
     noCameraExported: true,
     underReviewAssetBudget: true,

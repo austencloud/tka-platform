@@ -6,20 +6,6 @@ type Point2 = readonly [number, number];
 const distance = (left: Point2, right: Point2) =>
   Math.hypot(left[0] - right[0], left[1] - right[1]);
 
-const pointToSegmentDistance = (point: Point2, start: Point2, end: Point2) => {
-  const dx = end[0] - start[0];
-  const dz = end[1] - start[1];
-  const lengthSquared = dx * dx + dz * dz;
-  const amount = Math.max(
-    0,
-    Math.min(
-      1,
-      ((point[0] - start[0]) * dx + (point[1] - start[1]) * dz) / lengthSquared
-    )
-  );
-  return distance(point, [start[0] + dx * amount, start[1] + dz * amount]);
-};
-
 const ellipseRadiusAt = (
   center: Point2,
   radiusX: number,
@@ -45,9 +31,8 @@ describe("Winter fire-court graybox revision", () => {
     expect(
       layout.friends.filter(({ role }) => role === "standing")
     ).toHaveLength(layout.requirements.standingCount);
-    expect(
-      layout.friends.filter(({ role }) => role === "rack-tender")
-    ).toHaveLength(layout.requirements.rackTenderCount);
+    expect(layout.furnishings).not.toHaveProperty("benchSegments");
+    expect(layout.furnishings).not.toHaveProperty("propRack");
   });
 
   it("keeps all three spinners inside the court with safe spacing", () => {
@@ -77,9 +62,17 @@ describe("Winter fire-court graybox revision", () => {
     }
   });
 
+  it("faces every performer toward the audience side of the court", () => {
+    const spinners = layout.friends.filter(({ role }) => role === "spinner");
+
+    for (const spinner of spinners) {
+      expect(spinner.facingDegrees).toBe(layout.court.performerFacingDegrees);
+    }
+  });
+
   it("holds the audience outside the fire court edge", () => {
     const center = layout.court.center as Point2;
-    const audience = layout.friends.filter(({ role }) => role !== "spinner");
+    const audience = layout.friends.filter(({ role }) => role === "standing");
 
     for (const friend of audience) {
       const position = friend.position as Point2;
@@ -91,32 +84,32 @@ describe("Winter fire-court graybox revision", () => {
         position
       );
       expect(radialDistance - courtRadius).toBeGreaterThanOrEqual(
-        layout.requirements.minimumAudienceCourtEdgeClearanceMetres
+        layout.requirements.minimumStandingCourtEdgeClearanceMetres
       );
     }
   });
 
-  it("places the arrival spine between the court and frozen pond", () => {
-    const primaryPath = layout.paths.find(
-      ({ id }) => id === "south-entry-to-lodge"
-    );
-    expect(primaryPath).toBeDefined();
+  it("turns every audience member toward the performance core", () => {
+    const center = layout.court.center as Point2;
+    const audience = layout.friends.filter(({ role }) => role !== "spinner");
 
-    const courtCenter = layout.court.center as Point2;
-    const pathPoints = primaryPath!.points.map(([x, z]) => [x, z] as Point2);
-    const pathDistance = Math.min(
-      ...pathPoints
-        .slice(1)
-        .map((point, index) =>
-          pointToSegmentDistance(courtCenter, pathPoints[index], point)
+    for (const friend of audience) {
+      const expectedFacing = Math.atan2(
+        center[0] - friend.position[0],
+        center[1] - friend.position[1]
+      );
+      const authoredFacing = (friend.facingDegrees * Math.PI) / 180;
+      const angularError = Math.abs(
+        Math.atan2(
+          Math.sin(authoredFacing - expectedFacing),
+          Math.cos(authoredFacing - expectedFacing)
         )
-    );
-    const pathEdgeClearance =
-      pathDistance - layout.court.radiusX - primaryPath!.width / 2;
-    expect(pathEdgeClearance).toBeGreaterThanOrEqual(
-      layout.requirements.minimumPrimaryPathCourtClearanceMetres
-    );
+      );
+      expect(angularError).toBeLessThan((2 * Math.PI) / 180);
+    }
+  });
 
+  it("keeps the fire court separate from the frozen pond", () => {
     const courtPondClearance =
       distance(layout.court.center as Point2, layout.pond.center as Point2) -
       layout.court.radiusX -
@@ -126,15 +119,25 @@ describe("Winter fire-court graybox revision", () => {
     );
   });
 
-  it("attaches the indoor practice wing to the existing lodge", () => {
-    const lodgeLeft = layout.lodge.center[0] - layout.lodge.footprint[0] / 2;
-    const wingRight =
-      layout.practiceWing.center[0] + layout.practiceWing.footprint[0] / 2;
-    const overlap = wingRight - lodgeLeft;
-
-    expect(overlap).toBeGreaterThanOrEqual(
-      layout.requirements.minimumPracticeWingAttachmentOverlapMetres
+  it("connects the court entry to the primary lodge route", () => {
+    const route = layout.paths.find(
+      ({ id }) => id === "fire-court-to-lodge-spur"
     );
-    expect(layout.practiceWing.wallHeight).toBeGreaterThan(4);
+    expect(route).toBeDefined();
+    expect(route).toHaveProperty("connectsToPathId", "stage-to-lodge");
+
+    const [courtEntry, , routeConnection] = route!.points;
+    const courtEdge = [
+      layout.court.center[0] + layout.court.radiusX,
+      layout.court.center[1],
+    ] as Point2;
+    expect(distance(courtEntry as Point2, courtEdge)).toBeLessThanOrEqual(
+      layout.requirements.maximumCourtEntryPathGapMetres
+    );
+    expect(distance(routeConnection as Point2, [-6, -9])).toBeLessThanOrEqual(
+      layout.requirements.maximumPrimaryRouteConnectionGapMetres
+    );
+    expect(layout.furnishings.routeLanterns).toHaveLength(3);
+    expect(layout).not.toHaveProperty("practiceWing");
   });
 });

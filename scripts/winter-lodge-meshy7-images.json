@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "sceneId": "moonlit-winter-hollow",
+  "imageRoot": "assets/meshy-refs/winter/lodge-v7",
+  "outputDirectory": "static/models/winter/settlement/meshy7-candidates",
+  "statePath": "blender/winter-lodge-meshy7-tasks.json",
+  "aiModel": "meshy-7",
+  "polycount": 30000,
+  "estimatedCreditsPerAsset": 20,
+  "maxCredits": 20,
+  "assets": [
+    {
+      "id": "winter-keeper-lodge-meshy7-r1",
+      "textureResolution": "2k",
+      "texturePrompt": "Aged dark-brown timber logs with visible end grain and joinery, rough gray stone foundation and chimney, deep natural white snow on roof ledges, warm amber window glass, weathered porch boards. Neutral baked lighting, realistic PBR materials, no terrain or detached objects."
+    }
+  ]
+}

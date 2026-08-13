@@ -1,14 +1,14 @@
 {
-  "version": 2,
+  "version": 4,
   "sceneId": "moonlit-winter-hollow",
   "coordinateFrame": "Runtime x/z in metres; Blender receives x/-z",
   "derivedFrom": "scripts/winter-composition-gate1-r2.json",
-  "intent": "The approved retreat triangle: performance ice first, lodge second, lodge-side hearth third, and natural frozen pond opposite",
+  "intent": "The approved retreat triangle: intimate fire court first, warming lodge second, lodge-side hearth third, and natural frozen pond opposite",
   "story": {
     "place": "Winter Keeper's Hollow",
     "resident": "An unnamed seasonal caretaker",
-    "guests": "Four or five visiting performers",
-    "stagePurpose": "A low timber-and-stone deck flooded into a permanently level illuminated ice floor",
+    "guests": "Ten friends gathering for a private winter fire jam",
+    "stagePurpose": "An irregular fire-safe court for three performers, linked directly to the lodge warming room",
     "waterRule": "The separate natural pond is fully frozen",
     "excludedMotifs": [
       "tents",
@@ -32,9 +32,9 @@
   "lodge": {
     "id": "warming-lodge",
     "center": [-24, -38],
-    "footprint": [7.8, 6.4],
-    "wallHeight": 3.1,
-    "ridgeHeight": 5.2,
+    "footprint": [12, 9.8],
+    "wallHeight": 4.8,
+    "ridgeHeight": 8,
     "targetPadElevation": 2.6,
     "frontFaces": [0, 0],
     "yardClearance": 1.4
@@ -42,8 +42,8 @@
   "hearth": {
     "id": "caretaker-hearth",
     "center": [-34, -30],
-    "clearedRadius": 3.1,
-    "seatRadius": 3.05,
+    "clearedRadius": 3.4,
+    "seatRadius": 3.25,
     "seatCount": 5,
     "targetPadElevation": 2.45,
     "seatAnglesDegrees": [20, 70, 120, 170, 220],
@@ -104,6 +104,19 @@
       ]
     },
     {
+      "id": "fire-court-to-lodge-spur",
+      "role": "fire-court-connection",
+      "width": 1.6,
+      "treeHalfWidth": 1.2,
+      "treeShoulderWidth": 0.9,
+      "targetElevations": [0.12, 0.34],
+      "points": [
+        [-7.7, -7],
+        [-7, -8],
+        [-6, -9]
+      ]
+    },
+    {
       "id": "pond-overlook-spur",
       "role": "quiet-visual-branch",
       "width": 1.4,
@@ -122,7 +135,7 @@
       "id": "lodge-yard",
       "shape": "lodge-rectangle",
       "center": [-24, -38],
-      "halfSize": [5.3, 4.6],
+      "halfSize": [7.5, 6.4],
       "frontFaces": [0, 0]
     },
     {
