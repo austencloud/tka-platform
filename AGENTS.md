@@ -35,9 +35,20 @@ When a user asks for a **named word** with creative freedom (e.g. "generate CAKE
 
 Does NOT apply to requests by letter, level, loopType, or length. Those: generate immediately with `constraintPreset: "smooth"`. Full workflow: `docs/reference/sequence-generation-guide.md`.
 
+## Effect Preview Sequences
+
+Effect preset labs, renderer comparisons, and other continuously playing effect
+previews use `InfiniteSequenceGenerator`, the same production generator used by
+the Infinite Spinner and Effects Lab. Generate 16 counts by default, never a
+four-count fixture. Eight counts is the minimum. Validate with
+`isEffectPreviewLoop`, and play straight through the seam with no end hold,
+reset pose, reload flash, or visible jump. If generation fails, show a retryable
+error instead of silently falling back to a short sequence. Full rule:
+`.claude/rules/sequence-generation.md`.
+
 ## Verification
 
-Every "done" or "fixed" claim needs proof: test output, runtime query output, console log, or screenshot. If you can't show proof, say: *"I've made the changes but need you to verify. Please [specific action] and tell me what you see."*
+Every "done" or "fixed" claim needs proof: test output, runtime query output, console log, or screenshot. If you can't show proof, say: _"I've made the changes but need you to verify. Please [specific action] and tell me what you see."_
 
 "Build succeeded", "I updated the config", "I changed the component" do NOT count as verification.
 
@@ -48,6 +59,7 @@ Every "done" or "fixed" claim needs proof: test output, runtime query output, co
 Run them yourself. If the tool reports errors, fix them and run again. Keep iterating until green or until you hit a genuine blocker. Only then surface it.
 
 Phrases that mean you're punting and must be removed:
+
 - "Run `npm run check` to verify"
 - "Please typecheck and commit"
 - "Let me know if the build passes"
@@ -62,11 +74,12 @@ When you catch yourself about to say "want me to research X" / "should I look in
 The user can see your context window. If you're about to spend tokens that would genuinely overload it, that's their call to make — but 99% of investigations are cheap. Prodding the code to answer a question is never a permission request.
 
 Banned patterns:
+
 - "Want me to go research..."
 - "May I look into..."
 - "Should I check what Decks uses..."
 - "It would really help to know X — want me to find out?"
-- Listing 4 options and asking the user to pick *before* narrowing the list via investigation
+- Listing 4 options and asking the user to pick _before_ narrowing the list via investigation
 
 Correct pattern: investigate → narrow to 1-2 informed options → either decide, or present a concrete recommendation with the tradeoff you actually uncovered. If genuinely 50/50 between two informed options, ask. If you haven't investigated yet, you haven't earned the right to ask.
 

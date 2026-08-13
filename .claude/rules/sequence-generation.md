@@ -24,3 +24,25 @@ generate_sequence(length: 8, constraintPreset: "smooth")
 When user provides a specific named word (e.g. "generate CAKE"), present 4 tagline options from the humor profile before generating. See full workflow in `docs/reference/sequence-generation-guide.md`.
 
 Does NOT apply to requests by letter, level, loop type, or length.
+
+## Effect Previews Use Generated LOOPs
+
+Effect preset labs, effect comparison pages, renderer studies, and other
+continuously playing effect previews use the production LOOP generator. Reuse
+`InfiniteSequenceGenerator`; do not feed these surfaces a hand-authored museum
+drill or an ordinary sequence whose player merely resets at the end.
+
+- Generate 16 counts by default. Eight counts is the minimum. Four-count
+  previews are forbidden unless Austen explicitly requests one.
+- Validate the result with `isEffectPreviewLoop`, which applies the length
+  floor and the canonical position-plus-orientation seam check.
+- Playback moves straight from the closing beat into beat one. Do not add an
+  end hold, reset pose, reload flash, or visible jump at the boundary.
+- If generation is asynchronous, render an honest loading state and a retryable
+  error state. Never fall back silently to a short fixture.
+- Orientation-cycle extension performed by the canonical generator is part of
+  the LOOP. Do not truncate it to make the count look shorter.
+
+The production references are the landing-page Infinite Spinner and
+`EffectsLabPlaybackHost.svelte`. The shared preview policy lives in
+`src/lib/shared/effects/domain/effect-preview-loop-policy.ts`.
