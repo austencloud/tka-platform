@@ -83,11 +83,32 @@ describe("deck print model", () => {
       turnIntensity: 1,
       gridMode: "diamond",
       propType: "double_staff",
+      includeHowToRead: true,
     });
 
     expect(metadata.title).toBe("Deck 042: 3 cards");
     expect(metadata.keywords).toEqual(["AB", "C"]);
     expect(metadata.deckSummary).toContain("Fire Deck  ·  Rotated");
     expect(metadata.subject).toContain("2 sequence cards + How to Read insert");
+  });
+
+  it("describes only sequence cards when the insert is disabled", () => {
+    const metadata = buildDeckPrintMetadata({
+      deckLabel: "Home Deck",
+      deckRefPadded: "043",
+      sequences: [{ word: "ABAB" }, { word: "C" }],
+      loopType: "rotated",
+      level: 2,
+      period: "quartered",
+      selectedLength: 8,
+      turnIntensity: 1,
+      gridMode: "diamond",
+      propType: "double_staff",
+      includeHowToRead: false,
+    });
+
+    expect(metadata.title).toBe("Deck 043: 2 cards");
+    expect(metadata.subject).toContain("2 sequence cards. Words:");
+    expect(metadata.subject).not.toContain("How to Read");
   });
 });

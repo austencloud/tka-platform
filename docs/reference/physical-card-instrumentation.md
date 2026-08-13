@@ -24,7 +24,9 @@ application. It does not prove that one piece of paper exists.
 
 - A PDF with nine copies of a card gets nine IDs.
 - A ZIP gets one ID for each front image.
-- Downloading a fresh front, combined PDF, or ZIP creates a new print run.
+- Preparing a front or combined PDF for a new deck/settings key creates a new
+  print run. Printing or downloading that prepared artifact again reuses the
+  run. ZIP exports still create a fresh run each time.
 - A back-only PDF creates no IDs.
 - Printing the same downloaded file more than once repeats its IDs. Those paper
   copies cannot be distinguished.

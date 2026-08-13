@@ -1,11 +1,13 @@
 <script lang="ts">
   /**
-   * Visual harness for the redesigned "Compose Your Catalog" screen.
-   * Renders the settled three-column ConfigurePrototype at realistic pane widths,
-   * with mock TnD data so the real sub-components render without Firestore.
+   * Visual harness for the live "Compose your catalog" screen. The route owns
+   * only representative data and viewport controls; production ConfigureStep
+   * remains the single presentation owner.
    */
   import { onMount } from "svelte";
-  import ConfigurePrototype from "./ConfigurePrototype.svelte";
+  import ConfigureStep from "$lib/features/choreo-card/components/deck-releaser/ConfigureStep.svelte";
+  import { createDeckReleaserState } from "$lib/features/choreo-card/components/deck-releaser/state/deck-releaser-state.svelte";
+  import { setDeckReleaserContext } from "$lib/features/choreo-card/components/deck-releaser/context/deck-releaser-context";
   import {
     initializeTkaTheme,
     applyThemeForBackground,
@@ -13,9 +15,21 @@
   } from "$lib/shared/theme/config/tka-theme-config";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getTnDTurnPatternOptions } from "$lib/features/choreo-card/services/deck-composer";
-  import type { StartOriMode, VariationConfig } from "$lib/features/choreo-card/services/deck-variation";
+  import type {
+    StartOriMode,
+    VariationConfig,
+  } from "$lib/features/choreo-card/services/deck-variation";
   import type { ResolvedReversalPattern } from "$lib/features/choreo-card/domain/reversal-transform";
   import type { TnDFamilyOption } from "$lib/features/choreo-card/services/deck-composer";
+
+  const deckState = createDeckReleaserState({
+    storage: null,
+    getBluePropType: () => null,
+    getRedPropType: () => null,
+    mintSeed: () => "configure-preview",
+    nextReferenceNumber: () => 1,
+  });
+  setDeckReleaserContext({ state: deckState });
 
   const FAMILY_DEFS = [
     { id: "split-same", label: "Split-Same", count: 21 },
@@ -41,8 +55,7 @@
 
   const tndTurnPatterns = getTnDTurnPatternOptions(126);
 
-  let deckMode = $state<"loop" | "tnd">("loop");
-  let notes = $state("Fire Drums 2026");
+  let deckMode = $state<"loop" | "tnd" | "gallery">("gallery");
 
   // ── LOOP mock state ──
   let weights = $state([
@@ -51,21 +64,30 @@
     { stepCount: 8, weight: 25, available: 108 },
     { stepCount: 4, weight: 15, available: 10 },
   ]);
-  let totalCards = $state(52);
+  deckState.totalCards = 54;
+  deckState.notes = "Fire Drums 2026";
   const sources = [
     { sliceType: "halved" as const, catalogCount: 2, sequenceCount: 11972 },
     { sliceType: "quartered" as const, catalogCount: 4, sequenceCount: 19804 },
   ];
-  let selectedSlices = $state<Set<"halved" | "quartered">>(new Set(["quartered"]));
+  let selectedSlices = $state<Set<"halved" | "quartered">>(
+    new Set(["quartered"])
+  );
   let variationConfig = $state<VariationConfig>({
     reversalFrequency: 0.4,
     enabledReversals: ["book", "long-book", "alternating"],
     turnFrequency: 0.5,
-    enabledTurnPatterns: ["hold-1", "pulse-1", "trade-1", "half-trade", "wave-21"],
+    enabledTurnPatterns: [
+      "hold-1",
+      "pulse-1",
+      "trade-1",
+      "half-trade",
+      "wave-21",
+    ],
   });
   let selectedTnDFamilies = $state<Set<string>>(new Set(["split-opp"]));
   let selectedTnDTurnPatterns = $state<Set<string>>(
-    new Set(["0|0", "0.5|0.5", "1|1", "1.5|1.5", "2|2", "2.5|2.5", "3|3"]),
+    new Set(["0|0", "0.5|0.5", "1|1", "1.5|1.5", "2|2", "2.5|2.5", "3|3"])
   );
   let startOriModes = $state<Set<StartOriMode>>(new Set(["radial"]));
   let gridModes = $state<Set<"diamond" | "box">>(new Set(["diamond"]));
@@ -76,11 +98,13 @@
     [...selectedTnDFamilies].reduce((sum, id) => {
       const fam = tndFamilies.find((f) => f.familyId === id);
       return sum + (fam ? fam.sequenceCount : 0);
-    }, 0),
+    }, 0)
   );
   // Source pool = families × turn patterns (before the Transform panel multiplies).
   const sourceCount = $derived(familySeqSum * selectedTurnPatternCount);
-  const tndCardCount = $derived(sourceCount * startOriModes.size * gridModes.size);
+  const tndCardCount = $derived(
+    sourceCount * startOriModes.size * gridModes.size
+  );
 
   function toggleIn<T>(set: Set<T>, v: T, allowEmpty = false): Set<T> {
     const next = new Set(set);
@@ -131,7 +155,12 @@
     <div class="group">
       <span class="bar-label">Theme</span>
       {#each THEMES as t (t.id)}
-        <button type="button" class="chip" class:active={activeTheme === t.id} onclick={() => selectTheme(t.id)}>
+        <button
+          type="button"
+          class="chip"
+          class:active={activeTheme === t.id}
+          onclick={() => selectTheme(t.id)}
+        >
           {t.label}
         </button>
       {/each}
@@ -139,37 +168,56 @@
     <div class="group">
       <span class="bar-label">Width</span>
       {#each WIDTHS as w (w.id)}
-        <button type="button" class="chip" class:active={paneWidth === w.px} onclick={() => (paneWidth = w.px)}>
+        <button
+          type="button"
+          class="chip"
+          class:active={paneWidth === w.px}
+          onclick={() => (paneWidth = w.px)}
+        >
           {w.label}
         </button>
       {/each}
     </div>
     <div class="group">
       <span class="bar-label">Mode</span>
-      {#each [{ id: "loop", label: "LOOP" }, { id: "tnd", label: "TnD" }] as const as m (m.id)}
-        <button type="button" class="chip" class:active={deckMode === m.id} onclick={() => (deckMode = m.id)}>
+      {#each [{ id: "loop", label: "LOOP" }, { id: "tnd", label: "TnD" }, { id: "gallery", label: "Gallery" }] as const as m (m.id)}
+        <button
+          type="button"
+          class="chip"
+          class:active={deckMode === m.id}
+          onclick={() => (deckMode = m.id)}
+        >
           {m.label}
         </button>
       {/each}
     </div>
   </div>
 
-  <div class="pane" style={paneWidth ? `width: ${paneWidth}px;` : "width: 100%;"}>
-    <ConfigurePrototype
+  <div
+    class="pane"
+    style={paneWidth ? `width: ${paneWidth}px;` : "width: 100%;"}
+  >
+    <ConfigureStep
       {deckMode}
-      {notes}
-      onModeChange={(m) => (deckMode = m)}
-      onNotesChange={(n) => (notes = n)}
+      notes={deckState.notes}
+      onModeChange={(m) => {
+        deckMode = m;
+        deckState.deckMode = m;
+      }}
+      onNotesChange={(n) => (deckState.notes = n)}
       {tndFamilies}
       {selectedTnDFamilies}
-      onTnDFamilyToggle={(id) => (selectedTnDFamilies = toggleIn(selectedTnDFamilies, id, true))}
-      onSelectAllFamilies={() => (selectedTnDFamilies = new Set(tndFamilies.map((f) => f.familyId)))}
+      onTnDFamilyToggle={(id) =>
+        (selectedTnDFamilies = toggleIn(selectedTnDFamilies, id, true))}
+      onSelectAllFamilies={() =>
+        (selectedTnDFamilies = new Set(tndFamilies.map((f) => f.familyId)))}
       onClearFamilies={() => (selectedTnDFamilies = new Set())}
       {selectedTurnPatternCount}
       {tndCardCount}
       {tndTurnPatterns}
       {selectedTnDTurnPatterns}
-      onTnDTurnPatternToggle={(tp) => (selectedTnDTurnPatterns = toggleIn(selectedTnDTurnPatterns, tp, true))}
+      onTnDTurnPatternToggle={(tp) =>
+        (selectedTnDTurnPatterns = toggleIn(selectedTnDTurnPatterns, tp, true))}
       onTnDTurnPatternsSet={(s) => (selectedTnDTurnPatterns = s)}
       {startOriModes}
       onToggleStartOriMode={(m) => (startOriModes = toggleIn(startOriModes, m))}
@@ -179,15 +227,18 @@
       onReversalChange={(p) => (reversalPattern = p)}
       onDraw={() => {}}
       {weights}
-      {totalCards}
-      {sources}
-      {selectedSlices}
+      totalCards={deckState.totalCards}
+      sourceSummaries={sources}
+      selectedSliceTypes={selectedSlices}
       {variationConfig}
-      onTotalChange={(n) => (totalCards = n)}
-      onSliceToggle={(s) => (selectedSlices = toggleIn(selectedSlices, s))}
+      onTotalCardsChange={(n) => (deckState.totalCards = n)}
+      onSliceTypeToggle={(s) => (selectedSlices = toggleIn(selectedSlices, s))}
       onWeightChange={(stepCount, weight) =>
-        (weights = weights.map((w) => (w.stepCount === stepCount ? { ...w, weight } : w)))}
-      onVariationChange={(c) => (variationConfig = c)}
+        (weights = weights.map((w) =>
+          w.stepCount === stepCount ? { ...w, weight } : w
+        ))}
+      onVariationConfigChange={(c) => (variationConfig = c)}
+      isLoading={false}
     />
   </div>
 </div>
@@ -204,11 +255,12 @@
        Only tokens the theme package doesn't emit + design constants stay. */
     --theme-text-muted: rgba(255, 255, 255, 0.55);
     --theme-text-on-accent: #fff;
-    --min-touch-target: 40px;
+    --min-touch-target: 44px;
     --duration-fast: 150ms;
     --duration-normal: 220ms;
     --font-size-compact: 12px;
-    --font-size-sm: 13px;
+    --font-size-min: 14px;
+    --font-size-sm: 14px;
     --z-dropdown: 50;
   }
 
@@ -260,5 +312,14 @@
     margin: 0 auto;
     max-width: 100%;
     border-inline: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+
+  @media (min-width: 2600px) {
+    .harness {
+      --font-size-compact: 14px;
+      --font-size-min: 16px;
+      --font-size-sm: 16px;
+      --min-touch-target: 52px;
+    }
   }
 </style>

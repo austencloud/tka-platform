@@ -18,7 +18,13 @@
     perPage?: number;
   }
 
-  let { value, onchange, presets = [1, 3, 6, 9, 12], annotate, perPage }: Props = $props();
+  let {
+    value,
+    onchange,
+    presets = [1, 3, 6, 9, 12],
+    annotate,
+    perPage,
+  }: Props = $props();
 
   const isCustom = $derived(!presets.includes(value));
 
@@ -62,8 +68,20 @@
       class:per-page={isPerPage}
       role="radio"
       aria-checked={value === p}
-      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{isPerPage ? ', one card per page (recommended)' : a ? (a.perfect ? ', fills every sheet' : `, ${a.blanks} blank cells`) : ''}"
-      title={isPerPage ? "One card per page: a full sheet of this card, cut into identical copies. The default." : a ? (a.perfect ? "Fills every sheet, no wasted cards" : `${a.blanks} blank cells`) : undefined}
+      aria-label="{p} {p === 1 ? 'copy' : 'copies'} per card{isPerPage
+        ? ', one card per page (recommended)'
+        : a
+          ? a.perfect
+            ? ', fills every sheet'
+            : `, ${a.blanks} blank cells`
+          : ''}"
+      title={isPerPage
+        ? "One card per page: a full sheet of this card, cut into identical copies. The default."
+        : a
+          ? a.perfect
+            ? "Fills every sheet, no wasted cards"
+            : `${a.blanks} blank cells`
+          : undefined}
       onclick={() => onchange(p)}
     >
       <span class="copies-num">{p}</span>
@@ -75,6 +93,7 @@
     <input
       class="copies-custom"
       type="number"
+      name="custom-copies-per-card"
       min="1"
       inputmode="numeric"
       aria-label="Custom copies per card"
@@ -108,7 +127,9 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     border: none;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
 
   .copies-option:not(:last-child),
@@ -147,9 +168,14 @@
      persistent accent treatment so it stands apart from the plain counts even
      before it's selected. (per-page wins over perfect for the badge color.) */
   .copies-option.per-page:not(.active) {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 16%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 16%,
+      transparent
+    );
     color: var(--theme-accent, #4a9eff);
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
+    box-shadow: inset 0 0 0 1.5px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
   }
 
   .copies-option.per-page:not(.active) .copies-num {
@@ -168,7 +194,11 @@
   }
 
   .copies-option.per-page:hover:not(.active) {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 26%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 26%,
+      transparent
+    );
     color: var(--theme-accent, #4a9eff);
   }
 

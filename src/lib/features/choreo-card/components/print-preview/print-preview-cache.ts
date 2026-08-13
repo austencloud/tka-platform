@@ -1,5 +1,3 @@
-import type { CardPair } from "../../services/types";
-
 export interface RenderedCard {
   frontUrl: string;
   backUrl: string;
@@ -8,7 +6,8 @@ export interface RenderedCard {
 
 export interface CachedCard {
   rendered: RenderedCard;
-  pair: CardPair | null;
+  frontBlob: Blob;
+  backBlob: Blob;
 }
 
 export const cardCache = new Map<string, CachedCard>();

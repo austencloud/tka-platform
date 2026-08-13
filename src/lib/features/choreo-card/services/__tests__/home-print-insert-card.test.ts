@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { PDFDocument, PrintScaling } from "pdf-lib";
-import { exportCalibrationPDF, exportHomePrintPDF } from "../print-pdf-exporter";
+import {
+  exportCalibrationPDF,
+  exportHomePrintPDF,
+} from "../print-pdf-exporter";
 import type { CardPair } from "../types";
 
 /**
@@ -35,11 +38,25 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
     const opts = { copies: 3, groupByElement: false };
 
     // 2 cards × 3 copies = 6 slots → 1 sheet. Insert: 3 → 1 sheet.
-    const without = await exportHomePrintPDF(pairs, "D", "poker", undefined, "combined", opts);
-    const with_ = await exportHomePrintPDF(pairs, "D", "poker", undefined, "combined", {
-      ...opts,
-      insertPair: pair("How to Read"),
-    });
+    const without = await exportHomePrintPDF(
+      pairs,
+      "D",
+      "poker",
+      undefined,
+      "combined",
+      opts
+    );
+    const with_ = await exportHomePrintPDF(
+      pairs,
+      "D",
+      "poker",
+      undefined,
+      "combined",
+      {
+        ...opts,
+        insertPair: pair("How to Read"),
+      }
+    );
 
     expect(await pageCount(without)).toBe(3); // 1 front + flip + 1 back
     expect(await pageCount(with_)).toBe(5); // 2 front + flip + 2 back
@@ -48,33 +65,94 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
   it("scales insert sheets with the copy count, not the document", async () => {
     // 12 copies of the insert overflow one 9-up sheet → 2 insert sheets.
     // A single per-document insert would add only one.
-    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "combined", {
-      copies: 12,
-      groupByElement: false,
-      insertPair: pair("How to Read"),
-    });
+    const blob = await exportHomePrintPDF(
+      [pair("ABC")],
+      "D",
+      "poker",
+      undefined,
+      "combined",
+      {
+        copies: 12,
+        groupByElement: false,
+        insertPair: pair("How to Read"),
+      }
+    );
 
     // cards: 1×12 = 12 → 2 sheets. inserts: 12 → 2 sheets. total 4 sheets.
     expect(await pageCount(blob)).toBe(9); // 4 front + flip + 4 back
   });
 
   it("leaves the document unchanged when no insert is supplied", async () => {
-    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "combined", {
-      copies: 1,
-      groupByElement: false,
-    });
+    const blob = await exportHomePrintPDF(
+      [pair("ABC")],
+      "D",
+      "poker",
+      undefined,
+      "combined",
+      {
+        copies: 1,
+        groupByElement: false,
+      }
+    );
 
     expect(await pageCount(blob)).toBe(3);
+  });
+
+  it("can emit a two-page file for direct duplex printing", async () => {
+    const blob = await exportHomePrintPDF(
+      Array.from({ length: 9 }, (_, index) => pair(`C${index + 1}`)),
+      "Festival Sampler",
+      "poker",
+      undefined,
+      "combined",
+      {
+        copies: 1,
+        groupByElement: false,
+        firstOnTop: false,
+        includeFlipInstruction: false,
+      }
+    );
+
+    expect(await pageCount(blob)).toBe(2);
+  });
+
+  it("repeats a duplex handout as complete front/back jobs", async () => {
+    const progress: Array<[number, number]> = [];
+    const blob = await exportHomePrintPDF(
+      Array.from({ length: 9 }, (_, index) => pair(`C${index + 1}`)),
+      "Festival Sampler",
+      "poker",
+      (current, total) => progress.push([current, total]),
+      "combined",
+      {
+        copies: 1,
+        jobCopies: 60,
+        groupByElement: false,
+        firstOnTop: false,
+        includeFlipInstruction: false,
+      }
+    );
+
+    expect(await pageCount(blob)).toBe(120);
+    expect(progress).toHaveLength(120);
+    expect(progress.at(-1)).toEqual([120, 120]);
   });
 
   it("emits 13x19 Super B pages holding 25 poker cards when paperSize is superb", async () => {
     // 25 cards fill exactly one 5×5 Super B sheet; on Letter they'd need 3.
     const pairs = Array.from({ length: 25 }, (_, i) => pair(`C${i}`));
-    const blob = await exportHomePrintPDF(pairs, "D", "poker", undefined, "fronts", {
-      paperSize: "superb",
-      copies: 1,
-      groupByElement: false,
-    });
+    const blob = await exportHomePrintPDF(
+      pairs,
+      "D",
+      "poker",
+      undefined,
+      "fronts",
+      {
+        paperSize: "superb",
+        copies: 1,
+        groupByElement: false,
+      }
+    );
 
     const doc = await PDFDocument.load(await blob.arrayBuffer());
     expect(doc.getPageCount()).toBe(1);
@@ -84,10 +162,17 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
   });
 
   it("keeps Letter page dimensions when paperSize is omitted", async () => {
-    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "fronts", {
-      copies: 1,
-      groupByElement: false,
-    });
+    const blob = await exportHomePrintPDF(
+      [pair("ABC")],
+      "D",
+      "poker",
+      undefined,
+      "fronts",
+      {
+        copies: 1,
+        groupByElement: false,
+      }
+    );
 
     const doc = await PDFDocument.load(await blob.arrayBuffer());
     const { width, height } = doc.getPage(0).getSize();
@@ -99,11 +184,18 @@ describe("exportHomePrintPDF with the How to Read insert", () => {
     // PrintScaling None defaults honoring viewers (Acrobat, Edge) to Actual
     // size — the guard against the shrink-to-Letter trap that printed tiny
     // cards on a 13x19 sheet.
-    const blob = await exportHomePrintPDF([pair("ABC")], "D", "poker", undefined, "fronts", {
-      paperSize: "superb",
-      copies: 1,
-      groupByElement: false,
-    });
+    const blob = await exportHomePrintPDF(
+      [pair("ABC")],
+      "D",
+      "poker",
+      undefined,
+      "fronts",
+      {
+        paperSize: "superb",
+        copies: 1,
+        groupByElement: false,
+      }
+    );
 
     const doc = await PDFDocument.load(await blob.arrayBuffer());
     const prefs = doc.catalog.getOrCreateViewerPreferences();

@@ -51,8 +51,6 @@ export interface DeckProductionStateDependencies {
     blueOrientation: Orientation,
     redOrientation: Orientation
   ): PictographData[];
-  prewarmCardPool: typeof import("$lib/shared/render/services/card-pool-prewarm").prewarmCardPool;
-  warmCardBackCaches: typeof import("../../../services/card-back/warm-card-back-caches").warmCardBackCaches;
   loadArchivedDeck(refNumber: number): Promise<ArchivedDeckPayload | null>;
   getReleasedSequenceIds(): Set<string>;
   info(message: string): void;
@@ -401,13 +399,6 @@ export function createDeckProductionState(
       position: index + 1,
       footer: { center: deck.notes },
     }));
-    deps.prewarmCardPool({
-      sequences: deck.sequences,
-      bluePropType: deck.bluePropType,
-      redPropType: deck.redPropType,
-      theme: deck.theme,
-      iconPaths: [],
-    });
     return true;
   }
 
@@ -426,13 +417,6 @@ export function createDeckProductionState(
       }
       deck.sequences = sequences;
       deck.cards = cards;
-      deps.prewarmCardPool({
-        sequences,
-        bluePropType: deck.bluePropType,
-        redPropType: deck.redPropType,
-        theme: deck.theme,
-        iconPaths: [],
-      });
       return true;
     } catch (error) {
       console.warn("Gallery draw failed:", error);
@@ -462,13 +446,6 @@ export function createDeckProductionState(
       }
       deck.sequences = sequences;
       deck.cards = cards;
-      deps.prewarmCardPool({
-        sequences,
-        bluePropType: deck.bluePropType,
-        redPropType: deck.redPropType,
-        theme: deck.theme,
-        iconPaths: [],
-      });
       deck.persist();
       deps.success(
         `Refreshed. ${sequences.length} sequences from your gallery.`
@@ -518,17 +495,6 @@ export function createDeckProductionState(
       deck.brokenLoopCount = resolved.filter(
         (item) => !item.turnLoopClosed
       ).length;
-      deps.prewarmCardPool({
-        sequences: deck.sequences,
-        bluePropType: deck.bluePropType,
-        redPropType: deck.redPropType,
-        theme: deck.theme,
-        iconPaths: deck.cards
-          .map((card) => card.footer?.iconPath)
-          .filter((path): path is string => !!path),
-      });
-      const warmSequence = deck.sequences[0];
-      if (warmSequence) deps.warmCardBackCaches(warmSequence, deck.theme);
     } catch (error) {
       console.warn("Failed to load sequences:", error);
     } finally {
@@ -550,17 +516,6 @@ export function createDeckProductionState(
         if (payload?.sequences.length) {
           deck.sequences = payload.sequences;
           deck.cards = payload.cards;
-          deps.prewarmCardPool({
-            sequences: deck.sequences,
-            bluePropType: deck.bluePropType,
-            redPropType: deck.redPropType,
-            theme: deck.theme,
-            iconPaths: deck.cards
-              .map((card) => card.footer?.iconPath)
-              .filter((path): path is string => !!path),
-          });
-          const warmSequence = deck.sequences[0];
-          if (warmSequence) deps.warmCardBackCaches(warmSequence, deck.theme);
           return;
         }
       }

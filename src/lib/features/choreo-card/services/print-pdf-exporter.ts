@@ -2,8 +2,15 @@ import { PDFDocument, PrintScaling, rgb, StandardFonts } from 'pdf-lib';
 import type { PDFFont, PDFImage, PDFPage } from 'pdf-lib';
 import { planPrintSlots, type PlannedSlot } from './print-slot-planner';
 import type { TnDElement } from '../domain/tnd-element';
-import type { CardPair } from "./types";
-import { CARD_SIZES, getPageLayout, PAPER_SIZES, type CardSizeId, type PageLayout, type PaperSizeId } from '../domain/card-sizes';
+import type { CardPair } from './types';
+import {
+	CARD_SIZES,
+	getPageLayout,
+	PAPER_SIZES,
+	type CardSizeId,
+	type PageLayout,
+	type PaperSizeId,
+} from '../domain/card-sizes';
 
 /** Ask PDF viewers to default their print dialog to 100% scale and to pick the
  *  tray holding paper that matches the page size. Acrobat and most desktop
@@ -49,22 +56,28 @@ export async function exportDeckPDF(
 		const frontImage = await pdfDoc.embedPng(canvasToPngBytes(pair.front));
 		const frontPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 		frontPage.drawImage(frontImage, {
-			x: 0, y: 0,
-			width: pageWidthPt, height: pageHeightPt
+			x: 0,
+			y: 0,
+			width: pageWidthPt,
+			height: pageHeightPt,
 		});
 
 		const backImage = await pdfDoc.embedPng(canvasToPngBytes(pair.back));
 		const backPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 		backPage.drawImage(backImage, {
-			x: 0, y: 0,
-			width: pageWidthPt, height: pageHeightPt
+			x: 0,
+			y: 0,
+			width: pageWidthPt,
+			height: pageHeightPt,
 		});
 
 		onProgress?.(i + 1, total);
 	}
 
 	const pdfBytes = await pdfDoc.save();
-	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+	return new Blob([pdfBytes.buffer as ArrayBuffer], {
+		type: 'application/pdf',
+	});
 }
 
 /** One-page scaling test sheet: the true card-grid outlines for this paper +
@@ -74,7 +87,7 @@ export async function exportDeckPDF(
  *  dialog is scaling — the fix is there, not in the deck. */
 export async function exportCalibrationPDF(
 	cardSize: CardSizeId = 'poker',
-	paperSize: PaperSizeId = 'letter',
+	paperSize: PaperSizeId = 'letter'
 ): Promise<Blob> {
 	const layout = getPageLayout(cardSize, paperSize);
 	const { cols, rows, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } = layout;
@@ -137,15 +150,18 @@ export async function exportCalibrationPDF(
 		{ text: `${paper.label} test sheet`, f: fontBold, size: 16 },
 		{
 			text: `Print dialog: Paper size ${paper.label}  ·  Scale 100% / Actual size — never "Fit to page".`,
-			f: font, size: 11,
+			f: font,
+			size: 11,
 		},
 		{
 			text: `The ruler above must measure exactly ${rulerInches} inches. Short ruler = the dialog is scaling.`,
-			f: font, size: 11,
+			f: font,
+			size: 11,
 		},
 		{
 			text: `Each outlined cell is one ${card.label} card. The grid should sit centered with even margins.`,
-			f: font, size: 11,
+			f: font,
+			size: 11,
 		},
 	];
 	let textY = rulerY - 40;
@@ -161,7 +177,9 @@ export async function exportCalibrationPDF(
 	}
 
 	const pdfBytes = await pdfDoc.save();
-	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+	return new Blob([pdfBytes.buffer as ArrayBuffer], {
+		type: 'application/pdf',
+	});
 }
 
 export type PrintPDFMode = 'combined' | 'fronts' | 'backs';
@@ -172,17 +190,34 @@ export interface HomePrintOptions {
 	paperSize?: PaperSizeId;
 	/** Whole-deck copies. Each element block repeats N times. Default 1, min 1. */
 	copies?: number;
+	/** Repeat the finished sheet set as complete print jobs. A two-page duplex
+	 *  handout with `jobCopies: 60` is emitted front/back, front/back, sixty
+	 *  times. Embedded card images are still shared across the whole PDF. */
+	jobCopies?: number;
 	/** Element tag per pair, parallel to `pairs`. Absent → no grouping (single
 	 *  trailing bucket, tail-padded). */
 	elements?: (TnDElement | undefined)[];
 	/** When false, relax the one-color-per-sheet rule: cards fill sheets in order
 	 *  with blanks only on the final sheet (no inter-color gaps). Default true. */
 	groupByElement?: boolean;
+	/** Reverse the authored card order for cut-stack collation. Deck releases
+	 * default to true. Fixed-position handout sheets set this false so the screen
+	 * grid and printed grid stay in the same order. */
+	firstOnTop?: boolean;
+	/** Combined files normally include a manual-flip instruction page between
+	 * fronts and backs. Set false for a two-page file sent straight to a duplex
+	 * printer. Default true. */
+	includeFlipInstruction?: boolean;
 	/** Document metadata embedded in the PDF (title / subject / keywords) so a
 	 *  downloaded file is indexable by deck reference + contents without opening.
 	 *  `deckSummary` also prints centered in each sheet's top margin (the recipe:
 	 *  e.g. "Rotated · Quartered · 8-step · L1 · 1 turn · Diamond · Staff"). */
-	meta?: { title?: string; subject?: string; keywords?: string[]; deckSummary?: string };
+	meta?: {
+		title?: string;
+		subject?: string;
+		keywords?: string[];
+		deckSummary?: string;
+	};
 	/** Per-occurrence front renderer. Serialized exports provide this to replace
 	 *  the shared QR with the physical ID allocated for this exact print slot. */
 	frontRenderer?: (context: {
@@ -231,25 +266,24 @@ export async function exportHomePrintPDF(
 	cardSize: CardSizeId = 'poker',
 	onProgress?: (current: number, total: number) => void,
 	mode: PrintPDFMode = 'combined',
-	options: HomePrintOptions = {},
+	options: HomePrintOptions = {}
 ): Promise<Blob> {
 	const layout = getPageLayout(cardSize, options.paperSize ?? 'letter');
-	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } = layout;
+	const { cols, cardsPerPage, cardWidthPt, cardHeightPt, gutterPt, marginXPt, marginYPt, pageWidthPt, pageHeightPt } =
+		layout;
 
 	const copies = Math.max(1, Math.floor(options.copies ?? 1));
+	const jobCopies = Math.max(1, Math.floor(options.jobCopies ?? 1));
 	const elements = options.elements ?? [];
 	const groupByElement = options.groupByElement ?? true;
+	const firstOnTop = options.firstOnTop ?? true;
 	// firstOnTop: reverse card order so the deck's FIRST card is drawn last and
 	// lands on top of the printed/cut stack (was: last card on top).
-	const indexedPairs: IndexedCardPair[] = pairs.map((pair, cardIndex) => ({ pair, cardIndex }));
-	const plannedSlots = planPrintSlots(
-		indexedPairs,
-		elements,
-		copies,
-		cardsPerPage,
-		groupByElement,
-		true
-	);
+	const indexedPairs: IndexedCardPair[] = pairs.map((pair, cardIndex) => ({
+		pair,
+		cardIndex,
+	}));
+	const plannedSlots = planPrintSlots(indexedPairs, elements, copies, cardsPerPage, groupByElement, firstOnTop);
 
 	// The insert gets its own leading sheet(s): one insert per copy, padded to a
 	// whole sheet. Routing it through planPrintSlots instead would either merge it
@@ -263,10 +297,18 @@ export async function exportHomePrintPDF(
 			isInsert: true,
 		};
 		for (let c = 0; c < copies; c++) {
-			insertSlots.push({ item: insertItem, elementName: 'How to Read', copyIndex: c });
+			insertSlots.push({
+				item: insertItem,
+				elementName: 'How to Read',
+				copyIndex: c,
+			});
 		}
 		while (insertSlots.length % cardsPerPage !== 0) {
-			insertSlots.push({ item: null, elementName: 'How to Read', copyIndex: null });
+			insertSlots.push({
+				item: null,
+				elementName: 'How to Read',
+				copyIndex: null,
+			});
 		}
 	}
 
@@ -279,7 +321,7 @@ export async function exportHomePrintPDF(
 	const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 	const includeFronts = mode === 'combined' || mode === 'fronts';
 	const includeBacks = mode === 'combined' || mode === 'backs';
-	const progressTotal = (includeFronts ? totalSheets : 0) + (includeBacks ? totalSheets : 0);
+	const progressTotal = ((includeFronts ? totalSheets : 0) + (includeBacks ? totalSheets : 0)) * jobCopies;
 	let progressCount = 0;
 
 	// Embed each unique card PNG once; reuse the handle across all N copies.
@@ -287,12 +329,18 @@ export async function exportHomePrintPDF(
 	const backImages = new Map<HTMLCanvasElement, PDFImage>();
 	const embedFront = async (c: HTMLCanvasElement): Promise<PDFImage> => {
 		let img = frontImages.get(c);
-		if (!img) { img = await pdfDoc.embedPng(canvasToPngBytes(c)); frontImages.set(c, img); }
+		if (!img) {
+			img = await pdfDoc.embedPng(canvasToPngBytes(c));
+			frontImages.set(c, img);
+		}
 		return img;
 	};
 	const embedBack = async (c: HTMLCanvasElement): Promise<PDFImage> => {
 		let img = backImages.get(c);
-		if (!img) { img = await pdfDoc.embedPng(canvasToPngBytes(c)); backImages.set(c, img); }
+		if (!img) {
+			img = await pdfDoc.embedPng(canvasToPngBytes(c));
+			backImages.set(c, img);
+		}
 		return img;
 	};
 
@@ -301,71 +349,99 @@ export async function exportHomePrintPDF(
 		return el ? `${base}  ·  ${capitalize(el)}` : base;
 	};
 
-	if (includeFronts) {
-		for (let sheet = 0; sheet < totalSheets; sheet++) {
-			const start = sheet * cardsPerPage;
-			const sheetSlots = slots.slice(start, start + cardsPerPage);
-			const frontsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+	for (let job = 0; job < jobCopies; job++) {
+		if (includeFronts) {
+			for (let sheet = 0; sheet < totalSheets; sheet++) {
+				const start = sheet * cardsPerPage;
+				const sheetSlots = slots.slice(start, start + cardsPerPage);
+				const frontsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 
-			for (let i = 0; i < sheetSlots.length; i++) {
-				const slot = sheetSlots[i]!;
-				if (!slot.item) continue;
-				const col = i % cols;
-				const row = Math.floor(i / cols);
-				const x = marginXPt + col * (cardWidthPt + gutterPt);
-				const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				// The insert has no sequence, so it never goes through the serialized
-				// renderer — its identical pixels are embedded once and reused.
-				const serialize = Boolean(options.frontRenderer) && !slot.item.isInsert;
-				const front = serialize
-					? await options.frontRenderer!({
-						pair: slot.item.pair,
-						cardIndex: slot.item.cardIndex,
-						copyIndex: slot.copyIndex!,
-						slotIndex: start + i,
-					})
-					: slot.item.pair.front;
-				// Serialized fronts are unique by definition; caching their canvas
-				// handles would retain every full-size copy for the life of the PDF.
-				const img = serialize
-					? await pdfDoc.embedPng(canvasToPngBytes(front))
-					: await embedFront(front);
-				frontsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
+				for (let i = 0; i < sheetSlots.length; i++) {
+					const slot = sheetSlots[i]!;
+					if (!slot.item) continue;
+					const col = i % cols;
+					const row = Math.floor(i / cols);
+					const x = marginXPt + col * (cardWidthPt + gutterPt);
+					const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+					// The insert has no sequence, so it never goes through the serialized
+					// renderer — its identical pixels are embedded once and reused.
+					const serialize = Boolean(options.frontRenderer) && !slot.item.isInsert;
+					const front = serialize
+						? await options.frontRenderer!({
+								pair: slot.item.pair,
+								cardIndex: slot.item.cardIndex,
+								copyIndex: slot.copyIndex!,
+								slotIndex: start + i,
+							})
+						: slot.item.pair.front;
+					// Serialized fronts are unique by definition; caching their canvas
+					// handles would retain every full-size copy for the life of the PDF.
+					const img = serialize ? await pdfDoc.embedPng(canvasToPngBytes(front)) : await embedFront(front);
+					frontsPage.drawImage(img, {
+						x,
+						y,
+						width: cardWidthPt,
+						height: cardHeightPt,
+					});
+				}
+
+				drawCropMarks(frontsPage, layout);
+				drawSheetLabel(
+					frontsPage,
+					font,
+					fontBold,
+					sheetSide('FRONTS', sheetSlots),
+					sheet + 1,
+					totalSheets,
+					deckName,
+					options.meta?.deckSummary
+				);
+				drawFlipHint(frontsPage, font, 'FRONT SIDE');
+				onProgress?.(++progressCount, progressTotal);
 			}
-
-			drawCropMarks(frontsPage, layout);
-			drawSheetLabel(frontsPage, font, fontBold, sheetSide('FRONTS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
-			drawFlipHint(frontsPage, font, "FRONT SIDE");
-			onProgress?.(++progressCount, progressTotal);
 		}
-	}
 
-	if (mode === 'combined') {
-		addFlipInstructionPage(pdfDoc, font, fontBold, pageWidthPt, pageHeightPt);
-	}
+		if (mode === 'combined' && (options.includeFlipInstruction ?? true)) {
+			addFlipInstructionPage(pdfDoc, font, fontBold, pageWidthPt, pageHeightPt);
+		}
 
-	if (includeBacks) {
-		for (let sheet = 0; sheet < totalSheets; sheet++) {
-			const start = sheet * cardsPerPage;
-			const sheetSlots = slots.slice(start, start + cardsPerPage);
-			const backsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+		if (includeBacks) {
+			for (let sheet = 0; sheet < totalSheets; sheet++) {
+				const start = sheet * cardsPerPage;
+				const sheetSlots = slots.slice(start, start + cardsPerPage);
+				const backsPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 
-			for (let i = 0; i < sheetSlots.length; i++) {
-				const slot = sheetSlots[i]!;
-				if (!slot.item) continue;
-				const col = i % cols;
-				const row = Math.floor(i / cols);
-				const mirroredCol = cols - 1 - col;
-				const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
-				const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
-				const img = await embedBack(slot.item.pair.back);
-				backsPage.drawImage(img, { x, y, width: cardWidthPt, height: cardHeightPt });
+				for (let i = 0; i < sheetSlots.length; i++) {
+					const slot = sheetSlots[i]!;
+					if (!slot.item) continue;
+					const col = i % cols;
+					const row = Math.floor(i / cols);
+					const mirroredCol = cols - 1 - col;
+					const x = marginXPt + mirroredCol * (cardWidthPt + gutterPt);
+					const y = pageHeightPt - marginYPt - (row + 1) * cardHeightPt - row * gutterPt;
+					const img = await embedBack(slot.item.pair.back);
+					backsPage.drawImage(img, {
+						x,
+						y,
+						width: cardWidthPt,
+						height: cardHeightPt,
+					});
+				}
+
+				drawCropMarks(backsPage, layout);
+				drawSheetLabel(
+					backsPage,
+					font,
+					fontBold,
+					sheetSide('BACKS', sheetSlots),
+					sheet + 1,
+					totalSheets,
+					deckName,
+					options.meta?.deckSummary
+				);
+				drawFlipHint(backsPage, font, 'BACK SIDE: columns mirrored for long-edge flip');
+				onProgress?.(++progressCount, progressTotal);
 			}
-
-			drawCropMarks(backsPage, layout);
-			drawSheetLabel(backsPage, font, fontBold, sheetSide('BACKS', sheetSlots), sheet + 1, totalSheets, deckName, options.meta?.deckSummary);
-			drawFlipHint(backsPage, font, "BACK SIDE: columns mirrored for long-edge flip");
-			onProgress?.(++progressCount, progressTotal);
 		}
 	}
 
@@ -379,7 +455,9 @@ export async function exportHomePrintPDF(
 	pdfDoc.setProducer('Flow Arts Composer');
 
 	const pdfBytes = await pdfDoc.save();
-	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+	return new Blob([pdfBytes.buffer as ArrayBuffer], {
+		type: 'application/pdf',
+	});
 }
 
 function cardX(col: number, layout: PageLayout): number {
@@ -401,12 +479,32 @@ function drawCropMarks(page: PDFPage, layout: PageLayout) {
 		const botEdge = cardY(rows - 1, layout);
 
 		// Top margin marks
-		page.drawLine({ start: { x: left, y: topEdge + CROP_OFFSET }, end: { x: left, y: topEdge + CROP_OFFSET + CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
-		page.drawLine({ start: { x: right, y: topEdge + CROP_OFFSET }, end: { x: right, y: topEdge + CROP_OFFSET + CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({
+			start: { x: left, y: topEdge + CROP_OFFSET },
+			end: { x: left, y: topEdge + CROP_OFFSET + CROP_LEN },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
+		page.drawLine({
+			start: { x: right, y: topEdge + CROP_OFFSET },
+			end: { x: right, y: topEdge + CROP_OFFSET + CROP_LEN },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
 
 		// Bottom margin marks
-		page.drawLine({ start: { x: left, y: botEdge - CROP_OFFSET }, end: { x: left, y: botEdge - CROP_OFFSET - CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
-		page.drawLine({ start: { x: right, y: botEdge - CROP_OFFSET }, end: { x: right, y: botEdge - CROP_OFFSET - CROP_LEN }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({
+			start: { x: left, y: botEdge - CROP_OFFSET },
+			end: { x: left, y: botEdge - CROP_OFFSET - CROP_LEN },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
+		page.drawLine({
+			start: { x: right, y: botEdge - CROP_OFFSET },
+			end: { x: right, y: botEdge - CROP_OFFSET - CROP_LEN },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
 	}
 
 	for (let row = 0; row < rows; row++) {
@@ -417,12 +515,32 @@ function drawCropMarks(page: PDFPage, layout: PageLayout) {
 		const rightEdge = cardX(cols - 1, layout) + layout.cardWidthPt;
 
 		// Left margin marks
-		page.drawLine({ start: { x: leftEdge - CROP_OFFSET, y: top }, end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: top }, thickness: 0.5, color: CROP_COLOR });
-		page.drawLine({ start: { x: leftEdge - CROP_OFFSET, y: bot }, end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: bot }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({
+			start: { x: leftEdge - CROP_OFFSET, y: top },
+			end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: top },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
+		page.drawLine({
+			start: { x: leftEdge - CROP_OFFSET, y: bot },
+			end: { x: leftEdge - CROP_OFFSET - CROP_LEN, y: bot },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
 
 		// Right margin marks
-		page.drawLine({ start: { x: rightEdge + CROP_OFFSET, y: top }, end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: top }, thickness: 0.5, color: CROP_COLOR });
-		page.drawLine({ start: { x: rightEdge + CROP_OFFSET, y: bot }, end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: bot }, thickness: 0.5, color: CROP_COLOR });
+		page.drawLine({
+			start: { x: rightEdge + CROP_OFFSET, y: top },
+			end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: top },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
+		page.drawLine({
+			start: { x: rightEdge + CROP_OFFSET, y: bot },
+			end: { x: rightEdge + CROP_OFFSET + CROP_LEN, y: bot },
+			thickness: 0.5,
+			color: CROP_COLOR,
+		});
 	}
 }
 
@@ -434,7 +552,7 @@ function drawSheetLabel(
 	sheetNum: number,
 	totalSheets: number,
 	deckName: string,
-	deckSummary = "",
+	deckSummary = ''
 ) {
 	const { width: pageW, height: pageH } = page.getSize();
 	const label = `${side}  ·  Sheet ${sheetNum} of ${totalSheets}`;
@@ -470,11 +588,7 @@ function drawSheetLabel(
 	}
 }
 
-function drawFlipHint(
-	page: PDFPage,
-	font: PDFFont,
-	hint: string,
-) {
+function drawFlipHint(page: PDFPage, font: PDFFont, hint: string) {
 	page.drawText(hint, {
 		x: LABEL_EDGE_X,
 		y: LABEL_EDGE_Y,
@@ -484,7 +598,7 @@ function drawFlipHint(
 	});
 
 	// Arrow in bottom-right indicating long-edge flip direction
-	const flipText = ">> LONG EDGE";
+	const flipText = '>> LONG EDGE';
 	const flipWidth = font.widthOfTextAtSize(flipText, 6);
 	page.drawText(flipText, {
 		x: page.getSize().width - LABEL_EDGE_X - flipWidth,
@@ -500,33 +614,51 @@ function addFlipInstructionPage(
 	font: PDFFont,
 	fontBold: PDFFont,
 	pageWidthPt: number,
-	pageHeightPt: number,
+	pageHeightPt: number
 ) {
 	const page = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
 	const cx = pageWidthPt / 2;
 	let y = pageHeightPt / 2 + 60;
 
-	const title = "STOP: FLIP YOUR PAPER";
+	const title = 'STOP: FLIP YOUR PAPER';
 	const titleW = fontBold.widthOfTextAtSize(title, 16);
-	page.drawText(title, { x: cx - titleW / 2, y, size: 16, font: fontBold, color: GUIDE_COLOR });
+	page.drawText(title, {
+		x: cx - titleW / 2,
+		y,
+		size: 16,
+		font: fontBold,
+		color: GUIDE_COLOR,
+	});
 
 	y -= 36;
 	const steps = [
-		"1.  Remove all printed fronts from the output tray",
-		"2.  Flip the stack on the LONG EDGE",
-		"3.  Reinsert into the paper tray, top edge goes in first",
-		"4.  Print the remaining pages (all backs)",
+		'1.  Remove all printed fronts from the output tray',
+		'2.  Flip the stack on the LONG EDGE',
+		'3.  Reinsert into the paper tray, top edge goes in first',
+		'4.  Print the remaining pages (all backs)',
 	];
 	for (const step of steps) {
 		const w = font.widthOfTextAtSize(step, 10);
-		page.drawText(step, { x: cx - w / 2, y, size: 10, font, color: GUIDE_COLOR });
+		page.drawText(step, {
+			x: cx - w / 2,
+			y,
+			size: 10,
+			font,
+			color: GUIDE_COLOR,
+		});
 		y -= 18;
 	}
 
 	y -= 12;
-	const note = "This page does not print on card stock. It is an instruction separator.";
+	const note = 'This page does not print on card stock. It is an instruction separator.';
 	const noteW = font.widthOfTextAtSize(note, 7);
-	page.drawText(note, { x: cx - noteW / 2, y, size: 7, font, color: GUIDE_COLOR });
+	page.drawText(note, {
+		x: cx - noteW / 2,
+		y,
+		size: 7,
+		font,
+		color: GUIDE_COLOR,
+	});
 }
 
 function canvasToPngBytes(canvas: HTMLCanvasElement): Uint8Array {

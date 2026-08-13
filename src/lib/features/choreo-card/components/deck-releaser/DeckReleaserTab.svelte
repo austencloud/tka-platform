@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
@@ -42,6 +44,7 @@
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
+  import FestivalSamplerPrintView from "./FestivalSamplerPrintView.svelte";
 
   interface Props {
     onContextMenu?: (
@@ -179,6 +182,27 @@
       : rs.deckMode === "gallery"
   );
   let showNameModal = $state(false);
+  const showingFestivalSampler = $derived(
+    page.url.searchParams.get("pack") === "festival-sampler-2026"
+  );
+
+  async function closeFestivalSampler(): Promise<void> {
+    const url = new URL(page.url);
+    url.searchParams.delete("pack");
+    await goto(`${url.pathname}${url.search}${url.hash}`, {
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
+  async function openFestivalSampler(): Promise<void> {
+    const url = new URL(page.url);
+    url.searchParams.set("pack", "festival-sampler-2026");
+    await goto(`${url.pathname}${url.search}${url.hash}`, {
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
 
   /** If the composed deck matches an existing release, bounce into it and return
    *  true; the caller skips the fresh-review path. */
@@ -369,7 +393,10 @@
   }
 </script>
 
-<div class="deck-releaser">
+{#if showingFestivalSampler}
+  <FestivalSamplerPrintView onExit={closeFestivalSampler} />
+{/if}
+<div class="deck-releaser" class:festival-hidden={showingFestivalSampler}>
   <div class="releaser-main">
     {#if rs.step === "configure"}
       <ConfigureStep
@@ -528,6 +555,26 @@
 
     {#if sidebarMode === "browse"}
       <div class="sidebar-body">
+        <section class="ready-print-jobs" aria-labelledby="ready-print-heading">
+          <h2 id="ready-print-heading">Ready to print</h2>
+          <button
+            type="button"
+            class="festival-job"
+            onclick={openFestivalSampler}
+          >
+            <span class="festival-job-icon" aria-hidden="true">
+              <i class="fas fa-ticket-alt"></i>
+            </span>
+            <span class="festival-job-copy">
+              <strong>Festival Sampler</strong>
+              <small>1 signup + 8 sample cards · duplex batch</small>
+            </span>
+            <i
+              class="fas fa-chevron-right festival-job-arrow"
+              aria-hidden="true"
+            ></i>
+          </button>
+        </section>
         <GeneratedArchivePanel
           decks={archive.decks}
           isLoading={archive.isLoading}
@@ -647,6 +694,10 @@
     min-height: 0;
   }
 
+  .festival-hidden {
+    display: none;
+  }
+
   .releaser-main {
     flex: 1;
     min-width: 0;
@@ -675,6 +726,98 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .ready-print-jobs {
+    flex: 0 0 auto;
+    padding: 12px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .ready-print-jobs h2 {
+    margin: 0 0 8px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.58));
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .festival-job {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 64px;
+    padding: 9px 11px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent);
+    border-radius: 11px;
+    color: var(--theme-text, #fff);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .festival-job:hover {
+    border-color: var(--theme-accent, #8b5cf6);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 18%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+  }
+
+  .festival-job:focus-visible {
+    outline: 3px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .festival-job-icon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 25%,
+      transparent
+    );
+    color: var(--theme-accent, #a78bfa);
+  }
+
+  .festival-job-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+
+  .festival-job-copy strong,
+  .festival-job-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .festival-job-copy strong {
+    font-size: 14px;
+  }
+
+  .festival-job-copy small {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-size: 12px;
+  }
+
+  .festival-job-arrow {
+    color: var(--theme-accent, #a78bfa);
+    font-size: 12px;
   }
   /* Browse = two stacked sections (Generated · Released), each scrolls its own list. */
   .sidebar-body > :global(.archive-panel),

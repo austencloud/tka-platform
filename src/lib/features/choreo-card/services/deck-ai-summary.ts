@@ -4,7 +4,11 @@
 // Copy-for-AI button's getData. Markdown so it pastes legibly into a chat.
 
 import type { CardSizeId } from "../domain/card-sizes";
-import type { CardVariation, DeckRecipe, DeckReleaseCard } from "../domain/models/DeckRelease";
+import type {
+  CardVariation,
+  DeckRecipe,
+  DeckReleaseCard,
+} from "../domain/models/DeckRelease";
 import { getTnDElementByIconPath } from "../domain/tnd-element";
 
 export interface DeckAiSummaryLayout {
@@ -13,6 +17,7 @@ export interface DeckAiSummaryLayout {
   copies: number;
   groupByColor: boolean;
   groupByLetter: boolean;
+  includeHowToRead: boolean;
   sheets: number;
   blanks: number;
 }
@@ -33,7 +38,8 @@ function deckNumberLabel(n: number): string {
 /** "4-step ×54" style distribution, highest step count first. */
 function stepDistribution(cards: DeckReleaseCard[]): string {
   const dist = new Map<number, number>();
-  for (const c of cards) dist.set(c.stepCount, (dist.get(c.stepCount) ?? 0) + 1);
+  for (const c of cards)
+    dist.set(c.stepCount, (dist.get(c.stepCount) ?? 0) + 1);
   const rows = [...dist.entries()].sort((a, b) => b[0] - a[0]);
   if (rows.length === 1) return `${rows[0]![0]}-step`;
   return rows.map(([step, count]) => `${step}-step ×${count}`).join(", ");
@@ -57,24 +63,34 @@ function colorLabel(card: DeckReleaseCard): string {
 
 function recipeSection(recipe: DeckRecipe): string {
   const lines: string[] = [`- Mode: ${recipe.deckMode}`];
-  if (recipe.startOriModes?.length) lines.push(`- Start orientation: ${recipe.startOriModes.join(", ")}`);
-  if (recipe.gridModes?.length) lines.push(`- Grid modes: ${recipe.gridModes.join(", ")}`);
+  if (recipe.startOriModes?.length)
+    lines.push(`- Start orientation: ${recipe.startOriModes.join(", ")}`);
+  if (recipe.gridModes?.length)
+    lines.push(`- Grid modes: ${recipe.gridModes.join(", ")}`);
   if (recipe.reversalPattern) {
     const r = recipe.reversalPattern;
-    lines.push(`- Reversal: ${r.id ?? "custom"}${r.sequence ? ` (${r.sequence})` : ""}`);
+    lines.push(
+      `- Reversal: ${r.id ?? "custom"}${r.sequence ? ` (${r.sequence})` : ""}`
+    );
   } else {
     lines.push(`- Reversal: none`);
   }
   if (recipe.deckMode === "loop") {
-    if (recipe.totalCards != null) lines.push(`- Target total cards: ${recipe.totalCards}`);
-    if (recipe.sliceTypes?.length) lines.push(`- Slice types: ${recipe.sliceTypes.join(", ")}`);
+    if (recipe.totalCards != null)
+      lines.push(`- Target total cards: ${recipe.totalCards}`);
+    if (recipe.sliceTypes?.length)
+      lines.push(`- Slice types: ${recipe.sliceTypes.join(", ")}`);
     if (recipe.weights?.length) {
-      const w = recipe.weights.map((x) => `${x.stepCount}-step×${x.weight}`).join(", ");
+      const w = recipe.weights
+        .map((x) => `${x.stepCount}-step×${x.weight}`)
+        .join(", ");
       lines.push(`- Step weights: ${w}`);
     }
   } else {
-    if (recipe.tndFamilyIds?.length) lines.push(`- TnD families: ${recipe.tndFamilyIds.join(", ")}`);
-    if (recipe.tndTurnPatternIds?.length) lines.push(`- TnD turn patterns: ${recipe.tndTurnPatternIds.join(", ")}`);
+    if (recipe.tndFamilyIds?.length)
+      lines.push(`- TnD families: ${recipe.tndFamilyIds.join(", ")}`);
+    if (recipe.tndTurnPatternIds?.length)
+      lines.push(`- TnD turn patterns: ${recipe.tndTurnPatternIds.join(", ")}`);
   }
   return lines.join("\n");
 }
@@ -83,13 +99,18 @@ export function buildDeckAiSummary(input: DeckAiSummaryInput): string {
   const { name, deckNumber, isReleased, cards, layout, recipe } = input;
   const title = name?.trim() || "Untitled Deck";
   const mode = recipe?.deckMode ? `${recipe.deckMode.toUpperCase()} mode` : "";
-  const fit = layout.blanks === 0 ? "perfect fit (0 blanks)" : `${layout.blanks} blank cells`;
+  const fit =
+    layout.blanks === 0
+      ? "perfect fit (0 blanks)"
+      : `${layout.blanks} blank cells`;
 
   const out: string[] = [];
 
-  out.push(`# Deck: ${title} (${isReleased ? "released " : "draft, next "}${deckNumberLabel(deckNumber)})`);
   out.push(
-    `${cards.length} cards · ${stepDistribution(cards)}${mode ? ` · ${mode}` : ""}`,
+    `# Deck: ${title} (${isReleased ? "released " : "draft, next "}${deckNumberLabel(deckNumber)})`
+  );
+  out.push(
+    `${cards.length} cards · ${stepDistribution(cards)}${mode ? ` · ${mode}` : ""}`
   );
 
   out.push("", "## Current print layout (what's on screen)");
@@ -98,7 +119,8 @@ export function buildDeckAiSummary(input: DeckAiSummaryInput): string {
     `- Copies per card: ${layout.copies}`,
     `- Group by color: ${layout.groupByColor ? "on" : "off"}`,
     `- Group by letter: ${layout.groupByLetter ? "on" : "off"}`,
-    `- Sheets: ${layout.sheets} · ${fit}`,
+    `- How to Read card: ${layout.includeHowToRead ? "included" : "not included"}`,
+    `- Sheets: ${layout.sheets} · ${fit}`
   );
 
   if (recipe) {
@@ -111,7 +133,7 @@ export function buildDeckAiSummary(input: DeckAiSummaryInput): string {
   out.push("|---|--------|-------|-------|-----------|");
   for (const c of cards) {
     out.push(
-      `| ${c.position} | ${c.word || "—"} | ${c.stepCount} | ${colorLabel(c)} | ${variationLabel(c.variation)} |`,
+      `| ${c.position} | ${c.word || "—"} | ${c.stepCount} | ${colorLabel(c)} | ${variationLabel(c.variation)} |`
     );
   }
 

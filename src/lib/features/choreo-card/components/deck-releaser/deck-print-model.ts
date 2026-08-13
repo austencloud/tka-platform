@@ -91,6 +91,7 @@ export interface DeckPrintMetadataInput {
   turnIntensity: number;
   gridMode: string;
   propType: string;
+  includeHowToRead: boolean;
 }
 
 export interface DeckPrintMetadata {
@@ -115,6 +116,7 @@ export function buildDeckPrintMetadata(
     ),
   ];
   const count = input.sequences.length;
+  const printedCount = count + (input.includeHowToRead ? 1 : 0);
   const turns = `${input.turnIntensity} turn${input.turnIntensity === 1 ? "" : "s"}`;
   const prop = pretty(input.propType);
   const deckSummary = [
@@ -131,11 +133,11 @@ export function buildDeckPrintMetadata(
     .join("  ·  ");
 
   return {
-    title: `Deck ${input.deckRefPadded}: ${count + 1} cards`,
+    title: `Deck ${input.deckRefPadded}: ${printedCount} cards`,
     subject:
       `LOOP ${input.loopType} · ${input.selectedLength}-step · L${input.level}` +
       `${input.period ? ` · ${input.period}` : ""} · ${capitalize(input.gridMode)} · ${prop} · ${count} sequence cards` +
-      ` + How to Read insert.` +
+      `${input.includeHowToRead ? " + How to Read insert" : ""}.` +
       ` Words: ${words.join(", ")}`,
     keywords: words,
     deckSummary,
