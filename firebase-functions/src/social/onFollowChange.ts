@@ -8,13 +8,11 @@
  *
  *   users/{userId}/followers/{followerUserId}
  *
- * and these triggers keep BOTH counters in sync from that one source of truth:
- *   - create  →  {userId}.followerCount +1  AND  {followerUserId}.followingCount +1
- *   - delete  →  both -1
+ * and these triggers keep BOTH counters in sync from that source of truth.
  *
- * The admin SDK bypasses security rules, and FieldValue.increment is atomic, so
- * this is race-safe against concurrent follows and cannot be manipulated by a
- * client (which can only create its own single followers doc per target).
+ * Each event recounts the relationship collections and writes their exact
+ * totals. That makes retries idempotent and repairs a stale cached total the
+ * next time either person follows or unfollows someone.
  *
  * The create trigger also writes the followed user's "user-followed"
  * notification. That write has to happen server-side for the same reason the
@@ -33,35 +31,47 @@ import {
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 
-const db = admin.firestore();
-
 const FOLLOW_PATH = "users/{userId}/followers/{followerUserId}";
 
-async function applyFollowDelta(
+export async function _reconcileFollowCounts(
   targetUserId: string,
   followerUserId: string,
-  delta: 1 | -1
+  firestore: FirebaseFirestore.Firestore = admin.firestore()
 ): Promise<void> {
-  // Guard against a self-follow edge case producing a double-counted own doc.
   if (targetUserId === followerUserId) {
     return;
   }
 
-  const increment = admin.firestore.FieldValue.increment(delta);
-  const batch = db.batch();
+  const targetProfile = firestore.doc(`users/${targetUserId}`);
+  const followerProfile = firestore.doc(`users/${followerUserId}`);
+  const followerCount = firestore
+    .collection(`users/${targetUserId}/followers`)
+    .count();
+  const followingCount = firestore
+    .collection(`users/${followerUserId}/following`)
+    .count();
 
-  batch.set(
-    db.collection("users").doc(targetUserId),
-    { followerCount: increment },
-    { merge: true }
-  );
-  batch.set(
-    db.collection("users").doc(followerUserId),
-    { followingCount: increment },
-    { merge: true }
-  );
+  await firestore.runTransaction(async (transaction) => {
+    const [target, follower, followers, following] = await Promise.all([
+      transaction.get(targetProfile),
+      transaction.get(followerProfile),
+      transaction.get(followerCount),
+      transaction.get(followingCount),
+    ]);
 
-  await batch.commit();
+    // Account deletion can race a delayed event. Updates preserve that deletion
+    // instead of recreating a profile just to store a counter.
+    if (target.exists) {
+      transaction.update(targetProfile, {
+        followerCount: followers.data().count,
+      });
+    }
+    if (follower.exists) {
+      transaction.update(followerProfile, {
+        followingCount: following.data().count,
+      });
+    }
+  });
 }
 
 /**
@@ -80,6 +90,7 @@ async function notifyOfNewFollower(
   targetUserId: string,
   followerUserId: string
 ): Promise<void> {
+  const db = admin.firestore();
   const followerSnap = await db.collection("users").doc(followerUserId).get();
   const followerData = followerSnap.data();
   const followerName =
@@ -103,27 +114,33 @@ async function notifyOfNewFollower(
     });
 }
 
-export const onFollowCreated = onDocumentCreated(FOLLOW_PATH, async (event) => {
-  const { userId, followerUserId } = event.params;
-  await applyFollowDelta(userId, followerUserId, 1);
+export const onFollowCreated = onDocumentCreated(
+  { document: FOLLOW_PATH, retry: true },
+  async (event) => {
+    const { userId, followerUserId } = event.params;
+    await _reconcileFollowCounts(userId, followerUserId);
 
-  if (userId === followerUserId) {
-    return;
+    if (userId === followerUserId) {
+      return;
+    }
+
+    // The relationship is already complete even if its optional notification
+    // cannot be delivered. The deterministic notification id prevents repeats.
+    try {
+      await notifyOfNewFollower(userId, followerUserId);
+    } catch (error) {
+      console.error(
+        `onFollowCreated: failed to notify ${userId} of follower ${followerUserId}`,
+        error
+      );
+    }
   }
+);
 
-  // A failed notification must not fail the function: retrying would re-run
-  // applyFollowDelta and double-count the follower.
-  try {
-    await notifyOfNewFollower(userId, followerUserId);
-  } catch (error) {
-    console.error(
-      `onFollowCreated: failed to notify ${userId} of follower ${followerUserId}`,
-      error
-    );
+export const onFollowDeleted = onDocumentDeleted(
+  { document: FOLLOW_PATH, retry: true },
+  async (event) => {
+    const { userId, followerUserId } = event.params;
+    await _reconcileFollowCounts(userId, followerUserId);
   }
-});
-
-export const onFollowDeleted = onDocumentDeleted(FOLLOW_PATH, async (event) => {
-  const { userId, followerUserId } = event.params;
-  await applyFollowDelta(userId, followerUserId, -1);
-});
+);

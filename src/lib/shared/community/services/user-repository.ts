@@ -7,6 +7,7 @@
 
 import {
   collection,
+  getCountFromServer,
   getDocs,
   doc,
   getDoc,
@@ -109,6 +110,11 @@ const SORT_FIELD_MAP: Record<CreatorSortCriteria, string> = {
   favoriteProp: "favoriteProp",
 };
 
+interface SocialCounts {
+  followerCount: number;
+  followingCount: number;
+}
+
 // ============================================================================
 // PRIVATE HELPERS
 // ============================================================================
@@ -124,6 +130,35 @@ async function getFollowingIds(userId: string): Promise<Set<string>> {
   } catch (error) {
     console.error(`[UserRepository] Error getting following IDs:`, error);
     return new Set();
+  }
+}
+
+async function getExactSocialCounts(
+  userId: string
+): Promise<SocialCounts | null> {
+  try {
+    const firestore = await getFirestoreInstance();
+    const [followers, following] = await Promise.all([
+      getCountFromServer(
+        collection(firestore, `${USERS_COLLECTION}/${userId}/followers`)
+      ),
+      getCountFromServer(
+        collection(firestore, `${USERS_COLLECTION}/${userId}/following`)
+      ),
+    ]);
+
+    return {
+      followerCount: followers.data().count,
+      followingCount: following.data().count,
+    };
+  } catch (error) {
+    // Exact counts require the network. A cached profile is still useful while
+    // offline, so keep its last known values instead of failing the whole page.
+    console.warn(
+      `[UserRepository] Could not refresh social counts for ${userId}:`,
+      error
+    );
+    return null;
   }
 }
 
@@ -312,12 +347,22 @@ export async function getUserProfile(
       return null;
     }
 
-    let isFollowing = false;
-    if (currentUserId && currentUserId !== userId) {
-      isFollowing = await checkIsFollowing(currentUserId, userId);
-    }
+    const [isFollowing, exactSocialCounts] = await Promise.all([
+      currentUserId && currentUserId !== userId
+        ? checkIsFollowing(currentUserId, userId)
+        : false,
+      getExactSocialCounts(userId),
+    ]);
 
-    return mapFirestoreToEnhancedProfile(userId, userData, isFollowing);
+    const profile = await mapFirestoreToEnhancedProfile(
+      userId,
+      userData,
+      isFollowing
+    );
+
+    return profile && exactSocialCounts
+      ? { ...profile, ...exactSocialCounts }
+      : profile;
   } catch (error) {
     console.error(`[UserRepository] Error fetching user ${userId}:`, error);
     throw error;
