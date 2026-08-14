@@ -15,7 +15,9 @@
 `UFY4AuUL80NTJMojrRBN`, `cYHeDvPZV5zgbGyCTbh7`,
 `Q9wYcOIrKi0DBs3srzgm`, `lTXVsp1LWwbWMTL02sQK`,
 `2h40cRvXHIL9szNFxb8c`, `IfXvzjoulL4tBTuSfY9j`,
-`eNGUZus1AmY7RDttJu0p`
+`eNGUZus1AmY7RDttJu0p`, `l7yMn4ZnGJwXKKNNSW0c`,
+`UwbTSR6CvVN9M925ZB2T`, `2jmNOIkBTDAWtY2VJL6C`,
+`90nJzrs68M97RhzjzmFg`, `QPrseVHJrkNlGKbehXBl`
 
 This file is an evidence index for the scene-production gate contract. The
 controlling plan remains the single creative and implementation owner.
@@ -232,16 +234,52 @@ terrain roughness to a dry 0.96 minimum; Day keeps the stronger detail response.
 No Night light, shadow, atmosphere, tree, stage, campsite, or placement value
 changed.
 
-The Meadow System pass replaces the visible sprinkled-spike layer with 6,251
-habitat-authored summer clumps across the same 15 ecological patches. Curved,
-tapered ribbons and feathered patch edges concentrate physical blades around
-the clearing and trail shoulders, then yield to the ground atlas through the
-distance. The runtime reveals 2,833 base clumps on low quality, adds 1,683 at
-medium, and adds 1,735 at high. All tiers share the rooted GPU wind owner,
-including local phase variation, root contact darkening, and restrained colour
-variation. The performance core, trail cores, mushrooms, stage, campsite,
-trees, and Night lighting remain outside the pass. Day and Night floor proofs
-are in `./evidence/meadow-system/`.
+Ground Ecosystem R1 replaces the colony ribbons with 6,620 authored plant
+populations across the same 15 ecological habitats. The two grass families are
+5,253 deterministic, tapered blade clumps with per-blade summer colour,
+continuous root-to-tip wind weight, and true geometry silhouettes. They no
+longer use whole-plant photo cards, which produced dark brush-stamp hedges at
+middle distance. The other six families remain 1,367 GPU-instanced Poly Haven
+scans: summer forbs, bracken, nettles, periwinkle, moss, and dandelions. Their
+authored alpha, normal, and surface-response maps remain intact. Habitat
+suitability, moisture, colony centres, priority competition, protected path and
+performance cores, and distance bands all come from the static placement
+contract rather than uniform scatter. The optimized near-frame layer is
+14,679,272 bytes and retains Draco, WebP, and GPU instancing. The stage,
+campsite, paths, trees, cameras, composition, and Gate 12 Night Master remain
+outside the pass. Day, Night, human-height, path, and responsive proofs are in
+`./evidence/ground-ecosystem-r1/`. The governing tracker decision is
+`90nJzrs68M97RhzjzmFg`.
+
+Lush Grass Floor R1 supersedes the visible botanical-patch interpretation of
+that pass. The near-frame ground population is now 127,498 deterministic,
+GPU-instanced grass clumps across a continuous 112 m summer sward. Its only
+species are summer sward and shade-tolerant woodland grass; fern, forb, nettle,
+periwinkle, wildflower, and moss populations are absent from this floor layer.
+Habitat data still controls blade palette and scale, but cannot open gaps or
+form visible foliage islands. The world-space ground atlas is meadow-dominant
+from the performance bowl through the distant hills, while authored paths,
+the camp shelf, stage contact, and mushroom clearances remain legible. The
+optimized near-frame layer is 17,139,876 bytes and the main environment is
+16,438,504 bytes. Day hero, walking-height, campsite, and locked-Night proof
+live in `./evidence/lush-grass-floor-r1/`. The governing tracker decision is
+`QPrseVHJrkNlGKbehXBl`.
+
+Grass Fidelity R2 preserves that approved lush floor and replaces its
+single-height silhouette with three continuous ecological strata: 66,658
+ground-carpet clumps, 50,650 meadow clumps, and 11,322 sparse seed-height
+clumps. The complete 128,630-clump population still uses only summer sward and
+shade-tolerant woodland grass. Paths, the stage apron, and the campsite now
+compress and thin the sward through feathered traffic gradients instead of
+cutting visible holes through it. Each stratum has its own height, lean,
+palette, and wind response; all three share one traveling gust field so the
+floor moves as a connected meadow rather than as synchronized props. The
+night atmosphere retains a dry, matte response and does not revive the former
+silver-frost failure. Both production GLBs remain below the 18 MiB ceiling:
+16,438,456 bytes for the environment and 17,320,832 bytes for the near-frame
+layer. Matched Day floor, Day hero, and Night floor proof plus the contract
+results live in `./evidence/grass-fidelity-r2/`. This is a refinement of tracker
+decision `QPrseVHJrkNlGKbehXBl`, not a new scene gate.
 
 The subsequent tree diagnosis established that the washed-out western canopy
 is not a broken Poly Haven asset channel. The current Day foliage grade lifts
@@ -278,3 +316,29 @@ Safety references:
   the fire small.
 - Leave No Trace Center: prefer an established fire ring and durable campsite
   surfaces.
+
+## Grass Fidelity R3: dry meadow and lived-in paths
+
+Approved and verified 2026-08-13. The ground pipeline now stabilizes grass
+shading across camera angles, softens the daytime substrate normal response,
+and replaces deleted path cores with directionally flattened grass over visible
+soil. The first 27.3 percent path-retention build was visually rejected as too
+bare. The accepted build retains 49.2 percent of eligible path samples and
+keeps Night matte without changing its locked atmosphere.
+
+Evidence: `evidence/grass-fidelity-r3/grass-fidelity-verdict.md` and
+`evidence/grass-fidelity-r3/grass-fidelity-metrics.json`.
+
+## Summer canopy diversity and release parity
+
+Verified for release 2026-08-13. The authored 295-tree woodland now uses 11
+structural sources across broad-canopy, gnarled, slender, riparian,
+understory, and fir families. No one source exceeds 20 percent of the layout.
+The rebuilt near-frame layer retains 128,855 instanced grass clumps after the
+current tree and path contracts are applied. The environment GLB is
+20,887,772 bytes and the near-frame GLB is 18,846,964 bytes, keeping both
+inside their production ceilings.
+
+The release proof covers the current Day hero at every required viewport and
+the locked Night hero at 1920 x 1080. Evidence and command results are indexed
+in `evidence/production-release-2026-08-13/production-release-verification.md`.

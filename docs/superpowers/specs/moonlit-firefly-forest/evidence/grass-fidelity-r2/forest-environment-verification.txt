@@ -1,0 +1,150 @@
+{
+  "glbPath": "E:\\tka-platform\\static\\models\\forest\\forest-environment.glb",
+  "bytes": 16438456,
+  "scenes": 1,
+  "nodes": 36,
+  "meshes": 35,
+  "materials": 16,
+  "textures": 45,
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_texture_webp",
+    "KHR_draco_mesh_compression",
+    "KHR_materials_ior",
+    "KHR_materials_specular",
+    "KHR_texture_transform"
+  ],
+  "terrainEnvelope": {
+    "shape": "irregular-radial",
+    "clearingRadius": 30,
+    "performanceCoreRadius": 4.8,
+    "maximumFlatDeviation": 0.00635528564453125,
+    "livingGroundRelief": 0.3799705505371094,
+    "minimumRadius": 152.774071584695,
+    "maximumRadius": 187.2271095265332,
+    "minimumSkirtDrop": 15.346601486206055
+  },
+  "materialZones": {
+    "Packed Performance Clearing": 102080
+  },
+  "paths": {
+    "layoutVersion": 3,
+    "layoutSha256": "fa6b7b577d2db695b85fbc526c827379028cb5ae970bf0795d0d4ec1d106f018",
+    "names": [
+      "Stage to Camp Spur",
+      "Southeast Forest Exit",
+      "Northwest Forest Exit",
+      "West Woodland Loop"
+    ],
+    "roles": [
+      "stage-to-camp",
+      "forest-exit",
+      "forest-exit",
+      "secondary-loop"
+    ],
+    "rootCrossings": 3,
+    "clearingEdgeRadius": [
+      30.209346612583374,
+      33.790653387416626
+    ]
+  },
+  "trees": {
+    "layoutVersion": 3,
+    "layoutSha256": "98d5e69ee5523075bc5b9b524afc8f908e78109fbc4b14d1256921dc52d93a5e",
+    "count": 295,
+    "clusters": [
+      "north-rim",
+      "northeast-rise",
+      "east-hollow",
+      "southeast-shoulder",
+      "southwest-grove",
+      "west-loop-grove",
+      "northwest-gateway",
+      "far-north-depth",
+      "far-west-depth",
+      "far-east-depth",
+      "far-south-depth",
+      "northeast-depth-bridge",
+      "southwest-depth-bridge"
+    ],
+    "assetCounts": {
+      "canopy-beech": 87,
+      "forked-elm": 112,
+      "young-hornbeam": 91,
+      "pale-willow": 5
+    },
+    "authoredVariantCounts": {
+      "gnarled-summer-broadleaf": 44,
+      "jacaranda-broad-canopy": 43,
+      "island-gnarled-spreader": 56,
+      "slender-broadleaf": 56,
+      "young-jacaranda-canopy": 31,
+      "young-slender-broadleaf": 30,
+      "young-riparian-spreader": 30,
+      "riparian-spreader": 5
+    },
+    "sourceMeshCounts": {
+      "ForestTreeMesh_canopy-beech_gnarled-summer-broadleaf": 100,
+      "ForestTreeMesh_canopy-beech_jacaranda-broad-canopy": 74,
+      "ForestTreeMesh_forked-elm_slender-broadleaf": 86,
+      "ForestTreeMesh_young-hornbeam_young-riparian-spreader": 35
+    },
+    "instancingNodes": 4,
+    "standaloneLowFrequencyNodes": 0,
+    "transformAttributes": [
+      "TRANSLATION",
+      "ROTATION",
+      "SCALE"
+    ]
+  },
+  "groundLife": {
+    "layoutVersion": 1,
+    "layoutSha256": "c01588ba9f2f629ec0e5b477d57b1a3e281745035548bb9e37012efddc993c69",
+    "ecologyVersion": 1,
+    "ecologySha256": "fe1601d80046790b3a8b56f2d62ca53a26aad314bad107956443533029ab6a69",
+    "patches": 21,
+    "plants": 339,
+    "habitatCounts": {
+      "damp-willow-hollow": 100,
+      "beech-shade-fern-colony": 76,
+      "fallen-log-decomposition": 61,
+      "sunlit-hazel-edge": 40,
+      "root-crossing-litter-drift": 32,
+      "sparse-path-shoulder": 30
+    },
+    "variantCounts": {
+      "hazel-wide": 8,
+      "hazel-leaning": 5,
+      "hazel-young": 7,
+      "hazel-coppiced": 8,
+      "fern-mature": 36,
+      "fern-fan": 36,
+      "fern-leaning": 36,
+      "fern-juvenile": 36,
+      "sedge-upright": 26,
+      "sedge-wind-bent": 23,
+      "sedge-broad": 21,
+      "sedge-young": 22,
+      "mushroom-single": 18,
+      "mushroom-pair": 17,
+      "mushroom-small-colony": 15,
+      "mushroom-mature-colony": 10,
+      "mushroom-spent-colony": 15
+    },
+    "moduleCounts": {
+      "root-arc": 18,
+      "moss-mat": 34,
+      "leaf-drift": 33,
+      "twig": 40,
+      "fallen-log": 3
+    },
+    "minimumClearingClearanceMetres": 1.0461884070825178,
+    "minimumPathCoreClearanceMetres": 0.49203814637681664,
+    "fullRootIslandInstances": 0,
+    "instancingNodes": {
+      "sourceVariants": 13,
+      "proceduralMushrooms": 4,
+      "repeatedModules": 11
+    }
+  }
+}

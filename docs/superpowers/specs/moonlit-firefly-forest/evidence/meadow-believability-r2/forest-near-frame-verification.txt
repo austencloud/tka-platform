@@ -1,0 +1,116 @@
+{
+  "glbPath": "E:\\tka-platform\\static\\models\\forest\\forest-near-frame.glb",
+  "bytes": 12319092,
+  "layoutVersion": 3,
+  "layoutSha256": "de7e80b4be2ebf7d3a231a13115244c3b2e1a6d9b408fc891b41bcd74715850e",
+  "frameTrees": [
+    "upstage-west-canopy-frame",
+    "upstage-west-depth-frame",
+    "upstage-east-middle-frame",
+    "upstage-east-depth-frame"
+  ],
+  "staticProps": [
+    "upstage-east-weathered-boulder",
+    "west-depth-boulder",
+    "upstage-west-root-rock",
+    "east-depth-shoulder-rock",
+    "upstage-east-runoff-stone",
+    "west-depth-quartz",
+    "upstage-west-windfall",
+    "east-depth-windfall",
+    "camp-threshold-north-outcrop",
+    "camp-threshold-south-root-island"
+  ],
+  "vignettes": [
+    "upstage-west-root-shelf",
+    "upstage-east-runoff-bank",
+    "west-depth-stone-break",
+    "east-depth-windthrow",
+    "camp-threshold-north",
+    "camp-threshold-south"
+  ],
+  "habitatZones": [
+    "camp-threshold-north",
+    "camp-threshold-south"
+  ],
+  "campShelf": {
+    "topElevationMetres": 0.25,
+    "minimumTopHeightMetres": 0.24999999999999997,
+    "maximumTopHeightMetres": 0.25,
+    "maximumApproachGradePercent": 2.5,
+    "vertexCount": 2107,
+    "faceCount": 2016
+  },
+  "grassPatches": [
+    "audience-left-meadow",
+    "audience-right-meadow",
+    "west-stage-bank",
+    "east-stage-bank",
+    "trail-west-shoulder",
+    "trail-east-shoulder",
+    "camp-threshold-north-ferns",
+    "camp-threshold-south-moss",
+    "damp-hollow-sedge-field",
+    "north-sunlit-hillside",
+    "east-camp-hillside",
+    "west-woodland-verge",
+    "south-summer-sward",
+    "northeast-runoff-meadow",
+    "southwest-dappled-slope"
+  ],
+  "grassClumps": 4449,
+  "grassTiers": {
+    "Base": 2349,
+    "Medium": 1416,
+    "High": 684
+  },
+  "grassBlades": {
+    "Base": 75257,
+    "Medium": 29252,
+    "High": 9489
+  },
+  "grassForms": {
+    "basal": 18000,
+    "fine": 58671,
+    "broad": 23826,
+    "arching": 11050,
+    "seed": 2451
+  },
+  "instancedGrassColonies": 4449,
+  "trail": {
+    "id": "upstage-woodland-trail",
+    "pathId": "northwest-exit",
+    "sampleCount": 47,
+    "maximumDistanceMetres": 58
+  },
+  "mushroomColonies": [
+    "west-windfall-amanitas",
+    "east-boulder-amanitas",
+    "audience-meadow-amanitas",
+    "trail-shoulder-chestnuts",
+    "damp-hollow-amanitas"
+  ],
+  "mushroomParts": 149,
+  "instancedMushroomParts": 141,
+  "sharedSourceMeshes": {
+    "weathered-boulder": 47,
+    "earth-tone-rock": 48,
+    "quartz-stone": 49,
+    "decomposing-fallen-log": 50,
+    "sand-rock-outcrop": 51,
+    "moss-root-island": 52
+  },
+  "margins": {
+    "pathShoulderMetres": 1.7641941385920599,
+    "campfireCenterMetres": 11.492443989449804,
+    "maximumAnchorDistanceMetres": 5.968249324550709
+  },
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_texture_webp",
+    "KHR_draco_mesh_compression",
+    "KHR_materials_ior",
+    "KHR_materials_specular",
+    "KHR_texture_transform"
+  ]
+}

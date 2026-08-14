@@ -1,0 +1,30 @@
+{
+  "status": "verified",
+  "groundEcosystemVersion": 6,
+  "meadowSystemVersion": 9,
+  "totalGrassClumps": 130639,
+  "wornGrassClumps": 2492,
+  "pathSamplesDeleted": 0,
+  "pathCoreCandidates": 2232,
+  "retainedPathCoreSamples": 1098,
+  "pathCoreRetention": 0.491935483870968,
+  "optimizedNearFrameBytes": 17478788,
+  "optimizedNearFrameMiB": 16.67,
+  "grassSpecularScale": 0.08,
+  "grassMinimumRoughness": 0.97,
+  "grassNormalUpBlend": 0.34,
+  "dayTerrainNormalResponse": 0.42,
+  "dayTerrainRoughnessFloor": 0.95,
+  "focusedTests": {
+    "passed": 10,
+    "failed": 0
+  },
+  "visualProof": [
+    "day-hero.png",
+    "day-floor.png",
+    "day-path.png",
+    "day-world.png",
+    "night-hero.png",
+    "night-path.png"
+  ]
+}

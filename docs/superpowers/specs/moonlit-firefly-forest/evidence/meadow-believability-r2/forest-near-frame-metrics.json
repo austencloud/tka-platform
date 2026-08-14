@@ -1,0 +1,135 @@
+{
+  "contractVersion": 3,
+  "contractSha256": "de7e80b4be2ebf7d3a231a13115244c3b2e1a6d9b408fc891b41bcd74715850e",
+  "compositionVersion": 2,
+  "compositionSha256": "80f9b2f22bbeda49a8ccaa07898abb69dead707526cc16f30855d9fd7e324219",
+  "visibility": "default-forest-only",
+  "groundLife": {
+    "grassPatchCounts": {
+      "audience-left-meadow": 154,
+      "audience-right-meadow": 111,
+      "west-stage-bank": 159,
+      "east-stage-bank": 112,
+      "trail-west-shoulder": 127,
+      "trail-east-shoulder": 156,
+      "camp-threshold-north-ferns": 154,
+      "camp-threshold-south-moss": 167,
+      "damp-hollow-sedge-field": 227,
+      "north-sunlit-hillside": 624,
+      "east-camp-hillside": 613,
+      "west-woodland-verge": 526,
+      "south-summer-sward": 612,
+      "northeast-runoff-meadow": 296,
+      "southwest-dappled-slope": 411
+    },
+    "grassClumpCount": 4449,
+    "grassTierCounts": {
+      "Base": 2349,
+      "Medium": 1416,
+      "High": 684
+    },
+    "grassTierPatchCounts": {
+      "Base": {
+        "audience-left-meadow": 79,
+        "audience-right-meadow": 62,
+        "west-stage-bank": 79,
+        "east-stage-bank": 55,
+        "trail-west-shoulder": 67,
+        "trail-east-shoulder": 82,
+        "camp-threshold-north-ferns": 79,
+        "camp-threshold-south-moss": 90,
+        "damp-hollow-sedge-field": 108,
+        "north-sunlit-hillside": 328,
+        "east-camp-hillside": 324,
+        "west-woodland-verge": 277,
+        "south-summer-sward": 313,
+        "northeast-runoff-meadow": 175,
+        "southwest-dappled-slope": 231
+      },
+      "Medium": {
+        "audience-left-meadow": 54,
+        "audience-right-meadow": 32,
+        "west-stage-bank": 53,
+        "east-stage-bank": 35,
+        "trail-west-shoulder": 41,
+        "trail-east-shoulder": 43,
+        "camp-threshold-north-ferns": 50,
+        "camp-threshold-south-moss": 49,
+        "damp-hollow-sedge-field": 77,
+        "north-sunlit-hillside": 197,
+        "east-camp-hillside": 193,
+        "west-woodland-verge": 175,
+        "south-summer-sward": 190,
+        "northeast-runoff-meadow": 88,
+        "southwest-dappled-slope": 139
+      },
+      "High": {
+        "audience-left-meadow": 21,
+        "audience-right-meadow": 17,
+        "west-stage-bank": 27,
+        "east-stage-bank": 22,
+        "trail-west-shoulder": 19,
+        "trail-east-shoulder": 31,
+        "camp-threshold-north-ferns": 25,
+        "camp-threshold-south-moss": 28,
+        "damp-hollow-sedge-field": 42,
+        "north-sunlit-hillside": 99,
+        "east-camp-hillside": 96,
+        "west-woodland-verge": 74,
+        "south-summer-sward": 109,
+        "northeast-runoff-meadow": 33,
+        "southwest-dappled-slope": 41
+      }
+    },
+    "grassBladeCounts": {
+      "Base": 75257,
+      "Medium": 29252,
+      "High": 9489
+    },
+    "grassFormCounts": {
+      "basal": 18000,
+      "fine": 58671,
+      "broad": 23826,
+      "arching": 11050,
+      "seed": 2451
+    },
+    "mushroomColonies": [
+      "west-windfall-amanitas",
+      "east-boulder-amanitas",
+      "audience-meadow-amanitas",
+      "trail-shoulder-chestnuts",
+      "damp-hollow-amanitas"
+    ],
+    "mushroomPartCount": 149,
+    "trail": {
+      "id": "upstage-woodland-trail",
+      "pathId": "northwest-exit",
+      "sampleCount": 47,
+      "maximumDistanceMetres": 58.0
+    }
+  },
+  "campShelf": {
+    "topElevationMetres": 0.25,
+    "minimumTopHeightMetres": 0.24999999999999997,
+    "maximumTopHeightMetres": 0.25,
+    "maximumApproachGradePercent": 2.5,
+    "vertexCount": 2107,
+    "faceCount": 2016
+  },
+  "frameTreeCount": 4,
+  "vignetteCount": 4,
+  "zonePropCount": 2,
+  "habitatZoneIds": ["camp-threshold-north", "camp-threshold-south"],
+  "propCount": 10,
+  "sourceCounts": {
+    "weathered-boulder": 2,
+    "earth-tone-rock": 2,
+    "quartz-stone": 2,
+    "decomposing-fallen-log": 2,
+    "sand-rock-outcrop": 1,
+    "moss-root-island": 1
+  },
+  "minimumPathShoulderMarginMetres": 1.7641941385920599,
+  "minimumCampfireCenterDistanceMetres": 11.492443989449804,
+  "maximumPropAnchorDistanceMetres": 5.968249324550709
+}

@@ -1,0 +1,42 @@
+{
+  "reportPath": "E:\\tka-platform\\docs\\superpowers\\specs\\moonlit-firefly-forest\\forest-composition-revision-verification.json",
+  "currentStageToFireMetres": 17.066,
+  "proposedStageToFireMetres": 34.059,
+  "separationIncreaseMetres": 16.993,
+  "proposedFire": [
+    34,
+    2
+  ],
+  "translatedTentPositions": [
+    {
+      "id": "dome-two-person",
+      "position": [
+        41,
+        1
+      ]
+    },
+    {
+      "id": "tunnel-three-person",
+      "position": [
+        39,
+        7.5
+      ]
+    },
+    {
+      "id": "trekking-one-person",
+      "position": [
+        32,
+        8.5
+      ]
+    }
+  ],
+  "maximumApproachGradePercent": 2.5,
+  "minimumFrameTreeClearanceMetres": 24.593,
+  "habitatZoneCount": 3,
+  "routeStops": 6,
+  "sightlinePriorities": [
+    1,
+    2,
+    3
+  ]
+}

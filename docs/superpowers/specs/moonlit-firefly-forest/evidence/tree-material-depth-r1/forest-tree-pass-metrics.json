@@ -1,0 +1,67 @@
+{
+  "generatedAt": "2026-08-13T01:35:42.993Z",
+  "contract": {
+    "tintHex": "#61a84f",
+    "strength": 0.78,
+    "jacarandaCoverage": 1.28,
+    "defaultCoverage": 0.82,
+    "alphaCutoff": 0.35
+  },
+  "jacarandaAtlas": {
+    "visiblePixelCount": 264113,
+    "liftedPixelPercent": 0,
+    "greenDominantPercentBefore": 91.81410986963913,
+    "greenDominantPercentAfter": 100,
+    "source": {
+      "mean": 0.1708473723832625,
+      "standardDeviation": 0.06088420707577365,
+      "p10": 0.08120012378535221,
+      "p90": 0.2380186837357154,
+      "p90ToP10Ratio": 2.931260109466137
+    },
+    "graded": {
+      "mean": 0.1708473723832625,
+      "standardDeviation": 0.06088420707577365,
+      "p10": 0.0812001237853522,
+      "p90": 0.23801868373571536,
+      "p90ToP10Ratio": 2.931260109466137
+    },
+    "standardDeviationRetention": 1,
+    "contrastRatioRetention": 1
+  },
+  "repetition": {
+    "environmentTreeCount": 295,
+    "sourceVariantCount": 8,
+    "variantCounts": {
+      "gnarled-summer-broadleaf": 44,
+      "jacaranda-broad-canopy": 43,
+      "island-gnarled-spreader": 56,
+      "slender-broadleaf": 56,
+      "young-jacaranda-canopy": 31,
+      "young-slender-broadleaf": 30,
+      "young-riparian-spreader": 30,
+      "riparian-spreader": 5
+    },
+    "previousExactJacarandaPlacements": 118,
+    "exactJacarandaPlacements": 74,
+    "exactJacarandaReductionPercent": 37.28813559322034
+  },
+  "runtimeAssets": {
+    "environmentBytes": 17066972,
+    "nearFrameBytes": 13382036,
+    "environmentTrees": {
+      "treeNodeCount": 4,
+      "treeInstanceCount": 295,
+      "uniqueTreeMeshCount": 4,
+      "uniqueTreePrototypeTriangles": 495368,
+      "estimatedTriangleSubmissionsPerRender": 38528996
+    },
+    "nearFrameTrees": {
+      "treeNodeCount": 4,
+      "treeInstanceCount": 4,
+      "uniqueTreeMeshCount": 3,
+      "uniqueTreePrototypeTriangles": 317267,
+      "estimatedTriangleSubmissionsPerRender": 410672
+    }
+  }
+}

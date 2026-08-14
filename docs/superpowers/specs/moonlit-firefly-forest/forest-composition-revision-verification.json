@@ -2,54 +2,38 @@
   "sceneId": "forest-firefly",
   "gateId": "playable-spatial-pass",
   "status": "implemented",
-  "generatedAt": "2026-08-12T20:19:11.200Z",
+  "generatedAt": "2026-08-14T04:14:08.207Z",
   "sourceDigests": {
     "compositionSha256": "80f9b2f22bbeda49a8ccaa07898abb69dead707526cc16f30855d9fd7e324219",
     "campsiteSha256": "03e16b1dcbaef473cefe2059635149b4c4db03fde77c32934c77a995037e4f2d",
     "pathsSha256": "fa6b7b577d2db695b85fbc526c827379028cb5ae970bf0795d0d4ec1d106f018",
-    "nearFrameSha256": "de7e80b4be2ebf7d3a231a13115244c3b2e1a6d9b408fc891b41bcd74715850e",
-    "treesSha256": "91d1525b34896090438c72f5470fab3f465aec7bb368251f9df33111d9c93c33"
+    "nearFrameSha256": "97f579b291ba3387ecfe8b0654653b35eacc2fafc043a97d0ebef7ca506a2b7e",
+    "treesSha256": "5fc44b554b1103e10ad9dba56d034e566a16b21deee4969a4ccc31c044fc604a"
   },
   "metrics": {
     "currentStageToFireMetres": 17.066,
     "proposedStageToFireMetres": 34.059,
     "separationIncreaseMetres": 16.993,
-    "proposedFire": [
-      34,
-      2
-    ],
+    "proposedFire": [34, 2],
     "translatedTentPositions": [
       {
         "id": "dome-two-person",
-        "position": [
-          41,
-          1
-        ]
+        "position": [41, 1]
       },
       {
         "id": "tunnel-three-person",
-        "position": [
-          39,
-          7.5
-        ]
+        "position": [39, 7.5]
       },
       {
         "id": "trekking-one-person",
-        "position": [
-          32,
-          8.5
-        ]
+        "position": [32, 8.5]
       }
     ],
     "maximumApproachGradePercent": 2.5,
     "minimumFrameTreeClearanceMetres": 24.593,
     "habitatZoneCount": 3,
     "routeStops": 6,
-    "sightlinePriorities": [
-      1,
-      2,
-      3
-    ]
+    "sightlinePriorities": [1, 2, 3]
   },
   "checks": [
     "production camp spur matches the approved extension",

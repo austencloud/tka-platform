@@ -1,0 +1,271 @@
+{
+  "generatedAt": "2026-08-14T04:14:08.357Z",
+  "contractVersion": 4,
+  "authored": {
+    "treeCount": 295,
+    "assetCounts": {
+      "mature-broad-canopy": 59,
+      "gnarled-spreader": 59,
+      "slender-broadleaf": 59,
+      "riparian-spreader": 41,
+      "summer-understory": 59,
+      "mature-fir": 9,
+      "fir-understory": 9
+    },
+    "structuralSourceCount": 11,
+    "sourceCounts": {
+      "mature-broad-canopy": 59,
+      "gnarled-spreader": 59,
+      "slender-broadleaf": 59,
+      "riparian-spreader": 41,
+      "summer-understory": 59,
+      "mature-fir-a": 3,
+      "mature-fir-b": 3,
+      "mature-fir-c": 3,
+      "fir-understory-a": 3,
+      "fir-understory-b": 3,
+      "fir-understory-c": 3
+    },
+    "largestSource": {
+      "variantId": "mature-broad-canopy",
+      "count": 59,
+      "share": 0.2
+    },
+    "clusterProfiles": {
+      "north-rim": {
+        "habitat": "mixed clearing rim with broad crowns and a dark conifer backbeat",
+        "treeCount": 31,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 7,
+          "gnarled-spreader": 7,
+          "slender-broadleaf": 6,
+          "riparian-spreader": 3,
+          "summer-understory": 6,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "northeast-rise": {
+        "habitat": "cool ridge where vertical firs interrupt the broadleaf canopy",
+        "treeCount": 29,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 7,
+          "gnarled-spreader": 6,
+          "slender-broadleaf": 5,
+          "riparian-spreader": 3,
+          "summer-understory": 6,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "east-hollow": {
+        "habitat": "damp runoff hollow with low spreaders and dense regeneration",
+        "treeCount": 29,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 4,
+          "gnarled-spreader": 5,
+          "slender-broadleaf": 6,
+          "riparian-spreader": 7,
+          "summer-understory": 6,
+          "mature-fir": 0,
+          "fir-understory": 1
+        }
+      },
+      "southeast-shoulder": {
+        "habitat": "sunlit transition from camp meadow into mixed young woodland",
+        "treeCount": 23,
+        "structuralFamilies": 5,
+        "counts": {
+          "mature-broad-canopy": 5,
+          "gnarled-spreader": 4,
+          "slender-broadleaf": 6,
+          "riparian-spreader": 3,
+          "summer-understory": 5,
+          "mature-fir": 0,
+          "fir-understory": 0
+        }
+      },
+      "southwest-grove": {
+        "habitat": "dappled mixed grove with uneven ages and fir pockets",
+        "treeCount": 29,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 5,
+          "gnarled-spreader": 7,
+          "slender-broadleaf": 5,
+          "riparian-spreader": 4,
+          "summer-understory": 6,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "west-loop-grove": {
+        "habitat": "irregular path-side woodland with broad middle-story rhythm",
+        "treeCount": 28,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 6,
+          "gnarled-spreader": 6,
+          "slender-broadleaf": 6,
+          "riparian-spreader": 4,
+          "summer-understory": 5,
+          "mature-fir": 0,
+          "fir-understory": 1
+        }
+      },
+      "northwest-gateway": {
+        "habitat": "cool trail gateway where conifers frame the exit without closing it",
+        "treeCount": 26,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 5,
+          "gnarled-spreader": 6,
+          "slender-broadleaf": 5,
+          "riparian-spreader": 3,
+          "summer-understory": 5,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "far-north-depth": {
+        "habitat": "layered depth ridge with fir spires above younger crowns",
+        "treeCount": 18,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 4,
+          "gnarled-spreader": 3,
+          "slender-broadleaf": 4,
+          "riparian-spreader": 1,
+          "summer-understory": 4,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "far-west-depth": {
+        "habitat": "mixed distant wall with narrow conifer breaks",
+        "treeCount": 18,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 5,
+          "gnarled-spreader": 4,
+          "slender-broadleaf": 3,
+          "riparian-spreader": 1,
+          "summer-understory": 4,
+          "mature-fir": 1,
+          "fir-understory": 0
+        }
+      },
+      "far-east-depth": {
+        "habitat": "damp eastern depth with riparian crowns mixed into the ridge",
+        "treeCount": 19,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 2,
+          "gnarled-spreader": 3,
+          "slender-broadleaf": 3,
+          "riparian-spreader": 6,
+          "summer-understory": 4,
+          "mature-fir": 0,
+          "fir-understory": 1
+        }
+      },
+      "far-south-depth": {
+        "habitat": "mixed southern skyline with fir and broadleaf alternation",
+        "treeCount": 18,
+        "structuralFamilies": 7,
+        "counts": {
+          "mature-broad-canopy": 4,
+          "gnarled-spreader": 4,
+          "slender-broadleaf": 4,
+          "riparian-spreader": 1,
+          "summer-understory": 3,
+          "mature-fir": 1,
+          "fir-understory": 1
+        }
+      },
+      "northeast-depth-bridge": {
+        "habitat": "young mixed connector between the rise and far ridge",
+        "treeCount": 13,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 3,
+          "gnarled-spreader": 2,
+          "slender-broadleaf": 2,
+          "riparian-spreader": 2,
+          "summer-understory": 3,
+          "mature-fir": 1,
+          "fir-understory": 0
+        }
+      },
+      "southwest-depth-bridge": {
+        "habitat": "dappled regeneration bridge carrying the grove into the south ridge",
+        "treeCount": 14,
+        "structuralFamilies": 6,
+        "counts": {
+          "mature-broad-canopy": 2,
+          "gnarled-spreader": 2,
+          "slender-broadleaf": 4,
+          "riparian-spreader": 3,
+          "summer-understory": 2,
+          "mature-fir": 1,
+          "fir-understory": 0
+        }
+      }
+    }
+  },
+  "runtime": {
+    "environmentBytes": 20887772,
+    "nearFrameBytes": 18846964,
+    "environment": {
+      "treeCount": 295,
+      "structuralSourceCount": 11,
+      "sourceCounts": {
+        "ForestTreeMesh_mature-fir_mature-fir-a": 3,
+        "ForestTreeMesh_mature-fir_mature-fir-b": 3,
+        "ForestTreeMesh_mature-fir_mature-fir-c": 3,
+        "ForestTreeMesh_fir-understory_fir-understory-a": 3,
+        "ForestTreeMesh_fir-understory_fir-understory-b": 3,
+        "ForestTreeMesh_fir-understory_fir-understory-c": 3,
+        "ForestTreeMesh_mature-broad-canopy_mature-broad-canopy": 59,
+        "ForestTreeMesh_gnarled-spreader_gnarled-spreader": 59,
+        "ForestTreeMesh_slender-broadleaf_slender-broadleaf": 59,
+        "ForestTreeMesh_riparian-spreader_riparian-spreader": 41,
+        "ForestTreeMesh_summer-understory_summer-understory": 59
+      },
+      "prototypeTriangles": {
+        "ForestTreeMesh_mature-fir_mature-fir-a": 57914,
+        "ForestTreeMesh_mature-fir_mature-fir-b": 33650,
+        "ForestTreeMesh_mature-fir_mature-fir-c": 7062,
+        "ForestTreeMesh_fir-understory_fir-understory-a": 15538,
+        "ForestTreeMesh_fir-understory_fir-understory-b": 9586,
+        "ForestTreeMesh_fir-understory_fir-understory-c": 9727,
+        "ForestTreeMesh_mature-broad-canopy_mature-broad-canopy": 169978,
+        "ForestTreeMesh_gnarled-spreader_gnarled-spreader": 99701,
+        "ForestTreeMesh_slender-broadleaf_slender-broadleaf": 158459,
+        "ForestTreeMesh_riparian-spreader_riparian-spreader": 67230,
+        "ForestTreeMesh_summer-understory_summer-understory": 131227
+      },
+      "triangleSubmissions": 36159396
+    },
+    "nearFrame": {
+      "treeCount": 4,
+      "structuralSourceCount": 4,
+      "sourceCounts": {
+        "ForestTreeMesh_mature-broad-canopy_mature-broad-canopy.001": 1,
+        "ForestTreeMesh_gnarled-spreader_gnarled-spreader.001": 1,
+        "ForestTreeMesh_mature-fir_mature-fir-a.001": 1,
+        "ForestTreeMesh_riparian-spreader_riparian-spreader.001": 1
+      },
+      "prototypeTriangles": {
+        "ForestTreeMesh_mature-broad-canopy_mature-broad-canopy.001": 160556,
+        "ForestTreeMesh_gnarled-spreader_gnarled-spreader.001": 93405,
+        "ForestTreeMesh_mature-fir_mature-fir-a.001": 57752,
+        "ForestTreeMesh_riparian-spreader_riparian-spreader.001": 63306
+      },
+      "triangleSubmissions": 375019
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "system": "Forest Grass Fidelity R2",
+  "ecosystemVersion": 5,
+  "meadowSystemVersion": 8,
+  "totalClumps": 128630,
+  "species": {
+    "summer-sward": 113063,
+    "woodland-grass": 15567
+  },
+  "strata": {
+    "carpet": 66658,
+    "meadow": 50650,
+    "seed": 11322
+  },
+  "trafficCompressedSamples": 2439,
+  "protectedSamples": 2248,
+  "pathSamples": 2413,
+  "campSamples": 506,
+  "stageSamples": 163,
+  "runtimeAssets": {
+    "forest-environment.glb": 16438456,
+    "forest-near-frame.glb": 17320832
+  },
+  "proofFrames": ["day-floor.png", "day-hero.png", "night-floor.png"]
+}

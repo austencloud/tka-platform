@@ -1,0 +1,30 @@
+{
+  "contractVersion": 6,
+  "groundEcosystemVersion": 4,
+  "meadowSystemVersion": 7,
+  "groundPopulationCount": 127498,
+  "groundFamilies": {
+    "grass": 127498
+  },
+  "species": {
+    "summer-sward": 111908,
+    "woodland-grass": 15590
+  },
+  "nonGrassGroundPopulationCount": 0,
+  "maximumTurfRadiusMetres": 112,
+  "spacingMetres": {
+    "near": 0.46,
+    "middle": 0.62,
+    "far": 0.82
+  },
+  "optimizedBytes": {
+    "environment": 16438504,
+    "nearFrame": 17139876
+  },
+  "visualProof": {
+    "dayHero": "day-hero.png",
+    "dayFloor": "day-floor.png",
+    "dayCamp": "day-camp.png",
+    "nightHero": "night-hero.png"
+  }
+}

@@ -18,7 +18,12 @@
       "UFY4AuUL80NTJMojrRBN",
       "Q9wYcOIrKi0DBs3srzgm",
       "lTXVsp1LWwbWMTL02sQK",
-      "2h40cRvXHIL9szNFxb8c"
+      "2h40cRvXHIL9szNFxb8c",
+      "l7yMn4ZnGJwXKKNNSW0c",
+      "UwbTSR6CvVN9M925ZB2T",
+      "2jmNOIkBTDAWtY2VJL6C",
+      "90nJzrs68M97RhzjzmFg",
+      "QPrseVHJrkNlGKbehXBl"
     ]
   },
   "sequenceFingerprints": [],
@@ -65,7 +70,7 @@
         {
           "kind": "canon-audit",
           "path": "docs/superpowers/specs/moonlit-firefly-forest/scene-development.md",
-          "sha256": "3b0680fbe3f31c2ee4d4aa5646f7e57a072f271a9fc8577c58ffd560c911f650"
+          "sha256": "f9658b7969d3593d0ff8cb71b2de5e177deb9b3d83a5b0fcdfe5a945474338d3"
         },
         {
           "kind": "room-shell",
@@ -114,7 +119,7 @@
         {
           "kind": "automated-report",
           "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-verification.json",
-          "sha256": "586ee47443ea72c48ed1ff411a8f335a0fb041477753b92259d08642b14a2703"
+          "sha256": "87a0802127b4ace57137025106983d3a65bf959c201c46fb4e274e059fa23cae"
         }
       ],
       "checks": [
@@ -155,7 +160,7 @@
         {
           "kind": "blender-source",
           "path": "blender/forest_environment.blend",
-          "sha256": "038a5035d1fd76a11c763c0347804cd7d48a36a6d046f780cde5eb9cc3fdc84b",
+          "sha256": "ea60a333a9aa36db5bbecd14845ed5879420cce600c7b7b034398415d3d13aa3",
           "note": "Authored terrain, east camp shelf, habitat props, path extension, and tree exclusion source."
         },
         {
@@ -166,12 +171,12 @@
         {
           "kind": "graybox-glb",
           "path": "static/models/forest/forest-environment.glb",
-          "sha256": "dd33212c07d718788d457d005ad826b16f3121208de0fec66bcedbf841ce564d"
+          "sha256": "c2b97ba38ee535facbf6cc9c70dc092493f59636e3ac2b31043fe4e01fd098ca"
         },
         {
           "kind": "near-frame-glb",
           "path": "static/models/forest/forest-near-frame.glb",
-          "sha256": "014d14800a960add1c31907ee32ac3049f8d2edbc901723d63dd5eb0727fd02d"
+          "sha256": "f855c972cb6fce5eac13093442909a84528a24a9dd4988b730460461c9cb729f"
         },
         {
           "kind": "campsite-glb",
@@ -192,7 +197,7 @@
         {
           "kind": "automated-report",
           "path": "docs/superpowers/specs/moonlit-firefly-forest/forest-composition-revision-verification.json",
-          "sha256": "586ee47443ea72c48ed1ff411a8f335a0fb041477753b92259d08642b14a2703"
+          "sha256": "87a0802127b4ace57137025106983d3a65bf959c201c46fb4e274e059fa23cae"
         }
       ],
       "checks": [
@@ -238,17 +243,22 @@
         {
           "kind": "locked-camera-set",
           "path": "src/routes/test/forest-scene/+page.svelte",
-          "sha256": "08e537949d679a69e7793771bf8f1834b8d1b79c46ead565c70287f0b732b6a4"
+          "sha256": "c9ec666f6e357235d9feca4a4a38f280d4c86255bfb591ef370787933218b220"
+        },
+        {
+          "kind": "visual-target-board",
+          "path": "docs/superpowers/specs/moonlit-firefly-forest/evidence/production-release-2026-08-13/day-hero-1920x1080.png",
+          "sha256": "9808059ad4df64ae770a6cfc4321cca61b265637cb19f06978ec16f564950ab9"
         },
         {
           "kind": "material-lighting-brief",
           "path": "src/lib/shared/3d/environments/scenes/forest/ForestLighting.svelte",
-          "sha256": "b2477e4a3462bf835b31484ba4e5f500f8e121f72a8b12be6e22b75249355e22"
+          "sha256": "568ebfc8595e2603ec651da5c98a25fb15d120d6f0fa5990028e7f2d3d2f3e57"
         },
         {
           "kind": "shadow-role-contract",
           "path": "src/lib/shared/3d/environments/scenes/forest/forest-shadow-roles.ts",
-          "sha256": "c5a8cf360aad689f33633410f4a440485d6c88361dd9f3599420f6004b483830"
+          "sha256": "6cb26661ecfce875183833b8a80193032f2d03c66b30771c9cfe0304ad4c97c8"
         },
         {
           "kind": "visual-target-hero",
@@ -271,6 +281,11 @@
           "name": "camera-registration",
           "status": "passed",
           "evidence": "The hero, stage, and camp targets were captured from the locked Forest review cameras in the live in-app route."
+        },
+        {
+          "name": "silhouette-read",
+          "status": "passed",
+          "evidence": "The registered Day hero keeps the stage centered beneath an asymmetric living canopy, with the paths and audience meadow legible through the grass floor."
         },
         {
           "name": "focal-hierarchy",

@@ -1,0 +1,25 @@
+{
+  "contractVersion": 4,
+  "sourceFamilies": [
+    "neutral",
+    "meadow",
+    "litter",
+    "damp"
+  ],
+  "atlas": {
+    "width": 4096,
+    "height": 4096,
+    "bytes": 823468,
+    "luminanceRange": 48.44,
+    "averageChroma": 62.18
+  },
+  "ecologyMask": {
+    "width": 1024,
+    "height": 1024
+  },
+  "runtimeFamilyMask": {
+    "width": 1024,
+    "height": 1024,
+    "bytes": 209740
+  }
+}

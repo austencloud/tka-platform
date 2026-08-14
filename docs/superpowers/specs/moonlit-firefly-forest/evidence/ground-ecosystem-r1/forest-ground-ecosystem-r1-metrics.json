@@ -1,0 +1,34 @@
+{
+  "ecosystemVersion": 2,
+  "meadowSystemVersion": 5,
+  "authoredGroundPopulations": 6620,
+  "speciesCounts": {
+    "summer-sward": 4513,
+    "woodland-grass": 740,
+    "summer-forb": 759,
+    "bracken-fern": 214,
+    "nettle-colony": 51,
+    "periwinkle-patch": 58,
+    "forest-moss": 192,
+    "summer-wildflower": 93
+  },
+  "familyCounts": {
+    "grass": 5253,
+    "forb": 810,
+    "fern": 214,
+    "flower": 151,
+    "moss": 192
+  },
+  "habitatPatchCount": 15,
+  "instancedScannedFlora": 1367,
+  "optimizedNearFrameBytes": 14679272,
+  "minimumPathShoulderMetres": 1.7641941385920599,
+  "minimumCampfireCenterMetres": 11.492443989449804,
+  "maximumPropAnchorDistanceMetres": 5.968249324550709,
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_texture_webp",
+    "KHR_draco_mesh_compression"
+  ],
+  "meshyCreditsUsed": 0
+}
