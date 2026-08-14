@@ -1,62 +1,57 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
-  import { FUSE_TRANSFORMS } from "../state/fuse-state.svelte";
-  import FuseLengthPicker from "./FuseLengthPicker.svelte";
 
   let {
-    compact = false,
-    onOpenOptions = () => {},
+    onOpenRecipe = () => {},
   }: {
-    compact?: boolean;
-    onOpenOptions?: () => void;
+    onOpenRecipe?: () => void;
   } = $props();
   const { state: fuseState } = getFuseContext();
 
-  const compactModeLabel = $derived.by(() => {
-    if (fuseState.mode === "shuffle") return "Independent";
-    const transformLabel =
-      FUSE_TRANSFORMS.find(
-        (transform) => transform.id === fuseState.transformId
-      )?.label ?? "Mirror";
-    return `Symmetry · ${transformLabel}`;
-  });
   const optionsDisabled = $derived(
     fuseState.isLoadingLength || fuseState.isFusing
   );
+  const turnSummary = $derived(
+    fuseState.generationLevel === 1
+      ? "No turns"
+      : `Max ${fuseState.maxTurnIntensity} ${fuseState.maxTurnIntensity === 1 ? "turn" : "turns"}`
+  );
 </script>
 
-<header class="fuse-header" class:compact>
-  {#if compact}
-    <div class="sr-only">
-      <h2>Fuse two paths</h2>
-      <p>Generate or adjust either one-hand LOOP, then Fuse.</p>
-    </div>
+<header class="fuse-header">
+  <div class="title-block">
+    <h2 aria-label="Fuse two paths">
+      <span class="title-full">Fuse two paths</span>
+      <span class="title-compact" aria-hidden="true">Fuse</span>
+    </h2>
+    <p>Build two one-hand LOOPs into one sequence.</p>
+  </div>
 
-    <div class="compact-summary" aria-label="Current Fuse options">
-      <span class="summary-length">{fuseState.requestedLength} steps</span>
-      <span class="summary-separator" aria-hidden="true">·</span>
-      <span class="summary-mode">{compactModeLabel}</span>
-    </div>
-
-    <div class="options-trigger">
-      <PanelButton
-        variant="secondary"
-        disabled={optionsDisabled}
-        onclick={onOpenOptions}
-      >
-        <i class="fas fa-sliders" aria-hidden="true"></i>
-        Options
-      </PanelButton>
-    </div>
-  {:else}
-    <h2>Fuse two paths</h2>
-    <div class="header-controls">
-      <div class="length-field">
-        <FuseLengthPicker />
-      </div>
-    </div>
-  {/if}
+  <PanelButton
+    variant="secondary"
+    disabled={optionsDisabled}
+    onclick={onOpenRecipe}
+    ariaLabel="Open path generation recipe"
+  >
+    <i class="fas fa-sliders" aria-hidden="true"></i>
+    <span class="recipe-label">
+      <span>Path recipe</span>
+      <strong>
+        <span class="recipe-full">
+          {fuseState.requestedLength} steps · Level {fuseState.generationLevel}
+          · {turnSummary}
+        </span>
+        <span class="recipe-compact" aria-hidden="true">
+          {fuseState.requestedLength} steps · L{fuseState.generationLevel} ·
+          {fuseState.generationLevel === 1
+            ? "No turns"
+            : `≤${fuseState.maxTurnIntensity}`}
+        </span>
+      </strong>
+    </span>
+    <i class="fas fa-chevron-right recipe-chevron" aria-hidden="true"></i>
+  </PanelButton>
 </header>
 
 <style>
@@ -73,19 +68,6 @@
     background: var(--theme-panel-bg, rgba(12, 14, 22, 0.94));
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
   h2 {
     min-width: 0;
     margin: 0;
@@ -98,50 +80,31 @@
     white-space: nowrap;
   }
 
-  .header-controls {
-    display: flex;
-    align-items: center;
-    gap: var(--settings-spacing-sm, 10px);
-    flex-shrink: 0;
+  .title-compact,
+  .recipe-compact {
+    display: none;
   }
 
-  .compact-summary {
-    display: flex;
-    align-items: baseline;
-    flex: 1 1 auto;
-    gap: 6px;
+  .title-block {
+    display: grid;
+    gap: 2px;
     min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    white-space: nowrap;
   }
 
-  .summary-length {
-    flex: 0 0 auto;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .summary-separator {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-
-  .summary-mode {
-    min-width: 0;
-    overflow: hidden;
+  .title-block p {
+    margin: 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
-    font-weight: 600;
-    text-overflow: ellipsis;
+    font-size: var(--font-size-compact, 12px);
   }
 
-  .options-trigger {
-    flex: 0 0 auto;
-  }
-
-  .options-trigger :global(.panel-btn) {
-    min-width: 112px;
-    padding-inline: 14px;
+  .fuse-header :global(.panel-btn) {
+    flex: 0 1 auto;
+    width: min(100%, 27rem);
+    min-width: 17rem;
+    min-height: 3.25rem;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
     border-color: color-mix(
       in srgb,
       var(--semantic-warning, #f97316) 45%,
@@ -154,37 +117,66 @@
       var(--theme-card-bg, #161821)
     );
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+    text-align: left;
   }
 
-  .length-field {
-    display: flex;
-    /* Enough room for all 7 segments inline on desktop; min-width:0 lets it
-       shrink before overflowing. Segment digits (2, 4, … 32) stay tabular. */
-    width: 24rem;
+  .recipe-label {
+    display: grid;
+    flex: 1;
+    gap: 1px;
     min-width: 0;
-    font-variant-numeric: tabular-nums;
   }
 
-  .length-field :global(.segmented-control) {
-    width: 100%;
+  .recipe-label > span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
+  }
+
+  .recipe-label strong {
+    overflow: hidden;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .recipe-chevron {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
   }
 
   @container fuse (max-width: 599px) {
-    .fuse-header.compact {
+    .fuse-header {
+      gap: 8px;
+      padding: 6px 8px;
+    }
+
+    h2 {
+      font-size: 1rem;
+    }
+
+    .title-full,
+    .recipe-full {
+      display: none;
+    }
+
+    .title-compact,
+    .recipe-compact {
+      display: inline;
+    }
+
+    .title-block p,
+    .recipe-label > span {
+      display: none;
+    }
+
+    .fuse-header :global(.panel-btn) {
+      width: auto;
+      min-width: 0;
       min-height: var(--min-touch-target, 48px);
-      padding: 0 0 0 var(--settings-spacing-sm, 8px);
-      border-color: color-mix(
-        in srgb,
-        var(--semantic-warning, #f97316) 22%,
-        var(--theme-stroke, transparent)
-      );
-      border-radius: var(--settings-radius-md, 14px);
-      background: color-mix(
-        in srgb,
-        var(--theme-panel-bg, #0c0e16) 88%,
-        transparent
-      );
+      padding-inline: 10px;
     }
   }
 
@@ -198,8 +190,24 @@
       font-size: 1.65rem;
     }
 
-    .length-field {
+    .fuse-header :global(.panel-btn) {
       width: 31rem;
+    }
+  }
+
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .fuse-header {
+      min-height: 96px;
+      padding-inline: 28px;
+    }
+
+    h2 {
+      font-size: 2rem;
+    }
+
+    .fuse-header :global(.panel-btn) {
+      width: 38rem;
+      min-height: 4rem;
     }
   }
 </style>

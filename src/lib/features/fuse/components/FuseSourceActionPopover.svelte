@@ -9,10 +9,13 @@
   let {
     side,
     disabled = false,
+    compactTrigger = false,
     onChooseFirstStep,
   }: {
     side: FuseSide;
     disabled?: boolean;
+    /** Icon-only trigger used by the phone source cards. */
+    compactTrigger?: boolean;
     onChooseFirstStep: (side: FuseSide) => void;
   } = $props();
 
@@ -40,11 +43,14 @@
         {...props}
         type="button"
         class="adjust-trigger"
+        class:compact-trigger={compactTrigger}
         {disabled}
         aria-label="Adjust {label} path"
       >
         <i class="fas fa-sliders" aria-hidden="true"></i>
-        Adjust path
+        {#if !compactTrigger}
+          Adjust path
+        {/if}
       </button>
     {/snippet}
   </Popover.Trigger>
@@ -103,7 +109,9 @@
       </div>
 
       <p class="palette-note">
-        First Step turns this source card into a beat picker.
+        {compactTrigger
+          ? "First Step opens the beat picker."
+          : "First Step turns this source card into a beat picker."}
       </p>
     </Popover.Content>
   </Popover.Portal>
@@ -133,6 +141,24 @@
   .adjust-trigger:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  .adjust-trigger.compact-trigger {
+    width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0;
+    border-color: color-mix(
+      in srgb,
+      var(--source-color) 38%,
+      var(--theme-stroke)
+    );
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--source-color) 12%,
+      var(--theme-card-bg)
+    );
+    font-size: var(--font-size-min, 14px);
   }
 
   .adjust-trigger:focus-visible,

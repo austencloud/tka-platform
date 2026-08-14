@@ -5,11 +5,13 @@
 <script lang="ts">
   import { onDestroy, onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import SplitCanvasView from "$lib/shared/animation-engine/components/SplitCanvasView.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     FUSE_PREVIEW_TIP_EFFECT_MAP,
@@ -21,12 +23,16 @@
     sequence,
     currentStep = 0,
     isPlaying = false,
+    decomposed = false,
     onError,
     onToggle,
   }: {
     sequence: SequenceData;
     currentStep?: number;
     isPlaying?: boolean;
+    /** Mobile Fuse presents both editable ingredients and their result as one
+     * synchronized animation object. */
+    decomposed?: boolean;
     onError?: (error: Error) => void;
     onToggle?: () => void;
   } = $props();
@@ -35,6 +41,14 @@
   // first paint, crossfading staff->saved a beat in. Passing the saved prop types
   // as explicit overrides makes the first frame render the correct prop, no fade.
   const settings = getSettings();
+  const fuseVisibility = new AnimationVisibilityStateManager({
+    ephemeral: true,
+  });
+  // A classified pair should identify itself while it moves. The canonical
+  // canvas glyph derives the element from each live step, so a four-step VTG
+  // relationship stays steady and a genuinely changing relationship changes
+  // with the animation.
+  fuseVisibility.setVisibility("elementalGlyph", true);
   const previewTrailSettings = $derived({
     ...animationSettings.trail,
     // Fuse has no trail controls, so its preview follows the same prop contract
@@ -181,7 +195,7 @@
   });
 </script>
 
-<div class="fuse-animation-preview" aria-hidden="true">
+<div class="fuse-animation-preview" class:decomposed aria-hidden="true">
   {#if loading}
     <div class="state-message">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -190,37 +204,62 @@
   {:else if error}
     <div class="state-message error-message">{error}</div>
   {:else}
-    <div class="canvas-wrap">
-      <AnimatorCanvas
-        blueProp={bluePropState}
-        redProp={redPropState}
-        bluePropType={settings.bluePropType}
-        redPropType={settings.redPropType}
-        trailSettings={previewTrailSettings}
-        tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
-        gridVisible={true}
-        {gridMode}
-        letter={null}
-        {stepData}
-        {sequenceData}
-        currentStep={animCurrentStep}
-        {isPlaying}
-        word={null}
-        hideProgressBar={true}
-        hideTkaGlyph={true}
-        hideStepNumbers={true}
-        progressBarVariant="minimal"
-        fillContainer={true}
-        tapToToggle={true}
-        onPlaybackToggle={() => onToggle?.()}
-        hoverHint="badge"
-      />
+    <div class="preview-unit">
+      {#if decomposed}
+        <SplitCanvasView
+          blueProp={bluePropState}
+          redProp={redPropState}
+          bluePropType={settings.bluePropType}
+          redPropType={settings.redPropType}
+          trailSettings={previewTrailSettings}
+          tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
+          visibilityManagerOverride={fuseVisibility}
+          gridVisible={true}
+          {gridMode}
+          letter={null}
+          {stepData}
+          {sequenceData}
+          currentStep={animCurrentStep}
+          {isPlaying}
+          expandRequested={true}
+          resizePaused={false}
+        />
+      {/if}
+
+      <div class="canvas-wrap">
+        <AnimatorCanvas
+          blueProp={bluePropState}
+          redProp={redPropState}
+          bluePropType={settings.bluePropType}
+          redPropType={settings.redPropType}
+          trailSettings={previewTrailSettings}
+          tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
+          gridVisible={true}
+          {gridMode}
+          letter={null}
+          {stepData}
+          {sequenceData}
+          currentStep={animCurrentStep}
+          {isPlaying}
+          visibilityManagerOverride={fuseVisibility}
+          word={null}
+          hideProgressBar={true}
+          hideTkaGlyph={true}
+          hideStepNumbers={true}
+          progressBarVariant="minimal"
+          fillContainer={true}
+          tapToToggle={true}
+          onPlaybackToggle={() => onToggle?.()}
+          hoverHint="badge"
+        />
+      </div>
     </div>
   {/if}
 </div>
 
 <style>
   .fuse-animation-preview,
+  .preview-unit,
   .canvas-wrap {
     position: relative;
     display: flex;
@@ -230,6 +269,63 @@
     height: 100%;
     min-width: 0;
     min-height: 0;
+  }
+
+  .fuse-animation-preview {
+    container: fuse-decomposed-preview / size;
+  }
+
+  .preview-unit {
+    flex-direction: column;
+  }
+
+  .decomposed .preview-unit {
+    flex: 0 1 auto;
+    width: min(100cqw, calc(100cqh * 2 / 3));
+    height: auto;
+  }
+
+  .decomposed .canvas-wrap {
+    flex: 0 0 auto;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  /* Short landscape screens have room beside the result instead of above it.
+     Keep the same synchronized canvases, but arrange Blue, Combined, and Red
+     as one balanced triptych so the animation uses the available width. */
+  @container fuse-decomposed-preview (min-aspect-ratio: 2 / 1) {
+    .decomposed .preview-unit {
+      flex-direction: row;
+      width: min(100cqw, 320cqh);
+      height: auto;
+      aspect-ratio: 3.2 / 1;
+    }
+
+    .decomposed .preview-unit :global(.split-canvases) {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      justify-content: space-between;
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      overflow: visible;
+      opacity: 1;
+    }
+
+    .decomposed .preview-unit :global(.split-canvas) {
+      flex: 0 0 auto;
+      width: auto;
+      height: 100%;
+      aspect-ratio: 1;
+    }
+
+    .decomposed .canvas-wrap {
+      z-index: 1;
+      width: auto;
+      height: 100%;
+    }
   }
 
   .state-message {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
@@ -9,6 +10,7 @@
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import FuseLivePathGrid from "./FuseLivePathGrid.svelte";
   import FuseSourceActionPopover from "./FuseSourceActionPopover.svelte";
+  import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
   import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
@@ -20,11 +22,13 @@
     type FuseSourceAdjustment,
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
+  import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
 
   let {
     side,
     full = false,
     compactHero = false,
+    toolbarOnly = false,
     stepCols = 4,
     onChooseFirstStep,
     firstStepPickerActive = false,
@@ -38,6 +42,9 @@
     full?: boolean;
     /** Full-bleed current-step preview used by the phone workspace. */
     compactHero?: boolean;
+    /** Compact source identity and actions without a second pictograph. The
+     * shared decomposed animator owns the live hand view in this mode. */
+    toolbarOnly?: boolean;
     // Step column count FuseLayout picked to maximize pictograph size for the
     // current seam width and length. Only used in full (desktop) mode.
     stepCols?: number;
@@ -71,6 +78,7 @@
       fuseState.isFusing
   );
   let isSavingLoop = $state(false);
+  let inspectedSequence = $state<SequenceData | null>(null);
 
   // Symmetry mode: the driver keeps its source + controls; the follower renders
   // the derived result (fuseState.symmetryPreview) read-only, so this card shows the
@@ -142,17 +150,39 @@
     )
   );
 
-  // Phone cards keep one canonical pictograph renderer mounted and feed it the
-  // playing step. This avoids ChoreoCard's heavy-content crossfade, preserves a
-  // stable grid, and lets PropSvg/ArrowSvg animate their in-place changes.
-  const compactStep = $derived(
-    highlightIndex === null
-      ? null
-      : (displaySequence?.steps[highlightIndex] ?? null)
+  // Phone cards keep one canonical pictograph renderer mounted. Fuse's shared
+  // clock drives the same motion geometry used by the Construct arrival stage,
+  // so props travel through the beat and arrows reveal with that motion instead
+  // of relying on a CSS transition between static pictographs.
+  const compactMotionFrame = $derived(
+    resolveFusePictographMotionFrame(displaySequence, fuseState.currentStep)
   );
+  const compactStep = $derived(compactMotionFrame?.step ?? null);
   const compactStepLabel = $derived(
-    highlightIndex === null ? "" : `${highlightIndex + 1} / ${stepCount}`
+    compactMotionFrame
+      ? `${compactMotionFrame.stepIndex + 1} / ${stepCount}`
+      : ""
   );
+  let systemPrefersReducedMotion = $state(false);
+  const compactMotionProgress = $derived(
+    (settings.reducedMotion ?? false) || systemPrefersReducedMotion
+      ? null
+      : (compactMotionFrame?.motionProgress ?? null)
+  );
+  const compactArrowOpacity = $derived(
+    compactMotionProgress === null ? 1 : compactMotionProgress
+  );
+
+  onMount(() => {
+    if (!compactHero) return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      systemPrefersReducedMotion = event.matches;
+    };
+    systemPrefersReducedMotion = query.matches;
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  });
 
   // Measure the notation stage so the non-full column choice tracks the real
   // card size (tablet side-by-side, portrait, etc.) rather than ChoreoCard's
@@ -246,6 +276,11 @@
     void fuseState.adjustSource(side, adjustment);
   }
 
+  function viewChoreoCard(): void {
+    if (!source.sequence) return;
+    inspectedSequence = source.sequence;
+  }
+
   async function chooseInlineFirstStep(stepIndex: number): Promise<void> {
     if (!firstStepPickerActive) return;
     await fuseState.adjustSource(side, {
@@ -263,6 +298,12 @@
   }
 
   const compactSourceMenuItems = $derived([
+    {
+      label: "View Choreo Card",
+      icon: "fas fa-id-card",
+      action: viewChoreoCard,
+      disabled: !source.sequence,
+    },
     ...(source.canGoBack
       ? [
           {
@@ -275,19 +316,6 @@
         ]
       : []),
     {
-      label: "Regenerate path",
-      icon: "fas fa-wand-magic-sparkles",
-      action: () => void fuseState.shuffle(side),
-    },
-    {
-      label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
-      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
-      action: (): void => {
-        void saveCurrentLoop();
-      },
-      disabled: isSavingLoop || !source.sequence,
-    },
-    {
       label: "Choose saved LOOP",
       icon: "fas fa-book",
       action: () => void openLibraryPicker(),
@@ -298,39 +326,12 @@
       action: openVtgPicker,
     },
     {
-      label: "Mirror path",
-      icon: "fas fa-left-right",
-      action: () => apply({ kind: "mirror" }),
-    },
-    {
-      label: "Flip path",
-      icon: "fas fa-up-down",
-      action: () => apply({ kind: "flip" }),
-    },
-    {
-      label: "Invert turns",
-      icon: "fas fa-repeat",
-      action: () => apply({ kind: "invert" }),
-    },
-    {
-      label: "Rotate left 90°",
-      icon: "fas fa-rotate-left",
-      action: () => apply({ kind: "rotate", quarterTurns: -1 }),
-    },
-    {
-      label: "Rotate right 90°",
-      icon: "fas fa-rotate-right",
-      action: () => apply({ kind: "rotate", quarterTurns: 1 }),
-    },
-    {
-      label: "Choose first step",
-      icon: "fas fa-forward",
-      action: () => onChooseFirstStep(side),
-    },
-    {
-      label: "Reset adjustments",
-      icon: "fas fa-arrow-rotate-left",
-      action: () => apply({ kind: "reset" }),
+      label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
+      icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
+      action: (): void => {
+        void saveCurrentLoop();
+      },
+      disabled: isSavingLoop || !source.sequence,
     },
   ]);
 </script>
@@ -339,17 +340,23 @@
   class="source-card {side}-source"
   class:loading={source.isLoading}
   class:compact-hero={compactHero}
+  class:compact-toolbar={toolbarOnly}
+  class:full-card={full}
   class:first-step-picker={firstStepPickerActive}
   aria-label="{label} path"
   aria-busy={source.isLoading}
 >
+  {#if toolbarOnly}
+    <div class="compact-toolbar-identity">
+      <span class="source-dot" aria-hidden="true"></span>
+      <strong>{label}</strong>
+      <span class="toolbar-step">{compactStepLabel}</span>
+    </div>
+  {/if}
+
   <div class="notation-stage" bind:this={stageEl}>
     {#if compactHero && compactStep}
-      <div
-        class="compact-live-pictograph"
-        class:playing={fuseState.clockRunning}
-        style:--fuse-beat-duration={`${60_000 / fuseState.bpm}ms`}
-      >
+      <div class="compact-live-pictograph">
         <PictographContainer
           pictographData={compactStep}
           disableTransitions={true}
@@ -368,6 +375,9 @@
           stepNumberOverride={false}
           cellIndex={0}
           transitionKey={`fuse-${side}-compact`}
+          motionStartData={compactMotionFrame?.motionStartData ?? null}
+          motionProgress={compactMotionProgress}
+          arrowOpacity={compactArrowOpacity}
         />
       </div>
     {:else if displaySequence}
@@ -416,7 +426,13 @@
         <i class="fas fa-link" aria-hidden="true"></i>
       </span>
     {:else}
-      <div class="compact-source-menu">
+      <div class="compact-source-tools">
+        <FuseSourceActionPopover
+          {side}
+          compactTrigger={true}
+          disabled={sourceControlsDisabled || !source.sequence}
+          {onChooseFirstStep}
+        />
         <OverflowMenu
           items={compactSourceMenuItems}
           disabled={sourceControlsDisabled}
@@ -506,7 +522,7 @@
   {/if}
 </section>
 
-{#if nextSequence && !isSymmetryFollower}
+{#if nextSequence && !isSymmetryFollower && !toolbarOnly}
   {#key nextSequence}
     <div class="prewarm" aria-hidden="true">
       <ChoreoCard
@@ -546,6 +562,17 @@
     {side}
     onSelect={handleVtgSelect}
     onClose={() => (vtgOpen = false)}
+  />
+{/if}
+
+{#if inspectedSequence}
+  <CardInspectModal
+    sequence={inspectedSequence}
+    presentation="live"
+    browseViewMode={viewMode}
+    bluePropType={settings.bluePropType}
+    redPropType={settings.redPropType}
+    onClose={() => (inspectedSequence = null)}
   />
 {/if}
 
@@ -634,27 +661,6 @@
     overflow: hidden;
   }
 
-  /* The notation itself never disappears between beats. A restrained light
-     pass makes the live arrow read as active while its canonical renderer
-     updates position and rotation in place. */
-  .compact-live-pictograph.playing :global(.arrow-svg) {
-    animation: live-arrow-energy var(--fuse-beat-duration, 1000ms) ease-in-out
-      infinite;
-  }
-
-  @keyframes live-arrow-energy {
-    0%,
-    100% {
-      filter: brightness(1) drop-shadow(0 0 0 transparent);
-    }
-    48% {
-      filter: brightness(1.28)
-        drop-shadow(
-          0 0 7px color-mix(in srgb, var(--source-color) 62%, transparent)
-        );
-    }
-  }
-
   .compact-step-position {
     position: absolute;
     z-index: 2;
@@ -671,12 +677,18 @@
     white-space: nowrap;
   }
 
-  .compact-source-menu,
+  .compact-source-tools,
   .compact-derived-indicator {
     position: absolute;
     z-index: 4;
     top: 14px;
     right: 14px;
+  }
+
+  .compact-source-tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .compact-derived-indicator {
@@ -831,6 +843,144 @@
     }
   }
 
+  .source-card.compact-hero {
+    height: 100%;
+    min-height: 0;
+    gap: 0;
+    padding: 7px;
+    overflow: visible;
+    border-color: color-mix(
+      in srgb,
+      var(--source-color) 52%,
+      var(--theme-stroke, transparent)
+    );
+    border-radius: var(--settings-radius-md, 14px);
+    box-shadow: inset 0 3px 0
+      color-mix(in srgb, var(--source-color) 72%, transparent);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--source-color) 13%, transparent),
+        transparent 50%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+  }
+
+  .source-card.compact-hero.compact-toolbar {
+    flex-direction: row;
+    align-items: center;
+    height: var(--min-touch-target, 48px);
+    min-height: var(--min-touch-target, 48px);
+    padding: 3px 2px 3px 6px;
+    overflow: visible;
+    box-shadow: inset 3px 0 0
+      color-mix(in srgb, var(--source-color) 78%, transparent);
+  }
+
+  .compact-toolbar .notation-stage {
+    display: none;
+  }
+
+  .compact-toolbar-identity {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 4px;
+    min-width: 0;
+    color: var(--theme-text, white);
+  }
+
+  .compact-toolbar-identity strong {
+    min-width: 0;
+    overflow: hidden;
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .source-dot {
+    grid-row: 1 / span 2;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--source-color);
+    box-shadow: 0 0 10px
+      color-mix(in srgb, var(--source-color) 72%, transparent);
+  }
+
+  .toolbar-step {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .compact-toolbar .compact-source-tools,
+  .compact-toolbar .compact-derived-indicator {
+    position: static;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .compact-toolbar .compact-source-tools {
+    gap: 4px;
+  }
+
+  .compact-toolbar .compact-derived-indicator {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+  }
+
+  /* The compact menu is intentionally local to its source card. Raise that
+     card while the trigger/menu owns focus so adjacent controls cannot paint
+     over the lower transform actions. */
+  .source-card.compact-hero:focus-within {
+    z-index: 30;
+  }
+
+  .compact-hero .notation-stage {
+    flex: 1 1 0;
+    min-height: 0;
+    border-color: color-mix(
+      in srgb,
+      var(--source-color) 24%,
+      var(--theme-stroke, transparent)
+    );
+    border-radius: calc(var(--settings-radius-md, 14px) - 3px);
+  }
+
+  .compact-hero .notation-scroll {
+    overflow: hidden;
+  }
+
+  .compact-hero .notation-loading {
+    top: 50%;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .compact-hero :global(.overflow-trigger) {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    border-color: color-mix(
+      in srgb,
+      var(--source-color) 38%,
+      var(--theme-stroke, transparent)
+    );
+    background: color-mix(
+      in srgb,
+      var(--source-color) 12%,
+      var(--theme-card-bg, #161821)
+    );
+  }
+
+  .compact-hero :global(.overflow-dropdown) {
+    min-width: 210px;
+  }
+
   @container fuse (max-width: 599px) {
     .source-card {
       padding: 14px;
@@ -839,79 +989,6 @@
 
     .source-actions {
       margin-top: 0;
-    }
-
-    .source-card.compact-hero {
-      height: 100%;
-      min-height: 0;
-      gap: 0;
-      padding: 7px;
-      overflow: visible;
-      border-color: color-mix(
-        in srgb,
-        var(--source-color) 52%,
-        var(--theme-stroke, transparent)
-      );
-      border-radius: var(--settings-radius-md, 14px);
-      box-shadow: inset 0 3px 0
-        color-mix(in srgb, var(--source-color) 72%, transparent);
-      background:
-        linear-gradient(
-          145deg,
-          color-mix(in srgb, var(--source-color) 13%, transparent),
-          transparent 50%
-        ),
-        var(--theme-card-bg, rgba(255, 255, 255, 0.045));
-    }
-
-    /* The compact menu is intentionally local to its source card. Raise that
-       card while the trigger/menu owns focus so the result controls below do
-       not paint over the lower transform actions. */
-    .source-card.compact-hero:focus-within {
-      z-index: 30;
-    }
-
-    .compact-hero .notation-stage {
-      flex: 1 1 0;
-      min-height: 0;
-      border-color: color-mix(
-        in srgb,
-        var(--source-color) 24%,
-        var(--theme-stroke, transparent)
-      );
-      border-radius: calc(var(--settings-radius-md, 14px) - 3px);
-    }
-
-    .compact-hero .notation-scroll {
-      overflow: hidden;
-    }
-
-    .compact-hero .notation-loading {
-      top: 50%;
-      right: auto;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .compact-hero :global(.overflow-trigger) {
-      width: var(--min-touch-target, 44px);
-      height: var(--min-touch-target, 44px);
-      border-color: color-mix(
-        in srgb,
-        var(--source-color) 38%,
-        var(--theme-stroke, transparent)
-      );
-      background: color-mix(
-        in srgb,
-        var(--source-color) 12%,
-        var(--theme-card-bg, #161821)
-      );
-    }
-
-    .compact-hero :global(.overflow-dropdown) {
-      min-width: 160px;
-      max-height: min(70vh, 520px);
-      overflow-y: auto;
     }
   }
 
@@ -923,6 +1000,23 @@
     .first-step-toolbar {
       min-height: calc(var(--min-touch-target, 44px) * 2 + 8px);
     }
+  }
+
+  /* FuseLayout owns the full-card breakpoint and passes it as a prop. These
+     mode styles follow that same decision so browser zoom cannot leave full
+     markup with the compact card geometry. */
+  .source-card.full-card {
+    min-height: 0;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .full-card .source-actions {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .full-card .notation-stage {
+    min-height: 64px;
   }
 
   @container fuse (min-width: 1100px) and (max-width: 1500px) and (min-height: 780px) {
@@ -985,8 +1079,7 @@
   @media (prefers-reduced-motion: reduce) {
     .notation-skeleton,
     .change-flash,
-    .notation-loading .fa-spin,
-    .compact-live-pictograph.playing :global(.arrow-svg) {
+    .notation-loading .fa-spin {
       animation: none;
     }
   }

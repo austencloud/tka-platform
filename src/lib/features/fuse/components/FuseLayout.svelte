@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { LANDSCAPE_THRESHOLDS } from "$lib/shared/device/domain/constants/device-constants";
+  import {
+    BREAKPOINTS,
+    LANDSCAPE_THRESHOLDS,
+  } from "$lib/shared/device/domain/constants/device-constants";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -8,9 +11,11 @@
   import { LibraryError } from "$lib/shared/library/domain/library-error";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getFuseContext } from "../context/fuse-context";
+  import FusePairingBar from "./FusePairingBar.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
-  import FuseRelationshipComposer from "./FuseRelationshipComposer.svelte";
-  import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
+  import FuseSettingsDrawer, {
+    type FuseSettingsDestination,
+  } from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
   import FuseWorkspaceHeader from "./FuseWorkspaceHeader.svelte";
@@ -20,7 +25,9 @@
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);
   let landscapeSplit = $state(false);
+  let shortLandscape = $state(false);
   let settingsOpen = $state(false);
+  let settingsDestination = $state<FuseSettingsDestination>(null);
   let actionSide = $state<"blue" | "red" | null>(null);
   let firstStepOpen = $state(false);
   let inlineFirstStepSide = $state<"blue" | "red" | null>(null);
@@ -31,7 +38,6 @@
   // 1100/780 layout breakpoint) so smaller screens keep the lean, big-cell view.
   let fullCard = $state(false);
   let wideWorkspace = $state(false);
-  const controlsInDrawer = $derived(!fullCard);
 
   // Desktop-only draggable seam between the path column and the animation
   // canvas — same pattern as the sequence viewer's sidebar resize
@@ -253,10 +259,15 @@
     if (!element || typeof ResizeObserver === "undefined") return;
 
     const updateLayoutMode = (width: number, height: number) => {
-      const useCompactLayout = width < 600;
+      const useShortLandscape =
+        width >= BREAKPOINTS.PORTRAIT_MOBILE &&
+        width > height &&
+        height < LANDSCAPE_THRESHOLDS.MAX_PHONE_HEIGHT;
+      const useCompactLayout = width < BREAKPOINTS.MOBILE || useShortLandscape;
       const useFullCards = width >= 1100 && height >= 780;
       const aspectRatio = height > 0 ? width / height : 1;
       compact = useCompactLayout;
+      shortLandscape = useShortLandscape;
       fullCard = useFullCards;
       wideWorkspace = width >= 1680 && height >= 900;
       // Use the measured Fuse slot, not the physical screen: Android chrome and
@@ -365,14 +376,20 @@
   function closeInlineFirstStep(): void {
     inlineFirstStepSide = null;
   }
+
+  function openSettings(destination: FuseSettingsDestination): void {
+    settingsDestination = destination;
+    settingsOpen = true;
+  }
 </script>
 
 <div class="fuse-container" bind:this={containerElement}>
   <div
     class="fuse-workspace themed-scrollbar"
     class:compact-workspace={compact}
-    class:condensed-workspace={controlsInDrawer}
+    class:short-landscape-workspace={shortLandscape}
     class:landscape-workspace={landscapeSplit}
+    class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
@@ -380,13 +397,8 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
   >
-    <FuseWorkspaceHeader
-      compact={controlsInDrawer}
-      onOpenOptions={() => (settingsOpen = true)}
-    />
-    {#if !controlsInDrawer}
-      <FuseRelationshipComposer />
-    {/if}
+    <FuseWorkspaceHeader onOpenRecipe={() => openSettings(null)} />
+    <FusePairingBar onOpenPairing={() => openSettings("pairing")} />
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
@@ -434,29 +446,6 @@
           </span>
         </div>
       </div>
-    {:else if compact}
-      <div class="fuse-mobile-sources" aria-label="Source paths">
-        <FuseSourceCard
-          side="blue"
-          compactHero={true}
-          onChooseFirstStep={openFirstStep}
-        />
-        <div class="fusion-bridge" aria-hidden="true">
-          <span class="fusion-beam beam-blue"></span>
-          <span class="fusion-core">
-            <i class="fas fa-link"></i>
-          </span>
-          <span class="fusion-beam beam-red"></span>
-          <span class="fusion-spark spark-one"></span>
-          <span class="fusion-spark spark-two"></span>
-          <span class="fusion-spark spark-three"></span>
-        </div>
-        <FuseSourceCard
-          side="red"
-          compactHero={true}
-          onChooseFirstStep={openFirstStep}
-        />
-      </div>
     {:else if landscapeSplit}
       <div class="fuse-left-col">
         <FuseSourceCard
@@ -476,7 +465,7 @@
           onCancelFirstStep={closeInlineFirstStep}
         />
       </div>
-    {:else}
+    {:else if !compact}
       <FuseSourceCard
         side="blue"
         full={false}
@@ -499,11 +488,15 @@
       onShare={handleShare}
       onSave={handleSaveResult}
       isSaving={isSavingResult}
+      onChooseFirstStep={openFirstStep}
       {compact}
     />
   </div>
 
-  <FuseSettingsDrawer bind:isOpen={settingsOpen} />
+  <FuseSettingsDrawer
+    bind:isOpen={settingsOpen}
+    bind:destination={settingsDestination}
+  />
   <FuseFirstStepPanel
     bind:isOpen={firstStepOpen}
     side={actionSide}
@@ -555,168 +548,18 @@
   }
 
   .fuse-workspace.compact-workspace {
-    grid-template-rows: auto clamp(132px, 23cqh, 210px) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "sources"
+      "mode"
       "preview";
     gap: var(--settings-spacing-sm, 8px);
     padding: var(--settings-spacing-sm, 8px);
     overflow: hidden;
   }
 
-  .fuse-mobile-sources {
-    grid-area: sources;
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--settings-spacing-sm, 8px);
-    min-width: 0;
-    min-height: 0;
-  }
-
-  /* A small, non-interactive bridge makes the relationship explicit: the two
-     live paths feed the combined canvas below. It sits in the gutter and never
-     steals taps from either card. */
-  .fusion-bridge {
-    position: absolute;
-    z-index: 6;
-    top: 50%;
-    left: 50%;
-    display: flex;
-    align-items: center;
-    width: 54px;
-    height: 34px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .fusion-beam {
-    position: absolute;
-    top: 50%;
-    width: 17px;
-    height: 2px;
-    transform: translateY(-50%);
-    box-shadow: 0 0 8px currentColor;
-  }
-
-  .beam-blue {
-    left: 0;
-    color: var(--prop-blue, #2196f3);
-    background: linear-gradient(90deg, transparent, currentColor);
-  }
-
-  .beam-red {
-    right: 0;
-    color: var(--prop-red, #f44336);
-    background: linear-gradient(90deg, currentColor, transparent);
-  }
-
-  .fusion-core {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    transform: translate(-50%, -50%);
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--semantic-warning, #f97316) 76%,
-        var(--theme-text, #fff)
-      );
-    border-radius: 50%;
-    color: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 24%,
-      var(--theme-text, #fff)
-    );
-    background:
-      radial-gradient(
-        circle at 35% 30%,
-        color-mix(in srgb, var(--theme-text, #fff) 34%, transparent),
-        transparent 34%
-      ),
-      color-mix(
-        in srgb,
-        var(--semantic-warning, #f97316) 72%,
-        var(--theme-panel-bg, #17131d)
-      );
-    box-shadow:
-      0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
-      0 0 16px
-        color-mix(in srgb, var(--semantic-warning, #f97316) 58%, transparent);
-    font-size: 12px;
-    animation: fusion-core-pulse 1800ms ease-in-out infinite;
-  }
-
-  .fusion-spark {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 36%,
-      var(--theme-text, #fff)
-    );
-    box-shadow: 0 0 6px var(--semantic-warning, #f97316);
-    animation: fusion-spark 1500ms ease-in-out infinite;
-  }
-
-  .spark-one {
-    top: 0;
-    left: 29px;
-  }
-
-  .spark-two {
-    right: 5px;
-    bottom: 2px;
-    animation-delay: -500ms;
-  }
-
-  .spark-three {
-    bottom: 0;
-    left: 6px;
-    animation-delay: -1000ms;
-  }
-
-  @keyframes fusion-core-pulse {
-    0%,
-    100% {
-      box-shadow:
-        0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
-        0 0 11px
-          color-mix(in srgb, var(--semantic-warning, #f97316) 42%, transparent);
-    }
-    50% {
-      box-shadow:
-        0 0 0 3px color-mix(in srgb, var(--theme-shadow) 56%, transparent),
-        0 0 20px
-          color-mix(in srgb, var(--semantic-warning, #f97316) 72%, transparent);
-    }
-  }
-
-  @keyframes fusion-spark {
-    0%,
-    100% {
-      opacity: 0.25;
-      transform: scale(0.7);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.45);
-    }
-  }
-
-  .fuse-mobile-sources :global(.source-card) {
-    grid-area: auto;
-  }
-
   @container fuse (min-width: 600px) {
-    .fuse-workspace {
+    .fuse-workspace:not(.compact-workspace) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-rows: repeat(4, max-content);
       grid-template-areas:
@@ -726,14 +569,6 @@
         "preview preview";
       gap: clamp(10px, 1.4cqw, 14px);
     }
-
-    .fuse-workspace.condensed-workspace:not(.landscape-workspace) {
-      grid-template-rows: repeat(3, max-content);
-      grid-template-areas:
-        "header header"
-        "blue red"
-        "preview preview";
-    }
   }
 
   /* One-page fit layout: any container with real height locks to the viewport
@@ -742,17 +577,13 @@
      exact condition to apply min-height: 0 (a zero minimum contribution
      collapses auto rows in the scroll layouts, so it must not leak there). */
   @container fuse (min-width: 600px) and (min-height: 600px) {
-    .fuse-workspace {
+    .fuse-workspace:not(.compact-workspace) {
       grid-template-rows: max-content max-content minmax(0, 0.9fr) minmax(
           0,
           1.7fr
         );
       align-content: stretch;
       overflow: hidden;
-    }
-
-    .fuse-workspace.condensed-workspace:not(.landscape-workspace) {
-      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.7fr);
     }
   }
 
@@ -761,27 +592,39 @@
      preview now owns the full content-row height instead of a shallow row. */
   .fuse-workspace.landscape-workspace {
     grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.15fr);
-    grid-template-rows: max-content minmax(0, 1fr);
+    grid-template-rows: max-content max-content minmax(0, 1fr);
     grid-template-areas:
       "header header"
+      "mode mode"
       "left preview";
     align-content: stretch;
     overflow: hidden;
   }
 
-  /* Locked desktop layout: cards stack in a left column beside a tall preview.
-     Requires real height on top of the fit layout's floor. */
-  @container fuse (min-width: 1100px) and (min-height: 780px) {
-    .fuse-workspace {
-      grid-template-columns: var(--fuse-left, 1.8fr) minmax(0, 1fr);
-      grid-template-rows: auto auto minmax(0, 1fr);
-      grid-template-areas:
-        "header header"
-        "mode mode"
-        "left preview";
-      align-content: stretch;
-      overflow: hidden;
-    }
+  /* A short landscape screen cannot carry two detailed source cards plus the
+     result vertically. Keep both live source beats together in a compact rail
+     and give the result the wider pane, all inside the available height. */
+  .fuse-workspace.compact-workspace.short-landscape-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: max-content max-content minmax(0, 1fr);
+    grid-template-areas:
+      "header"
+      "mode"
+      "preview";
+  }
+
+  /* Full-card markup and its grid must change as one state transition. Keeping
+     the layout behind a second CSS threshold let browser zoom put the markup
+     and grid on opposite sides of the seam, creating implicit columns. */
+  .fuse-workspace.full-card-workspace {
+    grid-template-columns: var(--fuse-left, 1.8fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "header header"
+      "mode mode"
+      "left preview";
+    align-content: stretch;
+    overflow: hidden;
   }
 
   /* Desktop path column: blue over red, with the drag seam pinned to its right
@@ -976,9 +819,7 @@
       scroll-behavior: auto;
     }
     .split-handle::before,
-    .split-handle::after,
-    .fusion-core,
-    .fusion-spark {
+    .split-handle::after {
       transition: none;
       animation: none;
     }

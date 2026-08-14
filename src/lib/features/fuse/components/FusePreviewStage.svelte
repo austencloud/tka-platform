@@ -6,19 +6,23 @@
   import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getFuseContext } from "../context/fuse-context";
+  import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
   import FuseMobileControls from "./FuseMobileControls.svelte";
+  import FuseSourceCard from "./FuseSourceCard.svelte";
 
   let {
     onOpenViewer,
     onShare,
     onSave,
+    onChooseFirstStep,
     compact = false,
     isSaving = false,
   }: {
     onOpenViewer: () => Promise<void>;
     onShare: () => Promise<void>;
     onSave: () => Promise<void>;
+    onChooseFirstStep: (side: FuseSide) => void;
     compact?: boolean;
     isSaving?: boolean;
   } = $props();
@@ -61,6 +65,23 @@
     </span>
   </header>
 
+  {#if compact}
+    <div class="mobile-source-toolbar" aria-label="Source path controls">
+      <FuseSourceCard
+        side="blue"
+        compactHero={true}
+        toolbarOnly={true}
+        {onChooseFirstStep}
+      />
+      <FuseSourceCard
+        side="red"
+        compactHero={true}
+        toolbarOnly={true}
+        {onChooseFirstStep}
+      />
+    </div>
+  {/if}
+
   <div class="frame-wrap">
     <div class="preview-frame" role="img" aria-label={previewDescription}>
       {#if fuseState.previewSequence}
@@ -68,6 +89,7 @@
           sequence={fuseState.previewSequence}
           currentStep={fuseState.currentStep}
           isPlaying={fuseState.clockRunning}
+          decomposed={compact}
           onToggle={() => fuseState.toggleClock()}
           onError={(failure) => fuseState.reportPreviewFailure(failure)}
         />
@@ -168,20 +190,22 @@
             onclick={() => void onShare()}
           />
         </div>
-        <PanelButton
-          variant="secondary"
-          fullWidth={true}
-          disabled={!fuseState.canFuse || isSaving}
-          ariaBusy={isSaving}
-          saveShortcut={true}
-          onclick={() => void onSave()}
-        >
-          <i
-            class="fas {isSaving ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
-            aria-hidden="true"
-          ></i>
-          {isSaving ? "Saving..." : "Save result"}
-        </PanelButton>
+        <div class="save-slot">
+          <PanelButton
+            variant="secondary"
+            fullWidth={true}
+            disabled={!fuseState.canFuse || isSaving}
+            ariaBusy={isSaving}
+            saveShortcut={true}
+            onclick={() => void onSave()}
+          >
+            <i
+              class="fas {isSaving ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
+              aria-hidden="true"
+            ></i>
+            {isSaving ? "Saving..." : "Save result"}
+          </PanelButton>
+        </div>
         <div class="viewer-slot">
           <PanelButton
             variant="secondary"
@@ -236,6 +260,7 @@
         transparent 58%
       ),
       var(--theme-panel-bg, rgba(12, 14, 22, 0.96));
+    container: fuse-preview / inline-size;
   }
 
   .sr-only {
@@ -255,10 +280,20 @@
     height: 100%;
     min-height: 0;
     gap: var(--settings-spacing-sm, 8px);
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    padding: var(--settings-spacing-sm, 8px);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-warning, #f97316) 42%,
+      var(--theme-stroke)
+    );
+    border-radius: var(--settings-radius-lg, 18px);
+    background:
+      radial-gradient(
+        circle at 50% 34%,
+        color-mix(in srgb, var(--semantic-warning, #f97316) 8%, transparent),
+        transparent 50%
+      ),
+      var(--theme-panel-bg);
   }
 
   .preview-stage.compact .preview-heading {
@@ -268,6 +303,18 @@
   .compact .frame-wrap {
     flex: 1 1 0;
     min-height: 0;
+  }
+
+  .mobile-source-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 0 0 auto;
+    gap: var(--settings-spacing-sm, 8px);
+    min-width: 0;
+  }
+
+  .mobile-source-toolbar :global(.source-card) {
+    grid-area: auto;
   }
 
   h3 {
@@ -474,7 +521,8 @@
   }
 
   .stage-controls {
-    display: flex;
+    display: grid;
+    grid-template-columns: clamp(110px, 14cqw, 180px) minmax(0, 1fr);
     align-items: center;
     gap: var(--settings-spacing-sm, 10px);
     min-height: var(--min-touch-target, 44px);
@@ -486,40 +534,74 @@
      absorbs any remainder — prominent BPM, no leftover gap. */
   .bpm-compact {
     display: flex;
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 340px;
+    width: 100%;
+    min-width: 110px;
   }
 
   .result-actions {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
-    flex: 1 1 auto;
     gap: var(--settings-spacing-sm, 10px);
     min-width: 0;
   }
 
   .share-slot,
+  .save-slot,
   .viewer-slot {
     min-width: 0;
   }
 
   .share-slot :global(.action-button),
   .result-actions :global(.panel-btn) {
+    min-width: 0;
     min-height: 54px;
+    padding-inline: clamp(8px, 1.2cqw, 16px);
     border-radius: 16px;
+    white-space: nowrap;
   }
 
   /* Really-big desktop: keep tempo visible beside a capped result action
      cluster. The previous rule hid the only BPM control at this width. */
   @container fuse (min-width: 1500px) {
-    .bpm-compact {
-      flex: 0 0 220px;
+    .stage-controls {
+      grid-template-columns: 220px minmax(0, 1fr);
     }
 
     .result-actions {
-      flex: 0 1 min(100%, 960px);
+      width: min(100%, 960px);
       margin-left: auto;
+    }
+  }
+
+  /* A narrow result pane cannot honestly fit tempo plus three labelled actions
+     on one line. Give Share the deliberate full-width row, then keep tempo,
+     save, and viewer equally readable beneath it. */
+  @container fuse-preview (max-width: 620px) {
+    .stage-controls {
+      grid-template-columns: 110px repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        "share share share"
+        "tempo save viewer";
+    }
+
+    .bpm-compact {
+      grid-area: tempo;
+    }
+
+    .result-actions {
+      display: contents;
+    }
+
+    .share-slot {
+      grid-area: share;
+    }
+
+    .save-slot {
+      grid-area: save;
+    }
+
+    .viewer-slot {
+      grid-area: viewer;
     }
   }
 
