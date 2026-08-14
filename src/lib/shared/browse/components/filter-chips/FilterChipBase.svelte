@@ -16,8 +16,9 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     active?: boolean;
     count?: number | null;
     chipColor?: string;
-    /** toggle = on/off switch · dropdown = opens a popover · action = momentary button (no chevron, no switch role). */
-    mode?: "toggle" | "dropdown" | "action";
+    /** toggle = on/off switch · dropdown = opens a popover · action = momentary
+     * button · display = the same chip presentation without button semantics. */
+    mode?: "toggle" | "dropdown" | "action" | "display";
     /** soft (default) = active state is a translucent wash of `chipColor` ·
      *  solid = active state fills with `chipColor` + on-accent text, matching a
      *  SegmentedControl indicator (use when a toggle sits beside one). */
@@ -126,7 +127,10 @@ Popover uses fixed positioning to escape overflow:hidden containers.
         ? Math.max(EDGE, rect.top - 6 - menuHeight)
         : below;
     const left = menuWidth
-      ? Math.max(EDGE, Math.min(rect.left, window.innerWidth - menuWidth - EDGE))
+      ? Math.max(
+          EDGE,
+          Math.min(rect.left, window.innerWidth - menuWidth - EDGE)
+        )
       : rect.left;
 
     // Everything above is viewport space, which is what the edge clamps need.
@@ -159,7 +163,17 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   {/if}
 {/snippet}
 
-{#if onremove}
+{#if mode === "display"}
+  <span
+    class="filter-chip display-only"
+    class:active
+    class:solid={emphasis === "solid"}
+    class:size-sm={size === "sm"}
+    style="--chip-color: {chipColor};"
+  >
+    {@render chipBody()}
+  </span>
+{:else if onremove}
   <span class="filter-chip-duo" style="--chip-color: {chipColor};">
     <button
       class="filter-chip duo-main"
@@ -330,15 +344,19 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     pointer-events: none;
   }
 
+  .filter-chip.display-only {
+    cursor: default;
+  }
+
   @media (hover: hover) {
-    .filter-chip:not(.disabled):hover {
+    .filter-chip:not(.disabled):not(.display-only):hover {
       background: color-mix(in srgb, var(--chip-color) 10%, transparent);
       border-color: color-mix(in srgb, var(--chip-color) 30%, transparent);
       color: var(--theme-text);
     }
   }
 
-  .filter-chip:not(.disabled):active {
+  .filter-chip:not(.disabled):not(.display-only):active {
     transform: scale(0.97);
   }
 

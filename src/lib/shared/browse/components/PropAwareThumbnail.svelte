@@ -34,6 +34,7 @@
   import { deriveKey } from "$lib/shared/browse/services/thumbnail-key-deriver";
   import {
     buildGalleryRenderInput,
+    deriveThumbnailSequenceName,
     galleryStepCount,
   } from "$lib/shared/browse/services/gallery-render-input";
   import { repairThumbnailCaches } from "$lib/shared/browse/services/thumbnail-repair";
@@ -147,7 +148,7 @@
   // Derived: sequence name (raw) — used as the cache-key + source-doc lookup
   // identity. Kept as word||name so existing cloud/local thumbnail keys and
   // loadFullSequenceData() lookups stay stable.
-  const sequenceName = $derived(sequence.word || sequence.name || "");
+  const sequenceName = $derived(deriveThumbnailSequenceName(sequence));
 
   // Derived: simplified display name (removes repeated patterns like "ABCABC" → "ABC").
   // Use the CONTENT-derived word (steps/stepPairings letters) rather than the raw

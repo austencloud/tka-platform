@@ -29,7 +29,6 @@
 {#snippet familyConnectiveControl()}
   <SegmentedControl
     size="sm"
-    density="compact"
     color="accent"
     ariaLabel="How selected families combine"
     options={[
@@ -46,8 +45,8 @@
     "Pick a Timing & Direction family",
     onToggleFamily
       ? familyConnective === "all"
-        ? "Tap several — sequences need every family."
-        : "Tap several — sequences match any family."
+        ? "Tap several. Sequences need every family."
+        : "Tap several. Sequences match any family."
       : undefined,
     onFamilyConnectiveChange ? familyConnectiveControl : undefined
   )}

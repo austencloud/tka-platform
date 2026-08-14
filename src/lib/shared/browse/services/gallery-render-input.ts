@@ -13,6 +13,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   resolveInfoCellDisplay,
@@ -84,6 +85,21 @@ export function galleryStepCount(sequence: SequenceData): number {
 }
 
 /**
+ * Runtime-generated sequences can be complete without having been named yet.
+ * Their rendered cards still need a stable cache identity, otherwise the live
+ * thumbnail waits forever instead of starting a render.
+ */
+export function deriveThumbnailSequenceName(sequence: SequenceData): string {
+  return (
+    sequence.word ||
+    sequence.name ||
+    deriveWord(sequence) ||
+    sequence.id ||
+    "Untitled sequence"
+  );
+}
+
+/**
  * Resolve the effective visibility object for a gallery card. Always returns
  * EXPLICIT showQRCode + showMandala values (never undefined) — the renderer
  * falls back to its own hardcoded defaults on undefined, which can diverge from
@@ -105,15 +121,23 @@ export function buildGalleryVisibility(
   const stepCount = galleryStepCount(p.sequence);
 
   const needsMotionFilter = showBlueMotion !== true || showRedMotion !== true;
-  const motionOverrides = needsMotionFilter ? { showBlueMotion, showRedMotion } : {};
+  const motionOverrides = needsMotionFilter
+    ? { showBlueMotion, showRedMotion }
+    : {};
 
   // Guests get no QR; one-count cards have no spare cell for it.
   const qrAllowed = allowQR && isAuthenticated && stepCount > 1;
 
   if (visibility) {
-    const qrGated = qrAllowed ? visibility : { ...visibility, showQRCode: false };
+    const qrGated = qrAllowed
+      ? visibility
+      : { ...visibility, showQRCode: false };
     return handPathMode || needsMotionFilter || !qrAllowed
-      ? { ...qrGated, ...(handPathMode && { handPathMode: true }), ...motionOverrides }
+      ? {
+          ...qrGated,
+          ...(handPathMode && { handPathMode: true }),
+          ...motionOverrides,
+        }
       : qrGated;
   }
 
@@ -146,7 +170,9 @@ export function buildGalleryVisibility(
   // on the warmer's no-QR (mandala) class.
   return {
     showQRCode: resolved.showQRCode,
-    showMandala: resolved.showQRCode ? compositionManager.showMandala : resolved.showMandala,
+    showMandala: resolved.showQRCode
+      ? compositionManager.showMandala
+      : resolved.showMandala,
     ...(handPathMode && { handPathMode: true }),
     ...motionOverrides,
   };
@@ -182,9 +208,10 @@ export function buildGalleryRenderInput(
 
   const stepCount = galleryStepCount(sequence);
   const effectiveStartPositionLayout =
-    startPositionLayout ?? compositionManager.getStartPositionLayoutForStepCount(stepCount);
+    startPositionLayout ??
+    compositionManager.getStartPositionLayoutForStepCount(stepCount);
 
-  const sequenceName = sequence.word || sequence.name || "";
+  const sequenceName = deriveThumbnailSequenceName(sequence);
   return {
     sequenceName,
     sequenceId: sequence.id,

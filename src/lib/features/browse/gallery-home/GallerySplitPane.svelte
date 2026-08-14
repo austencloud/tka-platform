@@ -9,6 +9,7 @@
   import type { Snippet } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ResizeHandle from "$lib/shared/panels/ResizeHandle.svelte";
+  import { startMorph } from "$lib/shared/transitions/results-morph";
   import GalleryPaneLeft from "./GalleryPaneLeft.svelte";
   import type {
     CategoryEntry,
@@ -73,7 +74,7 @@
 
   let filterPaneWidth = $state(restorePaneWidth());
   let filterPaneCollapsed = $state(restorePaneCollapsed());
-  let dragStartPaneWidth = $state(filterPaneWidth);
+  let dragStartPaneWidth = $state(FILTER_PANE_DEFAULT);
   let paneResizing = $state(false);
 
   function persistPaneWidth(): void {
@@ -85,13 +86,35 @@
   }
 
   function setPaneCollapsed(collapsed: boolean): void {
-    filterPaneCollapsed = collapsed;
-    try {
-      if (collapsed) localStorage.setItem(FILTER_PANE_COLLAPSED_KEY, "1");
-      else localStorage.removeItem(FILTER_PANE_COLLAPSED_KEY);
-    } catch {
-      // Collapsing remains available when persistence is denied.
+    if (collapsed === filterPaneCollapsed) return;
+
+    const apply = () => {
+      filterPaneCollapsed = collapsed;
+      try {
+        if (collapsed) localStorage.setItem(FILTER_PANE_COLLAPSED_KEY, "1");
+        else localStorage.removeItem(FILTER_PANE_COLLAPSED_KEY);
+      } catch {
+        // Collapsing remains available when persistence is denied.
+      }
+    };
+
+    if (typeof document === "undefined") {
+      apply();
+      return;
     }
+
+    const root = document.documentElement;
+    root.classList.add("gallery-pane-motion");
+    const transition = startMorph(apply);
+    if (!transition) {
+      root.classList.remove("gallery-pane-motion");
+      return;
+    }
+    void transition.finished
+      .catch(() => {})
+      .finally(() => {
+        root.classList.remove("gallery-pane-motion");
+      });
   }
 
   function handleResizeStart(): void {
@@ -145,13 +168,14 @@
       {/snippet}
     </GalleryPaneLeft>
   </div>
-  <div class="pane-resize-track" onkeydown={handleResizeKeydown}>
+  <div class="pane-resize-track">
     <ResizeHandle
       direction="horizontal"
       disabled={filterPaneCollapsed}
       onDragStart={handleResizeStart}
       onDrag={handleResize}
       onDragEnd={handleResizeEnd}
+      onKeydown={handleResizeKeydown}
     />
   </div>
   <div class="pane-right">
@@ -182,10 +206,6 @@
     min-width: 0;
     min-height: 0;
     flex: 1 1 0;
-    transition: grid-template-columns 0.24s var(--ease-smooth, ease);
-  }
-  .gallery-split-pane.pane-resizing {
-    transition: none;
   }
   .gallery-split-pane.filter-pane-collapsed {
     grid-template-columns: minmax(0, 0fr) 0 minmax(0, 1fr);
@@ -197,9 +217,14 @@
     opacity: 1;
     transform: translateX(0);
     transition:
-      opacity 0.16s ease,
-      transform 0.24s var(--ease-smooth, ease),
-      visibility 0s;
+      opacity var(--transition-fast),
+      transform var(--transition-spring);
+  }
+  :global(html.gallery-pane-motion) .pane-left-shell {
+    view-transition-name: gallery-filter-pane;
+  }
+  :global(html.gallery-pane-motion) .pane-right {
+    view-transition-name: gallery-results-pane;
   }
   .pane-left-shell > :global(.pane-left) {
     height: 100%;
@@ -209,7 +234,6 @@
     pointer-events: none;
     opacity: 0;
     transform: translateX(-0.75rem);
-    transition-delay: 0s, 0s, 0.24s;
   }
   .pane-collapse-control {
     position: absolute;
@@ -261,10 +285,40 @@
     overflow: hidden;
   }
 
+  :global(html.gallery-pane-motion::view-transition-group(gallery-filter-pane)),
+  :global(
+    html.gallery-pane-motion::view-transition-group(gallery-results-pane)
+  ) {
+    animation-duration: var(--duration-dramatic);
+    animation-timing-function: var(--ease-spring);
+  }
+  :global(html.gallery-pane-motion::view-transition-old(gallery-filter-pane)),
+  :global(html.gallery-pane-motion::view-transition-new(gallery-filter-pane)) {
+    animation-duration: var(--duration-emphasis);
+    animation-timing-function: var(--ease-in-out);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .gallery-split-pane,
     .pane-left-shell {
       transition: none;
+    }
+
+    :global(
+      html.gallery-pane-motion::view-transition-group(gallery-filter-pane)
+    ),
+    :global(html.gallery-pane-motion::view-transition-old(gallery-filter-pane)),
+    :global(html.gallery-pane-motion::view-transition-new(gallery-filter-pane)),
+    :global(
+      html.gallery-pane-motion::view-transition-group(gallery-results-pane)
+    ),
+    :global(
+      html.gallery-pane-motion::view-transition-old(gallery-results-pane)
+    ),
+    :global(
+      html.gallery-pane-motion::view-transition-new(gallery-results-pane)
+    ) {
+      animation: none;
     }
   }
 </style>

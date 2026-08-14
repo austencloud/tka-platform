@@ -265,7 +265,9 @@ Variation support:
   // than something that happens while the pointer passes through. Hover still
   // does its original job — warming the sequence cache, invisibly — which
   // means the data is already hydrated by the time the chip is tapped.
-  const previewActive = $derived(cardHoverPreview.isActive(displayedSequence.id));
+  const previewActive = $derived(
+    cardHoverPreview.isActive(displayedSequence.id)
+  );
 
   // ── Play/stop morph ────────────────────────────────────────────────
   // The static thumbnail is one baked <img>, so its header/grid/cells can't
@@ -293,9 +295,10 @@ Variation support:
   const sheetHeaderFrac = $derived.by(() => {
     const seq = displayedSequence;
     try {
-      const layout = getImageCompositionManager().getStartPositionLayoutForStepCount(
-        galleryStepCount(seq)
-      );
+      const layout =
+        getImageCompositionManager().getStartPositionLayoutForStepCount(
+          galleryStepCount(seq)
+        );
       const source = seq.steps?.length
         ? seq
         : ({
@@ -325,9 +328,10 @@ Variation support:
       return false;
     }
     try {
-      const layout = getImageCompositionManager().getStartPositionLayoutForStepCount(
-        galleryStepCount(seq)
-      );
+      const layout =
+        getImageCompositionManager().getStartPositionLayoutForStepCount(
+          galleryStepCount(seq)
+        );
       morphRegions = computeSheetRegionMap(seq, layout);
     } catch {
       return false;
@@ -339,8 +343,7 @@ Variation support:
 
   const nextFrame = () =>
     new Promise<void>((r) => requestAnimationFrame(() => r()));
-  const delay = (ms: number) =>
-    new Promise<void>((r) => setTimeout(r, ms));
+  const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
   /** Serializes toggles: a click during an in-flight morph is dropped rather
    * than letting two startViewTransition orchestrations interleave and clobber
@@ -706,6 +709,7 @@ Variation support:
     class:selection-mode={selectionMode}
     class:long-pressing={isLongPressing}
     class:light-mode={lightMode}
+    style:--selection-hold-duration={`${LONG_PRESS_MS}ms`}
     data-ghost={selectionMode ? undefined : "safe"}
     data-ghost-kind={selectionMode ? undefined : "gallery-item"}
     data-ghost-linger={selectionMode ? undefined : ""}
@@ -772,7 +776,7 @@ Variation support:
 
   .choreo-card.interactive {
     cursor: pointer;
-    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform var(--transition-fast);
   }
 
   .choreo-card.interactive:hover {
@@ -840,7 +844,7 @@ Variation support:
   }
 
   .selection-indicator.pressing {
-    animation: selection-hold 500ms linear both;
+    animation: selection-hold var(--selection-hold-duration) linear both;
   }
 
   @keyframes selection-hold {
@@ -907,6 +911,10 @@ Variation support:
       transform: none;
     }
     .selection-indicator {
+      transition: none;
+    }
+    .thumbnail-container.crossfade :global(img),
+    .thumbnail-container.crossfade :global(.placeholder) {
       transition: none;
     }
     .selection-indicator.pressing {

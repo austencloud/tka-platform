@@ -57,6 +57,7 @@ const CATEGORY_LABELS: Partial<Record<string, string>> = {
   [BrowseFilterType.REVERSAL_PATTERN]: "Reversals",
   [BrowseFilterType.FAVORITES]: "Favorites",
   [BrowseFilterType.RECENT]: "Recent",
+  search: "Search",
 };
 
 /**

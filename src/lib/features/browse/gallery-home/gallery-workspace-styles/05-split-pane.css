@@ -153,8 +153,8 @@
   background: transparent;
 }
 .drill-ctx.split-pane .drill-head.with-back .head-back {
-  height: 36px;
-  min-width: 36px;
+  height: 44px;
+  min-width: 44px;
   padding: 0 0.75rem 0 0.65rem;
 }
 .drill-ctx.split-pane .drill-head.with-back h2 {

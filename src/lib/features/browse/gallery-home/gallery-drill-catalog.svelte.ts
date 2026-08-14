@@ -11,7 +11,7 @@
  */
 
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
-import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+import { ACTIVE_DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
 import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { LOOP_COMPONENT_MAP } from "$lib/shared/browse/domain/constants/loop-constants";
@@ -76,7 +76,7 @@ export const SCREEN_CLASS: Record<Section, string> = {
   collection: "screen-collections",
 };
 
-export const LEVELS = [1, 2, 3];
+export const LEVELS = ACTIVE_DIFFICULTY_LEVELS;
 
 // Legacy desktop app's level descriptions, verbatim (filter_by_level_section).
 export const LEVEL_DESCRIPTIONS: Record<number, string> = {

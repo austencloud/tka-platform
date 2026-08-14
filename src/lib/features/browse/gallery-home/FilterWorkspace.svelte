@@ -22,7 +22,7 @@ the below-seam actions mutate the engine in place.
   import type { CollectionOption } from "$lib/features/browse/gallery-home/gallery-drill-catalog.svelte";
   import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { withResultsMorph } from "$lib/shared/transitions/results-morph";
+  import { startMorph } from "$lib/shared/transitions/results-morph";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import type { BrowseEngine } from "$lib/shared/browse/engine/types";
   import {
@@ -34,6 +34,8 @@ the below-seam actions mutate the engine in place.
     engine,
     collections = [],
     resultsPane,
+    resultsActions,
+    showViewResultsAction = true,
     onSaveSmart,
     onEject,
     onClose,
@@ -41,6 +43,10 @@ the below-seam actions mutate the engine in place.
     engine: BrowseEngine;
     collections?: CollectionOption[];
     resultsPane: Snippet;
+    /** Host-owned outcome placed beside the live result count. */
+    resultsActions?: Snippet;
+    /** Supporting hosts can keep their own outcome instead of the grid handoff. */
+    showViewResultsAction?: boolean;
     onSaveSmart?: () => void;
     /** Optional host outcome for a supporting filter pane. Rules stay active. */
     onClose?: () => void;
@@ -126,7 +132,11 @@ the below-seam actions mutate the engine in place.
      underneath. Both are the SHARED components the step-through flow and the
      grid tab already use — never a copy. -->
 {#snippet resultsHeader()}
-  <span class="strip-count" aria-live="polite">
+  <span
+    class="strip-count strip-motion-anchor"
+    style:view-transition-name="gallery-rule-count"
+    aria-live="polite"
+  >
     {engine.resultCount}
     {engine.resultCount === 1 ? "match" : "matches"}
   </span>
@@ -134,14 +144,19 @@ the below-seam actions mutate the engine in place.
     <FilterRuleStrip
       filters={engine.allFilterChips.filter((c) => !c.locked)}
       connectives={engine.connectives}
+      motionScope="gallery-rule"
       onEditFilter={editFilter}
-      onRemoveFilter={(key) => withResultsMorph(() => engine.removeFilter(key))}
+      onRemoveFilter={(key) => startMorph(() => engine.removeFilter(key))}
     />
   {:else}
-    <span class="strip-empty">No filters yet — pick one on the left.</span>
+    <span class="strip-empty">No filters yet. Pick one on the left.</span>
   {/if}
-  {#if onSaveSmart || onClose}
-    <div class="strip-actions">
+  {#if resultsActions || onSaveSmart || onClose}
+    <div
+      class="strip-actions strip-motion-anchor"
+      style:view-transition-name="gallery-rule-actions"
+    >
+      {@render resultsActions?.()}
       {#if onSaveSmart}
         <PanelButton
           variant="secondary"
@@ -177,32 +192,50 @@ the below-seam actions mutate the engine in place.
       </PanelButton>
     </div>
   {/if}
-  {#if engine.hasActiveFilters && !splitPaneActive}
+  {#if (engine.hasActiveFilters || resultsActions) && !splitPaneActive}
     <div class="gallery-rule-strip" aria-label="Current filters">
-      <span class="strip-count" aria-live="polite">
+      <span
+        class="strip-count strip-motion-anchor"
+        style:view-transition-name="gallery-rule-count"
+        aria-live="polite"
+      >
         {engine.resultCount}
         {engine.resultCount === 1 ? "match" : "matches"}
       </span>
-      <FilterRuleStrip
-        filters={engine.allFilterChips.filter((c) => !c.locked)}
-        connectives={engine.connectives}
-        onEditFilter={editFilter}
-        onRemoveFilter={(key) =>
-          withResultsMorph(() => engine.removeFilter(key))}
-      />
-      <div class="strip-actions">
-        <PanelButton
-          variant="primary"
-          onclick={() => {
-            // Above the seam this opens the workspace's own live pane; a
-            // desktop user is never handed to the "Start here" screen. Below
-            // it, the host's full-page grid.
-            if (splitCapable) showAllPane = true;
-            else eject(() => {});
-          }}
+      {#if engine.hasActiveFilters}
+        <FilterRuleStrip
+          filters={engine.allFilterChips.filter((c) => !c.locked)}
+          connectives={engine.connectives}
+          motionScope="gallery-rule"
+          onEditFilter={editFilter}
+          onRemoveFilter={(key) => startMorph(() => engine.removeFilter(key))}
+        />
+      {:else}
+        <span
+          class="strip-empty strip-motion-anchor"
+          style:view-transition-name="gallery-rule-empty"
+          >No filters yet. The whole library is ready.</span
         >
-          View {engine.resultCount} results
-        </PanelButton>
+      {/if}
+      <div
+        class="strip-actions strip-motion-anchor"
+        style:view-transition-name="gallery-rule-actions"
+      >
+        {@render resultsActions?.()}
+        {#if showViewResultsAction}
+          <PanelButton
+            variant="primary"
+            onclick={() => {
+              // Above the seam this opens the workspace's own live pane; a
+              // desktop user is never handed to the "Start here" screen. Below
+              // it, the host's full-page grid.
+              if (splitCapable) showAllPane = true;
+              else eject(() => {});
+            }}
+          >
+            View {engine.resultCount} results
+          </PanelButton>
+        {/if}
         {#if onSaveSmart}
           <PanelButton
             variant="secondary"
@@ -258,7 +291,12 @@ the below-seam actions mutate the engine in place.
         "any"}
       onLoopConnectiveChange={(connective) =>
         engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
-      onToggleLoop={(value, label, color, nowActive) => {
+      onToggleLoop={(
+        value: string,
+        label: string,
+        color: string,
+        nowActive: boolean
+      ) => {
         if (nowActive) {
           engine.addFilter(BrowseFilterType.LOOP_TYPE, value, label, color);
         } else {
@@ -272,7 +310,12 @@ the below-seam actions mutate the engine in place.
       ] ?? "any"}
       onFamilyConnectiveChange={(connective) =>
         engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
-      onToggleFamily={(familyId, label, color, nowActive) => {
+      onToggleFamily={(
+        familyId: string,
+        label: string,
+        color: string,
+        nowActive: boolean
+      ) => {
         if (nowActive) {
           engine.addFilter(BrowseFilterType.TND_FAMILY, familyId, label, color);
         } else {
@@ -342,5 +385,9 @@ the below-seam actions mutate the engine in place.
     gap: 0.5rem;
     margin-left: auto;
     flex: 0 0 auto;
+  }
+
+  .strip-motion-anchor {
+    view-transition-class: filter-rule-token;
   }
 </style>

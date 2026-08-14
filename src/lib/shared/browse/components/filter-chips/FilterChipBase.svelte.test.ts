@@ -25,7 +25,12 @@ describe("FilterChipBase (toggle mode)", () => {
     expect(onclick).toHaveBeenCalledOnce();
 
     // Controlled component: parent flips `active` → ARIA must follow.
-    await screen.rerender({ label: "Loops", mode: "toggle", active: true, onclick });
+    await screen.rerender({
+      label: "Loops",
+      mode: "toggle",
+      active: true,
+      onclick,
+    });
     await expect
       .element(page.getByRole("button", { name: "Loops" }))
       .toHaveAttribute("aria-pressed", "true");
@@ -52,5 +57,21 @@ describe("FilterChipBase (dropdown mode)", () => {
     await expect
       .element(page.getByRole("button", { name: "Sort" }))
       .toHaveAttribute("aria-expanded", "true");
+  });
+});
+
+describe("FilterChipBase (display mode)", () => {
+  it("keeps chip styling without exposing a fake button", async () => {
+    render(FilterChipBase, {
+      label: "Rotated (quartered)",
+      mode: "display",
+      active: true,
+      chipColor: "#36c3ff",
+    });
+
+    const chip = document.querySelector(".filter-chip");
+    expect(chip?.tagName).toBe("SPAN");
+    expect(chip).toHaveTextContent("Rotated (quartered)");
+    expect(document.querySelector("button")).toBeNull();
   });
 });

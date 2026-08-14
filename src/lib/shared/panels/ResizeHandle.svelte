@@ -25,6 +25,8 @@
     onDrag?: (delta: number) => void;
     /** Called when drag ends */
     onDragEnd?: () => void;
+    /** Keyboard resizing stays with the host because it owns the size bounds. */
+    onKeydown?: (event: KeyboardEvent) => void;
     /** Visual size of the handle in pixels */
     size?: number;
     /** Whether handle is disabled */
@@ -36,6 +38,7 @@
     onDragStart,
     onDrag,
     onDragEnd,
+    onKeydown,
     size = 6,
     disabled = false,
   }: Props = $props();
@@ -80,7 +83,8 @@
   });
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (a focusable ARIA separator is an adjustable widget) -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions (a focusable ARIA separator is an adjustable widget) -->
 <div
   class="resize-handle"
   class:horizontal={direction === "horizontal"}
@@ -92,6 +96,7 @@
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
+  onkeydown={onKeydown}
   role="separator"
   aria-orientation={direction}
   aria-disabled={disabled}
@@ -128,11 +133,11 @@
   }
 
   .handle-visual {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 2px;
     transition:
-      background 0.15s ease,
-      transform 0.15s ease;
+      background var(--transition-fast),
+      transform var(--transition-fast);
   }
 
   .horizontal .handle-visual {
@@ -148,7 +153,7 @@
   }
 
   .resize-handle:hover .handle-visual {
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .resize-handle.dragging .handle-visual {
@@ -170,5 +175,11 @@
     content: "";
     position: absolute;
     inset: -4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .handle-visual {
+      transition: none;
+    }
   }
 </style>

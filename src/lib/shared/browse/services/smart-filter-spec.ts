@@ -10,13 +10,17 @@
 
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import type { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import { applyFilter } from "$lib/shared/browse/services/browse-filter";
 import {
   applyFilters,
   CONNECTIVE_STACKING_TYPES,
   type FilterConnective,
 } from "$lib/shared/browse/services/multi-filter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { BrowseEngine, ActiveFilter } from "$lib/shared/browse/engine/types";
+import type {
+  BrowseEngine,
+  ActiveFilter,
+} from "$lib/shared/browse/engine/types";
 import type {
   SmartFilterSpec,
   StoredSmartFilter,
@@ -26,7 +30,9 @@ import type {
  * Serialize the engine's current NON-locked filters, source, and sort into a
  * Firestore-safe SmartFilterSpec.
  */
-export function buildFilterSpecFromEngine(engine: BrowseEngine): SmartFilterSpec {
+export function buildFilterSpecFromEngine(
+  engine: BrowseEngine
+): SmartFilterSpec {
   const filters: StoredSmartFilter[] = [];
   for (const [key, f] of engine.activeFilters) {
     if (f.locked) continue;
@@ -44,6 +50,8 @@ export function buildFilterSpecFromEngine(engine: BrowseEngine): SmartFilterSpec
     sortMethod: String(engine.sortMethod),
     sortDirection: engine.sortDirection,
   };
+  const searchQuery = engine.searchQuery.trim();
+  if (searchQuery) spec.searchQuery = searchQuery;
   const connectives = { ...engine.connectives };
   if (Object.keys(connectives).length > 0) {
     spec.connectives = connectives as Record<string, FilterConnective>;
@@ -81,7 +89,10 @@ export function resolveSpecConnectives(
  * Call after creating the engine; the derived pipeline applies the filters
  * once the pool loads via initialize().
  */
-export function applySpecToEngine(engine: BrowseEngine, spec: SmartFilterSpec): void {
+export function applySpecToEngine(
+  engine: BrowseEngine,
+  spec: SmartFilterSpec
+): void {
   for (const f of spec.filters) {
     engine.addFilter(f.type as BrowseFilterType, f.value, f.label, f.chipColor);
   }
@@ -89,6 +100,7 @@ export function applySpecToEngine(engine: BrowseEngine, spec: SmartFilterSpec): 
   for (const [type, connective] of Object.entries(connectives)) {
     engine.setConnective(type as BrowseFilterType, connective);
   }
+  engine.setSearch(spec.searchQuery ?? "");
   engine.setSort(spec.sortMethod as BrowseSortMethod, spec.sortDirection);
 }
 
@@ -110,5 +122,12 @@ export function deriveSpecMembers(
       locked: false,
     });
   }
-  return applyFilters(pool, map, resolveSpecConnectives(spec));
+  const filtered = applyFilters(pool, map, resolveSpecConnectives(spec));
+  return spec.searchQuery?.trim()
+    ? applyFilter(
+        filtered,
+        BrowseFilterType.CONTAINS_LETTERS,
+        spec.searchQuery.trim()
+      )
+    : filtered;
 }

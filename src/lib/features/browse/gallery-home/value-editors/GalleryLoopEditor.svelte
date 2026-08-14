@@ -29,7 +29,6 @@
 {#snippet loopConnectiveControl()}
   <SegmentedControl
     size="sm"
-    density="compact"
     color="accent"
     ariaLabel="How selected LOOPs combine"
     options={[
@@ -46,8 +45,8 @@
     "Pick a LOOP type",
     onToggleLoop
       ? loopConnective === "all"
-        ? "Tap several — sequences need every one of them."
-        : "Tap several — sequences match any of them."
+        ? "Tap several. Sequences need every one of them."
+        : "Tap several. Sequences match any of them."
       : undefined,
     onLoopConnectiveChange ? loopConnectiveControl : undefined
   )}

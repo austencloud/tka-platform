@@ -1155,9 +1155,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: calc(var(--min-touch-target, 48px) - 8px);
-    min-height: 32px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
     background: transparent;
     border: none;
     border-radius: var(--border-radius-sm, 6px);

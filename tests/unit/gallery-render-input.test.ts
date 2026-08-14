@@ -2,19 +2,27 @@ import { describe, it, expect } from "vitest";
 import {
   buildGalleryRenderInput,
   buildGalleryVisibility,
+  deriveThumbnailSequenceName,
   type GalleryCompositionSource,
 } from "$lib/shared/browse/services/gallery-render-input";
 import type { InfoCellChoice } from "$lib/shared/sequence-viewer/services/info-cell-display";
 
 // Pure fake of the slice buildGalleryVisibility reads. Mirrors the real
 // ImageCompositionStateManager getters the live gallery card passes.
-function source(overrides: Partial<{
-  showQRCode: boolean;
-  showMandala: boolean;
-  layout: "row" | "column";
-  choice: InfoCellChoice;
-}> = {}): GalleryCompositionSource {
-  const { showQRCode = true, showMandala = true, layout = "row", choice = "qr" } = overrides;
+function source(
+  overrides: Partial<{
+    showQRCode: boolean;
+    showMandala: boolean;
+    layout: "row" | "column";
+    choice: InfoCellChoice;
+  }> = {}
+): GalleryCompositionSource {
+  const {
+    showQRCode = true,
+    showMandala = true,
+    layout = "row",
+    choice = "qr",
+  } = overrides;
   return {
     showQRCode,
     showMandala,
@@ -24,13 +32,39 @@ function source(overrides: Partial<{
 }
 
 function seq(stepCount: number) {
-  return { steps: Array.from({ length: stepCount }, (_, i) => ({ letter: String(i) })) } as any;
+  return {
+    steps: Array.from({ length: stepCount }, (_, i) => ({ letter: String(i) })),
+  } as any;
 }
 
 // 4-count, row layout, start included -> exactly one info cell -> contention.
 const four = seq(4);
 // 8-count row layout -> 3 info cells -> no contention (both QR + mandala fit).
 const eight = seq(8);
+
+describe("deriveThumbnailSequenceName", () => {
+  it("derives an identity for a generated sequence that has not been named", () => {
+    expect(
+      deriveThumbnailSequenceName({
+        id: "generated-id",
+        word: "",
+        name: "",
+        steps: [{ letter: "A" }, { letter: "B" }],
+      } as any)
+    ).toBe("AB");
+  });
+
+  it("falls back to the sequence id when a path has no letter tokens", () => {
+    expect(
+      deriveThumbnailSequenceName({
+        id: "generated-id",
+        word: "",
+        name: "",
+        steps: [{ letter: null }],
+      } as any)
+    ).toBe("generated-id");
+  });
+});
 
 describe("buildGalleryVisibility — per-length QR/mandala choice", () => {
   it("honors choice 'mandala' on a single-info-cell 4-count (QR off, mandala on)", () => {

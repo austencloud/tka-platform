@@ -51,7 +51,13 @@
   flex: 0 0 auto;
   align-self: center;
   padding-bottom: 0.25rem;
-  background: var(--theme-panel-bg, #11131a);
+  /* The header stays above a scrolling value list. Theme panels can be
+     translucent, so give the sticky band an opaque base before tinting it. */
+  background-color: var(--theme-bg-deep, #080a10);
+  background-image: linear-gradient(
+    var(--theme-panel-bg, #11131a),
+    var(--theme-panel-bg, #11131a)
+  );
 }
 .drill-ctx.adaptive-value-layout .value-list,
 .drill-ctx.adaptive-value-layout .letter-grid {

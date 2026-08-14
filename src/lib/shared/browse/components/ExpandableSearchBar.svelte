@@ -117,7 +117,11 @@
   onMount(() => {
     document.addEventListener("pointerdown", handlePointerDownOutside, true);
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDownOutside, true);
+      document.removeEventListener(
+        "pointerdown",
+        handlePointerDownOutside,
+        true
+      );
       if (debounceTimer) clearTimeout(debounceTimer);
       if (collapseTimer) clearTimeout(collapseTimer);
       if (focusTimer) clearTimeout(focusTimer);
@@ -131,62 +135,60 @@
   bind:this={containerRef}
   role="search"
 >
-  {#if isExpanded}
-    <div class="search-input-wrapper">
-      <i class="fas fa-search search-icon" aria-hidden="true"></i>
-      <input
-        type="text"
-        class="search-input"
-        bind:this={inputRef}
-        bind:value={inputValue}
-        oninput={handleInput}
-        onkeydown={handleKeydown}
-        onblur={handleCollapse}
-        {placeholder}
-        aria-label={t('browse_search_sequences')}
-      />
-      {#if inputValue}
-        <button
-          class="clear-button"
-          onclick={handleClear}
-          type="button"
-          aria-label={t('browse_clear_search')}
-        >
-          <i class="fas fa-times" aria-hidden="true"></i>
-        </button>
-      {/if}
-    </div>
-  {:else}
-    <button
-      class="search-button"
-      onclick={handleExpand}
-      type="button"
-      aria-label={t('browse_open_search')}
-      aria-expanded="false"
-    >
-      <i class="fas fa-search" aria-hidden="true"></i>
-    </button>
-  {/if}
+  <button
+    class="search-button"
+    onclick={handleExpand}
+    type="button"
+    aria-label={t("browse_open_search")}
+    aria-expanded={isExpanded}
+    aria-hidden={isExpanded}
+    tabindex={isExpanded ? -1 : 0}
+  >
+    <i class="fas fa-search" aria-hidden="true"></i>
+  </button>
+
+  <div class="search-input-wrapper" aria-hidden={!isExpanded}>
+    <i class="fas fa-search search-icon" aria-hidden="true"></i>
+    <input
+      type="text"
+      class="search-input"
+      bind:this={inputRef}
+      bind:value={inputValue}
+      oninput={handleInput}
+      onkeydown={handleKeydown}
+      onblur={handleCollapse}
+      {placeholder}
+      aria-label={t("browse_search_sequences")}
+      tabindex={isExpanded ? 0 : -1}
+    />
+    {#if inputValue}
+      <button
+        class="clear-button"
+        onclick={handleClear}
+        type="button"
+        aria-label={t("browse_clear_search")}
+        tabindex={isExpanded ? 0 : -1}
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    {/if}
+  </div>
 </div>
 
 <style>
   .search-container {
     --control-height: var(--min-touch-target);
-    --transition-duration: var(--duration-normal, 200ms);
-
     position: relative;
     display: flex;
     align-items: center;
     height: var(--control-height);
     width: var(--control-height);
     overflow: visible;
-    transition: width var(--transition-duration) ease;
     flex-shrink: 0;
     z-index: 10;
   }
 
   .search-container.expanded {
-    width: clamp(200px, 40vw, 400px);
     z-index: var(--z-dropdown);
   }
 
@@ -202,8 +204,19 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-base);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-spring),
+      background var(--transition-fast),
+      color var(--transition-fast),
+      border-color var(--transition-fast);
     flex-shrink: 0;
+  }
+
+  .search-container.expanded .search-button {
+    opacity: 0;
+    transform: scale(0.82);
+    pointer-events: none;
   }
 
   .search-button:hover {
@@ -217,16 +230,31 @@
   }
 
   .search-input-wrapper {
+    position: absolute;
+    inset-inline-start: 0;
     display: flex;
     align-items: center;
-    width: 100%;
+    width: clamp(200px, 40vw, 400px);
     height: var(--control-height);
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     padding: 0 12px;
     gap: 8px;
-    transition: border-color var(--duration-fast) ease;
+    opacity: 0;
+    transform: translateX(-0.75rem) scale(0.94);
+    transform-origin: left center;
+    pointer-events: none;
+    transition:
+      opacity var(--transition-fast),
+      transform var(--transition-spring),
+      border-color var(--transition-fast);
+  }
+
+  .search-container.expanded .search-input-wrapper {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
   }
 
   .search-input-wrapper:focus-within {
@@ -269,7 +297,10 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-compact);
     cursor: pointer;
-    transition: all var(--duration-fast) ease;
+    transition:
+      background var(--transition-fast),
+      color var(--transition-fast),
+      transform var(--transition-spring);
     flex-shrink: 0;
   }
 
@@ -294,13 +325,26 @@
   }
 
   @media (max-width: 640px) {
-    .search-container.expanded {
+    .search-input-wrapper {
       width: clamp(160px, 50vw, 300px);
     }
 
     .search-input-wrapper {
       padding: 0 10px;
       gap: 6px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .search-button,
+    .search-input-wrapper,
+    .clear-button {
+      transition: none;
+    }
+
+    .search-container.expanded .search-button,
+    .search-container.expanded .search-input-wrapper {
+      transform: none;
     }
   }
 </style>

@@ -93,20 +93,10 @@
     flex: 0 0 var(--editor-size, 100%);
     flex-direction: column;
     overflow: hidden;
-    /* The allocation morphs as the screen changes; animating the basis is
-       what makes that read as a shift of space rather than a jump cut. */
-    transition: flex-basis 0.24s var(--ease-smooth, ease);
   }
   .pane-left :global(.desktop-filter-catalog.catalog-layout) {
     box-sizing: border-box;
     flex: 0 0 var(--catalog-size, auto);
-    transition: flex-basis 0.24s var(--ease-smooth, ease);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .drill-editor-stage,
-    .pane-left :global(.desktop-filter-catalog.catalog-layout) {
-      transition: none;
-    }
   }
 
   /* ONE surface for the whole workspace — the results pane declares the same
