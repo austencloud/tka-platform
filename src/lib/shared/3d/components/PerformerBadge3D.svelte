@@ -1,22 +1,17 @@
-<script lang="ts">
-  import { T } from "@threlte/core";
+<script module lang="ts">
   import { CanvasTexture } from "three";
-  import { getPerformerColor } from "../constants/performer-colors";
-  import { userProportionsState } from "@austencloud/scene-3d";
 
-  interface Props {
-    index: number;
-    selected: boolean;
-    allMode: boolean;
-  }
+  const badgeTextures = new Map<string, CanvasTexture>();
 
-  let { index, selected, allMode }: Props = $props();
+  function getBadgeTexture(
+    index: number,
+    color: string,
+    selected: boolean
+  ): CanvasTexture {
+    const key = `${index}:${color}:${selected ? "selected" : "plain"}`;
+    const cached = badgeTextures.get(key);
+    if (cached) return cached;
 
-  const color = $derived(getPerformerColor(index));
-  const opacity = $derived(selected ? 1.0 : allMode ? 0.6 : 0.35);
-  const badgeY = $derived(-userProportionsState.groundY + 0.15);
-
-  const texture = $derived.by(() => {
     const size = 64;
     const canvas = document.createElement("canvas");
     canvas.width = size;
@@ -24,7 +19,6 @@
     const ctx = canvas.getContext("2d")!;
 
     ctx.clearRect(0, 0, size, size);
-
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
     ctx.fillStyle = color;
@@ -42,10 +36,31 @@
     ctx.textBaseline = "middle";
     ctx.fillText(String(index + 1), size / 2, size / 2);
 
-    const tex = new CanvasTexture(canvas);
-    tex.needsUpdate = true;
-    return tex;
-  });
+    const texture = new CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    badgeTextures.set(key, texture);
+    return texture;
+  }
+</script>
+
+<script lang="ts">
+  import { T } from "@threlte/core";
+  import { getPerformerColor } from "../constants/performer-colors";
+  import { userProportionsState } from "@austencloud/scene-3d";
+
+  interface Props {
+    index: number;
+    selected: boolean;
+    allMode: boolean;
+  }
+
+  let { index, selected, allMode }: Props = $props();
+
+  const color = $derived(getPerformerColor(index));
+  const opacity = $derived(selected ? 1.0 : allMode ? 0.6 : 0.35);
+  const badgeY = $derived(-userProportionsState.groundY + 0.15);
+
+  const texture = $derived(getBadgeTexture(index, color, selected));
 </script>
 
 <T.Sprite

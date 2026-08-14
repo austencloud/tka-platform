@@ -12,7 +12,31 @@ describe("resolvePerformerProp", () => {
     expect(resolvePerformerProp(null, PropType.STAFF)).toBe(PropType.STAFF);
   });
 
+  it("keeps a performer's custom prop above the viewer override", () => {
+    const performer = {
+      settings: { prop: PropType.CHICKEN },
+      effectiveProp: PropType.CHICKEN,
+    } as any;
+
+    expect(
+      resolvePerformerProp(performer, PropType.STAFF, PropType.GUITAR)
+    ).toBe(PropType.CHICKEN);
+  });
+
+  it("uses the viewer override while the performer inherits", () => {
+    const performer = {
+      settings: { prop: null },
+      effectiveProp: PropType.STAFF,
+    } as any;
+
+    expect(
+      resolvePerformerProp(performer, PropType.STAFF, PropType.GUITAR)
+    ).toBe(PropType.GUITAR);
+  });
+
   it("returns the global fallback when performer is undefined", () => {
-    expect(resolvePerformerProp(undefined, PropType.STAFF)).toBe(PropType.STAFF);
+    expect(resolvePerformerProp(undefined, PropType.STAFF)).toBe(
+      PropType.STAFF
+    );
   });
 });

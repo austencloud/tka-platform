@@ -19,17 +19,38 @@ import { getDefaultPositions, MAX_PERFORMERS } from "@austencloud/scene-3d";
 // propInterpolator / sequenceConverter injected as module functions; no imports needed here
 import type {
   AvatarId,
-  Formation,
   FormationPreset,
 } from "@austencloud/scene-3d";
 import { createFormationManager } from "@austencloud/scene-3d";
+import {
+  sampleInterruptibleAngle,
+  sampleInterruptibleHermite,
+  type TimedTransition,
+} from "../camera/transitions";
 // FormationManager type inferred from createFormationManager return
 
 const COUNT_CHANGE_TRANSITION_MS = 320;
 
-interface PerformerLayoutSnapshot {
+export interface PerformerLayoutSnapshot {
   position: { x: number; z: number };
   facingAngle: number;
+}
+
+interface PerformerLayoutVelocity {
+  position: { x: number; z: number };
+  facingAngle: number;
+}
+
+interface PerformerLayoutTransitionMember {
+  id: string;
+  start: PerformerLayoutSnapshot;
+  end: PerformerLayoutSnapshot;
+  startVelocity: PerformerLayoutVelocity;
+}
+
+interface ActivePerformerLayoutTransition {
+  timing: TimedTransition;
+  members: PerformerLayoutTransitionMember[];
 }
 
 /**
@@ -68,6 +89,8 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   // engine - otherwise its internal clamp drops performers 5-8 from
   // slot calculations and they never move on preset apply.
   const formationManager = createFormationManager(1, maxPerformers);
+  let activeLayoutTransition: ActivePerformerLayoutTransition | null = null;
+  let nextLayoutTransitionId = 1;
 
   // Derived: active performer state
   const activeState = $derived(performerStates[activePerformerIndex] ?? null);
@@ -125,6 +148,108 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
     );
   }
 
+  function zeroLayoutVelocity(): PerformerLayoutVelocity {
+    return {
+      position: { x: 0, z: 0 },
+      facingAngle: 0,
+    };
+  }
+
+  /**
+   * Apply the shared layout clock to every performer and return the exact
+   * velocities visible at this instant. Those velocities become the tangents
+   * of a replacement transition when add/remove/formation actions arrive in
+   * quick succession.
+   */
+  function sampleLayoutTransition(
+    nowMs: number
+  ): Map<string, PerformerLayoutVelocity> {
+    const velocities = new Map<string, PerformerLayoutVelocity>();
+    const transition = activeLayoutTransition;
+    if (!transition) return velocities;
+
+    let done = false;
+    for (const member of transition.members) {
+      const performer = performerStates.find((candidate) => candidate.id === member.id);
+      if (!performer) continue;
+
+      const x = sampleInterruptibleHermite(
+        member.start.position.x,
+        member.end.position.x,
+        member.startVelocity.position.x,
+        transition.timing,
+        nowMs
+      );
+      const z = sampleInterruptibleHermite(
+        member.start.position.z,
+        member.end.position.z,
+        member.startVelocity.position.z,
+        transition.timing,
+        nowMs
+      );
+      const facing = sampleInterruptibleAngle(
+        member.start.facingAngle,
+        member.end.facingAngle,
+        member.startVelocity.facingAngle,
+        transition.timing,
+        nowMs
+      );
+
+      performer.position.x = x.value;
+      performer.position.z = z.value;
+      performer.setFacingAngle(facing.value);
+      velocities.set(member.id, {
+        position: { x: x.velocity, z: z.velocity },
+        facingAngle: facing.velocity,
+      });
+      done = x.done;
+    }
+
+    if (done) activeLayoutTransition = null;
+    return velocities;
+  }
+
+  function beginLayoutTransition(
+    targets: readonly PerformerLayoutSnapshot[],
+    durationMs: number,
+    carriedVelocities: ReadonlyMap<string, PerformerLayoutVelocity>,
+    nowMs: number
+  ): TimedTransition {
+    const timing: TimedTransition = {
+      id: nextLayoutTransitionId++,
+      startTimeMs: nowMs,
+      durationMs,
+    };
+
+    activeLayoutTransition = {
+      timing,
+      members: performerStates.flatMap((performer, index) => {
+        const end = targets[index];
+        if (!end) return [];
+        return [{
+          id: performer.id,
+          start: {
+            position: { ...performer.position },
+            facingAngle: performer.facingAngle,
+          },
+          end: {
+            position: { ...end.position },
+            facingAngle: end.facingAngle,
+          },
+          startVelocity: carriedVelocities.get(performer.id) ?? zeroLayoutVelocity(),
+        }];
+      }),
+    };
+
+    return timing;
+  }
+
+  function cancelFormationTransition(nowMs: number = performance.now()): void {
+    sampleLayoutTransition(nowMs);
+    activeLayoutTransition = null;
+    formationManager.cancelTransition();
+  }
+
   /**
    * Resolve every performer's destination under the active formation.
    * Presets with a smaller fixed cast fall back to the same centered layout
@@ -163,11 +288,12 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * the exact positions visible in the previous frame and closes the gap.
    */
   function transitionAfterCountChange(
-    previousLayout: Map<string, PerformerLayoutSnapshot>
-  ): void {
+    previousLayout: Map<string, PerformerLayoutSnapshot>,
+    carriedVelocities: ReadonlyMap<string, PerformerLayoutVelocity>,
+    nowMs: number
+  ): PerformerLayoutSnapshot[] {
     formationManager.cancelTransition();
     const targets = resolveLayoutTargets();
-    const targetBase = formationManager.currentFormation;
 
     performerStates.forEach((performer, index) => {
       if (previousLayout.has(performer.id)) return;
@@ -177,35 +303,13 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       performer.position.z = target.position.z;
       performer.setFacingAngle(target.facingAngle);
     });
-
-    const from: Formation = {
-      ...targetBase,
-      id: `${targetBase.id}-count-from`,
-      name: `${targetBase.name} count transition start`,
-      facingMode: "custom",
-      slots: performerStates.map((performer, index) => {
-        const snapshot = previousLayout.get(performer.id) ?? targets[index];
-        return {
-          index,
-          position: { ...(snapshot?.position ?? performer.position) },
-          facingAngle: snapshot?.facingAngle ?? performer.facingAngle,
-        };
-      }),
-    };
-    const to: Formation = {
-      ...targetBase,
-      id: `${targetBase.id}-count-to`,
-      name: `${targetBase.name} count transition target`,
-      facingMode: "custom",
-      slots: targets.map((target, index) => ({
-        index,
-        position: { ...target.position },
-        facingAngle: target.facingAngle,
-      })),
-    };
-
-    formationManager.applyFormation(from);
-    formationManager.transitionTo(to, COUNT_CHANGE_TRANSITION_MS);
+    beginLayoutTransition(
+      targets,
+      COUNT_CHANGE_TRANSITION_MS,
+      carriedVelocities,
+      nowMs
+    );
+    return targets;
   }
 
   /**
@@ -221,6 +325,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * with rows 0-1 of the row-pair default).
    */
   function updatePositions() {
+    activeLayoutTransition = null;
     formationManager.cancelTransition();
     const targets = resolveLayoutTargets();
     performerStates.forEach((performer, i) => {
@@ -236,6 +341,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Apply a formation preset (immediately, no transition)
    */
   function applyFormationPreset(preset: FormationPreset) {
+    activeLayoutTransition = null;
     formationManager.applyPreset(preset);
     updatePositions();
   }
@@ -247,7 +353,12 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
     preset: FormationPreset,
     durationMs: number = 500
   ) {
-    formationManager.transitionToPreset(preset, durationMs);
+    const nowMs = performance.now();
+    const carriedVelocities = sampleLayoutTransition(nowMs);
+    formationManager.cancelTransition();
+    formationManager.applyPreset(preset);
+    const targets = resolveLayoutTargets();
+    beginLayoutTransition(targets, durationMs, carriedVelocities, nowMs);
   }
 
   /**
@@ -257,41 +368,25 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * default row-pair slot instead of drifting.
    */
   function updateFormationTransition(timestamp?: number) {
-    if (!formationManager.isTransitioning) return;
-
-    formationManager.updateTransition(timestamp ?? performance.now());
-
-    const positions = formationManager.getAllPerformerPositions();
-    const defaults = getDefaultPositions(performerStates.length);
-
-    performerStates.forEach((performer, i) => {
-      const pos = positions.find((p) => p.index === i);
-      if (pos) {
-        performer.position.x = pos.position.x;
-        performer.position.z = pos.position.z;
-        performer.setFacingAngle(pos.facingAngle);
-      } else {
-        const fallback = defaults[i];
-        if (fallback) {
-          performer.position.x = fallback.x;
-          performer.position.z = fallback.z;
-          // Leave facing unchanged - the default layout doesn't imply a
-          // specific facing, and new performers already face the audience.
-        }
-      }
-    });
+    sampleLayoutTransition(timestamp ?? performance.now());
   }
 
   /**
    * Add a new performer
    */
-  function addPerformer() {
-    if (performerStates.length >= maxPerformers) return;
+  function addPerformer(): PerformerLayoutSnapshot[] | null {
+    if (performerStates.length >= maxPerformers) return null;
 
+    const nowMs = performance.now();
+    const carriedVelocities = sampleLayoutTransition(nowMs);
     const previousLayout = captureLayout();
     const newPerformer = createPerformer(performerStates.length);
     performerStates = [...performerStates, newPerformer];
-    transitionAfterCountChange(previousLayout);
+    const layoutTargets = transitionAfterCountChange(
+      previousLayout,
+      carriedVelocities,
+      nowMs
+    );
 
     // Create sync state when we have exactly 2 performers
     if (performerStates.length === 2) {
@@ -302,21 +397,29 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
         syncState = createAvatarSyncState(first, second);
       }
     }
+
+    return layoutTargets;
   }
 
   /**
    * Remove the last performer
    */
-  function removePerformer() {
-    if (performerStates.length <= 1) return;
+  function removePerformer(): PerformerLayoutSnapshot[] | null {
+    if (performerStates.length <= 1) return null;
 
+    const nowMs = performance.now();
+    const carriedVelocities = sampleLayoutTransition(nowMs);
     const previousLayout = captureLayout();
     const removed = performerStates[performerStates.length - 1];
-    if (!removed) return;
+    if (!removed) return null;
     removed.destroy();
 
     performerStates = performerStates.slice(0, -1);
-    transitionAfterCountChange(previousLayout);
+    const layoutTargets = transitionAfterCountChange(
+      previousLayout,
+      carriedVelocities,
+      nowMs
+    );
 
     // Adjust active index if needed
     if (activePerformerIndex >= performerStates.length) {
@@ -328,6 +431,8 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       syncState?.destroy();
       syncState = null;
     }
+
+    return layoutTargets;
   }
 
   /**
@@ -343,6 +448,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Handle performer drag
    */
   function handleDrag(index: number, newPos: { x: number; z: number }) {
+    cancelFormationTransition();
     const performer = performerStates[index];
     if (performer) {
       performer.position.x = newPos.x;
@@ -373,6 +479,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
    * Clean up all performers
    */
   function destroy() {
+    activeLayoutTransition = null;
     performerStates.forEach((p) => p.destroy());
     syncState?.destroy();
   }
@@ -412,7 +519,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       return formationManager.currentFormation.preset;
     },
     get isFormationTransitioning() {
-      return formationManager.isTransitioning;
+      return activeLayoutTransition !== null;
+    },
+    get formationTransitionTiming(): TimedTransition | null {
+      return activeLayoutTransition?.timing ?? null;
     },
 
     // Methods
@@ -429,6 +539,7 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
     applyFormationPreset,
     transitionToFormation,
     updateFormationTransition,
+    cancelFormationTransition,
   };
 }
 

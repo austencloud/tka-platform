@@ -20,6 +20,10 @@
   import { CameraMode } from "../camera/types";
   import type { AvatarState, PhysicsProvider } from "../camera/types";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import {
+    sampleInterruptibleVector3,
+    type TimedTransition,
+  } from "../camera/transitions";
 
   interface Props {
     /** Camera player avatar for fly/walk modes (WASD writes here, not the performer). */
@@ -194,6 +198,115 @@
   // smoothing instead of a hand-rolled rAF lerp.
   let controlsInstance: CameraControls | null = null;
 
+  interface ActiveCameraReframe {
+    timing: TimedTransition;
+    startPosition: { x: number; y: number; z: number };
+    endPosition: { x: number; y: number; z: number };
+    startTarget: { x: number; y: number; z: number };
+    endTarget: { x: number; y: number; z: number };
+    startPositionVelocity: { x: number; y: number; z: number };
+    startTargetVelocity: { x: number; y: number; z: number };
+  }
+
+  let activeCameraReframe: ActiveCameraReframe | null = null;
+  const _reframePos = new Vector3();
+  const _reframeTarget = new Vector3();
+
+  function sampleCameraReframe(
+    transition: ActiveCameraReframe,
+    nowMs: number
+  ) {
+    return {
+      position: sampleInterruptibleVector3(
+        transition.startPosition,
+        transition.endPosition,
+        transition.startPositionVelocity,
+        transition.timing,
+        nowMs
+      ),
+      target: sampleInterruptibleVector3(
+        transition.startTarget,
+        transition.endTarget,
+        transition.startTargetVelocity,
+        transition.timing,
+        nowMs
+      ),
+    };
+  }
+
+  function beginCameraReframe(
+    endPosition: { x: number; y: number; z: number },
+    endTarget: { x: number; y: number; z: number },
+    timing: TimedTransition
+  ): void {
+    const controls = controlsInstance;
+    if (!controls) return;
+
+    const nowMs = performance.now();
+    let startPositionVelocity = { x: 0, y: 0, z: 0 };
+    let startTargetVelocity = { x: 0, y: 0, z: 0 };
+
+    if (activeCameraReframe) {
+      const carried = sampleCameraReframe(activeCameraReframe, nowMs);
+      _reframePos.set(
+        carried.position.value.x,
+        carried.position.value.y,
+        carried.position.value.z
+      );
+      _reframeTarget.set(
+        carried.target.value.x,
+        carried.target.value.y,
+        carried.target.value.z
+      );
+      startPositionVelocity = carried.position.velocity;
+      startTargetVelocity = carried.target.velocity;
+    } else {
+      controls.getPosition(_reframePos);
+      controls.getTarget(_reframeTarget);
+    }
+
+    activeCameraReframe = {
+      timing,
+      startPosition: {
+        x: _reframePos.x,
+        y: _reframePos.y,
+        z: _reframePos.z,
+      },
+      endPosition: { ...endPosition },
+      startTarget: {
+        x: _reframeTarget.x,
+        y: _reframeTarget.y,
+        z: _reframeTarget.z,
+      },
+      endTarget: { ...endTarget },
+      startPositionVelocity,
+      startTargetVelocity,
+    };
+  }
+
+  function updateCameraReframe(nowMs: number): void {
+    const controls = controlsInstance;
+    const transition = activeCameraReframe;
+    if (!controls || !transition) return;
+
+    const sample = sampleCameraReframe(transition, nowMs);
+    controls.setLookAt(
+      sample.position.value.x,
+      sample.position.value.y,
+      sample.position.value.z,
+      sample.target.value.x,
+      sample.target.value.y,
+      sample.target.value.z,
+      false
+    );
+
+    if (sample.position.done) activeCameraReframe = null;
+  }
+
+  function cancelCameraReframe(): void {
+    activeCameraReframe = null;
+  }
+
   const ORBIT_COLLAPSE_THRESHOLD = 0.5;
   const _healthPos = new Vector3();
   const _healthTgt = new Vector3();
@@ -283,9 +396,17 @@
     targetPos: { x: number; y: number; z: number },
     targetLookAt: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
-    animate: boolean = true
+    animate: boolean = true,
+    transitionTiming?: TimedTransition
   ) {
     if (!controlsInstance) return;
+
+    if (animate && transitionTiming && !spherical) {
+      beginCameraReframe(targetPos, targetLookAt, transitionTiming);
+      return;
+    }
+
+    cancelCameraReframe();
 
     if (spherical) {
       controlsInstance.setLookAt(
@@ -351,10 +472,12 @@
   // and a live driver mutating `controls.azimuthAngle` would fight it.
   useTask((delta) => {
     if (viewer3DState.isExporting) return;
+    updateCameraReframe(performance.now());
     viewer3DState.cameraChoreography.tick(delta);
   });
 
   onDestroy(() => {
+    cancelCameraReframe();
     flushCameraSave();
   });
 </script>
@@ -409,7 +532,10 @@
         viewer3DState.cameraChoreography.unregisterControls(c);
       };
     }}
-    oncontrolstart={() => viewer3DState.setCameraDragging(true)}
+    oncontrolstart={() => {
+      cancelCameraReframe();
+      viewer3DState.setCameraDragging(true);
+    }}
     oncontrolend={(c) => {
       viewer3DState.setCameraDragging(false);
       handleControlEnd(c);

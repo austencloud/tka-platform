@@ -23,6 +23,10 @@
   } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import {
+    getGridMarkerGeometry,
+    getGridMaterial,
+  } from "./grid-render-resources";
 
   interface Props {
     /** Which planes to show */
@@ -65,6 +69,8 @@
   });
 
   const { camera } = useThrelte();
+  const centerPointGeometry = getGridMarkerGeometry(0.04, 32);
+  const centerPointMaterial = getGridMaterial(0xf59e0b);
 
   const PLANE_NORMALS: Partial<Record<Plane, Vector3>> = {
     [Plane.WALL]: new Vector3(0, 0, 1),
@@ -149,10 +155,12 @@
 {/if}
 
 <!-- Center point indicator (always visible) - 4cm sphere -->
-<T.Mesh position={[0, 0, 0]}>
-  <T.SphereGeometry args={[0.04, 32, 32]} />
-  <T.MeshBasicMaterial color="#f59e0b" />
-</T.Mesh>
+<T.Mesh
+  geometry={centerPointGeometry}
+  material={centerPointMaterial}
+  position={[0, 0, 0]}
+  dispose={false}
+/>
 
 <!-- Axis helpers for orientation reference -->
 <T.Group>

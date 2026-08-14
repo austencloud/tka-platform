@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
+  import { onDestroy } from "svelte";
+  import {
+    AVATAR_DEFINITIONS,
+    getAvatarModelPath,
+    prepareAvatarForDisplay,
+    type AvatarId,
+  } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { getPerformerColor } from "../../constants/performer-colors";
 
@@ -31,6 +37,10 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import {
+    filterSpinnerPropCategories,
+    isSpinnerViewerProp,
+  } from "../../domain/prop-motion-discipline";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
@@ -79,16 +89,53 @@
   });
 
   function pickAvatar(id: AvatarId) {
-    const previous = currentAvatarId;
-    applyToScope((p) => p?.setAvatarModel(id));
-    reportViewerControlChange(
-      onSettingChange,
-      "viewer_3d_performer",
-      "avatar",
-      previous,
-      id
-    );
+    cancelAvatarSelectionIntent();
+    if (pendingAvatarId === id || currentAvatarId === id) return;
+
+    const selectionRequest = ++avatarSelectionRequest;
+    pendingAvatarId = id;
+    void prepareAvatarSelection(id).finally(() => {
+      if (selectionRequest !== avatarSelectionRequest) return;
+      pendingAvatarId = null;
+
+      const previous = currentAvatarId;
+      applyToScope((p) => p?.setAvatarModel(id));
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_performer",
+        "avatar",
+        previous,
+        id
+      );
+    });
   }
+
+  let pendingAvatarId = $state<AvatarId | null>(null);
+  let avatarSelectionRequest = 0;
+  let avatarIntentTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function prepareAvatarSelection(id: AvatarId): Promise<void> {
+    return prepareAvatarForDisplay(getAvatarModelPath(id)).catch(() => {});
+  }
+
+  function queueAvatarSelectionIntent(id: AvatarId): void {
+    cancelAvatarSelectionIntent();
+    avatarIntentTimer = setTimeout(() => {
+      avatarIntentTimer = null;
+      void prepareAvatarSelection(id);
+    }, 120);
+  }
+
+  function cancelAvatarSelectionIntent(): void {
+    if (avatarIntentTimer === null) return;
+    clearTimeout(avatarIntentTimer);
+    avatarIntentTimer = null;
+  }
+
+  onDestroy(() => {
+    cancelAvatarSelectionIntent();
+    avatarSelectionRequest++;
+  });
 
   // ─── Inline name editing (input-swap pattern, mirrors TrackHeader) ───
   let isEditingName = $state(false);
@@ -222,11 +269,17 @@
   const currentProp = $derived(
     performer?.effectiveProp ?? viewer.defaultSettings.prop
   );
-  const propCategories = $derived(getBasePropsByCategory());
+  const propCategories = $derived(
+    filterSpinnerPropCategories(getBasePropsByCategory())
+  );
   const selectedBase = $derived(getBasePropType(currentProp));
   let expandedFamily = $state<PropType | null>(null);
   const familyVariants = $derived(
-    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : []
+    expandedFamily
+      ? getAllVariations(expandedFamily).filter(
+          (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+        )
+      : []
   );
 
   function applyToScope(fn: (p: typeof performer) => void) {
@@ -238,7 +291,9 @@
   }
 
   function handleFamilyClick(base: PropType) {
-    const activeVariants = getAllVariations(base).filter(isPropActive);
+    const activeVariants = getAllVariations(base).filter(
+      (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+    );
     if (activeVariants.length <= 1) {
       const previous = currentProp;
       applyToScope((p) => p?.setProp(base));
@@ -417,12 +472,22 @@
               <button
                 class="avatar-card"
                 class:selected={currentAvatarId === def.id}
+                class:preparing={pendingAvatarId === def.id}
                 class:has-thumb={loadedThumbs.has(def.id)}
                 role="radio"
                 aria-checked={currentAvatarId === def.id}
+                aria-busy={pendingAvatarId === def.id}
+                onpointerenter={() =>
+                  queueAvatarSelectionIntent(def.id as AvatarId)}
+                onpointerleave={cancelAvatarSelectionIntent}
+                onfocus={() => queueAvatarSelectionIntent(def.id as AvatarId)}
+                onblur={cancelAvatarSelectionIntent}
                 onclick={() => pickAvatar(def.id as AvatarId)}
                 title={def.description}
               >
+                {#if pendingAvatarId === def.id}
+                  <span class="avatar-loading" aria-hidden="true"></span>
+                {/if}
                 <i
                   class="fas {def.icon ?? 'fa-user'} avatar-fallback-icon"
                   class:hidden={loadedThumbs.has(def.id)}
@@ -1029,6 +1094,36 @@
       color-mix(in srgb, var(--performer-color) 20%, transparent);
   }
 
+  .avatar-card.preparing {
+    border-color: color-mix(in srgb, var(--performer-color) 50%, transparent);
+    color: var(--performer-color);
+  }
+
+  .avatar-loading {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    border: 2px solid
+      color-mix(in srgb, var(--performer-color) 25%, transparent);
+    border-top-color: var(--performer-color);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-panel-bg) 75%, transparent);
+    animation: avatar-loading-spin 700ms linear infinite;
+  }
+
+  @keyframes avatar-loading-spin {
+    from {
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
   .avatar-card.has-thumb.selected {
     border-color: var(--performer-color);
     box-shadow:
@@ -1049,6 +1144,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .avatar-loading {
+      animation-duration: 1400ms;
+    }
   }
 
   .remove-btn {

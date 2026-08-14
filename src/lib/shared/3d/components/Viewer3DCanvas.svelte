@@ -24,7 +24,10 @@
   import StepPlaneStrip from "./controls/StepPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
-  import { setSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import {
+    setSceneFeatureContext,
+    tryGetSceneFeatureContext,
+  } from "../scene-features/context/scene-feature-context";
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
@@ -56,6 +59,10 @@
     bluePropType?: string | null;
     redPropType?: string | null;
     hideOverlays?: boolean;
+    /** Hide in-world review markers while keeping the avatar and effects. */
+    hideSceneMarkers?: boolean;
+    /** Hide performer numbers without suppressing plane grids. */
+    hidePerformerBadges?: boolean;
     fullScreen?: boolean;
     onExitFullScreen?: () => void;
     onRendererReady?: (renderer: WebGLRenderer | null) => void;
@@ -86,6 +93,8 @@
     bluePropType = null,
     redPropType = null,
     hideOverlays = false,
+    hideSceneMarkers = false,
+    hidePerformerBadges = false,
     fullScreen = false,
     onExitFullScreen,
     onRendererReady,
@@ -132,12 +141,11 @@
   // isolated from the shared `tka-scene-features` key; an ordinary viewer reads
   // and writes that key as before.
   const seededFeatures = viewer3DState.seededSceneFeatures;
-  const sceneFeatureState = createSceneFeatureState(
-    seededFeatures ?? undefined,
-    {
-      isolated: seededFeatures !== null,
-    }
-  );
+  const inheritedSceneFeatureState = tryGetSceneFeatureContext();
+  const sceneFeatureState =
+    seededFeatures !== null
+      ? createSceneFeatureState(seededFeatures, { isolated: true })
+      : (inheritedSceneFeatureState ?? createSceneFeatureState());
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
   // performer rendering iterates inside Viewer3DScene itself, but the Canvas
@@ -309,6 +317,8 @@
               {avatarState}
               bluePropTypeOverride={bluePropType}
               redPropTypeOverride={redPropType}
+              {hideSceneMarkers}
+              {hidePerformerBadges}
               onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
             />
           </ScenePostProcessing>

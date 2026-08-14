@@ -31,8 +31,13 @@ import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
-import { computeChoreographerShot, computeBehindPerformerShot } from "$lib/shared/sequence-viewer/camera-choreography/presets/shots";
+import {
+  computeChoreographerShot,
+  computeBehindPerformerShot,
+  type PerformerShotSubject,
+} from "$lib/shared/sequence-viewer/camera-choreography/presets/shots";
 import type { OceanVariant } from "../environments/domain/enums/environment-enums";
+import type { TimedTransition } from "../camera/transitions";
 
 
 // ============================================
@@ -56,6 +61,14 @@ const STORAGE_KEY_EFFECT_TOGGLES = "tka-viewer3d-effectToggles";
 const STORAGE_KEY_OCEAN_VARIANT = "tka-viewer3d-oceanVariant";
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
+
+type CameraSnapTo = (
+  position: { x: number; y: number; z: number },
+  target: { x: number; y: number; z: number },
+  spherical?: { azimuth: number; polar: number },
+  animate?: boolean,
+  transitionTiming?: TimedTransition
+) => void;
 
 function loadPersistedNavMode(): ViewerNavMode {
   if (typeof localStorage === "undefined") return "orbit";
@@ -520,6 +533,35 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     return p ? [p] : [];
   }
 
+  function currentViewportAspect(): number {
+    return typeof window === "undefined"
+      ? 1
+      : window.innerWidth / window.innerHeight;
+  }
+
+  /**
+   * Keep the complete cast in view after a cast or formation edit. The shot is
+   * calculated from the destination slots, so the camera arrives with the
+   * performers instead of correcting itself after their movement finishes.
+   */
+  function framePerformerGroup(
+    performers: readonly PerformerShotSubject[]
+  ): void {
+    if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
+    const shot = computeChoreographerShot(
+      performers,
+      stageGroundOffset,
+      currentViewportAspect()
+    );
+    snapCameraTo(
+      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
+      { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+      undefined,
+      true,
+      performerManager.formationTransitionTiming ?? undefined
+    );
+  }
+
   /**
    * Set the current selection scope. Pass null for "All".
    * Out-of-bounds indices are allowed - scopedPerformers() will return []
@@ -542,7 +584,11 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
         { x: shot.target.x, y: shot.target.y, z: shot.target.z },
       );
     } else {
-      const shot = computeChoreographerShot(performers, stageGroundOffset);
+      const shot = computeChoreographerShot(
+        performers,
+        stageGroundOffset,
+        currentViewportAspect()
+      );
       snapCameraTo(
         { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
         { x: shot.target.x, y: shot.target.y, z: shot.target.z },
@@ -725,6 +771,8 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
       performerManager.removePerformer();
     }
 
+    performerManager.cancelFormationTransition();
+
     snap.performers.forEach((ps, i) => {
       const p = performerManager.performers[i];
       if (!p) return;
@@ -740,6 +788,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
 
     activeFormation = snap.activeFormation;
     selectedPerformerIndex = snap.selectedPerformerIndex;
+    framePerformerGroup(snap.performers);
   }
 
   function restoreVisibilitySnapshot(snap: VisibilityDomainSnapshot): void {
@@ -756,7 +805,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     const sourceIndex = selectedPerformerIndex ?? 0;
     const source = performerManager.performers[sourceIndex];
 
-    performerManager.addPerformer();
+    const layoutTargets = performerManager.addPerformer();
 
     const newIndex = performerManager.performers.length - 1;
     const newPerf = performerManager.performers[newIndex];
@@ -772,6 +821,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
 
     selectedPerformerIndex = newIndex;
     sceneUndo.commitState();
+    if (layoutTargets) framePerformerGroup(layoutTargets);
   }
 
   function removePerformerFromUI(): void {
@@ -780,13 +830,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     sceneUndo.captureState("remove-performer", "Remove performer");
 
     const removedIndex = performerManager.performers.length - 1;
-    performerManager.removePerformer();
+    const layoutTargets = performerManager.removePerformer();
 
     if (selectedPerformerIndex !== null && selectedPerformerIndex >= removedIndex) {
       selectedPerformerIndex = Math.max(0, removedIndex - 1);
     }
 
     sceneUndo.commitState();
+    if (layoutTargets) framePerformerGroup(layoutTargets);
   }
 
   function applyFormationFromUI(preset: FormationPreset): void {
@@ -820,6 +871,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
       undo: () => restoreViewerSnapshot(beforeSnap),
       redo: () => restoreViewerSnapshot(afterSnap),
     });
+    framePerformerGroup(afterPerformers);
   }
 
   let _spatialBeforeSnapshot: ViewerDomainSnapshot | null = null;
@@ -966,7 +1018,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   let updateEffectsCallback = $state<((dt: number) => void) | null>(null);
 
   // Camera snap callback - registered by Viewer3DCamera, called by Viewer3DViewPresets
-  let _snapToFn: ((position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }, animate?: boolean) => void) | null = null;
+  let _snapToFn: CameraSnapTo | null = null;
 
   // ---------------------------------------------------------------
   // Persistence effects - serialize state to localStorage reactively.
@@ -1152,7 +1204,11 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     _welcomeAnimationPending = false;
     const performers = performerManager.performers;
     if (performers.length === 0) return;
-    const shot = computeChoreographerShot(performers, stageGroundOffset);
+    const shot = computeChoreographerShot(
+      performers,
+      stageGroundOffset,
+      currentViewportAspect()
+    );
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
       { x: shot.target.x, y: shot.target.y, z: shot.target.z },
@@ -1163,9 +1219,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
    * Register the snap-to callback from Viewer3DCamera so preset buttons
    * can animate the camera without direct coupling to Three.js objects.
    */
-  function registerSnapTo(
-    fn: (position: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, spherical?: { azimuth: number; polar: number }, animate?: boolean) => void
-  ) {
+  function registerSnapTo(fn: CameraSnapTo) {
     _snapToFn = fn;
     if (_welcomeAnimationPending) {
       requestAnimationFrame(() => _fireWelcome());
@@ -1181,8 +1235,9 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     target: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
     animate: boolean = true,
+    transitionTiming?: TimedTransition,
   ) {
-    _snapToFn?.(position, target, spherical, animate);
+    _snapToFn?.(position, target, spherical, animate, transitionTiming);
   }
 
   return {

@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   computeAutoOrbitShot,
+  computeChoreographerShot,
   computePlaneShot,
   computeGroupBounds,
+  type PerformerShotSubject,
 } from "../../../src/lib/shared/sequence-viewer/camera-choreography/presets/shots";
 
-// Minimal stand-in for AvatarInstanceState — shots.ts only reads `position`.
-function fakePerformer(x: number, z: number) {
-  return { position: { x, y: 0, z } } as any;
+function fakePerformer(x: number, z: number): PerformerShotSubject {
+  return { position: { x, z } };
 }
 
 describe("camera-choreography shot helpers", () => {
@@ -52,5 +53,41 @@ describe("camera-choreography shot helpers", () => {
     expect(shot.eye.x).toBeCloseTo(shot.target.x);
     expect(shot.eye.y).toBeGreaterThan(shot.target.y);
     expect(shot.eye.z).toBeCloseTo(shot.target.z);
+  });
+
+  it("centers the choreographer shot on the destination formation", () => {
+    const shot = computeChoreographerShot(
+      [fakePerformer(3, -2), fakePerformer(5, 2)],
+      2.5
+    );
+
+    expect(shot.target.x).toBeCloseTo(4);
+    expect(shot.target.z).toBeCloseTo(0);
+    expect(shot.target.y).toBeCloseTo(3.05);
+  });
+
+  it("backs the choreographer camera away as the formation spreads", () => {
+    const compact = computeChoreographerShot(
+      [fakePerformer(-0.5, 0), fakePerformer(0.5, 0)],
+      0
+    );
+    const wide = computeChoreographerShot(
+      [fakePerformer(-4, 0), fakePerformer(4, 0)],
+      0
+    );
+
+    const compactDistance = compact.eye.distanceTo(compact.target);
+    const wideDistance = wide.eye.distanceTo(wide.target);
+    expect(wideDistance).toBeGreaterThan(compactDistance);
+  });
+
+  it("backs the choreographer camera away in a portrait viewport", () => {
+    const performers = [fakePerformer(-2, 0), fakePerformer(2, 0)];
+    const landscape = computeChoreographerShot(performers, 0, 16 / 9);
+    const portrait = computeChoreographerShot(performers, 0, 9 / 16);
+
+    expect(portrait.eye.distanceTo(portrait.target)).toBeGreaterThan(
+      landscape.eye.distanceTo(landscape.target)
+    );
   });
 });

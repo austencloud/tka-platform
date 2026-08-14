@@ -83,6 +83,11 @@
     <span>{copiedCamera ? "Copied!" : "Copy Camera State"}</span>
   </button>
 
+  <button class="dev-action" onclick={() => viewer.togglePerf()}>
+    <i class="fas fa-gauge-high"></i>
+    <span>{viewer.showPerf ? "Hide Performance Stats" : "Show Performance Stats"}</span>
+  </button>
+
   <div class="tier-group" role="group" aria-label="Ocean quality tier">
     <span class="tier-label">Ocean tier</span>
     <div class="tier-pills">

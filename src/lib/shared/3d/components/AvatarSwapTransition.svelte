@@ -38,7 +38,7 @@
   // SWITCH THIS TO COMPARE MODES:
   //   "fade" = opacity crossfade (avatar only, props stay)
   //   "pop"  = instant hide + particle burst
-  const MODE: "fade" | "pop" = "fade";
+  const MODE: "fade" | "pop" = "pop";
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   interface Props {
@@ -97,10 +97,12 @@
   });
 
   let instMesh = $state<InstancedMesh | undefined>(undefined);
+  let particlesActive = $state(false);
   const m4 = new Matrix4();
   const v3 = new Vector3();
 
   function spawnParticles() {
+    particlesActive = true;
     const cx = performer.position.x;
     const cy = groundOffset + 0.8;
     const cz = performer.position.z;
@@ -173,7 +175,10 @@
           }
         }
         instMesh.instanceMatrix.needsUpdate = true;
-        if (!alive) instMesh.visible = false;
+        if (!alive) {
+          instMesh.visible = false;
+          particlesActive = false;
+        }
       }
       return;
     }
@@ -238,9 +243,11 @@
   {@render children({ onAvatarSwapped: handleAvatarSwapped, avatarOpacity })}
 </T.Group>
 
-<T.InstancedMesh
-  bind:ref={instMesh}
-  args={[geo, mat, N]}
-  frustumCulled={false}
-  visible={false}
-/>
+{#if phase !== "idle" || particlesActive}
+  <T.InstancedMesh
+    bind:ref={instMesh}
+    args={[geo, mat, N]}
+    frustumCulled={false}
+    visible={false}
+  />
+{/if}

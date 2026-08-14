@@ -62,6 +62,10 @@
      *  pass through without needing to import PropType. */
     bluePropTypeOverride?: string | null;
     redPropTypeOverride?: string | null;
+    /** Hide grid references and performer numbers in cinematic review embeds. */
+    hideSceneMarkers?: boolean;
+    /** Hide performer numbers while leaving grid references available. */
+    hidePerformerBadges?: boolean;
     onEnvironmentTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
@@ -74,6 +78,8 @@
     avatarState,
     bluePropTypeOverride = null,
     redPropTypeOverride = null,
+    hideSceneMarkers = false,
+    hidePerformerBadges = false,
     onEnvironmentTransitionChange,
   }: Props = $props();
   // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
@@ -384,6 +390,20 @@
     stageGroundOffset + 2.5,
     (selectedPerformer?.position.z ?? 0) + 0.3,
   ] as [number, number, number]);
+  const performerGroundLevel = $derived(
+    userProportionsState.groundY + stageGroundOffset
+  );
+  const selectedPerformerRingPosition = $derived([
+    selectedPerformer?.position.x ?? 0,
+    performerGroundLevel + 0.015,
+    selectedPerformer?.position.z ?? 0,
+  ] as [number, number, number]);
+  const selectedPerformerRingColor = $derived.by(() => {
+    const index = viewer3DState.selectedPerformerIndex;
+    return index === null
+      ? 0x6b7280
+      : Number.parseInt(getPerformerColor(index).slice(1), 16);
+  });
 
   const performerCount = $derived(performerManager.performers.length);
 
@@ -480,6 +500,43 @@
     decay={1.5}
   />
 
+  <!-- One movable selection indicator keeps cast changes from allocating and
+       uploading four hidden geometries for every performer. -->
+  <T.Group
+    position={selectedPerformerRingPosition}
+    rotation={[-Math.PI / 2, 0, 0]}
+    visible={selectedPerformer !== null}
+  >
+    <T.Mesh>
+      <T.RingGeometry args={[0.42, 0.58, 64]} />
+      <T.MeshBasicMaterial
+        color={selectedPerformerRingColor}
+        transparent
+        opacity={ringPulse * 0.9}
+        blending={AdditiveBlending}
+        depthWrite={false}
+      />
+    </T.Mesh>
+    <T.Mesh>
+      <T.RingGeometry args={[0.58, 1.0, 64]} />
+      <T.MeshBasicMaterial
+        color={selectedPerformerRingColor}
+        transparent
+        opacity={ringPulse * 0.3}
+        blending={AdditiveBlending}
+        depthWrite={false}
+      />
+    </T.Mesh>
+    <T.Mesh>
+      <T.CircleGeometry args={[0.42, 64]} />
+      <T.MeshBasicMaterial
+        color={selectedPerformerRingColor}
+        transparent
+        opacity={0.15}
+      />
+    </T.Mesh>
+  </T.Group>
+
   {#each performerManager.performers as performer, i (performer.id)}
     <T.Group userData={{ performerIndex: i }}>
       {@const performerGridMode = (sequenceData?.gridMode ??
@@ -510,10 +567,18 @@
             visiblePlanes={explicitPlanes}
             gridMode={performerGridMode}
             bluePropType={toScenePropType(
-              resolvePerformerProp(performer, bluePropType)
+              resolvePerformerProp(
+                performer,
+                bluePropType,
+                bluePropTypeOverride as PropType | null
+              )
             )}
             redPropType={toScenePropType(
-              resolvePerformerProp(performer, redPropType)
+              resolvePerformerProp(
+                performer,
+                redPropType,
+                redPropTypeOverride as PropType | null
+              )
             )}
             bluePropState={performer.bluePropState}
             redPropState={performer.redPropState}
@@ -526,17 +591,19 @@
             {avatarOpacity}
           >
             {#snippet gridSlot()}
-              <T.Group
-                position.z={performerGridOffset}
-                layers={BASE_SCENE_LAYER}
-              >
-                <Grid3D
-                  visiblePlanes={explicitPlanes}
-                  gridMode={performerGridMode}
-                  planeMode={performer.planeMode}
-                  showLabels={viewer3DState.showGridLabels}
-                />
-              </T.Group>
+              {#if !hideSceneMarkers}
+                <T.Group
+                  position.z={performerGridOffset}
+                  layers={BASE_SCENE_LAYER}
+                >
+                  <Grid3D
+                    visiblePlanes={explicitPlanes}
+                    gridMode={performerGridMode}
+                    planeMode={performer.planeMode}
+                    showLabels={viewer3DState.showGridLabels}
+                  />
+                </T.Group>
+              {/if}
             {/snippet}
             {#snippet effectsSlot({
               bluePropState,
@@ -551,10 +618,18 @@
                 {bluePropState}
                 {redPropState}
                 bluePropType={toScenePropType(
-                  resolvePerformerProp(performer, bluePropType)
+                  resolvePerformerProp(
+                    performer,
+                    bluePropType,
+                    bluePropTypeOverride as PropType | null
+                  )
                 )}
                 redPropType={toScenePropType(
-                  resolvePerformerProp(performer, redPropType)
+                  resolvePerformerProp(
+                    performer,
+                    redPropType,
+                    redPropTypeOverride as PropType | null
+                  )
                 )}
                 isPlaying={rigPlaying}
                 {staffHalfLength}
@@ -571,71 +646,34 @@
         {/snippet}
       </AvatarSwapTransition>
 
-      {@const isSelected = viewer3DState.selectedPerformerIndex === i}
-      {@const isAllMode = viewer3DState.selectedPerformerIndex === null}
-      {@const glowColor = Number.parseInt(getPerformerColor(i).slice(1), 16)}
-      {@const groundLevel = userProportionsState.groundY + stageGroundOffset}
+      {#if viewer3DState.selectedPerformerIndex === null}
+        <T.Mesh
+          position={[
+            performer.position.x,
+            performerGroundLevel + 0.01,
+            performer.position.z,
+          ]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <T.CircleGeometry args={[0.35, 32]} />
+          <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
+        </T.Mesh>
+      {/if}
 
-      <T.Group
-        position={[
-          performer.position.x,
-          groundLevel + 0.015,
-          performer.position.z,
-        ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        visible={isSelected}
-      >
-        <T.Mesh>
-          <T.RingGeometry args={[0.42, 0.58, 64]} />
-          <T.MeshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={ringPulse * 0.9}
-            blending={AdditiveBlending}
-            depthWrite={false}
+      {#if !hideSceneMarkers && !hidePerformerBadges}
+        <!-- Floating numbered badge above performer head -->
+        <T.Group
+          position.x={performer.position.x}
+          position.y={stageGroundOffset}
+          position.z={performer.position.z}
+        >
+          <PerformerBadge3D
+            index={i}
+            selected={viewer3DState.selectedPerformerIndex === i}
+            allMode={viewer3DState.selectedPerformerIndex === null}
           />
-        </T.Mesh>
-        <T.Mesh>
-          <T.RingGeometry args={[0.58, 1.0, 64]} />
-          <T.MeshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={ringPulse * 0.3}
-            blending={AdditiveBlending}
-            depthWrite={false}
-          />
-        </T.Mesh>
-        <T.Mesh>
-          <T.CircleGeometry args={[0.42, 64]} />
-          <T.MeshBasicMaterial color={glowColor} transparent opacity={0.15} />
-        </T.Mesh>
-      </T.Group>
-
-      <T.Mesh
-        position={[
-          performer.position.x,
-          userProportionsState.groundY + stageGroundOffset + 0.01,
-          performer.position.z,
-        ]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        visible={isAllMode}
-      >
-        <T.CircleGeometry args={[0.35, 32]} />
-        <T.MeshBasicMaterial color={0x6b7280} transparent opacity={0.15} />
-      </T.Mesh>
-
-      <!-- Floating numbered badge above performer head -->
-      <T.Group
-        position.x={performer.position.x}
-        position.y={stageGroundOffset}
-        position.z={performer.position.z}
-      >
-        <PerformerBadge3D
-          index={i}
-          selected={viewer3DState.selectedPerformerIndex === i}
-          allMode={viewer3DState.selectedPerformerIndex === null}
-        />
-      </T.Group>
+        </T.Group>
+      {/if}
     </T.Group>
   {/each}
 </T.Group>

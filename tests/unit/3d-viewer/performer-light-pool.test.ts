@@ -19,4 +19,15 @@ describe("performer selection light", () => {
     );
     expect(performerLoop).not.toContain("<T.PointLight");
   });
+
+  it("keeps one selection-ring mesh set outside the performer loop", () => {
+    expect(sceneSource.match(/<T\.RingGeometry/g)).toHaveLength(2);
+    expect(sceneSource).toContain("position={selectedPerformerRingPosition}");
+
+    const performerLoop = sceneSource.slice(
+      sceneSource.indexOf("{#each performerManager.performers"),
+      sceneSource.lastIndexOf("{/each}")
+    );
+    expect(performerLoop).not.toContain("<T.RingGeometry");
+  });
 });

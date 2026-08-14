@@ -24,7 +24,9 @@ describe("performer manager count transitions", () => {
     expect(original?.position.x).toBe(0);
     expect(original?.position.z).toBe(0);
 
-    manager.addPerformer();
+    const addTargets = manager.addPerformer();
+
+    expect(addTargets?.map((target) => target.position.x)).toEqual([-1, 1]);
 
     const added = manager.performers[1];
     expect(added?.position.x).toBe(1);
@@ -61,7 +63,9 @@ describe("performer manager count transitions", () => {
     expect(survivor?.position.z).toBe(0);
 
     now = 2_000;
-    manager.removePerformer();
+    const removeTargets = manager.removePerformer();
+
+    expect(removeTargets?.map((target) => target.position.x)).toEqual([0]);
 
     expect(manager.performers).toHaveLength(1);
     expect(survivor?.position.x).toBe(-1);
@@ -74,6 +78,31 @@ describe("performer manager count transitions", () => {
     manager.updateFormationTransition(now + 320);
     expect(survivor?.position.x).toBe(0);
     expect(survivor?.position.z).toBe(0);
+
+    manager.destroy();
+  });
+
+  it("carries performer velocity through a rapid count retarget", () => {
+    const manager = createPerformerManager({
+      initialAvatarId: DEFAULT_AVATAR_ID,
+      maxPerformers: 8,
+    });
+    manager.initialize();
+    manager.addPerformer();
+
+    manager.updateFormationTransition(now + 120);
+    const beforeRetarget = manager.performers[0]!.position.x;
+    const firstTiming = manager.formationTransitionTiming;
+
+    now += 120;
+    manager.addPerformer();
+    const replacementTiming = manager.formationTransitionTiming;
+    manager.updateFormationTransition(now + 1);
+    const afterRetarget = manager.performers[0]!.position.x;
+
+    expect(replacementTiming?.id).not.toBe(firstTiming?.id);
+    expect(replacementTiming?.startTimeMs).toBe(now);
+    expect(afterRetarget).toBeLessThan(beforeRetarget);
 
     manager.destroy();
   });

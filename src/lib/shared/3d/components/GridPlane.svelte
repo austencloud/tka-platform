@@ -1,7 +1,6 @@
 <script lang="ts">
   import { T } from "@threlte/core";
   import { HTML } from "@threlte/extras";
-  import { DoubleSide } from "three";
   import { Plane } from "@austencloud/scene-3d";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
@@ -15,6 +14,12 @@
     getOuterPoints,
   } from "../domain/constants/grid-layout";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import {
+    getGridMarkerGeometry,
+    getGridMaterial,
+    getGridPlaneGeometry,
+    getGridRingGeometry,
+  } from "./grid-render-resources";
 
   interface Props {
     plane: Plane;
@@ -48,6 +53,32 @@
 
   const handPoints = $derived(getHandPoints(gridMode));
   const outerPoints = $derived(getOuterPoints(gridMode));
+  const planeGeometry = $derived(getGridPlaneGeometry(effectiveSize));
+  const handRingGeometry = $derived(
+    getGridRingGeometry(handPointRadius, 0.015, 64)
+  );
+  const outerRingGeometry = $derived(
+    getGridRingGeometry(outerPointRadius, 0.01, 64)
+  );
+  const centerGeometry = getGridMarkerGeometry(CENTER_POINT_SIZE, 16);
+  const handMarkerGeometry = getGridMarkerGeometry(HAND_POINT_SIZE, 16);
+  const outerMarkerGeometry = getGridMarkerGeometry(OUTER_POINT_SIZE, 12);
+  const planeMaterial = $derived(
+    getGridMaterial(color, {
+      opacity,
+      doubleSided: true,
+      depthWrite: false,
+    })
+  );
+  const handRingMaterial = $derived(
+    getGridMaterial(color, { opacity: 0.5, doubleSided: true })
+  );
+  const outerRingMaterial = $derived(
+    getGridMaterial(color, { opacity: 0.25, doubleSided: true })
+  );
+  const pointMaterial = $derived(getGridMaterial(color));
+  const outerPointMaterial = $derived(getGridMaterial(color, { opacity: 0.6 }));
+  const centerMaterial = getGridMaterial(0xf59e0b);
 
   function getGridPointPosition(
     location: GridLocation,
@@ -87,66 +118,53 @@
 <!-- Plane group with rotation -->
 <T.Group rotation={getPlaneRotation()}>
   <!-- Semi-transparent plane surface -->
-  <T.Mesh>
-    <T.PlaneGeometry args={[effectiveSize * 2, effectiveSize * 2]} />
-    <T.MeshBasicMaterial
-      {color}
-      {opacity}
-      transparent={true}
-      side={DoubleSide}
-      depthWrite={false}
-    />
-  </T.Mesh>
+  <T.Mesh geometry={planeGeometry} material={planeMaterial} dispose={false} />
 
   <!-- Hand point circle (inner ring) - 1.5cm thickness -->
-  <T.Mesh position={[0, 0, 0.005]}>
-    <T.RingGeometry
-      args={[handPointRadius - 0.015, handPointRadius + 0.015, 64]}
-    />
-    <T.MeshBasicMaterial
-      {color}
-      opacity={0.5}
-      transparent={true}
-      side={DoubleSide}
-    />
-  </T.Mesh>
+  <T.Mesh
+    geometry={handRingGeometry}
+    material={handRingMaterial}
+    position={[0, 0, 0.005]}
+    dispose={false}
+  />
 
   <!-- Outer point circle - 1cm thickness -->
-  <T.Mesh position={[0, 0, 0.003]}>
-    <T.RingGeometry
-      args={[outerPointRadius - 0.01, outerPointRadius + 0.01, 64]}
-    />
-    <T.MeshBasicMaterial
-      {color}
-      opacity={0.25}
-      transparent={true}
-      side={DoubleSide}
-    />
-  </T.Mesh>
+  <T.Mesh
+    geometry={outerRingGeometry}
+    material={outerRingMaterial}
+    position={[0, 0, 0.003]}
+    dispose={false}
+  />
 
   <!-- Center point (largest, white/gold) -->
-  <T.Mesh position={[0, 0, 0.01]}>
-    <T.SphereGeometry args={[CENTER_POINT_SIZE, 16, 16]} />
-    <T.MeshBasicMaterial color="#f59e0b" />
-  </T.Mesh>
+  <T.Mesh
+    geometry={centerGeometry}
+    material={centerMaterial}
+    position={[0, 0, 0.01]}
+    dispose={false}
+  />
 </T.Group>
 
 <!-- Hand point markers (medium size, at hand radius) -->
 {#each handPoints as location}
   {@const pos = getGridPointPosition(location, handPointRadius)}
-  <T.Mesh position={pos}>
-    <T.SphereGeometry args={[HAND_POINT_SIZE, 16, 16]} />
-    <T.MeshBasicMaterial {color} />
-  </T.Mesh>
+  <T.Mesh
+    geometry={handMarkerGeometry}
+    material={pointMaterial}
+    position={pos}
+    dispose={false}
+  />
 {/each}
 
 <!-- Outer point markers (smaller, at outer radius) -->
 {#each outerPoints as location}
   {@const pos = getGridPointPosition(location, outerPointRadius)}
-  <T.Mesh position={pos}>
-    <T.SphereGeometry args={[OUTER_POINT_SIZE, 12, 12]} />
-    <T.MeshBasicMaterial {color} opacity={0.6} transparent />
-  </T.Mesh>
+  <T.Mesh
+    geometry={outerMarkerGeometry}
+    material={outerPointMaterial}
+    position={pos}
+    dispose={false}
+  />
 
   {#if showLabels}
     <T.Group position={[pos[0] * 1.08, pos[1] * 1.08, pos[2] * 1.08]}>

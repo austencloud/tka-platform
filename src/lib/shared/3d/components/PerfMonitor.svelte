@@ -6,6 +6,7 @@
 
   interface RendererPerformanceSample {
     fps: number;
+    peakFrameMs: number;
     drawCalls: number;
     triangles: number;
     geometries: number;
@@ -42,6 +43,7 @@
   });
 
   let fps = $state(0);
+  let peakFrameMs = $state(0);
   let drawCalls = $state(0);
   let triangles = $state(0);
   let geometries = $state(0);
@@ -50,6 +52,20 @@
 
   let frameCount = 0;
   let lastTime = performance.now();
+  let lastFrameTime = lastTime;
+  let observedPeakFrameMs = 0;
+  let wasVisible = false;
+
+  $effect(() => {
+    if (visible && !wasVisible) {
+      peakFrameMs = 0;
+      observedPeakFrameMs = 0;
+      frameCount = 0;
+      lastTime = performance.now();
+      lastFrameTime = lastTime;
+    }
+    wasVisible = visible;
+  });
 
   useTask((delta) => {
     adaptiveQuality?.observeFrame(
@@ -61,12 +77,21 @@
 
     if (!visible && !active) return;
 
-    frameCount++;
     const now = performance.now();
+    const frameGapMs = now - lastFrameTime;
+    if (frameGapMs > observedPeakFrameMs) {
+      observedPeakFrameMs = frameGapMs;
+      if (visible && frameGapMs > 50) {
+        console.info(`[PerfMonitor] ${frameGapMs.toFixed(1)} ms frame gap`);
+      }
+    }
+    lastFrameTime = now;
+    frameCount++;
     const elapsed = now - lastTime;
 
     if (elapsed >= 500) {
       fps = Math.round((frameCount * 1000) / elapsed);
+      peakFrameMs = observedPeakFrameMs;
       frameCount = 0;
       lastTime = now;
 
@@ -76,7 +101,15 @@
       geometries = info.memory.geometries;
       textures = info.memory.textures;
       programs = info.programs?.length ?? 0;
-      onSample?.({ fps, drawCalls, triangles, geometries, textures, programs });
+      onSample?.({
+        fps,
+        peakFrameMs,
+        drawCalls,
+        triangles,
+        geometries,
+        textures,
+        programs,
+      });
     }
   });
 </script>
@@ -89,6 +122,12 @@
         class="perf-value"
         class:perf-warn={fps < 30}
         class:perf-good={fps >= 55}>{fps}</span
+      >
+    </div>
+    <div class="perf-row">
+      <span class="perf-label">Peak</span>
+      <span class="perf-value" class:perf-warn={peakFrameMs > 32}
+        >{peakFrameMs.toFixed(1)} ms</span
       >
     </div>
     <div class="perf-row">

@@ -14,6 +14,10 @@
   import { slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import CascadeBadge from "./CascadeBadge.svelte";
+  import {
+    filterSpinnerPropCategories,
+    isSpinnerViewerProp,
+  } from "../../domain/prop-motion-discipline";
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -31,26 +35,42 @@
       : (selected?.effectiveProp ?? viewer.defaultSettings.prop)
   );
 
-  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.prop ?? false));
-  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("prop") : 0);
+  const isOverridden = $derived(
+    !isAllMode && (selected?.hasOverride.prop ?? false)
+  );
+  const overrideCount = $derived(
+    isAllMode ? viewer.overrideCountForCategory("prop") : 0
+  );
 
-  const performerColor = $derived(isAllMode ? "#4a9eff" : getPerformerColor(selectedIndex ?? 0));
+  const performerColor = $derived(
+    isAllMode ? "#4a9eff" : getPerformerColor(selectedIndex ?? 0)
+  );
 
-  const propCategories = $derived(getBasePropsByCategory());
+  const propCategories = $derived(
+    filterSpinnerPropCategories(getBasePropsByCategory())
+  );
   const selectedBase = $derived(getBasePropType(currentProp));
   let expandedFamily = $state<PropType | null>(null);
 
   const familyVariants = $derived(
-    expandedFamily ? getAllVariations(expandedFamily).filter(isPropActive) : [],
+    expandedFamily
+      ? getAllVariations(expandedFamily).filter(
+          (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+        )
+      : []
   );
 
   function variantCount(base: PropType): number | undefined {
-    const count = getAllVariations(base).filter(isPropActive).length;
+    const count = getAllVariations(base).filter(
+      (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+    ).length;
     return count > 1 ? count : undefined;
   }
 
   function handleFamilyClick(base: PropType) {
-    const activeVariants = getAllVariations(base).filter(isPropActive);
+    const activeVariants = getAllVariations(base).filter(
+      (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+    );
     if (activeVariants.length <= 1) {
       if (isAllMode) {
         viewer.setDefaultProp(base);
@@ -74,7 +94,12 @@
 
 <div class="prop-content" style:--pop-accent={performerColor}>
   {#if isAllMode && overrideCount > 0}
-    <CascadeBadge mode="overrides" {overrideCount} categoryLabel="prop" onReset={() => viewer.resetAllPerformersProp()} />
+    <CascadeBadge
+      mode="overrides"
+      {overrideCount}
+      categoryLabel="prop"
+      onReset={() => viewer.resetAllPerformersProp()}
+    />
   {:else if !isAllMode && isOverridden}
     <CascadeBadge mode="custom" onReset={() => selected?.resetProp()} />
   {:else if !isAllMode}
@@ -89,7 +114,10 @@
       <div class="tile-row">
         {#each bases as base}
           {@const info = getPropTypeDisplayInfo(base)}
-          {@const isSelected = expandedFamily !== null ? expandedFamily === base : selectedBase === base}
+          {@const isSelected =
+            expandedFamily !== null
+              ? expandedFamily === base
+              : selectedBase === base}
           {@const badge = variantCount(base)}
           <button
             class="tile"
@@ -103,7 +131,11 @@
               <span class="badge">{badge}</span>
             {/if}
             <div class="tile-icon">
-              <PropCompositionPreview propType={base} size={40} darkBackground />
+              <PropCompositionPreview
+                propType={base}
+                size={40}
+                darkBackground
+              />
             </div>
           </button>
         {/each}
@@ -113,8 +145,13 @@
 </div>
 
 {#if expandedFamily && familyVariants.length > 1}
-  <div class="variant-strip" transition:slide={{ duration: 180, easing: cubicOut }}>
-    <span class="variant-label">{getPropTypeDisplayInfo(expandedFamily).label} Variants</span>
+  <div
+    class="variant-strip"
+    transition:slide={{ duration: 180, easing: cubicOut }}
+  >
+    <span class="variant-label"
+      >{getPropTypeDisplayInfo(expandedFamily).label} Variants</span
+    >
     <div class="variant-row">
       {#each familyVariants as variant}
         {@const vInfo = getPropTypeDisplayInfo(variant)}
@@ -126,7 +163,11 @@
           onclick={() => handleVariantClick(variant)}
         >
           <div class="variant-icon">
-            <PropCompositionPreview propType={variant} size={32} darkBackground />
+            <PropCompositionPreview
+              propType={variant}
+              size={32}
+              darkBackground
+            />
           </div>
           <span class="variant-name">{vInfo.label}</span>
         </button>
