@@ -1714,3 +1714,40 @@ describe("generator setups: private saved configs", () => {
     await assertSucceeds(getDoc(doc(signedOut, `users/${FULL_UID}`)));
   });
 });
+
+describe("media composition presets: private reusable layouts", () => {
+  const presetPath = (uid: string, id = "preset-1") =>
+    `users/${uid}/mediaCompositionPresets/${id}`;
+
+  it("lets an owner create, read, update, and delete a layout", async () => {
+    const db = fullCtx().firestore(SDK_SETTINGS);
+    await assertSucceeds(
+      setDoc(doc(db, presetPath(FULL_UID)), {
+        name: "Vertical breakdown",
+        updatedAt: 1,
+      })
+    );
+    await assertSucceeds(getDoc(doc(db, presetPath(FULL_UID))));
+    await assertSucceeds(
+      updateDoc(doc(db, presetPath(FULL_UID)), { updatedAt: 2 })
+    );
+    await assertSucceeds(deleteDoc(doc(db, presetPath(FULL_UID))));
+  });
+
+  it("keeps layouts private to their owner", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), presetPath(FULL_UID)), {
+        name: "Private layout",
+        updatedAt: 1,
+      });
+    });
+
+    const outsider = anonCtx().firestore(SDK_SETTINGS);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+    await assertFails(getDoc(doc(outsider, presetPath(FULL_UID))));
+    await assertFails(
+      setDoc(doc(outsider, presetPath(FULL_UID)), { name: "Changed" })
+    );
+    await assertFails(getDoc(doc(signedOut, presetPath(FULL_UID))));
+  });
+});

@@ -27,6 +27,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
   import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
+  import PostStudio from "$lib/shared/share/components/post-studio/PostStudio.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -212,6 +213,9 @@
    */
   let renderedCardTarget: SequenceData | null = null;
   let videoBlob = $state<Blob | null>(null);
+  /** A Post Studio render supersedes the viewer's plain animation render. */
+  let studioVideoUrl = $state<string | null>(null);
+  let studioOpen = $state(false);
 
   /**
    * Neither the card-composition manager nor the visibility manager is
@@ -293,6 +297,7 @@
   const activeBlob = $derived(artifact === "video" ? videoBlob : cardBlob);
 
   const filename = $derived(buildArtifactFilename(word, artifact));
+  const activeVideoUrl = $derived(studioVideoUrl ?? videoBlobUrl);
 
   const destinations = $derived(
     resolveDestinations({ artifact, blob: activeBlob, filename })
@@ -305,7 +310,8 @@
    * implements `navigator.share`.
    */
   const nativeShare = $derived(
-    destinations.find((destination) => destination.id === "native-share") ?? null
+    destinations.find((destination) => destination.id === "native-share") ??
+      null
   );
 
   /**
@@ -371,7 +377,7 @@
         brand: "instagram",
         name: "Instagram",
         label: "Connect Instagram",
-        hint: "Post straight from here",
+        hint: "Professional account required",
         kind: "connect",
         target: "instagram",
       });
@@ -480,12 +486,14 @@
     !!metaStatus.facebookPage && !metaStatus.facebookPage.selectedPageId
   );
 
-  const metaBusy = $derived(postingTarget !== null || connectingTarget !== null);
+  const metaBusy = $derived(
+    postingTarget !== null || connectingTarget !== null
+  );
 
   const previewReady = $derived(
     !qrDataUrl &&
       ((artifact === "card" && !!cardPreviewUrl) ||
-        (artifact === "video" && !!videoBlobUrl))
+        (artifact === "video" && !!activeVideoUrl))
   );
 
   const videoBusy = $derived(artifact === "video" && !videoBlob);
@@ -522,7 +530,7 @@
    * for a render reads this, never the blob: gating on `videoBlob` is what made
    * the sheet fire a second 3D take the instant it reopened holding the first.
    */
-  const hasVideo = $derived(!!videoBlobUrl || !!videoBlob);
+  const hasVideo = $derived(!!activeVideoUrl || !!videoBlob);
 
   /** A render is in hand, but not of the settings now selected. */
   const videoSettingsStale = $derived(
@@ -554,6 +562,7 @@
     wasOpen = isOpen;
     if (!isOpen) return;
     artifact = initialArtifact;
+    studioOpen = false;
     // Every share starts on the short path: the settings you already have, one
     // press from the destination. Customize is there when the answer is no.
     customizeOpen = false;
@@ -602,7 +611,8 @@
     const settingsKey = `${JSON.stringify(cardOptions)}|${JSON.stringify(
       visibility.getState()
     )}`;
-    if (settingsKey === renderedCardKey && target === renderedCardTarget) return;
+    if (settingsKey === renderedCardKey && target === renderedCardTarget)
+      return;
 
     let stale = false;
 
@@ -627,6 +637,10 @@
     return () => {
       stale = true;
     };
+  });
+
+  onDestroy(() => {
+    if (studioVideoUrl) URL.revokeObjectURL(studioVideoUrl);
   });
 
   // The viewer owns the export; this only adopts the resulting blob.
@@ -735,9 +749,37 @@
 
     // isRecordingScene counts as in flight: a 3D take reads as idle to both
     // other flags, so without it re-picking Video starts a second recording.
-    if (next === "video" && !hasVideo && !isExportingVideo && !isRecordingScene) {
+    if (
+      next === "video" &&
+      !hasVideo &&
+      !isExportingVideo &&
+      !isRecordingScene
+    ) {
       requestVideo();
     }
+  }
+
+  function openPostStudio(): void {
+    statusMessage = "";
+    qrDataUrl = null;
+    studioOpen = true;
+  }
+
+  function closePostStudio(): void {
+    studioOpen = false;
+  }
+
+  function noop(): void {}
+
+  function handleStudioExported(blob: Blob): void {
+    if (studioVideoUrl) URL.revokeObjectURL(studioVideoUrl);
+    studioVideoUrl = URL.createObjectURL(blob);
+    videoBlob = blob;
+    renderedVideoKey = null;
+    artifact = "video";
+    postedPermalinks = {};
+    statusMessage = "Post Studio render ready";
+    studioOpen = false;
   }
 
   /**
@@ -844,7 +886,8 @@
     const blob = activeBlob;
     if (!blob) return;
     if (!sequence?.id) {
-      statusMessage = "Save this sequence first so it has somewhere to upload to.";
+      statusMessage =
+        "Save this sequence first so it has somewhere to upload to.";
       return;
     }
 
@@ -857,7 +900,8 @@
       // future export path ever hands back WebM, say so here rather than
       // uploading it and letting Meta reject the container minutes later.
       if (artifact === "video" && blob.type && !blob.type.includes("mp4")) {
-        statusMessage = "This video isn't in a format Instagram or Facebook accepts.";
+        statusMessage =
+          "This video isn't in a format Instagram or Facebook accepts.";
         return;
       }
 
@@ -1140,377 +1184,422 @@
   ariaLabel="Share this sequence"
   {onClose}
   narrow={!!qrDataUrl}
+  expanded={studioOpen}
 >
   {#snippet children(surface)}
-  <!-- The QR is a focused step, not a sibling of the setup controls: with the
+    {#if studioOpen && sequence}
+      <PostStudio
+        {sequence}
+        {cardPreviewUrl}
+        animationPreviewUrl={null}
+        isPreparingCard={!cardPreviewUrl}
+        isPreparingAnimation={false}
+        onRequestAnimation={noop}
+        onBack={closePostStudio}
+        {onClose}
+        onExported={handleStudioExported}
+      />
+    {:else}
+      <!-- The QR is a focused step, not a sibling of the setup controls: with the
        picker, caption, tiles and connections all hidden, the two-column grid
        leaves the whole right column empty under the title. One column. -->
-  <!-- `autofocus` on the container, not on a control. A native <dialog> that
+      <!-- `autofocus` on the container, not on a control. A native <dialog> that
        finds no autofocus target focuses its first focusable child, which here
        is Close — so the sheet opened with a focus ring around the one button
        that throws the sheet away, drawing the eye there instead of to the
        destinations. Taking the focus itself is also the standard dialog
        behaviour: the sheet is announced, and Tab starts at the first control. -->
-  <!-- svelte-ignore a11y_autofocus -->
-  <div
-    class="sheet"
-    data-surface={surface}
-    class:qr-step={!!qrDataUrl}
-    tabindex="-1"
-    autofocus
-  >
-    <header class="panel-header">
-      <!-- The word is a word in this alphabet, so it renders in the alphabet —
+      <!-- svelte-ignore a11y_autofocus -->
+      <div
+        class="sheet"
+        data-surface={surface}
+        class:qr-step={!!qrDataUrl}
+        tabindex="-1"
+        autofocus
+      >
+        <header class="panel-header">
+          <!-- The word is a word in this alphabet, so it renders in the alphabet —
            the same glyph component the card, the gallery and compose use. A
            system font here spells FΨ as two unrelated symbols. -->
-      <h2 class="panel-title">
-        <!-- The glyph takes a px height, but the size belongs with the other
+          <h2 class="panel-title">
+            <!-- The glyph takes a px height, but the size belongs with the other
              tier rules in CSS, so a zero-width sizer carries it across. -->
-        <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
-        <TKAWordGlyph
-          word={glyphWord}
-          height={glyphHeight || 26}
-          darkMode
-        />
-      </h2>
-      <button
-        type="button"
-        class="header-close"
-        onclick={onClose}
-        aria-label="Close share sheet"
-      >
-        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-      </button>
-    </header>
+            <span class="glyph-sizer" bind:clientHeight={glyphHeight}></span>
+            <TKAWordGlyph
+              word={glyphWord}
+              height={glyphHeight || 26}
+              darkMode
+            />
+          </h2>
+          <button
+            type="button"
+            class="header-close"
+            onclick={onClose}
+            aria-label="Close share sheet"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
 
-    <!-- A compact glass pill, not a full-width bar: two short labels size to
+        <!-- A compact glass pill, not a full-width bar: two short labels size to
          their labels (.claude/rules/visual-verification-mandatory.md). It sits
          above the artwork rather than on it, because the card preview IS the
          content and an overlay would cover a pictograph. -->
-    {#if !qrDataUrl}
-      <div class="artifact-picker">
-        <SegmentedControl
-          options={[
-            { value: "card", label: "Card" },
-            { value: "video", label: videoLabel },
-          ]}
-          value={artifact}
-          onchange={handleArtifactChange}
-          ariaLabel="What to share"
-          semantics="radiogroup"
-          size="sm"
-          color="accent"
-        />
-      </div>
-    {/if}
+        {#if !qrDataUrl}
+          <div class="artifact-picker">
+            <SegmentedControl
+              options={[
+                { value: "card", label: "Card" },
+                { value: "video", label: videoLabel },
+              ]}
+              value={artifact}
+              onchange={handleArtifactChange}
+              ariaLabel="What to share"
+              semantics="radiogroup"
+              size="sm"
+              color="accent"
+            />
+            <button
+              type="button"
+              class="studio-launch"
+              onclick={openPostStudio}
+            >
+              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+              Post Studio
+            </button>
+          </div>
+        {/if}
 
-    <div class="stage" class:showing-media={!!previewReady}>
-      {#if qrDataUrl}
-        <div class="qr-view">
-          <img src={qrDataUrl} alt="QR code linking to the uploaded file" />
-          <p>Scan with your phone, save it, then post from Instagram.</p>
-          <button type="button" class="secondary" onclick={closeQrView}>
-            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            Back
-          </button>
+        <div class="stage" class:showing-media={!!previewReady}>
+          {#if qrDataUrl}
+            <div class="qr-view">
+              <img src={qrDataUrl} alt="QR code linking to the uploaded file" />
+              <p>Scan with your phone, save it, then post from Instagram.</p>
+              <button type="button" class="secondary" onclick={closeQrView}>
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                Back
+              </button>
+            </div>
+          {:else if artifact === "card" && cardPreviewUrl}
+            <img
+              class="preview"
+              src={cardPreviewUrl}
+              alt="Sequence card preview"
+            />
+          {:else if artifact === "video" && activeVideoUrl}
+            <!-- svelte-ignore a11y_media_has_caption -->
+            <video
+              class="preview"
+              src={activeVideoUrl}
+              autoplay
+              loop
+              muted
+              playsinline
+            ></video>
+          {:else if artifact === "video" && videoRefused}
+            <div class="stage-pending stage-refused" role="status">
+              <span>The render didn't start.</span>
+              <button class="retry" type="button" onclick={requestVideo}>
+                Try again
+              </button>
+            </div>
+          {:else}
+            <div class="stage-pending" role="status">
+              <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+              ></i>
+              <span>{progressLabel || "Preparing…"}</span>
+            </div>
+          {/if}
         </div>
-      {:else if artifact === "card" && cardPreviewUrl}
-        <img class="preview" src={cardPreviewUrl} alt="Sequence card preview" />
-      {:else if artifact === "video" && videoBlobUrl}
-        <!-- svelte-ignore a11y_media_has_caption -->
-        <video class="preview" src={videoBlobUrl} autoplay loop muted playsinline
-        ></video>
-      {:else if artifact === "video" && videoRefused}
-        <div class="stage-pending stage-refused" role="status">
-          <span>The render didn't start.</span>
-          <button class="retry" type="button" onclick={requestVideo}>
-            Try again
-          </button>
-        </div>
-      {:else}
-        <div class="stage-pending" role="status">
-          <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
-          <span>{progressLabel || "Preparing…"}</span>
-        </div>
-      {/if}
 
-    </div>
-
-    <!-- The customization layer: optional, folded away, and sitting directly
+        <!-- The customization layer: optional, folded away, and sitting directly
          under what it changes so a toggled setting is visible in the preview
          above it. Card settings redraw the card as you press them; video
          settings apply to the next render, so a landed take offers one. -->
-    {#if !qrDataUrl && sequence}
-      <div class="customize">
-        <button
-          type="button"
-          class="customize-toggle"
-          aria-expanded={customizeOpen}
-          aria-controls="post-share-customize"
-          onclick={() => (customizeOpen = !customizeOpen)}
-        >
-          <i
-            class="fa-solid fa-sliders"
-            aria-hidden="true"
-          ></i>
-          <span class="customize-label">
-            {artifact === "card" ? "Card settings" : `${videoLabel} settings`}
-          </span>
-          <i
-            class="fa-solid fa-chevron-down chevron"
-            class:open={customizeOpen}
-            aria-hidden="true"
-          ></i>
-        </button>
+        {#if !qrDataUrl && sequence}
+          <div class="customize">
+            <button
+              type="button"
+              class="customize-toggle"
+              aria-expanded={customizeOpen}
+              aria-controls="post-share-customize"
+              onclick={() => (customizeOpen = !customizeOpen)}
+            >
+              <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+              <span class="customize-label">
+                {artifact === "card"
+                  ? "Card settings"
+                  : `${videoLabel} settings`}
+              </span>
+              <i
+                class="fa-solid fa-chevron-down chevron"
+                class:open={customizeOpen}
+                aria-hidden="true"
+              ></i>
+            </button>
 
-        {#if customizeOpen}
-          <div
-            class="customize-body"
-            id="post-share-customize"
-            transition:slide={{ duration: 200 }}
-            onintroend={revealCustomize}
-          >
-            {#if artifact === "card"}
-              <ExportImagePanel
-                {exportOptions}
-                layout="inline"
-                stepCount={sequence.steps?.length ?? 0}
-                resolvedAutoLayout={resolvedCardAutoLayout}
-              />
-            {:else}
-              <ExportPopover />
-              {#if videoSettingsStale}
-                <button
-                  type="button"
-                  class="rerender"
-                  onclick={requestVideo}
-                  transition:slide={{ duration: 160 }}
-                >
-                  <i class="fa-solid fa-rotate" aria-hidden="true"></i>
-                  Re-render with these settings
-                </button>
-              {/if}
+            {#if customizeOpen}
+              <div
+                class="customize-body"
+                id="post-share-customize"
+                transition:slide={{ duration: 200 }}
+                onintroend={revealCustomize}
+              >
+                {#if artifact === "card"}
+                  <ExportImagePanel
+                    {exportOptions}
+                    layout="inline"
+                    stepCount={sequence.steps?.length ?? 0}
+                    resolvedAutoLayout={resolvedCardAutoLayout}
+                  />
+                {:else}
+                  <ExportPopover />
+                  {#if videoSettingsStale}
+                    <button
+                      type="button"
+                      class="rerender"
+                      onclick={requestVideo}
+                      transition:slide={{ duration: 160 }}
+                    >
+                      <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+                      Re-render with these settings
+                    </button>
+                  {/if}
+                {/if}
+              </div>
             {/if}
           </div>
         {/if}
-      </div>
-    {/if}
 
-    {#if !qrDataUrl}
-      <div class="caption-block">
-        <!-- One scrolling chip row instead of a label row plus a chip row: the
+        {#if !qrDataUrl}
+          <div class="caption-block">
+            <!-- One scrolling chip row instead of a label row plus a chip row: the
              presets and "save this one" are the same gesture family, and the
              placeholder already names the field. -->
-        <label class="visually-hidden" for="post-share-caption">Caption</label>
+            <label class="visually-hidden" for="post-share-caption"
+              >Caption</label
+            >
 
-        <div class="presets">
-          {#each presets as preset (preset.id)}
-            <!-- Toggle, not action: these are one-of-N choices where the Nth
+            <div class="presets">
+              {#each presets as preset (preset.id)}
+                <!-- Toggle, not action: these are one-of-N choices where the Nth
                  option is "typed my own", so the row has a none-selected state
                  and no indicator to slide. Without `active` all the presets
                  rendered identically and nothing said which caption you were
                  looking at. -->
-            <FilterChipBase
-              label={preset.label}
-              mode="toggle"
-              active={caption === preset.text}
-              size="sm"
-              onclick={() => applyPreset(preset.text)}
-            />
-          {/each}
-          <FilterChipBase
-            label="Save current"
-            icon="fa-solid fa-plus"
-            mode="action"
-            size="sm"
-            disabled={!caption.trim()}
-            onclick={saveCurrentAsPreset}
-          />
-        </div>
+                <FilterChipBase
+                  label={preset.label}
+                  mode="toggle"
+                  active={caption === preset.text}
+                  size="sm"
+                  onclick={() => applyPreset(preset.text)}
+                />
+              {/each}
+              <FilterChipBase
+                label="Save current"
+                icon="fa-solid fa-plus"
+                mode="action"
+                size="sm"
+                disabled={!caption.trim()}
+                onclick={saveCurrentAsPreset}
+              />
+            </div>
 
-        <textarea
-          id="post-share-caption"
-          bind:value={caption}
-          oninput={() => (captionTouched = true)}
-          rows="3"
-          placeholder="Write a caption…"
-        ></textarea>
-      </div>
+            <textarea
+              id="post-share-caption"
+              bind:value={caption}
+              oninput={() => (captionTouched = true)}
+              rows="3"
+              placeholder="Write a caption…"
+            ></textarea>
+          </div>
 
-      <!-- The destinations, in the order they matter: the phone's own share
+          <!-- The destinations, in the order they matter: the phone's own share
            sheet when there is one (one tap, reaches everything), then a
            full-width button per network. -->
-      <div class="actions">
-        {#if nativeShare}
-          <button
-            type="button"
-            class="cta"
-            disabled={!activeBlob || busyDestination !== null || qrPending}
-            onclick={() => runDestination(nativeShare.id)}
-          >
-            <i
-              class={busyDestination === nativeShare.id
-                ? "fa-solid fa-circle-notch fa-spin"
-                : nativeShare.icon}
-              aria-hidden="true"
-            ></i>
-            <span class="cta-text">
-              <span class="cta-label">{nativeShare.label}</span>
-              {#if nativeShare.hint}
-                <span class="cta-hint">{nativeShare.hint}</span>
-              {/if}
-            </span>
-          </button>
-        {/if}
-
-        {#each networks as plan (plan.key)}
-          {@render networkButton(plan)}
-        {/each}
-      </div>
-
-      {#if tileDestinations.length || localTiles.length}
-        <div class="tiles">
-          {#each localTiles as tile (tile.id)}
-            <button
-              type="button"
-              class="tile"
-              aria-label={tile.label}
-              title={tile.label}
-              disabled={!tile.ready || busyLocalTile !== null}
-              onclick={tile.run}
-            >
-              <span class="tile-icon">
-                {#if busyLocalTile === tile.id}
-                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
-                  ></i>
-                {:else}
-                  <i class={tile.icon} aria-hidden="true"></i>
-                {/if}
-              </span>
-              <span class="tile-label">{tile.short}</span>
-            </button>
-          {/each}
-          {#each tileDestinations as destination (destination.id)}
-            <button
-              type="button"
-              class="tile"
-              aria-label={destination.label}
-              title={destination.hint
-                ? `${destination.label} · ${destination.hint}`
-                : destination.label}
-              disabled={(destination.id !== "copy-caption" && !activeBlob) ||
-                busyDestination !== null ||
-                qrPending}
-              onclick={() => runDestination(destination.id)}
-            >
-              <span class="tile-icon">
-                {#if busyDestination === destination.id}
-                  <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
-                  ></i>
-                {:else if destination.brand}
-                  {@render brandMark(destination.brand)}
-                {:else}
-                  <i class={destination.icon} aria-hidden="true"></i>
-                {/if}
-              </span>
-              <span class="tile-label">{destination.short}</span>
-            </button>
-          {/each}
-        </div>
-      {/if}
-
-      <!-- Setup for accounts that are ALREADY connected — which Page, and how
-           to drop the connection. Connecting itself is not here any more: it
-           is the network button above, in that network's own colours. -->
-      {#if metaStatus.facebookPage || autoPostTargets.length}
-        <div class="connections">
-          {#if metaStatus.facebookPage}
-            {@const selected = metaStatus.facebookPage}
-            <!-- A dropdown, not a segmented control: Page names are long and
-                 unbounded, and laying them all out side by side is what pushed
-                 this row past the sheet's width. -->
-            <div class="page-chip">
-              <FilterChipBase
-                label={selected.selectedPageName || "Choose a Page"}
-                ariaLabel="Which Page to post to"
-                mode="dropdown"
-                size="sm"
-                active={pageChoicePending}
-                emphasis={pageChoicePending ? "solid" : "soft"}
-                expanded={pageMenuOpen}
-                disabled={metaBusy}
-                onclick={() => (pageMenuOpen = !pageMenuOpen)}
+          <div class="actions">
+            {#if nativeShare}
+              <button
+                type="button"
+                class="cta"
+                disabled={!activeBlob || busyDestination !== null || qrPending}
+                onclick={() => runDestination(nativeShare.id)}
               >
-                {#snippet iconSnippet()}
-                  {@render brandMark("facebook")}
-                {/snippet}
-                {#snippet children()}
-                  {#each facebookPages as page (page.id)}
-                    <button
-                      class="page-option"
-                      class:selected={page.id === selected.selectedPageId}
-                      type="button"
-                      role="option"
-                      aria-selected={page.id === selected.selectedPageId}
-                      onclick={() => handlePageChange(page.id)}
-                    >
-                      <span>{page.name}</span>
-                      {#if page.id === selected.selectedPageId}
-                        <i class="fa-solid fa-check" aria-hidden="true"></i>
-                      {/if}
-                    </button>
-                  {/each}
-                  <!-- Lives here because this is where you look when the Page
-                       you want is not on the list. The setup row above is one
-                       scrolling line by design and has no room for a fourth
-                       chip. -->
-                  <button
-                    class="page-option page-option--add"
-                    type="button"
-                    role="option"
-                    aria-selected="false"
-                    disabled={metaBusy}
-                    onclick={changeSharedPages}
-                  >
-                    <span>Add a Page…</span>
-                    {#if connectingTarget === "facebook-page"}
-                      <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+                <i
+                  class={busyDestination === nativeShare.id
+                    ? "fa-solid fa-circle-notch fa-spin"
+                    : nativeShare.icon}
+                  aria-hidden="true"
+                ></i>
+                <span class="cta-text">
+                  <span class="cta-label">{nativeShare.label}</span>
+                  {#if nativeShare.hint}
+                    <span class="cta-hint">{nativeShare.hint}</span>
+                  {/if}
+                </span>
+              </button>
+            {/if}
+
+            {#each networks as plan (plan.key)}
+              {@render networkButton(plan)}
+            {/each}
+          </div>
+
+          {#if tileDestinations.length || localTiles.length}
+            <div class="tiles">
+              {#each localTiles as tile (tile.id)}
+                <button
+                  type="button"
+                  class="tile"
+                  aria-label={tile.label}
+                  title={tile.label}
+                  disabled={!tile.ready || busyLocalTile !== null}
+                  onclick={tile.run}
+                >
+                  <span class="tile-icon">
+                    {#if busyLocalTile === tile.id}
+                      <i
+                        class="fa-solid fa-circle-notch fa-spin"
+                        aria-hidden="true"
                       ></i>
                     {:else}
-                      <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                      <i class={tile.icon} aria-hidden="true"></i>
                     {/if}
-                  </button>
-                {/snippet}
-              </FilterChipBase>
+                  </span>
+                  <span class="tile-label">{tile.short}</span>
+                </button>
+              {/each}
+              {#each tileDestinations as destination (destination.id)}
+                <button
+                  type="button"
+                  class="tile"
+                  aria-label={destination.label}
+                  title={destination.hint
+                    ? `${destination.label} · ${destination.hint}`
+                    : destination.label}
+                  disabled={(destination.id !== "copy-caption" &&
+                    !activeBlob) ||
+                    busyDestination !== null ||
+                    qrPending}
+                  onclick={() => runDestination(destination.id)}
+                >
+                  <span class="tile-icon">
+                    {#if busyDestination === destination.id}
+                      <i
+                        class="fa-solid fa-circle-notch fa-spin"
+                        aria-hidden="true"
+                      ></i>
+                    {:else if destination.brand}
+                      {@render brandMark(destination.brand)}
+                    {:else}
+                      <i class={destination.icon} aria-hidden="true"></i>
+                    {/if}
+                  </span>
+                  <span class="tile-label">{destination.short}</span>
+                </button>
+              {/each}
             </div>
           {/if}
 
-          {#each autoPostTargets as target (target.id)}
-            <!-- The network, not the account: the account is already named on
+          <!-- Setup for accounts that are ALREADY connected — which Page, and how
+           to drop the connection. Connecting itself is not here any more: it
+           is the network button above, in that network's own colours. -->
+          {#if metaStatus.facebookPage || autoPostTargets.length}
+            <div class="connections">
+              {#if metaStatus.facebookPage}
+                {@const selected = metaStatus.facebookPage}
+                <!-- A dropdown, not a segmented control: Page names are long and
+                 unbounded, and laying them all out side by side is what pushed
+                 this row past the sheet's width. -->
+                <div class="page-chip">
+                  <FilterChipBase
+                    label={selected.selectedPageName || "Choose a Page"}
+                    ariaLabel="Which Page to post to"
+                    mode="dropdown"
+                    size="sm"
+                    active={pageChoicePending}
+                    emphasis={pageChoicePending ? "solid" : "soft"}
+                    expanded={pageMenuOpen}
+                    disabled={metaBusy}
+                    onclick={() => (pageMenuOpen = !pageMenuOpen)}
+                  >
+                    {#snippet iconSnippet()}
+                      {@render brandMark("facebook")}
+                    {/snippet}
+                    {#snippet children()}
+                      {#each facebookPages as page (page.id)}
+                        <button
+                          class="page-option"
+                          class:selected={page.id === selected.selectedPageId}
+                          type="button"
+                          role="option"
+                          aria-selected={page.id === selected.selectedPageId}
+                          onclick={() => handlePageChange(page.id)}
+                        >
+                          <span>{page.name}</span>
+                          {#if page.id === selected.selectedPageId}
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                          {/if}
+                        </button>
+                      {/each}
+                      <!-- Lives here because this is where you look when the Page
+                       you want is not on the list. The setup row above is one
+                       scrolling line by design and has no room for a fourth
+                       chip. -->
+                      <button
+                        class="page-option page-option--add"
+                        type="button"
+                        role="option"
+                        aria-selected="false"
+                        disabled={metaBusy}
+                        onclick={changeSharedPages}
+                      >
+                        <span>Add a Page…</span>
+                        {#if connectingTarget === "facebook-page"}
+                          <i
+                            class="fa-solid fa-circle-notch fa-spin"
+                            aria-hidden="true"
+                          ></i>
+                        {:else}
+                          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                        {/if}
+                      </button>
+                    {/snippet}
+                  </FilterChipBase>
+                </div>
+              {/if}
+
+              {#each autoPostTargets as target (target.id)}
+                <!-- The network, not the account: the account is already named on
                  the post button above, and a variable-width label here is what
                  made this row overflow the sheet. -->
-            <FilterChipBase
-              label={`Disconnect ${target.network}`}
-              ariaLabel={`Disconnect ${target.account} from ${target.network}`}
-              icon={connectingTarget === target.id
-                ? "fa-solid fa-circle-notch fa-spin"
-                : "fa-solid fa-link-slash"}
-              mode="action"
-              size="sm"
-              disabled={metaBusy}
-              onclick={() => forgetTarget(target.id)}
-            />
-          {/each}
-        </div>
-      {/if}
-    {/if}
+                <FilterChipBase
+                  label={`Disconnect ${target.network}`}
+                  ariaLabel={`Disconnect ${target.account} from ${target.network}`}
+                  icon={connectingTarget === target.id
+                    ? "fa-solid fa-circle-notch fa-spin"
+                    : "fa-solid fa-link-slash"}
+                  mode="action"
+                  size="sm"
+                  disabled={metaBusy}
+                  onclick={() => forgetTarget(target.id)}
+                />
+              {/each}
+            </div>
+          {/if}
+        {/if}
 
-    <!-- Reserved row: status text appears and disappears without moving the
+        <!-- Reserved row: status text appears and disappears without moving the
          sheet's contents. -->
-    <p class="status" role="status" class:visible={!!(statusMessage || qrError)}>
-      {qrError || statusMessage || " "}
-    </p>
-  </div>
+        <p
+          class="status"
+          role="status"
+          class:visible={!!(statusMessage || qrError)}
+        >
+          {qrError || statusMessage || " "}
+        </p>
+      </div>
+    {/if}
   {/snippet}
 </ShareSheetFrame>
 
@@ -1680,12 +1769,53 @@
      so it sizes to its two labels rather than the sheet
      (.claude/rules/visual-verification-mandatory.md). */
   .artifact-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     align-self: center;
     max-width: 100%;
   }
 
   .artifact-picker :global(.segmented-control) {
     width: auto;
+  }
+
+  .studio-launch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.45rem 0.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b7cff) 42%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b7cff) 10%,
+      transparent
+    );
+    color: color-mix(in srgb, var(--theme-accent, #8b7cff) 70%, white);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .studio-launch:hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #8b7cff) 74%, white);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b7cff) 17%,
+      transparent
+    );
+  }
+
+  .studio-launch:focus-visible {
+    outline: 3px solid var(--theme-accent, #8b7cff);
+    outline-offset: 2px;
   }
 
   .qr-view {

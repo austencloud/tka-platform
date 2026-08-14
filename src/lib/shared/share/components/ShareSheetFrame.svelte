@@ -32,10 +32,22 @@
      * frame exists to avoid.
      */
     narrow?: boolean;
+    /**
+     * Post Studio uses the same modal mechanics as sharing, but its preview,
+     * setup controls, and timeline need separate desktop columns.
+     */
+    expanded?: boolean;
     children: Snippet<[surface: "modal" | "drawer"]>;
   }
 
-  let { isOpen, ariaLabel, onClose, narrow = false, children }: Props = $props();
+  let {
+    isOpen,
+    ariaLabel,
+    onClose,
+    narrow = false,
+    expanded = false,
+    children,
+  }: Props = $props();
 
   const WIDE = "(min-width: 900px)";
 
@@ -60,11 +72,15 @@
   });
 </script>
 
-{#if wide}
+{#if wide || expanded}
   <BaseModal
     open={isOpen}
-    class={narrow ? "share-sheet-modal share-sheet-modal--narrow" : "share-sheet-modal"}
-    size="fit"
+    class={narrow
+      ? "share-sheet-modal share-sheet-modal--narrow"
+      : expanded
+        ? "share-sheet-modal share-sheet-modal--expanded"
+        : "share-sheet-modal"}
+    size={expanded ? "full" : "fit"}
     position="center"
     animation="pop"
     onclose={onClose}
@@ -113,6 +129,27 @@
     :global(dialog.base-modal.share-sheet-modal[data-size]) {
       width: min(118rem, calc(100vw - 10rem));
     }
+  }
+
+  /* The regular share sheet is intentionally compact. Post Studio is an
+     editor, so large desktops spend their width on preview, setup, and timing
+     columns instead of stretching one form column across the dialog. */
+  :global(dialog.base-modal.share-sheet-modal--expanded[data-size]) {
+    width: calc(100vw - 1rem);
+    height: calc(var(--viewport-height, 100dvh) - 1rem);
+    max-width: none;
+    max-height: calc(var(--viewport-height, 100dvh) - 1rem);
+    border-radius: var(--radius-2026-lg, 1rem);
+  }
+
+  :global(dialog.base-modal.share-sheet-modal--expanded .modal-content-wrapper),
+  :global(dialog.base-modal.share-sheet-modal--expanded .modal-body) {
+    height: 100%;
+    min-height: 0;
+  }
+
+  :global(dialog.base-modal.share-sheet-modal--expanded .modal-body) {
+    overflow: hidden;
   }
 
   /* The QR step holds one code and a Back button. Last among the width rules so

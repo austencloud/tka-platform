@@ -231,6 +231,38 @@ export function getStepStartTime(stepIndex: number, steps: readonly Step[]): num
 }
 
 /**
+ * Convert the shared sequence-position convention into animation duration.
+ * Positions below 1 belong to the start pose. Position 1 begins the first
+ * motion beat, and each later integer begins the next motion beat.
+ */
+export function sequencePositionToAnimationTime(
+  sequencePosition: number,
+  steps: readonly Step[],
+  startPositionDuration: number
+): number {
+  if (steps.length === 0) return 0;
+
+  const clampedPosition = Math.max(
+    0,
+    Math.min(sequencePosition, steps.length + 1)
+  );
+  if (clampedPosition < 1) {
+    return clampedPosition * startPositionDuration;
+  }
+
+  const stepIndex = Math.floor(clampedPosition) - 1;
+  const stepProgress = clampedPosition - Math.floor(clampedPosition);
+  let timePosition =
+    startPositionDuration + getStepStartTime(stepIndex, steps);
+
+  if (stepIndex >= 0 && stepIndex < steps.length) {
+    timePosition += stepProgress * (steps[stepIndex]?.duration ?? 1);
+  }
+
+  return timePosition;
+}
+
+/**
  * Calculate beat state using duration-aware timing.
  * Uses actual beat durations to determine current beat and progress.
  */

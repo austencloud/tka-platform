@@ -28,6 +28,7 @@ import {
 } from "../domain/constants/database_constants";
 import type { UserProject } from "../domain/models/user-project";
 import type { UserWorkData } from "../domain/models/user-work-data";
+import type { MediaCompositionPreset } from "$lib/shared/media-composition/domain/media-composition-preset-schema";
 
 // ============================================================================
 // DATABASE CLASS
@@ -60,6 +61,9 @@ export class TKADatabase extends Dexie {
 
   // Mandala loader pool (v8)
   generatedMandalaPool!: EntityTable<GeneratedMandalaEntry, "id">;
+
+  // Shared Post Studio / Compose layout presets (v9)
+  mediaCompositionPresets!: EntityTable<MediaCompositionPreset, "id">;
 
   constructor() {
     super(DATABASE_NAME);
@@ -121,6 +125,7 @@ export async function clearAllData(): Promise<void> {
       db.galleryCache,
       db.galleryCacheMeta,
       db.generatedMandalaPool,
+      db.mediaCompositionPresets,
     ],
     async () => {
       await db.sequences.clear();
@@ -134,6 +139,7 @@ export async function clearAllData(): Promise<void> {
       await db.galleryCache.clear();
       await db.galleryCacheMeta.clear();
       await db.generatedMandalaPool.clear();
+      await db.mediaCompositionPresets.clear();
     }
   );
 }
@@ -153,6 +159,7 @@ export async function getDatabaseInfo(): Promise<{
   galleryCache: number;
   galleryCacheMeta: number;
   generatedMandalaPool: number;
+  mediaCompositionPresets: number;
 }> {
   const info = {
     sequences: await db.sequences.count(),
@@ -170,6 +177,7 @@ export async function getDatabaseInfo(): Promise<{
     galleryCacheMeta: await db.galleryCacheMeta.count(),
     // Mandala loader pool (v8)
     generatedMandalaPool: await db.generatedMandalaPool.count(),
+    mediaCompositionPresets: await db.mediaCompositionPresets.count(),
   };
   return info;
 }

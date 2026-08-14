@@ -17,7 +17,18 @@
  * the main thread (ready, progress, complete, error).
  */
 
-import { Output, Mp4OutputFormat, BufferTarget, EncodedVideoPacketSource, EncodedPacket } from "mediabunny";
+import {
+  ALL_FORMATS,
+  AudioSampleSink,
+  AudioSampleSource,
+  BufferTarget,
+  EncodedPacket,
+  EncodedVideoPacketSource,
+  Input,
+  Mp4OutputFormat,
+  Output,
+  UrlSource,
+} from "mediabunny";
 import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-frame";
 
 // ---------------------------------------------------------------------------
@@ -33,7 +44,13 @@ const hasWebCodecs = typeof VideoEncoder !== "undefined";
 // the profile by platform.
 const IS_MOBILE = (() => {
   try {
-    const nav = (self as unknown as { navigator?: Navigator & { userAgentData?: { mobile?: boolean; platform?: string } } }).navigator;
+    const nav = (
+      self as unknown as {
+        navigator?: Navigator & {
+          userAgentData?: { mobile?: boolean; platform?: string };
+        };
+      }
+    ).navigator;
     const ua = nav?.userAgent ?? "";
     const platform = nav?.userAgentData?.platform ?? "";
     const isAndroid = /Android/i.test(ua) || platform === "Android";
@@ -156,6 +173,12 @@ export interface ExportConfig {
    * enabling gap-free MSE looping. Default false (progressive, max-compat).
    */
   fragmented?: boolean;
+  /** Preserve and normalize the source video's original audio in the MP4. */
+  originalAudio?: {
+    url: string;
+    startSeconds?: number;
+    endSeconds?: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -165,6 +188,11 @@ export interface ExportConfig {
 let encoder: VideoEncoder | null = null;
 let output: Output | null = null;
 let videoSource: EncodedVideoPacketSource | null = null;
+let originalAudioInput: Input | null = null;
+let originalAudioSink: AudioSampleSink | null = null;
+let originalAudioSource: AudioSampleSource | null = null;
+let originalAudioRange: { startSeconds: number; endSeconds: number } | null =
+  null;
 
 // ---------------------------------------------------------------------------
 // Worker state -- WASM fallback path
@@ -207,12 +235,20 @@ let sourceHeight = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
  *   - Level 5.1 (0x33): up to 8,912,896 px (e.g. 4096x2160)
  *   - Level 6.0 (0x3c): up to 35,651,584 px (e.g. 8192x4320)
  */
-export function selectCodec(width: number, height: number, isMobile: boolean = IS_MOBILE): string {
+export function selectCodec(
+  width: number,
+  height: number,
+  isMobile: boolean = IS_MOBILE
+): string {
   const pixelArea = width * height;
-  const level = pixelArea <= 921_600 ? "1f"
-    : pixelArea <= 2_073_600 ? "28"
-    : pixelArea <= 8_912_896 ? "33"
-    : "3c";
+  const level =
+    pixelArea <= 921_600
+      ? "1f"
+      : pixelArea <= 2_073_600
+        ? "28"
+        : pixelArea <= 8_912_896
+          ? "33"
+          : "3c";
   return isMobile ? `avc1.42e0${level}` : `avc1.6400${level}`;
 }
 
@@ -228,7 +264,7 @@ export function selectCodec(width: number, height: number, isMobile: boolean = I
 function selectCodecAv1(
   width: number,
   height: number,
-  bitDepth: "08" | "10" = "10",
+  bitDepth: "08" | "10" = "10"
 ): string {
   const pixelArea = width * height;
   if (pixelArea <= 2_073_600) return `av01.1.08M.${bitDepth}`;
@@ -318,6 +354,12 @@ function cleanup(): void {
   }
   output = null;
   videoSource = null;
+  originalAudioSource?.close();
+  originalAudioSource = null;
+  originalAudioSink = null;
+  originalAudioInput?.dispose();
+  originalAudioInput = null;
+  originalAudioRange = null;
 
   // WASM cleanup
   if (wasmEncoder) {
@@ -348,10 +390,48 @@ async function handleConfigWebCodecs(config: ExportConfig): Promise<void> {
   // Create mediabunny MP4 output with in-memory fast-start
   videoSource = new EncodedVideoPacketSource(useAv1 ? "av1" : "avc");
   output = new Output({
-    format: new Mp4OutputFormat({ fastStart: config.fragmented ? "fragmented" : "in-memory" }),
+    format: new Mp4OutputFormat({
+      fastStart: config.fragmented ? "fragmented" : "in-memory",
+    }),
     target: new BufferTarget(),
   });
   output.addVideoTrack(videoSource, { frameRate: config.fps });
+
+  if (config.originalAudio) {
+    if (typeof AudioEncoder === "undefined") {
+      throw new Error(
+        "This browser can render the video but cannot encode its original audio."
+      );
+    }
+
+    originalAudioInput = new Input({
+      formats: ALL_FORMATS,
+      source: new UrlSource(config.originalAudio.url),
+    });
+    const audioTrack = await originalAudioInput.getPrimaryAudioTrack();
+    if (audioTrack && (await audioTrack.canDecode())) {
+      originalAudioSink = new AudioSampleSink(audioTrack);
+      originalAudioSource = new AudioSampleSource({
+        codec: "aac",
+        bitrate: 192_000,
+        transform: {
+          numberOfChannels: 2,
+          sampleRate: 48_000,
+        },
+      });
+      originalAudioRange = {
+        startSeconds: Math.max(0, config.originalAudio.startSeconds ?? 0),
+        endSeconds: Math.max(
+          config.originalAudio.startSeconds ?? 0,
+          config.originalAudio.endSeconds ?? config.totalFrames / config.fps
+        ),
+      };
+      output.addAudioTrack(originalAudioSource);
+    } else {
+      originalAudioInput.dispose();
+      originalAudioInput = null;
+    }
+  }
   await output.start();
 
   const localVideoSource = videoSource;
@@ -593,6 +673,29 @@ async function handleFinishWebCodecs(): Promise<void> {
 
   // Flush all remaining frames through the encoder pipeline
   await encoder.flush();
+
+  // Audio is added after video flush so both tracks remain monotonic while the
+  // in-memory MP4 muxer interleaves them. Samples are decoded from the source
+  // and encoded to AAC/48 kHz stereo, which keeps the resulting post inside
+  // Instagram's documented ingest profile even when the upload used another
+  // browser-decodable audio codec.
+  if (originalAudioSink && originalAudioSource && originalAudioRange) {
+    const { startSeconds, endSeconds } = originalAudioRange;
+    for await (const sample of originalAudioSink.samples(
+      startSeconds,
+      endSeconds
+    )) {
+      if (cancelled) {
+        sample.close();
+        throw new Error("Export cancelled");
+      }
+      sample.setTimestamp(Math.max(0, sample.timestamp - startSeconds));
+      await originalAudioSource.add(sample);
+      sample.close();
+    }
+    originalAudioSource.close();
+    originalAudioSource = null;
+  }
 
   // Finalize the MP4 container (writes moov atom)
   videoSource?.close();

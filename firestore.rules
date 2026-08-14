@@ -453,6 +453,12 @@ service cloud.firestore {
         allow create, update, delete: if isOwner(userId);
       }
 
+      // Role-bound Post Studio / Compose layouts. Presets contain structure and
+      // source roles, never uploaded media bytes or third-party credentials.
+      match /mediaCompositionPresets/{presetId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+
       // -------------------------------------------------------------------------
       // USER TAGS (Private)
       // -------------------------------------------------------------------------

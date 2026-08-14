@@ -25,7 +25,7 @@ import {
   calculateBeatState,
   calculateTotalDuration,
   calculateBeatStateDurationAware,
-  getStepStartTime,
+  sequencePositionToAnimationTime,
 } from "$lib/shared/animation-engine/services/step-calculator";
 import {
   interpolatePropAngles,
@@ -735,29 +735,11 @@ export class SequenceAnimationOrchestrator {
     if (this.steps.length === 0) {
       return 0;
     }
-
-    const startPosDuration = this.getStartPositionDuration();
-
-    // Beat 0 to <1 = within start position
-    if (beat < 1) {
-      return beat * startPosDuration; // 0 to startPosDuration
-    }
-
-    // Beat 1+ = motion beats
-    // Get the integer beat index (0-based) and fractional progress
-    const stepNumber = Math.floor(beat) - 1; // Convert 1-based to 0-based
-    const beatProgress = beat - Math.floor(beat);
-
-    // Calculate time position: startPosDuration + sum of all previous beat durations + progress
-    let timePosition = startPosDuration + getStepStartTime(stepNumber, this.steps);
-
-    // Add progress within current beat
-    if (stepNumber >= 0 && stepNumber < this.steps.length) {
-      const currentStepDuration = this.steps[stepNumber]?.duration ?? 1;
-      timePosition += beatProgress * currentStepDuration;
-    }
-
-    return timePosition;
+    return sequencePositionToAnimationTime(
+      beat,
+      this.steps,
+      this.getStartPositionDuration()
+    );
   }
 
   /**

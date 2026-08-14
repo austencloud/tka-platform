@@ -25,8 +25,10 @@ export const DATABASE_NAME = "TKADatabase";
  *            torn out). Dexie drops the object stores omitted from this schema.
  * Version 8: Added generatedMandalaPool — bounded pool of locally-generated
  *            sequences for the in-app MandalaLoader (drop-oldest at cap).
+ * Version 9: Added role-bound media composition presets for Post Studio and
+ *            Compose.
  */
-export const DATABASE_VERSION = 8;
+export const DATABASE_VERSION = 9;
 
 // ============================================================================
 // TABLE NAMES
@@ -48,6 +50,7 @@ export const TABLE_NAMES = {
   GALLERY_CACHE_META: "galleryCacheMeta",
   // Mandala loader pool (v8)
   GENERATED_MANDALA_POOL: "generatedMandalaPool",
+  MEDIA_COMPOSITION_PRESETS: "mediaCompositionPresets",
 } as const;
 
 // ============================================================================
@@ -79,6 +82,8 @@ export const TABLE_INDEXES = {
   [TABLE_NAMES.GALLERY_CACHE_META]: "id",
   // Mandala loader pool (v8) — id is a supplied uuid, not auto-increment
   [TABLE_NAMES.GENERATED_MANDALA_POOL]: "id, generatedAt",
+  [TABLE_NAMES.MEDIA_COMPOSITION_PRESETS]:
+    "id, ownerId, updatedAt, createdAt, name",
 } as const;
 
 // ============================================================================

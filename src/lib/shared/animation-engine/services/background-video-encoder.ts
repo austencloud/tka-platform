@@ -22,6 +22,17 @@ export interface BackgroundExportConfig {
   codec?: "h264" | "av1";
   /** Mux fragmented MP4 (MSE-appendable) instead of progressive. Default false. */
   fragmented?: boolean;
+  /**
+   * Optional source whose original audio track is decoded, normalized to AAC,
+   * and muxed into the exported MP4. Visual frames still use the existing
+   * worker encoder; this extends that one output rather than creating a second
+   * composition pipeline.
+   */
+  originalAudio?: {
+    url: string;
+    startSeconds?: number;
+    endSeconds?: number;
+  };
 }
 import type {
   ExportWorkerMessage,
@@ -32,6 +43,13 @@ import type { CapturedFrame } from "$lib/shared/video-export/domain/captured-fra
 export class BackgroundVideoEncoder {
   private worker: Worker | null = null;
   private totalFrames = 0;
+  private submittedFrames = 0;
+  private encodedFrames = 0;
+  private drainWaiters = new Set<{
+    maxPendingFrames: number;
+    resolve: () => void;
+    reject: (error: Error) => void;
+  }>();
 
   /**
    * Pending promise resolvers for request/response cycles.
@@ -78,9 +96,12 @@ export class BackgroundVideoEncoder {
 
   async initialize(config: BackgroundExportConfig): Promise<void> {
     // Terminate any leftover worker from a previous export
+    this.rejectDrainWaiters(new Error("Encoder restarted"));
     this.terminateWorker();
 
     this.totalFrames = config.totalFrames;
+    this.submittedFrames = 0;
+    this.encodedFrames = 0;
     this.firstError = null;
 
     // Spawn the worker. Vite resolves the URL at build time via
@@ -103,7 +124,7 @@ export class BackgroundVideoEncoder {
         if (this.initReject) {
           const err = new Error(
             "Encoder initialization timed out. The codec configuration did not " +
-            "complete (try a lower resolution/fps, or a different browser)."
+              "complete (try a lower resolution/fps, or a different browser)."
           );
           this.initReject(err);
           this.initResolve = null;
@@ -122,6 +143,7 @@ export class BackgroundVideoEncoder {
           totalFrames: config.totalFrames,
           codec: config.codec,
           fragmented: config.fragmented,
+          originalAudio: config.originalAudio,
         },
       });
     });
@@ -152,6 +174,7 @@ export class BackgroundVideoEncoder {
     };
 
     this.worker.postMessage(message, [buffer]);
+    this.submittedFrames += 1;
   }
 
   addFrameCaptured(
@@ -196,6 +219,28 @@ export class BackgroundVideoEncoder {
         [frame.data.data.buffer]
       );
     }
+    this.submittedFrames += 1;
+  }
+
+  /**
+   * Applies main-thread backpressure to long exports. A transferred VideoFrame
+   * still occupies browser/GPU memory until the worker encodes and closes it;
+   * bounding that queue prevents a fast compositor from freezing the tab while
+   * hundreds of full-resolution frames wait behind the codec.
+   */
+  async waitForFrameQueue(maxPendingFrames = 8): Promise<void> {
+    if (!Number.isInteger(maxPendingFrames) || maxPendingFrames < 0) {
+      throw new RangeError(
+        "Pending frame limit must be a non-negative integer"
+      );
+    }
+    if (this.firstError) throw this.firstError;
+    if (!this.worker) throw new Error("Export cancelled");
+    if (this.submittedFrames - this.encodedFrames <= maxPendingFrames) return;
+
+    await new Promise<void>((resolve, reject) => {
+      this.drainWaiters.add({ maxPendingFrames, resolve, reject });
+    });
   }
 
   async finish(): Promise<Blob> {
@@ -263,11 +308,19 @@ export class BackgroundVideoEncoder {
         break;
 
       case "progress":
+        this.encodedFrames = Math.max(
+          this.encodedFrames,
+          response.frameIndex + 1
+        );
+        this.resolveDrainWaiters();
         this.onProgress?.(response.frameIndex, this.totalFrames);
         break;
 
       case "complete": {
         const blob = new Blob([response.buffer], { type: "video/mp4" });
+
+        this.encodedFrames = this.submittedFrames;
+        this.resolveDrainWaiters();
 
         this.finishResolve?.(blob);
         this.finishResolve = null;
@@ -286,6 +339,8 @@ export class BackgroundVideoEncoder {
         if (this.firstError === null) {
           this.firstError = new Error(response.error);
         }
+
+        this.rejectDrainWaiters(this.firstError);
 
         this.clearInitTimer();
 
@@ -322,6 +377,7 @@ export class BackgroundVideoEncoder {
 
   private rejectPending(error: Error): void {
     this.clearInitTimer();
+    this.rejectDrainWaiters(error);
     if (this.initReject) {
       this.initReject(error);
       this.initResolve = null;
@@ -332,6 +388,21 @@ export class BackgroundVideoEncoder {
       this.finishResolve = null;
       this.finishReject = null;
     }
+  }
+
+  private resolveDrainWaiters(): void {
+    const pendingFrames = this.submittedFrames - this.encodedFrames;
+    for (const waiter of this.drainWaiters) {
+      if (pendingFrames <= waiter.maxPendingFrames) {
+        this.drainWaiters.delete(waiter);
+        waiter.resolve();
+      }
+    }
+  }
+
+  private rejectDrainWaiters(error: Error): void {
+    for (const waiter of this.drainWaiters) waiter.reject(error);
+    this.drainWaiters.clear();
   }
 
   private terminateWorker(): void {

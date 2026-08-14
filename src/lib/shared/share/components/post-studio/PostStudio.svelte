@@ -1,0 +1,774 @@
+<script lang="ts">
+  import { onDestroy, onMount } from "svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
+  import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
+  import { createTempoGridTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
+  import {
+    POST_STUDIO_PRESETS,
+    POST_STUDIO_ROLE,
+  } from "$lib/shared/media-composition/domain/post-studio-presets";
+  import {
+    createMediaCompositionState,
+    type CompositionSourceBinding,
+  } from "$lib/shared/media-composition/state/media-composition-state.svelte";
+  import { setMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
+  import {
+    exportPostStudioVideo,
+    type PostStudioExportProgress,
+  } from "$lib/shared/media-composition/services/post-studio-exporter";
+  import {
+    loadMediaCompositionPresets,
+    saveMediaCompositionPreset,
+  } from "$lib/shared/media-composition/services/media-composition-preset-repository";
+  import { getVideoFileMetadata } from "$lib/shared/video-collaboration/helpers/create-video-from-upload";
+  import { getUser } from "$lib/shared/auth/state/auth-state.svelte";
+  import PostStudioTopBar from "./PostStudioTopBar.svelte";
+  import PostStudioPreview from "./PostStudioPreview.svelte";
+  import PostStudioPresetPicker from "./PostStudioPresetPicker.svelte";
+  import PostStudioSourcePanel from "./PostStudioSourcePanel.svelte";
+  import PostStudioInspector from "./PostStudioInspector.svelte";
+  import PostStudioTimeline from "./PostStudioTimeline.svelte";
+  import PostStudioDeliveryPanel from "./PostStudioDeliveryPanel.svelte";
+  import PostStudioPerformancePicker from "./PostStudioPerformancePicker.svelte";
+
+  type FocusedPanel = "canvas" | "layout" | "edit" | "timing";
+
+  interface PerformanceSelection {
+    url: string;
+    duration?: number;
+    label: string;
+  }
+
+  interface Props {
+    sequence: SequenceData;
+    cardPreviewUrl: string | null;
+    animationPreviewUrl: string | null;
+    animationPreviewType?: "video" | "image";
+    performanceDurationSeconds?: number;
+    sequenceTimeMap?: SequenceTimeMap | null;
+    isPreparingCard?: boolean;
+    isPreparingAnimation?: boolean;
+    onRequestAnimation: () => void;
+    onBack?: () => void;
+    onClose?: () => void;
+    onExported?: (blob: Blob) => void;
+  }
+
+  let {
+    sequence,
+    cardPreviewUrl,
+    animationPreviewUrl,
+    animationPreviewType = "video",
+    performanceDurationSeconds,
+    sequenceTimeMap = null,
+    isPreparingCard = false,
+    isPreparingAnimation = false,
+    onRequestAnimation,
+    onBack,
+    onClose,
+    onExported,
+  }: Props = $props();
+
+  let chosenPerformanceUrl = $state<string | null>(null);
+  let chosenPerformanceDuration = $state<number | undefined>(undefined);
+  let localPerformanceUrl: string | null = null;
+  let performancePickerOpen = $state(false);
+  let focusedPanel = $state<FocusedPanel>("canvas");
+
+  const performanceUrl = $derived(
+    chosenPerformanceUrl ?? sequence.performanceVideoUrl ?? null
+  );
+  const performanceDuration = $derived(
+    chosenPerformanceDuration ?? performanceDurationSeconds
+  );
+
+  const bindings = $derived.by((): CompositionSourceBinding[] => [
+    {
+      roleKey: POST_STUDIO_ROLE.performance,
+      kind: "video",
+      label: "Performance",
+      previewUrl: performanceUrl,
+      previewType: "video",
+      renderMode: "external-media",
+      durationSeconds: performanceDuration,
+      status: performanceUrl ? "ready" : "missing",
+      missingMessage: "Choose a performance video",
+    },
+    {
+      roleKey: POST_STUDIO_ROLE.animation,
+      kind: "sequence-animation",
+      label: "Animation",
+      previewUrl: animationPreviewUrl,
+      previewType: animationPreviewType,
+      renderMode: "sequence-animation",
+      status:
+        sequence.steps.length > 0
+          ? "ready"
+          : animationPreviewUrl
+            ? "ready"
+            : isPreparingAnimation
+              ? "preparing"
+              : "missing",
+      missingMessage: "No sequence motion",
+    },
+    {
+      roleKey: POST_STUDIO_ROLE.card,
+      kind: "choreo-card",
+      label: "Choreo card",
+      previewUrl: cardPreviewUrl,
+      previewType: "image",
+      renderMode: "choreo-card",
+      status:
+        sequence.steps.length > 0
+          ? "ready"
+          : cardPreviewUrl
+            ? "ready"
+            : isPreparingCard
+              ? "preparing"
+              : "missing",
+      missingMessage: "Card preview unavailable",
+    },
+  ]);
+
+  const composition = createMediaCompositionState({
+    presets: POST_STUDIO_PRESETS,
+    initialPresetId: "sequence-breakdown",
+    getBindings: () => bindings,
+    getSequenceSteps: () => sequence.steps,
+    getSequenceTimeMap: (durationSeconds) =>
+      sequenceTimeMap ??
+      createTempoGridTimeMap({
+        sequenceRef: {
+          sequenceId: sequence.id,
+          revisionId: [
+            "preview",
+            sequence.canonicalSignature ?? sequence.canonicalHandPath ?? "",
+            sequence.bluePathHash ?? "",
+            sequence.redPathHash ?? "",
+            sequence.word,
+            sequence.steps.length,
+          ].join(":"),
+        },
+        mediaSourceId: performanceUrl
+          ? `performance:${sequence.id}`
+          : `animation:${sequence.id}`,
+        mediaDurationSeconds: durationSeconds,
+        motionDurations: sequence.steps.map((step) => step.duration ?? 1),
+      }),
+    requestSource: (roleKey) => {
+      if (roleKey === POST_STUDIO_ROLE.performance) {
+        performancePickerOpen = true;
+        return;
+      }
+      if (roleKey === POST_STUDIO_ROLE.animation) onRequestAnimation();
+    },
+  });
+  setMediaCompositionContext(composition);
+
+  let previewRoot = $state<HTMLElement | null>(null);
+  let audioMode = $state<"original" | "instagram">("original");
+  let audioModeTouched = $state(false);
+  let exportProgress = $state<PostStudioExportProgress | null>(null);
+  let exportError = $state("");
+  let exportedUrl = $state<string | null>(null);
+  let presetLoadError = $state("");
+  let loadingSavedPresets = $state(false);
+  let exportCancelled = false;
+  let presetOwnerId = "local";
+
+  const performanceBinding = $derived(
+    bindings.find(
+      (binding) => binding.roleKey === POST_STUDIO_ROLE.performance
+    ) ?? null
+  );
+  const usesPerformance = $derived(
+    composition.activePreset.sourceRoles.some(
+      (role) => role.key === POST_STUDIO_ROLE.performance
+    )
+  );
+  const canKeepOriginalAudio = $derived(
+    usesPerformance &&
+      performanceBinding?.status === "ready" &&
+      Boolean(performanceBinding.previewUrl)
+  );
+  const exporting = $derived(exportProgress !== null);
+  const exportPercent = $derived(
+    exportProgress
+      ? Math.round(
+          (exportProgress.completedFrames / exportProgress.totalFrames) * 100
+        )
+      : 0
+  );
+  const sequenceName = $derived(
+    simplifyRepeatedWord(
+      sequence.displayName || deriveWord(sequence) || "Vertical post"
+    )
+  );
+  const exportFilename = $derived(
+    `${simplifyRepeatedWord(sequenceName || "tka-post")}.mp4`
+  );
+  const firstMissingSource = $derived(
+    composition.missingRequiredRoles[0] ?? null
+  );
+  const canRender = $derived(
+    composition.isReady && previewRoot !== null && !exporting
+  );
+
+  $effect(() => {
+    if (audioModeTouched) return;
+    audioMode = canKeepOriginalAudio ? "original" : "instagram";
+  });
+
+  onMount(() => {
+    presetOwnerId = getUser()?.uid ?? "local";
+    let stale = false;
+    void loadSavedPresets(() => stale);
+    return () => {
+      stale = true;
+    };
+  });
+
+  onDestroy(() => {
+    exportCancelled = true;
+    if (exportedUrl) URL.revokeObjectURL(exportedUrl);
+    if (localPerformanceUrl) URL.revokeObjectURL(localPerformanceUrl);
+  });
+
+  function setPreviewRoot(root: HTMLElement | null): void {
+    previewRoot = root;
+  }
+
+  function setAudioMode(mode: "original" | "instagram"): void {
+    audioMode = mode;
+    audioModeTouched = true;
+  }
+
+  async function loadSavedPresets(
+    isStale: () => boolean = () => false
+  ): Promise<void> {
+    if (loadingSavedPresets) return;
+    loadingSavedPresets = true;
+    presetLoadError = "";
+    try {
+      const presets = await loadMediaCompositionPresets(presetOwnerId);
+      if (isStale()) return;
+      for (const preset of presets) composition.addPreset(preset);
+    } catch {
+      if (!isStale()) presetLoadError = "Saved layouts could not be loaded.";
+    } finally {
+      if (!isStale()) loadingSavedPresets = false;
+    }
+  }
+
+  function fixFirstMissingSource(): void {
+    if (!firstMissingSource) return;
+    composition.requestSource(firstMissingSource.roleKey);
+  }
+
+  function choosePerformance(selection: PerformanceSelection): void {
+    if (localPerformanceUrl) {
+      URL.revokeObjectURL(localPerformanceUrl);
+      localPerformanceUrl = null;
+    }
+    chosenPerformanceUrl = selection.url;
+    chosenPerformanceDuration = selection.duration;
+    performancePickerOpen = false;
+    composition.selectRole(POST_STUDIO_ROLE.performance);
+    focusedPanel = "edit";
+  }
+
+  async function choosePerformanceFile(file: File): Promise<void> {
+    if (!file.type.startsWith("video/")) {
+      throw new Error("Choose a video file.");
+    }
+    if (file.size > 500 * 1024 * 1024) {
+      throw new Error("Choose a video under 500 MB.");
+    }
+    const metadata = await getVideoFileMetadata(file);
+    if (localPerformanceUrl) URL.revokeObjectURL(localPerformanceUrl);
+    localPerformanceUrl = URL.createObjectURL(file);
+    chosenPerformanceUrl = localPerformanceUrl;
+    chosenPerformanceDuration = metadata.duration;
+    performancePickerOpen = false;
+    composition.selectRole(POST_STUDIO_ROLE.performance);
+    focusedPanel = "edit";
+  }
+
+  async function renderPost(): Promise<void> {
+    if (!previewRoot || !composition.isReady || exporting) return;
+    const previousTime = composition.previewSeconds;
+    const wasPlaying = composition.isPlaying;
+    composition.pause();
+    exportCancelled = false;
+    exportError = "";
+    exportProgress = {
+      completedFrames: 0,
+      totalFrames: Math.ceil(
+        composition.durationSeconds * composition.activePreset.output.frameRate
+      ),
+      phase: "rendering",
+    };
+
+    try {
+      const blob = await exportPostStudioVideo({
+        root: previewRoot,
+        preset: composition.activePreset,
+        durationSeconds: composition.durationSeconds,
+        getLayers: () => composition.frameLayers,
+        seek: composition.seek,
+        originalAudioUrl:
+          audioMode === "original" ? performanceBinding?.previewUrl : null,
+        onProgress: (progress) => (exportProgress = progress),
+        shouldCancel: () => exportCancelled,
+      });
+      if (exportedUrl) URL.revokeObjectURL(exportedUrl);
+      exportedUrl = URL.createObjectURL(blob);
+      onExported?.(blob);
+    } catch (error) {
+      if (!exportCancelled) {
+        console.error("[PostStudio] Export failed:", error);
+        exportError =
+          error instanceof Error
+            ? error.message
+            : "The post could not be rendered.";
+      }
+    } finally {
+      exportProgress = null;
+      composition.seek(previousTime);
+      if (wasPlaying) composition.togglePlayback();
+    }
+  }
+
+  function cancelExport(): void {
+    exportCancelled = true;
+  }
+
+  async function saveCurrentPreset(name: string): Promise<void> {
+    const preset = composition.createPreset(name, presetOwnerId);
+    await saveMediaCompositionPreset(preset);
+    composition.addPreset(preset, true);
+  }
+</script>
+
+<section
+  class="post-studio"
+  data-mobile-panel={focusedPanel}
+  aria-labelledby="post-studio-title"
+>
+  <PostStudioTopBar
+    {sequenceName}
+    presetName={composition.activePreset.name}
+    missingCount={composition.missingRequiredRoles.length}
+    missingLabel={firstMissingSource?.label}
+    {canRender}
+    {exporting}
+    {exportProgress}
+    {exportPercent}
+    {exportedUrl}
+    {exportFilename}
+    {onBack}
+    {onClose}
+    onFixMissing={fixFirstMissingSource}
+    onRender={renderPost}
+    onCancelExport={cancelExport}
+  />
+
+  <div class="workspace">
+    <aside class="asset-rail themed-scrollbar" aria-label="Layouts and sources">
+      <PostStudioPresetPicker rail onSavePreset={saveCurrentPreset} />
+      {#if presetLoadError}
+        <div class="preset-error" role="alert">
+          <span>{presetLoadError}</span>
+          <button type="button" onclick={() => void loadSavedPresets()}>
+            Try again
+          </button>
+        </div>
+      {/if}
+      <div class="rail-divider"></div>
+      <PostStudioSourcePanel onEditSource={() => (focusedPanel = "edit")} />
+    </aside>
+
+    <main class="canvas-panel" aria-label="Post canvas">
+      <div class="canvas-heading">
+        <span>Canvas</span>
+        <span>9:16 · {composition.durationSeconds.toFixed(1)} seconds</span>
+      </div>
+      <div class="canvas-stage">
+        <PostStudioPreview
+          {sequence}
+          onRootReady={setPreviewRoot}
+          onEditRegion={() => (focusedPanel = "edit")}
+        />
+      </div>
+    </main>
+
+    <aside
+      class="inspector-rail themed-scrollbar"
+      aria-label="Inspector and export settings"
+    >
+      <PostStudioInspector />
+      <PostStudioDeliveryPanel
+        {audioMode}
+        {canKeepOriginalAudio}
+        {exporting}
+        {exportError}
+        onAudioModeChange={setAudioMode}
+      />
+    </aside>
+
+    <div class="timeline-dock themed-scrollbar">
+      <PostStudioTimeline />
+    </div>
+  </div>
+
+  <nav class="focused-nav" aria-label="Post Studio tools">
+    <button
+      type="button"
+      class:active={focusedPanel === "canvas"}
+      aria-pressed={focusedPanel === "canvas"}
+      onclick={() => (focusedPanel = "canvas")}
+    >
+      <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i>
+      Canvas
+    </button>
+    <button
+      type="button"
+      class:active={focusedPanel === "layout"}
+      aria-pressed={focusedPanel === "layout"}
+      onclick={() => (focusedPanel = "layout")}
+    >
+      <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+      Layout
+    </button>
+    <button
+      type="button"
+      class:active={focusedPanel === "edit"}
+      aria-pressed={focusedPanel === "edit"}
+      onclick={() => (focusedPanel = "edit")}
+    >
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+      Edit
+    </button>
+    <button
+      type="button"
+      class:active={focusedPanel === "timing"}
+      aria-pressed={focusedPanel === "timing"}
+      onclick={() => (focusedPanel = "timing")}
+    >
+      <i class="fa-solid fa-scissors" aria-hidden="true"></i>
+      Timing
+    </button>
+  </nav>
+
+  <PostStudioPerformancePicker
+    open={performancePickerOpen}
+    {sequence}
+    currentUrl={performanceUrl}
+    onClose={() => (performancePickerOpen = false)}
+    onSelect={choosePerformance}
+    onChooseFile={choosePerformanceFile}
+  />
+</section>
+
+<style>
+  .post-studio {
+    position: relative;
+    container-name: post-studio;
+    container-type: inline-size;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+  }
+
+  .workspace {
+    display: grid;
+    grid-template-areas:
+      "assets canvas inspector"
+      "timeline timeline timeline";
+    grid-template-columns: minmax(16rem, 19rem) minmax(25rem, 1fr) minmax(
+        19rem,
+        23rem
+      );
+    grid-template-rows: minmax(0, 1fr) clamp(13rem, 23dvh, 17rem);
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .asset-rail,
+  .inspector-rail,
+  .timeline-dock {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .asset-rail,
+  .inspector-rail {
+    display: grid;
+    align-content: start;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--theme-panel-bg);
+  }
+
+  .asset-rail {
+    grid-area: assets;
+    border-right: 1px solid var(--theme-stroke);
+  }
+
+  .inspector-rail {
+    grid-area: inspector;
+    border-left: 1px solid var(--theme-stroke);
+  }
+
+  .rail-divider {
+    height: 1px;
+    background: var(--theme-stroke);
+  }
+
+  .preset-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 42%, transparent);
+    border-radius: var(--radius-2026-sm);
+    color: var(--semantic-error);
+    font-size: var(--font-size-min);
+  }
+
+  .preset-error button {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-2026-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .preset-error button:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .canvas-panel {
+    grid-area: canvas;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    min-width: 0;
+    min-height: 0;
+    padding: var(--spacing-md);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg) 48%,
+      var(--theme-panel-bg)
+    );
+  }
+
+  .canvas-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    min-height: 2.75rem;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .canvas-heading > span:first-child {
+    color: var(--theme-text);
+    font-weight: 750;
+  }
+
+  .canvas-stage {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .timeline-dock {
+    grid-area: timeline;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+  }
+
+  .focused-nav {
+    display: none;
+  }
+
+  @container post-studio (min-width: 132rem) {
+    .workspace {
+      grid-template-columns: 24rem minmax(34rem, 1fr) 28rem;
+      grid-template-rows: minmax(0, 1fr) 20rem;
+    }
+
+    .asset-rail,
+    .inspector-rail {
+      gap: var(--spacing-xl);
+      padding: var(--spacing-xl);
+    }
+
+    .timeline-dock {
+      padding: var(--spacing-lg) var(--spacing-xl);
+    }
+  }
+
+  @container post-studio (max-width: 70rem) {
+    .post-studio {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .workspace {
+      position: relative;
+      display: block;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .asset-rail,
+    .canvas-panel,
+    .inspector-rail,
+    .timeline-dock {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .post-studio[data-mobile-panel="canvas"] .canvas-panel {
+      display: grid;
+    }
+
+    .post-studio[data-mobile-panel="layout"] .asset-rail,
+    .post-studio[data-mobile-panel="edit"] .inspector-rail,
+    .post-studio[data-mobile-panel="timing"] .timeline-dock {
+      display: grid;
+    }
+
+    .asset-rail,
+    .inspector-rail,
+    .timeline-dock {
+      padding: var(--spacing-md);
+    }
+
+    .focused-nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--theme-stroke);
+      background: var(--theme-panel-bg);
+    }
+
+    .focused-nav button {
+      display: grid;
+      place-items: center;
+      gap: var(--spacing-xs);
+      min-height: 3.75rem;
+      padding: var(--spacing-xs);
+      border: 0;
+      border-top: 2px solid transparent;
+      background: transparent;
+      color: var(--theme-text-dim);
+      font: inherit;
+      font-size: var(--font-size-compact);
+      cursor: pointer;
+    }
+
+    .focused-nav button.active {
+      border-top-color: var(--theme-accent);
+      color: var(--theme-text);
+    }
+
+    .focused-nav button:focus-visible {
+      outline: 3px solid var(--theme-accent);
+      outline-offset: -4px;
+    }
+  }
+
+  @media (max-height: 40rem) {
+    .post-studio {
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .workspace {
+      position: relative;
+      display: block;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .asset-rail,
+    .canvas-panel,
+    .inspector-rail,
+    .timeline-dock {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .post-studio[data-mobile-panel="canvas"] .canvas-panel {
+      display: grid;
+    }
+
+    .post-studio[data-mobile-panel="layout"] .asset-rail,
+    .post-studio[data-mobile-panel="edit"] .inspector-rail,
+    .post-studio[data-mobile-panel="timing"] .timeline-dock {
+      display: grid;
+    }
+
+    .asset-rail,
+    .inspector-rail,
+    .timeline-dock {
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .focused-nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border-top: 1px solid var(--theme-stroke);
+      background: var(--theme-panel-bg);
+    }
+
+    .focused-nav button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      min-height: 3rem;
+      padding: var(--spacing-xs);
+      border: 0;
+      border-top: 2px solid transparent;
+      background: transparent;
+      color: var(--theme-text-dim);
+      font: inherit;
+      font-size: var(--font-size-compact);
+      cursor: pointer;
+    }
+
+    .focused-nav button.active {
+      border-top-color: var(--theme-accent);
+      color: var(--theme-text);
+    }
+
+    .focused-nav button:focus-visible {
+      outline: 3px solid var(--theme-accent);
+      outline-offset: -4px;
+    }
+  }
+</style>

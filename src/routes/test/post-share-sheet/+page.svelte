@@ -15,12 +15,15 @@
   owns and no harness can drive.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
+  import PostStudio from "$lib/shared/share/components/post-studio/PostStudio.svelte";
   import type { MetaPublishStatus } from "$lib/shared/share/services/meta-publish";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
+  import { getSharer } from "$lib/shared/share/get-sharer";
+  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
 
@@ -42,8 +45,13 @@
 
   let sequence = $state<SequenceData | null>(null);
   let loadError = $state<string | null>(null);
+  let studioHarness = $state(false);
+  let studioCardUrl = $state<string | null>(null);
+  let studioAnimationUrl = $state<string | null>(null);
+  let studioAnimationType = $state<"video" | "image">("video");
 
   onMount(async () => {
+    studioHarness = new URLSearchParams(window.location.search).has("studio");
     // Hydration runs the viewer's own path, which asks for a loop detector.
     // The real viewer route registers it exactly like this.
     registerLoopDetector(loopDetector);
@@ -56,11 +64,34 @@
         loadError = "That sequence is not in the published gallery any more.";
         return;
       }
-      sequence = await hydrateSequence(loaded);
+      const hydrated = await hydrateSequence(loaded);
+      const linkedVideos = studioHarness
+        ? await getVideosForSequence(SEQUENCE_ID).catch(() => [])
+        : [];
+      const performanceVideoUrl =
+        hydrated.performanceVideoUrl ?? linkedVideos[0]?.videoUrl;
+      sequence = performanceVideoUrl
+        ? { ...hydrated, performanceVideoUrl }
+        : hydrated;
+
+      if (studioHarness) {
+        const card = await getSharer().getCardImageBlob(sequence, {
+          darkMode: true,
+        });
+        studioCardUrl = URL.createObjectURL(card);
+        if (sequence.animatedSequenceUrl) {
+          studioAnimationUrl = sequence.animatedSequenceUrl;
+          studioAnimationType = "image";
+        }
+      }
     } catch (error) {
       loadError =
         error instanceof Error ? error.message : "Could not load the sequence.";
     }
+  });
+
+  onDestroy(() => {
+    if (studioCardUrl) URL.revokeObjectURL(studioCardUrl);
   });
 
   let isOpen = $state(true);
@@ -121,67 +152,98 @@
   }
 </script>
 
-<div class="harness">
-  <h1>PostShareSheet</h1>
-  <div class="controls">
-    <button type="button" onclick={() => (isOpen = true)}>Open sheet</button>
-    <button type="button" onclick={fakeRender}>Simulate video render</button>
-    <button
-      type="button"
-      onclick={() => {
-        isExportingVideo = false;
-        exportProgress = null;
-      }}>Clear render state</button
-    >
-    <button type="button" onclick={() => (metaState = "none")}
-      >Meta: not connected</button
-    >
-    <button type="button" onclick={() => (metaState = "instagram")}
-      >Meta: Instagram only</button
-    >
-    <button type="button" onclick={() => (metaState = "both")}
-      >Meta: IG + Page</button
-    >
-    <button type="button" onclick={() => (metaState = "unchosen")}
-      >Meta: Page not chosen</button
-    >
-    <button type="button" onclick={() => (overrideEnabled = !overrideEnabled)}
-      >{overrideEnabled ? "Meta: as shipped (flag off)" : "Meta: use override"}</button
-    >
+{#if !studioHarness}
+  <div class="harness">
+    <h1>PostShareSheet</h1>
+    <div class="controls">
+      <button type="button" onclick={() => (isOpen = true)}>Open sheet</button>
+      <button type="button" onclick={fakeRender}>Simulate video render</button>
+      <button
+        type="button"
+        onclick={() => {
+          isExportingVideo = false;
+          exportProgress = null;
+        }}>Clear render state</button
+      >
+      <button type="button" onclick={() => (metaState = "none")}
+        >Meta: not connected</button
+      >
+      <button type="button" onclick={() => (metaState = "instagram")}
+        >Meta: Instagram only</button
+      >
+      <button type="button" onclick={() => (metaState = "both")}
+        >Meta: IG + Page</button
+      >
+      <button type="button" onclick={() => (metaState = "unchosen")}
+        >Meta: Page not chosen</button
+      >
+      <button type="button" onclick={() => (overrideEnabled = !overrideEnabled)}
+        >{overrideEnabled
+          ? "Meta: as shipped (flag off)"
+          : "Meta: use override"}</button
+      >
+    </div>
+    <p class="note">
+      {#if loadError}
+        Couldn't load the real sequence: {loadError}
+      {:else if !sequence}
+        Loading {SEQUENCE_ID} from the published gallery…
+      {:else}
+        Real sequence {sequence.word} ({sequence.steps?.length ?? 0} steps). Video
+        export is driven by the viewer in the real app; this harness only simulates
+        its progress states.
+      {/if}
+    </p>
   </div>
-  <p class="note">
-    {#if loadError}
-      Couldn't load the real sequence: {loadError}
-    {:else if !sequence}
-      Loading {SEQUENCE_ID} from the published gallery…
-    {:else}
-      Real sequence {sequence.word} ({sequence.steps?.length ?? 0} steps). Video
-      export is driven by the viewer in the real app; this harness only
-      simulates its progress states.
-    {/if}
-  </p>
-</div>
+{/if}
 
 <!-- No `shareUrl`: the sheet mints (or, per the one-code-per-hash invariant,
      re-resolves) this sequence's real short code itself, which is what the
      viewer makes it do in production. A hardcoded link here would skip the
      one piece of the caption the user actually posts. -->
-<PostShareSheet
-  isOpen={isOpen && !!sequence}
-  {sequence}
-  shareUrl=""
-  {videoBlobUrl}
-  {isExportingVideo}
-  {exportProgress}
-  onRequestVideo={fakeRender}
-  onClose={() => (isOpen = false)}
-  metaStatusOverride={overrideEnabled ? META_STATES[metaState] : undefined}
-/>
+{#if studioHarness && sequence}
+  <main class="studio-harness">
+    <PostStudio
+      {sequence}
+      cardPreviewUrl={studioCardUrl}
+      animationPreviewUrl={studioAnimationUrl}
+      animationPreviewType={studioAnimationType}
+      isPreparingCard={!studioCardUrl}
+      isPreparingAnimation={isExportingVideo}
+      onRequestAnimation={fakeRender}
+    />
+  </main>
+{:else}
+  <PostShareSheet
+    isOpen={isOpen && !!sequence}
+    {sequence}
+    shareUrl=""
+    {videoBlobUrl}
+    {isExportingVideo}
+    {exportProgress}
+    onRequestVideo={fakeRender}
+    onClose={() => (isOpen = false)}
+    metaStatusOverride={overrideEnabled ? META_STATES[metaState] : undefined}
+  />
+{/if}
 
 <style>
   .harness {
     padding: 2rem;
     color: var(--theme-text, #fff);
+  }
+
+  .studio-harness {
+    width: 100%;
+    min-height: 100dvh;
+    padding: clamp(0.5rem, 1.5vw, 2rem);
+    background:
+      radial-gradient(
+        circle at 12% 0%,
+        rgba(87, 64, 180, 0.18),
+        transparent 34rem
+      ),
+      #09090d;
   }
 
   h1 {
