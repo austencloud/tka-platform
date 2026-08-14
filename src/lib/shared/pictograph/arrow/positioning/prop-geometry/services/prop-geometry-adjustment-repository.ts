@@ -21,6 +21,7 @@ import {
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import type { Timestamp } from "firebase/firestore";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 const logger = createComponentLogger("PropGeometryAdjustmentRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";
@@ -59,7 +60,7 @@ export class PropGeometryAdjustmentRepository {
           this.state.setAdjustment(adjustment);
           logger.info(
             `Real-time update: ${generatePropGeometryKeyString({
-              gridMode: adjustment.gridMode,
+              placementFrame: adjustment.placementFrame,
               propType: adjustment.propType,
               otherPropType: adjustment.otherPropType,
               positionType: adjustment.positionType,
@@ -130,7 +131,7 @@ export class PropGeometryAdjustmentRepository {
     } as unknown as Timestamp;
 
     this.state.setAdjustment({
-      gridMode: input.gridMode,
+      placementFrame: normalizePlacementFrame(input.placementFrame),
       propType: input.propType,
       otherPropType: input.otherPropType,
       positionType: input.positionType,

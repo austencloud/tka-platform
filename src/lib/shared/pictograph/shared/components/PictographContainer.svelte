@@ -276,6 +276,15 @@ with pre-prepared data for better performance.
   const effectiveRedMotion = $derived(
     showRedMotion !== undefined ? showRedMotion : true
   );
+  // A one-hand presentation must be prepared as one hand, not prepared as a
+  // pair and filtered only at the final SVG layer. Relationship geometry such
+  // as beta offsets and arrow keys depends on this semantic visibility.
+  const preparationShowBlueMotion = $derived(
+    effectiveBlueMotion && visibleHand !== "red"
+  );
+  const preparationShowRedMotion = $derived(
+    effectiveRedMotion && visibleHand !== "blue"
+  );
   const effectiveShowGrid = $derived(
     showGrid !== undefined ? showGrid : syncedVisibility.showGrid
   );
@@ -404,6 +413,7 @@ with pre-prepared data for better performance.
           // Include manual adjustments so arrow moves when adjusted
           manualAdjustX: blueMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
           manualAdjustY: blueMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+          isVisible: blueMotion.isVisible !== false,
         }
       : null;
 
@@ -421,6 +431,7 @@ with pre-prepared data for better performance.
           // Include manual adjustments so arrow moves when adjusted
           manualAdjustX: redMotion.arrowPlacementData?.manualAdjustmentX ?? 0,
           manualAdjustY: redMotion.arrowPlacementData?.manualAdjustmentY ?? 0,
+          isVisible: redMotion.isVisible !== false,
         }
       : null;
 
@@ -432,6 +443,8 @@ with pre-prepared data for better performance.
       darkMode: effectiveDarkMode, // Include effective dark mode for color-correct preparation
       blueMotion: blueFingerprint,
       redMotion: redFingerprint,
+      preparationShowBlueMotion,
+      preparationShowRedMotion,
       motionStartData: motionStartData
         ? {
             id: motionStartData.id,
@@ -484,6 +497,8 @@ with pre-prepared data for better performance.
           themeMode: currentDarkMode ? ("dark" as const) : ("light" as const),
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
+          showBlueMotion: preparationShowBlueMotion,
+          showRedMotion: preparationShowRedMotion,
         };
         const [result, startResult] = await Promise.all([
           pictographPreparer.prepareSingle(

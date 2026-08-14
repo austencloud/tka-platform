@@ -18,7 +18,7 @@ describe("Key Serialization", () => {
   describe("generateAdjustmentKeyString", () => {
     it("generates Layer 1 key (5 parts) without prop types", () => {
       const key: GlobalAdjustmentKey = {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "A",
         turnsTuple: "(1, 0.5)",
@@ -27,13 +27,13 @@ describe("Key Serialization", () => {
 
       const result = generateAdjustmentKeyString(key);
 
-      expect(result).toBe("diamond|in_out|A|(1, 0.5)|blue");
+      expect(result).toBe("canonical|in_out|A|(1, 0.5)|blue");
       expect(result.split("|")).toHaveLength(5);
     });
 
     it("generates Layer 2 key (6 parts) with propType", () => {
       const key: GlobalAdjustmentKey = {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "A",
         turnsTuple: "(1, 0.5)",
@@ -43,13 +43,13 @@ describe("Key Serialization", () => {
 
       const result = generateAdjustmentKeyString(key);
 
-      expect(result).toBe("diamond|in_out|A|(1, 0.5)|blue|fan");
+      expect(result).toBe("canonical|in_out|A|(1, 0.5)|blue|fan");
       expect(result.split("|")).toHaveLength(6);
     });
 
     it("generates Layer 3 key (7 parts) with both prop types", () => {
       const key: GlobalAdjustmentKey = {
-        gridMode: "box",
+        placementFrame: "canonical",
         oriKey: "out_in",
         letter: "G",
         turnsTuple: "(2, 1)",
@@ -60,14 +60,14 @@ describe("Key Serialization", () => {
 
       const result = generateAdjustmentKeyString(key);
 
-      expect(result).toBe("box|out_in|G|(2, 1)|red|fan|club");
+      expect(result).toBe("canonical|out_in|G|(2, 1)|red|fan|club");
       expect(result.split("|")).toHaveLength(7);
     });
 
     it("ignores otherPropType if propType is not set", () => {
       // This is an invalid state but should handle gracefully
       const key: GlobalAdjustmentKey = {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "A",
         turnsTuple: "(1, 0.5)",
@@ -78,18 +78,18 @@ describe("Key Serialization", () => {
       const result = generateAdjustmentKeyString(key);
 
       // Should only have 5 parts since propType is missing
-      expect(result).toBe("diamond|in_out|A|(1, 0.5)|blue");
+      expect(result).toBe("canonical|in_out|A|(1, 0.5)|blue");
     });
   });
 
   describe("parseAdjustmentKeyString", () => {
     it("parses Layer 1 key (5 parts)", () => {
-      const keyString = "diamond|in_out|A|(1, 0.5)|blue";
+      const keyString = "canonical|in_out|A|(1, 0.5)|blue";
 
       const result = parseAdjustmentKeyString(keyString);
 
       expect(result).toEqual({
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "A",
         turnsTuple: "(1, 0.5)",
@@ -100,12 +100,12 @@ describe("Key Serialization", () => {
     });
 
     it("parses Layer 2 key (6 parts)", () => {
-      const keyString = "diamond|in_out|A|(1, 0.5)|blue|fan";
+      const keyString = "canonical|in_out|A|(1, 0.5)|blue|fan";
 
       const result = parseAdjustmentKeyString(keyString);
 
       expect(result).toEqual({
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "A",
         turnsTuple: "(1, 0.5)",
@@ -116,12 +116,12 @@ describe("Key Serialization", () => {
     });
 
     it("parses Layer 3 key (7 parts)", () => {
-      const keyString = "box|out_in|G|(2, 1)|red|fan|club";
+      const keyString = "canonical|out_in|G|(2, 1)|red|fan|club";
 
       const result = parseAdjustmentKeyString(keyString);
 
       expect(result).toEqual({
-        gridMode: "box",
+        placementFrame: "canonical",
         oriKey: "out_in",
         letter: "G",
         turnsTuple: "(2, 1)",
@@ -132,7 +132,7 @@ describe("Key Serialization", () => {
     });
 
     it("returns null for invalid key (too few parts)", () => {
-      const keyString = "diamond|in_out|A|blue"; // Only 4 parts
+      const keyString = "canonical|in_out|A|blue"; // Only 4 parts
 
       const result = parseAdjustmentKeyString(keyString);
 
@@ -140,7 +140,7 @@ describe("Key Serialization", () => {
     });
 
     it("returns null for invalid key (too many parts)", () => {
-      const keyString = "diamond|in_out|A|(1, 0.5)|blue|fan|club|extra"; // 8 parts
+      const keyString = "canonical|in_out|A|(1, 0.5)|blue|fan|club|extra"; // 8 parts
 
       const result = parseAdjustmentKeyString(keyString);
 
@@ -155,7 +155,7 @@ describe("Key Serialization", () => {
   describe("round-trip serialization", () => {
     it("Layer 1 key survives round-trip", () => {
       const original: GlobalAdjustmentKey = {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_out",
         letter: "Λ", // Greek letter
         turnsTuple: "(s, 1, 1)",
@@ -170,7 +170,7 @@ describe("Key Serialization", () => {
 
     it("Layer 2 key survives round-trip", () => {
       const original: GlobalAdjustmentKey = {
-        gridMode: "box",
+        placementFrame: "canonical",
         oriKey: "out_out",
         letter: "W",
         turnsTuple: "(2, 0.5)",
@@ -186,7 +186,7 @@ describe("Key Serialization", () => {
 
     it("Layer 3 key survives round-trip", () => {
       const original: GlobalAdjustmentKey = {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "in_in",
         letter: "Q",
         turnsTuple: "(1, 1)",
@@ -206,7 +206,7 @@ describe("Key Serialization", () => {
 describe("getKeyLayer", () => {
   it("returns Layer 1 for base key (no prop types)", () => {
     const key: GlobalAdjustmentKey = {
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriKey: "in_out",
       letter: "A",
       turnsTuple: "(1, 0.5)",
@@ -218,7 +218,7 @@ describe("getKeyLayer", () => {
 
   it("returns Layer 2 for prop-specific key", () => {
     const key: GlobalAdjustmentKey = {
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriKey: "in_out",
       letter: "A",
       turnsTuple: "(1, 0.5)",
@@ -231,7 +231,7 @@ describe("getKeyLayer", () => {
 
   it("returns Layer 3 for combination key", () => {
     const key: GlobalAdjustmentKey = {
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriKey: "in_out",
       letter: "A",
       turnsTuple: "(1, 0.5)",
@@ -246,7 +246,7 @@ describe("getKeyLayer", () => {
   it("returns Layer 1 if only otherPropType is set (invalid state)", () => {
     // This shouldn't happen in practice, but test defensive behavior
     const key: GlobalAdjustmentKey = {
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriKey: "in_out",
       letter: "A",
       turnsTuple: "(1, 0.5)",
@@ -369,7 +369,7 @@ describe("Cascading Lookup Priority", () => {
   }
 
   const baseKey: GlobalAdjustmentKey = {
-    gridMode: "diamond",
+    placementFrame: "canonical",
     oriKey: "in_out",
     letter: "A",
     turnsTuple: "(1, 0.5)",
@@ -381,10 +381,10 @@ describe("Cascading Lookup Priority", () => {
 
     // Add adjustments at all three layers
     store.set(generateAdjustmentKeyString(baseKey), { x: 10, y: 10 }); // Layer 1
-    store.set(
-      generateAdjustmentKeyString({ ...baseKey, propType: "fan" }),
-      { x: 20, y: 20 }
-    ); // Layer 2
+    store.set(generateAdjustmentKeyString({ ...baseKey, propType: "fan" }), {
+      x: 20,
+      y: 20,
+    }); // Layer 2
     store.set(
       generateAdjustmentKeyString({
         ...baseKey,
@@ -405,10 +405,10 @@ describe("Cascading Lookup Priority", () => {
 
     // Add adjustments at layers 1 and 2 only
     store.set(generateAdjustmentKeyString(baseKey), { x: 10, y: 10 }); // Layer 1
-    store.set(
-      generateAdjustmentKeyString({ ...baseKey, propType: "fan" }),
-      { x: 20, y: 20 }
-    ); // Layer 2
+    store.set(generateAdjustmentKeyString({ ...baseKey, propType: "fan" }), {
+      x: 20,
+      y: 20,
+    }); // Layer 2
 
     const result = mockCascadingLookup(store, baseKey, "fan", "club");
 
@@ -463,10 +463,10 @@ describe("Cascading Lookup Priority", () => {
 
     // Add adjustments at layers 1 and 2
     store.set(generateAdjustmentKeyString(baseKey), { x: 10, y: 10 }); // Layer 1
-    store.set(
-      generateAdjustmentKeyString({ ...baseKey, propType: "staff" }),
-      { x: 20, y: 20 }
-    ); // Layer 2 for staff (shouldn't be used)
+    store.set(generateAdjustmentKeyString({ ...baseKey, propType: "staff" }), {
+      x: 20,
+      y: 20,
+    }); // Layer 2 for staff (shouldn't be used)
 
     // With staff + fan, looking up for staff hand
     const result = mockCascadingLookup(store, baseKey, "staff", "fan");
@@ -482,10 +482,10 @@ describe("Cascading Lookup Priority", () => {
     // Base layer (staff default)
     store.set(generateAdjustmentKeyString(baseKey), { x: 10, y: 10 });
     // Fan-specific layer
-    store.set(
-      generateAdjustmentKeyString({ ...baseKey, propType: "fan" }),
-      { x: 25, y: 25 }
-    );
+    store.set(generateAdjustmentKeyString({ ...baseKey, propType: "fan" }), {
+      x: 25,
+      y: 25,
+    });
 
     // Fan hand should get Layer 2
     const fanResult = mockCascadingLookup(store, baseKey, "fan", "staff");

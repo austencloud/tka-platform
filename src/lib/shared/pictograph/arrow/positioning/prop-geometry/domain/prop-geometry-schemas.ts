@@ -1,10 +1,11 @@
 import { z } from "zod";
 // Worker-safe leaf (no auth/firebase-client): the barrel pulls authState → $app/navigation.
 import { firestoreDate } from "$lib/shared/firestore/firestore-date";
+import { PlacementFrame } from "../../placement/domain/placement-frame";
 
 export const PropGeometryAdjustmentSchema = z
   .object({
-    gridMode: z.string(),
+    placementFrame: z.enum([PlacementFrame.CANONICAL, PlacementFrame.SKEWED]),
     propType: z.string(),
     otherPropType: z.string(),
     positionType: z.string(),
@@ -20,4 +21,6 @@ export const PropGeometryAdjustmentSchema = z
   })
   .passthrough();
 
-export type PropGeometryAdjustmentParsed = z.infer<typeof PropGeometryAdjustmentSchema>;
+export type PropGeometryAdjustmentParsed = z.infer<
+  typeof PropGeometryAdjustmentSchema
+>;

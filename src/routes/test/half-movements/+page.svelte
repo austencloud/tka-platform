@@ -23,7 +23,11 @@
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData, createPlaceholderMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+    type MotionData,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
   import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
@@ -34,7 +38,10 @@
     Orientation,
     RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
@@ -76,7 +83,10 @@
       stepNumber: 1,
       gridMode: GridMode.DIAMOND,
       motions: {
-        blue: createPlaceholderMotion(MotionColor.BLUE, { location: E, orientation: IN }),
+        blue: createPlaceholderMotion(MotionColor.BLUE, {
+          location: E,
+          orientation: IN,
+        }),
         red: createMotionData({
           motionType: type,
           rotationDirection: rot,
@@ -113,7 +123,11 @@
     if (!m) return null;
     return {
       key: `${m.motionType}_t${m.turns}`,
-      R: calculateSegmentRotation(m.endOrientation, m.endLocation, m.startLocation),
+      R: calculateSegmentRotation(
+        m.endOrientation,
+        m.endLocation,
+        m.startLocation
+      ),
       mirrored:
         m.motionType === MotionType.ANTI
           ? m.rotationDirection === CW
@@ -141,10 +155,12 @@
       for (const mt of MT_LIST) {
         try {
           const res = await fetch(
-            `/data/arrow_placement/diamond/default/default_diamond_${mt}_half_placements.json`
+            `/data/arrow_placement/default/default_${mt}_half_placements.json`
           );
           const data = await res.json();
-          for (const [turns, xy] of Object.entries((data?.[mt] ?? {}) as Record<string, [number, number]>)) {
+          for (const [turns, xy] of Object.entries(
+            (data?.[mt] ?? {}) as Record<string, [number, number]>
+          )) {
             out[`${mt}_t${turns}`] = { x: xy[0], y: xy[1] };
           }
         } catch {
@@ -188,7 +204,10 @@
     if (!meta) return step;
     const tot = adjustments[meta.key];
     const b = baseline[meta.key];
-    const adj = { x: (tot?.x ?? 0) - (b?.x ?? 0), y: (tot?.y ?? 0) - (b?.y ?? 0) };
+    const adj = {
+      x: (tot?.x ?? 0) - (b?.x ?? 0),
+      y: (tot?.y ?? 0) - (b?.y ?? 0),
+    };
     if (!adj.x && !adj.y) return step;
     const rad = (meta.R * Math.PI) / 180;
     const ly = meta.mirrored ? -adj.y : adj.y;
@@ -254,7 +273,10 @@
     const cur = adjustments[selectedMeta.key] ?? { x: 0, y: 0 };
     adjustments = {
       ...adjustments,
-      [selectedMeta.key]: { x: Math.round((cur.x + lx) * 10) / 10, y: Math.round((cur.y + lyv) * 10) / 10 },
+      [selectedMeta.key]: {
+        x: Math.round((cur.x + lx) * 10) / 10,
+        y: Math.round((cur.y + lyv) * 10) / 10,
+      },
     };
   };
 
@@ -263,7 +285,12 @@
   };
   // ───────────────────────────────────────────────────────────────────────────
 
-  type Cell = { label: string; sub: string; step: StepData | null; meta: CellMeta | null };
+  type Cell = {
+    label: string;
+    sub: string;
+    step: StepData | null;
+    meta: CellMeta | null;
+  };
 
   const dirWord = (rot: RotationDirection) => (rot === CW ? "cw" : "ccw");
 
@@ -276,11 +303,26 @@
   // rotationDirection is the PROP rotation, which is derived: pro = same as
   // the path, anti = opposite (TurnsPage: PRO E->S carries CW, ANTI E->S
   // carries CCW). `pathCw` is the swept axis; rot falls out of it.
-  const shiftCell = (type: MotionType, from: GridLocation, to: GridLocation, pathCw: boolean, turns: Turns): Cell => {
+  const shiftCell = (
+    type: MotionType,
+    from: GridLocation,
+    to: GridLocation,
+    pathCw: boolean,
+    turns: Turns
+  ): Cell => {
     const endOri = type === MotionType.PRO && turns === 1 ? OUT : IN;
     const propCw = type === MotionType.PRO ? pathCw : !pathCw;
     const rot = propCw ? CW : CCW;
-    const full = fullStep(`${type}-${from}-${to}-t${turns}`, type, from, to, IN, endOri, rot, turns);
+    const full = fullStep(
+      `${type}-${from}-${to}-t${turns}`,
+      type,
+      from,
+      to,
+      IN,
+      endOri,
+      rot,
+      turns
+    );
     const half = buildHalvedStep(full, 0.5);
     const mid = half?.motions?.red?.endLocation;
     return {
@@ -291,8 +333,22 @@
     };
   };
 
-  const dashCell = (from: GridLocation, to: GridLocation, rot: RotationDirection, turns: Turns): Cell => {
-    const full = fullStep(`dash-${from}-${to}-${dirWord(rot)}-t${turns}`, MotionType.DASH, from, to, IN, OUT, rot, turns);
+  const dashCell = (
+    from: GridLocation,
+    to: GridLocation,
+    rot: RotationDirection,
+    turns: Turns
+  ): Cell => {
+    const full = fullStep(
+      `dash-${from}-${to}-${dirWord(rot)}-t${turns}`,
+      MotionType.DASH,
+      from,
+      to,
+      IN,
+      OUT,
+      rot,
+      turns
+    );
     const half = buildHalvedStep(full, 0.5);
     return {
       label: `${LOC_SHORT[from]} → center`,
@@ -302,8 +358,21 @@
     };
   };
 
-  const staticCell = (at: GridLocation, rot: RotationDirection, turns: Turns): Cell => {
-    const full = fullStep(`static-${at}-${dirWord(rot)}-t${turns}`, MotionType.STATIC, at, at, IN, IN, rot, turns);
+  const staticCell = (
+    at: GridLocation,
+    rot: RotationDirection,
+    turns: Turns
+  ): Cell => {
+    const full = fullStep(
+      `static-${at}-${dirWord(rot)}-t${turns}`,
+      MotionType.STATIC,
+      at,
+      at,
+      IN,
+      IN,
+      rot,
+      turns
+    );
     const half = buildHalvedStep(full, 0.5);
     return {
       label: `${LOC_SHORT[at]} (static)`,
@@ -315,8 +384,10 @@
 
   // Cardinal ring, cw order. cw shift ends at the next cardinal, ccw at the previous.
   const RING = [N, E, S, W] as const;
-  const cwEnd = (from: GridLocation) => RING[(RING.indexOf(from as (typeof RING)[number]) + 1) % 4]!;
-  const ccwEnd = (from: GridLocation) => RING[(RING.indexOf(from as (typeof RING)[number]) + 3) % 4]!;
+  const cwEnd = (from: GridLocation) =>
+    RING[(RING.indexOf(from as (typeof RING)[number]) + 1) % 4]!;
+  const ccwEnd = (from: GridLocation) =>
+    RING[(RING.indexOf(from as (typeof RING)[number]) + 3) % 4]!;
 
   const OPPOSITE: [GridLocation, GridLocation][] = [
     [N, S],
@@ -348,7 +419,12 @@
   // ── Coverage matrix ────────────────────────────────────────────────────────
   // scripts/half-domain-coverage.mjs is the authority behind these sets.
   const ALL_TURNS: Turns[] = [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"];
-  const MT_ORDER = [MotionType.PRO, MotionType.ANTI, MotionType.DASH, MotionType.STATIC] as const;
+  const MT_ORDER = [
+    MotionType.PRO,
+    MotionType.ANTI,
+    MotionType.DASH,
+    MotionType.STATIC,
+  ] as const;
 
   const LEGAL_TURNS: Record<string, Set<Turns>> = {
     [MotionType.PRO]: new Set(ALL_TURNS),
@@ -363,7 +439,11 @@
 
   type Status = "covered" | "hole" | "blocked";
   const statusOf = (mt: MotionType, t: Turns): Status =>
-    !LEGAL_TURNS[mt]!.has(t) ? "blocked" : COVERED[mt]!.has(t) ? "covered" : "hole";
+    !LEGAL_TURNS[mt]!.has(t)
+      ? "blocked"
+      : COVERED[mt]!.has(t)
+        ? "covered"
+        : "hole";
 
   const familyKey = (mt: MotionType, t: Turns) => `${mt}_t${t}`;
 
@@ -377,7 +457,16 @@
   const familyCell = (mt: MotionType, turns: Turns): Cell | null => {
     const [from, to] = FAMILY_SHAPE[mt]!;
     const rot = mt === MotionType.PRO ? CW : CCW;
-    const full = fullStep(`family-${mt}-${turns}`, mt, from, to, IN, IN, rot, turns);
+    const full = fullStep(
+      `family-${mt}-${turns}`,
+      mt,
+      from,
+      to,
+      IN,
+      IN,
+      rot,
+      turns
+    );
     const half = buildHalvedStep(full, 0.5);
     if (!half) return null;
     return {
@@ -409,7 +498,9 @@
   };
   const tunedCount = $derived(
     MT_ORDER.flatMap((mt) =>
-      ALL_TURNS.filter((t) => LEGAL_TURNS[mt]!.has(t)).map((t) => familyKey(mt, t))
+      ALL_TURNS.filter((t) => LEGAL_TURNS[mt]!.has(t)).map((t) =>
+        familyKey(mt, t)
+      )
     ).filter(isTuned).length
   );
 
@@ -417,7 +508,9 @@
   let expanded = $state<{ mt: MotionType; turns: Turns } | null>(null);
   let panelEl = $state<HTMLElement | null>(null);
 
-  const variations = $derived(expanded ? variationCells(expanded.mt, expanded.turns) : []);
+  const variations = $derived(
+    expanded ? variationCells(expanded.mt, expanded.turns) : []
+  );
 
   const expandFamily = (mt: MotionType, t: Turns) => {
     if (expanded?.mt === mt && expanded?.turns === t) {
@@ -495,8 +588,9 @@
     yet, <span class="lg grey">✕</span> = not representable. Click a cell to
     open its 8 variations, then <strong>WASD</strong> to move the glyph
     (Shift&nbsp;=&nbsp;20px, Ctrl+Shift&nbsp;=&nbsp;200px,
-    <strong>R</strong>&nbsp;=&nbsp;reset, <strong>Esc</strong>&nbsp;=&nbsp;close).
-    One nudge moves the whole family and <strong>autosaves as canon</strong>
+    <strong>R</strong>&nbsp;=&nbsp;reset,
+    <strong>Esc</strong>&nbsp;=&nbsp;close). One nudge moves the whole family
+    and <strong>autosaves as canon</strong>
     into the placement JSONs.
   </p>
 
@@ -534,10 +628,20 @@
 
   <div class="stats">
     <div class="stat-line">
-      <strong>Art coverage: {TOTAL_COVERED} / {TOTAL_LEGAL} families ({COVERED_PCT}%)</strong>
-      <span class="stat-tuned">placement tuned: {tunedCount} / {TOTAL_LEGAL}</span>
+      <strong
+        >Art coverage: {TOTAL_COVERED} / {TOTAL_LEGAL} families ({COVERED_PCT}%)</strong
+      >
+      <span class="stat-tuned"
+        >placement tuned: {tunedCount} / {TOTAL_LEGAL}</span
+      >
     </div>
-    <div class="progress" role="progressbar" aria-valuenow={COVERED_PCT} aria-valuemin="0" aria-valuemax="100">
+    <div
+      class="progress"
+      role="progressbar"
+      aria-valuenow={COVERED_PCT}
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
       <div class="progress-fill" style:width="{COVERED_PCT}%"></div>
     </div>
   </div>
@@ -554,7 +658,14 @@
       {#each ALL_TURNS as t (t)}
         {@const st = statusOf(mt, t)}
         {#if st === "blocked"}
-          <div class="mcell blocked" title="no {turnsLabel(t)}-turns {mt} halves — not pipeline-representable">✕</div>
+          <div
+            class="mcell blocked"
+            title="no {turnsLabel(
+              t
+            )}-turns {mt} halves — not pipeline-representable"
+          >
+            ✕
+          </div>
         {:else}
           {@const cell = FAMILY_CELLS[familyKey(mt, t)]}
           <button
@@ -562,7 +673,9 @@
             class="mcell {st}"
             class:open={expanded?.mt === mt && expanded?.turns === t}
             onclick={() => expandFamily(mt, t)}
-            title="{mt} · {turnsLabel(t)} turns — {st === 'covered' ? `asset ${mt}_half${typeof t === 'number' ? `_${t.toFixed(1)}` : `_${t}`}.svg` : 'NO ART (fallback shown)'}"
+            title="{mt} · {turnsLabel(t)} turns — {st === 'covered'
+              ? `asset ${mt}_half${typeof t === 'number' ? `_${t.toFixed(1)}` : `_${t}`}.svg`
+              : 'NO ART (fallback shown)'}"
           >
             <div class="mini">
               {#if cell?.step}
@@ -588,8 +701,8 @@
   </div>
 
   <p class="note center">
-    Outside this matrix (pipeline-blocked, not art holes): float motions,
-    skewed motions, hash (center-touching dashes), quarter fractions.
+    Outside this matrix (pipeline-blocked, not art holes): float motions, skewed
+    motions, hash (center-touching dashes), quarter fractions.
   </p>
 
   {#if expanded}
@@ -597,7 +710,9 @@
       <h2>
         {expanded.mt} · {turnsLabel(expanded.turns)} turns — all 8 variations
         {#if statusOf(expanded.mt, expanded.turns) === "hole"}
-          <span class="hole-flag">NO ART — showing fallback {expanded.mt}_half.svg</span>
+          <span class="hole-flag"
+            >NO ART — showing fallback {expanded.mt}_half.svg</span
+          >
         {/if}
       </h2>
       <p class="note">
@@ -610,7 +725,9 @@
             class="cell"
             class:selected={selected === cell.sub}
             onclick={() => selectCell(cell.sub, cell.meta)}
-            onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.sub, cell.meta)}
+            onkeydown={(e) =>
+              (e.key === "Enter" || e.key === " ") &&
+              selectCell(cell.sub, cell.meta)}
             role="button"
             tabindex="0"
           >

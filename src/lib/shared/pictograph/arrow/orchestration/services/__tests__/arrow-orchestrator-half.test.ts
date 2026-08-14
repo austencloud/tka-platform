@@ -5,7 +5,10 @@ import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioni
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
 import { getInitialPosition } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-grid-coordinator";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { GridLocation, GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionType,
   MotionColor,
@@ -43,7 +46,11 @@ describe("orchestrator — segment frames bypass the letter-adjustment machinery
     const { picto, motion } = segmentPictograph();
     const [x, y, rotation] = await calculateArrowPoint(picto, motion);
     expect(rotation).toBeCloseTo(
-      calculateSegmentRotation(Orientation.CLOCK, GridLocation.SOUTHEAST, GridLocation.EAST),
+      calculateSegmentRotation(
+        Orientation.CLOCK,
+        GridLocation.SOUTHEAST,
+        GridLocation.EAST
+      ),
       6
     );
     expect(Number.isFinite(x)).toBe(true);
@@ -71,7 +78,9 @@ describe("orchestrator — segment adjustments are GLYPH-LOCAL (rotate with the 
     // Inject a known glyph-local nudge via the default-override seam (the same
     // seam Firestore admin overrides use).
     setDefaultOverrideResolver((_g, motionType, placementKey, turns) =>
-      motionType === "pro_half" && placementKey === "pro" && turns === "1" ? [10, 0] : null
+      motionType === "pro_half" && placementKey === "pro" && turns === "1"
+        ? [10, 0]
+        : null
     );
     const { picto, motion } = segmentPictograph();
     const location = arrowLocationCalculator.calculateLocation(motion, picto);
@@ -105,11 +114,16 @@ describe("ArrowPlacer — _half default-tier lookup", () => {
   }
 
   const PRO_HALF_PATH =
-    "/data/arrow_placement/diamond/default/default_diamond_pro_half_placements.json";
+    "/data/arrow_placement/default/default_pro_half_placements.json";
 
   it("falls through to {0,0} when the _half bucket has no authored data (today's baseline)", async () => {
     const placer = new ArrowPlacer(new FakeJsonCache({}));
-    const adjustment = await placer.getDefaultAdjustment("pro_half", "pro", 1, GridMode.DIAMOND);
+    const adjustment = await placer.getDefaultAdjustment(
+      "pro_half",
+      "pro",
+      1,
+      GridMode.DIAMOND
+    );
     expect(adjustment).toEqual({ x: 0, y: 0 });
   });
 
@@ -117,7 +131,12 @@ describe("ArrowPlacer — _half default-tier lookup", () => {
     const placer = new ArrowPlacer(
       new FakeJsonCache({ [PRO_HALF_PATH]: { pro: { "1": [5, -3] } } })
     );
-    const adjustment = await placer.getDefaultAdjustment("pro_half", "pro", 1, GridMode.DIAMOND);
+    const adjustment = await placer.getDefaultAdjustment(
+      "pro_half",
+      "pro",
+      1,
+      GridMode.DIAMOND
+    );
     expect(adjustment).toEqual({ x: 5, y: -3 });
   });
 
@@ -125,7 +144,12 @@ describe("ArrowPlacer — _half default-tier lookup", () => {
     const placer = new ArrowPlacer(
       new FakeJsonCache({ [PRO_HALF_PATH]: { pro: { "1": [5, -3] } } })
     );
-    const adjustment = await placer.getDefaultAdjustment("pro_half", "pro", 1.0, GridMode.DIAMOND);
+    const adjustment = await placer.getDefaultAdjustment(
+      "pro_half",
+      "pro",
+      1.0,
+      GridMode.DIAMOND
+    );
     expect(adjustment).toEqual({ x: 5, y: -3 });
   });
 });

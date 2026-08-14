@@ -29,7 +29,7 @@ export interface GlobalTierInfo {
 
 export interface SpecialJsonTierInfo {
   value: TierValue;
-  /** e.g. "diamond/special/from_layer1/H_placements.json" */
+  /** e.g. "special/from_layer1/H_placements.json" */
   filePath: string;
   /** e.g. "(2.5, 2.5)" */
   turnsTupleKey: string;
@@ -55,7 +55,7 @@ export interface PropGeometryTierInfo {
 export interface DefaultTierInfo {
   value: TierValue;
   /** Lookup identity so the editor can address the Firestore default field. */
-  gridMode: string;
+  placementFrame: string;
   propType: string;
   motionType: string;
   placementKey: string;

@@ -16,11 +16,11 @@ import {
   generateOrientationKey,
   resolveEffectiveOriKey,
 } from "../../key-generation/services/special-placement-ori-key-generator";
+import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
+import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
 
 export class GlobalAdjustmentKeyGenerator {
-  constructor(
-    private readonly turnsTupleGenerator: TurnsTupleGenerator
-  ) {}
+  constructor(private readonly turnsTupleGenerator: TurnsTupleGenerator) {}
 
   /**
    * Generate a global adjustment key from motion and pictograph data.
@@ -34,8 +34,15 @@ export class GlobalAdjustmentKeyGenerator {
     arrowKey: string,
     options?: KeyGeneratorPropOptions
   ): GlobalAdjustmentKey {
-    // Generate grid mode
-    const gridMode = this.getGridMode(pictographData);
+    const canonicalContext = createCanonicalPlacementContext(
+      pictographData,
+      motionData
+    );
+    pictographData = canonicalContext.pictographData;
+    motionData = canonicalContext.motionData;
+    const placementFrame = placementFrameForGridMode(
+      this.getGridMode(pictographData)
+    );
 
     // Generate orientation key.
     // For staff+staff, collapse to legacy bucket - radial variants are identical.
@@ -51,7 +58,7 @@ export class GlobalAdjustmentKeyGenerator {
 
     // Build base key
     const key: GlobalAdjustmentKey = {
-      gridMode,
+      placementFrame,
       oriKey,
       letter,
       turnsTuple,
@@ -63,7 +70,8 @@ export class GlobalAdjustmentKeyGenerator {
       (key as { propType?: string }).propType = options.propType.toLowerCase();
     }
     if (options?.otherPropType) {
-      (key as { otherPropType?: string }).otherPropType = options.otherPropType.toLowerCase();
+      (key as { otherPropType?: string }).otherPropType =
+        options.otherPropType.toLowerCase();
     }
 
     return key;

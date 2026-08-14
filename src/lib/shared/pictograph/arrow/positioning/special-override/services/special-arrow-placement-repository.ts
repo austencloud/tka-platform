@@ -19,6 +19,7 @@ import {
 } from "../state/special-arrow-placement-state.svelte";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { globalAdjustmentVersion } from "../../global/state/global-adjustment-version.svelte";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 const logger = createComponentLogger("SpecialArrowPlacementRepository");
 const ADMIN_EMAIL = "austencloud@gmail.com";
@@ -55,15 +56,10 @@ export class SpecialArrowPlacementRepository {
         globalAdjustmentVersion.increment();
       }
 
-      // The collection requires auth to read — a listener opened while signed
-      // out just gets permission-killed. resumeSubscription() picks it up
-      // once the boot orchestrator re-initializes after sign-in.
-      if (authState.isAuthenticated) {
-        this.startSubscription();
-      }
+      this.startSubscription();
 
       logger.success(
-        `Initialized with ${this.state.count} special placement overrides`,
+        `Initialized with ${this.state.count} special placement overrides`
       );
     } catch (error) {
       const message =
@@ -86,32 +82,8 @@ export class SpecialArrowPlacementRepository {
       (key: string) => {
         this.state.removeOverride(key);
         logger.info(`Real-time removal: ${key}`);
-      },
+      }
     );
-  }
-
-  /**
-   * Stop the Firestore listener but keep loaded overrides in memory.
-   * Called before sign-out so the listener isn't permission-killed when
-   * the auth token is invalidated.
-   */
-  pauseSubscription(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
-      logger.info("Subscription paused");
-    }
-  }
-
-  /**
-   * Start the Firestore listener if it isn't running and the user is
-   * authenticated. The initial snapshot redelivers every doc, so state
-   * catches up on anything missed while paused.
-   */
-  resumeSubscription(): void {
-    if (this.unsubscribe || !authState.isAuthenticated) return;
-    this.startSubscription();
-    logger.info("Subscription resumed");
   }
 
   getOverride(key: string): { x: number; y: number } | null {
@@ -141,7 +113,8 @@ export class SpecialArrowPlacementRepository {
    * Use this for live preview during WASD adjustment.
    */
   saveOverrideLocal(input: SpecialArrowPlacementInput): void {
-    const key = generateSpecialOverrideKey(input);
+    const placementFrame = normalizePlacementFrame(input.placementFrame);
+    const key = generateSpecialOverrideKey({ ...input, placementFrame });
     const fakeTimestamp = {
       seconds: Math.floor(Date.now() / 1000),
       nanoseconds: 0,
@@ -152,7 +125,7 @@ export class SpecialArrowPlacementRepository {
 
     this.state.setOverride({
       key,
-      gridMode: input.gridMode,
+      placementFrame,
       oriFolder: input.oriFolder,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -187,7 +160,8 @@ export class SpecialArrowPlacementRepository {
    */
   async saveOverride(input: SpecialArrowPlacementInput): Promise<void> {
     const email = authState.user?.email;
-    if (email !== ADMIN_EMAIL) throw new Error("Only admin can save special placement overrides");
+    if (email !== ADMIN_EMAIL)
+      throw new Error("Only admin can save special placement overrides");
     if (input.adjustmentX === 0 && input.adjustmentY === 0) {
       await this.deleteOverride(generateSpecialOverrideKey(input)); // zero = remove, never persist [0,0]
       return;
@@ -197,7 +171,8 @@ export class SpecialArrowPlacementRepository {
 
   /** In-memory suppression preview (admin only) — instant, before the Firestore write. */
   saveSuppressionLocal(input: SpecialSuppressionInput): void {
-    const key = generateSpecialOverrideKey(input);
+    const placementFrame = normalizePlacementFrame(input.placementFrame);
+    const key = generateSpecialOverrideKey({ ...input, placementFrame });
     const fakeTimestamp = {
       seconds: Math.floor(Date.now() / 1000),
       nanoseconds: 0,
@@ -208,7 +183,7 @@ export class SpecialArrowPlacementRepository {
 
     this.state.setOverride({
       key,
-      gridMode: input.gridMode,
+      placementFrame,
       oriFolder: input.oriFolder,
       letter: input.letter,
       turnsTuple: input.turnsTuple,

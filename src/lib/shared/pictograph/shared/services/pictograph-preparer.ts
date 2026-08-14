@@ -13,14 +13,22 @@ import type { PropPosition } from "../../prop/domain/models/prop-position";
 import type { PropAssets } from "../../prop/domain/models/prop-assets";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { PropType } from "../../prop/domain/enums/prop-type";
-import { MotionType, HandPath, RotationDirection, Orientation } from "../domain/enums/pictograph-enums";
+import {
+  MotionType,
+  HandPath,
+  RotationDirection,
+  Orientation,
+} from "../domain/enums/pictograph-enums";
 import { getPictographGeometryRevision } from "$lib/shared/render/services/pictograph-key-hasher";
 // Prop-type defaults used when callers don't pass explicit options.
 // Formerly imported getSettings() from app-state.svelte, but that module chain
 // pulls in Firebase auth which accesses `window` — crashing in Web Workers.
 // All render-path callers (ImageComposer, CompositionDispatcher) already pass
 // prop types through options, so this default is only hit in edge cases.
-const DEFAULT_PROP_SETTINGS = { bluePropType: PropType.STAFF, redPropType: PropType.STAFF };
+const DEFAULT_PROP_SETTINGS = {
+  bluePropType: PropType.STAFF,
+  redPropType: PropType.STAFF,
+};
 
 /** One warning per session per colour — a propless grid would otherwise emit
  *  hundreds of identical lines and bury the signal it exists to give. */
@@ -97,7 +105,7 @@ export class PictographPreparer {
       // prop under this key for the life of this singleton, even after the
       // underlying asset is fixed. Skip the cache write so the next request
       // for this key retries the load instead.
-      if (!this.hasPropLoadFailure(pictograph, prepared)) {
+      if (!this.hasPropLoadFailure(pictograph, prepared, options)) {
         this.prepareCache.set(cacheKey, prepared);
       }
 
@@ -116,12 +124,15 @@ export class PictographPreparer {
    */
   private hasPropLoadFailure(
     pictograph: PictographData,
-    prepared: PreparedRenderData
+    prepared: PreparedRenderData,
+    options?: PrepareOptions
   ): boolean {
     const motions = pictograph.motions;
     if (!motions) return false;
     for (const [color, motion] of Object.entries(motions)) {
       if (!isVisibleMotion(motion)) continue;
+      if (color === "blue" && options?.showBlueMotion === false) continue;
+      if (color === "red" && options?.showRedMotion === false) continue;
       if (!motion.propPlacementData) continue;
       if (!prepared.propAssets[color]) return true;
     }
@@ -141,28 +152,36 @@ export class PictographPreparer {
 
     const effectiveBlueProp = settings.bluePropType;
     const effectiveRedProp = settings.redPropType;
-    const useHandPath = options?.handPathMode ||
-      (effectiveBlueProp === PropType.HAND && effectiveRedProp === PropType.HAND);
+    const useHandPath =
+      options?.handPathMode ||
+      (effectiveBlueProp === PropType.HAND &&
+        effectiveRedProp === PropType.HAND);
 
     const effectivePictograph = useHandPath
       ? this.transformForHandPath(pictograph)
       : pictograph;
-    const overriddenMotions = this.getMotionsWithOverrides(effectivePictograph, settings, options);
+    const overriddenMotions = this.getMotionsWithOverrides(
+      effectivePictograph,
+      settings,
+      options
+    );
     const pictographWithPropOverrides: PictographData = {
       ...effectivePictograph,
-      motions: Object.fromEntries(overriddenMotions) as PictographData["motions"],
+      motions: Object.fromEntries(
+        overriddenMotions
+      ) as PictographData["motions"],
     };
 
-    const showBlue = options?.showBlueMotion ?? true;
-    const showRed = options?.showRedMotion ?? true;
-    const soloMode = (showBlue !== showRed);
+    const showBlue = isVisibleMotion(pictographWithPropOverrides.motions.blue);
+    const showRed = isVisibleMotion(pictographWithPropOverrides.motions.red);
+    const soloMode = showBlue !== showRed;
 
     const arrowResult = await this.arrowManager.coordinateArrowLifecycle(
       pictographWithPropOverrides,
       { themeMode: options?.themeMode, gridMode, soloMode }
     );
     const { propPositions, propAssets } = await this.calculateProps(
-      effectivePictograph,
+      pictographWithPropOverrides,
       options
     );
 
@@ -176,12 +195,17 @@ export class PictographPreparer {
     };
   }
 
-  private deriveCacheKey(pictograph: PictographData, options?: PrepareOptions): string {
+  private deriveCacheKey(
+    pictograph: PictographData,
+    options?: PrepareOptions
+  ): string {
     const blue = pictograph.motions?.blue;
     const red = pictograph.motions?.red;
 
-    const effectiveBlue = options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType;
-    const effectiveRed = options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType;
+    const effectiveBlue =
+      options?.bluePropType ?? DEFAULT_PROP_SETTINGS.bluePropType;
+    const effectiveRed =
+      options?.redPropType ?? DEFAULT_PROP_SETTINGS.redPropType;
 
     const parts = [
       pictograph.letter ?? "none",
@@ -207,7 +231,10 @@ export class PictographPreparer {
       red?.arrowPlacementData?.manualAdjustmentY ?? 0,
       options?.themeMode ?? "dark",
       (options?.useGridVersion ?? false) ? "grid" : "thumbnail",
-      (options?.handPathMode || (effectiveBlue === PropType.HAND && effectiveRed === PropType.HAND)) ? "hp" : "",
+      options?.handPathMode ||
+      (effectiveBlue === PropType.HAND && effectiveRed === PropType.HAND)
+        ? "hp"
+        : "",
       options?.showBlueMotion === false ? "hideBlue" : "",
       options?.showRedMotion === false ? "hideRed" : "",
       pictograph.betaSwapped ? "bs" : "",
@@ -230,14 +257,14 @@ export class PictographPreparer {
       return raw;
     }
 
-    if (!isVisibleMotion(pictograph.motions?.blue) || !isVisibleMotion(pictograph.motions?.red)) {
+    if (
+      !isVisibleMotion(pictograph.motions?.blue) ||
+      !isVisibleMotion(pictograph.motions?.red)
+    ) {
       return GridMode.DIAMOND;
     }
     try {
-      return _deriveGridMode(
-        pictograph.motions.blue,
-        pictograph.motions.red
-      );
+      return _deriveGridMode(pictograph.motions.blue, pictograph.motions.red);
     } catch {
       return GridMode.DIAMOND;
     }
@@ -327,29 +354,38 @@ export class PictographPreparer {
     settings: { bluePropType?: unknown; redPropType?: unknown },
     options?: PrepareOptions
   ): [string, MotionData][] {
-    return Object.entries(pictograph.motions || {})
-      // invisible placeholder = hand not really there (both-required Step shape)
-      .filter((entry): entry is [string, MotionData] => isVisibleMotion(entry[1]))
-      .map(([color, motion]) => {
-        const explicitPropType =
-          color === "blue" ? options?.bluePropType : options?.redPropType;
-        if (explicitPropType !== undefined) {
-          return [color, { ...motion, propType: explicitPropType }] as [
-            string,
-            MotionData,
-          ];
-        }
+    return (
+      Object.entries(pictograph.motions || {})
+        // invisible placeholder = hand not really there (both-required Step shape)
+        .filter((entry): entry is [string, MotionData] => {
+          const [color, motion] = entry;
+          if (!isVisibleMotion(motion)) return false;
+          if (color === "blue" && options?.showBlueMotion === false)
+            return false;
+          if (color === "red" && options?.showRedMotion === false) return false;
+          return true;
+        })
+        .map(([color, motion]) => {
+          const explicitPropType =
+            color === "blue" ? options?.bluePropType : options?.redPropType;
+          if (explicitPropType !== undefined) {
+            return [color, { ...motion, propType: explicitPropType }] as [
+              string,
+              MotionData,
+            ];
+          }
 
-        const settingsPropType =
-          color === "blue" ? settings.bluePropType : settings.redPropType;
-        if (settingsPropType) {
-          return [color, { ...motion, propType: settingsPropType }] as [
-            string,
-            MotionData,
-          ];
-        }
-        return [color, motion] as [string, MotionData];
-      });
+          const settingsPropType =
+            color === "blue" ? settings.bluePropType : settings.redPropType;
+          if (settingsPropType) {
+            return [color, { ...motion, propType: settingsPropType }] as [
+              string,
+              MotionData,
+            ];
+          }
+          return [color, motion] as [string, MotionData];
+        })
+    );
   }
 
   private transformForHandPath(pictograph: PictographData): PictographData {
@@ -407,7 +443,8 @@ export class PictographPreparer {
         return {
           ...motion,
           propType: PropType.HAND,
-          arrowPlacementData: undefined as unknown as typeof motion.arrowPlacementData,
+          arrowPlacementData:
+            undefined as unknown as typeof motion.arrowPlacementData,
         };
       }
 
@@ -431,23 +468,42 @@ export class PictographPreparer {
     endLocation: string
   ): HandPath | null {
     const CW_PAIRS: [string, string][] = [
-      ["s", "w"], ["w", "n"], ["n", "e"], ["e", "s"],
-      ["ne", "se"], ["se", "sw"], ["sw", "nw"], ["nw", "ne"],
+      ["s", "w"],
+      ["w", "n"],
+      ["n", "e"],
+      ["e", "s"],
+      ["ne", "se"],
+      ["se", "sw"],
+      ["sw", "nw"],
+      ["nw", "ne"],
     ];
     const CCW_PAIRS: [string, string][] = [
-      ["w", "s"], ["n", "w"], ["e", "n"], ["s", "e"],
-      ["ne", "nw"], ["nw", "sw"], ["sw", "se"], ["se", "ne"],
+      ["w", "s"],
+      ["n", "w"],
+      ["e", "n"],
+      ["s", "e"],
+      ["ne", "nw"],
+      ["nw", "sw"],
+      ["sw", "se"],
+      ["se", "ne"],
     ];
     const DASH_PAIRS: [string, string][] = [
-      ["s", "n"], ["w", "e"], ["n", "s"], ["e", "w"],
-      ["ne", "sw"], ["se", "nw"], ["sw", "ne"], ["nw", "se"],
+      ["s", "n"],
+      ["w", "e"],
+      ["n", "s"],
+      ["e", "w"],
+      ["ne", "sw"],
+      ["se", "nw"],
+      ["sw", "ne"],
+      ["nw", "se"],
     ];
 
     const s = startLocation.toLowerCase();
     const e = endLocation.toLowerCase();
 
     if (s === e) return HandPath.STATIC;
-    if (CW_PAIRS.some(([a, b]) => a === s && b === e)) return HandPath.CLOCKWISE;
+    if (CW_PAIRS.some(([a, b]) => a === s && b === e))
+      return HandPath.CLOCKWISE;
     if (CCW_PAIRS.some(([a, b]) => a === s && b === e))
       return HandPath.COUNTER_CLOCKWISE;
     if (DASH_PAIRS.some(([a, b]) => a === s && b === e)) return HandPath.DASH;
@@ -456,13 +512,20 @@ export class PictographPreparer {
     // Determine CW vs CCW by comparing the shorter arc on the position circle.
     // Order: N=0, NE=1, E=2, SE=3, S=4, SW=5, W=6, NW=7 (CW around the grid)
     const POSITION_ORDER: Record<string, number> = {
-      n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7,
+      n: 0,
+      ne: 1,
+      e: 2,
+      se: 3,
+      s: 4,
+      sw: 5,
+      w: 6,
+      nw: 7,
     };
     const startIdx = POSITION_ORDER[s];
     const endIdx = POSITION_ORDER[e];
     if (startIdx !== undefined && endIdx !== undefined) {
       // CW delta: how many steps CW from start to end
-      const cwDelta = ((endIdx - startIdx) % 8 + 8) % 8;
+      const cwDelta = (((endIdx - startIdx) % 8) + 8) % 8;
       // If CW path is shorter (1-3 steps), it's CW; if longer (5-7), it's CCW;
       // 4 steps = opposite = DASH (already handled above for same-grid)
       if (cwDelta > 0 && cwDelta < 4) return HandPath.CLOCKWISE;

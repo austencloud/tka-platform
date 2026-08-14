@@ -17,11 +17,18 @@ import type { PictographPreparer } from "$lib/shared/pictograph/shared/services/
 import { GlobalAdjustmentKeyGenerator } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-key-generator";
 import { getGlobalAdjustmentRepository } from "$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton";
 import { globalAdjustmentVersion } from "$lib/shared/pictograph/arrow/positioning/global/state/global-adjustment-version.svelte";
-import type { GlobalArrowAdjustmentInput } from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
+import type {
+  GlobalAdjustmentKey,
+  GlobalArrowAdjustmentInput,
+} from "$lib/shared/pictograph/arrow/positioning/global/domain/global-arrow-adjustment";
 import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { arrowAdjustmentUndoStack } from "$lib/shared/pictograph/arrow/positioning/global/state/arrow-adjustment-undo-stack";
+import {
+  createCanonicalPlacementContext,
+  rotateScreenVectorToCanonical,
+} from "$lib/shared/pictograph/arrow/positioning/calculation/services/canonical-placement-frame";
 
 /**
  * Arrow selection context for adjustment operations
@@ -49,14 +56,7 @@ export interface ApplyMovementResult {
 /**
  * Target key for adjustment storage
  */
-export interface AdjustmentTargetKey {
-  gridMode: string;
-  oriKey: string;
-  letter: string;
-  turnsTuple: string;
-  arrowKey: string;
-  propType?: string;
-}
+export type AdjustmentTargetKey = GlobalAdjustmentKey;
 
 /**
  * Result of looking up current adjustment via cascading
@@ -126,15 +126,19 @@ export class ArrowAdjustmentOrchestrator {
     thisPropType: string,
     otherPropType?: string
   ): AdjustmentTargetKey | null {
-    const keyOptions = layer === 1
-      ? undefined // Layer 1: no prop types
-      : layer === 3 && otherPropType
-        ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
-        : { propType: thisPropType }; // Layer 2: just this prop
+    const keyOptions =
+      layer === 1
+        ? undefined // Layer 1: no prop types
+        : layer === 3 && otherPropType
+          ? { propType: thisPropType, otherPropType } // Layer 3: both prop types
+          : { propType: thisPropType }; // Layer 2: just this prop
 
     const arrowColor = selectedArrow.color as MotionColor;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
-      selectedArrow.pictographData, arrowColor, thisPropType, otherPropType || thisPropType
+      selectedArrow.pictographData,
+      arrowColor,
+      thisPropType,
+      otherPropType || thisPropType
     );
 
     return this.keyGenerator.generateKey(
@@ -155,7 +159,10 @@ export class ArrowAdjustmentOrchestrator {
 
     const arrowColor = selectedArrow.color as MotionColor;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
-      selectedArrow.pictographData, arrowColor, thisPropType, otherPropType
+      selectedArrow.pictographData,
+      arrowColor,
+      thisPropType,
+      otherPropType
     );
 
     // Generate BASE key (layer 1) for cascading lookup
@@ -178,7 +185,12 @@ export class ArrowAdjustmentOrchestrator {
   ): Promise<ApplyMovementResult> {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) {
-      return { targetKey: {} as AdjustmentTargetKey, newX: 0, newY: 0, success: false };
+      return {
+        targetKey: {} as AdjustmentTargetKey,
+        newX: 0,
+        newY: 0,
+        success: false,
+      };
     }
 
     const { motionData, pictographData, color } = selectedArrow;
@@ -190,22 +202,46 @@ export class ArrowAdjustmentOrchestrator {
     // Calculate the arrow location properly
     // The motionData.arrowLocation often defaults to NORTH when not explicitly set,
     // which breaks the transformation for different pictograph variants.
-    const arrowLocation = this.arrowLocationCalculator.calculateLocation(motionData, pictographData);
+    const arrowLocation = this.arrowLocationCalculator.calculateLocation(
+      motionData,
+      pictographData
+    );
 
-    // Transform screen-space adjustment to reference value using the INVERSE transformation.
-    // This ensures that pressing W (up) on ANY variant moves the arrow UP on that variant's screen.
-    const referenceAdjustment = this.screenSpaceTransformer.transformToReference(
-      new Point(screenSpaceAdjustment.x, screenSpaceAdjustment.y),
+    const placementFrame = createCanonicalPlacementContext(
+      pictographData,
       motionData,
       arrowLocation
     );
+    const canonicalScreenAdjustment = rotateScreenVectorToCanonical(
+      screenSpaceAdjustment,
+      placementFrame.rotationDegrees
+    );
+
+    // Transform screen-space adjustment to reference value using the INVERSE transformation.
+    // This ensures that pressing W (up) on ANY variant moves the arrow UP on that variant's screen.
+    const referenceAdjustment =
+      this.screenSpaceTransformer.transformToReference(
+        new Point(canonicalScreenAdjustment.x, canonicalScreenAdjustment.y),
+        placementFrame.motionData,
+        placementFrame.location ?? arrowLocation
+      );
 
     // Determine save layer and build target key
     const defaultLayer = this.getDefaultSaveLayer(thisPropType, otherPropType);
-    const targetKey = this.generateTargetKey(selectedArrow, defaultLayer, thisPropType, otherPropType);
+    const targetKey = this.generateTargetKey(
+      selectedArrow,
+      defaultLayer,
+      thisPropType,
+      otherPropType
+    );
 
     if (!targetKey) {
-      return { targetKey: {} as AdjustmentTargetKey, newX: 0, newY: 0, success: false };
+      return {
+        targetKey: {} as AdjustmentTargetKey,
+        newX: 0,
+        newY: 0,
+        success: false,
+      };
     }
 
     // Get current value via cascading lookup or calculator fallback
@@ -262,7 +298,12 @@ export class ArrowAdjustmentOrchestrator {
     const repo = getGlobalAdjustmentRepository();
     if (!repo) return null;
 
-    const targetKey = this.generateTargetKey(selectedArrow, currentLayer, thisPropType, otherPropType);
+    const targetKey = this.generateTargetKey(
+      selectedArrow,
+      currentLayer,
+      thisPropType,
+      otherPropType
+    );
     if (!targetKey) return null;
 
     try {
@@ -303,20 +344,37 @@ export class ArrowAdjustmentOrchestrator {
     // Check global repo at the target layer first
     const currentAdjustmentAtLayer = repo.getAdjustment(targetKey);
     if (currentAdjustmentAtLayer) {
-      return { currentX: currentAdjustmentAtLayer.x, currentY: currentAdjustmentAtLayer.y };
+      return {
+        currentX: currentAdjustmentAtLayer.x,
+        currentY: currentAdjustmentAtLayer.y,
+      };
     }
 
     // No global adjustment at the target layer - try cascading lookup
     // (a less-specific layer might have an adjustment we should build on)
     const { motionData, pictographData } = selectedArrow;
     const pictographWithPropOverrides = this.overridePictographPropTypes(
-      pictographData, arrowColor, thisPropType, otherPropType
+      pictographData,
+      arrowColor,
+      thisPropType,
+      otherPropType
     );
-    const baseKey = this.keyGenerator.generateKey(motionData, pictographWithPropOverrides, arrowColor);
-    const cascadingResult = repo.getAdjustmentCascading(baseKey, thisPropType, otherPropType);
+    const baseKey = this.keyGenerator.generateKey(
+      motionData,
+      pictographWithPropOverrides,
+      arrowColor
+    );
+    const cascadingResult = repo.getAdjustmentCascading(
+      baseKey,
+      thisPropType,
+      otherPropType
+    );
 
     if (cascadingResult) {
-      return { currentX: cascadingResult.adjustment.x, currentY: cascadingResult.adjustment.y };
+      return {
+        currentX: cascadingResult.adjustment.x,
+        currentY: cascadingResult.adjustment.y,
+      };
     }
 
     // No global at any layer - use the calculator to get the same base value
@@ -351,12 +409,13 @@ export class ArrowAdjustmentOrchestrator {
           }
         : pictographData;
 
-      const baseAdjustment = await this.arrowAdjustmentCalculator.getBaseAdjustmentPublic(
-        pictographWithPropOverrides,
-        motionWithPropOverride,
-        pictographData.letter || "",
-        arrowColor
-      );
+      const baseAdjustment =
+        await this.arrowAdjustmentCalculator.getBaseAdjustmentPublic(
+          pictographWithPropOverrides,
+          motionWithPropOverride,
+          pictographData.letter || "",
+          arrowColor
+        );
       return { currentX: baseAdjustment.x, currentY: baseAdjustment.y };
     } catch (error) {
       logger.warn("Failed to get base adjustment, using (0, 0):", error);

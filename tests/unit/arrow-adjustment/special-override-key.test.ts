@@ -15,16 +15,30 @@ vi.mock("firebase/firestore", () => ({
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { computeSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
-// Representative pictograph: letter P, box mode, both Pro motions, both staff.
-// motions.{blue,red} drive oriFolder/turns; the passed redMotion (distinct object)
-// drives the propType segment so toggling it changes only the last segment.
+// Representative pictograph: letter P, Diamond display, both Pro motions, both staff.
+// Display orientation is not persisted as placement ownership.
 function makePictograph(): PictographData {
   return {
     letter: "P",
     motions: {
-      blue: { motionType: "pro", startOrientation: "in", turns: 0, propType: "staff", color: "blue", gridMode: "box" },
-      red: { motionType: "pro", startOrientation: "in", turns: 0, propType: "staff", color: "red", gridMode: "box" },
+      blue: {
+        motionType: "pro",
+        startOrientation: "in",
+        turns: 0,
+        propType: "staff",
+        color: "blue",
+        gridMode: GridMode.DIAMOND,
+      },
+      red: {
+        motionType: "pro",
+        startOrientation: "in",
+        turns: 0,
+        propType: "staff",
+        color: "red",
+        gridMode: GridMode.DIAMOND,
+      },
     },
   } as unknown as PictographData;
 }
@@ -36,7 +50,7 @@ function makeRedMotion(propType?: string): MotionData {
     turns: 0,
     propType,
     color: "red",
-    gridMode: "box",
+    gridMode: GridMode.DIAMOND,
   } as unknown as MotionData;
 }
 
@@ -47,19 +61,37 @@ describe("computeSpecialOverrideKey", () => {
     expect(key.split("|")).toHaveLength(7);
     // propType undefined → defaults to "staff".
     expect(key.endsWith("|staff")).toBe(true);
-    expect(key).toBe("box|from_layer1|P|0,0|pro|red|staff");
+    expect(key).toBe("canonical|from_layer1|P|0,0|pro|red|staff");
   });
 
-  it("changes ONLY the last segment when the motion's prop type changes", () => {
+  it("keeps canonical ownership while deriving the prop-specific orientation bucket", () => {
     const pd = makePictograph();
-    const staffKey = computeSpecialOverrideKey(pd, makeRedMotion(undefined), "red");
-    const fanKey = computeSpecialOverrideKey(pd, makeRedMotion("fan"), "red");
+    const staffKey = computeSpecialOverrideKey(
+      pd,
+      makeRedMotion(undefined),
+      "red"
+    );
+    const fanPictograph = {
+      ...pd,
+      motions: {
+        ...pd.motions,
+        red: { ...pd.motions.red!, propType: "fan" },
+      },
+    };
+    const fanKey = computeSpecialOverrideKey(
+      fanPictograph,
+      makeRedMotion("fan"),
+      "red"
+    );
 
     const staffSegs = staffKey.split("|");
     const fanSegs = fanKey.split("|");
 
-    // First 6 segments identical, only the 7th (propType) differs.
-    expect(fanSegs.slice(0, 6)).toEqual(staffSegs.slice(0, 6));
+    expect(staffSegs[0]).toBe("canonical");
+    expect(fanSegs[0]).toBe("canonical");
+    expect(staffSegs[1]).toBe("from_layer1");
+    expect(fanSegs[1]).toBe("in_in");
+    expect(fanSegs.slice(2, 6)).toEqual(staffSegs.slice(2, 6));
     expect(staffSegs[6]).toBe("staff");
     expect(fanSegs[6]).toBe("fan");
   });

@@ -31,16 +31,25 @@ export async function initializeDefaultOverrides(): Promise<void> {
 async function doInitialize(): Promise<void> {
   try {
     logger.info("Initializing default placement override system...");
-    const { DefaultArrowPlacementPersister } = await import("./default-arrow-placement-persister");
-    const { DefaultArrowPlacementRepository } = await import("./default-arrow-placement-repository");
+    const { DefaultArrowPlacementPersister } =
+      await import("./default-arrow-placement-persister");
+    const { DefaultArrowPlacementRepository } =
+      await import("./default-arrow-placement-repository");
     const persister = new DefaultArrowPlacementPersister();
     const repository = new DefaultArrowPlacementRepository(persister);
     await repository.initialize();
     repositoryInstance = repository;
 
     // Register the Firestore-first resolver. Any new override now shadows JSON.
-    setDefaultOverrideResolver((gridMode, motionType, placementKey, turns, propType) =>
-      repository.getValue(gridMode, propType, motionType, placementKey, turns),
+    setDefaultOverrideResolver(
+      (placementFrame, motionType, placementKey, turns, propType) =>
+        repository.getValue(
+          placementFrame,
+          propType,
+          motionType,
+          placementKey,
+          turns
+        )
     );
     // Existing cached renders predate the resolver — invalidate so they repopulate.
     pictographPreparer.clearCache();

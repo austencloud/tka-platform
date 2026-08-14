@@ -19,19 +19,16 @@ import {
 import type { IRotationAngleOverrideKeyGenerator } from "../../key-generation/services/rotation-angle-override-key-generator";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 import { specialPlacer, type SpecialPlacer } from "./special-placer";
-const STORAGE_KEY = "tka_rotation_overrides";
-
-interface RotationOverrideData {
-  [gridMode: string]: {
-    [oriKey: string]: {
-      [letter: string]: {
-        [turnsTuple: string]: {
-          [rotationKey: string]: boolean;
-        };
-      };
-    };
-  };
-}
+import {
+  canonicalRotationOverrideData,
+  clearRotationOverrides,
+  loadRotationOverrides,
+  saveRotationOverrides,
+  type RotationOverrideData,
+} from "./rotation-override-store";
+import { placementFrameForGridMode } from "../domain/placement-frame";
+import { PlacementFrame } from "../domain/placement-frame";
+import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
 
 export interface IRotationOverrideManager {
   /**
@@ -78,6 +75,12 @@ export class RotationOverrideManager implements IRotationOverrideManager {
     motion: MotionData,
     pictographData: PictographData
   ): Promise<boolean> {
+    const canonicalContext = createCanonicalPlacementContext(
+      pictographData,
+      motion
+    );
+    pictographData = canonicalContext.pictographData;
+    motion = canonicalContext.motionData;
     // Validate motion type - only DASH and STATIC can have rotation overrides
     const motionType = motion.motionType.toLowerCase();
     if (motionType !== "dash" && motionType !== "static") {
@@ -98,7 +101,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
     // it preserves the specific orientation (e.g. "clock_counter").
     const rawOriKey = generateOrientationKey(motion, pictographData);
     const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
-    const gridMode = this.getGridMode(pictographData);
+    const placementFrame = this.getPlacementFrame(pictographData);
     const turnsTuple = this.tupleGenerator.generateTurnsTuple(pictographData);
     const rotationKey =
       this.rotationKeyGenerator.generateRotationAngleOverrideKey(
@@ -111,14 +114,15 @@ export class RotationOverrideManager implements IRotationOverrideManager {
     const overrides = this.loadOverrides();
 
     // Ensure structure exists
-    if (!overrides[gridMode]) overrides[gridMode] = {};
-    if (!overrides[gridMode][oriKey]) overrides[gridMode][oriKey] = {};
-    if (!overrides[gridMode][oriKey][letter])
-      overrides[gridMode][oriKey][letter] = {};
-    if (!overrides[gridMode][oriKey][letter][turnsTuple])
-      overrides[gridMode][oriKey][letter][turnsTuple] = {};
+    if (!overrides[placementFrame]) overrides[placementFrame] = {};
+    if (!overrides[placementFrame][oriKey])
+      overrides[placementFrame][oriKey] = {};
+    if (!overrides[placementFrame][oriKey][letter])
+      overrides[placementFrame][oriKey][letter] = {};
+    if (!overrides[placementFrame][oriKey][letter][turnsTuple])
+      overrides[placementFrame][oriKey][letter][turnsTuple] = {};
 
-    const turnsData = overrides[gridMode][oriKey][letter][turnsTuple];
+    const turnsData = overrides[placementFrame][oriKey][letter][turnsTuple];
 
     // Toggle the effective state, including authored static JSON. Keeping an
     // explicit false value is necessary when the built-in placement flag is
@@ -164,9 +168,7 @@ export class RotationOverrideManager implements IRotationOverrideManager {
   }
 
   clearAllOverrides(): void {
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
-    }
+    clearRotationOverrides();
   }
 
   exportOverrides(): string {
@@ -176,7 +178,9 @@ export class RotationOverrideManager implements IRotationOverrideManager {
 
   importOverrides(jsonData: string): void {
     try {
-      const overrides = JSON.parse(jsonData) as RotationOverrideData;
+      const overrides = canonicalRotationOverrideData(
+        JSON.parse(jsonData) as RotationOverrideData
+      );
       this.saveOverrides(overrides);
     } catch (error) {
       console.error("Failed to import overrides:", error);
@@ -185,40 +189,26 @@ export class RotationOverrideManager implements IRotationOverrideManager {
   }
 
   private loadOverrides(): RotationOverrideData {
-    if (typeof localStorage === "undefined") {
-      return {};
-    }
-
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) return {};
-      return JSON.parse(data) as RotationOverrideData;
-    } catch (error) {
-      console.error("Failed to load rotation overrides:", error);
-      return {};
-    }
+    return loadRotationOverrides();
   }
 
   private saveOverrides(overrides: RotationOverrideData): void {
-    if (typeof localStorage === "undefined") {
-      return;
-    }
-
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+      saveRotationOverrides(overrides);
     } catch (error) {
       console.error("Failed to save rotation overrides:", error);
     }
   }
 
-  private getGridMode(pictographData: PictographData): string {
+  private getPlacementFrame(
+    pictographData: PictographData
+  ): "canonical" | "skewed" {
     if (pictographData.motions.blue && pictographData.motions.red) {
-      return _deriveGridMode(
-        pictographData.motions.blue,
-        pictographData.motions.red
+      return placementFrameForGridMode(
+        _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
       );
     }
-    return "diamond";
+    return PlacementFrame.CANONICAL;
   }
 }
 

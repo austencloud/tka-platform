@@ -14,7 +14,7 @@ export class NodeJsonCache implements IJsonCache {
 
   /**
    * Get JSON data from file system (cached)
-   * @param path Relative path from project root (e.g., "/data/arrow_placement/diamond/special/...")
+   * @param path Relative path from project root (e.g., "/data/arrow_placement/special/...")
    */
   async get<T = unknown>(path: string): Promise<T> {
     // Check cache first

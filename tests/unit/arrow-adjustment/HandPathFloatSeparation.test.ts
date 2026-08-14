@@ -99,20 +99,37 @@ describe("hand-path float arrow separation (G tog-same)", () => {
     // to the legacy bucket where the static JSON actually lives.
     expect(resolveEffectiveOriKey(rawOriKey, transformed)).toBe("in_in");
     expect(mapToLegacyBucket(rawOriKey)).toBe("from_layer1");
-    expect(turnsTupleGenerator.generateTurnsTuple(transformed)).toBe("(fl, fl)");
+    expect(turnsTupleGenerator.generateTurnsTuple(transformed)).toBe(
+      "(fl, fl)"
+    );
   });
 
   it("gives red its special adjustment and lets blue fall to the default", () => {
     const letterData = JSON.parse(
       readFileSync(
-        resolve(STATIC_ROOT, "data/arrow_placement/diamond/special/from_layer1/G_placements.json"),
+        resolve(
+          STATIC_ROOT,
+          "data/arrow_placement/special/from_layer1/G_placements.json"
+        ),
         "utf-8"
       )
     ) as Record<string, unknown>;
 
     const lookup = new SpecialPlacementLookup();
-    const redAdj = lookup.lookupAdjustment(letterData, "(fl, fl)", red, transformed, "red");
-    const blueAdj = lookup.lookupAdjustment(letterData, "(fl, fl)", blue, transformed, "blue");
+    const redAdj = lookup.lookupAdjustment(
+      letterData,
+      "(fl, fl)",
+      red,
+      transformed,
+      "red"
+    );
+    const blueAdj = lookup.lookupAdjustment(
+      letterData,
+      "(fl, fl)",
+      blue,
+      transformed,
+      "blue"
+    );
 
     expect(redAdj).toEqual(new Point(80, -100));
     expect(blueAdj).toBeNull(); // → falls through to the default tier
@@ -121,7 +138,10 @@ describe("hand-path float arrow separation (G tog-same)", () => {
   it("restores layer detection so blue's default key is beta-specific, not a bare miss", () => {
     const floatDefaults = JSON.parse(
       readFileSync(
-        resolve(STATIC_ROOT, "data/arrow_placement/diamond/default/default_diamond_float_placements.json"),
+        resolve(
+          STATIC_ROOT,
+          "data/arrow_placement/default/default_float_placements.json"
+        ),
         "utf-8"
       )
     ) as Record<string, [number, number][]>;
@@ -130,7 +150,9 @@ describe("hand-path float arrow separation (G tog-same)", () => {
     const blueKey = generatePlacementKey(blue, transformed, availableKeys);
     expect(blueKey).toBe("float_to_layer1_beta");
 
-    const blueDefault = (floatDefaults[blueKey] as unknown as Record<string, [number, number]>)["fl"];
+    const blueDefault = (
+      floatDefaults[blueKey] as unknown as Record<string, [number, number]>
+    )["fl"];
     expect(blueDefault).toEqual([30, -30]);
     // Separation: red's special base ≠ blue's default base.
     expect(blueDefault).not.toEqual([80, -100]);

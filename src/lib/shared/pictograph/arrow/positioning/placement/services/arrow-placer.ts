@@ -6,9 +6,10 @@
  */
 
 import type { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
+import { placementAssetRoot, PlacementFrame } from "../domain/placement-frame";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
 import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
-import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/simple-json-cache'
+import type { SimpleJsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
 import type {
   GridPlacementData,
   JsonPlacementData,
@@ -19,16 +20,18 @@ import type {
  * Returns the stored base [x, y] or null to fall through to the static map.
  */
 export type DefaultOverrideResolver = (
-  gridMode: string,
+  placementFrame: string,
   motionType: string,
   placementKey: string,
   turns: string,
-  propType: string,
+  propType: string
 ) => [number, number] | null;
 
 let defaultOverrideResolver: DefaultOverrideResolver | null = null;
 
-export function setDefaultOverrideResolver(fn: DefaultOverrideResolver | null): void {
+export function setDefaultOverrideResolver(
+  fn: DefaultOverrideResolver | null
+): void {
   defaultOverrideResolver = fn;
 }
 
@@ -37,15 +40,19 @@ export function setDefaultOverrideResolver(fn: DefaultOverrideResolver | null): 
  * MotionType, not members of it — a half-motion frame is letterless and looked
  * up by its own bucket ("pro_half" etc.), never by extending motionTypes.
  */
-export type SegmentPlacementKey = "pro_half" | "anti_half" | "dash_half" | "static_half";
+export type SegmentPlacementKey =
+  | "pro_half"
+  | "anti_half"
+  | "dash_half"
+  | "static_half";
 
 export class ArrowPlacer {
   private jsonCacheImpl: SimpleJsonCache;
 
-  // [gridMode][propType][motionType][placementKey][turns] = [x, y]
+  // [placementFrame][propType][motionType][placementKey][turns] = [x, y]
   private allPlacements: Record<string, Record<string, GridPlacementData>> = {};
 
-  // Lazily-loaded (gridMode, propType) buckets, e.g. "diamond:fan".
+  // Lazily-loaded authored-frame/prop buckets, e.g. "canonical:fan".
   private loadedKeys = new Set<string>();
 
   // Buckets whose load is in flight, keyed the same way. Collapses the N
@@ -57,43 +64,66 @@ export class ArrowPlacer {
   // a prop listed here but not seeded there reads a <prop>/ folder that doesn't
   // exist (silent staff fallback), and vice-versa.
   private static readonly SEEDED_PROPS = new Set([
-    "fan", "bigfan", "club", "bigclub", "triad", "bigtriad",
-    "minihoop", "bighoop", "buugeng", "bigbuugeng",
-    "doublestar", "bigdoublestar", "eightrings", "bigeightrings",
+    "fan",
+    "bigfan",
+    "club",
+    "bigclub",
+    "triad",
+    "bigtriad",
+    "minihoop",
+    "bighoop",
+    "buugeng",
+    "bigbuugeng",
+    "doublestar",
+    "bigdoublestar",
+    "eightrings",
+    "bigeightrings",
   ]);
 
-  private readonly motionTypes = ["pro", "anti", "float", "dash", "static"] as const;
+  private readonly motionTypes = [
+    "pro",
+    "anti",
+    "float",
+    "dash",
+    "static",
+  ] as const;
 
   // Sibling bucket for halved-arrow default placements — NOT added to
   // motionTypes above. A half-motion frame is letterless, so it never goes
   // through the letter tiers; it reads its own pro_half/anti_half/dash_half/
   // static_half file instead. float has no half variant (no shift-turns
   // concept to split).
-  private readonly segmentMotionTypes = ["pro_half", "anti_half", "dash_half", "static_half"] as const;
+  private readonly segmentMotionTypes = [
+    "pro_half",
+    "anti_half",
+    "dash_half",
+    "static_half",
+  ] as const;
 
-  /** Resolve the motion-type file paths for a (gridMode, propType). Seeded
+  /** Resolve the motion-type file paths for a canonical prop bucket. Seeded
    *  props read their <prop>/ subfolder; staff and unseeded props read root.
    *  The 4 _half segment files are staff-root only (v1) — seeded prop buckets
    *  skip them so a prop bucket doesn't fire 4 spurious missing-file warnings
    *  for data that hasn't been authored per-prop yet. Segment files are also
-   *  grid-mode-invariant: every grid mode reads the DIAMOND copies (see below). */
-  private filesFor(gridMode: string, propType: string): Record<string, string> {
+   *  grid-mode-invariant: every display grid reads the same authored files. */
+  private filesFor(propType: string): Record<string, string> {
+    const assetRoot = placementAssetRoot(PlacementFrame.CANONICAL);
     const seeded = ArrowPlacer.SEEDED_PROPS.has(propType);
     const sub = seeded ? `${propType}/` : "";
     const files: Record<string, string> = {};
     for (const mt of this.motionTypes) {
-      files[mt] = `/data/arrow_placement/${gridMode}/default/${sub}default_${gridMode}_${mt}_placements.json`;
+      files[mt] = `${assetRoot}/default/${sub}default_${mt}_placements.json`;
     }
     if (sub === "") {
       for (const mt of this.segmentMotionTypes) {
         // Segment (half-motion) nudges are authored GLYPH-LOCAL and are
         // grid-mode-invariant by design (arrow-positioning-orchestrator.ts
         // rotates one local value with the glyph): a single (motionType, turns)
-        // value serves every location/direction/grid. The diamond files are the
-        // single source of truth — box files must not exist (a second source
+        // value serves every location/direction/grid. The canonical files are
+        // the single source of truth; display-grid copies must not exist (a second source
         // would contradict the coverage oracle and the WASD authoring harness,
         // both diamond-only on purpose).
-        files[mt] = `/data/arrow_placement/diamond/default/default_diamond_${mt}_placements.json`;
+        files[mt] = `${assetRoot}/default/default_${mt}_placements.json`;
       }
     }
     return files;
@@ -108,39 +138,30 @@ export class ArrowPlacer {
   }
 
   /**
-   * Load all placement data from JSON files (staff, diamond + box)
+   * Load all canonical staff placement data from JSON files.
    * @deprecated Use ensureLoaded(gridMode, propType) for lazy prop-aware loading
    */
   async loadPlacementData(): Promise<void> {
-    // Load both grid modes for backwards compatibility (staff scope)
     await this.ensureLoaded(GridMode.DIAMOND, "staff");
-    await this.ensureLoaded(GridMode.BOX, "staff");
   }
 
   /**
    * Ensure placement data is loaded for a specific (grid mode, prop type).
-   * Only loads 5 files per bucket. SKEWED loads BOTH diamond and box for the
-   * same prop (arrows can end at cardinal or intercardinal positions).
+   * Diamond and Box alias the same canonical bucket. SKEWED also preloads that one
+   * authored source; its mixed-grid tuple behavior remains downstream.
    */
   async ensureLoaded(gridMode: GridMode, propType: string): Promise<void> {
-    if (gridMode === GridMode.SKEWED) {
-      await this.ensureLoaded(GridMode.DIAMOND, propType);
-      await this.ensureLoaded(GridMode.BOX, propType);
-      return;
-    }
-    const key = `${gridMode}:${propType}`;
+    void gridMode;
+    const placementFrame = PlacementFrame.CANONICAL;
+    const key = `${placementFrame}:${propType}`;
     if (this.loadedKeys.has(key)) return;
-    // loadPlacements swallows per-file fetch errors to {} (a missing file is a
-    // legitimate empty dataset), so the bucket is cached as-loaded even on a
-    // failed fetch — same contract as the pre-prop loader. Missing → {0,0}.
-    //
     // In-flight dedup mirrors SimpleJsonCache.loadingPromises: a grid of N
     // pictographs mounts N concurrent ensureLoaded calls for the same bucket
     // before any of them finishes, and without this every one of them fans out
     // its own file loads.
     let inFlight = this.loadingBuckets.get(key);
     if (!inFlight) {
-      inFlight = this.loadPlacements(gridMode, propType)
+      inFlight = this.loadPlacements(placementFrame, propType)
         .then(() => {
           this.loadedKeys.add(key);
         })
@@ -157,43 +178,42 @@ export class ArrowPlacer {
     await this.ensureLoaded(gridMode, "staff");
   }
 
-  private async loadPlacements(gridMode: GridMode, propType: string): Promise<void> {
-    const files = this.filesFor(gridMode, propType);
-    this.allPlacements[gridMode] ??= {};
+  private async loadPlacements(
+    placementFrame: PlacementFrame,
+    propType: string
+  ): Promise<void> {
+    const files = this.filesFor(propType);
+    this.allPlacements[placementFrame] ??= {};
     const byMotion: GridPlacementData = {};
     for (const [motionType, filePath] of Object.entries(files)) {
-      try {
-        const raw = await this.loadJsonFile(filePath);
-        const filtered: GridPlacementData[string] = {};
-        for (const [placementKey, turnsData] of Object.entries(raw ?? {})) {
-          filtered[placementKey] = {};
-          for (const [turns, coords] of Object.entries(turnsData ?? {})) {
-            if (Array.isArray(coords) && coords.length === 2 &&
-                typeof coords[0] === "number" && typeof coords[1] === "number") {
-              filtered[placementKey][turns] = coords as unknown as [number, number];
-            }
+      const raw = await this.loadJsonFile(filePath);
+      const filtered: GridPlacementData[string] = {};
+      for (const [placementKey, turnsData] of Object.entries(raw ?? {})) {
+        filtered[placementKey] = {};
+        for (const [turns, coords] of Object.entries(turnsData ?? {})) {
+          if (
+            Array.isArray(coords) &&
+            coords.length === 2 &&
+            typeof coords[0] === "number" &&
+            typeof coords[1] === "number"
+          ) {
+            filtered[placementKey][turns] = coords as unknown as [
+              number,
+              number,
+            ];
           }
         }
-        byMotion[motionType] = filtered;
-      } catch (error) {
-        console.warn(`Could not load ${motionType} placements for ${gridMode}/${propType}: ${error}`);
-        byMotion[motionType] = {};
       }
+      byMotion[motionType] = filtered;
     }
-    this.allPlacements[gridMode][propType] = byMotion;
+    this.allPlacements[placementFrame][propType] = byMotion;
   }
 
   /**
    * Load JSON file with caching
    */
   private async loadJsonFile(path: string): Promise<JsonPlacementData> {
-    try {
-      const data = await this.jsonCacheImpl.get(path);
-      return data as JsonPlacementData;
-    } catch (error) {
-      console.warn(`Failed to load placement data from ${path}:`, error);
-      return {};
-    }
+    return (await this.jsonCacheImpl.get(path)) as JsonPlacementData;
   }
 
   /**
@@ -204,28 +224,31 @@ export class ArrowPlacer {
     placementKey: string,
     turns: number | string,
     gridMode: GridMode = GridMode.DIAMOND,
-    propType: string = "staff",
+    propType: string = "staff"
   ): Promise<{ x: number; y: number }> {
     // SEEDED_PROPS holds lowercase keys; normalize once so a non-lowercased
     // caller can't silently miss its bucket and fall back to staff.
     const prop = propType.toLowerCase();
+    const placementFrame = PlacementFrame.CANONICAL;
     await this.ensureLoaded(gridMode, prop);
     const turnsStr = this.formatTurnsForLookup(turns);
 
     // Firestore-first: an admin default override shadows the static JSON value.
     const override = defaultOverrideResolver
       ? defaultOverrideResolver(
-          gridMode as unknown as string,
+          placementFrame,
           motionType as unknown as string,
           placementKey,
           turnsStr,
-          prop,
+          prop
         )
       : null;
     if (override) return { x: override[0], y: override[1] };
 
     const adjustment =
-      this.allPlacements[gridMode]?.[prop]?.[motionType]?.[placementKey]?.[turnsStr];
+      this.allPlacements[placementFrame]?.[prop]?.[motionType]?.[
+        placementKey
+      ]?.[turnsStr];
     if (!adjustment) return { x: 0, y: 0 };
     return { x: adjustment[0], y: adjustment[1] };
   }
@@ -244,7 +267,8 @@ export class ArrowPlacer {
   ): Promise<string[]> {
     await this.ensureLoaded(gridMode, "staff");
 
-    const motionPlacements = this.allPlacements[gridMode]?.["staff"]?.[motionType];
+    const motionPlacements =
+      this.allPlacements[PlacementFrame.CANONICAL]?.["staff"]?.[motionType];
     if (!motionPlacements) {
       return [];
     }
@@ -253,19 +277,11 @@ export class ArrowPlacer {
   }
 
   /**
-   * Check if staff data is loaded for a grid mode (or diamond if not specified)
+   * Check if the canonical staff data has been loaded.
    */
   isLoaded(gridMode?: GridMode): boolean {
-    if (gridMode) {
-      // SKEWED mode requires both DIAMOND and BOX staff buckets to be loaded
-      if (gridMode === GridMode.SKEWED) {
-        return this.loadedKeys.has(`${GridMode.DIAMOND}:staff`) &&
-               this.loadedKeys.has(`${GridMode.BOX}:staff`);
-      }
-      return this.loadedKeys.has(`${gridMode}:staff`);
-    }
-    // For backwards compatibility, check if at least diamond staff is loaded
-    return this.loadedKeys.has(`${GridMode.DIAMOND}:staff`);
+    void gridMode;
+    return this.loadedKeys.has(`${PlacementFrame.CANONICAL}:staff`);
   }
 
   /**
@@ -306,7 +322,8 @@ export class ArrowPlacer {
   ): Promise<{ [turns: string]: [number, number] }> {
     await this.ensureLoaded(gridMode, "staff");
 
-    const motionPlacements = this.allPlacements[gridMode]?.["staff"]?.[motionType];
+    const motionPlacements =
+      this.allPlacements[PlacementFrame.CANONICAL]?.["staff"]?.[motionType];
     return motionPlacements?.[placementKey] || {};
   }
 }

@@ -5,24 +5,28 @@
  * to all pictographs matching the same key.
  *
  * Key Structure (3 layers for cascading lookups):
- * - Layer 1 (Base): gridMode|oriKey|letter|turnsTuple|arrowKey
+ * - Layer 1 (Base): placementFrame|oriKey|letter|turnsTuple|arrowKey
  *   - Staff adjustments; serve as fallback for all props
- * - Layer 2 (Prop-Specific): gridMode|oriKey|letter|turnsTuple|arrowKey|propType
+ * - Layer 2 (Prop-Specific): placementFrame|oriKey|letter|turnsTuple|arrowKey|propType
  *   - Adjustments for specific prop types (fan, club, buugeng, etc.)
- * - Layer 3 (Combination Override): gridMode|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
+ * - Layer 3 (Combination Override): placementFrame|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
  *   - Edge cases where blue+red prop combo causes conflicts
  *
  * These adjustments are stored in Firestore and override the static JSON special placements.
  */
 
 import type { Timestamp } from "firebase/firestore";
+import {
+  normalizePlacementFrame,
+  type PlacementFrame,
+} from "../../placement/domain/placement-frame";
 
 /**
  * A single global arrow adjustment entry
  */
 export interface GlobalArrowAdjustment {
-  /** Grid mode: "diamond" or "box" */
-  readonly gridMode: string;
+  /** Authored ownership frame. Diamond and Box both resolve to canonical. */
+  readonly placementFrame: PlacementFrame;
 
   /** Orientation key: "from_layer1", "from_layer2", etc. */
   readonly oriKey: string;
@@ -59,7 +63,7 @@ export interface GlobalArrowAdjustment {
  * Data required to create or update a global adjustment
  */
 export interface GlobalArrowAdjustmentInput {
-  readonly gridMode: string;
+  readonly placementFrame: string;
   readonly oriKey: string;
   readonly letter: string;
   readonly turnsTuple: string;
@@ -81,7 +85,7 @@ export interface GlobalArrowAdjustmentInput {
  * - Layer 3: 7 parts (includes propType + otherPropType)
  */
 export interface GlobalAdjustmentKey {
-  readonly gridMode: string;
+  readonly placementFrame: PlacementFrame;
   readonly oriKey: string;
   readonly letter: string;
   readonly turnsTuple: string;
@@ -104,12 +108,12 @@ export function getKeyLayer(key: GlobalAdjustmentKey): 1 | 2 | 3 {
 /**
  * Generate a string key from adjustment key components.
  * Format varies by layer:
- * - Layer 1: gridMode|oriKey|letter|turnsTuple|arrowKey
- * - Layer 2: gridMode|oriKey|letter|turnsTuple|arrowKey|propType
- * - Layer 3: gridMode|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
+ * - Layer 1: placementFrame|oriKey|letter|turnsTuple|arrowKey
+ * - Layer 2: placementFrame|oriKey|letter|turnsTuple|arrowKey|propType
+ * - Layer 3: placementFrame|oriKey|letter|turnsTuple|arrowKey|propType|otherPropType
  */
 export function generateAdjustmentKeyString(key: GlobalAdjustmentKey): string {
-  let keyString = `${key.gridMode}|${key.oriKey}|${key.letter}|${key.turnsTuple}|${key.arrowKey}`;
+  let keyString = `${normalizePlacementFrame(key.placementFrame)}|${key.oriKey}|${key.letter}|${key.turnsTuple}|${key.arrowKey}`;
   if (key.propType) {
     keyString += `|${key.propType}`;
     if (key.otherPropType) {
@@ -133,15 +137,29 @@ export function parseAdjustmentKeyString(
     return null;
   }
 
-  const [gridMode, oriKey, letter, turnsTuple, arrowKey, propType, otherPropType] = parts;
+  const [
+    placementFrameValue,
+    oriKey,
+    letter,
+    turnsTuple,
+    arrowKey,
+    propType,
+    otherPropType,
+  ] = parts;
 
   // Base fields are required
-  if (!gridMode || !oriKey || !letter || !turnsTuple || !arrowKey) {
+  if (!placementFrameValue || !oriKey || !letter || !turnsTuple || !arrowKey) {
+    return null;
+  }
+  let placementFrame: PlacementFrame;
+  try {
+    placementFrame = normalizePlacementFrame(placementFrameValue);
+  } catch {
     return null;
   }
 
   const key: GlobalAdjustmentKey = {
-    gridMode,
+    placementFrame,
     oriKey,
     letter,
     turnsTuple,

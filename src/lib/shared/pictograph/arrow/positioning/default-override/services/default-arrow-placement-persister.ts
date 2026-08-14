@@ -19,6 +19,7 @@ import {
   type PlacementValue,
 } from "../domain/default-arrow-placement";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 const logger = createComponentLogger("DefaultArrowPlacementPersister");
 
@@ -27,13 +28,13 @@ const HISTORY_COLLECTION_NAME = "default_arrow_adjustment_history";
 
 /** The single field the selected-arrow history query filters on. */
 function buildEntryKey(
-  gridMode: string,
+  placementFrame: string,
   propType: string,
   motionType: string,
   placementKey: string,
-  turns: string,
+  turns: string
 ): string {
-  return `${generateDefaultDocId(gridMode, propType, motionType)}|${placementKey}|${turns}`;
+  return `${generateDefaultDocId(placementFrame, propType, motionType)}|${placementKey}|${turns}`;
 }
 
 export class DefaultArrowPlacementPersister {
@@ -41,7 +42,10 @@ export class DefaultArrowPlacementPersister {
 
   async loadAll(): Promise<DefaultArrowPlacementDoc[]> {
     try {
-      const docs = await firestoreList(COLLECTION_NAME, DefaultArrowPlacementDocSchema);
+      const docs = await firestoreList(
+        COLLECTION_NAME,
+        DefaultArrowPlacementDocSchema
+      );
       logger.success(`Loaded ${docs.length} default placement docs`);
       return docs as unknown as DefaultArrowPlacementDoc[];
     } catch (error: unknown) {
@@ -55,38 +59,51 @@ export class DefaultArrowPlacementPersister {
     }
   }
 
-  /** Merge a single base value into the {gridMode}_{propType}_{motionType} doc. */
+  /** Merge a single base value into the {placementFrame}_{propType}_{motionType} doc. */
   async saveValue(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
     value: PlacementValue,
     userEmail: string,
-    prevValue: PlacementValue | null = null,
+    prevValue: PlacementValue | null = null
   ): Promise<void> {
-    const id = generateDefaultDocId(gridMode, propType, motionType);
+    const canonicalFrame = normalizePlacementFrame(placementFrame);
+    const id = generateDefaultDocId(canonicalFrame, propType, motionType);
     try {
       await firestoreSet(
         COLLECTION_NAME,
         id,
         {
-          gridMode,
+          placementFrame: canonicalFrame,
           propType,
           motionType,
           placements: { [placementKey]: { [turns]: value } },
           updatedBy: userEmail,
         } as Record<string, unknown>,
-        { merge: true },
+        { merge: true }
       );
-      logger.success(`Saved default ${id} ${placementKey}/${turns} → (${value[0]}, ${value[1]})`);
+      logger.success(
+        `Saved default ${id} ${placementKey}/${turns} → (${value[0]}, ${value[1]})`
+      );
       this.appendHistory(
-        gridMode, propType, motionType, placementKey, turns,
-        "save", value, prevValue, userEmail,
+        canonicalFrame,
+        propType,
+        motionType,
+        placementKey,
+        turns,
+        "save",
+        value,
+        prevValue,
+        userEmail
       );
     } catch (error) {
-      logger.error(`Failed to save default ${id} ${placementKey}/${turns}:`, error);
+      logger.error(
+        `Failed to save default ${id} ${placementKey}/${turns}:`,
+        error
+      );
       throw error;
     }
   }
@@ -96,7 +113,7 @@ export class DefaultArrowPlacementPersister {
    * the save/delete it records. Mirrors the global persister's appendHistory.
    */
   private async appendHistory(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
@@ -104,18 +121,24 @@ export class DefaultArrowPlacementPersister {
     action: "save" | "delete",
     newValue: PlacementValue | null,
     prevValue: PlacementValue | null,
-    userEmail: string,
+    userEmail: string
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
       const historyDoc = doc(collection(firestore, HISTORY_COLLECTION_NAME));
       await setDoc(historyDoc, {
-        gridMode,
+        placementFrame,
         propType,
         motionType,
         placementKey,
         turns,
-        entryKey: buildEntryKey(gridMode, propType, motionType, placementKey, turns),
+        entryKey: buildEntryKey(
+          placementFrame,
+          propType,
+          motionType,
+          placementKey,
+          turns
+        ),
         action,
         newX: newValue ? newValue[0] : null,
         newY: newValue ? newValue[1] : null,
@@ -131,24 +154,36 @@ export class DefaultArrowPlacementPersister {
 
   /** Remove a single base value (revert that key/turns to the JSON baseline). */
   async deleteValue(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
     userEmail: string = "unknown",
-    prevValue: PlacementValue | null = null,
+    prevValue: PlacementValue | null = null
   ): Promise<void> {
-    const id = generateDefaultDocId(gridMode, propType, motionType);
+    const canonicalFrame = normalizePlacementFrame(placementFrame);
+    const id = generateDefaultDocId(canonicalFrame, propType, motionType);
     try {
       const firestore = await getFirestoreInstance();
       const docRef = doc(firestore, COLLECTION_NAME, id);
       // FieldPath, not a dotted string: the `turns` segment ("1.5") contains a dot.
-      await updateDoc(docRef, new FieldPath("placements", placementKey, turns), deleteField());
+      await updateDoc(
+        docRef,
+        new FieldPath("placements", placementKey, turns),
+        deleteField()
+      );
       logger.success(`Deleted default ${id} ${placementKey}/${turns}`);
       this.appendHistory(
-        gridMode, propType, motionType, placementKey, turns,
-        "delete", null, prevValue, userEmail,
+        canonicalFrame,
+        propType,
+        motionType,
+        placementKey,
+        turns,
+        "delete",
+        null,
+        prevValue,
+        userEmail
       );
     } catch (error) {
       // Already at JSON baseline: no Firestore doc/field to remove. `updateDoc`
@@ -158,10 +193,15 @@ export class DefaultArrowPlacementPersister {
       const code = (error as { code?: string })?.code;
       const msg = error instanceof Error ? error.message : String(error);
       if (code === "not-found" || msg.includes("No document to update")) {
-        logger.info(`No default override to delete for ${id} ${placementKey}/${turns} (already at baseline)`);
+        logger.info(
+          `No default override to delete for ${id} ${placementKey}/${turns} (already at baseline)`
+        );
         return;
       }
-      logger.error(`Failed to delete default ${id} ${placementKey}/${turns}:`, error);
+      logger.error(
+        `Failed to delete default ${id} ${placementKey}/${turns}:`,
+        error
+      );
       throw error;
     }
   }
@@ -185,7 +225,7 @@ export class DefaultArrowPlacementPersister {
               if (decoded && data.placements) {
                 onChange({
                   id: change.doc.id,
-                  gridMode: data.gridMode ?? decoded.gridMode,
+                  placementFrame: data.placementFrame ?? decoded.placementFrame,
                   propType: data.propType ?? decoded.propType,
                   motionType: data.motionType ?? decoded.motionType,
                   placements: data.placements,
@@ -198,11 +238,13 @@ export class DefaultArrowPlacementPersister {
           (error: unknown) => {
             const msg = error instanceof Error ? error.message : String(error);
             if (msg.includes("permission")) {
-              logger.warn("Default placement subscription not accessible (permissions).");
+              logger.warn(
+                "Default placement subscription not accessible (permissions)."
+              );
             } else {
               logger.error("Subscription error:", error);
             }
-          },
+          }
         );
       })
       .catch((error: unknown) => {

@@ -77,16 +77,9 @@ export class GlobalArrowAdjustmentRepository {
         globalAdjustmentVersion.increment();
       }
 
-      // The collection requires auth to read — a listener opened while signed
-      // out just gets permission-killed. resumeSubscription() picks it up
-      // once the boot orchestrator re-initializes after sign-in.
-      if (authState.isAuthenticated) {
-        this.startSubscription();
-      }
+      this.startSubscription();
 
-      logger.success(
-        `Initialized with ${this.state.count} global adjustments`
-      );
+      logger.success(`Initialized with ${this.state.count} global adjustments`);
     } catch (error) {
       const message =
         error instanceof Error
@@ -106,13 +99,15 @@ export class GlobalArrowAdjustmentRepository {
       // On add/modify
       (adjustment: GlobalArrowAdjustment) => {
         this.state.setAdjustment(adjustment);
-        logger.info(`Real-time update: ${generateAdjustmentKeyString({
-          gridMode: adjustment.gridMode,
-          oriKey: adjustment.oriKey,
-          letter: adjustment.letter,
-          turnsTuple: adjustment.turnsTuple,
-          arrowKey: adjustment.arrowKey,
-        })}`);
+        logger.info(
+          `Real-time update: ${generateAdjustmentKeyString({
+            placementFrame: adjustment.placementFrame,
+            oriKey: adjustment.oriKey,
+            letter: adjustment.letter,
+            turnsTuple: adjustment.turnsTuple,
+            arrowKey: adjustment.arrowKey,
+          })}`
+        );
       },
       // On remove
       (keyString: string) => {
@@ -123,30 +118,6 @@ export class GlobalArrowAdjustmentRepository {
         }
       }
     );
-  }
-
-  /**
-   * Stop the Firestore listener but keep loaded adjustments in memory.
-   * Called before sign-out so the listener isn't permission-killed when
-   * the auth token is invalidated.
-   */
-  pauseSubscription(): void {
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = null;
-      logger.info("Subscription paused");
-    }
-  }
-
-  /**
-   * Start the Firestore listener if it isn't running and the user is
-   * authenticated. The initial snapshot redelivers every doc, so state
-   * catches up on anything missed while paused.
-   */
-  resumeSubscription(): void {
-    if (this.unsubscribe || !authState.isAuthenticated) return;
-    this.startSubscription();
-    logger.info("Subscription resumed");
   }
 
   /**
@@ -188,7 +159,12 @@ export class GlobalArrowAdjustmentRepository {
     otherPropType: string,
     legacyOriKey?: string
   ): CascadingLookupResult | null {
-    return this.state.getAdjustmentCascading(baseKey, thisPropType, otherPropType, legacyOriKey);
+    return this.state.getAdjustmentCascading(
+      baseKey,
+      thisPropType,
+      otherPropType,
+      legacyOriKey
+    );
   }
 
   /** All loaded adjustments, in the exact shape `state.loadAll` consumes (bundle snapshot). */
@@ -208,7 +184,7 @@ export class GlobalArrowAdjustmentRepository {
 
     // Build key with optional prop types
     const key: GlobalAdjustmentKey = {
-      gridMode: input.gridMode,
+      placementFrame: input.placementFrame,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -233,7 +209,7 @@ export class GlobalArrowAdjustmentRepository {
     } as unknown as Timestamp;
 
     const adjustment: GlobalArrowAdjustment = {
-      gridMode: input.gridMode,
+      placementFrame: input.placementFrame,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -267,7 +243,7 @@ export class GlobalArrowAdjustmentRepository {
 
     // Build key with optional prop types
     const key: GlobalAdjustmentKey = {
-      gridMode: input.gridMode,
+      placementFrame: input.placementFrame,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,

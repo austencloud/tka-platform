@@ -35,6 +35,10 @@
   import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
   import { computeSpecialOverrideKey } from "$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-key";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    createCanonicalPlacementContext,
+    rotateScreenVectorToCanonical,
+  } from "$lib/shared/pictograph/arrow/positioning/calculation/services/canonical-placement-frame";
 
   const logger = createComponentLogger("PipelineEditorDock");
 
@@ -203,7 +207,7 @@
   // The Default-tier lookup identity, surfaced by the diagnostics producer.
   const defaultLookup = $derived.by(
     (): {
-      gridMode: string;
+      placementFrame: string;
       propType: string;
       motionType: string;
       placementKey: string;
@@ -211,9 +215,9 @@
     } | null => {
       if (!diagnostics?.default) return null;
       const d = diagnostics.default;
-      if (!d.gridMode || !d.motionType || !d.placementKey) return null;
+      if (!d.placementFrame || !d.motionType || !d.placementKey) return null;
       return {
-        gridMode: d.gridMode,
+        placementFrame: d.placementFrame,
         propType: d.propType,
         motionType: d.motionType,
         placementKey: d.placementKey,
@@ -229,7 +233,7 @@
     if (!lk) return false;
     return (
       getDefaultOverrideRepository()?.hasValue(
-        lk.gridMode,
+        lk.placementFrame,
         lk.propType,
         lk.motionType,
         lk.placementKey,
@@ -463,14 +467,24 @@
     };
     const dir = directionMap[key]!;
     const motion = stepData.motions?.[activeColor!];
-    if (motion && arrowLocation) {
-      // WASD is a SCREEN-space direction; tier values are REFERENCE-space.
-      // Invert the per-quadrant directional-tuple matrix so the pressed key
-      // moves the arrow in that screen direction (correct for 90°/270° too).
-      const refDelta = screenSpaceAdjustmentTransformer.transformToReference(
-        new Point(dir.dx, dir.dy),
+    const pd = selectedArrowContext?.pictographData;
+    if (motion && arrowLocation && pd) {
+      const placementFrame = createCanonicalPlacementContext(
+        pd,
         motion,
         arrowLocation
+      );
+      const canonicalScreenDelta = rotateScreenVectorToCanonical(
+        { x: dir.dx, y: dir.dy },
+        placementFrame.rotationDegrees
+      );
+      // WASD is a SCREEN-space direction; tier values are REFERENCE-space.
+      // Undo the box-frame rotation, then invert the canonical diamond tuple so
+      // the pressed key moves the visible arrow in the requested direction.
+      const refDelta = screenSpaceAdjustmentTransformer.transformToReference(
+        new Point(canonicalScreenDelta.x, canonicalScreenDelta.y),
+        placementFrame.motionData,
+        placementFrame.location ?? arrowLocation
       );
       editX += refDelta.x;
       editY += refDelta.y;
@@ -611,7 +625,7 @@
     if (!fields) return null;
 
     return {
-      gridMode: fields.gridMode,
+      placementFrame: fields.placementFrame,
       oriFolder: fields.oriFolder,
       letter: fields.letter,
       turnsTuple: fields.turnsTuple,
@@ -674,7 +688,7 @@
     const lk = defaultLookup;
     if (!repo || !lk) return;
     repo.saveDefaultLocal(
-      lk.gridMode,
+      lk.placementFrame,
       lk.propType,
       lk.motionType,
       lk.placementKey,
@@ -693,7 +707,7 @@
     try {
       saveState = "saving";
       await repo.saveDefault(
-        lk.gridMode,
+        lk.placementFrame,
         lk.propType,
         lk.motionType,
         lk.placementKey,
@@ -719,14 +733,14 @@
     if (!repo || !lk) return;
     try {
       repo.deleteDefaultLocal(
-        lk.gridMode,
+        lk.placementFrame,
         lk.propType,
         lk.motionType,
         lk.placementKey,
         lk.turns
       );
       await repo.deleteDefault(
-        lk.gridMode,
+        lk.placementFrame,
         lk.propType,
         lk.motionType,
         lk.placementKey,
@@ -839,7 +853,7 @@
     <div class="dock-actions">
       {#if editTarget === "default" && defaultLookup}
         <DefaultArrowAdjustmentHistory
-          gridMode={defaultLookup.gridMode}
+          placementFrame={defaultLookup.placementFrame}
           propType={defaultLookup.propType}
           motionType={defaultLookup.motionType}
           placementKey={defaultLookup.placementKey}

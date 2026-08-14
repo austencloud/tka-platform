@@ -51,7 +51,10 @@ export function createPropGeometryAdjustmentState() {
         const adjustment = adjustmentsMap.get(candidateKey);
         if (adjustment) {
           return {
-            adjustment: { x: adjustment.adjustmentX, y: adjustment.adjustmentY },
+            adjustment: {
+              x: adjustment.adjustmentX,
+              y: adjustment.adjustmentY,
+            },
             matchedKey: candidateKey,
           };
         }
@@ -75,7 +78,7 @@ export function createPropGeometryAdjustmentState() {
 
     setAdjustment(adjustment: PropGeometryAdjustment): void {
       const keyString = generatePropGeometryKeyString({
-        gridMode: adjustment.gridMode,
+        placementFrame: adjustment.placementFrame,
         propType: adjustment.propType,
         otherPropType: adjustment.otherPropType,
         positionType: adjustment.positionType,
@@ -107,7 +110,7 @@ export function createPropGeometryAdjustmentState() {
         const newMap = new Map<string, PropGeometryAdjustment>();
         for (const adjustment of adjustments) {
           const keyString = generatePropGeometryKeyString({
-            gridMode: adjustment.gridMode,
+            placementFrame: adjustment.placementFrame,
             propType: adjustment.propType,
             otherPropType: adjustment.otherPropType,
             positionType: adjustment.positionType,

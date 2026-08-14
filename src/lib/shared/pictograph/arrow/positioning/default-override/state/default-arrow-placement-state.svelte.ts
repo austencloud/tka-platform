@@ -5,6 +5,7 @@ import {
   type PlacementValue,
   type PlacementsMap,
 } from "../domain/default-arrow-placement";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 export function createDefaultArrowPlacementState() {
   let docsMap = $state<Map<string, DefaultArrowPlacementDoc>>(new Map());
@@ -15,25 +16,40 @@ export function createDefaultArrowPlacementState() {
   let lastError = $state<string | null>(null);
 
   return {
-    get isInitialized() { return isInitialized; },
-    get isLoading() { return isLoading; },
-    get lastError() { return lastError; },
-    get count() { return docsMap.size; },
+    get isInitialized() {
+      return isInitialized;
+    },
+    get isLoading() {
+      return isLoading;
+    },
+    get lastError() {
+      return lastError;
+    },
+    get count() {
+      return docsMap.size;
+    },
 
-    /** The merged placements map for a (gridMode, propType, motionType), or null if no doc. */
-    getMap(gridMode: string, propType: string, motionType: string): PlacementsMap | null {
-      return docsMap.get(generateDefaultDocId(gridMode, propType, motionType))?.placements ?? null;
+    /** The merged placements map for a (placementFrame, propType, motionType), or null if no doc. */
+    getMap(
+      placementFrame: string,
+      propType: string,
+      motionType: string
+    ): PlacementsMap | null {
+      return (
+        docsMap.get(generateDefaultDocId(placementFrame, propType, motionType))
+          ?.placements ?? null
+      );
     },
 
     /** A single base value, Firestore-first; null if no override exists. */
     getValue(
-      gridMode: string,
+      placementFrame: string,
       propType: string,
       motionType: string,
       placementKey: string,
-      turns: string,
+      turns: string
     ): PlacementValue | null {
-      const map = this.getMap(gridMode, propType, motionType);
+      const map = this.getMap(placementFrame, propType, motionType);
       if (!map) return null;
       return unflattenValue(map, placementKey, turns);
     },
@@ -51,7 +67,11 @@ export function createDefaultArrowPlacementState() {
       // authoritative and its values win; the legacy seed only fills gaps. This
       // makes reload order-independent — an admin's real save can never be
       // silently clobbered by a stale seed doc that happens to load after it.
-      const id = generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType);
+      const id = generateDefaultDocId(
+        doc.placementFrame,
+        doc.propType,
+        doc.motionType
+      );
       const newMap = new Map(docsMap);
       newMap.set(id, mergeCollidingDocs(id, docsMap.get(id), doc));
       docsMap = newMap;
@@ -59,20 +79,24 @@ export function createDefaultArrowPlacementState() {
 
     /** Merge a single placementKey/turns value into a doc's map (live preview + local write). */
     setValue(
-      gridMode: string,
+      placementFrame: string,
       propType: string,
       motionType: string,
       placementKey: string,
       turns: string,
       value: PlacementValue,
-      updatedBy: string,
+      updatedBy: string
     ): void {
-      const id = generateDefaultDocId(gridMode, propType, motionType);
+      const id = generateDefaultDocId(placementFrame, propType, motionType);
+      const canonicalFrame = normalizePlacementFrame(placementFrame);
       const existing = docsMap.get(id);
       const placements: PlacementsMap = existing
         ? structuredCloneMap(existing.placements)
         : {};
-      placements[placementKey] = { ...(placements[placementKey] ?? {}), [turns]: value };
+      placements[placementKey] = {
+        ...(placements[placementKey] ?? {}),
+        [turns]: value,
+      };
       const fakeTimestamp = {
         seconds: Math.floor(Date.now() / 1000),
         nanoseconds: 0,
@@ -83,7 +107,7 @@ export function createDefaultArrowPlacementState() {
       const newMap = new Map(docsMap);
       newMap.set(id, {
         id,
-        gridMode,
+        placementFrame: canonicalFrame,
         propType,
         motionType,
         placements,
@@ -95,13 +119,13 @@ export function createDefaultArrowPlacementState() {
 
     /** Remove a single placementKey/turns value (revert to JSON baseline). */
     removeValue(
-      gridMode: string,
+      placementFrame: string,
       propType: string,
       motionType: string,
       placementKey: string,
-      turns: string,
+      turns: string
     ): void {
-      const id = generateDefaultDocId(gridMode, propType, motionType);
+      const id = generateDefaultDocId(placementFrame, propType, motionType);
       const existing = docsMap.get(id);
       if (!existing) return;
       const placements = structuredCloneMap(existing.placements);
@@ -125,14 +149,19 @@ export function createDefaultArrowPlacementState() {
         // Merge on collision (legacy {grid}_{motion} + new {grid}_staff_{motion}
         // share an id) so load order can't clobber a real override — see setDoc.
         for (const doc of docs) {
-          const id = generateDefaultDocId(doc.gridMode, doc.propType, doc.motionType);
+          const id = generateDefaultDocId(
+            doc.placementFrame,
+            doc.propType,
+            doc.motionType
+          );
           newMap.set(id, mergeCollidingDocs(id, newMap.get(id), doc));
         }
         docsMap = newMap;
         loadedDocs = [...docs];
         isInitialized = true;
       } catch (error) {
-        lastError = error instanceof Error ? error.message : "Failed to load defaults";
+        lastError =
+          error instanceof Error ? error.message : "Failed to load defaults";
       } finally {
         isLoading = false;
       }
@@ -149,8 +178,12 @@ export function createDefaultArrowPlacementState() {
       isInitialized = false;
     },
 
-    setLoading(loading: boolean): void { isLoading = loading; },
-    setError(error: string | null): void { lastError = error; },
+    setLoading(loading: boolean): void {
+      isLoading = loading;
+    },
+    setError(error: string | null): void {
+      lastError = error;
+    },
   };
 }
 
@@ -174,7 +207,7 @@ function updatedAtMillis(doc: DefaultArrowPlacementDoc): number {
 function mergeCollidingDocs(
   canonicalId: string,
   existing: DefaultArrowPlacementDoc | undefined,
-  incoming: DefaultArrowPlacementDoc,
+  incoming: DefaultArrowPlacementDoc
 ): DefaultArrowPlacementDoc {
   if (!existing) return incoming;
 
@@ -186,7 +219,10 @@ function mergeCollidingDocs(
     auth = existingIsAuth ? existing : incoming;
     base = existingIsAuth ? incoming : existing;
   } else {
-    auth = updatedAtMillis(incoming) >= updatedAtMillis(existing) ? incoming : existing;
+    auth =
+      updatedAtMillis(incoming) >= updatedAtMillis(existing)
+        ? incoming
+        : existing;
     base = auth === incoming ? existing : incoming;
   }
 
@@ -198,7 +234,7 @@ function mergeCollidingDocs(
 
   return {
     id: canonicalId,
-    gridMode: auth.gridMode,
+    placementFrame: auth.placementFrame,
     propType: auth.propType,
     motionType: auth.motionType,
     placements,
@@ -216,4 +252,6 @@ function structuredCloneMap(src: PlacementsMap): PlacementsMap {
   return out;
 }
 
-export type DefaultArrowPlacementState = ReturnType<typeof createDefaultArrowPlacementState>;
+export type DefaultArrowPlacementState = ReturnType<
+  typeof createDefaultArrowPlacementState
+>;

@@ -95,7 +95,7 @@
           <p class="section-number">02</p>
           <h2>Workspace header</h2>
         </div>
-        <span class="measure">20 px level · 16 px LOOP icons</span>
+        <span class="measure">20 px level · 18 px LOOP icons</span>
       </div>
 
       <div

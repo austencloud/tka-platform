@@ -1,10 +1,11 @@
 import { z } from "zod";
 // Worker-safe leaf (no auth/firebase-client): the barrel pulls authState → $app/navigation.
 import { firestoreDate } from "$lib/shared/firestore/firestore-date";
+import { PlacementFrame } from "../../placement/domain/placement-frame";
 
 export const GlobalArrowAdjustmentSchema = z
   .object({
-    gridMode: z.string(),
+    placementFrame: z.enum([PlacementFrame.CANONICAL, PlacementFrame.SKEWED]),
     oriKey: z.string(),
     letter: z.string(),
     turnsTuple: z.string(),
@@ -18,4 +19,6 @@ export const GlobalArrowAdjustmentSchema = z
   })
   .passthrough();
 
-export type GlobalArrowAdjustmentParsed = z.infer<typeof GlobalArrowAdjustmentSchema>;
+export type GlobalArrowAdjustmentParsed = z.infer<
+  typeof GlobalArrowAdjustmentSchema
+>;

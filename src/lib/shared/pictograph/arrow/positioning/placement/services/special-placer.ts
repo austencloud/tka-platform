@@ -17,6 +17,9 @@
 import { Point as FabricPoint } from "fabric";
 import { deriveGridMode as _deriveGridMode } from "../../../../grid/services/grid-mode-deriver";
 import { GridMode } from "../../../../grid/domain/enums/grid-enums";
+import { placementFrameForGridMode } from "../domain/placement-frame";
+import { placementAssetRoot } from "../domain/placement-frame";
+import { getStoredRotationOverride } from "./rotation-override-store";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 import type { MotionData } from "../../../../shared/domain/models/motion-data";
 import {
@@ -97,7 +100,7 @@ export class SpecialPlacer {
     const globalResolver = getGlobalAdjustmentResolver();
     if (!isGlobalReadDisabled() && globalResolver) {
       const baseKey = {
-        gridMode,
+        placementFrame: placementFrameForGridMode(gridMode),
         oriKey,
         letter,
         turnsTuple,
@@ -218,7 +221,7 @@ export class SpecialPlacer {
     for (const bucket of orientationBuckets) {
       for (const key of overrideKeys) {
         const localStorageOverride = this.checkLocalStorageOverride(
-          gridMode,
+          placementFrameForGridMode(gridMode),
           bucket,
           letter,
           turnsTuple,
@@ -335,7 +338,9 @@ export class SpecialPlacer {
       return null;
     }
 
-    const filePath = `${gridMode}/special/${usedOriKey}/${letter}_placements.json`;
+    const filePath = `${placementAssetRoot(
+      placementFrameForGridMode(gridMode)
+    )}/special/${usedOriKey}/${letter}_placements.json`;
 
     return { adjustment, filePath, turnsTupleKey };
   }
@@ -345,32 +350,19 @@ export class SpecialPlacer {
    * Returns null if not found, true/false if found
    */
   private checkLocalStorageOverride(
-    gridMode: string,
+    placementFrame: "canonical" | "skewed",
     oriKey: string,
     letter: string,
     turnsTuple: string,
     rotationOverrideKey: string
   ): boolean | null {
-    if (typeof localStorage === "undefined") {
-      return null;
-    }
-
-    try {
-      const data = localStorage.getItem("tka_rotation_overrides");
-      if (!data) return null;
-
-      const overrides = JSON.parse(data);
-      const override =
-        overrides?.[gridMode]?.[oriKey]?.[letter]?.[turnsTuple]?.[
-          rotationOverrideKey
-        ];
-
-      if (override === true) return true;
-      if (override === false) return false;
-      return null;
-    } catch {
-      return null;
-    }
+    return getStoredRotationOverride(
+      placementFrame,
+      oriKey,
+      letter,
+      turnsTuple,
+      rotationOverrideKey
+    );
   }
 
   /**

@@ -2,10 +2,15 @@ import { z } from "zod";
 // Worker-safe leaf (no auth/firebase-client): the barrel pulls authState → $app/navigation.
 import { firestoreDate } from "$lib/shared/firestore/firestore-date";
 import type { Timestamp } from "firebase/firestore";
+import {
+  normalizePlacementFrame,
+  PlacementFrame,
+  type PlacementFrame as PlacementFrameValue,
+} from "../../placement/domain/placement-frame";
 
 export interface SpecialArrowPlacement {
   readonly key: string;
-  readonly gridMode: string;
+  readonly placementFrame: PlacementFrameValue;
   readonly oriFolder: string;
   readonly letter: string;
   readonly turnsTuple: string;
@@ -36,7 +41,7 @@ export interface SpecialArrowPlacement {
 
 /** The 7 key fields plus the static value being hidden. Input to a tombstone write. */
 export interface SpecialSuppressionInput {
-  readonly gridMode: string;
+  readonly placementFrame: string;
   readonly oriFolder: string;
   readonly letter: string;
   readonly turnsTuple: string;
@@ -49,7 +54,7 @@ export interface SpecialSuppressionInput {
 }
 
 export interface SpecialArrowPlacementInput {
-  readonly gridMode: string;
+  readonly placementFrame: string;
   readonly oriFolder: string;
   readonly letter: string;
   readonly turnsTuple: string;
@@ -65,7 +70,7 @@ export interface SpecialArrowPlacementInput {
 export const SpecialArrowPlacementSchema = z
   .object({
     key: z.string(),
-    gridMode: z.string(),
+    placementFrame: z.enum([PlacementFrame.CANONICAL, PlacementFrame.SKEWED]),
     oriFolder: z.string(),
     letter: z.string(),
     turnsTuple: z.string(),
@@ -91,7 +96,7 @@ export const SpecialArrowPlacementSchema = z
   .passthrough();
 
 export function generateSpecialOverrideKey(input: {
-  gridMode: string;
+  placementFrame: string;
   oriFolder: string;
   letter: string;
   turnsTuple: string;
@@ -99,11 +104,11 @@ export function generateSpecialOverrideKey(input: {
   attributeKey: string;
   propType: string;
 }): string {
-  return `${input.gridMode}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}|${input.attributeKey}|${input.propType}`;
+  return `${normalizePlacementFrame(input.placementFrame)}|${input.oriFolder}|${input.letter}|${input.turnsTuple}|${input.motionType}|${input.attributeKey}|${input.propType}`;
 }
 
 export function parseSpecialOverrideKey(key: string): {
-  gridMode: string;
+  placementFrame: PlacementFrameValue;
   oriFolder: string;
   letter: string;
   turnsTuple: string;
@@ -113,14 +118,47 @@ export function parseSpecialOverrideKey(key: string): {
 } | null {
   const parts = key.split("|");
   if (parts.length !== 6 && parts.length !== 7) return null;
-  const [gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey] = parts;
+  const [
+    placementFrameValue,
+    oriFolder,
+    letter,
+    turnsTuple,
+    motionType,
+    attributeKey,
+  ] = parts;
   const propType = parts.length === 7 ? parts[6] : "staff";
-  if (!gridMode || !oriFolder || !letter || !turnsTuple || !motionType || !attributeKey || !propType) return null;
-  return { gridMode, oriFolder, letter, turnsTuple, motionType, attributeKey, propType };
+  if (
+    !placementFrameValue ||
+    !oriFolder ||
+    !letter ||
+    !turnsTuple ||
+    !motionType ||
+    !attributeKey ||
+    !propType
+  )
+    return null;
+  let placementFrame: PlacementFrameValue;
+  try {
+    placementFrame = normalizePlacementFrame(placementFrameValue);
+  } catch {
+    return null;
+  }
+  return {
+    placementFrame,
+    oriFolder,
+    letter,
+    turnsTuple,
+    motionType,
+    attributeKey,
+    propType,
+  };
 }
 
 export function extractOriFolderFromPath(filePath: string): string {
   const parts = filePath.split("/");
-  if (parts.length >= 3) return parts[2] ?? "from_layer1";
+  const specialIndex = parts.indexOf("special");
+  if (specialIndex >= 0 && parts[specialIndex + 1]) {
+    return parts[specialIndex + 1];
+  }
   return "from_layer1";
 }

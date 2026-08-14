@@ -15,13 +15,20 @@ import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { getInitialPosition, getSceneCenter } from "./arrow-grid-coordinator";
 import {
   ensureValidPosition,
-  extractAdjustmentValues,
   updateArrowInPictograph,
 } from "./arrow-data-processor";
 import { arrowLocationCalculator } from "../../positioning/calculation/services/arrow-location-calculator";
 import { arrowRotationCalculator } from "../../positioning/calculation/services/arrow-rotation-calculator";
 import { arrowAdjustmentCalculator } from "../../positioning/calculation/services/arrow-adjustment-calculator";
-import { arrowPlacer, type SegmentPlacementKey } from "../../positioning/placement/services/arrow-placer";
+import {
+  arrowPlacer,
+  type SegmentPlacementKey,
+} from "../../positioning/placement/services/arrow-placer";
+import {
+  createCanonicalPlacementContext,
+  rotatePlacementAngleToDisplayed,
+  rotatePlacementVectorToDisplayed,
+} from "../../positioning/calculation/services/canonical-placement-frame";
 
 export async function calculateArrowPoint(
   pictographData: PictographData,
@@ -47,10 +54,26 @@ export async function calculateArrowPoint(
 
     const validPosition = ensureValidPosition(initialPosition);
 
-    const rotation = await arrowRotationCalculator.calculateRotation(
-      motion,
-      location,
-      pictographData
+    // A full arrow is resolved once in the canonical placement frame. Position
+    // offsets, rotation flags, and glyph angle must share this boundary or Box
+    // can quietly regain its own data owner. Half-motion glyphs remain local to
+    // their extracted asset and keep the existing displayed-frame path.
+    const placementFrame = motion.segment
+      ? null
+      : createCanonicalPlacementContext(
+          pictographData,
+          motion,
+          location,
+          gridMode
+        );
+    const canonicalRotation = await arrowRotationCalculator.calculateRotation(
+      placementFrame?.motionData ?? motion,
+      placementFrame?.location ?? location,
+      placementFrame?.pictographData ?? pictographData
+    );
+    const rotation = rotatePlacementAngleToDisplayed(
+      canonicalRotation,
+      placementFrame?.rotationDegrees ?? 0
     );
 
     // Half-motion frames are letterless by construction; route them AROUND the
@@ -85,15 +108,23 @@ export async function calculateArrowPoint(
       adjustmentX = local.x * Math.cos(rad) - ly * Math.sin(rad);
       adjustmentY = local.x * Math.sin(rad) + ly * Math.cos(rad);
     } else {
+      if (!placementFrame) {
+        throw new Error("Full arrow is missing its canonical placement frame");
+      }
       const adjustment = await arrowAdjustmentCalculator.calculateAdjustment(
-        pictographData,
-        motion,
-        pictographData.letter || "A",
-        location,
+        placementFrame.pictographData,
+        placementFrame.motionData,
+        placementFrame.pictographData.letter || "A",
+        placementFrame.location ?? location,
         motion.color,
         soloMode
       );
-      [adjustmentX, adjustmentY] = extractAdjustmentValues(adjustment);
+      const displayedAdjustment = rotatePlacementVectorToDisplayed(
+        adjustment,
+        placementFrame.rotationDegrees
+      );
+      adjustmentX = displayedAdjustment.x;
+      adjustmentY = displayedAdjustment.y;
     }
 
     const finalX = validPosition.x + adjustmentX;
@@ -126,7 +157,11 @@ export async function updateArrowPosition(
       motionData
     );
 
-    const shouldMirror = shouldMirrorArrow(arrowData, pictographData, motionData);
+    const shouldMirror = shouldMirrorArrow(
+      arrowData,
+      pictographData,
+      motionData
+    );
 
     const manualAdjustX = arrowData.manualAdjustmentX || 0;
     const manualAdjustY = arrowData.manualAdjustmentY || 0;
@@ -144,7 +179,12 @@ export async function updateArrowPosition(
       arrowLocation: location,
     } as unknown as Partial<MotionData>;
 
-    return updateArrowInPictograph(pictographData, color, updates, motionUpdates);
+    return updateArrowInPictograph(
+      pictographData,
+      color,
+      updates,
+      motionUpdates
+    );
   } catch (error) {
     console.error("Arrow position update failed:", error);
     return pictographData;

@@ -23,7 +23,9 @@ export function createGlobalArrowAdjustmentState() {
    * Internal helper: look up an adjustment by key and return a Point.
    * Used by both getAdjustment (public) and getAdjustmentCascading (public).
    */
-  function _getAdjustment(key: GlobalAdjustmentKey): { x: number; y: number } | null {
+  function _getAdjustment(
+    key: GlobalAdjustmentKey
+  ): { x: number; y: number } | null {
     const keyString = generateAdjustmentKeyString(key);
     const adjustment = adjustmentsMap.get(keyString);
     if (!adjustment) {
@@ -108,15 +110,16 @@ export function createGlobalArrowAdjustmentState() {
       baseKey: GlobalAdjustmentKey,
       thisPropType: string,
       otherPropType: string,
-      legacyOriKey?: string,
+      legacyOriKey?: string
     ): CascadingLookupResult | null {
       const normalizedThisProp = thisPropType.toLowerCase();
       const normalizedOtherProp = otherPropType.toLowerCase();
 
       // Build the legacy fallback key (only if a legacy oriKey was provided and differs)
-      const fallbackKey = legacyOriKey && legacyOriKey !== baseKey.oriKey
-        ? { ...baseKey, oriKey: legacyOriKey }
-        : null;
+      const fallbackKey =
+        legacyOriKey && legacyOriKey !== baseKey.oriKey
+          ? { ...baseKey, oriKey: legacyOriKey }
+          : null;
 
       // Layer 3: Combination-specific (this prop + other prop)
       if (normalizedThisProp !== "staff" || normalizedOtherProp !== "staff") {
@@ -188,13 +191,15 @@ export function createGlobalArrowAdjustmentState() {
     setAdjustment(adjustment: GlobalArrowAdjustment): void {
       // Build key including optional propType and otherPropType for Layer 2/3 support
       const key: GlobalAdjustmentKey = {
-        gridMode: adjustment.gridMode,
+        placementFrame: adjustment.placementFrame,
         oriKey: adjustment.oriKey,
         letter: adjustment.letter,
         turnsTuple: adjustment.turnsTuple,
         arrowKey: adjustment.arrowKey,
         ...(adjustment.propType && { propType: adjustment.propType }),
-        ...(adjustment.otherPropType && { otherPropType: adjustment.otherPropType }),
+        ...(adjustment.otherPropType && {
+          otherPropType: adjustment.otherPropType,
+        }),
       };
       const keyString = generateAdjustmentKeyString(key);
       // Create new map to trigger reactivity
@@ -227,13 +232,15 @@ export function createGlobalArrowAdjustmentState() {
         for (const adjustment of adjustments) {
           // Build key including optional propType and otherPropType for Layer 2/3 support
           const key: GlobalAdjustmentKey = {
-            gridMode: adjustment.gridMode,
+            placementFrame: adjustment.placementFrame,
             oriKey: adjustment.oriKey,
             letter: adjustment.letter,
             turnsTuple: adjustment.turnsTuple,
             arrowKey: adjustment.arrowKey,
             ...(adjustment.propType && { propType: adjustment.propType }),
-            ...(adjustment.otherPropType && { otherPropType: adjustment.otherPropType }),
+            ...(adjustment.otherPropType && {
+              otherPropType: adjustment.otherPropType,
+            }),
           };
           const keyString = generateAdjustmentKeyString(key);
           newMap.set(keyString, adjustment);

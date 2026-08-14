@@ -6,22 +6,27 @@
  */
 
 import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
-import type { SimpleJsonCache } from '$lib/shared/pictograph/shared/services/simple-json-cache'
+import type { SimpleJsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
+import {
+  placementAssetRoot,
+  placementFrameForGridMode,
+  type PlacementFrame,
+} from "../domain/placement-frame";
 
 export class SpecialPlacementDataProvider {
-  // Structure: [gridMode][oriKey][letter] -> Record<string, unknown>
+  // Structure: [placementFrame][oriKey][letter] -> Record<string, unknown>
   private cache: Record<
     string,
     Record<string, Record<string, Record<string, unknown>>>
   > = {
-    diamond: {},
-    box: {},
+    canonical: {},
+    skewed: {},
   };
 
   // Track in-flight loading operations to prevent race conditions
   private loadingPromises = new Map<string, Promise<void>>();
 
-  // Manifest of which files actually exist (loaded lazily), keyed by gridMode
+  // Manifest of which files actually exist, keyed by authored placement frame.
   private manifests = new Map<string, Record<string, string[]>>();
   private manifestLoadPromises = new Map<string, Promise<void>>();
 
@@ -34,35 +39,31 @@ export class SpecialPlacementDataProvider {
   /**
    * Load the manifest file that tells us which placement files exist
    */
-  private async loadManifest(gridMode: string): Promise<void> {
-    // Return if already loaded for this gridMode
-    if (this.manifests.has(gridMode)) return;
+  private async loadManifest(frame: PlacementFrame): Promise<void> {
+    if (this.manifests.has(frame)) return;
 
     // Check if loading is already in progress for this gridMode
-    if (this.manifestLoadPromises.has(gridMode)) {
-      await this.manifestLoadPromises.get(gridMode);
+    if (this.manifestLoadPromises.has(frame)) {
+      await this.manifestLoadPromises.get(frame);
       return;
     }
 
     // Start loading
     const loadPromise = (async () => {
       try {
-        const manifestPath = `/data/arrow_placement/${gridMode}/special/placement_manifest.json`;
+        const manifestPath = `${placementAssetRoot(frame)}/special/placement_manifest.json`;
         const manifest = (await this.jsonCacheImpl.get(manifestPath)) as Record<
           string,
           string[]
         >;
-        this.manifests.set(gridMode, manifest);
-      } catch {
-        // If manifest doesn't exist, cache empty object (no special placements for this gridMode)
-        this.manifests.set(gridMode, {});
+        this.manifests.set(frame, manifest);
       } finally {
         // Clean up loading promise
-        this.manifestLoadPromises.delete(gridMode);
+        this.manifestLoadPromises.delete(frame);
       }
     })();
 
-    this.manifestLoadPromises.set(gridMode, loadPromise);
+    this.manifestLoadPromises.set(frame, loadPromise);
     await loadPromise;
   }
 
@@ -70,12 +71,12 @@ export class SpecialPlacementDataProvider {
    * Check if a placement file exists for the given letter
    */
   private async hasPlacementFile(
-    gridMode: string,
+    frame: PlacementFrame,
     oriKey: string,
     letter: string
   ): Promise<boolean> {
-    await this.loadManifest(gridMode);
-    const manifest = this.manifests.get(gridMode);
+    await this.loadManifest(frame);
+    const manifest = this.manifests.get(frame);
     return manifest?.[oriKey]?.includes(letter) ?? false;
   }
 
@@ -88,65 +89,57 @@ export class SpecialPlacementDataProvider {
     oriKey: string,
     letter: string
   ): Promise<Record<string, unknown>> {
-    try {
-      // Ensure cache structure exists
-      this.ensureCacheStructure(gridMode, oriKey);
+    const frame = placementFrameForGridMode(gridMode);
+    this.ensureCacheStructure(frame, oriKey);
 
-      // Return cached data if available
-      if (this.cache[gridMode]?.[oriKey]?.[letter]) {
-        return this.cache[gridMode][oriKey][letter];
+    // Return cached data if available
+    if (this.cache[frame]?.[oriKey]?.[letter]) {
+      return this.cache[frame][oriKey][letter];
+    }
+
+    // Check manifest to see if file exists before attempting to fetch
+    const fileExists = await this.hasPlacementFile(frame, oriKey, letter);
+    if (!fileExists) {
+      // Manifest-confirmed absence is a legitimate empty placement.
+      if (this.cache[frame]?.[oriKey]) {
+        this.cache[frame][oriKey][letter] = {};
       }
-
-      // Check manifest to see if file exists before attempting to fetch
-      const fileExists = await this.hasPlacementFile(gridMode, oriKey, letter);
-      if (!fileExists) {
-        // No placement file exists - cache and return empty object immediately
-        if (this.cache[gridMode]?.[oriKey]) {
-          this.cache[gridMode][oriKey][letter] = {};
-        }
-        return {};
-      }
-
-      const cacheKey = `${gridMode}:${oriKey}:${letter}`;
-
-      // Check if loading is already in progress
-      if (this.loadingPromises.has(cacheKey)) {
-        await this.loadingPromises.get(cacheKey);
-        return this.cache[gridMode]?.[oriKey]?.[letter] || {};
-      }
-
-      // Start new loading operation
-      const loadingPromise = this.loadData(gridMode, oriKey, letter);
-      this.loadingPromises.set(cacheKey, loadingPromise);
-
-      try {
-        await loadingPromise;
-        return this.cache[gridMode]?.[oriKey]?.[letter] || {};
-      } finally {
-        // Clean up the promise from cache when done
-        this.loadingPromises.delete(cacheKey);
-      }
-    } catch {
-      // Missing special placement files are expected - return empty object (interpreted as zero adjustment)
       return {};
+    }
+
+    const cacheKey = `${frame}:${oriKey}:${letter}`;
+
+    // Check if loading is already in progress
+    if (this.loadingPromises.has(cacheKey)) {
+      await this.loadingPromises.get(cacheKey);
+      return this.cache[frame]?.[oriKey]?.[letter] || {};
+    }
+
+    // Start new loading operation
+    const loadingPromise = this.loadData(frame, oriKey, letter);
+    this.loadingPromises.set(cacheKey, loadingPromise);
+
+    try {
+      await loadingPromise;
+      return this.cache[frame]?.[oriKey]?.[letter] || {};
+    } finally {
+      // Failed requests remain retryable.
+      this.loadingPromises.delete(cacheKey);
     }
   }
 
   /**
    * Ensure cache structure exists for gridMode and oriKey
    */
-  private ensureCacheStructure(gridMode: string, oriKey: string): void {
-    if (!this.cache[gridMode]) {
-      this.cache[gridMode] = {} as Record<
+  private ensureCacheStructure(frame: PlacementFrame, oriKey: string): void {
+    if (!this.cache[frame]) {
+      this.cache[frame] = {} as Record<
         string,
         Record<string, Record<string, unknown>>
       >;
     }
-    if (!this.cache[gridMode][oriKey]) {
-      this.cache[gridMode][oriKey] = {} as Record<
-        string,
-        Record<string, unknown>
-      >;
+    if (!this.cache[frame][oriKey]) {
+      this.cache[frame][oriKey] = {} as Record<string, Record<string, unknown>>;
     }
   }
 
@@ -154,25 +147,21 @@ export class SpecialPlacementDataProvider {
    * Load data from JSON file and store in cache
    */
   private async loadData(
-    gridMode: string,
+    frame: PlacementFrame,
     oriKey: string,
     letter: string
   ): Promise<void> {
     // Files are served under /data/... in the web app
-    // Example path: /data/arrow_placement/diamond/special/from_layer1/A_placements.json
+    // Example path: /data/arrow_placement/special/from_layer1/A_placements.json
     const encodedLetter = encodeURIComponent(letter);
-    const basePath = `/data/arrow_placement/${gridMode}/special/${oriKey}/${encodedLetter}_placements.json`;
+    const basePath = `${placementAssetRoot(frame)}/special/${oriKey}/${encodedLetter}_placements.json`;
 
-    try {
-      const data = (await this.jsonCacheImpl.get(basePath)) as Record<string, unknown>;
-      if (this.cache[gridMode]?.[oriKey]) {
-        this.cache[gridMode][oriKey][letter] = data;
-      }
-    } catch {
-      // If file doesn't exist, store empty object
-      if (this.cache[gridMode]?.[oriKey]) {
-        this.cache[gridMode][oriKey][letter] = {};
-      }
+    const data = (await this.jsonCacheImpl.get(basePath)) as Record<
+      string,
+      unknown
+    >;
+    if (this.cache[frame]?.[oriKey]) {
+      this.cache[frame][oriKey][letter] = data;
     }
   }
 }

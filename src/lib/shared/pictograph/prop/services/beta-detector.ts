@@ -8,9 +8,9 @@
 import { getGridPositionFromLocations } from "../../grid/services/grid-position-deriver";
 import type { GridPosition } from "../../grid/domain/enums/grid-enums";
 import type { PictographData } from "../../shared/domain/models/pictograph-data";
+import { isVisibleMotion } from "../../shared/domain/models/motion-data";
 
 export class BetaDetector {
-
   /**
    * Check if a grid position is a beta position
    * Beta positions are the BETA enum values
@@ -23,7 +23,10 @@ export class BetaDetector {
    * Check if a pictograph starts with beta (start position is a beta position)
    */
   startsWithBeta(pictographData: PictographData): boolean {
-    if (!pictographData.motions.blue || !pictographData.motions.red) {
+    if (
+      !isVisibleMotion(pictographData.motions.blue) ||
+      !isVisibleMotion(pictographData.motions.red)
+    ) {
       return false;
     }
 
@@ -39,7 +42,10 @@ export class BetaDetector {
    * Check if a pictograph ends with beta (end position is a beta position)
    */
   endsWithBeta(pictographData: PictographData): boolean {
-    if (!pictographData.motions.blue || !pictographData.motions.red) {
+    if (
+      !isVisibleMotion(pictographData.motions.blue) ||
+      !isVisibleMotion(pictographData.motions.red)
+    ) {
       // No motion data = can't end with beta position
       // This is expected in some contexts (static pictographs, loading states)
       return false;

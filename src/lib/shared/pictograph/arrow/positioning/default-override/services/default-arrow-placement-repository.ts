@@ -1,5 +1,8 @@
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-import type { DefaultArrowPlacementDoc, PlacementValue } from "../domain/default-arrow-placement";
+import type {
+  DefaultArrowPlacementDoc,
+  PlacementValue,
+} from "../domain/default-arrow-placement";
 import type { DefaultArrowPlacementPersister } from "./default-arrow-placement-persister";
 import {
   createDefaultArrowPlacementState,
@@ -72,9 +75,12 @@ export class DefaultArrowPlacementRepository {
         logger.info(`Real-time update: ${doc.id}`);
       });
 
-      logger.success(`Initialized with ${this.state.count} default placement docs`);
+      logger.success(
+        `Initialized with ${this.state.count} default placement docs`
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to initialize";
+      const message =
+        error instanceof Error ? error.message : "Failed to initialize";
       this.state.setError(message);
       logger.error("Initialization failed:", error);
       throw error;
@@ -86,13 +92,19 @@ export class DefaultArrowPlacementRepository {
 
   /** Firestore-first base value, or null when no override exists (resolver consumes this). */
   getValue(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
-    turns: string,
+    turns: string
   ): PlacementValue | null {
-    return this.state.getValue(gridMode, propType, motionType, placementKey, turns);
+    return this.state.getValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns
+    );
   }
 
   /** All loaded docs, in the exact shape `state.loadAll` consumes (bundle snapshot). */
@@ -101,80 +113,129 @@ export class DefaultArrowPlacementRepository {
   }
 
   hasValue(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
-    turns: string,
+    turns: string
   ): boolean {
-    return this.state.getValue(gridMode, propType, motionType, placementKey, turns) !== null;
+    return (
+      this.state.getValue(
+        placementFrame,
+        propType,
+        motionType,
+        placementKey,
+        turns
+      ) !== null
+    );
   }
 
   /** In-memory live preview during WASD (admin only). */
   saveDefaultLocal(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
-    value: PlacementValue,
+    value: PlacementValue
   ): void {
     this.state.setValue(
-      gridMode,
+      placementFrame,
       propType,
       motionType,
       placementKey,
       turns,
       value,
-      authState.user?.email ?? "unknown",
+      authState.user?.email ?? "unknown"
     );
   }
 
   /** In-memory revert preview (admin only). */
   deleteDefaultLocal(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
-    turns: string,
+    turns: string
   ): void {
-    this.state.removeValue(gridMode, propType, motionType, placementKey, turns);
+    this.state.removeValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns
+    );
   }
 
   /** Persist a single base value (admin only). */
   async saveDefault(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
     turns: string,
-    value: PlacementValue,
+    value: PlacementValue
   ): Promise<void> {
     const email = authState.user?.email;
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can save default placement overrides");
     }
     // Capture the prior value before the write so the audit row records prev→new.
-    const prev = this.state.getValue(gridMode, propType, motionType, placementKey, turns);
-    await this.persister.saveValue(gridMode, propType, motionType, placementKey, turns, value, email, prev);
+    const prev = this.state.getValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns
+    );
+    await this.persister.saveValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns,
+      value,
+      email,
+      prev
+    );
   }
 
   /** Persist a single delete (admin only). */
   async deleteDefault(
-    gridMode: string,
+    placementFrame: string,
     propType: string,
     motionType: string,
     placementKey: string,
-    turns: string,
+    turns: string
   ): Promise<void> {
     const email = authState.user?.email;
     if (email !== ADMIN_EMAIL) {
       throw new Error("Only admin can delete default placement overrides");
     }
     // Capture the prior value before the delete so the audit row records it.
-    const prev = this.state.getValue(gridMode, propType, motionType, placementKey, turns);
-    await this.persister.deleteValue(gridMode, propType, motionType, placementKey, turns, email, prev);
-    this.state.removeValue(gridMode, propType, motionType, placementKey, turns);
+    const prev = this.state.getValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns
+    );
+    await this.persister.deleteValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns,
+      email,
+      prev
+    );
+    this.state.removeValue(
+      placementFrame,
+      propType,
+      motionType,
+      placementKey,
+      turns
+    );
   }
 
   isAdmin(): boolean {

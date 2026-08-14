@@ -75,4 +75,35 @@ describe("PropPlacer beta offset — unilateral radial-but-different (letter Y)"
       Math.abs(placement.positionY - def.y) > 0.5;
     expect(moved).toBe(true);
   });
+
+  it("treats an invisible structural partner as absent", async () => {
+    const soloPictograph = createPictographData({
+      letter: null,
+      motions: {
+        blue,
+        red: { ...red, isVisible: false },
+      },
+    });
+    const placement = await propPlacer.calculatePlacement(
+      soloPictograph,
+      blue,
+      undefined,
+      { bluePropType: "staff", redPropType: "staff" }
+    );
+
+    expect(placement.positionX).toBeCloseTo(def.x, 1);
+    expect(placement.positionY).toBeCloseTo(def.y, 1);
+  });
+
+  it("removes beta separation when the partner is presentation-hidden", async () => {
+    const placement = await propPlacer.calculatePlacement(
+      pictograph,
+      blue,
+      { showBlue: true, showRed: false },
+      { bluePropType: "staff", redPropType: "staff" }
+    );
+
+    expect(placement.positionX).toBeCloseTo(def.x, 1);
+    expect(placement.positionY).toBeCloseTo(def.y, 1);
+  });
 });

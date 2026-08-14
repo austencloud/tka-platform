@@ -242,7 +242,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
  * Remove from this set to reactivate.
  */
 export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
-  PropType.GUITAR,
   PropType.UKULELE,
   PropType.CONTACTBALL,
   PropType.BIGCONTACTBALL,
@@ -651,6 +650,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     label: "Novelty",
     props: [
       PropType.CHICKEN,
+      PropType.GUITAR,
       PropType.DOUBLESTAR,
       PropType.QUIAD,
       PropType.TRIQUETRA,

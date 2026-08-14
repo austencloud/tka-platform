@@ -5,7 +5,7 @@
  * Uses a top-level collection since adjustments are global (not per-user).
  *
  * Collection: global_arrow_adjustments
- * Document ID: {gridMode}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
+ * Document ID: {placementFrame}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
  */
 
 import {
@@ -27,6 +27,7 @@ import {
   type GlobalArrowAdjustmentInput,
 } from "../domain/global-arrow-adjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 const logger = createComponentLogger("GlobalArrowAdjustmentPersister");
 
@@ -45,7 +46,7 @@ export class GlobalArrowAdjustmentPersister {
     try {
       const adjustments = await firestoreList(
         COLLECTION_NAME,
-        GlobalArrowAdjustmentSchema,
+        GlobalArrowAdjustmentSchema
       );
 
       logger.success(`Loaded ${adjustments.length} global adjustments`);
@@ -64,10 +65,11 @@ export class GlobalArrowAdjustmentPersister {
     userEmail: string,
     previousX: number = 0,
     previousY: number = 0,
-    action: AdjustmentHistoryAction = "save",
+    action: AdjustmentHistoryAction = "save"
   ): Promise<void> {
+    const placementFrame = normalizePlacementFrame(input.placementFrame);
     const keyString = generateAdjustmentKeyString({
-      gridMode: input.gridMode,
+      placementFrame,
       oriKey: input.oriKey,
       letter: input.letter,
       turnsTuple: input.turnsTuple,
@@ -77,37 +79,33 @@ export class GlobalArrowAdjustmentPersister {
     });
 
     try {
-      await firestoreSet(
-        COLLECTION_NAME,
-        keyString,
-        {
-          gridMode: input.gridMode,
-          oriKey: input.oriKey,
-          letter: input.letter,
-          turnsTuple: input.turnsTuple,
-          arrowKey: input.arrowKey,
-          ...(input.propType && { propType: input.propType }),
-          ...(input.otherPropType && { otherPropType: input.otherPropType }),
-          adjustmentX: input.adjustmentX,
-          adjustmentY: input.adjustmentY,
-          updatedBy: userEmail,
-        } as Record<string, unknown>,
-      );
+      await firestoreSet(COLLECTION_NAME, keyString, {
+        placementFrame,
+        oriKey: input.oriKey,
+        letter: input.letter,
+        turnsTuple: input.turnsTuple,
+        arrowKey: input.arrowKey,
+        ...(input.propType && { propType: input.propType }),
+        ...(input.otherPropType && { otherPropType: input.otherPropType }),
+        adjustmentX: input.adjustmentX,
+        adjustmentY: input.adjustmentY,
+        updatedBy: userEmail,
+      } as Record<string, unknown>);
 
       logger.success(
-        `Saved adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`,
+        `Saved adjustment: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
       );
 
       // Fire-and-forget history write
       this.appendHistory(
-        input,
+        { ...input, placementFrame },
         action,
         input.adjustmentX,
         input.adjustmentY,
         previousX,
         previousY,
         userEmail,
-        keyString,
+        keyString
       );
     } catch (error) {
       logger.error(`Failed to save adjustment ${keyString}:`, error);
@@ -124,14 +122,14 @@ export class GlobalArrowAdjustmentPersister {
     previousY: number = 0,
     userEmail: string = "unknown",
     historyInput?: {
-      gridMode: string;
+      placementFrame: string;
       oriKey: string;
       letter: string;
       turnsTuple: string;
       arrowKey: string;
       propType?: string;
       otherPropType?: string;
-    },
+    }
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
@@ -149,7 +147,7 @@ export class GlobalArrowAdjustmentPersister {
           previousX,
           previousY,
           userEmail,
-          keyString,
+          keyString
         );
       }
     } catch (error) {
@@ -163,7 +161,7 @@ export class GlobalArrowAdjustmentPersister {
    */
   private async appendHistory(
     input: {
-      gridMode: string;
+      placementFrame: string;
       oriKey: string;
       letter: string;
       turnsTuple: string;
@@ -177,7 +175,7 @@ export class GlobalArrowAdjustmentPersister {
     previousX: number,
     previousY: number,
     userEmail: string,
-    sourceKey: string,
+    sourceKey: string
   ): Promise<void> {
     try {
       const firestore = await getFirestoreInstance();
@@ -185,7 +183,7 @@ export class GlobalArrowAdjustmentPersister {
       const historyDoc = doc(colRef);
 
       await setDoc(historyDoc, {
-        gridMode: input.gridMode,
+        placementFrame: input.placementFrame,
         oriKey: input.oriKey,
         letter: input.letter,
         turnsTuple: input.turnsTuple,
@@ -212,7 +210,7 @@ export class GlobalArrowAdjustmentPersister {
    */
   subscribe(
     onAdd: (adjustment: GlobalArrowAdjustment) => void,
-    onRemove: (keyString: string) => void,
+    onRemove: (keyString: string) => void
   ): () => void {
     // Clean up any existing subscription
     if (this.unsubscribe) {
@@ -234,7 +232,7 @@ export class GlobalArrowAdjustmentPersister {
 
               if (change.type === "added" || change.type === "modified") {
                 if (
-                  data.gridMode &&
+                  data.placementFrame &&
                   data.oriKey &&
                   data.letter &&
                   data.turnsTuple &&
@@ -243,7 +241,7 @@ export class GlobalArrowAdjustmentPersister {
                   typeof data.adjustmentY === "number"
                 ) {
                   onAdd({
-                    gridMode: data.gridMode,
+                    placementFrame: data.placementFrame,
                     oriKey: data.oriKey,
                     letter: data.letter,
                     turnsTuple: data.turnsTuple,
@@ -267,11 +265,13 @@ export class GlobalArrowAdjustmentPersister {
             if (isPermissionDeniedError(subscriptionError)) {
               // Auth token gone mid-stream (sign-out race) — the repository
               // resubscribes on next sign-in; cached adjustments keep serving.
-              logger.warn("Subscription permission-denied — paused until next sign-in");
+              logger.warn(
+                "Subscription permission-denied — paused until next sign-in"
+              );
               return;
             }
             logger.error("Subscription error:", subscriptionError);
-          },
+          }
         );
       })
       .catch((initError: unknown) => {

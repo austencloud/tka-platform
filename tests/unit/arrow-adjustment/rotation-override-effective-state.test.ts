@@ -82,6 +82,7 @@ function createThetaDashPictograph(): PictographData {
 describe("rotation override effective state", () => {
   beforeEach(() => {
     localStorage.removeItem("tka_rotation_overrides");
+    localStorage.removeItem("tka_rotation_overrides_v2");
   });
 
   it("inherits Θ- (s, 3, 3) from layer2 and lets the toggle turn it off and on", async () => {
@@ -124,5 +125,23 @@ describe("rotation override effective state", () => {
     await expect(
       calculator.calculateRotation(blueMotion, GridLocation.EAST, pictograph)
     ).resolves.toBe(0);
+  });
+
+  it("propagates a manifest failure and leaves the request retryable", async () => {
+    let attempts = 0;
+    const provider = new SpecialPlacementDataProvider({
+      get: async () => {
+        attempts++;
+        throw new Error("fixture network failure");
+      },
+    } as never);
+
+    await expect(
+      provider.getLetterData(GridMode.DIAMOND, "from_layer1", "A")
+    ).rejects.toThrow("fixture network failure");
+    await expect(
+      provider.getLetterData(GridMode.BOX, "from_layer1", "A")
+    ).rejects.toThrow("fixture network failure");
+    expect(attempts).toBe(2);
   });
 });

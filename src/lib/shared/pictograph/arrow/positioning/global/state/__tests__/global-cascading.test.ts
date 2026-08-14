@@ -16,7 +16,7 @@ function fakeTimestamp(): Timestamp {
 
 function adj(over: Partial<GlobalArrowAdjustment>): GlobalArrowAdjustment {
   return {
-    gridMode: "diamond",
+    placementFrame: "canonical",
     oriKey: "from_layer1",
     letter: "A",
     turnsTuple: "(0, 0)",
@@ -35,14 +35,14 @@ describe("GlobalArrowAdjustmentState.getAdjustmentCascading", () => {
     s.loadAll([adj({ propType: "fan", adjustmentX: 7, adjustmentY: 9 })]);
     const r = s.getAdjustmentCascading(
       {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "from_layer1",
         letter: "A",
         turnsTuple: "(0, 0)",
         arrowKey: "pro",
       },
       "fan",
-      "fan",
+      "fan"
     );
     expect(r).not.toBeNull();
     expect(r!.layer).toBe(2);
@@ -53,31 +53,38 @@ describe("GlobalArrowAdjustmentState.getAdjustmentCascading", () => {
     const s = createGlobalArrowAdjustmentState();
     const r = s.getAdjustmentCascading(
       {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "from_layer1",
         letter: "A",
         turnsTuple: "(0, 0)",
         arrowKey: "pro",
       },
       "fan",
-      "fan",
+      "fan"
     );
     expect(r).toBeNull();
   });
 
   it("returns layer-3 combination-specific adjustment when both props match", () => {
     const s = createGlobalArrowAdjustmentState();
-    s.loadAll([adj({ propType: "fan", otherPropType: "club", adjustmentX: 5, adjustmentY: 3 })]);
+    s.loadAll([
+      adj({
+        propType: "fan",
+        otherPropType: "club",
+        adjustmentX: 5,
+        adjustmentY: 3,
+      }),
+    ]);
     const r = s.getAdjustmentCascading(
       {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "from_layer1",
         letter: "A",
         turnsTuple: "(0, 0)",
         arrowKey: "pro",
       },
       "fan",
-      "club",
+      "club"
     );
     expect(r).not.toBeNull();
     expect(r!.layer).toBe(3);
@@ -89,14 +96,14 @@ describe("GlobalArrowAdjustmentState.getAdjustmentCascading", () => {
     s.loadAll([adj({ adjustmentX: 2, adjustmentY: 4 })]);
     const r = s.getAdjustmentCascading(
       {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "from_layer1",
         letter: "A",
         turnsTuple: "(0, 0)",
         arrowKey: "pro",
       },
       "staff",
-      "staff",
+      "staff"
     );
     expect(r).not.toBeNull();
     expect(r!.layer).toBe(1);
@@ -109,14 +116,14 @@ describe("GlobalArrowAdjustmentState.getAdjustmentCascading", () => {
     s.loadAll([adj({ adjustmentX: 10, adjustmentY: 10 })]);
     const r = s.getAdjustmentCascading(
       {
-        gridMode: "diamond",
+        placementFrame: "canonical",
         oriKey: "from_layer1",
         letter: "A",
         turnsTuple: "(0, 0)",
         arrowKey: "pro",
       },
       "fan",
-      "fan",
+      "fan"
     );
     expect(r).toBeNull();
   });

@@ -112,7 +112,10 @@ async function loadEngine(): Promise<
   vi.doMock("$lib/shared/auth/state/authState.svelte", () => ({
     authState: { effectiveUserId: null, user: { email: "admin@test" } },
   }));
-  vi.doMock("firebase/firestore", () => ({ collection: vi.fn(), doc: vi.fn() }));
+  vi.doMock("firebase/firestore", () => ({
+    collection: vi.fn(),
+    doc: vi.fn(),
+  }));
 
   // 3 fixture variation-arrows: A blue, B red, C blue.
   vi.doMock(
@@ -150,7 +153,7 @@ async function loadEngine(): Promise<
     () => ({
       computeSpecialOverrideKey: vi.fn(
         (pd: { letter: string }, _m: unknown, color: string) =>
-          `diamond|from_layer1|${pd.letter}|(0, 0)|pro|${color}|staff`
+          `canonical|from_layer1|${pd.letter}|(0, 0)|pro|${color}|staff`
       ),
     })
   );

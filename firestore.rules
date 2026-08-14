@@ -30,6 +30,18 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
     }
 
+    // Arrow-placement persistence is authored in one rotational frame.
+    // Diamond and Box are display orientations, never storage ownership keys.
+    function hasValidPlacementFrame() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['placementFrame'])
+        && !data.keys().hasAny(['gridMode'])
+        && (
+          data.placementFrame == 'canonical'
+          || data.placementFrame == 'skewed'
+        );
+    }
+
     function hasEncodedShortcodePayload() {
       let data = request.resource.data;
       return data.keys().hasAny(['encoded'])
@@ -222,7 +234,10 @@ service cloud.firestore {
     // Readable by all (needed pre-auth for rendering), writable by admins
     match /prop_geometry_adjustments/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && hasValidPlacementFrame()
+        && docId.matches('^' + request.resource.data.placementFrame + '[|].*');
+      allow delete: if isAdmin();
     }
 
     // Guide sequence overrides (Level 1 Guide Companion v2) - the printed guide
@@ -1589,13 +1604,15 @@ service cloud.firestore {
 
     // Global arrow adjustments - admin-set arrow position overrides
     // These adjustments apply to ALL pictographs matching the same key
-    // Document ID format: {gridMode}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
+    // Document ID format: {placementFrame}|{oriKey}|{letter}|{turnsTuple}|{arrowKey}
     match /global_arrow_adjustments/{adjustmentId} {
-      // ANYONE authenticated can read (required for rendering pipeline)
-      allow read: if isAuthenticated();
+      // Placement is presentation data: guests and signed-in users must render identically.
+      allow read: if true;
 
-      // Only admin can write (create, update, delete)
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && hasValidPlacementFrame()
+        && adjustmentId.matches('^' + request.resource.data.placementFrame + '[|].*');
+      allow delete: if isAdmin();
     }
 
     // Audit trail for arrow adjustment changes
@@ -1614,18 +1631,24 @@ service cloud.firestore {
     }
 
     // Special arrow placement overrides - per-letter Firestore overrides for static JSON
-    // Document ID format: {gridMode}|{oriFolder}|{letter}|{turnsTuple}|{motionType}
+    // Document ID format: {placementFrame}|{oriFolder}|{letter}|{turnsTuple}|{motionType}
     match /special_arrow_placements/{docId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && hasValidPlacementFrame()
+        && docId.matches('^' + request.resource.data.placementFrame + '[|].*');
+      allow delete: if isAdmin();
     }
 
     // Default arrow placements — canonical baseline arrow positions (one doc per
-    // {gridMode}_{motionType}). Readable by all (every arrow render needs them,
+    // {placementFrame}_{propType}_{motionType}). Readable by all (every arrow render needs them,
     // incl. guests / pre-auth), writable by admins.
     match /default_arrow_adjustments/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && hasValidPlacementFrame()
+        && docId.matches('^' + request.resource.data.placementFrame + '_.*');
+      allow delete: if isAdmin();
     }
 
     // ============================================================================

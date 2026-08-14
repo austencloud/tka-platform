@@ -45,6 +45,11 @@ import {
   extractOriFolderFromPath,
 } from "../../special-override/domain/special-arrow-placement";
 import { computeSpecialOverrideKey } from "../../special-override/services/special-override-key";
+import {
+  createCanonicalPlacementContext,
+  rotatePlacementVectorToDisplayed,
+} from "./canonical-placement-frame";
+import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
 
 export class ArrowAdjustmentCalculator {
   /**
@@ -103,9 +108,13 @@ export class ArrowAdjustmentCalculator {
     arrowColor?: string
   ): Promise<Point> {
     try {
-      return await this.getBaseAdjustment(
+      const placementFrame = createCanonicalPlacementContext(
         pictographData,
-        motionData,
+        motionData
+      );
+      return await this.getBaseAdjustment(
+        placementFrame.pictographData,
+        placementFrame.motionData,
         letter,
         arrowColor
       );
@@ -157,7 +166,7 @@ export class ArrowAdjustmentCalculator {
           `[ARROW-ADJ] ${arrowColor ?? motionData.color} ${letter}` +
             ` mt=${motionData.motionType} rot=${motionData.rotationDirection} loc=${location}` +
             ` | base=(${baseAdjustment.x},${baseAdjustment.y})` +
-            ` final=(${finalAdjustment.x},${finalAdjustment.y})`,
+            ` final=(${finalAdjustment.x},${finalAdjustment.y})`
         );
       }
 
@@ -188,6 +197,32 @@ export class ArrowAdjustmentCalculator {
     location: GridLocation,
     arrowColor?: string
   ): Promise<PipelineDiagnostics> {
+    const placementFrame = createCanonicalPlacementContext(
+      pictographData,
+      motionData,
+      location
+    );
+    const diagnostics = await this.getCanonicalDiagnostics(
+      placementFrame.pictographData,
+      placementFrame.motionData,
+      letter,
+      placementFrame.location ?? location,
+      arrowColor
+    );
+    diagnostics.finalAdjustment = rotatePlacementVectorToDisplayed(
+      diagnostics.finalAdjustment,
+      placementFrame.rotationDegrees
+    );
+    return diagnostics;
+  }
+
+  private async getCanonicalDiagnostics(
+    pictographData: PictographData,
+    motionData: MotionData,
+    letter: string,
+    location: GridLocation,
+    arrowColor?: string
+  ): Promise<PipelineDiagnostics> {
     const diagnostics: PipelineDiagnostics = {
       activeTier: "default",
       global: null,
@@ -210,14 +245,8 @@ export class ArrowAdjustmentCalculator {
           const otherMotion = pictographData.motions?.[otherColor];
           const otherPropType = otherMotion?.propType?.toLowerCase() || "staff";
 
-          const rawOriKey = generateOrientationKey(
-            motionData,
-            pictographData
-          );
-          const oriKey = resolveEffectiveOriKey(
-            rawOriKey,
-            pictographData
-          );
+          const rawOriKey = generateOrientationKey(motionData, pictographData);
+          const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
           const gridMode =
             motionData.gridMode ||
             (pictographData.motions.blue && pictographData.motions.red
@@ -225,7 +254,7 @@ export class ArrowAdjustmentCalculator {
                   pictographData.motions.blue,
                   pictographData.motions.red
                 )
-              : "diamond");
+              : GridMode.DIAMOND);
 
           // The global key's turnsTuple must match the format SpecialPlacer uses when
           // writing global overrides. We recover that string by asking the SpecialPlacer
@@ -253,9 +282,9 @@ export class ArrowAdjustmentCalculator {
             turnsTupleString = generateTurnsTuple(pictographData).join(",");
           }
 
-          const legacyOriKey = mapToLegacyBucket(oriKey);
+          const legacyOriKey = mapToLegacyBucket(rawOriKey);
           const baseKey = {
-            gridMode,
+            placementFrame: placementFrameForGridMode(gridMode),
             oriKey,
             letter: pictographData.letter || "",
             turnsTuple: turnsTupleString,
@@ -294,7 +323,7 @@ export class ArrowAdjustmentCalculator {
       const key = computeSpecialOverrideKey(
         pictographData,
         motionData,
-        arrowColor ?? motionData.color,
+        arrowColor ?? motionData.color
       );
       return r.getFullOverride(key)?.suppressed === true;
     })();
@@ -328,10 +357,13 @@ export class ArrowAdjustmentCalculator {
             const gridMode =
               motionData.gridMode ||
               (pictographData.motions.blue && pictographData.motions.red
-                ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
-                : "diamond");
+                ? _deriveGridMode(
+                    pictographData.motions.blue,
+                    pictographData.motions.red
+                  )
+                : GridMode.DIAMOND);
             const overrideKey = generateSpecialOverrideKey({
-              gridMode,
+              placementFrame: placementFrameForGridMode(gridMode),
               oriFolder,
               letter: pictographData.letter || "",
               turnsTuple: String(jsonResult.turnsTupleKey),
@@ -344,11 +376,20 @@ export class ArrowAdjustmentCalculator {
             // the row's value as (0,0) instead of the static value it hides.
             if (fullOverride && !fullOverride.suppressed) {
               specialJsonInfo.firestoreOverride = {
-                value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
-                original: { x: jsonResult.adjustment.x, y: jsonResult.adjustment.y },
+                value: {
+                  x: fullOverride.adjustmentX,
+                  y: fullOverride.adjustmentY,
+                },
+                original: {
+                  x: jsonResult.adjustment.x,
+                  y: jsonResult.adjustment.y,
+                },
                 updatedBy: fullOverride.updatedBy,
               };
-              specialJsonInfo.value = { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY };
+              specialJsonInfo.value = {
+                x: fullOverride.adjustmentX,
+                y: fullOverride.adjustmentY,
+              };
             }
           }
 
@@ -357,13 +398,19 @@ export class ArrowAdjustmentCalculator {
           // No static JSON entry — check for Firestore-only override
           const specialResolver = getSpecialOverrideResolver();
           if (specialResolver && pictographData.letter) {
-            const rawOriKey = generateOrientationKey(motionData, pictographData);
+            const rawOriKey = generateOrientationKey(
+              motionData,
+              pictographData
+            );
             const oriKey = resolveEffectiveOriKey(rawOriKey, pictographData);
             const gridMode =
               motionData.gridMode ||
               (pictographData.motions.blue && pictographData.motions.red
-                ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
-                : "diamond");
+                ? _deriveGridMode(
+                    pictographData.motions.blue,
+                    pictographData.motions.red
+                  )
+                : GridMode.DIAMOND);
             const turnsTupleArr = generateTurnsTuple(pictographData);
             const [, , attrKeyForOverride] = this.generateLookupKeys(
               pictographData,
@@ -372,7 +419,7 @@ export class ArrowAdjustmentCalculator {
 
             for (const folder of [oriKey, mapToLegacyBucket(oriKey)]) {
               const overrideKey = generateSpecialOverrideKey({
-                gridMode,
+                placementFrame: placementFrameForGridMode(gridMode),
                 oriFolder: folder,
                 letter: pictographData.letter,
                 turnsTuple: turnsTupleArr.join(","),
@@ -383,11 +430,17 @@ export class ArrowAdjustmentCalculator {
               const fullOverride = specialResolver.getFullOverride(overrideKey);
               if (fullOverride && !fullOverride.suppressed) {
                 diagnostics.specialJson = {
-                  value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
-                  filePath: `${gridMode}/special/${folder}/${pictographData.letter}_placements.json`,
+                  value: {
+                    x: fullOverride.adjustmentX,
+                    y: fullOverride.adjustmentY,
+                  },
+                  filePath: `special/${folder}/${pictographData.letter}_placements.json`,
                   turnsTupleKey: turnsTupleArr.join(","),
                   firestoreOverride: {
-                    value: { x: fullOverride.adjustmentX, y: fullOverride.adjustmentY },
+                    value: {
+                      x: fullOverride.adjustmentX,
+                      y: fullOverride.adjustmentY,
+                    },
                     original: null,
                     updatedBy: fullOverride.updatedBy,
                   },
@@ -431,7 +484,7 @@ export class ArrowAdjustmentCalculator {
       );
       diagnostics.default = {
         value: { x: defaultResult.x, y: defaultResult.y },
-        gridMode: identity.gridMode as unknown as string,
+        placementFrame: identity.placementFrame,
         propType: identity.propType,
         motionType: identity.motionType as unknown as string,
         placementKey: identity.placementKey,
@@ -515,7 +568,10 @@ export class ArrowAdjustmentCalculator {
       // so we skip special placement and go straight to prop geometry / default.
       if (letter) {
         // Generate required keys for special placement lookup
-        const [, , attrKey] = this.generateLookupKeys(pictographData, motionData);
+        const [, , attrKey] = this.generateLookupKeys(
+          pictographData,
+          motionData
+        );
 
         try {
           const specialAdjustment = await this.lookupSpecialPlacement(
@@ -529,7 +585,10 @@ export class ArrowAdjustmentCalculator {
             return specialAdjustment;
           }
         } catch (error) {
-          console.warn(`Error in special placement lookup for ${letter}:`, error);
+          console.warn(
+            `Error in special placement lookup for ${letter}:`,
+            error
+          );
         }
       }
 
@@ -564,12 +623,8 @@ export class ArrowAdjustmentCalculator {
   ): [string, string, string] {
     /**Generate all required keys for special placement lookup.*/
     try {
-      const oriKey = generateOrientationKey(
-        motionData,
-        pictographData
-      );
-      const turnsTuple =
-        generateTurnsTuple(pictographData);
+      const oriKey = generateOrientationKey(motionData, pictographData);
+      const turnsTuple = generateTurnsTuple(pictographData);
 
       const color = motionData.color;
       const tempArrow = {
@@ -585,11 +640,7 @@ export class ArrowAdjustmentCalculator {
         isSelected: false,
       };
 
-      const attrKey = getKeyFromArrow(
-        tempArrow,
-        pictographData,
-        color
-      );
+      const attrKey = getKeyFromArrow(tempArrow, pictographData, color);
 
       return [oriKey, turnsTuple.join(","), attrKey];
     } catch (error) {
@@ -617,36 +668,45 @@ export class ArrowAdjustmentCalculator {
         const canonicalKey = computeSpecialOverrideKey(
           pictographData,
           motionData,
-          arrowColor ?? motionData.color,
+          arrowColor ?? motionData.color
         );
-        if (specialResolver.getFullOverride(canonicalKey)?.suppressed) return null;
+        if (specialResolver.getFullOverride(canonicalKey)?.suppressed)
+          return null;
       }
 
       if (specialResolver && pictographData.letter) {
         const override = specialResolver.getOverride(
-          computeSpecialOverrideKey(pictographData, motionData, arrowColor ?? motionData.color),
+          computeSpecialOverrideKey(
+            pictographData,
+            motionData,
+            arrowColor ?? motionData.color
+          )
         );
         if (override) return new Point(override.x, override.y);
       }
 
       // Check Firestore special overrides first
       if (specialResolver && pictographData.letter) {
-        const jsonResult = await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
-          motionData,
-          pictographData,
-          arrowColor,
-          attributeKey
-        );
+        const jsonResult =
+          await this.SpecialPlacer.getSpecialJsonAdjustmentOnly(
+            motionData,
+            pictographData,
+            arrowColor,
+            attributeKey
+          );
 
         if (jsonResult) {
           const oriFolder = extractOriFolderFromPath(jsonResult.filePath);
           const gridMode =
             motionData.gridMode ||
             (pictographData.motions.blue && pictographData.motions.red
-              ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
-              : "diamond");
+              ? _deriveGridMode(
+                  pictographData.motions.blue,
+                  pictographData.motions.red
+                )
+              : GridMode.DIAMOND);
           const overrideKey = generateSpecialOverrideKey({
-            gridMode,
+            placementFrame: placementFrameForGridMode(gridMode),
             oriFolder,
             letter: pictographData.letter,
             turnsTuple: String(jsonResult.turnsTupleKey),
@@ -711,7 +771,7 @@ export class ArrowAdjustmentCalculator {
   }
 
   /**
-   * Resolve the Default-tier lookup identity (gridMode, motionType, placementKey,
+   * Resolve the Default-tier lookup identity (placement frame, motion type, placement key,
    * turns) for a motion. Shared by calculateDefaultAdjustment and getDiagnostics
    * so the editor can address the exact Firestore default field.
    *
@@ -724,14 +784,15 @@ export class ArrowAdjustmentCalculator {
     motionData: MotionData,
     pictographData: PictographData
   ): Promise<{
-    gridMode: GridMode;
+    placementFrame: string;
+    displayGridMode: GridMode;
     motionType: MotionType;
     placementKey: string;
     turns: string;
     propType: string;
   }> {
     // Use gridMode from motion data if available, otherwise derive from locations
-    const gridMode = (motionData.gridMode ||
+    const displayGridMode = (motionData.gridMode ||
       (pictographData.motions.blue && pictographData.motions.red
         ? _deriveGridMode(
             pictographData.motions.blue,
@@ -741,7 +802,7 @@ export class ArrowAdjustmentCalculator {
 
     const keys = await this.DefaultPlacer.getAvailablePlacementKeys(
       motionData.motionType as MotionType,
-      gridMode
+      displayGridMode
     );
     const defaultPlacements: Record<string, unknown> = Object.fromEntries(
       (keys || []).map((k: string) => [k, true])
@@ -764,7 +825,8 @@ export class ArrowAdjustmentCalculator {
           : rawTurns.toString();
 
     return {
-      gridMode,
+      placementFrame: placementFrameForGridMode(displayGridMode),
+      displayGridMode,
       motionType: motionData.motionType as MotionType,
       placementKey,
       turns,
@@ -780,14 +842,14 @@ export class ArrowAdjustmentCalculator {
      * Calculate default adjustment - IDENTICAL to ArrowAdjustmentLookup.
      */
     try {
-      const { gridMode, motionType, placementKey, turns, propType } =
+      const { displayGridMode, motionType, placementKey, turns, propType } =
         await this.resolveDefaultLookupIdentity(motionData, pictographData);
 
       const adjustmentPoint = await this.DefaultPlacer.getDefaultAdjustment(
         placementKey,
         turns,
         motionType,
-        gridMode,
+        displayGridMode,
         propType
       );
 

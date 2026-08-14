@@ -25,7 +25,7 @@
   } from "../AdjustmentHistoryPanel.svelte";
 
   interface Props {
-    gridMode: string;
+    placementFrame: string;
     propType: string;
     motionType: string;
     placementKey: string;
@@ -33,7 +33,7 @@
     accentColor?: string;
   }
   let {
-    gridMode,
+    placementFrame,
     propType,
     motionType,
     placementKey,
@@ -42,13 +42,19 @@
   }: Props = $props();
 
   const entryKey = $derived(
-    `${generateDefaultDocId(gridMode, propType, motionType)}|${placementKey}|${turns}`
+    `${generateDefaultDocId(placementFrame, propType, motionType)}|${placementKey}|${turns}`
   );
 
   // Snapshot the key the loader closes over so revert targets the right arrow.
-  let active = $state({ gridMode, propType, motionType, placementKey, turns });
+  let active = $state({
+    placementFrame,
+    propType,
+    motionType,
+    placementKey,
+    turns,
+  });
   $effect(() => {
-    active = { gridMode, propType, motionType, placementKey, turns };
+    active = { placementFrame, propType, motionType, placementKey, turns };
   });
 
   async function load(): Promise<HistoryEntry[]> {
@@ -83,7 +89,7 @@
     const repo = getDefaultOverrideRepository();
     if (!repo) return;
     const {
-      gridMode: g,
+      placementFrame: frame,
       propType: p,
       motionType: m,
       placementKey: k,
@@ -91,18 +97,18 @@
     } = active;
 
     if (entry.action === "delete") {
-      repo.deleteDefaultLocal(g, p, m, k, t);
+      repo.deleteDefaultLocal(frame, p, m, k, t);
       pictographPreparer.clearCache();
       globalAdjustmentVersion.increment();
-      await repo.deleteDefault(g, p, m, k, t);
+      await repo.deleteDefault(frame, p, m, k, t);
       return;
     }
 
     const value: [number, number] = [entry.x ?? 0, entry.y ?? 0];
-    repo.saveDefaultLocal(g, p, m, k, t, value);
+    repo.saveDefaultLocal(frame, p, m, k, t, value);
     pictographPreparer.clearCache();
     globalAdjustmentVersion.increment();
-    await repo.saveDefault(g, p, m, k, t, value);
+    await repo.saveDefault(frame, p, m, k, t, value);
   }
 </script>
 

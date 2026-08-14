@@ -8,7 +8,11 @@
 
 import { collection, onSnapshot, type Unsubscribe } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-import { firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore";
+import {
+  firestoreList,
+  firestoreSet,
+  firestoreDelete,
+} from "$lib/shared/firestore";
 import { PropGeometryAdjustmentSchema } from "../domain/prop-geometry-schemas";
 import {
   generatePropGeometryKeyString,
@@ -16,6 +20,7 @@ import {
   type PropGeometryAdjustmentInput,
 } from "../domain/prop-geometry-adjustment";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { normalizePlacementFrame } from "../../placement/domain/placement-frame";
 
 const logger = createComponentLogger("PropGeometryAdjustmentPersister");
 
@@ -28,12 +33,10 @@ export class PropGeometryAdjustmentPersister {
     try {
       const adjustments = await firestoreList(
         COLLECTION_NAME,
-        PropGeometryAdjustmentSchema,
+        PropGeometryAdjustmentSchema
       );
 
-      logger.success(
-        `Loaded ${adjustments.length} prop geometry adjustments`,
-      );
+      logger.success(`Loaded ${adjustments.length} prop geometry adjustments`);
       return adjustments as unknown as PropGeometryAdjustment[];
     } catch (error) {
       // Permissions errors are expected when Firestore rules don't allow
@@ -45,7 +48,7 @@ export class PropGeometryAdjustmentPersister {
 
       if (isPermissionError) {
         logger.warn(
-          "Prop geometry adjustments not accessible (permissions). Using defaults.",
+          "Prop geometry adjustments not accessible (permissions). Using defaults."
         );
         return [];
       }
@@ -57,10 +60,11 @@ export class PropGeometryAdjustmentPersister {
 
   async save(
     input: PropGeometryAdjustmentInput,
-    userEmail: string,
+    userEmail: string
   ): Promise<void> {
+    const placementFrame = normalizePlacementFrame(input.placementFrame);
     const keyString = generatePropGeometryKeyString({
-      gridMode: input.gridMode,
+      placementFrame,
       propType: input.propType,
       otherPropType: input.otherPropType,
       positionType: input.positionType,
@@ -72,27 +76,23 @@ export class PropGeometryAdjustmentPersister {
     });
 
     try {
-      await firestoreSet(
-        COLLECTION_NAME,
-        keyString,
-        {
-          gridMode: input.gridMode,
-          propType: input.propType,
-          otherPropType: input.otherPropType,
-          positionType: input.positionType,
-          endOrientation: input.endOrientation,
-          otherEndOrientation: input.otherEndOrientation,
-          motionType: input.motionType,
-          turns: input.turns,
-          arrowColor: input.arrowColor,
-          adjustmentX: input.adjustmentX,
-          adjustmentY: input.adjustmentY,
-          updatedBy: userEmail,
-        } as Record<string, unknown>,
-      );
+      await firestoreSet(COLLECTION_NAME, keyString, {
+        placementFrame,
+        propType: input.propType,
+        otherPropType: input.otherPropType,
+        positionType: input.positionType,
+        endOrientation: input.endOrientation,
+        otherEndOrientation: input.otherEndOrientation,
+        motionType: input.motionType,
+        turns: input.turns,
+        arrowColor: input.arrowColor,
+        adjustmentX: input.adjustmentX,
+        adjustmentY: input.adjustmentY,
+        updatedBy: userEmail,
+      } as Record<string, unknown>);
 
       logger.success(
-        `Saved prop geometry: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`,
+        `Saved prop geometry: ${keyString} → (${input.adjustmentX}, ${input.adjustmentY})`
       );
     } catch (error) {
       logger.error(`Failed to save prop geometry ${keyString}:`, error);
@@ -112,7 +112,7 @@ export class PropGeometryAdjustmentPersister {
 
   subscribe(
     onAdd: (adjustment: PropGeometryAdjustment) => void,
-    onRemove: (keyString: string) => void,
+    onRemove: (keyString: string) => void
   ): () => void {
     if (this.unsubscribe) {
       this.unsubscribe();
@@ -132,14 +132,14 @@ export class PropGeometryAdjustmentPersister {
 
               if (change.type === "added" || change.type === "modified") {
                 if (
-                  data.gridMode &&
+                  data.placementFrame &&
                   data.propType &&
                   data.positionType &&
                   typeof data.adjustmentX === "number" &&
                   typeof data.adjustmentY === "number"
                 ) {
                   onAdd({
-                    gridMode: data.gridMode,
+                    placementFrame: data.placementFrame,
                     propType: data.propType,
                     otherPropType: data.otherPropType ?? "*",
                     positionType: data.positionType,
@@ -163,18 +163,18 @@ export class PropGeometryAdjustmentPersister {
             const isPermissionError =
               subscriptionError instanceof Error &&
               (subscriptionError.message.includes(
-                "Missing or insufficient permissions",
+                "Missing or insufficient permissions"
               ) ||
                 subscriptionError.message.includes("permission-denied"));
 
             if (isPermissionError) {
               logger.warn(
-                "Prop geometry subscription not accessible (permissions). Real-time updates disabled.",
+                "Prop geometry subscription not accessible (permissions). Real-time updates disabled."
               );
             } else {
               logger.error("Subscription error:", subscriptionError);
             }
-          },
+          }
         );
       })
       .catch((initError: unknown) => {

@@ -15,7 +15,7 @@ import {
 
 describe("PropGeometryAdjustment", () => {
   const sampleKey: PropGeometryKey = {
-    gridMode: "diamond",
+    placementFrame: "canonical",
     propType: "triad",
     otherPropType: "triad",
     positionType: "beta",
@@ -29,9 +29,7 @@ describe("PropGeometryAdjustment", () => {
   describe("generatePropGeometryKeyString", () => {
     it("produces a 9-part pipe-separated key", () => {
       const result = generatePropGeometryKeyString(sampleKey);
-      expect(result).toBe(
-        "diamond|triad|triad|beta|out|in|pro|1|blue"
-      );
+      expect(result).toBe("canonical|triad|triad|beta|out|in|pro|1|blue");
     });
 
     it("handles wildcard values", () => {
@@ -41,7 +39,7 @@ describe("PropGeometryAdjustment", () => {
         arrowColor: "*",
       };
       const result = generatePropGeometryKeyString(wildcardKey);
-      expect(result).toBe("diamond|triad|*|beta|out|in|pro|1|*");
+      expect(result).toBe("canonical|triad|*|beta|out|in|pro|1|*");
     });
   });
 
@@ -68,13 +66,13 @@ describe("PropGeometryAdjustment", () => {
       expect(keys).toHaveLength(4);
 
       // Level 1: Full key
-      expect(keys[0]).toBe("diamond|triad|triad|beta|out|in|pro|1|blue");
+      expect(keys[0]).toBe("canonical|triad|triad|beta|out|in|pro|1|blue");
       // Level 2: Wildcard arrowColor
-      expect(keys[1]).toBe("diamond|triad|triad|beta|out|in|pro|1|*");
+      expect(keys[1]).toBe("canonical|triad|triad|beta|out|in|pro|1|*");
       // Level 3: Wildcard otherPropType
-      expect(keys[2]).toBe("diamond|triad|*|beta|out|in|pro|1|blue");
+      expect(keys[2]).toBe("canonical|triad|*|beta|out|in|pro|1|blue");
       // Level 4: Wildcard both
-      expect(keys[3]).toBe("diamond|triad|*|beta|out|in|pro|1|*");
+      expect(keys[3]).toBe("canonical|triad|*|beta|out|in|pro|1|*");
     });
 
     it("most specific key matches the original key string", () => {
@@ -99,7 +97,7 @@ describe("PropGeometryAdjustment", () => {
 
     it("finds exact match at full specificity", () => {
       const stored = new Map<string, { x: number; y: number }>();
-      stored.set("diamond|triad|triad|beta|out|in|pro|1|blue", {
+      stored.set("canonical|triad|triad|beta|out|in|pro|1|blue", {
         x: 20,
         y: -50,
       });
@@ -111,7 +109,7 @@ describe("PropGeometryAdjustment", () => {
     it("falls back to wildcard arrowColor when exact key missing", () => {
       const stored = new Map<string, { x: number; y: number }>();
       // Stored with wildcard arrowColor — applies to both blue and red
-      stored.set("diamond|triad|triad|beta|out|in|pro|1|*", {
+      stored.set("canonical|triad|triad|beta|out|in|pro|1|*", {
         x: 15,
         y: -30,
       });
@@ -123,7 +121,7 @@ describe("PropGeometryAdjustment", () => {
     it("falls back to wildcard otherPropType", () => {
       const stored = new Map<string, { x: number; y: number }>();
       // Stored without caring about the other hand's prop type
-      stored.set("diamond|triad|*|beta|out|in|pro|1|blue", {
+      stored.set("canonical|triad|*|beta|out|in|pro|1|blue", {
         x: 10,
         y: -25,
       });
@@ -134,7 +132,7 @@ describe("PropGeometryAdjustment", () => {
 
     it("falls back to wildcard both when nothing else matches", () => {
       const stored = new Map<string, { x: number; y: number }>();
-      stored.set("diamond|triad|*|beta|out|in|pro|1|*", { x: 5, y: -10 });
+      stored.set("canonical|triad|*|beta|out|in|pro|1|*", { x: 5, y: -10 });
 
       const result = simulateLookup(stored, sampleKey);
       expect(result).toEqual({ x: 5, y: -10 });
@@ -143,7 +141,7 @@ describe("PropGeometryAdjustment", () => {
     it("returns null when no match at any level", () => {
       const stored = new Map<string, { x: number; y: number }>();
       // Different prop type — shouldn't match
-      stored.set("diamond|fan|fan|beta|out|in|pro|1|blue", {
+      stored.set("canonical|fan|fan|beta|out|in|pro|1|blue", {
         x: 20,
         y: -50,
       });
@@ -155,11 +153,11 @@ describe("PropGeometryAdjustment", () => {
     it("prefers more specific match over wildcard", () => {
       const stored = new Map<string, { x: number; y: number }>();
       // Both a specific and a wildcard match exist
-      stored.set("diamond|triad|triad|beta|out|in|pro|1|blue", {
+      stored.set("canonical|triad|triad|beta|out|in|pro|1|blue", {
         x: 20,
         y: -50,
       });
-      stored.set("diamond|triad|*|beta|out|in|pro|1|*", { x: 5, y: -10 });
+      stored.set("canonical|triad|*|beta|out|in|pro|1|*", { x: 5, y: -10 });
 
       const result = simulateLookup(stored, sampleKey);
       // Should pick the exact match, not the wildcard
@@ -168,11 +166,11 @@ describe("PropGeometryAdjustment", () => {
 
     it("handles different orientation combos independently", () => {
       const stored = new Map<string, { x: number; y: number }>();
-      stored.set("diamond|triad|triad|beta|out|in|pro|1|blue", {
+      stored.set("canonical|triad|triad|beta|out|in|pro|1|blue", {
         x: 20,
         y: -50,
       });
-      stored.set("diamond|triad|triad|beta|out|out|pro|1|blue", {
+      stored.set("canonical|triad|triad|beta|out|out|pro|1|blue", {
         x: 30,
         y: -40,
       });

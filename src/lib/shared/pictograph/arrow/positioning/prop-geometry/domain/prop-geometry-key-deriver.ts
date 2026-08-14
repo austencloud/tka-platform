@@ -9,17 +9,27 @@ import { deriveGridMode as _deriveGridMode } from "$lib/shared/pictograph/grid/s
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PropGeometryKey } from "./prop-geometry-adjustment";
+import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
+import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
 
 export function derivePropGeometryKey(
   pictographData: PictographData,
   motionData: MotionData,
   arrowColor?: string
 ): PropGeometryKey | null {
+  const canonicalContext = createCanonicalPlacementContext(
+    pictographData,
+    motionData
+  );
+  pictographData = canonicalContext.pictographData;
+  motionData = canonicalContext.motionData;
   const blueMotion = pictographData.motions.blue;
   const redMotion = pictographData.motions.red;
   if (!blueMotion || !redMotion) return null;
 
-  const gridMode = motionData.gridMode || _deriveGridMode(blueMotion, redMotion);
+  const placementFrame = placementFrameForGridMode(
+    _deriveGridMode(blueMotion, redMotion)
+  );
 
   const endPosition = pictographData.endPosition;
   if (!endPosition) return null;
@@ -31,7 +41,7 @@ export function derivePropGeometryKey(
   const otherMotion = isBlue ? redMotion : blueMotion;
 
   return {
-    gridMode,
+    placementFrame,
     propType: thisMotion.propType?.toLowerCase() || "staff",
     otherPropType: otherMotion.propType?.toLowerCase() || "staff",
     positionType,

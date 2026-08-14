@@ -17,7 +17,7 @@ import {
  */
 describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
   const shared = {
-    gridMode: "box",
+    placementFrame: "canonical",
     oriFolder: "from_layer1",
     letter: "A",
     turnsTuple: "(0, 1.5)",
@@ -28,8 +28,14 @@ describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
   };
 
   it("produces DIFFERENT keys for the two arrows of a same-motion-type letter", () => {
-    const blueKey = generateSpecialOverrideKey({ ...shared, attributeKey: "blue" });
-    const redKey = generateSpecialOverrideKey({ ...shared, attributeKey: "red" });
+    const blueKey = generateSpecialOverrideKey({
+      ...shared,
+      attributeKey: "blue",
+    });
+    const redKey = generateSpecialOverrideKey({
+      ...shared,
+      attributeKey: "red",
+    });
     expect(blueKey).not.toBe(redKey);
   });
 
@@ -41,7 +47,7 @@ describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
 
   it("keeps hybrid-letter keys distinct via their attribute keys", () => {
     const proKey = generateSpecialOverrideKey({
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriFolder: "from_layer1",
       letter: "C",
       turnsTuple: "(1, 1)",
@@ -49,7 +55,7 @@ describe("generateSpecialOverrideKey — per-arrow discriminator", () => {
       attributeKey: "pro_from_layer1",
     });
     const antiKey = generateSpecialOverrideKey({
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriFolder: "from_layer1",
       letter: "C",
       turnsTuple: "(1, 1)",

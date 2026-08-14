@@ -13,19 +13,23 @@
  * overrides the special. Manual WASD adds on top of everything.
  *
  * Key structure encodes the physical scenario without any letter:
- *   gridMode|propType|otherPropType|positionType|endOri|otherEndOri|motionType|turns|arrowColor
+ *   placementFrame|propType|otherPropType|positionType|endOri|otherEndOri|motionType|turns|arrowColor
  *
  * Values are BASE adjustments - they go through directional tuple rotation
  * in the pipeline, so one entry covers all four quadrants automatically.
  */
 
 import type { Timestamp } from "firebase/firestore";
+import {
+  normalizePlacementFrame,
+  type PlacementFrame,
+} from "../../placement/domain/placement-frame";
 
 /**
  * A single prop geometry adjustment entry
  */
 export interface PropGeometryAdjustment {
-  readonly gridMode: string;
+  readonly placementFrame: PlacementFrame;
   readonly propType: string;
   readonly otherPropType: string;
   readonly positionType: string;
@@ -44,7 +48,7 @@ export interface PropGeometryAdjustment {
  * Input for creating or updating a prop geometry adjustment
  */
 export interface PropGeometryAdjustmentInput {
-  readonly gridMode: string;
+  readonly placementFrame: string;
   readonly propType: string;
   readonly otherPropType: string;
   readonly positionType: string;
@@ -61,7 +65,7 @@ export interface PropGeometryAdjustmentInput {
  * Composite key for looking up prop geometry adjustments.
  */
 export interface PropGeometryKey {
-  readonly gridMode: string;
+  readonly placementFrame: PlacementFrame;
   readonly propType: string;
   readonly otherPropType: string;
   readonly positionType: string;
@@ -77,7 +81,7 @@ export interface PropGeometryKey {
  */
 export function generatePropGeometryKeyString(key: PropGeometryKey): string {
   return [
-    key.gridMode,
+    normalizePlacementFrame(key.placementFrame),
     key.propType,
     key.otherPropType,
     key.positionType,
@@ -100,7 +104,7 @@ export function parsePropGeometryKeyString(
   if (parts.length !== 9) return null;
 
   const [
-    gridMode,
+    placementFrameValue,
     propType,
     otherPropType,
     positionType,
@@ -112,7 +116,7 @@ export function parsePropGeometryKeyString(
   ] = parts;
 
   if (
-    !gridMode ||
+    !placementFrameValue ||
     !propType ||
     !otherPropType ||
     !positionType ||
@@ -125,8 +129,15 @@ export function parsePropGeometryKeyString(
     return null;
   }
 
+  let placementFrame: PlacementFrame;
+  try {
+    placementFrame = normalizePlacementFrame(placementFrameValue);
+  } catch {
+    return null;
+  }
+
   return {
-    gridMode,
+    placementFrame,
     propType,
     otherPropType,
     positionType,
@@ -156,14 +167,10 @@ export function generateCascadingKeys(key: PropGeometryKey): string[] {
   keys.push(generatePropGeometryKeyString(key));
 
   // Level 2: Wildcard arrowColor
-  keys.push(
-    generatePropGeometryKeyString({ ...key, arrowColor: "*" })
-  );
+  keys.push(generatePropGeometryKeyString({ ...key, arrowColor: "*" }));
 
   // Level 3: Wildcard otherPropType
-  keys.push(
-    generatePropGeometryKeyString({ ...key, otherPropType: "*" })
-  );
+  keys.push(generatePropGeometryKeyString({ ...key, otherPropType: "*" }));
 
   // Level 4: Wildcard both
   keys.push(

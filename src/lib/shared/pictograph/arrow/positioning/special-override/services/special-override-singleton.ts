@@ -2,7 +2,7 @@
  * Special Arrow Placement Override Singleton
  *
  * Provides a singleton instance of the SpecialArrowPlacementRepository
- * that can be initialized after Firebase auth is ready.
+ * that is initialized with public presentation data at app startup.
  *
  * Mirrors the pattern used by global-adjustment-singleton.ts.
  */
@@ -26,35 +26,22 @@ export function getSpecialOverrideRepository(): SpecialArrowPlacementRepository 
 
 /**
  * Initialize the special placement override system.
- * Should be called after Firebase auth is ready.
  * Safe to call multiple times - subsequent calls are no-ops.
  */
 export async function initializeSpecialOverrides(): Promise<void> {
   if (initializationPromise) return initializationPromise;
-  if (repositoryInstance?.isInitialized) {
-    // Already built — just make sure the listener is live. It's paused
-    // across sign-out, and skipped entirely when the first init ran
-    // signed-out (e.g. a guest opening CardInspectModal).
-    repositoryInstance.resumeSubscription();
-    return;
-  }
+  if (repositoryInstance?.isInitialized) return;
   initializationPromise = doInitialize();
   return initializationPromise;
-}
-
-/**
- * Stop the Firestore listener (keeping cached overrides) before sign-out,
- * so it isn't permission-killed when the auth token is invalidated.
- */
-export function pauseSpecialOverrideSubscription(): void {
-  repositoryInstance?.pauseSubscription();
 }
 
 async function doInitialize(): Promise<void> {
   try {
     logger.info("Initializing special placement override system...");
-    const { SpecialArrowPlacementPersister } = await import("./special-arrow-placement-persister");
-    const { SpecialArrowPlacementRepository } = await import("./special-arrow-placement-repository");
+    const { SpecialArrowPlacementPersister } =
+      await import("./special-arrow-placement-persister");
+    const { SpecialArrowPlacementRepository } =
+      await import("./special-arrow-placement-repository");
     const persister = new SpecialArrowPlacementPersister();
     const repository = new SpecialArrowPlacementRepository(persister);
     await repository.initialize();

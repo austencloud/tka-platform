@@ -2,7 +2,7 @@
  * Global Arrow Adjustment Singleton
  *
  * Provides a singleton instance of the GlobalArrowAdjustmentRepository
- * that can be initialized after Firebase auth is ready.
+ * that is initialized with public presentation data at app startup.
  *
  * This pattern allows the repository to be accessed by services
  * like SpecialPlacer without requiring DI container reconstruction.
@@ -18,8 +18,12 @@ let repositoryInstance: GlobalArrowAdjustmentRepository | null = null;
 let initializationPromise: Promise<void> | null = null;
 
 let globalReadDisabled = false;
-export function setGlobalReadDisabled(v: boolean): void { globalReadDisabled = v; }
-export function isGlobalReadDisabled(): boolean { return globalReadDisabled; }
+export function setGlobalReadDisabled(v: boolean): void {
+  globalReadDisabled = v;
+}
+export function isGlobalReadDisabled(): boolean {
+  return globalReadDisabled;
+}
 
 /**
  * Get the global adjustment repository instance.
@@ -31,7 +35,6 @@ export function getGlobalAdjustmentRepository(): GlobalArrowAdjustmentRepository
 
 /**
  * Initialize the global adjustment system.
- * Should be called after Firebase auth is ready.
  * Safe to call multiple times - subsequent calls are no-ops.
  */
 export async function initializeGlobalAdjustments(): Promise<void> {
@@ -40,23 +43,10 @@ export async function initializeGlobalAdjustments(): Promise<void> {
     return initializationPromise;
   }
 
-  // Already built — just make sure the listener is live (it's paused
-  // across sign-out and skipped when the first init ran signed-out).
-  if (repositoryInstance?.isInitialized) {
-    repositoryInstance.resumeSubscription();
-    return;
-  }
+  if (repositoryInstance?.isInitialized) return;
 
   initializationPromise = doInitialize();
   return initializationPromise;
-}
-
-/**
- * Stop the Firestore listener (keeping cached adjustments) before sign-out,
- * so it isn't permission-killed when the auth token is invalidated.
- */
-export function pauseGlobalAdjustmentSubscription(): void {
-  repositoryInstance?.pauseSubscription();
 }
 
 async function doInitialize(): Promise<void> {
@@ -64,8 +54,10 @@ async function doInitialize(): Promise<void> {
     logger.info("Initializing global arrow adjustment system...");
 
     // Create persister and repository
-    const { GlobalArrowAdjustmentPersister } = await import("./global-arrow-adjustment-persister");
-    const { GlobalArrowAdjustmentRepository } = await import("./global-arrow-adjustment-repository");
+    const { GlobalArrowAdjustmentPersister } =
+      await import("./global-arrow-adjustment-persister");
+    const { GlobalArrowAdjustmentRepository } =
+      await import("./global-arrow-adjustment-repository");
     const persister = new GlobalArrowAdjustmentPersister();
     const repository = new GlobalArrowAdjustmentRepository(persister);
 
@@ -75,8 +67,14 @@ async function doInitialize(): Promise<void> {
     // Store singleton
     repositoryInstance = repository;
 
-    setGlobalAdjustmentResolver((baseKey, thisPropType, otherPropType, legacyOriKey) =>
-      repository.getAdjustmentCascading(baseKey, thisPropType, otherPropType, legacyOriKey),
+    setGlobalAdjustmentResolver(
+      (baseKey, thisPropType, otherPropType, legacyOriKey) =>
+        repository.getAdjustmentCascading(
+          baseKey,
+          thisPropType,
+          otherPropType,
+          legacyOriKey
+        )
     );
 
     logger.success(

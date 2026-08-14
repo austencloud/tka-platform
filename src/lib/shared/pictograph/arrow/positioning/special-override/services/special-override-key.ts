@@ -9,6 +9,8 @@ import {
 import { generateTurnsTuple } from "../../key-generation/services/turns-tuple-key-generator";
 import { getKeyFromArrow } from "../../key-generation/services/attribute-key-generator";
 import { generateSpecialOverrideKey } from "../domain/special-arrow-placement";
+import { createCanonicalPlacementContext } from "../../calculation/services/canonical-placement-frame";
+import { placementFrameForGridMode } from "../../placement/domain/placement-frame";
 
 /**
  * The single source of truth for a pictograph arrow's special-override key.
@@ -18,29 +20,43 @@ import { generateSpecialOverrideKey } from "../domain/special-arrow-placement";
 export function computeSpecialOverrideKey(
   pictographData: PictographData,
   motionData: MotionData,
-  arrowColor: string,
+  arrowColor: string
 ): string {
-  const gridMode =
-    motionData.gridMode ||
+  const canonicalContext = createCanonicalPlacementContext(
+    pictographData,
+    motionData
+  );
+  pictographData = canonicalContext.pictographData;
+  motionData = canonicalContext.motionData;
+  const displayGrid =
+    motionData.gridMode ??
     (pictographData.motions.blue && pictographData.motions.red
       ? _deriveGridMode(pictographData.motions.blue, pictographData.motions.red)
       : GridMode.DIAMOND);
+  const placementFrame = placementFrameForGridMode(displayGrid);
   const oriFolder = resolveEffectiveOriKey(
     generateOrientationKey(motionData, pictographData),
-    pictographData,
+    pictographData
   );
   const turnsTuple = generateTurnsTuple(pictographData).join(",");
   const attributeKey = getKeyFromArrow(
     {
-      id: "temp", arrowLocation: null, positionX: 0, positionY: 0, rotationAngle: 0,
-      coordinates: { x: 0, y: 0 }, svgCenter: { x: 0, y: 0 }, svgMirrored: false,
-      isVisible: true, isSelected: false,
+      id: "temp",
+      arrowLocation: null,
+      positionX: 0,
+      positionY: 0,
+      rotationAngle: 0,
+      coordinates: { x: 0, y: 0 },
+      svgCenter: { x: 0, y: 0 },
+      svgMirrored: false,
+      isVisible: true,
+      isSelected: false,
     } as never,
     pictographData,
-    arrowColor,
+    arrowColor
   );
   return generateSpecialOverrideKey({
-    gridMode: String(gridMode),
+    placementFrame: String(placementFrame),
     oriFolder,
     letter: pictographData.letter || "",
     turnsTuple,

@@ -66,7 +66,7 @@
     if (parts.length < 5) return;
 
     const targetKey = {
-      gridMode: parts[0]!,
+      placementFrame: parts[0]! as "canonical" | "skewed",
       oriKey: parts[1]!,
       letter: parts[2]!,
       turnsTuple: parts[3]!,

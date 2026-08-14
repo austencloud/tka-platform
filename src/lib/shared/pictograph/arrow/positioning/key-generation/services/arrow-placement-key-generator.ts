@@ -5,7 +5,10 @@
  */
 
 import { MotionType } from "../../../../shared/domain/enums/pictograph-enums";
-import type { MotionData } from "../../../../shared/domain/models/motion-data";
+import {
+  isVisibleMotion,
+  type MotionData,
+} from "../../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../../shared/domain/models/pictograph-data";
 
 const DASH_LETTER_CONDITIONS = {
@@ -17,14 +20,21 @@ function normalizeMotionType(motionType: unknown): MotionType {
   if (typeof motionType === "string") {
     const normalized = motionType.toLowerCase();
     switch (normalized) {
-      case "pro": return MotionType.PRO;
-      case "anti": return MotionType.ANTI;
-      case "float": return MotionType.FLOAT;
-      case "dash": return MotionType.DASH;
-      case "static": return MotionType.STATIC;
+      case "pro":
+        return MotionType.PRO;
+      case "anti":
+        return MotionType.ANTI;
+      case "float":
+        return MotionType.FLOAT;
+      case "dash":
+        return MotionType.DASH;
+      case "static":
+        return MotionType.STATIC;
     }
   }
-  console.warn(`Invalid motion type: ${String(motionType)}, defaulting to 'pro'`);
+  console.warn(
+    `Invalid motion type: ${String(motionType)}, defaulting to 'pro'`
+  );
   return MotionType.PRO;
 }
 
@@ -52,8 +62,12 @@ function detectLayerInfo(pictographData: PictographData): {
   hasBetaProps: boolean;
   hasGammaProps: boolean;
 } {
-  const redEndOri = pictographData.motions.red?.endOrientation;
-  const blueEndOri = pictographData.motions.blue?.endOrientation;
+  const redEndOri = isVisibleMotion(pictographData.motions.red)
+    ? pictographData.motions.red.endOrientation
+    : undefined;
+  const blueEndOri = isVisibleMotion(pictographData.motions.blue)
+    ? pictographData.motions.blue.endOrientation
+    : undefined;
 
   const radialOrientations = ["in", "out"];
   const nonRadialOrientations = ["clock", "counter"];
@@ -99,12 +113,64 @@ function detectLayerInfo(pictographData: PictographData): {
     (redIsRadial && blueIsNonRadial) || (redIsNonRadial && blueIsRadial);
 
   const letter = pictographData.letter;
-  const alphaLetters = ["A","B","C","D","E","F","W","X","W-","X-","Φ","Φ-","α"];
-  const betaLetters = ["G","H","I","J","K","L","Y","Z","Y-","Z-","Ψ","Ψ-","β"];
+  const alphaLetters = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "W",
+    "X",
+    "W-",
+    "X-",
+    "Φ",
+    "Φ-",
+    "α",
+  ];
+  const betaLetters = [
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "Y",
+    "Z",
+    "Y-",
+    "Z-",
+    "Ψ",
+    "Ψ-",
+    "β",
+  ];
   const gammaLetters = [
-    "M","N","O","P","Q","R","S","T","U","V",
-    "Σ","Δ","Θ","Ω","Σ-","Δ-","Θ-","Ω-",
-    "Λ","Λ-","γ","ζ","η","τ","⊕","μ","ν",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "Σ",
+    "Δ",
+    "Θ",
+    "Ω",
+    "Σ-",
+    "Δ-",
+    "Θ-",
+    "Ω-",
+    "Λ",
+    "Λ-",
+    "γ",
+    "ζ",
+    "η",
+    "τ",
+    "⊕",
+    "μ",
+    "ν",
   ];
 
   const hasAlphaProps = letter ? alphaLetters.includes(letter) : false;
@@ -190,13 +256,23 @@ function generateCandidateKeys(
 
   if (letter) {
     const letterSuffix = getLetterSuffix(letter);
-    const keyWithLetter = generateLegacyStyleKey(motionType, layerInfo, letterSuffix, motionData);
+    const keyWithLetter = generateLegacyStyleKey(
+      motionType,
+      layerInfo,
+      letterSuffix,
+      motionData
+    );
     if (keyWithLetter) {
       candidates.push(keyWithLetter);
     }
   }
 
-  const keyNoLetter = generateLegacyStyleKey(motionType, layerInfo, "", motionData);
+  const keyNoLetter = generateLegacyStyleKey(
+    motionType,
+    layerInfo,
+    "",
+    motionData
+  );
   if (keyNoLetter) {
     candidates.push(keyNoLetter);
   }

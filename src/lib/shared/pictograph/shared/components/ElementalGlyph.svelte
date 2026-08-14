@@ -3,10 +3,13 @@ ElementalGlyph.svelte - Fused Elemental + VTG Glyph Component
 
 Renders fused elemental/VTG symbols (water/SS, fire/SO, earth/TS, air/TO, sun/QS, moon/QO)
 in the bottom-right corner of pictographs. Each icon contains the VTG mode text
-embedded within the elemental shape. Only displays for Type1 letters.
+embedded within the elemental shape. Known non-Type1 letters are rejected.
 -->
 <script lang="ts">
-  import { type ElementalType, getElementImagePath } from "../domain/enums/pictograph-enums";
+  import {
+    type ElementalType,
+    getElementImagePath,
+  } from "../domain/enums/pictograph-enums";
   import { LetterType } from "../../../foundation/domain/models/letter-type";
   import {
     type Letter,
@@ -29,7 +32,7 @@ embedded within the elemental shape. Only displays for Type1 letters.
   } = $props<{
     /** The elemental type to display (water, fire, earth, air, sun, moon) */
     elementalType?: ElementalType | null;
-    /** The letter (used to check if Type1) */
+    /** The letter, when known, is used to reject non-Type1 steps. */
     letter?: Letter | null;
     /** Whether the pictograph has valid data */
     hasValidData?: boolean;
@@ -45,7 +48,9 @@ embedded within the elemental shape. Only displays for Type1 letters.
     xOffset?: number;
   }>();
 
-  // Only render for Type1 letters with valid elemental type AND when visible
+  // A known non-Type1 letter cannot carry an elemental relationship. Some
+  // generated previews have complete two-hand geometry before letter lookup,
+  // though, and that geometry is already enough for the canonical derivation.
   // NOTE: We check visibility here (not just CSS) because when exporting to SVG/image,
   // CSS classes don't carry over - only the raw SVG markup is captured.
   // Preview mode allows rendering at reduced opacity even when not visible.
@@ -74,7 +79,7 @@ embedded within the elemental shape. Only displays for Type1 letters.
   // one pure module prevents a landing or video treatment from shrinking away
   // from the pictograph users already recognize.
   const glyphBox = $derived(
-    getElementalGlyphBox(ELEMENTAL_GLYPH_VIEWBOX_SIZE, xOffset),
+    getElementalGlyphBox(ELEMENTAL_GLYPH_VIEWBOX_SIZE, xOffset)
   );
 
   // Center point for scale animation
@@ -95,9 +100,15 @@ embedded within the elemental shape. Only displays for Type1 letters.
 
     // Skip initial mount (prevElementalType is undefined)
     // Animate when type changes to a new value
-    if (previous !== undefined && elementalType !== previous && elementalType !== null) {
+    if (
+      previous !== undefined &&
+      elementalType !== previous &&
+      elementalType !== null
+    ) {
       isAnimating = true;
-      const timeout = setTimeout(() => { isAnimating = false; }, 180);
+      const timeout = setTimeout(() => {
+        isAnimating = false;
+      }, 180);
       return () => clearTimeout(timeout);
     }
     return undefined;

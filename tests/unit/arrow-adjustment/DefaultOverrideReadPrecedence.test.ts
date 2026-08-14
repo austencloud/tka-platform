@@ -1,18 +1,24 @@
-import { describe, it, expect, afterEach } from "vitest";
-import { ArrowPlacer, setDefaultOverrideResolver } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  ArrowPlacer,
+  setDefaultOverrideResolver,
+} from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
-// Minimal SimpleJsonCache stand-in: returns a fixed box/pro placements map.
+// Minimal SimpleJsonCache stand-in: returns a fixed canonical/pro map.
+const requestedPaths: string[] = [];
 const fakeCache = {
   async get(path: string) {
-    if (path.includes("box") && path.includes("pro")) {
+    requestedPaths.push(path);
+    if (path.endsWith("default_pro_placements.json")) {
       return { pro_to_layer1_alpha: { "1.5": [-35, 145] } };
     }
     return {};
   },
 } as unknown as import("$lib/shared/pictograph/shared/services/simple-json-cache").SimpleJsonCache;
 
+beforeEach(() => requestedPaths.splice(0));
 afterEach(() => setDefaultOverrideResolver(null));
 
 describe("default override read precedence", () => {
@@ -22,23 +28,31 @@ describe("default override read precedence", () => {
       "pro" as MotionType,
       "pro_to_layer1_alpha",
       "1.5",
-      GridMode.BOX,
+      GridMode.BOX
     );
     expect(result).toEqual({ x: -35, y: 145 });
+    expect(requestedPaths).toContain(
+      "/data/arrow_placement/default/default_pro_placements.json"
+    );
+    expect(requestedPaths.every((path) => !path.includes("/box/"))).toBe(true);
   });
 
   it("prefers the resolver value over the static JSON value", async () => {
     const placer = new ArrowPlacer(fakeCache);
     setDefaultOverrideResolver((grid, motion, key, turns, prop) =>
-      grid === "box" && motion === "pro" && key === "pro_to_layer1_alpha" && turns === "1.5" && prop === "staff"
+      grid === "canonical" &&
+      motion === "pro" &&
+      key === "pro_to_layer1_alpha" &&
+      turns === "1.5" &&
+      prop === "staff"
         ? [7, 9]
-        : null,
+        : null
     );
     const result = await placer.getDefaultAdjustment(
       "pro" as MotionType,
       "pro_to_layer1_alpha",
       "1.5",
-      GridMode.BOX,
+      GridMode.BOX
     );
     expect(result).toEqual({ x: 7, y: 9 });
   });
@@ -50,7 +64,7 @@ describe("default override read precedence", () => {
       "pro" as MotionType,
       "pro_to_layer1_alpha",
       "1.5",
-      GridMode.BOX,
+      GridMode.BOX
     );
     expect(result).toEqual({ x: -35, y: 145 });
   });

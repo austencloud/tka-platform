@@ -62,7 +62,7 @@ function letteredPictograph() {
   });
   const picto = {
     letter: "A",
-    gridMode: red.gridMode,
+    placementFrame: red.placementFrame,
     motions: { blue, red },
   } as unknown as PictographData;
   return { picto, red };
@@ -74,7 +74,7 @@ function buildCalculator() {
   const specialPlacer = {
     getSpecialJsonAdjustmentOnly: async () => ({
       adjustment: SPECIAL_VALUE,
-      filePath: "diamond/special/from_layer1/A_placements.json",
+      filePath: "canonical/special/from_layer1/A_placements.json",
       turnsTupleKey: "(0, 0)",
     }),
     getSpecialAdjustment: async () => SPECIAL_VALUE,
@@ -88,14 +88,14 @@ function buildCalculator() {
   return new ArrowAdjustmentCalculator(
     specialPlacer as never,
     defaultPlacer as never,
-    tupleProcessor as never,
+    tupleProcessor as never
   );
 }
 
 function tombstone(key: string) {
   return {
     key,
-    gridMode: "diamond",
+    placementFrame: "canonical",
     oriFolder: "from_layer1",
     letter: "A",
     turnsTuple: "(0, 0)",
@@ -132,7 +132,7 @@ describe("special suppression — render path", () => {
       red,
       "A",
       location,
-      "red",
+      "red"
     );
     expect({ x: result.x, y: result.y }).toEqual(SPECIAL_VALUE);
   });
@@ -151,7 +151,7 @@ describe("special suppression — render path", () => {
       red,
       "A",
       location,
-      "red",
+      "red"
     );
     expect({ x: result.x, y: result.y }).toEqual(DEFAULT_VALUE);
   });
@@ -170,7 +170,7 @@ describe("special suppression — render path", () => {
       red,
       "A",
       location,
-      "red",
+      "red"
     );
     expect(diagnostics.activeTier).toBe("default");
     expect(diagnostics.baseAdjustment).toEqual(DEFAULT_VALUE);
@@ -184,7 +184,7 @@ describe("special suppression — render path", () => {
 });
 
 describe("special suppression — state and schema", () => {
-  const key = "diamond|from_layer1|A|(0, 0)|pro|red|staff";
+  const key = "canonical|from_layer1|A|(0, 0)|pro|red|staff";
 
   it("keeps a tombstone invisible to the override readers", () => {
     const state = createSpecialArrowPlacementState();
@@ -201,7 +201,7 @@ describe("special suppression — state and schema", () => {
   it("defaults a legacy doc written before the field existed to suppressed=false", () => {
     const parsed = SpecialArrowPlacementSchema.parse({
       key,
-      gridMode: "diamond",
+      placementFrame: "canonical",
       oriFolder: "from_layer1",
       letter: "A",
       turnsTuple: "(0, 0)",
