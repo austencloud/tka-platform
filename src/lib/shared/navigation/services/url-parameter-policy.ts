@@ -15,6 +15,7 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "handoff", isValidForPath: startsWith("/compose") },
   { name: "feedback", isValidForPath: startsWith("/feedback") },
   { name: "openFeedback", isValidForPath: startsWith("/feedback") },
+  { name: "environment", isValidForPath: startsWith("/settings/theme") },
   { name: "pack", isValidForPath: startsWith("/choreo_card/releaser") },
   { name: "room", isValidForPath: startsWith("/museum") },
   { name: "seq", isValidForPath: isLoopLabelerPath },

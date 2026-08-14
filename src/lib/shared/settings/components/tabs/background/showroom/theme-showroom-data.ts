@@ -114,3 +114,9 @@ export function getShowroomTheme(
     SHOWROOM_THEMES[0]!
   );
 }
+
+export function getShowroomThemeFromId(
+  value: string | null
+): BackgroundType | undefined {
+  return SHOWROOM_THEMES.find((theme) => theme.id === value)?.id;
+}

@@ -44,4 +44,19 @@ describe("route-scoped URL parameters", () => {
     expect(releaserUrl.search).toBe("?pack=festival-sampler-2026");
     expect(generateUrl.search).toBe("");
   });
+
+  it("keeps an environment link only on the Theme page", () => {
+    const themeUrl = new URL(
+      "https://tkaflowarts.com/settings/theme?environment=autumn"
+    );
+    const profileUrl = new URL(
+      "https://tkaflowarts.com/settings/profile?environment=autumn"
+    );
+
+    pruneRouteScopedParams(themeUrl, themeUrl.pathname);
+    pruneRouteScopedParams(profileUrl, profileUrl.pathname);
+
+    expect(themeUrl.search).toBe("?environment=autumn");
+    expect(profileUrl.search).toBe("");
+  });
 });

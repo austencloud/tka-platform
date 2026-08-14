@@ -10,6 +10,7 @@
   Mobile: Swipe left from left edge to exit (matches portal animation direction)
 -->
 <script lang="ts">
+  import { page } from "$app/state";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
@@ -22,7 +23,7 @@
   import Toast from "$lib/shared/settings/components/Toast.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import type { ModuleId } from "$lib/shared/navigation/domain/types";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
@@ -36,6 +37,7 @@
   import ReleaseNotesTab from "$lib/shared/settings/components/tabs/ReleaseNotesTab.svelte";
   import PropTypeTab from "$lib/shared/settings/components/tabs/PropTypeTab.svelte";
   import ThemeShowroom from "$lib/shared/settings/components/tabs/background/showroom/ThemeShowroom.svelte";
+  import { getShowroomThemeFromId } from "$lib/shared/settings/components/tabs/background/showroom/theme-showroom-data";
   import PreferencesTab from "$lib/shared/settings/components/tabs/PreferencesTab.svelte";
   import LanguageTab from "$lib/shared/settings/components/tabs/LanguageTab.svelte";
   import NotificationPreferencesPanel from "$lib/features/feedback/components/NotificationPreferencesPanel.svelte";
@@ -108,7 +110,10 @@
     try {
       // Use updateSetting to directly update the specific key
       // This avoids race conditions from spreading stale settings objects
-      updateSetting(event.key as keyof AppSettings, event.value as AppSettings[keyof AppSettings]);
+      updateSetting(
+        event.key as keyof AppSettings,
+        event.value as AppSettings[keyof AppSettings]
+      );
 
       // Show success toast briefly
       showToast = true;
@@ -131,6 +136,9 @@
 
   // Use navigation state's active tab
   const activeTab = $derived(navigationState.activeTab);
+  const linkedThemePreview = $derived(
+    getShowroomThemeFromId(page.url.searchParams.get("environment"))
+  );
 
   // Swipe-to-exit gesture state
   let swipeStartX = 0;
@@ -263,7 +271,11 @@
         {:else if activeTab === "props"}
           <PropTypeTab {settings} onUpdate={handleSettingUpdate} />
         {:else if activeTab === "theme"}
-          <ThemeShowroom {settings} onUpdate={handleSettingUpdate} />
+          <ThemeShowroom
+            {settings}
+            onUpdate={handleSettingUpdate}
+            initialPreview={linkedThemePreview}
+          />
         {:else if activeTab === "notifications"}
           <NotificationPreferencesPanel />
         {:else if activeTab === "preferences"}

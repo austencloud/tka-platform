@@ -1,8 +1,10 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 import { describe, expect, it } from "vitest";
 
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 import {
   getShowroomTheme,
+  getShowroomThemeFromId,
   SHOWROOM_THEMES,
 } from "$lib/shared/settings/components/tabs/background/showroom/theme-showroom-data";
 
@@ -14,7 +16,7 @@ describe("theme showroom data", () => {
       BackgroundType.OCEAN,
       BackgroundType.FOREST,
       BackgroundType.WINTER,
-      BackgroundType.PRIDE,
+      PRIDE_BACKGROUND_TYPE,
       BackgroundType.BLOSSOM,
       BackgroundType.AUTUMN,
       BackgroundType.CELESTIAL,
@@ -57,5 +59,11 @@ describe("theme showroom data", () => {
 
     expect(SHOWROOM_THEMES[celestialIndex - 1]?.id).toBe(BackgroundType.AUTUMN);
     expect(SHOWROOM_THEMES[celestialIndex + 1]?.id).toBe(BackgroundType.VOID);
+  });
+
+  it("resolves environment links without accepting unknown values", () => {
+    expect(getShowroomThemeFromId("autumn")).toBe(BackgroundType.AUTUMN);
+    expect(getShowroomThemeFromId("unknown")).toBeUndefined();
+    expect(getShowroomThemeFromId(null)).toBeUndefined();
   });
 });
