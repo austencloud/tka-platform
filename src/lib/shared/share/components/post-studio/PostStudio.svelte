@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
@@ -23,6 +24,7 @@
     saveMediaCompositionPreset,
   } from "$lib/shared/media-composition/services/media-composition-preset-repository";
   import { getVideoFileMetadata } from "$lib/shared/video-collaboration/helpers/create-video-from-upload";
+  import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import { getUser } from "$lib/shared/auth/state/auth-state.svelte";
   import PostStudioTopBar from "./PostStudioTopBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
@@ -46,6 +48,7 @@
     cardPreviewUrl: string | null;
     animationPreviewUrl: string | null;
     animationPreviewType?: "video" | "image";
+    cardRenderOptions?: Partial<SequenceExportOptions> | null;
     performanceDurationSeconds?: number;
     sequenceTimeMap?: SequenceTimeMap | null;
     isPreparingCard?: boolean;
@@ -61,6 +64,7 @@
     cardPreviewUrl,
     animationPreviewUrl,
     animationPreviewType = "video",
+    cardRenderOptions = null,
     performanceDurationSeconds,
     sequenceTimeMap = null,
     isPreparingCard = false,
@@ -76,6 +80,9 @@
   let localPerformanceUrl: string | null = null;
   let performancePickerOpen = $state(false);
   let focusedPanel = $state<FocusedPanel>("canvas");
+  let timingAdvanced = $state(false);
+  let performanceHasAudio = $state<boolean | null>(null);
+  let audioInspectionVersion = 0;
 
   const performanceUrl = $derived(
     chosenPerformanceUrl ?? sequence.performanceVideoUrl ?? null
@@ -93,6 +100,7 @@
       previewType: "video",
       renderMode: "external-media",
       durationSeconds: performanceDuration,
+      hasAudio: performanceHasAudio === true,
       status: performanceUrl ? "ready" : "missing",
       missingMessage: "Choose a performance video",
     },
@@ -191,7 +199,8 @@
   const canKeepOriginalAudio = $derived(
     usesPerformance &&
       performanceBinding?.status === "ready" &&
-      Boolean(performanceBinding.previewUrl)
+      Boolean(performanceBinding.previewUrl) &&
+      performanceBinding.hasAudio === true
   );
   const exporting = $derived(exportProgress !== null);
   const exportPercent = $derived(
@@ -219,6 +228,16 @@
   $effect(() => {
     if (audioModeTouched) return;
     audioMode = canKeepOriginalAudio ? "original" : "instagram";
+  });
+
+  $effect(() => {
+    const url = performanceUrl;
+    const version = ++audioInspectionVersion;
+    performanceHasAudio = null;
+    if (!url) return;
+    void hasDecodableAudioTrack(url).then((hasAudio) => {
+      if (version === audioInspectionVersion) performanceHasAudio = hasAudio;
+    });
   });
 
   onMount(() => {
@@ -319,7 +338,9 @@
         getLayers: () => composition.frameLayers,
         seek: composition.seek,
         originalAudioUrl:
-          audioMode === "original" ? performanceBinding?.previewUrl : null,
+          audioMode === "original" && canKeepOriginalAudio
+            ? performanceBinding?.previewUrl
+            : null,
         onProgress: (progress) => (exportProgress = progress),
         shouldCancel: () => exportCancelled,
       });
@@ -375,8 +396,8 @@
     onCancelExport={cancelExport}
   />
 
-  <div class="workspace">
-    <aside class="asset-rail themed-scrollbar" aria-label="Layouts and sources">
+  <div class:timing-advanced={timingAdvanced} class="workspace">
+    <aside class="asset-rail" aria-label="Layouts and sources">
       <PostStudioPresetPicker rail onSavePreset={saveCurrentPreset} />
       {#if presetLoadError}
         <div class="preset-error" role="alert">
@@ -398,28 +419,31 @@
       <div class="canvas-stage">
         <PostStudioPreview
           {sequence}
+          {cardRenderOptions}
           onRootReady={setPreviewRoot}
           onEditRegion={() => (focusedPanel = "edit")}
         />
       </div>
     </main>
 
-    <aside
-      class="inspector-rail themed-scrollbar"
-      aria-label="Inspector and export settings"
-    >
+    <aside class="inspector-rail" aria-label="Inspector and export settings">
       <PostStudioInspector />
-      <PostStudioDeliveryPanel
-        {audioMode}
-        {canKeepOriginalAudio}
-        {exporting}
-        {exportError}
-        onAudioModeChange={setAudioMode}
-      />
+      {#if canKeepOriginalAudio}
+        <PostStudioDeliveryPanel
+          {audioMode}
+          {canKeepOriginalAudio}
+          {exporting}
+          {exportError}
+          onAudioModeChange={setAudioMode}
+        />
+      {/if}
     </aside>
 
-    <div class="timeline-dock themed-scrollbar">
-      <PostStudioTimeline />
+    <div class="timeline-dock">
+      <PostStudioTimeline
+        advanced={timingAdvanced}
+        onToggleAdvanced={() => (timingAdvanced = !timingAdvanced)}
+      />
     </div>
   </div>
 
@@ -455,7 +479,10 @@
       type="button"
       class:active={focusedPanel === "timing"}
       aria-pressed={focusedPanel === "timing"}
-      onclick={() => (focusedPanel = "timing")}
+      onclick={() => {
+        timingAdvanced = true;
+        focusedPanel = "timing";
+      }}
     >
       <i class="fa-solid fa-scissors" aria-hidden="true"></i>
       Timing
@@ -474,6 +501,13 @@
 
 <style>
   .post-studio {
+    --studio-control-height: 2.75rem;
+    --studio-body-size: var(--font-size-min);
+    --studio-meta-size: var(--font-size-compact);
+    --studio-section-title-size: 1.15rem;
+    --studio-panel-gap: var(--spacing-lg);
+    --studio-panel-padding: var(--spacing-lg);
+    --studio-canvas-padding: var(--spacing-md);
     position: relative;
     container-name: post-studio;
     container-type: inline-size;
@@ -492,30 +526,43 @@
     display: grid;
     grid-template-areas:
       "assets canvas inspector"
-      "timeline timeline timeline";
+      "assets timeline inspector";
     grid-template-columns: minmax(16rem, 19rem) minmax(25rem, 1fr) minmax(
         19rem,
         23rem
       );
-    grid-template-rows: minmax(0, 1fr) clamp(13rem, 23dvh, 17rem);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 0;
+    background: var(--theme-panel-bg);
+  }
+
+  .workspace.timing-advanced {
+    grid-template-rows: minmax(0, 1fr) clamp(16rem, 29dvh, 19rem);
   }
 
   .asset-rail,
-  .inspector-rail,
-  .timeline-dock {
+  .inspector-rail {
     min-width: 0;
     min-height: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  .asset-rail::-webkit-scrollbar,
+  .inspector-rail::-webkit-scrollbar,
+  .timeline-dock::-webkit-scrollbar {
+    display: none;
   }
 
   .asset-rail,
   .inspector-rail {
     display: grid;
     align-content: start;
-    gap: var(--spacing-lg);
-    padding: var(--spacing-lg);
+    gap: var(--studio-panel-gap);
+    padding: var(--studio-panel-padding);
     background: var(--theme-panel-bg);
   }
 
@@ -569,7 +616,7 @@
     grid-template-rows: auto minmax(0, 1fr);
     min-width: 0;
     min-height: 0;
-    padding: var(--spacing-md);
+    padding: var(--studio-canvas-padding);
     background: color-mix(
       in srgb,
       var(--theme-card-bg) 48%,
@@ -582,9 +629,9 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-md);
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size);
     font-variant-numeric: tabular-nums;
   }
 
@@ -594,6 +641,8 @@
   }
 
   .canvas-stage {
+    container-name: post-studio-stage;
+    container-type: size;
     display: grid;
     place-items: center;
     min-width: 0;
@@ -603,7 +652,13 @@
 
   .timeline-dock {
     grid-area: timeline;
-    padding: var(--spacing-md) var(--spacing-lg);
+    min-width: 0;
+    min-height: 0;
+    padding: var(--studio-canvas-padding) var(--studio-panel-padding);
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
     border-top: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
   }
@@ -612,20 +667,47 @@
     display: none;
   }
 
-  @container post-studio (min-width: 132rem) {
+  @container post-studio (min-width: 105rem) {
     .workspace {
-      grid-template-columns: 24rem minmax(34rem, 1fr) 28rem;
-      grid-template-rows: minmax(0, 1fr) 20rem;
+      --studio-control-height: 3.25rem;
+      --studio-body-size: 0.9375rem;
+      --studio-meta-size: 0.8125rem;
+      --studio-section-title-size: 1.25rem;
+      --studio-panel-gap: var(--spacing-xl);
+      --studio-panel-padding: var(--spacing-xl);
+      --studio-canvas-padding: var(--spacing-lg);
+      grid-template-columns: minmax(20rem, 22rem) minmax(40rem, 92rem) minmax(
+          23rem,
+          27rem
+        );
+      grid-template-rows: minmax(0, 1fr) auto;
+      justify-content: center;
     }
 
-    .asset-rail,
-    .inspector-rail {
-      gap: var(--spacing-xl);
-      padding: var(--spacing-xl);
+    .workspace.timing-advanced {
+      grid-template-rows: minmax(0, 1fr) clamp(20rem, 29dvh, 22rem);
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .workspace {
+      --studio-control-height: 3.75rem;
+      --studio-body-size: 1.125rem;
+      --studio-meta-size: 1rem;
+      --studio-section-title-size: 1.5rem;
+      --studio-panel-gap: 2.5rem;
+      --studio-panel-padding: 2.5rem;
+      --studio-canvas-padding: 2rem;
+      grid-template-columns: minmax(30rem, 34rem) minmax(72rem, 92rem) minmax(
+          34rem,
+          40rem
+        );
+      grid-template-rows: minmax(0, 1fr) auto;
+      justify-content: center;
     }
 
-    .timeline-dock {
-      padding: var(--spacing-lg) var(--spacing-xl);
+    .workspace.timing-advanced {
+      grid-template-rows: minmax(0, 1fr) 26rem;
     }
   }
 

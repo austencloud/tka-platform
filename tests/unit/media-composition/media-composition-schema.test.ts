@@ -434,6 +434,19 @@ describe("MediaCompositionPresetSchema", () => {
     expect(parsed.transitions).toHaveLength(1);
   });
 
+  it("accepts sequence tempo duration and rejects unreachable BPM values", () => {
+    const preset = referencePreset();
+    preset.duration = { mode: "sequence-tempo", bpm: 90 };
+
+    expect(MediaCompositionPresetSchema.parse(preset).duration).toEqual({
+      mode: "sequence-tempo",
+      bpm: 90,
+    });
+
+    preset.duration = { mode: "sequence-tempo", bpm: 240 };
+    expect(MediaCompositionPresetSchema.safeParse(preset).success).toBe(false);
+  });
+
   it("rejects clips whose source role cannot resolve", () => {
     const preset = referencePreset();
     preset.clips[0]!.sourceRole = "missing-role";

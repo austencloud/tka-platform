@@ -15,10 +15,11 @@
   owns and no harness can drive.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import PostStudio from "$lib/shared/share/components/post-studio/PostStudio.svelte";
   import type { MetaPublishStatus } from "$lib/shared/share/services/meta-publish";
+  import type { InstagramCapabilitySnapshot } from "$lib/shared/share/domain/instagram/instagram-capability-schema";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
@@ -51,7 +52,17 @@
   let studioAnimationType = $state<"video" | "image">("video");
 
   onMount(async () => {
-    studioHarness = new URLSearchParams(window.location.search).has("studio");
+    const params = new URLSearchParams(window.location.search);
+    studioHarness = params.has("studio");
+    const requestedMeta = params.get("meta");
+    if (
+      requestedMeta === "none" ||
+      requestedMeta === "unchosen" ||
+      requestedMeta === "instagram" ||
+      requestedMeta === "both"
+    ) {
+      metaState = requestedMeta;
+    }
     // Hydration runs the viewer's own path, which asks for a loop detector.
     // The real viewer route registers it exactly like this.
     registerLoopDetector(loopDetector);
@@ -74,6 +85,11 @@
         ? { ...hydrated, performanceVideoUrl }
         : hydrated;
 
+      if (params.has("open")) {
+        await tick();
+        isOpen = true;
+      }
+
       if (studioHarness) {
         const card = await getSharer().getCardImageBlob(sequence, {
           darkMode: true,
@@ -94,7 +110,7 @@
     if (studioCardUrl) URL.revokeObjectURL(studioCardUrl);
   });
 
-  let isOpen = $state(true);
+  let isOpen = $state(false);
   let videoBlobUrl = $state<string | null>(null);
   let isExportingVideo = $state(false);
   let exportProgress = $state<number | null>(null);
@@ -102,6 +118,58 @@
   // The sheet composes differently depending on which Meta accounts are
   // connected, and that state arrives over a Firestore subscription the
   // harness cannot produce. These are the four shapes worth checking.
+  const available = {
+    available: true,
+    reasonCode: null,
+    recoveryAction: "none",
+  } as const;
+  const needsFacebook = {
+    available: false,
+    reasonCode: "meta/facebook-capability-required",
+    recoveryAction: "connect-facebook",
+  } as const;
+  const needsPermission = {
+    available: false,
+    reasonCode: "meta/permission-missing",
+    recoveryAction: "reconnect",
+  } as const;
+  const TEST_INSTAGRAM_CAPABILITIES = {
+    schemaVersion: 1,
+    id: "instagram-login:ig-austencloud:harness",
+    accountId: "ig-austencloud",
+    username: "austencloud",
+    accountType: "CREATOR",
+    route: "instagram-login",
+    graphVersion: "v26.0",
+    appAccess: "standard",
+    permissions: {
+      instagram_business_basic: "granted",
+      instagram_business_content_publish: "granted",
+    },
+    features: {
+      image: available,
+      reel: available,
+      carousel: available,
+      story: available,
+      "trial-reel": available,
+      "alt-text": available,
+      cover: available,
+      "feed-distribution": available,
+      "user-tags": available,
+      location: available,
+      collaborators: needsFacebook,
+      "product-tags": needsFacebook,
+      "partnership-labels": needsFacebook,
+      "ai-disclosure": available,
+      "api-audio": needsFacebook,
+      comments: needsPermission,
+      insights: needsPermission,
+      schedule: available,
+    },
+    verifiedAtMs: 1,
+    expiresAtMs: 9_999_999_999_999,
+  } satisfies InstagramCapabilitySnapshot;
+
   const META_STATES = {
     none: { instagram: null, facebookPage: null },
     // Connected to an account that administers several Pages, none chosen.
@@ -119,11 +187,25 @@
       },
     },
     instagram: {
-      instagram: { username: "austencloud", expiresAtMs: 0 },
+      instagram: {
+        accountId: "ig-austencloud",
+        username: "austencloud",
+        accountType: "CREATOR",
+        route: "instagram-login",
+        expiresAtMs: 0,
+        capabilities: TEST_INSTAGRAM_CAPABILITIES,
+      },
       facebookPage: null,
     },
     both: {
-      instagram: { username: "austencloud", expiresAtMs: 0 },
+      instagram: {
+        accountId: "ig-austencloud",
+        username: "austencloud",
+        accountType: "CREATOR",
+        route: "instagram-login",
+        expiresAtMs: 0,
+        capabilities: TEST_INSTAGRAM_CAPABILITIES,
+      },
       facebookPage: {
         selectedPageId: "page-1",
         selectedPageName: "The Kinetic Alphabet",
@@ -153,7 +235,7 @@
 </script>
 
 {#if !studioHarness}
-  <div class="harness">
+  <div class="harness" data-sheet-open={isOpen}>
     <h1>PostShareSheet</h1>
     <div class="controls">
       <button type="button" onclick={() => (isOpen = true)}>Open sheet</button>

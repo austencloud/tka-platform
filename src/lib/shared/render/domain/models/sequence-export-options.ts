@@ -12,13 +12,13 @@ export interface SequenceExportOptions {
   addWord: boolean;
   combinedGrids: boolean;
   addDifficultyLevel: boolean;
-  customName?: string; 
+  customName?: string;
 
-  loopType?: LOOPType; 
-  showLoopGlyph?: boolean; 
+  loopType?: LOOPType;
+  showLoopGlyph?: boolean;
 
-  showNotes?: boolean; 
-  customNotesText?: string; 
+  showNotes?: boolean;
+  customNotesText?: string;
   /** Left-side label override (e.g. "SS 🌊" for VTG cards) */
   leftLabel?: string;
   /** Right-side label override (e.g. "1:1" turn ratio) */
@@ -48,6 +48,7 @@ export interface SequenceExportOptions {
     bleedPx: number;
     accent: string;
     dark: string;
+    palette?: readonly string[];
   };
 
   stepScale: number;
@@ -87,10 +88,10 @@ export interface SequenceExportOptions {
 
   notes: string;
 
-  columnCount?: number | null;  
+  columnCount?: number | null;
 
   format: "PNG" | "JPEG" | "WebP";
-  quality: number; 
+  quality: number;
   scale: number;
   width?: number;
   height?: number;

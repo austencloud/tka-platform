@@ -30,7 +30,6 @@
       disabled={!canKeepOriginalAudio || exporting}
       role="radio"
       aria-checked={audioMode === "original"}
-      aria-label="Keep the performance video's original sound"
       onclick={() => onAudioModeChange("original")}
     >
       <i class="fa-solid fa-volume-high" aria-hidden="true"></i>
@@ -46,7 +45,6 @@
       disabled={exporting}
       role="radio"
       aria-checked={audioMode === "instagram"}
-      aria-label="Export silently and add music in Instagram"
       onclick={() => onAudioModeChange("instagram")}
     >
       <i class="fa-brands fa-instagram" aria-hidden="true"></i>
@@ -70,8 +68,8 @@
 <style>
   .delivery {
     display: grid;
-    gap: var(--spacing-md);
-    padding-top: var(--spacing-lg);
+    gap: var(--studio-panel-gap, var(--spacing-md));
+    padding-top: var(--studio-panel-gap, var(--spacing-lg));
     border-top: 1px solid var(--theme-stroke);
   }
 
@@ -79,7 +77,7 @@
     display: block;
     margin-bottom: var(--spacing-xs);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -88,7 +86,7 @@
   h3 {
     margin: 0;
     color: var(--theme-text);
-    font-size: 1.15rem;
+    font-size: var(--studio-section-title-size, 1.15rem);
   }
 
   .sound-options {
@@ -101,7 +99,7 @@
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 0.75rem;
-    min-height: 4rem;
+    min-height: calc(var(--studio-control-height, 2.75rem) + 1.25rem);
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-2026-sm);
@@ -115,8 +113,8 @@
   .sound-option > i {
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: calc(var(--studio-control-height, 2.75rem) - 0.25rem);
+    height: calc(var(--studio-control-height, 2.75rem) - 0.25rem);
     border-radius: var(--radius-2026-sm);
     background: color-mix(
       in srgb,
@@ -133,12 +131,12 @@
   }
 
   .sound-option strong {
-    font-size: var(--font-size-min);
+    font-size: var(--studio-body-size, var(--font-size-min));
   }
 
   .sound-option small {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     line-height: 1.35;
   }
 
@@ -165,7 +163,7 @@
   .delivery-note,
   .error-slot {
     margin: 0;
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     line-height: 1.45;
   }
 
@@ -174,7 +172,7 @@
   }
 
   .error-slot {
-    min-height: 1.25rem;
+    min-height: 1.25em;
     visibility: hidden;
     color: var(--semantic-error);
   }

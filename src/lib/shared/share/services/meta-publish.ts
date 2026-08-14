@@ -18,6 +18,10 @@ import {
   getFirestoreInstance,
   getFunctionsInstance,
 } from "$lib/shared/auth/firebase";
+import {
+  InstagramCapabilitySnapshotSchema,
+  type InstagramCapabilitySnapshot,
+} from "$lib/shared/share/domain/instagram/instagram-capability-schema";
 
 /**
  * Gates every interactive posting entry point: the connect chips, the post
@@ -39,7 +43,14 @@ export type MetaPublishTarget = "instagram" | "facebook-page";
 export type MetaPublishMediaType = "image" | "video";
 
 export interface MetaPublishStatus {
-  instagram: { username: string; expiresAtMs: number } | null;
+  instagram: {
+    accountId: string;
+    username: string;
+    accountType: "BUSINESS" | "CREATOR" | "UNKNOWN";
+    route: "instagram-login";
+    expiresAtMs: number;
+    capabilities: InstagramCapabilitySnapshot | null;
+  } | null;
   facebookPage: {
     selectedPageId: string;
     selectedPageName: string;
@@ -73,6 +84,16 @@ export function metaErrorMessage(code: string): string {
       return "Sign in with a full account to post directly.";
     case "meta/account-type-required":
       return "Direct posting needs an Instagram creator or business account. You can still finish the post in Instagram.";
+    case "meta/account-type-unverified":
+      return "Reconnect Instagram so TKA can verify this professional account.";
+    case "meta/account-mismatch":
+      return "This connection controls a different Instagram account.";
+    case "meta/capabilities-missing":
+      return "Reconnect Instagram so TKA can verify what this account supports.";
+    case "meta/facebook-capability-required":
+      return "Connect Facebook to use this Instagram option.";
+    case "meta/review-required":
+      return "Review this post for Instagram before publishing.";
     case "meta/app-configuration-mismatch":
       return "Instagram's connection settings need an app update. Trying again will not fix this.";
     case "meta/session-required":
@@ -162,13 +183,29 @@ export function readMetaPublishStatus(
 
   const instagram = data.instagram;
   const facebookPage = data.facebookPage;
+  const capabilityResult = InstagramCapabilitySnapshotSchema.safeParse(
+    instagram?.capabilities
+  );
 
   return {
     instagram:
       instagram && typeof instagram.username === "string"
         ? {
+            accountId:
+              typeof instagram.accountId === "string"
+                ? instagram.accountId
+                : "",
             username: instagram.username,
+            accountType:
+              instagram.accountType === "BUSINESS" ||
+              instagram.accountType === "CREATOR"
+                ? instagram.accountType
+                : "UNKNOWN",
+            route: "instagram-login",
             expiresAtMs: Number(instagram.expiresAtMs) || 0,
+            capabilities: capabilityResult.success
+              ? capabilityResult.data
+              : null,
           }
         : null,
     facebookPage:
@@ -416,6 +453,13 @@ export interface PublishRequest {
   /** Public URL Meta will fetch the media from. */
   mediaUrl: string;
   caption: string;
+  instagram?: {
+    format: "image" | "reel";
+    selectedAccountId: string;
+    capabilitySnapshotId: string | null;
+    shareToFeed: boolean;
+    thumbOffsetMs: number | null;
+  };
 }
 
 export interface PublishResult {

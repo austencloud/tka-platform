@@ -24,7 +24,7 @@ import {
   type MetaErrorPayload,
 } from "./metaPublishPolicy";
 
-export const GRAPH_VERSION = "v23.0";
+export const GRAPH_VERSION = "v26.0";
 const IG_GRAPH = `https://graph.instagram.com`;
 const FB_GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const FB_RUPLOAD = `https://rupload.facebook.com/video-upload/${GRAPH_VERSION}`;
@@ -156,15 +156,17 @@ export async function refreshInstagramLongLivedToken(
 export async function fetchInstagramAccount(accessToken: string): Promise<{
   igUserId: string;
   username: string;
+  accountType: "BUSINESS" | "CREATOR" | "UNKNOWN";
 }> {
   const url = new URL(`${IG_GRAPH}/${GRAPH_VERSION}/me`);
-  url.searchParams.set("fields", "user_id,username");
+  url.searchParams.set("fields", "user_id,username,account_type");
   url.searchParams.set("access_token", accessToken);
 
   const payload = await graphRequest<{
     user_id?: string;
     id?: string;
     username?: string;
+    account_type?: string;
   }>(url.toString());
   const igUserId = payload?.user_id ?? payload?.id;
   if (!igUserId) {
@@ -173,7 +175,18 @@ export async function fetchInstagramAccount(accessToken: string): Promise<{
       "Instagram did not identify the account"
     );
   }
-  return { igUserId: String(igUserId), username: payload?.username ?? "" };
+  const rawAccountType = payload?.account_type?.toUpperCase();
+  const accountType =
+    rawAccountType === "BUSINESS"
+      ? "BUSINESS"
+      : rawAccountType === "MEDIA_CREATOR" || rawAccountType === "CREATOR"
+        ? "CREATOR"
+        : "UNKNOWN";
+  return {
+    igUserId: String(igUserId),
+    username: payload?.username ?? "",
+    accountType,
+  };
 }
 
 export async function createInstagramContainer(input: {
@@ -182,6 +195,8 @@ export async function createInstagramContainer(input: {
   caption: string;
   mediaUrl: string;
   mediaType: "image" | "video";
+  shareToFeed?: boolean;
+  thumbOffsetMs?: number;
 }): Promise<string> {
   const payload = await graphRequest<{ id?: string }>(
     `${IG_GRAPH}/${GRAPH_VERSION}/${input.igUserId}/media`,
@@ -192,7 +207,18 @@ export async function createInstagramContainer(input: {
         caption: input.caption,
         access_token: input.accessToken,
         ...(input.mediaType === "video"
-          ? { media_type: "REELS", video_url: input.mediaUrl }
+          ? {
+              media_type: "REELS",
+              video_url: input.mediaUrl,
+              share_to_feed:
+                input.shareToFeed === undefined
+                  ? undefined
+                  : String(input.shareToFeed),
+              thumb_offset:
+                input.thumbOffsetMs === undefined
+                  ? undefined
+                  : String(input.thumbOffsetMs),
+            }
           : { image_url: input.mediaUrl }),
       }),
     }

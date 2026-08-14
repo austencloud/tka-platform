@@ -28,6 +28,10 @@
   import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
   import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
   import PostStudio from "$lib/shared/share/components/post-studio/PostStudio.svelte";
+  import InstagramPostReview from "$lib/shared/share/components/instagram/InstagramPostReview.svelte";
+  import { createPostDeliveryState } from "$lib/shared/share/state/post-delivery-state.svelte";
+  import { setPostDeliveryContext } from "$lib/shared/share/context/post-delivery-context";
+  import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
@@ -158,6 +162,48 @@
     resolvedCardAutoLayout = null,
   }: Props = $props();
 
+  const postDeliveryState = createPostDeliveryState({
+    draft: {
+      schemaVersion: 1,
+      id: "local-instagram-draft",
+      ownerId: "local-preview",
+      sourceSequenceId: null,
+      recipeId: null,
+      format: "image",
+      items: [
+        {
+          id: "local-media",
+          artifactRevisionId: "local-artifact",
+          order: 0,
+          altText: null,
+          cropPreviewRevision: "local-crop",
+        },
+      ],
+      caption: "",
+      instagram: {
+        shareToFeed: null,
+        cover: null,
+        originalAudioName: null,
+        attachedAudio: null,
+        trial: null,
+        collaborators: [],
+        userTags: [],
+        locationId: null,
+        productTags: [],
+        aiGenerated: null,
+        paidPartnership: false,
+        sponsorIds: [],
+      },
+      delivery: { mode: "handoff" },
+      selectedAccountId: null,
+      capabilitySnapshotId: null,
+      createdAt: 0,
+      updatedAt: 0,
+    },
+    capabilitySnapshot: null,
+  });
+  setPostDeliveryContext({ state: postDeliveryState });
+
   const captions = getCaptionPresetManager();
   const exportOptions = getExportOptionsState();
 
@@ -204,6 +250,9 @@
 
   let cardBlob = $state<Blob | null>(null);
   let cardPreviewUrl = $state<string | null>(null);
+  let postStudioCardOptions = $state<ReturnType<
+    typeof buildCardRenderOptions
+  > | null>(null);
   /** Card settings the blob in hand was rendered from; re-render when it moves. */
   let renderedCardKey: string | null = null;
   /**
@@ -216,6 +265,9 @@
   /** A Post Studio render supersedes the viewer's plain animation render. */
   let studioVideoUrl = $state<string | null>(null);
   let studioOpen = $state(false);
+  let instagramReviewOpen = $state(false);
+  let activeHasAudio = $state<boolean | null>(false);
+  let audioInspectionVersion = 0;
 
   /**
    * Neither the card-composition manager nor the visibility manager is
@@ -298,6 +350,22 @@
 
   const filename = $derived(buildArtifactFilename(word, artifact));
   const activeVideoUrl = $derived(studioVideoUrl ?? videoBlobUrl);
+  const reviewPreviewUrl = $derived(
+    artifact === "video" ? activeVideoUrl : cardPreviewUrl
+  );
+
+  $effect(() => {
+    const mediaUrl = artifact === "video" ? activeVideoUrl : null;
+    const version = ++audioInspectionVersion;
+    if (!mediaUrl) {
+      activeHasAudio = false;
+      return;
+    }
+    activeHasAudio = null;
+    void hasDecodableAudioTrack(mediaUrl).then((hasAudio) => {
+      if (version === audioInspectionVersion) activeHasAudio = hasAudio;
+    });
+  });
 
   const destinations = $derived(
     resolveDestinations({ artifact, blob: activeBlob, filename })
@@ -324,7 +392,7 @@
 
   const metaStatus = $derived(metaStatusOverride ?? liveMetaStatus);
 
-  type NetworkKind = "post" | "connect" | "choose-page" | "handoff";
+  type NetworkKind = "post" | "review" | "connect" | "choose-page" | "handoff";
 
   interface NetworkPlan {
     key: "instagram" | "facebook";
@@ -366,9 +434,9 @@
         key: "instagram",
         brand: "instagram",
         name: "Instagram",
-        label: "Post to Instagram",
+        label: "Review for Instagram",
         hint: `@${instagram.username}`,
-        kind: "post",
+        kind: "review",
         target: "instagram",
       });
     } else if (postingAvailable) {
@@ -376,8 +444,8 @@
         key: "instagram",
         brand: "instagram",
         name: "Instagram",
-        label: "Connect Instagram",
-        hint: "Professional account required",
+        label: "Connect professional Instagram",
+        hint: "Creator or business account",
         kind: "connect",
         target: "instagram",
       });
@@ -444,7 +512,7 @@
   /** Every connected Meta target, for the disconnect chips in the setup row. */
   const autoPostTargets = $derived(
     networks
-      .filter((plan) => plan.kind === "post")
+      .filter((plan) => plan.kind === "post" || plan.kind === "review")
       .map((plan) => ({
         id: plan.target as MetaPublishTarget,
         network: plan.name,
@@ -602,6 +670,7 @@
       isHandPath: !!target.metadata?.isHandPathVisualization,
       resolvedAutoLayout: resolvedCardAutoLayout,
     });
+    postStudioCardOptions = cardOptions;
     // The visibility snapshot rides along because TKA, TnD, positions and
     // non-radial points never enter cardOptions — the composer inherits them
     // from the global manager at render time. Keyed on the options alone, this
@@ -765,6 +834,98 @@
     studioOpen = true;
   }
 
+  function openInstagramReview(): void {
+    const account = metaStatus.instagram;
+    if (!account || !reviewPreviewUrl) return;
+
+    const now = Date.now();
+    const isReel = artifact === "video";
+    const accountId = account.accountId || `instagram:${account.username}`;
+    postDeliveryState.reset({
+      draft: {
+        schemaVersion: 1,
+        id: `local:${sequence?.id ?? "unsaved"}:${artifact}`,
+        ownerId: getUser()?.uid ?? "local-preview",
+        sourceSequenceId: sequence?.id ?? null,
+        recipeId: null,
+        format: isReel ? "reel" : "image",
+        items: [
+          {
+            id: `item:${artifact}`,
+            artifactRevisionId: `local:${sequence?.id ?? "unsaved"}:${artifact}`,
+            order: 0,
+            altText: null,
+            cropPreviewRevision:
+              artifact === "card"
+                ? renderedCardKey || "current-card"
+                : renderedVideoKey || "current-video",
+          },
+        ],
+        caption,
+        instagram: {
+          shareToFeed: isReel ? true : null,
+          cover: null,
+          originalAudioName: null,
+          attachedAudio: null,
+          trial: null,
+          collaborators: [],
+          userTags: [],
+          locationId: null,
+          productTags: [],
+          aiGenerated: null,
+          paidPartnership: false,
+          sponsorIds: [],
+        },
+        delivery: { mode: "publish-now" },
+        selectedAccountId: accountId,
+        capabilitySnapshotId: account.capabilities?.id ?? null,
+        createdAt: now,
+        updatedAt: now,
+      },
+      capabilitySnapshot: account.capabilities,
+    });
+    statusMessage = "";
+    qrDataUrl = null;
+    instagramReviewOpen = true;
+  }
+
+  function syncInstagramReviewCaption(): void {
+    caption = postDeliveryState.draft.caption;
+    captionTouched = true;
+  }
+
+  function closeInstagramReview(): void {
+    syncInstagramReviewCaption();
+    instagramReviewOpen = false;
+  }
+
+  function closeShareFromInstagramReview(): void {
+    syncInstagramReviewCaption();
+    onClose();
+  }
+
+  function editInstagramComposition(): void {
+    closeInstagramReview();
+    openPostStudio();
+  }
+
+  function postReviewedInstagram(): void {
+    syncInstagramReviewCaption();
+    void postToTarget("instagram");
+  }
+
+  function finishInstagramReview(): void {
+    closeInstagramReview();
+    const destination =
+      nativeShare ??
+      destinations.find((candidate) => candidate.id === "send-to-phone");
+    if (destination) {
+      void runDestination(destination.id);
+      return;
+    }
+    statusMessage = "Download the post, then finish it in Instagram.";
+  }
+
   function closePostStudio(): void {
     studioOpen = false;
   }
@@ -924,6 +1085,23 @@
         mediaType: artifact === "video" ? "video" : "image",
         mediaUrl: url,
         caption,
+        instagram:
+          target === "instagram"
+            ? {
+                format:
+                  postDeliveryState.draft.format === "reel" ? "reel" : "image",
+                selectedAccountId:
+                  postDeliveryState.draft.selectedAccountId ?? "",
+                capabilitySnapshotId:
+                  postDeliveryState.draft.capabilitySnapshotId,
+                shareToFeed:
+                  postDeliveryState.draft.instagram.shareToFeed ?? true,
+                thumbOffsetMs:
+                  postDeliveryState.draft.instagram.cover?.kind === "frame"
+                    ? postDeliveryState.draft.instagram.cover.offsetMs
+                    : null,
+              }
+            : undefined,
       });
 
       if (result.permalink) {
@@ -1007,6 +1185,9 @@
 
   function runNetwork(plan: NetworkPlan): void {
     switch (plan.kind) {
+      case "review":
+        openInstagramReview();
+        return;
       case "post":
         void postToTarget(plan.target as MetaPublishTarget);
         return;
@@ -1109,6 +1290,13 @@
     document.addEventListener("pointerdown", close, true);
     return () => document.removeEventListener("pointerdown", close, true);
   });
+
+  $effect(() => {
+    if (!instagramReviewOpen) return;
+    postDeliveryState.setCapabilitySnapshot(
+      metaStatus.instagram?.capabilities ?? null
+    );
+  });
 </script>
 
 {#snippet brandMark(brand: "instagram" | "facebook")}
@@ -1191,6 +1379,7 @@
       <PostStudio
         {sequence}
         {cardPreviewUrl}
+        cardRenderOptions={postStudioCardOptions}
         animationPreviewUrl={null}
         isPreparingCard={!cardPreviewUrl}
         isPreparingAnimation={false}
@@ -1198,6 +1387,21 @@
         onBack={closePostStudio}
         {onClose}
         onExported={handleStudioExported}
+      />
+    {:else if instagramReviewOpen && reviewPreviewUrl}
+      <InstagramPostReview
+        previewUrl={reviewPreviewUrl}
+        mediaKind={artifact === "video" ? "video" : "image"}
+        hasAudio={activeHasAudio === true}
+        busy={postingTarget === "instagram"}
+        stage={postStage}
+        postedPermalink={postedPermalinks.instagram ?? null}
+        onBack={closeInstagramReview}
+        onClose={closeShareFromInstagramReview}
+        onEditComposition={editInstagramComposition}
+        onPost={postReviewedInstagram}
+        onHandoff={finishInstagramReview}
+        onReconnect={() => void connectTarget("instagram")}
       />
     {:else}
       <!-- The QR is a focused step, not a sibling of the setup controls: with the

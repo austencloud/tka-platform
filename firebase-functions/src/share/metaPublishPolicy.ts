@@ -18,6 +18,10 @@ export type MetaPublishFailureCode =
   /** Connected, but administers several Pages and none has been chosen. */
   | "meta/page-required"
   | "meta/token-expired"
+  | "meta/account-mismatch"
+  | "meta/account-type-required"
+  | "meta/account-type-unverified"
+  | "meta/facebook-capability-required"
   | "meta/permission-missing"
   | "meta/media-rejected"
   | "meta/media-url-not-allowed"
@@ -253,6 +257,14 @@ export function publishFailureMessage(code: MetaPublishFailureCode): string {
       return "Connect the account first.";
     case "meta/token-expired":
       return "That connection expired. Reconnect and try again.";
+    case "meta/account-mismatch":
+      return "This connection controls a different Instagram account.";
+    case "meta/account-type-required":
+      return "Direct posting needs an Instagram creator or business account.";
+    case "meta/account-type-unverified":
+      return "Reconnect Instagram so TKA can verify this professional account.";
+    case "meta/facebook-capability-required":
+      return "Connect Facebook to use this Instagram option.";
     case "meta/permission-missing":
       return "This account has not granted TKA permission to post.";
     case "meta/media-rejected":

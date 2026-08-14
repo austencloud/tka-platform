@@ -57,7 +57,6 @@
         class="source-row"
         class:used
         class:missing={binding.status === "missing"}
-        aria-label={`${binding.label}. ${statusCopy(binding.roleKey, binding.status, used)}`}
         onclick={() => activateSource(binding.roleKey, binding.status)}
       >
         <span class="source-icon" aria-hidden="true">
@@ -96,7 +95,7 @@
 <style>
   .source-panel {
     display: grid;
-    gap: var(--spacing-md);
+    gap: var(--studio-panel-gap, var(--spacing-md));
   }
 
   .panel-heading {
@@ -110,7 +109,7 @@
     display: block;
     margin-bottom: var(--spacing-xs);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-weight: 650;
     letter-spacing: 0.07em;
     text-transform: uppercase;
@@ -119,19 +118,19 @@
   h3 {
     margin: 0;
     color: var(--theme-text);
-    font-size: 1.15rem;
+    font-size: var(--studio-section-title-size, 1.15rem);
   }
 
   .source-count {
     display: grid;
     place-items: center;
     min-width: 2.75rem;
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
     border: 1px solid
       color-mix(in srgb, var(--semantic-warning) 42%, transparent);
     border-radius: var(--radius-2026-full);
     color: var(--semantic-warning);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-variant-numeric: tabular-nums;
     font-weight: 750;
   }
@@ -151,7 +150,7 @@
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
-    min-height: 4rem;
+    min-height: calc(var(--studio-control-height, 2.75rem) + 1.25rem);
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-2026-sm);
@@ -188,8 +187,8 @@
   .source-icon {
     display: grid;
     place-items: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: calc(var(--studio-control-height, 2.75rem) - 0.25rem);
+    height: calc(var(--studio-control-height, 2.75rem) - 0.25rem);
     border-radius: var(--radius-2026-sm);
     background: color-mix(
       in srgb,
@@ -213,12 +212,12 @@
   }
 
   .source-copy strong {
-    font-size: var(--font-size-min);
+    font-size: var(--studio-body-size, var(--font-size-min));
   }
 
   .source-copy small {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
   }
 
   .source-action {
@@ -226,7 +225,7 @@
     border-radius: var(--radius-2026-xs);
     background: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
     color: var(--semantic-warning);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-weight: 750;
   }
 
@@ -240,7 +239,7 @@
     gap: var(--spacing-sm);
     margin: 0;
     color: var(--semantic-warning);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     line-height: 1.4;
   }
 

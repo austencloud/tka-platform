@@ -33,6 +33,7 @@ function readyBindings(): CompositionSourceBinding[] {
       kind: "video",
       label: "Performance",
       previewUrl: "https://example.com/performance.mp4",
+      renderMode: "external-media",
       durationSeconds: 12,
       status: "ready",
     },
@@ -41,6 +42,7 @@ function readyBindings(): CompositionSourceBinding[] {
       kind: "sequence-animation",
       label: "Animation",
       previewUrl: "blob:animation",
+      renderMode: "sequence-animation",
       status: "ready",
     },
     {
@@ -48,6 +50,7 @@ function readyBindings(): CompositionSourceBinding[] {
       kind: "choreo-card",
       label: "Card",
       previewUrl: "blob:card",
+      renderMode: "choreo-card",
       status: "ready",
     },
   ];
@@ -186,6 +189,60 @@ describe("createMediaCompositionState", () => {
         (layer) => layer.clipId === "performance-animation"
       )?.opacity
     ).toBeCloseTo(0.5);
+  });
+
+  it("derives sequence-only duration from weighted motion units and tempo", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "sequence-breakdown",
+      getBindings: readyBindings,
+      getSequenceSteps: () =>
+        [
+          { duration: 1 },
+          { duration: 2 },
+          { duration: 0.5 },
+          { duration: 1.5 },
+        ] as unknown as StepData[],
+    });
+
+    expect(state.tempoBpm).toBe(60);
+    expect(state.durationSeconds).toBe(6);
+
+    state.setTempoBpm(120);
+    flushSync();
+
+    expect(state.tempoBpm).toBe(120);
+    expect(state.durationSeconds).toBe(3);
+  });
+
+  it("saves the chosen sequence tempo with a reusable layout", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "motion-focus",
+      getBindings: readyBindings,
+      getSequenceSteps: () => [{ duration: 1 }] as unknown as StepData[],
+    });
+
+    state.setTempoBpm(90);
+    const saved = state.createPreset("Ninety BPM motion", "owner-1");
+
+    expect(saved.duration).toEqual({ mode: "sequence-tempo", bpm: 90 });
+  });
+
+  it("reports fit support only when the selected area contains external media", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "sequence-breakdown",
+      getBindings: readyBindings,
+    });
+
+    expect(state.selectedSupportsFit).toBe(false);
+    state.selectPreset("performance-breakdown");
+    flushSync();
+    expect(state.selectedSupportsFit).toBe(true);
+    state.selectRegion("card");
+    flushSync();
+    expect(state.selectedSupportsFit).toBe(false);
   });
 
   it("keeps every sequence-derived layer on the same mapped position", () => {

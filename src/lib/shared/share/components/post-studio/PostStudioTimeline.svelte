@@ -2,6 +2,15 @@
   import { onDestroy } from "svelte";
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import { resolvePresetTimePoint } from "$lib/shared/media-composition/services/frame-evaluator";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
+
+  let {
+    advanced = false,
+    onToggleAdvanced,
+  }: {
+    advanced?: boolean;
+    onToggleAdvanced: () => void;
+  } = $props();
 
   const composition = getMediaCompositionContext();
   let frameRequest: number | null = null;
@@ -171,10 +180,10 @@
   }
 </script>
 
-<section class="timeline" aria-labelledby="post-studio-timing">
+<section class="timeline" class:advanced aria-labelledby="post-studio-timing">
   <div class="timeline-heading">
     <div>
-      <span class="eyebrow">Timeline</span>
+      <span class="eyebrow">Playback</span>
       <div class="title-row">
         <h3 id="post-studio-timing">Timing</h3>
         {#if alignmentLabel}
@@ -189,131 +198,165 @@
           </span>
         {/if}
       </div>
-      <p class="timeline-help">
-        Drag the clip edges. Arrow keys move 0.1 seconds; hold Shift for 1
-        second.
-      </p>
     </div>
-    <div class="transport">
+    <div class="primary-controls">
+      <div class="transport">
+        <button
+          type="button"
+          class="play-button"
+          onclick={composition.togglePlayback}
+          aria-label={composition.isPlaying ? "Pause preview" : "Play preview"}
+        >
+          <i
+            class={composition.isPlaying
+              ? "fa-solid fa-pause"
+              : "fa-solid fa-play"}
+            aria-hidden="true"
+          ></i>
+        </button>
+        <span>{formatTime(composition.previewSeconds)}</span>
+        <span class="duration">/ {formatTime(composition.durationSeconds)}</span
+        >
+      </div>
+      {#if composition.tempoBpm !== null}
+        <div class="tempo-editor">
+          <span>Tempo</span>
+          <TempoControl
+            bpm={composition.tempoBpm}
+            onBpmChange={composition.setTempoBpm}
+            showPresets={false}
+            showPractice={false}
+            presetsMode="popover"
+          />
+        </div>
+      {/if}
       <button
         type="button"
-        class="play-button"
-        onclick={composition.togglePlayback}
-        aria-label={composition.isPlaying ? "Pause preview" : "Play preview"}
+        class:active={advanced}
+        class="advanced-toggle"
+        aria-expanded={advanced}
+        onclick={onToggleAdvanced}
       >
-        <i
-          class={composition.isPlaying
-            ? "fa-solid fa-pause"
-            : "fa-solid fa-play"}
-          aria-hidden="true"
-        ></i>
+        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+        {advanced ? "Hide timeline" : "Advanced timing"}
       </button>
-      <span>{formatTime(composition.previewSeconds)}</span>
-      <span class="duration">/ {formatTime(composition.durationSeconds)}</span>
     </div>
   </div>
 
-  <div class="ruler" aria-hidden="true">
-    <span>{formatTime(0)}</span>
-    <span>{formatTime(composition.durationSeconds * 0.25)}</span>
-    <span>{formatTime(composition.durationSeconds * 0.5)}</span>
-    <span>{formatTime(composition.durationSeconds * 0.75)}</span>
-    <span>{formatTime(composition.durationSeconds)}</span>
-  </div>
-
-  <div class="lanes">
-    {#each lanes as lane (lane.region.id)}
-      <div class="lane">
-        <span class="lane-label">{lane.region.label}</span>
-        <div class="lane-track">
-          {#each lane.clips as clip (clip.id)}
-            <button
-              type="button"
-              class="clip"
-              class:selected={composition.selectedRegion?.id === lane.region.id}
-              data-role={clip.sourceRole}
-              style={clipStyle(clip)}
-              aria-label={`Edit ${roleLabel(clip.sourceRole)}, ${clipTimeLabel(clip)}`}
-              title={`${roleLabel(clip.sourceRole)} · ${clipTimeLabel(clip)}`}
-              onclick={() => composition.selectRole(clip.sourceRole)}
-            >
-              <strong>{roleLabel(clip.sourceRole)}</strong>
-              <span class="clip-time">{clipTimeLabel(clip)}</span>
-            </button>
-            {@const clipStartPercent = percent(clip.start)}
-            {@const clipEndPercent = percent(clip.end)}
-            <button
-              type="button"
-              role="slider"
-              class="trim-handle trim-start"
-              class:at-leading={clipStartPercent < 0.5}
-              style:left={`${clipStartPercent}%`}
-              aria-label={`Trim ${roleLabel(clip.sourceRole)} start`}
-              aria-valuemin="0"
-              aria-valuemax={composition.durationSeconds}
-              aria-valuenow={boundarySeconds(clip, "start")}
-              aria-valuetext={formatTime(boundarySeconds(clip, "start"))}
-              title="Drag to change when this starts"
-              onpointerdown={(event) => beginTrim(event, clip.id, "start")}
-              onkeydown={(event) => nudgeTrim(event, clip, "start")}
-            ></button>
-            <button
-              type="button"
-              role="slider"
-              class="trim-handle trim-end"
-              class:at-trailing={clipEndPercent > 99.5}
-              style:left={`${clipEndPercent}%`}
-              aria-label={`Trim ${roleLabel(clip.sourceRole)} end`}
-              aria-valuemin="0"
-              aria-valuemax={composition.durationSeconds}
-              aria-valuenow={boundarySeconds(clip, "end")}
-              aria-valuetext={formatTime(boundarySeconds(clip, "end"))}
-              title="Drag to change when this ends"
-              onpointerdown={(event) => beginTrim(event, clip.id, "end")}
-              onkeydown={(event) => nudgeTrim(event, clip, "end")}
-            ></button>
-          {/each}
-          {#each composition.activePreset.transitions.filter( (transition) => lane.clips.some((clip) => clip.id === transition.outgoingClipId) ) as transition (transition.id)}
-            <span
-              class="transition"
-              style={transitionStyle(transition)}
-              title="Crossfade"
-              aria-hidden="true"
-            ></span>
-          {/each}
-        </div>
+  {#if advanced}
+    <div class="advanced-panel">
+      <p class="timeline-help">
+        Drag clip edges to change when each source appears. Arrow keys move 0.1
+        seconds; hold Shift for 1 second.
+      </p>
+      <div class="ruler" aria-hidden="true">
+        <span>{formatTime(0)}</span>
+        <span>{formatTime(composition.durationSeconds * 0.25)}</span>
+        <span>{formatTime(composition.durationSeconds * 0.5)}</span>
+        <span>{formatTime(composition.durationSeconds * 0.75)}</span>
+        <span>{formatTime(composition.durationSeconds)}</span>
       </div>
-    {/each}
-  </div>
 
-  <div class="scrubber">
-    <input
-      type="range"
-      min="0"
-      max={composition.durationSeconds}
-      step="0.01"
-      value={composition.previewSeconds}
-      aria-label="Preview time"
-      oninput={onScrub}
-    />
-    <span
-      class="playhead"
-      style:left={`${(composition.previewSeconds / composition.durationSeconds) * 100}%`}
-      aria-hidden="true"
-    ></span>
-  </div>
+      <div class="lanes">
+        {#each lanes as lane (lane.region.id)}
+          <div class="lane">
+            <span class="lane-label">{lane.region.label}</span>
+            <div class="lane-track">
+              {#each lane.clips as clip (clip.id)}
+                <button
+                  type="button"
+                  class="clip"
+                  class:selected={composition.selectedRegion?.id ===
+                    lane.region.id}
+                  data-role={clip.sourceRole}
+                  style={clipStyle(clip)}
+                  aria-label={`Edit ${roleLabel(clip.sourceRole)}, ${clipTimeLabel(clip)}`}
+                  title={`${roleLabel(clip.sourceRole)} · ${clipTimeLabel(clip)}`}
+                  onclick={() => composition.selectRole(clip.sourceRole)}
+                >
+                  <strong>{roleLabel(clip.sourceRole)}</strong>
+                  <span class="clip-time">{clipTimeLabel(clip)}</span>
+                </button>
+                {@const clipStartPercent = percent(clip.start)}
+                {@const clipEndPercent = percent(clip.end)}
+                <button
+                  type="button"
+                  role="slider"
+                  class="trim-handle trim-start"
+                  class:at-leading={clipStartPercent < 0.5}
+                  style:left={`${clipStartPercent}%`}
+                  aria-label={`Trim ${roleLabel(clip.sourceRole)} start`}
+                  aria-valuemin="0"
+                  aria-valuemax={composition.durationSeconds}
+                  aria-valuenow={boundarySeconds(clip, "start")}
+                  aria-valuetext={formatTime(boundarySeconds(clip, "start"))}
+                  title="Drag to change when this starts"
+                  onpointerdown={(event) => beginTrim(event, clip.id, "start")}
+                  onkeydown={(event) => nudgeTrim(event, clip, "start")}
+                ></button>
+                <button
+                  type="button"
+                  role="slider"
+                  class="trim-handle trim-end"
+                  class:at-trailing={clipEndPercent > 99.5}
+                  style:left={`${clipEndPercent}%`}
+                  aria-label={`Trim ${roleLabel(clip.sourceRole)} end`}
+                  aria-valuemin="0"
+                  aria-valuemax={composition.durationSeconds}
+                  aria-valuenow={boundarySeconds(clip, "end")}
+                  aria-valuetext={formatTime(boundarySeconds(clip, "end"))}
+                  title="Drag to change when this ends"
+                  onpointerdown={(event) => beginTrim(event, clip.id, "end")}
+                  onkeydown={(event) => nudgeTrim(event, clip, "end")}
+                ></button>
+              {/each}
+              {#each composition.activePreset.transitions.filter( (transition) => lane.clips.some((clip) => clip.id === transition.outgoingClipId) ) as transition (transition.id)}
+                <span
+                  class="transition"
+                  style={transitionStyle(transition)}
+                  title="Crossfade"
+                  aria-hidden="true"
+                ></span>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+
+      <div class="scrubber">
+        <input
+          type="range"
+          min="0"
+          max={composition.durationSeconds}
+          step="0.01"
+          value={composition.previewSeconds}
+          aria-label="Preview time"
+          oninput={onScrub}
+        />
+        <span
+          class="playhead"
+          style:left={`${(composition.previewSeconds / composition.durationSeconds) * 100}%`}
+          aria-hidden="true"
+        ></span>
+      </div>
+    </div>
+  {/if}
 </section>
 
 <style>
   .timeline {
     display: grid;
-    gap: 0.75rem;
+    gap: clamp(0.75rem, 0.65rem + 0.12cqi, 1rem);
+    min-width: 0;
+  }
+
+  .timeline.advanced {
     min-width: 42rem;
   }
 
   .timeline-heading {
     display: flex;
-    align-items: end;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
   }
@@ -322,20 +365,25 @@
     display: block;
     margin-bottom: 0.2rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
   }
 
   .timeline-help {
     margin: 0.3rem 0 0;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     line-height: 1.35;
+  }
+
+  .advanced-panel {
+    display: grid;
+    gap: clamp(0.65rem, 0.55rem + 0.1cqi, 0.9rem);
   }
 
   h3 {
     margin: 0;
     color: var(--theme-text, #fff);
-    font-size: clamp(1rem, 2.4cqi, 1.25rem);
+    font-size: var(--studio-section-title-size, 1.15rem);
     line-height: 1.1;
   }
 
@@ -356,7 +404,7 @@
     border-radius: 999px;
     background: var(--theme-card-bg);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.66));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
     line-height: 1;
   }
 
@@ -367,7 +415,52 @@
     min-width: 8.75rem;
     color: var(--theme-text, #fff);
     font-variant-numeric: tabular-nums;
-    font-size: max(var(--font-size-min, 0.875rem), 0.875rem);
+    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
+  }
+
+  .primary-controls,
+  .tempo-editor {
+    display: flex;
+    align-items: center;
+  }
+
+  .primary-controls {
+    justify-content: flex-end;
+    gap: var(--spacing-lg);
+    min-width: 0;
+  }
+
+  .tempo-editor {
+    gap: var(--spacing-sm);
+    color: var(--theme-text-dim);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+  }
+
+  .tempo-editor :global(.tempo-wrapper) {
+    width: 13rem;
+  }
+
+  .advanced-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-width: 10rem;
+    min-height: var(--studio-control-height, 2.75rem);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .advanced-toggle.active {
+    border-color: var(--theme-accent);
+    color: var(--theme-accent);
   }
 
   .duration {
@@ -377,8 +470,8 @@
   .play-button {
     display: grid;
     place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: var(--studio-control-height, 2.75rem);
+    height: var(--studio-control-height, 2.75rem);
     margin-right: 0.25rem;
     padding: 0;
     border: 1px solid
@@ -394,6 +487,7 @@
   }
 
   .play-button:focus-visible,
+  .advanced-toggle:focus-visible,
   input:focus-visible {
     outline: 3px solid var(--theme-accent, #8b7cff);
     outline-offset: 2px;
@@ -409,7 +503,7 @@
     grid-template-columns: repeat(4, 1fr) auto;
     margin-left: 6.125rem;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-variant-numeric: tabular-nums;
   }
 
@@ -427,14 +521,14 @@
   .lane-label {
     overflow: hidden;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.66));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .lane-track {
     position: relative;
-    height: 2.75rem;
+    height: var(--studio-control-height, 2.75rem);
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: 0.5rem;
@@ -445,9 +539,9 @@
     position: absolute;
     inset-block: 0;
     z-index: 5;
-    width: 2.75rem;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    width: var(--studio-control-height, 2.75rem);
+    min-width: var(--studio-control-height, 2.75rem);
+    min-height: var(--studio-control-height, 2.75rem);
     padding: 0;
     border: 0;
     background: transparent;
@@ -512,7 +606,7 @@
     background: linear-gradient(135deg, #243b84, #182557);
     color: rgba(255, 255, 255, 0.88);
     font: inherit;
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
     white-space: nowrap;
     cursor: pointer;
   }
@@ -560,13 +654,13 @@
   .scrubber {
     position: relative;
     margin-left: 6.125rem;
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
   }
 
   input {
     display: block;
     width: 100%;
-    height: 2.75rem;
+    height: var(--studio-control-height, 2.75rem);
     margin: 0;
     opacity: 0.001;
     cursor: ew-resize;
@@ -596,8 +690,40 @@
   }
 
   @container post-studio (max-width: 34rem) {
+    .timeline.advanced {
+      min-width: 0;
+    }
+
     .timeline-heading {
       align-items: start;
+      flex-direction: column;
+    }
+
+    .primary-controls {
+      align-items: stretch;
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: var(--spacing-sm);
+    }
+
+    .transport {
+      min-width: 0;
+    }
+
+    .tempo-editor {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      flex: 1 1 100%;
+    }
+
+    .tempo-editor :global(.tempo-wrapper) {
+      width: auto;
+      min-width: 0;
+    }
+
+    .advanced-toggle {
+      display: none;
     }
 
     .lane {
@@ -609,18 +735,18 @@
       margin-left: 4.875rem;
     }
 
+    .ruler span:nth-child(even) {
+      visibility: hidden;
+    }
+
     .clip {
       padding-inline: 0.3rem;
     }
   }
 
-  @container post-studio (min-width: 132rem) {
+  @container post-studio (min-width: 105rem) {
     .lane {
       grid-template-columns: 7rem minmax(0, 1fr);
-    }
-
-    .lane-track {
-      height: 2.75rem;
     }
 
     .ruler,
@@ -631,7 +757,19 @@
     .clip,
     .lane-label,
     .eyebrow {
-      font-size: 0.9375rem;
+      font-size: var(--studio-body-size, 0.9375rem);
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .lane {
+      grid-template-columns: 8rem minmax(0, 1fr);
+      gap: 1rem;
+    }
+
+    .ruler,
+    .scrubber {
+      margin-left: 9rem;
     }
   }
 </style>

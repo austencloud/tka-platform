@@ -15,6 +15,7 @@
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
   import { migrateLegacyStepMap } from "$lib/shared/media-composition/domain/sequence-time-map";
+  import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
 
   const SEQUENCE_WORD = "BΣTW";
   const SEQUENCE_ID = "BΣTW";
@@ -26,6 +27,9 @@
   let isPreparingAnimation = $state(false);
   let performanceDurationSeconds = $state<number | undefined>();
   let sequenceTimeMap = $state<SequenceTimeMap | null>(null);
+  let cardRenderOptions = $state<ReturnType<
+    typeof buildCardRenderOptions
+  > | null>(null);
   let loadError = $state<string | null>(null);
   let animationTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -60,6 +64,7 @@
       sequence = performanceVideoUrl
         ? { ...hydrated, performanceVideoUrl }
         : hydrated;
+      cardRenderOptions = buildCardRenderOptions(sequence, { darkMode: true });
 
       const blob = await getSharer().getCardImageBlob(sequence, {
         darkMode: true,
@@ -111,9 +116,12 @@
       {animationPreviewType}
       {performanceDurationSeconds}
       {sequenceTimeMap}
+      {cardRenderOptions}
       isPreparingCard={!cardPreviewUrl}
       {isPreparingAnimation}
       onRequestAnimation={requestAnimation}
+      onBack={() => undefined}
+      onClose={() => undefined}
     />
   {/if}
 </main>

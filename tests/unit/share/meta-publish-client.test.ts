@@ -42,8 +42,12 @@ describe("connection status reader", () => {
     });
 
     expect(status.instagram).toEqual({
+      accountId: "",
       username: "austencloud",
+      accountType: "UNKNOWN",
+      route: "instagram-login",
       expiresAtMs: 1234,
+      capabilities: null,
     });
     expect(status.facebookPage?.selectedPageId).toBe("page-1");
     expect(status.facebookPage?.pages).toHaveLength(2);

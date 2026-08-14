@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13
 
-**Status:** Gates 1 through 3 are implemented. Gate 4 has synchronized original-audio export and an explicit Instagram-music path. Gate 5 has deterministic MP4 export and durable presets; rights-cleared track mixing and whole-Compose serialization remain.
+**Status:** Gates 1 through 3 are implemented. Gate 4 has synchronized original-audio export, tempo-driven sequence playback, and an explicit Instagram-music path. Gate 5 has deterministic MP4 export, durable presets, and the preset-first Post Studio surface; rights-cleared track mixing and whole-Compose serialization remain.
 
 **Capability owner:** Shared media composition
 
@@ -592,6 +592,30 @@ two regions, two clips, and a server timestamp; the same layout reappeared after
 reload. Compose already exposes the canonical Share button and Post Share Sheet
 for its current playable sequence. Serializing an arbitrary multi-cell Compose
 project into this shared model remains unfinished.
+
+#### Post Studio correction record, 2026-08-14
+
+Sequence-only presets now derive their duration from the sequence engine's
+variable beat durations and a visible BPM control. The default is 60 BPM because
+one engine duration unit equals one second at that rate. The 17-unit acceptance
+sequence therefore previews at 17.0 seconds instead of being compressed into an
+unrelated eight-second fixture. Setting 90 BPM recalculates the same composition
+to 11.3 seconds without changing its clip structure.
+
+The normal surface keeps playback and tempo visible while the clip ruler,
+handles, and scrubber sit behind Advanced timing. Crop, Fit, and Stretch appear
+only for external media. Placement values now use one shared numeric control
+that supports pointer scrubbing, keyboard adjustment, and exact entry. The word
+in the top bar uses the canonical TKA glyph renderer. The live choreo-card layer
+receives the same resolved QR, mandala, layout, and visibility options as the
+share export. Sound controls appear only after the selected performance source
+is proven to contain a decodable audio track.
+
+Browser proof covered 3840 by 2160, 2560 by 1440, 1920 by 1080, 1440 by 900,
+tablet portrait, 960 by 412 landscape, and 375 by 667 phone layouts. The desktop
+surface has no document overflow or unintended scrolling. Phone Canvas, Edit,
+and Timing views fit their controls without horizontal clipping; the dedicated
+Timing view exposes the full advanced timeline.
 
 ### Gate 6: Instagram delivery
 

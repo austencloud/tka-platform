@@ -24,6 +24,7 @@ import {
   exchangeFacebookLongLivedToken,
   exchangeInstagramLongLivedToken,
   fetchInstagramAccount,
+  GRAPH_VERSION,
   listFacebookPages,
   listPermissionStatuses,
   revokeFacebookPermissions,
@@ -66,7 +67,7 @@ export const META_CONNECT_CALLBACK_URL =
   "https://tkaflowarts.com/api/share/meta/callback";
 
 const INSTAGRAM_AUTHORIZE_URL = "https://www.instagram.com/oauth/authorize";
-const FACEBOOK_AUTHORIZE_URL = "https://www.facebook.com/v23.0/dialog/oauth";
+const FACEBOOK_AUTHORIZE_URL = `https://www.facebook.com/${GRAPH_VERSION}/dialog/oauth`;
 
 /**
  * `instagram_business_content_publish` is the scope Meta app review gates. The
@@ -394,12 +395,20 @@ async function connectInstagram(uid: string, code: string): Promise<string> {
   await writeInstagramConnection(uid, {
     igUserId: account.igUserId || shortLived.userId,
     username: account.username,
+    accountType: account.accountType,
+    graphVersion: GRAPH_VERSION,
+    appAccess: "unknown",
+    permissions: {
+      instagram_business_basic: "granted",
+      instagram_business_content_publish: "granted",
+    },
     accessToken: longLived.accessToken,
     issuedAt: admin.firestore.Timestamp.fromMillis(now),
     expiresAt: admin.firestore.Timestamp.fromMillis(
       now + longLived.expiresIn * 1000
     ),
     connectedAt: admin.firestore.Timestamp.fromMillis(now),
+    verifiedAt: admin.firestore.Timestamp.fromMillis(now),
   });
 
   return account.username || "Instagram";

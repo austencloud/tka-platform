@@ -27,6 +27,7 @@ import {
   readConnections,
   type MetaConnectionTarget,
 } from "./metaConnectionStore";
+import { buildInstagramCapabilitySnapshot } from "./instagramCapabilities";
 import {
   assertAllowedMediaUrl,
   assertInstagramImageFormat,
@@ -78,6 +79,73 @@ function parseMediaType(value: unknown): MetaPublishMediaType {
   });
 }
 
+interface InstagramPublishInput {
+  format: "image" | "reel";
+  selectedAccountId: string;
+  capabilitySnapshotId: string | null;
+  shareToFeed: boolean;
+  thumbOffsetMs: number | null;
+}
+
+function parseInstagramPublishInput(
+  value: unknown,
+  mediaType: MetaPublishMediaType
+): InstagramPublishInput {
+  if (!value || typeof value !== "object") {
+    throw new HttpsError("invalid-argument", "Instagram review is required", {
+      reason: "meta/review-required",
+    });
+  }
+  const input = value as Record<string, unknown>;
+  const format = input.format;
+  if (format !== "image" && format !== "reel") {
+    throw new HttpsError("invalid-argument", "Unknown Instagram format", {
+      reason: "meta/media-type-invalid",
+    });
+  }
+  if (
+    (format === "reel" && mediaType !== "video") ||
+    (format === "image" && mediaType !== "image")
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Media does not match the format",
+      {
+        reason: "meta/media-type-invalid",
+      }
+    );
+  }
+  const selectedAccountId =
+    typeof input.selectedAccountId === "string"
+      ? input.selectedAccountId.trim()
+      : "";
+  if (!selectedAccountId) {
+    throw new HttpsError("invalid-argument", "Choose an Instagram account", {
+      reason: "meta/account-required",
+    });
+  }
+  const thumbOffsetMs =
+    input.thumbOffsetMs === null
+      ? null
+      : typeof input.thumbOffsetMs === "number" &&
+          Number.isSafeInteger(input.thumbOffsetMs) &&
+          input.thumbOffsetMs >= 0
+        ? input.thumbOffsetMs
+        : null;
+
+  return {
+    format,
+    selectedAccountId,
+    capabilitySnapshotId:
+      typeof input.capabilitySnapshotId === "string"
+        ? input.capabilitySnapshotId
+        : null,
+    shareToFeed:
+      typeof input.shareToFeed === "boolean" ? input.shareToFeed : true,
+    thumbOffsetMs,
+  };
+}
+
 function toHttpsError(error: unknown): HttpsError {
   if (error instanceof HttpsError) return error;
   if (error instanceof MetaPublishError) {
@@ -100,6 +168,10 @@ export const publishToMeta = onCall(
       typeof request.data?.mediaUrl === "string" ? request.data.mediaUrl : "";
     const rawCaption =
       typeof request.data?.caption === "string" ? request.data.caption : "";
+    const instagram =
+      target === "instagram"
+        ? parseInstagramPublishInput(request.data?.instagram, mediaType)
+        : null;
 
     try {
       assertAllowedMediaUrl(mediaUrl, r2PublicUrl.value().trim());
@@ -113,6 +185,7 @@ export const publishToMeta = onCall(
               caption,
               mediaUrl,
               mediaType,
+              instagram: instagram!,
             })
           : await publishFacebookPage({
               connection: connections.facebookPage,
@@ -150,11 +223,26 @@ async function publishInstagram(input: {
   caption: string;
   mediaUrl: string;
   mediaType: MetaPublishMediaType;
+  instagram: InstagramPublishInput;
 }): Promise<{ permalink: string | null; postId: string }> {
   const connection = input.connection;
   if (!connection) throw new MetaPublishError("meta/not-connected");
   if (connection.expiresAt.toMillis() <= Date.now()) {
     throw new MetaPublishError("meta/token-expired");
+  }
+  if (input.instagram.selectedAccountId !== connection.igUserId) {
+    throw new MetaPublishError(
+      "meta/account-mismatch",
+      "The selected Instagram account does not match this connection"
+    );
+  }
+  const capabilities = buildInstagramCapabilitySnapshot(connection);
+  const feature =
+    input.instagram.format === "reel"
+      ? capabilities.features.reel
+      : capabilities.features.image;
+  if (!feature.available) {
+    throw new MetaPublishError(feature.reasonCode ?? "meta/permission-missing");
   }
   if (input.mediaType === "image") {
     assertInstagramImageFormat(input.mediaUrl);
@@ -166,6 +254,14 @@ async function publishInstagram(input: {
     caption: input.caption,
     mediaUrl: input.mediaUrl,
     mediaType: input.mediaType,
+    shareToFeed:
+      input.instagram.format === "reel"
+        ? input.instagram.shareToFeed
+        : undefined,
+    thumbOffsetMs:
+      input.instagram.format === "reel"
+        ? (input.instagram.thumbOffsetMs ?? undefined)
+        : undefined,
   });
 
   await waitForContainer({

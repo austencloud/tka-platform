@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PostStudioExportProgress } from "$lib/shared/media-composition/services/post-studio-exporter";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequenceName: string;
@@ -52,7 +53,7 @@
       <button
         type="button"
         class="icon-button back-button"
-        aria-label="Back to sharing"
+        aria-label="Share, back to sharing"
         onclick={onBack}
       >
         <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
@@ -63,7 +64,9 @@
 
   <div class="title-block">
     <span>Post Studio</span>
-    <h2 id="post-studio-title">{sequenceName}</h2>
+    <h2 id="post-studio-title" aria-label={sequenceName}>
+      <TKAWordGlyph word={sequenceName} height={26} darkMode fitToParent />
+    </h2>
   </div>
 
   <div class="project-state">
@@ -168,6 +171,9 @@
   }
 
   h2 {
+    display: flex;
+    align-items: center;
+    min-height: 1.8rem;
     margin: 0;
     overflow: hidden;
     color: var(--theme-text);
@@ -258,7 +264,7 @@
 
   .render-button {
     border: 1px solid var(--theme-accent);
-    background: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 62%, #24223d);
   }
 
   .download-button {
@@ -318,6 +324,109 @@
     border-radius: inherit;
     background: var(--theme-accent);
     transition: width var(--duration-fast) linear;
+  }
+
+  @container post-studio (min-width: 105rem) {
+    .topbar {
+      grid-template-columns: auto minmax(14rem, 0.8fr) minmax(20rem, 1fr) auto;
+      min-height: 5rem;
+      padding: 0.75rem 1.25rem;
+    }
+
+    .title-block > span,
+    .preset-name,
+    .ready-state,
+    .missing-state {
+      font-size: 0.8125rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+    }
+
+    .preset-name,
+    .ready-state,
+    .missing-state,
+    .icon-button,
+    .secondary-button,
+    .render-button,
+    .download-button {
+      min-height: 3.25rem;
+    }
+
+    .icon-button,
+    .secondary-button,
+    .render-button,
+    .download-button {
+      font-size: 0.9375rem;
+    }
+
+    .close-button {
+      width: 3.25rem;
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .topbar {
+      grid-template-columns: auto minmax(18rem, 0.8fr) minmax(26rem, 1fr) auto;
+      gap: 2.5rem;
+      min-height: 6rem;
+      padding: 1rem 2.5rem;
+    }
+
+    .navigation-actions,
+    .export-actions,
+    .project-state {
+      gap: 1rem;
+    }
+
+    .title-block {
+      gap: 0.25rem;
+    }
+
+    .title-block > span,
+    .preset-name,
+    .ready-state,
+    .missing-state {
+      font-size: 1rem;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+    }
+
+    .preset-name {
+      max-width: 24rem;
+      padding-inline: 1.25rem;
+    }
+
+    .preset-name,
+    .ready-state,
+    .missing-state,
+    .icon-button,
+    .secondary-button,
+    .render-button,
+    .download-button {
+      min-height: 3.75rem;
+    }
+
+    .icon-button,
+    .secondary-button,
+    .render-button,
+    .download-button {
+      padding-inline: 1.25rem;
+      font-size: 1.125rem;
+    }
+
+    .close-button {
+      width: 3.75rem;
+      padding: 0;
+    }
+
+    .export-progress {
+      width: 14rem;
+      font-size: 1rem;
+    }
   }
 
   @container post-studio (max-width: 70rem) {

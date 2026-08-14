@@ -158,7 +158,7 @@ export const POST_STUDIO_PRESETS: readonly MediaCompositionPreset[] = [
     id: "sequence-breakdown",
     name: "Sequence breakdown",
     description: "Animation above the full choreo card.",
-    duration: { mode: "fixed", seconds: 8 },
+    duration: { mode: "sequence-tempo", bpm: 60 },
     sourceRoles: [ANIMATION_ROLE, CARD_ROLE],
     regions: [
       region(
@@ -235,7 +235,7 @@ export const POST_STUDIO_PRESETS: readonly MediaCompositionPreset[] = [
     id: "motion-focus",
     name: "Motion focus",
     description: "The sequence animation fills the vertical frame.",
-    duration: { mode: "fixed", seconds: 8 },
+    duration: { mode: "sequence-tempo", bpm: 60 },
     sourceRoles: [ANIMATION_ROLE],
     regions: [
       region(

@@ -11,6 +11,8 @@ import {
 import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MediaCompositionPresetSchema } from "$lib/shared/media-composition/domain/media-composition-preset-schema";
+import { clampTempoBpm } from "$lib/shared/animation-engine/domain/tempo-behavior";
+import { getStepDuration } from "$lib/shared/animation-engine/timeline/services/step-grid-calculator";
 
 type VisualPresetClip = Extract<
   MediaCompositionPreset["clips"][number],
@@ -27,6 +29,7 @@ export interface CompositionSourceBinding {
   previewType?: "video" | "image";
   renderMode?: "external-media" | "sequence-animation" | "choreo-card";
   durationSeconds?: number;
+  hasAudio?: boolean;
   status: CompositionSourceStatus;
   missingMessage?: string;
 }
@@ -119,6 +122,17 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     const activePreset = getActivePreset();
     if (activePreset.duration.mode === "fixed") {
       return activePreset.duration.seconds;
+    }
+    if (activePreset.duration.mode === "sequence-tempo") {
+      const startPositionDuration = deps.startPositionDuration ?? 1;
+      const motionDuration = (deps.getSequenceSteps?.() ?? []).reduce(
+        (total, step) => total + (step.duration ?? 1),
+        0
+      );
+      return (
+        (startPositionDuration + motionDuration) *
+        getStepDuration(activePreset.duration.bpm)
+      );
     }
     const roleKey = activePreset.duration.sourceRole;
     const binding = getBindings().find(
@@ -223,6 +237,30 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
         updatedAt: Date.now(),
       },
     };
+  }
+
+  function selectedRegionSupportsFit(): boolean {
+    return getSelectedVisualClips().some((clip) => {
+      const binding = getBindings().find(
+        (candidate) => candidate.roleKey === clip.sourceRole
+      );
+      return (binding?.renderMode ?? "external-media") === "external-media";
+    });
+  }
+
+  function setTempoBpm(value: number): void {
+    const preset = workingPresets[activePresetId];
+    if (!preset || preset.duration.mode !== "sequence-tempo") return;
+    const bpm = clampTempoBpm(value);
+    workingPresets = {
+      ...workingPresets,
+      [activePresetId]: {
+        ...preset,
+        duration: { mode: "sequence-tempo", bpm },
+        updatedAt: Date.now(),
+      },
+    };
+    previewSeconds = Math.min(previewSeconds, getDurationSeconds());
   }
 
   function getSelectedVisualClips(): VisualPresetClip[] {
@@ -488,6 +526,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     get selectedOpacity() {
       return getSelectedVisualClips()[0]?.opacity ?? null;
     },
+    get selectedSupportsFit() {
+      return selectedRegionSupportsFit();
+    },
     get bindings() {
       return getBindings();
     },
@@ -502,6 +543,10 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     },
     get durationSeconds() {
       return getDurationSeconds();
+    },
+    get tempoBpm() {
+      const duration = getActivePreset().duration;
+      return duration.mode === "sequence-tempo" ? duration.bpm : null;
     },
     get previewSeconds() {
       return previewSeconds;
@@ -521,6 +566,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     selectRegion,
     selectRole,
     setSelectedFit,
+    setTempoBpm,
     setSelectedTransform,
     setSelectedOpacity,
     resetSelectedAppearance,

@@ -119,7 +119,6 @@
         class:selected={composition.activePresetId === preset.id}
         role="radio"
         aria-checked={composition.activePresetId === preset.id}
-        aria-label={`${preset.name}${missingRoleKeys(preset).length > 0 ? "; needs a source" : ""}`}
         onclick={() => selectPreset(preset)}
       >
         <span class="mini-frame" aria-hidden="true">
@@ -172,13 +171,13 @@
     display: block;
     margin-bottom: 0.2rem;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
   }
 
   h3 {
     margin: 0;
     color: var(--theme-text, #fff);
-    font-size: clamp(1rem, 2.4cqi, 1.25rem);
+    font-size: var(--studio-section-title-size, 1.15rem);
     line-height: 1.1;
   }
 
@@ -190,7 +189,7 @@
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.07);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.68));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
   }
 
   .save-toggle,
@@ -199,14 +198,14 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
     padding: 0.45rem 0.7rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 0.7rem;
     background: rgba(255, 255, 255, 0.05);
     color: var(--theme-text, #fff);
     font: inherit;
-    font-size: max(var(--font-size-min, 0.875rem), 0.875rem);
+    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
     cursor: pointer;
   }
 
@@ -241,20 +240,20 @@
 
   .save-row label {
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.68));
-    font-size: max(var(--font-size-min, 0.875rem), 0.875rem);
+    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
     font-weight: 600;
   }
 
   .save-row input {
     min-width: 0;
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
     padding: 0.55rem 0.7rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.13));
     border-radius: 0.65rem;
     background: rgba(0, 0, 0, 0.22);
     color: var(--theme-text, #fff);
     font: inherit;
-    font-size: max(var(--font-size-min, 0.875rem), 0.875rem);
+    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
   }
 
   .save-row button[type="submit"] {
@@ -280,7 +279,7 @@
     grid-column: 2 / -1;
     margin: 0;
     color: #ffb3b3;
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
   }
 
   .preset-grid {
@@ -375,7 +374,7 @@
 
   .preset-copy strong {
     padding-right: 1.25rem;
-    font-size: max(var(--font-size-min, 0.875rem), 0.875rem);
+    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
     line-height: 1.2;
   }
 
@@ -383,7 +382,7 @@
     display: -webkit-box;
     overflow: hidden;
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.62));
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
+    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
     line-height: 1.3;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -400,7 +399,7 @@
     border-radius: 999px;
     background: var(--theme-accent, #8b7cff);
     opacity: 0;
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     transform: scale(0.7);
     transition:
       opacity var(--duration-fast, 120ms) ease,
@@ -467,30 +466,51 @@
     }
   }
 
-  @container post-studio (min-width: 132rem) {
+  @container post-studio (min-width: 105rem) {
     .preset-grid {
-      gap: 1rem;
+      gap: 0.875rem;
     }
 
     .preset-card {
-      grid-template-columns: 3.75rem minmax(0, 1fr);
-      min-height: 6.5rem;
-      padding: 1rem;
+      grid-template-columns: 3rem minmax(0, 1fr);
+      min-height: 5.5rem;
+      padding: 0.875rem;
       border-radius: 1.125rem;
     }
 
     .mini-frame {
-      width: 3.25rem;
+      width: 2.75rem;
     }
 
     .preset-copy strong {
-      font-size: 1.125rem;
+      font-size: var(--studio-body-size, 1rem);
     }
 
     .preset-copy span,
     .eyebrow,
     .count {
-      font-size: 0.9375rem;
+      font-size: var(--studio-meta-size, 0.8125rem);
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .preset-grid {
+      gap: 1.25rem;
+    }
+
+    .preset-card {
+      grid-template-columns: 4.25rem minmax(0, 1fr);
+      min-height: 7.5rem;
+      padding: 1.25rem;
+      border-radius: 1.25rem;
+    }
+
+    .mini-frame {
+      width: 3.75rem;
+    }
+
+    .preset-copy strong {
+      font-size: 1.25rem;
     }
   }
 

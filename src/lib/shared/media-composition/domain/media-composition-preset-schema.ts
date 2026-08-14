@@ -9,6 +9,10 @@ import {
   MediaSourceKindSchema,
   type MediaSourceKind,
 } from "$lib/shared/media-composition/domain/media-source-schema";
+import {
+  PLAYBACK_MAX_BPM,
+  PLAYBACK_MIN_BPM,
+} from "$lib/shared/animation-engine/domain/constants/timing";
 
 const NonEmptyIdSchema = z.string().trim().min(1);
 const TimestampSchema = z.number().finite().int().nonnegative();
@@ -184,6 +188,12 @@ export const PresetDurationPolicySchema = z.union([
     .object({
       mode: z.literal("follow-source-role"),
       sourceRole: NonEmptyIdSchema,
+    })
+    .strict(),
+  z
+    .object({
+      mode: z.literal("sequence-tempo"),
+      bpm: z.number().finite().min(PLAYBACK_MIN_BPM).max(PLAYBACK_MAX_BPM),
     })
     .strict(),
 ]);

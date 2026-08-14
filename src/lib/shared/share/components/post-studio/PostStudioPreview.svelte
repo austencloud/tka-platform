@@ -3,13 +3,16 @@
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import PostStudioMediaLayer from "./PostStudioMediaLayer.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 
   let {
     sequence,
+    cardRenderOptions,
     onRootReady,
     onEditRegion,
   }: {
     sequence: SequenceData;
+    cardRenderOptions?: Partial<SequenceExportOptions> | null;
     onRootReady?: (root: HTMLElement | null) => void;
     onEditRegion?: () => void;
   } = $props();
@@ -173,18 +176,21 @@
         {#each layers as layer (layer.clipId)}
           {@const layerBinding = composition.bindingForRole(layer.sourceRole)}
           {#if layerBinding?.status === "ready" && (layerBinding.previewUrl || layerBinding.renderMode === "sequence-animation" || layerBinding.renderMode === "choreo-card")}
-            <PostStudioMediaLayer
-              binding={layerBinding}
-              fit={region.fit}
-              opacity={layer.opacity}
-              sourceTimeSeconds={layer.sourceTimeSeconds}
-              playing={composition.isPlaying}
-              {sequence}
-              sequencePosition={layer.sequencePosition}
-              displayedBeatNumber={layer.displayedBeatNumber}
-              clipId={layer.clipId}
-              transform={layer.transform}
-            />
+            <span class="rendered-media" aria-hidden="true">
+              <PostStudioMediaLayer
+                binding={layerBinding}
+                fit={region.fit}
+                opacity={layer.opacity}
+                sourceTimeSeconds={layer.sourceTimeSeconds}
+                playing={composition.isPlaying}
+                {sequence}
+                {cardRenderOptions}
+                sequencePosition={layer.sequencePosition}
+                displayedBeatNumber={layer.displayedBeatNumber}
+                clipId={layer.clipId}
+                transform={layer.transform}
+              />
+            </span>
           {/if}
         {/each}
         {#if !hasVisibleSource}
@@ -232,7 +238,7 @@
 
 <style>
   .preview-shell {
-    --preview-width: min(100%, clamp(16rem, min(22cqi, 42dvh), 44rem));
+    --preview-width: min(100%, calc((100cqb - 2.75rem) * 0.5625), 44rem);
     display: grid;
     align-content: center;
     justify-items: center;
@@ -263,6 +269,10 @@
       0 2rem 5rem rgba(0, 0, 0, 0.4),
       0 0 0 0.35rem rgba(255, 255, 255, 0.035);
     isolation: isolate;
+  }
+
+  .rendered-media {
+    display: contents;
   }
 
   .region {
@@ -413,31 +423,47 @@
 
   @container post-studio (min-width: 84rem) {
     .preview-shell {
-      --preview-width: min(100%, clamp(18rem, min(22cqi, 42dvh), 44rem));
+      --preview-width: min(100%, calc((100cqb - 3rem) * 0.5625), 44rem);
     }
   }
 
-  @container post-studio (min-width: 132rem) {
+  @container post-studio (min-width: 105rem) {
     .preview-shell {
-      --preview-width: min(100%, clamp(24rem, min(26cqi, 44dvh), 56rem));
+      --preview-width: min(100%, calc((100cqb - 3.25rem) * 0.5625), 56rem);
     }
 
     .region-name,
     .safe-frame span,
     .preview-meta {
-      font-size: 1rem;
+      font-size: var(--studio-body-size, 1rem);
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .preview-shell {
+      --preview-width: min(100%, calc((100cqb - 3.75rem) * 0.5625), 68rem);
+    }
+  }
+
+  @container post-studio (max-width: 70rem) {
+    .preview-shell {
+      --preview-width: min(100%, clamp(17rem, min(52cqi, 45dvh), 34rem));
     }
   }
 
   @container post-studio (max-width: 38rem) {
     .preview-shell {
-      --preview-width: min(100%, 19rem);
+      --preview-width: min(100%, min(19rem, 36dvh));
     }
   }
 
   @media (max-height: 40rem) {
     .preview-shell {
-      --preview-width: min(100%, 11rem);
+      --preview-width: min(100%, 7rem);
+    }
+
+    .preview-meta {
+      display: none;
     }
   }
 

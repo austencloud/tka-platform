@@ -13,6 +13,10 @@
  */
 
 import * as admin from "firebase-admin";
+import {
+  buildInstagramCapabilitySnapshot,
+  type InstagramCapabilitySnapshot,
+} from "./instagramCapabilities";
 
 const CONNECTIONS = "metaPublishConnections";
 const STATUS = "metaPublishStatus";
@@ -20,11 +24,16 @@ const STATUS = "metaPublishStatus";
 export interface InstagramPublishConnection {
   igUserId: string;
   username: string;
+  accountType?: "BUSINESS" | "CREATOR" | "UNKNOWN";
+  graphVersion?: string;
+  appAccess?: "standard" | "advanced" | "unknown";
+  permissions?: Record<string, "granted" | "declined" | "expired" | "unknown">;
   accessToken: string;
   /** When this token was minted. A token under 24h old cannot be refreshed. */
   issuedAt: admin.firestore.Timestamp;
   expiresAt: admin.firestore.Timestamp;
   connectedAt: admin.firestore.Timestamp;
+  verifiedAt?: admin.firestore.Timestamp;
   lastRefreshedAt?: admin.firestore.Timestamp;
 }
 
@@ -138,10 +147,7 @@ export async function clearConnection(
     .firestore()
     .collection(CONNECTIONS)
     .doc(uid)
-    .set(
-      { [field]: admin.firestore.FieldValue.delete() },
-      { merge: true }
-    );
+    .set({ [field]: admin.firestore.FieldValue.delete() }, { merge: true });
   await syncStatus(uid);
 }
 
@@ -162,7 +168,14 @@ export async function listInstagramConnections(): Promise<
 }
 
 export interface MetaPublishStatus {
-  instagram: { username: string; expiresAtMs: number } | null;
+  instagram: {
+    accountId: string;
+    username: string;
+    accountType: "BUSINESS" | "CREATOR" | "UNKNOWN";
+    route: "instagram-login";
+    expiresAtMs: number;
+    capabilities: InstagramCapabilitySnapshot;
+  } | null;
   facebookPage: {
     selectedPageId: string;
     selectedPageName: string;
@@ -185,8 +198,12 @@ export async function syncStatus(uid: string): Promise<MetaPublishStatus> {
   const status: MetaPublishStatus = {
     instagram: connections.instagram
       ? {
+          accountId: connections.instagram.igUserId,
           username: connections.instagram.username,
+          accountType: connections.instagram.accountType ?? "UNKNOWN",
+          route: "instagram-login",
           expiresAtMs: connections.instagram.expiresAt.toMillis(),
+          capabilities: buildInstagramCapabilitySnapshot(connections.instagram),
         }
       : null,
     facebookPage: facebook

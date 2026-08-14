@@ -4,6 +4,7 @@
   import type { EvaluatedFrameLayer } from "$lib/shared/media-composition/services/frame-evaluator";
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import PostStudioSequenceAnimationLayer from "./PostStudioSequenceAnimationLayer.svelte";
   import PostStudioChoreoLayer from "./PostStudioChoreoLayer.svelte";
 
@@ -14,6 +15,7 @@
     sourceTimeSeconds: number;
     playing: boolean;
     sequence: SequenceData;
+    cardRenderOptions?: Partial<SequenceExportOptions> | null;
     sequencePosition?: number;
     displayedBeatNumber?: number;
     clipId: string;
@@ -27,6 +29,7 @@
     sourceTimeSeconds,
     playing,
     sequence,
+    cardRenderOptions = null,
     sequencePosition,
     displayedBeatNumber,
     clipId,
@@ -73,7 +76,11 @@
   {#if binding.renderMode === "sequence-animation" && sequencePosition !== undefined}
     <PostStudioSequenceAnimationLayer {sequence} {sequencePosition} {playing} />
   {:else if binding.renderMode === "choreo-card" && displayedBeatNumber !== undefined}
-    <PostStudioChoreoLayer {sequence} {displayedBeatNumber} />
+    <PostStudioChoreoLayer
+      {sequence}
+      {displayedBeatNumber}
+      {cardRenderOptions}
+    />
   {:else if binding.previewType === "video" || binding.kind === "video"}
     <!-- svelte-ignore a11y_media_has_caption -->
     <video

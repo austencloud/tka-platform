@@ -1,5 +1,6 @@
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import ScrubbableNumber from "$lib/shared/ui/components/ScrubbableNumber.svelte";
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import type {
     ClipTransform,
@@ -57,18 +58,20 @@
   </div>
 
   {#if composition.selectedRegion && transform}
-    <div class="control-group">
-      <span class="group-label">Frame fit</span>
-      <SegmentedControl
-        options={FIT_OPTIONS}
-        value={composition.selectedRegion.fit}
-        onchange={composition.setSelectedFit}
-        ariaLabel="How the source fits the selected area"
-        semantics="radiogroup"
-        size="sm"
-        color="accent"
-      />
-    </div>
+    {#if composition.selectedSupportsFit}
+      <div class="control-group">
+        <span class="group-label">Frame fit</span>
+        <SegmentedControl
+          options={FIT_OPTIONS}
+          value={composition.selectedRegion.fit}
+          onchange={composition.setSelectedFit}
+          ariaLabel="How the source fits the selected area"
+          semantics="radiogroup"
+          size="sm"
+          color="accent"
+        />
+      </div>
+    {/if}
 
     <div class="control-group placement-controls">
       <div class="group-heading">
@@ -79,7 +82,7 @@
         </span>
       </div>
 
-      <label class="slider-row">
+      <div class="slider-row">
         <span>Scale</span>
         <input
           type="range"
@@ -87,13 +90,23 @@
           max="200"
           step="1"
           value={Math.round(transform.scale * 100)}
+          aria-label="Scale"
           aria-valuetext={`${Math.round(transform.scale * 100)} percent`}
           oninput={(event) => setTransform("scale", numberFrom(event) / 100)}
         />
-        <output>{Math.round(transform.scale * 100)}%</output>
-      </label>
+        <ScrubbableNumber
+          label="Scale"
+          value={transform.scale * 100}
+          min={50}
+          max={200}
+          step={1}
+          unit="%"
+          showLabel={false}
+          onchange={(value) => setTransform("scale", value / 100)}
+        />
+      </div>
 
-      <label class="slider-row">
+      <div class="slider-row">
         <span>Horizontal</span>
         <input
           type="range"
@@ -101,14 +114,24 @@
           max="100"
           step="1"
           value={Math.round(transform.translateX * 100)}
+          aria-label="Horizontal position"
           aria-valuetext={`${Math.round(transform.translateX * 100)} percent`}
           oninput={(event) =>
             setTransform("translateX", numberFrom(event) / 100)}
         />
-        <output>{Math.round(transform.translateX * 100)}%</output>
-      </label>
+        <ScrubbableNumber
+          label="Horizontal position"
+          value={transform.translateX * 100}
+          min={-100}
+          max={100}
+          step={1}
+          unit="%"
+          showLabel={false}
+          onchange={(value) => setTransform("translateX", value / 100)}
+        />
+      </div>
 
-      <label class="slider-row">
+      <div class="slider-row">
         <span>Vertical</span>
         <input
           type="range"
@@ -116,14 +139,24 @@
           max="100"
           step="1"
           value={Math.round(transform.translateY * 100)}
+          aria-label="Vertical position"
           aria-valuetext={`${Math.round(transform.translateY * 100)} percent`}
           oninput={(event) =>
             setTransform("translateY", numberFrom(event) / 100)}
         />
-        <output>{Math.round(transform.translateY * 100)}%</output>
-      </label>
+        <ScrubbableNumber
+          label="Vertical position"
+          value={transform.translateY * 100}
+          min={-100}
+          max={100}
+          step={1}
+          unit="%"
+          showLabel={false}
+          onchange={(value) => setTransform("translateY", value / 100)}
+        />
+      </div>
 
-      <label class="slider-row">
+      <div class="slider-row">
         <span>Rotation</span>
         <input
           type="range"
@@ -131,14 +164,24 @@
           max="180"
           step="1"
           value={Math.round(transform.rotationDegrees)}
+          aria-label="Rotation"
           aria-valuetext={`${Math.round(transform.rotationDegrees)} degrees`}
           oninput={(event) =>
             setTransform("rotationDegrees", numberFrom(event))}
         />
-        <output>{Math.round(transform.rotationDegrees)}°</output>
-      </label>
+        <ScrubbableNumber
+          label="Rotation"
+          value={transform.rotationDegrees}
+          min={-180}
+          max={180}
+          step={1}
+          unit="°"
+          showLabel={false}
+          onchange={(value) => setTransform("rotationDegrees", value)}
+        />
+      </div>
 
-      <label class="slider-row">
+      <div class="slider-row">
         <span>Opacity</span>
         <input
           type="range"
@@ -146,12 +189,22 @@
           max="100"
           step="1"
           value={Math.round(opacity * 100)}
+          aria-label="Opacity"
           aria-valuetext={`${Math.round(opacity * 100)} percent`}
           oninput={(event) =>
             composition.setSelectedOpacity(numberFrom(event) / 100)}
         />
-        <output>{Math.round(opacity * 100)}%</output>
-      </label>
+        <ScrubbableNumber
+          label="Opacity"
+          value={opacity * 100}
+          min={0}
+          max={100}
+          step={1}
+          unit="%"
+          showLabel={false}
+          onchange={(value) => composition.setSelectedOpacity(value / 100)}
+        />
+      </div>
     </div>
 
     <button
@@ -178,7 +231,7 @@
 <style>
   .inspector {
     display: grid;
-    gap: var(--spacing-lg);
+    gap: var(--studio-panel-gap, var(--spacing-lg));
   }
 
   .inspector-heading,
@@ -192,7 +245,7 @@
   .eyebrow,
   .group-label {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -206,7 +259,7 @@
   h3 {
     margin: 0;
     color: var(--theme-text);
-    font-size: 1.15rem;
+    font-size: var(--studio-section-title-size, 1.15rem);
   }
 
   .reset-button {
@@ -214,14 +267,14 @@
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm);
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
     padding: 0.5rem 0.7rem;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-2026-sm);
     background: var(--theme-card-bg);
     color: var(--theme-text);
     font: inherit;
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     cursor: pointer;
   }
 
@@ -252,28 +305,22 @@
     align-items: center;
     gap: var(--spacing-xs);
     color: var(--theme-accent);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
   }
 
   .slider-row {
     display: grid;
-    grid-template-columns: 5.25rem minmax(5rem, 1fr) 3.25rem;
+    grid-template-columns: 5.25rem minmax(5rem, 1fr) 5rem;
     align-items: center;
     gap: 0.75rem;
-    min-height: 2.75rem;
+    min-height: var(--studio-control-height, 2.75rem);
     color: var(--theme-text-dim);
-    font-size: var(--font-size-min);
-  }
-
-  .slider-row output {
-    color: var(--theme-text);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
+    font-size: var(--studio-body-size, var(--font-size-min));
   }
 
   .slider-row input {
     width: 100%;
-    height: 2.75rem;
+    height: var(--studio-control-height, 2.75rem);
     margin: 0;
     accent-color: var(--theme-accent);
     cursor: ew-resize;
@@ -284,7 +331,7 @@
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: 0.75rem;
-    min-height: 4rem;
+    min-height: calc(var(--studio-control-height, 2.75rem) + 1.25rem);
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--theme-stroke);
     border-radius: var(--radius-2026-sm);
@@ -305,12 +352,12 @@
   }
 
   .guide-toggle strong {
-    font-size: var(--font-size-min);
+    font-size: var(--studio-body-size, var(--font-size-min));
   }
 
   .guide-toggle small {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
     line-height: 1.35;
   }
 
@@ -347,7 +394,7 @@
 
   @container post-studio (max-width: 30rem) {
     .slider-row {
-      grid-template-columns: 4.5rem minmax(4rem, 1fr) 3rem;
+      grid-template-columns: 4.5rem minmax(4rem, 1fr) 5rem;
       gap: var(--spacing-sm);
     }
   }
