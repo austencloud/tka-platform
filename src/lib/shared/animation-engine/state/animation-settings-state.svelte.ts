@@ -48,6 +48,8 @@ export interface TrailAppearance {
  * Complete animation settings (persisted)
  */
 export interface AnimationSettings {
+  version: number;
+
   // Playback
   bpm: number;
   shouldLoop: boolean;
@@ -76,7 +78,10 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   ...MODULE_DEFAULT_TRAIL_SETTINGS,
 };
 
+export const ANIMATION_SETTINGS_VERSION = 2;
+
 export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
+  version: ANIMATION_SETTINGS_VERSION,
   bpm: 120,
   shouldLoop: true,
   trail: { ...DEFAULT_TRAIL_SETTINGS },
@@ -88,17 +93,57 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
 
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
 
+const ANIMATION_SETTINGS_STORAGE_KEY = "tka_animation_settings";
+const BOTH_ENDS_DEFAULT_VERSION = 2;
+
 const settingsPersistence = createPersistenceHelper({
-  key: "tka_animation_settings",
+  key: ANIMATION_SETTINGS_STORAGE_KEY,
   defaultValue: DEFAULT_ANIMATION_SETTINGS,
 });
+
+function readStoredSettingsVersion(): number {
+  if (typeof window === "undefined") return ANIMATION_SETTINGS_VERSION;
+
+  try {
+    const raw = window.localStorage.getItem(ANIMATION_SETTINGS_STORAGE_KEY);
+    if (!raw) return ANIMATION_SETTINGS_VERSION;
+
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === "number" ? parsed.version : 1;
+  } catch {
+    return ANIMATION_SETTINGS_VERSION;
+  }
+}
+
+export function migrateAnimationSettings(
+  settings: AnimationSettings,
+  storedVersion: number,
+): AnimationSettings {
+  // Older installs inherited Thumb End from the old factory default. Promote
+  // that value once so a staff opens with both trails, then preserve every
+  // tracking choice the user makes after this migration.
+  const trail =
+    storedVersion < BOTH_ENDS_DEFAULT_VERSION &&
+    settings.trail.trackingMode === TrackingMode.RIGHT_END
+      ? { ...settings.trail, trackingMode: TrackingMode.BOTH_ENDS }
+      : settings.trail;
+
+  return {
+    ...settings,
+    version: ANIMATION_SETTINGS_VERSION,
+    trail,
+  };
+}
 
 /**
  * Load animation settings with migration logic
  * Forces vivid trail preset for all users
  */
 function loadSettings(): AnimationSettings {
-  const settings = settingsPersistence.load();
+  const settings = migrateAnimationSettings(
+    settingsPersistence.load(),
+    readStoredSettingsVersion(),
+  );
 
   // MIGRATION: Force the vivid trail preset for everyone
   // The rendering now always uses exponential fade and tapered width (hardcoded)
@@ -177,6 +222,7 @@ export function createAnimationSettingsState(
     $effect.root(() => {
       $effect(() => {
         // Access all properties to track changes
+        void settings.version;
         void settings.bpm;
         void settings.shouldLoop;
         void settings.trail.mode;
@@ -290,7 +336,10 @@ export function createAnimationSettingsState(
     },
 
     resetToDefaults: () => {
-      settings = { ...DEFAULT_ANIMATION_SETTINGS };
+      settings = {
+        ...DEFAULT_ANIMATION_SETTINGS,
+        trail: { ...DEFAULT_TRAIL_SETTINGS },
+      };
     },
 
     // Current prop type (for UI labels like trail tracking mode)

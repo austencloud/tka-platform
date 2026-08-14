@@ -81,7 +81,7 @@
 		Math.abs(lineWidth - DEFAULT_EFFECTS_CONFIG.trails.thickness) < 0.2 &&
 		Math.abs(maxOpacity - DEFAULT_EFFECTS_CONFIG.trails.brightness) < 0.03 &&
 		tailLength === DEFAULT_TRAIL_SETTINGS.tailLength &&
-		trackingMode === TrackingMode.RIGHT_END &&
+		trackingMode === DEFAULT_TRAIL_SETTINGS.trackingMode &&
 		blueColor === defaultBlue &&
 		redColor === defaultRed
 	);
@@ -94,7 +94,7 @@
 			redColor: defaultRed,
 		});
 		animationSettings.setTailLength(DEFAULT_TRAIL_SETTINGS.tailLength);
-		animationSettings.setTrackingMode(TrackingMode.RIGHT_END);
+		animationSettings.setTrackingMode(DEFAULT_TRAIL_SETTINGS.trackingMode);
 	}
 </script>
 

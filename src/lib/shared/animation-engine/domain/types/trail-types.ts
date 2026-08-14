@@ -117,7 +117,7 @@ export const DEFAULT_TRAIL_SETTINGS: TrailSettings = {
   ],
   minOpacity: 0.25,
   maxOpacity: 1.0,
-  trackingMode: TrackingMode.RIGHT_END,
+  trackingMode: TrackingMode.BOTH_ENDS,
   hideProps: false,
   usePathCache: true,
   previewMode: false,

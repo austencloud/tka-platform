@@ -4,8 +4,14 @@ import {
   ephemeralAdapter,
   createMemoryAdapter,
 } from "$lib/shared/animation-engine/state/persistence-adapter";
-import { createAnimationSettingsState } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+import {
+  ANIMATION_SETTINGS_VERSION,
+  DEFAULT_ANIMATION_SETTINGS,
+  createAnimationSettingsState,
+  migrateAnimationSettings,
+} from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
+import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 
 describe("persistence adapters", () => {
   it("ephemeral adapter never loads or persists", () => {
@@ -23,6 +29,12 @@ describe("persistence adapters", () => {
 });
 
 describe("ephemeral animation settings", () => {
+  it("seeds trail tracking at both ends", () => {
+    const settings = createAnimationSettingsState({ ephemeral: true });
+
+    expect(settings.trail.trackingMode).toBe(TrackingMode.BOTH_ENDS);
+  });
+
   it("seeds from defaults and does not write localStorage", () => {
     let wrote = false;
     const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
@@ -33,6 +45,38 @@ describe("ephemeral animation settings", () => {
     expect(settings.bpm).toBe(99);
     expect(wrote).toBe(false);
     spy.mockRestore();
+  });
+});
+
+describe("animation settings migrations", () => {
+  it("promotes the inherited thumb-end default to both ends once", () => {
+    const legacy = {
+      ...DEFAULT_ANIMATION_SETTINGS,
+      version: 1,
+      trail: {
+        ...DEFAULT_ANIMATION_SETTINGS.trail,
+        trackingMode: TrackingMode.RIGHT_END,
+      },
+    };
+
+    const migrated = migrateAnimationSettings(legacy, legacy.version);
+
+    expect(migrated.version).toBe(ANIMATION_SETTINGS_VERSION);
+    expect(migrated.trail.trackingMode).toBe(TrackingMode.BOTH_ENDS);
+  });
+
+  it("preserves an explicit thumb-end choice after the migration", () => {
+    const current = {
+      ...DEFAULT_ANIMATION_SETTINGS,
+      trail: {
+        ...DEFAULT_ANIMATION_SETTINGS.trail,
+        trackingMode: TrackingMode.RIGHT_END,
+      },
+    };
+
+    const migrated = migrateAnimationSettings(current, ANIMATION_SETTINGS_VERSION);
+
+    expect(migrated.trail.trackingMode).toBe(TrackingMode.RIGHT_END);
   });
 });
 
