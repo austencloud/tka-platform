@@ -512,7 +512,11 @@ Animates forward in z-axis and expands to fill the container space
   bind:this={overlayElement}
   class="loop-expanded-overlay"
   class:combo-mode={isMultiSelectMode}
-  transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+  transition:scale={{
+    start: 0.95,
+    duration: motionDuration(DURATION.emphasis),
+    easing: quintOut,
+  }}
 >
   <LoopOverlayHeader
     onClose={handleClose}

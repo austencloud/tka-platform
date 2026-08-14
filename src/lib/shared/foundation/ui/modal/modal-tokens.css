@@ -243,6 +243,7 @@ dialog.base-modal[data-animation="slide"] {
 /* No animation */
 dialog.base-modal[data-animation="none"] {
   transition: none;
+  animation: none;
 }
 
 /* ===== Backdrop Styles ===== */
@@ -428,7 +429,7 @@ dialog.base-modal.chromeless {
 
 /* ===== Fallback for browsers without @starting-style ===== */
 @supports not (selector(@starting-style {})) {
-  dialog.base-modal[data-entered="true"] {
+  dialog.base-modal[data-entered="true"]:not([data-animation="none"]) {
     animation: modalFallbackIn var(--modal-duration-in) var(--modal-ease-spring);
   }
 

@@ -61,7 +61,8 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   const REVERSAL_HINTS: Record<"smooth" | "mixed" | "choppy", string> = {
     smooth: "Reversals kept to a minimum.",
     mixed: "Reversals allowed where they fit.",
-    choppy: "A reversal on every step — a narrow target, so results repeat more.",
+    choppy:
+      "A reversal on every step — a narrow target, so results repeat more.",
   };
 
   const DASH_HINTS: Record<"no-dash" | "mixed" | "prefer-dash", string> = {
@@ -114,7 +115,9 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             onclick={() => handleProps(opt.value)}
           >
             <span class="option-label">{opt.label}</span>
-            {#if defaultProps === opt.value}<span class="option-default">default</span>{/if}
+            {#if defaultProps === opt.value}<span class="option-default"
+                >default</span
+              >{/if}
           </button>
         {/each}
       </div>
@@ -142,7 +145,9 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             onclick={() => handleHands(opt.value)}
           >
             <span class="option-label">{opt.label}</span>
-            {#if defaultHands === opt.value}<span class="option-default">default</span>{/if}
+            {#if defaultHands === opt.value}<span class="option-default"
+                >default</span
+              >{/if}
           </button>
         {/each}
       </div>
@@ -167,7 +172,9 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
             onclick={() => handleDashes(opt.value)}
           >
             <span class="option-label">{opt.label}</span>
-            {#if defaultDashes === opt.value}<span class="option-default">default</span>{/if}
+            {#if defaultDashes === opt.value}<span class="option-default"
+                >default</span
+              >{/if}
           </button>
         {/each}
       </div>
@@ -274,7 +281,7 @@ Displayed inside CompactSettingsToolbar's morph expand overlay when "Style" chip
   }
 
   .option-default {
-    font-size: 9px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.6px;
     text-transform: uppercase;

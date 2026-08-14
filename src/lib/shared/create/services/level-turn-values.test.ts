@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampMaxTurnIntensity,
   clampTurnToLevel,
   levelForTurnValue,
   levelForTurns,
+  maxTurnIntensitiesForLevel,
   turnValuesForLevel,
 } from "./level-turn-values";
 
@@ -22,6 +24,21 @@ describe("turnValuesForLevel", () => {
   it("clamps out-of-range levels into 1-3", () => {
     expect(turnValuesForLevel(0)).toEqual(turnValuesForLevel(1));
     expect(turnValuesForLevel(7)).toEqual(turnValuesForLevel(3));
+  });
+});
+
+describe("maxTurnIntensitiesForLevel", () => {
+  it("uses the same selectable ceilings as Generate", () => {
+    expect(maxTurnIntensitiesForLevel(1)).toEqual([]);
+    expect(maxTurnIntensitiesForLevel(2)).toEqual([1, 2, 3]);
+    expect(maxTurnIntensitiesForLevel(3)).toEqual([0.5, 1, 1.5, 2, 2.5, 3]);
+  });
+
+  it("clamps a saved ceiling when the level changes", () => {
+    expect(clampMaxTurnIntensity(0.5, 2)).toBe(1);
+    expect(clampMaxTurnIntensity(2.5, 2)).toBe(2);
+    expect(clampMaxTurnIntensity(1.5, 3)).toBe(1.5);
+    expect(clampMaxTurnIntensity(2, 1)).toBe(2);
   });
 });
 

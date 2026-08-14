@@ -21,9 +21,39 @@ const LEVEL_TURN_VALUES: Record<TurnLevel, readonly TurnValue[]> = {
   3: ["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3],
 };
 
+const LEVEL_MAX_TURN_INTENSITIES: Record<TurnLevel, readonly number[]> = {
+  1: [],
+  2: [1, 2, 3],
+  3: [0.5, 1, 1.5, 2, 2.5, 3],
+};
+
 /** Turn values legal at `level`. Out-of-range levels clamp into 1-3. */
 export function turnValuesForLevel(level: number): readonly TurnValue[] {
   return LEVEL_TURN_VALUES[asTurnLevel(level)];
+}
+
+/** Selectable ceilings for generated turn values at `level`. */
+export function maxTurnIntensitiesForLevel(level: number): readonly number[] {
+  return LEVEL_MAX_TURN_INTENSITIES[asTurnLevel(level)];
+}
+
+/**
+ * Keep a saved maximum valid when the level changes. Level 1 has no selector,
+ * so its previous maximum is retained for when turns are enabled again.
+ */
+export function clampMaxTurnIntensity(value: number, level: number): number {
+  const allowed = maxTurnIntensitiesForLevel(level);
+  if (allowed.length === 0) return Number.isFinite(value) ? value : 1;
+  if (allowed.includes(value)) return value;
+
+  const finiteValue = Number.isFinite(value) ? value : 1;
+  let best = allowed[0]!;
+  for (const candidate of allowed) {
+    if (Math.abs(candidate - finiteValue) < Math.abs(best - finiteValue)) {
+      best = candidate;
+    }
+  }
+  return best;
 }
 
 export function asTurnLevel(level: number): TurnLevel {

@@ -52,6 +52,7 @@ named in .claude/rules/crossfade-primitive.md.
     selected = $bindable(null),
     detail,
     listHeader,
+    listContent,
     onSelect,
   }: {
     items: SettingsDrillItem[];
@@ -61,6 +62,8 @@ named in .claude/rules/crossfade-primitive.md.
     detail: Snippet<[string]>;
     /** Pinned above the list — notes, hints. */
     listHeader?: Snippet;
+    /** Optional custom landing content. The drill still owns navigation. */
+    listContent?: Snippet;
     onSelect?: (id: string | null) => void;
   } = $props();
 
@@ -68,7 +71,7 @@ named in .claude/rules/crossfade-primitive.md.
 
   let reducedMotion = $state(
     typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
 
   $effect(() => {
@@ -113,17 +116,21 @@ named in .claude/rules/crossfade-primitive.md.
             <div class="layer-header">{@render listHeader()}</div>
           {/if}
           <div class="layer-body themed-scrollbar">
-            <div class="row-list">
-              {#each items as item (item.id)}
-                <SettingsDrillRow
-                  label={item.label}
-                  value={item.value}
-                  disabled={item.disabled}
-                  disabledReason={item.disabledReason}
-                  onclick={() => choose(item)}
-                />
-              {/each}
-            </div>
+            {#if listContent}
+              {@render listContent()}
+            {:else}
+              <div class="row-list">
+                {#each items as item (item.id)}
+                  <SettingsDrillRow
+                    label={item.label}
+                    value={item.value}
+                    disabled={item.disabled}
+                    disabledReason={item.disabledReason}
+                    onclick={() => choose(item)}
+                  />
+                {/each}
+              </div>
+            {/if}
           </div>
         {:else}
           <div class="layer-header detail-title-row">

@@ -31,6 +31,7 @@
     /** Numerals only — for bars too tight to carry the level name. */
     compact?: boolean;
     ariaLabel?: string;
+    disabled?: boolean;
   }
 
   const {
@@ -38,6 +39,7 @@
     onchange,
     compact = false,
     ariaLabel = "Difficulty level",
+    disabled = false,
   }: Props = $props();
 
   const LEVELS: readonly LevelNumber[] = [1, 2, 3];
@@ -71,6 +73,7 @@
       class:selected={value === n}
       aria-pressed={value === n}
       aria-label="Level {n}: {meta.name}"
+      {disabled}
       title="Level {n} — {meta.name}. {meta.blurb}"
       style="--lvl-bg: {styleFor(n).cssBg}; --lvl-ink: {styleFor(n)
         .text}; --lvl-accent: {accentFor(n)};"
@@ -184,6 +187,15 @@
 
   .lvl:active {
     transform: scale(0.98);
+  }
+
+  .lvl:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+
+  .lvl:disabled:active {
+    transform: none;
   }
 
   .lvl:focus-visible {

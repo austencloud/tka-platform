@@ -13,14 +13,14 @@ clipped 415px of that content instead of scrolling.
 Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 -->
 <script lang="ts">
-  import "../customize-accent.css";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { scale } from "svelte/transition";
-  import { quintOut } from "svelte/easing";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount, untrack } from "svelte";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
-  import { GridMode, type GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    type GridPosition,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     detectPresetFromBlocked,
     getAllowedPositions,
@@ -44,6 +44,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   } from "./customize-summary";
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import GenerationSettingsOverlay from "./GenerationSettingsOverlay.svelte";
   import {
     clampStartOrientationToLevel,
     startOrientationsForLevel,
@@ -99,9 +100,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   }
 
   // ─── Local state for style (instant UI feedback) ───
-  let localConstraintPreset = $state<"smooth" | "mixed" | "choppy">(untrack(() => constraintPreset));
-  let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(untrack(() => handPathMode));
-  let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(untrack(() => motionTypeFilter));
+  let localConstraintPreset = $state<"smooth" | "mixed" | "choppy">(
+    untrack(() => constraintPreset)
+  );
+  let localHandPathMode = $state<"smooth" | "mixed" | "choppy">(
+    untrack(() => handPathMode)
+  );
+  let localMotionTypeFilter = $state<"no-dash" | "prefer-dash" | null>(
+    untrack(() => motionTypeFilter)
+  );
 
   // ─── Local state for start positions (instant UI feedback) ───
   let localBlockedPositions = $state<GridPosition[]>(
@@ -127,9 +134,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       level
     )
   );
-  const availableStartOrientations = $derived(
-    startOrientationsForLevel(level)
-  );
+  const availableStartOrientations = $derived(startOrientationsForLevel(level));
 
   // Abbreviations come from the summary resolver so the row and the collapsed
   // card can't drift into two vocabularies.
@@ -184,9 +189,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   const endBlockedPositions = $derived(
     localEndPositions.length === 0
       ? []
-      : getAllPositions(gridMode).filter(
-          (p) => !localEndPositions.includes(p)
-        )
+      : getAllPositions(gridMode).filter((p) => !localEndPositions.includes(p))
   );
 
   function handleEndBlockedChange(blocked: GridPosition[]) {
@@ -304,14 +307,12 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   }
 </script>
 
-<div
-  class="customize-expanded-overlay customize-accent-scope"
-  transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+<GenerationSettingsOverlay
+  title="Customize"
+  closeLabel="Close customize panel"
+  onClose={handleClose}
 >
-  <!-- Pinned above the drill panel, not inside its list: drilling into a
-       setting must never take Close and Reset all off screen. -->
-  <div class="overlay-header">
-    <h3 class="overlay-title">Customize</h3>
+  {#snippet actions()}
     {#if onResetAll}
       <button
         class="reset-button"
@@ -324,86 +325,93 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
         Reset all
       </button>
     {/if}
-    <button
-      class="close-button"
-      onclick={handleClose}
-      aria-label="Close customize panel"
+  {/snippet}
+
+  {#snippet children()}
+    <SettingsDrillPanel
+      items={drillItems}
+      bind:selected
+      onSelect={handleSelect}
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="18" y1="6" x2="6" y2="18"></line>
-        <line x1="6" y1="6" x2="18" y2="18"></line>
-      </svg>
-    </button>
-  </div>
+      {#snippet listHeader()}
+        <!-- These settings persist across sessions, which is what made a saved
+             Choppy props value look like a broken generator. Say so up front. -->
+        <p class="overlay-note">
+          These settings stick until you change them again.
+        </p>
+      {/snippet}
 
-  <SettingsDrillPanel items={drillItems} bind:selected onSelect={handleSelect}>
-    {#snippet listHeader()}
-      <!-- These settings persist across sessions, which is what made a saved
-           Choppy props value look like a broken generator. Say so up front. -->
-      <p class="overlay-note">These settings stick until you change them again.</p>
-    {/snippet}
-
-    {#snippet detail(id)}
-      {#if id === "style"}
-        <div class="drill-fill spread">
-          <StyleExpandPanel
-            constraintPreset={localConstraintPreset}
-            handPathMode={localHandPathMode}
-            motionTypeFilter={localMotionTypeFilter}
-            baseline={styleBaseline}
-            haptic={hapticService}
-            onPropsChange={(v) => { localConstraintPreset = v; onConstraintPresetChange(v); }}
-            onHandsChange={(v) => { localHandPathMode = v; onHandPathModeChange(v); }}
-            onDashesChange={(v) => { localMotionTypeFilter = v === "mixed" ? null : v; onMotionTypeFilterChange(v); }}
-          />
-        </div>
-      {:else if id === "startPos"}
-        <div class="drill-fill grid-fill">
-          <MultiSelectPositionPicker
-            blockedPositions={localBlockedPositions}
-            onBlockedChange={handleBlockedChange}
-            blueStartOrientation={localBlueOri}
-            redStartOrientation={localRedOri}
-            presets={startPositionPresets}
-            {gridMode}
-          />
-        </div>
-      {:else if id === "endPos"}
-        <div class="drill-fill grid-fill">
-          <MultiSelectPositionPicker
-            blockedPositions={endBlockedPositions}
-            onBlockedChange={handleEndBlockedChange}
-            blueStartOrientation={localBlueOri}
-            redStartOrientation={localRedOri}
-            {gridMode}
-          />
-        </div>
-      {:else if id === "startOri"}
-        <p class="detail-note">Level {level}</p>
-        <div class="drill-fill spread">
-          <div class="ori-row">
-            <span class="ori-color-label ori-blue">Blue</span>
-            <PropOrientationControl
-              color="blue"
-              orientation={localBlueOri}
-              allowedOrientations={availableStartOrientations}
-              onOrientationChange={handleBlueOriChange}
+      {#snippet detail(id)}
+        {#if id === "style"}
+          <div class="drill-fill spread">
+            <StyleExpandPanel
+              constraintPreset={localConstraintPreset}
+              handPathMode={localHandPathMode}
+              motionTypeFilter={localMotionTypeFilter}
+              baseline={styleBaseline}
+              haptic={hapticService}
+              onPropsChange={(v) => {
+                localConstraintPreset = v;
+                onConstraintPresetChange(v);
+              }}
+              onHandsChange={(v) => {
+                localHandPathMode = v;
+                onHandPathModeChange(v);
+              }}
+              onDashesChange={(v) => {
+                localMotionTypeFilter = v === "mixed" ? null : v;
+                onMotionTypeFilterChange(v);
+              }}
             />
           </div>
-          <div class="ori-row">
-            <span class="ori-color-label ori-red">Red</span>
-            <PropOrientationControl
-              color="red"
-              orientation={localRedOri}
-              allowedOrientations={availableStartOrientations}
-              onOrientationChange={handleRedOriChange}
+        {:else if id === "startPos"}
+          <div class="drill-fill grid-fill">
+            <MultiSelectPositionPicker
+              blockedPositions={localBlockedPositions}
+              onBlockedChange={handleBlockedChange}
+              blueStartOrientation={localBlueOri}
+              redStartOrientation={localRedOri}
+              presets={startPositionPresets}
+              {gridMode}
             />
           </div>
-        </div>
-      {/if}
-    {/snippet}
-  </SettingsDrillPanel>
-</div>
+        {:else if id === "endPos"}
+          <div class="drill-fill grid-fill">
+            <MultiSelectPositionPicker
+              blockedPositions={endBlockedPositions}
+              onBlockedChange={handleEndBlockedChange}
+              blueStartOrientation={localBlueOri}
+              redStartOrientation={localRedOri}
+              {gridMode}
+            />
+          </div>
+        {:else if id === "startOri"}
+          <p class="detail-note">Level {level}</p>
+          <div class="drill-fill spread">
+            <div class="ori-row">
+              <span class="ori-color-label ori-blue">Blue</span>
+              <PropOrientationControl
+                color="blue"
+                orientation={localBlueOri}
+                allowedOrientations={availableStartOrientations}
+                onOrientationChange={handleBlueOriChange}
+              />
+            </div>
+            <div class="ori-row">
+              <span class="ori-color-label ori-red">Red</span>
+              <PropOrientationControl
+                color="red"
+                orientation={localRedOri}
+                allowedOrientations={availableStartOrientations}
+                onOrientationChange={handleRedOriChange}
+              />
+            </div>
+          </div>
+        {/if}
+      {/snippet}
+    </SettingsDrillPanel>
+  {/snippet}
+</GenerationSettingsOverlay>
 
 <ConfirmDialog
   bind:isOpen={resetConfirmOpen}
@@ -417,47 +425,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
 />
 
 <style>
-  .customize-expanded-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 100;
-
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 16px;
-
-    /* Palette hoisted to ../customize-accent.css (shared with CustomizeDrawer) */
-    background: var(--customize-surface-gradient);
-    border-radius: 16px;
-    border: 2px solid color-mix(in srgb, var(--customize-accent) 40%, transparent);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.4),
-      0 0 24px color-mix(in srgb, var(--customize-accent) 20%, transparent);
-
-    overflow: hidden;
-  }
-
-  .overlay-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-    margin-bottom: 4px;
-  }
-
-  .overlay-title {
-    margin: 0;
-    /* Takes the slack so Reset all and Close stay pinned right, and neither
-       moves when the title or note changes. */
-    flex: 1;
-    min-width: 0;
-    font-size: var(--font-size-lg, 18px);
-    font-weight: 700;
-    color: var(--theme-text, white);
-    letter-spacing: 0.3px;
-  }
-
   /* A real button, not a text link — it's a standalone action. */
   .reset-button {
     flex-shrink: 0;
@@ -492,33 +459,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     flex-shrink: 0;
     font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.55);
-  }
-
-  .close-button {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    border-radius: 8px;
-    color: var(--theme-text, white);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-    width: var(--min-touch-target);
-    height: var(--min-touch-target);
-    transition:
-      background var(--duration-normal) ease,
-      border-color var(--duration-normal) ease;
-  }
-
-  .close-button:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
-  }
-
-  .close-button svg {
-    width: 20px;
-    height: 20px;
   }
 
   /* ─── Detail bodies ─── */
@@ -625,7 +565,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   /* ─── Reduced motion ─── */
 
   @media (prefers-reduced-motion: reduce) {
-    .close-button,
     .reset-button {
       transition: none;
     }
