@@ -9,6 +9,14 @@
     type FishEscapePhase,
     type FishMarineLife,
   } from "@austencloud/backgrounds";
+  import {
+    summarizeCursorEscapeCapture,
+    type CursorEscapeCaptureSample,
+    type CursorCapturePhase,
+    type CursorCaptureState,
+    type LiveCursorCaptureReport,
+  } from "./cursor-escape-capture";
+  import CursorEscapeCapturePanel from "./CursorEscapeCapturePanel.svelte";
 
   type TrialKind = "escape" | "burst";
   type TrialPhase = FishEscapePhase | "complete";
@@ -60,10 +68,27 @@
     phases: TrialPhase[];
   }
 
+  interface ActiveCursorCapture {
+    elapsed: number;
+    startEventCount: number;
+    startHeadingAngle: number;
+    lastHeadingAngle: number;
+    source: { x: number; y: number };
+    samples: CursorEscapeCaptureSample[];
+  }
+
   interface BenchmarkApi {
     runEscape: () => void;
     runBurst: () => void;
     runPair: () => void;
+    armCursorCapture: () => void;
+    cancelCursorCapture: () => void;
+    getCursorCapture: () => {
+      state: CursorCaptureState;
+      report: LiveCursorCaptureReport | null;
+      trace: CursorEscapeCaptureSample[];
+      pointer: { x: number; y: number } | null;
+    };
     getReport: () => {
       escape: TrialResult | null;
       burst: TrialResult | null;
@@ -74,6 +99,11 @@
       behavior: string | null;
       behaviorTimer: number | null;
       speed: number | null;
+      x: number | null;
+      y: number | null;
+      bodyLength: number | null;
+      headingAngle: number | null;
+      escapeCurvature: number | null;
       fishCount: number;
       activeTrial: TrialKind | null;
     };
@@ -86,6 +116,7 @@
   }
 
   const SEED = "phase-two-motion-benchmark";
+  const CURSOR_CAPTURE_DURATION = 7;
   const ESCAPE_PHASES: Array<{ phase: FishEscapePhase; duration: number }> = [
     { phase: "coil", duration: ESCAPE_KINEMATICS.coilDuration },
     { phase: "propulsion", duration: ESCAPE_KINEMATICS.propulsionDuration },
@@ -110,10 +141,17 @@
   let burstTrace = $state<TrialSample[]>([]);
   let escapeResult = $state<TrialResult | null>(null);
   let burstResult = $state<TrialResult | null>(null);
+  let cursorCaptureState = $state<CursorCaptureState>("idle");
+  let cursorCaptureTrace = $state<CursorEscapeCaptureSample[]>([]);
+  let cursorCaptureReport = $state<LiveCursorCaptureReport | null>(null);
+  let livePointer = $state<{ x: number; y: number } | null>(null);
   let fps = $state(0);
 
   let system: OceanBackgroundOrchestrator | null = null;
-  let activeTrial: ActiveTrial | null = null;
+  let activeTrial = $state.raw<ActiveTrial | null>(null);
+  let activeCursorCapture: ActiveCursorCapture | null = null;
+  let armedEscapeEventCount = 0;
+  let lastCursorSource: { x: number; y: number } | null = null;
   let dimensions = { width: 1, height: 1 };
   let animationTime = 0;
   let followWithBurst = false;
@@ -124,6 +162,9 @@
     escapeResult && burstResult
       ? escapeResult.fishId === burstResult.fishId
       : null
+  );
+  const cursorCaptureBusy = $derived(
+    cursorCaptureState === "armed" || cursorCaptureState === "recording"
   );
 
   function format(value: number | null | undefined, digits = 2): string {
@@ -241,6 +282,7 @@
     fish.intent = "cruise";
     fish.intentTimer = 0;
     fish.escapeManeuver = undefined;
+    fish.escapeSwim = undefined;
     fish.burstStartSpeed = undefined;
     fish.burstPeakSpeed = undefined;
     fish.fleeTimer = 0;
@@ -262,8 +304,139 @@
     return fish;
   }
 
-  function beginTrial(kind: TrialKind): void {
+  function cancelCursorCapture(): void {
+    system?.setPointer(0, 0, false);
+    activeCursorCapture = null;
+    livePointer = null;
+    if (cursorCaptureState !== "complete") cursorCaptureState = "idle";
+  }
+
+  function armCursorCapture(): void {
     if (!ready || !system || activeTrial) return;
+    const fish = resetTrackedFish();
+    if (!fish) return;
+
+    cursorCaptureTrace = [];
+    cursorCaptureReport = null;
+    activeCursorCapture = null;
+    lastCursorSource = null;
+    armedEscapeEventCount = fish.escapeEventCount;
+    cursorCaptureState = "armed";
+    status = "Armed. Sweep your cursor toward the ringed fish.";
+  }
+
+  function handlePointerMove(event: PointerEvent): void {
+    if (!stage || !system || !cursorCaptureBusy) return;
+    const rect = stage.getBoundingClientRect();
+    const x =
+      ((event.clientX - rect.left) / Math.max(1, rect.width)) *
+      dimensions.width;
+    const y =
+      ((event.clientY - rect.top) / Math.max(1, rect.height)) *
+      dimensions.height;
+    livePointer = { x, y };
+    system.setPointer(x, y, true);
+  }
+
+  function handlePointerLeave(): void {
+    if (!system || !cursorCaptureBusy) return;
+    livePointer = null;
+    system.setPointer(0, 0, false);
+  }
+
+  function recordCursorCapture(deltaSeconds: number): void {
+    const fish = selectedFish;
+    if (
+      !fish ||
+      cursorCaptureState === "idle" ||
+      cursorCaptureState === "complete"
+    )
+      return;
+
+    if (cursorCaptureState === "armed") {
+      const maneuver = fish.escapeManeuver;
+      if (
+        fish.escapeEventCount <= armedEscapeEventCount ||
+        !maneuver ||
+        maneuver.source.kind !== "cursor"
+      ) {
+        return;
+      }
+      lastCursorSource = { x: maneuver.source.x, y: maneuver.source.y };
+      activeCursorCapture = {
+        elapsed: 0,
+        startEventCount: armedEscapeEventCount,
+        startHeadingAngle: maneuver.startHeadingAngle,
+        lastHeadingAngle: maneuver.startHeadingAngle,
+        source: { ...lastCursorSource },
+        samples: [],
+      };
+      cursorCaptureState = "recording";
+      status = "Escape triggered. Keep moving naturally while the trace runs.";
+    }
+
+    const capture = activeCursorCapture;
+    if (!capture) return;
+    capture.elapsed += deltaSeconds;
+    const maneuver = fish.escapeManeuver;
+    const escapeResponse = maneuver ?? fish.escapeSwim;
+    if (maneuver) capture.lastHeadingAngle = maneuver.headingAngle;
+    const bodyLength = Math.max(1, fish.bodyLength);
+    const phase: CursorCapturePhase = maneuver
+      ? maneuver.phase
+      : fish.escapeSwim
+        ? "escape-swim"
+        : "recovery";
+    capture.samples.push({
+      elapsed: capture.elapsed,
+      escapeEventId: maneuver?.eventId ?? null,
+      escapeResponseEventId: escapeResponse?.eventId ?? null,
+      x: fish.x,
+      y: fish.baseY,
+      pointerX: livePointer?.x ?? null,
+      pointerY: livePointer?.y ?? null,
+      speedBodyLengths: fish.speed / bodyLength,
+      headingAngle: maneuver?.headingAngle ?? capture.lastHeadingAngle,
+      direction: fish.direction,
+      bodyFlex: fish.bodyFlexAmount,
+      animationPhase: fish.animationPhase,
+      clearanceBodyLengths:
+        Math.hypot(fish.x - capture.source.x, fish.baseY - capture.source.y) /
+        bodyLength,
+      phase,
+    });
+    cursorCaptureTrace = [...capture.samples];
+
+    if (capture.elapsed < CURSOR_CAPTURE_DURATION) return;
+    const report = summarizeCursorEscapeCapture(
+      capture.samples,
+      bodyLength,
+      capture.startHeadingAngle
+    );
+    cursorCaptureReport = report
+      ? {
+          ...report,
+          fishId: fish.fishId ?? null,
+          species: fish.species,
+          bodyLength,
+          source: { ...capture.source },
+        }
+      : null;
+    cursorCaptureState = "complete";
+    activeCursorCapture = null;
+    livePointer = null;
+    system?.setPointer(0, 0, false);
+    status = report
+      ? "Captured. Each escape event is measured separately."
+      : "Capture ended without enough samples. Arm it and try again.";
+  }
+
+  function beginTrial(kind: TrialKind): void {
+    if (!ready || !system || activeTrial || cursorCaptureBusy) return;
+    cursorCaptureState = "idle";
+    cursorCaptureTrace = [];
+    cursorCaptureReport = null;
+    lastCursorSource = null;
     const fish = resetTrackedFish();
     if (!fish) return;
 
@@ -500,7 +673,7 @@
 
   function drawTrace(
     context: CanvasRenderingContext2D,
-    trace: TrialSample[],
+    trace: Array<{ x: number; y: number }>,
     color: string
   ): void {
     if (trace.length < 2) return;
@@ -519,6 +692,16 @@
   function drawDiagnostics(context: CanvasRenderingContext2D): void {
     drawTrace(context, escapeTrace, "#ffb86b");
     drawTrace(context, burstTrace, "#66e3ff");
+    drawTrace(context, cursorCaptureTrace, "#70e4b0");
+    drawTrace(
+      context,
+      cursorCaptureTrace.flatMap((sample) =>
+        sample.pointerX === null || sample.pointerY === null
+          ? []
+          : [{ x: sample.pointerX, y: sample.pointerY }]
+      ),
+      "rgba(236, 249, 255, 0.52)"
+    );
     const fish = selectedFish;
     if (!fish) return;
 
@@ -526,12 +709,17 @@
     const ringRadius = Math.max(22, fish.bodyLength * 0.58);
     context.beginPath();
     context.arc(fish.x, fish.baseY, ringRadius, 0, Math.PI * 2);
-    context.strokeStyle = activeKind === "escape" ? "#ffb86b" : "#66e3ff";
+    context.strokeStyle = cursorCaptureBusy
+      ? "#70e4b0"
+      : activeKind === "escape"
+        ? "#ffb86b"
+        : "#66e3ff";
     context.lineWidth = 1.5;
     context.setLineDash([4, 5]);
     context.stroke();
 
     const source =
+      lastCursorSource ??
       activeTrial?.source ??
       (escapeTrace.length > 0 && escapeResult
         ? {
@@ -542,7 +730,7 @@
             y: escapeTrace[0]!.y,
           }
         : null);
-    if (source && activeKind === "escape") {
+    if (source && (activeKind === "escape" || cursorCaptureState !== "idle")) {
       context.beginPath();
       context.arc(source.x, source.y, 7, 0, Math.PI * 2);
       context.fillStyle = "#ffb86b";
@@ -550,6 +738,14 @@
       context.beginPath();
       context.arc(source.x, source.y, 14, 0, Math.PI * 2);
       context.strokeStyle = "rgba(255, 184, 107, 0.65)";
+      context.stroke();
+    }
+    if (livePointer) {
+      context.beginPath();
+      context.arc(livePointer.x, livePointer.y, 10, 0, Math.PI * 2);
+      context.strokeStyle = "rgba(236, 249, 255, 0.82)";
+      context.lineWidth = 1.5;
+      context.setLineDash([3, 4]);
       context.stroke();
     }
     context.restore();
@@ -611,9 +807,8 @@
       resetTrackedFish();
       ready = selectedFish !== null;
       status = ready
-        ? "Same fish selected for both trials"
+        ? "Target ready. Arm the live capture, then sweep toward the ringed fish."
         : "No fish available for the benchmark";
-      if (ready) queue(runPair, 280);
     }
 
     function animate(now: number): void {
@@ -628,6 +823,7 @@
         animationTime += 0.016;
         system.update(dimensions, 1);
         if (activeTrial) recordTrial(0.016);
+        if (cursorCaptureBusy) recordCursorCapture(0.016);
         simulationRemainder -= 0.016;
       }
       system.draw(context!, dimensions);
@@ -647,6 +843,14 @@
       runEscape,
       runBurst,
       runPair,
+      armCursorCapture,
+      cancelCursorCapture,
+      getCursorCapture: () => ({
+        state: cursorCaptureState,
+        report: cursorCaptureReport,
+        trace: [...cursorCaptureTrace],
+        pointer: livePointer ? { ...livePointer } : null,
+      }),
       getReport: () => ({
         escape: escapeResult,
         burst: burstResult,
@@ -659,6 +863,15 @@
         behavior: selectedFish?.behavior ?? null,
         behaviorTimer: selectedFish?.behaviorTimer ?? null,
         speed: selectedFish?.speed ?? null,
+        x: selectedFish?.x ?? null,
+        y: selectedFish?.baseY ?? null,
+        bodyLength: selectedFish?.bodyLength ?? null,
+        headingAngle:
+          selectedFish?.escapeManeuver?.headingAngle ??
+          selectedFish?.spineJoints?.[0]?.angle ??
+          selectedFish?.rotation ??
+          null,
+        escapeCurvature: selectedFish?.escapeManeuver?.curvature ?? null,
         fishCount: system?.getFish().length ?? 0,
         activeTrial: activeTrial?.kind ?? null,
       }),
@@ -691,36 +904,73 @@
       <p class="eyebrow">PHASE II / LOCOMOTION</p>
       <h1>One fish. Two causes.</h1>
       <p class="subtitle">
-        Threat escape and voluntary burst, recorded from the production motion
-        system.
+        Your moving cursor and the fish's production escape path, recorded in
+        the same coordinate system.
       </p>
     </div>
     <div class="runtime-readout" aria-label="Benchmark runtime">
-      <span class:live={activeKind !== null}></span>
+      <span class:live={activeKind !== null || cursorCaptureBusy}></span>
       <strong>{fps.toFixed(0)} fps</strong>
       <small>{selectedFish?.species ?? "loading"}</small>
     </div>
   </header>
 
   <section class="benchmark-body">
-    <div class="stage" bind:this={stage}>
-      <canvas bind:this={canvas} aria-label="Tracked production fish motion"
+    <div
+      class="stage"
+      class:cursor-capture-active={cursorCaptureBusy}
+      bind:this={stage}
+    >
+      <canvas
+        bind:this={canvas}
+        aria-label="Interactive production fish motion"
+        data-target-x={selectedFish?.x ?? ""}
+        data-target-y={selectedFish?.baseY ?? ""}
+        data-target-body-length={selectedFish?.bodyLength ?? ""}
+        data-target-direction={selectedFish?.direction ?? ""}
+        onpointermove={handlePointerMove}
+        onpointerleave={handlePointerLeave}
+        onpointercancel={handlePointerLeave}
       ></canvas>
       <div class="stage-legend" aria-hidden="true">
+        <span class="cursor-key">Your capture</span>
         <span class="escape-key">Escape path</span>
         <span class="burst-key">Voluntary path</span>
       </div>
       <div class="stage-caption">
         <span
-          >{activeKind
-            ? `${labelPhase(liveSample?.phase)} phase`
-            : "Trial complete"}</span
+          >{cursorCaptureState === "armed"
+            ? "Waiting for your gesture"
+            : cursorCaptureState === "recording"
+              ? `${cursorCaptureTrace.at(-1)?.phase ?? "coil"} phase`
+              : cursorCaptureState === "complete"
+                ? "Cursor capture complete"
+                : activeKind
+                  ? `${labelPhase(liveSample?.phase)} phase`
+                  : "Target ready"}</span
         >
-        <strong>{format(liveSample?.elapsed, 3)} s</strong>
+        <strong
+          >{cursorCaptureState === "recording"
+            ? `${format(cursorCaptureTrace.at(-1)?.elapsed, 3)} s`
+            : cursorCaptureState === "complete"
+              ? `${format(cursorCaptureReport?.duration, 2)} s`
+              : `${format(liveSample?.elapsed, 3)} s`}</strong
+        >
       </div>
     </div>
 
     <aside class="instrument-panel">
+      <CursorEscapeCapturePanel
+        state={cursorCaptureState}
+        report={cursorCaptureReport}
+        {status}
+        {ready}
+        controlledTrialActive={activeTrial !== null}
+        expectedManeuverMilliseconds={ESCAPE_KINEMATICS.totalDuration * 1000}
+        onArm={armCursorCapture}
+        onCancel={cancelCursorCapture}
+      />
+
       <section class="control-block">
         <div class="section-heading">
           <div>
@@ -734,22 +984,24 @@
             class="escape-action"
             type="button"
             onclick={runEscape}
-            disabled={!ready || activeKind !== null}>Threat escape</button
+            disabled={!ready || activeKind !== null || cursorCaptureBusy}
+            >Threat escape</button
           >
           <button
             class="burst-action"
             type="button"
             onclick={runBurst}
-            disabled={!ready || activeKind !== null}>Voluntary burst</button
+            disabled={!ready || activeKind !== null || cursorCaptureBusy}
+            >Voluntary burst</button
           >
           <button
             class="pair-action"
             type="button"
             onclick={runPair}
-            disabled={!ready || activeKind !== null}>Run pair</button
+            disabled={!ready || activeKind !== null || cursorCaptureBusy}
+            >Run pair</button
           >
         </div>
-        <p class="status" aria-live="polite">{status}</p>
       </section>
 
       <section class="phase-block">
@@ -949,9 +1201,10 @@
     --escape: #ffb86b;
     --burst: #66e3ff;
     --pass: #70e4b0;
+    --cursor-capture: var(--pass);
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    width: 100vw;
+    width: 100%;
     height: 100vh;
     color: var(--text-primary);
     background:
@@ -1067,6 +1320,10 @@
     height: 100%;
   }
 
+  .stage.cursor-capture-active {
+    cursor: crosshair;
+  }
+
   .stage-legend,
   .stage-caption {
     position: absolute;
@@ -1079,6 +1336,7 @@
     background: rgba(3, 16, 26, 0.78);
     box-shadow: 0 0.4rem 1.5rem rgba(0, 0, 0, 0.18);
     backdrop-filter: blur(10px);
+    pointer-events: none;
   }
 
   .stage-legend {
@@ -1112,6 +1370,10 @@
     color: var(--burst);
   }
 
+  .cursor-key {
+    color: var(--cursor-capture);
+  }
+
   .stage-caption {
     right: 1rem;
     bottom: 1rem;
@@ -1129,7 +1391,7 @@
 
   .instrument-panel {
     display: grid;
-    grid-template-rows: auto auto minmax(11rem, 1fr) auto auto;
+    grid-template-rows: auto auto auto minmax(11rem, 1fr) auto auto;
     min-height: 0;
     overflow-y: auto;
     background: var(--surface-panel);
@@ -1174,7 +1436,7 @@
   }
 
   button {
-    min-height: 2.85rem;
+    min-height: 3rem;
     border: 1px solid var(--line-strong);
     border-radius: 0.7rem;
     color: var(--text-primary);
@@ -1211,15 +1473,8 @@
 
   .pair-action {
     grid-column: 1 / -1;
-    min-height: 2.75rem;
+    min-height: 3rem;
     color: var(--text-secondary);
-  }
-
-  .status {
-    min-height: 1.25rem;
-    margin: 0.65rem 0 0;
-    color: var(--text-secondary);
-    font-size: 0.72rem;
   }
 
   .phase-track {
@@ -1433,7 +1688,6 @@
       font-size: 0.86rem;
     }
 
-    .status,
     dl div {
       font-size: 0.76rem;
     }
@@ -1471,7 +1725,6 @@
       font-size: 1.05rem;
     }
 
-    .status,
     dl div {
       font-size: 0.9rem;
     }
@@ -1518,7 +1771,7 @@
 
   @media (max-height: 950px) and (min-width: 901px) {
     .instrument-panel {
-      grid-template-rows: auto auto minmax(8rem, 1fr) auto auto;
+      grid-template-rows: auto auto auto minmax(8rem, 1fr) auto auto;
     }
 
     .instrument-panel > section,

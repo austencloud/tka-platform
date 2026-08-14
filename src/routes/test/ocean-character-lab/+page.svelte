@@ -34,6 +34,9 @@
     secondSocialTarget: number | null;
     sourceKind: string | null;
     neighborKind: string | null;
+    sourceThreat: number;
+    sourceAlarm: number;
+    neighborAlarm: number;
   }
 
   interface AgencyBenchmarkApi {
@@ -305,6 +308,9 @@
       secondSocialTarget: null,
       sourceKind: null,
       neighborKind: null,
+      sourceThreat: 0,
+      sourceAlarm: 0,
+      neighborAlarm: 0,
     };
   }
 
@@ -424,13 +430,13 @@
     const x = dimensions.width * 0.36;
     const y = dimensions.height * 0.52;
     placeFish(source, x, y);
-    placeFish(neighbor, x + 25, y);
+    placeFish(neighbor, x + 12, y);
     placeFish(secondHop, x + 175, y);
     source.personality!.boldness = 0.1;
     neighbor.personality!.boldness = 1;
     secondHop.personality!.boldness = 1;
-    pointerMarker = { x: x - 8, y };
-    system.setPointer(pointerMarker.x, pointerMarker.y, true);
+    pointerMarker = null;
+    system.setPointer(0, 0, false);
     status =
       "One fish sees the threat; only its nearest neighbor hears the alarm";
   }
@@ -542,6 +548,10 @@
   function updateSocial(trial: ActiveTrial): void {
     const [focal, familiar, alternate] = participants;
     if (!focal || !familiar || !alternate) return;
+    const partnerX = dimensions.width * 0.34 + 120;
+    const centerY = dimensions.height * 0.52;
+    holdFishAt(familiar, partnerX, centerY - 42);
+    holdFishAt(alternate, partnerX, centerY + 42);
     if (trial.firstSocialTarget === null && focal.attention.kind === "fish") {
       trial.firstSocialTarget = focal.attention.targetFishId ?? null;
     }
@@ -601,10 +611,27 @@
 
   function updateAlarm(trial: ActiveTrial): void {
     const [source, neighbor, secondHop] = participants;
-    if (!source || !neighbor || !secondHop) return;
+    if (!source || !neighbor || !secondHop || !system) return;
+    if (trial.phase === "observe") {
+      if (trial.elapsed < 0.064) return;
+      trial.phase = "threat";
+      activePhase = "alarm relay";
+      pointerMarker = { x: source.x - 8, y: source.baseY };
+      system.setPointer(pointerMarker.x, pointerMarker.y, true);
+      return;
+    }
     trial.sourceKind ??= source.perception.threatSource?.kind ?? null;
     trial.neighborKind ??= neighbor.perception.threatSource?.kind ?? null;
-    if (trial.elapsed < (viewMode === "reel" ? 2.4 : 0.18)) return;
+    trial.sourceThreat = Math.max(
+      trial.sourceThreat,
+      source.perception.cursorThreat
+    );
+    trial.sourceAlarm = Math.max(trial.sourceAlarm, source.memory.cursorAlarm);
+    trial.neighborAlarm = Math.max(
+      trial.neighborAlarm,
+      neighbor.memory.cursorAlarm
+    );
+    if (trial.elapsed < (viewMode === "reel" ? 2.5 : 0.3)) return;
     const sourceEntries = source.escapeEventCount - trial.startingEvents[0]!;
     const neighborEntries =
       neighbor.escapeEventCount - trial.startingEvents[1]!;
@@ -626,6 +653,10 @@
         { label: "Neighbor entries", value: String(neighborEntries) },
         { label: "Second-hop entries", value: String(secondHopEntries) },
         { label: "Neighbor source", value: trial.neighborKind ?? "none" },
+        {
+          label: "Threat / relay",
+          value: `${formatPercent(trial.sourceThreat)} / ${formatPercent(trial.neighborAlarm)}`,
+        },
       ],
     });
   }
@@ -1699,17 +1730,17 @@
 
   @media (min-width: 2600px) {
     .agency-header {
-      min-height: 9.5rem;
-      padding: 2rem 3rem;
+      min-height: 12rem;
+      padding: 2.5rem 3.5rem;
     }
 
     .workspace,
     .ocean-stage {
-      min-height: calc(100vh - 9.5rem);
+      min-height: calc(100vh - 12rem);
     }
 
     .workspace {
-      grid-template-columns: minmax(0, 1fr) 52rem;
+      grid-template-columns: minmax(0, 1fr) 62rem;
     }
 
     .control-block,
@@ -1720,8 +1751,59 @@
     }
 
     article {
-      min-height: 10rem;
-      padding: 1.1rem;
+      min-height: 11rem;
+      padding: 1.35rem;
+    }
+
+    h1 {
+      font-size: 4.1rem;
+    }
+
+    .eyebrow {
+      font-size: 0.95rem;
+    }
+
+    .dek,
+    .run-state strong {
+      font-size: 1.2rem;
+    }
+
+    .run-state small,
+    .seed,
+    .gate-state {
+      font-size: 0.95rem;
+    }
+
+    .section-heading h2 {
+      font-size: 1.45rem;
+    }
+
+    .read-options button {
+      min-height: 6rem;
+      padding: 1.1rem 1.2rem;
+    }
+
+    .read-options button strong,
+    article h3 {
+      font-size: 1.12rem;
+    }
+
+    .read-options button span,
+    article p,
+    .metric-grid span,
+    .recognition-block > p {
+      font-size: 0.95rem;
+    }
+
+    .reel-actions button,
+    .mode-switch {
+      min-height: 4rem;
+      font-size: 1rem;
+    }
+
+    .blind-badge,
+    footer {
+      font-size: 0.95rem;
     }
   }
 

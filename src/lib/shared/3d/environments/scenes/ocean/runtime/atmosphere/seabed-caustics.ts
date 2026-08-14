@@ -18,8 +18,7 @@ import {
 //     above uGroundY), so it physically can't wash the whole frame — it only
 //     exists on geometry near the seabed.
 //
-// Mirrors patchSwayMaterial in FloraInstances. The voronoi is ported from the
-// otherwise-unused voronoi-caustic.frag. Vertex injection uses anchors
+// Mirrors patchSwayMaterial in FloraInstances. Vertex injection uses anchors
 // (`void main`, `#include <project_vertex>`) that the sway patch does NOT touch,
 // and the patch CHAINS any prior onBeforeCompile, so a flora reed can carry both
 // sway and caustics at once.
@@ -55,34 +54,17 @@ const CAUSTIC_PARS = /* glsl */ `
   uniform float uGroundY;
   uniform float uCausticFadeHeight;
 
-  vec2 cHash22(vec2 p) {
-    return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
-  }
-  float cVoronoi(vec2 p, float t) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    float md = 8.0;
-    for (int y = -1; y <= 1; y++) {
-      for (int x = -1; x <= 1; x++) {
-        vec2 n = vec2(float(x), float(y));
-        vec2 o = cHash22(i + n);
-        o = 0.5 + 0.5 * sin(t * 0.8 + 6.2831 * o);
-        vec2 r = n + o - f;
-        md = min(md, dot(r, r));
-      }
-    }
-    return sqrt(md);
-  }
+  // Four analytic wave evaluations replace the former three-octave Voronoi
+  // search (27 hashed neighbour cells per fragment). Crossing wave fronts
+  // still form the thin, moving light filaments that read as caustics, while
+  // keeping the authored reef fragment-bound scene inside its frame budget.
   float causticPattern(vec2 p, float t) {
-    float v1 = cVoronoi(p + vec2(t * 0.1, t * 0.05), t);
-    float v2 = cVoronoi(p * 1.4 + vec2(-t * 0.08, t * 0.12) + 3.7, t);
-    float v3 = cVoronoi(p * 0.7 + vec2(t * 0.06, -t * 0.09) + 7.3, t);
-    float pat = v1 * v2 + v3 * 0.3;
-    // pat routinely exceeds 1.0 (v1*v2 of two voronoi distances), so 1.0 - pat
-    // goes negative. pow(negative, 3.5) is undefined in GLSL (log2 of a negative)
-    // → NaN, which poisons totalEmissiveRadiance and gets smeared into black
-    // square blocks by the bloom mipmap blur. Clamp the base non-negative.
-    return pow(max(1.0 - pat, 0.0), 3.5);
+    vec2 drift = p + uSunDirXZ * t * 0.16;
+    float fold = sin(drift.x * 3.1 + sin(drift.y * 2.7 - t * 0.38));
+    float crossA = sin(dot(drift, vec2(0.82, 0.57)) * 4.4 + t * 0.31);
+    float crossB = sin(dot(drift, vec2(-0.63, 0.78)) * 3.7 - t * 0.27);
+    float ridges = 1.0 - abs((fold + crossA + crossB) * 0.3333333);
+    return smoothstep(0.72, 0.96, ridges);
   }
 `;
 
@@ -128,7 +110,7 @@ export function patchCausticsMaterial(mat: MeshStandardMaterial): void {
       /* glsl */ `#include <emissivemap_fragment>
         {
           float fade = smoothstep(uGroundY + uCausticFadeHeight, uGroundY, vCausticWorldPos.y);
-          if (fade > 0.001) {
+          if (fade > 0.001 && uCausticStrength > 0.0001) {
             vec2 cp = vCausticWorldPos.xz * uCausticScale + uSunDirXZ * uTime * 0.04;
             float c = causticPattern(cp, uTime);
             totalEmissiveRadiance += uCausticColor * (c * uCausticStrength * fade);

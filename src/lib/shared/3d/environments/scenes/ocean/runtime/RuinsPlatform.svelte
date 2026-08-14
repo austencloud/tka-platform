@@ -1,6 +1,12 @@
 <script lang="ts">
   import { T, useTask } from "@threlte/core";
-  import { BoxGeometry, PlaneGeometry, CylinderGeometry, MeshStandardMaterial } from "three";
+  import { onMount } from "svelte";
+  import {
+    BoxGeometry,
+    PlaneGeometry,
+    CylinderGeometry,
+    MeshStandardMaterial,
+  } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     createBodyMaterial,
@@ -36,10 +42,23 @@
   let { config }: Props = $props();
   const groundY = $derived(userProportionsState.groundY);
 
+  const enabled = $derived(config.enabled);
+  const width = $derived(config.width);
+  const depth = $derived(config.depth);
+  const height = $derived(config.height);
   const elevation = $derived(config.elevation ?? 0);
+  const groundOffset = $derived(config.groundOffset ?? 0);
+  const zOffset = $derived(config.zOffset ?? 0);
+  const columnCount = $derived(config.columnCount);
+  const materialConfig = $derived({
+    stoneColor: config.stoneColor,
+    runeGlowColor: config.runeGlowColor,
+    glowIntensity: config.glowIntensity,
+    mossIntensity: config.mossIntensity,
+  });
   // Base reference for all vertical placement. groundOffset raises it to the
   // seabed surface so the platform stands on the sand rather than sinking in.
-  const baseY = $derived(groundY + (config.groundOffset ?? 0));
+  const baseY = $derived(groundY + groundOffset);
 
   let bodyGeometry = $state<BoxGeometry | undefined>(undefined);
   let topGeometry = $state<PlaneGeometry | undefined>(undefined);
@@ -47,12 +66,12 @@
   let supportPillarGeometry = $state<CylinderGeometry | undefined>(undefined);
 
   $effect(() => {
-    const geo = new BoxGeometry(config.width, config.height, config.depth);
+    const geo = new BoxGeometry(width, height, depth);
     bodyGeometry = geo;
     return () => geo.dispose();
   });
   $effect(() => {
-    const geo = new PlaneGeometry(config.width, config.depth);
+    const geo = new PlaneGeometry(width, depth);
     topGeometry = geo;
     return () => geo.dispose();
   });
@@ -72,12 +91,15 @@
   });
 
   const columns = $derived.by(() => {
-    const count = config.columnCount;
+    const count = columnCount;
     if (count === 0) return [];
-    const hw = config.width * 0.46;
-    const hd = config.depth * 0.46;
+    const hw = width * 0.46;
+    const hd = depth * 0.46;
     const corners: [number, number][] = [
-      [-hw, -hd], [-hw, hd], [hw, -hd], [hw, hd],
+      [-hw, -hd],
+      [-hw, hd],
+      [hw, -hd],
+      [hw, hd],
     ];
     const result: { x: number; z: number; scaleY: number }[] = [];
     for (let i = 0; i < Math.min(count, 4); i++) {
@@ -86,12 +108,22 @@
     }
     if (count > 4) {
       const midpoints: [number, number][] = [
-        [0, -hd], [0, hd], [-hw, 0], [hw, 0],
-        [-hw * 0.5, -hd], [hw * 0.5, -hd], [-hw * 0.5, hd], [hw * 0.5, hd],
+        [0, -hd],
+        [0, hd],
+        [-hw, 0],
+        [hw, 0],
+        [-hw * 0.5, -hd],
+        [hw * 0.5, -hd],
+        [-hw * 0.5, hd],
+        [hw * 0.5, hd],
       ];
       for (let i = 0; i < count - 4 && i < midpoints.length; i++) {
         const [mx, mz] = midpoints[i]!;
-        result.push({ x: mx, z: mz, scaleY: (0.25 + ((i * 0.13) % 0.35)) / 0.6 });
+        result.push({
+          x: mx,
+          z: mz,
+          scaleY: (0.25 + ((i * 0.13) % 0.35)) / 0.6,
+        });
       }
     }
     return result;
@@ -99,8 +131,8 @@
 
   const supportPillars = $derived.by(() => {
     if (elevation <= 0) return [];
-    const hw = config.width * 0.4;
-    const hd = config.depth * 0.4;
+    const hw = width * 0.4;
+    const hd = depth * 0.4;
     return [
       { x: -hw, z: -hd },
       { x: -hw, z: hd },
@@ -120,33 +152,29 @@
   let topMaterial = $state<MeshStandardMaterial | undefined>(undefined);
   let columnMaterial = $state<MeshStandardMaterial | undefined>(undefined);
 
-  $effect(() => {
-    const mat = createBodyMaterial(config);
-    bodyMaterial = mat;
-    return () => mat.dispose();
-  });
-
-  $effect(() => {
-    const mat = createTopMaterial(config, config.width, config.depth);
+  onMount(() => {
+    const body = createBodyMaterial(materialConfig);
+    const top = createTopMaterial(materialConfig, width, depth);
     // The deck catches the same drifting light-dapple as the seabed. It sits
     // ~2.5 m above the floor, inside the caustic fade band, so the stage stops
     // being the one surface the water is not playing across.
-    patchCausticsMaterial(mat);
-    topMaterial = mat;
-    return () => mat.dispose();
-  });
-
-  $effect(() => {
-    const mat = createBodyMaterial(config);
-    columnMaterial = mat;
-    return () => mat.dispose();
+    patchCausticsMaterial(top);
+    const column = createBodyMaterial(materialConfig);
+    bodyMaterial = body;
+    topMaterial = top;
+    columnMaterial = column;
+    return () => {
+      body.dispose();
+      top.dispose();
+      column.dispose();
+    };
   });
 
   $effect(() => {
     if (!bodyMaterial || !topMaterial || !columnMaterial) return;
-    applyDaisConfig(bodyMaterial, config);
-    applyDaisConfig(topMaterial, config, { width: config.width, depth: config.depth });
-    applyDaisConfig(columnMaterial, config);
+    applyDaisConfig(bodyMaterial, materialConfig);
+    applyDaisConfig(topMaterial, materialConfig, { width, depth });
+    applyDaisConfig(columnMaterial, materialConfig);
   });
 
   useTask((delta) => {
@@ -158,13 +186,13 @@
   });
 </script>
 
-{#if config.enabled}
-  <T.Group position.z={config.zOffset ?? 0}>
+{#if enabled}
+  <T.Group position.z={zOffset}>
     <!-- Weathered stone body (elevated above terrain) -->
     <T.Mesh
       geometry={bodyGeometry}
       material={bodyMaterial}
-      position.y={baseY + elevation + config.height / 2}
+      position.y={baseY + elevation + height / 2}
       castShadow
       receiveShadow
     />
@@ -174,7 +202,7 @@
       geometry={topGeometry}
       material={topMaterial}
       rotation.x={-Math.PI / 2}
-      position.y={baseY + elevation + config.height + 0.001}
+      position.y={baseY + elevation + height + 0.001}
       receiveShadow
     />
 
@@ -185,7 +213,7 @@
         geometry={columnGeometry}
         material={columnMaterial}
         position.x={col.x}
-        position.y={baseY + elevation + config.height + colHeight * 0.5}
+        position.y={baseY + elevation + height + colHeight * 0.5}
         position.z={col.z}
         scale.y={col.scaleY}
         castShadow

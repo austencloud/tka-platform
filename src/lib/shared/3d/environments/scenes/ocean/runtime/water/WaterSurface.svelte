@@ -2,6 +2,7 @@
   import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy } from "svelte";
   import { ShaderMaterial, DoubleSide, Color, Vector3 } from "three";
+  import { OCEAN_WATER_DEPTH_METERS } from "$lib/shared/3d/environments/domain/models/ocean-water-depth";
   import vertexShader from "../../shaders/water/gerstner.vert?raw";
   import fragmentShader from "../../shaders/water/snell-window.frag?raw";
 
@@ -9,7 +10,7 @@
     groundY?: number;
     /**
      * Absolute elevation of the surface. Wins over groundY when given. The
-     * ocean scene sits the surface 12 m over its seabed datum, which is fine
+     * ocean scene adds 25 ft to its original deep-water column, which is fine
      * for one authored scene and useless to any caller that knows the
      * waterline it wants — the Water Traverse knows it exactly.
      */
@@ -56,7 +57,7 @@
     fogDensity = 0.026,
   }: Props = $props();
 
-  const waterY = $derived(surfaceY ?? groundY + 12);
+  const waterY = $derived(surfaceY ?? groundY + OCEAN_WATER_DEPTH_METERS);
 
   const { camera } = useThrelte();
 

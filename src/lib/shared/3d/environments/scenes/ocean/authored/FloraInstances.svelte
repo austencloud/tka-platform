@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useTask } from "@threlte/core";
+  import { T, useTask, useThrelte } from "@threlte/core";
   import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
   import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
   import {
@@ -11,12 +11,17 @@
     type InstancedMesh,
     type Object3D,
     type Material,
+    type Texture,
     type WebGLProgramParametersWithUniforms,
   } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
   import { oceanDebugToggles } from "../quality/ocean-debug-toggles.svelte";
   import { patchCausticsMaterial } from "../runtime/atmosphere/seabed-caustics";
+  import {
+    createAuthoredFloraCuller,
+    type AuthoredFloraCuller,
+  } from "./flora-instance-culling";
   import { R2_CDN } from "$lib/shared/3d/constants/r2-cdn";
   import { page } from "$app/state";
 
@@ -239,6 +244,33 @@
   }
 
   let floraScene = $state<Object3D | null>(null);
+  let floraCuller: AuthoredFloraCuller | null = null;
+  let hasLoggedCullingSample = false;
+  const { camera } = useThrelte();
+
+  function disposeFloraScene(scene: Object3D): void {
+    const geometries = new Set<InstancedMesh["geometry"]>();
+    const materials = new Set<Material>();
+    const textures = new Set<Texture>();
+    scene.traverse((child) => {
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      if (mesh.geometry) geometries.add(mesh.geometry);
+      const meshMaterials = Array.isArray(mesh.material)
+        ? mesh.material
+        : [mesh.material];
+      meshMaterials.forEach((material: Material) => {
+        materials.add(material);
+        Object.values(material).forEach((value) => {
+          const texture = value as Texture | null;
+          if (texture?.isTexture) textures.add(texture);
+        });
+      });
+    });
+    geometries.forEach((geometry) => geometry.dispose());
+    materials.forEach((material) => material.dispose());
+    textures.forEach((texture) => texture.dispose());
+  }
 
   $effect(() => {
     let cancelled = false;
@@ -246,8 +278,18 @@
     gltfLoader.load(
       FLORA_GLB_URL,
       (gltf) => {
-        if (cancelled) return;
+        if (cancelled) {
+          disposeFloraScene(gltf.scene);
+          return;
+        }
         enhanceMaterials(gltf.scene);
+        floraCuller = createAuthoredFloraCuller(gltf.scene);
+        if (import.meta.env.DEV) {
+          const stats = floraCuller.stats;
+          console.debug(
+            `[FloraInstances] per-instance culling ready: ${stats.culledBatches}/${stats.sourceBatches} batches, ${stats.instances} instances, ${(stats.estimatedVerticesCovered / 1_000_000).toFixed(1)}M covered vertices`
+          );
+        }
         floraScene = gltf.scene;
         onProgress?.(1.0);
         onReady?.();
@@ -269,14 +311,9 @@
     return () => {
       cancelled = true;
       if (floraScene) {
-        floraScene.traverse((child) => {
-          const m = child as Mesh;
-          if (m.isMesh) {
-            m.geometry?.dispose();
-            const mats = Array.isArray(m.material) ? m.material : [m.material];
-            mats.forEach((mat: Material) => mat.dispose());
-          }
-        });
+        floraCuller?.restore();
+        floraCuller = null;
+        disposeFloraScene(floraScene);
         floraScene = null;
       }
     };
@@ -299,6 +336,14 @@
   // Advance the shared sway clock; all patched plant materials read uTime.
   useTask((delta) => {
     swayUniforms.uTime.value += delta;
+    if (!floraCuller || !camera.current) return;
+    const cullingStats = floraCuller.update(camera.current);
+    if (import.meta.env.DEV && !hasLoggedCullingSample) {
+      hasLoggedCullingSample = true;
+      console.debug(
+        `[FloraInstances] first visible-instance sample: ${cullingStats.visibleInstances}/${cullingStats.instances} instances, ${(cullingStats.estimatedSubmittedVertices / 1_000_000).toFixed(1)}M submitted vertices`
+      );
+    }
   });
 </script>
 

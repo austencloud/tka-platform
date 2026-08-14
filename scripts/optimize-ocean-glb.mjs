@@ -20,7 +20,9 @@
  *   2. (API)     normalize all textures → PNG (KTX-readable, via sharp)
  *   3. uastc     KTX2 UASTC for normal / metallicRoughness / occlusion
  *   4. etc1s     KTX2 ETC1S for baseColor / emissive
- *   5. meshopt   EXT_meshopt_compression geometry (applied last)
+ *   5. weld      restore mergeable runtime vertices after texture processing
+ *   6. simplify  second visibility-distance pass for the authored reef
+ *   7. meshopt   EXT_meshopt_compression geometry (applied last)
  *
  * KTX2 encoding needs KTX-Software; a local copy in .tools/ktx/ is put on PATH.
  *
@@ -48,6 +50,8 @@ const TMP_SLIM = tmp("slim");
 const TMP_PNG = tmp("png");
 const TMP_UASTC = tmp("uastc");
 const TMP_ETC = tmp("etc");
+const TMP_WELD = tmp("weld");
+const TMP_RUNTIME_LOD = tmp("runtime-lod");
 
 // Local KTX-Software on PATH so the uastc/etc1s passes can transcode.
 const KTX_BIN = resolve(".tools/ktx");
@@ -150,12 +154,35 @@ run(
   ].join(" ")
 );
 
-// 5. Meshopt geometry compression, applied last (after textures are KTX2).
-run("Meshopt geometry compression", `npx gltf-transform meshopt "${TMP_ETC}" "${OUTPUT}"`);
+// 5–6. The source pass is intentionally conservative around UV/topology seams.
+// Welding the already-authored runtime asset exposes safe collapses that the
+// first pass cannot see. A second 0.2 / 0.05 pass reduces the reef from ~54M to
+// ~15M rendered vertices without removing any object, material, or texture.
+run(
+  "Weld runtime geometry for the visibility-distance pass",
+  `npx gltf-transform weld "${TMP_ETC}" "${TMP_WELD}"`
+);
+run(
+  "Simplify runtime reef geometry (all authored objects retained)",
+  `npx gltf-transform simplify "${TMP_WELD}" "${TMP_RUNTIME_LOD}" --ratio 0.2 --error 0.05 --lock-border true`
+);
+
+// 7. Meshopt geometry compression, applied last (after textures are KTX2).
+run(
+  "Meshopt geometry compression",
+  `npx gltf-transform meshopt "${TMP_RUNTIME_LOD}" "${OUTPUT}"`
+);
 
 console.log(`\nOutput: ${OUTPUT} (${fileSize(OUTPUT)} MB)`);
 
-for (const tmp of [TMP_SLIM, TMP_PNG, TMP_UASTC, TMP_ETC]) {
+for (const tmp of [
+  TMP_SLIM,
+  TMP_PNG,
+  TMP_UASTC,
+  TMP_ETC,
+  TMP_WELD,
+  TMP_RUNTIME_LOD,
+]) {
   if (existsSync(tmp)) rmSync(tmp);
 }
 

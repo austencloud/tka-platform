@@ -1,4 +1,8 @@
 import { Vector3, Quaternion } from "three";
+import {
+  OCEAN_STAGE_DECK_OFFSET_METERS,
+  OCEAN_WATER_DEPTH_METERS,
+} from "$lib/shared/3d/environments/domain/models/ocean-water-depth";
 
 /**
  * The one light axis the ocean scene agrees on.
@@ -14,11 +18,8 @@ import { Vector3, Quaternion } from "three";
 /** Sun position. Shared with the DirectionalLight in OceanRuntimeSystems. */
 export const SUN_POS = new Vector3(10, 30, -20);
 
-/** Water plane height above groundY. Matches WaterSurface. */
-export const WATER_Y = 12;
-
 /** Shaft column length. */
-export const SHAFT_HEIGHT = 18;
+export const SHAFT_HEIGHT = Math.ceil(OCEAN_WATER_DEPTH_METERS);
 
 /** Base column lean toward the sun, radians. */
 export const LEAN = 0.26;
@@ -50,9 +51,6 @@ export const COLUMN_UP = new Vector3(0, 1, 0)
  */
 export const HERO_TARGET_XZ = { x: 0, z: 0 };
 
-/** Stage deck top, relative to groundY: groundOffset 1.5 + elevation/height 1.0. */
-export const STAGE_DECK_OFFSET = 2.5;
-
 /**
  * Centre position for a shaft whose BOTTOM should land on `targetXZ`.
  * The column is tilted, so its centre has to sit up-lean of where it lands.
@@ -65,7 +63,7 @@ export function shaftCentreForTarget(
   const half = SHAFT_HEIGHT * 0.5;
   return new Vector3(
     targetX + COLUMN_UP.x * half,
-    groundY + WATER_Y - half,
+    groundY + OCEAN_WATER_DEPTH_METERS - half,
     targetZ + COLUMN_UP.z * half
   );
 }
@@ -75,9 +73,9 @@ export function shaftCentreForTarget(
  * plane, so the visible shaft and the pool it casts share one origin.
  */
 export function keyLightPosition(groundY: number): Vector3 {
-  const deckY = groundY + STAGE_DECK_OFFSET;
+  const deckY = groundY + OCEAN_STAGE_DECK_OFFSET_METERS;
   // Travel up the column axis until we reach the water plane.
-  const rise = (groundY + WATER_Y - deckY) / COLUMN_UP.y;
+  const rise = (groundY + OCEAN_WATER_DEPTH_METERS - deckY) / COLUMN_UP.y;
   return new Vector3(
     HERO_TARGET_XZ.x + COLUMN_UP.x * rise,
     deckY + COLUMN_UP.y * rise,

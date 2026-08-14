@@ -1,0 +1,322 @@
+import type { FishEscapePhase } from "@austencloud/backgrounds";
+
+export type CursorCapturePhase = FishEscapePhase | "escape-swim" | "recovery";
+export type CursorCaptureState = "idle" | "armed" | "recording" | "complete";
+
+export interface CursorEscapeCaptureSample {
+  elapsed: number;
+  escapeEventId: number | null;
+  escapeResponseEventId: number | null;
+  x: number;
+  y: number;
+  pointerX: number | null;
+  pointerY: number | null;
+  speedBodyLengths: number;
+  headingAngle: number;
+  direction: 1 | -1;
+  bodyFlex: number;
+  animationPhase: number;
+  clearanceBodyLengths: number;
+  phase: CursorCapturePhase;
+}
+
+export interface CursorEscapeCaptureReport {
+  duration: number;
+  sampleCount: number;
+  netDisplacementBodyLengths: number | null;
+  pathDistanceBodyLengths: number;
+  postTurnNetDisplacementBodyLengths: number | null;
+  postTurnPathDistanceBodyLengths: number;
+  turnLatencyMilliseconds: number | null;
+  maneuverActiveMilliseconds: number;
+  escapeEventCount: number;
+  firstManeuverDurationMilliseconds: number | null;
+  firstManeuverNetDisplacementBodyLengths: number | null;
+  firstManeuverPathDistanceBodyLengths: number | null;
+  firstManeuverClearanceGainBodyLengths: number | null;
+  firstManeuverTurnLatencyMilliseconds: number | null;
+  firstResponseDurationMilliseconds: number | null;
+  firstResponseNetDisplacementBodyLengths: number | null;
+  firstResponsePathDistanceBodyLengths: number | null;
+  firstResponseClearanceGainBodyLengths: number | null;
+  firstResponseTravelEfficiency: number | null;
+  clearanceGainBodyLengths: number;
+  peakSpeedBodyLengths: number;
+  peakBodyFlex: number;
+  bodyWaveCyclesAfterTurn: number;
+  bodyLengthsPerWaveAfterTurn: number | null;
+  travelEfficiency: number | null;
+  pointerPathBodyLengths: number;
+  wrapped: boolean;
+}
+
+export interface LiveCursorCaptureReport extends CursorEscapeCaptureReport {
+  fishId: number | null;
+  species: string;
+  bodyLength: number;
+  source: { x: number; y: number };
+}
+
+const normalizeAngle = (angle: number): number => {
+  let normalized = angle;
+  while (normalized > Math.PI) normalized -= Math.PI * 2;
+  while (normalized < -Math.PI) normalized += Math.PI * 2;
+  return normalized;
+};
+
+interface EscapeEventSegment {
+  eventId: number;
+  startIndex: number;
+  endIndex: number;
+  duration: number;
+}
+
+function eventSegments(
+  samples: CursorEscapeCaptureSample[],
+  eventIdFor: (sample: CursorEscapeCaptureSample) => number | null
+): EscapeEventSegment[] {
+  const segments: EscapeEventSegment[] = [];
+  let active: Omit<EscapeEventSegment, "duration"> | null = null;
+
+  for (let index = 0; index < samples.length; index += 1) {
+    const eventId = eventIdFor(samples[index]!);
+    if (eventId === null) {
+      if (active) {
+        const endBoundary = samples[index]!.elapsed;
+        const startBoundary = samples[active.startIndex - 1]?.elapsed ?? 0;
+        segments.push({
+          ...active,
+          duration: Math.max(0, endBoundary - startBoundary),
+        });
+        active = null;
+      }
+      continue;
+    }
+
+    const currentActive = active as Omit<EscapeEventSegment, "duration"> | null;
+    if (currentActive !== null && currentActive.eventId === eventId) {
+      currentActive.endIndex = index;
+      continue;
+    }
+
+    if (active) {
+      const endBoundary = samples[index]!.elapsed;
+      const startBoundary = samples[active.startIndex - 1]?.elapsed ?? 0;
+      segments.push({
+        ...active,
+        duration: Math.max(0, endBoundary - startBoundary),
+      });
+    }
+    active = { eventId, startIndex: index, endIndex: index };
+  }
+
+  if (active) {
+    const previous = samples[active.endIndex - 1];
+    const last = samples[active.endIndex]!;
+    const finalStep = previous ? last.elapsed - previous.elapsed : last.elapsed;
+    const startBoundary = samples[active.startIndex - 1]?.elapsed ?? 0;
+    segments.push({
+      ...active,
+      duration: Math.max(0, last.elapsed + finalStep - startBoundary),
+    });
+  }
+
+  return segments;
+}
+
+function pathDistance(
+  samples: CursorEscapeCaptureSample[],
+  bodyLength: number
+): { distance: number; wrapped: boolean } {
+  let distance = 0;
+  let wrapped = false;
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1]!;
+    const current = samples[index]!;
+    const step = Math.hypot(current.x - previous.x, current.y - previous.y);
+    if (step > bodyLength * 4) {
+      wrapped = true;
+      continue;
+    }
+    distance += step;
+  }
+  return { distance: distance / bodyLength, wrapped };
+}
+
+function pointerPathDistance(
+  samples: CursorEscapeCaptureSample[],
+  bodyLength: number
+): number {
+  let distance = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    const previous = samples[index - 1]!;
+    const current = samples[index]!;
+    if (
+      previous.pointerX === null ||
+      previous.pointerY === null ||
+      current.pointerX === null ||
+      current.pointerY === null
+    ) {
+      continue;
+    }
+    distance += Math.hypot(
+      current.pointerX - previous.pointerX,
+      current.pointerY - previous.pointerY
+    );
+  }
+  return distance / bodyLength;
+}
+
+function bodyWaveCycles(samples: CursorEscapeCaptureSample[]): number {
+  let phaseTravel = 0;
+  for (let index = 1; index < samples.length; index += 1) {
+    phaseTravel += Math.abs(
+      samples[index]!.animationPhase - samples[index - 1]!.animationPhase
+    );
+  }
+  return phaseTravel / (Math.PI * 2);
+}
+
+export function summarizeCursorEscapeCapture(
+  samples: CursorEscapeCaptureSample[],
+  bodyLength: number,
+  startHeadingAngle: number
+): CursorEscapeCaptureReport | null {
+  if (samples.length < 2 || bodyLength <= 0) return null;
+
+  const first = samples[0]!;
+  const last = samples.at(-1)!;
+  const turnIndex = samples.findIndex(
+    (sample) =>
+      Math.abs(normalizeAngle(sample.headingAngle - startHeadingAngle)) >=
+      Math.PI * 0.5
+  );
+  const postTurnSamples = turnIndex >= 0 ? samples.slice(turnIndex) : [];
+  const entirePath = pathDistance(samples, bodyLength);
+  const postTurnPath = pathDistance(postTurnSamples, bodyLength);
+  const netDisplacement = Math.hypot(last.x - first.x, last.y - first.y);
+  const postTurnFirst = postTurnSamples[0];
+  const postTurnNet = postTurnFirst
+    ? Math.hypot(last.x - postTurnFirst.x, last.y - postTurnFirst.y) /
+      bodyLength
+    : null;
+  const postTurnWaves = bodyWaveCycles(postTurnSamples);
+  const maneuverSegments = eventSegments(
+    samples,
+    (sample) => sample.escapeEventId
+  );
+  const responseSegments = eventSegments(
+    samples,
+    (sample) => sample.escapeResponseEventId
+  );
+  const firstEvent = maneuverSegments[0];
+  const firstEventSamples = firstEvent
+    ? samples.slice(firstEvent.startIndex, firstEvent.endIndex + 1)
+    : [];
+  const firstEventPath = pathDistance(firstEventSamples, bodyLength);
+  const firstEventStart = firstEventSamples[0];
+  const firstEventEnd = firstEventSamples.at(-1);
+  const firstEventStartBoundary = firstEvent
+    ? (samples[firstEvent.startIndex - 1]?.elapsed ?? 0)
+    : null;
+  const firstEventNet =
+    firstEventStart && firstEventEnd
+      ? Math.hypot(
+          firstEventEnd.x - firstEventStart.x,
+          firstEventEnd.y - firstEventStart.y
+        ) / bodyLength
+      : null;
+  const firstEventTurnIndex = firstEventSamples.findIndex(
+    (sample) =>
+      Math.abs(normalizeAngle(sample.headingAngle - startHeadingAngle)) >=
+      Math.PI * 0.5
+  );
+  const firstResponse = responseSegments[0];
+  const firstResponseSamples = firstResponse
+    ? samples.slice(firstResponse.startIndex, firstResponse.endIndex + 1)
+    : [];
+  const firstResponsePath = pathDistance(firstResponseSamples, bodyLength);
+  const firstResponseStart = firstResponseSamples[0];
+  const firstResponseEnd = firstResponseSamples.at(-1);
+  const firstResponseNet =
+    firstResponseStart && firstResponseEnd
+      ? Math.hypot(
+          firstResponseEnd.x - firstResponseStart.x,
+          firstResponseEnd.y - firstResponseStart.y
+        ) / bodyLength
+      : null;
+
+  return {
+    duration: last.elapsed - first.elapsed,
+    sampleCount: samples.length,
+    netDisplacementBodyLengths: entirePath.wrapped
+      ? null
+      : netDisplacement / bodyLength,
+    pathDistanceBodyLengths: entirePath.distance,
+    postTurnNetDisplacementBodyLengths: entirePath.wrapped ? null : postTurnNet,
+    postTurnPathDistanceBodyLengths: postTurnPath.distance,
+    turnLatencyMilliseconds:
+      turnIndex >= 0 ? samples[turnIndex]!.elapsed * 1000 : null,
+    maneuverActiveMilliseconds:
+      maneuverSegments.reduce((sum, segment) => sum + segment.duration, 0) *
+      1000,
+    escapeEventCount: new Set(
+      maneuverSegments.map((segment) => segment.eventId)
+    ).size,
+    firstManeuverDurationMilliseconds: firstEvent
+      ? firstEvent.duration * 1000
+      : null,
+    firstManeuverNetDisplacementBodyLengths: firstEventPath.wrapped
+      ? null
+      : firstEventNet,
+    firstManeuverPathDistanceBodyLengths: firstEvent
+      ? firstEventPath.distance
+      : null,
+    firstManeuverClearanceGainBodyLengths:
+      firstEventStart && firstEventEnd
+        ? firstEventEnd.clearanceBodyLengths -
+          firstEventStart.clearanceBodyLengths
+        : null,
+    firstManeuverTurnLatencyMilliseconds:
+      firstEventTurnIndex >= 0 && firstEventStartBoundary !== null
+        ? (firstEventSamples[firstEventTurnIndex]!.elapsed -
+            firstEventStartBoundary) *
+          1000
+        : null,
+    firstResponseDurationMilliseconds: firstResponse
+      ? firstResponse.duration * 1000
+      : null,
+    firstResponseNetDisplacementBodyLengths: firstResponsePath.wrapped
+      ? null
+      : firstResponseNet,
+    firstResponsePathDistanceBodyLengths: firstResponse
+      ? firstResponsePath.distance
+      : null,
+    firstResponseClearanceGainBodyLengths:
+      firstResponseStart && firstResponseEnd
+        ? firstResponseEnd.clearanceBodyLengths -
+          firstResponseStart.clearanceBodyLengths
+        : null,
+    firstResponseTravelEfficiency:
+      firstResponseNet !== null && firstResponsePath.distance > 0.001
+        ? firstResponseNet / firstResponsePath.distance
+        : null,
+    clearanceGainBodyLengths:
+      last.clearanceBodyLengths - first.clearanceBodyLengths,
+    peakSpeedBodyLengths: Math.max(
+      ...samples.map((sample) => sample.speedBodyLengths)
+    ),
+    peakBodyFlex: Math.max(...samples.map((sample) => sample.bodyFlex)),
+    bodyWaveCyclesAfterTurn: postTurnWaves,
+    bodyLengthsPerWaveAfterTurn:
+      postTurnNet !== null && postTurnWaves > 0.01
+        ? postTurnNet / postTurnWaves
+        : null,
+    travelEfficiency:
+      entirePath.wrapped || entirePath.distance <= 0.001
+        ? null
+        : netDisplacement / bodyLength / entirePath.distance,
+    pointerPathBodyLengths: pointerPathDistance(samples, bodyLength),
+    wrapped: entirePath.wrapped || postTurnPath.wrapped,
+  };
+}

@@ -15,11 +15,11 @@
   } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy } from "svelte";
+  import { OCEAN_WATER_DEPTH_METERS } from "$lib/shared/3d/environments/domain/models/ocean-water-depth";
   import vertexShader from "../../shaders/atmosphere/god-ray.vert?raw";
   import fragmentShader from "../../shaders/atmosphere/god-ray.frag?raw";
   import { oceanDebugToggles } from "../../quality/ocean-debug-toggles.svelte";
   import {
-    WATER_Y,
     SHAFT_HEIGHT,
     LEAN,
     LEAN_AXIS,
@@ -154,7 +154,7 @@
         // leave the frame's centre to the hero.
         pos.set(
           Math.cos(angle) * radius,
-          localGroundY + WATER_Y - HEIGHT * 0.5,
+          localGroundY + OCEAN_WATER_DEPTH_METERS - HEIGHT * 0.5,
           Math.sin(angle) * radius
         );
       }
