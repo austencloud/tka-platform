@@ -12,6 +12,7 @@ export class NativeInitializer {
   private deepLinkTransitionToken = 0;
   private launchScanTraceCode: string | null = null;
   private appUrlListenerRegistration: Promise<void> | null = null;
+  private appUrlOpenNavigation: Promise<boolean> | null = null;
 
   async initialize(): Promise<void> {
     if (!isNative()) return;
@@ -114,11 +115,15 @@ export class NativeInitializer {
     const openedViaDeepLink = launchUrl?.url
       ? await this.handleDeepLink(launchUrl.url)
       : false;
+    const appUrlOpenNavigation = this.appUrlOpenNavigation;
+    const openedViaAppUrlOpen = appUrlOpenNavigation
+      ? await appUrlOpenNavigation
+      : false;
 
     // Normal cold start (tapped the app icon, no deep link): the native shell
     // loads "/", which is the marketing landing. This is a standalone app, so
     // boot straight into the Composer instead of showing the landing page.
-    if (!openedViaDeepLink) {
+    if (!openedViaDeepLink && !openedViaAppUrlOpen) {
       await this.bootIntoApp();
     }
   }
@@ -131,7 +136,9 @@ export class NativeInitializer {
   private async attachAppUrlListener(): Promise<void> {
     const { App } = await import("@capacitor/app");
     await App.addListener("appUrlOpen", async ({ url }) => {
-      await this.handleDeepLink(url, true);
+      const navigation = this.handleDeepLink(url, true);
+      this.appUrlOpenNavigation = navigation;
+      await navigation;
     });
   }
 
@@ -139,7 +146,21 @@ export class NativeInitializer {
   // Android back button from the app entry exits the app (via the backButton
   // handler) rather than returning to the landing page.
   private async bootIntoApp(): Promise<void> {
+    const appUrlOpenNavigation = this.appUrlOpenNavigation;
+    if (appUrlOpenNavigation && (await appUrlOpenNavigation)) return;
+
     const { goto } = await import("$app/navigation");
+
+    // Importing the router yields. Recheck in case Android delivered the URL
+    // in that gap so the ordinary app boot cannot overwrite the scan route.
+    const latestAppUrlOpenNavigation = this.appUrlOpenNavigation;
+    if (
+      latestAppUrlOpenNavigation !== appUrlOpenNavigation &&
+      latestAppUrlOpenNavigation &&
+      (await latestAppUrlOpenNavigation)
+    )
+      return;
+
     await goto("/create", { replaceState: true });
   }
 

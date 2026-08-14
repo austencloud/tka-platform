@@ -129,6 +129,10 @@ describe("NativeInitializer deep-link readiness", () => {
 
     releaseShareTarget();
     await initialization;
+
+    expect(mocks.goto).not.toHaveBeenCalledWith("/create", {
+      replaceState: true,
+    });
   });
 
   it("waits for app startup before navigating a QR launch URL", async () => {
