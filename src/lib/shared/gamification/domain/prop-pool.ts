@@ -29,6 +29,7 @@ export const CORE_PROPS: readonly PropType[] = [
 export const UNLOCKABLE_POOL: readonly PropType[] = [
   PropType.SWORD,
   PropType.CHICKEN,
+  PropType.GUITAR,
   PropType.DOUBLESTAR,
   PropType.QUIAD,
   PropType.TRIQUETRA,

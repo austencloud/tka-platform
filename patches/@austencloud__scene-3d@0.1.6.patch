@@ -1,8 +1,17 @@
 diff --git a/dist/lib/components/Avatar3D.svelte b/dist/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df9d97a72b 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..3a486415115e3e9ebe658b6432c8475fc67d65c8 100644
 --- a/dist/lib/components/Avatar3D.svelte
 +++ b/dist/lib/components/Avatar3D.svelte
-@@ -23,19 +23,19 @@
+@@ -16,26 +16,30 @@
+    */
+ 
+   import { onMount, onDestroy, untrack } from "svelte";
+-  import { T, useTask } from "@threlte/core";
++  import { T, useTask, useThrelte } from "@threlte/core";
+   import { Vector3, Quaternion, Euler } from "three";
++  import type { Camera, Scene, WebGLRenderer } from "three";
+   import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
+   import type { IIKSolver } from "../services/contracts/IIKSolver";
    import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
    import type { PropState3D } from "../domain/models/PropState3D";
    import { cmToUnits } from "../config/avatar-proportions";
@@ -18,16 +27,19 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    } from "../config/avatar-definitions";
 +  import {
 +    checkSharedAssetAvailability,
++    isAvatarPreparedForRenderer,
++    registerAvatarRenderWarmup,
 +    schedulePerformerInitialization,
++    takePreparedAvatarRoot,
 +  } from "../services/shared-gltf-cache";
-
+ 
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
 -  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
    const toast = { warning(_msg: string) {} };
-
+ 
    import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-@@ -51,7 +51,11 @@
+@@ -51,7 +55,11 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
@@ -40,7 +52,25 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -115,7 +119,11 @@
+@@ -74,6 +82,17 @@
+   const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
+   const redVisible = $derived(viewerVisibility?.redMotion ?? true);
+ 
++  const { renderer, scene, camera } = useThrelte() as unknown as {
++    renderer: WebGLRenderer;
++    scene: Scene;
++    camera: { current: Camera };
++  };
++  const releaseAvatarRenderWarmup = registerAvatarRenderWarmup(
++    renderer,
++    scene,
++    () => camera.current ?? null
++  );
++
+   // Default Z position for avatars
+   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
+   // The avatar's body is thin enough that it won't clip through the grid
+@@ -115,7 +134,11 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -53,7 +83,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
      /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
      bluePropAnchorRef?: import("three").Group;
      /** PropAnchor group ref for red hand IK target (from PerformerRig) */
-@@ -210,11 +218,18 @@
+@@ -210,11 +233,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -77,17 +107,17 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +239,7 @@
+@@ -224,7 +254,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
 -  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
 +  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
-
+ 
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -280,7 +295,7 @@
-
+@@ -280,7 +310,7 @@
+ 
    let servicesReady = $state(false);
    let modelLoaded = $state(false);
 -  let useProceduralFallback = $state(true);
@@ -95,7 +125,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,8 +317,8 @@
+@@ -302,14 +332,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -104,20 +134,105 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +      ? position.y - feetOffset // Use provided Y (terrain mode)
 +      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
    );
-
+ 
    // No mesh offset needed - the crouch animation's Hips position track (scaled
-@@ -324,7 +339,9 @@
-
+   // from cm to m in LocomotionAnimator) handles the body drop directly.
+   const groupY = $derived(baseGroupY);
+ 
++  function applyModelOpacity(
++    root: import("three").Object3D,
++    value: number
++  ): void {
++    const transparent = value < 1;
++    root.traverse((child: any) => {
++      if (!child.isMesh || !child.material) return;
++      const materials = Array.isArray(child.material)
++        ? child.material
++        : [child.material];
++      for (const material of materials) {
++        material.transparent = transparent;
++        material.opacity = value;
++        material.depthWrite = !transparent;
++      }
++    });
++  }
++
++  let modelSwapFinalizeFrame: number | undefined;
++
++  function finalizeModelSwapAfterPaint(): void {
++    if (modelSwapFinalizeFrame !== undefined) {
++      cancelAnimationFrame(modelSwapFinalizeFrame);
++    }
++    modelSwapFinalizeFrame = requestAnimationFrame(() => {
++      modelSwapFinalizeFrame = requestAnimationFrame(() => {
++        modelSwapFinalizeFrame = undefined;
++        skeletonService?.finalizeModelSwap();
++      });
++    });
++  }
++
+   // Load a GLTF model for a specific avatar
+   // Uses hot-swap pattern: keeps old avatar visible until new one is ready
+   async function loadAvatar(targetAvatarId: string) {
+@@ -324,7 +386,11 @@
+ 
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
-+      await schedulePerformerInitialization(() =>
-+        skeletonService!.loadModel(url)
-+      );
-
++      const rendererPrepared = isAvatarPreparedForRenderer(url, renderer);
++      const preparedRoot = takePreparedAvatarRoot(url, renderer);
++      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
++      if (preparedRoot) await loadModel();
++      else await schedulePerformerInitialization(loadModel);
+ 
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -363,8 +380,14 @@
+@@ -333,19 +399,35 @@
+       // Get the feet offset for positioning (negative value)
+       feetOffset = skeletonService.getFeetOffset();
+ 
+-      // Update cached root AFTER everything is ready
+-      // This ensures Threlte only sees the swap when the new model is complete
+-      cachedRoot = skeletonService.getRoot();
++      const nextRoot = skeletonService.getRoot();
++      const activeCamera = camera.current;
++      if (nextRoot && activeCamera && !rendererPrepared) {
++        nextRoot.traverse((child: any) => {
++          if (child.isMesh) child.castShadow = true;
++        });
+ 
+-      // Enable shadow casting on all meshes in the avatar
+-      if (cachedRoot) {
+-        cachedRoot.traverse((child: any) => {
+-          if (child.isMesh) {
+-            child.castShadow = true;
++        try {
++          // The outgoing avatar stays alive through both preparations so Three
++          // can reuse compatible programs. Swaps fade through a transparent
++          // material variant, then return to opaque at the end of the reveal;
++          // compile both before the replacement reaches a visible frame.
++          applyModelOpacity(nextRoot, 1);
++          await renderer.compileAsync(nextRoot, activeCamera, scene);
++          if (opacity < 1) {
++            applyModelOpacity(nextRoot, opacity);
++            await renderer.compileAsync(nextRoot, activeCamera, scene);
+           }
+-        });
++        } catch (error) {
++          console.warn("[Avatar3D] avatar shader warmup failed:", error);
++        }
+       }
+ 
++      // Update cached root AFTER everything is ready. This ensures Threlte
++      // only sees the swap when the model and both fade shader variants are
++      // complete.
++      cachedRoot = nextRoot;
++      finalizeModelSwapAfterPaint();
++
+       currentLoadedAvatarId = targetAvatarId;
+       modelLoaded = true;
+       useProceduralFallback = false;
+@@ -363,8 +445,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -134,9 +249,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +421,11 @@
+@@ -398,7 +486,11 @@
          locomotionAnimator.initialize(cachedRoot);
-
+ 
          // Initialize root motion extractor with the Hips bone
 -        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
 +        if (
@@ -147,7 +262,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +445,15 @@
+@@ -418,9 +510,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -166,7 +281,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +477,35 @@
+@@ -444,18 +542,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -211,7 +326,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +526,13 @@
+@@ -476,7 +591,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -225,17 +340,17 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +      ) {
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
-
-@@ -587,7 +643,7 @@
-
+ 
+@@ -587,7 +708,7 @@
+ 
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
 -    if ('setSpineTwistEnabled' in animationService) {
 +    if ("setSpineTwistEnabled" in animationService) {
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
-
-@@ -596,16 +652,19 @@
+ 
+@@ -596,16 +717,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -262,11 +377,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +          },
 +          delta
 +        );
-
+ 
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -642,7 +701,9 @@
-
+@@ -642,7 +766,9 @@
+ 
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
 -          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
@@ -276,7 +391,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +742,11 @@
+@@ -681,7 +807,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -289,16 +404,16 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -716,7 +781,6 @@
+@@ -716,7 +846,6 @@
            currentClipPhase: currentTurnPhase,
          });
        }
 -
      }
-
+ 
      // 2. IK post-process (blends per-arm based on prop presence)
-@@ -748,7 +812,7 @@
-
+@@ -748,7 +877,7 @@
+ 
      animationService.setPropsAndBlend(
        blueVisible ? blueWorldProp : null,
 -      redVisible ? redWorldProp : null,
@@ -306,20 +421,36 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
      );
      // Push optional external spine pitch (e.g., lean-forward stance variants)
      // before the animator runs IK so the arms solve against the leaned torso.
-@@ -871,7 +935,9 @@
-     const transparent = o < 1;
-     cachedRoot.traverse((child: any) => {
-       if (!child.isMesh || !child.material) return;
+@@ -867,20 +996,15 @@
+   // transparent with depth-write off so the fade blends correctly.
+   $effect(() => {
+     if (!cachedRoot) return;
+-    const o = opacity;
+-    const transparent = o < 1;
+-    cachedRoot.traverse((child: any) => {
+-      if (!child.isMesh || !child.material) return;
 -      const materials = Array.isArray(child.material) ? child.material : [child.material];
-+      const materials = Array.isArray(child.material)
-+        ? child.material
-+        : [child.material];
-       for (const material of materials) {
-         material.transparent = transparent;
-         material.opacity = o;
-@@ -913,13 +979,10 @@
+-      for (const material of materials) {
+-        material.transparent = transparent;
+-        material.opacity = o;
+-        material.depthWrite = !transparent;
+-      }
+-    });
++    applyModelOpacity(cachedRoot, opacity);
+   });
+ 
+   onDestroy(() => {
++    if (modelSwapFinalizeFrame !== undefined) {
++      cancelAnimationFrame(modelSwapFinalizeFrame);
++    }
++    releaseAvatarRenderWarmup();
++
+     // Dispose locomotion animator, state machine, and foot planter
+     if (locomotionAnimator) {
+       locomotionAnimator.dispose();
+@@ -913,13 +1037,10 @@
  </script>
-
+ 
  {#if visible}
 -  <!-- Loading indicator while avatar model loads -->
 -  {#if isLoading}
@@ -341,7 +472,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
 +++ b/dist/lib/components/PerformerRig.svelte
 @@ -16,7 +16,7 @@
     */
-
+ 
    import { T } from "@threlte/core";
 -  import { untrack } from "svelte";
 +  import { onMount, untrack } from "svelte";
@@ -353,7 +484,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
-
+ 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
 @@ -294,6 +295,44 @@
@@ -399,7 +530,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
 +    };
 +  });
  </script>
-
+ 
  <!-- Root: position in world space, apply facing rotation -->
 @@ -305,7 +344,7 @@
  >
@@ -412,13 +543,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
        {avatarId}
 @@ -339,7 +378,7 @@
    {/if}
-
+ 
    <!-- Grid (consumer-provided via gridSlot) -->
 -  {#if showGrid && gridSlot}
 +  {#if showGrid && gridSlot && gridMounted}
      {@render gridSlot()}
    {/if}
-
+ 
 @@ -355,7 +394,7 @@
          position.y={bluePropState.worldPosition.y}
          position.z={bluePropState.worldPosition.z}
@@ -439,7 +570,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
              propState={redPropState}
 @@ -392,7 +431,7 @@
    </T.Group>
-
+ 
    <!-- Effects (consumer-provided via effectsSlot) -->
 -  {#if showEffects && effectsSlot}
 +  {#if showEffects && effectsSlot && effectsMounted}
@@ -453,14 +584,14 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
 @@ -50,8 +50,11 @@
      length,
    }: Props = $props();
-
+ 
 -  // "Big" variants use a 1.4x scale on the base prop.
 +  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
 +  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
 +  // span makes the grip-to-rim reach 30/13 of the standard fan.
    const BIG_SCALE = 1.4;
 +  const BIG_FAN_SCALE = 30 / 13;
-
+ 
    // Check if a GLTF model is available for this prop type.
    // resolvePropModel handles big variant → base type resolution.
 @@ -84,7 +87,7 @@
@@ -469,14 +600,124 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
-
+ 
    {:else if propType === PropType.TRIAD}
      <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/dist/lib/components/props/prop-model-recolor.js b/dist/lib/components/props/prop-model-recolor.js
+index 202c7626491817532b35a1e4572dbf417ca12c51..1e34c29da90ca149158fcba95893a2a3d544015f 100644
+--- a/dist/lib/components/props/prop-model-recolor.js
++++ b/dist/lib/components/props/prop-model-recolor.js
+@@ -1,9 +1,10 @@
+ /**
+  * Runtime recoloring for loaded GLTF prop models.
+  *
+- * Traverses a cloned GLTF scene graph and tints all MeshStandardMaterials
+- * to the target prop color (blue/red) while preserving PBR properties
+- * like roughness, metalness, normal maps, and texture detail.
++ * Traverses a cloned GLTF scene graph and tints its runtime-recolor materials
++ * to the target prop color while preserving PBR properties. Multi-material
++ * props mark recolorable materials by including "Recolor" in the material
++ * name. Legacy models without a marker continue to recolor every material.
+  */
+ import { Color, MeshStandardMaterial } from "three";
+ import { PROP_COLORS } from "./Prop3DProps";
+@@ -17,17 +18,33 @@ import { PROP_COLORS } from "./Prop3DProps";
+  */
+ export function recolorPropModel(scene, propColor) {
+     const target = new Color(PROP_COLORS[propColor].main);
++    let hasExplicitRecolorMaterial = false;
+     scene.traverse((child) => {
+         const mesh = child;
+         if (!mesh.isMesh)
+             return;
+-        // Handle both single material and material arrays
+         const materials = Array.isArray(mesh.material)
+             ? mesh.material
+             : [mesh.material];
+-        for (const mat of materials) {
++        if (materials.some((material) => material instanceof MeshStandardMaterial &&
++            material.name.includes("Recolor"))) {
++            hasExplicitRecolorMaterial = true;
++        }
++    });
++    scene.traverse((child) => {
++        const mesh = child;
++        if (!mesh.isMesh)
++            return;
++        const usesMaterialArray = Array.isArray(mesh.material);
++        const materials = Array.isArray(mesh.material)
++            ? mesh.material
++            : [mesh.material];
++        const recoloredMaterials = materials.map((mat) => {
+             if (!(mat instanceof MeshStandardMaterial))
+-                continue;
++                return mat;
++            if (hasExplicitRecolorMaterial && !mat.name.includes("Recolor")) {
++                return mat;
++            }
+             // Clone the material so we don't mutate the cached original
+             const cloned = mat.clone();
+             // Get the original luminance to preserve relative brightness
+@@ -43,9 +60,23 @@ export function recolorPropModel(scene, propColor) {
+                 // Normal surfaces: shift hue strongly, keep original lightness
+                 const targetHSL = { h: 0, s: 0, l: 0 };
+                 target.getHSL(targetHSL);
+-                cloned.color.setHSL(targetHSL.h, targetHSL.s * 0.8, origHSL.l);
++                const visibilityFloor = propColor === "red" ? 0.6 : 0.55;
++                const lightness = hasExplicitRecolorMaterial
++                    ? Math.max(origHSL.l, visibilityFloor)
++                    : origHSL.l;
++                const saturationScale = hasExplicitRecolorMaterial && propColor === "red" ? 1 : 0.8;
++                cloned.color.setHSL(targetHSL.h, targetHSL.s * saturationScale, lightness);
++                if (hasExplicitRecolorMaterial) {
++                    cloned.roughness = Math.max(cloned.roughness, 0.62);
++                    cloned.metalness = 0;
++                    cloned.emissive.copy(target);
++                    cloned.emissiveIntensity = propColor === "red" ? 0.18 : 0.08;
++                }
+             }
+-            mesh.material = cloned;
+-        }
++            return cloned;
++        });
++        mesh.material = usesMaterialArray
++            ? recoloredMaterials
++            : recoloredMaterials[0];
+     });
+ }
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
-index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..c88c7695b8f5cf0ad199c957d6dc59416438f776 100644
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319e13778e6 100644
 --- a/dist/lib/components/props/prop-model-registry.js
 +++ b/dist/lib/components/props/prop-model-registry.js
-@@ -49,7 +49,7 @@ export function getPropModel(propType) {
+@@ -32,8 +32,25 @@ function modelUrl(filename) {
+  * Add entries as models become available - the system degrades gracefully.
+  */
+ export const PROP_MODEL_REGISTRY = {
+-// Re-enable after Blender assembly: scale + gripOffsetY may need tuning
+-// [PropType.BUUGENG]: { modelUrl: modelUrl("buugeng.glb"), scale: 1, gripOffsetY: 0 },
++    [PropType.BUUGENG]: {
++        modelUrl: modelUrl("buugeng.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
++    [PropType.CHICKEN]: {
++        modelUrl: modelUrl("chicken.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
++    [PropType.GUITAR]: {
++        modelUrl: modelUrl("guitar.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
++};
++/** Smaller prop families that reuse an authored base model. */
++export const SHARED_MODEL_VARIANT_MAP = {
++    [PropType.UKULELE]: { base: PropType.GUITAR, scale: 0.75 },
+ };
+ /**
+  * Look up a GLTF model for a prop type. Returns null if no model
+@@ -49,7 +66,7 @@ export function getPropModel(propType) {
  export const BIG_VARIANT_MAP = {
      [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
      [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -485,8 +726,24 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..c88c7695b8f5cf0ad199c957d6dc5941
      [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
      [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
      [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+@@ -72,6 +89,15 @@ export function resolvePropModel(propType) {
+     const direct = getPropModel(propType);
+     if (direct)
+         return { entry: direct, scale: direct.scale };
++    const sharedVariant = SHARED_MODEL_VARIANT_MAP[propType];
++    if (sharedVariant) {
++        const baseEntry = getPropModel(sharedVariant.base);
++        if (baseEntry)
++            return {
++                entry: baseEntry,
++                scale: baseEntry.scale * sharedVariant.scale,
++            };
++    }
+     // Check big variant map
+     const bigVariant = BIG_VARIANT_MAP[propType];
+     if (bigVariant) {
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..69924c963c14862e563bf6f0528f2f560d68a3cb 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..ec6392485320401f1694e6638969614990311b2d 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
@@ -509,29 +766,87 @@ index 10260a02337aeff1c9a1b880aff958088813053b..949a8ad21d64343d9483bdcabbf7f760
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
  export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
+diff --git a/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts b/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts
+index 9f78a284bd474a0c248036425b604b9e4ab23ecb..079315abb85d0ac38b455c7c2fab98f48d030773 100644
+--- a/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts
++++ b/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts
+@@ -59,7 +59,7 @@ export interface IAvatarSkeletonBuilder {
+      * @param url Path to the GLTF/GLB file
+      * @returns Promise resolving when loaded
+      */
+-    loadModel(url: string): Promise<void>;
++    loadModel(url: string, preparedRoot?: Object3D): Promise<void>;
+     /**
+      * Get the current skeleton state
+      */
+@@ -116,6 +116,12 @@ export interface IAvatarSkeletonBuilder {
+      * @deprecated Use getFeetOffset() instead
+      */
+     getGroundOffset(): number;
++    /**
++     * Release the previous avatar instance after its replacement is ready.
++     * Keeping the previous materials alive through renderer preparation lets
++     * compatible avatars reuse their compiled shader programs.
++     */
++    finalizeModelSwap(): void;
+     /**
+      * Dispose of the loaded model and free resources
+      */
+diff --git a/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts.map b/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts.map
+index f060449e1693e2b2ac3147313e66284117b2fa60..dea9b90dcbcbfd5ec3551734009945f28c0e4b4e 100644
+--- a/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts.map
++++ b/dist/lib/services/contracts/IAvatarSkeletonBuilder.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"IAvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/contracts/IAvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,OAAO,KAAK,EAAE,IAAI,EAAE,WAAW,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,OAAO,CAAC;AAClE,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,8BAA8B,CAAC;AAEjE;;GAEG;AACH,MAAM,MAAM,QAAQ,GAChB,MAAM,GACN,OAAO,GACP,QAAQ,GACR,QAAQ,GACR,MAAM,GACN,MAAM,GACN,cAAc,GACd,SAAS,GACT,aAAa,GACb,UAAU,GACV,eAAe,GACf,UAAU,GACV,cAAc,GACd,WAAW,GACX,WAAW,GACX,SAAS,GACT,UAAU,GACV,YAAY,GACZ,UAAU,GACV,WAAW,CAAC;AAEhB;;GAEG;AACH,MAAM,WAAW,SAAS;IACxB,8CAA8C;IAC9C,IAAI,EAAE,IAAI,CAAC;IACX,gCAAgC;IAChC,MAAM,EAAE,IAAI,CAAC;IACb,gCAAgC;IAChC,QAAQ,EAAE,IAAI,CAAC;IACf,gCAAgC;IAChC,WAAW,EAAE,MAAM,CAAC;IACpB,8BAA8B;IAC9B,WAAW,EAAE,MAAM,CAAC;IACpB,+BAA+B;IAC/B,WAAW,EAAE,MAAM,CAAC;IACpB,4DAA4D;IAC5D,WAAW,EAAE,OAAO,CAAC;IACrB,8DAA8D;IAC9D,aAAa,EAAE,OAAO,CAAC;CACxB;AAED;;GAEG;AACH,MAAM,WAAW,aAAa;IAC5B,+CAA+C;IAC/C,QAAQ,EAAE,OAAO,CAAC;IAClB,8CAA8C;IAC9C,IAAI,EAAE,QAAQ,GAAG,IAAI,CAAC;IACtB,sCAAsC;IACtC,MAAM,EAAE,WAAW,EAAE,CAAC;IACtB,wCAAwC;IACxC,KAAK,EAAE,GAAG,CAAC,QAAQ,EAAE,IAAI,CAAC,CAAC;IAC3B,qCAAqC;IACrC,YAAY,EAAE,SAAS,GAAG,IAAI,CAAC;IAC/B,aAAa,EAAE,SAAS,GAAG,IAAI,CAAC;IAChC,iEAAiE;IACjE,YAAY,EAAE,SAAS,GAAG,IAAI,CAAC;IAC/B,aAAa,EAAE,SAAS,GAAG,IAAI,CAAC;IAChC,mEAAmE;IACnE,YAAY,EAAE,YAAY,GAAG,IAAI,CAAC;CACnC;AAED,MAAM,WAAW,sBAAsB;IACrC;;;;OAIG;IACH,SAAS,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;IAEtC;;OAEG;IACH,QAAQ,IAAI,aAAa,CAAC;IAE1B;;;OAGG;IACH,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,eAAe,IAAI,SAAS,GAAG,IAAI,CAAC;IAEpC;;OAEG;IACH,gBAAgB,IAAI,SAAS,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,eAAe,IAAI,SAAS,GAAG,IAAI,CAAC;IAEpC;;OAEG;IACH,gBAAgB,IAAI,SAAS,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,OAAO,IAAI,QAAQ,GAAG,IAAI,CAAC;IAE3B;;OAEG;IACH,cAAc,IAAI,IAAI,CAAC;IAEvB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI,CAAC;IAE9B;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI,CAAC;IAEhC;;;;;;;;OAQG;IACH,aAAa,IAAI,MAAM,CAAC;IAExB;;OAEG;IACH,eAAe,IAAI,MAAM,CAAC;IAE1B;;OAEG;IACH,OAAO,IAAI,IAAI,CAAC;CACjB"}
+\ No newline at end of file
++{"version":3,"file":"IAvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/contracts/IAvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AAEH,OAAO,KAAK,EAAE,IAAI,EAAE,WAAW,EAAE,QAAQ,EAAE,OAAO,EAAE,MAAM,OAAO,CAAC;AAClE,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,8BAA8B,CAAC;AAEjE;;GAEG;AACH,MAAM,MAAM,QAAQ,GAChB,MAAM,GACN,OAAO,GACP,QAAQ,GACR,QAAQ,GACR,MAAM,GACN,MAAM,GACN,cAAc,GACd,SAAS,GACT,aAAa,GACb,UAAU,GACV,eAAe,GACf,UAAU,GACV,cAAc,GACd,WAAW,GACX,WAAW,GACX,SAAS,GACT,UAAU,GACV,YAAY,GACZ,UAAU,GACV,WAAW,CAAC;AAEhB;;GAEG;AACH,MAAM,WAAW,SAAS;IACxB,8CAA8C;IAC9C,IAAI,EAAE,IAAI,CAAC;IACX,gCAAgC;IAChC,MAAM,EAAE,IAAI,CAAC;IACb,gCAAgC;IAChC,QAAQ,EAAE,IAAI,CAAC;IACf,gCAAgC;IAChC,WAAW,EAAE,MAAM,CAAC;IACpB,8BAA8B;IAC9B,WAAW,EAAE,MAAM,CAAC;IACpB,+BAA+B;IAC/B,WAAW,EAAE,MAAM,CAAC;IACpB,4DAA4D;IAC5D,WAAW,EAAE,OAAO,CAAC;IACrB,8DAA8D;IAC9D,aAAa,EAAE,OAAO,CAAC;CACxB;AAED;;GAEG;AACH,MAAM,WAAW,aAAa;IAC5B,+CAA+C;IAC/C,QAAQ,EAAE,OAAO,CAAC;IAClB,8CAA8C;IAC9C,IAAI,EAAE,QAAQ,GAAG,IAAI,CAAC;IACtB,sCAAsC;IACtC,MAAM,EAAE,WAAW,EAAE,CAAC;IACtB,wCAAwC;IACxC,KAAK,EAAE,GAAG,CAAC,QAAQ,EAAE,IAAI,CAAC,CAAC;IAC3B,qCAAqC;IACrC,YAAY,EAAE,SAAS,GAAG,IAAI,CAAC;IAC/B,aAAa,EAAE,SAAS,GAAG,IAAI,CAAC;IAChC,iEAAiE;IACjE,YAAY,EAAE,SAAS,GAAG,IAAI,CAAC;IAC/B,aAAa,EAAE,SAAS,GAAG,IAAI,CAAC;IAChC,mEAAmE;IACnE,YAAY,EAAE,YAAY,GAAG,IAAI,CAAC;CACnC;AAED,MAAM,WAAW,sBAAsB;IACrC;;;;OAIG;IACH,SAAS,CAAC,GAAG,EAAE,MAAM,EAAE,YAAY,CAAC,EAAE,QAAQ,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;IAE/D;;OAEG;IACH,QAAQ,IAAI,aAAa,CAAC;IAE1B;;;OAGG;IACH,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,eAAe,IAAI,SAAS,GAAG,IAAI,CAAC;IAEpC;;OAEG;IACH,gBAAgB,IAAI,SAAS,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,eAAe,IAAI,SAAS,GAAG,IAAI,CAAC;IAEpC;;OAEG;IACH,gBAAgB,IAAI,SAAS,GAAG,IAAI,CAAC;IAErC;;OAEG;IACH,OAAO,IAAI,QAAQ,GAAG,IAAI,CAAC;IAE3B;;OAEG;IACH,cAAc,IAAI,IAAI,CAAC;IAEvB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI,CAAC;IAE9B;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI,CAAC;IAEhC;;;;;;;;OAQG;IACH,aAAa,IAAI,MAAM,CAAC;IAExB;;OAEG;IACH,eAAe,IAAI,MAAM,CAAC;IAE1B;;;;OAIG;IACH,iBAAiB,IAAI,IAAI,CAAC;IAE1B;;OAEG;IACH,OAAO,IAAI,IAAI,CAAC;CACjB"}
+\ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
-index 6f6a49b79156198141ac54620228b885cb8425fd..17ca4c6171dca63e9258e8480035d6b1a35094d7 100644
+index 6f6a49b79156198141ac54620228b885cb8425fd..df477c18111d2ca64c0ae23df49bea1597fe0304 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts
-@@ -8,7 +8,6 @@ import type { Object3D, Bone } from "three";
+@@ -8,14 +8,14 @@ import type { Object3D, Bone } from "three";
  import type { IAvatarSkeletonBuilder, BoneName, BoneChain, SkeletonState } from "../contracts/IAvatarSkeletonBuilder";
  export declare class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      private state;
 -    private loader;
      private originalHeight;
      private skeleton;
++    private replacedRoots;
      /** Offset from model origin to feet (negative value - feet are below origin) */
-@@ -68,6 +67,7 @@ export declare class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+     private feetOffset;
+     /** Original bounding box min Y (in unscaled model space) - computed once at load time */
+     private originalMinY;
+-    loadModel(url: string): Promise<void>;
++    loadModel(url: string, preparedRoot?: Object3D): Promise<void>;
+     private processGLTF;
+     /**
+      * Map a bone to a bones map (used during hot-swap)
+@@ -68,6 +68,12 @@ export declare class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
       */
      setHeight(height: number): void;
      getGroundOffset(): number;
++    finalizeModelSwap(): void;
++    /**
++     * Cloned performers own their skeleton GPU data and materials. Geometry and
++     * textures belong to the page-level parsed GLTF cache and stay shared.
++     */
 +    private disposeInstanceResources;
      dispose(): void;
  }
  //# sourceMappingURL=AvatarSkeletonBuilder.d.ts.map
 \ No newline at end of file
+diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map
+index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..6948635ecf1d5397dc0d50cd2571c01ef02bcc4a 100644
+--- a/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map
++++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"AvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/AvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,EAAE,QAAQ,EAAE,IAAI,EAAwB,MAAM,OAAO,CAAC;AAGlE,OAAO,KAAK,EACV,sBAAsB,EACtB,QAAQ,EACR,SAAS,EACT,aAAa,EACd,MAAM,qCAAqC,CAAC;AA2E7C,qBAAa,qBAAsB,YAAW,sBAAsB;IAClE,OAAO,CAAC,KAAK,CAUX;IAEF,OAAO,CAAC,MAAM,CAAoB;IAClC,OAAO,CAAC,cAAc,CAAa;IACnC,OAAO,CAAC,QAAQ,CAAyB;IAEzC,gFAAgF;IAChF,OAAO,CAAC,UAAU,CAAa;IAE/B,yFAAyF;IACzF,OAAO,CAAC,YAAY,CAAa;IAE3B,SAAS,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC;IAiB3C,OAAO,CAAC,WAAW;IAqEnB;;OAEG;IACH,OAAO,CAAC,YAAY;IAwBpB,OAAO,CAAC,OAAO;IAyBf,OAAO,CAAC,cAAc;IAoDtB;;;OAGG;IACH,OAAO,CAAC,cAAc;IAgDtB;;;;;;;;OAQG;IACH,OAAO,CAAC,iBAAiB;IAmDzB;;;OAGG;IACH,OAAO,CAAC,oBAAoB;IAoB5B,OAAO,CAAC,aAAa;IAQrB,QAAQ,IAAI,aAAa;IAIzB,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,OAAO,IAAI,QAAQ,GAAG,IAAI;IAI1B,cAAc,IAAI,IAAI;IAStB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IAuB7B;;;;OAIG;IACH,aAAa,IAAI,MAAM;IAIvB;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI;IAQ/B,eAAe,IAAI,MAAM;IAMzB,OAAO,IAAI,IAAI;CA8BhB"}
+\ No newline at end of file
++{"version":3,"file":"AvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/AvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,EAAE,QAAQ,EAAE,IAAI,EAAyB,MAAM,OAAO,CAAC;AAEnE,OAAO,KAAK,EACV,sBAAsB,EACtB,QAAQ,EACR,SAAS,EACT,aAAa,EACd,MAAM,qCAAqC,CAAC;AAgF7C,qBAAa,qBAAsB,YAAW,sBAAsB;IAClE,OAAO,CAAC,KAAK,CAUX;IAEF,OAAO,CAAC,cAAc,CAAa;IACnC,OAAO,CAAC,QAAQ,CAAyB;IACzC,OAAO,CAAC,aAAa,CAAkB;IAEvC,gFAAgF;IAChF,OAAO,CAAC,UAAU,CAAa;IAE/B,yFAAyF;IACzF,OAAO,CAAC,YAAY,CAAa;IAE3B,SAAS,CAAC,GAAG,EAAE,MAAM,EAAE,YAAY,CAAC,EAAE,QAAQ,GAAG,OAAO,CAAC,IAAI,CAAC;IAWpE,OAAO,CAAC,WAAW;IA+DnB;;OAEG;IACH,OAAO,CAAC,YAAY;IAwBpB,OAAO,CAAC,OAAO;IAyBf,OAAO,CAAC,cAAc;IAoDtB;;;OAGG;IACH,OAAO,CAAC,cAAc;IAgDtB;;;;;;;;OAQG;IACH,OAAO,CAAC,iBAAiB;IAmDzB;;;OAGG;IACH,OAAO,CAAC,oBAAoB;IAoB5B,OAAO,CAAC,aAAa;IAQrB,QAAQ,IAAI,aAAa;IAIzB,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,OAAO,IAAI,QAAQ,GAAG,IAAI;IAI1B,cAAc,IAAI,IAAI;IAStB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IAuB7B;;;;OAIG;IACH,aAAa,IAAI,MAAM;IAIvB;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI;IAQ/B,eAAe,IAAI,MAAM;IAMzB,iBAAiB,IAAI,IAAI;IAOzB;;;OAGG;IACH,OAAO,CAAC,wBAAwB;IAgBhC,OAAO,IAAI,IAAI;CAiBhB"}
+\ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d736b1098 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb75ef276e 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 @@ -5,8 +5,8 @@
@@ -540,22 +855,23 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
  import { Vector3, Box3 } from "three";
 -import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
  import { FINGER_BONES, } from "../../domain/models/GripPose";
-+import { cloneSharedSkinnedScene, loadSharedGltf, } from "../shared-gltf-cache";
++import { cloneSharedSkinnedScene, getSharedGltfBounds, loadSharedGltf, } from "../shared-gltf-cache";
  /**
   * Mapping of standard bone names to common variations
   * GLTF models from different sources use different naming conventions
-@@ -84,7 +84,6 @@ export class AvatarSkeletonBuilder {
+@@ -84,25 +84,25 @@ export class AvatarSkeletonBuilder {
          rightLegChain: null,
          fingerChains: null,
      };
 -    loader = new GLTFLoader();
      originalHeight = 0;
      skeleton = null;
++    replacedRoots = [];
      /** Offset from model origin to feet (negative value - feet are below origin) */
-@@ -92,17 +91,16 @@ export class AvatarSkeletonBuilder {
+     feetOffset = 0;
      /** Original bounding box min Y (in unscaled model space) - computed once at load time */
      originalMinY = 0;
-     async loadModel(url) {
+-    async loadModel(url) {
 -        return new Promise((resolve, reject) => {
 -            this.loader.load(url, (gltf) => {
 -                this.processGLTF(gltf);
@@ -565,9 +881,11 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
 -                reject(error);
 -            });
 -        });
++    async loadModel(url, preparedRoot) {
 +        try {
 +            const gltf = await loadSharedGltf(url);
-+            this.processGLTF(cloneSharedSkinnedScene(gltf.scene));
++            const root = preparedRoot ?? cloneSharedSkinnedScene(gltf.scene);
++            this.processGLTF(root, getSharedGltfBounds(url));
 +        }
 +        catch (error) {
 +            console.error("Failed to load avatar model:", error);
@@ -575,11 +893,11 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
 +        }
      }
 -    processGLTF(gltf) {
-+    processGLTF(root) {
++    processGLTF(root, preparedBounds) {
          // Hot-swap: keep old arm chains valid until new ones are ready
          // This ensures animation continues smoothly during the swap
          const oldRoot = this.state.root;
-@@ -111,7 +109,7 @@ export class AvatarSkeletonBuilder {
+@@ -111,7 +111,7 @@ export class AvatarSkeletonBuilder {
          const newBones = new Map();
          let newSkeleton = null;
          // Find all skinned meshes and bones in the new model
@@ -588,14 +906,22 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,38 +127,22 @@ export class AvatarSkeletonBuilder {
+@@ -129,38 +129,30 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
 -        const box = new Box3().setFromObject(gltf.scene);
-+        const box = new Box3().setFromObject(root);
-         this.originalHeight = box.max.y - box.min.y;
-         this.originalMinY = box.min.y; // Store original feet position for scaling
+-        this.originalHeight = box.max.y - box.min.y;
+-        this.originalMinY = box.min.y; // Store original feet position for scaling
++        if (preparedBounds) {
++            this.originalHeight = preparedBounds.height;
++            this.originalMinY = preparedBounds.minY;
++        }
++        else {
++            const box = new Box3().setFromObject(root);
++            this.originalHeight = box.max.y - box.min.y;
++            this.originalMinY = box.min.y;
++        }
          // Now atomically swap everything at once
 -        this.state.root = gltf.scene;
 +        this.state.root = root;
@@ -608,7 +934,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
 -        this.state.fingerChains = this.buildFingerChains(gltf.scene);
 +        this.state.fingerChains = this.buildFingerChains(root);
          this.state.isLoaded = true;
-         // Dispose old model resources after swap is complete
+-        // Dispose old model resources after swap is complete
 -        if (oldRoot) {
 -            queueMicrotask(() => {
 -                oldRoot.traverse((child) => {
@@ -627,15 +953,40 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
 -                });
 -            });
 -        }
++        // Keep the outgoing instance alive until Avatar3D has prepared the new
++        // root. Disposing its materials here evicts compatible shader programs
++        // before the renderer can reuse them for the replacement.
 +        if (oldRoot)
-+            queueMicrotask(() => this.disposeInstanceResources(oldRoot));
++            this.replacedRoots.push(oldRoot);
      }
      /**
       * Map a bone to a bones map (used during hot-swap)
-@@ -452,23 +434,30 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +444,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
+-    dispose() {
+-        if (this.state.root) {
+-            this.state.root.traverse((child) => {
+-                const mesh = child;
+-                if (mesh.geometry) {
+-                    mesh.geometry.dispose();
+-                }
+-                if (mesh.material) {
+-                    if (Array.isArray(mesh.material)) {
+-                        mesh.material.forEach((m) => m.dispose());
+-                    }
+-                    else {
+-                        mesh.material.dispose();
+-                    }
+-                }
+-            });
++    finalizeModelSwap() {
++        for (const root of this.replacedRoots) {
++            this.disposeInstanceResources(root);
+         }
++        this.replacedRoots.length = 0;
++    }
 +    /**
 +     * Cloned performers own their skeleton GPU data and materials. Geometry and
 +     * textures belong to the page-level parsed GLTF cache and stay shared.
@@ -657,23 +1008,8 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..94dca45bc735c3a17ac3cdb69f31642d
 +        });
 +        skeletons.forEach((skeleton) => skeleton.dispose());
 +    }
-     dispose() {
--        if (this.state.root) {
--            this.state.root.traverse((child) => {
--                const mesh = child;
--                if (mesh.geometry) {
--                    mesh.geometry.dispose();
--                }
--                if (mesh.material) {
--                    if (Array.isArray(mesh.material)) {
--                        mesh.material.forEach((m) => m.dispose());
--                    }
--                    else {
--                        mesh.material.dispose();
--                    }
--                }
--            });
--        }
++    dispose() {
++        this.finalizeModelSwap();
 +        if (this.state.root)
 +            this.disposeInstanceResources(this.state.root);
          this.state = {
@@ -1096,40 +1432,96 @@ index 29809adb0b6cd2e639a532bc3c7794224d7bc79c..8ea2643e9726eacfd9d46e37875b55f7
      }
 diff --git a/dist/lib/services/shared-gltf-cache.d.ts b/dist/lib/services/shared-gltf-cache.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..8cc909a2c6ca161a664663ccfed5ae8d20a9dd7c
+index 0000000000000000000000000000000000000000..468c7b17c1675e61df54fc0ac1061dde97c4f035
 --- /dev/null
 +++ b/dist/lib/services/shared-gltf-cache.d.ts
-@@ -0,0 +1,18 @@
-+import type { AnimationClip, Object3D } from "three";
-+import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-+/** Parse a GLTF URL once for the lifetime of the page. */
+@@ -0,0 +1,61 @@
++import type { AnimationClip, Camera, Object3D, Scene, WebGLRenderer } from "three";
++import { type GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
++/**
++ * Parse a GLTF URL once for the lifetime of the page.
++ *
++ * Performer rigs frequently use the same avatar and locomotion files. Browser
++ * caching avoids another download, but GLTFLoader would still parse the same
++ * binary again for every performer. Keeping the parsed result here removes
++ * that repeated main-thread work. A failed request is evicted so retry still
++ * works after a temporary network problem.
++ */
 +export declare function loadSharedGltf(url: string): Promise<GLTF>;
-+/** Parse an avatar before another performer needs it. */
++/**
++ * Parse an avatar before another performer needs it.
++ *
++ * The first visible performer starts this work. Later performers then clone
++ * the prepared scene instead of briefly showing a stand-in while the same
++ * model is parsed again.
++ */
 +export declare function prepareSharedGltf(url: string): Promise<void>;
-+/** Parse an animation GLB once and retain only its reusable clip. */
++/** Reuse source-pose bounds instead of traversing a prepared clone on click. */
++export declare function getSharedGltfBounds(url: string): {
++    height: number;
++    minY: number;
++} | null;
++/**
++ * Register a live renderer that can prepare avatar shaders and textures on
++ * intent. Multiple Avatar3D instances in one canvas share one context.
++ */
++export declare function registerAvatarRenderWarmup(renderer: WebGLRenderer, scene: Scene, getCamera: () => Camera | null): () => void;
++/**
++ * Parse and upload an avatar when pointer or keyboard intent is known.
++ * Failed hints are evicted so the normal visible load can still retry.
++ */
++export declare function prepareAvatarForDisplay(url: string): Promise<void>;
++/** Whether a URL's shaders and shared textures are ready for this renderer. */
++export declare function isAvatarPreparedForRenderer(url: string, renderer: WebGLRenderer): boolean;
++/** Transfer a completed intent warmup to the avatar instance that requested it. */
++export declare function takePreparedAvatarRoot(url: string, renderer?: WebGLRenderer): Object3D | null;
++/**
++ * Parse an animation GLB once without retaining the file's embedded scene.
++ *
++ * Mixamo animation exports often include a complete character alongside the
++ * clip. Keeping the entire GLTF for every locomotion asset costs hundreds of
++ * megabytes. This cache retains only the immutable AnimationClip shared by
++ * every performer and lets the unused scene graph be collected.
++ */
 +export declare function loadSharedAnimation(url: string): Promise<AnimationClip>;
 +/** Share existence probes used before optional animation packs are loaded. */
 +export declare function checkSharedAssetAvailability(url: string): Promise<boolean>;
-+/** Spread independent performer setup across frames in mount order. */
 +export declare function schedulePerformerInitialization<T>(initialize: () => Promise<T>): Promise<T>;
-+/** Mount one expensive performer subtree after the browser has painted. */
 +export declare function schedulePerformerMount(mount: () => void): Promise<void>;
-+/** Clone a parsed skinned scene with performer-owned materials. */
++/**
++ * Give one performer an independently animatable skeleton while sharing the
++ * immutable geometry and textures from the parsed model. Materials are cloned
++ * because performer fades and customization mutate opacity and color.
++ */
 +export declare function cloneSharedSkinnedScene(source: Object3D): Object3D;
 +/** Test-only reset for proving retry and deduplication behavior. */
 +export declare function clearSharedGltfCache(): void;
++//# sourceMappingURL=shared-gltf-cache.d.ts.map
+\ No newline at end of file
+diff --git a/dist/lib/services/shared-gltf-cache.d.ts.map b/dist/lib/services/shared-gltf-cache.d.ts.map
+new file mode 100644
+index 0000000000000000000000000000000000000000..a66f489fb38453a16bbc407d1f5f8c277ee814dc
+--- /dev/null
++++ b/dist/lib/services/shared-gltf-cache.d.ts.map
+@@ -0,0 +1 @@
++{"version":3,"file":"shared-gltf-cache.d.ts","sourceRoot":"","sources":["../../../src/lib/services/shared-gltf-cache.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EACV,aAAa,EACb,MAAM,EAGN,QAAQ,EACR,KAAK,EAGL,aAAa,EACd,MAAM,OAAO,CAAC;AAEf,OAAO,EAEL,KAAK,IAAI,EACV,MAAM,0CAA0C,CAAC;AAgClD;;;;;;;;GAQG;AACH,wBAAgB,cAAc,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAkBzD;AAqED;;;;;;GAMG;AACH,wBAAgB,iBAAiB,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAE5D;AAED,gFAAgF;AAChF,wBAAgB,mBAAmB,CACjC,GAAG,EAAE,MAAM,GACV;IAAE,MAAM,EAAE,MAAM,CAAC;IAAC,IAAI,EAAE,MAAM,CAAA;CAAE,GAAG,IAAI,CAEzC;AAED;;;GAGG;AACH,wBAAgB,0BAA0B,CACxC,QAAQ,EAAE,aAAa,EACvB,KAAK,EAAE,KAAK,EACZ,SAAS,EAAE,MAAM,MAAM,GAAG,IAAI,GAC7B,MAAM,IAAI,CA2BZ;AAmCD;;;GAGG;AACH,wBAAsB,uBAAuB,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CA6BxE;AAED,+EAA+E;AAC/E,wBAAgB,2BAA2B,CACzC,GAAG,EAAE,MAAM,EACX,QAAQ,EAAE,aAAa,GACtB,OAAO,CAET;AAED,mFAAmF;AACnF,wBAAgB,sBAAsB,CACpC,GAAG,EAAE,MAAM,EACX,QAAQ,CAAC,EAAE,aAAa,GACvB,QAAQ,GAAG,IAAI,CAajB;AAED;;;;;;;GAOG;AACH,wBAAgB,mBAAmB,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,aAAa,CAAC,CAcvE;AAED,8EAA8E;AAC9E,wBAAgB,4BAA4B,CAAC,GAAG,EAAE,MAAM,GAAG,OAAO,CAAC,OAAO,CAAC,CAa1E;AAWD,wBAAsB,+BAA+B,CAAC,CAAC,EACrD,UAAU,EAAE,MAAM,OAAO,CAAC,CAAC,CAAC,GAC3B,OAAO,CAAC,CAAC,CAAC,CAcZ;AAaD,wBAAsB,sBAAsB,CAAC,KAAK,EAAE,MAAM,IAAI,GAAG,OAAO,CAAC,IAAI,CAAC,CAc7E;AAED;;;;GAIG;AACH,wBAAgB,uBAAuB,CAAC,MAAM,EAAE,QAAQ,GAAG,QAAQ,CAWlE;AAED,oEAAoE;AACpE,wBAAgB,oBAAoB,IAAI,IAAI,CAa3C"}
+\ No newline at end of file
 diff --git a/dist/lib/services/shared-gltf-cache.js b/dist/lib/services/shared-gltf-cache.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..ae737c894b2350b9e61223a7ce2a0d0555f64811
+index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3eb32a10f
 --- /dev/null
 +++ b/dist/lib/services/shared-gltf-cache.js
-@@ -0,0 +1,154 @@
+@@ -0,0 +1,358 @@
++import { Box3 } from "three";
 +import { GLTFLoader, } from "three/examples/jsm/loaders/GLTFLoader.js";
 +import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 +const loader = new GLTFLoader();
 +const loads = new Map();
 +const animationLoads = new Map();
 +const availabilityChecks = new Map();
++const avatarBounds = new Map();
++const MAX_AVATAR_TEXTURE_DIMENSION = 1024;
++const avatarRenderContexts = new Map();
 +function yieldToNextFrame() {
 +    if (typeof requestAnimationFrame !== "function")
 +        return Promise.resolve();
@@ -1152,7 +1544,15 @@ index 0000000000000000000000000000000000000000..ae737c894b2350b9e61223a7ce2a0d05
 +    const existing = loads.get(url);
 +    if (existing)
 +        return existing;
-+    const pending = loader.loadAsync(url);
++    const pending = loader.loadAsync(url).then(async (gltf) => {
++        await fitAvatarTexturesToDisplayBudget(gltf.scene);
++        const box = new Box3().setFromObject(gltf.scene);
++        avatarBounds.set(url, {
++            height: box.max.y - box.min.y,
++            minY: box.min.y,
++        });
++        return gltf;
++    });
 +    loads.set(url, pending);
 +    void pending.catch(() => {
 +        if (loads.get(url) === pending)
@@ -1160,9 +1560,194 @@ index 0000000000000000000000000000000000000000..ae737c894b2350b9e61223a7ce2a0d05
 +    });
 +    return pending;
 +}
-+/** Parse an avatar before another performer needs it. */
++/**
++ * The authored character GLBs include desktop-production 4K PNGs. A single
++ * avatar can otherwise allocate hundreds of megabytes and block the WebGL
++ * driver for several frames when selected. Resize those decoded images once,
++ * before any instance reaches the renderer. The shared textures and all later
++ * clones retain the same color-space and material configuration.
++ */
++async function fitAvatarTexturesToDisplayBudget(root) {
++    if (typeof createImageBitmap !== "function")
++        return;
++    const texturesByImage = new Map();
++    for (const texture of collectTextures(root)) {
++        const image = texture.image;
++        if (!image)
++            continue;
++        const siblings = texturesByImage.get(image);
++        if (siblings)
++            siblings.push(texture);
++        else
++            texturesByImage.set(image, [texture]);
++    }
++    await Promise.all([...texturesByImage].map(async ([image, imageTextures]) => {
++        const source = image;
++        const width = source.width ?? source.naturalWidth ?? 0;
++        const height = source.height ?? source.naturalHeight ?? 0;
++        const largestDimension = Math.max(width, height);
++        if (largestDimension <= MAX_AVATAR_TEXTURE_DIMENSION)
++            return;
++        const scale = MAX_AVATAR_TEXTURE_DIMENSION / largestDimension;
++        const resized = await createImageBitmap(source, {
++            resizeWidth: Math.max(1, Math.round(width * scale)),
++            resizeHeight: Math.max(1, Math.round(height * scale)),
++            resizeQuality: "high",
++        });
++        for (const texture of imageTextures) {
++            texture.image = resized;
++            texture.needsUpdate = true;
++        }
++        source.close?.();
++    }));
++}
++function collectTextures(root) {
++    const textures = new Set();
++    root.traverse((child) => {
++        const mesh = child;
++        if (!mesh.material)
++            return;
++        const materials = Array.isArray(mesh.material)
++            ? mesh.material
++            : [mesh.material];
++        for (const material of materials) {
++            for (const value of Object.values(material)) {
++                if (value?.isTexture) {
++                    textures.add(value);
++                }
++            }
++        }
++    });
++    return [...textures];
++}
++/**
++ * Parse an avatar before another performer needs it.
++ *
++ * The first visible performer starts this work. Later performers then clone
++ * the prepared scene instead of briefly showing a stand-in while the same
++ * model is parsed again.
++ */
 +export function prepareSharedGltf(url) {
 +    return loadSharedGltf(url).then(() => undefined);
++}
++/** Reuse source-pose bounds instead of traversing a prepared clone on click. */
++export function getSharedGltfBounds(url) {
++    return avatarBounds.get(url) ?? null;
++}
++/**
++ * Register a live renderer that can prepare avatar shaders and textures on
++ * intent. Multiple Avatar3D instances in one canvas share one context.
++ */
++export function registerAvatarRenderWarmup(renderer, scene, getCamera) {
++    const existing = avatarRenderContexts.get(renderer);
++    if (existing) {
++        existing.references++;
++        existing.getCamera = getCamera;
++    }
++    else {
++        avatarRenderContexts.set(renderer, {
++            renderer,
++            scene,
++            getCamera,
++            references: 1,
++            warmups: new Map(),
++            preparedRoots: new Map(),
++            preparedUrls: new Set(),
++        });
++    }
++    return () => {
++        const context = avatarRenderContexts.get(renderer);
++        if (!context)
++            return;
++        context.references--;
++        if (context.references > 0)
++            return;
++        for (const root of context.preparedRoots.values()) {
++            disposeWarmAvatarRoot(root);
++        }
++        avatarRenderContexts.delete(renderer);
++    };
++}
++function disposeWarmAvatarRoot(root) {
++    const skeletons = new Set();
++    root.traverse((child) => {
++        const mesh = child;
++        if (mesh.skeleton)
++            skeletons.add(mesh.skeleton);
++        if (!mesh.material)
++            return;
++        if (Array.isArray(mesh.material)) {
++            mesh.material.forEach((material) => material.dispose());
++        }
++        else {
++            mesh.material.dispose();
++        }
++    });
++    skeletons.forEach((skeleton) => skeleton.dispose());
++}
++async function warmAvatarForRenderer(context, root) {
++    const camera = context.getCamera();
++    if (!camera)
++        return;
++    await context.renderer.compileAsync(root, camera, context.scene);
++    // Upload one decoded texture per painted frame. WebGLRenderer.initTexture()
++    // leaves the live framebuffer, viewport, and scene untouched, so moving
++    // across avatar choices cannot flash a one-pixel target onto the stage.
++    for (const texture of collectTextures(root)) {
++        context.renderer.initTexture(texture);
++        await yieldToNextFrame();
++    }
++}
++/**
++ * Parse and upload an avatar when pointer or keyboard intent is known.
++ * Failed hints are evicted so the normal visible load can still retry.
++ */
++export async function prepareAvatarForDisplay(url) {
++    const gltf = await loadSharedGltf(url);
++    await Promise.all([...avatarRenderContexts.values()].map((context) => {
++        const existing = context.warmups.get(url);
++        if (existing)
++            return existing;
++        const preparedRoot = cloneSharedSkinnedScene(gltf.scene);
++        preparedRoot.traverse((child) => {
++            const mesh = child;
++            if (mesh.isMesh)
++                mesh.castShadow = true;
++        });
++        const pending = warmAvatarForRenderer(context, preparedRoot)
++            .then(() => {
++            context.preparedRoots.set(url, preparedRoot);
++            context.preparedUrls.add(url);
++        })
++            .catch((error) => {
++            if (context.warmups.get(url) === pending) {
++                context.warmups.delete(url);
++                context.preparedRoots.delete(url);
++                disposeWarmAvatarRoot(preparedRoot);
++            }
++            throw error;
++        });
++        context.warmups.set(url, pending);
++        return pending;
++    }));
++}
++/** Whether a URL's shaders and shared textures are ready for this renderer. */
++export function isAvatarPreparedForRenderer(url, renderer) {
++    return avatarRenderContexts.get(renderer)?.preparedUrls.has(url) ?? false;
++}
++/** Transfer a completed intent warmup to the avatar instance that requested it. */
++export function takePreparedAvatarRoot(url, renderer) {
++    const contexts = renderer
++        ? [avatarRenderContexts.get(renderer)].filter((context) => Boolean(context))
++        : [...avatarRenderContexts.values()];
++    for (const context of contexts) {
++        const root = context.preparedRoots.get(url);
++        if (!root)
++            continue;
++        context.preparedRoots.delete(url);
++        return root;
++    }
++    return null;
 +}
 +/**
 + * Parse an animation GLB once without retaining the file's embedded scene.
@@ -1277,12 +1862,28 @@ index 0000000000000000000000000000000000000000..ae737c894b2350b9e61223a7ce2a0d05
 +    availabilityChecks.clear();
 +    performerInitializationQueue = Promise.resolve();
 +    performerMountQueue = Promise.resolve();
++    for (const context of avatarRenderContexts.values()) {
++        context.warmups.clear();
++        for (const root of context.preparedRoots.values()) {
++            disposeWarmAvatarRoot(root);
++        }
++        context.preparedRoots.clear();
++    }
 +}
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
-index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df9d97a72b 100644
+index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..3a486415115e3e9ebe658b6432c8475fc67d65c8 100644
 --- a/src/lib/components/Avatar3D.svelte
 +++ b/src/lib/components/Avatar3D.svelte
-@@ -23,19 +23,19 @@
+@@ -16,26 +16,30 @@
+    */
+ 
+   import { onMount, onDestroy, untrack } from "svelte";
+-  import { T, useTask } from "@threlte/core";
++  import { T, useTask, useThrelte } from "@threlte/core";
+   import { Vector3, Quaternion, Euler } from "three";
++  import type { Camera, Scene, WebGLRenderer } from "three";
+   import type { IAvatarSkeletonBuilder } from "../services/contracts/IAvatarSkeletonBuilder";
+   import type { IIKSolver } from "../services/contracts/IIKSolver";
    import type { IAvatarAnimator } from "../services/contracts/IAvatarAnimator";
    import type { PropState3D } from "../domain/models/PropState3D";
    import { cmToUnits } from "../config/avatar-proportions";
@@ -1298,16 +1899,19 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    } from "../config/avatar-definitions";
 +  import {
 +    checkSharedAssetAvailability,
++    isAvatarPreparedForRenderer,
++    registerAvatarRenderWarmup,
 +    schedulePerformerInitialization,
++    takePreparedAvatarRoot,
 +  } from "../services/shared-gltf-cache";
-
+ 
    import { userProportionsState } from "../state/user-proportions-state.svelte";
    import IKFigure3D from "./IKFigure3D.svelte";
 -  import AvatarLoadingIndicator from "./AvatarLoadingIndicator.svelte";
    const toast = { warning(_msg: string) {} };
-
+ 
    import type { ILocomotionAnimator } from "../services/contracts/ILocomotionAnimator";
-@@ -51,7 +51,11 @@
+@@ -51,7 +55,11 @@
    import { createAvatarServices } from "../services/implementations/AvatarServicesFactory";
    import { GripType } from "../domain/models/GripPose";
    import { CollisionDetector } from "../services/implementations/CollisionDetector";
@@ -1320,7 +1924,25 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    import { tryGetViewer3DContext } from "../context/viewer-3d-context";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
    import {
-@@ -115,7 +119,11 @@
+@@ -74,6 +82,17 @@
+   const blueVisible = $derived(viewerVisibility?.blueMotion ?? true);
+   const redVisible = $derived(viewerVisibility?.redMotion ?? true);
+ 
++  const { renderer, scene, camera } = useThrelte() as unknown as {
++    renderer: WebGLRenderer;
++    scene: Scene;
++    camera: { current: Camera };
++  };
++  const releaseAvatarRenderWarmup = registerAvatarRenderWarmup(
++    renderer,
++    scene,
++    () => camera.current ?? null
++  );
++
+   // Default Z position for avatars
+   // Placing avatar at z=0 (same as grid plane) so hands are exactly at prop positions
+   // The avatar's body is thin enough that it won't clip through the grid
+@@ -115,7 +134,11 @@
      enableRootMotion?: boolean;
      /** Called each frame with the world-space XZ delta from root motion.
       *  The parent applies this to physics for collision-aware movement. */
@@ -1333,7 +1955,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
      /** PropAnchor group ref for blue hand IK target (from PerformerRig) */
      bluePropAnchorRef?: import("three").Group;
      /** PropAnchor group ref for red hand IK target (from PerformerRig) */
-@@ -210,11 +218,18 @@
+@@ -210,11 +233,18 @@
    // Collision detection - logs when props/arms clip through the avatar body
    const collisionDetector = new CollisionDetector();
    const _boneVecs = {
@@ -1357,17 +1979,17 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    };
    // Scratch vectors for deriving the face center from the shoulder line.
    // The Mixamo Head bone is at the base of the skull, so we push the face
-@@ -224,7 +239,7 @@
+@@ -224,7 +254,7 @@
    const _faceRight = new Vector3();
    const _faceForward = new Vector3();
    const FACE_FORWARD_OFFSET = 0.08; // 8 cm forward from head bone
 -  const FACE_UP_OFFSET = 0.05;      // 5 cm up from head bone
 +  const FACE_UP_OFFSET = 0.05; // 5 cm up from head bone
-
+ 
    /**
     * Base rotation from the staff's local-Y axis to the "horizontal" axis
-@@ -280,7 +295,7 @@
-
+@@ -280,7 +310,7 @@
+ 
    let servicesReady = $state(false);
    let modelLoaded = $state(false);
 -  let useProceduralFallback = $state(true);
@@ -1375,7 +1997,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
    let currentLoadedAvatarId = $state<string | null>(null);
    let isLoading = $state(false);
    let hasShownFallbackToast = $state(false);
-@@ -302,8 +317,8 @@
+@@ -302,14 +332,46 @@
    // feetOffset adjusts so feet touch the ground (it's negative)
    const baseGroupY = $derived(
      position.y !== undefined && position.y !== 0
@@ -1384,20 +2006,105 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +      ? position.y - feetOffset // Use provided Y (terrain mode)
 +      : defaultGroundY - feetOffset // Use stage groundY (stage mode)
    );
-
+ 
    // No mesh offset needed - the crouch animation's Hips position track (scaled
-@@ -324,7 +339,9 @@
-
+   // from cm to m in LocomotionAnimator) handles the body drop directly.
+   const groupY = $derived(baseGroupY);
+ 
++  function applyModelOpacity(
++    root: import("three").Object3D,
++    value: number
++  ): void {
++    const transparent = value < 1;
++    root.traverse((child: any) => {
++      if (!child.isMesh || !child.material) return;
++      const materials = Array.isArray(child.material)
++        ? child.material
++        : [child.material];
++      for (const material of materials) {
++        material.transparent = transparent;
++        material.opacity = value;
++        material.depthWrite = !transparent;
++      }
++    });
++  }
++
++  let modelSwapFinalizeFrame: number | undefined;
++
++  function finalizeModelSwapAfterPaint(): void {
++    if (modelSwapFinalizeFrame !== undefined) {
++      cancelAnimationFrame(modelSwapFinalizeFrame);
++    }
++    modelSwapFinalizeFrame = requestAnimationFrame(() => {
++      modelSwapFinalizeFrame = requestAnimationFrame(() => {
++        modelSwapFinalizeFrame = undefined;
++        skeletonService?.finalizeModelSwap();
++      });
++    });
++  }
++
+   // Load a GLTF model for a specific avatar
+   // Uses hot-swap pattern: keeps old avatar visible until new one is ready
+   async function loadAvatar(targetAvatarId: string) {
+@@ -324,7 +386,11 @@
+ 
      try {
        // Load new model (skeleton service handles internal swap)
 -      await skeletonService.loadModel(url);
-+      await schedulePerformerInitialization(() =>
-+        skeletonService!.loadModel(url)
-+      );
-
++      const rendererPrepared = isAvatarPreparedForRenderer(url, renderer);
++      const preparedRoot = takePreparedAvatarRoot(url, renderer);
++      const loadModel = () => skeletonService!.loadModel(url, preparedRoot ?? undefined);
++      if (preparedRoot) await loadModel();
++      else await schedulePerformerInitialization(loadModel);
+ 
        // Scale model to match user's height
        // setHeight() calculates proper scale and stores feet offset
-@@ -363,8 +380,14 @@
+@@ -333,19 +399,35 @@
+       // Get the feet offset for positioning (negative value)
+       feetOffset = skeletonService.getFeetOffset();
+ 
+-      // Update cached root AFTER everything is ready
+-      // This ensures Threlte only sees the swap when the new model is complete
+-      cachedRoot = skeletonService.getRoot();
++      const nextRoot = skeletonService.getRoot();
++      const activeCamera = camera.current;
++      if (nextRoot && activeCamera && !rendererPrepared) {
++        nextRoot.traverse((child: any) => {
++          if (child.isMesh) child.castShadow = true;
++        });
+ 
+-      // Enable shadow casting on all meshes in the avatar
+-      if (cachedRoot) {
+-        cachedRoot.traverse((child: any) => {
+-          if (child.isMesh) {
+-            child.castShadow = true;
++        try {
++          // The outgoing avatar stays alive through both preparations so Three
++          // can reuse compatible programs. Swaps fade through a transparent
++          // material variant, then return to opaque at the end of the reveal;
++          // compile both before the replacement reaches a visible frame.
++          applyModelOpacity(nextRoot, 1);
++          await renderer.compileAsync(nextRoot, activeCamera, scene);
++          if (opacity < 1) {
++            applyModelOpacity(nextRoot, opacity);
++            await renderer.compileAsync(nextRoot, activeCamera, scene);
+           }
+-        });
++        } catch (error) {
++          console.warn("[Avatar3D] avatar shader warmup failed:", error);
++        }
+       }
+ 
++      // Update cached root AFTER everything is ready. This ensures Threlte
++      // only sees the swap when the model and both fade shader variants are
++      // complete.
++      cachedRoot = nextRoot;
++      finalizeModelSwapAfterPaint();
++
+       currentLoadedAvatarId = targetAvatarId;
+       modelLoaded = true;
+       useProceduralFallback = false;
+@@ -363,8 +445,14 @@
        const rightUpLeg = skState.bones.get("RightUpLeg");
        if (leftUpLeg && rightUpLeg) {
          const stanceAngle = (8 * Math.PI) / 180; // 8° outward each side
@@ -1414,9 +2121,9 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
          leftUpLeg.quaternion.multiply(leftTilt);
          rightUpLeg.quaternion.multiply(rightTilt);
          leftUpLeg.updateMatrixWorld(true);
-@@ -398,7 +421,11 @@
+@@ -398,7 +486,11 @@
          locomotionAnimator.initialize(cachedRoot);
-
+ 
          // Initialize root motion extractor with the Hips bone
 -        if (enableRootMotion && rootMotionExtractor && locomotionAnimator.getHipsBone) {
 +        if (
@@ -1427,7 +2134,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            const hipsBone = locomotionAnimator.getHipsBone();
            if (hipsBone) {
              rootMotionExtractor.initialize(hipsBone);
-@@ -418,9 +445,15 @@
+@@ -418,9 +510,15 @@
              backward: `${animBase}walk-backward${rmSuffix}.glb`,
              strafeLeft: `${animBase}strafe-left${rmSuffix}.glb`,
              strafeRight: `${animBase}strafe-right${rmSuffix}.glb`,
@@ -1446,7 +2153,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
              crouch: "/animations/crouch-idle.glb",
            })
            .catch((err) => {
-@@ -444,18 +477,35 @@
+@@ -444,18 +542,35 @@
          const turnsBase = "/animations/turns/";
          const probeUrl = `${turnsBase}turn-left-90.glb`;
          const rootForTurns = cachedRoot;
@@ -1491,7 +2198,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
                ])
                .then(() => {
                  // Register turn clip contact curves so FootPlanter can query them
-@@ -476,7 +526,13 @@
+@@ -476,7 +591,13 @@
        // ikSolver, which is still used by arm IK elsewhere in this file).
        // Gated on enableFootPlanting - off by default so the museum FPS player
        // (which wants responsive code-driven movement) isn't affected.
@@ -1505,17 +2212,17 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +      ) {
          footPlanter.initialize(skeletonService, legIKSolver, contactCurveCache);
        }
-
-@@ -587,7 +643,7 @@
-
+ 
+@@ -587,7 +708,7 @@
+ 
      // Disable spine twist in dual-wheel mode - wide lateral IK targets
      // twist the torso and shift the feet on the ground.
 -    if ('setSpineTwistEnabled' in animationService) {
 +    if ("setSpineTwistEnabled" in animationService) {
        (animationService as any).setSpineTwistEnabled(!disableSpineTwist);
      }
-
-@@ -596,16 +652,19 @@
+ 
+@@ -596,16 +717,19 @@
      if (enableLocomotion && locomotionAnimator) {
        if (stateMachine) {
          // State machine decides what state we're in based on physics signals
@@ -1542,11 +2249,11 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
 +          },
 +          delta
 +        );
-
+ 
          // Feed state to LocomotionAnimator for clip selection
          locomotionAnimator.setActiveState?.(stateOutput.state);
-@@ -642,7 +701,9 @@
-
+@@ -642,7 +766,9 @@
+ 
          // Apply bone rotations - overwrite animation pose for lower body
          for (const [boneName, quat] of sample.boneRotations) {
 -          const bone = bones.get(boneName as import("../services/contracts/IAvatarSkeletonBuilder").BoneName);
@@ -1556,7 +2263,7 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            if (bone) {
              bone.quaternion.copy(quat);
            }
-@@ -681,7 +742,11 @@
+@@ -681,7 +807,11 @@
        // displacement needs the same conversion.
        if (rootMotionExtractor?.isReady() && onRootMotion) {
          const localDelta = rootMotionExtractor.extract();
@@ -1569,16 +2276,16 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
            // Convert Mixamo centimeters to scene units.
            // Our avatar is scaled to ~avatarHeight scene units for ~170cm Mixamo model.
            // So 1 Mixamo cm ≈ avatarHeight/170 scene units.
-@@ -716,7 +781,6 @@
+@@ -716,7 +846,6 @@
            currentClipPhase: currentTurnPhase,
          });
        }
 -
      }
-
+ 
      // 2. IK post-process (blends per-arm based on prop presence)
-@@ -748,7 +812,7 @@
-
+@@ -748,7 +877,7 @@
+ 
      animationService.setPropsAndBlend(
        blueVisible ? blueWorldProp : null,
 -      redVisible ? redWorldProp : null,
@@ -1586,20 +2293,36 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..0a1c2a8fa25e3d11a0f530384982b5df
      );
      // Push optional external spine pitch (e.g., lean-forward stance variants)
      // before the animator runs IK so the arms solve against the leaned torso.
-@@ -871,7 +935,9 @@
-     const transparent = o < 1;
-     cachedRoot.traverse((child: any) => {
-       if (!child.isMesh || !child.material) return;
+@@ -867,20 +996,15 @@
+   // transparent with depth-write off so the fade blends correctly.
+   $effect(() => {
+     if (!cachedRoot) return;
+-    const o = opacity;
+-    const transparent = o < 1;
+-    cachedRoot.traverse((child: any) => {
+-      if (!child.isMesh || !child.material) return;
 -      const materials = Array.isArray(child.material) ? child.material : [child.material];
-+      const materials = Array.isArray(child.material)
-+        ? child.material
-+        : [child.material];
-       for (const material of materials) {
-         material.transparent = transparent;
-         material.opacity = o;
-@@ -913,13 +979,10 @@
+-      for (const material of materials) {
+-        material.transparent = transparent;
+-        material.opacity = o;
+-        material.depthWrite = !transparent;
+-      }
+-    });
++    applyModelOpacity(cachedRoot, opacity);
+   });
+ 
+   onDestroy(() => {
++    if (modelSwapFinalizeFrame !== undefined) {
++      cancelAnimationFrame(modelSwapFinalizeFrame);
++    }
++    releaseAvatarRenderWarmup();
++
+     // Dispose locomotion animator, state machine, and foot planter
+     if (locomotionAnimator) {
+       locomotionAnimator.dispose();
+@@ -913,13 +1037,10 @@
  </script>
-
+ 
  {#if visible}
 -  <!-- Loading indicator while avatar model loads -->
 -  {#if isLoading}
@@ -1621,7 +2344,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
 +++ b/src/lib/components/PerformerRig.svelte
 @@ -16,7 +16,7 @@
     */
-
+ 
    import { T } from "@threlte/core";
 -  import { untrack } from "svelte";
 +  import { onMount, untrack } from "svelte";
@@ -1633,7 +2356,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
    import { derivePlaneModeFromHands } from "../domain/utils/plane-mode-utils";
    import { tryGetViewerVisibilityContext } from "../context/viewer-visibility-context";
 +  import { schedulePerformerMount } from "../services/shared-gltf-cache";
-
+ 
    // Constant sets to avoid allocating new Set objects on every reactive update.
    const WHEEL_ONLY = new Set([Plane.WHEEL]);
 @@ -119,16 +120,20 @@
@@ -1664,22 +2387,22 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
 +        },
 +      ]
 +    >;
-
+ 
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
 @@ -174,7 +179,8 @@
    }: Props = $props();
-
+ 
    const staffHalfLength = $derived(
 -    staffHalfLengthProp ?? (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
 +    staffHalfLengthProp ??
 +      (propLength ? propLength / 2 : userProportionsState.staffLength / 2)
    );
-
+ 
    // Animation-driven yaw accumulator. When animationDrivenYaw is true, the
 @@ -185,8 +191,12 @@
    let accumulatedYaw = $state(untrack(() => facingAngle));
-
+ 
    // Resolve prop states: use overrides (for dual-wheel swap) or avatarState defaults
 -  const bluePropState = $derived(bluePropStateOverride ?? avatarState.bluePropState);
 -  const redPropState = $derived(redPropStateOverride ?? avatarState.redPropState);
@@ -1689,18 +2412,18 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
 +  const redPropState = $derived(
 +    redPropStateOverride ?? avatarState.redPropState
 +  );
-
+ 
    // Derive mode config and grid offset from the current plane mode
    const modeConfig = $derived(PLANE_MODE_CONFIGS[planeMode]);
 @@ -247,7 +257,9 @@
-
+ 
    // When a turn is active, enable animation-driven yaw so the rig
    // rotates from the turn clip's root motion rather than snapping.
 -  const effectiveAnimDrivenYaw = $derived(animationDrivenYaw || turnRequest !== null);
 +  const effectiveAnimDrivenYaw = $derived(
 +    animationDrivenYaw || turnRequest !== null
 +  );
-
+ 
    // Turn completion snap: when turnRequest goes null after being active,
    // snap avatarState to the post-turn heading so the sync effect below
 @@ -294,6 +306,44 @@
@@ -1746,7 +2469,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
 +    };
 +  });
  </script>
-
+ 
  <!-- Root: position in world space, apply facing rotation -->
 @@ -305,14 +355,14 @@
  >
@@ -1781,13 +2504,13 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
        beatProgress={avatarState.progress}
 @@ -339,15 +389,12 @@
    {/if}
-
+ 
    <!-- Grid (consumer-provided via gridSlot) -->
 -  {#if showGrid && gridSlot}
 +  {#if showGrid && gridSlot && gridMounted}
      {@render gridSlot()}
    {/if}
-
+ 
    <!-- Blue HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={blueHandPos.x}
@@ -1808,7 +2531,7 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
              propState={bluePropState}
 @@ -368,10 +415,7 @@
    </T.Group>
-
+ 
    <!-- Red HandAnchor + PropAnchor -->
 -  <T.Group
 -    position.x={redHandPos.x}
@@ -1829,13 +2552,239 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..e5af3ea4b109eb58e0066c529184550a
              propState={redPropState}
 @@ -392,7 +436,7 @@
    </T.Group>
-
+ 
    <!-- Effects (consumer-provided via effectsSlot) -->
 -  {#if showEffects && effectsSlot}
 +  {#if showEffects && effectsSlot && effectsMounted}
      <T.Group bind:ref={effectsGroupRef}>
        {@render effectsSlot({
          bluePropState,
+diff --git a/src/lib/components/Staff3D.svelte b/src/lib/components/Staff3D.svelte
+index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5c6ffd92f 100644
+--- a/src/lib/components/Staff3D.svelte
++++ b/src/lib/components/Staff3D.svelte
+@@ -1,3 +1,87 @@
++<script module lang="ts">
++  import {
++    CylinderGeometry,
++    MeshBasicMaterial,
++    MeshStandardMaterial,
++    SphereGeometry,
++    TorusGeometry,
++  } from "three";
++
++  interface StaffGeometrySet {
++    shaft: CylinderGeometry;
++    tBar: CylinderGeometry;
++    tBarCap: SphereGeometry;
++    endCap: SphereGeometry;
++    grip: TorusGeometry;
++  }
++
++  interface StaffMaterialSet {
++    main: MeshStandardMaterial;
++    dark: MeshStandardMaterial;
++    grip: MeshStandardMaterial;
++    trail: MeshBasicMaterial;
++  }
++
++  const geometrySets = new Map<string, StaffGeometrySet>();
++  const materialSets = new Map<"blue" | "red", StaffMaterialSet>();
++
++  function getStaffGeometrySet(
++    length: number,
++    thickness: number
++  ): StaffGeometrySet {
++    const key = `${length}:${thickness}`;
++    const cached = geometrySets.get(key);
++    if (cached) return cached;
++
++    const tBarLength = length * 0.228;
++    const geometry = {
++      shaft: new CylinderGeometry(thickness, thickness, length, 16, 1),
++      tBar: new CylinderGeometry(thickness, thickness, tBarLength, 12, 1),
++      tBarCap: new SphereGeometry(thickness, 12, 12),
++      endCap: new SphereGeometry(thickness, 16, 16),
++      grip: new TorusGeometry(thickness * 1.15, thickness * 0.15, 12, 24),
++    };
++    geometrySets.set(key, geometry);
++    return geometry;
++  }
++
++  function getStaffMaterialSet(color: "blue" | "red"): StaffMaterialSet {
++    const cached = materialSets.get(color);
++    if (cached) return cached;
++
++    const palette =
++      color === "blue"
++        ? { main: "#3b82f6", dark: "#1d4ed8" }
++        : { main: "#ef4444", dark: "#b91c1c" };
++    const materials = {
++      main: new MeshStandardMaterial({
++        color: palette.main,
++        roughness: 0.3,
++        metalness: 0.2,
++      }),
++      dark: new MeshStandardMaterial({
++        color: palette.dark,
++        roughness: 0.3,
++        metalness: 0.2,
++      }),
++      grip: new MeshStandardMaterial({
++        color: "white",
++        roughness: 0.4,
++        metalness: 0.1,
++      }),
++      trail: new MeshBasicMaterial({
++        color: palette.main,
++        opacity: 0.3,
++        transparent: true,
++      }),
++    };
++    materialSets.set(color, materials);
++    return materials;
++  }
++
++  const trailGeometry = new SphereGeometry(0.015, 8, 8);
++</script>
++
+ <script lang="ts">
+   /**
+    * Staff3D Component
+@@ -58,15 +142,10 @@
+   // T-bar dimensions - proportional to staff
+   // T-bar length (perpendicular extent) from SVG ratio: 57.6/252.8 = 22.8%
+   const tBarLength = $derived(effectiveLength * 0.228); // ~68 for length 300
+-  // T-bar thickness should match shaft thickness (in SVG they're nearly equal: 18.2 vs 17)
+-  const tBarThickness = $derived(effectiveThickness); // Slightly thinner than main shaft
+-
+-  // Color values - use hex for Three.js compatibility
+-  const colors = {
+-    blue: { main: "#3b82f6", dark: "#1d4ed8", light: "#60a5fa" },
+-    red: { main: "#ef4444", dark: "#b91c1c", light: "#f87171" },
+-  };
+-  const palette = $derived(colors[color]);
++  const geometry = $derived(
++    getStaffGeometrySet(effectiveLength, effectiveThickness)
++  );
++  const materials = $derived(getStaffMaterialSet(color));
+ 
+   // Rotation only - position is handled by the parent PerformerRig scene graph.
+   // Facing rotation is inherited from the PerformerRig parent group.
+@@ -80,73 +159,59 @@
+   <T.Group {rotation} layers={staffLayer}>
+     <!-- Staff CENTER (grip) is at the hand/grid point -->
+     <!-- Main staff body - cylinder along Y axis -->
+-    <T.Mesh>
+-      <T.CylinderGeometry
+-        args={[effectiveThickness, effectiveThickness, effectiveLength, 16, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={geometry.shaft}
++      material={materials.main}
++      dispose={false}
++    />
+ 
+     <!-- T-bar at thumb end - PERPENDICULAR crossbar like in 2D SVG -->
+     <!-- With positive quaternion (X-negated coords), +Y end points toward center for IN -->
+     <T.Group position={[0, halfLength, 0]}>
+       <!-- Perpendicular crossbar - rotated 90° around Z to cross the shaft -->
+-      <T.Mesh rotation={[0, 0, Math.PI / 2]}>
+-        <T.CylinderGeometry
+-          args={[tBarThickness, tBarThickness, tBarLength, 12, 1]}
+-        />
+-        <T.MeshStandardMaterial
+-          color={palette.main}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
++      <T.Mesh
++        geometry={geometry.tBar}
++        material={materials.main}
++        rotation={[0, 0, Math.PI / 2]}
++        dispose={false}
++      />
+       <!-- Left cap of T-bar -->
+-      <T.Mesh position={[-tBarLength / 2, 0, 0]}>
+-        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
++      <T.Mesh
++        geometry={geometry.tBarCap}
++        material={materials.dark}
++        position={[-tBarLength / 2, 0, 0]}
++        dispose={false}
++      />
+       <!-- Right cap of T-bar -->
+-      <T.Mesh position={[tBarLength / 2, 0, 0]}>
+-        <T.SphereGeometry args={[tBarThickness, 12, 12]} />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
++      <T.Mesh
++        geometry={geometry.tBarCap}
++        material={materials.dark}
++        position={[tBarLength / 2, 0, 0]}
++        dispose={false}
++      />
+     </T.Group>
+ 
+     <!-- Rounded cap at pinky end -->
+-    <T.Mesh position={[0, -halfLength, 0]}>
+-      <T.SphereGeometry args={[effectiveThickness, 16, 16]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={geometry.endCap}
++      material={materials.dark}
++      position={[0, -halfLength, 0]}
++      dispose={false}
++    />
+ 
+     <!-- Center grip ring (white, at the hand point) -->
+-    <T.Mesh>
+-      <T.TorusGeometry
+-        args={[effectiveThickness * 1.15, effectiveThickness * 0.15, 12, 24]}
+-      />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={geometry.grip}
++      material={materials.grip}
++      dispose={false}
++    />
+   </T.Group>
+ 
+   <!-- Trail indicator (small sphere at prop position for path visualization) -->
+-  <T.Mesh layers={staffLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <T.Mesh
++    geometry={trailGeometry}
++    material={materials.trail}
++    layers={staffLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c3c16e4a6 100644
 --- a/src/lib/components/props/Prop3D.svelte
@@ -1843,14 +2792,14 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
 @@ -50,8 +50,11 @@
      length,
    }: Props = $props();
-
+ 
 -  // "Big" variants use a 1.4x scale on the base prop.
 +  // Most "Big" variants use a 1.4x scale on the base prop. Big Fan has a
 +  // larger authored size: its 600-unit pictograph span versus Fan's 260-unit
 +  // span makes the grip-to-rim reach 30/13 of the standard fan.
    const BIG_SCALE = 1.4;
 +  const BIG_FAN_SCALE = 30 / 13;
-
+ 
    // Check if a GLTF model is available for this prop type.
    // resolvePropModel handles big variant → base type resolution.
 @@ -84,7 +87,7 @@
@@ -1859,14 +2808,150 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..eabc93a57f4b5c99ca6f6a3a9719d12c
    {:else if propType === PropType.BIGFAN}
 -    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
 +    <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_FAN_SCALE} />
-
+ 
    {:else if propType === PropType.TRIAD}
      <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/src/lib/components/props/prop-model-recolor.ts b/src/lib/components/props/prop-model-recolor.ts
+index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17dfdf1bf6 100644
+--- a/src/lib/components/props/prop-model-recolor.ts
++++ b/src/lib/components/props/prop-model-recolor.ts
+@@ -1,9 +1,10 @@
+ /**
+  * Runtime recoloring for loaded GLTF prop models.
+  *
+- * Traverses a cloned GLTF scene graph and tints all MeshStandardMaterials
+- * to the target prop color (blue/red) while preserving PBR properties
+- * like roughness, metalness, normal maps, and texture detail.
++ * Traverses a cloned GLTF scene graph and tints its runtime-recolor materials
++ * to the target prop color while preserving PBR properties. Multi-material
++ * props mark recolorable materials by including "Recolor" in the material
++ * name. Legacy models without a marker continue to recolor every material.
+  */
+ 
+ import { Color, type Object3D, type Mesh, MeshStandardMaterial } from "three";
+@@ -22,18 +23,39 @@ export function recolorPropModel(
+   propColor: "blue" | "red"
+ ): void {
+   const target = new Color(PROP_COLORS[propColor].main);
++  let hasExplicitRecolorMaterial = false;
++
++  scene.traverse((child) => {
++    const mesh = child as Mesh;
++    if (!mesh.isMesh) return;
++    const materials = Array.isArray(mesh.material)
++      ? mesh.material
++      : [mesh.material];
++    if (
++      materials.some(
++        (material) =>
++          material instanceof MeshStandardMaterial &&
++          material.name.includes("Recolor")
++      )
++    ) {
++      hasExplicitRecolorMaterial = true;
++    }
++  });
+ 
+   scene.traverse((child) => {
+     const mesh = child as Mesh;
+     if (!mesh.isMesh) return;
+ 
+-    // Handle both single material and material arrays
++    const usesMaterialArray = Array.isArray(mesh.material);
+     const materials = Array.isArray(mesh.material)
+       ? mesh.material
+       : [mesh.material];
+ 
+-    for (const mat of materials) {
+-      if (!(mat instanceof MeshStandardMaterial)) continue;
++    const recoloredMaterials = materials.map((mat) => {
++      if (!(mat instanceof MeshStandardMaterial)) return mat;
++      if (hasExplicitRecolorMaterial && !mat.name.includes("Recolor")) {
++        return mat;
++      }
+ 
+       // Clone the material so we don't mutate the cached original
+       const cloned = mat.clone();
+@@ -51,10 +73,30 @@ export function recolorPropModel(
+         // Normal surfaces: shift hue strongly, keep original lightness
+         const targetHSL = { h: 0, s: 0, l: 0 };
+         target.getHSL(targetHSL);
+-        cloned.color.setHSL(targetHSL.h, targetHSL.s * 0.8, origHSL.l);
++        const visibilityFloor = propColor === "red" ? 0.6 : 0.55;
++        const lightness = hasExplicitRecolorMaterial
++          ? Math.max(origHSL.l, visibilityFloor)
++          : origHSL.l;
++        const saturationScale =
++          hasExplicitRecolorMaterial && propColor === "red" ? 1 : 0.8;
++        cloned.color.setHSL(
++          targetHSL.h,
++          targetHSL.s * saturationScale,
++          lightness
++        );
++        if (hasExplicitRecolorMaterial) {
++          cloned.roughness = Math.max(cloned.roughness, 0.62);
++          cloned.metalness = 0;
++          cloned.emissive.copy(target);
++          cloned.emissiveIntensity = propColor === "red" ? 0.18 : 0.08;
++        }
+       }
+ 
+-      mesh.material = cloned;
+-    }
++      return cloned;
++    });
++
++    mesh.material = usesMaterialArray
++      ? recoloredMaterials
++      : recoloredMaterials[0];
+   });
+ }
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
-index 899e076e7e08becffb11b36d6651a9099ab43d6c..40127c182b5cb020e9890d51948cdb2368c091db 100644
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab17e17082 100644
 --- a/src/lib/components/props/prop-model-registry.ts
 +++ b/src/lib/components/props/prop-model-registry.ts
-@@ -67,7 +67,7 @@ export const BIG_VARIANT_MAP: Partial<
+@@ -46,8 +46,38 @@ function modelUrl(filename: string): string {
+  * Add entries as models become available - the system degrades gracefully.
+  */
+ export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
+-  // Re-enable after Blender assembly: scale + gripOffsetY may need tuning
+-  // [PropType.BUUGENG]: { modelUrl: modelUrl("buugeng.glb"), scale: 1, gripOffsetY: 0 },
++  [PropType.BUUGENG]: {
++    modelUrl: modelUrl("buugeng.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
++  [PropType.CHICKEN]: {
++    modelUrl: modelUrl("chicken.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
++  [PropType.GUITAR]: {
++    modelUrl: modelUrl("guitar.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
++  [PropType.TRIGENG]: {
++    modelUrl: modelUrl("trigeng.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
++  [PropType.DOUBLECONTACTBALL]: {
++    modelUrl: modelUrl("double-contact-ball.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
++};
++
++/** Smaller prop families that reuse an authored base model. */
++export const SHARED_MODEL_VARIANT_MAP: Partial<
++  Record<PropType, { base: PropType; scale: number }>
++> = {
++  [PropType.UKULELE]: { base: PropType.GUITAR, scale: 0.75 },
+ };
+ 
+ /**
+@@ -67,7 +97,7 @@ export const BIG_VARIANT_MAP: Partial<
  > = {
    [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
    [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -1875,12 +2960,29 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..40127c182b5cb020e9890d51948cdb23
    [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
    [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
    [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
+@@ -93,6 +123,16 @@ export function resolvePropModel(
+   const direct = getPropModel(propType);
+   if (direct) return { entry: direct, scale: direct.scale };
+ 
++  const sharedVariant = SHARED_MODEL_VARIANT_MAP[propType];
++  if (sharedVariant) {
++    const baseEntry = getPropModel(sharedVariant.base);
++    if (baseEntry)
++      return {
++        entry: baseEntry,
++        scale: baseEntry.scale * sharedVariant.scale,
++      };
++  }
++
+   // Check big variant map
+   const bigVariant = BIG_VARIANT_MAP[propType];
+   if (bigVariant) {
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e3fa168a5 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..0a6f458e041c91656d382d4fa115a83697e6e171 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -26,25 +26,50 @@ export { default as Triquetra3D } from "./components/props/Triquetra3D.svelte";
-
+ 
  // Domain enums
  export { PropType } from "./domain/enums/PropType";
 -export { Plane, PLANE_LABELS, PLANE_COLORS, PRIMARY_PLANES } from "./domain/enums/Plane";
@@ -1892,7 +2994,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +} from "./domain/enums/Plane";
  export { PlaneMode } from "./domain/enums/PlaneMode";
  export { RotationDirection } from "./domain/enums/RotationDirection";
-
+ 
  // Domain models & types
 -export type { PropState3D, PropState2D, PropStates3D, InterpolationResult3D } from "./domain/models/PropState3D";
 +export type {
@@ -1915,7 +3017,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +} from "./domain/types/TipEffectTypes";
  export type { CameraStateSnapshot } from "./domain/types/CameraStateSnapshot";
  export type { GridMode } from "./domain/constants/grid-layout";
-
+ 
  // Domain constants
 -export { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "./domain/constants/plane-mode-configs";
 +export {
@@ -1923,7 +3025,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  GRID_OFFSETS,
 +} from "./domain/constants/plane-mode-configs";
  export type { PlaneModeConfig } from "./domain/constants/plane-mode-configs";
-
+ 
  // Performer positions
 -export { getDefaultPositions, getPerformerPosition, WALL_OFFSET, MAX_PERFORMERS, PERFORMER_GRID_SPACING } from "./domain/constants/performer-positions";
 +export {
@@ -1934,11 +3036,11 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  PERFORMER_GRID_SPACING,
 +} from "./domain/constants/performer-positions";
  export type { PerformerPosition } from "./domain/constants/performer-positions";
-
+ 
  // Domain utilities
-@@ -55,31 +80,78 @@ export { calculateFacingAngle } from "./domain/formation";
+@@ -55,31 +80,81 @@ export { calculateFacingAngle } from "./domain/formation";
  export type { FormationPreset } from "./domain/formation";
-
+ 
  // Camera choreography
 -export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
 -export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
@@ -1956,7 +3058,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  lerpCameraPosition,
 +  lerpCameraState,
 +} from "./domain/camera-choreography";
-
+ 
  // Config
 -export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
 +export {
@@ -1968,7 +3070,10 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 -export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
 -export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
 -export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
-+export { prepareSharedGltf } from "./services/shared-gltf-cache";
++export {
++  prepareAvatarForDisplay,
++  prepareSharedGltf,
++} from "./services/shared-gltf-cache";
 +export {
 +  cmToUnits,
 +  deriveSceneProportions,
@@ -1985,7 +3090,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  createFormationFromPreset,
 +  FORMATION_PRESET_INFO,
 +} from "./config/formation-presets";
-
+ 
  // Scale & layers
  export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
 -export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
@@ -1996,10 +3101,10 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  getCameraLayers,
 +  shouldUsePlayerBodyLayer,
 +} from "./layers/layer-constants";
-
+ 
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
-
+ 
  // Context
 -export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
 -export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
@@ -2014,7 +3119,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  tryGetViewerVisibilityContext,
 +} from "./context/viewer-visibility-context";
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
-
+ 
  // Services - contracts
  export type { IAvatarAnimator } from "./services/contracts/IAvatarAnimator";
 -export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
@@ -2025,7 +3130,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
  export type { IIKSolver } from "./services/contracts/IIKSolver";
  export type { ILocomotionAnimator } from "./services/contracts/ILocomotionAnimator";
  export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
-@@ -91,18 +163,40 @@ export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
+@@ -91,18 +166,40 @@ export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
  export type { ISpineTwister } from "./services/contracts/ISpineTwister";
  export type { IElbowPoleComputer } from "./services/contracts/IElbowPoleComputer";
  export type { IAngleMathCalculator } from "./services/contracts/IAngleMathCalculator";
@@ -2069,10 +3174,10 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  ViewerSnapshot,
 +  ViewerOperationType,
 +} from "./services/contracts/IViewer3DUndoManager";
-
+ 
  // Services - implementations
  export { createAvatarServices } from "./services/implementations/AvatarServicesFactory";
-@@ -131,7 +225,10 @@ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolv
+@@ -131,7 +228,10 @@ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolv
  export type { GraspResult } from "./services/implementations/CylinderGraspSolver";
  export { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
  export { Viewer3DUndoManager } from "./services/implementations/Viewer3DUndoManager";
@@ -2082,16 +3187,43 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c735bcc94851d2860aba7a9c58bc130e
 +  seatedAudienceLoader,
 +} from "./services/implementations/SeatedAudienceLoader";
  export type { PreparedFigure } from "./services/implementations/SeatedAudienceLoader";
-
+ 
  // Utilities
+diff --git a/src/lib/services/contracts/IAvatarSkeletonBuilder.ts b/src/lib/services/contracts/IAvatarSkeletonBuilder.ts
+index 666a20b6ddead4b33f695ce341c854f937eaabb6..43dc493cad1ab1c5aa47e574f24f1f593bedc349 100644
+--- a/src/lib/services/contracts/IAvatarSkeletonBuilder.ts
++++ b/src/lib/services/contracts/IAvatarSkeletonBuilder.ts
+@@ -84,7 +84,7 @@ export interface IAvatarSkeletonBuilder {
+    * @param url Path to the GLTF/GLB file
+    * @returns Promise resolving when loaded
+    */
+-  loadModel(url: string): Promise<void>;
++  loadModel(url: string, preparedRoot?: Object3D): Promise<void>;
+ 
+   /**
+    * Get the current skeleton state
+@@ -154,6 +154,13 @@ export interface IAvatarSkeletonBuilder {
+    */
+   getGroundOffset(): number;
+ 
++  /**
++   * Release the previous avatar instance after its replacement is ready.
++   * Keeping the previous materials alive through renderer preparation lets
++   * compatible avatars reuse their compiled shader programs.
++   */
++  finalizeModelSwap(): void;
++
+   /**
+    * Dispose of the loaded model and free resources
+    */
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a127915f6 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d3ac09cd9 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
   * Provides access to bones for IK solving and animation.
   */
-
+ 
 -import type { Object3D, Bone, SkinnedMesh, Skeleton} from "three";
 +import type { Object3D, Bone, SkinnedMesh, Skeleton } from "three";
  import { Vector3, Box3 } from "three";
@@ -2099,29 +3231,34 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a
  import type {
    IAvatarSkeletonBuilder,
    BoneName,
-@@ -19,6 +18,10 @@ import {
+@@ -19,6 +18,11 @@ import {
    type FingerBoneName,
    type FingerChains,
  } from "../../domain/models/GripPose";
 +import {
 +  cloneSharedSkinnedScene,
++  getSharedGltfBounds,
 +  loadSharedGltf,
 +} from "../shared-gltf-cache";
-
+ 
  /**
   * Mapping of standard bone names to common variations
-@@ -101,7 +104,6 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -101,9 +105,9 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      fingerChains: null,
    };
-
+ 
 -  private loader = new GLTFLoader();
    private originalHeight: number = 0;
    private skeleton: Skeleton | null = null;
-
-@@ -112,23 +114,16 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
++  private replacedRoots: Object3D[] = [];
+ 
+   /** Offset from model origin to feet (negative value - feet are below origin) */
+   private feetOffset: number = 0;
+@@ -111,24 +115,21 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   /** Original bounding box min Y (in unscaled model space) - computed once at load time */
    private originalMinY: number = 0;
-
-   async loadModel(url: string): Promise<void> {
+ 
+-  async loadModel(url: string): Promise<void> {
 -    return new Promise((resolve, reject) => {
 -      this.loader.load(
 -        url,
@@ -2136,54 +3273,66 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a
 -        }
 -      );
 -    });
++  async loadModel(url: string, preparedRoot?: Object3D): Promise<void> {
 +    try {
 +      const gltf = await loadSharedGltf(url);
-+      this.processGLTF(cloneSharedSkinnedScene(gltf.scene));
++      const root = preparedRoot ?? cloneSharedSkinnedScene(gltf.scene);
++      this.processGLTF(root, getSharedGltfBounds(url));
 +    } catch (error) {
 +      console.error("Failed to load avatar model:", error);
 +      throw error;
 +    }
    }
-
+ 
 -  private processGLTF(gltf: GLTF): void {
-+  private processGLTF(root: Object3D): void {
++  private processGLTF(
++    root: Object3D,
++    preparedBounds: { height: number; minY: number } | null
++  ): void {
      // Hot-swap: keep old arm chains valid until new ones are ready
      // This ensures animation continues smoothly during the swap
      const oldRoot = this.state.root;
-@@ -139,7 +134,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -139,7 +140,7 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      let newSkeleton: Skeleton | null = null;
-
+ 
      // Find all skinned meshes and bones in the new model
 -    gltf.scene.traverse((child) => {
 +    root.traverse((child) => {
        if ((child as SkinnedMesh).isSkinnedMesh) {
          const skinnedMesh = child as SkinnedMesh;
          newMeshes.push(skinnedMesh);
-@@ -160,12 +155,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
-
+@@ -160,12 +161,17 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+ 
      // Compute original bounding box of new model (before any transforms)
      // This is done ONCE at load time, before the model is added to the scene
 -    const box = new Box3().setFromObject(gltf.scene);
-+    const box = new Box3().setFromObject(root);
-     this.originalHeight = box.max.y - box.min.y;
-     this.originalMinY = box.min.y; // Store original feet position for scaling
-
+-    this.originalHeight = box.max.y - box.min.y;
+-    this.originalMinY = box.min.y; // Store original feet position for scaling
++    if (preparedBounds) {
++      this.originalHeight = preparedBounds.height;
++      this.originalMinY = preparedBounds.minY;
++    } else {
++      const box = new Box3().setFromObject(root);
++      this.originalHeight = box.max.y - box.min.y;
++      this.originalMinY = box.min.y;
++    }
+ 
      // Now atomically swap everything at once
 -    this.state.root = gltf.scene;
 +    this.state.root = root;
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,28 +168,12 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,28 +179,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
 -    this.state.fingerChains = this.buildFingerChains(gltf.scene);
 +    this.state.fingerChains = this.buildFingerChains(root);
-
+ 
      this.state.isLoaded = true;
-
-     // Dispose old model resources after swap is complete
+ 
+-    // Dispose old model resources after swap is complete
 -    if (oldRoot) {
 -      queueMicrotask(() => {
 -        oldRoot.traverse((child) => {
@@ -2201,14 +3350,39 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a
 -        });
 -      });
 -    }
-+    if (oldRoot) queueMicrotask(() => this.disposeInstanceResources(oldRoot));
++    // Keep the outgoing instance alive until Avatar3D has prepared the new
++    // root. Disposing its materials here evicts compatible shader programs
++    // before the renderer can reuse them for the replacement.
++    if (oldRoot) this.replacedRoots.push(oldRoot);
    }
-
+ 
    /**
-@@ -535,22 +514,28 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +527,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
-
+ 
+-  dispose(): void {
+-    if (this.state.root) {
+-      this.state.root.traverse((child) => {
+-        const mesh = child as SkinnedMesh;
+-        if (mesh.geometry) {
+-          mesh.geometry.dispose();
+-        }
+-        if (mesh.material) {
+-          if (Array.isArray(mesh.material)) {
+-            mesh.material.forEach((m) => m.dispose());
+-          } else {
+-            mesh.material.dispose();
+-          }
+-        }
+-      });
++  finalizeModelSwap(): void {
++    for (const root of this.replacedRoots) {
++      this.disposeInstanceResources(root);
+     }
++    this.replacedRoots.length = 0;
++  }
++
 +  /**
 +   * Cloned performers own their skeleton GPU data and materials. Geometry and
 +   * textures belong to the page-level parsed GLTF cache and stay shared.
@@ -2229,24 +3403,10 @@ index d2f43b6b63eacb247573543f3d15c29118926882..d1c81671fd5127c1bcba043aa21a285a
 +    skeletons.forEach((skeleton) => skeleton.dispose());
 +  }
 +
-   dispose(): void {
--    if (this.state.root) {
--      this.state.root.traverse((child) => {
--        const mesh = child as SkinnedMesh;
--        if (mesh.geometry) {
--          mesh.geometry.dispose();
--        }
--        if (mesh.material) {
--          if (Array.isArray(mesh.material)) {
--            mesh.material.forEach((m) => m.dispose());
--          } else {
--            mesh.material.dispose();
--          }
--        }
--      });
--    }
++  dispose(): void {
++    this.finalizeModelSwap();
 +    if (this.state.root) this.disposeInstanceResources(this.state.root);
-
+ 
      this.state = {
        isLoaded: false,
 diff --git a/src/lib/services/implementations/ClipBasedTurnAnimator.ts b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
@@ -2255,7 +3415,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
 +++ b/src/lib/services/implementations/ClipBasedTurnAnimator.ts
 @@ -19,10 +19,14 @@
   */
-
+ 
  import { Quaternion, Euler, Vector3 } from "three";
 -import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
  import type { Object3D, AnimationClip, QuaternionKeyframeTrack } from "three";
@@ -2267,7 +3427,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
 +} from "../contracts/ITurnAnimator";
  import type { ContactCurveData } from "../contracts/IContactCurveCache";
 +import { loadSharedAnimation } from "../shared-gltf-cache";
-
+ 
  // ---------------------------------------------------------------------------
  // Constants
 @@ -148,7 +152,8 @@ function bakeClip(
@@ -2281,7 +3441,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
    const clipPrefix = detectClipPrefix(clip);
    const frameCount = Math.max(2, Math.ceil(clip.duration * BAKE_FPS) + 1);
 @@ -157,7 +162,10 @@ function bakeClip(
-
+ 
    // Build empty frame arrays for each wanted bone
    for (const bone of TURN_BONE_NAMES) {
 -    boneFrames.set(bone, Array.from({ length: frameCount }, () => new Quaternion()));
@@ -2293,14 +3453,14 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
    for (let i = 0; i < frameCount; i++) {
      hipsPositions.push(new Vector3());
 @@ -169,7 +177,9 @@ function bakeClip(
-
+ 
      const rawBoneName = track.name.slice(0, dotIdx);
      const property = track.name.slice(dotIdx + 1);
 -    const coreName = clipPrefix ? rawBoneName.slice(clipPrefix.length) : rawBoneName;
 +    const coreName = clipPrefix
 +      ? rawBoneName.slice(clipPrefix.length)
 +      : rawBoneName;
-
+ 
      if (property === "quaternion" && TURN_BONE_NAMES.has(coreName)) {
        const frames = boneFrames.get(coreName)!;
 @@ -230,9 +240,9 @@ function bakeClip(
@@ -2317,7 +3477,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
        }
      }
 @@ -247,7 +257,7 @@ function bakeClip(
-
+ 
    return {
      angleDeg,
 -    clipName: clip.name,
@@ -2328,7 +3488,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
 @@ -257,6 +267,75 @@ function bakeClip(
    };
  }
-
+ 
 +interface ContactSidecar {
 +  leftFoot: number[];
 +  rightFoot: number[];
@@ -2434,13 +3594,13 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
 -      })
 -    );
 +    const bakedClips = await loadSharedBakedTurnClips(modelPrefix, manifest);
-
+ 
      this.initializeFromData(bakedClips);
    }
 @@ -410,8 +462,14 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
        );
      }
-
+ 
 -    const leftFootContact = sampleContactAtPhase(clip.contactLeft, clampedPhase);
 -    const rightFootContact = sampleContactAtPhase(clip.contactRight, clampedPhase);
 +    const leftFootContact = sampleContactAtPhase(
@@ -2451,7 +3611,7 @@ index f8a2b8ddba4717fa9c4594e099d623a2c3ac14e5..b89f4c939459ecbfe41ec443567fece1
 +      clip.contactRight,
 +      clampedPhase
 +    );
-
+ 
      return {
        yawDelta,
 @@ -471,7 +529,11 @@ export class ClipBasedTurnAnimator implements ITurnAnimator {
@@ -2472,7 +3632,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 --- a/src/lib/services/implementations/LocomotionAnimator.ts
 +++ b/src/lib/services/implementations/LocomotionAnimator.ts
 @@ -14,7 +14,6 @@
-
+ 
  import type { AnimationAction, Object3D, Bone } from "three";
  import { AnimationMixer, AnimationClip, LoopRepeat, LoopOnce } from "three";
 -import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -2484,9 +3644,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
  } from "../contracts/ILocomotionAnimator";
  import { LocomotionState } from "../contracts/IAnimationStateMachine";
 +import { loadSharedAnimation } from "../shared-gltf-cache";
-
+ 
  type DirectionKey = "forward" | "backward" | "strafeLeft" | "strafeRight";
-
+ 
 +const preparedClipCache = new WeakMap<
 +  AnimationClip,
 +  Map<string, AnimationClip>
@@ -2510,22 +3670,22 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 +  "RightFoot",
 +  "RightToeBase",
  ]);
-
+ 
  function remapClipToSkeleton(
 @@ -95,7 +106,9 @@ function remapClipToSkeleton(
-
+ 
        const boneName = track.name.slice(0, dotIdx);
        const property = track.name.slice(dotIdx + 1);
 -      const coreName = clipPrefix ? boneName.slice(clipPrefix.length) : boneName;
 +      const coreName = clipPrefix
 +        ? boneName.slice(clipPrefix.length)
 +        : boneName;
-
+ 
        // Skip bones that don't exist on our models
        if (coreName.endsWith("_End")) return false;
 @@ -110,7 +123,12 @@ function remapClipToSkeleton(
        if (coreName === "Hips" && property === "quaternion") return false;
-
+ 
        // Keep Hips position track when needed for root motion or crouch pose.
 -      if (coreName === "Hips" && property === "position" && hipsMode !== "strip") return true;
 +      if (
@@ -2534,7 +3694,7 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 +        hipsMode !== "strip"
 +      )
 +        return true;
-
+ 
        // Keep all other quaternion tracks - bone rotations are the animation.
        // Filter out position/scale tracks (position teleports, scale vanishes).
 @@ -122,7 +140,9 @@ function remapClipToSkeleton(
@@ -2545,9 +3705,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 +      const coreName = clipPrefix
 +        ? boneName.slice(clipPrefix.length)
 +        : boneName;
-
+ 
        const cloned = track.clone();
-
+ 
 @@ -136,7 +156,11 @@ function remapClipToSkeleton(
        // first keyframe's Z preserves the natural vertical bob (hips go up
        // and down ~2-3cm per step) while removing the absolute offset that
@@ -2580,10 +3740,10 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
    private root: Object3D | null = null;
 -  private loader = new GLTFLoader();
    private modelPrefix = "mixamorig";
-
+ 
    // Actions - created from raw clips, no processing
 @@ -262,14 +289,7 @@ export class LocomotionAnimator implements ILocomotionAnimator {
-
+ 
      const results = await Promise.allSettled(
        entries.map(async ({ key, url }) => {
 -        const gltf = await this.loadGltf(url);
@@ -2606,11 +3766,11 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 +    if (this.config.enableRootMotion && isLocomotionClip)
 +      hipsMode = "rootMotion";
      if (key === "crouch") hipsMode = "pose";
-
+ 
      // Strip leg bones from idle clip for exhibit performers so feet
      // stay perfectly planted during sequence playback.
      const stripLegs = this.config.stripLegBones && key === "idle";
-
+ 
 -    return remapClipToSkeleton(raw, this.modelPrefix, hipsMode, stripLegs);
 +    const cacheKey = `${key}|${this.modelPrefix}|${hipsMode}|${stripLegs}`;
 +    let variants = preparedClipCache.get(raw);
@@ -2634,19 +3794,19 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 +    variants.set(cacheKey, prepared);
 +    return prepared;
    }
-
+ 
    /**
 @@ -327,7 +368,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
    private createActions(): void {
      if (!this.mixer) return;
-
+ 
 -
      // Idle - starts at weight 1
      const idleClip = this.prepareClip("idle");
      if (idleClip && !this.idleAction) {
 @@ -338,7 +378,12 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      }
-
+ 
      // Walk directions - start at weight 0
 -    for (const key of ["forward", "backward", "strafeLeft", "strafeRight"] as DirectionKey[]) {
 +    for (const key of [
@@ -2659,9 +3819,9 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
        if (clip && !this.walkActions[key]) {
          const action = this.mixer.clipAction(clip);
 @@ -475,12 +520,6 @@ export class LocomotionAnimator implements ILocomotionAnimator {
-
+ 
    // --- Private helpers ---
-
+ 
 -  private loadGltf(url: string): Promise<import("three/examples/jsm/loaders/GLTFLoader.js").GLTF> {
 -    return new Promise((resolve, reject) => {
 -      this.loader.load(url, resolve, undefined, reject);
@@ -2678,12 +3838,12 @@ index 25b0660fc5e3c3b71f7dede872aa86fe78a16162..6c130265ce6fd949147e5d2f42284f67
 -    const hasMovement = Object.values(this.targetDirWeights).some(w => w > 0);
 +    const hasMovement = Object.values(this.targetDirWeights).some((w) => w > 0);
      const crouchWalking = isCrouching && hasMovement;
-
+ 
 -    const wantWalk = state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
 +    const wantWalk =
 +      state === LocomotionState.WALKING ? 1 : crouchWalking ? 0.4 : 0;
      const wantCrouch = isCrouching ? (crouchWalking ? 0.6 : 1) : 0;
-
+ 
      // Idle
 @@ -573,7 +613,10 @@ export class LocomotionAnimator implements ILocomotionAnimator {
      // On state entry: snap weights for instant transitions on one-shot clips.
@@ -2718,13 +3878,13 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 @@ -41,6 +43,9 @@ const SINGLE_HAND_MAX_YAW = (40 * Math.PI) / 180;
  /** Maximum lateral tilt (leaning sideways) in radians (~25 degrees). */
  const MAX_TILT = (25 * Math.PI) / 180;
-
+ 
 +/** Maximum forward shoulder carry for a fully crossed two-hand pose. */
 +const MAX_FORWARD_PITCH = (10 * Math.PI) / 180;
 +
  /** Half shoulder width for normalizing lateral offset */
  const SHOULDER_HALF_WIDTH = 0.2;
-
+ 
 @@ -123,12 +128,15 @@ export class SpineTwister implements ISpineTwister {
      // Cross-body tension: how much each hand crosses its natural side
      // Left hand's natural side is -X, so crossing = positive X.
@@ -2736,20 +3896,20 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 +    const rightCross = Math.max(0, -rightX);
 +    const directionalCross =
 +      (leftCross - rightCross) * CROSS_TENSION_WEIGHT;
-
+ 
 -    // Combined yaw signal
 -    const yawSignal = lateralBias + Math.sign(lateralBias || 1) * crossTension;
 +    // Crossing with one hand turns the torso toward that hand. A symmetric
 +    // two-hand cross has no arbitrary left/right winner, so it stays centered
 +    // and uses forward pitch below to carry both shoulders toward the props.
 +    const yawSignal = lateralBias + directionalCross;
-
+ 
      // Normalize to [-1, 1] range
      const normalizedYaw = Math.max(-1, Math.min(1,
 @@ -155,6 +163,11 @@ export class SpineTwister implements ISpineTwister {
        (leftCross + rightCross) / SHOULDER_HALF_WIDTH
      ));
-
+ 
 +    // Pull the upper body toward crossed targets before arm IK runs. This is
 +    // the local equivalent of a full-body IK chain pre-pull: the shoulders
 +    // contribute to the reach rather than leaving the two arm bones alone.
@@ -2760,7 +3920,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
      const totalTilt = tiltSignal * MAX_TILT;
 @@ -163,11 +176,11 @@ export class SpineTwister implements ISpineTwister {
      const weights = this.redistributeWeights(availableBones);
-
+ 
      return {
 -      spine1: this.makeSpineRotation(totalYaw * (weights.spine1 ?? 0), totalTilt * (weights.spine1 ?? 0)),
 -      spine2: this.makeSpineRotation(totalYaw * (weights.spine2 ?? 0), totalTilt * (weights.spine2 ?? 0)),
@@ -2774,7 +3934,7 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
 +      hips: this.makeSpineRotation(totalYaw * HIP_COUNTER_FRACTION, totalTilt * HIP_COUNTER_FRACTION * 0.5, 0),
      };
    }
-
+ 
 @@ -258,11 +271,19 @@ export class SpineTwister implements ISpineTwister {
     * Create a quaternion combining Y-axis yaw and Z-axis lateral tilt.
     * Order matters: tilt first (local Z), then yaw (local Y).
@@ -2801,11 +3961,22 @@ index f6212ea61c00417a102adf86799b7d4d93b2d1c9..d2974663d651574fc2349d702bc7f7f1
    }
 diff --git a/src/lib/services/shared-gltf-cache.ts b/src/lib/services/shared-gltf-cache.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb28945496310
+index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7b3c1e62d
 --- /dev/null
 +++ b/src/lib/services/shared-gltf-cache.ts
-@@ -0,0 +1,174 @@
-+import type { AnimationClip, Material, Mesh, Object3D } from "three";
+@@ -0,0 +1,420 @@
++import type {
++  AnimationClip,
++  Camera,
++  Material,
++  Mesh,
++  Object3D,
++  Scene,
++  Skeleton,
++  Texture,
++  WebGLRenderer,
++} from "three";
++import { Box3 } from "three";
 +import {
 +  GLTFLoader,
 +  type GLTF,
@@ -2816,6 +3987,20 @@ index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb289
 +const loads = new Map<string, Promise<GLTF>>();
 +const animationLoads = new Map<string, Promise<AnimationClip>>();
 +const availabilityChecks = new Map<string, Promise<boolean>>();
++const avatarBounds = new Map<string, { height: number; minY: number }>();
++const MAX_AVATAR_TEXTURE_DIMENSION = 1024;
++
++interface AvatarRenderWarmupContext {
++  renderer: WebGLRenderer;
++  scene: Scene;
++  getCamera: () => Camera | null;
++  references: number;
++  warmups: Map<string, Promise<void>>;
++  preparedRoots: Map<string, Object3D>;
++  preparedUrls: Set<string>;
++}
++
++const avatarRenderContexts = new Map<WebGLRenderer, AvatarRenderWarmupContext>();
 +
 +function yieldToNextFrame(): Promise<void> {
 +  if (typeof requestAnimationFrame !== "function") return Promise.resolve();
@@ -2840,12 +4025,87 @@ index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb289
 +  const existing = loads.get(url);
 +  if (existing) return existing;
 +
-+  const pending = loader.loadAsync(url);
++  const pending = loader.loadAsync(url).then(async (gltf) => {
++    await fitAvatarTexturesToDisplayBudget(gltf.scene);
++    const box = new Box3().setFromObject(gltf.scene);
++    avatarBounds.set(url, {
++      height: box.max.y - box.min.y,
++      minY: box.min.y,
++    });
++    return gltf;
++  });
 +  loads.set(url, pending);
 +  void pending.catch(() => {
 +    if (loads.get(url) === pending) loads.delete(url);
 +  });
 +  return pending;
++}
++
++/**
++ * The authored character GLBs include desktop-production 4K PNGs. A single
++ * avatar can otherwise allocate hundreds of megabytes and block the WebGL
++ * driver for several frames when selected. Resize those decoded images once,
++ * before any instance reaches the renderer. The shared textures and all later
++ * clones retain the same color-space and material configuration.
++ */
++async function fitAvatarTexturesToDisplayBudget(root: Object3D): Promise<void> {
++  if (typeof createImageBitmap !== "function") return;
++
++  const texturesByImage = new Map<object, Texture[]>();
++  for (const texture of collectTextures(root)) {
++    const image = texture.image as object | undefined;
++    if (!image) continue;
++    const siblings = texturesByImage.get(image);
++    if (siblings) siblings.push(texture);
++    else texturesByImage.set(image, [texture]);
++  }
++
++  await Promise.all(
++    [...texturesByImage].map(async ([image, imageTextures]) => {
++      const source = image as ImageBitmapSource & {
++        width?: number;
++        height?: number;
++        naturalWidth?: number;
++        naturalHeight?: number;
++        close?: () => void;
++      };
++      const width = source.width ?? source.naturalWidth ?? 0;
++      const height = source.height ?? source.naturalHeight ?? 0;
++      const largestDimension = Math.max(width, height);
++      if (largestDimension <= MAX_AVATAR_TEXTURE_DIMENSION) return;
++
++      const scale = MAX_AVATAR_TEXTURE_DIMENSION / largestDimension;
++      const resized = await createImageBitmap(source, {
++        resizeWidth: Math.max(1, Math.round(width * scale)),
++        resizeHeight: Math.max(1, Math.round(height * scale)),
++        resizeQuality: "high",
++      });
++      for (const texture of imageTextures) {
++        texture.image = resized;
++        texture.needsUpdate = true;
++      }
++      source.close?.();
++    })
++  );
++}
++
++function collectTextures(root: Object3D): Texture[] {
++  const textures = new Set<Texture>();
++  root.traverse((child) => {
++    const mesh = child as Mesh;
++    if (!mesh.material) return;
++    const materials = Array.isArray(mesh.material)
++      ? mesh.material
++      : [mesh.material];
++    for (const material of materials) {
++      for (const value of Object.values(material)) {
++        if ((value as Texture | undefined)?.isTexture) {
++          textures.add(value as Texture);
++        }
++      }
++    }
++  });
++  return [...textures];
 +}
 +
 +/**
@@ -2857,6 +4117,145 @@ index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb289
 + */
 +export function prepareSharedGltf(url: string): Promise<void> {
 +  return loadSharedGltf(url).then(() => undefined);
++}
++
++/** Reuse source-pose bounds instead of traversing a prepared clone on click. */
++export function getSharedGltfBounds(
++  url: string
++): { height: number; minY: number } | null {
++  return avatarBounds.get(url) ?? null;
++}
++
++/**
++ * Register a live renderer that can prepare avatar shaders and textures on
++ * intent. Multiple Avatar3D instances in one canvas share one context.
++ */
++export function registerAvatarRenderWarmup(
++  renderer: WebGLRenderer,
++  scene: Scene,
++  getCamera: () => Camera | null
++): () => void {
++  const existing = avatarRenderContexts.get(renderer);
++  if (existing) {
++    existing.references++;
++    existing.getCamera = getCamera;
++  } else {
++    avatarRenderContexts.set(renderer, {
++      renderer,
++      scene,
++      getCamera,
++      references: 1,
++      warmups: new Map(),
++      preparedRoots: new Map(),
++      preparedUrls: new Set(),
++    });
++  }
++
++  return () => {
++    const context = avatarRenderContexts.get(renderer);
++    if (!context) return;
++    context.references--;
++    if (context.references > 0) return;
++    for (const root of context.preparedRoots.values()) {
++      disposeWarmAvatarRoot(root);
++    }
++    avatarRenderContexts.delete(renderer);
++  };
++}
++
++function disposeWarmAvatarRoot(root: Object3D): void {
++  const skeletons = new Set<Skeleton>();
++  root.traverse((child) => {
++    const mesh = child as Mesh & { skeleton?: Skeleton };
++    if (mesh.skeleton) skeletons.add(mesh.skeleton);
++    if (!mesh.material) return;
++    if (Array.isArray(mesh.material)) {
++      mesh.material.forEach((material) => material.dispose());
++    } else {
++      mesh.material.dispose();
++    }
++  });
++  skeletons.forEach((skeleton) => skeleton.dispose());
++}
++
++async function warmAvatarForRenderer(
++  context: AvatarRenderWarmupContext,
++  root: Object3D
++): Promise<void> {
++  const camera = context.getCamera();
++  if (!camera) return;
++
++  await context.renderer.compileAsync(root, camera, context.scene);
++
++  // Upload one decoded texture per painted frame. WebGLRenderer.initTexture()
++  // leaves the live framebuffer, viewport, and scene untouched, so moving
++  // across avatar choices cannot flash a one-pixel target onto the stage.
++  for (const texture of collectTextures(root)) {
++    context.renderer.initTexture(texture);
++    await yieldToNextFrame();
++  }
++}
++
++/**
++ * Parse and upload an avatar when pointer or keyboard intent is known.
++ * Failed hints are evicted so the normal visible load can still retry.
++ */
++export async function prepareAvatarForDisplay(url: string): Promise<void> {
++  const gltf = await loadSharedGltf(url);
++  await Promise.all(
++    [...avatarRenderContexts.values()].map((context) => {
++      const existing = context.warmups.get(url);
++      if (existing) return existing;
++
++      const preparedRoot = cloneSharedSkinnedScene(gltf.scene);
++      preparedRoot.traverse((child) => {
++        const mesh = child as Mesh;
++        if (mesh.isMesh) mesh.castShadow = true;
++      });
++      const pending = warmAvatarForRenderer(context, preparedRoot)
++        .then(() => {
++          context.preparedRoots.set(url, preparedRoot);
++          context.preparedUrls.add(url);
++        })
++        .catch((error) => {
++          if (context.warmups.get(url) === pending) {
++            context.warmups.delete(url);
++            context.preparedRoots.delete(url);
++            disposeWarmAvatarRoot(preparedRoot);
++          }
++          throw error;
++        });
++      context.warmups.set(url, pending);
++      return pending;
++    })
++  );
++}
++
++/** Whether a URL's shaders and shared textures are ready for this renderer. */
++export function isAvatarPreparedForRenderer(
++  url: string,
++  renderer: WebGLRenderer
++): boolean {
++  return avatarRenderContexts.get(renderer)?.preparedUrls.has(url) ?? false;
++}
++
++/** Transfer a completed intent warmup to the avatar instance that requested it. */
++export function takePreparedAvatarRoot(
++  url: string,
++  renderer?: WebGLRenderer
++): Object3D | null {
++  const contexts = renderer
++    ? [avatarRenderContexts.get(renderer)].filter(
++        (context): context is AvatarRenderWarmupContext => Boolean(context)
++      )
++    : [...avatarRenderContexts.values()];
++  for (const context of contexts) {
++    const root = context.preparedRoots.get(url);
++    if (!root) continue;
++    context.preparedRoots.delete(url);
++    return root;
++  }
++  return null;
 +}
 +
 +/**
@@ -2978,4 +4377,11 @@ index 0000000000000000000000000000000000000000..b5c8ba3d73be26f0873158af337eb289
 +  availabilityChecks.clear();
 +  performerInitializationQueue = Promise.resolve();
 +  performerMountQueue = Promise.resolve();
++  for (const context of avatarRenderContexts.values()) {
++    context.warmups.clear();
++    for (const root of context.preparedRoots.values()) {
++      disposeWarmAvatarRoot(root);
++    }
++    context.preparedRoots.clear();
++  }
 +}

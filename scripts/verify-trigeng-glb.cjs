@@ -9,7 +9,7 @@ const glbPath = path.join(
   "static",
   "models",
   "props",
-  "buugeng.glb"
+  "trigeng.glb"
 );
 
 function invariant(condition, message) {
@@ -21,7 +21,10 @@ function parseGlb(filePath) {
   invariant(bytes.length >= 20, "GLB is too short");
   invariant(bytes.readUInt32LE(0) === 0x46546c67, "GLB magic is invalid");
   invariant(bytes.readUInt32LE(4) === 2, "GLB must use glTF 2.0");
-  invariant(bytes.readUInt32LE(8) === bytes.length, "GLB length header is invalid");
+  invariant(
+    bytes.readUInt32LE(8) === bytes.length,
+    "GLB length header is invalid"
+  );
 
   let offset = 12;
   let document = null;
@@ -37,7 +40,6 @@ function parseGlb(filePath) {
     }
     offset += 8 + chunkLength;
   }
-
   invariant(document, "GLB JSON chunk is missing");
   invariant(binary, "GLB binary chunk is missing");
   return { bytes, document, binary };
@@ -55,9 +57,11 @@ function nodeMatrix(node) {
 function readPositions(document, binary, accessorIndex) {
   const accessor = document.accessors[accessorIndex];
   const view = document.bufferViews[accessor.bufferView];
-  invariant(accessor.componentType === 5126, "POSITION data must use FLOAT components");
+  invariant(
+    accessor.componentType === 5126,
+    "POSITION data must use FLOAT components"
+  );
   invariant(accessor.type === "VEC3", "POSITION data must use VEC3 values");
-
   const stride = view.byteStride ?? 12;
   const baseOffset = (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
   const positions = [];
@@ -77,6 +81,7 @@ function readPositions(document, binary, accessorIndex) {
 function collectScene(document, binary) {
   const minimum = new Vector3(Infinity, Infinity, Infinity);
   const maximum = new Vector3(-Infinity, -Infinity, -Infinity);
+  const worldMatrices = new Map();
   let vertexCount = 0;
   let triangleCount = 0;
   let primitiveCount = 0;
@@ -84,25 +89,40 @@ function collectScene(document, binary) {
   function visit(nodeIndex, parentMatrix) {
     const node = document.nodes[nodeIndex];
     const worldMatrix = parentMatrix.clone().multiply(nodeMatrix(node));
+    worldMatrices.set(nodeIndex, worldMatrix);
     if (node.mesh !== undefined) {
       const mesh = document.meshes[node.mesh];
       for (const primitive of mesh.primitives) {
         primitiveCount += 1;
-        invariant(primitive.indices !== undefined, `${mesh.name} is unindexed triangle soup`);
-        invariant(primitive.attributes.NORMAL !== undefined, `${mesh.name} has no normals`);
-        invariant(primitive.attributes.TEXCOORD_0 !== undefined, `${mesh.name} has no UVs`);
-
-        const positions = readPositions(document, binary, primitive.attributes.POSITION);
+        invariant(
+          primitive.indices !== undefined,
+          `${mesh.name} is unindexed triangle soup`
+        );
+        invariant(
+          primitive.attributes.NORMAL !== undefined,
+          `${mesh.name} has no normals`
+        );
+        invariant(
+          primitive.attributes.TEXCOORD_0 !== undefined,
+          `${mesh.name} has no UVs`
+        );
+        const positions = readPositions(
+          document,
+          binary,
+          primitive.attributes.POSITION
+        );
         vertexCount += positions.length;
         for (const position of positions) {
           position.applyMatrix4(worldMatrix);
           minimum.min(position);
           maximum.max(position);
         }
-
-        const indexAccessor = document.accessors[primitive.indices];
-        invariant(indexAccessor.count % 3 === 0, `${mesh.name} indices do not form triangles`);
-        triangleCount += indexAccessor.count / 3;
+        const indices = document.accessors[primitive.indices];
+        invariant(
+          indices.count % 3 === 0,
+          `${mesh.name} indices do not form triangles`
+        );
+        triangleCount += indices.count / 3;
       }
     }
     for (const child of node.children ?? []) visit(child, worldMatrix);
@@ -114,52 +134,111 @@ function collectScene(document, binary) {
     minimum,
     maximum,
     dimensions: maximum.clone().sub(minimum),
-    center: maximum.clone().add(minimum).multiplyScalar(0.5),
     vertexCount,
     triangleCount,
     primitiveCount,
+    worldMatrices,
   };
-}
-
-function near(actual, expected, tolerance) {
-  return Math.abs(actual - expected) <= tolerance;
 }
 
 const { bytes, document, binary } = parseGlb(glbPath);
 const stats = collectScene(document, binary);
-const nodeNames = new Set((document.nodes ?? []).map((node) => node.name));
-const materialNames = new Set((document.materials ?? []).map((item) => item.name));
+const nodes = document.nodes ?? [];
+const nodeIndexByName = new Map(nodes.map((node, index) => [node.name, index]));
+const materialNames = new Set(
+  (document.materials ?? []).map((material) => material.name)
+);
+const expectedMaterials = new Set([
+  "TKA_Trigeng_Recolor",
+  "TKA_Trigeng_ShellSeam",
+]);
+const requiredNodes = [
+  "TKA_Trigeng",
+  "TKA_Hand_Pivot",
+  "TKA_Trigeng_CrownedShell",
+  "TKA_Trigeng_MoldSeam",
+];
 
-invariant(bytes.length <= 500_000, `Buugeng exceeds 500 KB: ${bytes.length}`);
-invariant(document.scenes?.length === 1, "Buugeng must contain exactly one scene");
-invariant((document.cameras?.length ?? 0) === 0, "QA camera leaked into the GLB");
+invariant(bytes.length <= 900_000, `Trigeng exceeds 900 KB: ${bytes.length}`);
+invariant(
+  document.scenes?.length === 1,
+  "Trigeng must contain exactly one scene"
+);
+invariant(
+  (document.cameras?.length ?? 0) === 0,
+  "QA camera leaked into the GLB"
+);
 invariant(
   !(document.extensionsUsed ?? []).includes("KHR_lights_punctual"),
   "QA lights leaked into the GLB"
 );
-invariant(nodeNames.has("TKA_Buugeng"), "Root node TKA_Buugeng is missing");
-invariant(nodeNames.has("TKA_Buugeng_Body"), "Body node is missing");
-invariant(materialNames.has("TKA_Body_Recolor"), "Body material is missing");
-invariant(materialNames.size === 1, `Buugeng must use one material, found ${materialNames.size}`);
+for (const nodeName of requiredNodes) {
+  invariant(
+    nodeIndexByName.has(nodeName),
+    `Required node is missing: ${nodeName}`
+  );
+}
+for (const materialName of expectedMaterials) {
+  invariant(
+    materialNames.has(materialName),
+    `Required material is missing: ${materialName}`
+  );
+}
 invariant(
-  [...nodeNames].every((name) => !name.includes("Grip")),
-  "Grip geometry must not return"
-);
-invariant(stats.vertexCount <= 12_000, `Too many vertices: ${stats.vertexCount}`);
-invariant(stats.triangleCount <= 10_000, `Too many triangles: ${stats.triangleCount}`);
-invariant(
-  near(stats.dimensions.y, 0.83, 0.005),
-  `Local Y length must be 0.83m, got ${stats.dimensions.y.toFixed(4)}`
-);
-invariant(
-  stats.dimensions.x >= 0.39 && stats.dimensions.x <= 0.48,
-  `Unexpected silhouette width: ${stats.dimensions.x.toFixed(4)}`
+  materialNames.size === expectedMaterials.size,
+  `Unexpected material set: ${[...materialNames].join(", ")}`
 );
 invariant(
-  stats.dimensions.z >= 0.0095 && stats.dimensions.z <= 0.0105,
-  `Body depth must be 10mm, got ${stats.dimensions.z.toFixed(4)}`
+  stats.vertexCount <= 40_000,
+  `Too many vertices: ${stats.vertexCount}`
 );
-invariant(stats.center.length() <= 0.003, `Hand pivot drifted: ${stats.center.toArray()}`);
+invariant(
+  stats.triangleCount <= 34_000,
+  `Too many triangles: ${stats.triangleCount}`
+);
+invariant(
+  stats.dimensions.x >= 0.61 && stats.dimensions.x <= 0.67,
+  `Unexpected Trigeng width: ${stats.dimensions.x.toFixed(4)}`
+);
+invariant(
+  stats.dimensions.y >= 0.61 && stats.dimensions.y <= 0.67,
+  `Unexpected Trigeng height: ${stats.dimensions.y.toFixed(4)}`
+);
+invariant(
+  stats.dimensions.z >= 0.028 && stats.dimensions.z <= 0.055,
+  `Unexpected Trigeng depth: ${stats.dimensions.z.toFixed(4)}`
+);
+
+const rootNode = nodes[nodeIndexByName.get("TKA_Trigeng")];
+invariant(
+  rootNode.extras?.tka_prop_type === "trigeng",
+  "Root prop metadata is missing"
+);
+invariant(
+  rootNode.extras?.grip_origin === "0,0,0",
+  "Root grip metadata is missing"
+);
+invariant(
+  rootNode.extras?.local_primary_axis === "+Y",
+  "Root axis metadata is missing"
+);
+invariant(
+  rootNode.extras?.recolor_material === "TKA_Trigeng_Recolor",
+  "Root recolor metadata is missing"
+);
+invariant(
+  rootNode.extras?.canonical_source === "static/images/props/trigeng.svg",
+  "Canonical source metadata is missing"
+);
+
+const pivotIndex = nodeIndexByName.get("TKA_Hand_Pivot");
+const pivotPosition = new Vector3().setFromMatrixPosition(
+  stats.worldMatrices.get(pivotIndex)
+);
+invariant(
+  pivotPosition.length() <= 0.00001,
+  `Hand pivot drifted: ${pivotPosition.toArray()}`
+);
 
 console.log(`Verified ${glbPath}`);
 console.log(`  bytes: ${bytes.length}`);
@@ -171,4 +250,9 @@ console.log(`  materials: ${[...materialNames].join(", ")}`);
 console.log(
   `  bounds: ${stats.dimensions.x.toFixed(4)} x ${stats.dimensions.y.toFixed(4)} x ${stats.dimensions.z.toFixed(4)} m`
 );
-console.log(`  hand pivot: ${stats.center.toArray().map((value) => value.toFixed(5)).join(", ")}`);
+console.log(
+  `  hand pivot: ${pivotPosition
+    .toArray()
+    .map((value) => value.toFixed(5))
+    .join(", ")}`
+);
