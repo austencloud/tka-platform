@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -39,12 +39,18 @@
   import { createDeckProductionState } from "./state/deck-production-state.svelte";
   import { isGalleryRelease, isLoopRelease } from "./deck-release-model";
   import { setDeckReleaserContext } from "./context/deck-releaser-context";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { mintSeed, nextReferenceNumber } from "../../services/deck-recipe";
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { loadDiamondEdges } from "../../services/pictograph-letter-lookup";
   import FestivalSamplerPrintView from "./FestivalSamplerPrintView.svelte";
+  import FestivalSamplerTurnReview from "./FestivalSamplerTurnReview.svelte";
+  import {
+    legacyGalleryFiltersToSpec,
+    type GalleryDeckSelection,
+  } from "../../services/gallery-deck-source";
+  import { runDeckReleaserTransition } from "./deck-releaser-motion";
 
   interface Props {
     onContextMenu?: (
@@ -60,12 +66,11 @@
   const storage = typeof window === "undefined" ? null : window.localStorage;
   const rs = createDeckReleaserState({
     storage,
-    getBluePropType: () => settingsService.settings.bluePropType,
-    getRedPropType: () => settingsService.settings.redPropType,
+    getBluePropType: () => getSettings().bluePropType,
+    getRedPropType: () => getSettings().redPropType,
     mintSeed,
     nextReferenceNumber,
   });
-  setDeckReleaserContext({ state: rs });
 
   const print = createDeckPrintState(rs, {
     storage,
@@ -139,6 +144,11 @@
         await import("../../services/gallery-deck-source");
       return queryGalleryDeck(...args);
     },
+    async queryGalleryDeckFromSpec(...args) {
+      const { queryGalleryDeckFromSpec } =
+        await import("../../services/gallery-deck-source");
+      return queryGalleryDeckFromSpec(...args);
+    },
     async resolveGalleryCards(...args) {
       const { resolveGalleryCards } =
         await import("../../services/gallery-deck-source");
@@ -158,6 +168,7 @@
     success: (message) => toast.success(message),
     error: (message) => toast.error(message),
   });
+  setDeckReleaserContext({ state: rs });
 
   // Captured synchronously at component init, BEFORE any $effect runs. The
   // auto-persist effect below would otherwise fire first and overwrite the saved
@@ -181,14 +192,92 @@
       ? isGalleryRelease(rs.viewingRelease)
       : rs.deckMode === "gallery"
   );
+  const galleryReviewFilterSpec = $derived.by(() => {
+    if (!viewingGallery) return null;
+
+    if (rs.viewingRelease) {
+      const recipe = rs.viewingRelease.recipe;
+      return (
+        recipe?.galleryFilterSpec ??
+        (recipe?.galleryFilters
+          ? legacyGalleryFiltersToSpec(recipe.galleryFilters)
+          : null)
+      );
+    }
+
+    return (
+      rs.galleryFilterSpec ?? legacyGalleryFiltersToSpec(rs.galleryFilters)
+    );
+  });
   let showNameModal = $state(false);
+  const stageOrder = { configure: 0, review: 1, released: 2 } as const;
+  const initialVisualStep = untrack(() => rs.step);
+  let visibleStep = $state(initialVisualStep);
+  let pendingVisibleStep = initialVisualStep;
+
+  // The persisted production step changes inside several state owners (draw,
+  // archive, release). Keep one visual step at the shell and carry every owner
+  // through the same directional transition instead of teaching each service
+  // about animation.
+  $effect(() => {
+    const nextStep = rs.step;
+    if (nextStep === pendingVisibleStep) return;
+    const previousStep = pendingVisibleStep;
+    pendingVisibleStep = nextStep;
+    const direction =
+      stageOrder[nextStep] >= stageOrder[previousStep] ? "forward" : "backward";
+    queueMicrotask(() => {
+      runDeckReleaserTransition("stage", direction, () => {
+        visibleStep = nextStep;
+      });
+    });
+  });
+
+  function commitDeckStep(
+    nextStep: keyof typeof stageOrder,
+    direction: "forward" | "backward",
+    mutate: () => void
+  ): void {
+    pendingVisibleStep = nextStep;
+    runDeckReleaserTransition("stage", direction, () => {
+      mutate();
+      visibleStep = nextStep;
+    });
+  }
   const showingFestivalSampler = $derived(
     page.url.searchParams.get("pack") === "festival-sampler-2026"
   );
+  const showingFestivalTurnReview = $derived(
+    showingFestivalSampler &&
+      page.url.searchParams.get("review") === "turn-patterns"
+  );
+
+  const sourceOrder = { loop: 0, tnd: 1, gallery: 2 } as const;
+
+  function handleDeckModeChange(mode: "loop" | "tnd" | "gallery"): void {
+    if (mode === rs.deckMode) return;
+    const direction =
+      sourceOrder[mode] >= sourceOrder[rs.deckMode] ? "forward" : "backward";
+    runDeckReleaserTransition("source", direction, () => {
+      production.handleModeChange(mode);
+    });
+  }
+
+  function handleSidebarModeChange(mode: SidebarMode): void {
+    if (mode === sidebarMode) return;
+    runDeckReleaserTransition(
+      "sidebar",
+      mode === "print" ? "forward" : "backward",
+      () => {
+        sidebarMode = mode;
+      }
+    );
+  }
 
   async function closeFestivalSampler(): Promise<void> {
     const url = new URL(page.url);
     url.searchParams.delete("pack");
+    url.searchParams.delete("review");
     await goto(`${url.pathname}${url.search}${url.hash}`, {
       keepFocus: true,
       noScroll: true,
@@ -198,6 +287,26 @@
   async function openFestivalSampler(): Promise<void> {
     const url = new URL(page.url);
     url.searchParams.set("pack", "festival-sampler-2026");
+    url.searchParams.delete("review");
+    await goto(`${url.pathname}${url.search}${url.hash}`, {
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
+  async function openFestivalTurnReview(): Promise<void> {
+    const url = new URL(page.url);
+    url.searchParams.set("pack", "festival-sampler-2026");
+    url.searchParams.set("review", "turn-patterns");
+    await goto(`${url.pathname}${url.search}${url.hash}`, {
+      keepFocus: true,
+      noScroll: true,
+    });
+  }
+
+  async function closeFestivalTurnReview(): Promise<void> {
+    const url = new URL(page.url);
+    url.searchParams.delete("review");
     await goto(`${url.pathname}${url.search}${url.hash}`, {
       keepFocus: true,
       noScroll: true,
@@ -294,7 +403,7 @@
   // SequenceData) are never stored — re-derive them here so the deck renders after
   // an HMR re-eval / refresh / tab reopen. No-op when viewing a release or when a
   // draw already populated sequences this session.
-  async function handleDraw() {
+  async function handleDraw(gallerySelection?: GalleryDeckSelection) {
     const gen = ++rs.drawGeneration;
     // Fresh draw = a new, not-yet-named deck. Clear any leftover name.
     rs.name = "";
@@ -304,7 +413,11 @@
       const ok = await production.generateLiveDeck(gen);
       if (!ok || gen !== rs.drawGeneration) return;
     } else if (rs.deckMode === "gallery") {
-      const ok = await production.composeGalleryDeck(gen);
+      if (!gallerySelection) {
+        toast.error("Choose the Gallery cards before composing the deck.");
+        return;
+      }
+      const ok = await production.composeGalleryDeck(gen, gallerySelection);
       if (!ok || gen !== rs.drawGeneration) return;
     } else {
       rs.cards = production.composeFullDeck();
@@ -313,8 +426,10 @@
       if (gen !== rs.drawGeneration) return;
     }
     archive.archiveCurrent();
-    rs.step = "review";
-    rs.persist();
+    commitDeckStep("review", "forward", () => {
+      rs.step = "review";
+      rs.persist();
+    });
   }
 
   async function handleRedraw() {
@@ -324,6 +439,9 @@
     rs.bumpReference();
     if (rs.deckMode === "loop") {
       const ok = await production.generateLiveDeck(gen);
+      if (!ok || gen !== rs.drawGeneration) return;
+    } else if (rs.deckMode === "gallery") {
+      const ok = await production.refreshGallery(gen);
       if (!ok || gen !== rs.drawGeneration) return;
     } else {
       rs.cards = production.composeFullDeck();
@@ -378,27 +496,40 @@
   }
 
   function handleStartNew() {
-    rs.reset();
+    commitDeckStep("configure", "backward", () => rs.reset());
   }
 
   function handleReuseRecipe(recipe: DeckRecipe) {
-    rs.loadRecipe(recipe);
+    commitDeckStep("configure", "backward", () => rs.loadRecipe(recipe));
     toast.success("Recipe loaded. Tweak or press Draw for a fresh deck.");
   }
 
   async function handleSelectRelease(release: DeckRelease) {
-    releaseHistory.activate(release);
+    if (visibleStep === "review") {
+      runDeckReleaserTransition("content", "forward", () => {
+        releaseHistory.activate(release);
+      });
+    } else {
+      commitDeckStep("review", "forward", () => {
+        releaseHistory.activate(release);
+      });
+    }
     const gen = ++rs.drawGeneration;
     await production.loadSelectedSequences(gen);
   }
 </script>
 
-{#if showingFestivalSampler}
-  <FestivalSamplerPrintView onExit={closeFestivalSampler} />
+{#if showingFestivalTurnReview}
+  <FestivalSamplerTurnReview onBack={closeFestivalTurnReview} />
+{:else if showingFestivalSampler}
+  <FestivalSamplerPrintView
+    onExit={closeFestivalSampler}
+    onReviewTurns={openFestivalTurnReview}
+  />
 {/if}
 <div class="deck-releaser" class:festival-hidden={showingFestivalSampler}>
   <div class="releaser-main">
-    {#if rs.step === "configure"}
+    {#if visibleStep === "configure"}
       <ConfigureStep
         deckMode={rs.deckMode}
         weights={rs.weights}
@@ -412,8 +543,8 @@
         selectedTnDTurnPatterns={rs.selectedTnDTurnPatterns}
         tndCardCount={production.tndCardCount}
         selectedTurnPatternCount={rs.selectedTnDTurnPatterns.size}
-        isLoading={rs.isLoadingPools}
-        onModeChange={production.handleModeChange}
+        isLoading={rs.isLoadingPools || rs.isLoadingSequences}
+        onModeChange={handleDeckModeChange}
         onWeightChange={production.handleWeightChange}
         onTotalCardsChange={(t) => {
           rs.totalCards = t;
@@ -444,7 +575,7 @@
         isGenerating={rs.isLoadingSequences}
         genProgress={rs.drawProgress}
       />
-    {:else if rs.step === "review"}
+    {:else if visibleStep === "review"}
       <ReviewStep
         cards={rs.cards}
         sequences={rs.sequences}
@@ -455,6 +586,7 @@
         refNumber={print.deckRefNumber}
         deckName={rs.name}
         deckSummary={print.metadata.deckSummary}
+        galleryFilterSpec={galleryReviewFilterSpec}
         isReleasing={rs.isReleasing}
         readOnly={rs.viewingRelease !== null}
         brokenLoopCount={rs.brokenLoopCount}
@@ -502,15 +634,17 @@
         onRelease={openReleaseModal}
         onRename={rs.viewingRelease !== null ? handleRenameDeck : undefined}
         onBack={() => {
-          rs.viewingRelease = null;
-          rs.themeOverride = null;
-          rs.bluePropOverride = null;
-          rs.redPropOverride = null;
-          rs.step = "configure";
-          rs.persist();
+          commitDeckStep("configure", "backward", () => {
+            rs.viewingRelease = null;
+            rs.themeOverride = null;
+            rs.bluePropOverride = null;
+            rs.redPropOverride = null;
+            rs.step = "configure";
+            rs.persist();
+          });
         }}
       />
-    {:else if rs.step === "released"}
+    {:else if visibleStep === "released"}
       <div class="released-step">
         <div class="released-card">
           <div class="released-icon">
@@ -545,133 +679,142 @@
           { value: "print", label: "Print" },
         ]}
         value={sidebarMode}
-        onchange={(v) => {
-          sidebarMode = v;
-        }}
+        onchange={handleSidebarModeChange}
         color="accent"
         size="sm"
       />
     </div>
 
-    {#if sidebarMode === "browse"}
-      <div class="sidebar-body">
-        <section class="ready-print-jobs" aria-labelledby="ready-print-heading">
-          <h2 id="ready-print-heading">Ready to print</h2>
-          <button
-            type="button"
-            class="festival-job"
-            onclick={openFestivalSampler}
-          >
-            <span class="festival-job-icon" aria-hidden="true">
-              <i class="fas fa-ticket-alt"></i>
-            </span>
-            <span class="festival-job-copy">
-              <strong>Festival Sampler</strong>
-              <small>1 signup + 8 sample cards · duplex batch</small>
-            </span>
-            <i
-              class="fas fa-chevron-right festival-job-arrow"
-              aria-hidden="true"
-            ></i>
-          </button>
-        </section>
-        <GeneratedArchivePanel
-          decks={archive.decks}
-          isLoading={archive.isLoading}
-          activeRefNumber={rs.viewingRelease === null && rs.step === "review"
-            ? rs.referenceNumber
-            : null}
-          onOpen={handleOpenArchivedDeck}
-          onDelete={archive.remove}
-        />
-        <ReleaseHistoryPanel
-          title="Timing &amp; Direction Decks"
-          releases={releaseHistory.tndReleases}
-          isLoading={releaseHistory.isLoading}
-          activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
-          onSelectRelease={handleSelectRelease}
-          onDeleteRelease={handleDeleteRelease}
-          onReuseRecipe={handleReuseRecipe}
-        />
-        {#if releaseHistory.galleryReleases.length > 0}
-          <ReleaseHistoryPanel
-            title="Gallery Decks"
-            releases={releaseHistory.galleryReleases}
-            isLoading={releaseHistory.isLoading}
-            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
-            onSelectRelease={handleSelectRelease}
-            onDeleteRelease={handleDeleteRelease}
-            onReuseRecipe={handleReuseRecipe}
-          />
-        {/if}
-        {#if releaseHistory.loopReleases.length > 0}
-          <ReleaseHistoryPanel
-            title="Released Decks"
-            releases={releaseHistory.loopReleases}
-            isLoading={releaseHistory.isLoading}
-            activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
-            onSelectRelease={handleSelectRelease}
-            onDeleteRelease={handleDeleteRelease}
-            onReuseRecipe={handleReuseRecipe}
-          />
-        {/if}
-      </div>
-      {#if rs.step === "review" && rs.viewingRelease === null}
-        <div class="sidebar-footer">
-          <button
-            type="button"
-            class="release-btn"
-            onclick={openReleaseModal}
-            disabled={rs.isReleasing || print.isRendering}
-          >
-            {#if rs.isReleasing}
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i> Releasing…
-            {:else}
-              <i class="fas fa-stamp" aria-hidden="true"></i>
-              Release Deck #{String(rs.nextDeckNumber).padStart(3, "0")}
+    <div class="sidebar-stage">
+      {#if sidebarMode === "browse"}
+        <div class="sidebar-view">
+          <div class="sidebar-body">
+            <section
+              class="ready-print-jobs"
+              aria-labelledby="ready-print-heading"
+            >
+              <h2 id="ready-print-heading">Ready to print</h2>
+              <button
+                type="button"
+                class="festival-job"
+                onclick={openFestivalSampler}
+              >
+                <span class="festival-job-icon" aria-hidden="true">
+                  <i class="fas fa-ticket-alt"></i>
+                </span>
+                <span class="festival-job-copy">
+                  <strong>Festival Sampler</strong>
+                  <small>1 signup + 8 sample cards · duplex batch</small>
+                </span>
+                <i
+                  class="fas fa-chevron-right festival-job-arrow"
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </section>
+            <GeneratedArchivePanel
+              decks={archive.decks}
+              isLoading={archive.isLoading}
+              activeRefNumber={rs.viewingRelease === null &&
+              visibleStep === "review"
+                ? rs.referenceNumber
+                : null}
+              onOpen={handleOpenArchivedDeck}
+              onDelete={archive.remove}
+            />
+            <ReleaseHistoryPanel
+              title="Timing &amp; Direction Decks"
+              releases={releaseHistory.tndReleases}
+              isLoading={releaseHistory.isLoading}
+              activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+              onSelectRelease={handleSelectRelease}
+              onDeleteRelease={handleDeleteRelease}
+              onReuseRecipe={handleReuseRecipe}
+            />
+            {#if releaseHistory.galleryReleases.length > 0}
+              <ReleaseHistoryPanel
+                title="Gallery Decks"
+                releases={releaseHistory.galleryReleases}
+                isLoading={releaseHistory.isLoading}
+                activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+                onSelectRelease={handleSelectRelease}
+                onDeleteRelease={handleDeleteRelease}
+                onReuseRecipe={handleReuseRecipe}
+              />
             {/if}
-          </button>
+            {#if releaseHistory.loopReleases.length > 0}
+              <ReleaseHistoryPanel
+                title="Released Decks"
+                releases={releaseHistory.loopReleases}
+                isLoading={releaseHistory.isLoading}
+                activeDeckNumber={rs.viewingRelease?.deckNumber ?? null}
+                onSelectRelease={handleSelectRelease}
+                onDeleteRelease={handleDeleteRelease}
+                onReuseRecipe={handleReuseRecipe}
+              />
+            {/if}
+          </div>
+          {#if visibleStep === "review" && rs.viewingRelease === null}
+            <div class="sidebar-footer">
+              <button
+                type="button"
+                class="release-btn"
+                onclick={openReleaseModal}
+                disabled={rs.isReleasing || print.isRendering}
+              >
+                {#if rs.isReleasing}
+                  <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                  Releasing…
+                {:else}
+                  <i class="fas fa-stamp" aria-hidden="true"></i>
+                  Release Deck #{String(rs.nextDeckNumber).padStart(3, "0")}
+                {/if}
+              </button>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <div class="sidebar-view">
+          <div class="sidebar-body">
+            {#if visibleStep === "review" && rs.cards.length > 0}
+              <PrintPanel
+                cardCount={rs.cards.length}
+                tndElements={print.tndElements}
+                cardSize={print.cardSize}
+                paperSize={print.paperSize}
+                copies={print.copies}
+                groupByElement={print.groupByElement}
+                includeHowToRead={print.includeHowToRead}
+                onIncludeHowToReadChange={(value) => {
+                  print.includeHowToRead = value;
+                }}
+                theme={rs.theme}
+                selectedSide={print.selectedSide}
+                onSideChange={(side) => {
+                  print.selectedSide = side;
+                }}
+                isExporting={print.isExporting}
+                isPrinting={print.isPrinting}
+                isRendering={print.isRendering}
+                exportProgress={print.exportProgress}
+                exportTotal={print.exportTotal}
+                exportError={print.exportError}
+                onPrint={print.print}
+                onPrintTest={print.printTestSheet}
+                onExportPDF={print.exportPDF}
+                onExportZIP={print.exportZIP}
+                onExportBoth={print.exportFrontsAndBacks}
+              />
+            {:else}
+              <div class="sidebar-empty">
+                <i class="fas fa-print" aria-hidden="true"></i>
+                <span>Compose or open a deck to print.</span>
+              </div>
+            {/if}
+          </div>
         </div>
       {/if}
-    {:else}
-      <div class="sidebar-body">
-        {#if rs.step === "review" && rs.cards.length > 0}
-          <PrintPanel
-            cardCount={rs.cards.length}
-            tndElements={print.tndElements}
-            cardSize={print.cardSize}
-            paperSize={print.paperSize}
-            copies={print.copies}
-            groupByElement={print.groupByElement}
-            includeHowToRead={print.includeHowToRead}
-            onIncludeHowToReadChange={(value) => {
-              print.includeHowToRead = value;
-            }}
-            theme={rs.theme}
-            selectedSide={print.selectedSide}
-            onSideChange={(side) => {
-              print.selectedSide = side;
-            }}
-            isExporting={print.isExporting}
-            isPrinting={print.isPrinting}
-            isRendering={print.isRendering}
-            exportProgress={print.exportProgress}
-            exportTotal={print.exportTotal}
-            exportError={print.exportError}
-            onPrint={print.print}
-            onPrintTest={print.printTestSheet}
-            onExportPDF={print.exportPDF}
-            onExportZIP={print.exportZIP}
-            onExportBoth={print.exportFrontsAndBacks}
-          />
-        {:else}
-          <div class="sidebar-empty">
-            <i class="fas fa-print" aria-hidden="true"></i>
-            <span>Compose or open a deck to print.</span>
-          </div>
-        {/if}
-      </div>
-    {/if}
+    </div>
   </div>
 </div>
 
@@ -704,6 +847,16 @@
     overflow: auto;
   }
 
+  :global(html.deck-motion-stage) .releaser-main :global(*),
+  :global(html.deck-motion-content) .releaser-main :global(*) {
+    view-transition-name: none !important;
+  }
+
+  :global(html.deck-motion-stage) .releaser-main,
+  :global(html.deck-motion-content) .releaser-main {
+    view-transition-name: deck-releaser-stage;
+  }
+
   .releaser-sidebar {
     width: clamp(320px, 18vw, 400px);
     flex-shrink: 0;
@@ -718,6 +871,29 @@
     padding: 12px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     flex-shrink: 0;
+  }
+
+  .sidebar-stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :global(html.deck-motion-sidebar) .sidebar-stage :global(*) {
+    view-transition-name: none !important;
+  }
+
+  :global(html.deck-motion-sidebar) .sidebar-stage {
+    view-transition-name: deck-releaser-sidebar;
+  }
+
+  .sidebar-view {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
   .sidebar-body {
@@ -737,7 +913,7 @@
   .ready-print-jobs h2 {
     margin: 0 0 8px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.58));
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -763,15 +939,27 @@
     font: inherit;
     text-align: left;
     cursor: pointer;
+    transition:
+      transform var(--transition-spring),
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .festival-job:hover {
+    transform: translateY(var(--hover-lift-sm, -1px));
     border-color: var(--theme-accent, #8b5cf6);
     background: color-mix(
       in srgb,
       var(--theme-accent, #8b5cf6) 18%,
       var(--theme-card-bg, rgba(255, 255, 255, 0.04))
     );
+    box-shadow: 0 10px 24px
+      color-mix(in srgb, var(--theme-shadow, #000) 40%, transparent);
+  }
+
+  .festival-job:active {
+    transform: scale(0.985);
   }
 
   .festival-job:focus-visible {
@@ -850,11 +1038,20 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: filter 0.15s;
+    transition:
+      transform var(--transition-spring),
+      filter var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .sidebar-footer .release-btn:hover:not(:disabled) {
+    transform: translateY(var(--hover-lift-sm, -1px));
     filter: brightness(1.1);
+    box-shadow: 0 10px 26px
+      color-mix(in srgb, var(--semantic-success, #10b981) 28%, transparent);
+  }
+  .sidebar-footer .release-btn:active:not(:disabled) {
+    transform: scale(0.985);
   }
   .sidebar-footer .release-btn:disabled {
     opacity: 0.5;
@@ -895,6 +1092,8 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     text-align: center;
+    box-shadow: 0 24px 70px
+      color-mix(in srgb, var(--theme-shadow, #000) 55%, transparent);
   }
 
   .released-icon {
@@ -944,15 +1143,25 @@
     background: var(--theme-accent, #8b5cf6);
     border: none;
     border-radius: 10px;
-    color: #fff;
+    color: var(--theme-text);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+      transform var(--transition-spring),
+      filter var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .new-deck-btn:hover {
+    transform: translateY(var(--hover-lift-sm, -1px));
     filter: brightness(1.1);
+    box-shadow: 0 10px 26px
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 24%, transparent);
+  }
+
+  .new-deck-btn:active {
+    transform: scale(0.985);
   }
 
   @media (min-width: 2600px) {
@@ -986,6 +1195,18 @@
     }
     .releaser-sidebar.print-mode {
       max-height: min(65%, 640px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .festival-job,
+    .sidebar-footer .release-btn,
+    .new-deck-btn {
+      transition: none;
+    }
+
+    .sidebar-footer .fa-spin {
+      animation: none;
     }
   }
 </style>

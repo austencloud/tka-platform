@@ -1,8 +1,21 @@
 import { describe, it, expect } from "vitest";
-import { allocateTurns, getDefaultMaxTurnIntensity } from "../../../src/generation/turns/TurnAllocator.js";
+import {
+  allocateTurns,
+  getDefaultMaxTurnIntensity,
+} from "../../../src/generation/turns/TurnAllocator.js";
 
 describe("TurnAllocator", () => {
   describe("allocateTurns", () => {
+    it("uses injected entropy for deterministic allocation", () => {
+      const values = [0.99, 0, 0.49, 0.75];
+      const random = () => values.shift() ?? 0;
+
+      expect(allocateTurns(2, 2, 1, { random })).toEqual({
+        blue: [1, 0],
+        red: [0, 1],
+      });
+    });
+
     it("level 1 produces only 0 turns", () => {
       const result = allocateTurns(10, 1);
 
@@ -48,7 +61,16 @@ describe("TurnAllocator", () => {
 
       // With 200 iterations of 5 steps each (2000 values per hand),
       // we should see half turns and "fl" in the output
-      const validValues = new Set<number | "fl">([0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"]);
+      const validValues = new Set<number | "fl">([
+        0,
+        0.5,
+        1,
+        1.5,
+        2,
+        2.5,
+        3,
+        "fl",
+      ]);
       for (const v of allValues) {
         expect(validValues.has(v)).toBe(true);
       }

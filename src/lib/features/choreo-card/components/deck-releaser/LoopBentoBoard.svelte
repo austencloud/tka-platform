@@ -24,8 +24,9 @@
     LOOP_TYPE_LABELS,
   } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
-  import { scale } from "svelte/transition";
-  import { quintOut } from "svelte/easing";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
+  import ModalHeader from "$lib/shared/foundation/ui/modal/ModalHeader.svelte";
+  import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
   import TransformPanel from "./TransformPanel.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import OrientationCycler from "$lib/features/create/construct/start-position-picker/components/OrientationCycler.svelte";
@@ -36,7 +37,10 @@
   import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
-  import { type VariationConfig, type StartOriMode } from "../../services/deck-variation";
+  import {
+    type VariationConfig,
+    type StartOriMode,
+  } from "../../services/deck-variation";
   import type { ResolvedReversalPattern } from "../../domain/reversal-transform";
   import type { StepCountWeight } from "../../domain/models/DeckRelease";
   import type { CatalogSourceSummary } from "../../services/deck-composer";
@@ -81,15 +85,20 @@
   }: Props = $props();
 
   const c = getCardColors(BackgroundType.COSMIC);
-  const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
+  const LOOP_COLOR =
+    "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
   const LOOP_SHADOW = "60deg 55% 35%";
-  const POS_COLOR = "linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%)";
+  const POS_COLOR =
+    "linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #0f766e 100%)";
   const POS_SHADOW = "175deg 65% 40%";
-  const SIZE_COLOR = "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)";
+  const SIZE_COLOR =
+    "linear-gradient(135deg, #e11d48 0%, #be123c 50%, #9f1239 100%)";
   const SIZE_SHADOW = "345deg 80% 45%";
-  const PROP_TILE_COLOR = "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)";
+  const PROP_TILE_COLOR =
+    "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)";
   const PROP_TILE_SHADOW = "275deg 70% 50%";
-  const GRID_COLOR = "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%)";
+  const GRID_COLOR =
+    "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%)";
   const GRID_SHADOW = "200deg 80% 50%";
 
   // Deck size is user-set (1–500). 54 fills a print page neatly (6 sheets × 9);
@@ -106,7 +115,10 @@
   const LENGTHS = [4, 8, 12, 16];
   function stepLength(dir: number) {
     const i = LENGTHS.indexOf(rs.selectedLength);
-    rs.selectedLength = LENGTHS[Math.max(0, Math.min(LENGTHS.length - 1, (i < 0 ? 1 : i) + dir))]!;
+    rs.selectedLength =
+      LENGTHS[
+        Math.max(0, Math.min(LENGTHS.length - 1, (i < 0 ? 1 : i) + dir))
+      ]!;
     rs.persist();
   }
 
@@ -118,8 +130,14 @@
   const DASH_LABELS = ["Low", "Mixed", "High"];
   const STYLE_COLORS = {
     props: { color: c.continuity.color, shadow: c.continuity.shadowColor },
-    hands: { color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)", shadow: "245deg 70% 55%" },
-    dashes: { color: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)", shadow: "25deg 90% 55%" },
+    hands: {
+      color: "linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)",
+      shadow: "245deg 70% 55%",
+    },
+    dashes: {
+      color: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
+      shadow: "25deg 90% 55%",
+    },
   };
   const propIdx = $derived(PROP_STYLES.indexOf(rs.propStyle));
   const handIdx = $derived(PROP_STYLES.indexOf(rs.handStyle));
@@ -138,12 +156,18 @@
   }
 
   // ── derived labels ─────────────────────────────────────────────────────────
-  const currentLoop = $derived(([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED);
+  const currentLoop = $derived(
+    ([...rs.selectedLoopTypes][0] as LOOPType) ?? LOOPType.ROTATED
+  );
   const currentLevel = $derived([...rs.selectedLevels][0] ?? 1);
   // Level tile colors per level (baby-blue / silver / gold …), same source the
   // Generate panel's LevelCard uses.
-  const levelColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.cssBg ?? c.level.color);
-  const levelTextColor = $derived(DIFFICULTY_LEVELS[currentLevel]?.text ?? "white");
+  const levelColor = $derived(
+    DIFFICULTY_LEVELS[currentLevel]?.cssBg ?? c.level.color
+  );
+  const levelTextColor = $derived(
+    DIFFICULTY_LEVELS[currentLevel]?.text ?? "white"
+  );
   const loopComponents = $derived(parseLoopComponents(currentLoop));
 
   const periodLabel = $derived(
@@ -153,16 +177,22 @@
         ? "Quartered"
         : selectedSliceTypes.has("halved")
           ? "Halved"
-          : "—",
+          : "—"
   );
   // Max turn intensity follows the generator model (single scalar). Half-turns
   // unlock at Level 3, mirroring the Generate panel. Floors exclude 0: a
   // Level 2+ deck capped at 0 turns is just a Level 1 deck.
-  const turnAllowed = $derived(currentLevel >= 3 ? [0.5, 1, 1.5, 2, 2.5, 3] : [1, 2, 3]);
-  const ORI_LABEL: Record<string, string> = { radial: "Radial", nonradial: "Nonradial", split: "Mixed" };
+  const turnAllowed = $derived(
+    currentLevel >= 3 ? [0.5, 1, 1.5, 2, 2.5, 3] : [1, 2, 3]
+  );
+  const ORI_LABEL: Record<string, string> = {
+    radial: "Radial",
+    nonradial: "Nonradial",
+    split: "Mixed",
+  };
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const transformSummary = $derived(
-    `${[...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(", ")} · ${[...gridModes].map(cap).join("/")}`,
+    `${[...startOriModes].map((m) => ORI_LABEL[m] ?? m).join(", ")} · ${[...gridModes].map(cap).join("/")}`
   );
 
   // User-set deck size (read live).
@@ -176,7 +206,9 @@
 
   // Deck prop. Shows the effective prop (chosen, else the global default).
   const propLabel = $derived(
-    String(rs.bluePropType).replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()),
+    String(rs.bluePropType)
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (m) => m.toUpperCase())
   );
 
   // ── start position + orientation (ported from the unified-generation prototype)
@@ -184,11 +216,21 @@
   // stored as GridPosition strings; empty ⇒ any. Orientation is per-hand and
   // baked into every generated card's beat 0 via blue/redStartOrientation.
   let posShowAll = $state(false);
-  const posGridMode = $derived(([...rs.selectedGridModes][0] ?? "diamond") as GridMode);
+  const posGridMode = $derived(
+    ([...rs.selectedGridModes][0] ?? "diamond") as GridMode
+  );
   const posList = $derived<PictographData[]>(
     posShowAll
-      ? startPositionManager.getAllStartPositionVariations(posGridMode, rs.startOriBlue as Orientation, rs.startOriRed as Orientation)
-      : startPositionManager.getDefaultStartPositions(posGridMode, rs.startOriBlue as Orientation, rs.startOriRed as Orientation),
+      ? startPositionManager.getAllStartPositionVariations(
+          posGridMode,
+          rs.startOriBlue as Orientation,
+          rs.startOriRed as Orientation
+        )
+      : startPositionManager.getDefaultStartPositions(
+          posGridMode,
+          rs.startOriBlue as Orientation,
+          rs.startOriRed as Orientation
+        )
   );
   function togglePos(pos: string) {
     const next = new Set(rs.selectedStartPositionIds);
@@ -197,12 +239,25 @@
     rs.selectedStartPositionIds = next;
     rs.persist();
   }
-  function clearPos() { rs.selectedStartPositionIds = new Set(); rs.persist(); }
-  function allPos() { rs.selectedStartPositionIds = new Set(posList.map((p) => String(p.startPosition))); rs.persist(); }
-  const ORI_SHORT: Record<string, string> = { in: "In", out: "Out", clock: "Clock", counter: "Counter" };
+  function clearPos() {
+    rs.selectedStartPositionIds = new Set();
+    rs.persist();
+  }
+  function allPos() {
+    rs.selectedStartPositionIds = new Set(
+      posList.map((p) => String(p.startPosition))
+    );
+    rs.persist();
+  }
+  const ORI_SHORT: Record<string, string> = {
+    in: "In",
+    out: "Out",
+    clock: "Clock",
+    counter: "Counter",
+  };
   const oriLabel = (o: string) => ORI_SHORT[o] ?? o;
   const posSummary = $derived(
-    `${rs.selectedStartPositionIds.size === 0 ? "Any" : `${rs.selectedStartPositionIds.size} pos`} · ${oriLabel(rs.startOriBlue)}/${oriLabel(rs.startOriRed)}`,
+    `${rs.selectedStartPositionIds.size === 0 ? "Any" : `${rs.selectedStartPositionIds.size} pos`} · ${oriLabel(rs.startOriBlue)}/${oriLabel(rs.startOriRed)}`
   );
 
   // ── actions ────────────────────────────────────────────────────────────────
@@ -219,23 +274,63 @@
   }
   // Period + Grid are toggled by PeriodCard / GridModeCard (two-option toggles).
   // These labels feed the "This Deck" recipe readout only.
-  const gridLabel = $derived(([...rs.selectedGridModes][0] ?? "diamond") === "box" ? "Box" : "Diamond");
+  const gridLabel = $derived(
+    ([...rs.selectedGridModes][0] ?? "diamond") === "box" ? "Box" : "Diamond"
+  );
 </script>
 
 <div class="bento-stage">
   <!-- Row 1: core dials -->
   <div class="card-grid">
     <div class="tile">
-      <BaseCard title="Loop Type" currentValue={LOOP_TYPE_LABELS[currentLoop]} color={LOOP_COLOR} shadowColor={LOOP_SHADOW} gridColumnSpan={2} onClick={() => (showLoop = true)} />
+      <BaseCard
+        title="Loop Type"
+        currentValue={LOOP_TYPE_LABELS[currentLoop]}
+        color={LOOP_COLOR}
+        shadowColor={LOOP_SHADOW}
+        gridColumnSpan={2}
+        onClick={() => (showLoop = true)}
+      />
     </div>
     <div class="tile">
-      <StepperCard title="Length" currentValue={rs.selectedLength} minValue={4} maxValue={16} description="STEP COUNT" color={c.length.color} shadowColor={c.length.shadowColor} gridColumnSpan={2} onIncrement={() => stepLength(1)} onDecrement={() => stepLength(-1)} />
+      <StepperCard
+        title="Length"
+        currentValue={rs.selectedLength}
+        minValue={4}
+        maxValue={16}
+        description="STEP COUNT"
+        color={c.length.color}
+        shadowColor={c.length.shadowColor}
+        gridColumnSpan={2}
+        onIncrement={() => stepLength(1)}
+        onDecrement={() => stepLength(-1)}
+      />
     </div>
     <div class="tile">
-      <StepperCard title="Level" currentValue={currentLevel} minValue={1} maxValue={3} description="BASE MOTIONS" color={levelColor} textColor={levelTextColor} shadowColor="0deg 0% 0%" gridColumnSpan={2} onIncrement={() => setLevel(currentLevel + 1)} onDecrement={() => setLevel(currentLevel - 1)} />
+      <StepperCard
+        title="Level"
+        currentValue={currentLevel}
+        minValue={1}
+        maxValue={3}
+        description="BASE MOTIONS"
+        color={levelColor}
+        textColor={levelTextColor}
+        shadowColor="0deg 0% 0%"
+        gridColumnSpan={2}
+        onIncrement={() => setLevel(currentLevel + 1)}
+        onDecrement={() => setLevel(currentLevel - 1)}
+      />
     </div>
     <div class="tile">
-      <PeriodCard currentPeriod={rs.selectedSliceTypes.has("quartered") ? 4 : 2} onPeriodChange={(p: number) => { rs.selectedSliceTypes = new Set([p === 4 ? "quartered" : "halved"]); rs.persist(); }} color={c.gridMode.color} shadowColor={c.gridMode.shadowColor} />
+      <PeriodCard
+        currentPeriod={rs.selectedSliceTypes.has("quartered") ? 4 : 2}
+        onPeriodChange={(p: number) => {
+          rs.selectedSliceTypes = new Set([p === 4 ? "quartered" : "halved"]);
+          rs.persist();
+        }}
+        color={c.gridMode.color}
+        shadowColor={c.gridMode.shadowColor}
+      />
     </div>
   </div>
 
@@ -243,36 +338,111 @@
        (joining the pair to make three) and collapsing to zero-width at Level 1.
        Own flex row so the reflow stays contained. -->
   <div class="card-grid">
-    <div class="tile turns" class:collapsed={currentLevel <= 1} aria-hidden={currentLevel <= 1}>
-      <TurnIntensityCard currentIntensity={rs.turnIntensity} allowedValues={turnAllowed} onIntensityChange={(v: number) => { rs.turnIntensity = v; rs.persist(); }} shadowColor="140deg 70% 45%" gridColumnSpan={2} />
+    <div
+      class="tile turns"
+      class:collapsed={currentLevel <= 1}
+      aria-hidden={currentLevel <= 1}
+    >
+      <TurnIntensityCard
+        currentIntensity={rs.turnIntensity}
+        allowedValues={turnAllowed}
+        onIntensityChange={(v: number) => {
+          rs.turnIntensity = v;
+          rs.persist();
+        }}
+        shadowColor="140deg 70% 45%"
+        gridColumnSpan={2}
+      />
     </div>
     <div class="tile">
-      <GridModeCard currentMode={([...rs.selectedGridModes][0] ?? "diamond") as GridMode} onModeChange={(m: GridMode) => { rs.selectedGridModes = new Set([m as "diamond" | "box"]); rs.persist(); }} color={GRID_COLOR} shadowColor={GRID_SHADOW} />
+      <GridModeCard
+        currentMode={([...rs.selectedGridModes][0] ?? "diamond") as GridMode}
+        onModeChange={(m: GridMode) => {
+          rs.selectedGridModes = new Set([m as "diamond" | "box"]);
+          rs.persist();
+        }}
+        color={GRID_COLOR}
+        shadowColor={GRID_SHADOW}
+      />
     </div>
     <div class="tile">
-      <BaseCard title="Prop" currentValue={propLabel} color={PROP_TILE_COLOR} shadowColor={PROP_TILE_SHADOW} gridColumnSpan={2} onClick={() => (showProp = true)} />
+      <BaseCard
+        title="Prop"
+        currentValue={propLabel}
+        color={PROP_TILE_COLOR}
+        shadowColor={PROP_TILE_SHADOW}
+        gridColumnSpan={2}
+        onClick={() => (showProp = true)}
+      />
     </div>
   </div>
 
   <!-- Row 3: motion style steppers -->
   <div class="card-grid">
     <div class="tile">
-      <StepperCard title="Props" currentValue={propIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.props.color} shadowColor={STYLE_COLORS.props.shadow} gridColumnSpan={2} onIncrement={() => stepProp(1)} onDecrement={() => stepProp(-1)} />
+      <StepperCard
+        title="Props"
+        currentValue={propIdx}
+        minValue={0}
+        maxValue={2}
+        description="REVERSALS"
+        formatValue={(i: number) => PROP_LABELS[i] ?? ""}
+        color={STYLE_COLORS.props.color}
+        shadowColor={STYLE_COLORS.props.shadow}
+        gridColumnSpan={2}
+        onIncrement={() => stepProp(1)}
+        onDecrement={() => stepProp(-1)}
+      />
     </div>
     <div class="tile">
-      <StepperCard title="Hands" currentValue={handIdx} minValue={0} maxValue={2} description="REVERSALS" formatValue={(i: number) => PROP_LABELS[i] ?? ""} color={STYLE_COLORS.hands.color} shadowColor={STYLE_COLORS.hands.shadow} gridColumnSpan={2} onIncrement={() => stepHand(1)} onDecrement={() => stepHand(-1)} />
+      <StepperCard
+        title="Hands"
+        currentValue={handIdx}
+        minValue={0}
+        maxValue={2}
+        description="REVERSALS"
+        formatValue={(i: number) => PROP_LABELS[i] ?? ""}
+        color={STYLE_COLORS.hands.color}
+        shadowColor={STYLE_COLORS.hands.shadow}
+        gridColumnSpan={2}
+        onIncrement={() => stepHand(1)}
+        onDecrement={() => stepHand(-1)}
+      />
     </div>
     <div class="tile">
-      <StepperCard title="Dashes" currentValue={dashIdx} minValue={0} maxValue={2} description="FREQUENCY" formatValue={(i: number) => DASH_LABELS[i] ?? ""} color={STYLE_COLORS.dashes.color} shadowColor={STYLE_COLORS.dashes.shadow} gridColumnSpan={2} onIncrement={() => stepDash(1)} onDecrement={() => stepDash(-1)} />
+      <StepperCard
+        title="Dashes"
+        currentValue={dashIdx}
+        minValue={0}
+        maxValue={2}
+        description="FREQUENCY"
+        formatValue={(i: number) => DASH_LABELS[i] ?? ""}
+        color={STYLE_COLORS.dashes.color}
+        shadowColor={STYLE_COLORS.dashes.shadow}
+        gridColumnSpan={2}
+        onIncrement={() => stepDash(1)}
+        onDecrement={() => stepDash(-1)}
+      />
     </div>
   </div>
 
   <!-- Row 4: deck-level — equal-width cards -->
   <div class="card-grid row-equal">
     <div class="tile size-tile">
-      <BaseCard title="Deck Size" currentValue="" clickable={false} color={SIZE_COLOR} shadowColor={SIZE_SHADOW} gridColumnSpan={2}>
+      <BaseCard
+        title="Deck Size"
+        currentValue=""
+        clickable={false}
+        color={SIZE_COLOR}
+        shadowColor={SIZE_SHADOW}
+        gridColumnSpan={2}
+      >
         <div class="size-row">
-          <button class="size-step" aria-label="Fewer cards" onclick={() => setTotal(rs.totalCards - 1)}>−</button>
+          <button
+            class="size-step"
+            aria-label="Fewer cards"
+            onclick={() => setTotal(rs.totalCards - 1)}>−</button
+          >
           <input
             class="size-input"
             type="number"
@@ -283,129 +453,264 @@
             value={rs.totalCards}
             onchange={(e) => setTotal(parseInt(e.currentTarget.value, 10))}
           />
-          <button class="size-step" aria-label="More cards" onclick={() => setTotal(rs.totalCards + 1)}>+</button>
+          <button
+            class="size-step"
+            aria-label="More cards"
+            onclick={() => setTotal(rs.totalCards + 1)}>+</button
+          >
         </div>
         <span class="size-desc">CARDS</span>
       </BaseCard>
     </div>
     <div class="tile">
-      <BaseCard title="Start · Ori" currentValue={posSummary} color={POS_COLOR} shadowColor={POS_SHADOW} gridColumnSpan={2} onClick={() => (showPosOri = true)} />
+      <BaseCard
+        title="Start · Ori"
+        currentValue={posSummary}
+        color={POS_COLOR}
+        shadowColor={POS_SHADOW}
+        gridColumnSpan={2}
+        onClick={() => (showPosOri = true)}
+      />
     </div>
     <div class="tile">
-      <BaseCard title="Transform" currentValue={transformSummary} color={c.duration.color} shadowColor={c.duration.shadowColor} gridColumnSpan={2} onClick={() => (showTransform = true)} />
+      <BaseCard
+        title="Transform"
+        currentValue={transformSummary}
+        color={c.duration.color}
+        shadowColor={c.duration.shadowColor}
+        gridColumnSpan={2}
+        onClick={() => (showTransform = true)}
+      />
     </div>
   </div>
 
   <section class="recipe">
     <span class="recipe-title">This Deck</span>
     <dl class="recipe-list">
-      <div class="recipe-row"><dt>Cards</dt><dd>{effectiveTotal}</dd></div>
-      <div class="recipe-row"><dt>Loop</dt><dd>{LOOP_TYPE_LABELS[currentLoop]}</dd></div>
-      <div class="recipe-row"><dt>Length</dt><dd>{rs.selectedLength} steps</dd></div>
-      <div class="recipe-row"><dt>Level</dt><dd>{currentLevel}</dd></div>
-      <div class="recipe-row"><dt>Period</dt><dd>{periodLabel}</dd></div>
-      <div class="recipe-row"><dt>Grid</dt><dd>{gridLabel}</dd></div>
-      <div class="recipe-row"><dt>Prop</dt><dd>{propLabel}</dd></div>
-      <div class="recipe-row"><dt>Max Turns</dt><dd>{rs.turnIntensity}</dd></div>
-      <div class="recipe-row"><dt>Style</dt><dd>{PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[dashIdx]}</dd></div>
-      <div class="recipe-row"><dt>Start · Ori</dt><dd>{posSummary}</dd></div>
-      <div class="recipe-row"><dt>Transform</dt><dd>{transformSummary}</dd></div>
-      <div class="recipe-row"><dt>Reversal</dt><dd>{reversalPattern?.label ?? "Continuous"}</dd></div>
+      <div class="recipe-row">
+        <dt>Cards</dt>
+        <dd>{effectiveTotal}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Loop</dt>
+        <dd>{LOOP_TYPE_LABELS[currentLoop]}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Length</dt>
+        <dd>{rs.selectedLength} steps</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Level</dt>
+        <dd>{currentLevel}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Period</dt>
+        <dd>{periodLabel}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Grid</dt>
+        <dd>{gridLabel}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Prop</dt>
+        <dd>{propLabel}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Max Turns</dt>
+        <dd>{rs.turnIntensity}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Style</dt>
+        <dd>
+          {PROP_LABELS[propIdx]} · {PROP_LABELS[handIdx]} · {DASH_LABELS[
+            dashIdx
+          ]}
+        </dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Start · Ori</dt>
+        <dd>{posSummary}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Transform</dt>
+        <dd>{transformSummary}</dd>
+      </div>
+      <div class="recipe-row">
+        <dt>Reversal</dt>
+        <dd>{reversalPattern?.label ?? "Continuous"}</dd>
+      </div>
     </dl>
   </section>
 </div>
 
-{#if showLoop}
-  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showLoop = false; }}>
-    <div class="loop-col" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-      <div class="loop-host">
-        <LOOPExpandedOverlay currentType={currentLoop} selectedComponents={loopComponents} onChange={(lt: LOOPType) => pickLoop(lt)} onClose={() => (showLoop = false)} />
-      </div>
-    </div>
+<BaseModal
+  bind:open={showLoop}
+  size="xl"
+  animation="none"
+  class="loop-picker-modal"
+  labelledBy="deck-loop-picker-title"
+  onclose={() => (showLoop = false)}
+>
+  <div class="loop-host">
+    <h2 id="deck-loop-picker-title" class="visually-hidden">Deck Loop Type</h2>
+    <LOOPExpandedOverlay
+      currentType={currentLoop}
+      selectedComponents={loopComponents}
+      onChange={(lt: LOOPType) => pickLoop(lt)}
+      onClose={() => (showLoop = false)}
+    />
   </div>
-{/if}
+</BaseModal>
 
-{#if showTransform}
-  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showTransform = false; }}>
-    <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-      <div class="po-header">
-        <h3>Transform</h3>
-        <button class="po-close" aria-label="Close" onclick={() => (showTransform = false)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="po-body">
-        <TransformPanel {startOriModes} {onToggleStartOriMode} {gridModes} {onToggleGridMode} {reversalPattern} onReversalChange={(p) => onReversalChange?.(p)} reversalCustomDefault={false} />
-      </div>
-      <button class="po-done" onclick={() => (showTransform = false)}>Done</button>
-    </div>
+<BaseModal
+  bind:open={showTransform}
+  size="xl"
+  animation="pop"
+  class="deck-picker-modal"
+  labelledBy="deck-transform-picker-title"
+  onclose={() => (showTransform = false)}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="deck-transform-picker-title"
+      title="Transform"
+      icon="fa-shuffle"
+      onClose={() => (showTransform = false)}
+    />
+  {/snippet}
+  <div class="picker-body">
+    <TransformPanel
+      {startOriModes}
+      {onToggleStartOriMode}
+      {gridModes}
+      {onToggleGridMode}
+      {reversalPattern}
+      onReversalChange={(p) => onReversalChange?.(p)}
+      reversalCustomDefault={false}
+    />
   </div>
-{/if}
+  {#snippet footer()}
+    <ModalFooter align="stretch">
+      <button
+        type="button"
+        class="primary"
+        onclick={() => (showTransform = false)}>Done</button
+      >
+    </ModalFooter>
+  {/snippet}
+</BaseModal>
 
-{#if showProp}
-  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showProp = false; }}>
-    <div class="picker-overlay" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-      <div class="po-header">
-        <h3>Deck Prop</h3>
-        <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="po-body">
-        <BentoPropGrid
-          selectedPropType={rs.bluePropType}
-          variant="inline"
-          title="Select Prop"
-          onSelect={(p: PropType) => { rs.selectedPropType = p; rs.persist(); showProp = false; }}
-        />
-      </div>
-      <button class="po-done" onclick={() => (showProp = false)}>Done</button>
-    </div>
+<BaseModal
+  bind:open={showProp}
+  size="xl"
+  animation="pop"
+  class="deck-picker-modal"
+  labelledBy="deck-prop-picker-title"
+  onclose={() => (showProp = false)}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="deck-prop-picker-title"
+      title="Deck Prop"
+      icon="fa-wand-magic-sparkles"
+      onClose={() => (showProp = false)}
+    />
+  {/snippet}
+  <div class="picker-body">
+    <BentoPropGrid
+      selectedPropType={rs.bluePropType}
+      variant="inline"
+      title="Select Prop"
+      onSelect={(p: PropType) => {
+        rs.selectedPropType = p;
+        rs.persist();
+        showProp = false;
+      }}
+    />
   </div>
-{/if}
+  {#snippet footer()}
+    <ModalFooter align="stretch">
+      <button type="button" class="primary" onclick={() => (showProp = false)}
+        >Done</button
+      >
+    </ModalFooter>
+  {/snippet}
+</BaseModal>
 
-{#if showPosOri}
-  <div class="modal-backdrop" role="presentation" onclick={(e) => { if (e.target === e.currentTarget) showPosOri = false; }}>
-    <div class="picker-overlay posori" transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}>
-      <div class="po-header">
-        <h3>Start Position &amp; Orientation</h3>
-        <button class="po-close" aria-label="Close" onclick={() => (showPosOri = false)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="po-body">
-        <div class="pos-controls">
-          <button class="pc-btn" onclick={allPos}>All</button>
-          <button class="pc-btn" onclick={clearPos}>Clear</button>
-          <button class="pc-btn pc-scope" class:active={posShowAll} onclick={() => (posShowAll = !posShowAll)}>
-            {posShowAll ? "Simple (3)" : "All Variations"}
-          </button>
-        </div>
-        <div class="pos-grid" class:all={posShowAll}>
-          {#each posList as p (p.id)}
-            {@const sel = rs.selectedStartPositionIds.has(String(p.startPosition))}
-            <button
-              class="pos-cell"
-              class:on={sel}
-              aria-pressed={sel}
-              aria-label={`Start position ${String(p.startPosition)}${sel ? " (selected)" : ""}`}
-              onclick={() => togglePos(String(p.startPosition))}
-            >
-              <PictographContainer pictographData={p} />
-              {#if sel}<span class="pos-check">✓</span>{/if}
-            </button>
-          {/each}
-        </div>
-        <div class="pos-ori-row">
-          <OrientationCycler orientation={rs.startOriBlue as Orientation} onOrientationChange={(o: Orientation) => { rs.startOriBlue = o; rs.persist(); }} color="blue" />
-          <OrientationCycler orientation={rs.startOriRed as Orientation} onOrientationChange={(o: Orientation) => { rs.startOriRed = o; rs.persist(); }} color="red" />
-        </div>
-        <p class="pos-hint">No selection = any start position. Orientation applies to every card in the deck.</p>
-      </div>
-      <button class="po-done" onclick={() => (showPosOri = false)}>Done</button>
+<BaseModal
+  bind:open={showPosOri}
+  size="xl"
+  animation="pop"
+  class="deck-picker-modal position-picker-modal"
+  labelledBy="deck-position-picker-title"
+  onclose={() => (showPosOri = false)}
+>
+  {#snippet header()}
+    <ModalHeader
+      id="deck-position-picker-title"
+      title="Start Position & Orientation"
+      icon="fa-location-crosshairs"
+      onClose={() => (showPosOri = false)}
+    />
+  {/snippet}
+  <div class="picker-body position-picker-body">
+    <div class="pos-controls">
+      <button class="pc-btn" onclick={allPos}>All</button>
+      <button class="pc-btn" onclick={clearPos}>Clear</button>
+      <button
+        class="pc-btn pc-scope"
+        class:active={posShowAll}
+        onclick={() => (posShowAll = !posShowAll)}
+      >
+        {posShowAll ? "Simple (3)" : "All Variations"}
+      </button>
     </div>
+    <div class="pos-grid" class:all={posShowAll}>
+      {#each posList as p (p.id)}
+        {@const sel = rs.selectedStartPositionIds.has(String(p.startPosition))}
+        <button
+          class="pos-cell"
+          class:on={sel}
+          aria-pressed={sel}
+          aria-label={`Start position ${String(p.startPosition)}${sel ? " (selected)" : ""}`}
+          onclick={() => togglePos(String(p.startPosition))}
+        >
+          <PictographContainer pictographData={p} />
+          {#if sel}<span class="pos-check">✓</span>{/if}
+        </button>
+      {/each}
+    </div>
+    <div class="pos-ori-row">
+      <OrientationCycler
+        orientation={rs.startOriBlue as Orientation}
+        onOrientationChange={(o: Orientation) => {
+          rs.startOriBlue = o;
+          rs.persist();
+        }}
+        color="blue"
+      />
+      <OrientationCycler
+        orientation={rs.startOriRed as Orientation}
+        onOrientationChange={(o: Orientation) => {
+          rs.startOriRed = o;
+          rs.persist();
+        }}
+        color="red"
+      />
+    </div>
+    <p class="pos-hint">
+      No selection = any start position. Orientation applies to every card in
+      the deck.
+    </p>
   </div>
-{/if}
+  {#snippet footer()}
+    <ModalFooter align="stretch">
+      <button type="button" class="primary" onclick={() => (showPosOri = false)}
+        >Done</button
+      >
+    </ModalFooter>
+  {/snippet}
+</BaseModal>
 
 <style>
   .bento-stage {
@@ -419,7 +724,7 @@
     --card-text-size: 22px;
     --card-text-weight: 800;
     --card-text-spacing: 0.3px;
-    --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    --card-text-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.45));
     --element-spacing: 10px;
   }
   .card-grid {
@@ -439,27 +744,26 @@
   .card-grid.row-equal > .tile {
     flex: 1 1 0;
   }
-  /* Turn Intensity morph: at Level 1 it collapses to zero width and the style
-     steppers fill the row; at Level 2+ it slides back in from the left edge,
-     pushing them right. Animated flex-basis/grow (not an {#if}) so the row
-     re-flows every frame. margin cancels the 12px grid gap of the empty tile. */
+  /* The row recomposes immediately. The card's opacity/transform provide the
+     cue without animating flex math on every frame. */
   .card-grid > .tile.turns {
     min-width: 0;
     overflow: hidden;
     transition:
-      flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      flex-grow 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      margin-right 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 240ms ease;
+      opacity var(--transition-emphasis),
+      transform var(--transition-spring);
   }
   .card-grid > .tile.turns.collapsed {
     flex: 0 0 0;
     opacity: 0;
+    transform: translateX(-0.75rem) scale(0.96);
     pointer-events: none;
     margin-right: -12px;
   }
   @media (prefers-reduced-motion: reduce) {
-    .card-grid > .tile.turns { transition-duration: 0.001ms; }
+    .card-grid > .tile.turns {
+      transition: none;
+    }
   }
   .tile > :global(*) {
     width: 100%;
@@ -467,8 +771,14 @@
   }
   /* Unify type scale across the cards (matches the prototype). */
   .card-grid :global(.value-number),
-  .card-grid :global(.base-card .card-value) { font-size: 24px !important; line-height: 1.15 !important; }
-  .card-grid :global(.card-title) { font-size: var(--font-size-compact, 12px) !important; letter-spacing: 0.8px !important; }
+  .card-grid :global(.base-card .card-value) {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+  .card-grid :global(.card-title) {
+    font-size: var(--font-size-compact, 12px) !important;
+    letter-spacing: 0.8px !important;
+  }
 
   .recipe {
     display: grid;
@@ -487,93 +797,144 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .recipe-list { display: contents; }
-  .recipe-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-  .recipe-row dt { font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.45)); }
-  .recipe-row dd { margin: 0; font-size: 13px; font-weight: 600; color: var(--theme-text, #fff); text-align: right; }
-
-  /* ── modals (match the prototype chrome) ── */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(16px, 4vh, 48px);
-    background: rgba(4, 7, 14, 0.62);
-    backdrop-filter: blur(5px);
+  .recipe-list {
+    display: contents;
   }
-  .loop-col { width: min(1000px, 94vw); max-height: 92vh; display: flex; flex-direction: column; gap: 12px; }
-  .loop-host { position: relative; min-height: 0; overflow: hidden; border-radius: 18px; }
-  .loop-host :global(.loop-expanded-overlay) { position: relative !important; inset: auto !important; width: 100%; max-height: 82vh; }
-  .loop-host :global(.grid-container) { flex: 0 0 auto; }
-
-  .picker-overlay {
-    width: min(880px, 94vw);
-    max-height: min(840px, 90vh);
+  .recipe-row {
     display: flex;
-    flex-direction: column;
+    align-items: baseline;
+    justify-content: space-between;
     gap: 12px;
-    padding: 16px;
-    background: linear-gradient(135deg,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
-      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
-    border-radius: 18px;
-    border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  }
+  .recipe-row dt {
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+  }
+  .recipe-row dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+    text-align: right;
+  }
+
+  /* BaseModal owns top-layer placement, backdrop, Escape, focus, and motion. */
+  :global(dialog.base-modal.loop-picker-modal[data-size="xl"]) {
+    width: min(1000px, 94vw);
+    height: min(860px, 90dvh);
+  }
+  :global(dialog.base-modal.deck-picker-modal[data-size="xl"]) {
+    width: min(880px, 94vw);
+    height: min(840px, 90dvh);
+  }
+  :global(dialog.base-modal.position-picker-modal[data-size="xl"]) {
+    height: min(740px, 90dvh);
+  }
+  .loop-host {
+    position: relative;
+    min-height: 0;
+    height: 100%;
     overflow: hidden;
   }
-  .po-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .po-header h3 { margin: 0; font-size: 18px; font-weight: 700; color: #fff; }
-  .po-close { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 8px; }
-  .po-close svg { width: 20px; height: 20px; }
-  .po-close:hover { background: rgba(255, 255, 255, 0.15); }
-  .po-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-  .po-done { flex-shrink: 0; width: 100%; padding: 12px 20px; min-height: 44px; background: color-mix(in srgb, var(--theme-accent) 30%, transparent); border: 2px solid var(--theme-accent); border-radius: 10px; color: #fff; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; }
-  .po-done:hover { background: color-mix(in srgb, var(--theme-accent) 45%, transparent); }
+  .loop-host :global(.loop-expanded-overlay) {
+    position: relative !important;
+    inset: auto !important;
+    width: 100%;
+    max-height: 82vh;
+  }
+  .loop-host :global(.grid-container) {
+    flex: 0 0 auto;
+  }
+  .picker-body {
+    min-height: 0;
+    padding: 1rem;
+  }
+  .position-picker-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   /* ── start position + orientation picker ── */
-  /* Definite height so the 4×4 "All Variations" grid doesn't collapse. */
-  .picker-overlay.posori { height: min(740px, 90vh); }
-  .pos-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .pos-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
   .pc-btn {
     min-height: 36px;
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke-strong);
     border-radius: 8px;
-    color: #fff;
+    color: var(--theme-text);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
   }
-  .pc-btn:hover { background: rgba(255, 255, 255, 0.14); }
-  .pc-scope { margin-left: auto; }
-  .pc-scope.active { background: color-mix(in srgb, var(--theme-accent) 35%, transparent); border-color: var(--theme-accent); }
+  .pc-btn:hover {
+    background: var(--theme-card-hover-bg);
+  }
+  .pc-scope {
+    margin-left: auto;
+  }
+  .pc-scope.active {
+    background: color-mix(in srgb, var(--theme-accent) 35%, transparent);
+    border-color: var(--theme-accent);
+  }
   .pos-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
   }
-  .pos-grid.all { grid-template-columns: repeat(4, 1fr); }
+  .pos-grid.all {
+    grid-template-columns: repeat(4, 1fr);
+  }
   .pos-cell {
     position: relative;
     aspect-ratio: 1;
     padding: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 2px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg);
+    border: 2px solid var(--theme-stroke);
     border-radius: 12px;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    transition:
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      transform var(--transition-spring);
   }
-  .pos-cell:hover { background: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
-  .pos-cell.on { border-color: var(--pos-active-accent, #14b8a6); background: color-mix(in srgb, var(--pos-active-accent, #14b8a6) 18%, transparent); }
+  .pos-cell:hover {
+    background: var(--theme-card-hover-bg);
+    transform: translateY(-1px);
+  }
+  .pos-cell.on {
+    border-color: var(--pos-active-accent, #14b8a6);
+    background: color-mix(
+      in srgb,
+      var(--pos-active-accent, #14b8a6) 18%,
+      transparent
+    );
+  }
   /* Scope to the pictograph wrapper + its SVG only — NOT every descendant.
      `:global(*) { width/height: 100% }` blows up the prop groups inside the SVG. */
   .pos-cell :global(.pictograph),
-  .pos-cell :global(.pictograph svg) { width: 100%; height: 100%; display: block; }
+  .pos-cell :global(.pictograph svg) {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
   .pos-check {
     position: absolute;
     top: 4px;
@@ -584,18 +945,30 @@
     align-items: center;
     justify-content: center;
     background: var(--pos-active-accent, #14b8a6);
-    color: #042f2a;
+    color: var(--theme-text-on-accent, #042f2a);
     font-size: 13px;
     font-weight: 900;
     border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4));
   }
-  .pos-ori-row { display: flex; gap: 16px; justify-content: center; margin-top: 16px; }
-  .pos-hint { margin: 12px 2px 0; font-size: 12px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.5)); text-align: center; }
+  .pos-ori-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .pos-hint {
+    margin: 12px 2px 0;
+    font-size: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
+  }
 
   /* ── deck size tile: reuse BaseCard's frame, repurpose its content slot for a
         numeric input. Collapse the (empty) value div; center the input column. */
-  .size-tile :global(.card-value) { display: none; }
+  .size-tile :global(.card-value) {
+    display: none;
+  }
   .size-tile :global(.card-content) {
     margin-top: 0;
     flex: 1;
@@ -605,7 +978,11 @@
     justify-content: center;
     gap: 2px;
   }
-  .size-row { display: flex; align-items: center; gap: 8px; }
+  .size-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .size-step {
     width: 30px;
     height: 30px;
@@ -613,21 +990,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: var(--theme-card-hover-bg);
+    border: 1px solid var(--theme-stroke-strong);
     border-radius: 8px;
-    color: #fff;
+    color: var(--theme-text);
     font-size: 18px;
     font-weight: 800;
     line-height: 1;
     cursor: pointer;
   }
-  .size-step:hover { background: rgba(255, 255, 255, 0.26); }
+  .size-step:hover {
+    background: color-mix(
+      in srgb,
+      var(--theme-card-hover-bg) 75%,
+      var(--theme-text) 25%
+    );
+  }
   .size-input {
     width: 74px;
     background: transparent;
     border: none;
-    color: #fff;
+    color: var(--theme-text);
     font-size: 32px;
     font-weight: 800;
     text-align: center;
@@ -636,13 +1019,18 @@
     appearance: textfield;
   }
   .size-input::-webkit-outer-spin-button,
-  .size-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .size-input:focus { outline: none; }
+  .size-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .size-input:focus {
+    outline: none;
+  }
   .size-desc {
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.8px;
-    color: rgba(255, 255, 255, 0.75);
+    color: var(--theme-text-muted);
     text-transform: uppercase;
   }
 </style>

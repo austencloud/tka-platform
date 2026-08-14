@@ -36,7 +36,11 @@ export function getCardFrameContentInset(bleedPx: number): number {
 /** Draw a rounded rectangle path (does not fill or stroke) */
 function roundRectPath(
   ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
 ): void {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
@@ -46,10 +50,31 @@ function roundRectPath(
 /** Fill the canvas with diagonal pinstripes */
 function drawStripes(
   ctx: CanvasRenderingContext2D,
-  w: number, h: number,
-  accent: string, dark: string,
-  stripeWidth: number = 6
+  w: number,
+  h: number,
+  accent: string,
+  dark: string,
+  stripeWidth: number = 6,
+  palette?: readonly string[]
 ): void {
+  if (palette && palette.length > 0) {
+    const diagonal = Math.sqrt(w * w + h * h);
+    const bandWidth = stripeWidth * 2;
+    const count = Math.ceil(diagonal / bandWidth) + palette.length;
+
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(-Math.PI / 4);
+    for (let index = -count; index <= count; index += 1) {
+      const paletteIndex =
+        ((index % palette.length) + palette.length) % palette.length;
+      ctx.fillStyle = palette[paletteIndex]!;
+      ctx.fillRect(index * bandWidth, -diagonal / 2, bandWidth + 1, diagonal);
+    }
+    ctx.restore();
+    return;
+  }
+
   // Fill base with dark color
   ctx.fillStyle = dark;
   ctx.fillRect(0, 0, w, h);
@@ -72,7 +97,11 @@ function drawStripes(
 }
 
 /** Draw the edge glow overlay */
-function drawEdgeGlow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+function drawEdgeGlow(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number
+): void {
   const glowHeight = h * 0.2;
 
   // Top glow
@@ -91,11 +120,13 @@ function drawEdgeGlow(ctx: CanvasRenderingContext2D, w: number, h: number): void
 }
 
 export interface CardFrameOptions {
-  canvasWidth?: number;   // default 822
-  canvasHeight?: number;  // default 1122
-  bleedPx?: number;       // default 36 (print trim margin)
-  accent: string;         // tndElement.accentColor (fallback handled by caller)
-  dark: string;           // tndElement.darkComplement
+  canvasWidth?: number; // default 822
+  canvasHeight?: number; // default 1122
+  bleedPx?: number; // default 36 (print trim margin)
+  accent: string; // tndElement.accentColor (fallback handled by caller)
+  dark: string; // tndElement.darkComplement
+  /** Ordered semantic stripe colors. Omit to preserve the classic two-color frame. */
+  palette?: readonly string[];
 }
 
 /**
@@ -109,7 +140,7 @@ export interface CardFrameOptions {
 export function wrapContentInCardFrame(
   content: CanvasImageSource,
   opts: CardFrameOptions,
-  createCanvas: (w: number, h: number) => RenderCanvas = createRenderCanvas,
+  createCanvas: (w: number, h: number) => RenderCanvas = createRenderCanvas
 ): RenderCanvas {
   const canvasW = opts.canvasWidth ?? MPC_WIDTH;
   const canvasH = opts.canvasHeight ?? MPC_HEIGHT;
@@ -135,7 +166,7 @@ export function wrapContentInCardFrame(
   ctx.clip();
 
   // 2. Draw stripe pattern across entire canvas
-  drawStripes(ctx, canvasW, canvasH, opts.accent, opts.dark);
+  drawStripes(ctx, canvasW, canvasH, opts.accent, opts.dark, 6, opts.palette);
 
   // 3. Draw edge glow overlay
   drawEdgeGlow(ctx, canvasW, canvasH);

@@ -184,7 +184,7 @@ const payload = `${JSON.stringify(
     schemaVersion: 2,
     generatedBy: "flow-arts SequenceBuilder via MCP generation adapter",
     levelPolicy:
-      "Generated records are frozen at Level 1 with zero turns. The pack manifest assigns patterned turns to three Level 2 cards and one Level 3 card selected from all eight choreography slots.",
+      "Generated records are frozen at Level 1 with zero turns. The pack manifest assigns patterned turns to three Level 2 cards selected from all eight choreography slots and one Level 3 card selected from the six LOOP slots.",
     records,
   },
   null,

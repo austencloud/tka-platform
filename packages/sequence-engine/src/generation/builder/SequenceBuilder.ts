@@ -39,6 +39,7 @@ import {
   type TurnAllocation,
   type TurnAllocationOptions,
 } from "../turns/TurnAllocator.js";
+import { materializeTurn } from "../turns/TurnMaterializer.js";
 import { BeamSearch, type BeamSearchResult } from "./BeamSearch.js";
 import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
 import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
@@ -118,56 +119,15 @@ function resolveTurnAllocationOptions(
   };
 
   return {
-    forcePeriod4OrientationCycle:
-      shouldForcePeriod4OrientationCycle(options.loop),
+    forcePeriod4OrientationCycle: shouldForcePeriod4OrientationCycle(
+      options.loop
+    ),
     ...(typeof constraints.turns === "number"
       ? { requiredTurns: constraints.turns }
       : {}),
     allowFloat:
       constraints.motionType !== "pro" && constraints.motionType !== "anti",
   };
-}
-
-/**
- * Dash and static motions in the CSV have "noRotation" because at 0 turns
- * they don't spin. When non-zero turns are allocated, the prop DOES spin
- * and needs a rotation direction for the renderer and orientation calculator.
- *
- * Behavior depends on the reversal preference:
- * - "maximize" (smooth): inherit the previous step's rotation direction
- * - "force-reversals" (choppy): flip the previous step's rotation direction
- * - "allow-reversals" (mixed) or default: random choice
- */
-function resolveRotationDirection(
-  original: string,
-  turns?: number | "fl",
-  previousRotation?: string,
-  propContinuity?: "maximize" | "allow-reversals" | "force-reversals"
-): string {
-  const hasTurns = turns !== undefined && turns !== 0;
-  const isNoRotation =
-    original === "noRotation" || original === "no_rot" || !original;
-
-  if (hasTurns && isNoRotation) {
-    const hasPrevious =
-      previousRotation &&
-      previousRotation !== "noRotation" &&
-      previousRotation !== "no_rot";
-
-    if (hasPrevious) {
-      if (propContinuity === "force-reversals") {
-        // Choppy: flip the direction every step
-        return previousRotation === "cw" ? "ccw" : "cw";
-      }
-      if (propContinuity === "maximize") {
-        // Smooth: inherit the direction
-        return previousRotation!;
-      }
-    }
-    // Mixed / no previous / default: random
-    return Math.random() < 0.5 ? "cw" : "ccw";
-  }
-  return original;
 }
 
 // Public types
@@ -507,10 +467,7 @@ export class SequenceBuilder {
     const components = allActiveComponents(loopSpec);
     if (components.has(LOOPComponent.ROTATED)) return null;
 
-    for (const component of [
-      LOOPComponent.MIRRORED,
-      LOOPComponent.FLIPPED,
-    ]) {
+    for (const component of [LOOPComponent.MIRRORED, LOOPComponent.FLIPPED]) {
       const componentSpec = components.get(component);
       if (componentSpec) return getReflectionAxis(component, componentSpec);
     }
@@ -1268,87 +1225,53 @@ export class SequenceBuilder {
       const prevBlueRot = prevStep?.motions.blue.rotationDirection;
       const prevRedRot = prevStep?.motions.red.rotationDirection;
 
-      // Float is a shift variant — the prop shifts to an adjacent point with
-      // minimal rotation. The TurnAllocator may assign "fl" to any hand, but
-      // float only applies when the underlying motion is a shift (pro or
-      // anti). A dash or static that gets "fl" from the allocator keeps its
-      // original motion type.
-      const blueIsShift =
-        pd.blueMotion.motionType === "pro" ||
-        pd.blueMotion.motionType === "anti";
-      const redIsShift =
-        pd.redMotion.motionType === "pro" || pd.redMotion.motionType === "anti";
-      const blueIsFloat = blueTurns === "fl" && blueIsShift;
-      const redIsFloat = redTurns === "fl" && redIsShift;
-      const blueMotionType = blueIsFloat
-        ? ("float" as const)
-        : pd.blueMotion.motionType;
-      const redMotionType = redIsFloat
-        ? ("float" as const)
-        : pd.redMotion.motionType;
-
-      // Compute effective turns: float keeps "fl", non-shift "fl" becomes 0,
-      // everything else passes through. We need this BEFORE resolving direction
-      // because 0-turn motions must always be "noRotation".
-      const effectiveBlueTurns = blueIsFloat
-        ? blueTurns
-        : blueTurns === "fl"
-          ? 0
-          : blueTurns;
-      const effectiveRedTurns = redIsFloat
-        ? redTurns
-        : redTurns === "fl"
-          ? 0
-          : redTurns;
+      const blueTurn = materializeTurn(pd.blueMotion, blueTurns, {
+        previousRotation: prevBlueRot,
+        propContinuity,
+      });
+      const redTurn = materializeTurn(pd.redMotion, redTurns, {
+        previousRotation: prevRedRot,
+        propContinuity,
+      });
 
       // PictographData from the variation provider carries string-typed
       // motion fields (loaded from JSON). Cast at the boundary into the
       // unified Motion/Step enums — the JSON is trusted.
       const blueMotion = {
-        motionType: blueMotionType as Motion["motionType"],
+        motionType: blueTurn.motionType as Motion["motionType"],
         startLocation: pd.blueMotion.startLocation as Motion["startLocation"],
         endLocation: pd.blueMotion.endLocation as Motion["endLocation"],
-        rotationDirection: (blueIsFloat
-          ? "noRotation"
-          : resolveRotationDirection(
-              pd.blueMotion.rotationDirection,
-              effectiveBlueTurns,
-              prevBlueRot,
-              propContinuity
-            )) as Motion["rotationDirection"],
+        rotationDirection:
+          blueTurn.rotationDirection as Motion["rotationDirection"],
         startOrientation: pd.blueMotion
           .startOrientation as Motion["startOrientation"],
         endOrientation: pd.blueMotion
           .endOrientation as Motion["endOrientation"],
-        turns: effectiveBlueTurns as Motion["turns"],
+        turns: blueTurn.turns as Motion["turns"],
         plane: "wall" as Motion["plane"],
-        ...(blueIsFloat && {
-          prefloatMotionType: pd.blueMotion.motionType as Motion["motionType"],
-          prefloatRotationDirection: pd.blueMotion
-            .rotationDirection as Motion["rotationDirection"],
+        ...(blueTurn.prefloatMotionType && {
+          prefloatMotionType:
+            blueTurn.prefloatMotionType as Motion["motionType"],
+          prefloatRotationDirection:
+            blueTurn.prefloatRotationDirection as Motion["rotationDirection"],
         }),
       };
       const redMotion = {
-        motionType: redMotionType as Motion["motionType"],
+        motionType: redTurn.motionType as Motion["motionType"],
         startLocation: pd.redMotion.startLocation as Motion["startLocation"],
         endLocation: pd.redMotion.endLocation as Motion["endLocation"],
-        rotationDirection: (redIsFloat
-          ? "noRotation"
-          : resolveRotationDirection(
-              pd.redMotion.rotationDirection,
-              effectiveRedTurns,
-              prevRedRot,
-              propContinuity
-            )) as Motion["rotationDirection"],
+        rotationDirection:
+          redTurn.rotationDirection as Motion["rotationDirection"],
         startOrientation: pd.redMotion
           .startOrientation as Motion["startOrientation"],
         endOrientation: pd.redMotion.endOrientation as Motion["endOrientation"],
-        turns: effectiveRedTurns as Motion["turns"],
+        turns: redTurn.turns as Motion["turns"],
         plane: "wall" as Motion["plane"],
-        ...(redIsFloat && {
-          prefloatMotionType: pd.redMotion.motionType as Motion["motionType"],
-          prefloatRotationDirection: pd.redMotion
-            .rotationDirection as Motion["rotationDirection"],
+        ...(redTurn.prefloatMotionType && {
+          prefloatMotionType:
+            redTurn.prefloatMotionType as Motion["motionType"],
+          prefloatRotationDirection:
+            redTurn.prefloatRotationDirection as Motion["rotationDirection"],
         }),
       };
       sequence.push({

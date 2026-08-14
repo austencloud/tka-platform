@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   applyFestivalSamplerTurnAssignment,
-  findCompatibleFestivalSamplerTurnPattern,
+  findCompatibleFestivalSamplerTurnAssignment,
   loadFestivalSamplerBaseSequence,
 } from "$lib/features/choreo-card/services/festival-sampler-turns";
 import type { FestivalSamplerCardManifest } from "$lib/features/choreo-card/services/festival-sampler-manifest";
@@ -76,6 +76,7 @@ async function freezeDocument(document: ManifestDocument): Promise<number> {
     for (const card of cards) {
       const intensity = card.turnIntensity ?? 0;
       if (intensity === 0) {
+        delete card.turnPatternId;
         delete card.turnPattern;
         continue;
       }
@@ -85,11 +86,13 @@ async function freezeDocument(document: ManifestDocument): Promise<number> {
         base = await loadFestivalSamplerBaseSequence(card);
         baseSequences.set(key, base);
       }
-      card.turnPattern = findCompatibleFestivalSamplerTurnPattern(
+      const assignment = findCompatibleFestivalSamplerTurnAssignment(
         card,
         base,
         `festival-pack-${rank}|${sourceKey(card)}|${card.slot}|level-${card.level}`
       );
+      card.turnPatternId = assignment.id;
+      card.turnPattern = assignment.pattern;
       applyFestivalSamplerTurnAssignment(card, base);
       patternedCards += 1;
     }

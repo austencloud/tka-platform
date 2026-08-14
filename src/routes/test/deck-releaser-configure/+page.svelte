@@ -6,6 +6,7 @@
    */
   import { onMount } from "svelte";
   import ConfigureStep from "$lib/features/choreo-card/components/deck-releaser/ConfigureStep.svelte";
+  import { runDeckReleaserTransition } from "$lib/features/choreo-card/components/deck-releaser/deck-releaser-motion";
   import { createDeckReleaserState } from "$lib/features/choreo-card/components/deck-releaser/state/deck-releaser-state.svelte";
   import { setDeckReleaserContext } from "$lib/features/choreo-card/components/deck-releaser/context/deck-releaser-context";
   import {
@@ -56,6 +57,19 @@
   const tndTurnPatterns = getTnDTurnPatternOptions(126);
 
   let deckMode = $state<"loop" | "tnd" | "gallery">("gallery");
+
+  const modeOrder = { loop: 0, tnd: 1, gallery: 2 } as const;
+
+  function changeMode(next: "loop" | "tnd" | "gallery") {
+    if (next === deckMode) return;
+
+    const direction =
+      modeOrder[next] > modeOrder[deckMode] ? "forward" : "backward";
+    runDeckReleaserTransition("source", direction, () => {
+      deckMode = next;
+      deckState.deckMode = next;
+    });
+  }
 
   // ── LOOP mock state ──
   let weights = $state([
@@ -120,7 +134,9 @@
     { id: "app", label: "App pane (~1300)", px: 1300 },
     { id: "wide", label: "Wide (1560)", px: 1560 },
     { id: "medium", label: "Medium (1100)", px: 1100 },
+    { id: "landscape", label: "Landscape (960)", px: 960 },
     { id: "narrow", label: "Narrow (820)", px: 820 },
+    { id: "phone", label: "Phone (375)", px: 375 },
     { id: "full", label: "Full bleed", px: 0 },
   ] as const;
   let paneWidth = $state<number>(1300);
@@ -185,7 +201,7 @@
           type="button"
           class="chip"
           class:active={deckMode === m.id}
-          onclick={() => (deckMode = m.id)}
+          onclick={() => changeMode(m.id)}
         >
           {m.label}
         </button>
@@ -199,11 +215,9 @@
   >
     <ConfigureStep
       {deckMode}
+      galleryPreviewSource="community"
       notes={deckState.notes}
-      onModeChange={(m) => {
-        deckMode = m;
-        deckState.deckMode = m;
-      }}
+      onModeChange={changeMode}
       onNotesChange={(n) => (deckState.notes = n)}
       {tndFamilies}
       {selectedTnDFamilies}
@@ -271,7 +285,9 @@
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
+    width: 100%;
     padding: 12px 24px;
+    box-sizing: border-box;
     background: rgba(10, 13, 24, 0.85);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -281,6 +297,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .bar-label {
@@ -292,7 +310,9 @@
   }
 
   .chip {
+    min-height: var(--min-touch-target, 44px);
     padding: 6px 12px;
+    box-sizing: border-box;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(255, 255, 255, 0.04);
@@ -312,6 +332,23 @@
     margin: 0 auto;
     max-width: 100%;
     border-inline: 1px dashed rgba(255, 255, 255, 0.08);
+  }
+
+  @media (max-width: 520px) {
+    .bar {
+      position: static;
+      gap: 12px;
+      padding: 10px 12px;
+    }
+
+    .group {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .bar-label {
+      flex: 0 0 100%;
+    }
   }
 
   @media (min-width: 2600px) {

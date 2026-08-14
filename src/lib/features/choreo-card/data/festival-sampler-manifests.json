@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-14T04:24:20.206Z",
-  "constraint": "Exactly three of all eight choreography cards in every pack are Level 2 with sparse one-turn patterns. One of the remaining five is randomly assigned Level 3 with a sparse half-turn pattern; the other four stay Level 1 with zero turns. Every frozen turn pattern is selected through the canonical variation engine and must preserve loop closure. Across 60 packs, all 56 possible Level 2 triples appear, every slot receives Level 2 22 or 23 times, and every slot receives Level 3 7 or 8 times. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
-  "selectionReason": "Every supported pack has three Level 2 cards and one Level 3 card chosen from the full eight-card assortment, its own generated 16-step mirrored, mirrored+swapped, and mirrored+inverted cards, a distinct TnD pairing, and varied published LOOP cards.",
+  "generatedAt": "2026-08-14T22:29:30.877Z",
+  "constraint": "Exactly three of all eight choreography cards in every pack are Level 2 with one-turn patterns. One of the remaining six LOOP cards is assigned Level 3 with a half-turn pattern; the other four cards stay Level 1 with zero turns. The approved catalog supplies four patterns to 4-step cards, eight to 8-step cards, and twelve to 16-step cards. Every frozen assignment must preserve loop closure. Across 60 packs, all 56 possible Level 2 triples appear, every slot receives Level 2 22 or 23 times, and each LOOP slot receives Level 3 exactly 10 times. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
+  "selectionReason": "Every supported pack has three Level 2 cards chosen from the full eight-card assortment and one Level 3 LOOP card, its own generated 16-step mirrored, mirrored+swapped, and mirrored+inverted cards, a distinct TnD pairing, and varied published LOOP cards.",
   "candidates": [
     {
       "rank": 1,
@@ -14,14 +14,16 @@
           "id": "festival-mirrored-01",
           "name": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
           "word": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "mirrored8",
@@ -29,16 +31,15 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0.5|0-0.5|0-0.5|0.5-0.5|0-0.5|0-0.5|0-0.5|0.5-0.5|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
         },
         {
           "slot": "rotated16",
@@ -103,7 +104,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -119,7 +121,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -135,7 +138,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -157,7 +161,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-0|1-1|1-1|1-0|0-0|1-1|1-1|1"
+          "turnPattern": "1|1-1|1-0|0-0|0-1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirrored8",
@@ -181,15 +186,17 @@
           "id": "AJEΦ-",
           "name": "AJEΦ-",
           "word": "AJEΦ-AJEΦ-AJEΦ-AJEΦ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AJEΦ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AJEΦ-",
+          "turnPattern": "0.5|0.5-0.5|0.5-0.5|0-0|0.5",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "rotated8",
@@ -206,7 +213,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OT",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
@@ -239,7 +247,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -247,15 +256,14 @@
           "id": "festival-mirrored_swapped-02",
           "name": "FΦ-BΨFΦ-BΨ",
           "word": "FΦ-BΨFΦ-BΨ",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredInverted8",
@@ -284,15 +292,14 @@
           "id": "festival-mirrored-03",
           "name": "XΘ-Z-FΘ-WΩ-ΛXΘ-Z-FΘ-WΩ-Λ",
           "word": "XΘ-Z-FΘ-WΩ-ΛXΘ-Z-FΘ-WΩ-Λ",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0-0.5|0-0|0.5-0|0.5-0|0-0.5|0"
+          "endPosition": "gamma11"
         },
         {
           "slot": "mirrored8",
@@ -316,15 +323,17 @@
           "id": "BΣTW",
           "name": "BΣTW",
           "word": "BΣTWBΣTWBΣTWBΣTW",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTW"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTW",
+          "turnPattern": "0.5|0.5-0|0-0.5|0-0|0.5",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -341,7 +350,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/QT",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
@@ -374,7 +384,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -390,7 +401,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirroredInverted8",
@@ -419,14 +431,16 @@
           "id": "festival-mirrored-04",
           "name": "KΔ-Y-IΦΣW-CKΔ-Y-IΦΣW-C",
           "word": "KΔ-Y-IΦΣW-CKΔ-Y-IΦΣW-C",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirrored8",
@@ -443,7 +457,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|0-1|0-1|0-1|0-0|0-1|0-1|0-1|0"
+          "turnPattern": "0|0-1|1-0|0-0|0-0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "rotated16",
@@ -476,24 +491,24 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/RT",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-same-gggg-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-same-gggg-1to1",
           "name": "GGGG",
           "word": "GGGG",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-same",
           "vtgFamily": "Tog-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "tndTurn",
@@ -540,7 +555,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -578,7 +594,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-1|1-1|1-1|1-0|0-1|1-1|1-1|1"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -595,7 +612,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/KΣ-XC",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "rotated8",
@@ -603,15 +621,17 @@
           "id": "SOTR",
           "name": "SOTR",
           "word": "SOTRSOTR",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/SOTR"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/SOTR",
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "tndBase",
@@ -632,19 +652,18 @@
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-split-opp-keke-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-split-opp-keke-1to1",
           "name": "KEKE",
           "word": "KEKE",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "split-opp",
           "vtgFamily": "Split-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "alpha1"
         },
         {
           "slot": "mirroredSwapped8",
@@ -675,7 +694,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         }
       ]
     },
@@ -697,7 +717,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|0-1|0-0|1-1|0-0|0"
+          "turnPattern": "1|1-1|1-1|0-0|1-1|1-1|1-1|0-0|1",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "mirrored8",
@@ -746,7 +767,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX",
-          "turnPattern": "0|0.5-0|0-0|0.5-0|0"
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndBase",
@@ -779,7 +801,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredSwapped8",
@@ -795,7 +818,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredInverted8",
@@ -848,7 +872,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|0-1|0-0|0-0|1-1|0-1|0-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated16",
@@ -856,16 +881,15 @@
           "id": "BΔTX",
           "name": "BΔTX",
           "word": "BΔTXBΔTXBΔTXBΔTX",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX",
-          "turnPattern": "0|0-0.5|0-0|0-0.5|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX"
         },
         {
           "slot": "rotated8",
@@ -882,7 +906,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTX",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "tndBase",
@@ -915,7 +940,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -923,14 +949,16 @@
           "id": "festival-mirrored_swapped-07",
           "name": "ΔRΛW-ΔRΛW-",
           "word": "ΔRΛW-ΔRΛW-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -974,15 +1002,17 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5-0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -1006,16 +1036,15 @@
           "id": "CΩ-SW-",
           "name": "CΩ-SW-",
           "word": "CΩ-SW-CΩ-SW-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΩ-SW-",
-          "turnPattern": "0.5|0.5-0|0.5-0.5|0.5-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΩ-SW-"
         },
         {
           "slot": "tndBase",
@@ -1032,7 +1061,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndTurn",
@@ -1049,7 +1079,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -1080,7 +1111,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         }
       ]
     },
@@ -1102,7 +1134,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-1|0-0|1-1|0-0|0-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-0|0-0|0-1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -1119,7 +1152,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|1-1|0-0|0-1|0-1|1-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|1-1|1-0|0-1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -1152,7 +1186,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΔUZ",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "tndBase",
@@ -1215,7 +1250,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-0.5|0.5-0|0-0.5|0.5"
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -1237,7 +1273,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-1|1-1|1-1|1-1|0-1|1-1|1-1|1"
+          "turnPattern": "1|1-1|1-0|0-0|0-1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirrored8",
@@ -1277,15 +1314,17 @@
           "id": "XΣΛS",
           "name": "XΣΛS",
           "word": "XΣΛSXΣΛS",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndBase",
@@ -1302,24 +1341,24 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-split-opp-jdjd-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-split-opp-jdjd-1to1",
           "name": "JDJD",
           "word": "JDJD",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "split-opp",
           "vtgFamily": "Split-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "alpha1"
         },
         {
           "slot": "mirroredSwapped8",
@@ -1350,7 +1389,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -1379,15 +1419,17 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "rotated16",
@@ -1404,7 +1446,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΣSW",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated8",
@@ -1421,7 +1464,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/ΦAΦ-L",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
@@ -1438,7 +1482,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
@@ -1462,15 +1507,14 @@
           "id": "festival-mirrored_swapped-11",
           "name": "Σ-PWΨΣ-PWΨ",
           "word": "Σ-PWΨΣ-PWΨ",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0-0|0-0.5|0-0|0"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredInverted8",
@@ -1507,7 +1551,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-0|0-1|0-1|1-0|0-0|0-1|0-1|1"
+          "turnPattern": "1|1-0|0-1|1-0|0-1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirrored8",
@@ -1524,7 +1569,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "1|1-1|0-0|1-1|1-1|1-1|0-0|1-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated16",
@@ -1541,7 +1587,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΔUW",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated8",
@@ -1620,7 +1667,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0"
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -1649,15 +1697,17 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -1674,7 +1724,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/IΩPY-",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -1695,19 +1746,18 @@
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-split-same-cccc-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-split-same-cccc-1to1",
           "name": "CCCC",
           "word": "CCCC",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "split-same",
           "vtgFamily": "Split-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "alpha1"
         },
         {
           "slot": "tndTurn",
@@ -1724,7 +1774,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -1740,7 +1791,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirroredInverted8",
@@ -1777,7 +1829,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|1-1|1-0|0-1|0-0|1-1|1-0|0-1|0"
+          "turnPattern": "1|1-0|0-1|0-0|1-1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "mirrored8",
@@ -1785,16 +1838,15 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|0.5-0|0.5-0|0-0|0-0|0.5-0|0.5-0|0-0|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
         },
         {
           "slot": "rotated16",
@@ -1843,7 +1895,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndTurn",
@@ -1875,7 +1928,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -1883,14 +1937,16 @@
           "id": "festival-mirrored_inverted-14",
           "name": "GGΣ-YHHΔ-Z",
           "word": "GGΣ-YHHΔ-Z",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         }
       ]
     },
@@ -1912,7 +1968,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-0|1-0|0-0|0-1|1-0|1-0|0-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1-1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirrored8",
@@ -1936,16 +1993,15 @@
           "id": "AΔSX",
           "name": "AΔSX",
           "word": "AΔSXAΔSXAΔSXAΔSX",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX",
-          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX"
         },
         {
           "slot": "rotated8",
@@ -1978,7 +2034,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndTurn",
@@ -1995,7 +2052,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -2003,14 +2061,16 @@
           "id": "festival-mirrored_swapped-15",
           "name": "X-LΘOX-LΘO",
           "word": "X-LΘOX-LΘO",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11"
+          "endPosition": "gamma11",
+          "turnPattern": "0|0-0.5|0.5-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "mirroredInverted8",
@@ -2039,15 +2099,14 @@
           "id": "festival-mirrored-16",
           "name": "KΔ-ZΔ-X-Φ-CCKΔ-ZΔ-X-Φ-CC",
           "word": "KΔ-ZΔ-X-Φ-CCKΔ-ZΔ-X-Φ-CC",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0-0.5|0.5-0|0"
+          "endPosition": "alpha1"
         },
         {
           "slot": "mirrored8",
@@ -2064,7 +2123,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|1-1|1-0|0-0|1-0|1-1|1-0|0-0|1"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -2113,7 +2173,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -2137,14 +2198,16 @@
           "id": "festival-mirrored_swapped-16",
           "name": "LΣ-ZΦLΣ-ZΦ",
           "word": "LΣ-ZΦLΣ-ZΦ",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0|0-0|0.5-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirroredInverted8",
@@ -2160,7 +2223,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -2182,7 +2246,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-1|0-1|0-1|0-1|1-1|0-1|0-1|0"
+          "turnPattern": "1|0-1|0-0|1-0|1-1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirrored8",
@@ -2215,7 +2280,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/FΦ-BJ",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated8",
@@ -2248,7 +2314,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndTurn",
@@ -2280,7 +2347,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -2317,7 +2385,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-1|1-1|1-1|0-0|0-1|1-1|1-1|0"
+          "turnPattern": "1|0-0|1-0|0-0|0-1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -2334,7 +2403,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|1-1|1-0|0-0|1-0|1-1|1-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|1-0|0-1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -2342,15 +2412,17 @@
           "id": "KΣ-XC",
           "name": "KΣ-XC",
           "word": "KΣ-XCKΣ-XCKΣ-XCKΣ-XC",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/KΣ-XC"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/KΣ-XC",
+          "turnPattern": "0.5|0-0|0.5-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "rotated8",
@@ -2358,16 +2430,15 @@
           "id": "BΣTX",
           "name": "BΣTX",
           "word": "BΣTXBΣTX",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTX",
-          "turnPattern": "0.5|0.5-0|0.5-0.5|0.5-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTX"
         },
         {
           "slot": "tndBase",
@@ -2430,7 +2501,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         }
       ]
     },
@@ -2444,14 +2516,16 @@
           "id": "festival-mirrored-19",
           "name": "BΩ-ΛYFΩ-ΛXBΩ-ΛYFΩ-ΛX",
           "word": "BΩ-ΛYFΩ-ΛXBΩ-ΛYFΩ-ΛX",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "mirrored8",
@@ -2468,7 +2542,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-0|0-0|1-1|0-0|0-0|0-0|1-1|0"
+          "turnPattern": "0|0-1|1-0|0-0|0-0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "rotated16",
@@ -2476,16 +2551,15 @@
           "id": "AJEΦ-",
           "name": "AJEΦ-",
           "word": "AJEΦ-AJEΦ-AJEΦ-AJEΦ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AJEΦ-",
-          "turnPattern": "0|0-0.5|0-0|0-0.5|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AJEΦ-"
         },
         {
           "slot": "rotated8",
@@ -2502,7 +2576,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΔUZ",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "tndBase",
@@ -2550,7 +2625,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirroredInverted8",
@@ -2603,7 +2679,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0.5|0-0.5|0-0|0-0|0-0.5|0-0.5|0-0|0-0|0"
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -2620,7 +2697,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|1-1|1-1|0-0|1",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "rotated8",
@@ -2637,7 +2715,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
@@ -2670,7 +2749,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -2738,7 +2818,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|0-1|1-1|0-0|1-1|0-1|1-1|0-0|1"
+          "turnPattern": "0|0-1|1-0|0-0|0-0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "rotated16",
@@ -2762,15 +2843,17 @@
           "id": "XΣΛS",
           "name": "XΣΛS",
           "word": "XΣΛSXΣΛS",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS",
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
@@ -2791,19 +2874,18 @@
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-opp-ekek-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-opp-ekek-1to1",
           "name": "EKEK",
           "word": "EKEK",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-opp",
           "vtgFamily": "Tog-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredSwapped8",
@@ -2819,7 +2901,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "mirroredInverted8",
@@ -2835,7 +2918,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -2857,7 +2941,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|1-0|1-0|0-0|1-0|1-0|1"
+          "turnPattern": "1|0-0|0-0|1-0|0-1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirrored8",
@@ -2874,7 +2959,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|0-0|1-0|1-1|1-0|0-0|1-0|1-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated16",
@@ -2923,7 +3009,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndTurn",
@@ -2970,7 +3057,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0.5|0.5-0|0.5-0.5|0.5-0|0.5"
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         }
       ]
     },
@@ -2984,15 +3072,14 @@
           "id": "festival-mirrored-23",
           "name": "ΦLFΣWΩ-Y-Ψ-ΦLFΣWΩ-Y-Ψ-",
           "word": "ΦLFΣWΩ-Y-Ψ-ΦLFΣWΩ-Y-Ψ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0-0|0.5-0.5|0-0|0.5-0|0-0|0.5-0.5|0-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirrored8",
@@ -3009,7 +3096,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|1-0|1-0|0-0|1-1|1-0|1-0|0-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0-1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated16",
@@ -3058,7 +3146,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -3075,7 +3164,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3098,14 +3188,16 @@
           "id": "festival-mirrored_inverted-23",
           "name": "Δ-UWΨΣ-VXΨ",
           "word": "Δ-UWΨΣ-VXΨ",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         }
       ]
     },
@@ -3127,7 +3219,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-1|0-1|1-0|1-1|0-1|0-1|1-0|1"
+          "turnPattern": "1|0-0|1-1|1-0|0-1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "mirrored8",
@@ -3180,19 +3273,18 @@
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-same-gggg-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-same-gggg-1to1",
           "name": "GGGG",
           "word": "GGGG",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-same",
           "vtgFamily": "Tog-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "tndTurn",
@@ -3209,7 +3301,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3217,14 +3310,16 @@
           "id": "festival-mirrored_swapped-24",
           "name": "PΛPΛPΛPΛ",
           "word": "PΛPΛPΛPΛ",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11"
+          "endPosition": "gamma11",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredInverted8",
@@ -3240,7 +3335,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -3262,7 +3358,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|0-0|0-1|0-0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-1|1-0|1-1|1-1|0-1|1-0|1-1|1",
+          "turnPatternId": "cross-accent"
         },
         {
           "slot": "mirrored8",
@@ -3295,7 +3392,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΣVX",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -3332,19 +3430,18 @@
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-quarter-opp-mpmp-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-quarter-opp-mpmp-1to1",
           "name": "MPMP",
           "word": "MPMP",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "quarter-opp",
           "vtgFamily": "Quarter-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "gamma11"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3352,14 +3449,16 @@
           "id": "festival-mirrored_swapped-25",
           "name": "CΔZΦCΔZΦ",
           "word": "CΔZΦCΔZΦ",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredInverted8",
@@ -3375,7 +3474,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         }
       ]
     },
@@ -3389,15 +3489,14 @@
           "id": "festival-mirrored-26",
           "name": "Δ-TX-ΣWΣYΨ-Δ-TX-ΣWΣYΨ-",
           "word": "Δ-TX-ΣWΣYΨ-Δ-TX-ΣWΣYΨ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0-0.5|0-0.5|0-0|0.5-0|0"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirrored8",
@@ -3414,7 +3513,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|1-0|0-0|0-1|0-0|1-0|0-0|0-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0-1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated16",
@@ -3422,15 +3522,17 @@
           "id": "IΩPY-",
           "name": "IΩPY-",
           "word": "IΩPY-IΩPY-IΩPY-IΩPY-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/IΩPY-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/IΩPY-",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "rotated8",
@@ -3479,7 +3581,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3510,7 +3613,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -3532,7 +3636,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-1|1-0|1-1|1-0|0-1|1-0|1-1|1"
+          "turnPattern": "1|0-1|1-0|1-1|1-1|0-1|1-0|1-1|1",
+          "turnPatternId": "cross-accent"
         },
         {
           "slot": "mirrored8",
@@ -3540,16 +3645,15 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-0|0.5-0|0.5-0|0.5-0|0-0|0.5-0|0.5-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
         },
         {
           "slot": "rotated16",
@@ -3573,15 +3677,17 @@
           "id": "BΔMX",
           "name": "BΔMX",
           "word": "BΔMXBΔMX",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndBase",
@@ -3629,7 +3735,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "mirroredInverted8",
@@ -3645,7 +3752,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -3667,7 +3775,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-0|1-1|0-0|0-1|0-0|1-1|0-0|0"
+          "turnPattern": "1|0-0|0-0|1-0|0-1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirrored8",
@@ -3684,7 +3793,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "1|1-0|1-1|0-0|0-1|1-0|1-1|0-0|0"
+          "turnPattern": "1|0-0|1-1|1-0|0-1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -3692,15 +3802,17 @@
           "id": "AΔSX",
           "name": "AΔSX",
           "word": "AΔSXAΔSXAΔSXAΔSX",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX",
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated8",
@@ -3721,19 +3833,18 @@
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-quarter-same-tttt-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-quarter-same-tttt-1to1",
           "name": "TTTT",
           "word": "TTTT",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "quarter-same",
           "vtgFamily": "Quarter-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "gamma11"
         },
         {
           "slot": "tndTurn",
@@ -3750,7 +3861,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3818,7 +3930,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|0-1|0-1|1-1|0-1|0-1|0-1|1-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0-1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated16",
@@ -3835,7 +3948,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΔUW",
-          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5"
+          "turnPattern": "0.5|0.5-0.5|0.5-0.5|0-0|0.5",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "rotated8",
@@ -3884,7 +3998,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -3900,7 +4015,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "mirroredInverted8",
@@ -3969,7 +4085,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/FΦ-BJ",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated8",
@@ -3986,7 +4103,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΔUZ",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "tndBase",
@@ -4034,7 +4152,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredInverted8",
@@ -4050,7 +4169,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -4088,7 +4208,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-1|1-0|0-1|1-0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -4105,7 +4226,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OVXΔ",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated8",
@@ -4113,15 +4235,17 @@
           "id": "XΣΛS",
           "name": "XΣΛS",
           "word": "XΣΛSXΣΛS",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS",
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
@@ -4154,7 +4278,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredSwapped8",
@@ -4177,15 +4302,14 @@
           "id": "festival-mirrored_inverted-31",
           "name": "ΨΣ-W-Φ-ΨΔ-X-Φ-",
           "word": "ΨΣ-W-Φ-ΨΔ-X-Φ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0"
+          "endPosition": "alpha1"
         }
       ]
     },
@@ -4199,14 +4323,16 @@
           "id": "festival-mirrored-32",
           "name": "IΣ-YΦΩ-NΛ-ZIΣ-YΦΩ-NΛ-Z",
           "word": "IΣ-YΦΩ-NΛ-ZIΣ-YΦΩ-NΛ-Z",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "mirrored8",
@@ -4255,7 +4381,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/ΦAΦ-L",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "tndBase",
@@ -4272,7 +4399,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -4296,15 +4424,14 @@
           "id": "festival-mirrored_swapped-32",
           "name": "Σ-W-ΣYΣ-W-ΣY",
           "word": "Σ-W-ΣYΣ-W-ΣY",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0.5-0|0.5-0.5|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredInverted8",
@@ -4320,7 +4447,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -4349,15 +4477,17 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "rotated16",
@@ -4374,7 +4504,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTW",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "rotated8",
@@ -4382,16 +4513,15 @@
           "id": "MVNU",
           "name": "MVNU",
           "word": "MVNUMVNU",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MVNU",
-          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MVNU"
         },
         {
           "slot": "tndBase",
@@ -4439,7 +4569,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "mirroredInverted8",
@@ -4455,7 +4586,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -4493,7 +4625,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|1-0|0-1|0-1|1-0|1-0|0-1|0-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated16",
@@ -4510,7 +4643,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EJΦK",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -4527,7 +4661,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OT",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
@@ -4548,19 +4683,18 @@
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-quarter-opp-mpmp-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-quarter-opp-mpmp-1to1",
           "name": "MPMP",
           "word": "MPMP",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "quarter-opp",
           "vtgFamily": "Quarter-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "gamma11"
         },
         {
           "slot": "mirroredSwapped8",
@@ -4568,14 +4702,16 @@
           "id": "festival-mirrored_swapped-34",
           "name": "ΨDΦ-CΨDΦ-C",
           "word": "ΨDΦ-CΨDΦ-C",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredInverted8",
@@ -4619,15 +4755,17 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5-0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "rotated16",
@@ -4660,24 +4798,24 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/QT",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-same-hhhh-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-same-hhhh-1to1",
           "name": "HHHH",
           "word": "HHHH",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-same",
           "vtgFamily": "Tog-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "tndTurn",
@@ -4694,7 +4832,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredSwapped8",
@@ -4725,7 +4864,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         }
       ]
     },
@@ -4747,7 +4887,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0-0|0-0|1-0|0-0|0-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-0|0-0|0-1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -4755,15 +4896,17 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5-0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -4780,7 +4923,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AKIΦ",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated8",
@@ -4829,7 +4973,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -4852,15 +4997,14 @@
           "id": "festival-mirrored_inverted-36",
           "name": "WΨΩVXΨΘU",
           "word": "WΨΩVXΨΘU",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0.5|0.5-0.5|0-0.5|0.5-0.5|0"
+          "endPosition": "gamma11"
         }
       ]
     },
@@ -4882,7 +5026,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-0|1-0|1-0|0-1|0-0|1-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirrored8",
@@ -4899,7 +5044,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-0|0-1|1-0|0-0|0-0|0-1|1-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1-1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "rotated16",
@@ -4916,7 +5062,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated8",
@@ -4924,16 +5071,15 @@
           "id": "VPUQ",
           "name": "VPUQ",
           "word": "VPUQVPUQ",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/VPUQ",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/VPUQ"
         },
         {
           "slot": "tndBase",
@@ -4988,14 +5134,16 @@
           "id": "festival-mirrored_inverted-37",
           "name": "Ω-VZ-EΘ-UY-D",
           "word": "Ω-VZ-EΘ-UY-D",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         }
       ]
     },
@@ -5009,14 +5157,16 @@
           "id": "festival-mirrored-38",
           "name": "Σ-ΛQZ-ΦΩ-VYΣ-ΛQZ-ΦΩ-VY",
           "word": "Σ-ΛQZ-ΦΩ-VYΣ-ΛQZ-ΦΩ-VY",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0.5-0.5|0.5-0.5|0-0|0.5-0.5|0.5-0.5|0.5-0.5|0-0|0.5",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "mirrored8",
@@ -5024,16 +5174,15 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|0.5-0|0-0.5|0-0.5|0.5-0|0.5-0|0-0.5|0-0.5|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
         },
         {
           "slot": "rotated16",
@@ -5066,7 +5215,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndBase",
@@ -5114,7 +5264,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredInverted8",
@@ -5130,7 +5281,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -5152,7 +5304,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0.5|0-0|0.5-0.5|0-0|0.5-0.5|0-0|0.5-0.5|0"
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0-0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirrored8",
@@ -5185,7 +5338,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/KDCΦ-",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated8",
@@ -5234,7 +5388,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -5265,7 +5420,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         }
       ]
     },
@@ -5319,7 +5475,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MΛWΔ",
-          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0"
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated8",
@@ -5336,7 +5493,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΔUZ",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "tndBase",
@@ -5353,7 +5511,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
@@ -5370,7 +5529,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -5438,7 +5598,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|1-0|0-0|1-1|1-1|1-0|0-0|1-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1-1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "rotated16",
@@ -5455,7 +5616,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΣSW",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated8",
@@ -5463,16 +5625,15 @@
           "id": "W-θ-",
           "name": "W-Θ-",
           "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-",
-          "turnPattern": "0|0-0.5|0.5-0|0-0.5|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-"
         },
         {
           "slot": "tndBase",
@@ -5489,7 +5650,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
@@ -5513,14 +5675,16 @@
           "id": "festival-mirrored_swapped-41",
           "name": "DΨΔ-Y-DΨΔ-Y-",
           "word": "DΨΔ-Y-DΨΔ-Y-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredInverted8",
@@ -5549,14 +5713,16 @@
           "id": "festival-mirrored-42",
           "name": "QNX-ΣW-Θ-Y-ΩQNX-ΣW-Θ-Y-Ω",
           "word": "QNX-ΣW-Θ-Y-ΩQNX-ΣW-Θ-Y-Ω",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11"
+          "endPosition": "gamma11",
+          "turnPattern": "0|0-0.5|0.5-0|0-0|0-0|0-0.5|0.5-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "mirrored8",
@@ -5580,16 +5746,15 @@
           "id": "CΔUW",
           "name": "CΔUW",
           "word": "CΔUWCΔUWCΔUWCΔUW",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΔUW",
-          "turnPattern": "0|0-0.5|0.5-0|0-0.5|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΔUW"
         },
         {
           "slot": "rotated8",
@@ -5606,7 +5771,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/XΣΛS",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndBase",
@@ -5623,7 +5789,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -5640,7 +5807,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredSwapped8",
@@ -5756,7 +5924,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndTurn",
@@ -5773,7 +5942,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -5789,7 +5959,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -5805,7 +5976,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0.5|0-0|0-0.5|0-0|0"
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         }
       ]
     },
@@ -5819,15 +5991,14 @@
           "id": "festival-mirrored-44",
           "name": "Δ-XΘ-Z-ΩWΔYΔ-XΘ-Z-ΩWΔY",
           "word": "Δ-XΘ-Z-ΩWΔYΔ-XΘ-Z-ΩWΔY",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0-0.5|0-0|0-0|0.5-0|0-0.5|0-0|0-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirrored8",
@@ -5867,15 +6038,17 @@
           "id": "OT",
           "name": "OT",
           "word": "OTOTOTOT",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OT"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OT",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndBase",
@@ -5892,7 +6065,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndTurn",
@@ -5924,7 +6098,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -5940,7 +6115,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -5954,14 +6130,16 @@
           "id": "festival-mirrored-45",
           "name": "RY-GΘWΘ-YΣ-RY-GΘWΘ-YΣ-",
           "word": "RY-GΘWΘ-YΣ-RY-GΘWΘ-YΣ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11"
+          "endPosition": "gamma11",
+          "turnPattern": "0.5|0-0|0.5-0|0-0|0-0.5|0-0|0.5-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -5969,16 +6147,15 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0.5|0-0.5|0-0|0-0|0-0.5|0-0.5|0-0|0-0|0"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
         },
         {
           "slot": "rotated16",
@@ -5995,7 +6172,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -6028,7 +6206,8 @@
           "turnIntensity": 1,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -6045,7 +6224,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredSwapped8",
@@ -6097,7 +6277,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|1-0|0-0|0-0|1-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirrored8",
@@ -6146,7 +6327,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/RT",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "tndBase",
@@ -6194,7 +6376,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0.5|0-0|0-0.5|0"
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirroredInverted8",
@@ -6210,7 +6393,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -6224,14 +6408,16 @@
           "id": "festival-mirrored-47",
           "name": "FΨΩWΨFΩ-Y-FΨΩWΨFΩ-Y-",
           "word": "FΨΩWΨFΩ-Y-FΨΩWΨFΩ-Y-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5-0.5|0-0|0.5-0.5|0-0|0.5",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirrored8",
@@ -6248,7 +6434,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|1-1|1-0|1-1|1-0|1-1|1-0|1-1|1"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -6281,7 +6468,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/SOTR",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "0|0-1|1-0|0-0|0",
+          "turnPatternId": "offbeat-together"
         },
         {
           "slot": "tndBase",
@@ -6298,24 +6486,24 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-opp-djdj-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-opp-djdj-1to1",
           "name": "DJDJ",
           "word": "DJDJ",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-opp",
           "vtgFamily": "Tog-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredSwapped8",
@@ -6367,7 +6555,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-0|0-0|0-0|1-1|1-0|0-0|0-0|1"
+          "turnPattern": "1|0-0|1-0|0-0|0-1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -6375,15 +6564,17 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
+          "turnPattern": "0.5|0.5-0.5|0.5-0|0-0|0-0.5|0.5-0.5|0.5-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "rotated16",
@@ -6416,7 +6607,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/VPUQ",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
@@ -6433,24 +6625,24 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-opp-ekek-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-opp-ekek-1to1",
           "name": "EKEK",
           "word": "EKEK",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-opp",
           "vtgFamily": "Tog-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredSwapped8",
@@ -6502,7 +6694,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|0-0|0-0|0-1|1-0|0-0|0-0|0"
+          "turnPattern": "1|0-1|0-0|1-0|1-1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "mirrored8",
@@ -6542,32 +6735,33 @@
           "id": "BΣTX",
           "name": "BΣTX",
           "word": "BΣTXBΣTX",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTX"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΣTX",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-quarter-same-uuuu-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-quarter-same-uuuu-1to1",
           "name": "UUUU",
           "word": "UUUU",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "quarter-same",
           "vtgFamily": "Quarter-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "gamma11"
         },
         {
           "slot": "tndTurn",
@@ -6599,7 +6793,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredInverted8",
@@ -6615,7 +6810,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -6637,7 +6833,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-1|0-0|0-1|1-1|0-1|0-0|0-1|1"
+          "turnPattern": "1|0-1|1-0|1-1|1-1|0-1|1-0|1-1|1",
+          "turnPatternId": "cross-accent"
         },
         {
           "slot": "mirrored8",
@@ -6661,15 +6858,17 @@
           "id": "BΔTX",
           "name": "BΔTX",
           "word": "BΔTXBΔTXBΔTXBΔTX",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔTX",
+          "turnPattern": "0.5|0.5-0|0-0.5|0.5-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "rotated8",
@@ -6686,24 +6885,24 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΩ-SW-",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndBase",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-quarter-same-vvvv-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-quarter-same-vvvv-1to1",
           "name": "VVVV",
           "word": "VVVV",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "quarter-same",
           "vtgFamily": "Quarter-Same",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "gamma11"
         },
         {
           "slot": "tndTurn",
@@ -6735,7 +6934,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "mirroredInverted8",
@@ -6795,15 +6995,17 @@
           "id": "EJΦK",
           "name": "EJΦK",
           "word": "EJΦKEJΦKEJΦKEJΦK",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EJΦK"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EJΦK",
+          "turnPattern": "0.5|0-0.5|0.5-0|0.5-0.5|0.5",
+          "turnPatternId": "cross-accent"
         },
         {
           "slot": "rotated8",
@@ -6820,7 +7022,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΔUZ",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "tndBase",
@@ -6837,7 +7040,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-1|1-0|0-1|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "tndTurn",
@@ -6869,7 +7073,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|1-1|1-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "mirroredInverted8",
@@ -6877,15 +7082,14 @@
           "id": "festival-mirrored_inverted-51",
           "name": "ZΣ-ΛMYΔ-ΛN",
           "word": "ZΣ-ΛMYΔ-ΛN",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0-0.5|0-0|0-0.5|0"
+          "endPosition": "gamma11"
         }
       ]
     },
@@ -6899,15 +7103,14 @@
           "id": "festival-mirrored-52",
           "name": "Θ-OZFΘ-Y-FΦ-Θ-OZFΘ-Y-FΦ-",
           "word": "Θ-OZFΘ-Y-FΦ-Θ-OZFΘ-Y-FΦ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0|0-0.5|0.5-0.5|0.5-0.5|0.5-0|0-0.5|0.5-0.5|0.5-0.5|0.5"
+          "endPosition": "alpha1"
         },
         {
           "slot": "mirrored8",
@@ -6940,7 +7143,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/KDCΦ-",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "rotated8",
@@ -6948,15 +7152,17 @@
           "id": "W-θ-",
           "name": "W-Θ-",
           "word": "W-Θ-W-Θ-W-Θ-W-Θ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/W-θ-",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndBase",
@@ -6973,7 +7179,8 @@
           "turnIntensity": 1,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|0-1|0-1|0-1|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndTurn",
@@ -7020,7 +7227,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|1-0|0-0|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         }
       ]
     },
@@ -7049,16 +7257,15 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0.5|0-0|0-0.5|0.5-0.5|0.5-0.5|0-0|0-0.5|0.5-0.5|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
         },
         {
           "slot": "rotated16",
@@ -7075,7 +7282,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AKIΦ",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated8",
@@ -7092,7 +7300,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/ΦAΦ-L",
-          "turnPattern": "1|1-0|1-1|1-0|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "tndBase",
@@ -7140,7 +7349,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredInverted8",
@@ -7148,14 +7358,16 @@
           "id": "festival-mirrored_inverted-53",
           "name": "FΔRZ-FΣRY-",
           "word": "FΔRZ-FΣRY-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "beta5",
-          "endPosition": "beta5"
+          "endPosition": "beta5",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -7193,7 +7405,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|1-1|0-0|0-1|0-0|1-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -7210,7 +7423,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΣSW",
-          "turnPattern": "1|1-1|0-1|1-1|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "rotated8",
@@ -7218,16 +7432,15 @@
           "id": "MVNU",
           "name": "MVNU",
           "word": "MVNUMVNU",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MVNU",
-          "turnPattern": "0|0.5-0.5|0.5-0|0.5-0.5|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/MVNU"
         },
         {
           "slot": "tndBase",
@@ -7275,7 +7488,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredInverted8",
@@ -7283,14 +7497,16 @@
           "id": "festival-mirrored_inverted-54",
           "name": "OΛWΘ-OΛXΩ-",
           "word": "OΛWΘ-OΛXΩ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11"
+          "endPosition": "gamma11",
+          "turnPattern": "0.5|0-0.5|0-0|0.5-0|0.5",
+          "turnPatternId": "split-blocks"
         }
       ]
     },
@@ -7304,14 +7520,16 @@
           "id": "festival-mirrored-55",
           "name": "CCCΔΛZ-Ψ-ECCCΔΛZ-Ψ-E",
           "word": "CCCΔΛZ-Ψ-ECCCΔΛZ-Ψ-E",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0|0.5-0|0-0|0-0.5|0-0|0.5-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "mirrored8",
@@ -7328,7 +7546,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "0|0-0|0-0|0-0|1-0|0-0|0-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "rotated16",
@@ -7336,16 +7555,15 @@
           "id": "CΣVX",
           "name": "CΣVX",
           "word": "CΣVXCΣVXCΣVXCΣVX",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 16,
           "gridMode": "diamond",
           "period": 4,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΣVX",
-          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΣVX"
         },
         {
           "slot": "rotated8",
@@ -7362,7 +7580,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/OT",
-          "turnPattern": "0|1-1|0-0|1-1|0"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndBase",
@@ -7410,7 +7629,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "mirroredInverted8",
@@ -7447,7 +7667,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-0|1-1|1-0|0-1|1-0|1-1|1-0|0"
+          "turnPattern": "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirrored8",
@@ -7455,15 +7676,17 @@
           "id": "EΦ-JΨ-DΦ-KΨ-",
           "name": "EΦ-JΨ-DΦ-KΨ-",
           "word": "EΦ-JΨ-DΦ-KΨ-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5-0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "rotated16",
@@ -7480,7 +7703,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/IΩPY-",
-          "turnPattern": "0|1-1|1-0|1-1|1"
+          "turnPattern": "1|1-0|0-1|0-0|1",
+          "turnPatternId": "accent-then-trade"
         },
         {
           "slot": "rotated8",
@@ -7517,19 +7741,18 @@
         {
           "slot": "tndTurn",
           "source": "catalog",
-          "catalogId": "tnd-2to1-motions",
-          "docId": "tnd-tog-opp-djdj-2to1",
+          "catalogId": "l1-tnd-motions",
+          "docId": "tnd-tog-opp-djdj-1to1",
           "name": "DJDJ",
           "word": "DJDJ",
-          "level": 3,
+          "level": 1,
           "sequenceLength": 4,
           "familyId": "tog-opp",
           "vtgFamily": "Tog-Opp",
-          "ratio": "2:1",
-          "turnIntensity": 0.5,
+          "ratio": "1:1",
+          "turnIntensity": 0,
           "startPosition": "beta5",
-          "endPosition": "beta5",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "endPosition": "beta5"
         },
         {
           "slot": "mirroredSwapped8",
@@ -7545,7 +7768,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "1|1-0|0-1|1-0|0"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredInverted8",
@@ -7582,7 +7806,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|1-0|0-1|0-1|1-1|1-0|0-1|0-1|1"
+          "turnPattern": "1|1-1|1-1|0-0|1-1|1-1|1-1|0-0|1",
+          "turnPatternId": "dense-handoff"
         },
         {
           "slot": "mirrored8",
@@ -7599,7 +7824,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-          "turnPattern": "1|1-1|1-1|1-1|0-1|1-1|1-1|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-0|0-1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated16",
@@ -7623,15 +7849,17 @@
           "id": "SOTR",
           "name": "SOTR",
           "word": "SOTRSOTR",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/SOTR"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/SOTR",
+          "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0",
+          "turnPatternId": "trade-then-accent"
         },
         {
           "slot": "tndBase",
@@ -7679,7 +7907,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|1-0|0-1|1-0|0",
+          "turnPatternId": "together-pulse"
         },
         {
           "slot": "mirroredInverted8",
@@ -7687,15 +7916,14 @@
           "id": "festival-mirrored_inverted-57",
           "name": "PΛPΛ-QΛQΛ-",
           "word": "PΛPΛ-QΛQΛ-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "gamma11",
-          "endPosition": "gamma11",
-          "turnPattern": "0|0-0.5|0-0|0-0.5|0"
+          "endPosition": "gamma11"
         }
       ]
     },
@@ -7717,7 +7945,8 @@
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "turnPattern": "1|1-0|1-0|0-0|1-1|1-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|0-0|1-1|1-1|0-0|0-0|1-1|1",
+          "turnPatternId": "bookended-trade"
         },
         {
           "slot": "mirrored8",
@@ -7750,7 +7979,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/AΔSX",
-          "turnPattern": "1|0-1|1-1|0-1|1"
+          "turnPattern": "1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "rotated8",
@@ -7767,7 +7997,8 @@
           "startPosition": "gamma11",
           "endPosition": "gamma11",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/VPUQ",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "tndBase",
@@ -7807,15 +8038,14 @@
           "id": "festival-mirrored_swapped-58",
           "name": "Ω-WΘ-W-Ω-WΘ-W-",
           "word": "Ω-WΘ-W-Ω-WΘ-W-",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "mirrored_swapped",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1",
-          "turnPattern": "0.5|0-0|0.5-0.5|0-0|0.5"
+          "endPosition": "alpha1"
         },
         {
           "slot": "mirroredInverted8",
@@ -7823,14 +8053,16 @@
           "id": "festival-mirrored_inverted-58",
           "name": "JΣ-ΛX-KΔ-ΛW-",
           "word": "JΣ-ΛX-KΔ-ΛW-",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored_inverted",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
-          "endPosition": "alpha1"
+          "endPosition": "alpha1",
+          "turnPattern": "0.5|0-0|0-0|0.5-0.5|0.5",
+          "turnPatternId": "bookended-trade"
         }
       ]
     },
@@ -7859,15 +8091,17 @@
           "id": "DJII",
           "name": "DJII",
           "word": "DJIIDJII",
-          "level": 1,
-          "turnIntensity": 0,
+          "level": 3,
+          "turnIntensity": 0.5,
           "loopType": "mirrored",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": null,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+          "turnPattern": "0.5|0-0|0-0|0.5-0|0-0.5|0-0|0-0|0.5-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated16",
@@ -7884,7 +8118,8 @@
           "startPosition": "alpha1",
           "endPosition": "alpha1",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/CΔUW",
-          "turnPattern": "0|0-1|0-0|0-1|0"
+          "turnPattern": "1|0-0|1-0|0-0|0",
+          "turnPatternId": "adjacent-handoff"
         },
         {
           "slot": "rotated8",
@@ -7892,16 +8127,15 @@
           "id": "BΔMX",
           "name": "BΔMX",
           "word": "BΔMXBΔMX",
-          "level": 3,
-          "turnIntensity": 0.5,
+          "level": 1,
+          "turnIntensity": 0,
           "loopType": "rotated",
           "sequenceLength": 8,
           "gridMode": "diamond",
           "period": 2,
           "startPosition": "alpha1",
           "endPosition": "alpha1",
-          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX",
-          "turnPattern": "0|0.5-0|0.5-0|0.5-0|0.5"
+          "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΔMX"
         },
         {
           "slot": "tndBase",
@@ -7918,7 +8152,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|1-1|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "tndTurn",
@@ -7950,7 +8185,8 @@
           "period": 2,
           "startPosition": "beta5",
           "endPosition": "beta5",
-          "turnPattern": "0|0-0|1-0|0-0|1"
+          "turnPattern": "1|0-0|1-1|0-0|1",
+          "turnPatternId": "alternating-hands"
         },
         {
           "slot": "mirroredInverted8",
@@ -8003,7 +8239,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/EΦ-JΨ-DΦ-KΨ-",
-          "turnPattern": "0|0-0|0-0|1-1|0-0|0-0|0-0|1-1|0"
+          "turnPattern": "1|0-0|0-0|1-0|0-1|0-0|0-0|1-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated16",
@@ -8020,7 +8257,8 @@
           "startPosition": "beta5",
           "endPosition": "beta5",
           "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/FΦ-BJ",
-          "turnPattern": "0.5|0-0.5|0-0.5|0-0.5|0"
+          "turnPattern": "0.5|0-0|0-0|0.5-0|0",
+          "turnPatternId": "spaced-handoff"
         },
         {
           "slot": "rotated8",
@@ -8053,7 +8291,8 @@
           "turnIntensity": 1,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "0|1-0|1-0|1-0|1"
+          "turnPattern": "1|0-1|0-0|1-0|1",
+          "turnPatternId": "split-blocks"
         },
         {
           "slot": "tndTurn",
@@ -8085,7 +8324,8 @@
           "period": 2,
           "startPosition": "gamma11",
           "endPosition": "gamma11",
-          "turnPattern": "1|0-0|0-1|0-0|0"
+          "turnPattern": "1|1-1|1-0|0-0|0",
+          "turnPatternId": "together-block"
         },
         {
           "slot": "mirroredInverted8",
@@ -8115,14 +8355,16 @@
         "id": "festival-mirrored-01",
         "name": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
         "word": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
-        "level": 1,
-        "turnIntensity": 0,
+        "level": 3,
+        "turnIntensity": 0.5,
         "loopType": "mirrored",
         "sequenceLength": 16,
         "gridMode": "diamond",
         "period": 2,
         "startPosition": "alpha1",
-        "endPosition": "alpha1"
+        "endPosition": "alpha1",
+        "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+        "turnPatternId": "trade-then-accent"
       },
       {
         "slot": "mirrored8",
@@ -8130,16 +8372,15 @@
         "id": "DJII",
         "name": "DJII",
         "word": "DJIIDJII",
-        "level": 3,
-        "turnIntensity": 0.5,
+        "level": 1,
+        "turnIntensity": 0,
         "loopType": "mirrored",
         "sequenceLength": 8,
         "gridMode": "diamond",
         "period": null,
         "startPosition": "beta5",
         "endPosition": "beta5",
-        "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-        "turnPattern": "0.5|0-0.5|0-0.5|0.5-0.5|0-0.5|0-0.5|0-0.5|0.5-0.5|0"
+        "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
       },
       {
         "slot": "rotated16",
@@ -8204,7 +8445,8 @@
         "turnIntensity": 1,
         "startPosition": "alpha1",
         "endPosition": "alpha1",
-        "turnPattern": "0|1-1|0-0|1-1|0"
+        "turnPattern": "1|0-0|1-1|0-0|1",
+        "turnPatternId": "alternating-hands"
       },
       {
         "slot": "mirroredSwapped8",
@@ -8220,7 +8462,8 @@
         "period": 2,
         "startPosition": "alpha1",
         "endPosition": "alpha1",
-        "turnPattern": "0|1-0|1-0|1-0|1"
+        "turnPattern": "1|0-1|0-0|1-0|1",
+        "turnPatternId": "split-blocks"
       },
       {
         "slot": "mirroredInverted8",
@@ -8236,7 +8479,8 @@
         "period": 2,
         "startPosition": "alpha1",
         "endPosition": "alpha1",
-        "turnPattern": "1|0-1|1-1|0-1|1"
+        "turnPattern": "1|0-1|0-0|1-0|1",
+        "turnPatternId": "split-blocks"
       }
     ]
   }

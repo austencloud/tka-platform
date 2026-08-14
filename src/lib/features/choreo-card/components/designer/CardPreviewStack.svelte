@@ -62,10 +62,14 @@
   let cardAspect = $state(0);
 
   const frontIsLandscape = $derived(
-    printMode ? false : (cardAspect > 0 ? cardAspect > 1.3 : false)
+    printMode ? false : cardAspect > 0 ? cardAspect > 1.3 : false
   );
   const frontAR = $derived(
-    printMode ? CARD_PORTRAIT : (frontIsLandscape ? CARD_LANDSCAPE : CARD_PORTRAIT)
+    printMode
+      ? CARD_PORTRAIT
+      : frontIsLandscape
+        ? CARD_LANDSCAPE
+        : CARD_PORTRAIT
   );
 
   const availMain = $derived(Math.max(0, (isHorizontal ? cW : cH) - GAP));
@@ -116,11 +120,20 @@
     });
     mo.observe(node, { childList: true, subtree: true });
 
-    return { destroy() { mo.disconnect(); } };
+    return {
+      destroy() {
+        mo.disconnect();
+      },
+    };
   }
 </script>
 
-<div class="preview-stack" class:horizontal={isHorizontal} class:print-mode={printMode} bind:this={containerEl}>
+<div
+  class="preview-stack"
+  class:horizontal={isHorizontal}
+  class:print-mode={printMode}
+  bind:this={containerEl}
+>
   <div class="card-slot">
     <div
       class="card-frame"
@@ -132,13 +145,14 @@
       {:else if sequence}
         <ChoreoCard
           {sequence}
-          showWord={showWord}
-          includeStartPosition={includeStartPosition}
+          {showWord}
+          {includeStartPosition}
           {startPositionLayout}
           showQRCodes={showQRCode}
-          printMode={printMode}
+          {printMode}
           cardMode={!printMode}
           preRenderedImageUrl={printMode ? frontImageUrl : undefined}
+          eager={true}
           onContextMenu={onCardContextMenu}
         />
       {/if}

@@ -37,6 +37,11 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { hashSequenceSkeleton } from "$lib/shared/foundation/services/content-hasher";
 import type { ArchivedDeckPayload } from "../../../services/deck-archive-store";
+import {
+  buildGalleryDeckResult,
+  normalizeGalleryFilters,
+  type GalleryDeckSelection,
+} from "../../../services/gallery-deck-source";
 import type { DeckReleaserState } from "./deck-releaser-state.svelte";
 
 export interface DeckProductionStateDependencies {
@@ -44,6 +49,7 @@ export interface DeckProductionStateDependencies {
   loadSequencesByIds: typeof import("../../../services/catalog-loader").loadSequencesByIds;
   loadDiamondEdges: typeof import("../../../services/pictograph-letter-lookup").loadDiamondEdges;
   queryGalleryDeck: typeof import("../../../services/gallery-deck-source").queryGalleryDeck;
+  queryGalleryDeckFromSpec: typeof import("../../../services/gallery-deck-source").queryGalleryDeckFromSpec;
   resolveGalleryCards: typeof import("../../../services/gallery-deck-source").resolveGalleryCards;
   generateSequence(options: GenerationOptions): Promise<SequenceData>;
   getStartPositionVariations(
@@ -402,46 +408,49 @@ export function createDeckProductionState(
     return true;
   }
 
-  async function composeGalleryDeck(generation: number): Promise<boolean> {
+  async function composeGalleryDeck(
+    generation: number,
+    selection: GalleryDeckSelection
+  ): Promise<boolean> {
     deck.isLoadingSequences = true;
     try {
-      const { cards, sequences } = await deps.queryGalleryDeck(
-        deck.galleryFilters,
+      if (generation !== deck.drawGeneration) return false;
+      const prepared = buildGalleryDeckResult(
+        selection.sequences,
         deck.totalCards,
         deck.notes
       );
-      if (generation !== deck.drawGeneration) return false;
-      if (sequences.length === 0) {
-        deps.info("No library sequences match these filters.");
+      if (prepared.sequences.length === 0) {
+        deps.info("No library sequences match this rule.");
         return false;
       }
-      deck.sequences = sequences;
-      deck.cards = cards;
+      deck.galleryFilterSpec = selection.filterSpec;
+      deck.galleryFilters = {};
+      deck.sequences = prepared.sequences;
+      deck.cards = prepared.cards;
       return true;
-    } catch (error) {
-      console.warn("Gallery draw failed:", error);
-      deps.error("Gallery draw failed. Check you're signed in.");
-      return false;
     } finally {
       deck.isLoadingSequences = false;
     }
   }
 
-  async function refreshGallery(): Promise<boolean> {
-    const filters =
-      deck.viewingRelease?.recipe?.galleryFilters ?? deck.galleryFilters;
+  async function refreshGallery(
+    generation = ++deck.drawGeneration
+  ): Promise<boolean> {
+    const filterSpec =
+      deck.viewingRelease?.recipe?.galleryFilterSpec ?? deck.galleryFilterSpec;
+    const filters = normalizeGalleryFilters(
+      deck.viewingRelease?.recipe?.galleryFilters ?? deck.galleryFilters
+    );
     const cap = deck.viewingRelease?.recipe?.totalCards ?? deck.totalCards;
-    const generation = ++deck.drawGeneration;
     deck.isLoadingSequences = true;
     try {
-      const { cards, sequences } = await deps.queryGalleryDeck(
-        filters,
-        cap,
-        deck.notes
-      );
+      const { cards, sequences } = filterSpec
+        ? await deps.queryGalleryDeckFromSpec(filterSpec, cap, deck.notes)
+        : await deps.queryGalleryDeck(filters, cap, deck.notes);
       if (generation !== deck.drawGeneration) return false;
       if (sequences.length === 0) {
-        deps.info("No library sequences match these filters.");
+        deps.info("No library sequences match this rule.");
         return false;
       }
       deck.sequences = sequences;

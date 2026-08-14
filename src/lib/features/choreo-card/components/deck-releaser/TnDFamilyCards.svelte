@@ -22,7 +22,15 @@
     onClear?: () => void;
   }
 
-  const { families, selected, multiplier, onToggle, columns = 2, onSelectAll, onClear }: Props = $props();
+  const {
+    families,
+    selected,
+    multiplier,
+    onToggle,
+    columns = 2,
+    onSelectAll,
+    onClear,
+  }: Props = $props();
 
   /**
    * Display order: row = motion family (Split → Tog → Quarter), column =
@@ -34,14 +42,29 @@
     const direction = id.includes("opp") ? 1 : 0;
     return family * 2 + direction;
   }
-  const ordered = $derived([...families].sort((a, b) => familyRank(a.familyId) - familyRank(b.familyId)));
+  const ordered = $derived(
+    [...families].sort(
+      (a, b) => familyRank(a.familyId) - familyRank(b.familyId)
+    )
+  );
 </script>
 
 <div class="family-cards">
   {#if onSelectAll || onClear}
     <div class="bulk-row">
-      {#if onSelectAll}<FilterChipBase label="All" icon="fas fa-check-double" mode="action" onclick={onSelectAll} />{/if}
-      {#if onClear}<FilterChipBase label="None" icon="fas fa-xmark" mode="action" chipColor="var(--semantic-error)" onclick={onClear} />{/if}
+      {#if onSelectAll}<FilterChipBase
+          label="All"
+          icon="fas fa-check-double"
+          mode="action"
+          onclick={onSelectAll}
+        />{/if}
+      {#if onClear}<FilterChipBase
+          label="None"
+          icon="fas fa-xmark"
+          mode="action"
+          chipColor="var(--semantic-error)"
+          onclick={onClear}
+        />{/if}
     </div>
   {/if}
   <div class="cards-mid">
@@ -56,10 +79,18 @@
           onclick={() => onToggle(fam.familyId)}
         >
           {#if el}
-            <img src={el.iconPath} alt="{el.element} element" class="family-icon" width="36" height="36" />
+            <img
+              src={el.iconPath}
+              alt="{el.element} element"
+              class="family-icon"
+              width="36"
+              height="36"
+            />
           {/if}
           <span class="family-name">{fam.label}</span>
-          <span class="family-count">{fam.sequenceCount * multiplier} cards</span>
+          <span class="family-count"
+            >{fam.sequenceCount * multiplier} cards</span
+          >
         </button>
       {/each}
     </div>
@@ -107,7 +138,11 @@
     padding: 16px 12px;
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
+      color-mix(
+        in srgb,
+        var(--accent) 8%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      ),
       var(--theme-card-bg, rgba(255, 255, 255, 0.04))
     );
     border: 1.5px solid color-mix(in srgb, var(--accent) 30%, transparent);
@@ -131,11 +166,20 @@
     transform: translateY(-1px) scale(1.01);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--accent) 24%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
-      color-mix(in srgb, var(--accent) 8%, var(--theme-card-bg, rgba(255, 255, 255, 0.04)))
+      color-mix(
+        in srgb,
+        var(--accent) 24%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      ),
+      color-mix(
+        in srgb,
+        var(--accent) 8%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+      )
     );
     border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--accent) 45%, transparent);
   }
 
   .family-btn:active {
@@ -146,7 +190,7 @@
     width: 44px;
     height: 44px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    filter: drop-shadow(0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.35)));
     opacity: 0.55;
     transition: opacity var(--transition-fast);
   }

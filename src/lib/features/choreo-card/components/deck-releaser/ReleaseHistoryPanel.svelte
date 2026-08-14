@@ -1,5 +1,12 @@
 <script lang="ts">
-  import type { DeckRelease, DeckRecipe } from "../../domain/models/DeckRelease";
+  import type {
+    DeckRelease,
+    DeckRecipe,
+  } from "../../domain/models/DeckRelease";
+  import { flip } from "svelte/animate";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { flipDuration, growFade } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   interface Props {
     releases: DeckRelease[];
@@ -14,7 +21,15 @@
     title?: string;
   }
 
-  const { releases, isLoading, activeDeckNumber, onSelectRelease, onDeleteRelease, onReuseRecipe, title = "Released Decks" }: Props = $props();
+  const {
+    releases,
+    isLoading,
+    activeDeckNumber,
+    onSelectRelease,
+    onDeleteRelease,
+    onReuseRecipe,
+    title = "Released Decks",
+  }: Props = $props();
 
   function reuse(e: MouseEvent, recipe: DeckRecipe) {
     e.stopPropagation();
@@ -43,7 +58,11 @@
 
   function formatDate(iso: string): string {
     const d = new Date(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }
 
   function distributionSummary(dist: Record<number, number>): string {
@@ -54,10 +73,15 @@
   }
 
   function displayName(r: DeckRelease): string {
-    return r.name?.trim() || r.notes?.trim() || `Deck #${String(r.deckNumber).padStart(3, "0")}`;
+    return (
+      r.name?.trim() ||
+      r.notes?.trim() ||
+      `Deck #${String(r.deckNumber).padStart(3, "0")}`
+    );
   }
 
-  const prettyProp = (p?: string) => (p ? p.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "");
+  const prettyProp = (p?: string) =>
+    p ? p.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase()) : "";
 </script>
 
 <div class="release-history">
@@ -82,7 +106,12 @@
   {:else}
     <div class="release-list">
       {#each releases as release (release.deckNumber)}
-        <div class="release-row" class:active={activeDeckNumber === release.deckNumber}>
+        <div
+          class="release-row"
+          class:active={activeDeckNumber === release.deckNumber}
+          animate:flip={{ duration: flipDuration() }}
+          out:growFade
+        >
           <button
             type="button"
             class="release-item"
@@ -91,7 +120,9 @@
             aria-pressed={activeDeckNumber === release.deckNumber}
           >
             <div class="release-header">
-              <span class="deck-badge">#{String(release.deckNumber).padStart(3, "0")}</span>
+              <span class="deck-badge"
+                >#{String(release.deckNumber).padStart(3, "0")}</span
+              >
               <span class="release-date">{formatDate(release.createdAt)}</span>
             </div>
             <div class="release-notes">{displayName(release)}</div>
@@ -100,53 +131,62 @@
               {#if release.bluePropType}
                 <span class="prop">{prettyProp(release.bluePropType)}</span>
               {/if}
-              <span class="distribution">{distributionSummary(release.stepCountDistribution)}</span>
+              <span class="distribution"
+                >{distributionSummary(release.stepCountDistribution)}</span
+              >
             </div>
           </button>
 
           {#if onDeleteRelease || (onReuseRecipe && release.recipe)}
             <div class="row-actions">
-              {#if onReuseRecipe && release.recipe}
-                <button
-                  type="button"
-                  class="reuse-btn"
-                  onclick={(e) => reuse(e, release.recipe!)}
-                  aria-label="Reuse recipe from Deck {release.deckNumber}"
-                  title="Reuse this deck's recipe"
-                >
-                  <i class="fas fa-rotate" aria-hidden="true"></i>
-                </button>
-              {/if}
-              {#if onDeleteRelease}
-              {#if confirmingDelete === release.deckNumber}
-                <button
-                  type="button"
-                  class="confirm-btn confirm-yes"
-                  onclick={(e) => confirmDelete(e, release.deckNumber)}
-                  aria-label="Confirm delete Deck {release.deckNumber}"
-                >
-                  <i class="fas fa-check" aria-hidden="true"></i> Delete
-                </button>
-                <button
-                  type="button"
-                  class="confirm-btn confirm-no"
-                  onclick={cancelConfirm}
-                  aria-label="Cancel delete"
-                >
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                </button>
-              {:else}
-                <button
-                  type="button"
-                  class="trash-btn"
-                  onclick={(e) => startConfirm(e, release.deckNumber)}
-                  aria-label="Delete Deck {release.deckNumber}"
-                  title="Delete deck"
-                >
-                  <i class="fas fa-trash" aria-hidden="true"></i>
-                </button>
-              {/if}
-              {/if}
+              <Crossfade
+                key={confirmingDelete === release.deckNumber}
+                duration={DURATION.fast}
+              >
+                <span class="action-set">
+                  {#if confirmingDelete === release.deckNumber}
+                    <button
+                      type="button"
+                      class="confirm-btn confirm-yes"
+                      onclick={(e) => confirmDelete(e, release.deckNumber)}
+                      aria-label="Confirm delete Deck {release.deckNumber}"
+                    >
+                      <i class="fas fa-check" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="confirm-btn confirm-no"
+                      onclick={cancelConfirm}
+                      aria-label="Cancel delete"
+                    >
+                      <i class="fas fa-times" aria-hidden="true"></i>
+                    </button>
+                  {:else}
+                    {#if onReuseRecipe && release.recipe}
+                      <button
+                        type="button"
+                        class="reuse-btn"
+                        onclick={(e) => reuse(e, release.recipe!)}
+                        aria-label="Reuse recipe from Deck {release.deckNumber}"
+                        title="Reuse this deck's recipe"
+                      >
+                        <i class="fas fa-rotate" aria-hidden="true"></i>
+                      </button>
+                    {/if}
+                    {#if onDeleteRelease}
+                      <button
+                        type="button"
+                        class="trash-btn"
+                        onclick={(e) => startConfirm(e, release.deckNumber)}
+                        aria-label="Delete Deck {release.deckNumber}"
+                        title="Delete deck"
+                      >
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                      </button>
+                    {/if}
+                  {/if}
+                </span>
+              </Crossfade>
             </div>
           {/if}
         </div>
@@ -185,9 +225,9 @@
   .release-count {
     margin-left: auto;
     padding: 1px 8px;
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     border-radius: 10px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: var(--theme-accent, #a78bfa);
   }
@@ -222,14 +262,22 @@
     border-radius: 8px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    transition: border-color 0.15s ease;
+    transition:
+      transform var(--transition-spring),
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
-  .release-row:hover { border-color: rgba(255, 255, 255, 0.15); }
+  .release-row:hover {
+    transform: translateX(2px);
+    border-color: var(--theme-stroke-strong);
+  }
 
   .release-row.active {
     border-color: var(--theme-accent, rgba(139, 92, 246, 0.5));
-    background: rgba(139, 92, 246, 0.08);
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    box-shadow: inset 3px 0 0 var(--theme-accent, #8b5cf6);
   }
 
   .release-item {
@@ -256,9 +304,22 @@
   .row-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: flex-end;
+    width: 6.5rem;
     padding-right: 8px;
     flex-shrink: 0;
+  }
+
+  .row-actions > :global(.crossfade) {
+    width: 100%;
+  }
+
+  .action-set {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    width: 100%;
   }
 
   /* Row actions hidden until row hover/focus on pointer devices; shown on touch. */
@@ -267,60 +328,86 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
     background: transparent;
     border: none;
     border-radius: 8px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    transition:
+      opacity var(--transition-fast),
+      color var(--transition-fast),
+      background var(--transition-fast),
+      transform var(--transition-spring);
   }
 
   .release-row:hover .trash-btn,
   .release-row:focus-within .trash-btn,
   .release-row:hover .reuse-btn,
-  .release-row:focus-within .reuse-btn { opacity: 1; }
+  .release-row:focus-within .reuse-btn {
+    opacity: 1;
+  }
 
   .trash-btn:hover {
-    color: #f87171;
-    background: rgba(248, 113, 113, 0.12);
+    transform: scale(1.08);
+    color: var(--semantic-error);
+    background: color-mix(in srgb, var(--semantic-error) 12%, transparent);
   }
 
   .reuse-btn:hover {
+    transform: rotate(-12deg) scale(1.08);
     color: var(--theme-accent, #a78bfa);
-    background: rgba(139, 92, 246, 0.15);
+    background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
   }
 
   .confirm-btn {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    min-height: 32px;
-    padding: 4px 10px;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 4px;
     border-radius: 8px;
     border: none;
     font: inherit;
-    font-size: 12px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     cursor: pointer;
   }
 
-  .confirm-yes { background: #ef4444; color: #fff; }
-  .confirm-yes:hover { background: #dc2626; }
-
-  .confirm-no {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.7);
-    padding: 4px 8px;
+  .confirm-yes {
+    background: var(--semantic-error);
+    color: var(--theme-text);
+  }
+  .confirm-yes:hover {
+    background: color-mix(
+      in srgb,
+      var(--semantic-error) 85%,
+      var(--theme-panel-bg)
+    );
   }
 
-  .confirm-no:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+  .confirm-no {
+    background: var(--theme-card-bg);
+    color: var(--theme-text-muted);
+  }
+
+  .confirm-no:hover {
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
 
   @media (hover: none) {
     .trash-btn,
-    .reuse-btn { opacity: 1; }
+    .reuse-btn {
+      opacity: 1;
+    }
   }
 
   .release-header {
@@ -338,7 +425,7 @@
 
   .release-date {
     margin-left: auto;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
   }
 
@@ -353,7 +440,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
   }
 
@@ -367,8 +454,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .release-row {
+    .release-row,
+    .trash-btn,
+    .reuse-btn {
       transition: none;
+    }
+
+    .panel-empty .fa-spin {
+      animation: none;
     }
   }
 </style>

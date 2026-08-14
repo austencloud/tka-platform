@@ -68,53 +68,123 @@ function stablePatternHash(value: string): number {
   return hash >>> 0;
 }
 
-function buildStructuralTurnPatternCandidates(
-  unitLength: number,
-  turnIntensity: number,
-  seed: string
-): string[] {
-  const motifLengths =
-    unitLength === 4 ? [1, 2] : unitLength === 8 ? [1, 2, 4] : [];
-  const candidates = new Set<string>();
-  for (const motifLength of motifLengths) {
-    const bitCount = motifLength * 2;
-    const allTurns = 2 ** bitCount - 1;
-    for (let mask = 1; mask < allTurns; mask += 1) {
-      const motif = Array.from({ length: motifLength }, (_, index) => {
-        const blue = mask & (1 << (index * 2));
-        const red = mask & (1 << (index * 2 + 1));
-        return `${blue ? turnIntensity : 0}|${red ? turnIntensity : 0}`;
-      });
-      candidates.add(
-        Array.from(
-          { length: unitLength },
-          (_, index) => motif[index % motifLength]!
-        ).join("-")
-      );
-    }
-  }
-  return [...candidates].sort(
-    (left, right) =>
-      stablePatternHash(`${seed}|${left}`) -
-        stablePatternHash(`${seed}|${right}`) || left.localeCompare(right)
-  );
+type FestivalTurnSymbol = "B" | "R" | "X" | "·";
+
+export interface FestivalTurnPatternPreset {
+  id: string;
+  label: string;
+  symbols: readonly FestivalTurnSymbol[];
+  minSequenceLength: 4 | 8 | 16;
 }
 
-function hasRepeatingTurnMotif(
-  unit: ReturnType<typeof parseTurnUnit>
-): boolean {
-  for (let motifLength = 1; motifLength < unit.length; motifLength += 1) {
-    if (unit.length % motifLength !== 0) continue;
-    if (
-      unit.every((entry, index) => {
-        const motifEntry = unit[index % motifLength]!;
-        return entry.blue === motifEntry.blue && entry.red === motifEntry.red;
-      })
-    ) {
-      return true;
-    }
+/**
+ * A deliberately small rhythm vocabulary. Four-step cards only receive the
+ * strict core. Eight- and sixteen-step cards progressively unlock more room.
+ */
+export const FESTIVAL_TURN_PATTERN_PRESETS = [
+  {
+    id: "together-block",
+    label: "Together block",
+    symbols: ["X", "X", "·", "·"],
+    minSequenceLength: 4,
+  },
+  {
+    id: "together-pulse",
+    label: "Together pulse",
+    symbols: ["X", "·", "X", "·"],
+    minSequenceLength: 4,
+  },
+  {
+    id: "split-blocks",
+    label: "Split blocks",
+    symbols: ["B", "B", "R", "R"],
+    minSequenceLength: 4,
+  },
+  {
+    id: "alternating-hands",
+    label: "Alternating hands",
+    symbols: ["B", "R", "B", "R"],
+    minSequenceLength: 4,
+  },
+  {
+    id: "offbeat-together",
+    label: "Offbeat together",
+    symbols: ["·", "X", "·", "·"],
+    minSequenceLength: 8,
+  },
+  {
+    id: "spaced-handoff",
+    label: "Spaced handoff",
+    symbols: ["B", "·", "R", "·"],
+    minSequenceLength: 8,
+  },
+  {
+    id: "trade-then-accent",
+    label: "Trade, then accent",
+    symbols: ["B", "R", "X", "·"],
+    minSequenceLength: 8,
+  },
+  {
+    id: "bookended-trade",
+    label: "Bookended trade",
+    symbols: ["B", "·", "R", "X"],
+    minSequenceLength: 8,
+  },
+  {
+    id: "adjacent-handoff",
+    label: "Adjacent handoff",
+    symbols: ["B", "R", "·", "·"],
+    minSequenceLength: 16,
+  },
+  {
+    id: "accent-then-trade",
+    label: "Accent, then trade",
+    symbols: ["X", "·", "B", "R"],
+    minSequenceLength: 16,
+  },
+  {
+    id: "dense-handoff",
+    label: "Dense handoff",
+    symbols: ["X", "X", "B", "R"],
+    minSequenceLength: 16,
+  },
+  {
+    id: "cross-accent",
+    label: "Cross accent",
+    symbols: ["B", "X", "R", "X"],
+    minSequenceLength: 16,
+  },
+] as const satisfies readonly FestivalTurnPatternPreset[];
+
+export type FestivalTurnPatternId =
+  (typeof FESTIVAL_TURN_PATTERN_PRESETS)[number]["id"];
+
+function turnPairForSymbol(
+  symbol: FestivalTurnSymbol,
+  intensity: 0.5 | 1
+): string {
+  if (symbol === "B") return `${intensity}|0`;
+  if (symbol === "R") return `0|${intensity}`;
+  if (symbol === "X") return `${intensity}|${intensity}`;
+  return "0|0";
+}
+
+export function buildFestivalTurnPattern(
+  preset: FestivalTurnPatternPreset,
+  unitLength: number,
+  intensity: 0.5 | 1
+): string {
+  if (
+    unitLength < preset.symbols.length ||
+    unitLength % preset.symbols.length !== 0
+  ) {
+    throw new Error(
+      `${preset.label} cannot fill a ${unitLength}-step structural unit.`
+    );
   }
-  return false;
+  return Array.from({ length: unitLength }, (_, index) =>
+    turnPairForSymbol(preset.symbols[index % preset.symbols.length]!, intensity)
+  ).join("-");
 }
 
 function festivalTurnUnitLength(
@@ -143,11 +213,16 @@ function hasCleanFestivalTurnResult(
 }
 
 /** Pick a deterministic structural pattern that preserves loop closure. */
-export function findCompatibleFestivalSamplerTurnPattern(
+export interface FestivalSamplerTurnAssignment {
+  id: FestivalTurnPatternId;
+  pattern: string;
+}
+
+export function findCompatibleFestivalSamplerTurnAssignment(
   card: FestivalSamplerCardManifest,
   base: SequenceData,
   seed = [card.source, card.sourceRef, card.id, card.name, card.slot].join("|")
-): string {
+): FestivalSamplerTurnAssignment {
   const turnIntensity = card.turnIntensity ?? 0;
   if (turnIntensity !== 1 && turnIntensity !== 0.5) {
     throw new Error(
@@ -155,28 +230,45 @@ export function findCompatibleFestivalSamplerTurnPattern(
     );
   }
   const unitLength = festivalTurnUnitLength(card, base);
-  const candidates = buildStructuralTurnPatternCandidates(
-    unitLength,
-    turnIntensity,
-    seed
-  );
+  const sequenceLength = card.sequenceLength ?? base.steps.length;
+  const candidates = FESTIVAL_TURN_PATTERN_PRESETS.filter(
+    (preset) => sequenceLength >= preset.minSequenceLength
+  )
+    .map((preset) => ({
+      preset,
+      turnPattern: buildFestivalTurnPattern(preset, unitLength, turnIntensity),
+    }))
+    .sort(
+      (left, right) =>
+        stablePatternHash(`${seed}|${left.preset.id}`) -
+          stablePatternHash(`${seed}|${right.preset.id}`) ||
+        left.preset.id.localeCompare(right.preset.id)
+    );
   if (candidates.length === 0) {
     throw new Error(
       `Festival sampler has no structural turn patterns for ${unitLength} steps: ${card.name}`
     );
   }
-  for (const turnPattern of candidates) {
+  for (const { preset, turnPattern } of candidates) {
     const applied = applyVariationDescriptor(base, { turnPattern }, []);
     if (
       applied.turnLoopClosed &&
       hasCleanFestivalTurnResult(applied.sequence, turnIntensity)
     ) {
-      return turnPattern;
+      return { id: preset.id, pattern: turnPattern };
     }
   }
   throw new Error(
     `Festival sampler found no loop-closing ${turnIntensity}-turn pattern for ${card.name}`
   );
+}
+
+export function findCompatibleFestivalSamplerTurnPattern(
+  card: FestivalSamplerCardManifest,
+  base: SequenceData,
+  seed?: string
+): string {
+  return findCompatibleFestivalSamplerTurnAssignment(card, base, seed).pattern;
 }
 
 export function applyFestivalSamplerTurnAssignment(
@@ -201,15 +293,29 @@ export function applyFestivalSamplerTurnAssignment(
   const unit = parseTurnUnit(card.turnPattern);
   const expectedUnitLength = festivalTurnUnitLength(card, base);
   const unitTurns = unit.flatMap((entry) => [entry.blue, entry.red]);
+  const frozenPreset = card.turnPatternId
+    ? FESTIVAL_TURN_PATTERN_PRESETS.find(
+        (preset) => preset.id === card.turnPatternId
+      )
+    : null;
+  const sequenceLength = card.sequenceLength ?? base.steps.length;
+  const frozenPatternMatches = frozenPreset
+    ? sequenceLength >= frozenPreset.minSequenceLength &&
+      buildFestivalTurnPattern(
+        frozenPreset,
+        expectedUnitLength,
+        turnIntensity
+      ) === card.turnPattern
+    : true;
   if (
     unit.length !== expectedUnitLength ||
-    !hasRepeatingTurnMotif(unit) ||
+    !frozenPatternMatches ||
     !unitTurns.some((turn) => turn === turnIntensity) ||
     !unitTurns.some((turn) => turn === 0) ||
     unitTurns.some((turn) => turn !== 0 && turn !== turnIntensity)
   ) {
     throw new Error(
-      `Festival sampler turn pattern is not a cyclic motif for the ${expectedUnitLength}-step structural unit and ${turnIntensity}-turn cap: ${card.name}`
+      `Festival sampler turn pattern is not valid for the ${expectedUnitLength}-step structural unit, ${sequenceLength}-step card, and ${turnIntensity}-turn cap: ${card.name}`
     );
   }
 

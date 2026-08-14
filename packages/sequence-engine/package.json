@@ -21,6 +21,11 @@
       "import": "./dist/generation/index.js",
       "default": "./dist/generation/index.js"
     },
+    "./generation/turn-materializer": {
+      "types": "./src/generation/turns/TurnMaterializer.ts",
+      "import": "./dist/generation/turns/TurnMaterializer.js",
+      "default": "./dist/generation/turns/TurnMaterializer.js"
+    },
     "./loop": {
       "types": "./src/loop/index.ts",
       "import": "./dist/loop/index.js",

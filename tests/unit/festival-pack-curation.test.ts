@@ -12,6 +12,7 @@ import {
 } from "$lib/features/choreo-card/services/festival-sampler-manifest";
 import uniquePackManifests from "$lib/features/choreo-card/data/festival-sampler-manifests.json";
 import localSequenceData from "$lib/features/choreo-card/data/festival-sampler-sequences.json";
+import { FESTIVAL_TURN_PATTERN_PRESETS } from "$lib/features/choreo-card/services/festival-sampler-turns";
 
 const require = createRequire(import.meta.url);
 const {
@@ -175,6 +176,7 @@ describe("festival pack curation", () => {
         )
       ).toBe(true);
       expect(levelThree[0]!.turnIntensity).toBe(0.5);
+      expect(levelThree[0]!.source).not.toBe("catalog");
       expect(levelThree[0]!.turnPattern).toMatch(/0\.5/);
       expect(levelThree[0]!.turnPattern).toMatch(/(?:^|[-|])0(?:[-|]|$)/);
       expect(
@@ -199,19 +201,13 @@ describe("festival pack curation", () => {
         expect(patternValues).toHaveLength(expectedUnitLength * 2);
         expect(Math.max(...patternValues)).toBe(card.turnIntensity);
         expect(Math.min(...patternValues)).toBe(0);
-        expect(
-          [1, 2, 4]
-            .filter(
-              (motifLength) =>
-                motifLength < patternEntries.length &&
-                patternEntries.length % motifLength === 0
-            )
-            .some((motifLength) =>
-              patternEntries.every(
-                (entry, index) => entry === patternEntries[index % motifLength]
-              )
-            )
-        ).toBe(true);
+        const preset = FESTIVAL_TURN_PATTERN_PRESETS.find(
+          (candidate) => candidate.id === card.turnPatternId
+        );
+        expect(preset).toBeDefined();
+        expect(card.sequenceLength).toBeGreaterThanOrEqual(
+          preset!.minSequenceLength
+        );
       }
     }
     const promotedSlots = new Set(
@@ -255,8 +251,10 @@ describe("festival pack curation", () => {
         (levelThreeCounts.get(card.slot) ?? 0) + 1
       );
     }
+    expect(levelThreeCounts.has("tndBase")).toBe(false);
+    expect(levelThreeCounts.has("tndTurn")).toBe(false);
     expect([...levelThreeCounts.values()].sort((a, b) => a - b)).toEqual([
-      7, 7, 7, 7, 8, 8, 8, 8,
+      10, 10, 10, 10, 10, 10,
     ]);
     expect(
       new Set(
@@ -324,7 +322,7 @@ describe("festival pack curation", () => {
     ]);
   });
 
-  it("randomly balances one eligible Level 3 card per pack", () => {
+  it("randomly balances one eligible LOOP at Level 3 per pack", () => {
     const levelTwoSchedule = buildBalancedTurnSchedule();
     const levelThreeSchedule =
       buildBalancedLevelThreeSchedule(levelTwoSchedule);
@@ -333,10 +331,12 @@ describe("festival pack curation", () => {
     expect(levelThreeSchedule).toHaveLength(60);
     levelThreeSchedule.forEach((slot, index) => {
       expect(levelTwoSchedule[index]).not.toContain(slot);
+      expect(slot).not.toBe("tndBase");
+      expect(slot).not.toBe("tndTurn");
       counts.set(slot, (counts.get(slot) ?? 0) + 1);
     });
     expect([...counts.values()].sort((a, b) => a - b)).toEqual([
-      7, 7, 7, 7, 8, 8, 8, 8,
+      10, 10, 10, 10, 10, 10,
     ]);
   });
 

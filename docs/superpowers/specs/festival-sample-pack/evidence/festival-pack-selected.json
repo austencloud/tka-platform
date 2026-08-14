@@ -8,14 +8,16 @@
       "id": "festival-mirrored-01",
       "name": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
       "word": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
-      "level": 1,
-      "turnIntensity": 0,
+      "level": 3,
+      "turnIntensity": 0.5,
       "loopType": "mirrored",
       "sequenceLength": 16,
       "gridMode": "diamond",
       "period": 2,
       "startPosition": "alpha1",
-      "endPosition": "alpha1"
+      "endPosition": "alpha1",
+      "turnPattern": "0.5|0-0|0.5-0.5|0.5-0|0-0.5|0-0|0.5-0.5|0.5-0|0",
+      "turnPatternId": "trade-then-accent"
     },
     {
       "slot": "mirrored8",
@@ -23,16 +25,15 @@
       "id": "DJII",
       "name": "DJII",
       "word": "DJIIDJII",
-      "level": 3,
-      "turnIntensity": 0.5,
+      "level": 1,
+      "turnIntensity": 0,
       "loopType": "mirrored",
       "sequenceLength": 8,
       "gridMode": "diamond",
       "period": null,
       "startPosition": "beta5",
       "endPosition": "beta5",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
-      "turnPattern": "0.5|0-0.5|0-0.5|0.5-0.5|0-0.5|0-0.5|0-0.5|0.5-0.5|0"
+      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
     },
     {
       "slot": "rotated16",
@@ -97,7 +98,8 @@
       "turnIntensity": 1,
       "startPosition": "alpha1",
       "endPosition": "alpha1",
-      "turnPattern": "0|1-1|0-0|1-1|0"
+      "turnPattern": "1|0-0|1-1|0-0|1",
+      "turnPatternId": "alternating-hands"
     },
     {
       "slot": "mirroredSwapped8",
@@ -113,7 +115,8 @@
       "period": 2,
       "startPosition": "alpha1",
       "endPosition": "alpha1",
-      "turnPattern": "0|1-0|1-0|1-0|1"
+      "turnPattern": "1|0-1|0-0|1-0|1",
+      "turnPatternId": "split-blocks"
     },
     {
       "slot": "mirroredInverted8",
@@ -129,7 +132,8 @@
       "period": 2,
       "startPosition": "alpha1",
       "endPosition": "alpha1",
-      "turnPattern": "1|0-1|1-1|0-1|1"
+      "turnPattern": "1|0-1|0-0|1-0|1",
+      "turnPatternId": "split-blocks"
     }
   ]
 }

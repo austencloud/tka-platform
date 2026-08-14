@@ -1,1663 +1,304 @@
-<!--
-  GalleryComposeBoard — the Configure board for gallery-sourced decks. Filters
-  the operator's own library; the deck is every match up to the size cap. Reads/
-  writes rs.galleryFilters + rs.totalCards. Built on the canonical FilterChipBase
-  toggle primitive (no hand-rolled chips, no checkboxes).
--->
 <script lang="ts">
-  import type { Snippet } from "svelte";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+  import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+  import {
+    applySpecToEngine,
+    buildFilterSpecFromEngine,
+  } from "$lib/shared/browse/services/smart-filter-spec";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+  import FilterWorkspace from "$lib/features/browse/gallery-home/FilterWorkspace.svelte";
+  import { getCollectionOptions } from "$lib/features/browse/gallery-home/collection-options.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
-  import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
-  import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import {
+    legacyGalleryFiltersToSpec,
+    type GalleryDeckSelection,
+  } from "../../services/gallery-deck-source";
   import { getDeckReleaserContext } from "./context/deck-releaser-context";
 
   interface Props {
-    completion?: Snippet;
+    onCompose: (selection: GalleryDeckSelection) => void;
+    isLoading?: boolean;
+    /** Visual harnesses can exercise the real workspace against public data. */
+    previewSource?: "community";
   }
 
-  let { completion }: Props = $props();
-
+  let { onCompose, isLoading = false, previewSource }: Props = $props();
   const { state: rs } = getDeckReleaserContext();
-
-  // Loaded collections (operator's library). Empty until the async load resolves
-  // or when signed-out / no collections — the board still works (collection filter
-  // just shows nothing to pick).
-  let collections = $state<{ id: string; name: string }[]>([]);
-  let collectionsReady = $state(false);
-  type PreviewState = "idle" | "loading" | "ready" | "stale" | "error";
-  let previewState = $state<PreviewState>("idle");
-  let previewMatchCount = $state(0);
-  let previewSequences = $state<SequenceData[]>([]);
-  let previewRequest = 0;
-
-  onMount(async () => {
-    try {
-      const { getCollections } =
-        await import("$lib/shared/library/services/collection-manager");
-      const cols = await getCollections();
-      collections = cols.map((c) => ({ id: c.id, name: c.name }));
-    } catch {
-      collections = [];
-    } finally {
-      collectionsReady = true;
-    }
+  const browseSource = untrack(() => previewSource ?? "my-library");
+  const engine = createBrowseEngine({
+    persistKey: null,
+    initialSource: browseSource,
+    initialSort: BrowseSortMethod.DATE_ADDED,
+    initialSortDirection: "asc",
+    sources: [browseSource],
+    sections: true,
   });
 
-  // Static axes. Loop types + lengths mirror the LOOP board's vocabulary.
-  const LOOP_TYPES: { id: string; label: string }[] = [
-    { id: "rotated", label: "Rotated" },
-    { id: "mirrored", label: "Mirrored" },
-    { id: "swapped", label: "Swapped" },
-    { id: "rotated_mirrored", label: "Rot+Mir" },
-  ];
-  const LENGTHS = [4, 8, 12, 16];
-  const LEVELS = [1, 2, 3, 4, 5, 6];
+  const initialSpec =
+    rs.galleryFilterSpec ?? legacyGalleryFiltersToSpec(rs.galleryFilters);
+  applySpecToEngine(engine, { ...initialSpec, source: browseSource });
 
-  // --- mutators (all persist so a refresh keeps the filter) ---
-  function invalidatePreview() {
-    previewRequest += 1;
-    if (previewState !== "idle") previewState = "stale";
-  }
+  let loadedUserId = $state<string | null>(null);
 
-  function patch(next: Partial<typeof rs.galleryFilters>) {
-    rs.galleryFilters = { ...rs.galleryFilters, ...next };
-    invalidatePreview();
-    rs.persist();
-  }
-  function toggleIn<T>(list: T[] | undefined, value: T): T[] {
-    const set = new Set(list ?? []);
-    set.has(value) ? set.delete(value) : set.add(value);
-    return [...set];
-  }
-  const f = $derived(rs.galleryFilters);
+  onMount(() => {
+    if (!previewSource) void authState.initialize();
+    return () => engine.destroy();
+  });
 
-  function pickCollection(id: string) {
-    patch({ collectionId: f.collectionId === id ? undefined : id });
-  }
-  function pickPeriod(p: "halved" | "quartered") {
-    patch({ period: f.period === p ? undefined : p });
-  }
+  const authReady = $derived(
+    !!previewSource || (authState.initialized && !authState.loading)
+  );
+  const signedIn = $derived(
+    !!previewSource ||
+      (authReady && authState.isFullAccount && !!authState.effectiveUserId)
+  );
 
-  function setTotalCards(value: string) {
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isNaN(parsed)) return;
-    const nextTotal = Math.max(1, Math.min(500, parsed));
-    if (nextTotal === rs.totalCards) return;
-    rs.totalCards = nextTotal;
-    invalidatePreview();
+  $effect(() => {
+    if (previewSource) {
+      if (loadedUserId === "__preview__") return;
+      loadedUserId = "__preview__";
+      void engine.initialize();
+      return;
+    }
+    const userId = signedIn ? authState.effectiveUserId : null;
+    if (!userId || userId === loadedUserId) return;
+    loadedUserId = userId;
+    engine.invalidateLibraryCache();
+    void engine.initialize();
+  });
+
+  const collectionOptions = $derived.by(() => getCollectionOptions());
+  const preparedSequences = $derived(
+    engine.sequences.slice(0, Math.max(1, rs.totalCards))
+  );
+  const preparedCount = $derived(preparedSequences.length);
+  const composeBusy = $derived(isLoading || engine.isLoading);
+  const composeDisabled = $derived(
+    !signedIn || composeBusy || preparedCount === 0 || !!engine.error
+  );
+  const libraryStateKey = $derived(
+    !authReady ? "opening" : !signedIn ? "signed-out" : "workspace"
+  );
+
+  function setCardLimit(raw: number): void {
+    const next = Math.min(500, Math.max(1, Math.floor(raw || 1)));
+    if (next === rs.totalCards) return;
+    rs.totalCards = next;
     rs.persist();
   }
 
-  const activeFilterCount = $derived(
-    (f.collectionId ? 1 : 0) +
-      (f.wordQuery?.trim() ? 1 : 0) +
-      (f.period ? 1 : 0) +
-      (f.loopTypes?.length ?? 0) +
-      (f.levels?.length ?? 0) +
-      (f.lengths?.length ?? 0)
-  );
-
-  const collectionSummary = $derived(
-    f.collectionId
-      ? (collections.find((collection) => collection.id === f.collectionId)
-          ?.name ?? "Saved collection")
-      : "Entire library"
-  );
-  const searchSummary = $derived(f.wordQuery?.trim() || "Any word");
-  const loopTypeSummary = $derived.by(() => {
-    const labels = (f.loopTypes ?? []).map(
-      (id) => LOOP_TYPES.find((option) => option.id === id)?.label ?? id
-    );
-    return labels.length === 0
-      ? "Any type"
-      : labels.length <= 2
-        ? labels.join(", ")
-        : `${labels.length} types`;
-  });
-  const periodSummary = $derived(
-    f.period === "quartered"
-      ? "Quartered"
-      : f.period === "halved"
-        ? "Halved"
-        : "Any period"
-  );
-  const levelSummary = $derived(
-    !f.levels?.length
-      ? "All levels"
-      : f.levels.length <= 3
-        ? f.levels.map((level) => `L${level}`).join(", ")
-        : `${f.levels.length} levels`
-  );
-  const lengthSummary = $derived(
-    !f.lengths?.length
-      ? "Any length"
-      : f.lengths.length <= 3
-        ? f.lengths.map((length) => `${length}-step`).join(", ")
-        : `${f.lengths.length} lengths`
-  );
-  const editionSummary = $derived(rs.notes.trim() || "Untitled edition");
-  const propSummary = $derived(getPropTypeDisplayInfo(rs.bluePropType).label);
-  const availabilityTitle = $derived(
-    previewState === "loading"
-      ? "Checking your library"
-      : previewState === "error"
-        ? "Library check failed"
-        : previewState === "stale"
-          ? "Filters changed"
-          : previewState === "ready" && previewMatchCount === 0
-            ? "No matches found"
-            : previewState === "ready" && previewMatchCount < rs.totalCards
-              ? `${previewMatchCount} matching ${previewMatchCount === 1 ? "card" : "cards"}`
-              : previewState === "ready"
-                ? "Target covered"
-                : "Check your library"
-  );
-  const availabilityDetail = $derived(
-    previewState === "loading"
-      ? "Finding the newest matching sequences."
-      : previewState === "error"
-        ? "The check could not finish. Drawing is still available."
-        : previewState === "stale"
-          ? "Run the check again for the current filters."
-          : previewState === "ready" && previewMatchCount === 0
-            ? "Clear a filter or search for another word."
-            : previewState === "ready" && previewMatchCount < rs.totalCards
-              ? `Only ${previewMatchCount} match. Lower the target or loosen a filter.`
-              : previewState === "ready"
-                ? `At least ${rs.totalCards} matches are ready to draw.`
-                : "Confirm the current filters before drawing."
-  );
-  const previewActionLabel = $derived(
-    previewState === "loading"
-      ? "Checking"
-      : previewState === "idle"
-        ? "Check matches"
-        : "Check again"
-  );
-
-  function sequenceTitle(sequence: SequenceData): string {
-    return (
-      sequence.displayName?.trim() ||
-      sequence.intendedWord?.trim() ||
-      sequence.word?.trim() ||
-      sequence.name?.trim() ||
-      "Untitled sequence"
-    );
-  }
-
-  function sequenceLength(sequence: SequenceData): number {
-    return sequence.sequenceLength ?? sequence.steps?.length ?? 0;
-  }
-
-  function sequenceLoopType(sequence: SequenceData): string | null {
-    if (!sequence.loopType) return null;
-    const id = String(sequence.loopType);
-    return (
-      LOOP_TYPES.find((option) => option.id === id)?.label ??
-      id
-        .split("_")
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ")
-    );
-  }
-
-  async function checkMatches() {
-    const request = ++previewRequest;
-    previewState = "loading";
-
-    try {
-      const { queryGalleryDeck } =
-        await import("$lib/features/choreo-card/services/gallery-deck-source");
-      const { sequences } = await queryGalleryDeck(
-        rs.galleryFilters,
-        rs.totalCards,
-        rs.notes
-      );
-      if (request !== previewRequest) return;
-
-      previewMatchCount = sequences.length;
-      previewSequences = sequences.slice(0, 4);
-      previewState = "ready";
-    } catch (error) {
-      if (request !== previewRequest) return;
-      console.warn("Gallery availability check failed:", error);
-      previewMatchCount = 0;
-      previewSequences = [];
-      previewState = "error";
-    }
-  }
-
-  function clearFilters() {
+  function compose(): void {
+    if (composeDisabled) return;
+    const filterSpec = buildFilterSpecFromEngine(engine);
+    rs.galleryFilterSpec = filterSpec;
     rs.galleryFilters = {};
-    invalidatePreview();
     rs.persist();
+    onCompose({
+      filterSpec,
+      sequences: [...preparedSequences],
+    });
+  }
+
+  function openSequence(
+    sequence: SequenceData,
+    variations?: SequenceData[]
+  ): void {
+    openSequenceViewer(sequence, {
+      returnPath: "/choreo_card/releaser",
+      returnLabel: "Deck Releaser",
+      variations,
+    });
   }
 </script>
 
-<div class="gallery-board">
-  <header class="gallery-intro">
-    <div class="intro-lead">
-      <span class="intro-mark" aria-hidden="true">
-        <i class="fas fa-sliders"></i>
-      </span>
-      <div class="intro-copy">
-        <span class="intro-kicker">Library draw</span>
-        <h3>Shape the source pool</h3>
-        <p>
-          Each selection narrows the library. Unselected categories stay open.
-        </p>
-      </div>
-    </div>
+{#snippet resultsPane()}
+  <BrowsePanel
+    {engine}
+    layout="compact"
+    showFilterBar={false}
+    hideFilterChips
+    onSelect={openSequence}
+  />
+{/snippet}
 
-    <div class="filter-status">
-      <span class="active-count" aria-live="polite">
-        <strong>{activeFilterCount}</strong>
-        {activeFilterCount === 1 ? "active filter" : "active filters"}
-      </span>
-      <FilterChipBase
-        mode="action"
-        size="sm"
-        icon="fas fa-arrow-rotate-left"
-        label="Clear all"
-        disabled={activeFilterCount === 0}
-        onclick={clearFilters}
-      />
-    </div>
-  </header>
+{#snippet deckActions()}
+  <label class="deck-limit">
+    <span>Deck size</span>
+    <input
+      type="number"
+      min="1"
+      max="500"
+      step="1"
+      value={rs.totalCards}
+      aria-label="Deck size"
+      disabled={composeBusy}
+      oninput={(event) =>
+        setCardLimit(Number((event.currentTarget as HTMLInputElement).value))}
+    />
+  </label>
+  <span class="compose-action">
+    <PanelButton
+      variant="primary"
+      disabled={composeDisabled}
+      ariaBusy={composeBusy}
+      ariaLabel={`Compose ${preparedCount} ${preparedCount === 1 ? "card" : "cards"}`}
+      onclick={compose}
+    >
+      {#if composeBusy}
+        <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+        Loading library
+      {:else}
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        Compose {preparedCount}
+      {/if}
+    </PanelButton>
+  </span>
+{/snippet}
 
-  <div class="gallery-workspace">
-    <div class="filter-canvas">
-      <section
-        class="filter-card quick-card"
-        class:is-active={!!f.wordQuery?.trim()}
-      >
-        <div class="card-heading">
-          <div class="heading-title">
-            <span class="card-icon"
-              ><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span
-            >
-            <span class="heading-copy">
-              <span class="card-kicker">Deck brief</span>
-              <strong>Search and size</strong>
-            </span>
-          </div>
-          <span class="card-state">Up to {rs.totalCards} cards</span>
+<section class="gallery-compose-host" aria-label="Gallery deck browser">
+  <Crossfade key={libraryStateKey} duration={DURATION.emphasis} fill>
+    <div class="gallery-state">
+      {#if !authReady}
+        <div class="library-state" role="status">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <strong>Opening the library</strong>
         </div>
-
-        <div class="quick-fields">
-          <label class="field search-field">
-            <span class="field-label">Word or name</span>
-            <span class="input-shell">
-              <i class="fas fa-magnifying-glass" aria-hidden="true"></i>
-              <input
-                id="gallery-word-query"
-                name="gallery-word-query"
-                class="word-input"
-                type="search"
-                value={f.wordQuery ?? ""}
-                placeholder="Search your library"
-                oninput={(e) =>
-                  patch({
-                    wordQuery:
-                      (e.target as HTMLInputElement).value || undefined,
-                  })}
-              />
-            </span>
-          </label>
-
-          <label class="field size-field">
-            <span class="field-label">Card limit</span>
-            <input
-              id="gallery-card-limit"
-              name="gallery-card-limit"
-              class="size-input"
-              type="number"
-              inputmode="numeric"
-              min="1"
-              max="500"
-              value={rs.totalCards}
-              oninput={(e) =>
-                setTotalCards((e.target as HTMLInputElement).value)}
-            />
-            <span class="field-help">1 to 500 cards</span>
-          </label>
+      {:else if !signedIn}
+        <div class="library-state">
+          <i class="fas fa-user-lock" aria-hidden="true"></i>
+          <strong>Sign in to compose from your library</strong>
+          <span>Gallery decks use sequences saved to a full account.</span>
         </div>
-      </section>
-
-      <div class="gallery-filter-grid">
-        <section
-          class="filter-card collection-card"
-          class:is-active={!!f.collectionId}
-        >
-          <div class="card-heading">
-            <div class="heading-title">
-              <span class="card-icon"
-                ><i class="fas fa-folder-open" aria-hidden="true"></i></span
-              >
-              <span class="heading-copy">
-                <span class="card-kicker">Source</span>
-                <strong>Collection</strong>
-              </span>
-            </div>
-            <span class="card-state">{collectionSummary}</span>
-          </div>
-          <div class="chips collection-options" aria-live="polite">
-            {#if !collectionsReady}
-              <span class="collection-state"
-                ><i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                Loading collections</span
-              >
-            {:else if collections.length === 0}
-              <span class="collection-state"
-                >No collections yet. The full library stays in scope.</span
-              >
-            {:else}
-              {#each collections as col (col.id)}
-                <FilterChipBase
-                  mode="toggle"
-                  size="sm"
-                  label={col.name}
-                  active={f.collectionId === col.id}
-                  onclick={() => pickCollection(col.id)}
-                />
-              {/each}
-            {/if}
-          </div>
-        </section>
-
-        <section
-          class="filter-card loop-card"
-          class:is-active={!!f.loopTypes?.length}
-        >
-          <div class="card-heading">
-            <div class="heading-title">
-              <span class="card-icon"
-                ><i class="fas fa-arrows-rotate" aria-hidden="true"></i></span
-              >
-              <span class="heading-copy">
-                <span class="card-kicker">Motion</span>
-                <strong>Loop type</strong>
-              </span>
-            </div>
-            <span class="card-state">{loopTypeSummary}</span>
-          </div>
-          <div class="chips">
-            {#each LOOP_TYPES as lt (lt.id)}
-              <FilterChipBase
-                mode="toggle"
-                size="sm"
-                label={lt.label}
-                active={(f.loopTypes ?? []).includes(lt.id)}
-                onclick={() =>
-                  patch({ loopTypes: toggleIn(f.loopTypes, lt.id) })}
-              />
-            {/each}
-          </div>
-        </section>
-
-        <section class="filter-card period-card" class:is-active={!!f.period}>
-          <div class="card-heading">
-            <div class="heading-title">
-              <span class="card-icon"
-                ><i class="fas fa-chart-pie" aria-hidden="true"></i></span
-              >
-              <span class="heading-copy">
-                <span class="card-kicker">Timing</span>
-                <strong>Period</strong>
-              </span>
-            </div>
-            <span class="card-state">{periodSummary}</span>
-          </div>
-          <div class="chips">
-            <FilterChipBase
-              mode="toggle"
-              size="sm"
-              label="Quartered"
-              active={f.period === "quartered"}
-              onclick={() => pickPeriod("quartered")}
-            />
-            <FilterChipBase
-              mode="toggle"
-              size="sm"
-              label="Halved"
-              active={f.period === "halved"}
-              onclick={() => pickPeriod("halved")}
-            />
-          </div>
-        </section>
-
-        <section
-          class="filter-card level-card"
-          class:is-active={!!f.levels?.length}
-        >
-          <div class="card-heading">
-            <div class="heading-title">
-              <span class="card-icon"
-                ><i class="fas fa-signal" aria-hidden="true"></i></span
-              >
-              <span class="heading-copy">
-                <span class="card-kicker">Difficulty</span>
-                <strong>Level</strong>
-              </span>
-            </div>
-            <span class="card-state">{levelSummary}</span>
-          </div>
-          <div class="chips">
-            {#each LEVELS as lvl (lvl)}
-              <FilterChipBase
-                mode="toggle"
-                size="sm"
-                label={`L${lvl}`}
-                active={(f.levels ?? []).includes(lvl)}
-                onclick={() => patch({ levels: toggleIn(f.levels, lvl) })}
-              />
-            {/each}
-          </div>
-        </section>
-
-        <section
-          class="filter-card length-card"
-          class:is-active={!!f.lengths?.length}
-        >
-          <div class="card-heading">
-            <div class="heading-title">
-              <span class="card-icon"
-                ><i class="fas fa-ruler-horizontal" aria-hidden="true"
-                ></i></span
-              >
-              <span class="heading-copy">
-                <span class="card-kicker">Sequence</span>
-                <strong>Length</strong>
-              </span>
-            </div>
-            <span class="card-state">{lengthSummary}</span>
-          </div>
-          <div class="chips">
-            {#each LENGTHS as len (len)}
-              <FilterChipBase
-                mode="toggle"
-                size="sm"
-                label={`${len}-step`}
-                active={(f.lengths ?? []).includes(len)}
-                onclick={() => patch({ lengths: toggleIn(f.lengths, len) })}
-              />
-            {/each}
-          </div>
-        </section>
-      </div>
-    </div>
-
-    <aside class="recipe-panel" aria-labelledby="gallery-recipe-heading">
-      <div class="recipe-heading">
-        <span class="recipe-icon" aria-hidden="true">
-          <i class="fas fa-layer-group"></i>
-        </span>
-        <span>
-          <span class="recipe-kicker">Live recipe</span>
-          <h3 id="gallery-recipe-heading">Deck at a glance</h3>
-        </span>
-      </div>
-
-      <section
-        class="availability-panel"
-        class:is-ready={previewState === "ready"}
-        class:is-error={previewState === "error"}
-        aria-labelledby="gallery-availability-heading"
-        aria-busy={previewState === "loading"}
-      >
-        <div class="availability-summary">
-          <span
-            class="target-count"
-            aria-label={`${rs.totalCards} card target`}
-          >
-            <strong>{rs.totalCards}</strong>
-            <span>card target</span>
-          </span>
-
-          <span class="availability-copy" aria-live="polite">
-            <small id="gallery-availability-heading">Library availability</small
-            >
-            <strong>{availabilityTitle}</strong>
-            <span id="gallery-availability-description"
-              >{availabilityDetail}</span
-            >
-          </span>
-        </div>
-
-        <ActionButton
-          label={previewActionLabel}
-          busyLabel="Checking"
-          icon={previewState === "loading"
-            ? "fa-spinner fa-spin"
-            : previewState === "idle"
-              ? "fa-magnifying-glass"
-              : "fa-arrow-rotate-right"}
-          color="theme"
-          fullWidth
-          busy={previewState === "loading"}
-          ariaDescribedBy="gallery-availability-description"
-          onclick={checkMatches}
+      {:else}
+        <FilterWorkspace
+          {engine}
+          collections={collectionOptions}
+          {resultsPane}
+          resultsActions={deckActions}
+          showViewResultsAction={false}
         />
-
-        {#if previewState === "loading"}
-          <div class="preview-skeleton" aria-hidden="true">
-            {#each [1, 2, 3] as row (row)}
-              <span><i></i><b></b></span>
-            {/each}
-          </div>
-        {:else if previewState === "ready" && previewSequences.length > 0}
-          <div class="preview-section">
-            <div class="preview-heading">
-              <strong>Newest matches</strong>
-              <span>{previewSequences.length} shown</span>
-            </div>
-            <ol class="preview-list">
-              {#each previewSequences as sequence, index (sequence.id)}
-                <li>
-                  <span class="preview-index"
-                    >{String(index + 1).padStart(2, "0")}</span
-                  >
-                  <span class="preview-copy">
-                    <strong>{sequenceTitle(sequence)}</strong>
-                    <span class="preview-meta">
-                      <span>{sequenceLength(sequence)} steps</span>
-                      {#if sequence.level}
-                        <span>L{sequence.level}</span>
-                      {/if}
-                      {#if sequenceLoopType(sequence)}
-                        <span>{sequenceLoopType(sequence)}</span>
-                      {/if}
-                    </span>
-                  </span>
-                </li>
-              {/each}
-            </ol>
-          </div>
-        {:else if previewState === "ready"}
-          <div class="preview-empty">
-            <i class="fas fa-filter-circle-xmark" aria-hidden="true"></i>
-            <span>No sequence cards match this recipe.</span>
-          </div>
-        {/if}
-      </section>
-
-      <dl class="recipe-list">
-        <div>
-          <dt>Edition</dt>
-          <dd>{editionSummary}</dd>
-        </div>
-        <div>
-          <dt>Collection</dt>
-          <dd>{collectionSummary}</dd>
-        </div>
-        <div>
-          <dt>Search</dt>
-          <dd>{searchSummary}</dd>
-        </div>
-        <div>
-          <dt>Motion</dt>
-          <dd>{loopTypeSummary}</dd>
-        </div>
-        <div>
-          <dt>Timing</dt>
-          <dd>{periodSummary}</dd>
-        </div>
-        <div>
-          <dt>Difficulty</dt>
-          <dd>{levelSummary}</dd>
-        </div>
-        <div>
-          <dt>Length</dt>
-          <dd>{lengthSummary}</dd>
-        </div>
-        <div>
-          <dt>Prop</dt>
-          <dd>{propSummary}</dd>
-        </div>
-      </dl>
-
-      <div class="draw-order">
-        <span class="order-index">01</span>
-        <span>
-          <small>Draw order</small>
-          <strong>Newest matches first</strong>
-        </span>
-      </div>
-    </aside>
-
-    {#if completion}
-      <div class="gallery-completion">
-        {@render completion()}
-      </div>
-    {/if}
-  </div>
-</div>
+      {/if}
+    </div>
+  </Crossfade>
+</section>
 
 <style>
-  .gallery-board {
+  .gallery-compose-host {
     display: flex;
-    flex-direction: column;
-    gap: clamp(14px, 1.25cqw, 24px);
-    width: 100%;
     min-width: 0;
+    height: clamp(30rem, 72dvh, 72rem);
+    overflow: hidden;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    color: var(--theme-text);
   }
 
-  .gallery-intro {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: clamp(16px, 2cqw, 32px);
-    padding: clamp(18px, 1.8cqw, 30px);
-    background:
-      linear-gradient(
-        115deg,
-        color-mix(in srgb, var(--theme-accent, #8b5cf6) 12%, transparent),
-        transparent 48%
-      ),
-      var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 18px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-  }
-
-  .intro-lead {
-    display: flex;
-    align-items: center;
-    gap: clamp(12px, 1.2cqw, 20px);
-    min-width: 0;
-  }
-
-  .intro-mark {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: clamp(44px, 4cqw, 58px);
-    height: clamp(44px, 4cqw, 58px);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 18%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 32%, transparent);
-    border-radius: 15px;
-    color: var(--theme-accent, #8b5cf6);
-    font-size: 18px;
-  }
-
-  .intro-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    min-width: 0;
-  }
-
-  .intro-kicker,
-  .card-kicker {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  .intro-copy h3 {
-    margin: 0;
-    color: var(--theme-text, #fff);
-    font-size: clamp(20px, 1.55cqw, 30px);
-    font-weight: 800;
-    letter-spacing: -0.025em;
-  }
-
-  .intro-copy p {
-    max-width: 56rem;
-    margin: 0;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.5;
-  }
-
-  .filter-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 0 0 auto;
-  }
-
-  .active-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 12px;
-    box-sizing: border-box;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 999px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
-    font-size: var(--font-size-compact, 12px);
-    white-space: nowrap;
-  }
-
-  .active-count strong {
-    color: var(--theme-text, #fff);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .gallery-workspace {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "filters"
-      "recipe"
-      "completion";
-    gap: clamp(14px, 1.25cqw, 24px);
-    align-items: stretch;
-    min-width: 0;
-  }
-
-  .filter-canvas {
-    grid-area: filters;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(12px, 1.1cqw, 22px);
-    min-width: 0;
-  }
-
-  .gallery-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: clamp(12px, 1.1cqw, 22px);
+  .gallery-compose-host :global(.gallery-workspace) {
     width: 100%;
   }
 
-  .filter-card {
+  .gallery-state {
     display: flex;
-    flex-direction: column;
-    gap: clamp(14px, 1.2cqw, 22px);
-    min-width: 0;
-    min-height: 9.5rem;
-    padding: clamp(16px, 1.45cqw, 26px);
-    box-sizing: border-box;
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--theme-accent, #8b5cf6) 4%, transparent),
-        transparent 46%
-      ),
-      var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    transition:
-      border-color 0.15s ease,
-      background 0.15s ease,
-      box-shadow 0.15s ease;
-  }
-
-  .filter-card:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.055));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
-  }
-
-  .filter-card.is-active {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 46%,
-      var(--theme-stroke, rgba(255, 255, 255, 0.1))
-    );
-    box-shadow: inset 3px 0 0
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 78%, transparent);
-  }
-
-  .quick-card {
-    grid-column: span 12;
+    width: 100%;
+    height: 100%;
     min-height: 0;
   }
 
-  .collection-card,
-  .loop-card,
-  .period-card,
-  .level-card,
-  .length-card {
-    grid-column: span 12;
-  }
-
-  .card-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 11px;
-  }
-
-  .heading-title {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    min-width: 0;
-  }
-
-  .heading-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .card-heading strong {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.35;
-  }
-
-  .card-state {
-    flex: 0 1 auto;
-    max-width: 46%;
-    overflow: hidden;
-    padding: 6px 9px;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 72%,
-      transparent
-    );
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
-    border-radius: 999px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .filter-card.is-active .card-state {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 14%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 30%,
-      transparent
-    );
-    color: var(--theme-text, #fff);
-  }
-
-  .card-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 40px;
-    height: 40px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 13%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 26%, transparent);
-    border-radius: 11px;
-    color: var(--theme-accent, #8b5cf6);
-  }
-
-  .quick-fields {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(9rem, 0.22fr);
-    gap: clamp(14px, 1.4cqw, 24px);
-    align-items: end;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    min-width: 0;
-  }
-
-  .field-label,
-  .field-help {
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-  }
-
-  .field-label {
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-  }
-
-  .field-help {
-    min-height: 1.35em;
-    line-height: 1.35;
-  }
-
-  .input-shell {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .input-shell > i {
-    position: absolute;
-    left: 14px;
-    z-index: 1;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    pointer-events: none;
-  }
-
-  .word-input,
-  .size-input {
-    width: 100%;
-    min-width: 0;
-    min-height: var(--min-touch-target, 44px);
-    padding: 11px 14px;
-    box-sizing: border-box;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    outline: none;
-    transition:
-      border-color 0.15s ease,
-      background 0.15s ease,
-      box-shadow 0.15s ease;
-  }
-
-  .word-input {
-    padding-inline-start: 40px;
-  }
-
-  .size-input {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .word-input:hover,
-  .size-input:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
-  }
-
-  .word-input:focus,
-  .size-input:focus {
-    border-color: var(--theme-accent, #8b5cf6);
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
-  }
-
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-content: flex-start;
-  }
-
-  .collection-options {
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .collection-state {
+  .deck-limit {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     min-height: var(--min-touch-target, 44px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.4;
-  }
-
-  .recipe-panel {
-    grid-area: recipe;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(16px, 1.35cqw, 24px);
-    min-width: 0;
-    padding: clamp(18px, 1.55cqw, 28px);
-    box-sizing: border-box;
-    background:
-      radial-gradient(
-        circle at 82% 14%,
-        color-mix(in srgb, var(--theme-accent, #8b5cf6) 17%, transparent),
-        transparent 30%
-      ),
-      linear-gradient(
-        155deg,
-        color-mix(in srgb, var(--theme-accent, #8b5cf6) 7%, transparent),
-        transparent 48%
-      ),
-      var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
-    border: 1px solid
-      color-mix(
-        in srgb,
-        var(--theme-accent, #8b5cf6) 22%,
-        var(--theme-stroke, rgba(255, 255, 255, 0.1))
-      );
-    border-radius: 18px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  .gallery-completion {
-    grid-area: completion;
-    min-width: 0;
-  }
-
-  .recipe-heading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .recipe-heading > span:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .recipe-icon {
-    display: grid;
-    place-items: center;
-    flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
-    background: var(--theme-accent, #8b5cf6);
-    border-radius: 13px;
-    color: #fff;
-    box-shadow: 0 12px 28px
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 24%, transparent);
-  }
-
-  .recipe-kicker {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  .recipe-heading h3 {
-    margin: 0;
-    color: var(--theme-text, #fff);
-    font-size: clamp(18px, 1.25cqw, 24px);
-    line-height: 1.2;
-  }
-
-  .availability-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-width: 0;
-    padding: 14px;
-    background:
-      linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-      color-mix(
-        in srgb,
-        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 86%,
-        transparent
-      );
-    background-size: 24px 24px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
-  }
-
-  .availability-panel.is-ready {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 40%,
-      var(--theme-stroke, rgba(255, 255, 255, 0.1))
-    );
-    box-shadow: inset 0 0 0 1px
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 8%, transparent);
-  }
-
-  .availability-panel.is-error {
-    border-color: color-mix(
-      in srgb,
-      var(--color-error, #ef4444) 55%,
-      var(--theme-stroke, rgba(255, 255, 255, 0.1))
-    );
-  }
-
-  .availability-summary {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 13px;
-    align-items: center;
-    min-width: 0;
-  }
-
-  .target-count {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 5.25rem;
-    min-height: 5.25rem;
-    padding: 12px 14px;
-    box-sizing: border-box;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #11111a) 90%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 42%, transparent);
-    border-radius: 13px;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
-  }
-
-  .target-count strong {
-    color: var(--theme-text, #fff);
-    font-size: clamp(26px, 2.25cqw, 38px);
-    font-variant-numeric: tabular-nums;
-    line-height: 0.95;
-  }
-
-  .target-count span {
-    margin-top: 5px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
-    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted);
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 700;
     white-space: nowrap;
   }
 
-  .availability-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
+  .deck-limit input {
+    width: 4.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.45rem 0.6rem;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.5rem;
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
   }
 
-  .availability-copy small {
-    color: var(--theme-accent, #8b5cf6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+  .deck-limit input:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
   }
 
-  .availability-copy strong {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.3;
+  .compose-action {
+    display: inline-flex;
+    min-width: 10.5rem;
   }
 
-  .availability-copy > span {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.4;
-  }
-
-  .preview-skeleton,
-  .preview-section,
-  .preview-list {
-    min-width: 0;
-  }
-
-  .preview-skeleton {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-  }
-
-  .preview-skeleton > span {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
-    gap: 9px;
-    align-items: center;
-    min-height: 44px;
-    padding: 7px 9px;
-    box-sizing: border-box;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: 9px;
-  }
-
-  .preview-skeleton i,
-  .preview-skeleton b {
-    display: block;
-    height: 12px;
-    background: color-mix(in srgb, var(--theme-text, #fff) 10%, transparent);
-    border-radius: 999px;
-    animation: preview-pulse 1.1s ease-in-out infinite alternate;
-  }
-
-  .preview-skeleton i {
-    width: 22px;
-  }
-
-  .preview-skeleton b {
-    width: 72%;
-  }
-
-  .preview-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .preview-heading {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .preview-heading strong {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .preview-heading span {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .preview-list {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .preview-list li {
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 9px;
-    align-items: center;
-    min-height: 48px;
-    padding: 7px 9px;
-    box-sizing: border-box;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #11111a) 78%,
-      transparent
-    );
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 10px;
-  }
-
-  .preview-index {
-    display: grid;
-    place-items: center;
-    width: 30px;
-    height: 30px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 15%,
-      transparent
-    );
-    border-radius: 8px;
-    color: var(--theme-accent, #8b5cf6);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 900;
+  .compose-action :global(.panel-btn) {
+    width: 100%;
     font-variant-numeric: tabular-nums;
   }
 
-  .preview-copy {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .preview-copy > strong {
-    overflow: hidden;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .preview-meta {
-    display: flex;
-    gap: 7px;
-    min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.25;
-    white-space: nowrap;
-  }
-
-  .preview-meta > span + span::before {
-    margin-right: 7px;
-    color: color-mix(
-      in srgb,
-      var(--theme-text-dim, rgba(255, 255, 255, 0.5)) 52%,
-      transparent
-    );
-    content: "\00B7";
-  }
-
-  .preview-empty {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 48px;
-    padding: 10px;
-    box-sizing: border-box;
-    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
-    border-radius: 10px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.35;
-  }
-
-  .preview-empty i {
-    color: var(--theme-accent, #8b5cf6);
-  }
-
-  @keyframes preview-pulse {
-    to {
-      opacity: 0.42;
-    }
-  }
-
-  .recipe-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0 clamp(18px, 2cqw, 32px);
-    margin: 0;
-  }
-
-  .recipe-list > div {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    min-width: 0;
-    padding: 11px 0;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-
-  .recipe-list dt,
-  .recipe-list dd {
-    margin: 0;
-  }
-
-  .recipe-list dt {
-    flex: 0 0 auto;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-  }
-
-  .recipe-list dd {
-    min-width: 0;
-    overflow: hidden;
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    text-align: right;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .draw-order {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;
-    padding: 12px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 9%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
-    border-radius: 13px;
-  }
-
-  .order-index {
+  .library-state {
     display: grid;
     place-items: center;
-    flex: 0 0 auto;
-    width: 42px;
-    height: 42px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 18%,
-      transparent
-    );
-    border-radius: 11px;
-    color: var(--theme-accent, #8b5cf6);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 900;
-    font-variant-numeric: tabular-nums;
+    align-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 2rem;
+    color: var(--theme-text-muted);
+    text-align: center;
   }
 
-  .draw-order > span:last-child {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  .library-state > i {
+    color: var(--theme-accent);
+    font-size: 1.75rem;
   }
 
-  .draw-order small {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  .library-state strong {
+    color: var(--theme-text);
+    font-size: 1.1rem;
   }
 
-  .draw-order strong {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  @container configure (min-width: 52rem) {
-    .collection-card,
-    .loop-card {
-      grid-column: span 12;
-    }
-
-    .period-card,
-    .level-card {
-      grid-column: span 6;
-    }
-
-    .length-card {
-      grid-column: span 12;
-    }
-
-    .recipe-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @container configure (min-width: 74rem) {
-    .gallery-workspace {
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.31fr);
-      grid-template-areas:
-        "filters recipe"
-        "completion recipe";
-      grid-template-rows: auto auto;
-      align-items: start;
-    }
-
-    .collection-card {
-      grid-column: span 7;
-    }
-
-    .loop-card {
-      grid-column: span 5;
-    }
-
-    .period-card {
-      grid-column: span 3;
-    }
-
-    .level-card {
-      grid-column: span 4;
-    }
-
-    .length-card {
-      grid-column: span 5;
-    }
-
-    .recipe-panel {
-      align-self: stretch;
-    }
-
-    .recipe-list {
-      grid-template-columns: 1fr;
-    }
+  .library-state span {
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   @container configure (max-width: 40rem) {
-    .gallery-intro {
-      align-items: flex-start;
-      flex-direction: column;
+    .gallery-compose-host {
+      height: max(30rem, calc(100dvh - 16rem));
+      border-radius: 0.5rem;
     }
 
-    .filter-status {
-      width: 100%;
-      justify-content: space-between;
+    .deck-limit > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
     }
 
-    .quick-fields {
-      grid-template-columns: 1fr;
-    }
-
-    .intro-lead {
-      align-items: flex-start;
-    }
-
-    .card-heading {
-      align-items: flex-start;
-    }
-
-    .card-state {
-      max-width: 42%;
-    }
-
-    .recipe-list {
-      grid-template-columns: 1fr;
-    }
-
-    .active-count {
-      white-space: normal;
-    }
-  }
-
-  @container configure (max-width: 24rem) {
-    .filter-status {
-      align-items: stretch;
-      flex-direction: column;
-    }
-
-    .active-count {
-      justify-content: center;
-    }
-
-    .filter-card,
-    .gallery-intro,
-    .recipe-panel {
-      border-radius: 14px;
-    }
-
-    .availability-summary {
-      grid-template-columns: 1fr;
-    }
-
-    .target-count {
-      width: 100%;
-      min-height: 4.5rem;
-    }
-  }
-
-  @container configure (min-width: 160rem) {
-    .gallery-intro,
-    .filter-card,
-    .recipe-panel {
-      border-radius: 24px;
-    }
-
-    .gallery-intro {
-      min-height: 11rem;
-      padding: 36px;
-      box-sizing: border-box;
-    }
-
-    .intro-copy h3 {
-      font-size: 2.25rem;
-    }
-
-    .filter-card {
-      justify-content: space-between;
-      min-height: 15.5rem;
-      padding: 32px;
-    }
-
-    .quick-card {
-      min-height: 13rem;
-    }
-
-    .gallery-workspace {
-      grid-template-columns: minmax(0, 1fr) minmax(31rem, 0.27fr);
-      gap: 28px;
-    }
-
-    .recipe-panel {
-      min-height: 48rem;
-      padding: 32px;
-    }
-
-    .availability-panel {
-      gap: 18px;
-      padding: 20px;
-    }
-
-    .target-count {
-      min-width: 6.5rem;
-      min-height: 6.5rem;
-      padding: 16px 18px;
-    }
-
-    .preview-list {
-      gap: 10px;
-    }
-
-    .preview-list li {
-      min-height: 58px;
-      padding: 10px 12px;
-    }
-
-    .recipe-list > div {
-      padding-block: 15px;
-    }
-
-    .card-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 15px;
-    }
-
-    .chips {
-      gap: 12px;
+    .compose-action {
+      min-width: 8.75rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .filter-card,
-    .word-input,
-    .size-input,
-    .availability-panel {
-      transition: none;
-    }
-
-    .preview-skeleton i,
-    .preview-skeleton b {
+    .library-state .fa-spin,
+    .compose-action .fa-spin {
       animation: none;
     }
   }

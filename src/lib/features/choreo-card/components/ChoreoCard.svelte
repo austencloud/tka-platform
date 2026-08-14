@@ -41,6 +41,8 @@
     customNotesText?: string;
     /** Pre-rendered image URL - displays this instead of rendering via PropAwareThumbnail */
     preRenderedImageUrl?: string | null;
+    /** Render immediately when the card is already visible inside a modal. */
+    eager?: boolean;
     /** Show mandala fills in empty grid cells */
     showMandala?: boolean;
     /** Force a prop family for both hands (default: the user's global setting).
@@ -70,6 +72,7 @@
     showLoopGlyph = true,
     customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
+    eager = false,
     showMandala = false,
     bluePropType,
     redPropType,
@@ -79,7 +82,9 @@
 
   // Local override so re-render can clear the pre-rendered URL
   let preRenderedCleared = $state(false);
-  const usePreRendered = $derived(!!preRenderedImageUrlProp && !preRenderedCleared);
+  const usePreRendered = $derived(
+    !!preRenderedImageUrlProp && !preRenderedCleared
+  );
 
   let hapticService: HapticFeedback;
   let thumbnailRef: PropAwareThumbnail | undefined = $state();
@@ -88,7 +93,6 @@
     preRenderedCleared = true;
     thumbnailRef?.forceRerender();
   }
-
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -112,7 +116,9 @@
     showReversals: handPathMode ? false : true,
     showGrid,
     showNonRadialPoints: false, // Off by default for cleaner choreo cards
-    handPointVisibility: handPointsVisible ? "all" as const : "active" as const,
+    handPointVisibility: handPointsVisible
+      ? ("all" as const)
+      : ("active" as const),
     showQRCode: showQRCodes,
     handPathMode,
     showMandala,
@@ -170,6 +176,7 @@
         {showNotes}
         {showLoopGlyph}
         visibility={visibilitySettings}
+        {eager}
         {cardMode}
         {customNotesText}
       />

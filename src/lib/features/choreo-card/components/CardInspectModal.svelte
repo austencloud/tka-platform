@@ -2,8 +2,10 @@
   import { onMount, onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { Snippet } from "svelte";
+  import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import CardPreviewStack from "./designer/CardPreviewStack.svelte";
+  import LiveChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import CardArrowFixGrid from "./CardArrowFixGrid.svelte";
   import PictographInspectModal from "$lib/features/create/shared/components/sequence-actions/PictographInspectModal.svelte";
   import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
@@ -29,6 +31,10 @@
     /** Card's effective prop types (default: global settings, matching the bake). */
     bluePropType?: PropType;
     redPropType?: PropType;
+    /** "live" shows the responsive notation card. "print" keeps the physical
+     * front-and-back inspector used by deck production. */
+    presentation?: "print" | "live";
+    browseViewMode?: BrowseViewMode;
   }
 
   let {
@@ -42,6 +48,8 @@
     onRerender,
     bluePropType,
     redPropType,
+    presentation = "print",
+    browseViewMode,
   }: Props = $props();
 
   let mode = $state<"preview" | "fix">("preview");
@@ -51,8 +59,12 @@
   // Mirror PrintPreviewPages: explicit prop types win, else global settings,
   // else staff. Keeps the edited override key identical to the baked key.
   const settings = $derived(getSettings());
-  const effBlueProp = $derived(bluePropType ?? settings.bluePropType ?? PropType.STAFF);
-  const effRedProp = $derived(redPropType ?? settings.redPropType ?? PropType.STAFF);
+  const effBlueProp = $derived(
+    bluePropType ?? settings.bluePropType ?? PropType.STAFF
+  );
+  const effRedProp = $derived(
+    redPropType ?? settings.redPropType ?? PropType.STAFF
+  );
 
   async function enterFixMode(): Promise<void> {
     mode = "fix";
@@ -62,15 +74,24 @@
     // initialized them (that normally happens in Create), so a save would not
     // persist and the re-bake would read nothing — the edit would not show.
     // Initialize here; both are idempotent (no-op if already initialized).
-    await Promise.all([initializeSpecialOverrides(), initializeDefaultOverrides()]);
+    await Promise.all([
+      initializeSpecialOverrides(),
+      initializeDefaultOverrides(),
+    ]);
   }
 
-  function onCellSelected(step: StepData): void { selectedStep = step; }
+  function onCellSelected(step: StepData): void {
+    selectedStep = step;
+  }
 
   async function rebakeFront(): Promise<void> {
     if (!onRerender || rebaking) return;
     rebaking = true;
-    try { await onRerender(); } finally { rebaking = false; }
+    try {
+      await onRerender();
+    } finally {
+      rebaking = false;
+    }
   }
 
   // Esc / backdrop out of the editor without finishing: just return to the grid
@@ -89,7 +110,7 @@
   }
 
   async function exitFixMode(): Promise<void> {
-    await rebakeFront();   // ensure the latest fix is baked before showing preview
+    await rebakeFront(); // ensure the latest fix is baked before showing preview
     mode = "preview";
   }
 
@@ -106,16 +127,20 @@
     clearTimeout(dataResetTimer);
   });
 
-
   const imageComposition = getImageCompositionManager();
   let compositionVersion = $state(0);
-  function onCompositionChanged(): void { compositionVersion++; }
+  function onCompositionChanged(): void {
+    compositionVersion++;
+  }
   onMount(() => {
     imageComposition.registerObserver(onCompositionChanged);
   });
   onDestroy(() => imageComposition.unregisterObserver(onCompositionChanged));
 
-  const showQRCode = $derived.by(() => { void compositionVersion; return imageComposition.showQRCode; });
+  const showQRCode = $derived.by(() => {
+    void compositionVersion;
+    return imageComposition.showQRCode;
+  });
 
   function editSequence() {
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
@@ -135,11 +160,15 @@
       ]);
       copyImageState = "success";
       clearTimeout(imageResetTimer);
-      imageResetTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
+      imageResetTimer = setTimeout(() => {
+        copyImageState = "idle";
+      }, 2000);
     } catch {
       copyImageState = "error";
       clearTimeout(imageErrorTimer);
-      imageErrorTimer = setTimeout(() => { copyImageState = "idle"; }, 2000);
+      imageErrorTimer = setTimeout(() => {
+        copyImageState = "idle";
+      }, 2000);
     }
   }
 
@@ -157,19 +186,24 @@
       copyDataState = "error";
     } finally {
       clearTimeout(dataResetTimer);
-      dataResetTimer = setTimeout(() => { copyDataState = "idle"; }, 2000);
+      dataResetTimer = setTimeout(() => {
+        copyDataState = "idle";
+      }, 2000);
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key !== 'Escape') return;
-    if (selectedStep) return;        // editor handles its own Esc
-    if (mode === "fix") { void exitFixMode(); return; }
+    if (e.key !== "Escape") return;
+    if (selectedStep) return; // editor handles its own Esc
+    if (mode === "fix") {
+      void exitFixMode();
+      return;
+    }
     onClose();
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
+    if ((e.target as HTMLElement).classList.contains("modal-backdrop")) {
       onClose();
     }
   }
@@ -178,20 +212,57 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div class="modal-backdrop" role="presentation" onclick={handleBackdropClick}>
-  <div class="modal-container" role="dialog" aria-modal="true" aria-label="Card inspector">
-    <div class="stack-wrapper" bind:this={stackEl} role="group" aria-label="Card preview">
+  <div
+    class="modal-container"
+    class:live-container={presentation === "live"}
+    role="dialog"
+    aria-modal="true"
+    aria-label={presentation === "live"
+      ? "Choreo Card viewer"
+      : "Card inspector"}
+  >
+    <div
+      class="stack-wrapper"
+      class:live-preview={presentation === "live"}
+      bind:this={stackEl}
+      role="group"
+      aria-label="Card preview"
+    >
       {#if mode === "preview"}
-        <CardPreviewStack
-          {sequence}
-          {showWord}
-          {includeStartPosition}
-          startPositionLayout={getCatalogLayoutPolicy(sequence.steps?.length ?? 0)}
-          {showQRCode}
-          showInfoCard={false}
-          printMode={true}
-          {frontImageUrl}
-          onCardContextMenu={onContextMenu}
-        />
+        {#if presentation === "live"}
+          <LiveChoreoCard
+            {sequence}
+            {showWord}
+            {includeStartPosition}
+            showDifficultyLevel={false}
+            showNotes={false}
+            showLoopGlyph={true}
+            showQRCode={false}
+            showMandala={true}
+            {browseViewMode}
+            darkMode={true}
+            bluePropType={effBlueProp}
+            redPropType={effRedProp}
+            forceContain={true}
+            startPositionLayoutOverride={getCatalogLayoutPolicy(
+              sequence.steps?.length ?? 0
+            )}
+          />
+        {:else}
+          <CardPreviewStack
+            {sequence}
+            {showWord}
+            {includeStartPosition}
+            startPositionLayout={getCatalogLayoutPolicy(
+              sequence.steps?.length ?? 0
+            )}
+            {showQRCode}
+            showInfoCard={false}
+            printMode={true}
+            {frontImageUrl}
+            onCardContextMenu={onContextMenu}
+          />
+        {/if}
       {:else}
         <CardArrowFixGrid
           {sequence}
@@ -205,10 +276,19 @@
 
     <div class="bottom-bar">
       <div class="actions">
-        <button class="action-btn" onclick={editSequence} aria-label="Open sequence in construct for full editing">
+        <button
+          class="action-btn"
+          onclick={editSequence}
+          aria-label="Open sequence in construct for full editing"
+        >
           <i class="fas fa-pen-to-square"></i> Edit in Construct
         </button>
-        <button class="action-btn" onclick={copyCardImage} disabled={copyImageState === "copying"} aria-label="Copy image">
+        <button
+          class="action-btn"
+          onclick={copyCardImage}
+          disabled={copyImageState === "copying"}
+          aria-label="Copy image"
+        >
           {#if copyImageState === "copying"}
             <i class="fas fa-spinner fa-spin"></i> Capturing...
           {:else if copyImageState === "success"}
@@ -219,7 +299,12 @@
             <i class="fas fa-image"></i> Copy Image
           {/if}
         </button>
-        <button class="action-btn" onclick={copyCardData} disabled={copyDataState === "copying"} aria-label="Copy sequence data in AI-friendly text">
+        <button
+          class="action-btn"
+          onclick={copyCardData}
+          disabled={copyDataState === "copying"}
+          aria-label="Copy sequence data in AI-friendly text"
+        >
           {#if copyDataState === "copying"}
             <i class="fas fa-spinner fa-spin"></i> Copying...
           {:else if copyDataState === "success"}
@@ -231,11 +316,20 @@
           {/if}
         </button>
         {#if mode === "preview"}
-          <button class="action-btn" onclick={enterFixMode} aria-label="Fix arrow positions on this card's pictographs">
+          <button
+            class="action-btn"
+            onclick={enterFixMode}
+            aria-label="Fix arrow positions on this card's pictographs"
+          >
             <i class="fas fa-arrows-up-down-left-right"></i> Fix Arrows
           </button>
         {:else}
-          <button class="action-btn done-btn" onclick={exitFixMode} disabled={rebaking} aria-label="Finish fixing arrows and re-render the card">
+          <button
+            class="action-btn done-btn"
+            onclick={exitFixMode}
+            disabled={rebaking}
+            aria-label="Finish fixing arrows and re-render the card"
+          >
             {#if rebaking}
               <i class="fas fa-spinner fa-spin"></i> Re-rendering...
             {:else}
@@ -259,10 +353,14 @@
   <!-- The inspector fills its positioned host. This host is a fullscreen modal
        of its own, so it supplies a fixed viewport-sized box to fill. -->
   <div class="inspect-host">
-    <PictographInspectModal show stepData={selectedStep} onClose={closeEditor} onDone={handleEditorDone} />
+    <PictographInspectModal
+      show
+      stepData={selectedStep}
+      onClose={closeEditor}
+      onDone={handleEditorDone}
+    />
   </div>
 {/if}
-
 
 <style>
   /* Full-size positioned box for the inspector to fill. Sits above this host's
@@ -285,8 +383,12 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .modal-container {
@@ -299,10 +401,33 @@
     max-width: 1600px;
   }
 
+  .modal-container.live-container {
+    width: min(90vw, calc((90vh - 150px) * 2));
+    height: auto;
+  }
+
   .stack-wrapper {
     flex: 1;
     width: 100%;
     min-height: 0;
+  }
+
+  .stack-wrapper.live-preview {
+    box-sizing: border-box;
+    flex: 0 1 auto;
+    aspect-ratio: 2 / 1;
+    padding: clamp(8px, 1.5vw, 20px);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: var(--settings-radius-lg, 18px);
+    background:
+      radial-gradient(
+        circle at 50% 42%,
+        color-mix(in srgb, var(--theme-accent, #6366f1) 7%, transparent),
+        transparent 58%
+      ),
+      var(--theme-panel-bg, #11131a);
+    box-shadow: var(--theme-shadow, 0 18px 56px rgba(0, 0, 0, 0.42));
   }
 
   .close-btn {
@@ -364,7 +489,11 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease,
+      transform 0.15s ease;
   }
 
   .actions :global(button:hover:not(:disabled)) {
@@ -398,7 +527,11 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .modal-backdrop { animation: none; }
-    .actions :global(button:hover:not(:disabled)) { transform: none; }
+    .modal-backdrop {
+      animation: none;
+    }
+    .actions :global(button:hover:not(:disabled)) {
+      transform: none;
+    }
   }
 </style>

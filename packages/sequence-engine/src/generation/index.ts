@@ -20,10 +20,17 @@ export type {
   MotionData,
 } from "./constraints/types.js";
 
-export { ConstraintType, ConstraintCategory, type ConstraintMode } from "./constraints/constraint-types.js";
+export {
+  ConstraintType,
+  ConstraintCategory,
+  type ConstraintMode,
+} from "./constraints/constraint-types.js";
 
 // Style constraints
-export { ContinuityConstraint, type ContinuityMode } from "./constraints/style/continuity-constraint.js";
+export {
+  ContinuityConstraint,
+  type ContinuityMode,
+} from "./constraints/style/continuity-constraint.js";
 export {
   MotionTypeConstraint,
   type MotionTypeConstraintOptions,
@@ -48,7 +55,10 @@ export {
   allClockwise,
   allCounterClockwise,
 } from "./constraints/style/rotation-direction-constraint.js";
-export { ReversalConstraint, type ReversalMode } from "./constraints/style/reversal-constraint.js";
+export {
+  ReversalConstraint,
+  type ReversalMode,
+} from "./constraints/style/reversal-constraint.js";
 export {
   HandPathReversalConstraint,
   type HandPathMode,
@@ -149,6 +159,13 @@ export {
   getDefaultMaxTurnIntensity,
   type TurnAllocation,
 } from "./turns/TurnAllocator.js";
+export {
+  materializeTurn,
+  type MaterializedTurn,
+  type TurnMaterializationOptions,
+  type TurnMaterializationSource,
+  type TurnValue,
+} from "./turns/TurnMaterializer.js";
 
 // Reporting
 export {

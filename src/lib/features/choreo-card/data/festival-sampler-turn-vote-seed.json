@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "sourceFile": "festival-sampler-turn-pattern-votes (2).json",
+  "sourceSchemaVersion": 2,
+  "sourceSummary": {
+    "total": 140,
+    "reviewed": 62,
+    "yay": 59,
+    "nay": 3,
+    "edited": 9
+  },
+  "approvedPatternIds": [
+    "together-block",
+    "together-pulse",
+    "alternating-hands",
+    "trade-then-accent",
+    "adjacent-handoff",
+    "accent-then-trade",
+    "dense-handoff",
+    "cross-accent",
+    "split-blocks",
+    "offbeat-together",
+    "spaced-handoff",
+    "bookended-trade"
+  ],
+  "conversationApprovedPatternIds": [
+    "split-blocks",
+    "offbeat-together",
+    "spaced-handoff",
+    "bookended-trade"
+  ],
+  "rejectedSourcePatterns": [
+    "1|1-1|0-0|0-1|0-1|1-1|0-0|0-1|0",
+    "1|0-1|1-1|1-1|1-1|0-1|1-1|1-1|1",
+    "1|1-0|1-0|0-0|0-1|1-0|1-0|0-0|0"
+  ]
+}

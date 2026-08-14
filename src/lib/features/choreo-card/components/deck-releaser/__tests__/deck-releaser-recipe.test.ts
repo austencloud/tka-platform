@@ -3,6 +3,8 @@ import {
   createDeckReleaserState,
   type DeckReleaserState,
 } from "../state/deck-releaser-state.svelte";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 
 describe("deck-releaser recipe round-trip", () => {
   let releaserState: DeckReleaserState;
@@ -34,7 +36,7 @@ describe("deck-releaser recipe round-trip", () => {
   it("creates isolated state for each mounted deck releaser", () => {
     const other = createState();
     releaserState.name = "First mount";
-    releaserState.selectedLevels = new Set([4]);
+    releaserState.selectedLevels = new Set([3]);
 
     expect(other.name).toBe("");
     expect([...other.selectedLevels]).toEqual([1]);
@@ -77,6 +79,34 @@ describe("deck-releaser recipe round-trip", () => {
     releaserState.loadRecipe(r);
     expect(releaserState.seed).toEqual("stored-seed");
     expect([...releaserState.selectedLoopTypes]).toEqual(["inverted"]);
+  });
+
+  it("round-trips the canonical Gallery rule and deck size", () => {
+    releaserState.deckMode = "gallery";
+    releaserState.totalCards = 24;
+    releaserState.galleryFilterSpec = {
+      source: "my-library",
+      filters: [
+        {
+          key: BrowseFilterType.DIFFICULTY,
+          type: BrowseFilterType.DIFFICULTY,
+          value: 2,
+          label: "Level 2",
+          chipColor: "#8b5cf6",
+        },
+      ],
+      searchQuery: "fire",
+      sortMethod: BrowseSortMethod.ALPHABETICAL,
+      sortDirection: "asc",
+    };
+
+    const recipe = releaserState.toRecipe();
+    const restored = createState();
+    restored.loadRecipe(recipe);
+
+    expect(recipe.galleryFilters).toBeUndefined();
+    expect(restored.galleryFilterSpec).toEqual(releaserState.galleryFilterSpec);
+    expect(restored.totalCards).toBe(24);
   });
 
   it("reroll mints a new seed, leaves dials untouched", () => {

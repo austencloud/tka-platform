@@ -30,14 +30,17 @@ function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
   }
 }
 
-function randomChoice<T>(array: T[]): T {
+function randomChoice<T>(array: T[], random: () => number): T {
   if (array.length === 0) {
     throw new Error("Cannot choose from empty array");
   }
-  return array[Math.floor(Math.random() * array.length)]!;
+  return array[Math.floor(random() * array.length) % array.length]!;
 }
 
 export interface TurnAllocationOptions {
+  /** Injectable entropy for deterministic generators and tests. */
+  random?: () => number;
+
   /** Use this exact numeric turn value on every step for both hands. */
   requiredTurns?: number;
 
@@ -100,6 +103,7 @@ export function allocateTurns(
   // If filtering removed everything except possibly "fl", ensure we have at least 0
   const turnsPool = validTurns.length > 0 ? validTurns : [0];
   const requiredTurns = options?.requiredTurns;
+  const random = options?.random ?? Math.random;
 
   if (requiredTurns !== undefined) {
     if (!turnsPool.includes(requiredTurns)) {
@@ -114,8 +118,8 @@ export function allocateTurns(
     };
   }
 
-  const turnsBlue = allocateSingleHand(stepCount, turnsPool, options);
-  const turnsRed = allocateSingleHand(stepCount, turnsPool, options);
+  const turnsBlue = allocateSingleHand(stepCount, turnsPool, random, options);
+  const turnsRed = allocateSingleHand(stepCount, turnsPool, random, options);
 
   return {
     blue: turnsBlue,
@@ -126,12 +130,12 @@ export function allocateTurns(
 function allocateSingleHand(
   stepCount: number,
   turnsPool: (number | "fl")[],
+  random: () => number,
   options?: TurnAllocationOptions
 ): (number | "fl")[] {
   const result: (number | "fl")[] = [];
 
-  const forceFourRepetitions =
-    options?.forcePeriod4OrientationCycle === true;
+  const forceFourRepetitions = options?.forcePeriod4OrientationCycle === true;
 
   // Period-4 parity requires at least one half-integer option in the pool
   // (otherwise totals can only be ≡ 0 or 2 mod 4). If we can't satisfy it,
@@ -151,7 +155,7 @@ function allocateSingleHand(
   const stepsToPreallocate = canEnforce ? stepCount - 1 : stepCount;
 
   for (let i = 0; i < stepsToPreallocate; i++) {
-    result.push(randomChoice(turnsPool));
+    result.push(randomChoice(turnsPool, random));
   }
 
   if (!canEnforce) {
@@ -173,10 +177,10 @@ function allocateSingleHand(
   );
 
   if (matching.length > 0) {
-    result.push(randomChoice(matching));
+    result.push(randomChoice(matching, random));
   } else {
     // Shouldn't happen given canEnforce, but guard defensively.
-    result.push(randomChoice(turnsPool));
+    result.push(randomChoice(turnsPool, random));
   }
 
   return result;

@@ -20,9 +20,10 @@
 
   interface Props {
     onExit: () => void;
+    onReviewTurns?: () => void;
   }
 
-  let { onExit }: Props = $props();
+  let { onExit, onReviewTurns }: Props = $props();
 
   const OUTPUT_OPTIONS = [
     { value: "combined", label: "Duplex" },
@@ -225,10 +226,22 @@
 <div class="festival-print" data-testid="festival-sampler-print-view">
   <main class="preview-area">
     <header class="preview-header">
-      <button class="back-button" type="button" onclick={onExit}>
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Deck Releaser
-      </button>
+      <div class="header-actions">
+        <button class="back-button" type="button" onclick={onExit}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          Deck Releaser
+        </button>
+        {#if onReviewTurns}
+          <button
+            class="review-turns-button"
+            type="button"
+            onclick={onReviewTurns}
+          >
+            <i class="fas fa-code-branch" aria-hidden="true"></i>
+            Review turn patterns
+          </button>
+        {/if}
+      </div>
       <div class="title-block">
         <span class="eyebrow">Ready-to-print job</span>
         <h1>{FESTIVAL_SAMPLER_NAME}</h1>
@@ -509,6 +522,29 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
+  .header-actions {
+    display: grid;
+    gap: 8px;
+  }
+
+  .review-turns-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 22%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 48%, transparent);
+  }
+
+  .review-turns-button:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
   .back-button:hover:not(:disabled),
   .secondary-action:hover:not(:disabled),
   .test-button:hover:not(:disabled) {
@@ -583,7 +619,11 @@
       var(--semantic-error, #ef4444) 10%,
       transparent
     );
-    color: #fecaca;
+    color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 55%,
+      var(--theme-text, #fff)
+    );
   }
 
   .pack-list {
@@ -818,8 +858,12 @@
   .primary-action {
     min-height: 50px;
     padding: 11px 15px;
-    background: color-mix(in srgb, var(--semantic-success, #10b981) 68%, black);
-    color: #fff;
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #10b981) 68%,
+      var(--theme-shadow, #000)
+    );
+    color: var(--theme-text-on-accent, #fff);
   }
 
   .primary-action:hover:not(:disabled) {
@@ -929,6 +973,7 @@
       grid-template-columns: 1fr;
     }
 
+    .header-actions,
     .back-button,
     .job-status {
       justify-self: start;
@@ -940,6 +985,7 @@
       grid-template-columns: 1fr;
     }
 
+    .header-actions,
     .back-button,
     .job-status {
       justify-self: start;

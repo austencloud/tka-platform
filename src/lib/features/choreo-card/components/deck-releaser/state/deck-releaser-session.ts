@@ -8,6 +8,7 @@ import type {
   VariationConfig,
 } from "../../../services/deck-variation";
 import type { ResolvedReversalPattern } from "../../../domain/reversal-transform";
+import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 
 const STORAGE_KEY = "deckReleaser.session";
 
@@ -48,6 +49,8 @@ export interface PersistedDeckReleaserSession {
   selectedPropType?: string;
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];
+  galleryFilterSpec?: SmartFilterSpec;
+  /** @deprecated Gallery recipes now use `galleryFilterSpec`. */
   galleryFilters?: GalleryFilters;
   weights?: StepCountWeight[];
   cards?: DeckReleaseCard[];

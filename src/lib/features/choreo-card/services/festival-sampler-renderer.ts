@@ -22,6 +22,7 @@ import {
   buildFestivalSamplerRenderOptions,
   FESTIVAL_SAMPLER_NAME,
 } from "./festival-sampler-render-options";
+import { SIGNUP_CARD_ART_REVISION } from "./signup-card-canvas-renderer";
 
 export {
   buildFestivalSamplerRenderOptions,
@@ -80,8 +81,8 @@ interface CachedBatchRender {
 // Moving between app modules destroys the deck-releaser component. Keep the
 // expensive card canvases alive for this browser session so reopening the
 // festival job restores the finished preview instead of drawing every card
-// again. Include the frozen-manifest revision so regenerating a card recipe
-// cannot bring an older canvas back into the print job.
+// again. Include both the frozen-manifest and signup-art revisions so changing
+// either face of the center card cannot bring older artwork back into the job.
 const batchRenderCache = new Map<string, CachedBatchRender>();
 
 function assertClassicEndpoints(
@@ -225,7 +226,7 @@ export function renderFestivalSamplerBatch(
   onProgress?: (progress: FestivalSamplerProgress) => void
 ): Promise<FestivalSamplerPack[]> {
   const count = Math.floor(packCount);
-  const cacheKey = `${FESTIVAL_SAMPLER_MANIFEST_REVISION}:${count}`;
+  const cacheKey = `${FESTIVAL_SAMPLER_MANIFEST_REVISION}:${SIGNUP_CARD_ART_REVISION}:${count}`;
   const existing = batchRenderCache.get(cacheKey);
   if (existing) {
     if (onProgress) {

@@ -10,21 +10,8 @@ import {
   resolveFestivalSamplerCardSequence,
 } from "$lib/features/choreo-card/services/festival-sampler-turns";
 
-function smallestMotifLength(pattern: string): number {
-  const entries = pattern.split("-");
-  for (let motifLength = 1; motifLength <= entries.length; motifLength += 1) {
-    if (entries.length % motifLength !== 0) continue;
-    if (
-      entries.every((entry, index) => entry === entries[index % motifLength])
-    ) {
-      return motifLength;
-    }
-  }
-  return entries.length;
-}
-
 describe("festival sampler frozen turn assignments", () => {
-  it("resolves the first-page JD card from its repeating two-beat recipe", async () => {
+  it("resolves the first-page JD card from its approved four-step family", async () => {
     const card = manifests.candidates[0]!.cards.find(
       (candidate) => candidate.name === "JDJD"
     ) as FestivalSamplerCardManifest;
@@ -33,8 +20,9 @@ describe("festival sampler frozen turn assignments", () => {
       (step) => `${step.motions?.blue?.turns}|${step.motions?.red?.turns}`
     );
 
-    expect(card.turnPattern).toBe("0|1-1|0-0|1-1|0");
-    expect(applied).toEqual(["0|1", "1|0", "0|1", "1|0"]);
+    expect(card.turnPatternId).toBe("alternating-hands");
+    expect(card.turnPattern).toBe("1|0-0|1-1|0-0|1");
+    expect(applied).toEqual(["1|0", "0|1", "1|0", "0|1"]);
   });
 
   it("keeps every patterned card closed and inside its declared turn cap", async () => {
@@ -65,28 +53,25 @@ describe("festival sampler frozen turn assignments", () => {
       } else {
         expect(turns).toContain(cap);
         expect(turns).toContain(0);
-        const patternLength = card.turnPattern!.split("-").length;
-        expect(smallestMotifLength(card.turnPattern!)).toBeLessThan(
-          patternLength
-        );
+        expect(card.turnPatternId).toBeTruthy();
       }
     }
   }, 30_000);
 
-  it("rejects a four-beat recipe that closes but does not repeat a motif", async () => {
+  it("rejects a frozen pattern that does not match its catalog family", async () => {
     const source = manifests.candidates
       .flatMap((pack) => pack.cards as FestivalSamplerCardManifest[])
-      .find((card) => card.source === "catalog")!;
+      .find((card) => card.source === "catalog" && card.turnPatternId)!;
     const base = await loadFestivalSamplerBaseSequence(source);
-    const nonCyclic = {
+    const mismatched = {
       ...source,
       level: 2,
       turnIntensity: 1,
       turnPattern: "1|1-0|0-0|1-1|0",
     };
 
-    expect(() => applyFestivalSamplerTurnAssignment(nonCyclic, base)).toThrow(
-      /not a cyclic motif/
+    expect(() => applyFestivalSamplerTurnAssignment(mismatched, base)).toThrow(
+      /not valid/
     );
   });
 });

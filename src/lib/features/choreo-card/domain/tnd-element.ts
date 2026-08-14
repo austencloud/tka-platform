@@ -79,7 +79,34 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
 ] as const;
 
 export const TND_BY_FAMILY: Readonly<Record<string, TnDElement>> =
-  Object.fromEntries(TND_ELEMENTS.map(t => [t.familyId, t]));
+  Object.fromEntries(TND_ELEMENTS.map((t) => [t.familyId, t]));
+
+const TND_BY_ELEMENT: Readonly<Record<string, TnDElement>> = Object.fromEntries(
+  TND_ELEMENTS.map((element) => [element.element, element])
+);
+
+/**
+ * Resolve the print-frame palette from each step's actual hand-path geometry.
+ * Non-orbital Type 2 steps have no element and add no artificial neutral band.
+ * Repeated elements stay repeated so the stripe rhythm reflects the sequence.
+ */
+export function resolveSequenceElementFramePalette(
+  sequence: SequenceData
+): readonly string[] {
+  const elements = sequence.steps.flatMap((step) => {
+    const elementalType = deriveTnDFromPictograph(step).elementalType;
+    const element = elementalType ? TND_BY_ELEMENT[elementalType] : undefined;
+    return element ? [element] : [];
+  });
+  if (elements.length === 0) return [];
+
+  const uniqueElements = new Set(elements.map((element) => element.element));
+  if (uniqueElements.size === 1) {
+    const [element] = elements;
+    return [element!.accentColor, element!.darkComplement];
+  }
+  return elements.map((element) => element.accentColor);
+}
 
 export const TND_RATIO_LEVEL_MAP: Readonly<Record<string, number>> = {
   "1:1": 1,
@@ -132,3 +159,5 @@ export function getTnDElementByIconPath(iconPath: string): TnDElement | null {
   const normalized = ICON_LEGACY[iconPath] ?? iconPath;
   return TND_ELEMENTS.find((t) => t.iconPath === normalized) ?? null;
 }
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";

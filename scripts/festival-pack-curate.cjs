@@ -402,10 +402,15 @@ function buildBalancedTurnSchedule() {
 
 function buildBalancedLevelThreeSchedule(levelTwoSchedule) {
   const random = createSeededRandom(LEVEL_THREE_SCHEDULE_SEED);
-  const counts = new Map(FESTIVAL_SLOT_ORDER.map((slot) => [slot, 0]));
-  const schedule = levelTwoSchedule.map((levelTwoSlots) => {
-    const eligible = FESTIVAL_SLOT_ORDER.filter(
-      (slot) => !levelTwoSlots.includes(slot)
+  const loopSlots = FESTIVAL_SLOT_ORDER.filter(
+    (slot) => slot !== "tndBase" && slot !== "tndTurn"
+  );
+  const slotCopies = loopSlots.flatMap((slot) =>
+    Array.from({ length: 10 }, (_, copy) => `${slot}:${copy}`)
+  );
+  const adjacency = levelTwoSchedule.map((levelTwoSlots) => {
+    const eligible = slotCopies.filter(
+      (copy) => !levelTwoSlots.includes(copy.slice(0, copy.lastIndexOf(":")))
     );
     for (let index = eligible.length - 1; index > 0; index -= 1) {
       const swapIndex = Math.floor(random() * (index + 1));
@@ -414,15 +419,39 @@ function buildBalancedLevelThreeSchedule(levelTwoSchedule) {
         eligible[index],
       ];
     }
-    const minimum = Math.min(...eligible.map((slot) => counts.get(slot)));
-    const leastUsed = eligible.filter((slot) => counts.get(slot) === minimum);
-    const selected = leastUsed[Math.floor(random() * leastUsed.length)];
-    counts.set(selected, counts.get(selected) + 1);
-    return selected;
+    return eligible;
   });
+  const copyOwner = new Map();
+  const selectedCopy = new Array(levelTwoSchedule.length);
+
+  function claim(packIndex, seen) {
+    for (const copy of adjacency[packIndex]) {
+      if (seen.has(copy)) continue;
+      seen.add(copy);
+      const previousPack = copyOwner.get(copy);
+      if (previousPack === undefined || claim(previousPack, seen)) {
+        copyOwner.set(copy, packIndex);
+        selectedCopy[packIndex] = copy;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  for (let packIndex = 0; packIndex < levelTwoSchedule.length; packIndex++) {
+    if (!claim(packIndex, new Set())) {
+      throw new Error(`festival Level 3 schedule cannot assign pack ${packIndex + 1}`);
+    }
+  }
+
+  const schedule = selectedCopy.map((copy) =>
+    copy.slice(0, copy.lastIndexOf(":"))
+  );
+  const counts = new Map(loopSlots.map((slot) => [slot, 0]));
+  for (const slot of schedule) counts.set(slot, counts.get(slot) + 1);
 
   const distribution = [...counts.values()].sort((a, b) => a - b);
-  if (distribution.join(",") !== "7,7,7,7,8,8,8,8") {
+  if (distribution.join(",") !== "10,10,10,10,10,10") {
     throw new Error(
       `festival Level 3 schedule is not balanced: ${distribution.join(",")}`
     );
@@ -643,9 +672,9 @@ function buildFestivalPackCuration(
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     constraint:
-      "Exactly three of all eight choreography cards in every pack are Level 2 with sparse one-turn patterns. One of the remaining five is randomly assigned Level 3 with a sparse half-turn pattern; the other four stay Level 1 with zero turns. Every frozen turn pattern is selected through the canonical variation engine and must preserve loop closure. Across 60 packs, all 56 possible Level 2 triples appear, every slot receives Level 2 22 or 23 times, and every slot receives Level 3 7 or 8 times. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
+      "Exactly three of all eight choreography cards in every pack are Level 2 with one-turn patterns. One of the remaining six LOOP cards is assigned Level 3 with a half-turn pattern; the other four cards stay Level 1 with zero turns. The approved catalog supplies four patterns to 4-step cards, eight to 8-step cards, and twelve to 16-step cards. Every frozen assignment must preserve loop closure. Across 60 packs, all 56 possible Level 2 triples appear, every slot receives Level 2 22 or 23 times, and each LOOP slot receives Level 3 exactly 10 times. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
     selectionReason:
-      "Every supported pack has three Level 2 cards and one Level 3 card chosen from the full eight-card assortment, its own generated 16-step mirrored, mirrored+swapped, and mirrored+inverted cards, a distinct TnD pairing, and varied published LOOP cards.",
+      "Every supported pack has three Level 2 cards chosen from the full eight-card assortment and one Level 3 LOOP card, its own generated 16-step mirrored, mirrored+swapped, and mirrored+inverted cards, a distinct TnD pairing, and varied published LOOP cards.",
     candidates,
     selected: candidates[0],
   };

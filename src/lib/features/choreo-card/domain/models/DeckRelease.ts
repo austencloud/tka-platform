@@ -1,6 +1,7 @@
 import type { ResolvedReversalPattern } from "../reversal-transform";
 import type { VariationConfig } from "../../services/deck-variation";
 import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 
 export interface CardFooter {
   left?: string;
@@ -112,7 +113,9 @@ export interface DeckRecipe {
   /** TnD-only. */
   tndFamilyIds?: string[];
   tndTurnPatternIds?: string[];
-  /** Gallery-only: the filter that produced (and can Refresh) this deck. */
+  /** Gallery-only: the canonical Browse rule that produced this deck. */
+  galleryFilterSpec?: SmartFilterSpec;
+  /** @deprecated Gallery recipes now use `galleryFilterSpec`. */
   galleryFilters?: GalleryFilters;
 }
 

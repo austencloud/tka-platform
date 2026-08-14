@@ -3,7 +3,7 @@
  *
  * Draws the festival sample-pack signup card at MPC print dimensions.
  * Front: QR to tkaflowarts.com/start, the URL as text (QR-dead insurance),
- * and one pitch line. Back: brand mark.
+ * and one pitch line. Back: the learn, teach, pass relay.
  *
  * The card uses the SAME frame as the real deck cards — wrapContentInCardFrame
  * (stripe border, white inner content) — so it matches the pack it ships with
@@ -22,10 +22,29 @@ import {
 import { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
 
 export const SIGNUP_CARD_URL = "https://tkaflowarts.com/start";
+export const SIGNUP_CARD_ART_REVISION = "2026-08-14-relay-v1";
 /** Printed under the QR. No scheme — it is for humans typing it in. */
 const SIGNUP_CARD_URL_TEXT = "tkaflowarts.com/start";
 const PITCH_LINE =
   "Create a free account and every card in this pack comes alive.";
+
+export const SIGNUP_CARD_RELAY_STEPS = [
+  {
+    label: "SCAN + LEARN",
+    body: "Scan the QR on a choreo card. Learn its sequence.",
+  },
+  {
+    label: "TEACH",
+    body: "Teach the sequence to another person.",
+  },
+  {
+    label: "PASS IT ON",
+    body: "Give them the card. They start again at step one.",
+  },
+] as const;
+
+export const SIGNUP_CARD_RELAY_CLOSING =
+  "Keep the loop going until the world speaks this language.";
 
 const INK = "#1e1b4b";
 const INK_SOFT = "rgba(30, 27, 75, 0.55)";
@@ -57,7 +76,10 @@ function makeContentCanvas(options: InfoCardCanvasOptions): {
   border: number;
 } {
   const border = getCardFrameContentInset(options.bleedPx);
-  const canvas = htmlFactory(options.width - border * 2, options.height - border * 2);
+  const canvas = htmlFactory(
+    options.width - border * 2,
+    options.height - border * 2
+  );
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -180,50 +202,118 @@ export async function renderSignupCardBack(
   const key = `${options.theme}|${options.width}x${options.height}`;
   if (cachedBack && cachedBackKey === key) return cachedBack;
 
-  const logo = await loadImage("/branding/logo.jpg");
-
   const { canvas, ctx } = makeContentCanvas(options);
   const centerX = canvas.width / 2;
   const padY = 28 * REF_SCALE;
   const { accent } = frameColors(options.theme);
 
-  // Brand mark: the round logo with a thin accent ring (the logo JPEG carries
-  // its own white ground, so on a white card only the ring defines its edge),
-  // wordmark below — the same brand row the /start page opens with.
-  const logoR = 60 * REF_SCALE;
-  const blockH =
-    logoR * 2 + 20 * REF_SCALE + 30 * REF_SCALE + 8 * REF_SCALE + 16 * REF_SCALE;
-  const blockTop = (canvas.height - blockH) / 2;
-  const logoCY = blockTop + logoR;
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(centerX, logoCY, logoR - 2 * REF_SCALE, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(logo, centerX - logoR, logoCY - logoR, logoR * 2, logoR * 2);
-  ctx.restore();
-
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 2 * REF_SCALE;
-  ctx.beginPath();
-  ctx.arc(centerX, logoCY, logoR - REF_SCALE, 0, Math.PI * 2);
-  ctx.stroke();
-
-  let curY = logoCY + logoR + 20 * REF_SCALE;
+  // The back is a field instruction, not an advertisement. A vertical relay
+  // makes the physical handoff legible before anyone reads the small copy.
   ctx.fillStyle = INK;
-  ctx.font = `800 ${26 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+  ctx.font = `800 ${29 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("Flow Arts Composer", centerX, curY);
-  curY += 26 * REF_SCALE + 8 * REF_SCALE;
+  ctx.fillText("Learn it. Teach it. Pass it on.", centerX, 40 * REF_SCALE);
 
   ctx.fillStyle = INK_SOFT;
-  ctx.font = `400 ${15 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
-  ctx.fillText("The Kinetic Alphabet", centerX, curY);
+  ctx.font = `400 ${14 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+  ctx.fillText(
+    "Every choreo card runs on the same three-step loop.",
+    centerX,
+    88 * REF_SCALE
+  );
 
-  // Footer: the URL again — the back is the face a stacked pack shows.
+  const railX = 67 * REF_SCALE;
+  const textX = 112 * REF_SCALE;
+  const textWidth = canvas.width - textX - 34 * REF_SCALE;
+  const stepTops = [150, 280, 410].map((value) => value * REF_SCALE);
+  const circleRadius = 24 * REF_SCALE;
+
+  for (let index = 0; index < SIGNUP_CARD_RELAY_STEPS.length; index += 1) {
+    const step = SIGNUP_CARD_RELAY_STEPS[index]!;
+    const stepTop = stepTops[index]!;
+    const circleY = stepTop + 26 * REF_SCALE;
+
+    if (index < SIGNUP_CARD_RELAY_STEPS.length - 1) {
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 3 * REF_SCALE;
+      ctx.beginPath();
+      ctx.moveTo(railX, circleY + circleRadius);
+      ctx.lineTo(railX, stepTops[index + 1]! + 26 * REF_SCALE - circleRadius);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = 0.16;
+    ctx.beginPath();
+    ctx.arc(railX, circleY, circleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2 * REF_SCALE;
+    ctx.beginPath();
+    ctx.arc(railX, circleY, circleRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = INK;
+    ctx.font = `800 ${18 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(index + 1), railX, circleY);
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = `800 ${17 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+    ctx.fillText(step.label, textX, stepTop);
+
+    ctx.fillStyle = INK_SOFT;
+    const bodySize = 14 * REF_SCALE;
+    ctx.font = `400 ${bodySize}px "Segoe UI", system-ui, sans-serif`;
+    const lines = wrapText(ctx, step.body, textWidth);
+    lines.forEach((line, lineIndex) => {
+      ctx.fillText(
+        line,
+        textX,
+        stepTop + 31 * REF_SCALE + lineIndex * bodySize * 1.5
+      );
+    });
+  }
+
+  const loopX = 82 * REF_SCALE;
+  const loopY = 480 * REF_SCALE;
+  const loopWidth = canvas.width - loopX * 2;
+  const loopHeight = 44 * REF_SCALE;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2 * REF_SCALE;
+  roundRect(ctx, loopX, loopY, loopWidth, loopHeight, 22 * REF_SCALE);
+  ctx.stroke();
+
+  ctx.fillStyle = INK;
+  ctx.font = `700 ${18 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("1  →  2  →  3  →  1", centerX, loopY + loopHeight / 2);
+
+  ctx.fillStyle = INK;
+  const closingSize = 16 * REF_SCALE;
+  ctx.font = `700 ${closingSize}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textBaseline = "top";
+  const closingLines = wrapText(
+    ctx,
+    SIGNUP_CARD_RELAY_CLOSING,
+    canvas.width - 100 * REF_SCALE
+  );
+  closingLines.forEach((line, index) => {
+    ctx.fillText(line, centerX, 540 * REF_SCALE + index * closingSize * 1.45);
+  });
+
+  // The URL remains on both faces in case the card is separated from the pack.
   ctx.fillStyle = INK_FAINT;
   ctx.font = `400 ${12 * REF_SCALE}px "Segoe UI", system-ui, sans-serif`;
+  ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
   ctx.fillText(SIGNUP_CARD_URL_TEXT, centerX, canvas.height - padY);
 
@@ -241,13 +331,4 @@ export async function renderSignupCardBack(
   cachedBack = framed;
   cachedBackKey = key;
   return framed;
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
-  });
 }

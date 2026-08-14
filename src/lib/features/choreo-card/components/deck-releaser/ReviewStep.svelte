@@ -13,6 +13,8 @@
   import type { CardSizeId, PaperSizeId } from "../../domain/card-sizes";
   import type { TnDElement } from "../../domain/tnd-element";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
+  import FilterRuleStrip from "$lib/shared/browse/components/FilterRuleStrip.svelte";
 
   interface Props {
     cards: DeckReleaseCard[];
@@ -28,6 +30,9 @@
     /** Concise recipe line shown centered in the preview's top margin, mirroring
      *  the exported PDF sheet. */
     deckSummary?: string;
+    /** Gallery rule that produced the deck. Review shows the same grouped rule
+     *  sentence as the canonical Gallery workspace, without edit controls. */
+    galleryFilterSpec?: SmartFilterSpec | null;
     onSwapCard: (index: number) => void;
     /** Remove a card from the deck (LOOP decks only). Passed the sequence so the
      *  tab can resolve its real index regardless of the current sort. */
@@ -101,6 +106,7 @@
     refNumber = 0,
     deckName = "",
     deckSummary = "",
+    galleryFilterSpec = null,
     onSwapCard,
     onRemoveCard,
     allowRemove = false,
@@ -307,6 +313,25 @@
     </div>
   </div>
 
+  {#if galleryFilterSpec}
+    <div class="gallery-rule-band" aria-label="Gallery recipe">
+      <span class="gallery-rule-source">
+        <i class="fas fa-layer-group" aria-hidden="true"></i>
+        Built from Gallery
+      </span>
+      {#if galleryFilterSpec.filters.length > 0 || galleryFilterSpec.searchQuery?.trim()}
+        <FilterRuleStrip
+          filters={galleryFilterSpec.filters}
+          connectives={galleryFilterSpec.connectives}
+          searchQuery={galleryFilterSpec.searchQuery}
+          interactive={false}
+        />
+      {:else}
+        <span class="gallery-rule-empty">All library sequences</span>
+      {/if}
+    </div>
+  {/if}
+
   <PrintPreviewToolbar
     {cardSize}
     {paperSize}
@@ -418,6 +443,7 @@
     flex-direction: column;
     height: 100%;
     min-height: 0;
+    container-type: inline-size;
   }
 
   .review-header {
@@ -442,11 +468,20 @@
     color: var(--theme-text, #fff);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+      transform var(--transition-spring),
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .back-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(-2px);
+    background: var(--theme-card-hover-bg);
+  }
+
+  .back-btn:active {
+    transform: translateX(-2px) scale(0.98);
   }
 
   .deck-info {
@@ -491,18 +526,19 @@
     border-radius: 10px;
     cursor: text;
     transition:
-      background 0.15s,
-      border-color 0.15s;
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .deck-name-input:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg);
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .deck-name-input:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg);
     border-color: var(--theme-accent, #8b5cf6);
   }
 
@@ -544,6 +580,33 @@
     flex-shrink: 0;
   }
 
+  .gallery-rule-band {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-items: center;
+    gap: 0.65rem 1rem;
+    padding: 0.55rem 1rem;
+    flex: 0 0 auto;
+    background: var(--theme-panel-bg, rgba(0, 0, 0, 0.58));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .gallery-rule-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--theme-accent, #f59e0b);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 800;
+    letter-spacing: 0.035em;
+    white-space: nowrap;
+  }
+
+  .gallery-rule-empty {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 0.8rem;
+  }
+
   .redraw-btn {
     display: flex;
     align-items: center;
@@ -557,11 +620,21 @@
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+      transform var(--transition-spring),
+      background var(--transition-fast),
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .redraw-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(var(--hover-lift-sm, -1px));
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .redraw-btn:active:not(:disabled) {
+    transform: scale(0.98);
   }
 
   .redraw-btn:disabled {
@@ -653,20 +726,59 @@
     .deck-meta {
       font-size: var(--font-size-min, 16px);
     }
+
+    .gallery-rule-band {
+      gap: 0.8rem 1.25rem;
+      padding: 0.7rem 1.5rem;
+    }
   }
 
-  @media (max-width: 768px) {
+  @container (max-width: 48rem) {
     .review-header {
-      flex-direction: column;
-      align-items: stretch;
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      align-items: center;
+    }
+
+    .back-btn {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .deck-info {
+      grid-column: 2;
+      grid-row: 1;
     }
 
     .action-buttons {
-      justify-content: stretch;
+      display: grid;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
     }
 
-    .action-buttons button {
-      flex: 1;
+    .action-buttons :global(button) {
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* Gallery owns three header actions. Let Refresh take a full second row
+       instead of forcing the entire review surface wider than a phone. */
+    .action-buttons > .redraw-btn:nth-child(3) {
+      grid-column: 1 / -1;
+    }
+
+    .gallery-rule-band {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .back-btn,
+    .deck-name-input,
+    .redraw-btn {
+      transition: none;
     }
   }
 </style>

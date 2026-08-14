@@ -6,6 +6,7 @@ import type {
   StepCountWeight,
 } from "../../../domain/models/DeckRelease";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 import type {
   CatalogSourceSummary,
   TnDFamilyOption,
@@ -36,7 +37,72 @@ export interface DeckReleaserStateDependencies {
   nextReferenceNumber(): number;
 }
 
-export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
+export interface DeckReleaserState {
+  step: DeckReleaserStep;
+  cards: DeckReleaseCard[];
+  sequences: SequenceData[];
+  weights: StepCountWeight[];
+  totalCards: number;
+  notes: string;
+  name: string;
+  description: string;
+  themeOverride: string | null;
+  bluePropOverride: PropType | null;
+  redPropOverride: PropType | null;
+  brokenLoopCount: number;
+  variationConfig: VariationConfig;
+  selectedStartOriModes: Set<StartOriMode>;
+  selectedGridModes: Set<"diamond" | "box">;
+  reversalPattern: ResolvedReversalPattern | null;
+  selectedPropType: PropType | null;
+  nextDeckNumber: number;
+  releasedNumber: number | null;
+  sourceSummaries: CatalogSourceSummary[];
+  selectedSliceTypes: Set<"halved" | "quartered">;
+  seed: string;
+  selectedLoopTypes: Set<string>;
+  selectedLevels: Set<number>;
+  selectedStartPositionIds: Set<string>;
+  startOriBlue: string;
+  startOriRed: string;
+  propStyle: "smooth" | "mixed" | "choppy";
+  handStyle: "smooth" | "mixed" | "choppy";
+  dashStyle: "low" | "mixed" | "high";
+  selectedLength: number;
+  turnIntensity: number;
+  drawProgress: number;
+  referenceNumber: number;
+  tndSeedClasses: TnDSeedClass[];
+  tndFamilies: TnDFamilyOption[];
+  tndTurnPatterns: TnDTurnPatternOption[];
+  deckMode: DeckReleaserMode;
+  galleryFilterSpec: SmartFilterSpec | null;
+  galleryFilters: GalleryFilters;
+  selectedTnDFamilies: Set<string>;
+  selectedTnDTurnPatterns: Set<string>;
+  viewingRelease: DeckRelease | null;
+  isReleasing: boolean;
+  isLoadingSequences: boolean;
+  isLoadingPools: boolean;
+  drawGeneration: number;
+  poolsLoaded: boolean;
+  readonly theme: string;
+  readonly bluePropType: PropType;
+  readonly redPropType: PropType;
+  readonly savedViewingDeckNumber: number | null;
+  persist(): void;
+  toggleStartOriMode(mode: StartOriMode): void;
+  toggleGridMode(mode: "diamond" | "box"): void;
+  toRecipe(): DeckRecipe;
+  loadRecipe(recipe: DeckRecipe): void;
+  bumpReference(): void;
+  reroll(): void;
+  reset(): void;
+}
+
+export function createDeckReleaserState(
+  deps: DeckReleaserStateDependencies
+): DeckReleaserState {
   const saved = loadDeckReleaserSession(deps.storage);
   const restoredStartOriModes = saved?.startOriModes?.length
     ? saved.startOriModes
@@ -106,6 +172,9 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
   let tndFamilies = $state<TnDFamilyOption[]>([]);
   let tndTurnPatterns = $state<TnDTurnPatternOption[]>([]);
   let deckMode = $state<DeckReleaserMode>(saved?.deckMode ?? "loop");
+  let galleryFilterSpec = $state<SmartFilterSpec | null>(
+    saved?.galleryFilterSpec ?? null
+  );
   let galleryFilters = $state<GalleryFilters>(saved?.galleryFilters ?? {});
   let selectedTnDFamilies = $state<Set<string>>(
     new Set(saved?.tndFamilyIds ?? [])
@@ -149,6 +218,7 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
       selectedPropType: selectedPropType ?? undefined,
       tndFamilyIds: [...selectedTnDFamilies],
       tndTurnPatternIds: [...selectedTnDTurnPatterns],
+      galleryFilterSpec: galleryFilterSpec ?? undefined,
       galleryFilters,
       weights,
       cards: viewingRelease ? undefined : cards,
@@ -211,7 +281,17 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
       recipe.length = selectedLength;
       recipe.turnIntensity = turnIntensity;
     } else if (deckMode === "gallery") {
-      recipe.galleryFilters = { ...galleryFilters };
+      if (galleryFilterSpec) {
+        recipe.galleryFilterSpec = {
+          ...galleryFilterSpec,
+          filters: galleryFilterSpec.filters.map((filter) => ({ ...filter })),
+          connectives: galleryFilterSpec.connectives
+            ? { ...galleryFilterSpec.connectives }
+            : undefined,
+        };
+      } else {
+        recipe.galleryFilters = { ...galleryFilters };
+      }
       recipe.totalCards = totalCards;
     } else {
       recipe.tndFamilyIds = [...selectedTnDFamilies];
@@ -271,7 +351,9 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
       if (recipe.length) selectedLength = recipe.length;
       if (recipe.turnIntensity != null) turnIntensity = recipe.turnIntensity;
     } else if (recipe.deckMode === "gallery") {
+      galleryFilterSpec = recipe.galleryFilterSpec ?? null;
       galleryFilters = recipe.galleryFilters ?? {};
+      if (recipe.totalCards != null) totalCards = recipe.totalCards;
     } else {
       selectedTnDFamilies = new Set(recipe.tndFamilyIds ?? []);
       selectedTnDTurnPatterns = new Set(recipe.tndTurnPatternIds ?? []);
@@ -542,6 +624,12 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
     set deckMode(value) {
       deckMode = value;
     },
+    get galleryFilterSpec() {
+      return galleryFilterSpec;
+    },
+    set galleryFilterSpec(value) {
+      galleryFilterSpec = value;
+    },
     get galleryFilters() {
       return galleryFilters;
     },
@@ -628,5 +716,3 @@ export function createDeckReleaserState(deps: DeckReleaserStateDependencies) {
     reset,
   };
 }
-
-export type DeckReleaserState = ReturnType<typeof createDeckReleaserState>;

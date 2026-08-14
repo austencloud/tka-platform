@@ -18,6 +18,7 @@
     VariationConfig,
     StartOriMode,
   } from "../../services/deck-variation";
+  import type { GalleryDeckSelection } from "../../services/gallery-deck-source";
 
   type DeckMode = "loop" | "tnd" | "gallery";
 
@@ -44,7 +45,7 @@
     onClearFamilies: () => void;
     onTnDTurnPatternToggle: (tp: string) => void;
     onTnDTurnPatternsSet: (patterns: Set<string>) => void;
-    onDraw: () => void;
+    onDraw: (gallerySelection?: GalleryDeckSelection) => void;
     isLoading: boolean;
     variationConfig: VariationConfig;
     onVariationConfigChange: (config: VariationConfig) => void;
@@ -58,6 +59,8 @@
     /** Live-generation in progress + count (LOOP mode). */
     isGenerating?: boolean;
     genProgress?: number;
+    /** Production-identical public-data seam for the visual harness. */
+    galleryPreviewSource?: "community";
   }
 
   let {
@@ -95,6 +98,7 @@
     onReversalChange,
     isGenerating = false,
     genProgress = 0,
+    galleryPreviewSource,
   }: Props = $props();
 
   // Per-family card projection mirrors buildTnDCards' enumeration: each family's
@@ -105,8 +109,8 @@
     selectedTurnPatternCount * Math.max(1, startOriModes.size)
   );
 
-  // LOOP draws live (generate 52 fresh) — always drawable. TnD needs ≥1 card.
-  // Gallery draws from the library — always attemptable (empty result toasts).
+  // LOOP draws live and TnD needs at least one card. Gallery owns its action
+  // and account gate inside GalleryComposeBoard.
   const canDraw = $derived(deckMode === "tnd" ? tndCardCount > 0 : true);
 
   const drawLabel = $derived(
@@ -129,7 +133,7 @@
       ? "Generate a fresh run, then shape its length, level, motion, and variation mix."
       : deckMode === "tnd"
         ? "Choose the motion families and turn patterns that belong in this edition."
-        : "Pull the newest matching sequences from your library into a print-ready deck."
+        : "Use the Gallery drill-down, then send the visible order to Review."
   );
 
   const actionTitle = $derived(
@@ -149,14 +153,18 @@
   );
 </script>
 
-<div class="configure-step">
+<div class="configure-step" class:gallery-mode={deckMode === "gallery"}>
   <header class="workspace-header">
     <div class="title-block">
       <span class="eyebrow">
         <i class="fas fa-layer-group" aria-hidden="true"></i>
         Deck releaser
       </span>
-      <h2 class="step-title">Compose your catalog</h2>
+      <h2 class="step-title">
+        {deckMode === "gallery"
+          ? "Build from your library"
+          : "Compose your catalog"}
+      </h2>
       <p class="source-description">{sourceDescription}</p>
     </div>
 
@@ -187,7 +195,11 @@
     </nav>
   </header>
 
-  <section class="command-panel" aria-label="Deck setup">
+  <section
+    class="command-panel"
+    class:gallery-mode={deckMode === "gallery"}
+    aria-label="Deck setup"
+  >
     <div class="control-group source-control">
       <span class="control-label" id="card-source-label">Card source</span>
       <div class="mode-toggle">
@@ -305,7 +317,11 @@
         </section>
       </div>
     {:else if deckMode === "gallery"}
-      <GalleryComposeBoard completion={catalogCompletion} />
+      <GalleryComposeBoard
+        onCompose={onDraw}
+        {isLoading}
+        previewSource={galleryPreviewSource}
+      />
     {:else}
       <LoopBentoBoard
         {weights}
@@ -363,6 +379,16 @@
     flex-direction: column;
     gap: 6px;
     min-width: 0;
+  }
+
+  :global(html.deck-motion-source)
+    .configure-step
+    :global(*:not(.title-block):not(.command-panel):not(.board-shell)) {
+    view-transition-name: none !important;
+  }
+
+  :global(html.deck-motion-source) .title-block {
+    view-transition-name: deck-releaser-source-title;
   }
 
   .eyebrow {
@@ -436,7 +462,7 @@
   .progress-step.is-current .step-number {
     background: var(--theme-accent, #8b5cf6);
     border-color: transparent;
-    color: #fff;
+    color: var(--theme-text-on-accent, #fff);
     box-shadow: 0 8px 20px
       color-mix(in srgb, var(--theme-accent, #8b5cf6) 24%, transparent);
   }
@@ -462,7 +488,7 @@
 
   .progress-arrow {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.3));
-    font-size: 10px;
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .catalog-icon {
@@ -514,7 +540,45 @@
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.96));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--composer-radius);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16);
+    box-shadow: 0 18px 44px
+      color-mix(in srgb, var(--theme-shadow, #000) 40%, transparent);
+  }
+
+  :global(html.deck-motion-source) .command-panel {
+    view-transition-name: deck-releaser-command;
+  }
+
+  .command-panel.gallery-mode {
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--theme-panel-bg) 72%, transparent);
+    border-radius: 0.35rem;
+    box-shadow: none;
+  }
+
+  .command-panel.gallery-mode .control-group {
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .command-panel.gallery-mode .control-help {
+    display: none;
+  }
+
+  .configure-step.gallery-mode {
+    gap: clamp(0.75rem, 1cqw, 1.25rem);
+  }
+
+  .configure-step.gallery-mode .release-progress {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .configure-step.gallery-mode .step-number {
+    border-radius: 50%;
+    box-shadow: none;
   }
 
   .control-group {
@@ -567,8 +631,9 @@
     font-size: var(--font-size-min, 14px);
     outline: none;
     transition:
-      border-color 0.15s ease,
-      background 0.15s ease;
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .notes-input:hover {
@@ -588,6 +653,10 @@
   .board-shell {
     min-width: 0;
     width: 100%;
+  }
+
+  :global(html.deck-motion-source) .board-shell {
+    view-transition-name: deck-releaser-source;
   }
 
   /* TnD board: Families | hero Turn-Pattern matrix | Transform rail.
@@ -673,7 +742,8 @@
         var(--theme-stroke, rgba(255, 255, 255, 0.1))
       );
     border-radius: var(--composer-radius);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
   }
 
   .catalog-footer::before {

@@ -48,7 +48,9 @@ available for teaching instead of repeating eight more links.
   the card system.
 - Front: QR to `https://tkaflowarts.com/start` + the URL printed as text
   (QR-dead insurance) + one pitch line.
-- Back: matching card back art.
+- Back: a three-step relay: scan a choreo card and learn its sequence, teach
+  the sequence to someone else, then hand them the card so they repeat the
+  cycle from step one.
 
 ## Part 2 — The /start page (web)
 
@@ -91,16 +93,30 @@ apply, all-viewport verification required (primary audience is phones at a jam).
 ## Print-run revision: difficulty mix (2026-08-13)
 
 Every pack contains exactly three Level 2 cards chosen from all eight
-choreography slots. One of the other five is Level 3 with a maximum turn
-intensity of 0.5. The remaining four stay at Level 1 with zero turns.
+choreography slots. One of the remaining LOOP cards is Level 3 with a maximum
+turn intensity of 0.5. Four cards stay at Level 1 with zero turns. The
+four-step TnD cards are excluded from Level 3 because no balanced half-turn
+assignment in the approved vocabulary passes loop closure.
 
 The 60-pack run contains all 56 possible three-card selections once, plus four
 balanced repeats. Each of the eight slots is selected for Level 2 22 or 23
-times, and for Level 3 7 or 8 times. Level 2 and Level 3 cards use cyclic turn
-motifs: a four-step structural unit repeats a one- or two-step motif, while an
-eight-step unit repeats a one-, two-, or four-step motif. The chosen motif tiles
-the quartered or halved LOOP structure and must still pass the canonical loop
-closure check. The slot choices, patterns, and generated sequences are frozen
+times. Each of the six LOOP slots receives Level 3 exactly 10 times.
+
+Turn patterns come from twelve named rhythmic families. Actual card length
+controls the available vocabulary: four strict balanced families for 4-step
+cards, those four plus four more for 8-step cards, and all twelve for 16-step
+cards. Every family balances blue and red. The four-step core favors obvious
+blocks, pulses, and alternating hands; the 16-step tier allows denser phrases
+because the repeated period makes the rhythm legible. The chosen family tiles
+the quartered or halved structural unit and must pass the canonical loop
+closure check.
+
+Austen's `festival-sampler-turn-pattern-votes (2).json` review is the initial
+approval source. Its 59 Yay votes map to eight of the twelve families; the
+three vetoed patterns are not in the catalog. Austen approved the remaining
+four families in conversation on 2026-08-14, so all twelve print families now
+open as Yay in the review UI. Browser votes override the approval seed. Slot
+choices, pattern IDs, exact turn strings, and generated sequences are frozen
 into the print manifests so reopening or printing the job does not reshuffle a
 pack.
 

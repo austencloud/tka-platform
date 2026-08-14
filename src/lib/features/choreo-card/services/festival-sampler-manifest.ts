@@ -12,8 +12,10 @@ export interface FestivalSamplerCardManifest {
   ratio?: string;
   level?: number;
   sequenceLength?: number;
+  loopType?: string | null;
   period?: number | null;
   turnIntensity?: number;
+  turnPatternId?: string;
   turnPattern?: string;
 }
 
@@ -22,7 +24,9 @@ export function festivalSamplerCardKey(
 ): string {
   const identity =
     card.sourceRef ?? card.docId ?? card.id ?? `${card.slot}:${card.name}`;
-  const variation = card.turnPattern ?? `intensity-${card.turnIntensity ?? 0}`;
+  const variation = card.turnPattern
+    ? `${card.turnPatternId ?? "custom"}:${card.turnPattern}`
+    : `intensity-${card.turnIntensity ?? 0}`;
   return `${card.source}:${identity}:level-${card.level ?? 1}:turn-${variation}`;
 }
 
