@@ -1,8 +1,10 @@
+import { OCEAN_WATER_DEPTH_METERS } from "$lib/shared/3d/environments/domain/models/ocean-water-depth";
+
 /**
  * Ocean camera bounds.
  *
  * The ocean scene is deliberately bounded underwater — there is no sky and no
- * surface break, so a camera that rises above the water plane at y = +10.5
+ * surface break, so a camera that rises above the water plane at y = +22.12
  * looks up into geometry that was never authored. Clamping keeps every framing
  * inside the world the scene actually builds.
  *
@@ -12,8 +14,11 @@
  * Design: docs/superpowers/specs/active/2026-08-09-fathom-ocean-world-boundary-design.md
  */
 
-/** Just under the runtime water plane at y = +10.5. */
-export const OCEAN_CAMERA_CEILING_Y = 9.9;
+const OCEAN_SEABED_Y = -1.5;
+export const OCEAN_WATER_SURFACE_Y = OCEAN_SEABED_Y + OCEAN_WATER_DEPTH_METERS;
+
+/** Keeps every preset at least 60 cm below the runtime water plane. */
+export const OCEAN_CAMERA_CEILING_Y = OCEAN_WATER_SURFACE_Y - 0.6;
 
 export interface CameraPreset {
   readonly position: readonly [number, number, number];

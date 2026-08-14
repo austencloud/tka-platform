@@ -2,8 +2,19 @@
   import { getSceneFeatureContext } from "../../../../scene-features/context/scene-feature-context";
   import RuinsPlatform from "./RuinsPlatform.svelte";
 
+  interface Props {
+    stageWidth?: number;
+    stageDepth?: number;
+    stageZOffset?: number;
+  }
+
+  let { stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+
   const sceneFeatures = getSceneFeatureContext();
   const stageOn = $derived(sceneFeatures?.isEnabled("stage") ?? true);
+
+  const BASE_WIDTH = 8;
+  const BASE_DEPTH = 6;
 
   // The original gorgeous stage: a rectangular weathered-stone dais (8×6) with an
   // animated bioluminescent green crack network on top — a live shader that can't
@@ -13,8 +24,8 @@
   //   Viewer3DScene stands the performer on the flat deck.
   const config = $derived({
     enabled: stageOn,
-    width: 8,
-    depth: 6,
+    width: Math.max(BASE_WIDTH, stageWidth),
+    depth: Math.max(BASE_DEPTH, stageDepth),
     height: 0.5,
     elevation: 0.5,
     // Pale reef limestone — bleached coral stone, the same material the reef is
@@ -48,6 +59,7 @@
     mossIntensity: 0.8,
     columnCount: 6,
     groundOffset: 1.5,
+    zOffset: stageZOffset,
   });
 </script>
 

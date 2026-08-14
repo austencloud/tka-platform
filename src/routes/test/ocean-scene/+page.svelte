@@ -15,6 +15,7 @@
    */
   import { Canvas } from "@threlte/core";
   import { page } from "$app/state";
+  import { onDestroy, onMount } from "svelte";
   import { WebGLRenderer } from "three";
   import { BackgroundType } from "@austencloud/backgrounds";
   import Environment3D from "$lib/shared/3d/environments/components/Environment3D.svelte";
@@ -26,15 +27,99 @@
   import HarnessToneMapping from "./HarnessToneMapping.svelte";
   import HarnessInspector from "./HarnessInspector.svelte";
   import { clampPresetBelowWater } from "$lib/shared/3d/environments/scenes/ocean/ocean-camera-bounds";
+  import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
+  import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import demoSequenceJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import OceanExperienceControls from "./OceanExperienceControls.svelte";
 
-  const sceneFeatureState = createSceneFeatureState();
+  const viewer = createViewer3DState({
+    renderMode: "3d",
+    oceanVariant: "abyss",
+  });
+  setViewer3DContext(viewer);
+
+  const effectsConfigState = createEffectsConfigState(undefined, {
+    persist: false,
+  });
+  setEffectsConfigContext(effectsConfigState);
+  const scene3DRenderState = createScene3DRenderState();
+  setScene3DRenderContext(scene3DRenderState);
+
+  const sceneFeatureState = createSceneFeatureState(
+    {
+      environment: true,
+      stage: true,
+      audience: false,
+      campfire: false,
+      tent: false,
+    },
+    { isolated: true }
+  );
   setSceneFeatureContext(sceneFeatureState);
   const transitionVisual = createEnvironmentTransitionVisualState();
   transitionVisual.setRendererReady(true);
   setEnvironmentTransitionVisualContext(transitionVisual);
 
+  const experienceSequence = demoSequenceJson as unknown as SequenceData;
+  viewer.enter3D(experienceSequence);
+  let currentStep = $state(0);
+  let isPlaying = $state(true);
+  let compactControls = $state(false);
+  let experienceReady = $state(false);
+  const bpm = 60;
+  let playbackFrame = 0;
+  // Dense casts stay readable through the performer rail and stage rings.
+  const hideDensePerformerBadges = $derived(
+    viewer.performerManager.performers.length > 4
+  );
+
+  onMount(() => {
+    // The standalone experience enters in the Ocean, then uses the same global
+    // scene setting as the production viewer so the Scene picker stays live.
+    void settingsService.updateSetting("backgroundType", BackgroundType.OCEAN);
+    experienceReady = true;
+
+    const compactQuery = window.matchMedia(
+      "(max-width: 48rem), (max-height: 34rem)"
+    );
+    const syncCompactControls = (): void => {
+      compactControls = compactQuery.matches;
+    };
+    syncCompactControls();
+    compactQuery.addEventListener("change", syncCompactControls);
+
+    let previousTime = performance.now();
+
+    const tick = (time: number): void => {
+      const elapsedSeconds = Math.min((time - previousTime) / 1000, 0.1);
+      previousTime = time;
+      if (isPlaying) {
+        const stepCount = Math.max(1, experienceSequence.steps.length);
+        currentStep = (currentStep + elapsedSeconds * (bpm / 60)) % stepCount;
+      }
+      playbackFrame = requestAnimationFrame(tick);
+    };
+
+    playbackFrame = requestAnimationFrame(tick);
+
+    return () => {
+      compactQuery.removeEventListener("change", syncCompactControls);
+    };
+  });
+
+  onDestroy(() => {
+    cancelAnimationFrame(playbackFrame);
+  });
+
   // The performer's shoulder is world y=0 and the seabed is groundY = -1.5, so
-  // the stage deck top sits at y = +1.0 and the water plane at y = +10.5.
+  // the stage deck top sits at y = +1.0 and the water plane at y = +22.12.
   const VIEW_PRESETS = {
     hero: {
       position: [0, 4.5, 19],
@@ -74,6 +159,11 @@
   } as const;
 
   type ViewName = keyof typeof VIEW_PRESETS;
+  const reviewMode = $derived(
+    page.url.searchParams.has("view") ||
+      page.url.searchParams.has("cam") ||
+      page.url.searchParams.get("review") === "1"
+  );
   const requestedView = $derived(page.url.searchParams.get("view"));
   const view = $derived(
     requestedView && requestedView in VIEW_PRESETS
@@ -103,7 +193,11 @@
     if (!position) return null;
     const target = triple(page.url.searchParams.get("look")) ?? [0, 1, 0];
     const fov = Number(page.url.searchParams.get("fov"));
-    return { position, target, fov: Number.isFinite(fov) && fov > 0 ? fov : 46 };
+    return {
+      position,
+      target,
+      fov: Number.isFinite(fov) && fov > 0 ? fov : 46,
+    };
   });
 
   const basePreset = $derived(freePreset ?? VIEW_PRESETS[view]);
@@ -112,39 +206,78 @@
   );
   // Remount the camera whenever the framing changes, not just the named view.
   const cameraKey = $derived(JSON.stringify(cameraPreset));
+
+  function seekToStep(targetStep: number): void {
+    const stepCount = Math.max(1, experienceSequence.steps.length);
+    currentStep = ((targetStep % stepCount) + stepCount) % stepCount;
+  }
+
+  function stepForward(): void {
+    seekToStep(Math.floor(currentStep) + 1);
+  }
+
+  function stepBackward(): void {
+    seekToStep(Math.ceil(currentStep) - 1);
+  }
 </script>
 
 <svelte:head>
-  <title>Moody Twilight Reef verification</title>
+  <title>{reviewMode ? "Moody Twilight Reef verification" : "Ocean 3D"}</title>
 </svelte:head>
 
 <div class="page">
-  <Canvas
-    createRenderer={(canvas) =>
-      new WebGLRenderer({
-        canvas,
-        antialias: true,
-        preserveDrawingBuffer: true,
-        powerPreference: "high-performance",
-      })}
-  >
-    <HarnessToneMapping />
-    <HarnessInspector />
-    {#key cameraKey}
-      <EnvironmentReviewCamera
-        destinationId="ocean-scene-review"
-        preset={cameraPreset}
-        walk={!freePreset && view === "walk"}
+  {#if reviewMode}
+    <Canvas
+      createRenderer={(canvas) =>
+        new WebGLRenderer({
+          canvas,
+          antialias: true,
+          preserveDrawingBuffer: true,
+          powerPreference: "high-performance",
+        })}
+    >
+      <HarnessToneMapping />
+      <HarnessInspector />
+      {#key cameraKey}
+        <EnvironmentReviewCamera
+          destinationId="ocean-scene-review"
+          preset={cameraPreset}
+          walk={!freePreset && view === "walk"}
+        />
+      {/key}
+      <Environment3D
+        backgroundType={BackgroundType.OCEAN}
+        performerCount={1}
+        stageWidth={6}
+        stageDepth={6}
+        stageZOffset={0}
       />
-    {/key}
-    <Environment3D
-      backgroundType={BackgroundType.OCEAN}
-      performerCount={1}
-      stageWidth={6}
-      stageDepth={6}
-      stageZOffset={0}
+    </Canvas>
+  {:else if experienceReady}
+    <Viewer3DCanvas
+      sequenceData={experienceSequence}
+      {currentStep}
+      {isPlaying}
+      {bpm}
+      bluePropType="staff"
+      redPropType="staff"
+      hideOverlays={compactControls}
+      hidePerformerBadges={hideDensePerformerBadges}
+      fullScreen={true}
+      onPlaybackToggle={() => (isPlaying = !isPlaying)}
+      onProgressBarSeek={seekToStep}
     />
-  </Canvas>
+    <OceanExperienceControls
+      {isPlaying}
+      {compactControls}
+      {bpm}
+      onPlaybackToggle={() => (isPlaying = !isPlaying)}
+      onStepForward={stepForward}
+      onStepBackward={stepBackward}
+    />
+  {:else}
+    <div class="experience-loading" role="status">Preparing Ocean 3D…</div>
+  {/if}
 </div>
 
 <style>
@@ -155,5 +288,14 @@
     height: 100vh;
     overflow: hidden;
     background: #0a2438;
+  }
+
+  .experience-loading {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: var(--font-size-min, 0.875rem);
   }
 </style>

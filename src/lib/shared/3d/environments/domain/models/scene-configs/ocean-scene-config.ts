@@ -1,5 +1,6 @@
 /** Ocean environment configuration and production defaults. */
 
+import { OCEAN_WATER_DEPTH_METERS } from "../ocean-water-depth";
 import type {
   FallingParticlesConfig,
   SkyGradientConfig,
@@ -366,14 +367,14 @@ export function createDefaultOceanAbyssConfig(): OceanSceneConfig {
       color: "#b8d8e8",
       intensity: 0.4,
       width: 3.5,
-      height: 18,
+      height: Math.ceil(OCEAN_WATER_DEPTH_METERS),
       speed: 0.3,
       swayAmount: 1.2,
     },
     caustics: null,
     waterSurface: {
       enabled: true,
-      height: 12,
+      height: OCEAN_WATER_DEPTH_METERS,
       color: "#0d3050",
       opacity: 0.12,
       waveScale: 5,

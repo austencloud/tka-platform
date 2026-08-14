@@ -3,9 +3,13 @@
   import { Vector3, type DirectionalLight, type Object3D } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
+    OCEAN_STAGE_DECK_OFFSET_METERS,
+    OCEAN_STAGE_TO_SURFACE_METERS,
+  } from "$lib/shared/3d/environments/domain/models/ocean-water-depth";
+  import {
+    COLUMN_UP,
     SUN_POS,
     HERO_TARGET_XZ,
-    STAGE_DECK_OFFSET,
     keyLightPosition,
   } from "./atmosphere/god-ray-axis";
   import type { OceanQualityConfig } from "../quality/ocean-quality";
@@ -43,9 +47,13 @@
   let sunLight = $state<DirectionalLight | undefined>(undefined);
   let keyTarget = $state<Object3D | undefined>(undefined);
 
+  const keyAxisDistance = OCEAN_STAGE_TO_SURFACE_METERS / COLUMN_UP.y;
+  const keyAngle = Math.atan(3.05 / keyAxisDistance);
+  const keyIntensity = 260 * Math.pow(keyAxisDistance / 9.83, 2);
+
   const groundY = $derived(userProportionsState.groundY);
   const keyPosition = $derived(keyLightPosition(groundY));
-  const stageDeckY = $derived(groundY + STAGE_DECK_OFFSET);
+  const stageDeckY = $derived(groundY + OCEAN_STAGE_DECK_OFFSET_METERS);
 
   $effect(() => {
     if (!sunLight) return;
@@ -89,7 +97,7 @@
 <!-- One coherent warm-white sun drives surface form, hero shadows, caustics,
      shafts, and the Snell-window disc. It is no longer the scene's key — it
      supplies direction and shadow, the spot supplies the subject.
-     Colour went warm-white -> cool (#ffffdd -> #cfe0f0): at 10 m depth sunlight
+     Colour went warm-white -> cool (#ffffdd -> #cfe0f0): at this depth sunlight
      is already strongly blue-shifted, and the warm sun was the single biggest
      amplifier of the salmon seabed albedo. This cools the sand across the whole
      frame without touching the GLB texture (that stays a Gate 3 Blender pass),
@@ -104,20 +112,16 @@
 
 <!-- The key. A surface shaft pooling on the stage, travelling down the same axis
      as the hero god-ray column so the pool has a visible cause. Cool-white
-     because this light has come through 10 m of water; the torches own the only
+     because this light has come through deep water; the torches own the only
      warmth in the frame.
      No castShadow: the reef is ~54M verts/frame and the directional light
      already spends one full shadow pass over it. The cone's own falloff is what
      creates the darkness, not shadowing.
 
-     Cone geometry is the whole ballgame here, and 0.42/0.8 got it wrong. The
-     spot sits 9.83 m up the column axis from the deck, so angle 0.42 put a
-     9 m-wide circle over an 8x6 m stage: the cone was LARGER than its subject,
-     every edge fell outside the frame, and penumbra 0.8 smeared what was left.
-     The result read as fill, not as a beam landing — the deck lit evenly and
-     nothing around it went dark. 0.30 gives a ~6.1 m pool that sits inside the
-     deck with its falloff visible on the stone, and penumbra 0.55 leaves that
-     falloff soft without erasing it. Intensity follows the area down. -->
+     The water depth owns the cone angle and intensity. Moving the surface
+     farther away otherwise makes the pool wider and dimmer even though the
+     stage itself has not changed. The calculation preserves the established
+     6.1 m pool and its brightness at any waterline. -->
 <T.Object3D
   bind:ref={keyTarget}
   position={[HERO_TARGET_XZ.x, stageDeckY, HERO_TARGET_XZ.z]}
@@ -126,9 +130,9 @@
   <T.SpotLight
     position={[keyPosition.x, keyPosition.y, keyPosition.z]}
     target={keyTarget}
-    intensity={260}
+    intensity={keyIntensity}
     color="#cfe6f5"
-    angle={0.3}
+    angle={keyAngle}
     penumbra={0.55}
     distance={34}
     decay={2}
@@ -184,11 +188,11 @@
 
 <!-- Performer stage (Blender-authored Stage_* objects → stage.glb).
      Gated on the "stage" scene feature; grounds its deck under the performer. -->
-<OceanStage />
+<OceanStage {stageWidth} {stageDepth} {stageZOffset} />
 
 {#if quality.enableWaterSurface}
   <!-- Water surface (above everything) -->
-  <WaterSurface />
+  <WaterSurface {groundY} />
 {/if}
 
 {#if quality.enableAtmosphere}
