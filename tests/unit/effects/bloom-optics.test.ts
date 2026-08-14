@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveBloomAfterglowRetention,
-  resolveBloomFootprintScale,
   resolveBloomHistoryDeposit,
 } from "$lib/shared/effects/domain/bloom-optics";
 
@@ -22,14 +21,5 @@ describe("Bloom afterglow energy", () => {
       expect(steadyEnergy).toBeCloseTo(0.18 + afterglow * 0.82, 8);
       expect(steadyEnergy).toBeLessThanOrEqual(1);
     }
-  });
-});
-
-describe("Bloom formation footprint", () => {
-  it("shrinks dense formations without allowing the effect to disappear", () => {
-    expect(resolveBloomFootprintScale(1)).toBe(1);
-    expect(resolveBloomFootprintScale(4)).toBeLessThan(1);
-    expect(resolveBloomFootprintScale(16)).toBe(0.55);
-    expect(resolveBloomFootprintScale(64)).toBe(0.55);
   });
 });

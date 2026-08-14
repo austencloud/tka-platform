@@ -2,6 +2,83 @@
 
 **Status:** Approved for implementation on 2026-08-12
 
+## 2026-08-13 quality elevation
+
+The first film pass proved the pooled architecture, but the production forest
+review exposed four visible limits:
+
+- Low-poly sphere silhouettes could facet at hero size.
+- Concentric view-angle color made neighboring bubbles look stamped.
+- Fixed key lights did not bend the scene behind the film.
+- New bubbles ignored prop velocity and accumulated in vertical columns.
+
+The quality elevation keeps `BubbleRenderer3D` as the sole behavior owner and
+changes the shell representation to an analytic ellipsoid reconstructed from a
+two-triangle camera-facing surface. This removes capacity-dependent silhouette
+quality and makes every shell single-pass.
+
+The compositor downsamples its completed linear scene color to one-sixteenth
+width and height after rendering. This optically blurred transmission field is
+enough to bend broad background color through the film without paying for
+detail the transparent center cannot preserve. Bubble film samples the resolved
+texture on the next frame, which avoids read-write feedback and the measured
+cost of a full-resolution framebuffer copy. The material applies restrained RGB
+dispersion, then layers a three-wavelength thin-film response driven by a
+180-720 nm animated thickness field. The optical phase uses film IOR, view
+angle, wavelength, and life-driven drainage.
+
+Motion now inherits a capped fraction of source velocity, distributes batched
+spawns backward along the tip's frame path, relaxes vertical motion back toward
+buoyancy, and samples the existing divergence-free curl field in the horizontal
+plane. Nearby bubbles share air movement without a new simulation owner or
+per-particle allocation.
+
+## 2026-08-13 God Mode living-film pass
+
+**Status:** Implemented and verified on 2026-08-13
+
+The final pass concentrates the quality budget on motion that explains the
+material. Relative air speed stretches the shell along its projected travel
+direction, while the other axes contract to preserve volume. A damped spring
+lets surface tension overshoot slightly before the film settles back to round.
+The deformation stays inside the existing two-draw-call pool and adds no
+per-frame allocations.
+
+Film thickness now behaves as a living field instead of a stationary rainbow.
+Coherent eddies advect the color, gravity drives exponential drainage, and a
+clear zone descends from the top late in the bubble's life. Each bubble then
+opens a deterministic, top-biased rupture. The hole expands locally, carries a
+bright retracting rim, and throws its existing film fragments away from the
+break point. This replaces the old whole-shell collapse.
+
+The optical model follows measured soap-film behavior: interference depends on
+film thickness, refractive index, wavelength, and view angle; gravity produces
+non-uniform thinning; mature films tend to fail near their drained upper
+region. The implementation uses a bounded three-wavelength approximation rather
+than spectral integration:
+
+- [Applied Optics: spatial and temporal film thickness measurement](https://doi.org/10.1364/AO.51.008863)
+- [Journal of Fluid Mechanics: drainage and lifetime of thin liquid films](https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/drainage-and-lifetime-of-thin-liquid-films-the-role-of-salinity-and-convective-evaporation/15E577AB3CACF5E43E4DE4CA3F0C4416)
+- [Journal of Fluid Mechanics: cracks in bursting soap films](https://www.cambridge.org/core/journals/journal-of-fluid-mechanics/article/cracks-in-bursting-soap-films/A652601EFC45BDBD478A467BEB242273)
+
+Transmission is depth-aware. Displaced scene samples are reduced near contact
+and rejected when they would pull foreground silhouettes across the bubble.
+The scene-color and depth snapshot is produced only while a bubble pool requests
+it, with a three-frame demand lease. Quality tiers retain the same material
+behavior while capping capacity at 2,048, 1,024, and 512 shells and scaling the
+optical sampling strength.
+
+Verification evidence:
+
+- 40 focused unit and batching-contract tests pass.
+- The live forest scene reports no console errors or warnings with eight emitters.
+- Foreground A/B runs share the same 66.7 ms median frame interval with bubbles
+  enabled and disabled; no repeatable bubble-specific slowdown was measured in
+  the already constrained scene.
+- Visual captures were inspected at 1440p, 1920p, 2560p, and 3840p. The 3D
+  viewer is intentionally unavailable at the 820 px, 960 x 412 px, and 375 px
+  responsive tiers, so those widths exercise the application's 2D fallback.
+
 ## Outcome
 
 Bubbles reads as transparent soap film in both renderers. The existing 2D
@@ -39,8 +116,9 @@ make soap bubbles legible:
 1. Schlick-like grazing-angle reflectance creates a strong rim and clear center.
 2. View angle, per-bubble film phase, and time drive a restrained RGB
    interference sweep.
-3. A tight key reflection and a broad opposing bounce break the sphere's
-   symmetry without requiring scene-color refraction.
+3. A low-resolution resolved scene texture supplies bounded screen-space
+   refraction while a tight key reflection and broad opposing bounce retain
+   shape on flat backgrounds.
 4. Standard alpha blending and camera-relative, back-to-front instance sorting
    keep overlaps soft and avoid allocation-order artifacts.
 
@@ -69,8 +147,8 @@ strongest interference near grazing incidence:
 - Larger bubbles rise faster; smaller bubbles sway more.
 - Per-bubble phase drives mild anisotropic tension wobble.
 - The pop briefly collapses the shell and emits four to seven tiny film
-  fragments through a two-triangle film-sliver pool. Shells use tier-aware
-  icosahedron tessellation, so the 512 tier does not pay the 2,048-tier cost.
+  fragments through a two-triangle film-sliver pool. Shells use the same
+  analytic two-triangle surface at every capacity tier.
 
 ## Compatibility
 

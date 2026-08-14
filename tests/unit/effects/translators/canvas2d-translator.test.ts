@@ -17,7 +17,9 @@ describe("resolveTrails2D", () => {
   });
 
   it("maps brightness to maxOpacity 1:1", () => {
-    expect(resolveTrails2D({ ...intent, brightness: 0.8 }).maxOpacity).toBe(0.8);
+    expect(resolveTrails2D({ ...intent, brightness: 0.8 }).maxOpacity).toBe(
+      0.8
+    );
   });
 
   it("derives minOpacity as brightness * 0.3", () => {
@@ -34,7 +36,11 @@ describe("resolveTrails2D", () => {
   });
 
   it("preserves color fields from intent", () => {
-    const out = resolveTrails2D({ ...intent, blueColor: "#abc123", redColor: "#def456" });
+    const out = resolveTrails2D({
+      ...intent,
+      blueColor: "#abc123",
+      redColor: "#def456",
+    });
     expect(out.blueColor).toBe("#abc123");
     expect(out.redColor).toBe("#def456");
   });
@@ -99,7 +105,11 @@ describe("resolveLed2D", () => {
   const intent = DEFAULT_EFFECTS_CONFIG.led;
 
   it("preserves intent fields", () => {
-    const out = resolveLed2D({ ...intent, brightness: 3, primaryColor: "#abcdef" });
+    const out = resolveLed2D({
+      ...intent,
+      brightness: 3,
+      primaryColor: "#abcdef",
+    });
     expect(out.brightness).toBe(3);
     expect(out.primaryColor).toBe("#abcdef");
   });
@@ -119,5 +129,21 @@ describe("resolveCharcoal2D", () => {
 
   it("defaults particleCount to 200", () => {
     expect(resolveCharcoal2D(intent).particleCount).toBe(200);
+  });
+
+  it("keeps 3D emission styles out of the 2D motion controls", () => {
+    const steelWool = resolveCharcoal2D({
+      ...intent,
+      emissionStyle: "steel-wool",
+    });
+    const forgeBurst = resolveCharcoal2D({
+      ...intent,
+      emissionStyle: "forge-burst",
+    });
+
+    expect({ ...steelWool, emissionStyle: undefined }).toEqual({
+      ...forgeBurst,
+      emissionStyle: undefined,
+    });
   });
 });

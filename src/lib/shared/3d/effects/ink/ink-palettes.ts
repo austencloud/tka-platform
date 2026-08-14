@@ -36,9 +36,8 @@ export interface InkPalette {
    */
   readonly emissive?: boolean;
   /**
-   * True on the watercolor palette - renderer caps alpha at 0.4,
-   * multiplies stroke width by 2 for wider bleed, and (1j.iv) suppresses
-   * ground pooling since watercolor evaporates.
+   * True on the watercolor palette. Each renderer supplies its own translucent
+   * wash profile and suppresses ground pooling because watercolor evaporates.
    */
   readonly watercolor?: boolean;
 }
@@ -80,10 +79,10 @@ const NEON: InkPalette = {
 
 const BLOOD: InkPalette = {
   id: "blood",
-  pigment: "#8a1818",
-  edge: "#d93838",
-  splatterTint: "#b82828",
-  poolTint: "#4a0808",
+  pigment: "#8f2635",
+  edge: "#d67881",
+  splatterTint: "#a84255",
+  poolTint: "#310a11",
 };
 
 const ACID: InkPalette = {

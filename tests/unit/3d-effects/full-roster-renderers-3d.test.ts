@@ -371,7 +371,6 @@ describe("native 3D full-roster renderers", () => {
       params: resolvePulse3D({
         ...DEFAULT_EFFECTS_CONFIG.pulse,
         harmonics: 0,
-        chromatic: 0,
       }),
     };
     renderer.update([source], 1 / 60);

@@ -494,6 +494,7 @@
       propVelocity={bluePositiveVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowRightEnd}
+      {qualityTier}
     />
   {/if}
   {#if blueEnds}
@@ -502,6 +503,7 @@
       propVelocity={blueNegativeVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowLeftEnd}
+      {qualityTier}
     />
   {/if}
   {#if redEnds}
@@ -510,6 +512,7 @@
       propVelocity={redPositiveVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowRightEnd}
+      {qualityTier}
     />
   {/if}
   {#if redEnds}
@@ -518,6 +521,7 @@
       propVelocity={redNegativeVelocityVec}
       params={bubbles3D}
       enabled={bubblesShowLeftEnd}
+      {qualityTier}
     />
   {/if}
 {/if}

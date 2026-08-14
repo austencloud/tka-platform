@@ -17,7 +17,6 @@ function makeParams(): Bloom2DParams {
     pulseRate: 1,
     streak: 0,
     spikes: 0,
-    chromatic: 0,
     afterglow: 0,
     blendMode: "lighter",
   };

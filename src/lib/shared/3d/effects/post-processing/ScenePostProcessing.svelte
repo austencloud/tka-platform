@@ -4,13 +4,16 @@
   import { useTask, useThrelte } from "@threlte/core";
   import {
     HalfFloatType,
+    LinearFilter,
     Vector2,
     Vector3,
+    WebGLRenderTarget,
     ACESFilmicToneMapping,
     NoToneMapping,
   } from "three";
   import {
     EffectComposer,
+    CopyPass,
     RenderPass,
     EffectPass,
     BloomEffect,
@@ -28,6 +31,12 @@
   import { QualityTier } from "../types";
   import { tryGetEnvironmentTransitionVisualContext } from "../../environments/context/environment-transition-visual-context";
   import { EnvironmentTransitionCompositor } from "../../environments/rendering/environment-transition-compositor";
+  import {
+    SCENE_COLOR_SNAPSHOT_SCALE_3D,
+    clearSceneColorSnapshot3D,
+    consumeSceneColorSnapshotDemand3D,
+    publishSceneColorSnapshot3D,
+  } from "./scene-color-snapshot-3d";
 
   interface Props {
     children: Snippet;
@@ -89,9 +98,32 @@
   );
 
   let composer: EffectComposer | null = null;
+  let sceneDepthSourcePass: RenderPass | null = null;
   let lastW = 0;
   let lastH = 0;
   const _sizeVec = new Vector2();
+  const sceneColorTarget = new WebGLRenderTarget(1, 1, {
+    type: HalfFloatType,
+    depthBuffer: false,
+    stencilBuffer: false,
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
+  });
+  sceneColorTarget.texture.name = "SceneColorSnapshot3D";
+  sceneColorTarget.texture.generateMipmaps = false;
+  const sceneColorCopyPass = new CopyPass(sceneColorTarget, false);
+  sceneColorCopyPass.initialize(
+    renderer,
+    renderer.getContext().getContextAttributes()?.alpha ?? false,
+    HalfFloatType
+  );
+
+  function resizeSceneColorTarget(width: number, height: number): void {
+    sceneColorTarget.setSize(
+      Math.max(1, Math.ceil(width * SCENE_COLOR_SNAPSHOT_SCALE_3D)),
+      Math.max(1, Math.ceil(height * SCENE_COLOR_SNAPSHOT_SCALE_3D))
+    );
+  }
 
   // Water-tint live tuning (dev Water Tint slider). Base = the "1.0" look; the
   // slider scales the depth coeffs and the scatter veil proportionally, updating
@@ -113,7 +145,9 @@
       frameBufferType: HalfFloatType,
     });
 
-    composer.addPass(new RenderPass(scn, cam));
+    sceneDepthSourcePass = new RenderPass(scn, cam);
+    sceneDepthSourcePass.needsDepthTexture = true;
+    composer.addPass(sceneDepthSourcePass);
 
     if (isOcean) {
       renderer.shadowMap.enabled = tierConfig.enableShadows;
@@ -207,6 +241,7 @@
     const h = Math.round(_sizeVec.y);
     if (w > 0 && h > 0) {
       composer.setSize(w, h);
+      resizeSceneColorTarget(w, h);
     }
     lastW = w;
     lastH = h;
@@ -216,12 +251,14 @@
     if (composer) {
       composer.dispose();
       composer = null;
+      sceneDepthSourcePass = null;
       waterAbsorption = null;
       renderer.autoClear = true;
       renderer.shadowMap.enabled = false;
       renderer.toneMapping = NoToneMapping;
       renderer.toneMappingExposure = 1.0;
     }
+    clearSceneColorSnapshot3D(renderer);
   }
 
   $effect(() => {
@@ -280,11 +317,33 @@
         if (w < 1 || h < 1) return;
         if (w !== lastW || h !== lastH) {
           composer.setSize(w, h);
+          resizeSceneColorTarget(w, h);
           lastW = w;
           lastH = h;
         }
 
         composer.render(delta);
+        if (consumeSceneColorSnapshotDemand3D(renderer)) {
+          const previousRenderTarget = renderer.getRenderTarget();
+          try {
+            sceneColorCopyPass.render(
+              renderer,
+              composer.inputBuffer,
+              null,
+              delta,
+              false
+            );
+          } finally {
+            renderer.setRenderTarget(previousRenderTarget);
+          }
+          publishSceneColorSnapshot3D(renderer, {
+            texture: sceneColorTarget.texture,
+            depthTexture: sceneDepthSourcePass?.getDepthTexture() ?? null,
+            colorSpace: composer.inputBuffer.texture.colorSpace,
+          });
+        } else {
+          clearSceneColorSnapshot3D(renderer);
+        }
       }
 
       transitionCompositor.render(
@@ -299,6 +358,8 @@
 
   onDestroy(() => {
     disposeComposer();
+    sceneColorCopyPass.dispose();
+    sceneColorTarget.dispose();
     transitionCompositor.dispose();
   });
 </script>

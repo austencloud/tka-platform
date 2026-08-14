@@ -1,4 +1,5 @@
 import type { Object3D } from "three";
+import { QualityTier } from "../types";
 import {
   setLinearRgbFromHex,
   type MutableRgb,
@@ -9,12 +10,18 @@ import {
 } from "../scene-effects/scene-effect-source-3d";
 import {
   BUBBLE_LIFETIME_SWELL,
+  BUBBLE_MAX_DEFORMATION,
+  BUBBLE_MIN_REBOUND_DEFORMATION,
   BUBBLE_POP_DURATION_SECONDS,
   resolveAliveBubbleFrame3D,
+  resolveBubbleDeformationTarget3D,
   resolveBubbleFragmentCount3D,
   resolveBubbleLifetimeMultiplier3D,
   resolveBubbleRiseSpeed3D,
+  resolveBubbleRuptureOrigin3D,
+  resolveBubbleRuptureProgress3D,
   resolveBubbleSizeMultiplier3D,
+  resolveBubbleVelocityInheritance3D,
   resolveBubbleWobbleX3D,
   resolveBubbleWobbleZ3D,
   resolvePoppingBubbleFrame3D,
@@ -23,10 +30,18 @@ import {
   BubbleFilmPool3D,
   type BubbleFilmInstance3D,
 } from "./bubble-film-pool-3d";
+import { SampledCurlGrid2D } from "../smoke/smoke-curl-field";
 
 const MAX_CAPACITY = 2048;
 const DEFAULT_CAPACITY = 512;
 const TAU = Math.PI * 2;
+const AIRFLOW_SCALE = 0.72;
+const AIRFLOW_STRENGTH = 0.034;
+const HORIZONTAL_DRAG = 0.48;
+const VERTICAL_INHERITANCE_DRAG = 0.16;
+const DEFORMATION_STIFFNESS = 58;
+const DEFORMATION_DAMPING = 12;
+const DEFORMATION_DIRECTION_RESPONSE = 7;
 
 /**
  * Scene-batched soap bubbles. Curved shells and cheap film fragments each use
@@ -43,13 +58,22 @@ export class BubbleRenderer3D {
   private readonly vx = new Float32Array(MAX_CAPACITY);
   private readonly vy = new Float32Array(MAX_CAPACITY);
   private readonly vz = new Float32Array(MAX_CAPACITY);
+  private readonly riseSpeed = new Float32Array(MAX_CAPACITY);
   private readonly age = new Float32Array(MAX_CAPACITY);
   private readonly maxAge = new Float32Array(MAX_CAPACITY);
   private readonly baseRadius = new Float32Array(MAX_CAPACITY);
+  private readonly sizeMultiplier = new Float32Array(MAX_CAPACITY);
   private readonly wobbleAmplitude = new Float32Array(MAX_CAPACITY);
   private readonly wobbleFrequency = new Float32Array(MAX_CAPACITY);
   private readonly filmPhase = new Float32Array(MAX_CAPACITY);
   private readonly filmStrength = new Float32Array(MAX_CAPACITY);
+  private readonly deformation = new Float32Array(MAX_CAPACITY);
+  private readonly deformationVelocity = new Float32Array(MAX_CAPACITY);
+  private readonly deformationDirectionX = new Float32Array(MAX_CAPACITY);
+  private readonly deformationDirectionY = new Float32Array(MAX_CAPACITY);
+  private readonly deformationDirectionZ = new Float32Array(MAX_CAPACITY);
+  private readonly ruptureOriginX = new Float32Array(MAX_CAPACITY);
+  private readonly ruptureOriginY = new Float32Array(MAX_CAPACITY);
   private readonly popping = new Uint8Array(MAX_CAPACITY);
   private readonly popAge = new Float32Array(MAX_CAPACITY);
   private readonly popRadius = new Float32Array(MAX_CAPACITY);
@@ -75,6 +99,8 @@ export class BubbleRenderer3D {
 
   private readonly accumulators = new Map<number, number>();
   private readonly color: MutableRgb = { red: 1, green: 1, blue: 1 };
+  private readonly airflow = new SampledCurlGrid2D(48, 10, 1 / 3);
+  private readonly airflowSample = { vx: 0, vy: 0 };
   private readonly writeState: BubbleFilmInstance3D = {
     x: 0,
     y: 0,
@@ -88,20 +114,32 @@ export class BubbleRenderer3D {
     alpha: 1,
     filmSeed: 0,
     filmStrength: 0.5,
+    filmLife: 0,
+    deformationX: 1,
+    deformationY: 0,
+    deformationZ: 0,
+    deformation: 0,
+    ruptureOriginX: 0,
+    ruptureOriginY: 0.5,
+    ruptureProgress: 0,
   };
   private shellCursor = 0;
   private fragmentCursor = 0;
   private clock = 0;
   private capacity = DEFAULT_CAPACITY;
+  private qualityTier = QualityTier.HIGH;
   private parent: Object3D | null = null;
 
   initialize(parent: Object3D): void {
     this.parent = parent;
     this.shellPool.initialize(parent);
     this.fragmentPool.initialize(parent);
+    this.shellPool.setQualityTier(this.qualityTier);
+    this.fragmentPool.setQualityTier(this.qualityTier);
   }
 
   update(sources: readonly BubbleTipSource3D[], delta: number): void {
+    this.syncQualityTier(sources);
     this.ensureCapacity(sources);
     const dt = Math.min(Math.max(delta, 0), 1 / 15);
     this.clock += dt;
@@ -142,11 +180,90 @@ export class BubbleRenderer3D {
     for (let index = 0; index < this.capacity; index++) {
       if (this.active[index] === 0) continue;
 
+      const airflow = this.airflow.sampleInto(
+        this.x[index]! * AIRFLOW_SCALE,
+        this.z[index]! * AIRFLOW_SCALE,
+        this.clock,
+        this.airflowSample
+      );
+      this.vx[index]! += airflow.vx * AIRFLOW_STRENGTH * dt;
+      this.vz[index]! += airflow.vy * AIRFLOW_STRENGTH * dt;
+      const horizontalDrag = Math.pow(HORIZONTAL_DRAG, dt);
+      this.vx[index]! *= horizontalDrag;
+      this.vz[index]! *= horizontalDrag;
+      const verticalDrag = Math.pow(VERTICAL_INHERITANCE_DRAG, dt);
+      this.vy[index] =
+        this.riseSpeed[index]! +
+        (this.vy[index]! - this.riseSpeed[index]!) * verticalDrag;
       this.x[index]! += this.vx[index]! * dt;
       this.y[index]! += this.vy[index]! * dt;
       this.z[index]! += this.vz[index]! * dt;
-      this.vx[index]! *= Math.pow(0.55, dt);
-      this.vz[index]! *= Math.pow(0.55, dt);
+
+      const relativeX = this.vx[index]!;
+      const relativeY = this.vy[index]! - this.riseSpeed[index]!;
+      const relativeZ = this.vz[index]!;
+      const relativeSpeed = Math.hypot(relativeX, relativeY, relativeZ);
+      if (relativeSpeed > 0.018) {
+        const directionBlend =
+          1 - Math.exp(-DEFORMATION_DIRECTION_RESPONSE * dt);
+        const inverseSpeed = 1 / relativeSpeed;
+        let directionX =
+          this.deformationDirectionX[index]! +
+          (relativeX * inverseSpeed - this.deformationDirectionX[index]!) *
+            directionBlend;
+        let directionY =
+          this.deformationDirectionY[index]! +
+          (relativeY * inverseSpeed - this.deformationDirectionY[index]!) *
+            directionBlend;
+        let directionZ =
+          this.deformationDirectionZ[index]! +
+          (relativeZ * inverseSpeed - this.deformationDirectionZ[index]!) *
+            directionBlend;
+        const directionLength = Math.hypot(directionX, directionY, directionZ);
+        if (directionLength > 0.0001) {
+          directionX /= directionLength;
+          directionY /= directionLength;
+          directionZ /= directionLength;
+          this.deformationDirectionX[index] = directionX;
+          this.deformationDirectionY[index] = directionY;
+          this.deformationDirectionZ[index] = directionZ;
+        }
+      }
+
+      const life = Math.min(
+        1,
+        this.maxAge[index]! > 0 ? this.age[index]! / this.maxAge[index]! : 1
+      );
+      const tensionPulse =
+        Math.sin(
+          this.age[index]! * this.wobbleFrequency[index]! * 1.35 +
+            this.filmPhase[index]! * TAU
+        ) *
+        0.009 *
+        (1 - life * 0.45);
+      const targetDeformation =
+        this.popping[index] === 1
+          ? 0
+          : resolveBubbleDeformationTarget3D(
+              relativeSpeed,
+              this.sizeMultiplier[index]!
+            ) + tensionPulse;
+      let deformationVelocity = this.deformationVelocity[index]!;
+      deformationVelocity +=
+        ((targetDeformation - this.deformation[index]!) *
+          DEFORMATION_STIFFNESS -
+          deformationVelocity * DEFORMATION_DAMPING) *
+        dt;
+      let deformation = this.deformation[index]! + deformationVelocity * dt;
+      if (deformation > BUBBLE_MAX_DEFORMATION) {
+        deformation = BUBBLE_MAX_DEFORMATION;
+        deformationVelocity = Math.min(0, deformationVelocity);
+      } else if (deformation < BUBBLE_MIN_REBOUND_DEFORMATION) {
+        deformation = BUBBLE_MIN_REBOUND_DEFORMATION;
+        deformationVelocity = Math.max(0, deformationVelocity);
+      }
+      this.deformation[index] = deformation;
+      this.deformationVelocity[index] = deformationVelocity;
 
       let frame;
       if (this.popping[index] === 1) {
@@ -202,6 +319,20 @@ export class BubbleRenderer3D {
       write.alpha = frame.alpha;
       write.filmSeed = this.filmPhase[index]!;
       write.filmStrength = this.filmStrength[index]!;
+      write.filmLife =
+        this.popping[index] === 1
+          ? 1
+          : Math.min(1, this.age[index]! / this.maxAge[index]!);
+      write.deformationX = this.deformationDirectionX[index]!;
+      write.deformationY = this.deformationDirectionY[index]!;
+      write.deformationZ = this.deformationDirectionZ[index]!;
+      write.deformation = deformation;
+      write.ruptureOriginX = this.ruptureOriginX[index]!;
+      write.ruptureOriginY = this.ruptureOriginY[index]!;
+      write.ruptureProgress =
+        this.popping[index] === 1
+          ? resolveBubbleRuptureProgress3D(this.popAge[index]!)
+          : 0;
       this.shellPool.write(write);
     }
   }
@@ -238,6 +369,14 @@ export class BubbleRenderer3D {
       write.alpha = alpha;
       write.filmSeed = phase;
       write.filmStrength = this.fragmentFilmStrength[index]!;
+      write.filmLife = life;
+      write.deformationX = 1;
+      write.deformationY = 0;
+      write.deformationZ = 0;
+      write.deformation = 0;
+      write.ruptureOriginX = 0;
+      write.ruptureOriginY = 0.5;
+      write.ruptureProgress = 0;
       this.fragmentPool.write(write);
     }
   }
@@ -255,7 +394,12 @@ export class BubbleRenderer3D {
     const palette = params.resolvedPalette;
     const base = params.baseRadius * (0.7 + 0.9 * params.intensity);
     const lifetimeMultiplier = resolveBubbleLifetimeMultiplier3D(palette.id);
+    const velocityInheritance = resolveBubbleVelocityInheritance3D(
+      source.speed
+    );
     setLinearRgbFromHex(this.color, palette.rim);
+    const requestedSpawnCount = Math.floor(accumulator);
+    let spawnOrdinal = 0;
 
     while (accumulator >= 1) {
       const slot = this.takeShellSlot();
@@ -268,26 +412,70 @@ export class BubbleRenderer3D {
         params.sizeJitter
       );
       const radius = base * sizeMultiplier;
-      this.active[slot] = 1;
-      this.x[slot] = source.position.x + (Math.random() - 0.5) * 0.04;
-      this.y[slot] = source.position.y + (Math.random() - 0.5) * 0.04;
-      this.z[slot] = source.position.z + (Math.random() - 0.5) * 0.04;
-      this.vx[slot] = (Math.random() - 0.5) * 0.05;
-      this.vy[slot] = resolveBubbleRiseSpeed3D(
+      const pathProgress =
+        requestedSpawnCount > 0
+          ? (spawnOrdinal + 1) / (requestedSpawnCount + 1)
+          : 1;
+      const birthLag = dt * (1 - pathProgress);
+      const spawnJitter = 0.016 + radius * 0.22;
+      const resolvedRiseSpeed = resolveBubbleRiseSpeed3D(
         params.riseSpeed,
         sizeMultiplier
       );
-      this.vz[slot] = (Math.random() - 0.5) * 0.05;
+      this.active[slot] = 1;
+      this.x[slot] =
+        source.position.x -
+        source.velocity.x * birthLag +
+        (Math.random() - 0.5) * spawnJitter;
+      this.y[slot] =
+        source.position.y -
+        source.velocity.y * birthLag +
+        (Math.random() - 0.5) * spawnJitter;
+      this.z[slot] =
+        source.position.z -
+        source.velocity.z * birthLag +
+        (Math.random() - 0.5) * spawnJitter;
+      this.vx[slot] =
+        source.velocity.x * velocityInheritance + (Math.random() - 0.5) * 0.06;
+      this.vy[slot] =
+        resolvedRiseSpeed + source.velocity.y * velocityInheritance;
+      this.vz[slot] =
+        source.velocity.z * velocityInheritance + (Math.random() - 0.5) * 0.06;
+      this.riseSpeed[slot] = resolvedRiseSpeed;
       this.age[slot] = 0;
       this.maxAge[slot] =
         params.lifetime * lifetimeMultiplier * (0.7 + Math.random() * 0.6);
       this.baseRadius[slot] = radius;
+      this.sizeMultiplier[slot] = sizeMultiplier;
       this.wobbleAmplitude[slot] =
         (0.012 + Math.random() * 0.022) *
         Math.max(0.32, 1.25 - sizeMultiplier * 0.5);
       this.wobbleFrequency[slot] = 1.4 + Math.random() * 1.9;
       this.filmPhase[slot] = Math.random();
       this.filmStrength[slot] = palette.iridescent === true ? 1 : 0.62;
+      this.deformation[slot] = 0;
+      this.deformationVelocity[slot] = 0;
+      const sourceDirectionLength = Math.hypot(
+        source.velocity.x,
+        source.velocity.y,
+        source.velocity.z
+      );
+      if (sourceDirectionLength > 0.0001) {
+        this.deformationDirectionX[slot] =
+          source.velocity.x / sourceDirectionLength;
+        this.deformationDirectionY[slot] =
+          source.velocity.y / sourceDirectionLength;
+        this.deformationDirectionZ[slot] =
+          source.velocity.z / sourceDirectionLength;
+      } else {
+        const calmAngle = this.filmPhase[slot]! * TAU;
+        this.deformationDirectionX[slot] = Math.cos(calmAngle);
+        this.deformationDirectionY[slot] = 0.28;
+        this.deformationDirectionZ[slot] = Math.sin(calmAngle);
+      }
+      const ruptureOrigin = resolveBubbleRuptureOrigin3D(this.filmPhase[slot]!);
+      this.ruptureOriginX[slot] = ruptureOrigin.x;
+      this.ruptureOriginY[slot] = ruptureOrigin.y;
       this.popping[slot] = 0;
       this.popAge[slot] = 0;
       this.popRadius[slot] = radius * (1 + BUBBLE_LIFETIME_SWELL);
@@ -295,27 +483,32 @@ export class BubbleRenderer3D {
       this.green[slot] = this.color.green;
       this.blue[slot] = this.color.blue;
       accumulator -= 1;
+      spawnOrdinal++;
     }
     this.accumulators.set(source.sourceId, accumulator);
   }
 
   private spawnFragments(shellIndex: number): void {
     const count = resolveBubbleFragmentCount3D(Math.random());
+    const ruptureAngle = this.filmPhase[shellIndex]! * TAU;
+    const radius = this.popRadius[shellIndex]!;
+    const originX = Math.cos(ruptureAngle) * radius * 0.34;
+    const originY = radius * 0.52;
+    const originZ = Math.sin(ruptureAngle) * radius * 0.34;
     for (let ordinal = 0; ordinal < count; ordinal++) {
       const slot = this.takeFragmentSlot();
       if (slot < 0) return;
-      const angle = (ordinal / count) * TAU + (Math.random() - 0.5) * 0.32;
-      const elevation = (Math.random() - 0.5) * 0.55;
-      const horizontal = Math.cos(elevation);
+      const fan = count > 1 ? ordinal / (count - 1) - 0.5 : 0;
+      const angle = ruptureAngle + fan * 1.5 + (Math.random() - 0.5) * 0.28;
+      const directionY = 0.16 + Math.random() * 0.42;
+      const horizontal = Math.sqrt(Math.max(0, 1 - directionY * directionY));
       const directionX = Math.cos(angle) * horizontal;
-      const directionY = Math.sin(elevation);
       const directionZ = Math.sin(angle) * horizontal;
-      const radius = this.popRadius[shellIndex]!;
       const speed = 0.12 + Math.random() * 0.28;
       this.fragmentActive[slot] = 1;
-      this.fragmentX[slot] = this.x[shellIndex]! + directionX * radius * 0.76;
-      this.fragmentY[slot] = this.y[shellIndex]! + directionY * radius * 0.76;
-      this.fragmentZ[slot] = this.z[shellIndex]! + directionZ * radius * 0.76;
+      this.fragmentX[slot] = this.x[shellIndex]! + originX;
+      this.fragmentY[slot] = this.y[shellIndex]! + originY;
+      this.fragmentZ[slot] = this.z[shellIndex]! + originZ;
       this.fragmentVx[slot] = this.vx[shellIndex]! + directionX * speed;
       this.fragmentVy[slot] = this.vy[shellIndex]! * 0.18 + directionY * speed;
       this.fragmentVz[slot] = this.vz[shellIndex]! + directionZ * speed;
@@ -359,7 +552,10 @@ export class BubbleRenderer3D {
     for (const source of sources) {
       requested = Math.max(requested, source.params.poolSize);
     }
-    const nextCapacity = resolveBubbleCapacityTier3D(requested);
+    const nextCapacity = resolveBubbleCapacityForQuality3D(
+      requested,
+      this.qualityTier
+    );
     if (nextCapacity === this.capacity) return;
 
     this.capacity = nextCapacity;
@@ -371,10 +567,20 @@ export class BubbleRenderer3D {
     this.fragmentPool.dispose();
     this.shellPool = new BubbleFilmPool3D(nextCapacity, "shell");
     this.fragmentPool = new BubbleFilmPool3D(nextCapacity, "fragment");
+    this.shellPool.setQualityTier(this.qualityTier);
+    this.fragmentPool.setQualityTier(this.qualityTier);
     if (this.parent) {
       this.shellPool.initialize(this.parent);
       this.fragmentPool.initialize(this.parent);
     }
+  }
+
+  private syncQualityTier(sources: readonly BubbleTipSource3D[]): void {
+    const nextTier = sources[0]?.qualityTier ?? this.qualityTier;
+    if (nextTier === this.qualityTier) return;
+    this.qualityTier = nextTier;
+    this.shellPool.setQualityTier(nextTier);
+    this.fragmentPool.setQualityTier(nextTier);
   }
 }
 
@@ -382,4 +588,17 @@ export function resolveBubbleCapacityTier3D(requested: number): number {
   if (requested <= 512) return 512;
   if (requested <= 1024) return 1024;
   return 2048;
+}
+
+export function resolveBubbleCapacityForQuality3D(
+  requested: number,
+  qualityTier: QualityTier
+): number {
+  const tierLimit =
+    qualityTier === QualityTier.HIGH
+      ? 2048
+      : qualityTier === QualityTier.MEDIUM
+        ? 1024
+        : 512;
+  return resolveBubbleCapacityTier3D(Math.min(requested, tierLimit));
 }

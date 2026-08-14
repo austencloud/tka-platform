@@ -228,25 +228,17 @@ export function resolvePetals2D(
  *   - effectiveAmbient = min(intent.ambientEmission, 0.3) - motion-dominant
  *     hard cap. Ink is a stroke medium. If the user dials ambient to full,
  *     it still emits at ≤ 30% of the motion-driven rate.
- *   - opacityMax = watercolor ? 0.4 : 1.0 - palette-carried opacity cap.
+ *   - opacityMax = watercolor ? 0.68 : 1.0 - palette-carried opacity cap.
  *     Watercolor is translucent by identity (not a user knob).
- *   - strokeWidthMax = 12 px base * (watercolor ? 2 : 1) - watercolor
- *     bleeds wider.
+ *   - strokeWidthMax = palette material profile. Neon is narrowest;
+ *     Watercolor carries the widest faint bleed.
+ *   - attached-stroke gravity = viscosity-gated. Detached droplets keep full
+ *     gravity while ordinary painted marks stay on the choreography.
  *   - blendMode = palette.emissive ? "lighter" : "source-over" - neon is
  *     the only emissive ink palette. The other five are opaque pigment.
  *
- * Tuning constants from spec docs/superpowers/specs/2026-04-15-effects-phase-1j-ink-design.md:
- *   AMBIENT_BASE_RATE       = 2   (barely any drip at rest)
- *   MOTION_BASE_RATE        = 15  (moderate - ink is a stroke medium, not a particle emitter)
- *   MOTION_REFERENCE_SPEED  = 3.0 (world units/sec that maps to full motion scalar)
- *   STROKE_WIDTH_MIN        = 1   px (fast tip = thin lifted brush)
- *   STROKE_WIDTH_MAX_BASE   = 12  px (slow tip = thick loaded brush)
- *   LIFETIME_SECONDS_BASE   = 4.5 (center of spec 3-6 range)
- *   MAX_POINTS_PER_TIP      = 40  (center of spec 30-50 range)
- *
- * Sprint 1 ignores viscosity + splatterIntensity - they live on the
- * intent but the renderer's droplet breakup (1j.ii) and splatter bursts
- * (1j.iii) don't exist yet.
+ * The current production tuning is governed by
+ * docs/superpowers/specs/active/2026-08-14-ink-sumi-material-redesign.md.
  */
 export function resolveInk2D(
   intent: InkIntent,
@@ -259,8 +251,11 @@ export function resolveInk2D(
   const MOTION_BASE_RATE = 60;
   const MOTION_REFERENCE_SPEED = 3.0;
   const STROKE_WIDTH_MIN = 2;
-  const STROKE_WIDTH_MAX_BASE = 18;
-  const LIFETIME_SECONDS_BASE = 3.0;
+  const SUMI_STROKE_WIDTH_MIN = 10;
+  const STROKE_WIDTH_MAX_BASE = 14;
+  const SUMI_STROKE_WIDTH_MAX = 42;
+  const WATERCOLOR_STROKE_WIDTH_MAX = 13;
+  const NEON_STROKE_WIDTH_MAX = 10;
   // 60 pts/s * 3s lifetime = 180 candidate points, cap at 90 so the
   // bounded-history shift doesn't eat the newest stroke while keeping
   // older tail visible for the full lifetime.
@@ -275,13 +270,45 @@ export function resolveInk2D(
   // Watercolor gets its width from a faint bleed pass around a normal-sized
   // pigment body. Doubling the body here made production-size marks look like
   // a blue hose once several motions crossed each other.
-  const opacityMax = palette.watercolor ? 0.4 : 1.0;
-  const strokeWidthMax = STROKE_WIDTH_MAX_BASE;
-  const lifetimeSeconds = palette.watercolor ? 1.65 : LIFETIME_SECONDS_BASE;
-  const maxPointsPerTip = palette.watercolor ? 64 : MAX_POINTS_PER_TIP;
-  const strokeLengthPx = palette.watercolor ? 240 : 420;
+  const opacityMax = palette.watercolor ? 0.68 : 1.0;
+  const isSumi = palette.id === "sumi";
+  const isNeon = palette.emissive === true;
+  const strokeWidthMax = palette.watercolor
+    ? WATERCOLOR_STROKE_WIDTH_MAX
+    : isNeon
+      ? NEON_STROKE_WIDTH_MAX
+      : isSumi
+        ? SUMI_STROKE_WIDTH_MAX
+        : STROKE_WIDTH_MAX_BASE;
+  const lifetimeSeconds = palette.watercolor
+    ? 2.2
+    : isNeon
+      ? 1.55
+      : isSumi
+        ? 2.15
+        : 2.2;
+  const maxPointsPerTip = palette.watercolor
+    ? 84
+    : isNeon
+      ? 64
+      : isSumi
+        ? 72
+        : MAX_POINTS_PER_TIP;
+  const strokeLengthPx = palette.watercolor
+    ? 320
+    : isNeon
+      ? 220
+      : isSumi
+        ? 340
+        : 320;
   const gravityPx = palette.watercolor ? 180 * 0.2 : 180;
-  const strokeGravityPx = palette.watercolor ? 0 : gravityPx;
+  // Attached pigment follows the brush. Only a deliberately viscous dense ink
+  // sags, and even then much less than a detached droplet. This keeps Classic,
+  // Neon, Sumi, and Toxic on the choreography while preserving the weight of
+  // Drip and Splatter.
+  const denseSag = Math.max(0, Math.min(1, (intent.viscosity - 0.55) / 0.45));
+  const strokeGravityPx =
+    palette.watercolor || isSumi || isNeon ? 0 : gravityPx * denseSag * 0.65;
 
   // Neon is the only emissive ink palette. All others composite opaque -
   // this is the #1 differentiator from trails (which are always emissive).
@@ -296,7 +323,7 @@ export function resolveInk2D(
     ambientSpawnRate: AMBIENT_BASE_RATE,
     motionSpawnRate: MOTION_BASE_RATE,
     motionReferenceSpeed: MOTION_REFERENCE_SPEED,
-    strokeWidthMin: STROKE_WIDTH_MIN,
+    strokeWidthMin: isSumi ? SUMI_STROKE_WIDTH_MIN : STROKE_WIDTH_MIN,
     strokeWidthMax,
     opacityMax,
     lifetimeSeconds,

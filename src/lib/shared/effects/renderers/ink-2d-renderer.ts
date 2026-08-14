@@ -14,6 +14,15 @@ function hashNoise(ix: number, iy: number, seed: number): number {
   return (h & 0x7fffffff) / 0x7fffffff;
 }
 
+function stableStringSeed(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 0x1_0000_0000;
+}
+
 function sampleNoise(
   x: number,
   y: number,
@@ -70,6 +79,16 @@ function mixWithWhite(hex: string, amount: number): string {
   return `#${mix(r)}${mix(g)}${mix(b)}`;
 }
 
+function mixHexColors(from: string, to: string, amount: number): string {
+  const source = parseHex(from);
+  const target = parseHex(to);
+  const mix = (index: number) =>
+    Math.round(source[index]! + (target[index]! - source[index]!) * amount)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${mix(0)}${mix(1)}${mix(2)}`;
+}
+
 function isDarkColor(hex: string): boolean {
   const [r, g, b] = parseHex(hex);
   return (r * 0.2126 + g * 0.7152 + b * 0.0722) / 255 < 0.22;
@@ -80,7 +99,7 @@ function isDarkColor(hex: string): boolean {
 class BrushStampCache {
   private canvas: OffscreenCanvas | HTMLCanvasElement | null = null;
   private signature = "";
-  private noiseSeed = (Math.random() * 100000) | 0;
+  private readonly noiseSeed = 0x51f15e;
 
   get(params: Ink2DParams): OffscreenCanvas | HTMLCanvasElement {
     const palette = params.resolvedPalette;
@@ -198,6 +217,8 @@ interface InkPoint {
   age: number;
   spawnSpeedPx: number;
   tangentAngle: number;
+  sequence: number;
+  materialSeed: number;
   jitterSeed: number;
 }
 
@@ -211,6 +232,8 @@ interface TipState {
   emitAccumulator: number;
   splatterCooldown: number;
   splatterSequence: number;
+  pointSequence: number;
+  materialSeed: number;
 }
 
 interface DetachedStroke {
@@ -237,7 +260,17 @@ interface RibbonPoint {
   ny: number;
   width: number;
   fade: number;
+  turnLoad: number;
+  sequence: number;
+  materialSeed: number;
   seed: number;
+}
+
+interface RibbonPassOptions {
+  offsetFactor?: number;
+  noiseChannel?: number;
+  breakThreshold?: number;
+  chunkSize?: number;
 }
 
 export interface Ink2DDiagnostics {
@@ -317,12 +350,44 @@ export function resolveInkStrokeWidth(
   return pressureWidth * (0.5 + params.intensity * 0.8) * scale;
 }
 
+/**
+ * A brush pressed through a turn spreads before it lifts away. Without this
+ * extra load, loops drawn at a steady playback speed become uniform tubes even
+ * though the choreography changes direction sharply.
+ */
+export function resolveInkTurnLoad(
+  previous: { x: number; y: number },
+  point: { x: number; y: number },
+  next: { x: number; y: number }
+): number {
+  const incomingX = point.x - previous.x;
+  const incomingY = point.y - previous.y;
+  const outgoingX = next.x - point.x;
+  const outgoingY = next.y - point.y;
+  const incomingLength = Math.hypot(incomingX, incomingY);
+  const outgoingLength = Math.hypot(outgoingX, outgoingY);
+  if (incomingLength < 0.001 || outgoingLength < 0.001) return 0;
+
+  const dot = Math.min(
+    1,
+    Math.max(
+      -1,
+      (incomingX * outgoingX + incomingY * outgoingY) /
+        (incomingLength * outgoingLength)
+    )
+  );
+  const angle = Math.acos(dot);
+  const reversalDamping = 1 - smoothstep(Math.PI * 0.72, Math.PI, angle);
+  return smoothstep(0.06, 0.72, angle) * reversalDamping;
+}
+
 export class Ink2DRenderer {
   private tips = new Map<string, TipState>();
   private detachedStrokes: DetachedStroke[] = [];
   private visibleStrokeScratch: InkPoint[][] = [];
   private stampCache = new BrushStampCache();
   private droplets: InkDroplet[] = [];
+  private activeEmitterCount = 0;
 
   render(
     ctx: CanvasRenderingContext2D,
@@ -367,6 +432,7 @@ export class Ink2DRenderer {
     for (const [id, state] of this.tips) {
       if (!seen.has(id)) state.lastPos = null;
     }
+    this.activeEmitterCount = seen.size;
 
     this.applyGravityAndCull(safeDt, params, safeScale);
     this.detectBreakup(params, safeScale);
@@ -425,6 +491,8 @@ export class Ink2DRenderer {
         emitAccumulator: 0,
         splatterCooldown: 0,
         splatterSequence: 0,
+        pointSequence: 0,
+        materialSeed: stableStringSeed(id),
       };
       this.tips.set(id, state);
       return;
@@ -439,6 +507,7 @@ export class Ink2DRenderer {
     }
     let vx = 0;
     let vy = 0;
+    const movedDistance = last ? Math.hypot(pos.x - last.x, pos.y - last.y) : 0;
     if (last && dt > 0) {
       vx = (pos.x - last.x) / dt;
       vy = (pos.y - last.y) / dt;
@@ -459,7 +528,9 @@ export class Ink2DRenderer {
     const motionRate =
       speedPx >= MOTION_VELOCITY_THRESHOLD_PX * scale
         ? params.motionEmission * speedScalar * params.motionSpawnRate
-        : 0;
+        : movedDistance >= 0.08 * scale
+          ? params.motionEmission * params.motionSpawnRate * 0.18
+          : 0;
     state.emitAccumulator +=
       (motionRate + params.effectiveAmbient * params.ambientSpawnRate) * dt;
 
@@ -470,15 +541,20 @@ export class Ink2DRenderer {
     while (state.emitAccumulator >= 1) {
       state.emitAccumulator -= 1;
       if (this.canEmit(state, pos.x, pos.y, minSpacing)) {
-        this.pushPoint(state, pos.x, pos.y, speedPx, tangent, params);
-      }
-    }
-
-    // A tiny fractional chance keeps slow calligraphy alive without filling
-    // the canvas with ambient dots.
-    if (Math.random() < state.emitAccumulator * 0.08) {
-      if (this.canEmit(state, pos.x, pos.y, minSpacing)) {
-        this.pushPoint(state, pos.x, pos.y, speedPx, tangent, params);
+        if (params.resolvedPalette.id === "sumi") {
+          this.pushSumiStrokeSegment(
+            state,
+            pos.x,
+            pos.y,
+            speedPx,
+            tangent,
+            brushWidth,
+            scale,
+            params
+          );
+        } else {
+          this.pushPoint(state, pos.x, pos.y, speedPx, tangent, params);
+        }
       }
     }
 
@@ -529,7 +605,8 @@ export class Ink2DRenderer {
     const flingAngle = Math.atan2(-deltaVy, -deltaVx);
     const cone = 0.45 + params.splatterIntensity * 1.7;
     const burstSpeed = (42 + params.splatterIntensity * 150) * scale;
-    const sequenceSeed = ++state.splatterSequence * 0.61803398875;
+    const sequenceSeed =
+      state.materialSeed + ++state.splatterSequence * 0.61803398875;
 
     for (
       let i = 0;
@@ -580,6 +657,7 @@ export class Ink2DRenderer {
     tangentAngle: number,
     params: Ink2DParams
   ): void {
+    const sequence = ++state.pointSequence;
     state.points.push({
       x,
       y,
@@ -587,9 +665,59 @@ export class Ink2DRenderer {
       age: 0,
       spawnSpeedPx: speedPx,
       tangentAngle,
-      jitterSeed: Math.random(),
+      sequence,
+      materialSeed: state.materialSeed,
+      jitterSeed: (state.materialSeed + sequence * 0.61803398875) % 1,
     });
     while (state.points.length > params.maxPointsPerTip) state.points.shift();
+  }
+
+  private pushSumiStrokeSegment(
+    state: TipState,
+    x: number,
+    y: number,
+    speedPx: number,
+    tangentAngle: number,
+    brushWidth: number,
+    scale: number,
+    params: Ink2DParams
+  ): void {
+    const last = state.points[state.points.length - 1];
+    if (!last) {
+      this.pushPoint(state, x, y, speedPx, tangentAngle, params);
+      return;
+    }
+
+    const dx = x - last.x;
+    const dy = y - last.y;
+    const distance = Math.hypot(dx, dy);
+    const maxSpacing = Math.max(
+      3.5 * scale,
+      Math.min(8 * scale, brushWidth * 0.38)
+    );
+    const steps = Math.min(
+      params.maxPointsPerTip,
+      Math.max(1, Math.ceil(distance / maxSpacing))
+    );
+    const angleDelta = Math.atan2(
+      Math.sin(tangentAngle - last.tangentAngle),
+      Math.cos(tangentAngle - last.tangentAngle)
+    );
+
+    // Playback and low-rate previews can move a prop farther than one brush
+    // width between frames. A loaded brush still deposits a continuous mark,
+    // so fill that swept interval before building the material silhouette.
+    for (let step = 1; step <= steps; step++) {
+      const progress = step / steps;
+      this.pushPoint(
+        state,
+        last.x + dx * progress,
+        last.y + dy * progress,
+        last.spawnSpeedPx + (speedPx - last.spawnSpeedPx) * progress,
+        last.tangentAngle + angleDelta * progress,
+        params
+      );
+    }
   }
 
   private trimPathToLength(state: TipState, maxLength: number): void {
@@ -615,6 +743,8 @@ export class Ink2DRenderer {
         spawnSpeedPx:
           newer.spawnSpeedPx + (older.spawnSpeedPx - newer.spawnSpeedPx) * t,
         tangentAngle: newer.tangentAngle,
+        sequence: older.sequence,
+        materialSeed: older.materialSeed,
         jitterSeed: older.jitterSeed,
       };
       state.points = [boundary, ...state.points.slice(index)];
@@ -668,6 +798,18 @@ export class Ink2DRenderer {
   }
 
   private detectBreakup(params: Ink2DParams, scale: number): void {
+    // Sumi, custom pigment, Blood, and Watercolor are deposited by the brush
+    // and remain attached to the gesture. Their acceleration-triggered chips
+    // are still emitted separately; sparse samples must not convert the whole
+    // painted mark into detached droplets.
+    if (
+      params.resolvedPalette.id === "sumi" ||
+      params.resolvedPalette.id === "custom" ||
+      params.resolvedPalette.id === "blood" ||
+      params.resolvedPalette.watercolor
+    )
+      return;
+
     const threshold =
       (1 - params.viscosity) *
       params.breakStretchMax *
@@ -798,20 +940,30 @@ export class Ink2DRenderer {
     const palette = params.resolvedPalette;
     const peakAlpha = Math.min(
       params.opacityMax * (0.48 + params.intensity * 0.52),
-      palette.watercolor ? 0.4 : 1
+      1
     );
     const composite: GlobalCompositeOperation = palette.emissive
       ? "lighter"
       : "source-over";
     const needsDarkStageContrast =
       !palette.watercolor && !palette.emissive && isDarkColor(palette.edge);
-    const wetEdgeColor = needsDarkStageContrast
-      ? mixWithWhite(palette.edge, 0.58)
-      : palette.edge;
+    const sumiDensity =
+      palette.id === "sumi"
+        ? Math.max(0.62, Math.sqrt(2 / Math.max(2, this.activeEmitterCount)))
+        : 1;
+    const materialScale = scale * sumiDensity;
+    const materialPeakAlpha = peakAlpha * (0.45 + sumiDensity * 0.55);
 
     for (const points of strokes) {
       if (points.length === 0) continue;
-      const ribbon = this.buildRibbon(points, params, scale);
+      const visiblePoints =
+        palette.id === "sumi" && sumiDensity < 1
+          ? this.getStrokeTail(
+              points,
+              params.strokeLengthPx * sumiDensity * sumiDensity
+            )
+          : points;
+      const ribbon = this.buildRibbon(visiblePoints, params, materialScale);
 
       if (palette.watercolor) {
         // A wash is one thin pigment field with a faint wet margin. Drawing
@@ -822,8 +974,8 @@ export class Ink2DRenderer {
           ctx,
           ribbon,
           palette.edge,
-          1.62,
-          peakAlpha * 0.2,
+          1.38,
+          peakAlpha * 0.18,
           composite,
           18
         );
@@ -831,69 +983,467 @@ export class Ink2DRenderer {
           ctx,
           ribbon,
           palette.pigment,
-          0.98,
-          peakAlpha * 0.68,
+          0.94,
+          peakAlpha * 0.74,
           composite,
           24
         );
         continue;
       }
 
-      // A real wet mark has three scales: feathered bleed, a pigment-heavy
-      // boundary, and a translucent body. The old renderer used one circular
-      // sprite for all three, which is why every path looked like a blue tube.
-      this.drawRibbonPass(
-        ctx,
-        ribbon,
-        wetEdgeColor,
-        1.62,
-        peakAlpha * (needsDarkStageContrast ? 0.22 : 0.13),
-        composite
-      );
-      this.drawRibbonPass(
-        ctx,
-        ribbon,
-        wetEdgeColor,
-        1.18,
-        peakAlpha * (needsDarkStageContrast ? 0.42 : 0.54),
-        composite
-      );
-      this.drawRibbonPass(
-        ctx,
-        ribbon,
-        palette.pigment,
-        0.94,
-        peakAlpha * 0.92,
-        composite
-      );
-      this.drawRibbonPass(
-        ctx,
-        ribbon,
-        palette.pigment,
-        0.38,
-        peakAlpha * 0.2,
-        composite
-      );
-
-      // Dense inks are nearly black by design, but the animation stage is
-      // nearly black too. A thin, offset-free reflection makes the liquid
-      // surface legible while preserving an opaque pigment core. This is a
-      // material cue, not an emissive halo: neon remains the only additive
-      // palette.
-      if (!palette.watercolor && !palette.emissive) {
-        this.drawRibbonPass(
+      if (palette.id === "sumi") {
+        this.drawSumiRibbon(
           ctx,
           ribbon,
-          mixWithWhite(palette.edge, needsDarkStageContrast ? 0.72 : 0.42),
-          needsDarkStageContrast ? 0.2 : 0.16,
-          peakAlpha * (needsDarkStageContrast ? 0.58 : 0.34),
-          "screen"
+          palette.pigment,
+          palette.edge,
+          materialPeakAlpha
         );
+        continue;
       }
+
+      if (palette.emissive) {
+        this.drawNeonInkRibbon(
+          ctx,
+          ribbon,
+          palette.pigment,
+          palette.edge,
+          peakAlpha
+        );
+        continue;
+      }
+
+      this.drawDenseInkRibbon(
+        ctx,
+        ribbon,
+        palette.pigment,
+        palette.edge,
+        peakAlpha,
+        needsDarkStageContrast
+      );
     }
 
-    this.drawGranulation(ctx, params, scale, strokes);
-    this.drawBristleBreakup(ctx, params, scale, strokes);
+    this.drawGranulation(ctx, params, materialScale, strokes, sumiDensity);
+    this.drawBristleBreakup(ctx, params, materialScale, strokes);
+  }
+
+  private getStrokeTail(points: InkPoint[], maxLength: number): InkPoint[] {
+    let retainedLength = 0;
+    let startIndex = points.length - 1;
+    for (let index = points.length - 1; index > 0; index--) {
+      const newer = points[index]!;
+      const older = points[index - 1]!;
+      retainedLength += Math.hypot(newer.x - older.x, newer.y - older.y);
+      if (retainedLength > maxLength) break;
+      startIndex = index - 1;
+    }
+    return startIndex === 0 ? points : points.slice(startIndex);
+  }
+
+  private drawSumiRibbon(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    pigment: string,
+    edge: string,
+    peakAlpha: number
+  ): void {
+    // Sumi is painted onto a near-black stage, so literal black pigment would
+    // disappear. Treat the stage as moonlight on wet ink: a clear cobalt body,
+    // an almost-black loaded side, and a pale dry-bristle catch. The three
+    // values stay matte and visibly separate without using additive blending.
+    const moonlitBody = mixHexColors(pigment, "#63b7ff", 0.95);
+    const loadedCarbon = mixHexColors(pigment, "#102a52", 0.96);
+    const dryFiber = mixHexColors(edge, "#f7fcff", 0.88);
+
+    // One matte body carries the silhouette. A broad outer outline recreated
+    // the exact concentric hose this branch exists to remove.
+    this.drawSumiStrokePass(
+      ctx,
+      ribbon,
+      moonlitBody,
+      0.98,
+      peakAlpha * 1.1,
+      "source-over",
+      { noiseChannel: 31, chunkSize: 4 }
+    );
+    this.drawSumiStrokePass(
+      ctx,
+      ribbon,
+      loadedCarbon,
+      0.52,
+      peakAlpha * 1.08,
+      "source-over",
+      {
+        offsetFactor: -0.17,
+        noiseChannel: 33,
+        breakThreshold: 0.29,
+        chunkSize: 4,
+      }
+    );
+
+    // The dry side catches isolated fibers rather than forming another band.
+    this.drawSumiStrokePass(
+      ctx,
+      ribbon,
+      mixHexColors(moonlitBody, dryFiber, 0.46),
+      0.18,
+      peakAlpha * 0.56,
+      "source-over",
+      {
+        offsetFactor: 0.34,
+        noiseChannel: 35,
+        breakThreshold: 0.46,
+        chunkSize: 3,
+      }
+    );
+
+    this.drawSumiTurnPools(ctx, ribbon, moonlitBody, peakAlpha);
+
+    // Sparse dry fibers catch the stage light. Source-over keeps this matte;
+    // screen blending made the edge read like metal or neon.
+    this.drawSumiStrokePass(
+      ctx,
+      ribbon,
+      dryFiber,
+      0.065,
+      peakAlpha * 0.32,
+      "source-over",
+      {
+        offsetFactor: 0.39,
+        noiseChannel: 37,
+        breakThreshold: 0.58,
+        chunkSize: 3,
+      }
+    );
+
+    this.drawSumiEdgeFibers(ctx, ribbon, dryFiber, peakAlpha);
+  }
+
+  private drawSumiStrokePass(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    color: string,
+    widthFactor: number,
+    alpha: number,
+    composite: GlobalCompositeOperation,
+    options: RibbonPassOptions = {}
+  ): void {
+    if (ribbon.length === 0 || alpha <= 0.003) return;
+    const previousComposite = ctx.globalCompositeOperation;
+    const previousAlpha = ctx.globalAlpha;
+    const previousStroke = ctx.strokeStyle;
+    const previousLineWidth = ctx.lineWidth;
+    const previousLineCap = ctx.lineCap;
+    const previousLineJoin = ctx.lineJoin;
+    const previousFill = ctx.fillStyle;
+
+    try {
+      ctx.globalCompositeOperation = composite;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (ribbon.length === 1) {
+        const point = ribbon[0]!;
+        ctx.globalAlpha = alpha * point.fade;
+        ctx.beginPath();
+        ctx.arc(
+          point.x,
+          point.y,
+          point.width * widthFactor * 0.5,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        return;
+      }
+
+      const offsetFactor = options.offsetFactor ?? 0;
+      const noiseChannel = options.noiseChannel ?? 5;
+      const breakThreshold = options.breakThreshold ?? 0;
+      const chunkSize = Math.max(2, options.chunkSize ?? 4);
+      const centerX = (point: RibbonPoint): number =>
+        point.x + point.nx * point.width * offsetFactor;
+      const centerY = (point: RibbonPoint): number =>
+        point.y + point.ny * point.width * offsetFactor;
+      const lastIndex = ribbon.length - 1;
+
+      for (let startIndex = 0; startIndex < lastIndex; ) {
+        const chunkId = Math.floor(ribbon[startIndex]!.sequence / chunkSize);
+        let endIndex = startIndex + 1;
+        while (
+          endIndex < lastIndex &&
+          Math.floor(ribbon[endIndex]!.sequence / chunkSize) === chunkId
+        ) {
+          endIndex++;
+        }
+        const start = ribbon[startIndex]!;
+        const grain = jitterHash(
+          chunkId + start.materialSeed * 4096,
+          noiseChannel
+        );
+        if (grain < breakThreshold) {
+          startIndex = endIndex;
+          continue;
+        }
+
+        let localFade = 0;
+        let localWidth = 0;
+        for (let index = startIndex; index <= endIndex; index++) {
+          localFade += ribbon[index]!.fade;
+          localWidth += ribbon[index]!.width;
+        }
+        const pointCount = endIndex - startIndex + 1;
+        localFade /= pointCount;
+        localWidth /= pointCount;
+        ctx.globalAlpha = alpha * localFade * (0.78 + grain * 0.22);
+        if (ctx.globalAlpha <= 0.003) {
+          startIndex = endIndex;
+          continue;
+        }
+
+        ctx.lineWidth = localWidth * widthFactor;
+        ctx.beginPath();
+        ctx.moveTo(centerX(start), centerY(start));
+        for (let index = startIndex; index < endIndex; index++) {
+          const point0 = ribbon[Math.max(0, index - 1)]!;
+          const point1 = ribbon[index]!;
+          const point2 = ribbon[index + 1]!;
+          const point3 = ribbon[Math.min(lastIndex, index + 2)]!;
+          const p0x = centerX(point0);
+          const p0y = centerY(point0);
+          const p1x = centerX(point1);
+          const p1y = centerY(point1);
+          const p2x = centerX(point2);
+          const p2y = centerY(point2);
+          const p3x = centerX(point3);
+          const p3y = centerY(point3);
+          const segmentLength = Math.hypot(p2x - p1x, p2y - p1y);
+          const controlLimit = segmentLength * 0.45;
+          let control1X = (p2x - p0x) / 6;
+          let control1Y = (p2y - p0y) / 6;
+          let control2X = (p3x - p1x) / 6;
+          let control2Y = (p3y - p1y) / 6;
+          const control1Length = Math.hypot(control1X, control1Y);
+          const control2Length = Math.hypot(control2X, control2Y);
+          if (control1Length > controlLimit && control1Length > 0) {
+            const controlScale = controlLimit / control1Length;
+            control1X *= controlScale;
+            control1Y *= controlScale;
+          }
+          if (control2Length > controlLimit && control2Length > 0) {
+            const controlScale = controlLimit / control2Length;
+            control2X *= controlScale;
+            control2Y *= controlScale;
+          }
+          ctx.bezierCurveTo(
+            p1x + control1X,
+            p1y + control1Y,
+            p2x - control2X,
+            p2y - control2Y,
+            p2x,
+            p2y
+          );
+        }
+        ctx.stroke();
+        startIndex = endIndex;
+      }
+    } finally {
+      ctx.globalCompositeOperation = previousComposite;
+      ctx.globalAlpha = previousAlpha;
+      ctx.strokeStyle = previousStroke;
+      ctx.lineWidth = previousLineWidth;
+      ctx.lineCap = previousLineCap;
+      ctx.lineJoin = previousLineJoin;
+      ctx.fillStyle = previousFill;
+    }
+  }
+
+  private drawSumiTurnPools(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    color: string,
+    peakAlpha: number
+  ): void {
+    if (ribbon.length < 3) return;
+    const previousComposite = ctx.globalCompositeOperation;
+    const previousAlpha = ctx.globalAlpha;
+    const previousFill = ctx.fillStyle;
+    let lastSequence = Number.NEGATIVE_INFINITY;
+
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = mixHexColors(color, "#d7e0ed", 0.24);
+      for (let index = 1; index < ribbon.length - 1; index++) {
+        const point = ribbon[index]!;
+        if (
+          point.turnLoad < 0.62 ||
+          point.sequence - lastSequence < 12 ||
+          jitterHash(point.seed, 111) < 0.74
+        )
+          continue;
+
+        const radius = point.width * (0.2 + point.turnLoad * 0.08);
+        ctx.globalAlpha =
+          peakAlpha * (0.09 + point.turnLoad * 0.11) * point.fade;
+        ctx.save();
+        ctx.translate(
+          point.x - point.nx * point.width * 0.08,
+          point.y - point.ny * point.width * 0.08
+        );
+        ctx.rotate(Math.atan2(-point.nx, point.ny));
+        ctx.scale(1.55, 0.72);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        lastSequence = point.sequence;
+      }
+    } finally {
+      ctx.globalCompositeOperation = previousComposite;
+      ctx.globalAlpha = previousAlpha;
+      ctx.fillStyle = previousFill;
+    }
+  }
+
+  private drawSumiEdgeFibers(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    color: string,
+    peakAlpha: number
+  ): void {
+    if (ribbon.length < 3) return;
+    const previousComposite = ctx.globalCompositeOperation;
+    const previousAlpha = ctx.globalAlpha;
+    const previousStroke = ctx.strokeStyle;
+    const previousLineWidth = ctx.lineWidth;
+    const previousLineCap = ctx.lineCap;
+    const previousLineJoin = ctx.lineJoin;
+
+    try {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = color;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      for (let strand = 0; strand < 3; strand++) {
+        const side = 1;
+        const distance = 0.43 + strand * 0.065;
+        ctx.lineWidth = 0.46 + strand * 0.09;
+        ctx.globalAlpha = peakAlpha * 0.14;
+        ctx.beginPath();
+        let drawing = false;
+
+        for (const point of ribbon) {
+          const fiberContinues =
+            point.fade > 0.03 && jitterHash(point.seed, 121 + strand) > 0.36;
+          if (!fiberContinues) {
+            drawing = false;
+            continue;
+          }
+
+          const jitter =
+            (jitterHash(point.seed, 137 + strand) - 0.5) * point.width * 0.12;
+          const offset = point.width * distance * side + jitter;
+          const x = point.x + point.nx * offset;
+          const y = point.y + point.ny * offset;
+          if (drawing) ctx.lineTo(x, y);
+          else ctx.moveTo(x, y);
+          drawing = true;
+        }
+        ctx.stroke();
+      }
+    } finally {
+      ctx.globalCompositeOperation = previousComposite;
+      ctx.globalAlpha = previousAlpha;
+      ctx.strokeStyle = previousStroke;
+      ctx.lineWidth = previousLineWidth;
+      ctx.lineCap = previousLineCap;
+      ctx.lineJoin = previousLineJoin;
+    }
+  }
+
+  private drawNeonInkRibbon(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    pigment: string,
+    edge: string,
+    peakAlpha: number
+  ): void {
+    this.drawRibbonPass(ctx, ribbon, edge, 1.04, peakAlpha * 0.12, "lighter", {
+      noiseChannel: 39,
+      chunkSize: 6,
+    });
+    this.drawRibbonPass(
+      ctx,
+      ribbon,
+      pigment,
+      0.68,
+      peakAlpha * 0.74,
+      "lighter",
+      { noiseChannel: 41, chunkSize: 5 }
+    );
+    this.drawSegmentedRibbonPass(
+      ctx,
+      ribbon,
+      mixWithWhite(edge, 0.55),
+      0.32,
+      peakAlpha * 0.72,
+      "lighter",
+      43
+    );
+  }
+
+  private drawDenseInkRibbon(
+    ctx: CanvasRenderingContext2D,
+    ribbon: RibbonPoint[],
+    pigment: string,
+    edge: string,
+    peakAlpha: number,
+    needsDarkStageContrast: boolean
+  ): void {
+    this.drawRibbonPass(
+      ctx,
+      ribbon,
+      needsDarkStageContrast ? mixWithWhite(edge, 0.22) : edge,
+      1.02,
+      peakAlpha * (needsDarkStageContrast ? 0.06 : 0.05),
+      "source-over",
+      { noiseChannel: 45, chunkSize: 7 }
+    );
+    this.drawRibbonPass(
+      ctx,
+      ribbon,
+      needsDarkStageContrast ? mixWithWhite(pigment, 0.22) : pigment,
+      0.72,
+      peakAlpha * 0.82,
+      "source-over",
+      { noiseChannel: 47, chunkSize: 6 }
+    );
+    this.drawSegmentedRibbonPass(
+      ctx,
+      ribbon,
+      pigment,
+      0.52,
+      peakAlpha * 0.5,
+      "source-over",
+      49
+    );
+    this.drawRibbonPass(
+      ctx,
+      ribbon,
+      mixWithWhite(edge, needsDarkStageContrast ? 0.72 : 0.42),
+      0.05,
+      peakAlpha * (needsDarkStageContrast ? 0.36 : 0.24),
+      "screen",
+      {
+        offsetFactor: 0.3,
+        noiseChannel: 51,
+        breakThreshold: 0.3,
+        chunkSize: 3,
+      }
+    );
   }
 
   private buildRibbon(
@@ -915,6 +1465,8 @@ export class Ink2DRenderer {
     const ribbon = points.map((point, index) => {
       const previous = points[Math.max(0, index - 1)]!;
       const next = points[Math.min(points.length - 1, index + 1)]!;
+      const turnPrevious = points[Math.max(0, index - 4)]!;
+      const turnNext = points[Math.min(points.length - 1, index + 4)]!;
       let dx = next.x - previous.x;
       let dy = next.y - previous.y;
       const length = Math.hypot(dx, dy);
@@ -925,7 +1477,14 @@ export class Ink2DRenderer {
         dx /= length;
         dy /= length;
       }
-      const widthNoise = 0.84 + jitterHash(point.jitterSeed, 4) * 0.3;
+      const sumi = params.resolvedPalette.id === "sumi";
+      const widthNoise = sumi
+        ? 0.68 + jitterHash(point.jitterSeed, 4) * 0.62
+        : 0.84 + jitterHash(point.jitterSeed, 4) * 0.3;
+      const turnLoad = resolveInkTurnLoad(turnPrevious, point, turnNext);
+      const fade =
+        pointFade(point.age, params.lifetimeSeconds) *
+        smoothstep(0, tailFadeLength, cumulativeLength[index] ?? 0);
       return {
         x: point.x,
         y: point.y,
@@ -935,13 +1494,35 @@ export class Ink2DRenderer {
           Math.max(
             0.75 * scale,
             resolveInkStrokeWidth(params, point.spawnSpeedPx, scale)
-          ) * widthNoise,
-        fade:
-          pointFade(point.age, params.lifetimeSeconds) *
-          smoothstep(0, tailFadeLength, cumulativeLength[index] ?? 0),
+          ) *
+          widthNoise *
+          (1 + turnLoad * (sumi ? 0.64 : 0.42)),
+        fade,
+        turnLoad,
+        sequence: point.sequence,
+        materialSeed: point.materialSeed,
         seed: point.jitterSeed,
       };
     });
+
+    if (params.resolvedPalette.id === "sumi" && ribbon.length > 0) {
+      // Seed the dry side toward a stable stage-space light, then parallel
+      // transport that side through the stroke. Retracing no longer swaps the
+      // carbon and dry edges or crosses them into a cusp knot.
+      const first = ribbon[0]!;
+      if (first.nx * 0.62 + first.ny * -0.78 < 0) {
+        first.nx *= -1;
+        first.ny *= -1;
+      }
+      for (let index = 1; index < ribbon.length; index++) {
+        const previous = ribbon[index - 1]!;
+        const point = ribbon[index]!;
+        if (previous.nx * point.nx + previous.ny * point.ny < 0) {
+          point.nx *= -1;
+          point.ny *= -1;
+        }
+      }
+    }
 
     // Playback can go from still to fast in one frame. Real bristles cannot
     // collapse from a loaded mark to a hairline instantly, so cap the width
@@ -953,6 +1534,20 @@ export class Ink2DRenderer {
         previousWidth / 1.42,
         Math.min(previousWidth * 1.42, ribbon[index]!.width)
       );
+    }
+
+    if (params.resolvedPalette.id === "sumi" && ribbon.length >= 3) {
+      const lastIndex = ribbon.length - 1;
+      // The live brush lifts into the prop instead of ending in a marker cap.
+      // The retained tail already has its own age taper below.
+      ribbon[lastIndex]!.width *= 0.38;
+      ribbon[lastIndex - 1]!.width *= 0.68;
+    }
+
+    // Fade owns both opacity and silhouette. Collapsing the old end to a
+    // point prevents the retained history from ending as a blunt hose cap.
+    for (const point of ribbon) {
+      point.width *= Math.sqrt(Math.max(0, point.fade));
     }
     return ribbon;
   }
@@ -1046,7 +1641,8 @@ export class Ink2DRenderer {
     color: string,
     widthFactor: number,
     alpha: number,
-    composite: GlobalCompositeOperation
+    composite: GlobalCompositeOperation,
+    options: RibbonPassOptions = {}
   ): void {
     if (ribbon.length === 0 || alpha <= 0.003) return;
     const previousComposite = ctx.globalCompositeOperation;
@@ -1057,13 +1653,19 @@ export class Ink2DRenderer {
       ctx.globalCompositeOperation = composite;
       ctx.fillStyle = color;
 
+      const offsetFactor = options.offsetFactor ?? 0;
+      const noiseChannel = options.noiseChannel ?? 5;
+      const breakThreshold = options.breakThreshold ?? 0;
+      const chunkSize = Math.max(2, options.chunkSize ?? 8);
+
       if (ribbon.length === 1) {
         const point = ribbon[0]!;
         ctx.globalAlpha = alpha * point.fade;
+        const centerOffset = point.width * offsetFactor;
         ctx.beginPath();
         ctx.arc(
-          point.x,
-          point.y,
+          point.x + point.nx * centerOffset,
+          point.y + point.ny * centerOffset,
           point.width * widthFactor * 0.5,
           0,
           Math.PI * 2
@@ -1072,72 +1674,101 @@ export class Ink2DRenderer {
         return;
       }
 
-      const left = ribbon.map((point) => {
-        const halfWidth = point.width * widthFactor * 0.5;
-        return {
-          x: point.x + point.nx * halfWidth,
-          y: point.y + point.ny * halfWidth,
-        };
-      });
-      const right = ribbon.map((point) => {
-        const halfWidth = point.width * widthFactor * 0.5;
-        return {
-          x: point.x - point.nx * halfWidth,
-          y: point.y - point.ny * halfWidth,
-        };
-      });
-      const materialAlpha =
-        ribbon.reduce(
-          (sum, point) =>
-            sum + point.fade * (0.88 + jitterHash(point.seed, 5) * 0.12),
-          0
-        ) / ribbon.length;
-      ctx.globalAlpha = alpha * materialAlpha;
-
-      // Quadratic midpoint interpolation smooths both ribbon boundaries while
-      // retaining variable pressure. Filling disconnected quads here produced
-      // visible facets at large export sizes.
-      ctx.beginPath();
-      ctx.moveTo(left[0]!.x, left[0]!.y);
-      for (let index = 1; index < left.length - 1; index++) {
-        const point = left[index]!;
-        const next = left[index + 1]!;
-        ctx.quadraticCurveTo(
-          point.x,
-          point.y,
-          (point.x + next.x) * 0.5,
-          (point.y + next.y) * 0.5
+      const lastIndex = ribbon.length - 1;
+      for (let startIndex = 0; startIndex < lastIndex; ) {
+        // Anchor the material phase to immutable point sequences. Index-based
+        // chunks repartitioned the entire retained stroke whenever the oldest
+        // point was evicted, making grain crawl and broken reflections blink.
+        const chunkId = Math.floor(ribbon[startIndex]!.sequence / chunkSize);
+        let endIndex = startIndex + 1;
+        while (
+          endIndex < lastIndex &&
+          Math.floor(ribbon[endIndex]!.sequence / chunkSize) === chunkId
+        ) {
+          endIndex++;
+        }
+        const start = ribbon[startIndex]!;
+        const end = ribbon[endIndex]!;
+        const grain = jitterHash(
+          chunkId + start.materialSeed * 4096,
+          noiseChannel
         );
-      }
-      const lastLeft = left[left.length - 1]!;
-      ctx.lineTo(lastLeft.x, lastLeft.y);
-      const lastRight = right[right.length - 1]!;
-      ctx.lineTo(lastRight.x, lastRight.y);
-      for (let index = right.length - 2; index > 0; index--) {
-        const point = right[index]!;
-        const next = right[index - 1]!;
-        ctx.quadraticCurveTo(
-          point.x,
-          point.y,
-          (point.x + next.x) * 0.5,
-          (point.y + next.y) * 0.5
-        );
-      }
-      ctx.lineTo(right[0]!.x, right[0]!.y);
-      ctx.closePath();
-      ctx.fill();
+        if (grain >= breakThreshold) {
+          let localFade = 0;
+          for (let index = startIndex; index <= endIndex; index++) {
+            localFade += ribbon[index]!.fade;
+          }
+          localFade /= endIndex - startIndex + 1;
+          ctx.globalAlpha = alpha * localFade * (0.82 + grain * 0.18);
 
-      const newest = ribbon[ribbon.length - 1]!;
-      ctx.globalAlpha = alpha * newest.fade;
-      ctx.beginPath();
-      ctx.arc(
-        newest.x,
-        newest.y,
-        newest.width * widthFactor * 0.5,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
+          if (ctx.globalAlpha > 0.003) {
+            const startCenter = start.width * offsetFactor;
+            const startHalf = start.width * widthFactor * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(
+              start.x + start.nx * (startCenter + startHalf),
+              start.y + start.ny * (startCenter + startHalf)
+            );
+
+            for (let index = startIndex + 1; index < endIndex; index++) {
+              const point = ribbon[index]!;
+              const next = ribbon[index + 1]!;
+              const pointOffset =
+                point.width * offsetFactor + point.width * widthFactor * 0.5;
+              const nextOffset =
+                next.width * offsetFactor + next.width * widthFactor * 0.5;
+              const pointX = point.x + point.nx * pointOffset;
+              const pointY = point.y + point.ny * pointOffset;
+              const nextX = next.x + next.nx * nextOffset;
+              const nextY = next.y + next.ny * nextOffset;
+              ctx.quadraticCurveTo(
+                pointX,
+                pointY,
+                (pointX + nextX) * 0.5,
+                (pointY + nextY) * 0.5
+              );
+            }
+
+            const endCenter = end.width * offsetFactor;
+            const endHalf = end.width * widthFactor * 0.5;
+            ctx.lineTo(
+              end.x + end.nx * (endCenter + endHalf),
+              end.y + end.ny * (endCenter + endHalf)
+            );
+            ctx.lineTo(
+              end.x + end.nx * (endCenter - endHalf),
+              end.y + end.ny * (endCenter - endHalf)
+            );
+
+            for (let index = endIndex - 1; index > startIndex; index--) {
+              const point = ribbon[index]!;
+              const next = ribbon[index - 1]!;
+              const pointOffset =
+                point.width * offsetFactor - point.width * widthFactor * 0.5;
+              const nextOffset =
+                next.width * offsetFactor - next.width * widthFactor * 0.5;
+              const pointX = point.x + point.nx * pointOffset;
+              const pointY = point.y + point.ny * pointOffset;
+              const nextX = next.x + next.nx * nextOffset;
+              const nextY = next.y + next.ny * nextOffset;
+              ctx.quadraticCurveTo(
+                pointX,
+                pointY,
+                (pointX + nextX) * 0.5,
+                (pointY + nextY) * 0.5
+              );
+            }
+
+            ctx.lineTo(
+              start.x + start.nx * (startCenter - startHalf),
+              start.y + start.ny * (startCenter - startHalf)
+            );
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+        startIndex = endIndex;
+      }
     } finally {
       ctx.globalCompositeOperation = previousComposite;
       ctx.globalAlpha = previousAlpha;
@@ -1149,11 +1780,14 @@ export class Ink2DRenderer {
     ctx: CanvasRenderingContext2D,
     params: Ink2DParams,
     scale: number,
-    strokes: readonly InkPoint[][]
+    strokes: readonly InkPoint[][],
+    materialAlpha: number = 1
   ): void {
     const stamp = this.stampCache.get(params);
     const previousComposite = ctx.globalCompositeOperation;
     const previousAlpha = ctx.globalAlpha;
+    const watercolor = !!params.resolvedPalette.watercolor;
+    const sumi = params.resolvedPalette.id === "sumi";
 
     try {
       // The texture is clipped to the ribbon already on this transparent
@@ -1171,8 +1805,7 @@ export class Ink2DRenderer {
           );
           const stampScale = Math.max(
             0.08,
-            (width / (STAMP_R * 2)) *
-              (params.resolvedPalette.watercolor ? 1.45 : 1.1)
+            (width / (STAMP_R * 2)) * (watercolor ? 1.45 : sumi ? 1.28 : 1.1)
           );
           const scaleJitter =
             1 + (jitterHash(point.jitterSeed, 6) - 0.5) * MAX_SCALE_JITTER;
@@ -1180,7 +1813,7 @@ export class Ink2DRenderer {
             point.tangentAngle +
             (jitterHash(point.jitterSeed, 7) - 0.5) * MAX_ROTATION_JITTER;
           ctx.globalAlpha =
-            fade * (params.resolvedPalette.watercolor ? 0.24 : 0.12);
+            fade * materialAlpha * (watercolor ? 0.24 : sumi ? 0.22 : 0.12);
           ctx.save();
           ctx.translate(point.x, point.y);
           ctx.rotate(rotation);
@@ -1208,36 +1841,48 @@ export class Ink2DRenderer {
     const previousLineCap = ctx.lineCap;
     const previousLineJoin = ctx.lineJoin;
     const watercolor = !!params.resolvedPalette.watercolor;
+    const sumi = params.resolvedPalette.id === "sumi";
 
     try {
-      // Dry bristles expose the surface below the wash. Adding three blue
-      // hairlines here recreated the concentric-band problem at a smaller
-      // scale.
+      // Dry bristles expose the stage below the mark. Sumi uses low-alpha,
+      // discontinuous cuts: enough substrate shows through to read as starved
+      // fibers without erasing the body into two outlines.
       ctx.globalCompositeOperation = "destination-out";
       ctx.strokeStyle = "rgba(0,0,0,1)";
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.lineWidth = Math.max(0.65, (watercolor ? 0.62 : 0.8) * scale);
-      ctx.globalAlpha = watercolor ? 0.075 : 0.11;
+      ctx.lineWidth = Math.max(
+        0.45,
+        (watercolor ? 0.62 : sumi ? 0.76 : 0.8) * scale
+      );
+      ctx.globalAlpha = watercolor ? 0.075 : sumi ? 0.28 : 0.11;
 
       for (const points of strokes) {
         if (points.length < 3) continue;
-        for (let strand = -1; strand <= 1; strand++) {
+        const strandFloor = sumi ? -2 : -1;
+        const strandCeiling = sumi ? 2 : 1;
+        for (let strand = strandFloor; strand <= strandCeiling; strand++) {
           ctx.beginPath();
+          let drawing = false;
           points.forEach((point, index) => {
+            if (sumi && jitterHash(point.jitterSeed, 163 + strand) < 0.46) {
+              drawing = false;
+              return;
+            }
             const width = resolveInkStrokeWidth(
               params,
               point.spawnSpeedPx,
               scale
             );
             const offset =
-              strand * width * 0.16 +
+              (strand - (sumi ? 0.5 : 0)) * width * 0.16 +
               (jitterHash(point.jitterSeed, 12 + strand) - 0.5) * width * 0.12;
             const normalAngle = point.tangentAngle + Math.PI / 2;
             const x = point.x + Math.cos(normalAngle) * offset;
             const y = point.y + Math.sin(normalAngle) * offset;
-            if (index === 0) ctx.moveTo(x, y);
+            if (!drawing || index === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
+            drawing = true;
           });
           ctx.stroke();
         }
@@ -1268,37 +1913,65 @@ export class Ink2DRenderer {
         : "source-over";
       const peakAlpha = Math.min(
         params.opacityMax * (0.48 + params.intensity * 0.52),
-        palette.watercolor ? 0.4 : 1
+        1
       );
+      const densityAlpha =
+        palette.id === "sumi"
+          ? Math.max(0.55, Math.sqrt(2 / Math.max(2, this.activeEmitterCount)))
+          : 1;
 
       for (const droplet of this.droplets) {
         const fade = pointFade(droplet.age, droplet.maxAge);
         const speed = Math.hypot(droplet.vx, droplet.vy);
         const stretch = 1 + Math.min(1.7, speed / 190);
         const rotation = Math.atan2(droplet.vy, droplet.vx) - Math.PI / 2;
-        const bodyColor =
-          droplet.kind === "splatter" ? palette.splatterTint : palette.pigment;
+        const sumi = palette.id === "sumi";
+        const blood = palette.id === "blood";
+        const bodyColor = sumi
+          ? mixHexColors(palette.pigment, "#7892b8", 0.62)
+          : droplet.kind === "splatter"
+            ? palette.splatterTint
+            : palette.pigment;
 
         ctx.save();
         ctx.translate(droplet.x, droplet.y);
         ctx.rotate(rotation);
 
-        ctx.globalAlpha = peakAlpha * fade * (palette.watercolor ? 0.24 : 0.2);
-        ctx.fillStyle = palette.edge;
-        ctx.save();
-        ctx.scale(1.45, stretch * 1.25);
-        ctx.beginPath();
-        ctx.arc(0, 0, droplet.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.globalAlpha =
+          peakAlpha * fade * densityAlpha * (palette.watercolor ? 0.24 : 0.2);
+        ctx.fillStyle = sumi
+          ? mixHexColors(palette.edge, "#9eb1cb", 0.5)
+          : palette.edge;
+        if (blood) {
+          this.drawBloodChip(
+            ctx,
+            droplet.radius * 1.14,
+            stretch * 1.08,
+            droplet.jitterSeed
+          );
+        } else {
+          ctx.save();
+          ctx.scale(1.45, stretch * 1.25);
+          ctx.beginPath();
+          ctx.arc(0, 0, droplet.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
 
         ctx.globalAlpha =
-          peakAlpha * fade * (droplet.kind === "splatter" ? 0.9 : 0.78);
+          peakAlpha *
+          fade *
+          densityAlpha *
+          (sumi ? 0.72 : droplet.kind === "splatter" ? 0.9 : 0.78);
         ctx.fillStyle = bodyColor;
-        ctx.scale(0.72, stretch);
-        ctx.beginPath();
-        ctx.arc(0, 0, droplet.radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (blood) {
+          this.drawBloodChip(ctx, droplet.radius, stretch, droplet.jitterSeed);
+        } else {
+          ctx.scale(0.72, stretch);
+          ctx.beginPath();
+          ctx.arc(0, 0, droplet.radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
       }
     } finally {
@@ -1306,6 +1979,41 @@ export class Ink2DRenderer {
       ctx.globalAlpha = previousAlpha;
       ctx.fillStyle = previousFill;
     }
+  }
+
+  private drawBloodChip(
+    ctx: CanvasRenderingContext2D,
+    radius: number,
+    stretch: number,
+    seed: number
+  ): void {
+    const tipOffset = (jitterHash(seed, 21) - 0.5) * radius * 0.46;
+    const left = radius * (0.58 + jitterHash(seed, 22) * 0.28);
+    const right = radius * (0.54 + jitterHash(seed, 23) * 0.32);
+    const front = radius * stretch * (1.05 + jitterHash(seed, 24) * 0.24);
+    const tail = radius * stretch * (0.72 + jitterHash(seed, 25) * 0.2);
+
+    ctx.beginPath();
+    ctx.moveTo(tipOffset, -front);
+    ctx.bezierCurveTo(
+      right * 0.72,
+      -radius * 0.62,
+      right,
+      radius * 0.08,
+      right * 0.52,
+      tail * 0.58
+    );
+    ctx.quadraticCurveTo(0, tail, -left * 0.62, tail * 0.5);
+    ctx.bezierCurveTo(
+      -left,
+      radius * 0.04,
+      -left * 0.68,
+      -radius * 0.58,
+      tipOffset,
+      -front
+    );
+    ctx.closePath();
+    ctx.fill();
   }
 
   private isEndEnabled(end: "A" | "B", params: Ink2DParams): boolean {
@@ -1359,5 +2067,6 @@ export class Ink2DRenderer {
     this.visibleStrokeScratch = [];
     this.stampCache.dispose();
     this.droplets = [];
+    this.activeEmitterCount = 0;
   }
 }

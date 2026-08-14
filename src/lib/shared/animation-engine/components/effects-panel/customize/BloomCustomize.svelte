@@ -136,7 +136,7 @@
         <span class="slider-value">{state.bloom.radius}px</span>
       </div>
 
-      <AdvancedControls count={7}>
+      <AdvancedControls count={6}>
         <div class="slider-row">
           <label for="bloom-core">Core</label>
           <input
@@ -231,26 +231,6 @@
           />
           <span class="slider-value"
             >{Math.round(state.bloom.spikes * 100)}%</span
-          >
-        </div>
-
-        <!-- Chromatic (lens dispersion fringe) -->
-        <div class="slider-row">
-          <label for="bloom-chromatic">Dispersion</label>
-          <input
-            id="bloom-chromatic"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={state.bloom.chromatic}
-            oninput={(e) =>
-              state.updateEffect("bloom", {
-                chromatic: +(e.currentTarget as HTMLInputElement).value,
-              })}
-          />
-          <span class="slider-value"
-            >{Math.round(state.bloom.chromatic * 100)}%</span
           >
         </div>
 

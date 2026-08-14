@@ -12,6 +12,7 @@ import type {
   FireIntent,
   LedIntent,
   CharcoalIntent,
+  CharcoalEmissionStyle,
   ZapIntent,
   SparklesIntent,
   GhostIntent,
@@ -26,6 +27,7 @@ import type {
   AnimalIntent,
   PulseIntent,
 } from "../domain/effects-config";
+import type { Charcoal3DMotionProfile } from "./charcoal-3d-motion-profiles";
 import type { WaterPalette } from "../domain/water-palettes";
 import type { BubblePalette } from "../domain/bubble-palettes";
 import type { PetalPalette } from "../domain/petal-palettes";
@@ -80,6 +82,10 @@ export interface Led3DParams extends LedIntent {
 }
 
 export interface Charcoal3DParams extends CharcoalIntent {
+  /** Required 3D behavior signature after translation. */
+  emissionStyle: CharcoalEmissionStyle;
+  /** Resolved motion controls consumed by the 3D renderer. */
+  motionProfile: Readonly<Charcoal3DMotionProfile>;
   /** Particle lifetime in seconds. */
   particleLifetime: number;
   /** Gravity strength on particles (world units/s²). */

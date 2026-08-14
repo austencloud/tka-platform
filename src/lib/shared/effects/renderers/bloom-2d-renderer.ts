@@ -2,7 +2,6 @@ import type { Bloom2DParams } from "../translators/canvas2d-types";
 import {
   resolveBloomAfterglowRetention,
   resolveBloomExposure,
-  resolveBloomFootprintScale,
   resolveBloomHistoryDeposit,
 } from "../domain/bloom-optics";
 
@@ -27,31 +26,21 @@ export interface BloomTipInput {
 
 type Ctx2D = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
-const AURORA_SPECTRUM = [
-  "255,78,177",
-  "255,118,72",
-  "255,190,72",
-  "50,224,210",
-  "75,126,255",
-  "182,92,255",
-] as const;
-
 /**
  * Lens-bloom renderer for the Canvas2D backend.
  *
  * Renders each prop tip as an over-bright moving light source the way a camera
- * lens responds to one - the optics of brightness, not just a glow. Five layers
+ * lens responds to one - the optics of brightness, not just a glow. Four layers
  * per tip, all additive:
  *   1. Colored halo (falloff-shaped radial gradient).
  *   2. Blown-out white-hot core (over-exposure).
  *   3. Anamorphic streak - the halo stretched along the motion vector; length
  *      grows with the tip's per-frame speed.
  *   4. Diffraction star spikes - the lens glint off a bright point.
- *   5. Aurora - one stable pearlescent spectrum spanning each prop.
  *
  * A long-exposure afterglow is achieved with an offscreen accumulation buffer.
  * Only moving colored scatter enters that buffer. The white source, spikes,
- * and spectral fringe stay live, so revisiting a pose cannot stack them into a
+ * and diffraction spikes stay live, so revisiting a pose cannot stack them into a
  * flash. The decay remains frame-based so QR export stays deterministic.
  *
  * This is the only effect named after a real photographic phenomenon, and it
@@ -218,32 +207,9 @@ export class Bloom2DRenderer {
     if (baseAlpha <= 0) return;
 
     const coreR = Math.max(1, params.radius * scale);
-    const footprintScale = resolveBloomFootprintScale(
-      new Set(tips.map((tip) => tip.propIndex)).size
-    );
-
     target.save();
     target.globalCompositeOperation = "lighter";
     target.globalAlpha = 1;
-
-    if (params.chromatic > 0) {
-      const tipsByProp = new Map<number, BloomTipInput[]>();
-      for (const tip of tips) {
-        const propTips = tipsByProp.get(tip.propIndex);
-        if (propTips) propTips.push(tip);
-        else tipsByProp.set(tip.propIndex, [tip]);
-      }
-      for (const propTips of tipsByProp.values()) {
-        this.drawIridescentAura(
-          target,
-          propTips,
-          coreR,
-          params.chromatic,
-          footprintScale,
-          baseAlpha
-        );
-      }
-    }
 
     for (const tip of tips) {
       const color = this.pickColor(params, tip, t);
@@ -263,7 +229,7 @@ export class Bloom2DRenderer {
         coreR,
         params.falloff,
         color,
-        baseAlpha * (1 - params.chromatic * 0.94)
+        baseAlpha
       );
 
       // 2. Anamorphic motion streak.
@@ -421,84 +387,6 @@ export class Bloom2DRenderer {
     g.addColorStop(1, "rgba(255,255,255,0)");
     target.fillStyle = g;
     target.fillRect(x - r, y - r, r * 2, r * 2);
-  }
-
-  /** A stable opalescent light field with no moving parts or hard color seams. */
-  private drawIridescentAura(
-    target: Ctx2D,
-    tips: BloomTipInput[],
-    coreR: number,
-    chromatic: number,
-    footprintScale: number,
-    alpha: number
-  ): void {
-    const centerX =
-      tips.reduce((sum, tip) => sum + tip.x, 0) / Math.max(1, tips.length);
-    const centerY =
-      tips.reduce((sum, tip) => sum + tip.y, 0) / Math.max(1, tips.length);
-
-    let covarianceXX = 0;
-    let covarianceXY = 0;
-    let covarianceYY = 0;
-    for (const tip of tips) {
-      const dx = tip.x - centerX;
-      const dy = tip.y - centerY;
-      covarianceXX += dx * dx;
-      covarianceXY += dx * dy;
-      covarianceYY += dy * dy;
-    }
-    const angle =
-      tips.length > 1
-        ? 0.5 * Math.atan2(2 * covarianceXY, covarianceXX - covarianceYY)
-        : -Math.PI * 0.22;
-    const axisX = Math.cos(angle);
-    const axisY = Math.sin(angle);
-    let halfLength = 0;
-    let halfWidth = 0;
-    for (const tip of tips) {
-      const dx = tip.x - centerX;
-      const dy = tip.y - centerY;
-      halfLength = Math.max(halfLength, Math.abs(dx * axisX + dy * axisY));
-      halfWidth = Math.max(halfWidth, Math.abs(-dx * axisY + dy * axisX));
-    }
-
-    const sourceRadius = coreR * footprintScale;
-    halfLength = Math.max(sourceRadius, halfLength + sourceRadius * 0.64);
-    halfWidth = Math.max(sourceRadius * 0.74, halfWidth + sourceRadius * 0.34);
-    const auraAlpha = clamp01(alpha * chromatic);
-    const layers = [
-      { scale: 1, opacity: 0.58, blur: sourceRadius * 0.12 },
-      { scale: 0.76, opacity: 0.46, blur: sourceRadius * 0.04 },
-    ] as const;
-
-    for (const layer of layers) {
-      target.save();
-      target.translate(centerX, centerY);
-      target.rotate(angle);
-      target.filter = `blur(${Math.max(1, layer.blur)}px)`;
-
-      const gradient = target.createLinearGradient(
-        -halfLength * layer.scale,
-        0,
-        halfLength * layer.scale,
-        0
-      );
-      for (let index = 0; index < AURORA_SPECTRUM.length; index++) {
-        const rgb = AURORA_SPECTRUM[index]!;
-        const position = index / (AURORA_SPECTRUM.length - 1);
-        gradient.addColorStop(
-          position,
-          `rgba(${rgb},${auraAlpha * layer.opacity})`
-        );
-      }
-
-      target.fillStyle = gradient;
-      target.scale(1, halfWidth / halfLength);
-      target.beginPath();
-      target.arc(0, 0, halfLength * layer.scale, 0, Math.PI * 2);
-      target.fill();
-      target.restore();
-    }
   }
 
   /**

@@ -9,7 +9,6 @@ export interface BloomOpticalFrame3D {
   stretch: number;
   streak: number;
   spikes: number;
-  chromatic: number;
 }
 
 const HISTORY_CAPACITY: Record<QualityTier, number> = {
@@ -22,8 +21,7 @@ export function resolveBloomOpticalFrame3D(
   params: Bloom3DParams,
   speed: number,
   timeSeconds: number,
-  sourceNormalization: number,
-  footprintScale: number = 1
+  sourceNormalization: number
 ): BloomOpticalFrame3D {
   const motion = Math.min(
     1.5,
@@ -36,21 +34,15 @@ export function resolveBloomOpticalFrame3D(
     timeSeconds
   );
 
-  const dispersion = Math.min(1, Math.max(0, params.chromatic));
-  const auroraFootprint = 1 - dispersion + dispersion * footprintScale;
   const velocityStretch = 1 + params.streak * motion * 5.5;
 
   return {
     energy: exposure * Math.max(0, sourceNormalization),
     coreStrength: Math.min(1, Math.max(0, params.coreStrength)),
-    radiusWorld: params.haloRadiusWorld * auroraFootprint,
+    radiusWorld: params.haloRadiusWorld,
     stretch: velocityStretch,
     streak: params.streak * Math.min(1, motion),
     spikes: params.spikes * (0.55 + Math.min(1, motion) * 0.45),
-    // Aurora is a lens treatment, not a motion trigger. Letting speed multiply
-    // it from zero to full made every acceleration flash between white and
-    // saturated color. Constant energy follows the prop without blinking.
-    chromatic: dispersion,
   };
 }
 

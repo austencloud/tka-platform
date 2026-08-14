@@ -18,7 +18,6 @@ import {
 import { BoundedSourcePath3D } from "../scene-effects/bounded-source-path-3d";
 import type { Bloom3DParams } from "$lib/shared/effects/translators/webgl3d-types";
 import type { BloomTipSource3D } from "../scene-effects/scene-effect-source-3d";
-import { resolveBloomFootprintScale } from "$lib/shared/effects/domain/bloom-optics";
 import {
   DynamicLightManager,
   type LightHandle,
@@ -65,7 +64,6 @@ interface BloomInstanceWrite {
   stretch: number;
   streak: number;
   spikes: number;
-  chromatic: number;
   falloff: number;
   history: number;
   coreStrength: number;
@@ -85,18 +83,14 @@ export class BloomRenderer3D {
   private readonly velocitySeeds = new Float32Array(INSTANCE_CAPACITY * 4);
   private readonly colors = new Float32Array(INSTANCE_CAPACITY * 3);
   private readonly optics = new Float32Array(INSTANCE_CAPACITY * 4);
-  private readonly lenses = new Float32Array(INSTANCE_CAPACITY * 4);
+  private readonly lenses = new Float32Array(INSTANCE_CAPACITY * 3);
   private readonly coreStrengths = new Float32Array(INSTANCE_CAPACITY);
   private readonly attributes: readonly InstancedBufferAttribute[];
   private readonly material = createBloomMaterial3D();
   private readonly color = new Color();
   private readonly opticalAxis = new Vector3();
-  private readonly lightPositions = [new Vector3(), new Vector3()] as const;
-  private readonly lightColors = [new Color(), new Color()] as const;
-  private readonly lightHandles: [LightHandle | null, LightHandle | null] = [
-    null,
-    null,
-  ];
+  private readonly selectedLightSources: BloomTipSource3D[] = [];
+  private readonly lightHandles: Array<LightHandle | null> = [];
   private parent: Object3D | null = null;
   private lightManager: DynamicLightManager | null = null;
   private lightTier: QualityTier | null = null;
@@ -110,7 +104,7 @@ export class BloomRenderer3D {
     const velocitySeedAttribute = this.attribute(this.velocitySeeds, 4);
     const colorAttribute = this.attribute(this.colors, 3);
     const opticsAttribute = this.attribute(this.optics, 4);
-    const lensAttribute = this.attribute(this.lenses, 4);
+    const lensAttribute = this.attribute(this.lenses, 3);
     const coreStrengthAttribute = this.attribute(this.coreStrengths, 1);
     this.attributes = [
       centerAttribute,
@@ -153,7 +147,6 @@ export class BloomRenderer3D {
 
     const propCount = this.countProps(sources);
     const normalization = resolveBloomSourceNormalization(propCount);
-    const footprintScale = resolveBloomFootprintScale(propCount);
     let maxEmissive = 1;
 
     for (const source of sources) {
@@ -166,16 +159,13 @@ export class BloomRenderer3D {
     }
 
     this.visibleCount = 0;
-    this.writeAuroraGroups(sources, normalization, footprintScale);
     for (const source of sources) {
       const frame = resolveBloomOpticalFrame3D(
         source.params,
         source.speed,
         this.clock,
-        normalization,
-        footprintScale
+        normalization
       );
-      if (frame.chromatic > 0) continue;
       const opticalAxis = this.resolveOpticalAxis(source);
       this.resolveColor(source);
       this.write({
@@ -193,7 +183,6 @@ export class BloomRenderer3D {
         stretch: frame.stretch,
         streak: frame.streak,
         spikes: frame.spikes,
-        chromatic: frame.chromatic,
         falloff: resolveBloomFalloffCode(source.params.falloff),
         history: 0,
         coreStrength: frame.coreStrength,
@@ -206,98 +195,6 @@ export class BloomRenderer3D {
     this.material.uniforms.uEmissiveStrength!.value = maxEmissive;
     this.commit();
     this.updateLights(sources, normalization);
-  }
-
-  /** Aurora is one stable optical field per prop, not a rainbow coin per tip. */
-  private writeAuroraGroups(
-    sources: readonly BloomTipSource3D[],
-    normalization: number,
-    footprintScale: number
-  ): void {
-    const sourcesByProp = new Map<number, BloomTipSource3D[]>();
-    for (const source of sources) {
-      if (source.params.chromatic <= 0) continue;
-      const propId = Math.floor((source.sourceId - 1) / 2);
-      const propSources = sourcesByProp.get(propId);
-      if (propSources) propSources.push(source);
-      else sourcesByProp.set(propId, [source]);
-    }
-
-    for (const [propId, propSources] of sourcesByProp) {
-      const first = propSources[0]!;
-      const frame = resolveBloomOpticalFrame3D(
-        first.params,
-        first.speed,
-        this.clock,
-        normalization,
-        footprintScale
-      );
-      let centerX = 0;
-      let centerY = 0;
-      let centerZ = 0;
-      for (const source of propSources) {
-        centerX += source.position.x;
-        centerY += source.position.y;
-        centerZ += source.position.z;
-      }
-      centerX /= propSources.length;
-      centerY /= propSources.length;
-      centerZ /= propSources.length;
-
-      let axisX = 1;
-      let axisY = 0;
-      let axisZ = 0;
-      let maxDistanceSquared = 0;
-      for (let left = 0; left < propSources.length; left++) {
-        for (let right = left + 1; right < propSources.length; right++) {
-          const a = propSources[left]!.position;
-          const b = propSources[right]!.position;
-          const dx = b.x - a.x;
-          const dy = b.y - a.y;
-          const dz = b.z - a.z;
-          const distanceSquared = dx * dx + dy * dy + dz * dz;
-          if (distanceSquared > maxDistanceSquared) {
-            maxDistanceSquared = distanceSquared;
-            const inverseDistance = 1 / Math.sqrt(distanceSquared);
-            axisX = dx * inverseDistance;
-            axisY = dy * inverseDistance;
-            axisZ = dz * inverseDistance;
-          }
-        }
-      }
-      if (maxDistanceSquared === 0) {
-        const stableAxis = this.resolveOpticalAxis(first);
-        axisX = stableAxis.x;
-        axisY = stableAxis.y;
-        axisZ = stableAxis.z;
-      }
-
-      const width = frame.radiusWorld * 0.95;
-      const halfSpan = Math.sqrt(maxDistanceSquared) * 0.5;
-      const halfLength = Math.max(width, halfSpan + width * 0.46);
-      this.color.set(first.params.color);
-      this.write({
-        x: centerX,
-        y: centerY,
-        z: centerZ,
-        velocityX: axisX,
-        velocityY: axisY,
-        velocityZ: axisZ,
-        red: this.color.r,
-        green: this.color.g,
-        blue: this.color.b,
-        energy: Math.min(1.2, frame.energy * 1.15),
-        radius: width,
-        stretch: Math.min(1.9, halfLength / width),
-        streak: 0,
-        spikes: 0,
-        chromatic: frame.chromatic,
-        falloff: resolveBloomFalloffCode(first.params.falloff),
-        history: 0,
-        coreStrength: 0,
-        seed: (propId % 7) / 7,
-      });
-    }
   }
 
   clear(): void {
@@ -429,7 +326,6 @@ export class BloomRenderer3D {
         streak:
           state.params.streak * Math.min(1, motion) * (1 - progress * 0.35),
         spikes: 0,
-        chromatic: 0,
         falloff: resolveBloomFalloffCode(state.params.falloff),
         history: 1,
         coreStrength: 0,
@@ -516,16 +412,16 @@ export class BloomRenderer3D {
       this.lightTier = tier;
     }
 
-    const counts = [0, 0];
-    const energy = [0, 0];
-    const ranges = [0, 0];
-    for (let propIndex = 0; propIndex < 2; propIndex++) {
-      this.lightPositions[propIndex]!.set(0, 0, 0);
-      this.lightColors[propIndex]!.setRGB(0, 0, 0);
-    }
+    const lightSources = this.selectLightSources(
+      sources,
+      this.lightManager.capacity
+    );
+    // The cap shader supplies the visible glow. Share one physical-light budget
+    // across the selected tips so more performers never brighten the whole set.
+    const intensityScale = 1 / Math.max(1, lightSources.length);
 
-    for (const source of sources) {
-      const propIndex = source.propIndex;
+    for (let slot = 0; slot < lightSources.length; slot++) {
+      const source = lightSources[slot]!;
       const frame = resolveBloomOpticalFrame3D(
         source.params,
         source.speed,
@@ -533,55 +429,81 @@ export class BloomRenderer3D {
         normalization
       );
       this.resolveColor(source);
-      this.lightPositions[propIndex]!.add(
-        this.colorPosition.set(
-          source.position.x,
-          source.position.y,
-          source.position.z
-        )
+      this.colorPosition.set(
+        source.position.x,
+        source.position.y,
+        source.position.z
       );
-      this.lightColors[propIndex]!.r += this.color.r;
-      this.lightColors[propIndex]!.g += this.color.g;
-      this.lightColors[propIndex]!.b += this.color.b;
-      energy[propIndex]! +=
-        source.params.lightIntensity * (0.35 + frame.energy * 1.65);
-      ranges[propIndex]! = Math.max(
-        ranges[propIndex]!,
-        source.params.lightRange
+      const intensity = Math.min(
+        1.4,
+        source.params.lightIntensity *
+          (0.35 + frame.energy * 1.65) *
+          intensityScale
       );
-      counts[propIndex]!++;
-    }
-
-    for (let propIndex = 0; propIndex < 2; propIndex++) {
-      const count = counts[propIndex]!;
-      const handle = this.lightHandles[propIndex];
-      if (count === 0) {
-        if (handle) this.lightManager.releaseLight(handle);
-        this.lightHandles[propIndex] = null;
-        continue;
-      }
-      this.lightPositions[propIndex]!.divideScalar(count);
-      this.lightColors[propIndex]!.multiplyScalar(1 / count);
-      const intensity = Math.min(1.4, energy[propIndex]! / count);
+      const handle = this.lightHandles[slot];
       if (handle) {
         this.lightManager.updateLight(
           handle,
-          this.lightPositions[propIndex]!,
+          this.colorPosition,
           intensity,
-          this.lightColors[propIndex]!
+          this.color,
+          source.params.lightRange
         );
       } else {
-        this.lightHandles[propIndex] = this.lightManager.requestLight(
-          this.lightPositions[propIndex]!,
-          this.lightColors[propIndex]!,
+        this.lightHandles[slot] = this.lightManager.requestLight(
+          this.colorPosition,
+          this.color,
           intensity,
-          ranges[propIndex]!
+          source.params.lightRange
         );
       }
     }
+
+    for (
+      let slot = lightSources.length;
+      slot < this.lightHandles.length;
+      slot++
+    ) {
+      const handle = this.lightHandles[slot];
+      if (handle) this.lightManager.releaseLight(handle);
+    }
+    this.lightHandles.length = lightSources.length;
   }
 
   private readonly colorPosition = new Vector3();
+
+  /**
+   * Dynamic lights are scarce, especially in formations. Every allocated light
+   * stays on a real visible tip; evenly spaced source IDs spread the available
+   * illumination across performers without inventing a midpoint in empty air.
+   */
+  private selectLightSources(
+    sources: readonly BloomTipSource3D[],
+    capacity: number
+  ): readonly BloomTipSource3D[] {
+    this.selectedLightSources.length = 0;
+    if (capacity <= 0 || sources.length === 0) {
+      return this.selectedLightSources;
+    }
+    if (sources.length <= capacity) {
+      this.selectedLightSources.push(...sources);
+      return this.selectedLightSources;
+    }
+    if (capacity === 1) {
+      this.selectedLightSources.push(
+        sources[Math.floor((sources.length - 1) / 2)]!
+      );
+      return this.selectedLightSources;
+    }
+
+    for (let slot = 0; slot < capacity; slot++) {
+      const sourceIndex = Math.round(
+        (slot * (sources.length - 1)) / (capacity - 1)
+      );
+      this.selectedLightSources.push(sources[sourceIndex]!);
+    }
+    return this.selectedLightSources;
+  }
 
   private releaseLights(): void {
     if (!this.lightManager) return;
@@ -597,6 +519,7 @@ export class BloomRenderer3D {
     this.lightManager?.dispose();
     this.lightManager = null;
     this.lightTier = null;
+    this.lightHandles.length = 0;
   }
 
   private write(instance: BloomInstanceWrite): void {
@@ -618,10 +541,9 @@ export class BloomRenderer3D {
     this.optics[i4 + 1] = instance.radius;
     this.optics[i4 + 2] = instance.stretch;
     this.optics[i4 + 3] = instance.streak;
-    this.lenses[i4] = instance.spikes;
-    this.lenses[i4 + 1] = instance.chromatic;
-    this.lenses[i4 + 2] = instance.falloff;
-    this.lenses[i4 + 3] = instance.history;
+    this.lenses[i3] = instance.spikes;
+    this.lenses[i3 + 1] = instance.falloff;
+    this.lenses[i3 + 2] = instance.history;
     this.coreStrengths[index] = instance.coreStrength;
     this.visibleCount++;
   }

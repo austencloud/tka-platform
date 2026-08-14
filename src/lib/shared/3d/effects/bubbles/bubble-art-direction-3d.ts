@@ -6,6 +6,9 @@ export const BUBBLE_MAX_OPACITY = 0.82;
 export const BUBBLE_WORLD_SCALE = 0.72;
 export const BUBBLE_FRAGMENT_COUNT_MIN = 4;
 export const BUBBLE_FRAGMENT_COUNT_MAX = 7;
+export const BUBBLE_MAX_INHERITED_SPEED = 0.8;
+export const BUBBLE_MAX_DEFORMATION = 0.18;
+export const BUBBLE_MIN_REBOUND_DEFORMATION = -0.035;
 
 const SIZE_FLOOR = 0.34;
 const SIZE_BIAS = 2;
@@ -17,6 +20,17 @@ export interface BubbleShellFrame3D {
   scaleX: number;
   scaleY: number;
   scaleZ: number;
+}
+
+export interface BubbleDeformationScales3D {
+  major: number;
+  minor: number;
+  depth: number;
+}
+
+export interface BubbleRuptureOrigin3D {
+  x: number;
+  y: number;
 }
 
 function clamp01(value: number): number {
@@ -47,6 +61,75 @@ export function resolveBubbleRiseSpeed3D(
   sizeMultiplier: number
 ): number {
   return baseRiseSpeed * (0.55 + sizeMultiplier * 0.75);
+}
+
+/**
+ * New film follows a moving prop long enough to draw its path, then air drag
+ * hands control back to buoyancy. The cap keeps a fast spin from firing soap
+ * bubbles across the whole stage.
+ */
+export function resolveBubbleVelocityInheritance3D(
+  sourceSpeed: number
+): number {
+  const speed = Math.max(0, sourceSpeed);
+  if (speed <= 0.0001) return 0;
+  return Math.min(0.22, BUBBLE_MAX_INHERITED_SPEED / speed);
+}
+
+/**
+ * Fast prop movement temporarily wins over surface tension. Larger shells
+ * respond more because the same film has more area to pull out of round.
+ */
+export function resolveBubbleDeformationTarget3D(
+  relativeSpeed: number,
+  sizeMultiplier: number
+): number {
+  const movingSpeed = Math.max(0, relativeSpeed - 0.04);
+  const sizeResponse = Math.max(
+    0.62,
+    Math.min(1.25, 0.55 + Math.max(0, sizeMultiplier) * 0.42)
+  );
+  return Math.min(BUBBLE_MAX_DEFORMATION, movingSpeed * 0.18 * sizeResponse);
+}
+
+/**
+ * The film stretches in one direction and contracts across the other two.
+ * Keeping the product at one prevents a moving bubble from visibly inflating.
+ */
+export function resolveBubbleDeformationScales3D(
+  deformation: number
+): BubbleDeformationScales3D {
+  const bounded = Math.max(
+    BUBBLE_MIN_REBOUND_DEFORMATION,
+    Math.min(BUBBLE_MAX_DEFORMATION, deformation)
+  );
+  const major = 1 + bounded;
+  const crossSection = 1 / Math.sqrt(major);
+  return {
+    major,
+    minor: crossSection,
+    depth: crossSection,
+  };
+}
+
+/**
+ * Mature film usually fails in its gravity-drained upper region. The seed
+ * keeps the break deterministic while moving it off-center for each shell.
+ */
+export function resolveBubbleRuptureOrigin3D(
+  randomUnit: number
+): BubbleRuptureOrigin3D {
+  const wrappedSeed = randomUnit - Math.floor(randomUnit);
+  const angle = wrappedSeed * TAU;
+  return {
+    x: Math.cos(angle) * 0.38,
+    y: 0.54 + Math.sin(angle) * 0.14,
+  };
+}
+
+export function resolveBubbleRuptureProgress3D(popAge: number): number {
+  const progress = clamp01(popAge / BUBBLE_POP_DURATION_SECONDS);
+  return Math.pow(progress, 0.72);
 }
 
 export function resolveBubbleWobbleX3D(
@@ -90,8 +173,9 @@ export function resolveAliveBubbleFrame3D(
 }
 
 /**
- * A popped shell loses height while its rim relaxes outward. The old 1.5x
- * uniform expansion read as another bubble growing, not a film breaking.
+ * The shell stays present while the shader opens a local rupture through it.
+ * Only a slight tension release remains; flattening the whole bubble hid the
+ * expanding hole and made every pop look like a deflating balloon.
  */
 export function resolvePoppingBubbleFrame3D(
   popRadius: number,
@@ -99,13 +183,13 @@ export function resolvePoppingBubbleFrame3D(
 ): BubbleShellFrame3D {
   const progress = clamp01(popAge / BUBBLE_POP_DURATION_SECONDS);
   const relaxed = 1 - Math.pow(1 - progress, 2);
-  const radius = popRadius * (1 + relaxed * 0.18);
+  const radius = popRadius * (1 + relaxed * 0.055);
   return {
-    alpha: Math.pow(1 - progress, 1.6) * BUBBLE_MAX_OPACITY,
+    alpha: Math.pow(1 - progress, 0.72) * BUBBLE_MAX_OPACITY,
     radius,
-    scaleX: radius * (1 + progress * 0.12),
-    scaleY: radius * (1 - progress * 0.84),
-    scaleZ: radius * (1 + progress * 0.12),
+    scaleX: radius * (1 + progress * 0.02),
+    scaleY: radius * (1 - progress * 0.015),
+    scaleZ: radius * (1 - progress * 0.005),
   };
 }
 

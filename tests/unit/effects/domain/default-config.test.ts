@@ -58,15 +58,15 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
     }
   });
 
-  it("uses Sumi Flow as the ink default", () => {
+  it("uses continuous cool-blue liquid ink as the ink default", () => {
     expect(DEFAULT_EFFECTS_CONFIG.ink).toEqual({
-      ambientEmission: 0.1,
-      motionEmission: 0.94,
-      intensity: 0.68,
-      palette: "sumi",
-      customColor: "#0a0a0a",
-      viscosity: 0.38,
-      splatterIntensity: 0.16,
+      ambientEmission: 0.06,
+      motionEmission: 0.9,
+      intensity: 0.64,
+      palette: "custom",
+      customColor: "#2f8fb3",
+      viscosity: 0.28,
+      splatterIntensity: 0.06,
       trackingMode: "both_ends",
     });
   });

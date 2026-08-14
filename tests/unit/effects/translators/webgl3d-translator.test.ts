@@ -30,7 +30,9 @@ describe("resolveTrails3D", () => {
   });
 
   it("override taperCurve wins", () => {
-    expect(resolveTrails3D(intent, { taperCurve: "linear" }).taperCurve).toBe("linear");
+    expect(resolveTrails3D(intent, { taperCurve: "linear" }).taperCurve).toBe(
+      "linear"
+    );
   });
 
   it("defaults maxPoints to 256", () => {
@@ -42,21 +44,31 @@ describe("resolveFire3D", () => {
   const intent = DEFAULT_EFFECTS_CONFIG.fire;
 
   it("volumetricDensity scales with intensity: 0.3 + i*0.7", () => {
-    expect(resolveFire3D({ ...intent, intensity: 0.5 }).volumetricDensity).toBeCloseTo(0.65, 5);
-    expect(resolveFire3D({ ...intent, intensity: 1.0 }).volumetricDensity).toBeCloseTo(1.0, 5);
+    expect(
+      resolveFire3D({ ...intent, intensity: 0.5 }).volumetricDensity
+    ).toBeCloseTo(0.65, 5);
+    expect(
+      resolveFire3D({ ...intent, intensity: 1.0 }).volumetricDensity
+    ).toBeCloseTo(1.0, 5);
   });
 
   it("emissionRate scales with intensity: 200 + i*800", () => {
     expect(resolveFire3D({ ...intent, intensity: 0.5 }).emissionRate).toBe(600);
-    expect(resolveFire3D({ ...intent, intensity: 1.0 }).emissionRate).toBe(1000);
+    expect(resolveFire3D({ ...intent, intensity: 1.0 }).emissionRate).toBe(
+      1000
+    );
   });
 
   it("vortexStrength scales with turbulence: t*3", () => {
-    expect(resolveFire3D({ ...intent, turbulence: 0.5 }).vortexStrength).toBeCloseTo(1.5, 5);
+    expect(
+      resolveFire3D({ ...intent, turbulence: 0.5 }).vortexStrength
+    ).toBeCloseTo(1.5, 5);
   });
 
   it("bloomContribution scales with intensity: i*0.6", () => {
-    expect(resolveFire3D({ ...intent, intensity: 1.0 }).bloomContribution).toBeCloseTo(0.6, 5);
+    expect(
+      resolveFire3D({ ...intent, intensity: 1.0 }).bloomContribution
+    ).toBeCloseTo(0.6, 5);
   });
 
   it("shadowCasting defaults to false", () => {
@@ -64,7 +76,9 @@ describe("resolveFire3D", () => {
   });
 
   it("override volumetricDensity wins", () => {
-    expect(resolveFire3D(intent, { volumetricDensity: 0.9 }).volumetricDensity).toBe(0.9);
+    expect(
+      resolveFire3D(intent, { volumetricDensity: 0.9 }).volumetricDensity
+    ).toBe(0.9);
   });
 });
 
@@ -80,19 +94,69 @@ describe("resolveLed3D", () => {
   });
 
   it("preserves primaryColor from intent", () => {
-    expect(resolveLed3D({ ...intent, primaryColor: "#123456" }).primaryColor).toBe("#123456");
+    expect(
+      resolveLed3D({ ...intent, primaryColor: "#123456" }).primaryColor
+    ).toBe("#123456");
   });
 });
 
 describe("resolveCharcoal3D", () => {
   const intent = DEFAULT_EFFECTS_CONFIG.charcoal;
 
-  it("particleLifetime scales with glow: 0.5 + g*1.5", () => {
-    expect(resolveCharcoal3D({ ...intent, glow: 0 }).particleLifetime).toBeCloseTo(0.5, 5);
-    expect(resolveCharcoal3D({ ...intent, glow: 1 }).particleLifetime).toBeCloseTo(2.0, 5);
+  it("keeps wider, hotter coal alive longer", () => {
+    expect(
+      resolveCharcoal3D({ ...intent, spread: 0, glow: 0 }).particleLifetime
+    ).toBeCloseTo(0.55, 5);
+    expect(
+      resolveCharcoal3D({ ...intent, spread: 1, glow: 1 }).particleLifetime
+    ).toBeCloseTo(1.65, 5);
   });
 
-  it("defaults gravity to -2.0 (upward drift)", () => {
-    expect(resolveCharcoal3D(intent).gravity).toBeCloseTo(-2.0, 5);
+  it("uses downward gravity and lets broad sprays hang longer", () => {
+    const tight = resolveCharcoal3D({ ...intent, spread: 0 });
+    const broad = resolveCharcoal3D({ ...intent, spread: 1 });
+
+    expect(tight.gravity).toBeCloseTo(7.4 * 0.82, 5);
+    expect(broad.gravity).toBeCloseTo(5.6 * 0.82, 5);
+  });
+
+  it("resolves four distinct physical emission signatures", () => {
+    const steelWool = resolveCharcoal3D({
+      ...intent,
+      emissionStyle: "steel-wool",
+    }).motionProfile;
+    const forgeBurst = resolveCharcoal3D({
+      ...intent,
+      emissionStyle: "forge-burst",
+    }).motionProfile;
+    const cinderFan = resolveCharcoal3D({
+      ...intent,
+      emissionStyle: "cinder-fan",
+    }).motionProfile;
+    const bankedEmber = resolveCharcoal3D({
+      ...intent,
+      emissionStyle: "banked-ember",
+    }).motionProfile;
+
+    expect(
+      new Set(
+        [steelWool, forgeBurst, cinderFan, bankedEmber].map((profile) =>
+          JSON.stringify(profile)
+        )
+      )
+    ).toHaveLength(4);
+    expect(steelWool.motionEmissionScale).toBeGreaterThan(
+      forgeBurst.motionEmissionScale
+    );
+    expect(forgeBurst.burstFragmentScale).toBeGreaterThan(
+      steelWool.burstFragmentScale
+    );
+    expect(cinderFan.coneScale).toBeGreaterThan(forgeBurst.coneScale);
+    expect(bankedEmber.idleEmissionScale).toBeGreaterThan(
+      steelWool.idleEmissionScale
+    );
+    expect(bankedEmber.fragmentSizeScale).toBeGreaterThan(
+      cinderFan.fragmentSizeScale
+    );
   });
 });

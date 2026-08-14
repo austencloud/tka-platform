@@ -290,7 +290,7 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     expect(out.motionSpawnRate).toBe(60);
     expect(out.motionReferenceSpeed).toBe(3.0);
     expect(out.strokeWidthMin).toBe(2);
-    expect(out.strokeWidthMax).toBe(18);
+    expect(out.strokeWidthMax).toBe(14);
     expect(out.lifetimeSeconds).toBeGreaterThan(0);
     expect(out.maxPointsPerTip).toBeGreaterThan(10);
   });
@@ -311,23 +311,28 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     const out = resolveInk2D(baseIntent({ palette: "watercolor" }));
     expect(out.resolvedPalette.watercolor).toBe(true);
     expect(out.resolvedPalette.id).toBe("watercolor");
-    expect(out.strokeWidthMax).toBe(18);
-    expect(out.strokeLengthPx).toBe(240);
-    expect(out.lifetimeSeconds).toBe(1.65);
+    expect(out.strokeWidthMax).toBe(13);
+    expect(out.strokeLengthPx).toBe(320);
+    expect(out.lifetimeSeconds).toBe(2.2);
     expect(out.strokeGravityPx).toBe(0);
     expect(out.gravityPx).toBeGreaterThan(0);
-    // Alpha capped at 0.4 (translucent wash).
-    expect(out.opacityMax).toBe(0.4);
+    // Alpha is owned by the translator and remains a translucent wash.
+    expect(out.opacityMax).toBe(0.68);
     // Still opaque composite - watercolor ≠ neon. The cap comes from
     // alpha, not from switching to additive blend.
     expect(out.blendMode).toBe("source-over");
   });
 
-  it("keeps sag on dense ink strands", () => {
-    const out = resolveInk2D(baseIntent({ palette: "india" }));
-    expect(out.strokeLengthPx).toBe(420);
-    expect(out.strokeGravityPx).toBe(out.gravityPx);
-    expect(out.strokeGravityPx).toBeGreaterThan(0);
+  it("reserves attached-mark sag for deliberately viscous dense ink", () => {
+    const ordinary = resolveInk2D(baseIntent({ palette: "india" }));
+    expect(ordinary.strokeLengthPx).toBe(320);
+    expect(ordinary.strokeGravityPx).toBe(0);
+
+    const viscous = resolveInk2D(
+      baseIntent({ palette: "india", viscosity: 0.8 })
+    );
+    expect(viscous.strokeGravityPx).toBeGreaterThan(0);
+    expect(viscous.strokeGravityPx).toBeLessThan(viscous.gravityPx);
   });
 
   it("neon palette flips emissive flag + switches composite to lighter", () => {
@@ -343,7 +348,7 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     const blood = resolveInk2D(baseIntent({ palette: "blood" }));
     expect(blood.resolvedPalette.id).toBe("blood");
     expect(blood.blendMode).toBe("source-over");
-    expect(blood.resolvedPalette.pigment).toBe("#8a1818");
+    expect(blood.resolvedPalette.pigment).toBe("#8f2635");
 
     const acid = resolveInk2D(baseIntent({ palette: "acid" }));
     expect(acid.resolvedPalette.id).toBe("acid");
@@ -363,6 +368,9 @@ describe("resolveInk2D - palette + motion-dominant + stroke width", () => {
     // Custom ink is opaque (no flags).
     expect(out.blendMode).toBe("source-over");
     expect(out.opacityMax).toBe(1.0);
+    expect(out.strokeLengthPx).toBe(320);
+    expect(out.lifetimeSeconds).toBe(2.2);
+    expect(out.maxPointsPerTip).toBe(90);
   });
 
   it("carries viscosity + splatterIntensity through to params for sprint 2", () => {

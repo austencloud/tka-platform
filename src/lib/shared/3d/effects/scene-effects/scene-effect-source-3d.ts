@@ -46,6 +46,7 @@ export interface GooTipSource3D extends SceneEffectTipBase3D {
 export interface BubbleTipSource3D extends SceneEffectTipBase3D {
   effect: "bubbles";
   params: Bubbles3DParams;
+  qualityTier: QualityTier;
 }
 
 export interface PetalTipSource3D extends SceneEffectTipBase3D {

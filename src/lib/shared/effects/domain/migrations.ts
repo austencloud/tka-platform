@@ -195,8 +195,8 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // layers) and colorMode "solid" → "prop-matched". A persisted value equal to
   // the OLD default is that default echoing back, not a user choice (same logic
   // as the v16 LED remap), so remap each independently. Users who picked any
-  // other intensity / a non-solid mode keep their setting. The new streak/
-  // spikes/chromatic/afterglow fields resolve from defaults via the merge below.
+  // other intensity / a non-solid mode keep their setting. The new streak,
+  // spikes, and afterglow fields resolve from defaults via the merge below.
   if (version < 17 && input.bloom) {
     if (input.bloom.intensity === 0.95) input.bloom.intensity = 0.6;
     if (input.bloom.colorMode === "solid")
@@ -478,6 +478,13 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     const bloom = input.bloom as LegacyRecord;
     bloom.coreStrength ??= DEFAULT_EFFECTS_CONFIG.bloom.coreStrength;
     if (bloom.falloff === "ring") bloom.falloff = "smooth";
+  }
+
+  // v34 → v35: retire Bloom's Aurora preset and its dispersion field. Clear a
+  // saved Aurora selection so the UI does not retain a dead preset id.
+  if (input.bloom) delete input.bloom.chromatic;
+  if (input.activePresets?.bloom === "bloom-prism") {
+    input.activePresets = { ...input.activePresets, bloom: null };
   }
 
   const out: EffectsConfig = {

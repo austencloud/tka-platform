@@ -12,6 +12,62 @@ import type { EffectPreset, EffectPresetGroup } from "./types";
 
 export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
   {
+    id: "charcoal-steel-wool",
+    name: "Steel Wool",
+    previewColor: "#fff1c7",
+    patch: {
+      intensity: 0.98,
+      spread: 0.14,
+      glow: 0.96,
+      emissionStyle: "steel-wool",
+      coreColor: [255, 252, 232],
+      midColor: [255, 178, 78],
+      coolColor: [125, 24, 4],
+    },
+  },
+  {
+    id: "charcoal-forge-cinder",
+    name: "Forge Burst",
+    previewColor: "#ff7a1a",
+    patch: {
+      intensity: 0.9,
+      spread: 0.42,
+      glow: 0.8,
+      emissionStyle: "forge-burst",
+      coreColor: [255, 238, 190],
+      midColor: [255, 102, 20],
+      coolColor: [138, 18, 0],
+    },
+  },
+  {
+    id: "charcoal-cinder-fan",
+    name: "Cinder Fan",
+    previewColor: "#ff4930",
+    patch: {
+      intensity: 1,
+      spread: 1,
+      glow: 0.68,
+      emissionStyle: "cinder-fan",
+      coreColor: [255, 230, 174],
+      midColor: [255, 72, 20],
+      coolColor: [112, 8, 2],
+    },
+  },
+  {
+    id: "charcoal-banked-ember",
+    name: "Banked Ember",
+    previewColor: "#d83b16",
+    patch: {
+      intensity: 0.62,
+      spread: 0.25,
+      glow: 0.56,
+      emissionStyle: "banked-ember",
+      coreColor: [255, 210, 142],
+      midColor: [214, 52, 14],
+      coolColor: [72, 6, 2],
+    },
+  },
+  {
     id: "charcoal-violet-ember",
     name: "Violet Ember",
     previewColor: "#a855f7",
@@ -20,8 +76,8 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
       spread: 0.5,
       glow: 0.6,
       coreColor: [230, 180, 255], // bright lavender
-      midColor: [160, 60, 220],   // violet
-      coolColor: [80, 10, 120],   // deep purple
+      midColor: [160, 60, 220], // violet
+      coolColor: [80, 10, 120], // deep purple
     },
   },
   {
@@ -46,8 +102,8 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
       spread: 0.7,
       glow: 0.5,
       coreColor: [200, 255, 220], // bright mint
-      midColor: [40, 200, 120],   // emerald
-      coolColor: [10, 90, 50],    // dark green
+      midColor: [40, 200, 120], // emerald
+      coolColor: [10, 90, 50], // dark green
     },
   },
   {
@@ -59,8 +115,8 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
       spread: 0.3,
       glow: 0.2,
       coreColor: [220, 220, 230], // near-white
-      midColor: [140, 140, 155],  // medium gray
-      coolColor: [60, 60, 70],    // dark gray
+      midColor: [140, 140, 155], // medium gray
+      coolColor: [60, 60, 70], // dark gray
     },
   },
 ];

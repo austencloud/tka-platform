@@ -30,6 +30,19 @@ density makes it correct ~90% of the time. When a screen already has a test
 harness (e.g. `test/deck-releaser-configure/ConfigurePrototype.svelte`), iterate
 *there* — don't spin up a mockup.
 
+## Effect work: use a stable test route
+
+While developing or tuning a visual effect, leave Austen on an effect-specific
+`src/routes/test/*` page that loads the real avatar, props, renderer, playback,
+and controls directly. Follow the `test/coal-3d-showcase` pattern. The page must
+survive Vite HMR and reload back into the same effect and preset without manual
+navigation.
+
+The Sequence Viewer is a production integration check, not the working handoff
+surface for effect iteration. Do not leave it open as the only way to inspect an
+effect: an HMR restart can discard its modal, 3D mode, performer selection, and
+FX state.
+
 ## Visual companion: RETIRED here
 
 Never use or offer the superpowers visual companion. Not arbitrary — the

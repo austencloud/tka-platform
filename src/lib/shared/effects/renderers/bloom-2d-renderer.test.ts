@@ -121,7 +121,6 @@ function makeParams(overrides: Partial<Bloom2DParams> = {}): Bloom2DParams {
     pulseRate: 1,
     streak: 0.55,
     spikes: 0.6,
-    chromatic: 0,
     afterglow: 0.5,
     blendMode: "lighter",
     ...overrides,
@@ -159,8 +158,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
   it("draws a colored halo + white core per tip (2 radial gradients each)", () => {
     const r = new Bloom2DRenderer();
     const { ctx, radial } = makeCtx();
-    // With iridescence disabled, the two gradients are the colored halo and
-    // its white source.
+    // The two gradients are the colored halo and its white source.
     r.render(ctx, makeParams({ spikes: 0 }), [makeTip()]);
     expect(radial).toHaveLength(2);
   });
@@ -177,7 +175,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     const main = makeCtx();
     const accumulation = makeCtx();
     (
-      main.ctx as CanvasRenderingContext2D & {
+      main.ctx as unknown as {
         canvas: { width: number; height: number };
       }
     ).canvas = {
@@ -200,7 +198,6 @@ describe("Bloom2DRenderer (lens bloom)", () => {
         afterglow: 0.9,
         streak: 0,
         spikes: 0,
-        chromatic: 0,
       });
       r.render(main.ctx, params, [makeTip()]);
       r.render(main.ctx, params, [makeTip()]);
@@ -218,7 +215,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     const main = makeCtx();
     const accumulation = makeCtx();
     (
-      main.ctx as CanvasRenderingContext2D & {
+      main.ctx as unknown as {
         canvas: { width: number; height: number };
       }
     ).canvas = {
@@ -241,7 +238,6 @@ describe("Bloom2DRenderer (lens bloom)", () => {
         afterglow: 0.9,
         streak: 0,
         spikes: 0,
-        chromatic: 0,
       });
       r.render(main.ctx, params, [makeTip({ x: 100 })]);
       r.render(main.ctx, params, [makeTip({ x: 140 })]);
@@ -330,7 +326,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     it("spikes>0 draws 8 stroked spike lines (linear gradients)", () => {
       const r = new Bloom2DRenderer();
       const { ctx, linear, calls } = makeCtx();
-      r.render(ctx, makeParams({ spikes: 0.8, chromatic: 0 }), [makeTip()]);
+      r.render(ctx, makeParams({ spikes: 0.8 }), [makeTip()]);
       expect(linear).toHaveLength(8);
       expect(calls.stroke).toBe(8);
     });
@@ -338,7 +334,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     it("spikes=0 draws no spike lines", () => {
       const r = new Bloom2DRenderer();
       const { ctx, linear, calls } = makeCtx();
-      r.render(ctx, makeParams({ spikes: 0, chromatic: 0 }), [makeTip()]);
+      r.render(ctx, makeParams({ spikes: 0 }), [makeTip()]);
       expect(linear).toHaveLength(0);
       expect(calls.stroke).toBe(0);
     });
@@ -347,7 +343,7 @@ describe("Bloom2DRenderer (lens bloom)", () => {
   describe("motion reactivity", () => {
     it("frame 1 (no velocity) draws no streak transform; frame 2 (moved) does", () => {
       const r = new Bloom2DRenderer();
-      const params = makeParams({ spikes: 0, streak: 0.8, chromatic: 0 });
+      const params = makeParams({ spikes: 0, streak: 0.8 });
 
       // Frame 1 has no velocity streak.
       const f1 = makeCtx();
@@ -361,25 +357,6 @@ describe("Bloom2DRenderer (lens bloom)", () => {
       expect(f2.calls.scale).toBeGreaterThan(0); // anamorphic streak fired
       expect(f2.calls.translate).toBeGreaterThan(0);
       expect(f2.linear).toHaveLength(0);
-    });
-
-    it("keeps Aurora's aura unchanged when the tip moves", () => {
-      const r = new Bloom2DRenderer();
-      const aurora = BLOOM_PRESETS.find(
-        (preset) => preset.id === "bloom-prism"
-      )!;
-      const params = makeParams(aurora.patch ?? {});
-      const resting = makeCtx();
-      r.render(resting.ctx, params, [makeTip({ x: 80, y: 100 })]);
-      const moving = makeCtx();
-      r.render(moving.ctx, params, [makeTip({ x: 180, y: 100 })]);
-
-      expect(resting.radial).toHaveLength(2);
-      expect(moving.radial).toHaveLength(2);
-      expect(resting.linear).toHaveLength(2);
-      expect(moving.linear).toHaveLength(2);
-      expect(resting.calls.rotate).toBe(2);
-      expect(moving.calls.rotate).toBe(2);
     });
   });
 
@@ -404,7 +381,6 @@ describe("Bloom2DRenderer (lens bloom)", () => {
     expect(Object.fromEntries(signatures)).toEqual({
       Supernova: "2:8:0",
       Comet: "3:0:1",
-      Aurora: "2:2:2",
       Halo: "2:0:0",
     });
   });

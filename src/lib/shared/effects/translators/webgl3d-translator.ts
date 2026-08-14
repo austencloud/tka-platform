@@ -50,6 +50,7 @@ import { resolveFrostPalette } from "../domain/frost-palettes";
 import { resolveSilkPalette } from "../domain/silk-palettes";
 import { resolveAnimalPalette } from "../domain/animal-palettes";
 import { resolvePulsePalette } from "../domain/pulse-palettes";
+import { resolveCharcoal3DMotionProfile } from "./charcoal-3d-motion-profiles";
 
 /**
  * A 34" staff in world units — 1 world unit is 1 metre (AUSTEN_STAFF from
@@ -111,12 +112,17 @@ export function resolveCharcoal3D(
   intent: CharcoalIntent,
   override: Partial<Charcoal3DParams> = {}
 ): Charcoal3DParams {
+  const emissionStyle =
+    override.emissionStyle ?? intent.emissionStyle ?? "steel-wool";
+  const motionProfile =
+    override.motionProfile ?? resolveCharcoal3DMotionProfile(emissionStyle);
   const defaults: Omit<Charcoal3DParams, keyof CharcoalIntent> = {
-    particleLifetime: 0.5 + intent.glow * 1.5,
-    gravity: -2.0, // upward drift for charcoal sparks
-    sparkSizeJitter: 0.4,
+    particleLifetime: 0.55 + intent.spread * 0.65 + intent.glow * 0.45,
+    gravity: (7.4 - intent.spread * 1.8) * motionProfile.gravityScale,
+    sparkSizeJitter: 0.2 + intent.spread * 0.55,
+    motionProfile,
   };
-  return { ...intent, ...defaults, ...override };
+  return { ...intent, emissionStyle, ...defaults, ...override };
 }
 
 export function resolveZap3D(

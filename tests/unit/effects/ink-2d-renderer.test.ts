@@ -3,6 +3,7 @@ import { INK_PALETTES } from "$lib/shared/3d/effects/ink/ink-palettes";
 import {
   Ink2DRenderer,
   resolveInkStrokeWidth,
+  resolveInkTurnLoad,
 } from "$lib/shared/effects/renderers/ink-2d-renderer";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { Ink2DParams } from "$lib/shared/effects/translators/canvas2d-types";
@@ -26,11 +27,11 @@ function makeParams(overrides: Partial<Ink2DParams> = {}): Ink2DParams {
     motionSpawnRate: 60,
     motionReferenceSpeed: 3,
     strokeWidthMin: 2,
-    strokeWidthMax: 18,
-    opacityMax: 0.4,
-    lifetimeSeconds: 1.65,
-    maxPointsPerTip: 64,
-    strokeLengthPx: 240,
+    strokeWidthMax: 13,
+    opacityMax: 0.68,
+    lifetimeSeconds: 2.2,
+    maxPointsPerTip: 84,
+    strokeLengthPx: 320,
     stampScaleMin: 0.3,
     stampScaleMax: 1.2,
     gravityPx: 36,
@@ -68,6 +69,7 @@ function makeContext(): CanvasRenderingContext2D {
     moveTo: vi.fn(),
     lineTo: vi.fn(),
     quadraticCurveTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
     arc: vi.fn(),
     fill: vi.fn(),
     stroke: vi.fn(),
@@ -126,6 +128,18 @@ describe("Ink2DRenderer", () => {
     expect(resolveInkStrokeWidth(params, 0, 2)).toBeCloseTo(slow * 2);
   });
 
+  it("loads the brush through a turn without widening a straight segment", () => {
+    expect(
+      resolveInkTurnLoad({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 20, y: 0 })
+    ).toBe(0);
+    expect(
+      resolveInkTurnLoad({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 })
+    ).toBe(1);
+    expect(
+      resolveInkTurnLoad({ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 0 })
+    ).toBe(0);
+  });
+
   it("resolves separate Watercolor mark and droplet physics", () => {
     const intent: InkIntent = {
       ambientEmission: 0.1,
@@ -139,14 +153,552 @@ describe("Ink2DRenderer", () => {
     };
 
     const watercolor = resolveInk2D(intent);
-    expect(watercolor.strokeWidthMax).toBe(18);
-    expect(watercolor.strokeLengthPx).toBe(240);
+    expect(watercolor.strokeWidthMax).toBe(13);
+    expect(watercolor.strokeLengthPx).toBe(320);
+    expect(watercolor.lifetimeSeconds).toBe(2.2);
+    expect(watercolor.opacityMax).toBe(0.68);
     expect(watercolor.strokeGravityPx).toBe(0);
     expect(watercolor.gravityPx).toBeGreaterThan(0);
 
-    const india = resolveInk2D({ ...intent, palette: "india" });
-    expect(india.strokeLengthPx).toBe(420);
-    expect(india.strokeGravityPx).toBe(india.gravityPx);
+    const india = resolveInk2D({ ...intent, palette: "india", viscosity: 1 });
+    expect(india.strokeLengthPx).toBe(320);
+    expect(india.strokeGravityPx).toBeGreaterThan(0);
+    expect(india.strokeGravityPx).toBeLessThan(india.gravityPx);
+  });
+
+  it("keeps the default Sumi brush mark bold, bounded, and attached", () => {
+    const sumi = resolveInk2D({
+      ambientEmission: 0.1,
+      motionEmission: 0.94,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0.16,
+      trackingMode: "both_ends",
+    });
+
+    expect(sumi.strokeWidthMin).toBe(10);
+    expect(sumi.strokeWidthMax).toBe(42);
+    expect(sumi.strokeLengthPx).toBe(340);
+    expect(sumi.lifetimeSeconds).toBe(2.15);
+    expect(sumi.strokeGravityPx).toBe(0);
+    expect(sumi.gravityPx).toBeGreaterThan(0);
+  });
+
+  it("renders Sumi with a narrow matte dry catch on only one side", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const assignments: GlobalCompositeOperation[] = [];
+    const pigmentYs: number[] = [];
+    const reflectionYs: number[] = [];
+    const pigmentWidths: number[] = [];
+    const reflectionWidths: number[] = [];
+    let composite: GlobalCompositeOperation = "source-over";
+    Object.defineProperty(context, "globalCompositeOperation", {
+      get: () => composite,
+      set: (value: GlobalCompositeOperation) => {
+        assignments.push(value);
+        composite = value;
+      },
+    });
+    const recordY = (y: number): void => {
+      if (composite !== "source-over") return;
+      if (context.strokeStyle === "#e5e9ec") {
+        reflectionYs.push(y);
+        reflectionWidths.push(context.lineWidth);
+      } else {
+        pigmentYs.push(y);
+        pigmentWidths.push(context.lineWidth);
+      }
+    };
+    context.moveTo = vi.fn((_x: number, y: number) => recordY(y));
+    context.lineTo = vi.fn((_x: number, y: number) => recordY(y));
+    context.quadraticCurveTo = vi.fn(
+      (_cpx: number, cpy: number, _x: number, y: number) => {
+        recordY(cpy);
+        recordY(y);
+      }
+    );
+    context.bezierCurveTo = vi.fn(
+      (
+        _cp1x: number,
+        cp1y: number,
+        _cp2x: number,
+        cp2y: number,
+        _x: number,
+        y: number
+      ) => {
+        recordY(cp1y);
+        recordY(cp2y);
+        recordY(y);
+      }
+    );
+    const sumi = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    for (let frame = 0; frame < 18; frame++) {
+      renderer.render(
+        context,
+        sumi,
+        [makeTip(100 + frame * 9, 300)],
+        1 / 60,
+        1.57
+      );
+    }
+
+    expect(assignments).toContain("source-over");
+    expect(assignments).toContain("destination-out");
+    expect(assignments).not.toContain("screen");
+    expect(assignments).not.toContain("lighter");
+    expect(reflectionYs.length).toBeGreaterThan(0);
+    expect(
+      Math.max(...reflectionYs) <= 300 || Math.min(...reflectionYs) >= 300
+    ).toBe(true);
+    expect(
+      Math.max(...reflectionYs.map((y) => Math.abs(y - 300)))
+    ).toBeGreaterThan(2);
+    expect(Math.max(...reflectionWidths)).toBeLessThan(3);
+    expect(Math.max(...pigmentWidths)).toBeGreaterThan(
+      Math.max(...reflectionWidths) * 3
+    );
+    expect(vi.mocked(context.fill).mock.calls.length).toBeGreaterThan(0);
+  });
+
+  it("keeps an eight-second Sumi history inside its path and length bounds", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const sumi = resolveInk2D({
+      ambientEmission: 0.1,
+      motionEmission: 0.94,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    for (let frame = 0; frame < 8 * 60; frame++) {
+      renderer.render(
+        context,
+        sumi,
+        [
+          makeTip(
+            400 + Math.sin(frame / 35) * 120,
+            300 + Math.cos(frame / 47) * 120
+          ),
+        ],
+        1 / 60
+      );
+    }
+
+    const diagnostics = renderer.getDiagnostics();
+    expect(diagnostics.maxPathLength).toBeLessThanOrEqual(
+      sumi.strokeLengthPx + 0.01
+    );
+    expect(diagnostics.pointCount).toBeLessThanOrEqual(sumi.maxPointsPerTip);
+    for (const tip of diagnostics.tips) {
+      expect(tip.oldestY).toBeGreaterThanOrEqual(180);
+      expect(tip.oldestY).toBeLessThanOrEqual(420);
+      expect(tip.newestY).toBeGreaterThanOrEqual(180);
+      expect(tip.newestY).toBeLessThanOrEqual(420);
+    }
+  });
+
+  it("fills sparse Sumi motion samples into one attached brush path", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const sumi = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    renderer.render(context, sumi, [makeTip(100, 300)], 1 / 60);
+    renderer.render(context, sumi, [makeTip(180, 300)], 1 / 60);
+    renderer.render(context, sumi, [makeTip(260, 300)], 1 / 60);
+
+    const diagnostics = renderer.getDiagnostics();
+    expect(diagnostics.pointCount).toBeGreaterThan(6);
+    expect(diagnostics.dropletCount).toBe(0);
+    expect(diagnostics.tips).toHaveLength(1);
+  });
+
+  it("keeps custom pigment attached while acceleration chips remain optional", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const custom = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.64,
+      palette: "custom",
+      customColor: "#2f8fb3",
+      viscosity: 0.28,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    renderer.render(context, custom, [makeTip(100, 300)], 1 / 60);
+    renderer.render(context, custom, [makeTip(220, 300)], 1 / 60);
+    renderer.render(context, custom, [makeTip(340, 300)], 1 / 60);
+
+    const diagnostics = renderer.getDiagnostics();
+    expect(diagnostics.pointCount).toBeGreaterThan(1);
+    expect(diagnostics.dropletCount).toBe(0);
+  });
+
+  it("deposits a loaded Sumi mark during motion below the fast-motion threshold", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const sumi = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    for (let frame = 0; frame < 120; frame++) {
+      renderer.render(
+        context,
+        sumi,
+        [makeTip(100 + frame * 0.25, 300)],
+        1 / 60
+      );
+    }
+
+    expect(renderer.getDiagnostics().pointCount).toBeGreaterThan(2);
+  });
+
+  it("batches clean and reflected Sumi into bounded draw-call budgets", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const sumi = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+
+    for (let frame = 0; frame < 48; frame++) {
+      renderer.render(context, sumi, [makeTip(100 + frame * 6, 300)], 1 / 60);
+    }
+    vi.mocked(context.stroke).mockClear();
+    renderer.render(context, sumi, [makeTip(100 + 47 * 6, 300)], 0);
+
+    expect(vi.mocked(context.stroke).mock.calls.length).toBeLessThan(100);
+
+    const tunnelRenderer = new Ink2DRenderer();
+    const tunnelContext = makeContext();
+    for (let frame = 0; frame < 48; frame++) {
+      const emitters = Array.from({ length: 8 }, (_, propIndex) => ({
+        ...makeTip(100 + frame * 6, 260 + propIndex * 10),
+        propIndex,
+      }));
+      tunnelRenderer.render(tunnelContext, sumi, emitters, 1 / 60);
+    }
+    vi.mocked(tunnelContext.stroke).mockClear();
+    vi.mocked(tunnelContext.fill).mockClear();
+    vi.mocked(tunnelContext.drawImage).mockClear();
+    tunnelRenderer.render(
+      tunnelContext,
+      sumi,
+      Array.from({ length: 8 }, (_, propIndex) => ({
+        ...makeTip(100 + 47 * 6, 260 + propIndex * 10),
+        propIndex,
+      })),
+      0
+    );
+    const tunnelPaintCalls =
+      vi.mocked(tunnelContext.stroke).mock.calls.length +
+      vi.mocked(tunnelContext.fill).mock.calls.length +
+      vi.mocked(tunnelContext.drawImage).mock.calls.length;
+    expect(tunnelPaintCalls).toBeLessThan(600);
+  });
+
+  it("renders identical Ink geometry for identical frame input", () => {
+    const params = resolveInk2D({
+      ambientEmission: 0.1,
+      motionEmission: 0.94,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0.16,
+      trackingMode: "both_ends",
+    });
+    const firstRenderer = new Ink2DRenderer();
+    const secondRenderer = new Ink2DRenderer();
+    const firstContext = makeContext();
+    const secondContext = makeContext();
+
+    for (let frame = 0; frame < 90; frame++) {
+      const tip = makeTip(
+        240 + Math.sin(frame / 13) * 80,
+        300 + Math.cos(frame / 17) * 60
+      );
+      firstRenderer.render(firstContext, params, [tip], 1 / 60);
+      secondRenderer.render(secondContext, params, [tip], 1 / 60);
+    }
+
+    expect(firstRenderer.getDiagnostics()).toEqual(
+      secondRenderer.getDiagnostics()
+    );
+    expect(vi.mocked(firstContext.moveTo).mock.calls).toEqual(
+      vi.mocked(secondContext.moveTo).mock.calls
+    );
+    expect(vi.mocked(firstContext.lineTo).mock.calls).toEqual(
+      vi.mocked(secondContext.lineTo).mock.calls
+    );
+    expect(vi.mocked(firstContext.bezierCurveTo).mock.calls).toEqual(
+      vi.mocked(secondContext.bezierCurveTo).mock.calls
+    );
+    expect(vi.mocked(firstContext.quadraticCurveTo).mock.calls).toEqual(
+      vi.mocked(secondContext.quadraticCurveTo).mock.calls
+    );
+    expect(vi.mocked(firstContext.arc).mock.calls).toEqual(
+      vi.mocked(secondContext.arc).mock.calls
+    );
+    expect(vi.mocked(firstContext.translate).mock.calls).toEqual(
+      vi.mocked(secondContext.translate).mock.calls
+    );
+    expect(vi.mocked(firstContext.rotate).mock.calls).toEqual(
+      vi.mocked(secondContext.rotate).mock.calls
+    );
+    expect(vi.mocked(firstContext.scale).mock.calls).toEqual(
+      vi.mocked(secondContext.scale).mock.calls
+    );
+    expect(vi.mocked(firstContext.drawImage).mock.calls).toEqual(
+      vi.mocked(secondContext.drawImage).mock.calls
+    );
+  });
+
+  it("decorrelates material geometry for emitters following the same path", () => {
+    const params = resolveInk2D({
+      ambientEmission: 0,
+      motionEmission: 1,
+      intensity: 0.68,
+      palette: "sumi",
+      customColor: "#0a0a0a",
+      viscosity: 0.38,
+      splatterIntensity: 0,
+      trackingMode: "both_ends",
+    });
+    const firstRenderer = new Ink2DRenderer();
+    const secondRenderer = new Ink2DRenderer();
+    const firstContext = makeContext();
+    const secondContext = makeContext();
+
+    for (let frame = 0; frame < 40; frame++) {
+      const tip = makeTip(120 + frame * 7, 300);
+      firstRenderer.render(firstContext, params, [tip], 1 / 60);
+      secondRenderer.render(
+        secondContext,
+        params,
+        [{ ...tip, propIndex: 1 }],
+        1 / 60
+      );
+    }
+
+    expect(vi.mocked(firstContext.moveTo).mock.calls.length).toBeGreaterThan(0);
+    expect(vi.mocked(firstContext.moveTo).mock.calls).not.toEqual(
+      vi.mocked(secondContext.moveTo).mock.calls
+    );
+  });
+
+  it("keeps interior Sumi material chunks stable when the oldest point is evicted", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    let composite: GlobalCompositeOperation = "source-over";
+    let alpha = 1;
+    let currentPath: string[] = [];
+    let dryChunks: string[] = [];
+    const coordinate = (...values: number[]): string =>
+      values.map((value) => value.toFixed(5)).join(",");
+
+    Object.defineProperty(context, "globalCompositeOperation", {
+      get: () => composite,
+      set: (value: GlobalCompositeOperation) => {
+        composite = value;
+      },
+    });
+    Object.defineProperty(context, "globalAlpha", {
+      get: () => alpha,
+      set: (value: number) => {
+        alpha = value;
+      },
+    });
+    context.beginPath = vi.fn(() => {
+      currentPath = [];
+    });
+    context.moveTo = vi.fn((x: number, y: number) => {
+      currentPath.push(`M${coordinate(x, y)}`);
+    });
+    context.lineTo = vi.fn((x: number, y: number) => {
+      currentPath.push(`L${coordinate(x, y)}`);
+    });
+    context.quadraticCurveTo = vi.fn(
+      (cpx: number, cpy: number, x: number, y: number) => {
+        currentPath.push(`Q${coordinate(cpx, cpy, x, y)}`);
+      }
+    );
+    context.bezierCurveTo = vi.fn(
+      (
+        cp1x: number,
+        cp1y: number,
+        cp2x: number,
+        cp2y: number,
+        x: number,
+        y: number
+      ) => {
+        currentPath.push(`C${coordinate(cp1x, cp1y, cp2x, cp2y, x, y)}`);
+      }
+    );
+    const captureDryPath = (): void => {
+      if (
+        composite === "source-over" &&
+        context.lineWidth < 3 &&
+        currentPath.some((command) => command.startsWith("C"))
+      ) {
+        dryChunks.push(`${alpha.toFixed(6)}:${currentPath.join("|")}`);
+      }
+    };
+    context.fill = vi.fn(captureDryPath);
+    context.stroke = vi.fn(captureDryPath);
+
+    const params: Ink2DParams = {
+      ...resolveInk2D({
+        ambientEmission: 0,
+        motionEmission: 1,
+        intensity: 0.68,
+        palette: "sumi",
+        customColor: "#0a0a0a",
+        viscosity: 0.38,
+        splatterIntensity: 0,
+        trackingMode: "both_ends",
+      }),
+      lifetimeSeconds: 20,
+      maxPointsPerTip: 48,
+      strokeLengthPx: 2_000,
+      motionSpawnRate: 600,
+    };
+
+    for (let frame = 0; frame < 38; frame++) {
+      renderer.render(context, params, [makeTip(100 + frame * 8, 300)], 1 / 60);
+    }
+
+    dryChunks = [];
+    renderer.render(context, params, [makeTip(100 + 37 * 8, 300)], 0);
+    const beforeEviction = new Set(dryChunks);
+
+    const internalTips = (
+      renderer as unknown as {
+        tips: Map<string, { points: unknown[] }>;
+      }
+    ).tips;
+    const tipState = internalTips.values().next().value;
+    expect(tipState).toBeDefined();
+    tipState!.points.shift();
+
+    dryChunks = [];
+    renderer.render(context, params, [makeTip(100 + 37 * 8, 300)], 0);
+    const stableInteriorChunks = dryChunks.filter((chunk) =>
+      beforeEviction.has(chunk)
+    );
+
+    expect(beforeEviction.size).toBeGreaterThan(3);
+    expect(stableInteriorChunks.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("uses the translated Watercolor opacity without a second renderer cap", () => {
+    const renderer = new Ink2DRenderer();
+    const context = makeContext();
+    const alphaAssignments: number[] = [];
+    let alpha = 0;
+    Object.defineProperty(context, "globalAlpha", {
+      get: () => alpha,
+      set: (value: number) => {
+        alphaAssignments.push(value);
+        alpha = value;
+      },
+    });
+    const watercolor = makeParams({
+      intensity: 1,
+      opacityMax: 0.8,
+      motionSpawnRate: 600,
+      splatterIntensity: 0,
+      gravityPx: 0,
+    });
+
+    for (let frame = 0; frame < 20; frame++) {
+      renderer.render(
+        context,
+        watercolor,
+        [makeTip(100 + frame * 8, 300)],
+        1 / 60
+      );
+    }
+
+    expect(Math.max(...alphaAssignments)).toBeGreaterThan(0.4);
+    expect(Math.max(...alphaAssignments)).toBeLessThanOrEqual(0.8);
+  });
+
+  it("keeps Neon narrow and attached while preserving additive pigment", () => {
+    const neon = resolveInk2D({
+      ambientEmission: 0.1,
+      motionEmission: 1,
+      intensity: 0.9,
+      palette: "neon",
+      customColor: "#ff2080",
+      viscosity: 0.2,
+      splatterIntensity: 0.4,
+      trackingMode: "both_ends",
+    });
+
+    expect(neon.strokeWidthMax).toBe(10);
+    expect(neon.strokeLengthPx).toBe(220);
+    expect(neon.lifetimeSeconds).toBe(1.55);
+    expect(neon.strokeGravityPx).toBe(0);
+    expect(neon.blendMode).toBe("lighter");
+  });
+
+  it("applies attached-mark gravity only to deliberately viscous dense ink", () => {
+    const base: InkIntent = {
+      ambientEmission: 0.1,
+      motionEmission: 0.8,
+      intensity: 0.7,
+      palette: "india",
+      customColor: "#0a0a0a",
+      viscosity: 0.3,
+      splatterIntensity: 0.3,
+      trackingMode: "both_ends",
+    };
+
+    expect(resolveInk2D(base).strokeGravityPx).toBe(0);
+    expect(
+      resolveInk2D({ ...base, viscosity: 0.8 }).strokeGravityPx
+    ).toBeGreaterThan(0);
   });
 
   it("builds a continuous filled ribbon with clipped granulation", () => {
@@ -403,5 +955,45 @@ describe("Ink2DRenderer", () => {
     const finalContext = makeContext();
     loudRenderer.render(finalContext, loudParams, [], 1 / 60);
     expect(vi.mocked(finalContext.arc).mock.calls.length).toBe(6);
+  });
+
+  it("renders Blood splatter as irregular pointed chips instead of oval stamps", () => {
+    const renderer = new Ink2DRenderer();
+    const blood = makeParams({
+      palette: "blood",
+      resolvedPalette: INK_PALETTES.blood,
+      motionSpawnRate: 0,
+      splatterIntensity: 1,
+      gravityPx: 0,
+      dropletPoolSize: 3,
+    });
+    renderer.render(makeContext(), blood, [makeTip(100, 300)], 1 / 60);
+    renderer.render(makeContext(), blood, [makeTip(220, 300)], 1 / 60);
+
+    const finalContext = makeContext();
+    renderer.render(finalContext, blood, [], 1 / 60);
+
+    expect(vi.mocked(finalContext.bezierCurveTo)).toHaveBeenCalled();
+    expect(vi.mocked(finalContext.quadraticCurveTo)).toHaveBeenCalled();
+    expect(vi.mocked(finalContext.arc)).not.toHaveBeenCalled();
+  });
+
+  it("keeps the Blood stroke attached beneath its acceleration chips", () => {
+    const renderer = new Ink2DRenderer();
+    const blood = makeParams({
+      palette: "blood",
+      resolvedPalette: INK_PALETTES.blood,
+      motionSpawnRate: 600,
+      splatterIntensity: 0.34,
+      gravityPx: 0,
+    });
+
+    renderer.render(makeContext(), blood, [makeTip(100, 300)], 1 / 60);
+    renderer.render(makeContext(), blood, [makeTip(220, 300)], 1 / 60);
+    renderer.render(makeContext(), blood, [makeTip(340, 300)], 1 / 60);
+
+    const diagnostics = renderer.getDiagnostics();
+    expect(diagnostics.pointCount).toBeGreaterThan(1);
+    expect(diagnostics.tips[0]?.pathLength).toBeGreaterThan(100);
   });
 });

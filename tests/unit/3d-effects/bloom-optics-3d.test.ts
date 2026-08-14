@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { InstancedMesh, PointLight, Scene } from "three";
-import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
-import { resolveBloom3D } from "$lib/shared/effects/translators/webgl3d-translator";
+import { BLOOM_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/bloom-presets";
+import { BloomRenderer3D } from "$lib/shared/3d/effects/bloom/bloom-renderer-3d";
 import {
   resolveBloomFalloffCode,
   resolveBloomHistoryCapacity,
@@ -9,10 +9,10 @@ import {
   resolveBloomSourceNormalization,
   shouldResetBloomHistory3D,
 } from "$lib/shared/3d/effects/bloom/bloom-optics-3d";
-import { BloomRenderer3D } from "$lib/shared/3d/effects/bloom/bloom-renderer-3d";
-import { QualityTier } from "$lib/shared/3d/effects/types";
 import type { BloomTipSource3D } from "$lib/shared/3d/effects/scene-effects/scene-effect-source-3d";
-import { BLOOM_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/bloom-presets";
+import { QualityTier } from "$lib/shared/3d/effects/types";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import { resolveBloom3D } from "$lib/shared/effects/translators/webgl3d-translator";
 
 function makeSource(
   overrides: Partial<BloomTipSource3D> = {}
@@ -34,7 +34,6 @@ function makeSource(
       pulse: 0,
       streak: 0.7,
       spikes: 0.6,
-      chromatic: 0.5,
       afterglow: 0.8,
     }),
     qualityTier: QualityTier.HIGH,
@@ -44,27 +43,20 @@ function makeSource(
 
 describe("Bloom Kinetic Optics response", () => {
   it("maps every authored optical control to a material or history response", () => {
-    const baseIntent = DEFAULT_EFFECTS_CONFIG.bloom;
     const low = resolveBloom3D({
-      ...baseIntent,
+      ...DEFAULT_EFFECTS_CONFIG.bloom,
       intensity: 0.2,
       radius: 8,
       afterglow: 0,
     });
     const high = resolveBloom3D({
-      ...baseIntent,
+      ...DEFAULT_EFFECTS_CONFIG.bloom,
       intensity: 1,
       radius: 90,
       afterglow: 1,
     });
     const frame = resolveBloomOpticalFrame3D(
-      {
-        ...high,
-        pulse: 0,
-        streak: 0.8,
-        spikes: 0.7,
-        chromatic: 0.6,
-      },
+      { ...high, pulse: 0, streak: 0.8, spikes: 0.7 },
       3,
       0,
       1
@@ -82,7 +74,6 @@ describe("Bloom Kinetic Optics response", () => {
     expect(frame.stretch).toBeGreaterThan(1);
     expect(frame.streak).toBeGreaterThan(0);
     expect(frame.spikes).toBeGreaterThan(0);
-    expect(frame.chromatic).toBeGreaterThan(0);
     expect(resolveBloomFalloffCode("smooth")).toBe(0);
     expect(resolveBloomFalloffCode("sharp")).toBe(1);
     expect(resolveBloomFalloffCode("ring")).toBe(0);
@@ -102,39 +93,6 @@ describe("Bloom Kinetic Optics response", () => {
     expect(crest).toBeLessThan(0.25);
   });
 
-  it("keeps Aurora color and geometry identical at rest and in motion", () => {
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const params = resolveBloom3D({
-      ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...aurora.patch,
-    });
-    const resting = resolveBloomOpticalFrame3D(params, 0, 0, 1).chromatic;
-    const moving = resolveBloomOpticalFrame3D(params, 8, 0, 1).chromatic;
-
-    expect(resting).toBeCloseTo(0.9);
-    expect(moving).toBeCloseTo(0.9);
-    expect(moving).toBe(resting);
-
-    const restingFrame = resolveBloomOpticalFrame3D(params, 0, 0, 1);
-    const movingFrame = resolveBloomOpticalFrame3D(params, 8, 0, 1);
-    expect(restingFrame.stretch).toBe(1);
-    expect(movingFrame.stretch).toBe(restingFrame.stretch);
-  });
-
-  it("reduces Aurora's footprint in dense formations without changing its spectrum", () => {
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const params = resolveBloom3D({
-      ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...aurora.patch,
-    });
-    const solo = resolveBloomOpticalFrame3D(params, 0, 0, 1, 1);
-    const formation = resolveBloomOpticalFrame3D(params, 0, 0, 0.25, 0.55);
-
-    expect(formation.radiusWorld).toBeLessThan(solo.radiusWorld);
-    expect(formation.stretch).toBe(solo.stretch);
-    expect(formation.chromatic).toBe(solo.chromatic);
-  });
-
   it("normalizes additive energy by prop count and bounds quality history", () => {
     expect(resolveBloomSourceNormalization(1)).toBe(1);
     expect(resolveBloomSourceNormalization(4)).toBe(0.5);
@@ -151,43 +109,41 @@ describe("Bloom Kinetic Optics response", () => {
     expect(shouldResetBloomHistory3D(4, 4.1, 0.1)).toBe(false);
   });
 
-  it("gives every shipped preset a different dominant optical structure", () => {
+  it("keeps the three shipped presets optically distinct", () => {
+    expect(BLOOM_PRESETS.map((preset) => preset.name)).toEqual([
+      "Supernova",
+      "Comet",
+      "Halo",
+    ]);
     const signatures = new Map(
       BLOOM_PRESETS.map((preset) => {
         const params = resolveBloom3D({
           ...DEFAULT_EFFECTS_CONFIG.bloom,
           ...preset.patch,
         });
-        const frame = resolveBloomOpticalFrame3D(params, 3, 0, 1);
-        return [preset.name, { params, frame }] as const;
+        return [
+          preset.name,
+          {
+            params,
+            frame: resolveBloomOpticalFrame3D(params, 3, 0, 1),
+          },
+        ] as const;
       })
     );
 
     const supernova = signatures.get("Supernova")!;
     const comet = signatures.get("Comet")!;
-    const aurora = signatures.get("Aurora")!;
     const halo = signatures.get("Halo")!;
-
     expect(supernova.frame.coreStrength).toBe(1);
-    expect(supernova.frame.spikes).toBeGreaterThan(aurora.frame.spikes);
+    expect(supernova.frame.spikes).toBeGreaterThan(0);
     expect(comet.frame.streak).toBe(1);
     expect(comet.params.historyLifetimeSeconds).toBeGreaterThan(
       supernova.params.historyLifetimeSeconds
     );
-    expect(aurora.frame.chromatic).toBeCloseTo(0.9);
-    expect(aurora.frame.coreStrength).toBeGreaterThan(0);
-    expect(aurora.params.colorMode).toBe("solid");
-    expect(aurora.params.palette).toEqual([
-      "#ff1744",
-      "#00e676",
-      "#2979ff",
-      "#ffd600",
-    ]);
     expect(halo.frame.radiusWorld).toBeGreaterThan(supernova.frame.radiusWorld);
     expect(halo.frame.coreStrength).toBeLessThan(comet.frame.coreStrength);
     expect(halo.frame.streak).toBe(0);
     expect(halo.frame.spikes).toBe(0);
-    expect(halo.frame.chromatic).toBe(0);
   });
 });
 
@@ -196,7 +152,6 @@ describe("BloomRenderer3D", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
     const source = makeSource();
-    source.params = { ...source.params, chromatic: 0 };
     renderer.initialize(scene);
     renderer.update([source], 1 / 60);
     source.position.x = 0.2;
@@ -218,15 +173,13 @@ describe("BloomRenderer3D", () => {
       "aLens",
       "aCoreStrength",
     ]);
+    expect(geometry.getAttribute("aLens").itemSize).toBe(3);
     expect(geometry.getAttribute("aOptics").getZ(0)).toBeGreaterThan(1);
     expect(geometry.getAttribute("aOptics").getW(0)).toBeGreaterThan(0);
     expect(geometry.getAttribute("aLens").getX(0)).toBeGreaterThan(0);
-    expect(geometry.getAttribute("aLens").getY(0)).toBe(0);
-    expect(geometry.getAttribute("aLens").getW(1)).toBe(1);
+    expect(geometry.getAttribute("aLens").getZ(1)).toBe(1);
     expect(geometry.getAttribute("aCoreStrength").getX(0)).toBeGreaterThan(0);
     expect(geometry.getAttribute("aCoreStrength").getX(1)).toBe(0);
-    expect(geometry.getAttribute("aLens").getX(1)).toBe(0);
-    expect(geometry.getAttribute("aLens").getY(1)).toBe(0);
 
     renderer.dispose();
     expect(scene.children).toHaveLength(0);
@@ -249,113 +202,116 @@ describe("BloomRenderer3D", () => {
     renderer.dispose();
   });
 
-  it("keeps Aurora geometry identical when the prop moves and stops", () => {
+  it("wires every Bloom color mode into the 3D material", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const auroraParams = resolveBloom3D({
+    const baseParams = resolveBloom3D({
       ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...aurora.patch,
+      pulse: 0,
+      afterglow: 0,
     });
+    const source = makeSource({ params: baseParams, propColor: "#2979ff" });
     renderer.initialize(scene);
-    const source = makeSource({
-      sourceId: 1,
-      tipIndex: 0,
-      velocity: { x: 0, y: 3, z: 0 },
-      speed: 3,
-      params: auroraParams,
-    });
-    renderer.update([source], 1 / 60);
 
-    const movingStretch = renderer.object3D.geometry
-      .getAttribute("aOptics")
-      .getZ(0);
-    expect(movingStretch).toBe(1);
+    const signature = () => {
+      const color = renderer.object3D.geometry.getAttribute("aColor");
+      return [color.getX(0), color.getY(0), color.getZ(0)];
+    };
 
-    source.velocity = { x: 0, y: 0, z: 0 };
-    source.speed = 0;
+    source.params = { ...baseParams, colorMode: "solid", color: "#ff1744" };
     renderer.update([source], 1 / 60);
-    const restingStretch = renderer.object3D.geometry
-      .getAttribute("aOptics")
-      .getZ(0);
-    expect(restingStretch).toBe(movingStretch);
+    const solid = signature();
+
+    source.params = { ...baseParams, colorMode: "prop-matched" };
+    renderer.update([source], 1 / 60);
+    const prop = signature();
+
+    source.params = {
+      ...baseParams,
+      colorMode: "palette",
+      palette: ["#00e676"],
+    };
+    renderer.update([source], 1 / 60);
+    const palette = signature();
+
+    source.params = { ...baseParams, colorMode: "rainbow" };
+    renderer.update([source], 1 / 60);
+    const rainbow = signature();
+
+    expect(new Set([solid, prop, palette, rainbow].map(String)).size).toBe(4);
+    expect(solid[0]).toBeGreaterThan(solid[2]!);
+    expect(prop[2]).toBeGreaterThan(prop[0]!);
+    expect(palette[1]).toBeGreaterThan(palette[0]!);
     renderer.dispose();
   });
 
-  it("renders one elongated Aurora field for both tips of a prop", () => {
+  it("anchors Bloom scene lights to real moving tips", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const params = resolveBloom3D({
-      ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...aurora.patch,
-    });
+    const sources = [
+      makeSource({ sourceId: 1, position: { x: -2, y: 0, z: 0 } }),
+      makeSource({ sourceId: 2, tipIndex: 1, position: { x: 2, y: 0, z: 0 } }),
+    ];
     renderer.initialize(scene);
-    renderer.update(
-      [
-        makeSource({
-          sourceId: 1,
-          tipIndex: 0,
-          position: { x: -1, y: 0, z: 0 },
-          params,
-        }),
-        makeSource({
-          sourceId: 2,
-          tipIndex: 1,
-          position: { x: 1, y: 0, z: 0 },
-          params,
-        }),
-      ],
-      1 / 60
-    );
+    renderer.update(sources, 1 / 60);
 
-    const geometry = renderer.object3D.geometry;
-    expect(renderer.object3D.count).toBe(1);
-    expect(geometry.getAttribute("aOptics").getZ(0)).toBeGreaterThan(1);
-    expect(geometry.getAttribute("aLens").getY(0)).toBeCloseTo(0.9);
+    const positions = scene.children
+      .filter(
+        (child): child is PointLight =>
+          child instanceof PointLight && child.visible
+      )
+      .map((light) => light.position.x)
+      .sort((a, b) => a - b);
+    expect(positions).toEqual([-2, 2]);
+
+    sources[0]!.position.x = -3;
+    sources[1]!.position.x = 3;
+    renderer.update(sources, 1 / 60);
+    expect(
+      scene.children
+        .filter(
+          (child): child is PointLight =>
+            child instanceof PointLight && child.visible
+        )
+        .map((light) => light.position.x)
+        .sort((a, b) => a - b)
+    ).toEqual([-3, 3]);
     renderer.dispose();
   });
 
-  it("keeps matching prop hands on different performers as separate Aurora fields", () => {
+  it("spreads a limited light budget across performers without averaging", () => {
     const scene = new Scene();
     const renderer = new BloomRenderer3D();
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const params = resolveBloom3D({
-      ...DEFAULT_EFFECTS_CONFIG.bloom,
-      ...aurora.patch,
+    const sources = Array.from({ length: 16 }, (_, index) => {
+      const physicalProp = Math.floor(index / 2);
+      return makeSource({
+        sourceId: index + 1,
+        propIndex: (physicalProp % 2) as 0 | 1,
+        tipIndex: (index % 2) as 0 | 1,
+        position: { x: physicalProp * 10 + (index % 2) * 2, y: 0, z: 0 },
+      });
     });
     renderer.initialize(scene);
-    renderer.update(
-      [
-        makeSource({ sourceId: 1, propIndex: 0, tipIndex: 0, params }),
-        makeSource({ sourceId: 2, propIndex: 0, tipIndex: 1, params }),
-        makeSource({ sourceId: 5, propIndex: 0, tipIndex: 0, params }),
-        makeSource({ sourceId: 6, propIndex: 0, tipIndex: 1, params }),
-      ],
-      1 / 60
-    );
+    renderer.update(sources, 1 / 60);
 
-    expect(renderer.object3D.count).toBe(2);
+    const lightPositions = scene.children
+      .filter(
+        (child): child is PointLight =>
+          child instanceof PointLight && child.visible
+      )
+      .map((light) => light.position.x)
+      .sort((a, b) => a - b);
+    const sourcePositions = new Set(sources.map((source) => source.position.x));
+    expect(lightPositions).toHaveLength(4);
+    expect(
+      lightPositions.every((position) => sourcePositions.has(position))
+    ).toBe(true);
+    expect(lightPositions[0]).toBeLessThan(10);
+    expect(lightPositions.at(-1)).toBeGreaterThan(60);
     renderer.dispose();
   });
 
-  it("clears history on a backward step instead of drawing across a loop", () => {
-    const scene = new Scene();
-    const renderer = new BloomRenderer3D();
-    const source = makeSource({ currentStep: 7 });
-    renderer.initialize(scene);
-    renderer.update([source], 1 / 60);
-    source.position.x = 0.2;
-    renderer.update([source], 1 / 60);
-    expect(renderer.object3D.count).toBeGreaterThan(1);
-    source.currentStep = 0;
-    source.position.x = 10;
-    renderer.update([source], 1 / 60);
-    expect(renderer.object3D.count).toBe(1);
-    renderer.dispose();
-  });
-
-  it("aggregates local light per prop and disables lights on low quality", () => {
+  it("respects the quality-tier light budget and disables lights on low quality", () => {
     const highScene = new Scene();
     const highRenderer = new BloomRenderer3D();
     highRenderer.initialize(highScene);
@@ -371,7 +327,7 @@ describe("BloomRenderer3D", () => {
       highScene.children.filter(
         (child) => child instanceof PointLight && child.visible
       )
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     highRenderer.dispose();
 
     const lowScene = new Scene();

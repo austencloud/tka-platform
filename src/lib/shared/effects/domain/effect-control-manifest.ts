@@ -215,7 +215,7 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     { id: "bloom-palette", label: "Palette", type: "paletteSwatches", field: "palette", tier: "advanced", showWhen: (i) => i.colorMode === "palette" },
     slider("bloom", "pulse", "Pulse", { tier: "advanced" }),
     slider("bloom", "pulseRate", "Rate", { min: 0.25, max: 4, step: 0.25, pct: false, tier: "advanced" }),
-    // Trimmed for mobile (streak/spikes/chromatic/afterglow): optical fine-tuning
+    // Trimmed for mobile (streak/spikes/afterglow): optical fine-tuning
     // a flow artist rarely touches — still driven by presets, just not hand-tunable.
   ],
   goo: [

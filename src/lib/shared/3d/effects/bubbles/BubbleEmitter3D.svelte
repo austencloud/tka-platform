@@ -12,6 +12,7 @@
   import type { Object3D, Vector3 } from "three";
   import type { Bubbles3DParams } from "$lib/shared/effects/translators/webgl3d-types";
   import type { BubbleTipSource3D } from "../scene-effects/scene-effect-source-3d";
+  import { QualityTier } from "../types";
   import { BubbleRenderer3D } from "./bubble-renderer-3d";
 
   interface Props {
@@ -23,9 +24,17 @@
     params: Bubbles3DParams;
     /** Gates emission while existing film finishes naturally. */
     enabled: boolean;
+    /** Stable renderer capability tier for bubble density and optics. */
+    qualityTier?: QualityTier;
   }
 
-  let { position, propVelocity, params, enabled }: Props = $props();
+  let {
+    position,
+    propVelocity,
+    params,
+    enabled,
+    qualityTier = QualityTier.MEDIUM,
+  }: Props = $props();
   let root = $state<Object3D>();
   const renderer = new BubbleRenderer3D();
   const source: BubbleTipSource3D = {
@@ -39,6 +48,7 @@
     currentStep: 0,
     propColor: "#ffffff",
     params,
+    qualityTier,
   };
   const liveSources: readonly BubbleTipSource3D[] = [source];
   const idleSources: readonly BubbleTipSource3D[] = [];
@@ -49,6 +59,7 @@
 
   useTask((delta) => {
     source.params = params;
+    source.qualityTier = qualityTier;
     source.speed = propVelocity.length();
     source.velocity.x = propVelocity.x;
     source.velocity.y = propVelocity.y;

@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 34;
+export const EFFECTS_CONFIG_VERSION = 35;
 
 /** User-facing 2D Fire look. The renderer translates this into its internal profile. */
 export type FireRenderingStyle = "natural" | "liquid";
@@ -107,6 +107,12 @@ export interface LedIntent {
   colorMode: "unified" | "per-hand" | "prop-matched";
 }
 
+export type CharcoalEmissionStyle =
+  | "steel-wool"
+  | "forge-burst"
+  | "cinder-fan"
+  | "banked-ember";
+
 export interface CharcoalIntent {
   /** 0-1. Semantic intensity (RGB params derived on demand). */
   intensity: number;
@@ -114,6 +120,8 @@ export interface CharcoalIntent {
   spread: number;
   /** 0-1. Semantic glow. */
   glow: number;
+  /** 3D emission behavior. The 2D renderer keeps its existing coal motion. */
+  emissionStyle?: CharcoalEmissionStyle;
   /** Optional hottest spark color override (RGB 0-255). Null = use default curve. */
   coreColor?: [number, number, number];
   /** Optional mid-temperature spark color override (RGB 0-255). */
@@ -225,8 +233,6 @@ export interface BloomIntent {
   /** 0-1 - diffraction star-spike brightness (the lens glint off a bright
    *  point). 0 = no spikes. */
   spikes: number;
-  /** 0-1 - stable iridescent color surrounding the white source. */
-  chromatic: number;
   /** 0-1 - long-exposure afterglow persistence. 0 = none (draw-fresh each
    *  frame), 1 = light trail lingers ~1s. */
   afterglow: number;

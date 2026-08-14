@@ -31,7 +31,7 @@ import { GOO_PRESET_GROUP } from "./goo-presets";
 import { BUBBLES_PRESET_GROUP } from "./bubbles-presets";
 import { PETALS_PRESET_GROUP } from "./petals-presets";
 import { SMOKE_PRESET_GROUP } from "./smoke-presets";
-import { INK_PRESET_GROUP } from "./ink-presets";
+import { INK_PRESET_GROUP, INK_PRESETS } from "./ink-presets";
 import { SILK_PRESET_GROUP } from "./silk-presets";
 import { ANIMAL_PRESET_GROUP } from "./animal-presets";
 import { PULSE_PRESET_GROUP } from "./pulse-presets";
@@ -116,5 +116,15 @@ describe("effect preset data", () => {
       g.presets.filter((p) => p.resolvePatch).map((p) => p.id)
     );
     expect(dynamic).toEqual([]);
+  });
+
+  it("keeps only the production-approved Ink looks on the preset surface", () => {
+    expect(INK_PRESETS.map((preset) => preset.name)).toEqual([
+      "Toxic",
+      "Neon Tag",
+      "Splatter",
+    ]);
+    expect(INK_PRESETS.map((preset) => preset.id)).not.toContain("ink-classic");
+    expect(INK_PRESETS.map((preset) => preset.id)).not.toContain("ink-drip");
   });
 });

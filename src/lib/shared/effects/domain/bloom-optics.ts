@@ -50,13 +50,3 @@ export function resolveBloomHistoryDeposit(afterglow: number): number {
   const targetHistoryEnergy = 0.18 + amount * 0.82;
   return (1 - retention) * targetHistoryEnergy;
 }
-
-/**
- * Large formations need a smaller optical footprint, not fewer lights. This
- * keeps every prop readable while preventing sixteen iridescent auras from
- * covering the choreography underneath them.
- */
-export function resolveBloomFootprintScale(propCount: number): number {
-  const count = Math.max(1, Math.floor(propCount));
-  return Math.max(0.55, Math.pow(count, -0.22));
-}

@@ -16,12 +16,16 @@
   // blood reads dark red, etc. Palette choice also flips emissive /
   // watercolor flags inside the translator - user doesn't see those as
   // separate knobs.
-  const PALETTES: { value: InkIntent["palette"]; label: string; swatch: string }[] = [
+  const PALETTES: {
+    value: InkIntent["palette"];
+    label: string;
+    swatch: string;
+  }[] = [
     { value: "india", label: "India", swatch: "#0a0a0a" },
     { value: "sumi", label: "Sumi", swatch: "#404040" },
     { value: "watercolor", label: "Watercolor", swatch: "#4080c0" },
     { value: "neon", label: "Neon", swatch: "#ff2080" },
-    { value: "blood", label: "Blood", swatch: "#8a1818" },
+    { value: "blood", label: "Blood", swatch: "#a84255" },
     { value: "acid", label: "Acid", swatch: "#7fd94a" },
     { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
@@ -92,7 +96,9 @@
               ambientEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.ink.ambientEmission * 100)}%</span>
+        <span class="slider-value"
+          >{Math.round(state.ink.ambientEmission * 100)}%</span
+        >
       </div>
 
       <!-- Motion emission (dominant) -->
@@ -110,7 +116,9 @@
               motionEmission: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.ink.motionEmission * 100)}%</span>
+        <span class="slider-value"
+          >{Math.round(state.ink.motionEmission * 100)}%</span
+        >
       </div>
 
       <!-- Intensity (width + opacity) -->
@@ -128,45 +136,51 @@
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.ink.intensity * 100)}%</span>
+        <span class="slider-value"
+          >{Math.round(state.ink.intensity * 100)}%</span
+        >
       </div>
 
       <AdvancedControls count={2}>
         <!-- Viscosity - wires through now, sprint 2 renders it as strand breakup -->
-      <div class="slider-row">
-        <label for="ink-viscosity">Viscosity</label>
-        <input
-          id="ink-viscosity"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.ink.viscosity}
-          oninput={(e) =>
-            state.updateEffect("ink", {
-              viscosity: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.ink.viscosity * 100)}%</span>
-      </div>
+        <div class="slider-row">
+          <label for="ink-viscosity">Viscosity</label>
+          <input
+            id="ink-viscosity"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.ink.viscosity}
+            oninput={(e) =>
+              state.updateEffect("ink", {
+                viscosity: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.ink.viscosity * 100)}%</span
+          >
+        </div>
 
-      <!-- Splatter - wires through now, sprint 2 renders it as burst particles -->
-      <div class="slider-row">
-        <label for="ink-splatter">Splatter</label>
-        <input
-          id="ink-splatter"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.ink.splatterIntensity}
-          oninput={(e) =>
-            state.updateEffect("ink", {
-              splatterIntensity: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.ink.splatterIntensity * 100)}%</span>
-      </div>
+        <!-- Splatter - wires through now, sprint 2 renders it as burst particles -->
+        <div class="slider-row">
+          <label for="ink-splatter">Splatter</label>
+          <input
+            id="ink-splatter"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.ink.splatterIntensity}
+            oninput={(e) =>
+              state.updateEffect("ink", {
+                splatterIntensity: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value"
+            >{Math.round(state.ink.splatterIntensity * 100)}%</span
+          >
+        </div>
       </AdvancedControls>
     </div>
   {:else}

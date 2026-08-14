@@ -67,7 +67,7 @@ export const INK_PRESET_CANDIDATES: InkPresetCandidate[] = [
     id: "08",
     name: "Blood Splatter",
     description: "Dense red impacts followed by brief outward spray.",
-    accent: "#d93838",
+    accent: "#d67881",
     intent: inkIntent({
       palette: "blood",
       ambientEmission: 0.08,

@@ -540,13 +540,27 @@ describe("migrateEffectsConfig", () => {
         pulseRate: 1,
         streak: 0.55,
         spikes: 0.6,
-        chromatic: 0.35,
         afterglow: 0.5,
       },
     };
     const out = migrateEffectsConfig(current);
     expect(out.bloom.intensity).toBe(0.95);
     expect(out.bloom.colorMode).toBe("solid");
+  });
+
+  it("removes retired Aurora state from saved Bloom configurations", () => {
+    const saved = {
+      version: 34,
+      bloom: {
+        ...DEFAULT_EFFECTS_CONFIG.bloom,
+        chromatic: 0.9,
+      },
+      activePresets: { bloom: "bloom-prism" },
+    };
+    const out = migrateEffectsConfig(saved);
+
+    expect(out.activePresets.bloom).toBeNull();
+    expect("chromatic" in out.bloom).toBe(false);
   });
 
   it("deep-merges a partial pulse block over defaults", () => {

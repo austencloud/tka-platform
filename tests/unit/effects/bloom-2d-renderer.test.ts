@@ -104,7 +104,6 @@ describe("Bloom2DRenderer optical layers", () => {
         afterglow: 0.9,
         streak: 0,
         spikes: 0,
-        chromatic: 0,
       });
       renderer.render(main.context, config, [tip()]);
       renderer.render(main.context, config, [tip()]);
@@ -128,7 +127,6 @@ describe("Bloom2DRenderer optical layers", () => {
         afterglow: 0.9,
         streak: 0,
         spikes: 0,
-        chromatic: 0,
       });
       renderer.render(main.context, config, [tip(100)]);
       renderer.render(main.context, config, [tip(140)]);
@@ -138,39 +136,6 @@ describe("Bloom2DRenderer optical layers", () => {
     } finally {
       vi.unstubAllGlobals();
     }
-  });
-
-  it("keeps Aurora's iridescent structure identical at rest and in motion", () => {
-    const renderer = new Bloom2DRenderer();
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const resting = makeContext();
-    renderer.render(resting.context, params(aurora.patch ?? {}), [tip(100)]);
-
-    expect(resting.radial).toHaveLength(2);
-    expect(resting.linear).toHaveLength(2);
-    expect(resting.calls.scale).toBe(2);
-    expect(resting.calls.stroke).toBe(0);
-
-    const moving = makeContext();
-    renderer.render(moving.context, params(aurora.patch ?? {}), [tip(150)]);
-
-    expect(moving.radial).toHaveLength(2);
-    expect(moving.linear).toHaveLength(2);
-    expect(moving.calls.scale).toBe(2);
-    expect(moving.calls.stroke).toBe(0);
-  });
-
-  it("renders one Aurora field for all tips on the same prop", () => {
-    const renderer = new Bloom2DRenderer();
-    const aurora = BLOOM_PRESETS.find((preset) => preset.id === "bloom-prism")!;
-    const frame = makeContext();
-    renderer.render(frame.context, params(aurora.patch ?? {}), [
-      tip(80),
-      { ...tip(180), tipIndex: 1 },
-    ]);
-
-    expect(frame.linear).toHaveLength(2);
-    expect(frame.radial).toHaveLength(4);
   });
 
   it("renders a different dominant layer structure for every preset", () => {
@@ -193,7 +158,6 @@ describe("Bloom2DRenderer optical layers", () => {
     expect(Object.fromEntries(signatures)).toEqual({
       Supernova: "2:8:0",
       Comet: "3:0:1",
-      Aurora: "2:2:2",
       Halo: "2:0:0",
     });
   });

@@ -37,7 +37,7 @@ export class DynamicLightManager {
     position: Vector3,
     color: Color,
     intensity: number,
-    range: number,
+    range: number
   ): LightHandle | null {
     if (this.maxLights === 0) return null;
 
@@ -60,6 +60,7 @@ export class DynamicLightManager {
     position: Vector3,
     intensity: number,
     color?: Color,
+    range?: number
   ): void {
     const light = this.activeHandles.get(handle.id);
     if (!light) return;
@@ -67,6 +68,7 @@ export class DynamicLightManager {
     light.position.copy(position);
     light.intensity = intensity;
     if (color) light.color.copy(color);
+    if (range !== undefined) light.distance = range;
   }
 
   releaseLight(handle: LightHandle): void {

@@ -45,6 +45,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     intensity: 0.5,
     spread: 0.5,
     glow: 0.6,
+    emissionStyle: "steel-wool",
   },
 
   zap: {
@@ -96,7 +97,6 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     pulseRate: 1,
     streak: 0.4,
     spikes: 0.65,
-    chromatic: 0.35,
     afterglow: 0.5,
   },
 
@@ -156,17 +156,17 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
-  // Sumi Flow is the production default. It stays motion-dominant, keeps the
-  // resting tips quiet, and uses restrained breakup so choreography remains
-  // readable when several paths overlap.
+  // Production default: a continuous cool-blue liquid ink. Sumi remains an
+  // advanced palette, but its broad dry-brush profile no longer owns the
+  // synthetic Default card.
   ink: {
-    ambientEmission: 0.1,
-    motionEmission: 0.94,
-    intensity: 0.68,
-    palette: "sumi",
-    customColor: "#0a0a0a",
-    viscosity: 0.38,
-    splatterIntensity: 0.16,
+    ambientEmission: 0.06,
+    motionEmission: 0.9,
+    intensity: 0.64,
+    palette: "custom",
+    customColor: "#2f8fb3",
+    viscosity: 0.28,
+    splatterIntensity: 0.06,
     trackingMode: "both_ends",
   },
 

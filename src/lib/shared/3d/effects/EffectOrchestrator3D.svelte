@@ -53,6 +53,7 @@
   import {
     PROP_COLORS,
     PropType,
+    userProportionsState,
     type PropState3D,
   } from "@austencloud/scene-3d";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -279,7 +280,12 @@
           source = { ...base, effect, params: resolvedGoo };
           break;
         case "bubbles":
-          source = { ...base, effect, params: resolvedBubbles };
+          source = {
+            ...base,
+            effect,
+            params: resolvedBubbles,
+            qualityTier,
+          };
           break;
         case "petals":
           source = { ...base, effect, params: resolvedPetals };
@@ -320,6 +326,7 @@
         break;
       case "bubbles":
         source.params = resolvedBubbles;
+        source.qualityTier = qualityTier;
         break;
       case "petals":
         source.params = resolvedPetals;
@@ -717,6 +724,7 @@
           );
         } else if (effect === "charcoal") {
           charcoalTips.push({
+            sourceId: tipIndex,
             position: new Vector3(
               tip.position.x,
               tip.position.y,
@@ -815,6 +823,7 @@
           );
         } else if (effect === "charcoal") {
           charcoalTips.push({
+            sourceId: 2 + tipIndex,
             position: new Vector3(
               tip.position.x,
               tip.position.y,
@@ -991,7 +1000,13 @@
           charcoalRenderer.initialize(imperativeParent);
         }
         charcoalRenderer.updateConfig(resolveCharcoal3D(effectsState.charcoal));
-        charcoalRenderer.update(charcoalTips, dt);
+        charcoalRenderer.update(charcoalTips, dt, {
+          currentStep,
+          totalSteps,
+          // Effects live in PerformerRig-local space. In that space y=0 is
+          // shoulder height; the avatar's actual floor is groundY (~-1.56).
+          collisionFloorY: userProportionsState.groundY,
+        });
       } else {
         charcoalRenderer?.reset();
       }
