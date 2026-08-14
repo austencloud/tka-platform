@@ -241,15 +241,31 @@ export function createDeckPrintState(
   async function recordFailedPrintRun(run: {
     printRunId: string;
     fail(): Promise<void>;
-  }): Promise<void> {
+  }): Promise<boolean> {
     try {
       await run.fail();
+      return true;
     } catch (error) {
       console.error(
         `[deck-releaser] could not mark print run ${run.printRunId} failed:`,
         error
       );
+      return false;
     }
+  }
+
+  async function throwAfterRecordingFailedRun(
+    run: { printRunId: string; fail(): Promise<void> },
+    error: unknown
+  ): Promise<never> {
+    const recorded = await recordFailedPrintRun(run);
+    if (!recorded) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `${message}. The print run status could not be updated. Try again before reprinting.`
+      );
+    }
+    throw error;
   }
 
   async function buildInsertPair(options: {
@@ -361,8 +377,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await recordFailedPrintRun(run);
-        throw error;
+        await throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       return { blob, printRunId: run.printRunId };
@@ -470,8 +485,7 @@ export function createDeckPrintState(
           }
         );
       } catch (error) {
-        await recordFailedPrintRun(run);
-        throw error;
+        await throwAfterRecordingFailedRun(run, error);
       }
       await run.complete();
       deps.download(
