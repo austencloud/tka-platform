@@ -2,11 +2,9 @@
  * Runtime readers for the compile-time feature constants.
  *
  * Vite's `define` map replaces `__FEATURE_*__` textually, so a guard written
- * inline against the constant folds away entirely — that is exactly what
- * removes the Coven menu entry (and its `"View in coven hub"` string) from the
- * production client bundle, which `scripts/verify-native-release-surface.mjs`
- * asserts. Inline constants are therefore still correct wherever the goal is to
- * make code VANISH.
+ * inline against the constant folds away entirely. Inline constants are
+ * therefore still correct wherever the goal is to make code VANISH from the
+ * production client bundle.
  *
  * Route load guards are a different job: they must REDIRECT, and their behavior
  * has to be provable in both states. Vitest loads `vite.config.ts`, so the same
