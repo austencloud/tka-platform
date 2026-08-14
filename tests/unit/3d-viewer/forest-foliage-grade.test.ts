@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   applyForestFoliageGrade,
+  calculateForestCanopyLodAlphaCoverage,
+  calculateForestCanopyLodVisibility,
   calculateForestFoliageSkyExposure,
+  resolveForestFoliageAlphaTreatment,
   resolveForestFoliageGradeCoverage,
   resolveForestFoliageGreenSignalFloor,
   resolveForestFoliageGradeWeight,
@@ -14,6 +17,47 @@ const luminance = (color: { r: number; g: number; b: number }): number =>
   color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
 
 describe("Forest foliage family grading", () => {
+  it.each([
+    "jacaranda_tree_leaves.001",
+    "island_tree_01_leaves",
+    "tree_small_02_leaves",
+    "fir_tree_01_twig",
+    "fir_sapling_medium_leaf",
+  ])("preserves distant photographic coverage for %s", (materialName) => {
+    expect(resolveForestFoliageAlphaTreatment(materialName, 0.35)).toEqual({
+      alphaHash: true,
+      alphaTest: 0,
+    });
+  });
+
+  it("keeps opaque semantic foliage on its authored material path", () => {
+    expect(resolveForestFoliageAlphaTreatment("Foliage", 0)).toEqual({
+      alphaHash: false,
+      alphaTest: 0,
+    });
+  });
+
+  it("alpha-hashes the semantic distance canopy so its fade is real coverage", () => {
+    expect(
+      resolveForestFoliageAlphaTreatment(
+        "ForestSemanticCanopy_semantic-beech_foliage_canopy_lod",
+        0
+      )
+    ).toEqual({ alphaHash: true, alphaTest: 0 });
+  });
+
+  it("crossfades canopy support only at environment distance", () => {
+    expect(calculateForestCanopyLodVisibility(20)).toBe(0);
+    expect(calculateForestCanopyLodVisibility(45)).toBeCloseTo(0.5, 5);
+    expect(calculateForestCanopyLodVisibility(80)).toBe(1);
+  });
+
+  it("boosts averaged mip coverage without changing binary cutouts", () => {
+    expect(calculateForestCanopyLodAlphaCoverage(0)).toBe(0);
+    expect(calculateForestCanopyLodAlphaCoverage(1)).toBe(1);
+    expect(calculateForestCanopyLodAlphaCoverage(0.26)).toBeGreaterThan(0.8);
+  });
+
   it("corrects the silver-green Jacaranda family more strongly", () => {
     expect(resolveForestFoliageGradeCoverage("jacaranda_tree_leaves.002")).toBe(
       1.28
@@ -25,6 +69,19 @@ describe("Forest foliage family grading", () => {
       0.82
     );
     expect(resolveForestFoliageGradeCoverage("Material_Foliage")).toBe(0.82);
+  });
+
+  it.each([
+    ["Cathedral European Beech R2_Foliage", 0.76],
+    ["Fluted European Hornbeam R2_Foliage", 0.63],
+    ["Airy Silver Birch_Foliage", 0.72],
+    ["Tall Tulip Tree R5_Foliage", 0.82],
+    ["Shagbark Hickory_Foliage", 0.42],
+    ["Mottled American Sycamore R2_Foliage", 0.67],
+  ])("normalizes semantic summer exposure for %s", (materialName, scale) => {
+    expect(resolveForestFoliageGradeCoverage(materialName)).toBe(1);
+    expect(resolveForestFoliageGreenSignalFloor(materialName)).toBe(1);
+    expect(resolveForestFoliageLuminanceScale(materialName)).toBe(scale);
   });
 
   it("leaves neutral pixels in the naturally green families outside the grade", () => {
@@ -97,6 +154,19 @@ describe("Forest foliage family grading", () => {
 
     expect(resolveForestFoliageLuminanceScale("island_tree_01_leaves")).toBe(1);
     expect(luminance(graded)).toBeCloseTo(luminance(source), 12);
+  });
+
+  it("brings bright semantic hickory into the photographic canopy range", () => {
+    const source = { r: 0.12, g: 0.34, b: 0.08 };
+    const graded = applyForestFoliageGrade(
+      source,
+      { r: 0.1, g: 0.3, b: 0.08 },
+      "Shagbark Hickory_Foliage",
+      0.78
+    );
+
+    expect(luminance(graded)).toBeLessThan(luminance(source) * 0.6);
+    expect(graded.g).toBeGreaterThan(graded.r * 2);
   });
 
   it("limits indirect-depth shaping to the near-frame canopy", () => {

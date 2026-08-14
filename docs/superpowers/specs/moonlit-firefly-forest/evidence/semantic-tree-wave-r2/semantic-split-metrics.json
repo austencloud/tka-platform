@@ -1,0 +1,224 @@
+[
+  {
+    "id": "cathedral-european-beech-r2",
+    "species": "beech",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/cathedral-european-beech-r2_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/cathedral-european-beech-r2_semantic_review.glb",
+    "sourceTriangles": 101939,
+    "barkTriangles": 3413,
+    "foliageTriangles": 98526,
+    "barkTriangleShare": 0.03348080714937365,
+    "foliageTriangleShare": 0.9665191928506264,
+    "greenAtlasPixelShare": 0.8947656154632568,
+    "sourceDimensions": [
+      5.435279369354248,
+      8,
+      5.636547088623047
+    ],
+    "uniformScale": 2.25,
+    "normalizedMinimum": [
+      -6.114689290523529,
+      0,
+      -6.341115474700928
+    ],
+    "normalizedMaximum": [
+      6.114689290523529,
+      18,
+      6.341115474700928
+    ],
+    "normalizedDimensionsMetres": [
+      12.229378581047058,
+      18,
+      12.682230949401855
+    ],
+    "semanticMaterials": [
+      "Cathedral European Beech R2_Bark",
+      "Cathedral European Beech R2_Foliage"
+    ]
+  },
+  {
+    "id": "fluted-european-hornbeam-r2",
+    "species": "hornbeam",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/fluted-european-hornbeam-r2_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/fluted-european-hornbeam-r2_semantic_review.glb",
+    "sourceTriangles": 100243,
+    "barkTriangles": 3720,
+    "foliageTriangles": 96523,
+    "barkTriangleShare": 0.0371098231297946,
+    "foliageTriangleShare": 0.9628901768702054,
+    "greenAtlasPixelShare": 0.9993302226066589,
+    "sourceDimensions": [
+      3.3055572509765625,
+      5,
+      3.206106424331665
+    ],
+    "uniformScale": 3.0252085324027274,
+    "normalizedMinimum": [
+      -5,
+      0,
+      -4.8495702553396765
+    ],
+    "normalizedMaximum": [
+      5.000000000000001,
+      15.126042662013637,
+      4.849570255339676
+    ],
+    "normalizedDimensionsMetres": [
+      10,
+      15.126042662013637,
+      9.699140510679353
+    ],
+    "semanticMaterials": [
+      "Fluted European Hornbeam R2_Bark",
+      "Fluted European Hornbeam R2_Foliage"
+    ]
+  },
+  {
+    "id": "airy-silver-birch-r1",
+    "species": "birch",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/airy-silver-birch-r1_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/airy-silver-birch-r1_semantic_review.glb",
+    "sourceTriangles": 98059,
+    "barkTriangles": 4770,
+    "foliageTriangles": 93289,
+    "barkTriangleShare": 0.04864418360374877,
+    "foliageTriangleShare": 0.9513558163962512,
+    "greenAtlasPixelShare": 0.9305873513221741,
+    "sourceDimensions": [
+      6.659594774246216,
+      12,
+      6.56612229347229
+    ],
+    "uniformScale": 1.2012742923844795,
+    "normalizedMinimum": [
+      -4,
+      0,
+      -3.9438569559004404
+    ],
+    "normalizedMaximum": [
+      4,
+      14.415291508613754,
+      3.9438569559004404
+    ],
+    "normalizedDimensionsMetres": [
+      8,
+      14.415291508613754,
+      7.887713911800881
+    ],
+    "semanticMaterials": [
+      "Airy Silver Birch_Bark",
+      "Airy Silver Birch_Foliage"
+    ]
+  },
+  {
+    "id": "tall-tulip-tree-r5",
+    "species": "tulip-tree",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/tall-tulip-tree-r5_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/tall-tulip-tree-r5_semantic_review.glb",
+    "sourceTriangles": 100320,
+    "barkTriangles": 2346,
+    "foliageTriangles": 97974,
+    "barkTriangleShare": 0.023385167464114832,
+    "foliageTriangleShare": 0.9766148325358852,
+    "greenAtlasPixelShare": 0.943344235420227,
+    "sourceDimensions": [
+      9.54858684539795,
+      15,
+      9.804387092590332
+    ],
+    "uniformScale": 1.3259370399425328,
+    "normalizedMinimum": [
+      -6.330412488710581,
+      0,
+      -6.5
+    ],
+    "normalizedMaximum": [
+      6.330412488710582,
+      19.88905559913799,
+      6.5
+    ],
+    "normalizedDimensionsMetres": [
+      12.660824977421164,
+      19.88905559913799,
+      13
+    ],
+    "semanticMaterials": [
+      "Tall Tulip Tree R5_Bark",
+      "Tall Tulip Tree R5_Foliage"
+    ]
+  },
+  {
+    "id": "shagbark-hickory-r1",
+    "species": "hickory",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/shagbark-hickory-r1_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/shagbark-hickory-r1_semantic_review.glb",
+    "sourceTriangles": 100581,
+    "barkTriangles": 2384,
+    "foliageTriangles": 98197,
+    "barkTriangleShare": 0.023702289696861237,
+    "foliageTriangleShare": 0.9762977103031387,
+    "greenAtlasPixelShare": 0.9107063412666321,
+    "sourceDimensions": [
+      5.811814785003662,
+      10,
+      5.872959613800049
+    ],
+    "uniformScale": 2,
+    "normalizedMinimum": [
+      -5.811814785003662,
+      0,
+      -5.872959613800049
+    ],
+    "normalizedMaximum": [
+      5.811814785003662,
+      20,
+      5.872959613800049
+    ],
+    "normalizedDimensionsMetres": [
+      11.623629570007324,
+      20,
+      11.745919227600098
+    ],
+    "semanticMaterials": [
+      "Shagbark Hickory_Bark",
+      "Shagbark Hickory_Foliage"
+    ]
+  },
+  {
+    "id": "mottled-american-sycamore-r2",
+    "species": "sycamore",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/mottled-american-sycamore-r2_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/mottled-american-sycamore-r2_semantic_review.glb",
+    "sourceTriangles": 103322,
+    "barkTriangles": 4704,
+    "foliageTriangles": 98618,
+    "barkTriangleShare": 0.04552757399198622,
+    "foliageTriangleShare": 0.9544724260080137,
+    "greenAtlasPixelShare": 0.9636681079864502,
+    "sourceDimensions": [
+      12.44282054901123,
+      15,
+      11.054750919342041
+    ],
+    "uniformScale": 1.4466173428363371,
+    "normalizedMinimum": [
+      -9,
+      0,
+      -7.99599720032807
+    ],
+    "normalizedMaximum": [
+      9,
+      21.699260142545057,
+      7.995997200328069
+    ],
+    "normalizedDimensionsMetres": [
+      18,
+      21.699260142545057,
+      15.99199440065614
+    ],
+    "semanticMaterials": [
+      "Mottled American Sycamore R2_Bark",
+      "Mottled American Sycamore R2_Foliage"
+    ]
+  }
+]

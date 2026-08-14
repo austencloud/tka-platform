@@ -1,0 +1,116 @@
+[
+  {
+    "id": "cathedral-european-beech-r2",
+    "species": "beech",
+    "components": 3874,
+    "largestComponentTriangles": 336,
+    "largestComponentShare": 0.003296088837442,
+    "topTenTriangleCounts": [
+      336,
+      295,
+      224,
+      214,
+      209,
+      205,
+      192,
+      184,
+      183,
+      182
+    ]
+  },
+  {
+    "id": "fluted-european-hornbeam-r2",
+    "species": "hornbeam",
+    "components": 3009,
+    "largestComponentTriangles": 333,
+    "largestComponentShare": 0.0033219277156509683,
+    "topTenTriangleCounts": [
+      333,
+      310,
+      292,
+      272,
+      266,
+      261,
+      257,
+      249,
+      247,
+      247
+    ]
+  },
+  {
+    "id": "airy-silver-birch-r1",
+    "species": "birch",
+    "components": 5757,
+    "largestComponentTriangles": 259,
+    "largestComponentShare": 0.0026412669923209496,
+    "topTenTriangleCounts": [
+      259,
+      259,
+      227,
+      226,
+      190,
+      172,
+      171,
+      167,
+      165,
+      164
+    ]
+  },
+  {
+    "id": "tall-tulip-tree-r5",
+    "species": "tulip-tree",
+    "components": 4976,
+    "largestComponentTriangles": 278,
+    "largestComponentShare": 0.0027711323763955345,
+    "topTenTriangleCounts": [
+      278,
+      216,
+      213,
+      198,
+      197,
+      189,
+      176,
+      171,
+      170,
+      165
+    ]
+  },
+  {
+    "id": "shagbark-hickory-r1",
+    "species": "hickory",
+    "components": 3403,
+    "largestComponentTriangles": 385,
+    "largestComponentShare": 0.003827760710273312,
+    "topTenTriangleCounts": [
+      385,
+      343,
+      326,
+      309,
+      299,
+      281,
+      270,
+      262,
+      259,
+      251
+    ]
+  },
+  {
+    "id": "mottled-american-sycamore-r2",
+    "species": "sycamore",
+    "components": 1839,
+    "largestComponentTriangles": 608,
+    "largestComponentShare": 0.005884516366311144,
+    "topTenTriangleCounts": [
+      608,
+      607,
+      521,
+      519,
+      511,
+      453,
+      439,
+      432,
+      418,
+      405
+    ]
+  }
+]

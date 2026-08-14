@@ -342,3 +342,43 @@ inside their production ceilings.
 The release proof covers the current Day hero at every required viewport and
 the locked Night hero at 1920 x 1080. Evidence and command results are indexed
 in `evidence/production-release-2026-08-13/production-release-verification.md`.
+
+## Tree and grass parity R1
+
+Verified 2026-08-14. The accepted forest preserves the natural 11-silhouette
+Poly Haven population after a live Meshy oak trial failed the production visual
+gate. The oak's semantic bark/foliage split worked, but its sculpted crown read
+as a bright foam mass beside photographic leaf canopies, so all four live oak
+placements were removed and the natural baseline was rebuilt from source.
+
+The production world contains 295 trees across 13 ecological clusters, with no
+source above 20 percent. The near-frame meadow contains 128,855 instanced grass
+clumps, including 7,277 flattened worn-path clumps. Day hero, path, and tree
+cameras retain dry grass and brown trunks; the locked Night frame remains dark
+and matte without silver-frost shine. The environment is 20,887,796 bytes and
+the near-frame layer is 18,846,988 bytes, both inside their delivery ceilings.
+
+The semantic-tree program spent 470 Meshy credits. Six R2 species remain
+candidate-only, led by beech, birch, and tulip tree. Exact runtime proof,
+candidate sheets, credit ledger, and contract results are indexed in
+`evidence/tree-grass-parity-r1/tree-grass-parity-verdict.md`.
+
+## Semantic canopy integration R2
+
+Verified 2026-08-14. The six semantic Meshy families are now integrated into
+the production population, bringing the Forest to 294 trees across 17 source
+silhouettes. Meshy owns bark and branch structure only. Poly Haven leaf
+clusters provide close and middle-distance texture, while an authored,
+alpha-hashed crown shell restores low-frequency canopy mass from 24 to 48
+metres. The original fused Meshy foliage texture is not used.
+
+The first photographic-leaf build was rejected because its half-metre clusters
+dissolved into speckles. The first two-tier build was rejected because the
+optimizer renamed the crown role and exposed a bright foam surface. The
+accepted build preserves the role through palette optimization, darkens the
+shell, punches object-anchored gaps through it, and caps shell coverage at 72
+percent.
+
+The final world GLB is 20,885,804 bytes, the near-frame GLB remains 18,846,988
+bytes, and both production verifiers pass. Visual, structural, and performance
+evidence is indexed in `evidence/tree-hybrid-r2/tree-hybrid-r2-verdict.md`.

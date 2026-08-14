@@ -1,0 +1,116 @@
+[
+  {
+    "id": "cathedral-european-beech-r2",
+    "species": "beech",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\cathedral-european-beech-r2_refined_raw.glb",
+    "sourceDimensions": [
+      5.435279369354248,
+      5.636547088623047,
+      8.0
+    ],
+    "normalizedDimensionsMetres": [
+      12.229378700256348,
+      12.682230949401855,
+      18.0
+    ],
+    "targetHeightMetres": 18.0,
+    "targetCrownWidthMetres": 13.0,
+    "widthToHeight": 0.6794099277920194,
+    "depthToHeight": 0.7045683860778809
+  },
+  {
+    "id": "fluted-european-hornbeam-r2",
+    "species": "hornbeam",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\fluted-european-hornbeam-r2_refined_raw.glb",
+    "sourceDimensions": [
+      3.3055572509765625,
+      3.206106424331665,
+      5.0
+    ],
+    "normalizedDimensionsMetres": [
+      10.0,
+      9.699140548706055,
+      15.126042366027832
+    ],
+    "targetHeightMetres": 16.0,
+    "targetCrownWidthMetres": 10.0,
+    "widthToHeight": 0.6611114631319155,
+    "depthToHeight": 0.6412212999277149
+  },
+  {
+    "id": "airy-silver-birch-r1",
+    "species": "birch",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\airy-silver-birch-r1_refined_raw.glb",
+    "sourceDimensions": [
+      6.659594535827637,
+      6.566122055053711,
+      12.0
+    ],
+    "normalizedDimensionsMetres": [
+      8.0,
+      7.887714385986328,
+      14.415292739868164
+    ],
+    "targetHeightMetres": 17.0,
+    "targetCrownWidthMetres": 8.0,
+    "widthToHeight": 0.554966183785815,
+    "depthToHeight": 0.5471768439479132
+  },
+  {
+    "id": "tall-tulip-tree-r5",
+    "species": "tulip-tree",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\tall-tulip-tree-r5_refined_raw.glb",
+    "sourceDimensions": [
+      9.54858684539795,
+      9.804387092590332,
+      15.0
+    ],
+    "normalizedDimensionsMetres": [
+      12.6608247756958,
+      13.0,
+      19.889055252075195
+    ],
+    "targetHeightMetres": 24.0,
+    "targetCrownWidthMetres": 13.0,
+    "widthToHeight": 0.6365724573254825,
+    "depthToHeight": 0.6536258175784191
+  },
+  {
+    "id": "shagbark-hickory-r1",
+    "species": "hickory",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\shagbark-hickory-r1_refined_raw.glb",
+    "sourceDimensions": [
+      5.811814785003662,
+      5.872959613800049,
+      10.0
+    ],
+    "normalizedDimensionsMetres": [
+      11.623629570007324,
+      11.745919227600098,
+      20.0
+    ],
+    "targetHeightMetres": 20.0,
+    "targetCrownWidthMetres": 12.0,
+    "widthToHeight": 0.5811814785003662,
+    "depthToHeight": 0.5872959613800048
+  },
+  {
+    "id": "mottled-american-sycamore-r2",
+    "species": "sycamore",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\mottled-american-sycamore-r2_refined_raw.glb",
+    "sourceDimensions": [
+      12.44282054901123,
+      11.054750442504883,
+      15.0
+    ],
+    "normalizedDimensionsMetres": [
+      18.0,
+      15.99199390411377,
+      21.699260711669922
+    ],
+    "targetHeightMetres": 24.0,
+    "targetCrownWidthMetres": 18.0,
+    "widthToHeight": 0.8295213481775234,
+    "depthToHeight": 0.7369833524103995
+  }
+]

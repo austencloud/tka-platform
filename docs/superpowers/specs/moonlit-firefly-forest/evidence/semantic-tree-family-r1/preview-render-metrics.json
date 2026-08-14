@@ -1,0 +1,21 @@
+[
+  {
+    "id": "cathedral-american-elm-r3",
+    "species": "elm",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r1\\cathedral-american-elm-r3_preview.glb",
+    "sourceDimensions": [
+      5.514982223510742,
+      6.03169584274292,
+      10.0
+    ],
+    "normalizedDimensionsMetres": [
+      10.478466033935547,
+      11.460222244262695,
+      19.0
+    ],
+    "targetHeightMetres": 19.0,
+    "targetCrownWidthMetres": 14.0,
+    "widthToHeight": 0.5514982123123972,
+    "depthToHeight": 0.6031695918032998
+  }
+]

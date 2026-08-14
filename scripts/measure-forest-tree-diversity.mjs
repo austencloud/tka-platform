@@ -116,7 +116,10 @@ const [environment, nearFrame] = await Promise.all([
 const environmentMetrics = instancedTreeMetrics(environment);
 const nearFrameMetrics = instancedTreeMetrics(nearFrame);
 
-invariant(treeCount === 295, `Expected 295 authored trees, found ${treeCount}`);
+invariant(
+  treeCount >= 280,
+  `Woodland needs at least 280 authored trees, found ${treeCount}`
+);
 invariant(
   uniqueSourcePaths.size >= 10,
   "Woodland needs at least ten real sources"

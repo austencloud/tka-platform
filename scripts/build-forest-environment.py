@@ -16,9 +16,11 @@ import os
 import random
 import subprocess
 import sys
+from bisect import bisect_left
 
+import bmesh
 import bpy
-from mathutils import Vector
+from mathutils import Quaternion, Vector
 
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -832,7 +834,460 @@ def tree_source_variants(asset):
     return variants if variants else [asset]
 
 
-def import_tree_prototype(asset, variant=None):
+def foliage_material_indices(prototype):
+    return {
+        index
+        for index, slot in enumerate(prototype.material_slots)
+        if slot.material
+        and any(
+            marker in slot.material.name.lower()
+            for marker in ("leaf", "leaves", "twig", "foliage", "needle")
+        )
+    }
+
+
+def connected_foliage_components(bm, material_indices):
+    foliage_faces = {
+        face for face in bm.faces if face.material_index in material_indices
+    }
+    components = []
+    remaining = set(foliage_faces)
+    while remaining:
+        start = remaining.pop()
+        component = [start]
+        stack = [start]
+        while stack:
+            face = stack.pop()
+            for vertex in face.verts:
+                for neighbor in vertex.link_faces:
+                    if neighbor in remaining and neighbor in foliage_faces:
+                        remaining.remove(neighbor)
+                        component.append(neighbor)
+                        stack.append(neighbor)
+        components.append(component)
+    return components
+
+
+PHOTOGRAPHIC_FOLIAGE_DONORS = {}
+
+
+def load_photographic_foliage_donor(donor_asset_id):
+    """Load reusable, UV-complete leaf components from one natural tree."""
+    cached = PHOTOGRAPHIC_FOLIAGE_DONORS.get(donor_asset_id)
+    if cached:
+        return cached
+
+    donor_asset = TREE_ASSETS.get(donor_asset_id)
+    if donor_asset is None:
+        raise RuntimeError(f"Unknown photographic foliage donor: {donor_asset_id}")
+    donor_source = tree_source_variants(donor_asset)[0]
+    source_path = os.path.join(PROJECT_ROOT, donor_source["stagedPath"])
+    before = {obj.name for obj in bpy.data.objects}
+    bpy.ops.import_scene.gltf(filepath=source_path)
+    imported = [obj for obj in bpy.data.objects if obj.name not in before]
+    meshes = [obj for obj in imported if obj.type == "MESH"]
+    if len(meshes) != 1:
+        raise RuntimeError(
+            f"Photographic foliage donor {donor_asset_id} imported {len(meshes)} meshes"
+        )
+    donor = meshes[0]
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = donor
+    donor.select_set(True)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    donor.select_set(False)
+
+    material_indices = foliage_material_indices(donor)
+    if len(material_indices) != 1:
+        raise RuntimeError(
+            f"Photographic foliage donor {donor_asset_id} needs one foliage material"
+        )
+    material_index = next(iter(material_indices))
+    donor_material = donor.material_slots[material_index].material.copy()
+    donor_material.name = f"{donor.material_slots[material_index].material.name}_hybrid"
+    donor_material["tka_photographic_foliage_donor"] = donor_asset_id
+
+    bm = bmesh.new()
+    bm.from_mesh(donor.data)
+    bm.faces.ensure_lookup_table()
+    uv_layer = bm.loops.layers.uv.active
+    if uv_layer is None:
+        bm.free()
+        raise RuntimeError(f"Photographic foliage donor {donor_asset_id} has no UV layer")
+    components = connected_foliage_components(bm, material_indices)
+    rng = random.Random(
+        int(hashlib.sha256(f"forest-photo-leaves:{donor_asset_id}".encode()).hexdigest()[:16], 16)
+    )
+    candidates = [
+        component
+        for component in components
+        if 1 <= len(component) <= 16
+        and 3 <= len({vertex for face in component for vertex in face.verts}) <= 48
+    ]
+    component_records = []
+    for component in candidates:
+        vertices = list({vertex for face in component for vertex in face.verts})
+        center = sum((vertex.co for vertex in vertices), Vector()) / len(vertices)
+        vertex_index = {vertex: index for index, vertex in enumerate(vertices)}
+        normal = sum(
+            (face.normal * max(face.calc_area(), 0.000001) for face in component),
+            Vector(),
+        )
+        if normal.length_squared < 0.000001:
+            normal = Vector((0.0, 0.0, 1.0))
+        else:
+            normal.normalize()
+        component_records.append(
+            {
+                "center": center,
+                "positions": [vertex.co.copy() for vertex in vertices],
+                "normal": normal,
+                "faces": [
+                    {
+                        "indices": [vertex_index[vertex] for vertex in face.verts],
+                        "uvs": [loop[uv_layer].uv.copy() for loop in face.loops],
+                    }
+                    for face in component
+                ],
+            }
+        )
+    cell_size = 0.48
+    spatial_groups = {}
+    for component in component_records:
+        center = component["center"]
+        key = tuple(math.floor(axis / cell_size) for axis in center)
+        spatial_groups.setdefault(key, []).append(component)
+
+    grouped_components = []
+    for group in spatial_groups.values():
+        rng.shuffle(group)
+        for start in range(0, len(group), 36):
+            chunk = group[start : start + 36]
+            if len(chunk) >= 5:
+                grouped_components.append(chunk)
+    rng.shuffle(grouped_components)
+
+    templates = []
+    for group in grouped_components[:512]:
+        center = sum((component["center"] for component in group), Vector()) / len(group)
+        positions = []
+        faces = []
+        normal = Vector()
+        for component in group:
+            offset = len(positions)
+            positions.extend(position - center for position in component["positions"])
+            normal += component["normal"]
+            faces.extend(
+                {
+                    "indices": [offset + index for index in face["indices"]],
+                    "uvs": face["uvs"],
+                }
+                for face in component["faces"]
+            )
+        if normal.length_squared < 0.000001:
+            normal = Vector((0.0, 0.0, 1.0))
+        else:
+            normal.normalize()
+        templates.append(
+            {
+                "positions": positions,
+                "normal": normal,
+                "faces": faces,
+            }
+        )
+    bm.free()
+    for obj in imported:
+        bpy.data.objects.remove(obj, do_unlink=True)
+    if len(templates) < 64:
+        raise RuntimeError(
+            f"Photographic foliage donor {donor_asset_id} yielded only {len(templates)} templates"
+        )
+
+    cached = {"material": donor_material, "templates": templates}
+    PHOTOGRAPHIC_FOLIAGE_DONORS[donor_asset_id] = cached
+    print(
+        f"Photographic foliage donor {donor_asset_id}: "
+        f"{len(templates)} reusable multi-leaf clusters"
+    )
+    return cached
+
+
+def replace_semantic_foliage(prototype, asset, variant_id):
+    """Keep semantic structure, photo leaves, and a distance-only crown shell."""
+    config = asset.get("photographicFoliage")
+    if not config:
+        return None
+    source_material_indices = foliage_material_indices(prototype)
+    if len(source_material_indices) != 1:
+        raise RuntimeError(
+            f"Semantic tree {asset['id']} needs one source foliage material, "
+            f"found {len(source_material_indices)}"
+        )
+    source_material_index = next(iter(source_material_indices))
+    donor = load_photographic_foliage_donor(config["donorAssetId"])
+    donor_material = donor["material"]
+    prototype.data.materials.append(donor_material)
+    donor_material_index = len(prototype.data.materials) - 1
+
+    canopy_color = tuple(map(float, config["distanceCanopyColor"]))
+    canopy_material = principled_material(
+        f"ForestSemanticCanopy_{asset['id']}_foliage_canopy_lod",
+        canopy_color,
+        roughness=1.0,
+    )
+    canopy_material["tka_canopy_lod"] = True
+    canopy_material["tka_semantic_distance_canopy"] = True
+    prototype.data.materials.append(canopy_material)
+    canopy_material_index = len(prototype.data.materials) - 1
+
+    bm = bmesh.new()
+    bm.from_mesh(prototype.data)
+    bm.faces.ensure_lookup_table()
+    source_faces = [
+        face for face in bm.faces if face.material_index == source_material_index
+    ]
+    if not source_faces:
+        bm.free()
+        raise RuntimeError(f"Semantic tree {asset['id']} has no foliage faces")
+    bmesh.ops.triangulate(bm, faces=source_faces)
+    bm.faces.ensure_lookup_table()
+    source_faces = [
+        face for face in bm.faces if face.material_index == source_material_index
+    ]
+    targets = []
+    cumulative_area = []
+    total_area = 0.0
+    for face in source_faces:
+        if len(face.verts) != 3:
+            continue
+        area = face.calc_area()
+        if area <= 0.000001:
+            continue
+        total_area += area
+        cumulative_area.append(total_area)
+        targets.append(
+            (
+                tuple(vertex.co.copy() for vertex in face.verts),
+                face.normal.copy(),
+            )
+        )
+    # Meshy's crown carries a useful low-frequency species silhouette, even
+    # though it is unsuitable as walk-up foliage. Keep it in a separate,
+    # texture-free distance shell beneath the photographic leaf clusters.
+    for face in source_faces:
+        face.material_index = canopy_material_index
+    if not targets:
+        bm.free()
+        raise RuntimeError(f"Semantic tree {asset['id']} has no usable foliage surface")
+
+    uv_layer = bm.loops.layers.uv.verify()
+    seed = int(
+        hashlib.sha256(
+            f"forest-hybrid-foliage:{asset['id']}:{variant_id}".encode()
+        ).hexdigest()[:16],
+        16,
+    )
+    rng = random.Random(seed)
+    templates = donor["templates"]
+    card_count = int(config["cardCount"])
+    scale_min, scale_max = map(float, config["cardScaleRange"])
+    upward_bias = float(config.get("upwardBias", 0.28))
+    surface_offset = float(config.get("surfaceOffsetMetres", 0.035))
+    created_faces = 0
+    for _ in range(card_count):
+        target_index = min(
+            bisect_left(cumulative_area, rng.random() * total_area),
+            len(targets) - 1,
+        )
+        vertices, surface_normal = targets[target_index]
+        root = math.sqrt(rng.random())
+        barycentric = (
+            1.0 - root,
+            root * (1.0 - rng.random()),
+            root * rng.random(),
+        )
+        point = sum(
+            (vertices[index] * barycentric[index] for index in range(3)),
+            Vector(),
+        )
+        target_normal = surface_normal.normalized()
+        if target_normal.z < -0.2:
+            target_normal.z = -target_normal.z * 0.25
+        target_normal = (
+            target_normal * (1.0 - upward_bias)
+            + Vector((0.0, 0.0, 1.0)) * upward_bias
+        ).normalized()
+        template = rng.choice(templates)
+        alignment = template["normal"].rotation_difference(target_normal)
+        twist = Quaternion(target_normal, rng.random() * math.tau)
+        rotation = twist @ alignment
+        scale = rng.uniform(scale_min, scale_max)
+        point += target_normal * rng.uniform(-surface_offset * 0.3, surface_offset)
+        new_vertices = [
+            bm.verts.new(point + rotation @ (position * scale))
+            for position in template["positions"]
+        ]
+        for template_face in template["faces"]:
+            try:
+                face = bm.faces.new(
+                    [new_vertices[index] for index in template_face["indices"]]
+                )
+            except ValueError:
+                continue
+            face.material_index = donor_material_index
+            for loop, uv in zip(face.loops, template_face["uvs"]):
+                loop[uv_layer].uv = uv
+            created_faces += 1
+
+    bm.normal_update()
+    bm.to_mesh(prototype.data)
+    bm.free()
+    prototype.data.update()
+    prototype["tka_hybrid_foliage"] = True
+    prototype["tka_hybrid_foliage_donor"] = config["donorAssetId"]
+    prototype["tka_hybrid_foliage_cards"] = card_count
+    prototype["tka_hybrid_foliage_faces"] = created_faces
+    prototype["tka_semantic_distance_canopy"] = True
+    prototype["tka_semantic_distance_canopy_faces"] = len(source_faces)
+    print(
+        f"Hybrid foliage {asset['id']}/{variant_id}: "
+        f"{card_count} clusters, {created_faces} photo faces, "
+        f"{len(source_faces)} distance-shell faces, donor {config['donorAssetId']}"
+    )
+    return {
+        "cards": card_count,
+        "faces": created_faces,
+        "distanceShellFaces": len(source_faces),
+    }
+
+
+def add_overhead_foliage_support(prototype, asset, variant_id):
+    """Add a distance-only atlas-backed foliage LOD to one tree prototype."""
+    config = asset.get("overheadFoliageSupport")
+    if not config:
+        return None
+    material_indices = foliage_material_indices(prototype)
+    if len(material_indices) != 1:
+        raise RuntimeError(
+            f"Tree {asset['id']} requires one foliage material for overhead support, found {len(material_indices)}"
+        )
+
+    mesh = prototype.data
+    source_min_z = min(vertex.co.z for vertex in mesh.vertices)
+    source_max_z = max(vertex.co.z for vertex in mesh.vertices)
+    canopy_start = source_min_z + (source_max_z - source_min_z) * float(
+        config["canopyStartFraction"]
+    )
+    source_material_index = next(iter(material_indices))
+    source_material = prototype.material_slots[source_material_index].material
+    support_material = source_material.copy()
+    support_material.name = f"{source_material.name}_canopy_lod"
+    support_material["tka_canopy_lod"] = True
+    support_material.diffuse_color[3] = 0.999
+    mesh.materials.append(support_material)
+    support_material_index = len(mesh.materials) - 1
+
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.faces.ensure_lookup_table()
+    component_layer = bm.verts.layers.int.new("tka_canopy_component")
+    components = connected_foliage_components(bm, material_indices)
+    maximum_faces = int(config["maximumComponentFaces"])
+    candidates = []
+    for component in components:
+        vertices = {vertex for face in component for vertex in face.verts}
+        center = sum((vertex.co for vertex in vertices), Vector()) / len(vertices)
+        if center.z < canopy_start or len(component) > maximum_faces:
+            continue
+        area = sum(face.calc_area() for face in component)
+        if area <= 0.000001:
+            continue
+        candidates.append((component, vertices, center, area))
+
+    seed_material = f"{TREE_LAYOUT['seed']}:{asset['id']}:{variant_id}".encode()
+    rng = random.Random(int(hashlib.sha256(seed_material).hexdigest()[:16], 16))
+    rng.shuffle(candidates)
+    selected_count = max(
+        1, round(len(candidates) * float(config["componentFraction"]))
+    )
+    selected = candidates[:selected_count]
+    xy_scale = float(config["xyScale"])
+    z_scale = float(config["zScale"])
+    tilt_strength = float(config["tiltStrength"])
+    geometry = set()
+    transforms = {}
+    for component_index, (component, vertices, center, _area) in enumerate(
+        selected, start=1
+    ):
+        for vertex in vertices:
+            vertex[component_layer] = component_index
+        geometry.update(component)
+        geometry.update(vertices)
+        geometry.update(edge for face in component for edge in face.edges)
+        normal = sum(
+            (face.normal * face.calc_area() for face in component), Vector()
+        )
+        if normal.length_squared < 0.000001:
+            normal = Vector((0.0, 0.0, 1.0))
+        else:
+            normal.normalize()
+            if normal.z < 0:
+                normal.negate()
+        azimuth = rng.random() * math.tau
+        target_z = rng.uniform(0.82, 0.94)
+        horizontal = math.sqrt(max(0.0, 1.0 - target_z * target_z))
+        target_normal = Vector(
+            (
+                math.cos(azimuth) * horizontal,
+                math.sin(azimuth) * horizontal,
+                target_z,
+            )
+        )
+        alignment = normal.rotation_difference(target_normal)
+        tilt = Quaternion((1.0, 0.0, 0.0, 0.0)).slerp(
+            alignment, tilt_strength
+        )
+        transforms[component_index] = (center, tilt)
+
+    duplicated = bmesh.ops.duplicate(bm, geom=list(geometry))["geom"]
+    duplicated_vertices = [
+        element for element in duplicated if isinstance(element, bmesh.types.BMVert)
+    ]
+    duplicated_faces = [
+        element for element in duplicated if isinstance(element, bmesh.types.BMFace)
+    ]
+    for vertex in duplicated_vertices:
+        component_index = vertex[component_layer]
+        center, tilt = transforms[component_index]
+        relative = tilt @ (vertex.co - center)
+        relative.x *= xy_scale
+        relative.y *= xy_scale
+        relative.z *= z_scale
+        vertex.co = center + relative
+    for face in duplicated_faces:
+        face.material_index = support_material_index
+    created_faces = len(duplicated_faces)
+    bm.verts.layers.int.remove(component_layer)
+
+    bm.normal_update()
+    bm.to_mesh(mesh)
+    bm.free()
+    mesh.update()
+    prototype["tka_canopy_lod"] = True
+    prototype["tka_canopy_lod_components"] = len(selected)
+    prototype["tka_canopy_lod_faces"] = created_faces
+    prototype["tka_canopy_lod_distance_start"] = 32.0
+    prototype["tka_canopy_lod_distance_end"] = 58.0
+    mesh["tka_canopy_lod_xy_scale"] = xy_scale
+    mesh["tka_canopy_lod_z_scale"] = z_scale
+    print(
+        f"Overhead foliage support {asset['id']}/{variant_id}: "
+        f"{len(selected)} components, {created_faces} faces"
+    )
+    return {"components": len(selected), "faces": created_faces}
+
+
+def import_tree_prototype(asset, variant=None, overhead_support=False):
     source = variant or asset
     source_path = os.path.join(PROJECT_ROOT, source["stagedPath"])
     if not os.path.isfile(source_path):
@@ -858,21 +1313,30 @@ def import_tree_prototype(asset, variant=None):
     bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
     prototype.select_set(False)
     prototype.location = (0.0, 0.0, 0.0)
+    variant_id = source.get("id", asset["id"])
+    replace_semantic_foliage(prototype, asset, variant_id)
+    if overhead_support:
+        add_overhead_foliage_support(prototype, asset, variant_id)
     source_min_z = min(corner[2] for corner in prototype.bound_box)
     source_max_z = max(corner[2] for corner in prototype.bound_box)
     source_height = source_max_z - source_min_z
     if source_height <= 0.01:
         raise RuntimeError(f"Tree {asset['id']} has invalid height {source_height}")
-    prototype["tka_tree_variant"] = source.get("id", asset["id"])
+    prototype["tka_tree_variant"] = variant_id
     prototype.data.name = (
-        f"ForestTreeMesh_{asset['id']}_{source.get('id', asset['id'])}"
+        f"ForestTreeMesh_{asset['id']}_{variant_id}"
     )
     return prototype, source_min_z, source_height
 
 
-def import_tree_prototypes(asset):
+def import_tree_prototypes(asset, overhead_support=False):
     return [
-        (*import_tree_prototype(asset, variant), variant.get("id", asset["id"]))
+        (
+            *import_tree_prototype(
+                asset, variant, overhead_support=overhead_support
+            ),
+            variant.get("id", asset["id"]),
+        )
         for variant in tree_source_variants(asset)
     ]
 
@@ -1374,7 +1838,7 @@ def create_tree_composition(terrain):
         if not asset_placements:
             continue
         asset = TREE_ASSETS[asset_id]
-        prototypes = import_tree_prototypes(asset)
+        prototypes = import_tree_prototypes(asset, overhead_support=True)
         for index, placement in enumerate(asset_placements):
             prototype, source_min_z, source_height, variant_id = prototypes[
                 index % len(prototypes)
@@ -1481,8 +1945,20 @@ def verify_tree_composition(placements, counts):
     for role in ("mature-canopy", "irregular-middle", "young", "understory"):
         if role_counts.get(role, 0) <= 0:
             raise RuntimeError(f"Forest composition lost the {role} role")
-    if any(asset["family"] != "Poly Haven Natural" for asset in TREE_ASSETS.values()):
-        raise RuntimeError("Forest tree composition still contains a non-natural tree family")
+    approved_tree_families = {
+        "Poly Haven Natural",
+        "Meshy Semantic Summer R2",
+    }
+    unapproved_tree_families = {
+        asset["family"]
+        for asset in TREE_ASSETS.values()
+        if asset["family"] not in approved_tree_families
+    }
+    if unapproved_tree_families:
+        raise RuntimeError(
+            "Forest tree composition contains an unapproved production family: "
+            + ", ".join(sorted(unapproved_tree_families))
+        )
     variant_counts = {}
     cluster_asset_counts = {}
     for placement in placements:
@@ -1499,7 +1975,7 @@ def verify_tree_composition(placements, counts):
     )
     if len(variant_counts) != expected_variant_count:
         raise RuntimeError(
-            f"Expected {expected_variant_count} natural tree variants, used {len(variant_counts)}"
+            f"Expected {expected_variant_count} approved tree variants, used {len(variant_counts)}"
         )
     largest_variant_share = max(variant_counts.values()) / len(placements)
     if largest_variant_share > 0.2:

@@ -11,10 +11,17 @@
   import {
     FOREST_FOLIAGE_GREEN_SIGNAL_END,
     FOREST_FOLIAGE_GREEN_SIGNAL_START,
+    FOREST_CANOPY_LOD_DISTANCE_END,
+    FOREST_CANOPY_LOD_DISTANCE_START,
+    FOREST_CANOPY_LOD_ALPHA_COVERAGE_POWER,
+    FOREST_SEMANTIC_CANOPY_DISTANCE_END,
+    FOREST_SEMANTIC_CANOPY_DISTANCE_START,
+    FOREST_SEMANTIC_CANOPY_MAX_COVERAGE,
     FOREST_FOLIAGE_SKY_EXPOSURE_END,
     FOREST_FOLIAGE_SKY_EXPOSURE_START,
     resolveForestFoliageGradeCoverage,
     resolveForestFoliageGreenSignalFloor,
+    resolveForestFoliageAlphaTreatment,
     resolveForestFoliageIndirectDepth,
     resolveForestFoliageLuminanceScale,
   } from "./forest-foliage-grade";
@@ -110,7 +117,7 @@
     }
     if (materialName.startsWith("Material_")) return "foliageTint";
     const normalizedName = materialName.toLowerCase();
-    if (/leaves|twig/.test(normalizedName)) return "foliageTint";
+    if (/leaves|twig|foliage/.test(normalizedName)) return "foliageTint";
     if (
       /trunk|bark|branches|jacaranda_tree|tree_small|island_tree|fir_tree|fir_sapling/.test(
         normalizedName
@@ -127,6 +134,16 @@
     materialScope: MaterialScope
   ): FoliageGradeUniforms | null {
     if (category !== "foliageTint") return null;
+    const isCanopyLod = /_canopy_lod/i.test(material.name);
+    const isSemanticCanopyLod = /ForestSemanticCanopy_.*_canopy_lod/i.test(
+      material.name
+    );
+    const canopyDistanceStart = isSemanticCanopyLod
+      ? FOREST_SEMANTIC_CANOPY_DISTANCE_START
+      : FOREST_CANOPY_LOD_DISTANCE_START;
+    const canopyDistanceEnd = isSemanticCanopyLod
+      ? FOREST_SEMANTIC_CANOPY_DISTANCE_END
+      : FOREST_CANOPY_LOD_DISTANCE_END;
 
     const uniforms: FoliageGradeUniforms = {
       tint: { value: new Color("#3d7e34") },
@@ -147,6 +164,19 @@
 
     material.onBeforeCompile = (shader, renderer) => {
       previousCompile(shader, renderer);
+      if (isSemanticCanopyLod) {
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            "#include <common>",
+            `#include <common>
+varying vec3 vForestSemanticCanopyPosition;`
+          )
+          .replace(
+            "#include <begin_vertex>",
+            `#include <begin_vertex>
+vForestSemanticCanopyPosition = transformed;`
+          );
+      }
       shader.uniforms.uForestFoliageHighlightTint = uniforms.tint;
       shader.uniforms.uForestFoliageHighlightStrength = uniforms.strength;
       shader.uniforms.uForestFoliageGradeCoverage = uniforms.coverage;
@@ -163,11 +193,43 @@ uniform float uForestFoliageHighlightStrength;
 uniform float uForestFoliageGradeCoverage;
 uniform float uForestFoliageGreenSignalFloor;
 uniform float uForestFoliageLuminanceScale;
-uniform float uForestFoliageIndirectDepth;`
+uniform float uForestFoliageIndirectDepth;
+${isSemanticCanopyLod ? "varying vec3 vForestSemanticCanopyPosition;" : ""}`
         )
         .replace(
           "#include <map_fragment>",
           `#include <map_fragment>
+${
+  isCanopyLod
+    ? `diffuseColor.a = 1.0 - pow(
+    1.0 - clamp(diffuseColor.a, 0.0, 1.0),
+    ${FOREST_CANOPY_LOD_ALPHA_COVERAGE_POWER.toFixed(1)}
+  );
+  diffuseColor.a *= smoothstep(
+  ${canopyDistanceStart.toFixed(1)},
+  ${canopyDistanceEnd.toFixed(1)},
+  length(vViewPosition)
+);${
+        isSemanticCanopyLod
+          ? `
+  diffuseColor.a *= ${FOREST_SEMANTIC_CANOPY_MAX_COVERAGE.toFixed(2)};`
+          : ""
+      }${
+        isSemanticCanopyLod
+          ? `
+float forestCanopyBreakup = clamp(
+  0.48
+  + 0.24 * sin(dot(vForestSemanticCanopyPosition, vec3(1.7, 1.1, 2.3)))
+  + 0.16 * sin(dot(vForestSemanticCanopyPosition, vec3(-2.9, 2.1, 1.4))),
+  0.0,
+  1.0
+);
+diffuseColor.a *= smoothstep(0.24, 0.66, forestCanopyBreakup);
+diffuseColor.rgb *= mix(0.34, 0.62, forestCanopyBreakup);`
+          : ""
+      }`
+    : ""
+}
 float forestLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
 float forestGreenSignal = smoothstep(
   ${FOREST_FOLIAGE_GREEN_SIGNAL_START.toFixed(2)},
@@ -217,7 +279,7 @@ reflectedLight.indirectDiffuse *= forestIndirectRetention;`
         );
     };
     material.customProgramCacheKey = () =>
-      `${previousCacheKey()}|forest-foliage-highlight-grade-v10`;
+      `${previousCacheKey()}|forest-foliage-highlight-grade-v17|${isCanopyLod ? `canopy-lod-${canopyDistanceStart}-${canopyDistanceEnd}-${FOREST_CANOPY_LOD_ALPHA_COVERAGE_POWER}-${isSemanticCanopyLod ? FOREST_SEMANTIC_CANOPY_MAX_COVERAGE : 1}` : "source"}`;
     return uniforms;
   }
 
@@ -235,6 +297,14 @@ reflectedLight.indirectDiffuse *= forestIndirectRetention;`
     inheritForestGroundDetailPatch(original, clone);
     inheritRootedWindPatch(original, clone);
     const category = classify(original.name, materialScope);
+    if (category === "foliageTint") {
+      const alphaTreatment = resolveForestFoliageAlphaTreatment(
+        original.name,
+        original.alphaTest
+      );
+      clone.alphaHash = alphaTreatment.alphaHash;
+      clone.alphaTest = alphaTreatment.alphaTest;
+    }
     clones.set(original, clone);
     clonedMaterials.push(clone);
     workingMaterials.push({

@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 8,
   "seed": 194611,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "outerBoundaryFraction": 0.8,
@@ -20,24 +20,15 @@
       "leanDegrees": 1.2,
       "footprintRadius": 6.2,
       "pathClearance": 1.8,
-      "clearingSetback": 4.2
-    },
-    {
-      "id": "semantic-oak",
-      "label": "Veteran English Oak",
-      "family": "Meshy Semantic Summer R1",
-      "roles": ["mature-canopy", "hero-anchor", "clearing-rim"],
-      "habitatAffinity": ["sunlit-rim", "old-growth-pocket"],
-      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r1/broad-english-oak-r1_semantic_proof.glb",
-      "stagedPath": "blender/forest-composition-sources/semantic-oak-r1.glb",
-      "targetHeightMetres": 15.5,
-      "scaleRange": [0.92, 1.08],
-      "aspectRange": [0.96, 1.04],
-      "heightVariationRange": [0.98, 1.03],
-      "leanDegrees": 0.8,
-      "footprintRadius": 7.8,
-      "pathClearance": 2.1,
-      "clearingSetback": 5.0
+      "clearingSetback": 4.2,
+      "overheadFoliageSupport": {
+        "componentFraction": 0.055,
+        "canopyStartFraction": 0.46,
+        "maximumComponentFaces": 6,
+        "xyScale": 6.4,
+        "zScale": 1.8,
+        "tiltStrength": 0.72
+      }
     },
     {
       "id": "gnarled-spreader",
@@ -54,7 +45,15 @@
       "leanDegrees": 1.8,
       "footprintRadius": 4.8,
       "pathClearance": 1.55,
-      "clearingSetback": 3.4
+      "clearingSetback": 3.4,
+      "overheadFoliageSupport": {
+        "componentFraction": 0.07,
+        "canopyStartFraction": 0.45,
+        "maximumComponentFaces": 6,
+        "xyScale": 6.8,
+        "zScale": 1.85,
+        "tiltStrength": 0.75
+      }
     },
     {
       "id": "slender-broadleaf",
@@ -71,7 +70,15 @@
       "leanDegrees": 2.8,
       "footprintRadius": 3.4,
       "pathClearance": 1.25,
-      "clearingSetback": 2.8
+      "clearingSetback": 2.8,
+      "overheadFoliageSupport": {
+        "componentFraction": 0.06,
+        "canopyStartFraction": 0.4,
+        "maximumComponentFaces": 12,
+        "xyScale": 5.8,
+        "zScale": 1.75,
+        "tiltStrength": 0.68
+      }
     },
     {
       "id": "riparian-spreader",
@@ -88,7 +95,15 @@
       "leanDegrees": 2.0,
       "footprintRadius": 4.4,
       "pathClearance": 1.55,
-      "clearingSetback": 3.5
+      "clearingSetback": 3.5,
+      "overheadFoliageSupport": {
+        "componentFraction": 0.075,
+        "canopyStartFraction": 0.42,
+        "maximumComponentFaces": 5,
+        "xyScale": 6.8,
+        "zScale": 1.9,
+        "tiltStrength": 0.75
+      }
     },
     {
       "id": "summer-understory",
@@ -105,7 +120,165 @@
       "leanDegrees": 3.5,
       "footprintRadius": 2.6,
       "pathClearance": 1.0,
-      "clearingSetback": 2.3
+      "clearingSetback": 2.3,
+      "overheadFoliageSupport": {
+        "componentFraction": 0.07,
+        "canopyStartFraction": 0.38,
+        "maximumComponentFaces": 8,
+        "xyScale": 6.2,
+        "zScale": 1.85,
+        "tiltStrength": 0.72
+      }
+    },
+    {
+      "id": "semantic-beech",
+      "label": "Cathedral European Beech",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["mature-canopy", "shade-canopy"],
+      "habitatAffinity": ["mixed-woodland", "cool-rise"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/cathedral-european-beech-r2_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-beech-r2.glb",
+      "targetHeightMetres": 14.5,
+      "scaleRange": [0.9, 1.1],
+      "aspectRange": [0.96, 1.04],
+      "heightVariationRange": [0.97, 1.04],
+      "leanDegrees": 0.9,
+      "footprintRadius": 5.5,
+      "pathClearance": 1.9,
+      "clearingSetback": 4.5,
+      "photographicFoliage": {
+        "donorAssetId": "gnarled-spreader",
+        "cardCount": 960,
+        "cardScaleRange": [1.35, 1.95],
+        "distanceCanopyColor": [0.12, 0.28, 0.105],
+        "upwardBias": 0.3,
+        "surfaceOffsetMetres": 0.04
+      }
+    },
+    {
+      "id": "semantic-hornbeam",
+      "label": "Fluted European Hornbeam",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["irregular-middle", "understory"],
+      "habitatAffinity": ["mixed-woodland", "canopy-edge"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/fluted-european-hornbeam-r2_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-hornbeam-r2.glb",
+      "targetHeightMetres": 11.5,
+      "scaleRange": [0.88, 1.12],
+      "aspectRange": [0.95, 1.05],
+      "heightVariationRange": [0.96, 1.05],
+      "leanDegrees": 1.5,
+      "footprintRadius": 4.3,
+      "pathClearance": 1.5,
+      "clearingSetback": 3.5,
+      "photographicFoliage": {
+        "donorAssetId": "slender-broadleaf",
+        "cardCount": 720,
+        "cardScaleRange": [1.28, 1.82],
+        "distanceCanopyColor": [0.15, 0.31, 0.12],
+        "upwardBias": 0.28,
+        "surfaceOffsetMetres": 0.032
+      }
+    },
+    {
+      "id": "semantic-birch",
+      "label": "Airy Silver Birch",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["irregular-middle", "clearing-rim"],
+      "habitatAffinity": ["sunlit-rim", "woodland-gap"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/airy-silver-birch-r1_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-birch-r1.glb",
+      "targetHeightMetres": 12.5,
+      "scaleRange": [0.86, 1.14],
+      "aspectRange": [0.94, 1.06],
+      "heightVariationRange": [0.95, 1.06],
+      "leanDegrees": 1.8,
+      "footprintRadius": 3.4,
+      "pathClearance": 1.35,
+      "clearingSetback": 3.2,
+      "photographicFoliage": {
+        "donorAssetId": "slender-broadleaf",
+        "cardCount": 620,
+        "cardScaleRange": [1.18, 1.68],
+        "distanceCanopyColor": [0.18, 0.34, 0.14],
+        "upwardBias": 0.24,
+        "surfaceOffsetMetres": 0.028
+      }
+    },
+    {
+      "id": "semantic-tulip",
+      "label": "Tall Tulip Tree",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["mature-canopy", "distant-silhouette"],
+      "habitatAffinity": ["damp-hollow", "mixed-woodland"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/tall-tulip-tree-r5_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-tulip-r5.glb",
+      "targetHeightMetres": 16.0,
+      "scaleRange": [0.9, 1.1],
+      "aspectRange": [0.97, 1.03],
+      "heightVariationRange": [0.97, 1.04],
+      "leanDegrees": 0.8,
+      "footprintRadius": 5.6,
+      "pathClearance": 1.9,
+      "clearingSetback": 4.6,
+      "photographicFoliage": {
+        "donorAssetId": "gnarled-spreader",
+        "cardCount": 980,
+        "cardScaleRange": [1.4, 2.02],
+        "distanceCanopyColor": [0.13, 0.3, 0.11],
+        "upwardBias": 0.32,
+        "surfaceOffsetMetres": 0.04
+      }
+    },
+    {
+      "id": "semantic-hickory",
+      "label": "Shagbark Hickory",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["mature-canopy", "irregular-middle"],
+      "habitatAffinity": ["sunlit-rim", "depth-ridge"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/shagbark-hickory-r1_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-hickory-r1.glb",
+      "targetHeightMetres": 15.0,
+      "scaleRange": [0.9, 1.1],
+      "aspectRange": [0.95, 1.05],
+      "heightVariationRange": [0.97, 1.04],
+      "leanDegrees": 1.0,
+      "footprintRadius": 4.9,
+      "pathClearance": 1.75,
+      "clearingSetback": 4.1,
+      "photographicFoliage": {
+        "donorAssetId": "gnarled-spreader",
+        "cardCount": 900,
+        "cardScaleRange": [1.32, 1.9],
+        "distanceCanopyColor": [0.16, 0.3, 0.1],
+        "upwardBias": 0.28,
+        "surfaceOffsetMetres": 0.036
+      }
+    },
+    {
+      "id": "semantic-sycamore",
+      "label": "Mottled American Sycamore",
+      "family": "Meshy Semantic Summer R2",
+      "roles": ["mature-canopy", "damp-hollow"],
+      "habitatAffinity": ["damp-hollow", "runoff-bank"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r2/mottled-american-sycamore-r2_semantic.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-sycamore-r2.glb",
+      "targetHeightMetres": 15.5,
+      "scaleRange": [0.9, 1.1],
+      "aspectRange": [0.97, 1.03],
+      "heightVariationRange": [0.97, 1.04],
+      "leanDegrees": 0.8,
+      "footprintRadius": 6.5,
+      "pathClearance": 2.0,
+      "clearingSetback": 4.8,
+      "photographicFoliage": {
+        "donorAssetId": "gnarled-spreader",
+        "cardCount": 1040,
+        "cardScaleRange": [1.45, 2.08],
+        "distanceCanopyColor": [0.14, 0.29, 0.105],
+        "upwardBias": 0.3,
+        "surfaceOffsetMetres": 0.042
+      }
     },
     {
       "id": "mature-fir",
@@ -205,12 +378,15 @@
       "rotationDegrees": 0,
       "counts": {
         "mature-broad-canopy": 6,
-        "semantic-oak": 1,
-        "gnarled-spreader": 7,
-        "slender-broadleaf": 6,
-        "riparian-spreader": 3,
-        "summer-understory": 6,
-        "mature-fir": 1,
+        "gnarled-spreader": 4,
+        "slender-broadleaf": 2,
+        "riparian-spreader": 1,
+        "summer-understory": 3,
+        "semantic-beech": 5,
+        "semantic-birch": 3,
+        "semantic-tulip": 1,
+        "semantic-hickory": 3,
+        "mature-fir": 2,
         "fir-understory": 1
       }
     },
@@ -221,13 +397,16 @@
       "radii": [35, 38],
       "rotationDegrees": 25,
       "counts": {
-        "mature-broad-canopy": 7,
-        "gnarled-spreader": 6,
-        "slender-broadleaf": 5,
-        "riparian-spreader": 3,
-        "summer-understory": 6,
-        "mature-fir": 1,
-        "fir-understory": 1
+        "mature-broad-canopy": 3,
+        "gnarled-spreader": 3,
+        "slender-broadleaf": 3,
+        "summer-understory": 2,
+        "semantic-beech": 4,
+        "semantic-birch": 3,
+        "semantic-tulip": 2,
+        "semantic-hickory": 2,
+        "mature-fir": 4,
+        "fir-understory": 3
       }
     },
     {
@@ -237,13 +416,14 @@
       "radii": [34, 48],
       "rotationDegrees": -15,
       "counts": {
-        "mature-broad-canopy": 4,
-        "gnarled-spreader": 5,
-        "slender-broadleaf": 6,
-        "riparian-spreader": 7,
+        "gnarled-spreader": 3,
+        "slender-broadleaf": 2,
+        "riparian-spreader": 6,
         "summer-understory": 6,
-        "mature-fir": 0,
-        "fir-understory": 1
+        "semantic-hornbeam": 2,
+        "semantic-birch": 2,
+        "semantic-tulip": 3,
+        "semantic-sycamore": 5
       }
     },
     {
@@ -253,14 +433,14 @@
       "radii": [32, 34],
       "rotationDegrees": 15,
       "counts": {
-        "mature-broad-canopy": 4,
-        "semantic-oak": 1,
-        "gnarled-spreader": 4,
-        "slender-broadleaf": 6,
-        "riparian-spreader": 3,
-        "summer-understory": 5,
-        "mature-fir": 0,
-        "fir-understory": 0
+        "mature-broad-canopy": 1,
+        "gnarled-spreader": 2,
+        "slender-broadleaf": 5,
+        "summer-understory": 6,
+        "semantic-beech": 1,
+        "semantic-hornbeam": 2,
+        "semantic-birch": 4,
+        "semantic-hickory": 2
       }
     },
     {
@@ -270,12 +450,15 @@
       "radii": [43, 32],
       "rotationDegrees": -15,
       "counts": {
-        "mature-broad-canopy": 5,
-        "gnarled-spreader": 7,
-        "slender-broadleaf": 5,
-        "riparian-spreader": 4,
-        "summer-understory": 6,
-        "mature-fir": 1,
+        "mature-broad-canopy": 4,
+        "gnarled-spreader": 5,
+        "slender-broadleaf": 3,
+        "summer-understory": 4,
+        "semantic-beech": 3,
+        "semantic-hornbeam": 2,
+        "semantic-birch": 2,
+        "semantic-hickory": 3,
+        "mature-fir": 2,
         "fir-understory": 1
       }
     },
@@ -286,13 +469,15 @@
       "radii": [30, 50],
       "rotationDegrees": 8,
       "counts": {
-        "mature-broad-canopy": 6,
-        "gnarled-spreader": 6,
+        "mature-broad-canopy": 2,
+        "gnarled-spreader": 5,
         "slender-broadleaf": 6,
-        "riparian-spreader": 4,
+        "riparian-spreader": 1,
         "summer-understory": 5,
-        "mature-fir": 0,
-        "fir-understory": 1
+        "semantic-beech": 3,
+        "semantic-birch": 2,
+        "semantic-hickory": 2,
+        "semantic-sycamore": 2
       }
     },
     {
@@ -302,13 +487,16 @@
       "radii": [35, 35],
       "rotationDegrees": -25,
       "counts": {
-        "mature-broad-canopy": 5,
-        "gnarled-spreader": 6,
-        "slender-broadleaf": 5,
-        "riparian-spreader": 3,
-        "summer-understory": 5,
-        "mature-fir": 1,
-        "fir-understory": 1
+        "mature-broad-canopy": 3,
+        "gnarled-spreader": 3,
+        "slender-broadleaf": 3,
+        "summer-understory": 2,
+        "semantic-beech": 3,
+        "semantic-hornbeam": 2,
+        "semantic-birch": 3,
+        "semantic-hickory": 2,
+        "mature-fir": 3,
+        "fir-understory": 2
       }
     },
     {
@@ -318,13 +506,15 @@
       "radii": [70, 24],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 4,
-        "gnarled-spreader": 3,
-        "slender-broadleaf": 4,
-        "riparian-spreader": 1,
-        "summer-understory": 4,
-        "mature-fir": 1,
-        "fir-understory": 1
+        "mature-broad-canopy": 2,
+        "slender-broadleaf": 1,
+        "summer-understory": 1,
+        "semantic-beech": 3,
+        "semantic-birch": 1,
+        "semantic-tulip": 3,
+        "semantic-hickory": 2,
+        "mature-fir": 3,
+        "fir-understory": 2
       }
     },
     {
@@ -334,13 +524,15 @@
       "radii": [24, 65],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 5,
-        "gnarled-spreader": 4,
-        "slender-broadleaf": 3,
-        "riparian-spreader": 1,
-        "summer-understory": 4,
-        "mature-fir": 1,
-        "fir-understory": 0
+        "mature-broad-canopy": 3,
+        "gnarled-spreader": 2,
+        "slender-broadleaf": 1,
+        "summer-understory": 1,
+        "semantic-beech": 3,
+        "semantic-birch": 1,
+        "semantic-tulip": 2,
+        "semantic-hickory": 3,
+        "mature-fir": 2
       }
     },
     {
@@ -350,14 +542,13 @@
       "radii": [25, 70],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 1,
-        "semantic-oak": 1,
-        "gnarled-spreader": 3,
-        "slender-broadleaf": 3,
-        "riparian-spreader": 6,
+        "gnarled-spreader": 1,
+        "riparian-spreader": 4,
         "summer-understory": 4,
-        "mature-fir": 0,
-        "fir-understory": 1
+        "semantic-hornbeam": 2,
+        "semantic-birch": 1,
+        "semantic-tulip": 3,
+        "semantic-sycamore": 4
       }
     },
     {
@@ -367,13 +558,15 @@
       "radii": [70, 23],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 4,
-        "gnarled-spreader": 4,
-        "slender-broadleaf": 4,
-        "riparian-spreader": 1,
-        "summer-understory": 3,
-        "mature-fir": 1,
-        "fir-understory": 1
+        "mature-broad-canopy": 2,
+        "gnarled-spreader": 1,
+        "slender-broadleaf": 2,
+        "summer-understory": 2,
+        "semantic-beech": 3,
+        "semantic-birch": 1,
+        "semantic-tulip": 2,
+        "semantic-hickory": 3,
+        "mature-fir": 2
       }
     },
     {
@@ -383,13 +576,14 @@
       "radii": [43, 26],
       "rotationDegrees": 28,
       "counts": {
-        "mature-broad-canopy": 3,
-        "gnarled-spreader": 2,
+        "mature-broad-canopy": 1,
+        "gnarled-spreader": 1,
         "slender-broadleaf": 2,
-        "riparian-spreader": 2,
         "summer-understory": 3,
-        "mature-fir": 1,
-        "fir-understory": 0
+        "semantic-beech": 1,
+        "semantic-birch": 3,
+        "semantic-tulip": 1,
+        "mature-fir": 1
       }
     },
     {
@@ -399,13 +593,13 @@
       "radii": [47, 25],
       "rotationDegrees": 20,
       "counts": {
-        "mature-broad-canopy": 2,
+        "mature-broad-canopy": 1,
         "gnarled-spreader": 2,
-        "slender-broadleaf": 4,
-        "riparian-spreader": 3,
-        "summer-understory": 2,
-        "mature-fir": 1,
-        "fir-understory": 0
+        "slender-broadleaf": 3,
+        "summer-understory": 3,
+        "semantic-beech": 2,
+        "semantic-birch": 1,
+        "semantic-hickory": 1
       }
     }
   ]

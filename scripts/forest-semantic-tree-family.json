@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "familyId": "forest-semantic-summer-r1",
+  "outputDirectory": "static/models/forest/trees/candidates/semantic-summer-r1",
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/semantic-tree-family-r1",
+  "statePath": "docs/superpowers/specs/moonlit-firefly-forest/evidence/semantic-tree-family-r1/meshy-tasks.json",
+  "budget": {
+    "previewCreditsPerCandidate": 20,
+    "refineCreditsPerCandidate": 10,
+    "maximumCredits": 150
+  },
+  "generation": {
+    "aiModel": "meshy-6",
+    "targetPolycount": 80000,
+    "textureResolution": "4k",
+    "optimizedTextureSize": 2048,
+    "maximumOptimizedTriangles": 85000,
+    "maximumOptimizedBytes": 18874368
+  },
+  "candidates": [
+    {
+      "id": "broad-english-oak-r1",
+      "label": "Broad English Oak",
+      "species": "oak",
+      "targetHeightMetres": 12.0,
+      "targetCrownWidthMetres": 15.5,
+      "foliageRgbScale": [0.58, 0.7, 0.82],
+      "prompt": "One complete mature English oak tree as a realistic premium game asset. Broad, low, asymmetric spreading crown; stout brown trunk dividing into several long horizontal and rising scaffold limbs; visible tapering secondary branches; irregular layered leaf masses with generous sky windows and a memorable wind-shaped silhouette. Compact believable root flare, never giant or theatrical. Full tree isolated from root tips to crown, no ground disk, rocks, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy midsummer English oak. Trunk and every branch use dry brown-gray deeply furrowed bark with restrained warm brown creases, never green, mossy, gray-washed, or wet. Leaves alone vary across deep forest green, rich mid-green, and small fresh green highlights, with darker crown interiors. Neutral daylight albedo without baked light or shadow. Nonmetallic, high roughness, detailed bark and leaf normals, zero emission or gloss."
+    },
+    {
+      "id": "rounded-sugar-maple-r2",
+      "label": "Rounded Sugar Maple R2",
+      "species": "maple",
+      "targetHeightMetres": 15.0,
+      "targetCrownWidthMetres": 11.5,
+      "foliageRgbScale": [0.62, 0.73, 0.84],
+      "prompt": "One complete mature sugar maple in full summer leaf as a realistic premium game asset. Strong straight trunk divides into ascending scaffold limbs and many finer branches. Broad rounded deciduous crown with an irregular dome, clustered leaf sprays, uneven edges, and scattered interior sky gaps. Natural branch density, not stacked tiers, not conical, not a pine, fir, or Christmas tree. Modest grounded root flare. Full isolated tree, no ground disk, rocks, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy summer sugar maple. Trunk and all branches are warm brown-gray plated bark with subtle vertical fissures, no green tint, algae, moss, gray wash, wetness, or baked highlights. Foliage alone ranges from deep blue-green interiors through saturated midsummer green to restrained yellow-green leaf tips. Neutral diffuse daylight albedo, detailed nonmetallic PBR, high roughness, subtle normals, no emission or lacquer gloss."
+    },
+    {
+      "id": "cathedral-american-elm-r3",
+      "label": "Cathedral American Elm R3",
+      "species": "elm",
+      "targetHeightMetres": 19.0,
+      "targetCrownWidthMetres": 14.0,
+      "foliageRgbScale": [0.55, 0.68, 0.8],
+      "prompt": "One complete mature American elm in lush summer leaf as a realistic premium game asset. Lower 40 percent is a mostly clear tall trunk that forks high into two strong outward V leaders. The upper crown is dramatically wider than the lower crown, forming a broad open wineglass vase about 70 percent as wide as the full tree is tall, with a visible central hollow and fine outward twigs. Not columnar, conical, willow-like, or curtain-draped. Restrained root flare. Full isolated tree, no ground disk, rocks, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy midsummer American elm. Trunk and every branch use dry dark brown-gray interlaced bark with warm brown fissures, never green, algae-covered, mossy, gray-washed, wet, or glossy. Leaves alone vary among deep cool green interiors, rich natural green, and sparse sunlit yellow-green tips. Neutral daylight albedo with no baked lighting. Nonmetallic high-roughness PBR, fine bark and leaf normals, zero emission."
+    }
+  ],
+  "rejectedPreviews": [
+    {
+      "id": "layered-sugar-maple-r1",
+      "reason": "Conifer-like stacked crown tiers; failed deciduous maple silhouette."
+    },
+    {
+      "id": "cathedral-american-elm-r1",
+      "reason": "Willow-like hanging curtains; failed upright elm vase silhouette."
+    },
+    {
+      "id": "cathedral-american-elm-r2",
+      "reason": "Too columnar and narrow; failed wide upper-vase silhouette."
+    }
+  ]
+}

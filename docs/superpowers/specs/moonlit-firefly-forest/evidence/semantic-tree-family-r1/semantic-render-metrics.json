@@ -1,0 +1,59 @@
+[
+  {
+    "id": "broad-english-oak-r1",
+    "species": "oak",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r1\\broad-english-oak-r1_semantic_proof.glb",
+    "sourceDimensions": [
+      15.5,
+      15.422786712646484,
+      10.941168785095215
+    ],
+    "normalizedDimensionsMetres": [
+      15.5,
+      15.422786712646484,
+      10.941168785095215
+    ],
+    "targetHeightMetres": 12.0,
+    "targetCrownWidthMetres": 15.5,
+    "widthToHeight": 1.4166676617872056,
+    "depthToHeight": 1.4096105284159792
+  },
+  {
+    "id": "rounded-sugar-maple-r2",
+    "species": "maple",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r1\\rounded-sugar-maple-r2_semantic_proof.glb",
+    "sourceDimensions": [
+      10.28947925567627,
+      9.9688138961792,
+      15.0
+    ],
+    "normalizedDimensionsMetres": [
+      10.28947925567627,
+      9.9688138961792,
+      15.0
+    ],
+    "targetHeightMetres": 15.0,
+    "targetCrownWidthMetres": 11.5,
+    "widthToHeight": 0.6859652837117513,
+    "depthToHeight": 0.6645875930786133
+  },
+  {
+    "id": "cathedral-american-elm-r3",
+    "species": "elm",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r1\\cathedral-american-elm-r3_semantic_proof.glb",
+    "sourceDimensions": [
+      10.47846794128418,
+      11.46021842956543,
+      19.0
+    ],
+    "normalizedDimensionsMetres": [
+      10.47846794128418,
+      11.46021842956543,
+      19.0
+    ],
+    "targetHeightMetres": 19.0,
+    "targetCrownWidthMetres": 14.0,
+    "widthToHeight": 0.5514983126991674,
+    "depthToHeight": 0.6031693910297594
+  }
+]

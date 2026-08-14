@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "familyId": "forest-semantic-summer-r2",
+  "outputDirectory": "static/models/forest/trees/candidates/semantic-summer-r2",
+  "evidenceDirectory": "docs/superpowers/specs/moonlit-firefly-forest/evidence/semantic-tree-wave-r2",
+  "statePath": "docs/superpowers/specs/moonlit-firefly-forest/evidence/semantic-tree-wave-r2/meshy-tasks.json",
+  "budget": {
+    "previewCreditsPerCandidate": 20,
+    "refineCreditsPerCandidate": 10,
+    "expectedConsumedCredits": 320,
+    "maximumCredits": 400
+  },
+  "generation": {
+    "aiModel": "meshy-6",
+    "targetPolycount": 100000,
+    "textureResolution": "4k",
+    "optimizedTextureSize": 2048,
+    "maximumOptimizedTriangles": 105000,
+    "maximumOptimizedBytes": 18874368
+  },
+  "candidates": [
+    {
+      "id": "cathedral-european-beech-r2",
+      "label": "Cathedral European Beech R2",
+      "species": "beech",
+      "targetHeightMetres": 18.0,
+      "targetCrownWidthMetres": 13.0,
+      "foliageRgbScale": [0.64, 0.76, 0.86],
+      "prompt": "Botanically accurate mature European beech in full summer leaf, photogrammetry-quality game tree. Tall smooth trunk and low sweeping scaffold limbs stay visible inside a broad oval crown. Build the crown from hundreds of thin flat separate leaf sprays, each smaller than a human torso, with branching and sky between them. No continuous sculpted foliage masses, foam, broccoli, spheres, or topiary shell. Restrained roots. Complete isolated tree, no ground, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy midsummer European beech. Smooth dry silver-gray bark with faint warm brown seams on trunk and every branch, never green, mossy, wet, or washed out. Leaves alone vary from deep forest-green interiors through rich natural green to restrained fresh-green tips. Neutral unlit albedo, detailed bark and leaf normals, nonmetallic, high roughness, zero emission or baked light. Preserve bark and foliage as visually distinct surfaces."
+    },
+    {
+      "id": "fluted-european-hornbeam-r2",
+      "label": "Fluted European Hornbeam R2",
+      "species": "hornbeam",
+      "targetHeightMetres": 16.0,
+      "targetCrownWidthMetres": 10.0,
+      "foliageRgbScale": [0.59, 0.72, 0.84],
+      "foliageClassifier": {
+        "extraAtlasMode": "warm-summer-leaves",
+        "extraMinimumHeightFraction": 0.18,
+        "replacementRgb": [45, 116, 43],
+        "structuralBarkAspectRatio": 2.4,
+        "structuralBarkCentralRadiusFraction": 0.22,
+        "structuralBarkCentralMaximumHeightFraction": 0.82,
+        "structuralBarkCentralMinimumAspectRatio": 1.25,
+        "barkGreenNeutralize": true,
+        "barkReplacementRgb": [92, 82, 70]
+      },
+      "prompt": "Botanically accurate mature European hornbeam in summer leaf, photogrammetry-quality game tree. Muscular fluted trunk and zigzag ascending limbs remain exposed through a compact irregular oval crown. Use hundreds of thin flat separate serrated leaf sprays, each smaller than a human torso, with fine twigs and sky gaps. No continuous foliage masses, foam, broccoli, spheres, column, or topiary shell. Restrained roots. Complete isolated tree, no ground, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy summer hornbeam. Dry gray-brown fluted bark with subtle vertical ridges and warm creases, never green, algae-covered, mossy, wet, or pale-washed. Leaves alone range from dark blue-green interiors to natural midsummer green and modest yellow-green tips. Neutral unlit albedo, crisp nonmetallic PBR, high roughness, fine normals, no emission or baked highlights. Keep bark and foliage visually distinct."
+    },
+    {
+      "id": "airy-silver-birch-r1",
+      "label": "Airy Silver Birch",
+      "species": "birch",
+      "targetHeightMetres": 17.0,
+      "targetCrownWidthMetres": 8.0,
+      "foliageRgbScale": [0.68, 0.8, 0.9],
+      "prompt": "One complete mature silver birch in full summer leaf, realistic premium game asset. Slender slightly leaning trunk, narrow open crown, ascending primary limbs and many fine flexible twigs. Use hundreds of small separate airy leaf sprays with abundant sky between them; only twig tips lightly droop. No fused curtains, sheets, foam, cloud, broccoli, cauliflower, bubbles, or solid clumps. Modest roots. Isolated full tree, no ground, rocks, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy summer silver birch. Trunk and branches use dry white peeling bark with charcoal lenticels and muted tan-gray fissures, never green, mossy, wet, or glowing. Leaves alone use fresh natural greens with darker interior sprays and restrained yellow-green tips. Neutral unlit albedo, nonmetallic high-roughness PBR, fine bark and leaf normals, no emission or baked light. Keep bark and foliage visibly separate."
+    },
+    {
+      "id": "tall-tulip-tree-r5",
+      "label": "Tall Tulip Tree R5",
+      "species": "tulip-tree",
+      "targetHeightMetres": 24.0,
+      "targetCrownWidthMetres": 13.0,
+      "foliageRgbScale": [0.63, 0.76, 0.87],
+      "prompt": "Botanically accurate mature tulip tree, Liriodendron tulipifera, in complete full summer leaf as a photogrammetry-quality game tree. Very tall straight clean trunk branches high into an open irregular oval crown. Many thin separate broadleaf sprays follow visible ascending twigs with sky gaps and broken margins. Dense healthy green leaves, no flowers, tassels, hanging curtains, bare limbs, continuous blobs, topiary, or giant roots. Isolated tree, no ground, vines, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy midsummer tulip tree, Liriodendron tulipifera. Dry gray-brown bark with narrow vertical furrows on trunk and every branch, never green, mossy, wet, or washed out. Broad four-lobed leaves alone vary from deep cool green interiors to rich natural green and restrained fresh tips. Neutral unlit albedo, nonmetallic high roughness, detailed bark and leaf normals, zero emission or baked light. Preserve distinct bark and foliage surfaces."
+    },
+    {
+      "id": "shagbark-hickory-r1",
+      "label": "Shagbark Hickory",
+      "species": "hickory",
+      "targetHeightMetres": 20.0,
+      "targetCrownWidthMetres": 12.0,
+      "foliageRgbScale": [0.57, 0.7, 0.82],
+      "prompt": "One complete mature shagbark hickory in full midsummer leaf, realistic premium game asset. Tall straight trunk, high open irregular oval crown, strong ascending branch hierarchy, long shaggy bark plates. Many separated compound leaf sprays reveal branches and sky; crown is asymmetrical and finely articulated. Never fused foam, cloud, broccoli, cauliflower, bubbles, or solid clumps. Small root flare. Isolated full tree, no ground, rocks, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy summer shagbark hickory. Trunk and branches use dry brown-gray bark with long curling plates and deep warm fissures, never green, algae-covered, mossy, wet, or washed out. Compound leaves alone range from deep olive-green interiors through rich midsummer green to restrained fresh tips. Neutral unlit albedo, nonmetallic high roughness, crisp normals, no emission or baked light. Distinct bark and foliage."
+    },
+    {
+      "id": "mottled-american-sycamore-r2",
+      "label": "Mottled American Sycamore R2",
+      "species": "sycamore",
+      "targetHeightMetres": 24.0,
+      "targetCrownWidthMetres": 18.0,
+      "foliageRgbScale": [0.61, 0.74, 0.85],
+      "foliageClassifier": {
+        "extraAtlasMode": "pale-canopy-leaves",
+        "extraMinimumHeightFraction": 0.24,
+        "replacementRgb": [43, 105, 39],
+        "structuralBarkAspectRatio": 2.8
+      },
+      "prompt": "Botanically accurate mature American sycamore in full summer leaf, photogrammetry-quality game tree. Massive tall trunk forks high into exposed pale muscular scaffold limbs and a broad irregular open crown. Hundreds of thin flat separate leaf sprays, each smaller than a human torso, follow visible tapering branches with large sky windows. No continuous foliage masses, foam, broccoli, spheres, or solid shell. Restrained roots. Complete isolated tree, no ground, vines, moss, props, text, or background.",
+      "texturePrompt": "Photorealistic healthy summer American sycamore. Trunk and branches have dry patchwork bark in cream, tan, olive-gray, and muted brown, never uniformly green, mossy, wet, or glowing. Leaves alone range from deep forest-green interiors to natural midsummer green. Neutral unlit albedo, nonmetallic high-roughness PBR, detailed bark and leaf normals, no emission or baked light. Keep bark and foliage visibly independent."
+    }
+  ],
+  "rejectedPreviews": [
+    {
+      "id": "cathedral-european-beech-r1",
+      "reason": "Species read survived, but dense cone-like crown and fused foam clusters failed the fine-leaf gate."
+    },
+    {
+      "id": "fluted-european-hornbeam-r1",
+      "reason": "Fluted trunk read survived, but the canopy was a dense vertical shell of oversized clumps."
+    },
+    {
+      "id": "fine-weeping-willow-r1",
+      "reason": "Fused solid foliage curtains hid the branch hierarchy and failed the open-twig contract."
+    },
+    {
+      "id": "mottled-american-sycamore-r1",
+      "reason": "Strong scaffold silhouette, but foliage resolved as oversized cotton-ball masses."
+    },
+    {
+      "id": "fine-weeping-willow-r2",
+      "reason": "Second attempt retained solid curtain strips and theatrical exposed roots; replaced with black willow."
+    },
+    {
+      "id": "riparian-black-willow-r3",
+      "reason": "Third willow attempt again collapsed into solid weeping curtains; replaced by related riparian cottonwood."
+    },
+    {
+      "id": "riparian-eastern-cottonwood-r4",
+      "reason": "Cottonwood was interpreted as hanging cotton tassels on a mostly dead crown; failed lush-summer requirement."
+    }
+  ]
+}

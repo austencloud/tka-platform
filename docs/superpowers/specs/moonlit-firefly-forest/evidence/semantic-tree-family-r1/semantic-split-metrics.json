@@ -1,0 +1,116 @@
+[
+  {
+    "id": "broad-english-oak-r1",
+    "species": "oak",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/broad-english-oak-r1_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/broad-english-oak-r1_semantic_review.glb",
+    "sourceTriangles": 82509,
+    "barkTriangles": 2595,
+    "foliageTriangles": 79914,
+    "nonGreenTriangles": 2595,
+    "barkTriangleShare": 0.03145111442388103,
+    "foliageTriangleShare": 0.968548885576119,
+    "greenAtlasPixelShare": 0.910296618938446,
+    "sourceDimensions": [
+      8.500005722045898,
+      6,
+      8.457662582397461
+    ],
+    "uniformScale": 1.8235281841985922,
+    "normalizedMinimum": [
+      -7.750000000000001,
+      0,
+      -7.711393045721809
+    ],
+    "normalizedMaximum": [
+      7.75,
+      10.941169105191554,
+      7.71139304572181
+    ],
+    "normalizedDimensionsMetres": [
+      15.5,
+      10.941169105191554,
+      15.42278609144362
+    ],
+    "semanticMaterials": [
+      "Broad English Oak_Bark",
+      "Broad English Oak_Foliage"
+    ]
+  },
+  {
+    "id": "rounded-sugar-maple-r2",
+    "species": "maple",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/rounded-sugar-maple-r2_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/rounded-sugar-maple-r2_semantic_review.glb",
+    "sourceTriangles": 81120,
+    "barkTriangles": 2674,
+    "foliageTriangles": 78446,
+    "nonGreenTriangles": 2674,
+    "barkTriangleShare": 0.03296351084812623,
+    "foliageTriangleShare": 0.9670364891518738,
+    "greenAtlasPixelShare": 0.9094348549842834,
+    "sourceDimensions": [
+      6.859652996063232,
+      10,
+      6.645875930786133
+    ],
+    "uniformScale": 1.5,
+    "normalizedMinimum": [
+      -5.144739747047424,
+      0,
+      -4.9844069480896
+    ],
+    "normalizedMaximum": [
+      5.144739747047424,
+      15,
+      4.9844069480896
+    ],
+    "normalizedDimensionsMetres": [
+      10.289479494094849,
+      15,
+      9.9688138961792
+    ],
+    "semanticMaterials": [
+      "Rounded Sugar Maple R2_Bark",
+      "Rounded Sugar Maple R2_Foliage"
+    ]
+  },
+  {
+    "id": "cathedral-american-elm-r3",
+    "species": "elm",
+    "input": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/cathedral-american-elm-r3_refined_raw.glb",
+    "output": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/cathedral-american-elm-r3_semantic_review.glb",
+    "sourceTriangles": 81324,
+    "barkTriangles": 2637,
+    "foliageTriangles": 78687,
+    "nonGreenTriangles": 2637,
+    "barkTriangleShare": 0.032425852146967686,
+    "foliageTriangleShare": 0.9675741478530323,
+    "greenAtlasPixelShare": 0.9042317271232605,
+    "sourceDimensions": [
+      4.411986351013184,
+      8,
+      4.825355291366577
+    ],
+    "uniformScale": 2.375,
+    "normalizedMinimum": [
+      -5.2392337918281555,
+      0,
+      -5.73010940849781
+    ],
+    "normalizedMaximum": [
+      5.2392337918281555,
+      19,
+      5.73010940849781
+    ],
+    "normalizedDimensionsMetres": [
+      10.478467583656311,
+      19,
+      11.46021881699562
+    ],
+    "semanticMaterials": [
+      "Cathedral American Elm R3_Bark",
+      "Cathedral American Elm R3_Foliage"
+    ]
+  }
+]

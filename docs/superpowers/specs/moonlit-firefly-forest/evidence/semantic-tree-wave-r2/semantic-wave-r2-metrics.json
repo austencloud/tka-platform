@@ -1,0 +1,458 @@
+{
+  "contractVersion": 2,
+  "familyId": "forest-semantic-summer-r2",
+  "candidates": [
+    {
+      "id": "cathedral-european-beech-r2",
+      "species": "beech",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/cathedral-european-beech-r2_semantic.glb",
+      "sha256": "609a8d9f95b86ca2b0e3b23f974d0b8875f900e3686f2d41c5236c1776f46ddd",
+      "bytes": 1502656,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 80070,
+      "triangles": 101939,
+      "textures": 3,
+      "dimensionsMetres": [
+        12.229255043183691,
+        18,
+        12.68190557573168
+      ],
+      "materials": [
+        {
+          "name": "Cathedral European Beech R2_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Cathedral European Beech R2_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Cathedral European Beech R2_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Cathedral European Beech R2_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 3413,
+        "foliageTriangles": 98526,
+        "barkTriangleShare": 0.03348080714937365,
+        "foliageTriangleShare": 0.9665191928506264,
+        "greenAtlasPixelShare": 0.8947656154632568
+      }
+    },
+    {
+      "id": "fluted-european-hornbeam-r2",
+      "species": "hornbeam",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/fluted-european-hornbeam-r2_semantic.glb",
+      "sha256": "972bb148fcc4bcd29d3f390d00c3a942059c2d55944e1d63904e35f897081178",
+      "bytes": 1994500,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 73629,
+      "triangles": 100243,
+      "textures": 3,
+      "dimensionsMetres": [
+        9.999705073535551,
+        15.126042662013637,
+        9.69872604537817
+      ],
+      "materials": [
+        {
+          "name": "Fluted European Hornbeam R2_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Fluted European Hornbeam R2_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Fluted European Hornbeam R2_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Fluted European Hornbeam R2_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 3720,
+        "foliageTriangles": 96523,
+        "barkTriangleShare": 0.0371098231297946,
+        "foliageTriangleShare": 0.9628901768702054,
+        "greenAtlasPixelShare": 0.9993302226066589
+      }
+    },
+    {
+      "id": "airy-silver-birch-r1",
+      "species": "birch",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/airy-silver-birch-r1_semantic.glb",
+      "sha256": "4ddcd3a0aba3cba28c97a329a4d176073009c73ad0c9183de30ee841279fb11b",
+      "bytes": 2091772,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 85527,
+      "triangles": 98059,
+      "textures": 3,
+      "dimensionsMetres": [
+        8.000625366241943,
+        14.415291508613754,
+        7.88800246435269
+      ],
+      "materials": [
+        {
+          "name": "Airy Silver Birch_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Airy Silver Birch_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Airy Silver Birch_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Airy Silver Birch_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 4770,
+        "foliageTriangles": 93289,
+        "barkTriangleShare": 0.04864418360374877,
+        "foliageTriangleShare": 0.9513558163962512,
+        "greenAtlasPixelShare": 0.9305873513221741
+      }
+    },
+    {
+      "id": "tall-tulip-tree-r5",
+      "species": "tulip-tree",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/tall-tulip-tree-r5_semantic.glb",
+      "sha256": "8b719d7c7b2937243e8ac2670902becc01865107a7af124351f265642c1d07b0",
+      "bytes": 1651868,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 82500,
+      "triangles": 100320,
+      "textures": 3,
+      "dimensionsMetres": [
+        12.66047919207801,
+        19.88905559913799,
+        13.00039041786973
+      ],
+      "materials": [
+        {
+          "name": "Tall Tulip Tree R5_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Tall Tulip Tree R5_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Tall Tulip Tree R5_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Tall Tulip Tree R5_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 2346,
+        "foliageTriangles": 97974,
+        "barkTriangleShare": 0.023385167464114832,
+        "foliageTriangleShare": 0.9766148325358852,
+        "greenAtlasPixelShare": 0.943344235420227
+      }
+    },
+    {
+      "id": "shagbark-hickory-r1",
+      "species": "hickory",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/shagbark-hickory-r1_semantic.glb",
+      "sha256": "1590fcd30bcbc04342e10437437b35192d07495471fad7bae27a57b8060a3123",
+      "bytes": 1648176,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 76431,
+      "triangles": 100581,
+      "textures": 3,
+      "dimensionsMetres": [
+        11.62266914883877,
+        20,
+        11.74718466750084
+      ],
+      "materials": [
+        {
+          "name": "Shagbark Hickory_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Shagbark Hickory_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Shagbark Hickory_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Shagbark Hickory_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 2384,
+        "foliageTriangles": 98197,
+        "barkTriangleShare": 0.023702289696861237,
+        "foliageTriangleShare": 0.9762977103031387,
+        "greenAtlasPixelShare": 0.9107063412666321
+      }
+    },
+    {
+      "id": "mottled-american-sycamore-r2",
+      "species": "sycamore",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r2/mottled-american-sycamore-r2_semantic.glb",
+      "sha256": "c6d9c8cd0a3047dffaf48b524e9631ca1c8fc0ee2870fa07f0945bd2cd3d1030",
+      "bytes": 1964956,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 71407,
+      "triangles": 103322,
+      "textures": 3,
+      "dimensionsMetres": [
+        18.001372980584193,
+        21.699260142545057,
+        15.992832192219707
+      ],
+      "materials": [
+        {
+          "name": "Mottled American Sycamore R2_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Mottled American Sycamore R2_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "name": "Mottled American Sycamore R2_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Mottled American Sycamore R2_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 4704,
+        "foliageTriangles": 98618,
+        "barkTriangleShare": 0.04552757399198622,
+        "foliageTriangleShare": 0.9544724260080137,
+        "greenAtlasPixelShare": 0.9636681079864502
+      }
+    }
+  ],
+  "meshy": {
+    "inferredBalanceAtWaveStart": 1975,
+    "balanceAfterWave": 1655,
+    "previewCredits": 260,
+    "refineCredits": 60,
+    "totalConsumedCredits": 320,
+    "maximumCredits": 400,
+    "tasks": {
+      "cathedral-european-beech-r1": {
+        "species": "beech",
+        "accepted": false,
+        "previewTaskId": "019ffe88-71e4-7656-b5aa-37aa2d632344",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "fluted-european-hornbeam-r1": {
+        "species": "hornbeam",
+        "accepted": false,
+        "previewTaskId": "019ffe88-773b-7d89-8935-1d02d624f335",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "airy-silver-birch-r1": {
+        "species": "birch",
+        "accepted": true,
+        "previewTaskId": "019ffe88-7cb8-7cda-a078-9c63fed20fd4",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-6541-722d-9e6f-b68a4994af8e",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      },
+      "fine-weeping-willow-r1": {
+        "species": "willow",
+        "accepted": false,
+        "previewTaskId": "019ffe88-82a6-7657-9128-862aa2b2d829",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "shagbark-hickory-r1": {
+        "species": "hickory",
+        "accepted": true,
+        "previewTaskId": "019ffe88-87c1-765b-a1d0-2ac398f26da9",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-6fe2-7edc-9f78-2dcf1101d6ea",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      },
+      "mottled-american-sycamore-r1": {
+        "species": "sycamore",
+        "accepted": false,
+        "previewTaskId": "019ffe88-8d74-7ce0-a1b6-fd32d65941d8",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "cathedral-european-beech-r2": {
+        "species": "beech",
+        "accepted": true,
+        "previewTaskId": "019ffe92-b364-77b3-8eee-a9c824ab1f42",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-5af4-722a-85e6-fef6a11ad427",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      },
+      "fluted-european-hornbeam-r2": {
+        "species": "hornbeam",
+        "accepted": true,
+        "previewTaskId": "019ffe92-b85c-7b1b-9e8c-92adc5dd5504",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-6028-71b8-895b-1b86a792706f",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      },
+      "fine-weeping-willow-r2": {
+        "species": "willow",
+        "accepted": false,
+        "previewTaskId": "019ffe92-bdb8-77b4-b1ec-078e3f246a73",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "mottled-american-sycamore-r2": {
+        "species": "sycamore",
+        "accepted": true,
+        "previewTaskId": "019ffe92-c2fd-7b1c-bf7d-2f46ea935b73",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-74e3-722f-9914-c6f129db9054",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      },
+      "riparian-black-willow-r3": {
+        "species": "willow",
+        "accepted": false,
+        "previewTaskId": "019ffe9a-b6e9-7c41-945b-1c54fd758684",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "riparian-eastern-cottonwood-r4": {
+        "species": "cottonwood",
+        "accepted": false,
+        "previewTaskId": "019ffea0-1778-7029-af5b-c78a3e1578ee",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "refineStatus": null
+      },
+      "tall-tulip-tree-r5": {
+        "species": "tulip-tree",
+        "accepted": true,
+        "previewTaskId": "019ffea8-81b3-7a27-a68f-2770d89b3aa1",
+        "previewConsumedCredits": 20,
+        "previewStatus": "SUCCEEDED",
+        "refineTaskId": "019ffead-69e1-722e-8feb-987ca27ce25f",
+        "refineConsumedCredits": 10,
+        "refineStatus": "SUCCEEDED"
+      }
+    }
+  }
+}

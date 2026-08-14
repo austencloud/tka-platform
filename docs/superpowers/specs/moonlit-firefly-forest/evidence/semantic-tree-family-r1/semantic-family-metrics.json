@@ -1,0 +1,229 @@
+{
+  "contractVersion": 1,
+  "familyId": "forest-semantic-summer-r1",
+  "candidates": [
+    {
+      "id": "broad-english-oak-r1",
+      "species": "oak",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/broad-english-oak-r1_semantic.glb",
+      "sha256": "048bee493117ff5e0cbcdc4e1b501930ba0a6e73ec836adc14c6c179d1c6e05a",
+      "bytes": 1634352,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 57984,
+      "triangles": 82509,
+      "textures": 3,
+      "dimensionsMetres": [
+        15.5,
+        10.941343424787133,
+        15.422421948912016
+      ],
+      "materials": [
+        {
+          "name": "Broad English Oak_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Broad English Oak_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        },
+        {
+          "name": "Broad English Oak_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Broad English Oak_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 2595,
+        "foliageTriangles": 79914,
+        "barkTriangleShare": 0.03145111442388103,
+        "foliageTriangleShare": 0.968548885576119,
+        "greenAtlasPixelShare": 0.910296618938446
+      }
+    },
+    {
+      "id": "rounded-sugar-maple-r2",
+      "species": "maple",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/rounded-sugar-maple-r2_semantic.glb",
+      "sha256": "0a42b0f498cf4f087d8a31f1961d1176050661e621518c4e14b69aacc45110d4",
+      "bytes": 1378608,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 57820,
+      "triangles": 81120,
+      "textures": 3,
+      "dimensionsMetres": [
+        10.289925840021974,
+        15,
+        9.969481490524002
+      ],
+      "materials": [
+        {
+          "name": "Rounded Sugar Maple R2_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Rounded Sugar Maple R2_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        },
+        {
+          "name": "Rounded Sugar Maple R2_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Rounded Sugar Maple R2_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 2674,
+        "foliageTriangles": 78446,
+        "barkTriangleShare": 0.03296351084812623,
+        "foliageTriangleShare": 0.9670364891518738,
+        "greenAtlasPixelShare": 0.9094348549842834
+      }
+    },
+    {
+      "id": "cathedral-american-elm-r3",
+      "species": "elm",
+      "path": "E:/tka-platform/static/models/forest/trees/candidates/semantic-summer-r1/cathedral-american-elm-r3_semantic.glb",
+      "sha256": "97e854d1e919da8b84ba19a847f9a4348334722218d6c83ee8e76a8f064f662f",
+      "bytes": 1745056,
+      "meshes": 1,
+      "primitives": 2,
+      "vertices": 60634,
+      "triangles": 81324,
+      "textures": 3,
+      "dimensionsMetres": [
+        10.477919858394115,
+        19,
+        11.461348307748649
+      ],
+      "materials": [
+        {
+          "name": "Cathedral American Elm R3_Bark",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.92,
+          "baseColorTexture": "Cathedral American Elm R3_Bark_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        },
+        {
+          "name": "Cathedral American Elm R3_Foliage",
+          "metallicFactor": 0,
+          "roughnessFactor": 0.88,
+          "baseColorTexture": "Cathedral American Elm R3_Foliage_BaseColor",
+          "normalTexture": "Image_2",
+          "emissiveTexture": null,
+          "emissiveFactor": [
+            0,
+            0,
+            0
+          ],
+          "alphaMode": "OPAQUE",
+          "doubleSided": true
+        }
+      ],
+      "semanticSplit": {
+        "barkTriangles": 2637,
+        "foliageTriangles": 78687,
+        "barkTriangleShare": 0.032425852146967686,
+        "foliageTriangleShare": 0.9675741478530323,
+        "greenAtlasPixelShare": 0.9042317271232605
+      }
+    }
+  ],
+  "meshy": {
+    "balanceBeforeLatestRun": 2005,
+    "balanceAfterLatestRun": 1975,
+    "totalConsumedCredits": 150,
+    "tasks": {
+      "broad-english-oak-r1": {
+        "previewTaskId": "019ffe5a-1e34-77b7-b4d6-0691f70ee958",
+        "previewConsumedCredits": 20,
+        "refineTaskId": "019ffe68-3d36-7979-a696-44a4b6cfc3ec",
+        "refineConsumedCredits": 10,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": "SUCCEEDED"
+      },
+      "layered-sugar-maple-r1": {
+        "previewTaskId": "019ffe5a-22e7-7769-88c6-f19f7d580826",
+        "previewConsumedCredits": 20,
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": null
+      },
+      "cathedral-american-elm-r1": {
+        "previewTaskId": "019ffe5a-276c-705e-bd4c-04ebba1d1b26",
+        "previewConsumedCredits": 20,
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": null
+      },
+      "rounded-sugar-maple-r2": {
+        "previewTaskId": "019ffe61-4544-7184-93f4-7f38ea60d33e",
+        "previewConsumedCredits": 20,
+        "refineTaskId": "019ffe68-41df-7299-ac7b-01b7cd230796",
+        "refineConsumedCredits": 10,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": "SUCCEEDED"
+      },
+      "cathedral-american-elm-r2": {
+        "previewTaskId": "019ffe61-4a4b-7916-b90f-687a1b55e5db",
+        "previewConsumedCredits": 20,
+        "refineTaskId": null,
+        "refineConsumedCredits": 0,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": null
+      },
+      "cathedral-american-elm-r3": {
+        "previewTaskId": "019ffe64-f2b5-7adb-a98c-43d37d592989",
+        "previewConsumedCredits": 20,
+        "refineTaskId": "019ffe68-4694-7a60-9d45-170de29a0225",
+        "refineConsumedCredits": 10,
+        "previewStatus": "SUCCEEDED",
+        "refineStatus": "SUCCEEDED"
+      }
+    }
+  }
+}

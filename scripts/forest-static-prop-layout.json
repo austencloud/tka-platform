@@ -1,5 +1,5 @@
 {
-  "version": 10,
+  "version": 9,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "visibility": "default-forest-only",
   "sourceGate": "Forest Gate 10.1 approved composition revision",
@@ -21,9 +21,9 @@
     },
     {
       "id": "upstage-west-depth-frame",
-      "assetId": "semantic-oak",
+      "assetId": "mature-fir",
       "position": [-21.0, 20.0],
-      "scale": 0.82,
+      "scale": 0.98,
       "rotationDegrees": 42
     },
     {

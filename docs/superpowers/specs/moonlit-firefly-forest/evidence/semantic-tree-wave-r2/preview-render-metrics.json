@@ -1,0 +1,21 @@
+[
+  {
+    "id": "tall-tulip-tree-r5",
+    "species": "tulip-tree",
+    "asset": "E:\\tka-platform\\static\\models\\forest\\trees\\candidates\\semantic-summer-r2\\tall-tulip-tree-r5_preview.glb",
+    "sourceDimensions": [
+      6.365725517272949,
+      6.536258220672607,
+      10.0
+    ],
+    "normalizedDimensionsMetres": [
+      12.660826683044434,
+      13.0,
+      19.889055252075195
+    ],
+    "targetHeightMetres": 24.0,
+    "targetCrownWidthMetres": 13.0,
+    "widthToHeight": 0.6365725532248909,
+    "depthToHeight": 0.6536258175784191
+  }
+]

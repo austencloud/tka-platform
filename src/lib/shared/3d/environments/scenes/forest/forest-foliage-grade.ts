@@ -1,13 +1,34 @@
 const JACARANDA_FOLIAGE_PATTERN = /jacaranda_tree_leaves/i;
+const SEMANTIC_SUMMER_FOLIAGE_PATTERN =
+  /(?:Cathedral European Beech R2|Fluted European Hornbeam R2|Airy Silver Birch|Tall Tulip Tree R5|Shagbark Hickory|Mottled American Sycamore R2)_Foliage/i;
+const PHOTOGRAPHIC_FOLIAGE_PATTERN =
+  /jacaranda_tree_leaves|island_tree_\d+_leaves|tree_small_\d+_leaves|fir_tree.*(?:twig|needle|leaf)|fir_sapling.*(?:twig|needle|leaf)/i;
+const SEMANTIC_CANOPY_LOD_PATTERN = /ForestSemanticCanopy_.*_canopy_lod/i;
 
 export const FOREST_JACARANDA_FOLIAGE_LUMINANCE_SCALE = 0.58;
 export const FOREST_JACARANDA_GREEN_SIGNAL_FLOOR = 1;
+export const FOREST_SEMANTIC_FOLIAGE_GREEN_SIGNAL_FLOOR = 1;
+
+const SEMANTIC_SUMMER_LUMINANCE_SCALES = [
+  [/Cathedral European Beech R2_Foliage/i, 0.76],
+  [/Fluted European Hornbeam R2_Foliage/i, 0.63],
+  [/Airy Silver Birch_Foliage/i, 0.72],
+  [/Tall Tulip Tree R5_Foliage/i, 0.82],
+  [/Shagbark Hickory_Foliage/i, 0.42],
+  [/Mottled American Sycamore R2_Foliage/i, 0.67],
+] as const;
 
 export const FOREST_FOLIAGE_GREEN_SIGNAL_START = 0.01;
 export const FOREST_FOLIAGE_GREEN_SIGNAL_END = 0.14;
 export const FOREST_NEAR_FRAME_INDIRECT_DEPTH = 0.24;
 export const FOREST_FOLIAGE_SKY_EXPOSURE_START = -0.35;
 export const FOREST_FOLIAGE_SKY_EXPOSURE_END = 0.75;
+export const FOREST_CANOPY_LOD_DISTANCE_START = 32;
+export const FOREST_CANOPY_LOD_DISTANCE_END = 58;
+export const FOREST_CANOPY_LOD_ALPHA_COVERAGE_POWER = 6;
+export const FOREST_SEMANTIC_CANOPY_DISTANCE_START = 24;
+export const FOREST_SEMANTIC_CANOPY_DISTANCE_END = 48;
+export const FOREST_SEMANTIC_CANOPY_MAX_COVERAGE = 0.72;
 
 export type ForestFoliageScope =
   | "environment"
@@ -19,6 +40,11 @@ export interface ForestLinearRgb {
   r: number;
   g: number;
   b: number;
+}
+
+export interface ForestFoliageAlphaTreatment {
+  alphaHash: boolean;
+  alphaTest: number;
 }
 
 const LINEAR_LUMINANCE = {
@@ -45,6 +71,38 @@ function linearLuminance(color: ForestLinearRgb): number {
 }
 
 /**
+ * Poly Haven foliage uses photographic cutouts. Their mostly binary alpha
+ * masks average below the authored 0.35 alpha cutoff in distant mip levels,
+ * which can erase a healthy crown from world and overhead cameras. Alpha hash
+ * preserves that fractional coverage without exposing the card silhouette.
+ */
+export function resolveForestFoliageAlphaTreatment(
+  materialName: string,
+  sourceAlphaTest: number
+): ForestFoliageAlphaTreatment {
+  if (
+    !PHOTOGRAPHIC_FOLIAGE_PATTERN.test(materialName) &&
+    !SEMANTIC_CANOPY_LOD_PATTERN.test(materialName)
+  ) {
+    return { alphaHash: false, alphaTest: sourceAlphaTest };
+  }
+  return { alphaHash: true, alphaTest: 0 };
+}
+
+export function calculateForestCanopyLodVisibility(distance: number): number {
+  return smoothstep(
+    FOREST_CANOPY_LOD_DISTANCE_START,
+    FOREST_CANOPY_LOD_DISTANCE_END,
+    distance
+  );
+}
+
+export function calculateForestCanopyLodAlphaCoverage(alpha: number): number {
+  const clampedAlpha = clamp01(alpha);
+  return 1 - (1 - clampedAlpha) ** FOREST_CANOPY_LOD_ALPHA_COVERAGE_POWER;
+}
+
+/**
  * The Jacaranda atlas is authored as a pale silver-green canopy. Give that
  * family enough chroma correction to read as summer foliage while leaving the
  * naturally green Poly Haven families close to their source photography.
@@ -52,6 +110,7 @@ function linearLuminance(color: ForestLinearRgb): number {
 export function resolveForestFoliageGradeCoverage(
   materialName: string
 ): number {
+  if (SEMANTIC_SUMMER_FOLIAGE_PATTERN.test(materialName)) return 1;
   return JACARANDA_FOLIAGE_PATTERN.test(materialName) ? 1.28 : 0.82;
 }
 
@@ -63,16 +122,23 @@ export function resolveForestFoliageGradeCoverage(
 export function resolveForestFoliageLuminanceScale(
   materialName: string
 ): number {
-  return JACARANDA_FOLIAGE_PATTERN.test(materialName)
-    ? FOREST_JACARANDA_FOLIAGE_LUMINANCE_SCALE
-    : 1;
+  if (JACARANDA_FOLIAGE_PATTERN.test(materialName)) {
+    return FOREST_JACARANDA_FOLIAGE_LUMINANCE_SCALE;
+  }
+  for (const [pattern, scale] of SEMANTIC_SUMMER_LUMINANCE_SCALES) {
+    if (pattern.test(materialName)) return scale;
+  }
+  return 1;
 }
 
 export function resolveForestFoliageGreenSignalFloor(
   materialName: string
 ): number {
-  return JACARANDA_FOLIAGE_PATTERN.test(materialName)
-    ? FOREST_JACARANDA_GREEN_SIGNAL_FLOOR
+  if (JACARANDA_FOLIAGE_PATTERN.test(materialName)) {
+    return FOREST_JACARANDA_GREEN_SIGNAL_FLOOR;
+  }
+  return SEMANTIC_SUMMER_FOLIAGE_PATTERN.test(materialName)
+    ? FOREST_SEMANTIC_FOLIAGE_GREEN_SIGNAL_FLOOR
     : 0;
 }
 

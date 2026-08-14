@@ -59,6 +59,26 @@ async function resizeDistanceTierTextures(input, output) {
     const meshName = mesh.getName();
     const isGroundLife = meshName.startsWith("ForestGroundLifeVariantMesh_");
     const isMassForestTree = meshName.startsWith("ForestTreeMesh_");
+    const isSemanticSummerTree = meshName.startsWith(
+      "ForestTreeMesh_semantic-"
+    );
+    if (isSemanticSummerTree) {
+      const semanticCanopy = mesh
+        .listPrimitives()
+        .find((primitive) => {
+          const name = primitive.getMaterial()?.getName() ?? "";
+          return !/_hybrid|_Bark/i.test(name);
+        });
+      const paletteMaterial = semanticCanopy?.getMaterial();
+      if (semanticCanopy && paletteMaterial) {
+        const semanticMaterial = paletteMaterial
+          .clone()
+          .setName(
+            `ForestSemanticCanopy_${meshName.replace("ForestTreeMesh_", "")}_foliage_canopy_lod`
+          );
+        semanticCanopy.setMaterial(semanticMaterial);
+      }
+    }
     const isTerrain = meshName === "Forest Sculpted Terrain Mesh";
     if (!isGroundLife && !isMassForestTree && !isTerrain) continue;
     const maxSize = isMassForestTree ? 512 : 1024;
@@ -71,13 +91,25 @@ async function resizeDistanceTierTextures(input, output) {
         registerTexture(material.getNormalTexture(), 1024, 88);
         registerTexture(material.getOcclusionTexture(), 1024, 86);
       } else if (isMassForestTree) {
-        // Keep the alpha-bearing color atlas at the full mass-tree tier. The
-        // surface-response maps do not carry silhouette information and can
-        // use the far-field tier without changing leaf edges or species read.
-        registerTexture(material.getBaseColorTexture(), 512, 82);
-        registerTexture(material.getMetallicRoughnessTexture(), 256, 84);
-        registerTexture(material.getNormalTexture(), 384, 86);
-        registerTexture(material.getOcclusionTexture(), 256, 84);
+        const isHybridPhotographicFoliage = /_hybrid/i.test(
+          material.getName()
+        );
+        if (isSemanticSummerTree && !isHybridPhotographicFoliage) {
+          // The semantic bark remains a distance-tier Meshy surface. Hybrid
+          // crowns below use the same photographic budget as Poly Haven.
+          registerTexture(material.getBaseColorTexture(), 256, 82);
+          registerTexture(material.getMetallicRoughnessTexture(), 96, 82);
+          registerTexture(material.getNormalTexture(), 192, 84);
+          registerTexture(material.getOcclusionTexture(), 96, 82);
+        } else {
+          // Keep the alpha-bearing Poly Haven color atlas at the full mass-tree
+          // tier. Its leaf edges carry more visual information than the far
+          // response maps.
+          registerTexture(material.getBaseColorTexture(), 512, 82);
+          registerTexture(material.getMetallicRoughnessTexture(), 256, 84);
+          registerTexture(material.getNormalTexture(), 384, 86);
+          registerTexture(material.getOcclusionTexture(), 256, 84);
+        }
       } else {
         registerTexture(material.getBaseColorTexture(), maxSize, 84);
         registerTexture(material.getMetallicRoughnessTexture(), maxSize, 88);
@@ -114,6 +146,9 @@ async function resizeDistanceTierTextures(input, output) {
   let treeTrianglesAfter = 0;
   for (const mesh of root.listMeshes()) {
     if (!mesh.getName().startsWith("ForestTreeMesh_")) continue;
+    const isSemanticSummerTree = mesh
+      .getName()
+      .startsWith("ForestTreeMesh_semantic-");
     const meshTriangleCount = mesh
       .listPrimitives()
       .reduce(
@@ -127,13 +162,48 @@ async function resizeDistanceTierTextures(input, output) {
       );
     for (const primitive of mesh.listPrimitives()) {
       const materialName = primitive.getMaterial()?.getName() ?? "";
-      const isFoliage = /leaves|twig/i.test(materialName);
+      const isFoliage = /leaves|twig|foliage/i.test(materialName);
+      const isCanopyLod = /_canopy_lod/i.test(materialName);
+      const isSemanticCanopyLod =
+        /ForestSemanticCanopy_.*_canopy_lod/i.test(materialName);
+      const isHybridPhotographicFoliage = /_hybrid/i.test(materialName);
       const before =
         (primitive.getIndices()?.getCount() ??
           primitive.getAttribute("POSITION")?.getCount() ??
           0) / 3;
       treeTrianglesBefore += before;
-      if (!isFoliage && meshTriangleCount >= 15_000 && before >= 1_000) {
+      if (isSemanticCanopyLod && before >= 1_000) {
+        simplifyPrimitive(primitive, {
+          simplifier: MeshoptSimplifier,
+          ratio: 0.025,
+          error: 0.18,
+          lockBorder: false,
+        });
+      } else if (isCanopyLod) {
+        // The support primitive is already a sparse authored selection. Any
+        // further simplification can collapse its disconnected alpha cards.
+      } else if (
+        isSemanticSummerTree &&
+        !isHybridPhotographicFoliage &&
+        before >= 1_000
+      ) {
+        simplifyPrimitive(primitive, {
+          simplifier: MeshoptSimplifier,
+          ratio: isFoliage ? 0.12 : 0.32,
+          error: isFoliage ? 0.035 : 0.02,
+          lockBorder: false,
+        });
+      } else if (isFoliage && meshTriangleCount >= 50_000 && before >= 5_000) {
+        // The main environment is never the walk-up foliage layer. Reduce its
+        // photographic cards conservatively; the separate near-frame GLB keeps
+        // the full close silhouette and texture density.
+        simplifyPrimitive(primitive, {
+          simplifier: MeshoptSimplifier,
+          ratio: isHybridPhotographicFoliage ? 0.37 : 0.53,
+          error: isHybridPhotographicFoliage ? 0.03 : 0.015,
+          lockBorder: false,
+        });
+      } else if (!isFoliage && meshTriangleCount >= 15_000 && before >= 1_000) {
         simplifyPrimitive(primitive, {
           simplifier: MeshoptSimplifier,
           ratio: 0.35,
@@ -150,7 +220,7 @@ async function resizeDistanceTierTextures(input, output) {
 
   await io.write(output, document);
   console.log(
-    `Resized ${resized} Forest textures: mass-tree color/alpha at 512 px, normals at 384 px, response at 256 px, and ground life at 1024 px`
+    `Resized ${resized} Forest textures: Poly Haven color/alpha at 512 px, semantic crown color at 256 px, and distance response maps at 96-384 px`
   );
   console.log(
     `Simplified mass-tree prototypes from ${Math.round(treeTrianglesBefore).toLocaleString()} to ${Math.round(treeTrianglesAfter).toLocaleString()} triangles`
