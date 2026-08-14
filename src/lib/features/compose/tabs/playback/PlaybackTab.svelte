@@ -8,7 +8,7 @@
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import { getPlaybackState } from "./state/playback-state.svelte";
   import { getComposeModuleState } from "../../shared/state/compose-module-state.svelte";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import { onMount } from "svelte";
   import PlaybackHeader from "./components/PlaybackHeader.svelte";
   import PlaybackControls from "./components/PlaybackControls.svelte";
@@ -122,6 +122,7 @@
     <MobilePlaybackToolbar
       isPlaying={playbackState.isPlaying}
       activeView={playbackState.mobileToolView}
+      sequence={playbackState.sequences[0]?.sequence ?? null}
       onPlayPause={handlePlayPause}
       onToggleView={handleToggleMobileView}
       onClose={handleClose}

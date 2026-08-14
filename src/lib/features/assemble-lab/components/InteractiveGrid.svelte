@@ -48,10 +48,13 @@
   let {
     builderState,
     onStepCapExceeded,
+    startAimEnabled = true,
   }: {
     builderState: AssembleState;
     /** Called when the user tries to add a motion. Return true to block the action and show the nudge. */
     onStepCapExceeded?: () => boolean;
+    /** Fuse uses an explicit, level-filtered orientation control instead. */
+    startAimEnabled?: boolean;
   } = $props();
 
   // Services
@@ -877,7 +880,7 @@
     currentPosition={builderState.currentPosition}
     disabled={targetsDisabled}
     pulseTargets={false}
-    aimEnabled={builderState.phase === "idle"}
+    aimEnabled={startAimEnabled && builderState.phase === "idle"}
     keyLabels={builderState.keyboardMode ? LOCATION_TO_KEY_LABEL : {}}
     labelForLocation={getTargetLabel}
     onPointClick={handleTargetClick}

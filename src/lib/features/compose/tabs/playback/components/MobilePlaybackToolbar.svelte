@@ -6,17 +6,21 @@
 -->
 <script lang="ts">
   import type { MobileToolView } from "../state/playback-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import MobileToolViewToggle from "../../../components/inputs/MobileToolViewToggle.svelte";
+  import ShareButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ShareButton.svelte";
 
   let {
     isPlaying = false,
     activeView = "controls" as MobileToolView,
+    sequence = null,
     onPlayPause,
     onToggleView,
     onClose,
   }: {
     isPlaying: boolean;
     activeView: MobileToolView;
+    sequence?: SequenceData | null;
     onPlayPause: () => void;
     onToggleView: () => void;
     onClose: () => void;
@@ -40,6 +44,7 @@
   </div>
 
   <div class="toolbar-right">
+    <ShareButton {sequence} useMobileSheet />
     <button class="close-btn" onclick={onClose} aria-label="Close playback">
       <i class="fas fa-chevron-down" aria-hidden="true"></i>
     </button>
@@ -75,6 +80,7 @@
 
   .toolbar-right {
     justify-content: flex-end;
+    gap: 0.625rem;
   }
 
   .toolbar-center {
@@ -91,9 +97,11 @@
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 25%, transparent) 100%
+      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 25%, transparent)
+        100%
     );
-    border: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     color: var(--theme-accent, #c4b5fd);
     font-size: 1.25rem;
     cursor: pointer;
@@ -105,9 +113,14 @@
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--theme-accent, #8b5cf6) 40%, transparent) 0%,
-      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 35%, transparent) 100%
+      color-mix(in srgb, var(--theme-accent-strong, #7c3aed) 35%, transparent)
+        100%
     );
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 70%,
+      transparent
+    );
     transform: scale(1.05);
   }
 
@@ -121,7 +134,11 @@
       color-mix(in srgb, var(--semantic-success, #22c55e) 30%, transparent) 0%,
       color-mix(in srgb, var(--semantic-success, #16a34a) 25%, transparent) 100%
     );
-    border-color: color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 60%,
+      transparent
+    );
     color: var(--semantic-success, #86efac);
   }
 

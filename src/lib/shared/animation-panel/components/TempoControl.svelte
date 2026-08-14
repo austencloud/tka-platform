@@ -27,6 +27,7 @@
     clampTempoBpm,
     recordTempoTap,
   } from "$lib/shared/animation-engine/domain/tempo-behavior";
+  import ScrubbableNumber from "$lib/shared/ui/components/ScrubbableNumber.svelte";
 
   // Engine-derived: offering a BPM the playback clamp rejects makes the
   // buttons silent no-ops (readout freezes at the real ceiling).
@@ -269,6 +270,15 @@
 
 {#if showPopover && presetsMode === "popover"}
   <div class="bpm-popover" role="dialog" tabindex="-1" aria-label={t("compose_custom_bpm")} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); closePopover(); } }}>
+    <ScrubbableNumber
+      label={t("compose_custom_bpm")}
+      value={bpm}
+      min={BPM_MIN}
+      max={BPM_MAX}
+      step={1}
+      unit=" BPM"
+      onchange={onBpmChange}
+    />
     <div class="bpm-popover-presets">
       {#each NUMERIC_TEMPO_PRESETS as preset}
         <button

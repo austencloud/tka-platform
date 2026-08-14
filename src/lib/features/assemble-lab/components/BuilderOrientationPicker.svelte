@@ -6,10 +6,12 @@
     value,
     onchange,
     onHelp = null,
+    allowedOrientations = null,
   }: {
     value: Orientation;
     onchange: (orientation: Orientation) => void;
     onHelp?: (() => void) | null;
+    allowedOrientations?: readonly Orientation[] | null;
   } = $props();
 
   const RADIAL_OPTIONS: { value: Orientation; label: string }[] = [
@@ -30,20 +32,18 @@
   ];
   const isCenterOrientation = $derived(String(value).startsWith("center"));
   const options = $derived(
-    isCenterOrientation ? CENTER_OPTIONS : RADIAL_OPTIONS
+    (isCenterOrientation ? CENTER_OPTIONS : RADIAL_OPTIONS).filter(
+      (option) =>
+        allowedOrientations === null ||
+        allowedOrientations.includes(option.value)
+    )
   );
 </script>
 
 <div class="orientation-picker">
   <div class="segments">
     <div class="segments-inner" class:center-options={isCenterOrientation}>
-      <SegmentedControl
-        {options}
-        {value}
-        {onchange}
-        size="sm"
-        color="accent"
-      />
+      <SegmentedControl {options} {value} {onchange} size="sm" color="accent" />
     </div>
   </div>
   {#if onHelp}

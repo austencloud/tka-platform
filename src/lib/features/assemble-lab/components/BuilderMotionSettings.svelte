@@ -8,25 +8,20 @@
     onchangeTurnCount,
     onchangeRotationDirection,
     stacked = false,
+    turnCounts = [-0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3],
+    showTurns = true,
   }: {
     turnCount: number;
     rotationDirection: RotationDirection;
     onchangeTurnCount: (turnCount: number) => void;
     onchangeRotationDirection: (direction: RotationDirection) => void;
     stacked?: boolean;
+    /** Numeric builder values; -0.5 is the builder's internal float token. */
+    turnCounts?: readonly number[];
+    showTurns?: boolean;
   } = $props();
 
   const FLOAT_VALUE = "float";
-  const TURN_OPTIONS = [
-    { value: FLOAT_VALUE, label: "fl" },
-    { value: "0", label: "0" },
-    { value: "0.5", label: "0.5" },
-    { value: "1", label: "1" },
-    { value: "1.5", label: "1.5" },
-    { value: "2", label: "2" },
-    { value: "2.5", label: "2.5" },
-    { value: "3", label: "3" },
-  ];
   const ROTATION_OPTIONS = [
     { value: RotationDirection.CLOCKWISE, label: "CW" },
     { value: RotationDirection.COUNTER_CLOCKWISE, label: "CCW" },
@@ -34,6 +29,12 @@
 
   const turnValue = $derived(
     turnCount === -0.5 ? FLOAT_VALUE : String(turnCount)
+  );
+  const turnOptions = $derived(
+    turnCounts.map((value) => ({
+      value: value === -0.5 ? FLOAT_VALUE : String(value),
+      label: value === -0.5 ? "fl" : String(value),
+    }))
   );
   const rotationOptions = $derived(
     ROTATION_OPTIONS.map((option) => ({
@@ -47,7 +48,7 @@
   }
 </script>
 
-<div class="motion-settings" class:stacked>
+<div class="motion-settings" class:stacked class:direction-only={!showTurns}>
   <div class="setting rotation-setting">
     <span class="setting-label">Direction</span>
     <SegmentedControl
@@ -58,16 +59,18 @@
       color="accent"
     />
   </div>
-  <div class="setting turn-setting">
-    <span class="setting-label">Turns</span>
-    <SegmentedControl
-      options={TURN_OPTIONS}
-      value={turnValue}
-      onchange={selectTurn}
-      size="sm"
-      color="accent"
-    />
-  </div>
+  {#if showTurns}
+    <div class="setting turn-setting">
+      <span class="setting-label">Turns</span>
+      <SegmentedControl
+        options={turnOptions}
+        value={turnValue}
+        onchange={selectTurn}
+        size="sm"
+        color="accent"
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -93,6 +96,10 @@
 
   .rotation-setting {
     flex: 0 0 126px;
+  }
+
+  .direction-only .rotation-setting {
+    flex: 1 1 auto;
   }
 
   .turn-setting {
