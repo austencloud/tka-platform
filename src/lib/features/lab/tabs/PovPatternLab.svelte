@@ -20,7 +20,7 @@ import { getStripPatternEngine } from "$lib/features/poi/get-strip-pattern-engin
   import PatternTimeline from "$lib/features/poi/components/PatternTimeline.svelte";
   import StripPatternExporter from "$lib/features/poi/components/StripPatternExporter.svelte";
   import DevicePanel from "$lib/features/poi/components/DevicePanel.svelte";
-  import ScrubValue from "$lib/features/poi/components/ScrubValue.svelte";
+  import ScrubValue from "$lib/shared/ui/components/ScrubbableNumber.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
