@@ -4,6 +4,7 @@ import { AnimationLoop } from "../animation-loop";
 import type { SequenceAnimationOrchestrator } from "../sequence-animation-orchestrator";
 import type { AnimationPanelState } from "../../state/animation-panel-state.svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { sharedAnimationState } from "../../state/shared-animation-state.svelte";
 
 // Regression guard for the "HMR pauses the animation and play/pause goes dead"
 // bug in the sequence viewer.
@@ -24,10 +25,15 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 // newer claim is a no-op.
 describe("AnimationPlaybackController ownership (HMR remount clobber)", () => {
   beforeEach(() => {
-    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 123));
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn(() => 123)
+    );
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
   });
   afterEach(() => {
+    sharedAnimationState.setCurrentStep(0);
+    sharedAnimationState.setIsPlaying(false);
     vi.unstubAllGlobals();
   });
 
@@ -102,5 +108,26 @@ describe("AnimationPlaybackController ownership (HMR remount clobber)", () => {
     controller.togglePlayback();
 
     expect(stateA.setIsPlaying).not.toHaveBeenCalledWith(true);
+  });
+
+  it("can keep a standalone player's clock out of workspace highlighting", () => {
+    sharedAnimationState.setCurrentStep(7);
+    sharedAnimationState.setIsPlaying(false);
+    const loop = new AnimationLoop();
+    const controller = new AnimationPlaybackController(makeEngine(), loop, {
+      syncSharedWorkspaceState: false,
+    });
+    const state = makeState();
+
+    controller.initialize(seq, state);
+    controller.togglePlayback();
+
+    expect(state.isPlaying).toBe(true);
+    expect(sharedAnimationState.currentStep).toBe(7);
+    expect(sharedAnimationState.isPlaying).toBe(false);
+
+    controller.dispose(state);
+    expect(sharedAnimationState.currentStep).toBe(7);
+    expect(sharedAnimationState.isPlaying).toBe(false);
   });
 });

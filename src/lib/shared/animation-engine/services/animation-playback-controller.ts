@@ -20,6 +20,15 @@ import type {
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 
+export interface AnimationPlaybackControllerOptions {
+  /**
+   * Publish playback into Create's workspace beat highlight. Standalone and
+   * embedded players opt out so their animation cannot light up an unrelated
+   * sequence behind them.
+   */
+  syncSharedWorkspaceState?: boolean;
+}
+
 export class AnimationPlaybackController {
   private state: AnimationPanelState | null = null;
   private sequenceData: SequenceData | null = null;
@@ -58,7 +67,8 @@ export class AnimationPlaybackController {
 
   constructor(
     private readonly animationEngine: SequenceAnimationOrchestrator,
-    private readonly loopService: AnimationLoop
+    private readonly loopService: AnimationLoop,
+    private readonly options: AnimationPlaybackControllerOptions = {}
   ) {}
 
   /**
@@ -66,7 +76,9 @@ export class AnimationPlaybackController {
    */
   private syncCurrentStep(step: number): void {
     this.state?.setCurrentStep(step);
-    sharedAnimationState.setCurrentStep(step);
+    if (this.options.syncSharedWorkspaceState !== false) {
+      sharedAnimationState.setCurrentStep(step);
+    }
   }
 
   /**
@@ -74,7 +86,9 @@ export class AnimationPlaybackController {
    */
   private syncIsPlaying(playing: boolean): void {
     this.state?.setIsPlaying(playing);
-    sharedAnimationState.setIsPlaying(playing);
+    if (this.options.syncSharedWorkspaceState !== false) {
+      sharedAnimationState.setIsPlaying(playing);
+    }
   }
 
   initialize(sequenceData: SequenceData, state: AnimationPanelState): boolean {

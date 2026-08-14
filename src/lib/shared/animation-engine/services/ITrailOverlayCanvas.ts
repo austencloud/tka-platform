@@ -63,7 +63,11 @@ export interface TrailOverlayRenderParams {
 }
 
 export interface ITrailOverlayCanvas {
-  initialize(container: HTMLElement, width: number, height: number): void;
+  initialize(
+    container: HTMLElement,
+    width: number,
+    height: number
+  ): void | Promise<void>;
   resize(width: number, height: number): void;
   renderFrame(params: TrailOverlayRenderParams): void;
   clear(): void;

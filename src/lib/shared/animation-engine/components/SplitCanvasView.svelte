@@ -45,6 +45,9 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
+  import type { TrailSettings } from "../domain/types/trail-types";
+  import type { TipEffectMap } from "../domain/types/tip-effect-types";
+  import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
   import CanvasSurface from "./CanvasSurface.svelte";
   import { untrack } from "svelte";
 
@@ -60,6 +63,12 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     isPlaying = false,
     fireConfig = undefined,
     ledConfig = undefined,
+    trailSettings = undefined,
+    bluePropType = null,
+    redPropType = null,
+    tipEffectMap = undefined,
+    visibilityManagerOverride = undefined,
+    showNonRadialPoints = true,
     darkModeEnabled = true,
     // When true, the parent wants the split row expanded. When false, it wants
     // it collapsed (reassemble). The actual expand is gated on both child
@@ -86,6 +95,12 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     isPlaying?: boolean;
     fireConfig?: Partial<FireOverlayConfig>;
     ledConfig?: Partial<LedOverlayConfig>;
+    trailSettings?: TrailSettings;
+    bluePropType?: string | null;
+    redPropType?: string | null;
+    tipEffectMap?: TipEffectMap;
+    visibilityManagerOverride?: AnimationVisibilityStateManager;
+    showNonRadialPoints?: boolean;
     darkModeEnabled?: boolean;
     expandRequested?: boolean;
     resizePaused?: boolean;
@@ -164,6 +179,12 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {isPlaying}
       {fireConfig}
       {ledConfig}
+      {trailSettings}
+      {bluePropType}
+      {redPropType}
+      {tipEffectMap}
+      {visibilityManagerOverride}
+      {showNonRadialPoints}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
@@ -185,6 +206,12 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
       {isPlaying}
       {fireConfig}
       {ledConfig}
+      {trailSettings}
+      {bluePropType}
+      {redPropType}
+      {tipEffectMap}
+      {visibilityManagerOverride}
+      {showNonRadialPoints}
       hideTkaGlyph={true}
       hideStepNumbers={true}
       {resizePaused}
@@ -207,8 +234,9 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     opacity: 0;
     overflow: hidden;
     /* Collapse: fade out quickly, no delay */
-    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.2s ease-in;
+    transition:
+      max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.2s ease-in;
   }
 
   .split-canvases.expanded {
@@ -216,8 +244,9 @@ WHAT THE PARENT (AnimatorCanvas) OWNS:
     max-height: 50cqw;
     opacity: 1;
     /* Expand: delay opacity so engines have time to render before becoming visible */
-    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                opacity 0.3s ease-out 0.2s;
+    transition:
+      max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.3s ease-out 0.2s;
   }
 
   .split-canvas {

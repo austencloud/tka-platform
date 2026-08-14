@@ -194,7 +194,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     <!-- Keep the outgoing symbol mounted until its outro completes. Because
          Crossfade renders an HTML div, the keyed SVG group is the valid SVG
          equivalent used by the other glyphs in this overlay. -->
-    {#if elementalGlyphVisible && elementalInfo.elementalType && elementalLetter}
+    {#if elementalGlyphVisible && elementalInfo.elementalType}
       {#key elementalKey}
         <g
           class="elemental-glyph-transition"

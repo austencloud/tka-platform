@@ -210,7 +210,11 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // drawable frame so an initial one-ended prop does not retire blank FBOs.
   private prevTipTrailMask: number | null = null;
 
-  initialize(container: HTMLElement, width: number, height: number): void {
+  async initialize(
+    container: HTMLElement,
+    width: number,
+    height: number
+  ): Promise<void> {
     this.dispose();
 
     const canvas = document.createElement("canvas");
@@ -232,15 +236,20 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.height = height;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
 
-    // WebGL2Backend.initialize is synchronous despite the async signature
-    // (no awaits inside). The backend is usable the moment this returns.
-    void createBackend(canvas, { preferred: "webgl2" }).then((backend) => {
+    try {
+      const backend = await createBackend(canvas, { preferred: "webgl2" });
       if (this.canvas === canvas) {
         this.backend = backend;
       } else {
         backend.dispose();
       }
-    });
+    } catch (error) {
+      // A failed context request leaves a transparent canvas in the effect
+      // stack. Remove it before the adaptive owner installs Canvas2D, or every
+      // affected animation carries a dead layer for the rest of its lifetime.
+      if (this.canvas === canvas) this.dispose();
+      throw error;
+    }
   }
 
   resize(width: number, height: number): void {
@@ -990,21 +999,23 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
 
 // ── EffectPlugin descriptor ──────────────────────────────────────────────────
 // Trails is the kind:"trails" exception — ITrailOverlayCanvas.initialize returns
-// void (not boolean) and has no isInitialized(). The descriptor casts to
-// EffectRendererLike so the registry can hold it uniformly; consumers of the
-// trails branch cast back to ITrailOverlayCanvas via the kind:"trails" path.
+// void or a promise (not boolean) and has no isInitialized(). The descriptor
+// casts to EffectRendererLike so the registry can hold it uniformly; consumers
+// of the trails branch cast back via the kind:"trails" path.
 import type { EffectPlugin } from "./effects/effect-plugin";
 import type { EffectRendererLike } from "./effects/effect-renderer";
 import type { TrailsIntent } from "$lib/shared/effects/domain/effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { TrailOverlayCanvas } from "./trail-overlay-canvas";
+import { AdaptiveTrailOverlay } from "./adaptive-trail-overlay";
 
 export const trailsEffectPlugin: EffectPlugin<TrailsIntent> = {
   id: "trails",
   kind: "trails",
   createRenderer: (): EffectRendererLike => {
     // Runtime A/B toggle: set window.__TKA_TRAIL_GPU = false before a sequence
-    // starts to use the legacy Canvas2D overlay. Default is WebGL2.
+    // starts to force Canvas2D. The default prefers WebGL2 and falls back to
+    // Canvas2D automatically when the browser cannot allocate that context.
     // trails is the kind:"trails" exception — consumed via the trails branch as
     // ITrailOverlayCanvas, not the strict EffectRendererLike contract.
     const flag =
@@ -1015,7 +1026,10 @@ export const trailsEffectPlugin: EffectPlugin<TrailsIntent> = {
       console.info("[TrailOverlay] using legacy Canvas2D (window.__TKA_TRAIL_GPU = false)");
       return new TrailOverlayCanvas() as unknown as EffectRendererLike;
     }
-    return new TrailOverlayWebGL2() as unknown as EffectRendererLike;
+    return new AdaptiveTrailOverlay({
+      createPrimary: () => new TrailOverlayWebGL2(),
+      createFallback: () => new TrailOverlayCanvas()
+    }) as unknown as EffectRendererLike;
   },
   defaultConfig: DEFAULT_EFFECTS_CONFIG.trails,
   // RenderLoopConfig slot name for the trail overlay instance
