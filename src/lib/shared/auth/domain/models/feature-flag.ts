@@ -77,14 +77,19 @@ export interface UserFeatureOverrides {
  * This keeps hardcoded config minimal - PostHog is the source of truth
  * for everything beyond these essentials.
  */
-const CORE_USER_MODULES: ModuleId[] = ["create", "browse", "settings", "feedback"];
+const CORE_USER_MODULES: ModuleId[] = [
+  "create",
+  "browse",
+  "settings",
+  "feedback",
+];
 
 /**
  * Tabs that are still in development - visible to admins only,
  * regardless of the parent module's role.
  * Format: "moduleId:tabId"
  */
-const ADMIN_ONLY_TABS: string[] = ["create:fuse", "create:assemble"];
+const ADMIN_ONLY_TABS: string[] = ["create:assemble"];
 
 /**
  * Get the default role for a feature
