@@ -300,6 +300,270 @@ html.named-route-morph::view-transition {
 }
 
 /* ============================================================================
+   FILTER RULE REMOVAL
+   Each visible rule token gets a stable name from FilterRuleStrip. When one is
+   removed, it settles out while the surviving labels, connectives, count, and
+   action rail travel to their new positions instead of snapping together.
+   ============================================================================ */
+::view-transition-group(*.filter-rule-token),
+::view-transition-old(*.filter-rule-token),
+::view-transition-new(*.filter-rule-token) {
+  animation-duration: var(--duration-emphasis);
+  animation-timing-function: var(--ease-spring);
+}
+
+::view-transition-old(*.filter-rule-token):only-child {
+  animation: filter-rule-exit var(--duration-fast) var(--ease-in) both;
+}
+
+::view-transition-new(*.filter-rule-token):only-child {
+  animation: filter-rule-enter var(--duration-emphasis) var(--ease-spring) both;
+}
+
+@keyframes filter-rule-exit {
+  to {
+    opacity: 0;
+    transform: translateY(-0.3rem) scale(0.92);
+  }
+}
+
+@keyframes filter-rule-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*.filter-rule-token),
+  ::view-transition-old(*.filter-rule-token),
+  ::view-transition-new(*.filter-rule-token) {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   DECK RELEASER WORKFLOW
+   The releaser is one production flow, so every state change shows its cause:
+   stages travel forward/back, source boards settle in place, and the right rail
+   swaps inside its own boundary. The feature adds the temporary deck-motion-*
+   classes only while a named same-document transition owns the frame.
+   ============================================================================ */
+
+.deck-motion-stage.deck-motion-forward::view-transition-old(
+    deck-releaser-stage
+  ) {
+  z-index: 1;
+  animation: deck-stage-exit-forward var(--duration-emphasis) var(--ease-in)
+    both;
+}
+
+.deck-motion-stage.deck-motion-forward::view-transition-new(
+    deck-releaser-stage
+  ) {
+  z-index: 2;
+  animation: deck-stage-enter-forward var(--duration-dramatic)
+    var(--ease-spring) both;
+}
+
+.deck-motion-stage.deck-motion-backward::view-transition-old(
+    deck-releaser-stage
+  ) {
+  z-index: 2;
+  animation: deck-stage-exit-backward var(--duration-emphasis) var(--ease-in)
+    both;
+}
+
+.deck-motion-stage.deck-motion-backward::view-transition-new(
+    deck-releaser-stage
+  ) {
+  z-index: 1;
+  animation: deck-stage-enter-backward var(--duration-dramatic)
+    var(--ease-spring) both;
+}
+
+@keyframes deck-stage-exit-forward {
+  to {
+    opacity: 0;
+    transform: translateX(-2rem) scale(0.985);
+  }
+}
+
+@keyframes deck-stage-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(3rem) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes deck-stage-exit-backward {
+  to {
+    opacity: 0;
+    transform: translateX(2rem) scale(0.985);
+  }
+}
+
+@keyframes deck-stage-enter-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-3rem) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.deck-motion-source::view-transition-group(deck-releaser-source-title),
+.deck-motion-source::view-transition-group(deck-releaser-command),
+.deck-motion-source::view-transition-group(deck-releaser-source) {
+  animation-duration: var(--duration-dramatic);
+  animation-timing-function: var(--ease-spring);
+}
+
+.deck-motion-source::view-transition-old(deck-releaser-source-title),
+.deck-motion-source::view-transition-old(deck-releaser-command),
+.deck-motion-source::view-transition-old(deck-releaser-source) {
+  animation: deck-source-exit var(--duration-fast) var(--ease-in) both;
+}
+
+.deck-motion-source::view-transition-new(deck-releaser-source-title),
+.deck-motion-source::view-transition-new(deck-releaser-command),
+.deck-motion-source::view-transition-new(deck-releaser-source) {
+  animation: deck-source-enter var(--duration-dramatic) var(--ease-spring) both;
+}
+
+@keyframes deck-source-exit {
+  to {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.99);
+  }
+}
+
+@keyframes deck-source-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.8rem) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.deck-motion-sidebar.deck-motion-forward::view-transition-old(
+    deck-releaser-sidebar
+  ) {
+  animation: deck-sidebar-exit-forward var(--duration-fast) var(--ease-in) both;
+}
+
+.deck-motion-sidebar.deck-motion-forward::view-transition-new(
+    deck-releaser-sidebar
+  ) {
+  animation: deck-sidebar-enter-forward var(--duration-emphasis)
+    var(--ease-spring) both;
+}
+
+.deck-motion-sidebar.deck-motion-backward::view-transition-old(
+    deck-releaser-sidebar
+  ) {
+  animation: deck-sidebar-exit-backward var(--duration-fast) var(--ease-in) both;
+}
+
+.deck-motion-sidebar.deck-motion-backward::view-transition-new(
+    deck-releaser-sidebar
+  ) {
+  animation: deck-sidebar-enter-backward var(--duration-emphasis)
+    var(--ease-spring) both;
+}
+
+@keyframes deck-sidebar-exit-forward {
+  to {
+    opacity: 0;
+    transform: translateX(-1rem);
+  }
+}
+
+@keyframes deck-sidebar-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(1.4rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes deck-sidebar-exit-backward {
+  to {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+}
+
+@keyframes deck-sidebar-enter-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-1.4rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.deck-motion-content::view-transition-old(deck-releaser-stage) {
+  animation: deck-content-exit var(--duration-fast) var(--ease-in) both;
+}
+
+.deck-motion-content::view-transition-new(deck-releaser-stage) {
+  animation: deck-content-enter var(--duration-emphasis) var(--ease-spring) both;
+}
+
+@keyframes deck-content-exit {
+  to {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+}
+
+@keyframes deck-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-motion-stage::view-transition-old(deck-releaser-stage),
+  .deck-motion-stage::view-transition-new(deck-releaser-stage),
+  .deck-motion-source::view-transition-group(deck-releaser-source-title),
+  .deck-motion-source::view-transition-old(deck-releaser-source-title),
+  .deck-motion-source::view-transition-new(deck-releaser-source-title),
+  .deck-motion-source::view-transition-group(deck-releaser-command),
+  .deck-motion-source::view-transition-old(deck-releaser-command),
+  .deck-motion-source::view-transition-new(deck-releaser-command),
+  .deck-motion-source::view-transition-group(deck-releaser-source),
+  .deck-motion-source::view-transition-old(deck-releaser-source),
+  .deck-motion-source::view-transition-new(deck-releaser-source),
+  .deck-motion-sidebar::view-transition-old(deck-releaser-sidebar),
+  .deck-motion-sidebar::view-transition-new(deck-releaser-sidebar),
+  .deck-motion-content::view-transition-old(deck-releaser-stage),
+  .deck-motion-content::view-transition-new(deck-releaser-stage) {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
    HIGH CONTRAST MODE
    ============================================================================ */
 @media (prefers-contrast: high) {
