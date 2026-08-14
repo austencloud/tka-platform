@@ -72,7 +72,7 @@
     /** Compact trailing trigger (download / record). */
     trailingAction?: ControlDockAction;
     /** Optional secondary trailing slot(s): links (e.g. scan-landing
-     *  "Open TKA") and/or action buttons (e.g. choreo-card "Print"),
+     *  "Open Flow Arts Composer") and/or action buttons (e.g. choreo-card "Print"),
      *  rendered in order before the trailing trigger. */
     secondaryActions?: (ControlDockLink | ControlDockAction)[];
     /** Reports the dock's measured height so the stage can reserve room. */
@@ -233,7 +233,7 @@
   let dockEl: HTMLDivElement | undefined = $state();
   let wide = $state(false);
   let compact = $state(false);
-  // Secondary CTAs (Remix / Open TKA) + the download trigger eat ~260px of a
+  // Secondary CTAs (Remix / Open Flow Arts Composer) + the download trigger eat ~260px of a
   // single-row bar, starving the tab strip on phones. Below this width the bar
   // stacks: tabs own the top row, CTAs share the bottom row. Docks without
   // secondary actions (mandala) never stack.

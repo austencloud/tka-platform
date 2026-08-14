@@ -172,7 +172,9 @@ export function createViewerOrchestratorContextState(
 
       isLoggedIn: inputs.getIsLoggedIn(),
       isOwned: inputs.getIsOwned(),
+      isOwnedLibraryRecord: inputs.libraryActions.isOwnedLibraryRecord,
       isSaved: inputs.libraryActions.isSaved,
+      isSaving: inputs.libraryActions.isSaving,
       isPublished: inputs.getIsPublished(),
       isFavorite: inputs.libraryActions.isFavorite,
       handleFavoriteToggle: inputs.libraryActions.handleFavoriteToggle,

@@ -6,8 +6,10 @@ function makeCtx(over: Partial<Record<string, unknown>> = {}) {
   return {
     isFavorite: false,
     isSaved: true,
+    isSaving: false,
     isPublished: false,
     isOwned: false,
+    isOwnedLibraryRecord: false,
     isLoggedIn: false,
     practiceActive: false,
     invokeGatedAction: vi.fn((_id: string, run: () => void) => run()),
@@ -32,6 +34,7 @@ describe("buildHeaderActions", () => {
     const a = buildHeaderActions(makeCtx(), "full", wiring);
     expect(a.onFavoriteToggle).toBeTypeOf("function");
     expect(a.onSave).toBeTypeOf("function");
+    expect(a.isSaving).toBe(false);
     expect(a.onRemix).toBeTypeOf("function");
     expect(a.showPractice).toBe(true);
     expect(a.onPracticeToggle).toBeTypeOf("function");
@@ -41,11 +44,16 @@ describe("buildHeaderActions", () => {
     expect(a.onVideoUpload).toBeUndefined();
   });
 
-  it("owner + signed in + saved: management actions light up", () => {
+  it("exact owned library record: management actions light up", () => {
     const a = buildHeaderActions(
-      makeCtx({ isOwned: true, isSaved: true, isLoggedIn: true }),
+      makeCtx({
+        isOwned: true,
+        isOwnedLibraryRecord: true,
+        isSaved: true,
+        isLoggedIn: true,
+      }),
       "full",
-      wiring,
+      wiring
     );
     expect(a.onPublish).toBeTypeOf("function");
     expect(a.onUnpublish).toBeTypeOf("function");
@@ -61,11 +69,32 @@ describe("buildHeaderActions", () => {
     }
   });
 
-  it("owner not yet saved: no publish/delete (gate is isOwned && isSaved)", () => {
+  it("matching content without the exact owned record has no management actions", () => {
     const a = buildHeaderActions(
-      makeCtx({ isOwned: true, isSaved: false, isLoggedIn: true }),
+      makeCtx({
+        isOwned: true,
+        isOwnedLibraryRecord: false,
+        isSaved: true,
+        isLoggedIn: true,
+      }),
       "full",
-      wiring,
+      wiring
+    );
+    expect(a.onPublish).toBeUndefined();
+    expect(a.onUnpublish).toBeUndefined();
+    expect(a.onDeleteRequest).toBeUndefined();
+  });
+
+  it("owner not yet saved: no publish/delete", () => {
+    const a = buildHeaderActions(
+      makeCtx({
+        isOwned: true,
+        isOwnedLibraryRecord: false,
+        isSaved: false,
+        isLoggedIn: true,
+      }),
+      "full",
+      wiring
     );
     expect(a.onPublish).toBeUndefined();
     expect(a.onDeleteRequest).toBeUndefined();

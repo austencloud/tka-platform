@@ -21,6 +21,7 @@ export interface ViewerActionWiring {
 export interface ViewerHeaderActions {
   isFavorite: boolean;
   isSaved: boolean;
+  isSaving: boolean;
   isPublished: boolean;
   practiceActive: boolean;
   showPractice: boolean;
@@ -32,7 +33,6 @@ export interface ViewerHeaderActions {
   onPublish?: () => void;
   onUnpublish?: () => void;
   onDeleteRequest?: () => void;
-  onCopyData?: () => void;
   onPracticeToggle?: () => void;
 }
 
@@ -42,18 +42,19 @@ export interface ViewerHeaderActions {
  *   - Engagement (favorite/save/remix/practice): always offered — a guest tap
  *     prompts login via invokeGatedAction.
  *   - Management (video/publish/unpublish/delete): gated by ctx eligibility
- *     (isLoggedIn / isOwned && isSaved).
+ *     (isLoggedIn / exact owned library record).
  */
 export function buildHeaderActions(
   ctx: OrchestratorContext,
   _profile: ViewerHeaderProfile,
-  wiring: ViewerActionWiring = {},
+  wiring: ViewerActionWiring = {}
 ): ViewerHeaderActions {
-  const ownerCanManage = ctx.isOwned && ctx.isSaved;
+  const ownerCanManage = ctx.isOwned && ctx.isSaved && ctx.isOwnedLibraryRecord;
 
   const a: ViewerHeaderActions = {
     isFavorite: ctx.isFavorite,
     isSaved: ctx.isSaved,
+    isSaving: ctx.isSaving,
     isPublished: ctx.isPublished,
     practiceActive: ctx.practiceActive,
     showPractice: true,

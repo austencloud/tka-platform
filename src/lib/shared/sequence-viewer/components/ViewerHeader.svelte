@@ -47,14 +47,13 @@
     isFavorite: boolean;
     onFavoriteToggle?: () => void;
     isSaved: boolean;
+    isSaving: boolean;
     onSave?: () => void;
     onRemix?: () => void;
     onPracticeToggle?: () => void;
     canToggleMotionVisibility?: boolean;
     onMotionToggleBlue?: () => void;
     onMotionToggleRed?: () => void;
-    onCopyData?: () => void | Promise<void>;
-    copyDataFeedback?: boolean;
     onVideoUpload?: () => void;
     isPublished: boolean;
     onPublish?: () => void;
@@ -84,14 +83,13 @@
     isFavorite,
     onFavoriteToggle,
     isSaved,
+    isSaving,
     onSave,
     onRemix,
     onPracticeToggle,
     canToggleMotionVisibility = false,
     onMotionToggleBlue,
     onMotionToggleRed,
-    onCopyData,
-    copyDataFeedback = false,
     onVideoUpload,
     isPublished,
     onPublish,
@@ -117,11 +115,11 @@
       viewerWidth >=
         (navigation ? GENEROUS_CHROME_MIN_WIDTH : LABELLED_CHROME_MIN_WIDTH)
   );
-  const generousChrome = $derived(
-    labelledChrome && viewerWidth >= GENEROUS_CHROME_MIN_WIDTH
-  );
   const hasAccountEntry = $derived(
     !!openAppHref && !!onAccountSignIn && !embedded
+  );
+  const showOpenAppAction = $derived(
+    !!onOpenApp && !(hasAccountEntry && authState.isFullAccount)
   );
   const identityWord = $derived(
     sequence.word || sequence.displayName || sequence.name || "Sequence"
@@ -134,6 +132,13 @@
       : null
   );
   const hasDirectVisibilityAction = $derived(!!onPublish || !!onUnpublish);
+  const hasContextActions = $derived(
+    canToggleMotionVisibility ||
+      hasDirectVisibilityAction ||
+      !!onVideoUpload ||
+      showOpenAppAction ||
+      !!onDeleteRequest
+  );
 
   let shareMenuOpen = $state(false);
 
@@ -147,7 +152,6 @@
   class="viewer-header"
   class:compact={compactChrome}
   class:labelled={labelledChrome}
-  class:generous={generousChrome}
   class:with-navigation={!!navigation}
   data-hidden={hidden}
 >
@@ -184,7 +188,7 @@
         {#if onFavoriteToggle}
           <button
             type="button"
-            class="viewer-action"
+            class="viewer-action core-action favorite-action"
             class:favorite-active={isFavorite}
             onclick={onFavoriteToggle}
             aria-label={isFavorite
@@ -202,23 +206,44 @@
         {#if onSave}
           <button
             type="button"
-            class="viewer-action"
+            class="viewer-action core-action save-action"
             class:saved={isSaved}
+            class:saving={isSaving}
             data-save-shortcut={!isSaved ? "" : undefined}
             onclick={onSave}
-            disabled={isSaved}
-            aria-label={isSaved ? "Saved to library" : "Save to library"}
-            title={isSaved ? "Saved to library" : "Save to library"}
+            disabled={isSaved || isSaving}
+            aria-label={isSaving
+              ? "Saving to library"
+              : isSaved
+                ? "Saved to library"
+                : "Save to library"}
+            title={isSaving
+              ? "Saving to library"
+              : isSaved
+                ? "Saved to library"
+                : "Save to library"}
           >
-            <i class="fas fa-bookmark" aria-hidden="true"></i>
-            <span class="action-label">Library</span>
+            <i
+              class="fas {isSaving
+                ? 'fa-spinner fa-spin'
+                : isSaved
+                  ? 'fa-check'
+                  : 'fa-bookmark'}"
+              aria-hidden="true"
+            ></i>
+            <span class="action-label stable-label" aria-live="polite">
+              <span class="label-sizer" aria-hidden="true">Saving…</span>
+              <span class="label-live">
+                {isSaving ? "Saving…" : isSaved ? "Saved" : "Save"}
+              </span>
+            </span>
           </button>
         {/if}
 
         {#if onRemix}
           <button
             type="button"
-            class="viewer-action"
+            class="viewer-action core-action remix-action"
             onclick={onRemix}
             aria-label="Remix sequence"
             title="Remix"
@@ -232,7 +257,7 @@
       {#if onPracticeToggle}
         <button
           type="button"
-          class="viewer-action practice-action"
+          class="viewer-action core-action practice-action"
           onclick={onPracticeToggle}
           aria-label="Practice"
           title="Practice"
@@ -242,84 +267,100 @@
         </button>
       {/if}
 
-      {#if !compactChrome && canToggleMotionVisibility}
+      {#if !compactChrome && hasContextActions}
         <span class="action-divider" aria-hidden="true"></span>
-        <MotionVisibilityToggle
-          onToggleBlue={onMotionToggleBlue}
-          onToggleRed={onMotionToggleRed}
+        <div class="context-actions">
+          {#if canToggleMotionVisibility}
+            <MotionVisibilityToggle
+              onToggleBlue={onMotionToggleBlue}
+              onToggleRed={onMotionToggleRed}
+            />
+          {/if}
+
+          {#if hasDirectVisibilityAction}
+            <button
+              type="button"
+              class="viewer-action context-action visibility-action"
+              class:published={isPublished}
+              onclick={handleVisibilityAction}
+              aria-label={isPublished ? "Make Private" : "Make Public"}
+              title={isPublished ? "Make Private" : "Make Public"}
+            >
+              <i
+                class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}"
+                aria-hidden="true"
+              ></i>
+            </button>
+          {/if}
+
+          {#if onVideoUpload}
+            <button
+              type="button"
+              class="viewer-action context-action"
+              onclick={onVideoUpload}
+              aria-label="Upload video"
+              title="Upload Video"
+            >
+              <i class="fas fa-video" aria-hidden="true"></i>
+            </button>
+          {/if}
+
+          {#if showOpenAppAction && onOpenApp}
+            <button
+              type="button"
+              class="viewer-action context-action open-app-action"
+              onclick={onOpenApp}
+              aria-label="Open Flow Arts Composer"
+              title="Open Flow Arts Composer"
+            >
+              <i class="fas fa-compass" aria-hidden="true"></i>
+            </button>
+          {/if}
+
+          {#if onDeleteRequest}
+            <button
+              type="button"
+              class="viewer-action context-action delete-action"
+              onclick={onDeleteRequest}
+              aria-label="Delete sequence"
+              title="Delete"
+            >
+              <i class="fas fa-trash" aria-hidden="true"></i>
+            </button>
+          {/if}
+        </div>
+      {/if}
+
+      {#if compactChrome}
+        <ViewerOverflowMenu
+          variant="header"
+          dropDown
+          align="left"
+          {isFavorite}
+          {onFavoriteToggle}
+          {isSaved}
+          {isSaving}
+          {onSave}
+          {onRemix}
+          {onVideoUpload}
+          {isPublished}
+          {onPublish}
+          {onUnpublish}
+          {onDeleteRequest}
+          onOpenApp={showOpenAppAction ? onOpenApp : undefined}
+          onGuideAction={guideAction?.onSelect}
+          guideActionLabel={guideAction?.label}
+          motionVisibility={canToggleMotionVisibility
+            ? {
+                showBlue: ctx.viewerVisibility.blueMotion,
+                showRed: ctx.viewerVisibility.redMotion,
+                onToggleBlue: onMotionToggleBlue ?? (() => {}),
+                onToggleRed: onMotionToggleRed ?? (() => {}),
+              }
+            : undefined}
+          onOpenChange={onOverflowOpenChange}
         />
       {/if}
-
-      {#if !compactChrome && onCopyData}
-        <button
-          type="button"
-          class="viewer-action"
-          class:success-feedback={copyDataFeedback}
-          onclick={onCopyData}
-          aria-label="Copy sequence data"
-          title="Copy Data"
-        >
-          <i
-            class="fas {copyDataFeedback ? 'fa-check' : 'fa-terminal'}"
-            aria-hidden="true"
-          ></i>
-          <span class="action-label">Copy Data</span>
-        </button>
-      {/if}
-
-      {#if !compactChrome && hasDirectVisibilityAction}
-        <button
-          type="button"
-          class="viewer-action visibility-action"
-          class:published={isPublished}
-          onclick={handleVisibilityAction}
-          aria-label={isPublished ? "Make Private" : "Make Public"}
-          title={isPublished ? "Make Private" : "Make Public"}
-        >
-          <i
-            class="fas {isPublished ? 'fa-eye-slash' : 'fa-eye'}"
-            aria-hidden="true"
-          ></i>
-          <span class="action-label stable-label">
-            <span class="label-sizer" aria-hidden="true">Make Private</span>
-            <span class="label-live"
-              >{isPublished ? "Make Private" : "Make Public"}</span
-            >
-          </span>
-        </button>
-      {/if}
-
-      <ViewerOverflowMenu
-        variant="header"
-        dropDown
-        align="left"
-        showLabel={labelledChrome}
-        {isFavorite}
-        onFavoriteToggle={compactChrome ? onFavoriteToggle : undefined}
-        {isSaved}
-        onSave={compactChrome ? onSave : undefined}
-        onRemix={compactChrome ? onRemix : undefined}
-        onCopyData={compactChrome ? onCopyData : undefined}
-        {copyDataFeedback}
-        {onVideoUpload}
-        {isPublished}
-        onPublish={compactChrome ? onPublish : undefined}
-        onUnpublish={compactChrome ? onUnpublish : undefined}
-        {onDeleteRequest}
-        {onOpenApp}
-        onGuideAction={guideAction?.onSelect}
-        guideActionLabel={guideAction?.label}
-        sequenceId={sequence.id}
-        motionVisibility={compactChrome && canToggleMotionVisibility
-          ? {
-              showBlue: ctx.viewerVisibility.blueMotion,
-              showRed: ctx.viewerVisibility.redMotion,
-              onToggleBlue: onMotionToggleBlue ?? (() => {}),
-              onToggleRed: onMotionToggleRed ?? (() => {}),
-            }
-          : undefined}
-        onOpenChange={onOverflowOpenChange}
-      />
     {/if}
   </div>
 
@@ -382,8 +423,8 @@
           <a
             class="account-entry-control avatar"
             href={openAppHref}
-            aria-label="Open TKA"
-            title="Open TKA"
+            aria-label="Open Flow Arts Composer"
+            title="Open Flow Arts Composer"
             onclick={onAccountOpenApp
               ? (event) => {
                   event.preventDefault();
@@ -522,7 +563,18 @@
     padding: 0;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-text, #ffffff) 5%, transparent),
+        transparent 72%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, #ffffff) 8%, transparent),
+      0 2px 6px
+        color-mix(in srgb, var(--theme-shadow, #000000) 32%, transparent);
     color: var(--theme-text-secondary, rgba(255, 255, 255, 0.72));
     cursor: pointer;
     font-size: var(--font-size-min, 14px);
@@ -532,11 +584,14 @@
       background 150ms ease,
       border-color 150ms ease,
       color 150ms ease,
+      box-shadow 150ms ease,
       transform 150ms ease;
   }
 
   .viewer-header.labelled
-    .viewer-action:not(.close-action):not(.navigation-action) {
+    .viewer-action:not(.close-action):not(.navigation-action):not(
+      .context-action
+    ) {
     width: auto;
     padding-inline: 12px;
     gap: 8px;
@@ -547,11 +602,17 @@
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #ffffff);
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, #ffffff) 13%, transparent),
+      0 5px 14px
+        color-mix(in srgb, var(--theme-shadow, #000000) 38%, transparent);
+    transform: translateY(-1px);
   }
 
   .viewer-action:active:not(:disabled),
   .account-entry-control:active {
-    transform: scale(0.96);
+    transform: translateY(0) scale(0.96);
   }
 
   .viewer-action:focus-visible,
@@ -574,14 +635,6 @@
     display: inline-grid;
   }
 
-  .viewer-header.labelled .visibility-action .action-label {
-    display: none;
-  }
-
-  .viewer-header.generous .visibility-action .action-label {
-    display: inline-grid;
-  }
-
   .stable-label,
   .label-sizer,
   .label-live {
@@ -590,6 +643,12 @@
 
   .label-sizer {
     visibility: hidden;
+  }
+
+  .context-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .favorite-active {
@@ -607,7 +666,6 @@
   }
 
   .saved,
-  .success-feedback,
   .published {
     border-color: color-mix(
       in srgb,
@@ -622,7 +680,20 @@
     color: var(--semantic-success, #22c55e);
   }
 
-  .practice-action,
+  .saving {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #38bdf8) 52%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-info, #38bdf8) 12%,
+      transparent
+    );
+    color: var(--semantic-info, #38bdf8);
+  }
+
   .accent-active {
     border-color: color-mix(
       in srgb,
@@ -648,6 +719,20 @@
   }
 
   .close-action:hover {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 16%,
+      transparent
+    );
+    color: var(--semantic-error, #f87171);
+  }
+
+  .delete-action:hover {
     border-color: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 55%,
@@ -815,7 +900,7 @@
     }
 
     .viewer-header:not(.with-navigation) .header-word-slot {
-      width: min(160px, calc(100vw - 212px));
+      width: clamp(72px, calc(100vw - 292px), 132px);
     }
   }
 

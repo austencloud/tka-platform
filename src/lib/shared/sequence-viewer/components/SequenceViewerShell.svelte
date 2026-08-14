@@ -10,7 +10,7 @@
   Host deltas are props, not forks:
   - onClose: drawer dismiss vs scan navigate-to-app
   - onRemix: scan overrides with its guest-friendly composer handoff
-  - openAppHref: scan adds an "Open TKA" item to the title menu
+  - openAppHref: scan adds an "Open Flow Arts Composer" item to the title menu
   - onAccountSignIn: scan adds its sign-in/avatar account entry
   - exportOverrides: scan routes Download through its gated page pipeline
   - startInSplit: scan force-resets persisted viewer mode to the split first
@@ -44,8 +44,6 @@
   import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
-  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
@@ -91,7 +89,7 @@
     onClose: () => void;
     /** Override the header/menu Remix action (scan: composer handoff + ?sheet=auth). */
     onRemix?: () => void;
-    /** Adds an "Open TKA" item to the title menu (scan funnel exit). */
+    /** Adds an "Open Flow Arts Composer" item to the title menu (scan funnel exit). */
     openAppHref?: string;
     /** Adds the standalone host's sign-in/avatar entry to the shared header. */
     onAccountSignIn?: () => void;
@@ -127,7 +125,7 @@
      *     demo-flagged links into the world, and demo links suppress scan
      *     analytics by design. "Open this scan" beside the phone is the honest
      *     way out, and it carries the clean code.
-     *   - Every menu item that navigates away (Open TKA, Remix, Guide) or
+     *   - Every menu item that navigates away (Open Flow Arts Composer, Remix, Guide) or
      *     opens the sign-in gate (Favorite, Save), plus the owner-only
      *     management actions — a marketing page must not be able to publish or
      *     delete a sequence.
@@ -190,7 +188,6 @@
       getDefaultBluePropType: () => settingsService.settings.bluePropType,
     },
     {
-      copyForClaude: (value) => getClaudeCodeCopier().copyForClaude(value),
       openSendSequenceSheet,
       buildSequenceSharePayload,
       buildThumbnailUrl,
@@ -401,12 +398,13 @@
     onAccountOpenApp={openAppHref && !embedded
       ? interactions.handleAccountOpenApp
       : undefined}
-    {guideAction}
+    guideAction={embedded ? null : guideAction}
     isFavorite={interactions.headerActions.isFavorite}
     onFavoriteToggle={interactions.headerActions.onFavoriteToggle && !embedded
       ? interactions.handleFavoriteToggle
       : undefined}
     isSaved={interactions.headerActions.isSaved}
+    isSaving={interactions.headerActions.isSaving}
     onSave={interactions.headerActions.onSave && !embedded
       ? interactions.handleSave
       : undefined}
@@ -421,10 +419,6 @@
     {canToggleMotionVisibility}
     onMotionToggleBlue={() => interactions.handleMotionToggle("blue")}
     onMotionToggleRed={() => interactions.handleMotionToggle("red")}
-    onCopyData={authState.isAdmin && !embedded
-      ? share.copyForClaude
-      : undefined}
-    copyDataFeedback={share.copyClaudeFeedback}
     onVideoUpload={interactions.headerActions.onVideoUpload && !embedded
       ? interactions.handleHeaderVideoUpload
       : undefined}
@@ -525,6 +519,13 @@
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
                 compact={layout.compactChrome && !isMobile}
+                footerAction={!embedded && !layout.compactChrome && guideAction
+                  ? {
+                      label: guideAction.label,
+                      icon: "fa-book-open",
+                      onSelect: guideAction.onSelect,
+                    }
+                  : undefined}
                 onSelectSplit={() => layout.selectSplitMode()}
                 onSelectMode={(mode) => layout.selectViewerMode(mode)}
               />

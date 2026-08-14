@@ -6,6 +6,8 @@
   import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
   import type { ViewerMotionSurfaceProps } from "./viewer-split-pane-types";
   import RightRail from "./RightRail.svelte";
+  import ContactViewerRequired from "$lib/shared/3d/components/ContactViewerRequired.svelte";
+  import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
 
   let {
     side,
@@ -40,6 +42,12 @@
   );
   const is2DActive = $derived(selectedPane === "animation");
   const is3DActive = $derived(selectedPane === "animation-3d");
+  const requiresContactViewer = $derived(
+    sceneNeedsContactViewer(
+      propRendering.bluePropType,
+      propRendering.redPropType
+    )
+  );
 
   // Both 2D canvases and the primary 3D stage are keep-alive surfaces. The
   // companion-side 3D stage preserves its prior conditional-mount contract.
@@ -62,6 +70,24 @@
   let rail2D: HTMLDivElement | undefined = $state();
   let rail3D: HTMLDivElement | undefined = $state();
   let previousPane = $state(selectedPane);
+  let contactBoundaryReportedReady = $state(false);
+
+  // The contact boundary is an intentional ready state, not a failed scene
+  // load. Reporting ready keeps shared playback from being held behind a
+  // curtain for a stage that must never mount.
+  $effect(() => {
+    if (side !== "left" || !is3DActive) return;
+
+    if (requiresContactViewer) {
+      contactBoundaryReportedReady = true;
+      scene3DReady = true;
+      onSceneReadyChange?.(true);
+    } else if (contactBoundaryReportedReady) {
+      contactBoundaryReportedReady = false;
+      scene3DReady = false;
+      onSceneReadyChange?.(false);
+    }
+  });
 
   // Freeze the outgoing primary surface for the crossfade so its canvas and
   // rail do not remeasure while their replacement becomes active.
@@ -144,42 +170,46 @@
       class="canvas-layer canvas-3d-layer"
       style="opacity:1;pointer-events:auto;"
     >
-      <LazyMount
-        loader={loadViewer3DCanvas}
-        active={is3DActive}
-        debugName="3D viewer canvas"
-        placeholder={viewer3DLoading}
-        error={viewer3DError}
-        props={{
-          sequenceData: playback.animationState.sequenceData,
-          currentStep: playback.currentStep,
-          isPlaying: playback.isPlaying,
-          bpm,
-          onBpmChange,
-          bluePropType:
-            propRendering.bluePropType != null
-              ? String(propRendering.bluePropType)
-              : null,
-          redPropType:
-            propRendering.redPropType != null
-              ? String(propRendering.redPropType)
-              : null,
-          hideOverlays: false,
-          fullScreen: side === "left" && layout.focusedPane === "animation",
-          onExitFullScreen: onUnfocusPane,
-          onPlaybackToggle,
-          onSystemPlaybackChange,
-          onProgressBarSeek,
-          playbackMode,
-          onPlaybackModeChange,
-          onSettingChange: onViewer3DSettingChange,
-          onSceneReadyChange: (ready: boolean) => {
-            if (side !== "left") return;
-            scene3DReady = ready;
-            onSceneReadyChange?.(ready);
-          },
-        }}
-      />
+      {#if requiresContactViewer}
+        <ContactViewerRequired compact={side === "right"} />
+      {:else}
+        <LazyMount
+          loader={loadViewer3DCanvas}
+          active={is3DActive}
+          debugName="3D viewer canvas"
+          placeholder={viewer3DLoading}
+          error={viewer3DError}
+          props={{
+            sequenceData: playback.animationState.sequenceData,
+            currentStep: playback.currentStep,
+            isPlaying: playback.isPlaying,
+            bpm,
+            onBpmChange,
+            bluePropType:
+              propRendering.bluePropType != null
+                ? String(propRendering.bluePropType)
+                : null,
+            redPropType:
+              propRendering.redPropType != null
+                ? String(propRendering.redPropType)
+                : null,
+            hideOverlays: false,
+            fullScreen: side === "left" && layout.focusedPane === "animation",
+            onExitFullScreen: onUnfocusPane,
+            onPlaybackToggle,
+            onSystemPlaybackChange,
+            onProgressBarSeek,
+            playbackMode,
+            onPlaybackModeChange,
+            onSettingChange: onViewer3DSettingChange,
+            onSceneReadyChange: (ready: boolean) => {
+              if (side !== "left") return;
+              scene3DReady = ready;
+              onSceneReadyChange?.(ready);
+            },
+          }}
+        />
+      {/if}
     </div>
   </div>
 {/if}
@@ -275,7 +305,7 @@
   </div>
 {/if}
 
-{#if side === "left" && is3DMounted}
+{#if side === "left" && is3DMounted && !requiresContactViewer}
   <div
     bind:this={rail3D}
     class="persistent-rail"

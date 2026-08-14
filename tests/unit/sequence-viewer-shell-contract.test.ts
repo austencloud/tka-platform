@@ -147,6 +147,22 @@ describe("SequenceViewerShell host contract", () => {
     expect(scanSource).toMatch(/onAccountSignIn=\{ctx\.openSignInPrompt\}/);
   });
 
+  it("registers the library repository before the reset-layout scan viewer mounts", () => {
+    expect(scanSource).toContain(
+      'from "$lib/shared/composition-root/register-library-repository"'
+    );
+    expect(scanSource).toContain("if (browser) registerLibraryRepository();");
+  });
+
+  it("names the app Flow Arts Composer in viewer launch actions", () => {
+    expect(viewerHeaderSource).toContain("Open Flow Arts Composer");
+    expect(overflowMenuSource).toContain(
+      'openAppLabel = "Open Flow Arts Composer"'
+    );
+    expect(viewerHeaderSource).not.toContain("Open TKA");
+    expect(overflowMenuSource).not.toContain("Open TKA");
+  });
+
   it("uses one shared Share control and keeps Send inside it", () => {
     expect(viewerHeaderSource).toContain(
       'from "$lib/shared/share/components/ShareActionMenu.svelte"'
@@ -163,28 +179,55 @@ describe("SequenceViewerShell host contract", () => {
       /label:\s*linkCopied\s*\?\s*"Copied"\s*:\s*"Copy Link"/
     );
     expect(shellShareStateSource).toContain("shareLinkCopied = true");
-    expect(shellSource).toContain(
-      "copyDataFeedback={share.copyClaudeFeedback}"
-    );
     expect(viewerHeaderSource).not.toContain("onSendTo={handleSendTo}");
   });
 
-  it("does not duplicate wide header actions in the More menu", () => {
-    expect(viewerHeaderSource).toContain(
-      "onFavoriteToggle={compactChrome ? onFavoriteToggle : undefined}"
+  it("keeps More compact-only and limits the primary row to four actions", () => {
+    expect(viewerHeaderSource).toMatch(
+      /\{#if compactChrome\}[\s\S]*?<ViewerOverflowMenu/
+    );
+    expect(
+      viewerHeaderSource.match(/class="viewer-action core-action/g)
+    ).toHaveLength(4);
+    expect(viewerHeaderSource).toContain('class="context-actions"');
+    expect(viewerHeaderSource).not.toContain(
+      "{#if !compactChrome && guideAction}"
+    );
+    expect(shellSource).toContain(
+      "footerAction={!embedded && !layout.compactChrome && guideAction"
+    );
+    expect(viewerHeaderSource).toContain("{isSaving}");
+  });
+
+  it("does not duplicate the app launch when the account avatar already opens it", () => {
+    expect(viewerHeaderSource).toMatch(
+      /showOpenAppAction = \$derived\([\s\S]*?authState\.isFullAccount/
     );
     expect(viewerHeaderSource).toContain(
-      "onSave={compactChrome ? onSave : undefined}"
+      "onOpenApp={showOpenAppAction ? onOpenApp : undefined}"
     );
+  });
+
+  it("keeps admin clipboard tooling out of customer viewer chrome", () => {
+    expect(shellSource).not.toContain("getClaudeCodeCopier");
+    expect(shellShareStateSource).not.toContain("copyForClaude");
+    expect(viewerHeaderSource).not.toContain("Copy Data");
+    expect(overflowMenuSource).not.toContain("Copy Data");
+  });
+
+  it("labels Save by its action and exposes immediate pending feedback", () => {
+    expect(viewerHeaderSource).toContain(">Saving…</span>");
     expect(viewerHeaderSource).toContain(
-      "onRemix={compactChrome ? onRemix : undefined}"
+      '{isSaving ? "Saving…" : isSaved ? "Saved" : "Save"}'
     );
-    expect(viewerHeaderSource).toContain(
-      "onCopyData={compactChrome ? onCopyData : undefined}"
+    expect(viewerHeaderSource).not.toContain(
+      '<span class="action-label">Library</span>'
     );
-    expect(viewerHeaderSource).toContain(
-      "onPublish={compactChrome ? onPublish : undefined}"
-    );
+  });
+
+  it("does not expose the unfinished Coven hub from viewer overflow", () => {
+    expect(overflowMenuSource).not.toContain("View in coven hub");
+    expect(overflowMenuSource).not.toContain("__FEATURE_COVEN__");
   });
 
   it("keeps the current word as the stable centered identity", () => {

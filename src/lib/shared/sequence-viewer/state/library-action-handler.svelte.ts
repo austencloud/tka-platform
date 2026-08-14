@@ -1,14 +1,22 @@
-import { isFavorite as checkIsFavorite, toggleFavorite as doToggleFavorite } from "$lib/shared/library/services/collection-manager";
+import {
+  isFavorite as checkIsFavorite,
+  toggleFavorite as doToggleFavorite,
+} from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
+import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
-import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import {
+  removeToast,
+  showToast,
+} from "$lib/shared/toast/state/toast-state.svelte";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
 import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
@@ -25,37 +33,67 @@ export interface LibraryActionHandlerDeps {
 
 export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   let isSaved = $state(true);
+  let isSaving = $state(false);
   let isFavorite = $state(false);
+  let isOwnedLibraryRecord = $state(false);
 
   const savedHashCache = new Map<string, boolean>();
+  let savedStateRevision = 0;
 
   function syncSavedState(sequence: SequenceData | null) {
+    const revision = ++savedStateRevision;
     const seq = sequence as LibrarySequence | null;
-    if (!seq?.contentHash || !authState.user?.uid) {
+    isOwnedLibraryRecord = false;
+    if (!seq || !authState.user?.uid) {
       isSaved = !(deps.getIsOwned() && seq && !seq.contentHash);
       return;
     }
 
-    const hash = seq.contentHash;
-    if (savedHashCache.has(hash)) {
-      isSaved = savedHashCache.get(hash)!;
-      return;
-    }
+    if (!seq.contentHash && deps.getIsOwned()) isSaved = false;
 
     const repo = getLibraryRepository() as LibraryRepository;
-    repo.hasMatchingContent(hash)
-      .then((found) => {
+    if (deps.getIsOwned()) {
+      repo
+        .getSequence(seq.id)
+        .then((record) => {
+          if (
+            revision === savedStateRevision &&
+            deps.getSequence()?.id === seq.id
+          ) {
+            isOwnedLibraryRecord = record !== null;
+          }
+        })
+        .catch(() => {});
+    }
+
+    Promise.resolve(seq.contentHash ?? computeHash(seq))
+      .then(async (hash) => {
+        if (savedHashCache.has(hash)) return savedHashCache.get(hash)!;
+        const found = await repo.hasMatchingContent(hash);
         savedHashCache.set(hash, found);
-        if (deps.getSequence()?.id === seq.id) isSaved = found;
+        return found;
+      })
+      .then((found) => {
+        if (
+          revision === savedStateRevision &&
+          deps.getSequence()?.id === seq.id
+        ) {
+          isSaved = found;
+        }
       })
       .catch(() => {});
   }
 
   function syncFavoriteState(sequence: SequenceData | null) {
-    if (!sequence) { isFavorite = false; return; }
+    if (!sequence) {
+      isFavorite = false;
+      return;
+    }
 
     checkIsFavorite(sequence.id)
-      .then((fav) => { if (deps.getSequence()?.id === sequence.id) isFavorite = fav; })
+      .then((fav) => {
+        if (deps.getSequence()?.id === sequence.id) isFavorite = fav;
+      })
       .catch(() => {});
   }
 
@@ -63,12 +101,14 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
     const sequence = deps.getSequence();
     if (!sequence) return;
     isFavorite = !isFavorite;
-    doToggleFavorite(sequence.id).catch(() => { isFavorite = !isFavorite; });
+    doToggleFavorite(sequence.id).catch(() => {
+      isFavorite = !isFavorite;
+    });
   }
 
   async function handlePublishAction() {
     const sequence = deps.getSequence();
-    if (!sequence) return;
+    if (!sequence || !isOwnedLibraryRecord) return;
     try {
       const repo = getLibraryRepository() as LibraryRepository;
       await repo.publishSequence(sequence.id);
@@ -80,7 +120,7 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
 
   async function handleUnpublishAction() {
     const sequence = deps.getSequence();
-    if (!sequence) return;
+    if (!sequence || !isOwnedLibraryRecord) return;
     try {
       const repo = getLibraryRepository() as LibraryRepository;
       await repo.unpublishSequence(sequence.id);
@@ -93,16 +133,28 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   async function handleSave() {
     deps.getHapticService()?.trigger("selection");
     const sequence = deps.getSequence();
-    await ensureGuestIdentity();
     if (!sequence) {
       showToast("No sequence to save", "info");
       return;
     }
+    if (isSaving) return;
+
+    savedStateRevision += 1;
+    isSaving = true;
+    const pendingToastId = showToast({
+      message: "Saving to library…",
+      type: "info",
+      duration: 0,
+      announcement: "polite",
+    });
+
     try {
+      await ensureGuestIdentity();
       const currentPathShape = getAnimationVisibilityManager().getPathShape();
-      const pathShapeMetadata = currentPathShape !== "arc"
-        ? { ...sequence.metadata, pathShape: currentPathShape }
-        : sequence.metadata;
+      const pathShapeMetadata =
+        currentPathShape !== "arc"
+          ? { ...sequence.metadata, pathShape: currentPathShape }
+          : sequence.metadata;
       const bluePropType = deps.getBluePropType() ?? PropType.STAFF;
       const redPropType = deps.getRedPropType() ?? PropType.STAFF;
       const catDogMode = deps.getCatDogModeEnabled() ?? false;
@@ -115,8 +167,12 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
             redPropType,
             catDogMode,
           },
-          ...(sequence?.creatorIntent?.effortTimeline && { effortTimeline: sequence.creatorIntent.effortTimeline }),
-          ...(sequence?.effortTimeline && { effortTimeline: sequence.effortTimeline }),
+          ...(sequence?.creatorIntent?.effortTimeline && {
+            effortTimeline: sequence.creatorIntent.effortTimeline,
+          }),
+          ...(sequence?.effortTimeline && {
+            effortTimeline: sequence.effortTimeline,
+          }),
         },
         intendedProp: {
           bluePropType,
@@ -131,12 +187,21 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
           .filter(Boolean)
           .join("") ||
         "";
-      const result = await getLibrarySaveService().saveSequence(sequenceWithIntent, {
-        name,
-        visibility: "public",
-        tags: [],
-        notes: "",
-      });
+      const result = await getLibrarySaveService().saveSequence(
+        sequenceWithIntent,
+        {
+          name,
+          visibility: "public",
+          tags: [],
+          notes: "",
+        }
+      );
+      isSaved = true;
+      isOwnedLibraryRecord =
+        result.persisted && result.sequenceId === sequence.id;
+      const contentHash = (sequenceWithIntent as LibrarySequence).contentHash;
+      if (contentHash) savedHashCache.set(contentHash, true);
+      removeToast(pendingToastId, "programmatic");
       showToast("Saved to library", "success");
 
       // SP3 Part B: viewer save has no panel to close first (unlike the
@@ -146,15 +211,28 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
         postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
       }
     } catch (error) {
+      removeToast(pendingToastId, "programmatic");
+      if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
+        isSaved = true;
+        void computeHash(sequence)
+          .then((hash) => savedHashCache.set(hash, true))
+          .catch(() => {});
+        showToast("Already in library", "info");
+        return;
+      }
+
       console.error("Failed to save sequence:", error);
-      const msg = error instanceof Error ? error.message : "Failed to save sequence";
+      const msg =
+        error instanceof Error ? error.message : "Failed to save sequence";
       showToast(msg, "error");
+    } finally {
+      isSaving = false;
     }
   }
 
   async function handleDelete() {
     const sequence = deps.getSequence();
-    if (!sequence) return;
+    if (!sequence || !isOwnedLibraryRecord) return;
     deps.getHapticService()?.trigger("warning");
     try {
       const libraryRepo = getLibraryRepository();
@@ -168,8 +246,18 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
   }
 
   return {
-    get isSaved() { return isSaved; },
-    get isFavorite() { return isFavorite; },
+    get isSaved() {
+      return isSaved;
+    },
+    get isSaving() {
+      return isSaving;
+    },
+    get isFavorite() {
+      return isFavorite;
+    },
+    get isOwnedLibraryRecord() {
+      return isOwnedLibraryRecord;
+    },
     syncSavedState,
     syncFavoriteState,
     handleFavoriteToggle,

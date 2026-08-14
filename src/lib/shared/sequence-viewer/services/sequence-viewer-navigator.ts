@@ -10,6 +10,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ViewMode } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
 import { openSequenceOverlay } from "../state/sequence-viewer-overlay-state.svelte";
 import { cellPreWarmer } from "./cell-pre-warmer";
 import { getCached } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
@@ -25,6 +26,8 @@ export interface OpenSequenceViewerOptions {
   initialBpm?: number;
   /** Initial playback step */
   initialStep?: number;
+  /** Surface shown when the viewer opens. */
+  initialViewMode?: ViewMode;
   /** All variations of this sequence (same word). Enables variation navigation. */
   variations?: SequenceData[];
   /** When true, renders hand path visualization (HAND props, float arrows, no TKA). */
@@ -75,6 +78,7 @@ export function openSequenceViewer(
     returnLabel: options.returnLabel,
     initialBpm: options.initialBpm,
     initialStep: options.initialStep,
+    initialViewMode: options.initialViewMode,
     variations: options.variations,
     handPathMode: options.handPathMode,
     playOnOpen: options.playOnOpen,

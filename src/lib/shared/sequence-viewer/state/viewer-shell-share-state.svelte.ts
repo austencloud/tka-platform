@@ -24,7 +24,6 @@ interface ViewerShellShareInputs {
 }
 
 interface ViewerShellShareDependencies {
-  copyForClaude: (sequence: SequenceData) => Promise<{ success: boolean }>;
   openSendSequenceSheet: typeof import("$lib/shared/inbox/state/send-sequence-state.svelte").openSendSequenceSheet;
   buildSequenceSharePayload: typeof import("$lib/shared/inbox/state/send-sequence-state.svelte").buildSequenceSharePayload;
   buildThumbnailUrl: typeof import("$lib/shared/inbox/state/send-sequence-state.svelte").buildThumbnailUrl;
@@ -36,7 +35,6 @@ export function createViewerShellShareState(
   inputs: ViewerShellShareInputs,
   dependencies: ViewerShellShareDependencies
 ) {
-  let copyClaudeFeedback = $state(false);
   let shareLinkCopied = $state(false);
   let postSheetOpen = $state(false);
   /**
@@ -62,42 +60,13 @@ export function createViewerShellShareState(
    * Card with the finished take buried behind the picker.
    */
   let sceneTakeSuspended = $state(false);
-  let copyClaudeFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
   let shareLinkFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   const actions = $derived(buildViewerShareActions(shareLinkCopied));
   const statusMessage = $derived(shareLinkCopied ? "Link copied." : "");
 
   function destroy(): void {
-    if (copyClaudeFeedbackTimer) clearTimeout(copyClaudeFeedbackTimer);
     if (shareLinkFeedbackTimer) clearTimeout(shareLinkFeedbackTimer);
-  }
-
-  async function copyForClaude(): Promise<void> {
-    const sequence = inputs.getSequence();
-    try {
-      const result = await dependencies.copyForClaude(sequence);
-      if (!result.success) {
-        dependencies.captureScanAction("copy_for_claude", {
-          outcome: "failed",
-        });
-        return;
-      }
-      dependencies.captureScanAction("copy_for_claude", {
-        outcome: "completed",
-      });
-      copyClaudeFeedback = true;
-      if (copyClaudeFeedbackTimer) clearTimeout(copyClaudeFeedbackTimer);
-      copyClaudeFeedbackTimer = setTimeout(() => {
-        copyClaudeFeedback = false;
-        copyClaudeFeedbackTimer = null;
-      }, 1500);
-    } catch (error) {
-      dependencies.captureScanAction("copy_for_claude", {
-        outcome: "failed",
-      });
-      console.error("[SequenceViewerShell] Copy for Claude failed:", error);
-    }
   }
 
   function sendToInbox(): void {
@@ -160,7 +129,9 @@ export function createViewerShellShareState(
    * be a big fat share button specifically for sharing that tunnel."
    */
   function shareArt(target: ArtShareTarget): void {
-    dependencies.captureScanAction("share", { source: `art_${target.artType}` });
+    dependencies.captureScanAction("share", {
+      source: `art_${target.artType}`,
+    });
     // Start the slot empty. Both render paths keep their last result around —
     // the shared exporter's preview and the mandala's held blob — and either
     // one would be adopted as this share's artifact and labelled as the art the
@@ -255,9 +226,6 @@ export function createViewerShellShareState(
     get statusMessage() {
       return statusMessage;
     },
-    get copyClaudeFeedback() {
-      return copyClaudeFeedback;
-    },
     get postSheetOpen() {
       return postSheetOpen;
     },
@@ -295,7 +263,6 @@ export function createViewerShellShareState(
     getShareUrl(): string {
       return inputs.getContext().getShareUrl();
     },
-    copyForClaude,
     sendToInbox,
     setArtShareTarget,
     selectAction,

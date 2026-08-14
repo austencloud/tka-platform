@@ -5,7 +5,6 @@
   navigation, outside-click dismissal, and viewport collision handling.
 -->
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { DropdownMenu } from "bits-ui";
   import type { Snippet } from "svelte";
   import type { HTMLButtonAttributes } from "svelte/elements";
@@ -36,6 +35,7 @@
     isFavorite?: boolean;
     onFavoriteToggle?: () => void;
     isSaved?: boolean;
+    isSaving?: boolean;
     onSave?: () => void;
     onRemix?: () => void;
     onSendTo?: () => void;
@@ -44,11 +44,8 @@
     downloadBusy?: boolean;
     onOpenApp?: () => void;
     openAppLabel?: string;
-    onCopyData?: () => void;
-    copyDataFeedback?: boolean;
     onGuideAction?: () => void;
     guideActionLabel?: string;
-    sequenceId?: string;
     motionVisibility?: {
       showBlue: boolean;
       showRed: boolean;
@@ -86,6 +83,7 @@
     isFavorite = false,
     onFavoriteToggle,
     isSaved = true,
+    isSaving = false,
     onSave,
     onRemix,
     onSendTo,
@@ -93,12 +91,9 @@
     onDownload,
     downloadBusy = false,
     onOpenApp,
-    openAppLabel = "Open TKA",
-    onCopyData,
-    copyDataFeedback = false,
+    openAppLabel = "Open Flow Arts Composer",
     onGuideAction,
     guideActionLabel = "See it in the Guide",
-    sequenceId,
     motionVisibility,
     onOpenChange,
   }: Props = $props();
@@ -143,10 +138,11 @@
     }
     if (onSave && !isSaved) {
       items.push({
-        label: "Save",
-        icon: "fa-bookmark",
+        label: isSaving ? "Saving…" : "Save",
+        icon: isSaving ? "fa-spinner fa-spin" : "fa-bookmark",
         action: onSave,
-        className: "save",
+        className: isSaving ? "saving" : undefined,
+        disabled: isSaving,
       });
     }
     if (onRemix) {
@@ -154,7 +150,6 @@
         label: remixLabel,
         icon: "fa-pen-to-square",
         action: onRemix,
-        className: "remix",
       });
     }
     if (onSendTo) {
@@ -182,14 +177,6 @@
         icon: "fa-compass",
         action: onOpenApp,
         dividerBefore: items.length > 0,
-      });
-    }
-    if (onCopyData) {
-      items.push({
-        label: copyDataFeedback ? "Copied!" : "Copy Data",
-        icon: copyDataFeedback ? "fa-check" : "fa-terminal",
-        action: onCopyData,
-        className: copyDataFeedback ? "copied" : undefined,
       });
     }
     if (onGuideAction) {
@@ -231,18 +218,6 @@
         action: onCopyLink,
         className: linkCopied ? "copied" : undefined,
         dividerBefore: !onPropsOpen && items.length > 0,
-      });
-    }
-    if (
-      typeof __FEATURE_COVEN__ !== "undefined" &&
-      __FEATURE_COVEN__ &&
-      sequenceId
-    ) {
-      items.push({
-        label: "View in coven hub",
-        icon: "fa-hat-wizard",
-        action: () => goto(`/coven?seq=${sequenceId}`),
-        dividerBefore: items.length > 0,
       });
     }
     if (onPublish || onUnpublish) {
@@ -432,7 +407,19 @@
     min-height: var(--min-touch-target, 44px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-text, #ffffff) 7%, transparent),
+        transparent 72%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, #ffffff) 9%, transparent),
+      0 2px 6px
+        color-mix(in srgb, var(--theme-shadow, #000000) 32%, transparent);
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.76));
   }
 
   .overflow-trigger.header-variant.labelled-trigger {
@@ -520,12 +507,8 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  :global(.viewer-overflow-item.save) {
-    color: var(--semantic-success, #22c55e);
-  }
-
-  :global(.viewer-overflow-item.remix) {
-    color: var(--semantic-warning, #f59e0b);
+  :global(.viewer-overflow-item.saving) {
+    color: var(--semantic-info, #38bdf8);
   }
 
   :global(.viewer-overflow-item.practice-active) {

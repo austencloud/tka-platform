@@ -101,7 +101,9 @@ export interface OrchestratorContext {
 
   isLoggedIn: boolean;
   isOwned: boolean;
+  isOwnedLibraryRecord: boolean;
   isSaved: boolean;
+  isSaving: boolean;
   isPublished: boolean;
   isFavorite: boolean;
   handleFavoriteToggle: () => void;
@@ -133,7 +135,7 @@ export interface OrchestratorContext {
     preset?: "stagger" | "mirror" | "combo-export"
   ) => Promise<void>;
   handleEdit: () => void;
-  handleSave: () => void;
+  handleSave: () => Promise<void>;
   handleVideoUpload: () => Promise<void>;
   handleShare: () => void;
   handleCopyLink: () => Promise<boolean>;

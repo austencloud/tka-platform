@@ -390,6 +390,7 @@
           isMobile={isMobileWidth}
           initialBpm={overlay.initialBpm}
           initialStep={overlay.initialStep}
+          initialViewMode={overlay.initialViewMode}
           handPathMode={overlay.handPathMode}
           playOnOpen={overlay.playOnOpen}
           {playbackReleased}

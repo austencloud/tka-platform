@@ -42,7 +42,7 @@
       activeComponents={loopComponents}
       rotationPeriod={period ?? undefined}
       inversionPeriod={period ?? undefined}
-      size={16}
+      size={18}
       darkMode={true}
       showFreeformWhenEmpty={false}
     />
@@ -52,6 +52,10 @@
 <style>
   .metadata-rail {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     width: 100%;
     height: 20px;
     flex: 0 0 20px;
@@ -60,30 +64,32 @@
   .difficulty-slot,
   .loop-slot {
     position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
     visibility: hidden;
     opacity: 0;
   }
 
   .difficulty-slot.visible,
   .loop-slot.visible {
+    position: relative;
     visibility: visible;
     opacity: 1;
   }
 
   .difficulty-slot {
-    top: 0;
-    right: calc(50% + 4px);
     width: 20px;
-    height: 20px;
   }
 
   .loop-slot {
-    top: 2px;
-    left: calc(50% + 4px);
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    width: 112px;
-    height: 16px;
+    min-width: 18px;
+    width: max-content;
+    line-height: 1;
+  }
+
+  .loop-slot :global(.loop-icon-strip) {
+    line-height: 1;
   }
 </style>

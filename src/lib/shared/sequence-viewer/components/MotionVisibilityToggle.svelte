@@ -3,8 +3,8 @@
 
   Per-viewer motion visibility control.
 
-  - Wide viewports (>=768px): inline Left/Right chips via MotionColorChips.
-  - Narrow viewports: icon button + popover with the same chips.
+  One compact trigger at every width. The Left/Right controls live in a small
+  popover so this utility never consumes two primary-action slots.
 
   Reads/writes SequenceViewerVisibilityState via context.
 -->
@@ -32,18 +32,6 @@
   }
 
   let open = $state(false);
-  let isNarrow = $state(false);
-
-  $effect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const sync = () => {
-      isNarrow = mq.matches;
-      if (!isNarrow) open = false;
-    };
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  });
 
   function toggleOpen(e: MouseEvent) {
     e.stopPropagation();
@@ -74,61 +62,54 @@
   });
 </script>
 
-<div class="motion-vis-root" class:narrow={isNarrow}>
-  {#if isNarrow}
-    <button
-      type="button"
-      class="motion-vis-btn"
-      onclick={toggleOpen}
-      aria-label="Motion visibility"
-      data-ghost="safe"
-      data-ghost-kind="view-toggle"
-      data-ghost-label="Motion visibility"
-      aria-expanded={open}
-      aria-haspopup="dialog"
-    >
-      <span
-        class="prop-silhouette blue"
-        class:muted={!visibility.blueMotion}
-        aria-hidden="true"
-      ></span>
-      <span
-        class="prop-silhouette red"
-        class:muted={!visibility.redMotion}
-        aria-hidden="true"
-      ></span>
-    </button>
+<div class="motion-vis-root">
+  <button
+    type="button"
+    class="motion-vis-btn"
+    class:open
+    onclick={toggleOpen}
+    aria-label="Motion visibility"
+    title="Motion visibility"
+    data-ghost="safe"
+    data-ghost-kind="view-toggle"
+    data-ghost-label="Motion visibility"
+    aria-expanded={open}
+    aria-haspopup="dialog"
+  >
+    <span
+      class="prop-silhouette blue"
+      class:muted={!visibility.blueMotion}
+      aria-hidden="true"
+    ></span>
+    <span
+      class="prop-silhouette red"
+      class:muted={!visibility.redMotion}
+      aria-hidden="true"
+    ></span>
+  </button>
 
-    {#if open}
-      <div
-        class="motion-vis-backdrop"
-        role="button"
-        tabindex="-1"
-        aria-label="Close motion visibility menu"
-        onpointerdown={onBackdropPointerDown}
-      ></div>
-      <div
-        class="motion-vis-popover"
-        role="dialog"
-        aria-label="Motion visibility"
-        in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-        out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
-      >
-        <MotionColorChips
-          showBlue={visibility.blueMotion}
-          showRed={visibility.redMotion}
-          onToggleBlue={toggleBlue}
-          onToggleRed={toggleRed}
-        />
-      </div>
-    {/if}
-  {:else}
-    <MotionColorChips
-      showBlue={visibility.blueMotion}
-      showRed={visibility.redMotion}
-      onToggleBlue={toggleBlue}
-      onToggleRed={toggleRed}
-    />
+  {#if open}
+    <div
+      class="motion-vis-backdrop"
+      role="button"
+      tabindex="-1"
+      aria-label="Close motion visibility menu"
+      onpointerdown={onBackdropPointerDown}
+    ></div>
+    <div
+      class="motion-vis-popover"
+      role="dialog"
+      aria-label="Motion visibility"
+      in:scale={{ duration: 180, start: 0.96, opacity: 0, easing: backOut }}
+      out:scale={{ duration: 120, start: 0.98, opacity: 0, easing: cubicOut }}
+    >
+      <MotionColorChips
+        showBlue={visibility.blueMotion}
+        showRed={visibility.redMotion}
+        onToggleBlue={toggleBlue}
+        onToggleRed={toggleRed}
+      />
+    </div>
   {/if}
 </div>
 
@@ -138,20 +119,55 @@
   }
 
   .motion-vis-btn {
+    box-sizing: border-box;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
-    border-radius: 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: transparent;
+    border-radius: 10px;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--theme-text, #ffffff) 5%, transparent),
+        transparent 72%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, #ffffff) 8%, transparent),
+      0 2px 6px
+        color-mix(in srgb, var(--theme-shadow, #000000) 32%, transparent);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 3px;
     padding: 0 6px;
+    transition:
+      background 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      transform 150ms ease;
   }
-  .motion-vis-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+
+  .motion-vis-btn:hover,
+  .motion-vis-btn.open {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    box-shadow:
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, #ffffff) 13%, transparent),
+      0 5px 14px
+        color-mix(in srgb, var(--theme-shadow, #000000) 38%, transparent);
+    transform: translateY(-1px);
+  }
+
+  .motion-vis-btn:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  .motion-vis-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
   }
 
   .prop-silhouette {
@@ -190,11 +206,10 @@
     right: 0;
     min-width: 140px;
     padding: 8px;
-    background: rgba(20, 22, 32, 0.95);
-    backdrop-filter: blur(20px) saturate(140%);
+    background: var(--theme-panel-bg, #141620);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 8px 24px var(--theme-shadow, rgba(0, 0, 0, 0.45));
     z-index: 20;
   }
 
@@ -204,5 +219,11 @@
   }
   .motion-vis-popover :global(.chip) {
     flex: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-vis-btn {
+      transition: none;
+    }
   }
 </style>

@@ -37,7 +37,7 @@ function makeState() {
   return { state, openExternalHref, navigate, captureScanAction };
 }
 
-describe("viewer Open TKA handoff", () => {
+describe("viewer Open Flow Arts Composer handoff", () => {
   it.each([
     ["overflow", "handleOpenApp"],
     ["account_entry", "handleAccountOpenApp"],

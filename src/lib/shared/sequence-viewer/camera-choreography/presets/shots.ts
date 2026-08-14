@@ -31,13 +31,18 @@ export interface PerformerGroupBounds {
   radius: number;
 }
 
+/** The camera only needs a performer's stage position to frame a group. */
+export interface PerformerShotSubject {
+  position: { x: number; z: number };
+}
+
 /**
  * Bounding sphere of the performer group in world space. Uses each
  * performer's XZ position with a generous per-performer radius that
  * covers head height + arm span so props don't poke outside the shot.
  */
 export function computeGroupBounds(
-  performers: AvatarInstanceState[],
+  performers: readonly PerformerShotSubject[],
 ): PerformerGroupBounds {
   if (performers.length === 0) {
     return { center: new Vector3(0, TARGET_Y, 0), radius: 1.2 };
@@ -65,8 +70,12 @@ export function computeGroupBounds(
  * explicitly so callers can pad + clamp without triggering
  * camera-controls' own transition.
  */
-function distanceForSphere(radius: number): number {
-  return Math.max(MIN_DIST, radius / Math.sin(HALF_FOV_RAD));
+function distanceForSphere(radius: number, viewportAspect = 1): number {
+  const safeAspect =
+    Number.isFinite(viewportAspect) && viewportAspect > 0 ? viewportAspect : 1;
+  const horizontalHalfFov = Math.atan(Math.tan(HALF_FOV_RAD) * safeAspect);
+  const framingHalfFov = Math.min(HALF_FOV_RAD, horizontalHalfFov);
+  return Math.max(MIN_DIST, radius / Math.sin(framingHalfFov));
 }
 
 export interface Shot {
@@ -82,7 +91,7 @@ export interface Shot {
  */
 export function computePlaneShot(
   plane: Plane3,
-  performers: AvatarInstanceState[],
+  performers: readonly PerformerShotSubject[],
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
   const padded = radius * PLANE_PADDING_MULT;
@@ -113,7 +122,7 @@ export function computePlaneShot(
  * azimuth derived from the group bounds' -Z axis.
  */
 export function computeAutoOrbitShot(
-  performers: AvatarInstanceState[],
+  performers: readonly PerformerShotSubject[],
   initialAzimuth: number,
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
@@ -134,8 +143,8 @@ export function computeAutoOrbitShot(
 
 /** Elevation angle from horizontal — 36° matches the ideal choreographer sightline. */
 const CHOREO_POLAR_RAD = 36 * Math.PI / 180;
-/** Extra padding so performers aren't clipped at frustum edges. */
-const CHOREO_FRAMING_PADDING = 1.15;
+/** Extra padding keeps the nearest row clear of the viewer's transport bar. */
+const CHOREO_FRAMING_PADDING = 1.35;
 /** Floor for solo performer — close intimate view. */
 const CHOREO_MIN_DIST = 3.0;
 /** Target looks at performer hip height, not the ground. */
@@ -159,13 +168,17 @@ const GRID_FORWARD_OFFSET = 0.3;
  * FOV-derived so the full bounding sphere fits in frame.
  */
 export function computeChoreographerShot(
-  performers: AvatarInstanceState[],
+  performers: readonly PerformerShotSubject[],
   stageGroundOffset: number,
+  viewportAspect = 1,
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
 
   const paddedRadius = radius * CHOREO_FRAMING_PADDING;
-  const dist = Math.max(CHOREO_MIN_DIST, distanceForSphere(paddedRadius));
+  const dist = Math.max(
+    CHOREO_MIN_DIST,
+    distanceForSphere(paddedRadius, viewportAspect),
+  );
 
   const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
   const height = dist * Math.sin(CHOREO_POLAR_RAD);
@@ -190,12 +203,16 @@ export function computeChoreographerShot(
  * into the tighter choreographer position.
  */
 export function computeRevealStartShot(
-  performers: AvatarInstanceState[],
+  performers: readonly PerformerShotSubject[],
   stageGroundOffset: number,
+  viewportAspect = 1,
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
   const paddedRadius = radius * CHOREO_FRAMING_PADDING;
-  const baseDist = Math.max(CHOREO_MIN_DIST, distanceForSphere(paddedRadius));
+  const baseDist = Math.max(
+    CHOREO_MIN_DIST,
+    distanceForSphere(paddedRadius, viewportAspect),
+  );
   const dist = baseDist * REVEAL_DISTANCE_MULT;
 
   const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
