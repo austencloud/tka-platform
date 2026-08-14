@@ -575,6 +575,16 @@
     }
     bootProfiler.end("firestore-init");
 
+    // Arrow placement is presentation data. Load it for every visitor so guest
+    // and signed-in pictographs use the same canonical authored values.
+    import("$lib/shared/pictograph/arrow/positioning/placement/services/initialize-arrow-placement-data")
+      .then(({ initializeArrowPlacementData }) =>
+        initializeArrowPlacementData()
+      )
+      .catch((error) =>
+        console.warn("Arrow placement data initialization failed:", error)
+      );
+
     bootProfiler.mark("auth-init");
     const { authState } = await imports.authState;
     await authState.initialize();

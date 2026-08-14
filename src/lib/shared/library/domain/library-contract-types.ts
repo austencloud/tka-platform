@@ -42,6 +42,21 @@ export interface LibraryQueryOptions {
   offset?: number;
 }
 
+/**
+ * Opaque continuation returned by the library repository. Callers pass it back
+ * unchanged; the repository owns the Firestore ordering details inside it.
+ */
+export interface LibraryPageCursor {
+  readonly sortValue: unknown;
+  readonly documentId: string;
+}
+
+export interface LibrarySequencePage<TSequence> {
+  readonly sequences: TSequence[];
+  readonly nextCursor: LibraryPageCursor | null;
+  readonly exhausted: boolean;
+}
+
 // === From ILibrarySaveService ===
 
 export interface SaveToLibraryOptions {

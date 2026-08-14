@@ -30,69 +30,31 @@ export async function initializeChildServices(
   // Initialize settings Firebase sync (non-blocking)
   import("$lib/shared/settings/state/settings-state.svelte")
     .then(async (settingsModule) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await settingsModule.settingsService.initializeFirebaseSync();
     })
     .catch((error) => {
-      console.warn("⚠️ [authState] Settings sync initialization failed:", error);
-    });
-
-  // Initialize global arrow adjustments (non-blocking)
-  import("$lib/shared/pictograph/arrow/positioning/global/services/global-adjustment-singleton")
-    .then(async ({ initializeGlobalAdjustments }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      await getFirestoreInstance();
-      await initializeGlobalAdjustments();
-    })
-    .catch((error) => {
-      console.warn("⚠️ [authState] Global arrow adjustments initialization failed:", error);
-    });
-
-  // Initialize prop geometry adjustments (non-blocking)
-  import("$lib/shared/pictograph/arrow/positioning/prop-geometry/services/prop-geometry-singleton")
-    .then(async ({ initializePropGeometryAdjustments }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      await getFirestoreInstance();
-      await initializePropGeometryAdjustments();
-    })
-    .catch((error) => {
-      console.warn("⚠️ [authState] Prop geometry adjustments initialization failed:", error);
-    });
-
-  // Initialize special arrow placement overrides (non-blocking)
-  import("$lib/shared/pictograph/arrow/positioning/special-override/services/special-override-singleton")
-    .then(async ({ initializeSpecialOverrides }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      await getFirestoreInstance();
-      await initializeSpecialOverrides();
-    })
-    .catch((error) => {
-      console.warn("⚠️ [authState] Special placement overrides initialization failed:", error);
-    });
-
-  // Initialize default arrow placement overrides (non-blocking)
-  import("$lib/shared/pictograph/arrow/positioning/default-override/services/default-override-singleton")
-    .then(async ({ initializeDefaultOverrides }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      await getFirestoreInstance();
-      await initializeDefaultOverrides();
-    })
-    .catch((error) => {
-      console.warn("⚠️ [authState] Default placement overrides initialization failed:", error);
+      console.warn(
+        "⚠️ [authState] Settings sync initialization failed:",
+        error
+      );
     });
 
   // Sync first-run status FROM cloud
   import("$lib/shared/onboarding/state/first-run-state.svelte")
     .then(async ({ firstRunState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await firstRunState.syncFromCloud();
     })
     .catch(async (error) => {
       console.warn("⚠️ [authState] First-run sync failed:", error);
       try {
-        const { firstRunState } = await import("$lib/shared/onboarding/state/first-run-state.svelte");
+        const { firstRunState } =
+          await import("$lib/shared/onboarding/state/first-run-state.svelte");
         firstRunState.markCloudSyncComplete();
       } catch {
         // If even the import fails, app is in a very bad state
@@ -104,14 +66,16 @@ export async function initializeChildServices(
   // another). Non-blocking; localStorage carries the flag if this fails.
   import("$lib/shared/onboarding/state/generate-tour-state.svelte")
     .then(async ({ generateTourState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await generateTourState.syncFromCloud();
     })
     .catch(async (error) => {
       console.warn("⚠️ [authState] Generate-tour sync failed:", error);
       try {
-        const { generateTourState } = await import("$lib/shared/onboarding/state/generate-tour-state.svelte");
+        const { generateTourState } =
+          await import("$lib/shared/onboarding/state/generate-tour-state.svelte");
         generateTourState.markCloudSyncComplete();
       } catch {
         // Non-fatal; localStorage carries the flag
@@ -123,14 +87,16 @@ export async function initializeChildServices(
   // Previously write-only - this was the missing read-back call.
   import("$lib/shared/onboarding/state/app-entry-state.svelte")
     .then(async ({ appEntryState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await appEntryState.syncFromCloud();
     })
     .catch(async (error) => {
       console.warn("⚠️ [authState] App-entry sync failed:", error);
       try {
-        const { appEntryState } = await import("$lib/shared/onboarding/state/app-entry-state.svelte");
+        const { appEntryState } =
+          await import("$lib/shared/onboarding/state/app-entry-state.svelte");
         appEntryState.markCloudSyncComplete();
       } catch {
         // Non-fatal; the pending offer would otherwise stay deferred forever
@@ -140,7 +106,8 @@ export async function initializeChildServices(
   // Initialize onboarding Firebase sync (non-blocking)
   import("$lib/shared/onboarding/config/storage-keys")
     .then(async (onboardingModule) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await onboardingModule.syncOnboardingToCloud();
     })
@@ -151,7 +118,8 @@ export async function initializeChildServices(
   // Initialize system collections (Favorites, etc.) - non-blocking
   (async () => {
     try {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
 
       // Re-check auth after async gap
@@ -179,13 +147,17 @@ export async function initializeChildServices(
       if (getUserFromState()) followedCollectionsState.ensureStarted();
     })
     .catch((error) => {
-      console.warn("⚠️ [authState] Followed collections prewarm failed:", error);
+      console.warn(
+        "⚠️ [authState] Followed collections prewarm failed:",
+        error
+      );
     });
 
   // Initialize mandala collection Firebase sync (non-blocking)
   import("$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte")
     .then(async ({ mandalaCollectionState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await mandalaCollectionState.init(user.uid);
     })
@@ -196,7 +168,8 @@ export async function initializeChildServices(
   // Initialize tunnel collection Firebase sync (non-blocking)
   import("$lib/features/tunnel-collection/state/tunnel-collection-state.svelte")
     .then(async ({ tunnelCollectionState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await tunnelCollectionState.init(user.uid);
     })
@@ -207,7 +180,8 @@ export async function initializeChildServices(
   // Initialize 3D scene collection Firebase sync (non-blocking)
   import("$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte")
     .then(async ({ scene3dCollectionState }) => {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
       await getFirestoreInstance();
       await scene3dCollectionState.init(user.uid);
     })

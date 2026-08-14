@@ -16,6 +16,12 @@ vi.mock("$lib/shared/render/services/warm-sequence-cells", () => ({
 import { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  SIGNUP_CARD_ART_REVISION,
+  SIGNUP_CARD_RELAY_CLOSING,
+  SIGNUP_CARD_RELAY_STEPS,
+  SIGNUP_CARD_URL,
+} from "$lib/features/choreo-card/services/signup-card-canvas-renderer";
 
 const sequence = {
   id: "sequence-1",
@@ -97,5 +103,32 @@ describe("QRCodeGenerator canonical cell readiness", () => {
     );
     expect(createShortCode).not.toHaveBeenCalled();
     expect(getRawData).not.toHaveBeenCalled();
+  });
+});
+
+describe("festival signup card relay", () => {
+  it("prints the complete learn, teach, pass cycle", () => {
+    expect(SIGNUP_CARD_RELAY_STEPS).toEqual([
+      {
+        label: "SCAN + LEARN",
+        body: "Scan the QR on a choreo card. Learn its sequence.",
+      },
+      {
+        label: "TEACH",
+        body: "Teach the sequence to another person.",
+      },
+      {
+        label: "PASS IT ON",
+        body: "Give them the card. They start again at step one.",
+      },
+    ]);
+    expect(SIGNUP_CARD_RELAY_CLOSING).toBe(
+      "Keep the loop going until the world speaks this language."
+    );
+  });
+
+  it("keeps the live signup destination on the card", () => {
+    expect(SIGNUP_CARD_URL).toBe("https://tkaflowarts.com/start");
+    expect(SIGNUP_CARD_ART_REVISION).toBe("2026-08-14-relay-v1");
   });
 });

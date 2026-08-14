@@ -103,12 +103,18 @@
   import { ExportAttemptGuard } from "$lib/shared/sequence-viewer/domain/export-attempt-guard";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import { buildScanAppHandoffHref } from "$lib/shared/qr/services/scan-app-handoff";
+  import { registerLibraryRepository } from "$lib/shared/composition-root/register-library-repository";
 
   // Scan cards download pre-rendered pictographs from the shared cloud store
   // instead of rasterizing on the scanner's device. Enables probeCloud on every
   // descendant ChoreoCard cell render. Must be set during component init (not in
   // onMount) so the Svelte context resolves for the descendant viewer tree.
   setScanCardCloudProbe(true);
+
+  // This reset layout skips the root composition module. Register the library
+  // repository before the descendant viewer mounts so its first saved/owner
+  // state sync cannot race route bootstrap.
+  if (browser) registerLibraryRepository();
 
   interface Props {
     data: {
@@ -705,11 +711,9 @@
     }
   }
 
-  // Signed-in scanner: wire the deferred library/video/QR registrations the bare
-  // /q route skipped. save/favorite/publish call getLibraryRepository(), which
-  // THROWS without registerPublicIndexSyncerFactory() (done in deferred-registrations,
-  // normally run once at root startup — a bootstrap this route bypasses). Gated on
-  // auth so guests never pull the heavy video-export / profanity-list chunks. One-shot.
+  // Signed-in scanner: wire the heavy video/QR registrations the bare /q route
+  // skipped. Gated on auth so guests never pull the video-export and
+  // profanity-list chunks. One-shot.
   let deferredWired = false;
   $effect(() => {
     const isAuthenticated = authState.isAuthenticated;
@@ -762,6 +766,8 @@
       //    (bigger codes + a console warning on every generation).
       //  - loop display resolver: tryGet…() degrades silently, dropping the
       //    LOOP component labels on the scanned ChoreoCard.
+      // Library repository registration runs during component initialization,
+      // before the descendant viewer can query saved or ownership state.
       configureShortCodeManager(stubBrowseLoader);
       registerLoopDetector(loopDetector);
       registerLoopDisplayResolver(resolveLoopDisplay);

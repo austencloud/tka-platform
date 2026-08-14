@@ -2,6 +2,7 @@ import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { describe, expect, it, vi } from "vitest";
 import LazyMountLifecycleTestHarness from "./LazyMountLifecycleTestHarness.svelte";
+import LazyMountInactiveTestHarness from "./LazyMountInactiveTestHarness.svelte";
 import LazyMountTestHarness from "./LazyMountTestHarness.svelte";
 
 describe("LazyMount recovery", () => {
@@ -45,5 +46,22 @@ describe("LazyMount recovery", () => {
       .toHaveTextContent("loading");
     expect(errorLog).not.toHaveBeenCalled();
     errorLog.mockRestore();
+  });
+
+  it("can unmount an inactive instance while keeping its module ready", async () => {
+    render(LazyMountInactiveTestHarness);
+
+    await expect.element(page.getByText("Inactive preview")).toBeVisible();
+    await page.getByRole("button", { name: "Activate preview" }).click();
+    await expect.element(page.getByText("Loaded after retry")).toBeVisible();
+
+    await page.getByRole("button", { name: "Deactivate preview" }).click();
+    await expect.element(page.getByText("Inactive preview")).toBeVisible();
+    await expect
+      .element(page.getByText("Loaded after retry"))
+      .not.toBeInTheDocument();
+
+    await page.getByRole("button", { name: "Activate preview" }).click();
+    await expect.element(page.getByText("Loaded after retry")).toBeVisible();
   });
 });

@@ -4,8 +4,10 @@
    *
    * Defers a component's chunk (and its whole static import subtree) out of the
    * parent's eager graph. The component is dynamically imported the first time
-   * `active` flips true, then stays mounted (keep-alive) so exit animations and
-   * subsequent opens behave exactly as if it had always been there.
+   * `active` flips true, then stays mounted by default (keep-alive) so exit
+   * animations and subsequent opens behave exactly as if it had always been
+   * there. Set `keepAlive={false}` when inactive state must tear down the
+   * component instance while retaining the already-loaded module.
    *
    * Use for action-driven hosts — drawers, editors, dialogs — that render
    * nothing until a trigger fires but were previously imported statically,
@@ -36,6 +38,7 @@
   let {
     loader,
     active = false,
+    keepAlive = true,
     prefetch = false,
     props = {},
     placeholder,
@@ -47,6 +50,8 @@
     loader: () => Promise<{ default: Component<any> }>;
     /** When this first becomes true, the chunk loads and mounts permanently. */
     active?: boolean;
+    /** Keep the loaded component instance mounted while inactive. */
+    keepAlive?: boolean;
     /** Warm the chunk on idle (no mount) so the first open is instant. */
     prefetch?: boolean;
     /** Props forwarded to the loaded component. */
@@ -150,7 +155,7 @@
   });
 </script>
 
-{#if Loaded}
+{#if Loaded && (keepAlive || active)}
   <Loaded {...props} />
 {:else if loadError && error}
   {@render error(loadError, retry)}

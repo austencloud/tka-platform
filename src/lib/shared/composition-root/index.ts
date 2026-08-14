@@ -29,8 +29,7 @@ import {
   clearLoopDisplayCache,
 } from "$lib/features/loop-labeler/services/loop-display-resolver";
 
-import { registerPublicIndexSyncerFactory } from "../library/get-library-repository";
-import { createLazyPublicIndexSyncer } from "../library/services/create-lazy-public-index-syncer";
+import { registerLibraryRepository } from "./register-library-repository";
 
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
 
@@ -42,13 +41,7 @@ if (typeof window !== "undefined") {
   registerLoopDetector(loopDetector);
   registerLoopDisplayResolver(resolveLoopDisplay);
   registerLoopDisplayCacheClearer(clearLoopDisplayCache);
-  registerPublicIndexSyncerFactory(() =>
-    createLazyPublicIndexSyncer(async () => {
-      const { getPublicIndexSyncer } =
-        await import("$lib/features/library/get-public-index-syncer");
-      return getPublicIndexSyncer();
-    })
-  );
+  registerLibraryRepository();
 }
 
 if (typeof window !== "undefined" && isBootProfileVerbose()) {

@@ -16,12 +16,15 @@ import {
   orderBy,
   where,
   limit as firestoreLimit,
+  startAfter,
+  documentId,
   onSnapshot,
   serverTimestamp,
   getCountFromServer,
   writeBatch,
   type Unsubscribe,
   type DocumentData,
+  type QueryConstraint,
 } from "firebase/firestore";
 import {
   getAuthInstance,
@@ -62,6 +65,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type {
   LibraryStats,
   LibraryQueryOptions,
+  LibraryPageCursor,
+  LibrarySequencePage,
 } from "$lib/shared/library/domain/library-contract-types";
 import type {
   LibrarySequence,
@@ -104,6 +109,18 @@ import {
   MIN_COMMUNITY_STEPS,
   withCanonicalStepCount,
 } from "$lib/shared/library/domain/sequence-min-length";
+
+export function matchesLibraryTagIds(
+  sequence: Pick<LibrarySequence, "tagIds" | "sequenceTags">,
+  requestedTagIds: readonly string[]
+): boolean {
+  if (requestedTagIds.length === 0) return true;
+  const sequenceTagIds = new Set([
+    ...(sequence.tagIds ?? []),
+    ...(sequence.sequenceTags ?? []).map((tag) => tag.tagId),
+  ]);
+  return requestedTagIds.some((tagId) => sequenceTagIds.has(tagId));
+}
 
 export class LibraryRepository {
   /**
@@ -1078,6 +1095,108 @@ export class LibraryRepository {
     return this.getUserSequences(userId, options);
   }
 
+  /**
+   * Read one bounded library page. The cursor is based on the raw Firestore
+   * page, so callers can keep moving even when client-only filters remove every
+   * sequence in a page.
+   */
+  async getSequencePage(
+    options: LibraryQueryOptions,
+    cursor: LibraryPageCursor | null = null
+  ): Promise<LibrarySequencePage<LibrarySequence>> {
+    const pageSize = options.limit;
+    if (!pageSize || pageSize < 1) {
+      throw new Error("Library pages require a positive limit");
+    }
+    return this.getUserSequencePage(this.getUserId(), options, cursor);
+  }
+
+  private async getUserSequencePage(
+    userId: string,
+    options: LibraryQueryOptions,
+    cursor: LibraryPageCursor | null
+  ): Promise<LibrarySequencePage<LibrarySequence>> {
+    const firestore = await getFirestoreInstance();
+    const sequencesRef = collection(firestore, getUserSequencesPath(userId));
+    const sortField = options.sortBy ?? "updatedAt";
+    const sortDir = options.sortDirection ?? "desc";
+    const constraints: QueryConstraint[] = [];
+
+    if (options.source && options.source !== "all") {
+      constraints.push(where("source", "==", options.source));
+    }
+    if (options.visibility && options.visibility !== "all") {
+      constraints.push(where("visibility", "==", options.visibility));
+    }
+    if (options.collectionId) {
+      constraints.push(
+        where("collectionIds", "array-contains", options.collectionId)
+      );
+    }
+    if (options.isFavorite !== undefined) {
+      constraints.push(where("isFavorite", "==", options.isFavorite));
+    }
+
+    constraints.push(
+      orderBy(sortField, sortDir),
+      orderBy(documentId(), sortDir)
+    );
+    if (cursor) {
+      constraints.push(startAfter(cursor.sortValue, cursor.documentId));
+    }
+    constraints.push(firestoreLimit(options.limit!));
+
+    const snapshot = await getDocs(query(sequencesRef, ...constraints));
+    const sequences: LibrarySequence[] = [];
+    snapshot.forEach((docSnap) => {
+      let seq = this.mapDocToLibrarySequence(docSnap.data(), docSnap.id);
+      try {
+        seq = hydrate(seq) as LibrarySequence;
+      } catch {
+        // Older records can still be filtered from their stored metadata.
+      }
+      sequences.push({ ...seq, ownerId: userId });
+    });
+
+    const filtered = this.applyClientSequenceFilters(sequences, options);
+    const lastDoc = snapshot.docs.at(-1);
+    return {
+      sequences: filtered,
+      nextCursor: lastDoc
+        ? {
+            sortValue: lastDoc.get(sortField),
+            documentId: lastDoc.id,
+          }
+        : null,
+      exhausted: snapshot.size < options.limit!,
+    };
+  }
+
+  private applyClientSequenceFilters(
+    sequences: LibrarySequence[],
+    options?: LibraryQueryOptions
+  ): LibrarySequence[] {
+    let result = sequences.filter((seq) => !seq.isDeleted);
+
+    if (options?.tagIds?.length) {
+      result = result.filter((seq) =>
+        matchesLibraryTagIds(seq, options.tagIds!)
+      );
+    }
+
+    if (options?.searchQuery) {
+      const searchLower = options.searchQuery.toLowerCase();
+      result = result.filter(
+        (seq) =>
+          seq.name.toLowerCase().includes(searchLower) ||
+          seq.word.toLowerCase().includes(searchLower) ||
+          seq.displayName?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return result;
+  }
+
   async getUserSequences(
     userId: string,
     options?: LibraryQueryOptions
@@ -1165,23 +1284,10 @@ export class LibraryRepository {
       ownerAvatarUrl: ownerAvatarUrl ?? seq.ownerAvatarUrl,
     }));
 
-    // Filter out soft-deleted sequences (recycle bin).
-    // Done client-side because a Firestore "!=" query would exclude all
-    // existing documents that lack the isDeleted field entirely.
-    const activeSequences = enrichedSequences.filter((seq) => !seq.isDeleted);
-
-    // Client-side search filter (Firestore doesn't support full-text search)
-    if (options?.searchQuery) {
-      const searchLower = options.searchQuery.toLowerCase();
-      return activeSequences.filter(
-        (seq) =>
-          seq.name.toLowerCase().includes(searchLower) ||
-          seq.word.toLowerCase().includes(searchLower) ||
-          seq.displayName?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return activeSequences;
+    // Soft-delete, text search, and compatibility tag matching remain
+    // client-side. Tag membership merges the legacy tagIds array with the
+    // structured sequenceTags owner, matching the Library feature itself.
+    return this.applyClientSequenceFilters(enrichedSequences, options);
   }
 
   // ============================================================

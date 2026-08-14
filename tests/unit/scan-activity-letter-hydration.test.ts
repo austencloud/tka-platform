@@ -26,12 +26,13 @@ import { generatePlacementKey } from "$lib/shared/pictograph/arrow/positioning/k
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // The live payload on shortcode O263 ("IIII") — the card in the bug report.
-const O263_ENCODED = "s~r1:sr:e9a854fc:q1:HYPQN1Z0M/2Q 5Q:66FLG868WFFLH6K3BGJB000";
+const O263_ENCODED =
+  "s~r1:sr:e9a854fc:q1:HYPQN1Z0M/2Q 5Q:66FLG868WFFLH6K3BGJB000";
 
 function proPlacementKeys(): string[] {
   const file = resolve(
     process.cwd(),
-    "static/data/arrow_placement/diamond/default/default_diamond_pro_placements.json"
+    "static/data/arrow_placement/default/default_pro_placements.json"
   );
   return Object.keys(JSON.parse(readFileSync(file, "utf8")));
 }

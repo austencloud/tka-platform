@@ -75,6 +75,8 @@ export interface SmartFilterSpec {
   source: SmartCollectionSource;
   /** Array of objects — never a nested array (Firestore constraint). */
   filters: StoredSmartFilter[];
+  /** Optional text search applied after the structured rule filters. */
+  searchQuery?: string;
   /** String value of BrowseSortMethod. */
   sortMethod: string;
   sortDirection: "asc" | "desc";
