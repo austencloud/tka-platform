@@ -36,6 +36,7 @@
     clearNativeScanViewerReady,
     isNativeScanViewerTransitionPending,
     markNativeScanLoadingSurfaceReady,
+    markNativeScanTransitionStage,
     markNativeScanViewerFailed,
     markNativeScanViewerReady,
     subscribeNativeScanViewerTransition,
@@ -65,6 +66,7 @@
   let nativeLoadingWord = $state("");
   let nativeGlyphsReady = $state(false);
   let nativeLoadingProgress = $state(0);
+  let nativeLoaderSurface = $state<HTMLDivElement | null>(null);
 
   $effect(() => {
     drawerOpen = overlay.isOpen || nativeLoadingCode !== null;
@@ -75,6 +77,61 @@
     await new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
+  }
+
+  function loaderVisibilityDetails(): Record<
+    string,
+    string | number | boolean | null
+  > {
+    const surface = nativeLoaderSurface;
+    const drawer = surface?.closest("dialog");
+    if (!surface) {
+      return {
+        elementPresent: false,
+        drawerState: drawer?.dataset.state ?? null,
+        viewportCoverage: 0,
+      };
+    }
+
+    const rect = surface.getBoundingClientRect();
+    const visibleWidth = Math.max(
+      0,
+      Math.min(rect.right, window.innerWidth) - Math.max(rect.left, 0)
+    );
+    const visibleHeight = Math.max(
+      0,
+      Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
+    );
+    const viewportArea = Math.max(1, window.innerWidth * window.innerHeight);
+    const drawerStyle = drawer ? getComputedStyle(drawer) : null;
+
+    return {
+      elementPresent: true,
+      drawerState: drawer?.dataset.state ?? null,
+      viewportCoverage:
+        Math.round((visibleWidth * visibleHeight * 1000) / viewportArea) / 10,
+      surfaceTop: Math.round(rect.top),
+      surfaceBottom: Math.round(rect.bottom),
+      viewportHeight: window.innerHeight,
+      drawerTransform: drawerStyle?.transform ?? null,
+      drawerOpacity: drawerStyle?.opacity ?? null,
+    };
+  }
+
+  function watchLoaderVisibility(code: string): void {
+    const startedAt = performance.now();
+    const inspect = () => {
+      if (nativeLoadingCode !== code) return;
+
+      const details = loaderVisibilityDetails();
+      if (Number(details.viewportCoverage) >= 99) {
+        markNativeScanTransitionStage(code, "loader-visible", details);
+        return;
+      }
+
+      if (performance.now() - startedAt < 5_000) requestAnimationFrame(inspect);
+    };
+    requestAnimationFrame(inspect);
   }
 
   function clearNativeLoader(code?: string): void {
@@ -92,9 +149,16 @@
     nativeGlyphsReady = false;
     nativeLoadingProgress = 8;
     playbackReleased = false;
+    markNativeScanTransitionStage(code, "loader-state-created");
+    watchLoaderVisibility(code);
 
     void afterNextPaint().then(() => {
       if (nativeLoadingCode === code) {
+        markNativeScanTransitionStage(
+          code,
+          "loader-dom-painted",
+          loaderVisibilityDetails()
+        );
         markNativeScanLoadingSurfaceReady(code);
       }
     });
@@ -116,7 +180,11 @@
         }
 
         playbackReleased = true;
-        if (phase === "failed") clearNativeLoader(code);
+        if (phase === "failed") {
+          clearNativeLoader(code);
+        } else {
+          markNativeScanTransitionStage(code, "playback-released");
+        }
       }
     );
     // MainApplication imports this host after the route has already finished
@@ -155,7 +223,9 @@
   async function bootstrapFromCode(code: string) {
     if (typeof window === "undefined") return;
     let openedSuccessfully = false;
+    let failureReason: string | null = null;
     try {
+      markNativeScanTransitionStage(code, "shortcode-resolve-start");
       const manager = getShortCodeManager();
       const { sequence: resolved, record } =
         await manager.resolveShortCodeWithRecord(code);
@@ -163,6 +233,7 @@
         stripInvalidV(code);
         return;
       }
+      markNativeScanTransitionStage(code, "shortcode-resolved");
 
       if (nativeLoadingCode === code) {
         const rawWord =
@@ -175,10 +246,16 @@
 
         const baseLetters = getScanLoaderBaseLetters(nativeLoadingWord);
         if (baseLetters.length > 0) {
+          markNativeScanTransitionStage(code, "glyph-load-start", {
+            glyphCount: baseLetters.length,
+          });
           void getGlyphCache()
             .loadGlyphsByLetter(baseLetters)
             .then(() => {
-              if (nativeLoadingCode === code) nativeGlyphsReady = true;
+              if (nativeLoadingCode === code) {
+                nativeGlyphsReady = true;
+                markNativeScanTransitionStage(code, "glyphs-ready");
+              }
             })
             .catch(() => {
               /* Keep the animated dots if a glyph asset is unavailable. */
@@ -190,9 +267,11 @@
         new URL(window.location.href).searchParams.get("v") === code;
       if (!stillMatches) return;
 
+      markNativeScanTransitionStage(code, "hydrate-start");
       const hydrated = await hydrateSequence(resolved, {
         loopDetector: getLoopDetector(),
       });
+      markNativeScanTransitionStage(code, "hydrate-complete");
 
       if (nativeLoadingCode === code) nativeLoadingProgress = 72;
 
@@ -209,6 +288,7 @@
         redPropType: propConfig.redPropType,
         catDogMode: propConfig.catDogMode,
       });
+      markNativeScanTransitionStage(code, "settings-applied");
 
       if (nativeLoadingCode === code) nativeLoadingProgress = 88;
 
@@ -220,16 +300,21 @@
         skipHistoryPush: true,
         playOnOpen: true,
       });
+      markNativeScanTransitionStage(code, "viewer-overlay-opened");
       if (nativeLoadingCode === code) nativeLoadingProgress = 94;
       openedSuccessfully = true;
     } catch (error) {
+      failureReason = error instanceof Error ? error.message : String(error);
       console.warn(
         "[SequenceViewerDrawerHost] Failed to bootstrap from ?v= code:",
         error
       );
     } finally {
       if (!openedSuccessfully) {
-        markNativeScanViewerFailed(code);
+        markNativeScanViewerFailed(
+          code,
+          failureReason ? { reason: failureReason } : undefined
+        );
         stripInvalidV(code);
       }
     }
@@ -266,10 +351,17 @@
     const code = overlay.activeShortCode;
     if (code) {
       if (nativeLoadingCode === code) {
+        markNativeScanTransitionStage(code, "animation-surface-ready");
         nativeLoadingProgress = 100;
         await afterNextPaint();
+        markNativeScanTransitionStage(
+          code,
+          "loader-complete-painted",
+          loaderVisibilityDetails()
+        );
         clearNativeLoader(code);
         await afterNextPaint();
+        markNativeScanTransitionStage(code, "loader-removed-painted");
       }
       markNativeScanViewerReady(code);
     } else {
@@ -318,12 +410,14 @@
     {/if}
 
     {#if nativeLoadingCode}
-      <ScanSequenceLoader
-        word={nativeLoadingWord}
-        glyphsReady={nativeGlyphsReady}
-        progress={nativeLoadingProgress}
-        fill
-      />
+      <div class="native-loader-surface" bind:this={nativeLoaderSurface}>
+        <ScanSequenceLoader
+          word={nativeLoadingWord}
+          glyphsReady={nativeGlyphsReady}
+          progress={nativeLoadingProgress}
+          fill
+        />
+      </div>
     {/if}
   </div>
 </Drawer>
@@ -345,5 +439,11 @@
     height: 100%;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .native-loader-surface {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
   }
 </style>

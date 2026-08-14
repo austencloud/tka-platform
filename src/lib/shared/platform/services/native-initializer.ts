@@ -3,12 +3,14 @@ import { resolveNativeDeepLinkTarget } from "./native-deep-link-target";
 import {
   beginNativeScanViewerTransition,
   isNativeScanViewerReady,
+  markNativeScanTransitionStage,
   markNativeScanViewerFailed,
   waitForNativeScanLoadingSurfaceReady,
 } from "./native-scan-viewer-readiness";
 
 export class NativeInitializer {
   private deepLinkTransitionToken = 0;
+  private launchScanTraceCode: string | null = null;
 
   async initialize(): Promise<void> {
     if (!isNative()) return;
@@ -22,7 +24,8 @@ export class NativeInitializer {
       this.initAppLifecycle(),
     ]);
 
-    await this.hideSplashScreen();
+    await this.hideSplashScreen(this.launchScanTraceCode);
+    this.launchScanTraceCode = null;
   }
 
   private async initStatusBar(): Promise<void> {
@@ -46,16 +49,26 @@ export class NativeInitializer {
     await Keyboard.setScroll({ isDisabled: true });
   }
 
-  private async showSplashScreen(): Promise<void> {
+  private async showSplashScreen(scanCode: string): Promise<void> {
+    markNativeScanTransitionStage(scanCode, "native-cover-show-start");
     const { SplashScreen } = await import("@capacitor/splash-screen");
     await SplashScreen.show({ autoHide: false, fadeInDuration: 0 });
+    markNativeScanTransitionStage(scanCode, "native-cover-shown");
   }
 
-  private async hideSplashScreen(): Promise<void> {
+  private async hideSplashScreen(
+    scanCode: string | null = null
+  ): Promise<void> {
+    if (scanCode) {
+      markNativeScanTransitionStage(scanCode, "native-cover-hide-start");
+    }
     const { SplashScreen } = await import("@capacitor/splash-screen");
     // Playback is released only after this promise resolves. A zero-duration
     // hide makes that boundary exact instead of buzzing under a fading image.
     await SplashScreen.hide({ fadeOutDuration: 0 });
+    if (scanCode) {
+      markNativeScanTransitionStage(scanCode, "native-cover-hidden");
+    }
   }
 
   private async initAppLifecycle(): Promise<void> {
@@ -133,9 +146,15 @@ export class NativeInitializer {
 
     if (scanCode && !alreadyShowingScan) {
       beginNativeScanViewerTransition(scanCode);
+      markNativeScanTransitionStage(scanCode, "deep-link-received", {
+        launch: coverWithSplash ? "warm" : "cold",
+        coverRequested: shouldCoverTransition,
+      });
+      if (!coverWithSplash) this.launchScanTraceCode = scanCode;
     }
 
-    if (shouldCoverTransition) await this.showSplashScreen();
+    if (shouldCoverTransition && scanCode)
+      await this.showSplashScreen(scanCode);
 
     const loadingSurfaceReadiness =
       scanCode && !alreadyShowingScan
@@ -150,9 +169,18 @@ export class NativeInitializer {
       const { awaitAuthSettled } =
         await import("$lib/shared/auth/state/auth-state.svelte");
       await awaitAuthSettled();
+      if (scanCode) markNativeScanTransitionStage(scanCode, "auth-settled");
 
       const { goto } = await import("$app/navigation");
+      if (scanCode) {
+        markNativeScanTransitionStage(scanCode, "route-navigation-start", {
+          target,
+        });
+      }
       await goto(target);
+      if (scanCode) {
+        markNativeScanTransitionStage(scanCode, "route-navigation-complete");
+      }
 
       if (loadingSurfaceReadiness) {
         const outcome = await loadingSurfaceReadiness;
@@ -173,7 +201,7 @@ export class NativeInitializer {
         shouldCoverTransition &&
         transitionToken === this.deepLinkTransitionToken
       ) {
-        await this.hideSplashScreen();
+        await this.hideSplashScreen(scanCode);
       }
     }
   }

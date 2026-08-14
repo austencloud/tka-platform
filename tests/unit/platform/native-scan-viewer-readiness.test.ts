@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import {
   beginNativeScanViewerTransition,
   clearNativeScanViewerReady,
+  getLastNativeScanTrace,
   isNativeScanViewerTransitionPending,
   isNativeScanViewerReady,
   markNativeScanLoadingSurfaceReady,
+  markNativeScanTransitionStage,
   markNativeScanViewerFailed,
   markNativeScanViewerReady,
   subscribeNativeScanViewerTransition,
@@ -79,9 +81,36 @@ describe("native scan viewer readiness", () => {
 
     beginNativeScanViewerTransition("same42");
 
-    await expect(
-      waitForNativeScanLoadingSurfaceReady("SAME42")
-    ).resolves.toBe("ready");
+    await expect(waitForNativeScanLoadingSurfaceReady("SAME42")).resolves.toBe(
+      "ready"
+    );
     expect(isNativeScanViewerTransitionPending("SAME42")).toBe(true);
+  });
+
+  it("retains an ordered, logcat-readable handoff trace", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    clearNativeScanViewerReady();
+    beginNativeScanViewerTransition("trace42");
+    markNativeScanTransitionStage("TRACE42", "deep-link-received", {
+      launch: "warm",
+    });
+    markNativeScanTransitionStage("TRACE42", "loader-dom-painted", {
+      viewportCoverage: 0,
+    });
+
+    const trace = getLastNativeScanTrace();
+    expect(trace.map((entry) => entry.stage)).toEqual([
+      "transition-started",
+      "deep-link-received",
+      "loader-dom-painted",
+    ]);
+    expect(trace.every((entry) => entry.code === "TRACE42")).toBe(true);
+    expect(trace[2]!.details?.viewportCoverage).toBe(0);
+    expect(info).toHaveBeenLastCalledWith(
+      expect.stringContaining('"stage":"loader-dom-painted"')
+    );
+    expect(localStorage.getItem("tka:last-native-scan-trace")).toContain(
+      '"traceId":"TRACE42-'
+    );
   });
 });

@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   showSplash: vi.fn<() => Promise<void>>(),
   waitForLoadingSurface: vi.fn<() => Promise<"ready" | "failed" | "timeout">>(),
   beginViewerTransition: vi.fn(),
+  markTransitionStage: vi.fn(),
   markViewerFailed: vi.fn(),
   isViewerReady: vi.fn(() => false),
 }));
@@ -30,6 +31,7 @@ vi.mock("@capacitor/splash-screen", () => ({
 vi.mock("$lib/shared/platform/services/native-scan-viewer-readiness", () => ({
   beginNativeScanViewerTransition: mocks.beginViewerTransition,
   isNativeScanViewerReady: mocks.isViewerReady,
+  markNativeScanTransitionStage: mocks.markTransitionStage,
   markNativeScanViewerFailed: mocks.markViewerFailed,
   waitForNativeScanLoadingSurfaceReady: mocks.waitForLoadingSurface,
 }));
@@ -74,6 +76,11 @@ describe("NativeInitializer deep-link readiness", () => {
     );
     expect(mocks.waitForLoadingSurface).toHaveBeenCalledWith("W61Y");
     expect(mocks.beginViewerTransition).toHaveBeenCalledWith("W61Y");
+    expect(mocks.markTransitionStage).toHaveBeenCalledWith(
+      "W61Y",
+      "deep-link-received",
+      { launch: "cold", coverRequested: false }
+    );
   });
 
   it("covers a warm scan until the app loading surface has painted", async () => {
@@ -104,6 +111,10 @@ describe("NativeInitializer deep-link readiness", () => {
 
     await expect(opening).resolves.toBe(true);
     expect(mocks.hideSplash).toHaveBeenCalledWith({ fadeOutDuration: 0 });
+    expect(mocks.markTransitionStage).toHaveBeenCalledWith(
+      "W61Y",
+      "native-cover-hidden"
+    );
   });
 
   it("ignores non-deep-link URLs without waiting for startup", async () => {

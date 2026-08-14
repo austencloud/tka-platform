@@ -1,12 +1,51 @@
 export type NativeScanViewerOutcome = "ready" | "failed" | "timeout";
-export type NativeScanViewerTransitionPhase =
-  | "started"
-  | "revealed"
-  | "failed";
+export type NativeScanViewerTransitionPhase = "started" | "revealed" | "failed";
 
 export interface NativeScanViewerTransition {
   code: string;
   phase: NativeScanViewerTransitionPhase;
+}
+
+export type NativeScanTransitionStage =
+  | "transition-started"
+  | "deep-link-received"
+  | "native-cover-show-start"
+  | "native-cover-shown"
+  | "auth-settled"
+  | "route-navigation-start"
+  | "route-navigation-complete"
+  | "loader-state-created"
+  | "loader-dom-painted"
+  | "loader-visible"
+  | "shortcode-resolve-start"
+  | "shortcode-resolved"
+  | "glyph-load-start"
+  | "glyphs-ready"
+  | "hydrate-start"
+  | "hydrate-complete"
+  | "settings-applied"
+  | "viewer-overlay-opened"
+  | "animation-surface-ready"
+  | "loader-complete-painted"
+  | "loader-removed-painted"
+  | "viewer-ready"
+  | "native-cover-hide-start"
+  | "native-cover-hidden"
+  | "playback-released"
+  | "failed";
+
+export type NativeScanTraceDetails = Record<
+  string,
+  string | number | boolean | null
+>;
+
+export interface NativeScanTraceEntry {
+  traceId: string;
+  code: string;
+  stage: NativeScanTransitionStage;
+  elapsedMs: number;
+  timestamp: string;
+  details?: NativeScanTraceDetails;
 }
 
 interface PendingReadiness {
@@ -18,6 +57,13 @@ const DEFAULT_TIMEOUT_MS = 20_000;
 let readyCode: string | null = null;
 let loadingSurfaceReadyCode: string | null = null;
 let transitionCode: string | null = null;
+let activeTrace: {
+  id: string;
+  code: string;
+  startedAt: number;
+  entries: NativeScanTraceEntry[];
+} | null = null;
+let lastTrace: NativeScanTraceEntry[] = [];
 const pendingViewerByCode = new Map<string, Set<PendingReadiness>>();
 const pendingLoadingSurfaceByCode = new Map<string, Set<PendingReadiness>>();
 const transitionListeners = new Set<
@@ -26,6 +72,50 @@ const transitionListeners = new Set<
 
 function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
+}
+
+function now(): number {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+function persistTrace(entries: NativeScanTraceEntry[]): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem("tka:last-native-scan-trace", JSON.stringify(entries));
+  } catch {
+    // Logcat remains the source of truth if browser storage is unavailable.
+  }
+}
+
+/**
+ * Records the exact surfaces a scanner sees during the native handoff. Every
+ * entry is emitted as one JSON logcat line and retained for post-scan review.
+ */
+export function markNativeScanTransitionStage(
+  code: string,
+  stage: NativeScanTransitionStage,
+  details?: NativeScanTraceDetails
+): NativeScanTraceEntry | null {
+  const normalized = normalizeCode(code);
+  if (!activeTrace || activeTrace.code !== normalized) return null;
+
+  const entry: NativeScanTraceEntry = {
+    traceId: activeTrace.id,
+    code: normalized,
+    stage,
+    elapsedMs: Math.round(now() - activeTrace.startedAt),
+    timestamp: new Date().toISOString(),
+    ...(details ? { details } : {}),
+  };
+  activeTrace.entries.push(entry);
+  lastTrace = [...activeTrace.entries];
+  persistTrace(lastTrace);
+  console.info(`[native-scan-trace] ${JSON.stringify(entry)}`);
+  return entry;
+}
+
+export function getLastNativeScanTrace(): readonly NativeScanTraceEntry[] {
+  return lastTrace;
 }
 
 function settleCode(
@@ -99,6 +189,13 @@ export function beginNativeScanViewerTransition(code: string): void {
 
   loadingSurfaceReadyCode = null;
   transitionCode = normalized;
+  activeTrace = {
+    id: `${normalized}-${Date.now().toString(36)}`,
+    code: normalized,
+    startedAt: now(),
+    entries: [],
+  };
+  markNativeScanTransitionStage(normalized, "transition-started");
   notifyTransition(normalized, "started");
 }
 
@@ -138,14 +235,19 @@ export function markNativeScanViewerReady(code: string): void {
   const normalized = normalizeCode(code);
   readyCode = normalized;
   settleCode(pendingViewerByCode, normalized, "ready");
+  markNativeScanTransitionStage(normalized, "viewer-ready");
 
   if (transitionCode !== normalized) return;
   transitionCode = null;
   notifyTransition(normalized, "revealed");
 }
 
-export function markNativeScanViewerFailed(code: string): void {
+export function markNativeScanViewerFailed(
+  code: string,
+  details?: NativeScanTraceDetails
+): void {
   const normalized = normalizeCode(code);
+  markNativeScanTransitionStage(normalized, "failed", details);
   settleCode(pendingViewerByCode, normalized, "failed");
   settleCode(pendingLoadingSurfaceByCode, normalized, "failed");
   if (transitionCode === normalized) {
