@@ -15,3 +15,7 @@ export type { DifficultyLevel, GradientStop } from "@tka/render-composition";
 
 // Backwards-compat alias - the package calls it DifficultyLevel
 export type { DifficultyLevel as DifficultyLevelStyle } from "@tka/render-composition";
+
+/** Difficulty levels currently offered by Browse and deck composition. */
+export const ACTIVE_DIFFICULTY_LEVELS = [1, 2, 3] as const;
+export type ActiveDifficultyLevel = (typeof ACTIVE_DIFFICULTY_LEVELS)[number];
