@@ -21,26 +21,21 @@
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
-    buildFlowerAxis,
     flowerKey,
     flowerLabel,
     type Flower,
   } from "$lib/shared/shape-matrix/domain/flower-signature";
-  import {
-    applyFilter,
-    defaultAxisFilter,
-  } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
   import { loadShapeMatrix } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
   import { renderHeader } from "$lib/shared/shape-matrix/services/shape-matrix-render";
   import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
   import { getTipPointsBaseline } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
-  import { resolveFlowerArchetype } from "$lib/shared/shape-matrix/services/flower-archetype";
-  import { resolveRotationStyleMatrices } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
-  import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
-  import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import {
+    buildFuseFlowerPath,
+    FUSE_FLOWER_PATHS,
+  } from "../services/fuse-flower-path-source";
 
   let {
     side,
@@ -67,11 +62,7 @@
   // The flower list is deterministic and synchronous, so the tile grid has its
   // full structure from the first frame — only the painted images arrive async.
   // That keeps the modal from reflowing as thumbnails fill in.
-  const flowers: Flower[] = applyFilter(
-    buildFlowerAxis(),
-    defaultAxisFilter(),
-    true
-  );
+  const flowers = FUSE_FLOWER_PATHS;
 
   let tiles = $state<Map<string, string>>(tileCache.get(cacheKey) ?? new Map());
   let busy = $state(false);
@@ -92,15 +83,10 @@
       if (cancelled) return;
       const built = new Map<string, string>();
       const tipPoints = getTipPointsBaseline(propType).points;
-      const [matrices, edges] = await Promise.all([
-        resolveRotationStyleMatrices("diamond"),
-        loadDiamondEdges(),
-      ]);
-      if (cancelled) return;
       for (const flower of flowers) {
         const key = flowerKey(flower);
-        const archetype = resolveFlowerArchetype(matrices, flower.style);
-        const sequence = buildFlowerSequence(archetype, flower, side, edges);
+        const sequence = await buildFuseFlowerPath(flower, side);
+        if (cancelled) return;
         const geometry = calculateMandalaGeometry(
           sequence.steps,
           side === "blue" ? propType : undefined,
@@ -131,12 +117,7 @@
     busy = true;
     pickError = null;
     try {
-      const [matrices, edges] = await Promise.all([
-        resolveRotationStyleMatrices("diamond"),
-        loadDiamondEdges(),
-      ]);
-      const archetype = resolveFlowerArchetype(matrices, flower.style);
-      const solo = buildFlowerSequence(archetype, flower, side, edges);
+      const solo = await buildFuseFlowerPath(flower, side);
       onSelect(solo, flowerLabel(flower));
       open = false;
       onClose();

@@ -25,13 +25,20 @@ import {
 import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
 import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   MotionColor,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { swapMotionColor } from "$lib/shared/create/services/motion-transforms";
+import {
+  asTurnLevel,
+  clampMaxTurnIntensity,
+  maxTurnIntensitiesForLevel,
+  type TurnLevel,
+} from "$lib/shared/create/services/level-turn-values";
+import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
 import {
   flipSequence,
   invertSequence,
@@ -43,9 +50,12 @@ import {
 import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import {
-  closeSoloPathAsRewoundLoop,
+  DEFAULT_SOLO_LOOP_RECIPE,
+  fitSoloPathToLoop,
   isStructuredSoloLoop,
   type GeneratedSoloLoop,
+  type SoloLoopGenerationRecipe,
+  type SoloLoopTraversalDirection,
 } from "../services/solo-loop-generator";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
 import {
@@ -151,7 +161,10 @@ export interface FuseStateDeps {
   /** Browser-backed one-prop generator. Optional so state tests and non-browser
    * consumers can still exercise the legacy injected catalog seam. FuseTab
    * always supplies it. */
-  generateSoloLoop?: (length: FuseLength) => Promise<GeneratedSoloLoop>;
+  generateSoloLoop?: (
+    length: FuseLength,
+    recipe: SoloLoopGenerationRecipe
+  ) => Promise<GeneratedSoloLoop>;
 }
 
 /** Kind of a non-shuffle source injected via {@link setSource}. */
@@ -211,6 +224,45 @@ interface PersistedFuseState {
   mode?: FuseMode;
   driverSide?: FuseSide;
   transformId?: FuseTransformId;
+  generationLevel?: TurnLevel;
+  maxTurnIntensity?: number;
+  constraintPreset?: SoloLoopGenerationRecipe["constraintPreset"];
+  handPathMode?: SoloLoopGenerationRecipe["handPathMode"];
+  motionTypeFilter?: SoloLoopGenerationRecipe["motionTypeFilter"];
+  startLocation?: GridLocation | null;
+  startOrientation?: Orientation | null;
+  traversalDirection?: SoloLoopTraversalDirection | null;
+}
+
+const FUSE_START_LOCATIONS = [
+  GridLocation.NORTH,
+  GridLocation.EAST,
+  GridLocation.SOUTH,
+  GridLocation.WEST,
+] as const;
+
+function isContinuityPreference(
+  value: unknown
+): value is SoloLoopGenerationRecipe["constraintPreset"] {
+  return value === "smooth" || value === "mixed" || value === "choppy";
+}
+
+function isMotionTypeFilter(
+  value: unknown
+): value is SoloLoopGenerationRecipe["motionTypeFilter"] {
+  return value === null || value === "no-dash" || value === "prefer-dash";
+}
+
+function isFuseStartLocation(value: unknown): value is GridLocation {
+  return FUSE_START_LOCATIONS.includes(
+    value as (typeof FUSE_START_LOCATIONS)[number]
+  );
+}
+
+function isSoloTraversalDirection(
+  value: unknown
+): value is SoloLoopTraversalDirection {
+  return value === "clockwise" || value === "counterclockwise";
 }
 
 /** What initialize() hands setLength so a persisted pair is restored only on the
@@ -312,6 +364,53 @@ function readPersistedState(): PersistedFuseState {
     }
     if (isFuseTransformId(record.transformId)) {
       result.transformId = record.transformId;
+    }
+    if (
+      typeof record.generationLevel === "number" &&
+      Number.isFinite(record.generationLevel)
+    ) {
+      result.generationLevel = asTurnLevel(record.generationLevel);
+    }
+    if (
+      typeof record.maxTurnIntensity === "number" &&
+      Number.isFinite(record.maxTurnIntensity)
+    ) {
+      result.maxTurnIntensity = clampMaxTurnIntensity(
+        record.maxTurnIntensity,
+        result.generationLevel ?? DEFAULT_SOLO_LOOP_RECIPE.level
+      );
+    }
+    if (isContinuityPreference(record.constraintPreset)) {
+      result.constraintPreset = record.constraintPreset;
+    }
+    if (isContinuityPreference(record.handPathMode)) {
+      result.handPathMode = record.handPathMode;
+    }
+    if (isMotionTypeFilter(record.motionTypeFilter)) {
+      result.motionTypeFilter = record.motionTypeFilter;
+    }
+    if (
+      record.startLocation === null ||
+      isFuseStartLocation(record.startLocation)
+    ) {
+      result.startLocation = record.startLocation;
+    }
+    const persistedLevel =
+      result.generationLevel ?? DEFAULT_SOLO_LOOP_RECIPE.level;
+    if (
+      record.startOrientation === null ||
+      (typeof record.startOrientation === "string" &&
+        startOrientationsForLevel(persistedLevel).includes(
+          record.startOrientation as Orientation
+        ))
+    ) {
+      result.startOrientation = record.startOrientation as Orientation | null;
+    }
+    if (
+      record.traversalDirection === null ||
+      isSoloTraversalDirection(record.traversalDirection)
+    ) {
+      result.traversalDirection = record.traversalDirection;
     }
     const blue = parsePersistedSelection(record.blue);
     if (blue) result.blue = blue;
@@ -415,6 +514,33 @@ export function createFuseState({
   let requestedLength = $state<FuseLength>(initialLength);
   let appliedLength = $state<FuseLength | null>(null);
   let bpm = $state(normalizeBpm(persisted.bpm));
+  let generationLevel = $state<TurnLevel>(
+    persisted.generationLevel ?? DEFAULT_SOLO_LOOP_RECIPE.level
+  );
+  let maxTurnIntensity = $state(
+    clampMaxTurnIntensity(
+      persisted.maxTurnIntensity ?? DEFAULT_SOLO_LOOP_RECIPE.maxTurnIntensity,
+      generationLevel
+    )
+  );
+  let constraintPreset = $state<SoloLoopGenerationRecipe["constraintPreset"]>(
+    persisted.constraintPreset ?? DEFAULT_SOLO_LOOP_RECIPE.constraintPreset
+  );
+  let handPathMode = $state<SoloLoopGenerationRecipe["handPathMode"]>(
+    persisted.handPathMode ?? DEFAULT_SOLO_LOOP_RECIPE.handPathMode
+  );
+  let motionTypeFilter = $state<SoloLoopGenerationRecipe["motionTypeFilter"]>(
+    persisted.motionTypeFilter ?? DEFAULT_SOLO_LOOP_RECIPE.motionTypeFilter
+  );
+  let startLocation = $state<GridLocation | null>(
+    persisted.startLocation ?? DEFAULT_SOLO_LOOP_RECIPE.startLocation
+  );
+  let startOrientation = $state<Orientation | null>(
+    persisted.startOrientation ?? DEFAULT_SOLO_LOOP_RECIPE.startOrientation
+  );
+  let traversalDirection = $state<SoloLoopTraversalDirection | null>(
+    persisted.traversalDirection ?? DEFAULT_SOLO_LOOP_RECIPE.traversalDirection
+  );
   let previewSequence = $state<SequenceData | null>(null);
   let isLoadingLength = $state(false);
   let pendingSide = $state<FuseSide | null>(null);
@@ -482,7 +608,7 @@ export function createFuseState({
     if (!generateSoloLoop) {
       throw new Error("The solo LOOP generator is unavailable");
     }
-    const generated = await generateSoloLoop(length);
+    const generated = await generateSoloLoop(length, generationRecipe());
     return {
       sequence: sequenceForSolo(side, generated.solo),
       origin: {
@@ -503,6 +629,8 @@ export function createFuseState({
   let transformId = $state<FuseTransformId>(persisted.transformId ?? "mirror");
   let symmetryPreview = $state<SequenceData | null>(null);
   let symmetryGeneration = 0;
+  let relationshipDraftKey: string | null = null;
+  let relationshipPreviewBaseline: SequenceData | null = null;
   // True while a symmetry follower derive is in flight. Blocks Fuse so a tap
   // mid-derive can't build the driver's stale independent preview — deriveFollower
   // is the sole writer of previewSequence in symmetry mode.
@@ -663,6 +791,7 @@ export function createFuseState({
       const label = pendingSide === "blue" ? "Blue" : "Red";
       return `Loading another ${label} path...`;
     }
+    if (isDeriving) return "Previewing the linked path...";
     if (error) return error.message;
     if (canFuseNow()) return readyMessage;
     return "Choose a length to load two paths.";
@@ -719,6 +848,100 @@ export function createFuseState({
     // Merge so the mode write never drops the persisted pair, length, or step.
     persisted = { ...persisted, mode, driverSide, transformId };
     writePersistedState(persisted);
+  }
+
+  function generationRecipe(): SoloLoopGenerationRecipe {
+    return {
+      level: generationLevel,
+      maxTurnIntensity: generationLevel === 1 ? 0 : maxTurnIntensity,
+      constraintPreset,
+      handPathMode,
+      motionTypeFilter,
+      startLocation,
+      startOrientation,
+      traversalDirection,
+    };
+  }
+
+  function persistGenerationRecipe(): void {
+    persisted = {
+      ...persisted,
+      generationLevel,
+      maxTurnIntensity,
+      constraintPreset,
+      handPathMode,
+      motionTypeFilter,
+      startLocation,
+      startOrientation,
+      traversalDirection,
+    };
+    writePersistedState(persisted);
+  }
+
+  function setGenerationLevel(value: number): void {
+    const nextLevel = asTurnLevel(value);
+    generationLevel = nextLevel;
+    maxTurnIntensity = clampMaxTurnIntensity(maxTurnIntensity, nextLevel);
+    if (
+      startOrientation !== null &&
+      !startOrientationsForLevel(nextLevel).includes(startOrientation)
+    ) {
+      startOrientation = null;
+    }
+    persistGenerationRecipe();
+  }
+
+  function setMaxTurnIntensity(value: number): void {
+    if (generationLevel === 1) return;
+    const allowed = maxTurnIntensitiesForLevel(generationLevel);
+    if (!allowed.includes(value)) return;
+    maxTurnIntensity = value;
+    persistGenerationRecipe();
+  }
+
+  function setConstraintPreset(
+    value: SoloLoopGenerationRecipe["constraintPreset"]
+  ): void {
+    constraintPreset = value;
+    persistGenerationRecipe();
+  }
+
+  function setHandPathMode(
+    value: SoloLoopGenerationRecipe["handPathMode"]
+  ): void {
+    handPathMode = value;
+    persistGenerationRecipe();
+  }
+
+  function setMotionTypeFilter(
+    value: SoloLoopGenerationRecipe["motionTypeFilter"]
+  ): void {
+    motionTypeFilter = value;
+    persistGenerationRecipe();
+  }
+
+  function setStartLocation(value: GridLocation | null): void {
+    if (value !== null && !isFuseStartLocation(value)) return;
+    startLocation = value;
+    persistGenerationRecipe();
+  }
+
+  function setStartOrientation(value: Orientation | null): void {
+    if (
+      value !== null &&
+      !startOrientationsForLevel(generationLevel).includes(value)
+    ) {
+      return;
+    }
+    startOrientation = value;
+    persistGenerationRecipe();
+  }
+
+  function setTraversalDirection(
+    value: SoloLoopTraversalDirection | null
+  ): void {
+    traversalDirection = value;
+    persistGenerationRecipe();
   }
 
   /** Rebuild an injected side from its persisted solo alone — self-contained,
@@ -1195,7 +1418,7 @@ export function createFuseState({
           : carriedSolo;
       let effectiveOrigin = origin;
       if (origin.kind === "vtg") {
-        const closed = closeSoloPathAsRewoundLoop(solo, length);
+        const closed = fitSoloPathToLoop(solo, length);
         solo = closed.solo;
         effectiveOrigin = { ...origin, loopSpec: closed.loopSpec };
       } else if (!isStructuredSoloLoop(solo)) {
@@ -1448,6 +1671,34 @@ export function createFuseState({
     )}).`;
   }
 
+  async function createRelationshipPreview(
+    nextDriver: FuseSide,
+    nextTransform: FuseTransformId,
+    length: FuseLength
+  ): Promise<SequenceData | null> {
+    const driverSequence = poolFor(nextDriver).sequence;
+    const driverSolo =
+      nextDriver === "blue"
+        ? driverSequence?.blueSoloProp
+        : driverSequence?.redSoloProp;
+    if (!driverSequence || !driverSolo) return null;
+
+    const followerSolo = await deriveFollowerSolo(
+      driverSequence,
+      nextDriver,
+      nextTransform
+    );
+    const blueSolo = nextDriver === "blue" ? driverSolo : followerSolo;
+    const redSolo = nextDriver === "blue" ? followerSolo : driverSolo;
+    const preview = fuseSequences(blueSolo, redSolo, { maxSteps: length });
+    if (preview.steps.length !== length) {
+      throw new Error(
+        "The linked path did not preserve the selected sequence length"
+      );
+    }
+    return preview;
+  }
+
   /**
    * Recompute the symmetry follower from the current driver source + transform,
    * fuse it against the driver, and publish the result as both the follower
@@ -1457,21 +1708,15 @@ export function createFuseState({
   async function deriveFollower(): Promise<void> {
     if (disposed || mode !== "symmetry" || appliedLength === null) return;
     const length = appliedLength;
-    const driverSequence = poolFor(driverSide).sequence;
-    const driverSolo =
-      driverSide === "blue"
-        ? driverSequence?.blueSoloProp
-        : driverSequence?.redSoloProp;
-    if (!driverSequence || !driverSolo) return;
-
     const generation = ++symmetryGeneration;
     isDeriving = true;
     try {
-      const followerSolo = await deriveFollowerSolo(
-        driverSequence,
+      const preview = await createRelationshipPreview(
         driverSide,
-        transformId
+        transformId,
+        length
       );
+      if (!preview) return;
       if (
         disposed ||
         generation !== symmetryGeneration ||
@@ -1480,20 +1725,6 @@ export function createFuseState({
         return;
       }
 
-      const blueSolo = driverSide === "blue" ? driverSolo : followerSolo;
-      const redSolo = driverSide === "blue" ? followerSolo : driverSolo;
-      const preview = fuseSequences(blueSolo, redSolo, { maxSteps: length });
-      if (preview.steps.length !== length) {
-        // Length-preserving LOOP transforms never trip this today, but a future
-        // transform that changes step count must surface an error, not silently
-        // leave a stale follower while the status line still reads "ready".
-        error = {
-          kind: "derivation",
-          message:
-            "Couldn't derive the symmetric path at this length. Generate another driver and try again.",
-        };
-        return;
-      }
       if (
         disposed ||
         generation !== symmetryGeneration ||
@@ -1522,6 +1753,81 @@ export function createFuseState({
     }
   }
 
+  /** Preview a draft relationship on the combined canvas without changing the
+   * persisted mode, driver, or transform. The drawer owns the draft values;
+   * this method owns only their temporary rendered result. */
+  async function previewRelationship(
+    nextDriver: FuseSide,
+    nextTransform: FuseTransformId
+  ): Promise<void> {
+    if (disposed || appliedLength === null) return;
+    const length = appliedLength;
+    const key = `${nextDriver}:${nextTransform}`;
+    if (relationshipDraftKey === null) {
+      relationshipPreviewBaseline = previewSequence;
+    }
+    relationshipDraftKey = key;
+    const generation = ++symmetryGeneration;
+    isDeriving = true;
+
+    try {
+      const preview = await createRelationshipPreview(
+        nextDriver,
+        nextTransform,
+        length
+      );
+      if (
+        !preview ||
+        disposed ||
+        generation !== symmetryGeneration ||
+        relationshipDraftKey !== key
+      ) {
+        return;
+      }
+      previewSequence = preview;
+      error = null;
+      const driverLabel = nextDriver === "blue" ? "Blue" : "Red";
+      const followerLabel = nextDriver === "blue" ? "Red" : "Blue";
+      readyMessage = `Previewing ${driverLabel} → ${fuseTransformLabel(
+        nextTransform
+      )} → ${followerLabel}.`;
+    } catch (previewError) {
+      if (
+        disposed ||
+        generation !== symmetryGeneration ||
+        relationshipDraftKey !== key
+      ) {
+        return;
+      }
+      error = {
+        kind: "derivation",
+        message:
+          "Couldn't preview that relationship. Choose another transform and try again.",
+      };
+      reportUnexpected(error.message, previewError, "preview-relationship");
+    } finally {
+      if (generation === symmetryGeneration) isDeriving = false;
+    }
+  }
+
+  function cancelRelationshipPreview(): void {
+    if (relationshipDraftKey === null) return;
+    const baseline = relationshipPreviewBaseline;
+    relationshipDraftKey = null;
+    relationshipPreviewBaseline = null;
+    symmetryGeneration += 1;
+    isDeriving = false;
+    if (baseline) {
+      previewSequence = baseline;
+      error = null;
+      readyMessage =
+        mode === "symmetry" ? symmetryReadyMessage() : "Both paths are ready.";
+      return;
+    }
+    if (mode === "symmetry") void deriveFollower();
+    else restoreIndependentPreview();
+  }
+
   /** Rebuild the independent (shuffle-mode) preview from the two pools, used when
    * leaving symmetry — the pools were never clobbered, so this restores exactly
    * the two-path state that was showing before symmetry took over the preview. */
@@ -1540,6 +1846,8 @@ export function createFuseState({
 
   function setMode(next: FuseMode): void {
     if (next === mode) return;
+    relationshipDraftKey = null;
+    relationshipPreviewBaseline = null;
     mode = next;
     persistModeState();
     if (next === "symmetry") {
@@ -1562,11 +1870,16 @@ export function createFuseState({
     nextDriver: FuseSide,
     nextTransform: FuseTransformId
   ): void {
+    relationshipDraftKey = null;
+    relationshipPreviewBaseline = null;
     const changed =
       mode !== "symmetry" ||
       driverSide !== nextDriver ||
       transformId !== nextTransform;
-    if (!changed) return;
+    if (!changed) {
+      void deriveFollower();
+      return;
+    }
 
     driverSide = nextDriver;
     transformId = nextTransform;
@@ -1785,6 +2098,30 @@ export function createFuseState({
     get bpm() {
       return bpm;
     },
+    get generationLevel() {
+      return generationLevel;
+    },
+    get maxTurnIntensity() {
+      return maxTurnIntensity;
+    },
+    get constraintPreset() {
+      return constraintPreset;
+    },
+    get handPathMode() {
+      return handPathMode;
+    },
+    get motionTypeFilter() {
+      return motionTypeFilter;
+    },
+    get startLocation() {
+      return startLocation;
+    },
+    get startOrientation() {
+      return startOrientation;
+    },
+    get traversalDirection() {
+      return traversalDirection;
+    },
     get currentStep() {
       return currentStep;
     },
@@ -1843,12 +2180,22 @@ export function createFuseState({
     retry,
     setMode,
     setRelationship,
+    previewRelationship,
+    cancelRelationshipPreview,
     setDriver,
     setTransform,
     buildFusedSequence,
     reportPreviewFailure,
     reportViewerFailure,
     setBpm,
+    setGenerationLevel,
+    setMaxTurnIntensity,
+    setConstraintPreset,
+    setHandPathMode,
+    setMotionTypeFilter,
+    setStartLocation,
+    setStartOrientation,
+    setTraversalDirection,
     startClock,
     stopClock,
     toggleClock,

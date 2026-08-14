@@ -3,35 +3,26 @@
   import { getFuseContext } from "../context/fuse-context";
   import {
     FUSE_TRANSFORMS,
-    type FuseMode,
     type FuseTransformId,
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
-  import FuseModeBar from "./FuseModeBar.svelte";
   import FuseTransformPicker from "./FuseTransformPicker.svelte";
 
+  let {
+    onCancel,
+    onApply,
+  }: {
+    onCancel?: () => void;
+    onApply?: () => void;
+  } = $props();
+
   const { state: fuseState } = getFuseContext();
-  let editing = $state(false);
-  let draftMode = $state<FuseMode>(fuseState.mode);
   let draftDriver = $state<FuseSide>(fuseState.driverSide);
   let draftTransform = $state<FuseTransformId>(fuseState.transformId);
-  let restoreMode = $state<FuseMode>(fuseState.mode);
-  let restoreDriver = $state<FuseSide>(fuseState.driverSide);
-  let restoreTransform = $state<FuseTransformId>(fuseState.transformId);
 
-  const transformLabel = $derived(
-    FUSE_TRANSFORMS.find((item) => item.id === fuseState.transformId)?.label ??
-      "Mirror"
-  );
   const draftTransformLabel = $derived(
     FUSE_TRANSFORMS.find((item) => item.id === draftTransform)?.label ??
       "Mirror"
-  );
-  const appliedDriverLabel = $derived(
-    fuseState.driverSide === "blue" ? "Blue path" : "Red path"
-  );
-  const appliedFollowerLabel = $derived(
-    fuseState.driverSide === "blue" ? "Red path" : "Blue path"
   );
   const draftDriverLabel = $derived(
     draftDriver === "blue" ? "Blue path" : "Red path"
@@ -45,223 +36,99 @@
       fuseState.isFusing
   );
 
-  function beginEdit(mode: FuseMode = fuseState.mode): void {
-    restoreMode = fuseState.mode;
-    restoreDriver = fuseState.driverSide;
-    restoreTransform = fuseState.transformId;
-    draftMode = mode;
-    draftDriver = fuseState.driverSide;
-    draftTransform = fuseState.transformId;
-    editing = true;
+  $effect(() => {
+    void fuseState.previewRelationship(draftDriver, draftTransform);
+    return () => fuseState.cancelRelationshipPreview();
+  });
 
-    // Entering the linked workflow should change the canvas immediately. The
-    // saved values above let Cancel put the exact previous pairing back.
-    if (mode === "symmetry" && fuseState.mode !== "symmetry") {
-      fuseState.setRelationship(draftDriver, draftTransform);
-    }
-  }
-
-  function selectMode(mode: FuseMode): void {
-    if (mode === "shuffle") {
-      fuseState.setMode("shuffle");
-      editing = false;
-      return;
-    }
-    beginEdit("symmetry");
-  }
-
-  function applyRelationship(): void {
-    fuseState.setRelationship(draftDriver, draftTransform);
-    editing = false;
-  }
-
-  function previewDriver(side: FuseSide): void {
+  function chooseDriver(side: FuseSide): void {
     draftDriver = side;
-    fuseState.setRelationship(side, draftTransform);
   }
 
-  function previewTransform(id: FuseTransformId): void {
+  function chooseTransform(id: FuseTransformId): void {
     draftTransform = id;
-    fuseState.setRelationship(draftDriver, id);
   }
 
-  function cancelRelationship(): void {
-    if (restoreMode === "shuffle") {
-      fuseState.setMode("shuffle");
-    } else {
-      fuseState.setRelationship(restoreDriver, restoreTransform);
-    }
-    editing = false;
+  function cancel(): void {
+    fuseState.cancelRelationshipPreview();
+    onCancel?.();
+  }
+
+  function apply(): void {
+    fuseState.setRelationship(draftDriver, draftTransform);
+    onApply?.();
   }
 </script>
 
-<section class="relationship-shell" aria-labelledby="fuse-pairing-title">
-  <div class="relationship-heading">
-    <div>
-      <p class="eyebrow">Pairing</p>
-      <h3 id="fuse-pairing-title">
-        {(editing ? draftMode : fuseState.mode) === "shuffle"
-          ? "Edit paths separately"
-          : editing
-            ? "Choose how one path follows the other"
-            : "One path drives the other"}
-      </h3>
+<section class="pairing-editor" aria-labelledby="pairing-editor-title">
+  <header class="pairing-intro">
+    <p class="eyebrow">Pairing</p>
+    <h3 id="pairing-editor-title">Choose how the paths stay linked</h3>
+    <p>
+      Keep one path editable. Fuse rebuilds the other with the selected rule.
+    </p>
+  </header>
+
+  <FuseTransformPicker
+    embedded={true}
+    relationshipLayout={true}
+    driver={draftDriver}
+    transform={draftTransform}
+    onDriverChange={chooseDriver}
+    onTransformChange={chooseTransform}
+  />
+
+  <div class="relationship-commit">
+    <div class="relationship-flow" aria-live="polite">
+      <span class="flow-label">Preview</span>
+      <span class="path-token" data-side={draftDriver}>
+        <span>You edit</span>
+        <strong>{draftDriverLabel}</strong>
+      </span>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      <span class="transform-token">{draftTransformLabel}</span>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      <span
+        class="path-token"
+        data-side={draftDriver === "blue" ? "red" : "blue"}
+      >
+        <span>Fuse rebuilds</span>
+        <strong>{draftFollowerLabel}</strong>
+      </span>
     </div>
-    <FuseModeBar
-      compact={true}
-      selectedMode={editing ? draftMode : fuseState.mode}
-      onSelect={selectMode}
-    />
-  </div>
 
-  {#if editing && draftMode === "symmetry"}
-    <div class="relationship-editor">
-      <FuseTransformPicker
-        embedded={true}
-        relationshipLayout={true}
-        driver={draftDriver}
-        transform={draftTransform}
-        onDriverChange={previewDriver}
-        onTransformChange={previewTransform}
-      />
-
-      <div class="relationship-commit">
-        <div class="relationship-flow" aria-live="polite">
-          <span class="flow-label">Live preview</span>
-          <span class="path-token" data-side={draftDriver}>
-            <span class="token-kicker">You edit</span>
-            <strong>{draftDriverLabel}</strong>
-          </span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-          <span class="transform-token">
-            <span class="token-kicker">Using</span>
-            <strong>{draftTransformLabel}</strong>
-          </span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-          <span
-            class="path-token"
-            data-side={draftDriver === "blue" ? "red" : "blue"}
-          >
-            <span class="token-kicker">Fuse rebuilds</span>
-            <strong>{draftFollowerLabel}</strong>
-          </span>
-        </div>
-
-        <div class="editor-actions">
-          {#if fuseState.mode === "symmetry"}
-            <PanelButton variant="secondary" onclick={cancelRelationship}>
-              Cancel
-            </PanelButton>
-          {/if}
-          <PanelButton
-            variant="primary"
-            disabled={busy}
-            onclick={applyRelationship}
-          >
-            <i class="fas fa-link" aria-hidden="true"></i>
-            Use this relationship
-          </PanelButton>
-        </div>
-      </div>
-    </div>
-  {:else if fuseState.mode === "symmetry"}
-    <div class="applied-relationship">
-      <div class="relationship-equation" role="status">
-        <span class="path-token" data-side={fuseState.driverSide}
-          >{appliedDriverLabel} changes</span
-        >
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span class="transform-token">{transformLabel}</span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span
-          class="path-token"
-          data-side={fuseState.driverSide === "blue" ? "red" : "blue"}
-        >
-          {appliedFollowerLabel} rebuilds
-        </span>
-      </div>
-      <p>
-        Only {appliedDriverLabel} stays editable. Fuse keeps
-        {appliedFollowerLabel} linked to it.
-      </p>
-      <PanelButton variant="secondary" onclick={() => beginEdit("symmetry")}>
-        <i class="fas fa-pen" aria-hidden="true"></i>
-        Change link
+    <div class="editor-actions">
+      <PanelButton variant="secondary" onclick={cancel}>Cancel</PanelButton>
+      <PanelButton variant="primary" disabled={busy} onclick={apply}>
+        <i class="fas fa-link" aria-hidden="true"></i>
+        Use this relationship
       </PanelButton>
     </div>
-  {:else}
-    <div class="independent-state">
-      <div class="independent-paths" aria-hidden="true">
-        <span class="path-token" data-side="blue">Blue path</span>
-        <span class="independent-divider">
-          <i class="fas fa-link-slash" aria-hidden="true"></i>
-          Independent
-        </span>
-        <span class="path-token" data-side="red">Red path</span>
-      </div>
-      <p class="independent-note">
-        Change either path without rebuilding the other.
-      </p>
-    </div>
-  {/if}
+  </div>
 </section>
 
 <style>
-  .relationship-shell {
-    position: relative;
-    grid-area: mode;
+  .pairing-editor {
     display: grid;
-    gap: clamp(12px, 0.5cqw, var(--settings-spacing-lg, 20px));
-    min-width: 0;
-    padding: clamp(14px, 0.65cqw, var(--settings-spacing-lg, 20px));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-lg, 20px);
-    background: var(--theme-panel-bg, rgba(12, 14, 22, 0.94));
-    box-shadow: var(--theme-panel-shadow, 0 16px 44px rgba(0, 0, 0, 0.24));
-    overflow: hidden;
-  }
-
-  .relationship-shell::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 2px;
-    content: "";
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--prop-blue, #2196f3) 72%, transparent),
-      color-mix(in srgb, var(--theme-accent, #8b6cff) 58%, transparent),
-      color-mix(in srgb, var(--prop-red, #f44336) 72%, transparent)
-    );
-    opacity: 0.7;
-  }
-
-  .relationship-heading,
-  .applied-relationship,
-  .editor-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--settings-spacing-md, 12px);
-  }
-
-  .relationship-heading {
-    justify-content: flex-start;
     gap: var(--settings-spacing-lg, 20px);
-  }
-
-  .relationship-heading > div,
-  .applied-relationship p {
+    width: 100%;
     min-width: 0;
+    max-width: 34rem;
+    margin-inline: auto;
   }
 
-  .eyebrow,
-  h3,
-  p {
+  .pairing-intro {
+    display: grid;
+    gap: 4px;
+  }
+
+  .pairing-intro p,
+  .pairing-intro h3 {
     margin: 0;
   }
 
-  .eyebrow {
+  .eyebrow,
+  .flow-label {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
     font-weight: 750;
@@ -269,76 +136,32 @@
     text-transform: uppercase;
   }
 
-  h3 {
-    margin-top: 2px;
+  .pairing-intro h3 {
     color: var(--theme-text, #fff);
-    font-size: 1rem;
+    font-size: 1.05rem;
   }
 
-  .independent-note,
-  .applied-relationship p {
+  .pairing-intro > p:last-child {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
     font-size: var(--font-size-min, 14px);
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
-  .independent-state {
+  .relationship-commit {
     display: grid;
-    grid-template-columns: auto minmax(12rem, 1fr);
-    align-items: center;
-    gap: var(--settings-spacing-lg, 20px);
-    padding-top: var(--settings-spacing-md, 12px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .independent-paths {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .independent-divider {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-  }
-
-  .relationship-editor {
-    display: grid;
-    gap: var(--settings-spacing-md, 12px);
-    padding-top: var(--settings-spacing-md, 12px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    width: 100%;
-  }
-
-  .relationship-flow,
-  .relationship-equation {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-width: 0;
+    gap: var(--settings-spacing-md, 14px);
+    padding-top: var(--settings-spacing-md, 14px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .relationship-flow {
-    justify-content: flex-start;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
   }
 
-  .flow-label {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 750;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .relationship-flow > i,
-  .relationship-equation > i {
-    flex: 0 0 auto;
+  .relationship-flow > i {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
   }
@@ -347,13 +170,17 @@
   .transform-token {
     display: grid;
     gap: 1px;
-    min-width: 8rem;
-    padding: 8px 13px;
+    padding: 7px 11px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 999px;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 750;
+    color: var(--theme-text, #fff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+    font-size: var(--font-size-compact, 12px);
     white-space: nowrap;
+  }
+
+  .path-token > span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
   }
 
   .path-token[data-side="blue"] {
@@ -361,11 +188,6 @@
       in srgb,
       var(--prop-blue, #2196f3) 54%,
       var(--theme-stroke)
-    );
-    background: color-mix(
-      in srgb,
-      var(--prop-blue, #2196f3) 13%,
-      var(--theme-card-bg)
     );
   }
 
@@ -375,151 +197,59 @@
       var(--prop-red, #f44336) 54%,
       var(--theme-stroke)
     );
-    background: color-mix(
-      in srgb,
-      var(--prop-red, #f44336) 13%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .token-kicker {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 650;
   }
 
   .transform-token {
-    color: color-mix(in srgb, var(--semantic-warning, #f97316) 78%, white);
-    border-color: color-mix(
+    display: inline-flex;
+    align-items: center;
+    color: color-mix(
       in srgb,
-      var(--semantic-warning, #f97316) 45%,
-      var(--theme-stroke)
+      var(--semantic-warning, #f97316) 78%,
+      var(--theme-text)
     );
+    font-weight: 750;
   }
 
   .editor-actions {
-    justify-content: flex-end;
-    flex: 0 0 auto;
-  }
-
-  .relationship-commit {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 14px;
-    padding: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: var(--settings-radius-md, 14px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: 8px;
   }
 
-  .applied-relationship {
-    display: grid;
-    grid-template-columns: auto minmax(16rem, 1fr) auto;
-    padding-top: var(--settings-spacing-md, 12px);
-    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  .editor-actions :global(.panel-btn) {
+    width: 100%;
   }
 
-  .independent-note {
-    min-width: 0;
-  }
-
-  .applied-relationship p {
-    flex: 1 1 20rem;
-  }
-
-  @container fuse (max-width: 960px) {
-    .relationship-heading,
-    .applied-relationship,
-    .independent-state {
-      align-items: stretch;
-      flex-direction: column;
+  @media (max-width: 480px) {
+    .pairing-editor {
+      gap: var(--settings-spacing-md, 14px);
     }
 
-    .relationship-commit {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: stretch;
+    .relationship-flow {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     }
 
-    .applied-relationship {
-      grid-template-columns: minmax(0, 1fr);
+    .flow-label {
+      grid-column: 1 / -1;
     }
 
-    .independent-state {
-      grid-template-columns: minmax(0, 1fr);
+    .path-token {
+      min-width: 0;
+      white-space: normal;
     }
 
-    .relationship-heading :global(.fuse-mode-bar) {
-      width: 100%;
-    }
-  }
-
-  @container fuse (min-width: 1680px) and (min-height: 900px) {
-    .relationship-shell {
-      gap: var(--settings-spacing-lg, 20px);
-    }
-
-    h3 {
-      font-size: 1.2rem;
-    }
-
-    .independent-note,
-    .applied-relationship p,
-    .path-token,
     .transform-token {
-      font-size: 16px;
+      grid-column: 1 / -1;
+      justify-self: center;
     }
 
-    .relationship-editor {
-      padding-top: var(--settings-spacing-lg, 20px);
+    .relationship-flow > i:first-of-type {
+      grid-column: 2;
     }
 
-    .relationship-editor :global(.transform-picker) {
-      width: 100%;
-    }
-  }
-
-  @container fuse (min-width: 1181px) and (max-width: 1679px) and (min-height: 780px) {
-    .relationship-shell {
-      gap: 8px;
-      padding: 12px;
-    }
-
-    .relationship-editor {
-      gap: 8px;
-      padding-top: 8px;
-    }
-
-    .relationship-commit {
-      gap: 10px;
-      padding: 8px;
-    }
-
-    .path-token,
-    .transform-token {
-      min-width: 7rem;
-      padding: 6px 10px;
-    }
-  }
-
-  @container fuse (min-width: 2600px) and (min-height: 1400px) {
-    .relationship-shell {
-      gap: 24px;
-      padding: 24px;
-    }
-
-    h3 {
-      font-size: 1.4rem;
-    }
-
-    .relationship-commit {
-      gap: 20px;
-      padding: 16px;
-    }
-
-    .path-token,
-    .transform-token {
-      padding: 10px 16px;
+    .relationship-flow > i:last-of-type {
+      display: none;
     }
   }
 </style>

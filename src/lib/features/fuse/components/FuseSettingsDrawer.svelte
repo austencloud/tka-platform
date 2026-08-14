@@ -1,153 +1,154 @@
-<script lang="ts">
-  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-  import { portal } from "$lib/features/create/generate/components/modals/portal";
-  import { getFuseContext } from "../context/fuse-context";
-  import FuseLengthPicker from "./FuseLengthPicker.svelte";
-  import FuseRelationshipComposer from "./FuseRelationshipComposer.svelte";
-
-  let { isOpen = $bindable(false) }: { isOpen: boolean } = $props();
-  const { state: fuseState } = getFuseContext();
-
-  const modeSummary = $derived(
-    fuseState.mode === "shuffle" ? "Independent paths" : "Symmetry"
-  );
+<script module lang="ts">
+  export type FuseSettingsDestination =
+    | "basics"
+    | "style"
+    | "starting"
+    | "pairing"
+    | null;
 </script>
 
-<div use:portal>
-  <Drawer
-    bind:isOpen
-    placement="bottom"
-    closeOnBackdrop={true}
-    closeOnEscape={true}
-    ariaLabel="Fuse options"
-    showHandle={true}
-    focusContainerOnOpen={true}
-    class="fuse-settings-drawer"
-    backdropClass="settings-backdrop"
-  >
-    <div class="settings-shell">
-      <header class="settings-header">
-        <div class="settings-title">
-          <h2>Fuse options</h2>
-          <p>{fuseState.requestedLength} steps · {modeSummary}</p>
-        </div>
-        <PanelButton variant="secondary" onclick={() => (isOpen = false)}>
-          <i class="fas fa-check" aria-hidden="true"></i>
-          Done
-        </PanelButton>
-      </header>
+<script lang="ts">
+  import GenerationSettingsOverlay from "$lib/features/create/generate/components/cards/GenerationSettingsOverlay.svelte";
+  import {
+    buildCustomizeSummary,
+    ORIENTATION_SHORT,
+  } from "$lib/features/create/generate/components/cards/customize-summary";
+  import GenerationSettingsDrawer from "$lib/features/create/generate/components/modals/GenerationSettingsDrawer.svelte";
+  import SettingsDrillPanel, {
+    type SettingsDrillItem,
+  } from "$lib/shared/ui/components/settings-drill/SettingsDrillPanel.svelte";
+  import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getFuseContext } from "../context/fuse-context";
+  import { FUSE_TRANSFORMS } from "../state/fuse-state.svelte";
+  import FusePathRecipePanel from "./FusePathRecipePanel.svelte";
+  import FuseRelationshipComposer from "./FuseRelationshipComposer.svelte";
 
-      <div class="settings-body themed-scrollbar">
-        <section class="settings-section" aria-labelledby="fuse-length-title">
-          <h3 id="fuse-length-title">Length</h3>
-          <FuseLengthPicker />
-        </section>
+  let {
+    isOpen = $bindable(false),
+    destination = $bindable(null),
+  }: {
+    isOpen: boolean;
+    destination?: FuseSettingsDestination;
+  } = $props();
 
-        <FuseRelationshipComposer />
-      </div>
-    </div>
-  </Drawer>
-</div>
+  const { state: fuseState } = getFuseContext();
+  const styleBaseline = {
+    constraintPreset: "mixed",
+    handPathMode: "mixed",
+    motionTypeFilter: null,
+  } as const;
+  const locationLabels: Partial<Record<GridLocation, string>> = {
+    [GridLocation.NORTH]: "North",
+    [GridLocation.EAST]: "East",
+    [GridLocation.SOUTH]: "South",
+    [GridLocation.WEST]: "West",
+  };
+
+  const basicsSummary = $derived(
+    fuseState.generationLevel === 1
+      ? `${fuseState.requestedLength} steps · L1 · No turns`
+      : `${fuseState.requestedLength} steps · L${fuseState.generationLevel} · ≤${fuseState.maxTurnIntensity}`
+  );
+  const styleSummary = $derived.by(() => {
+    const summary = buildCustomizeSummary(
+      {
+        constraintPreset: fuseState.constraintPreset,
+        handPathMode: fuseState.handPathMode,
+        motionTypeFilter: fuseState.motionTypeFilter,
+      },
+      styleBaseline
+    );
+    return summary.isDefault ? "Default" : summary.facts.join(" · ");
+  });
+  const startingSummary = $derived.by(() => {
+    const location = fuseState.startLocation
+      ? (locationLabels[fuseState.startLocation] ?? fuseState.startLocation)
+      : "Random";
+    const orientation = fuseState.startOrientation
+      ? (ORIENTATION_SHORT[fuseState.startOrientation] ??
+        fuseState.startOrientation)
+      : "Random";
+    const travel = fuseState.traversalDirection
+      ? fuseState.traversalDirection === "clockwise"
+        ? "Clockwise"
+        : "Counterclockwise"
+      : "Random";
+    return `${location} · ${orientation} · ${travel}`;
+  });
+  const pairingSummary = $derived.by(() => {
+    if (fuseState.mode === "shuffle") return "Separate paths";
+    const driver = fuseState.driverSide === "blue" ? "Blue" : "Red";
+    const follower = fuseState.driverSide === "blue" ? "Red" : "Blue";
+    const transform =
+      FUSE_TRANSFORMS.find((item) => item.id === fuseState.transformId)
+        ?.label ?? "Mirror";
+    return `${driver} → ${transform} → ${follower}`;
+  });
+  const drillItems = $derived<SettingsDrillItem[]>([
+    { id: "basics", label: "Basics", value: basicsSummary },
+    { id: "style", label: "Style", value: styleSummary },
+    {
+      id: "starting",
+      label: "Starting conditions",
+      value: startingSummary,
+    },
+    { id: "pairing", label: "Pairing", value: pairingSummary },
+  ]);
+
+  function closeDrawer(): void {
+    isOpen = false;
+    destination = null;
+  }
+
+  function selectDestination(id: string | null): void {
+    destination = id as FuseSettingsDestination;
+  }
+</script>
+
+<GenerationSettingsDrawer
+  {isOpen}
+  ariaLabel="Customize Fuse settings"
+  onClose={closeDrawer}
+>
+  {#snippet children()}
+    <GenerationSettingsOverlay
+      title="Customize Fuse"
+      closeLabel="Close Fuse settings"
+      onClose={closeDrawer}
+    >
+      {#snippet children()}
+        <SettingsDrillPanel
+          items={drillItems}
+          bind:selected={destination}
+          onSelect={selectDestination}
+        >
+          {#snippet listHeader()}
+            <p class="overlay-note">
+              These settings stick until you change them again.
+            </p>
+          {/snippet}
+
+          {#snippet detail(id)}
+            {#if id === "basics" || id === "style" || id === "starting"}
+              <FusePathRecipePanel section={id} />
+            {:else if id === "pairing"}
+              <FuseRelationshipComposer
+                onCancel={() => (destination = null)}
+                onApply={closeDrawer}
+              />
+            {/if}
+          {/snippet}
+        </SettingsDrillPanel>
+      {/snippet}
+    </GenerationSettingsOverlay>
+  {/snippet}
+</GenerationSettingsDrawer>
 
 <style>
-  :global(.fuse-settings-drawer) {
-    --sheet-max-height: min(92dvh, 760px);
-    --sheet-bg: var(--theme-panel-bg, rgb(15, 15, 20));
-    --sheet-border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    --sheet-shadow: 0 -18px 54px rgba(0, 0, 0, 0.48);
-  }
-
-  .settings-shell {
-    display: flex;
-    flex-direction: column;
-    width: min(100%, 820px);
-    max-height: 100%;
-    min-height: 0;
-    margin: 0 auto;
-    color: var(--theme-text, #fff);
-  }
-
-  .settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex: 0 0 auto;
-    gap: var(--settings-spacing-md, 14px);
-    padding: 4px var(--settings-spacing-md, 16px)
-      var(--settings-spacing-md, 14px);
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  }
-
-  .settings-title {
-    min-width: 0;
-  }
-
-  .settings-title h2,
-  .settings-title p,
-  .settings-section h3 {
-    margin: 0;
-  }
-
-  .settings-title h2 {
-    font-size: 1.05rem;
-    font-weight: 750;
-    letter-spacing: -0.01em;
-  }
-
-  .settings-title p {
-    margin-top: 3px;
-    overflow: hidden;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+  .overlay-note {
+    flex-shrink: 0;
+    margin: 0 0 8px;
+    color: rgba(255, 255, 255, 0.55);
     font-size: var(--font-size-compact, 12px);
-    font-variant-numeric: tabular-nums;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .settings-header :global(.panel-btn) {
-    min-width: 96px;
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 48%,
-      var(--theme-stroke, transparent)
-    );
-    background: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 13%,
-      var(--theme-card-bg, #161821)
-    );
-    font-weight: 700;
-  }
-
-  .settings-body {
-    display: grid;
-    gap: var(--settings-spacing-md, 14px);
-    min-height: 0;
-    padding: var(--settings-spacing-md, 14px) var(--settings-spacing-md, 16px)
-      calc(var(--settings-spacing-lg, 24px) + env(safe-area-inset-bottom, 0px));
-    overflow-y: auto;
-  }
-
-  .settings-section {
-    display: grid;
-    gap: var(--settings-spacing-sm, 8px);
-    min-width: 0;
-    padding: var(--settings-spacing-md, 14px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-lg, 18px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
-  }
-
-  .settings-section h3 {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .settings-shell {
-      scroll-behavior: auto;
-    }
   }
 </style>

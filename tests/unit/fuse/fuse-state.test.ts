@@ -8,11 +8,15 @@ import { PLAYBACK_MAX_BPM } from "$lib/shared/animation-engine/domain/constants/
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { GeneratedSoloLoop } from "$lib/features/fuse/services/solo-loop-generator";
+import {
+  DEFAULT_SOLO_LOOP_RECIPE,
+  type GeneratedSoloLoop,
+} from "$lib/features/fuse/services/solo-loop-generator";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -147,7 +151,7 @@ describe("Fuse state", () => {
     await state.initialize();
 
     expect(generator).toHaveBeenCalledTimes(2);
-    expect(generator).toHaveBeenNthCalledWith(1, 8);
+    expect(generator).toHaveBeenNthCalledWith(1, 8, DEFAULT_SOLO_LOOP_RECIPE);
     expect(loader.loadSequenceMetadata).not.toHaveBeenCalled();
     expect(loader.loadFullSequenceData).not.toHaveBeenCalled();
     expect(state.blue.sequence?.blueSoloProp).toBeDefined();
@@ -160,6 +164,56 @@ describe("Fuse state", () => {
     expect(generator).toHaveBeenCalledTimes(3);
     expect(state.red.sequence?.redSoloProp?.contentHash).toBe(redHash);
     expect(state.blue.canGoBack).toBe(true);
+  });
+
+  it("uses one persisted generation recipe for both Regenerate buttons", async () => {
+    const generator = createSoloGenerator();
+    const state = createState(createLoader([]), {
+      generateSoloLoop: generator,
+    });
+    await state.initialize();
+
+    state.setGenerationLevel(3);
+    state.setMaxTurnIntensity(0.5);
+    state.setConstraintPreset("smooth");
+    state.setHandPathMode("choppy");
+    state.setMotionTypeFilter("prefer-dash");
+    state.setStartLocation(GridLocation.SOUTH);
+    state.setStartOrientation(Orientation.CLOCK);
+    state.setTraversalDirection("counterclockwise");
+    expect(generator).toHaveBeenCalledTimes(2);
+
+    await state.shuffle("red");
+
+    expect(generator).toHaveBeenLastCalledWith(8, {
+      level: 3,
+      maxTurnIntensity: 0.5,
+      constraintPreset: "smooth",
+      handPathMode: "choppy",
+      motionTypeFilter: "prefer-dash",
+      startLocation: GridLocation.SOUTH,
+      startOrientation: Orientation.CLOCK,
+      traversalDirection: "counterclockwise",
+    });
+    expect(state.generationLevel).toBe(3);
+    expect(state.maxTurnIntensity).toBe(0.5);
+
+    state.setGenerationLevel(2);
+    expect(state.maxTurnIntensity).toBe(1);
+    expect(state.startOrientation).toBeNull();
+    expect(generator).toHaveBeenCalledTimes(3);
+
+    const restored = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    expect(restored.generationLevel).toBe(2);
+    expect(restored.maxTurnIntensity).toBe(1);
+    expect(restored.constraintPreset).toBe("smooth");
+    expect(restored.handPathMode).toBe("choppy");
+    expect(restored.motionTypeFilter).toBe("prefer-dash");
+    expect(restored.startLocation).toBe(GridLocation.SOUTH);
+    expect(restored.startOrientation).toBeNull();
+    expect(restored.traversalDirection).toBe("counterclockwise");
   });
 
   it("chooses a new first step on one LOOP without changing its partner", async () => {
@@ -249,6 +303,35 @@ describe("Fuse state", () => {
     expect(mirroredMotions).toBeDefined();
     expect(rotatedMotions).toBeDefined();
     expect(rotatedMotions).not.toEqual(mirroredMotions);
+  });
+
+  it("previews a pairing draft without mutating the applied relationship", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+
+    const independentPreview = state.previewSequence;
+    await state.previewRelationship("red", "rotate90");
+
+    expect(state.mode).toBe("shuffle");
+    expect(state.driverSide).toBe("blue");
+    expect(state.transformId).toBe("mirror");
+    expect(state.previewSequence).not.toEqual(independentPreview);
+
+    state.cancelRelationshipPreview();
+    expect(state.mode).toBe("shuffle");
+    expect(state.driverSide).toBe("blue");
+    expect(state.transformId).toBe("mirror");
+    expect(state.previewSequence).toEqual(independentPreview);
+
+    state.setRelationship("red", "rotate90");
+    await vi.waitFor(() => {
+      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90).");
+    });
+    expect(state.mode).toBe("symmetry");
+    expect(state.driverSide).toBe("red");
+    expect(state.transformId).toBe("rotate90");
   });
 
   it("distinguishes a catalog failure from an exact-length empty pool", async () => {

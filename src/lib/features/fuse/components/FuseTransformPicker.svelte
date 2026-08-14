@@ -113,30 +113,6 @@
         {/if}
       </div>
     </div>
-    {#if relationshipLayout}
-      <div class="driver-map" aria-hidden="true">
-        <span class="driver-node" data-side={selectedDriver}>
-          <i class="fas fa-pen" aria-hidden="true"></i>
-          <span>
-            <strong>{driverLabel}</strong>
-            <small>You edit</small>
-          </span>
-        </span>
-        <span class="driver-arrow">
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        </span>
-        <span
-          class="driver-node"
-          data-side={selectedDriver === "blue" ? "red" : "blue"}
-        >
-          <i class="fas fa-link" aria-hidden="true"></i>
-          <span>
-            <strong>{followerLabel}</strong>
-            <small>Fuse builds</small>
-          </span>
-        </span>
-      </div>
-    {/if}
     <div class="field-control driver-control">
       <SegmentedControl
         options={driverOptions}
@@ -155,7 +131,7 @@
         <div>
           <span class="field-label">How the other path is rebuilt</span>
           <span class="field-help">
-            Each rule rebuilds {followerLabel} immediately
+            Each choice previews a new {followerLabel} path
           </span>
         </div>
       </div>
@@ -201,9 +177,12 @@
   }
 
   .transform-picker.embedded.relationship-layout {
-    grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
-    gap: 10px;
+    gap: var(--settings-spacing-md, 14px);
+    width: 100%;
+    max-width: 34rem;
+    margin-inline: auto;
   }
 
   .field {
@@ -291,66 +270,6 @@
     padding-block: 8px;
   }
 
-  .driver-map {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
-    margin-block: auto;
-    padding-block: 12px;
-  }
-
-  .driver-node {
-    display: grid;
-    justify-items: center;
-    gap: 7px;
-    min-width: 0;
-    padding: 12px 8px;
-    border: 1px solid
-      color-mix(in srgb, var(--node-color) 42%, var(--theme-stroke));
-    border-radius: var(--settings-radius-md, 14px);
-    color: var(--theme-text, #fff);
-    background: color-mix(
-      in srgb,
-      var(--node-color) 12%,
-      var(--theme-panel-bg)
-    );
-    text-align: center;
-  }
-
-  .driver-node[data-side="blue"] {
-    --node-color: var(--prop-blue, #2196f3);
-  }
-
-  .driver-node[data-side="red"] {
-    --node-color: var(--prop-red, #f44336);
-  }
-
-  .driver-node > i {
-    color: color-mix(in srgb, var(--node-color) 76%, var(--theme-text));
-    font-size: 1.15rem;
-  }
-
-  .driver-node > span {
-    display: grid;
-    gap: 1px;
-    min-width: 0;
-  }
-
-  .driver-node strong {
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .driver-node small {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .driver-arrow {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-  }
-
   .field-control :global(.segmented-control) {
     width: 100%;
   }
@@ -375,17 +294,7 @@
     }
   }
 
-  @container fuse (min-width: 1680px) and (max-width: 2599px) and (min-height: 900px) {
-    .transform-picker.embedded.relationship-layout {
-      grid-template-columns: minmax(16rem, 19rem) minmax(0, 1fr);
-    }
-  }
-
   @container fuse (min-width: 1181px) and (max-width: 1679px) and (min-height: 780px) {
-    .driver-map {
-      display: none;
-    }
-
     .relationship-layout .field,
     .relationship-layout .transform-options {
       padding: 10px;
@@ -403,11 +312,6 @@
   }
 
   @container fuse (min-width: 2600px) and (min-height: 1400px) {
-    .transform-picker.embedded.relationship-layout {
-      grid-template-columns: minmax(22rem, 26rem) minmax(0, 1fr);
-      gap: 16px;
-    }
-
     .relationship-layout .field,
     .relationship-layout .transform-options {
       padding: 20px;
@@ -416,11 +320,6 @@
     .step-number {
       width: 36px;
       height: 36px;
-    }
-
-    .driver-node {
-      min-height: 100px;
-      align-content: center;
     }
   }
 </style>

@@ -3,6 +3,12 @@ import {
   type MotionData as EngineMotionData,
 } from "@tka/sequence-engine";
 import {
+  allocateTurns,
+  getHandpathDirection,
+  HandPath,
+} from "@tka/sequence-engine/generation";
+import { materializeTurn } from "@tka/sequence-engine/generation/turn-materializer";
+import {
   DEFAULT_FLIPPED_AXIS,
   DEFAULT_MIRRORED_AXIS,
   LOCATION_MAP_CLOCKWISE,
@@ -17,28 +23,60 @@ import {
   buildRewoundSoloLoop,
   buildRotatedSoloLoop,
   detectSoloLOOP,
+  rewindSoloMotion,
 } from "@tka/sequence-engine/loop/solo";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
 import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
 import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
+import { extractBlueSoloProp } from "$lib/shared/foundation/services/sequence-decomposer";
 import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
 import {
+  GridLocation,
   GridMode,
-  type GridLocation,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionColor,
-  type Orientation,
+  MotionType,
+  Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+import type { TurnLevel } from "$lib/shared/create/services/level-turn-values";
 import {
   isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
 
 export interface GeneratedSoloLoop {
   readonly solo: SoloPropData;
   readonly loopSpec: PropLOOPSpecWire;
 }
+
+export interface SoloLoopGenerationRecipe {
+  readonly level: TurnLevel;
+  readonly maxTurnIntensity: number;
+  readonly constraintPreset: "smooth" | "mixed" | "choppy";
+  readonly handPathMode: "smooth" | "mixed" | "choppy";
+  readonly motionTypeFilter: "no-dash" | "prefer-dash" | null;
+  readonly startLocation: GridLocation | null;
+  readonly startOrientation: Orientation | null;
+  readonly traversalDirection: SoloLoopTraversalDirection | null;
+}
+
+export type SoloLoopTraversalDirection = "clockwise" | "counterclockwise";
+
+export const DEFAULT_SOLO_LOOP_RECIPE: SoloLoopGenerationRecipe = Object.freeze(
+  {
+    level: 2,
+    maxTurnIntensity: 1,
+    constraintPreset: "mixed",
+    handPathMode: "mixed",
+    motionTypeFilter: null,
+    startLocation: null,
+    startOrientation: null,
+    traversalDirection: null,
+  }
+);
 
 function soloStepsToEngineMotions(
   steps: readonly SoloPropStepData[]
@@ -85,6 +123,10 @@ async function loadDiamondMotionTemplates(): Promise<readonly MotionData[]> {
         for (const color of [MotionColor.BLUE, MotionColor.RED] as const) {
           const motion = pictograph.motions[color];
           if (!isVisibleMotion(motion)) continue;
+          // Float is allocated from a pro/anti shift at Level 3. Treating an
+          // already-floated variation as a base motion would let it leak into
+          // Levels 1 and 2 or receive a numeric turn value.
+          if (motion.motionType === "float") continue;
           unique.set(motionSignature(motion), motion);
         }
       }
@@ -104,29 +146,231 @@ function randomItem<T>(items: readonly T[], random: () => number): T {
   return items[Math.floor(random() * items.length) % items.length]!;
 }
 
+const CARDINAL_START_LOCATIONS: readonly GridLocation[] = [
+  GridLocation.NORTH,
+  GridLocation.EAST,
+  GridLocation.SOUTH,
+  GridLocation.WEST,
+];
+
+export interface FuseFlowerGenerationVariation {
+  readonly flower: Flower;
+  readonly firstBeat: number;
+  readonly startOrientation: Orientation;
+  readonly startLocation?: GridLocation;
+  readonly reverseTraversal: boolean;
+}
+
+/**
+ * Pick the hand path, first step, prop orientation, and traversal independently.
+ * Regenerating the same flower can therefore start elsewhere, present a
+ * different prop pose, or travel around the flower in the opposite direction.
+ */
+export function chooseFuseFlowerGenerationVariation(
+  flowers: readonly Flower[],
+  random: () => number = Math.random,
+  recipe: SoloLoopGenerationRecipe = DEFAULT_SOLO_LOOP_RECIPE
+): FuseFlowerGenerationVariation {
+  const allowedOrientations = startOrientationsForLevel(recipe.level);
+  return {
+    flower: randomItem(flowers, random),
+    firstBeat: randomItem([1, 2, 3, 4] as const, random),
+    startOrientation:
+      recipe.startOrientation ?? randomItem(allowedOrientations, random),
+    ...(recipe.startLocation ? { startLocation: recipe.startLocation } : {}),
+    reverseTraversal:
+      recipe.traversalDirection === "counterclockwise" ||
+      (recipe.traversalDirection === null && random() >= 0.5),
+  };
+}
+
+/**
+ * Play a closed one-hand LOOP in the opposite direction. The sequence engine's
+ * canonical rewind primitive reverses both the step order and each motion, so
+ * the first location and prop orientation still meet the final step exactly.
+ */
+export function reverseSoloLoopTraversal(source: SoloPropData): SoloPropData {
+  const reversed = [...soloStepsToEngineMotions(source.steps)]
+    .reverse()
+    .map(rewindSoloMotion);
+  return generatedFromMotions(reversed, source.name ?? "Generated solo LOOP")
+    .solo;
+}
+
 function instantiateMotion(
   template: MotionData,
-  startOrientation: string
+  startOrientation: string,
+  assignedTurns: number | "fl",
+  previousRotation: string | undefined,
+  random: () => number,
+  recipe: SoloLoopGenerationRecipe
 ): EngineMotionData {
+  const materialized = materializeTurn(template, assignedTurns, {
+    previousRotation,
+    propContinuity:
+      recipe.constraintPreset === "smooth"
+        ? "maximize"
+        : recipe.constraintPreset === "choppy"
+          ? "force-reversals"
+          : "allow-reversals",
+    random,
+  });
   const motion: EngineMotionData = {
-    motionType: template.motionType,
+    motionType: materialized.motionType as EngineMotionData["motionType"],
     startLocation: template.startLocation,
     endLocation: template.endLocation,
-    rotationDirection: template.rotationDirection,
-    turns: template.turns,
+    rotationDirection:
+      materialized.rotationDirection as EngineMotionData["rotationDirection"],
+    turns: materialized.turns as EngineMotionData["turns"],
     startOrientation: startOrientation as EngineMotionData["startOrientation"],
     endOrientation: startOrientation as EngineMotionData["endOrientation"],
-    ...(template.prefloatMotionType
-      ? { prefloatMotionType: template.prefloatMotionType }
+    ...(materialized.prefloatMotionType
+      ? {
+          prefloatMotionType:
+            materialized.prefloatMotionType as EngineMotionData["motionType"],
+        }
       : {}),
-    ...(template.prefloatRotationDirection
-      ? { prefloatRotationDirection: template.prefloatRotationDirection }
+    ...(materialized.prefloatRotationDirection
+      ? {
+          prefloatRotationDirection:
+            materialized.prefloatRotationDirection as EngineMotionData["rotationDirection"],
+        }
       : {}),
   };
   return {
     ...motion,
     endOrientation: calculateEndOrientation(motion),
   };
+}
+
+function isDashMotion(motion: Pick<MotionData, "motionType">): boolean {
+  return motion.motionType === MotionType.DASH;
+}
+
+function isDirectionalHandPath(path: HandPath): boolean {
+  return path === HandPath.CLOCKWISE || path === HandPath.COUNTER_CLOCKWISE;
+}
+
+function isRealRotation(rotation: string | undefined): boolean {
+  return Boolean(
+    rotation && rotation !== "noRotation" && rotation !== "no_rot"
+  );
+}
+
+function scoreTemplate(
+  template: MotionData,
+  previous: EngineMotionData | undefined,
+  recipe: SoloLoopGenerationRecipe
+): number {
+  let score = 0;
+
+  if (recipe.motionTypeFilter === "prefer-dash" && isDashMotion(template)) {
+    score += 8;
+  }
+
+  if (!previous) return score;
+
+  const previousHandPath = getHandpathDirection(
+    previous.startLocation,
+    previous.endLocation
+  );
+  const candidateHandPath = getHandpathDirection(
+    template.startLocation,
+    template.endLocation
+  );
+  const handReversal =
+    isDirectionalHandPath(previousHandPath) &&
+    isDirectionalHandPath(candidateHandPath) &&
+    previousHandPath !== candidateHandPath;
+
+  if (recipe.handPathMode === "smooth") score += handReversal ? -4 : 4;
+  if (recipe.handPathMode === "choppy") score += handReversal ? 4 : -2;
+
+  const propReversal =
+    isRealRotation(previous.rotationDirection) &&
+    isRealRotation(template.rotationDirection) &&
+    previous.rotationDirection !== template.rotationDirection;
+
+  if (recipe.constraintPreset === "smooth") score += propReversal ? -3 : 3;
+  if (recipe.constraintPreset === "choppy") score += propReversal ? 3 : -2;
+
+  return score;
+}
+
+function chooseMotionTemplate(
+  candidates: readonly MotionData[],
+  previous: EngineMotionData | undefined,
+  recipe: SoloLoopGenerationRecipe,
+  random: () => number
+): MotionData | null {
+  const viable =
+    recipe.motionTypeFilter === "no-dash"
+      ? candidates.filter((candidate) => !isDashMotion(candidate))
+      : [...candidates];
+  if (viable.length === 0) return null;
+
+  let bestScore = Number.NEGATIVE_INFINITY;
+  const best: MotionData[] = [];
+  for (const candidate of viable) {
+    const score = scoreTemplate(candidate, previous, recipe);
+    if (score > bestScore) {
+      bestScore = score;
+      best.length = 0;
+      best.push(candidate);
+    } else if (score === bestScore) {
+      best.push(candidate);
+    }
+  }
+  return randomItem(best, random);
+}
+
+function startLocationsWithMotions(
+  byStart: ReadonlyMap<string, readonly MotionData[]>,
+  recipe: SoloLoopGenerationRecipe
+): readonly GridLocation[] {
+  if (recipe.startLocation) {
+    return byStart.has(recipe.startLocation) ? [recipe.startLocation] : [];
+  }
+  return CARDINAL_START_LOCATIONS.filter((location) => byStart.has(location));
+}
+
+function chooseStartOrientation(
+  recipe: SoloLoopGenerationRecipe,
+  random: () => number
+): Orientation {
+  return (
+    recipe.startOrientation ??
+    randomItem(startOrientationsForLevel(recipe.level), random)
+  );
+}
+
+function applyTraversalPreference(
+  generated: GeneratedSoloLoop,
+  recipe: SoloLoopGenerationRecipe,
+  random: () => number
+): GeneratedSoloLoop {
+  const reverse =
+    recipe.traversalDirection === "counterclockwise" ||
+    (recipe.traversalDirection === null && random() >= 0.5);
+  if (!reverse) return generated;
+  const reversed = reverseSoloLoopTraversal(generated.solo);
+  return generatedFromMotions(
+    soloStepsToEngineMotions(reversed.steps),
+    generated.solo.name ?? "Generated solo LOOP"
+  );
+}
+
+function allocateSoloTurns(
+  count: number,
+  recipe: SoloLoopGenerationRecipe,
+  random: () => number
+): (number | "fl")[] {
+  return allocateTurns(
+    count,
+    recipe.level,
+    recipe.level === 1 ? 0 : recipe.maxTurnIntensity,
+    { random }
+  ).blue;
 }
 
 function toSoloStep(motion: EngineMotionData): SoloPropStepData {
@@ -178,7 +422,8 @@ function generatedFromMotions(
 export function generateRewoundSoloLoopFromMotions(
   templates: readonly MotionData[],
   length: number,
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  recipe: SoloLoopGenerationRecipe = DEFAULT_SOLO_LOOP_RECIPE
 ): GeneratedSoloLoop {
   if (!Number.isInteger(length) || length < 2 || length % 2 !== 0) {
     throw new RangeError("A generated solo LOOP needs a positive even length");
@@ -196,11 +441,27 @@ export function generateRewoundSoloLoopFromMotions(
     byStart.set(template.startLocation, bucket);
   }
 
+  const availableStartLocations = startLocationsWithMotions(byStart, recipe);
+  if (availableStartLocations.length === 0) {
+    throw new Error("No canonical motions are available at that start point");
+  }
+
   const seedLength = length / 2;
-  const firstTemplate = randomItem(templates, random);
+  const firstLocation = randomItem(availableStartLocations, random);
+  const firstTemplate = chooseMotionTemplate(
+    byStart.get(firstLocation) ?? [],
+    undefined,
+    recipe,
+    random
+  );
+  if (!firstTemplate) {
+    throw new Error("No canonical motions match this generation recipe");
+  }
   const seed: EngineMotionData[] = [];
-  let nextLocation = firstTemplate.startLocation;
-  let nextOrientation = firstTemplate.startOrientation;
+  let nextLocation = firstLocation;
+  let nextOrientation = chooseStartOrientation(recipe, random);
+  let previousRotation: string | undefined;
+  const turns = allocateSoloTurns(seedLength, recipe, random);
 
   for (let index = 0; index < seedLength; index += 1) {
     const candidates = byStart.get(nextLocation) ?? [];
@@ -208,11 +469,24 @@ export function generateRewoundSoloLoopFromMotions(
       throw new Error(`The solo motion graph has no exit from ${nextLocation}`);
     }
     const template =
-      index === 0 ? firstTemplate : randomItem(candidates, random);
-    const motion = instantiateMotion(template, nextOrientation);
+      index === 0
+        ? firstTemplate
+        : chooseMotionTemplate(candidates, seed.at(-1), recipe, random);
+    if (!template) {
+      throw new Error(`No solo motion matches the recipe from ${nextLocation}`);
+    }
+    const motion = instantiateMotion(
+      template,
+      nextOrientation,
+      turns[index]!,
+      previousRotation,
+      random,
+      recipe
+    );
     seed.push(motion);
     nextLocation = motion.endLocation;
     nextOrientation = motion.endOrientation;
+    previousRotation = motion.rotationDirection;
   }
 
   return generatedFromMotions(buildRewoundSoloLoop(seed));
@@ -237,7 +511,8 @@ function findSeedToTarget(
   templates: readonly MotionData[],
   seedLength: number,
   targetForStart: (start: string) => string,
-  random: () => number
+  random: () => number,
+  recipe: SoloLoopGenerationRecipe
 ): EngineMotionData[] | null {
   const byStart = new Map<string, MotionData[]>();
   for (const template of templates) {
@@ -246,13 +521,25 @@ function findSeedToTarget(
     byStart.set(template.startLocation, bucket);
   }
 
+  const availableStartLocations = startLocationsWithMotions(byStart, recipe);
+  if (availableStartLocations.length === 0) return null;
+
   for (let attempt = 0; attempt < 96; attempt += 1) {
-    const first = randomItem(templates, random);
-    const target = targetForStart(first.startLocation);
+    const firstLocation = randomItem(availableStartLocations, random);
+    const first = chooseMotionTemplate(
+      byStart.get(firstLocation) ?? [],
+      undefined,
+      recipe,
+      random
+    );
+    if (!first) continue;
+    const target = targetForStart(firstLocation);
     const seed: EngineMotionData[] = [];
-    let location = first.startLocation;
-    let orientation = first.startOrientation;
+    let location = firstLocation;
+    let orientation = chooseStartOrientation(recipe, random);
+    let previousRotation: string | undefined;
     let failed = false;
+    const turns = allocateSoloTurns(seedLength, recipe, random);
 
     for (let index = 0; index < seedLength; index += 1) {
       const allCandidates = byStart.get(location) ?? [];
@@ -264,15 +551,30 @@ function findSeedToTarget(
         failed = true;
         break;
       }
-      const template = index === 0 ? first : randomItem(candidates, random);
+      const template =
+        index === 0
+          ? first
+          : chooseMotionTemplate(candidates, seed.at(-1), recipe, random);
+      if (!template) {
+        failed = true;
+        break;
+      }
       if (index === seedLength - 1 && template.endLocation !== target) {
         failed = true;
         break;
       }
-      const motion = instantiateMotion(template, orientation);
+      const motion = instantiateMotion(
+        template,
+        orientation,
+        turns[index]!,
+        previousRotation,
+        random,
+        recipe
+      );
       seed.push(motion);
       location = motion.endLocation;
       orientation = motion.endOrientation;
+      previousRotation = motion.rotationDirection;
     }
     if (!failed && seed.length === seedLength && location === target)
       return seed;
@@ -284,7 +586,8 @@ function tryGenerateComponent(
   templates: readonly MotionData[],
   length: number,
   component: GeneratedComponent,
-  random: () => number
+  random: () => number,
+  recipe: SoloLoopGenerationRecipe
 ): GeneratedSoloLoop | null {
   const period = component === "rotated-quartered" ? 4 : 2;
   if (length % period !== 0) return null;
@@ -303,7 +606,13 @@ function tryGenerateComponent(
         return start;
     }
   };
-  const seed = findSeedToTarget(templates, seedLength, targetForStart, random);
+  const seed = findSeedToTarget(
+    templates,
+    seedLength,
+    targetForStart,
+    random,
+    recipe
+  );
   if (!seed) return null;
 
   let motions: EngineMotionData[];
@@ -335,7 +644,8 @@ function tryGenerateComponent(
 export function generateStructuredSoloLoopFromMotions(
   templates: readonly MotionData[],
   length: number,
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  recipe: SoloLoopGenerationRecipe = DEFAULT_SOLO_LOOP_RECIPE
 ): GeneratedSoloLoop {
   const components: GeneratedComponent[] = [
     ...(length % 4 === 0 ? (["rotated-quartered"] as const) : []),
@@ -351,36 +661,153 @@ export function generateStructuredSoloLoopFromMotions(
       templates,
       length,
       component,
-      random
+      random,
+      recipe
     );
-    if (generated) return generated;
+    if (generated) return applyTraversalPreference(generated, recipe, random);
   }
-  return generateRewoundSoloLoopFromMotions(templates, length, random);
+  return applyTraversalPreference(
+    generateRewoundSoloLoopFromMotions(templates, length, random, recipe),
+    recipe,
+    random
+  );
 }
 
 export async function generateSoloLoop(
   length: number,
-  random: () => number = Math.random
+  recipe: SoloLoopGenerationRecipe = DEFAULT_SOLO_LOOP_RECIPE,
+  random: () => number = Math.random,
+  loadFourCountSolo: (
+    random: () => number,
+    recipe: SoloLoopGenerationRecipe
+  ) => Promise<SoloPropData> = loadRandomFlowerSolo,
+  loadMotionTemplates: () => Promise<
+    readonly MotionData[]
+  > = loadDiamondMotionTemplates
 ): Promise<GeneratedSoloLoop> {
-  const templates = await loadDiamondMotionTemplates();
-  return generateStructuredSoloLoopFromMotions(templates, length, random);
+  if (length === 4) {
+    const prefersGenericPath =
+      recipe.constraintPreset === "choppy" ||
+      recipe.handPathMode === "choppy" ||
+      recipe.motionTypeFilter === "prefer-dash";
+    if (!prefersGenericPath) {
+      try {
+        return fitSoloPathToLoop(
+          await loadFourCountSolo(random, recipe),
+          length
+        );
+      } catch {
+        // The generic generator below is the canonical fallback when the
+        // authored flower pool cannot satisfy the selected recipe.
+      }
+    }
+  }
+  const templates = await loadMotionTemplates();
+  return generateStructuredSoloLoopFromMotions(
+    templates,
+    length,
+    random,
+    recipe
+  );
 }
 
-/** Use an authored one-hand path as the seed of a structured rewound LOOP. */
-export function closeSoloPathAsRewoundLoop(
+async function loadRandomFlowerSolo(
+  random: () => number,
+  recipe: SoloLoopGenerationRecipe
+): Promise<SoloPropData> {
+  // Keep the Firestore-backed flower catalog out of non-browser consumers of
+  // this otherwise pure generator (including unit tests and SSR).
+  const { buildFuseFlowerPath, FUSE_GENERATED_FLOWER_SHAPES } =
+    await import("./fuse-flower-path-source");
+  const eligibleFlowers = FUSE_GENERATED_FLOWER_SHAPES.filter((flower) =>
+    flowerMatchesRecipe(flower, recipe)
+  );
+  if (eligibleFlowers.length === 0) {
+    throw new Error("No four-count flowers match this generation recipe");
+  }
+  const variation = chooseFuseFlowerGenerationVariation(
+    eligibleFlowers,
+    random,
+    recipe
+  );
+  const solo = extractBlueSoloProp(
+    await buildFuseFlowerPath(variation.flower, "blue", variation)
+  );
+  if (
+    recipe.startLocation !== null &&
+    solo.startLocation !== recipe.startLocation
+  ) {
+    throw new Error("That flower cannot start at the selected point");
+  }
+  return variation.reverseTraversal ? reverseSoloLoopTraversal(solo) : solo;
+}
+
+export function flowerMatchesRecipe(
+  flower: Pick<Flower, "turns">,
+  recipe: SoloLoopGenerationRecipe
+): boolean {
+  if (recipe.level === 1) return flower.turns === 0;
+  if (flower.turns > recipe.maxTurnIntensity) return false;
+  return recipe.level === 3 || Number.isInteger(flower.turns);
+}
+
+/**
+ * Match an authored one-hand path to Fuse's requested length. A closed source
+ * repeats in its original order whenever it divides the target length. Only a
+ * non-looping or incompatible path is closed through the rewound primitive.
+ */
+export function fitSoloPathToLoop(
   source: SoloPropData,
   length: number
 ): GeneratedSoloLoop {
   if (!Number.isInteger(length) || length < 2 || length % 2 !== 0) {
     throw new RangeError("A generated solo LOOP needs a positive even length");
   }
+  const sourceMotions = soloStepsToEngineMotions(source.steps);
+  const sourceDetection = detectSoloLOOP(sourceMotions);
+  if (
+    sourceMotions.length > 0 &&
+    sourceDetection.isLoop &&
+    sourceDetection.spec &&
+    length % sourceMotions.length === 0
+  ) {
+    const repeatCount = length / sourceMotions.length;
+    const repeated = Array.from({ length: repeatCount }, () => sourceMotions)
+      .flat()
+      .map((motion) => ({ ...motion }));
+    if (repeatCount === 1) {
+      return generatedFromMotions(
+        repeated,
+        source.name ?? "Selected solo LOOP"
+      );
+    }
+
+    // The LOOP detector classifies a single primitive period. Repeating that
+    // period remains a closed loop, but asking the detector to classify the
+    // whole tiled sequence can hide the original component. Preserve the
+    // source period's spec while materializing the requested number of steps.
+    const loopSpec = loopSpecToWire({ blue: sourceDetection.spec }).blue;
+    if (!loopSpec)
+      throw new Error("Selected solo LOOP is missing its prop spec");
+    const steps = repeated.map(toSoloStep);
+    return {
+      solo: createSoloProp(
+        steps,
+        steps[0]!.startLocation,
+        steps[0]!.startOrientation,
+        { name: source.name ?? "Selected solo LOOP" }
+      ),
+      loopSpec,
+    };
+  }
+
   const seedLength = length / 2;
   if (source.steps.length < seedLength) {
     throw new RangeError(
       `This path needs at least ${seedLength} steps to make a ${length}-step LOOP`
     );
   }
-  const seed = soloStepsToEngineMotions(source.steps.slice(0, seedLength));
+  const seed = sourceMotions.slice(0, seedLength);
   const motions = buildRewoundSoloLoop(seed);
   const detection = detectSoloLOOP(motions);
   if (!detection.isLoop || !detection.spec) {
