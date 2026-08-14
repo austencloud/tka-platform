@@ -89,6 +89,11 @@ export interface PrintRenderOptions {
   bleedPx?: number;
   includeStartPosition: boolean;
   startPositionLayout?: "row" | "column";
+  /**
+   * Exact total grid columns, including the Start column when Start is placed
+   * on the left. This is the renderer-facing form of a resolved Auto layout.
+   */
+  totalGridColumns?: number;
   /** Override the default card back theme (e.g. "cosmic", "ocean") */
   theme?: string;
   /** Override prop types (reads from settings when not provided) */
@@ -110,6 +115,12 @@ export interface PrintRenderOptions {
   deckId?: string;
   /** Deck name for QR attribution tracking */
   deckName?: string;
+  /**
+   * A short URL that is already safe to print as this card's QR code.
+   * Released-card proofs can provide one so rendering stays read-only and does
+   * not need to resolve or create a Firestore short code.
+   */
+  qrUrl?: string;
   /**
    * Force the QR cell on/off, overriding the canonical locked profile. The
    * shop's live PREVIEW fan sets this false: a preview card is never scanned,

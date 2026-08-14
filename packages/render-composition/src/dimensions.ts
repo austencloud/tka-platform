@@ -26,6 +26,12 @@ export const NARROW_GRID_THRESHOLD = 3;
 /** Difficulty badge diameter as fraction of header height */
 export const BADGE_SIZE_SCALE = 0.6;
 
+/**
+ * Indicator diameter used on the 5:7 Choreo Card front. The physical deck
+ * header is 90px tall, so 8/15 resolves to the approved 48px badge/icon size.
+ */
+export const CARD_FRONT_INDICATOR_SIZE_SCALE = 8 / 15;
+
 /** Padding around badge as fraction of header height */
 export const BADGE_PADDING_SCALE = 0.12;
 
@@ -103,12 +109,18 @@ export function narrowGridScale(columns: number): number {
   return columns >= NARROW_GRID_THRESHOLD ? 1 : columns / NARROW_GRID_THRESHOLD;
 }
 
-export function calculateHeaderHeight(stepSize: number, columns?: number): number {
+export function calculateHeaderHeight(
+  stepSize: number,
+  columns?: number
+): number {
   const scale = columns != null ? narrowGridScale(columns) : 1;
   return Math.floor((stepSize * scale) / HEADER_HEIGHT_DIVISOR);
 }
 
-export function calculateFooterHeight(stepSize: number, columns?: number): number {
+export function calculateFooterHeight(
+  stepSize: number,
+  columns?: number
+): number {
   const scale = columns != null ? narrowGridScale(columns) : 1;
   return Math.floor((stepSize * scale) / FOOTER_HEIGHT_DIVISOR);
 }

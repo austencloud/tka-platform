@@ -1,7 +1,11 @@
 import type { SequenceData } from "../../foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { PictographVisibilityOptions } from "../utils/pictograph-to-svg";
-import type { RenderCanvas, LayerRenderOptions, LayerVisibility } from "./types";
+import type {
+  RenderCanvas,
+  LayerRenderOptions,
+  LayerVisibility,
+} from "./types";
 import type { TextRenderer } from "./text-renderer";
 import type { QRCodeGenerator } from "../../qr/services/qr-code-generator";
 import { calculateLayout } from "./layout-calculator";
@@ -17,6 +21,7 @@ import {
 import {
   calculateHeaderHeight as sharedHeaderHeight,
   calculateFooterHeight as sharedFooterHeight,
+  CARD_FRONT_INDICATOR_SIZE_SCALE,
 } from "@tka/render-composition";
 import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 // TEMP assembly profiler — header/footer/border phase timing for the cold-deck profiler.
@@ -49,7 +54,11 @@ export interface CardFrontLayout {
   hasStartPosition: boolean;
 }
 
-function localHeaderHeight(stepCount: number, stepSize: number, columns?: number): number {
+function localHeaderHeight(
+  stepCount: number,
+  stepSize: number,
+  columns?: number
+): number {
   if (stepCount === 0) return 0;
   return sharedHeaderHeight(stepSize, columns);
 }
@@ -131,7 +140,9 @@ export function computeCardFrontLayout(
       : 0;
 
     const availableHeight = contentHeight - headerHeight - footerHeight;
-    stepSize = Math.floor(Math.min(contentWidth / columns, availableHeight / rows));
+    stepSize = Math.floor(
+      Math.min(contentWidth / columns, availableHeight / rows)
+    );
 
     canvasHeight = contentHeight;
   } else {
@@ -154,7 +165,8 @@ export function computeCardFrontLayout(
   const gridHeight = rows * stepSize;
   const gridWidth = columns * stepSize;
   const gridOffsetY = options.deckCard
-    ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
+    ? headerHeight +
+      Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
     : headerHeight;
   // Optical centering for print cards: pictograph annotations (step number
   // and TKA letter at x=50, reversal dots at x≈71 in the 950-unit viewbox)
@@ -166,7 +178,9 @@ export function computeCardFrontLayout(
   const INK_INSET_LEFT_UNITS = 50; // tightest left anchor (step number / letter)
   const INK_INSET_RIGHT_UNITS = 175; // 950 - grid outer point at x=775
   const opticalShiftX = options.deckCard
-    ? Math.round(((INK_INSET_RIGHT_UNITS - INK_INSET_LEFT_UNITS) / 950) * stepSize / 2)
+    ? Math.round(
+        (((INK_INSET_RIGHT_UNITS - INK_INSET_LEFT_UNITS) / 950) * stepSize) / 2
+      )
     : 0;
   const gridOffsetX = options.deckCard
     ? Math.floor((canvasWidth - gridWidth) / 2) + opticalShiftX
@@ -174,7 +188,7 @@ export function computeCardFrontLayout(
 
   const layoutMode = options.startPositionLayout ?? "row";
   const useColumnMode = layoutMode === "column" && options.includeStartPosition;
-  const startRow = (!useColumnMode && options.includeStartPosition) ? 1 : 0;
+  const startRow = !useColumnMode && options.includeStartPosition ? 1 : 0;
   const startColumn = useColumnMode ? 1 : 0;
   const stepsPerRow = columns - startColumn;
 
@@ -215,8 +229,17 @@ export function paintCardFrontBackground(
   layout: CardFrontLayout,
   options: Partial<SequenceExportOptions>
 ): void {
-  const { isDarkMode, canvasWidth, canvasHeight, headerHeight, footerHeight, columns, rows, stepSize, gridOffsetX } =
-    layout;
+  const {
+    isDarkMode,
+    canvasWidth,
+    canvasHeight,
+    headerHeight,
+    footerHeight,
+    columns,
+    rows,
+    stepSize,
+    gridOffsetX,
+  } = layout;
 
   ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
 
@@ -224,17 +247,29 @@ export function paintCardFrontBackground(
   const gridWidth = columns * stepSize;
 
   if (options.deckCard) {
-    ctx.fillRect(0, headerHeight, canvasWidth, canvasHeight - headerHeight - footerHeight);
+    ctx.fillRect(
+      0,
+      headerHeight,
+      canvasWidth,
+      canvasHeight - headerHeight - footerHeight
+    );
 
     if (!isDarkMode && options.accentColor && gridOffsetX > 0) {
       const contentTop = headerHeight;
       const contentH = canvasHeight - headerHeight - footerHeight;
       const alphaHex = options.accentTintOpacity
-        ? Math.round(options.accentTintOpacity * 255).toString(16).padStart(2, "0")
+        ? Math.round(options.accentTintOpacity * 255)
+            .toString(16)
+            .padStart(2, "0")
         : "18";
       ctx.fillStyle = options.accentColor + alphaHex;
       ctx.fillRect(0, contentTop, gridOffsetX, contentH);
-      ctx.fillRect(gridOffsetX + gridWidth, contentTop, canvasWidth - gridOffsetX - gridWidth, contentH);
+      ctx.fillRect(
+        gridOffsetX + gridWidth,
+        contentTop,
+        canvasWidth - gridOffsetX - gridWidth,
+        contentH
+      );
       ctx.fillStyle = isDarkMode ? "#0a0a0f" : "white";
     }
   } else {
@@ -253,7 +288,8 @@ export function buildCellLayerOptions(
   visibility: PictographVisibilityOptions
 ): { options: LayerRenderOptions; visibility: LayerVisibility } {
   const rawHandVisibility = visibility.handPointVisibility ?? "all";
-  const handVisibility: "all" | "active" = rawHandVisibility === "none" ? "active" : rawHandVisibility;
+  const handVisibility: "all" | "active" =
+    rawHandVisibility === "none" ? "active" : rawHandVisibility;
 
   const options: LayerRenderOptions = {
     size: stepSize,
@@ -305,12 +341,24 @@ export async function paintCardFrontChrome(
   visibility: PictographVisibilityOptions,
   deps: CardFrontChromeDeps
 ): Promise<void> {
-  const { columns, rows, stepSize, gridOffsetY, gridOffsetX, isDarkMode, headerHeight, footerHeight, derivedWord } =
-    layout;
+  const {
+    columns,
+    rows,
+    stepSize,
+    gridOffsetY,
+    gridOffsetX,
+    isDarkMode,
+    headerHeight,
+    footerHeight,
+    derivedWord,
+  } = layout;
 
   // Draw the QR when we can produce one: either a generator (main thread) OR a
   // pre-rendered bitmap transferred in (the worker has no generator).
-  if (options.visibilityOverrides?.showQRCode && (deps.qrCodeGenerator || options.qrImageBitmap)) {
+  if (
+    options.visibilityOverrides?.showQRCode &&
+    (deps.qrCodeGenerator || options.qrImageBitmap)
+  ) {
     await deps.renderQRCode(ctx);
   }
 
@@ -361,7 +409,8 @@ export async function paintCardFrontChrome(
     loopComponents = filtered.size > 0 ? filtered : undefined;
 
     if (loopComponents && loopPeriod <= 1) {
-      const seqPeriod = sequence.period ?? (sequence.orientationCycleCount === 4 ? 4 : 2);
+      const seqPeriod =
+        sequence.period ?? (sequence.orientationCycleCount === 4 ? 4 : 2);
       loopPeriod = seqPeriod;
       if (loopComponents.has(LOOPComponent.ROTATED)) {
         rotationPeriod = seqPeriod === 4 ? Period.QUARTERED : Period.HALVED;
@@ -377,7 +426,8 @@ export async function paintCardFrontChrome(
   // - Inverted requires props (meaningless in hand-path mode)
   if (loopComponents) {
     const isHandPath = visibility.handPathMode ?? false;
-    const isSolo = visibility.showBlueMotion === false || visibility.showRedMotion === false;
+    const isSolo =
+      visibility.showBlueMotion === false || visibility.showRedMotion === false;
     if (isHandPath || isSolo) {
       const filtered = new Set(loopComponents);
       if (isSolo) filtered.delete(LOOPComponent.SWAPPED);
@@ -396,7 +446,9 @@ export async function paintCardFrontChrome(
     showLoopGlyph;
   if (showHeader && headerHeight > 0) {
     const difficultyLevel = getDifficultyLevel(sequence);
-    const displayName = options.addWord ? (options.customName || derivedWord) : "";
+    const displayName = options.addWord
+      ? options.customName || derivedWord
+      : "";
     const periodForRender =
       rotationPeriod === Period.QUARTERED
         ? "quartered"
@@ -415,12 +467,20 @@ export async function paintCardFrontChrome(
       canvas,
       word: displayName,
       headerHeight,
+      indicatorSizeScale:
+        options.cardMode || options.deckCard
+          ? CARD_FRONT_INDICATOR_SIZE_SCALE
+          : undefined,
       difficultyLevel,
       showDifficultyBadge: options.addDifficultyLevel,
       darkMode: isDarkMode,
       loopComponents: showLoopGlyph ? loopComponents : undefined,
-      backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
-      borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+      backgroundColor:
+        options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+      borderColor:
+        options.deckCard && !options.accentColor
+          ? DECK_BORDER_COLOR
+          : undefined,
       rotationPeriod: showLoopGlyph ? periodForRender : undefined,
       inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
       reflectionAxis: showLoopGlyph ? reflectionAxis : undefined,
@@ -443,8 +503,12 @@ export async function paintCardFrontChrome(
       darkMode: isDarkMode,
       showNotes,
       customNotesText: options.customNotesText,
-      backgroundColor: options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
-      borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
+      backgroundColor:
+        options.deckCard && !options.accentColor ? DECK_HEADER_BG : undefined,
+      borderColor:
+        options.deckCard && !options.accentColor
+          ? DECK_BORDER_COLOR
+          : undefined,
       leftLabel: options.leftLabel,
       rightLabel: options.rightLabel,
       iconPath: options.iconPath,

@@ -2,8 +2,7 @@
   ChoreoCard.svelte - Card front for Choreo Cards
 
   Displays a sequence thumbnail using PropAwareThumbnail with Firebase caching.
-  The front is the "reading" face: word, pictographs, footer.
-  Level badge and LOOP icons live on the card back (the "sorting" face).
+  The front is the "reading" face: word, level, LOOP icons, pictographs, footer.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -165,7 +164,7 @@
         lightMode={effectiveLightMode}
         variant="wordcard"
         addWord={showWord}
-        addDifficultyLevel={false}
+        addDifficultyLevel={true}
         {includeStartPosition}
         {startPositionLayout}
         {showNotes}

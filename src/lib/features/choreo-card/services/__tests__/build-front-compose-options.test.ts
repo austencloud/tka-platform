@@ -74,9 +74,27 @@ describe("buildFrontComposeOptions", () => {
     expect(composeOptions.showNotes).toBe(true);
   });
 
+  it("threads a resolved total-grid column count into the composer", () => {
+    const { composeOptions } = buildFrontComposeOptions(SEQ, {
+      ...BASE_OPTS,
+      startPositionLayout: "column",
+      totalGridColumns: 3,
+    });
+
+    expect(composeOptions.startPositionLayout).toBe("column");
+    expect(composeOptions.columnCount).toBe(3);
+  });
+
   it("emits prop-type overrides only when provided", () => {
     const none = buildFrontComposeOptions(SEQ, BASE_OPTS).composeOptions;
     expect(none.bluePropTypeOverride).toBeUndefined();
     expect(none.redPropTypeOverride).toBeUndefined();
+  });
+
+  it("includes difficulty and LOOP indicators on the card front", () => {
+    const { composeOptions } = buildFrontComposeOptions(SEQ, BASE_OPTS);
+
+    expect(composeOptions.addDifficultyLevel).toBe(true);
+    expect(composeOptions.showLoopGlyph).toBe(true);
   });
 });

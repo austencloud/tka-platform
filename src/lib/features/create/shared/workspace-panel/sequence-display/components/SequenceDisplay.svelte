@@ -11,6 +11,7 @@
   } from "$lib/shared/mandala/domain/mandala-types";
   import StepGrid from "./StepGrid.svelte";
   import WordLabel from "./WordLabel.svelte";
+  import SequenceMetadataRail from "./SequenceMetadataRail.svelte";
   import SaveToLibraryButton from "../../shared/components/buttons/SaveToLibraryButton.svelte";
   import { loopDetector as circularLoopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
@@ -117,9 +118,7 @@
     return map;
   });
 
-  // Reactive LOOP detection - kept for grid alignment: the circular detector's
-  // isCircular + loopType shape drives loopAlignedColumnCount below (the badge
-  // that also read it has been removed).
+  // Reactive LOOP detection drives both the metadata rail and grid alignment.
   const loopDetectionResult = $derived.by(() => {
     if (!currentSequence) return null;
     if ((currentSequence.steps?.length ?? 0) < 2) return null;
@@ -241,6 +240,11 @@
             {historyTransitionEpoch}
             historyWordChanged={historyTransition?.wordChanged ?? false}
           />
+          <SequenceMetadataRail
+            sequence={currentSequence}
+            loopType={loopDetectionResult?.loopType ?? null}
+            period={loopDetectionResult?.period ?? null}
+          />
         </div>
 
         <div class="save-area">
@@ -347,9 +351,11 @@
 
   .word-label-area {
     grid-column: 2;
-    display: flex;
-    justify-content: center;
+    display: grid;
+    grid-template-rows: auto 20px;
     align-items: center;
+    justify-items: center;
+    gap: 2px;
     flex: 1;
     /* Constrain width to prevent overflow into sibling button zones */
     min-width: 0;

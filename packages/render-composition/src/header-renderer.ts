@@ -1,11 +1,25 @@
-import type { LOOPComponentId, LetterStyle, GlyphImageData, CompressedSegment } from "./types.js";
+import type {
+  LOOPComponentId,
+  LetterStyle,
+  GlyphImageData,
+  CompressedSegment,
+} from "./types.js";
 import { tokenizeGlyphWord } from "./glyph-word.js";
 import {
-  BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
+  BADGE_SIZE_SCALE,
+  BADGE_PADDING_SCALE,
+  BADGE_NUMBER_FONT_SCALE,
+  BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
-  LOOP_ICON_SIZE_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
+  LOOP_ICON_SIZE_SCALE,
+  LOOP_ICON_STRIP_OFFSET_SCALE,
 } from "./dimensions.js";
-import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE, DIFFICULTY_FONT_FAMILY, applyGradientStops } from "./difficulty-config.js";
+import {
+  DIFFICULTY_LEVELS,
+  DEFAULT_DIFFICULTY_STYLE,
+  DIFFICULTY_FONT_FAMILY,
+  applyGradientStops,
+} from "./difficulty-config.js";
 import {
   renderLoopIconStrip,
   computeLoopIconStripWidth,
@@ -18,6 +32,8 @@ export interface HeaderOptions {
   canvasWidth: number;
   headerHeight: number;
   word: string;
+  /** Overrides the shared badge/icon diameter ratio for a specific surface. */
+  indicatorSizeScale?: number;
   difficultyLevel?: number;
   showDifficultyBadge?: boolean;
   loopComponents?: Set<LOOPComponentId>;
@@ -58,7 +74,7 @@ const DASH_W_SVG = 70;
 const DASH_H_SVG = 20;
 const DASH_GAP_SVG = 10;
 const DASH_RADIUS_SVG = 9.5;
-const ALPHA_BASELINE_SHIFT = 0.10;
+const ALPHA_BASELINE_SHIFT = 0.1;
 
 interface WordHorizontalBounds {
   left: number;
@@ -84,7 +100,7 @@ function fitWordToBounds(
 }
 
 function isAlphaToken(token: string): boolean {
-  return token === 'α';
+  return token === "α";
 }
 
 function renderGlyphWord(
@@ -95,7 +111,7 @@ function renderGlyphWord(
   headerHeight: number,
   horizontalBounds: WordHorizontalBounds,
   darkMode: boolean,
-  glyphImagesAreThemeColored: boolean,
+  glyphImagesAreThemeColored: boolean
 ): void {
   if (!word?.trim()) return;
 
@@ -135,7 +151,9 @@ function renderGlyphWord(
     const scale = (availableH / data.naturalHeight) * widthFit.scale;
     const glyphW = data.naturalWidth * scale;
     const baseGlyphY = verticalCenter - fittedGlyphHeight / 2;
-    const glyphY = baseGlyphY + (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
+    const glyphY =
+      baseGlyphY +
+      (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
     if (darkMode && !glyphImagesAreThemeColored) {
       ctx.save();
@@ -175,14 +193,14 @@ function renderCompressedGlyphWord(
   headerHeight: number,
   horizontalBounds: WordHorizontalBounds,
   darkMode: boolean,
-  glyphImagesAreThemeColored: boolean,
+  glyphImagesAreThemeColored: boolean
 ): void {
   const availableH = headerHeight * GLYPH_HEIGHT_RATIO;
   const letterGap = headerHeight * LETTER_GAP_RATIO;
   const verticalCenter = headerHeight / 2;
   const dashColor = darkMode ? "#ffffff" : "#231f20";
   const dotColor = darkMode ? "#ffffff" : "#1f2937";
-  const dotRadius = headerHeight * DOT_SIZE_SCALE / 2;
+  const dotRadius = (headerHeight * DOT_SIZE_SCALE) / 2;
   const groupGap = headerHeight * GROUP_GAP_SCALE;
 
   // First pass: compute total width
@@ -235,7 +253,9 @@ function renderCompressedGlyphWord(
       const scale = (availableH / data.naturalHeight) * widthFit.scale;
       const glyphW = data.naturalWidth * scale;
       const baseGlyphY = verticalCenter - fittedGlyphHeight / 2;
-      const glyphY = baseGlyphY + (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
+      const glyphY =
+        baseGlyphY +
+        (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
       if (darkMode && !glyphImagesAreThemeColored) {
         ctx.save();
@@ -266,13 +286,31 @@ function renderCompressedGlyphWord(
   }
 }
 
-export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptions): void {
+export function renderHeader(
+  ctx: CanvasRenderingContext2D,
+  options: HeaderOptions
+): void {
   const {
-    canvasWidth, headerHeight, word,
-    difficultyLevel = 1, showDifficultyBadge = true,
-    loopComponents, rotationPeriod, inversionPeriod, reflectionAxis, overlayComponents, darkMode = true, letterStyles,
-    backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages,
-    glyphImagesAreThemeColored = false, compressedSegments,
+    canvasWidth,
+    headerHeight,
+    word,
+    indicatorSizeScale = BADGE_SIZE_SCALE,
+    difficultyLevel = 1,
+    showDifficultyBadge = true,
+    loopComponents,
+    rotationPeriod,
+    inversionPeriod,
+    reflectionAxis,
+    overlayComponents,
+    darkMode = true,
+    letterStyles,
+    backgroundColor,
+    borderColor,
+    accentColor,
+    accentTintOpacity,
+    glyphImages,
+    glyphImagesAreThemeColored = false,
+    compressedSegments,
   } = options;
 
   const accent = !backgroundColor && !darkMode ? accentColor : undefined;
@@ -281,18 +319,24 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     headerBg = backgroundColor;
   } else if (accent) {
     const alphaHex = accentTintOpacity
-      ? Math.round(accentTintOpacity * 255).toString(16).padStart(2, '0')
+      ? Math.round(accentTintOpacity * 255)
+          .toString(16)
+          .padStart(2, "0")
       : "18";
     headerBg = accent + alphaHex;
   } else {
-    headerBg = darkMode ? "rgba(10, 10, 15, 0.98)" : "rgba(245, 245, 245, 0.98)";
+    headerBg = darkMode
+      ? "rgba(10, 10, 15, 0.98)"
+      : "rgba(245, 245, 245, 0.98)";
   }
   ctx.fillStyle = headerBg;
   ctx.fillRect(0, 0, canvasWidth, headerHeight);
 
   // Bottom border — skip when accent tint is active so header bleeds into content
   if (!accent) {
-    ctx.strokeStyle = borderColor ?? (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
+    ctx.strokeStyle =
+      borderColor ??
+      (darkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)");
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, headerHeight - 0.5);
@@ -300,12 +344,18 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
     ctx.stroke();
   }
 
-  const badgeSize = headerHeight * BADGE_SIZE_SCALE;
+  const badgeSize = headerHeight * indicatorSizeScale;
   const badgePadding = headerHeight * BADGE_PADDING_SCALE;
 
   // Difficulty badge (left)
   if (showDifficultyBadge) {
-    renderLevelBadge(ctx, difficultyLevel, badgePadding, (headerHeight - badgeSize) / 2, badgeSize);
+    renderLevelBadge(
+      ctx,
+      difficultyLevel,
+      badgePadding,
+      (headerHeight - badgeSize) / 2,
+      badgeSize
+    );
   }
 
   // LOOP icon strip (right)
@@ -313,10 +363,16 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   let rightIconZone = 0;
   if (hasLoop) {
     const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
-    const stripWidth = computeLoopIconStripWidth(loopComponents, iconSize, overlayComponents);
+    const stripWidth = computeLoopIconStripWidth(
+      loopComponents,
+      iconSize,
+      overlayComponents
+    );
     const rightEdge = canvasWidth - badgePadding;
-    const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
-    rightIconZone = badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
+    const stripCenterX =
+      rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
+    rightIconZone =
+      badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
     renderLoopIconStrip(
       ctx,
       loopComponents,
@@ -334,12 +390,16 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
 
   const wordBreathingGap = headerHeight * LETTER_GAP_RATIO;
   const wordHorizontalBounds = {
-    left: (showDifficultyBadge ? badgePadding + badgeSize : 0) + wordBreathingGap,
+    left:
+      (showDifficultyBadge ? badgePadding + badgeSize : 0) + wordBreathingGap,
     right: canvasWidth - rightIconZone - wordBreathingGap,
   };
 
   // Word text (center)
-  const finalFontSize = Math.max(10, Math.floor(headerHeight * HEADER_WORD_FONT_SCALE));
+  const finalFontSize = Math.max(
+    10,
+    Math.floor(headerHeight * HEADER_WORD_FONT_SCALE)
+  );
   const textColor = darkMode ? "#ffffff" : "#1f2937";
   const dimmedColor = darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
   ctx.font = `700 ${finalFontSize}px Gelasio, Georgia, serif`;
@@ -347,7 +407,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
 
   // Word: compressed glyphs → flat glyphs → styled text → plain text
   if (word?.trim()) {
-    const hasCompression = compressedSegments?.some(s => s.repeat > 1);
+    const hasCompression = compressedSegments?.some((s) => s.repeat > 1);
     if (hasCompression && glyphImages && glyphImages.size > 0) {
       renderCompressedGlyphWord(
         ctx,
@@ -357,7 +417,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
         headerHeight,
         wordHorizontalBounds,
         darkMode,
-        glyphImagesAreThemeColored,
+        glyphImagesAreThemeColored
       );
     } else if (glyphImages && glyphImages.size > 0) {
       renderGlyphWord(
@@ -368,7 +428,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
         headerHeight,
         wordHorizontalBounds,
         darkMode,
-        glyphImagesAreThemeColored,
+        glyphImagesAreThemeColored
       );
     } else if (letterStyles && letterStyles.length > 0) {
       // Per-letter with dimming for bridge/derived letters
@@ -413,7 +473,10 @@ function renderLevelBadge(
   ctx.fill();
 
   // Border
-  const borderWidth = Math.max(1, Math.floor(size / BADGE_BORDER_WIDTH_DIVISOR));
+  const borderWidth = Math.max(
+    1,
+    Math.floor(size / BADGE_BORDER_WIDTH_DIVISOR)
+  );
   ctx.strokeStyle = style.border;
   ctx.lineWidth = borderWidth;
   ctx.stroke();

@@ -19,7 +19,7 @@
   } from "../../services/print-slot-planner";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getCatalogLayoutPolicy } from "../../domain/catalog-layout-policy";
+  import { calculatePhysicalCardLayout } from "../../services/physical-card-layout-calculator";
   import {
     cardCache,
     type RenderedCard,
@@ -42,7 +42,7 @@
   // Bump when rendered pixels change for reasons NOT captured by the keyed
   // options below — e.g. the canonical profile changes. Rotates all keys so
   // stale persisted renders self-invalidate.
-  const CARD_RENDER_SCHEMA = "v5";
+  const CARD_RENDER_SCHEMA = "v7";
 
   interface Props {
     sequences: SequenceData[];
@@ -58,6 +58,9 @@
     tndElements?: (TnDElement | undefined)[];
     /** Per-card footer data, index-aligned with sequences */
     footers?: CardFooter[];
+    /** Per-card short URLs, index-aligned with sequences. When supplied, card
+     *  rendering stays read-only and skips Firestore short-code resolution. */
+    qrUrls?: (string | undefined)[];
     /** Use deck layout policy instead of user composition settings */
     deckMode?: boolean;
     /** Bump to force a full re-render of all cards */
@@ -132,6 +135,7 @@
     tndElement,
     tndElements,
     footers,
+    qrUrls,
     deckMode = false,
     rerenderKey = 0,
     copies = 1,
@@ -156,10 +160,10 @@
   // render; otherwise follow live settings. The cache key and render options
   // both read these so a pinned deck's content hash matches what was cached.
   const resolvedBlueProp = $derived(
-    bluePropType ?? settingsService.settings.bluePropType
+    bluePropType ?? settingsService.settings.bluePropType ?? PropType.STAFF
   );
   const resolvedRedProp = $derived(
-    redPropType ?? settingsService.settings.redPropType
+    redPropType ?? settingsService.settings.redPropType ?? PropType.STAFF
   );
   const resolvedBackground = $derived(
     theme ?? settingsService.settings.backgroundType ?? ""
@@ -378,7 +382,7 @@
   });
 
   function buildRenderOptions(
-    stepCount?: number,
+    sequence?: SequenceData,
     footer?: CardFooter,
     cardIndex?: number
   ): PrintRenderOptions {
@@ -390,16 +394,38 @@
     // poker aspect and then get squished into tarot print slots — stretch, a gap
     // where the tall slot isn't filled, and crop marks that don't meet the card.
     const size = CARD_SIZES[cardSize];
+    const bleedPx = 36;
+    const physicalLayout =
+      deckMode && sequence
+        ? calculatePhysicalCardLayout({
+            sequence,
+            canvasWidth: size.canvasWidth,
+            canvasHeight: size.canvasHeight,
+            bleedPx,
+            includeStartPosition,
+            showHeader: true,
+            showFooter: Boolean(
+              footer?.left ||
+              footer?.center ||
+              footer?.right ||
+              footer?.iconPath
+            ),
+            showQRCode: true,
+          })
+        : null;
+    const stepCount = sequence?.steps?.length;
     return {
       canvasWidth: size.canvasWidth,
       canvasHeight: size.canvasHeight,
       includeStartPosition,
-      startPositionLayout:
-        deckMode && stepCount != null
-          ? getCatalogLayoutPolicy(stepCount)
-          : stepCount != null
-            ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
-            : imageComposition.startPositionLayout,
+      startPositionLayout: physicalLayout
+        ? physicalLayout.startPositionLayout
+        : stepCount != null
+          ? imageComposition.getStartPositionLayoutForStepCount(stepCount)
+          : imageComposition.startPositionLayout,
+      ...(physicalLayout?.totalGridColumns !== undefined && {
+        totalGridColumns: physicalLayout.totalGridColumns,
+      }),
       showMandala: true,
       theme,
       tndElement: element,
@@ -409,9 +435,10 @@
       rightLabel: footer?.right,
       notes: footer?.center,
       iconPath: footer?.iconPath,
-      bleedPx: 36,
+      bleedPx,
       deckId,
       deckName,
+      qrUrl: cardIndex != null ? qrUrls?.[cardIndex] : undefined,
     };
   }
 
@@ -422,8 +449,8 @@
   ): string {
     const seqId = seq.id ?? seq.word ?? seq.name ?? "";
     const footer = footers?.[index];
-    const layout =
-      deckMode && stepCount != null ? getCatalogLayoutPolicy(stepCount) : "row";
+    const renderOptions = buildRenderOptions(seq, footer, index);
+    const layout = `${renderOptions.startPositionLayout}:${renderOptions.totalGridColumns ?? "static"}`;
     const optsPart = [
       CARD_RENDER_SCHEMA,
       cardSize,
@@ -436,6 +463,7 @@
       footer?.left ?? "",
       footer?.center ?? "",
       footer?.right ?? "",
+      qrUrls?.[index] ?? "managed-qr",
       layout,
       rerenderKey,
       // Content fingerprint: self-invalidates whenever the sequence's rendered
@@ -490,6 +518,7 @@
     const _bgType = resolvedBackground;
     const _blueProp = resolvedBlueProp;
     const _redProp = resolvedRedProp;
+    const _qrUrls = qrUrls;
 
     // Void unused captures to satisfy linter
     void _cardSize;
@@ -499,6 +528,7 @@
     void _bgType;
     void _blueProp;
     void _redProp;
+    void _qrUrls;
 
     const generation = ++renderGeneration;
     blobCacheWarned = false;
@@ -541,9 +571,7 @@
 
     // Phase 2: Fast path if every card is now in memory (from either tier)
     const allCached = seqs.every((seq, idx) => {
-      const cached = cardCache.get(
-        buildCacheKey(seq, seq.steps?.length, idx)
-      );
+      const cached = cardCache.get(buildCacheKey(seq, seq.steps?.length, idx));
       return !!cached?.frontBlob && !!cached.backBlob;
     });
 
@@ -619,21 +647,24 @@
     // also pegs the main thread and freezes the Print Deck modal. Best-effort:
     // any miss falls through to per-card resolution at render time. Reports
     // chunk progress so the bar moves during the otherwise-silent cold start.
-    await getShortCodeManager().resolveCodesForDeck(
-      seqs,
-      {
-        bluePropType: resolvedBlueProp,
-        redPropType: resolvedRedProp,
-        deckId,
-        deckName,
-      },
-      (done, total) => {
-        if (generation === renderGeneration) {
-          prepDone = done;
-          prepTotal = total;
+    const sequencesNeedingCodes = seqs.filter((_, index) => !qrUrls?.[index]);
+    if (sequencesNeedingCodes.length > 0) {
+      await getShortCodeManager().resolveCodesForDeck(
+        sequencesNeedingCodes,
+        {
+          bluePropType: resolvedBlueProp,
+          redPropType: resolvedRedProp,
+          deckId,
+          deckName,
+        },
+        (done, total) => {
+          if (generation === renderGeneration) {
+            prepDone = done;
+            prepTotal = total;
+          }
         }
-      }
-    );
+      );
+    }
     if (generation !== renderGeneration) return;
 
     // Codes resolved — lanes start. First card still warms the worker, so the
@@ -648,7 +679,7 @@
       const seq = seqs[i]!;
       const stepCount = seq.steps?.length;
       const footer = seqFooter(i);
-      const options = buildRenderOptions(stepCount, footer, i);
+      const options = buildRenderOptions(seq, footer, i);
       const cacheKey = buildCacheKey(seq, stepCount, i);
       const cached = cardCache.get(cacheKey);
 
@@ -764,7 +795,7 @@
       if (!cached?.frontBlob || !cached.backBlob) return null;
       const renderMeta = {
         sequence: seq,
-        options: buildRenderOptions(seq.steps?.length, seqFooter(idx), idx),
+        options: buildRenderOptions(seq, seqFooter(idx), idx),
       };
       if (idx > 0) await yieldToBrowser();
       pairs.push(await reconstructPair(cached, renderMeta));
@@ -838,7 +869,7 @@
     const renderer = getPrintCardRenderer();
     const stepCount = seq.steps?.length;
     const footer = seqFooter(index);
-    const options = buildRenderOptions(stepCount, footer, index);
+    const options = buildRenderOptions(seq, footer, index);
 
     const cacheKey = buildCacheKey(seq, stepCount, index);
     discardCachedCard(cacheKey);

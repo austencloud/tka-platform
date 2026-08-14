@@ -13,8 +13,14 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { ImageComposer } from "../../../shared/render/services/image-composer";
 import type { PrintRenderOptions } from "./types";
 import { renderCardBack } from "./card-back-dom-renderer";
-import { renderInfoCardFront, renderInfoCardBack } from "./info-card-canvas-renderer";
-import { renderSignupCardFront, renderSignupCardBack } from "./signup-card-canvas-renderer";
+import {
+  renderInfoCardFront,
+  renderInfoCardBack,
+} from "./info-card-canvas-renderer";
+import {
+  renderSignupCardFront,
+  renderSignupCardBack,
+} from "./signup-card-canvas-renderer";
 import { buildBackJob } from "./card-back/card-back-job-builder";
 import { paintBackJob } from "./card-back/card-back-raster";
 import { buildFrontComposeOptions } from "./build-front-compose-options";
@@ -24,7 +30,6 @@ import { getCompositionDispatcher } from "$lib/shared/render/get-composition-dis
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { CompositionProgressCallback } from "$lib/shared/render/services/types";
 import { CARD_SIZES, type CardSizeId } from "../domain/card-sizes";
-
 
 // MPC poker card defaults
 const MPC_WIDTH = 822;
@@ -40,11 +45,14 @@ export class PrintCardRenderer {
   async renderFront(
     sequence: SequenceData,
     options: PrintRenderOptions,
-    onProgress?: CompositionProgressCallback,
+    onProgress?: CompositionProgressCallback
   ): Promise<HTMLCanvasElement> {
     // Single shared builder — same options the worker/parity path consumes, so
     // the two renders stay identical by construction (no hand-mirrored copy).
-    const { composeOptions, frame } = buildFrontComposeOptions(sequence, options);
+    const { composeOptions, frame } = buildFrontComposeOptions(
+      sequence,
+      options
+    );
 
     const htmlFactory = (w: number, h: number): HTMLCanvasElement => {
       const c = document.createElement("canvas");
@@ -59,27 +67,57 @@ export class PrintCardRenderer {
     // and composited inside the worker from the supplied bitmap.
     if (CompositionDispatcher.canUseWorker()) {
       try {
-        const qrBitmap = await this.prerenderQr(sequence, options, composeOptions);
+        const qrBitmap = await this.prerenderQr(
+          sequence,
+          options,
+          composeOptions
+        );
         const inner = await getCompositionDispatcher().composeFrontBitmap(
           sequence,
           composeOptions,
           qrBitmap,
           undefined,
-          onProgress,
+          onProgress
         );
-        const framed = wrapContentInCardFrame(inner, frame, htmlFactory) as HTMLCanvasElement;
+        const framed = wrapContentInCardFrame(
+          inner,
+          frame,
+          htmlFactory
+        ) as HTMLCanvasElement;
         inner.close();
         return framed;
       } catch (err) {
-        console.warn("[PrintCardRenderer] worker front render failed, main-thread fallback:", err);
+        console.warn(
+          "[PrintCardRenderer] worker front render failed, main-thread fallback:",
+          err
+        );
         // fall through to the main-thread path below
       }
     }
 
     // Main-thread render (worker unavailable or per-card fallback). QR is
     // generated internally by composeSequenceImage as today.
-    const sequenceCanvas = await this.imageComposer.composeSequenceImage(sequence, composeOptions, onProgress);
-    return wrapContentInCardFrame(sequenceCanvas, frame, htmlFactory) as HTMLCanvasElement;
+    let mainThreadOptions = composeOptions;
+    if (options.qrUrl) {
+      const qrImage = await this.prerenderQrImage(
+        sequence,
+        options,
+        composeOptions
+      );
+      if (qrImage) {
+        mainThreadOptions = { ...composeOptions, qrImageBitmap: qrImage };
+      }
+    }
+    const sequenceCanvas = await this.imageComposer.composeSequenceImage(
+      sequence,
+      mainThreadOptions,
+      onProgress
+    );
+    return wrapContentInCardFrame(
+      sequenceCanvas,
+      frame,
+      htmlFactory
+    ) as HTMLCanvasElement;
   }
 
   /**
@@ -91,25 +129,43 @@ export class PrintCardRenderer {
   private async prerenderQr(
     sequence: SequenceData,
     options: PrintRenderOptions,
-    composeOptions: Partial<SequenceExportOptions>,
+    composeOptions: Partial<SequenceExportOptions>
   ): Promise<ImageBitmap | null> {
     if (!composeOptions.visibilityOverrides?.showQRCode) return null;
     const qrGen = this.imageComposer.qrGenerator;
     if (!qrGen) return null;
     try {
-      const img = await qrGen.generateAsImage(sequence, 600, {
-        style: "modern",
-        margin: 1,
-        darkMode: false,
-        bluePropType: options.bluePropType,
-        redPropType: options.redPropType,
-        deckName: options.deckName,
-      });
-      return await createImageBitmap(img);
+      const img = await this.prerenderQrImage(
+        sequence,
+        options,
+        composeOptions
+      );
+      return img ? await createImageBitmap(img) : null;
     } catch (err) {
       console.warn("[PrintCardRenderer] QR pre-render failed:", err);
       return null;
     }
+  }
+
+  private async prerenderQrImage(
+    sequence: SequenceData,
+    options: PrintRenderOptions,
+    composeOptions: Partial<SequenceExportOptions>
+  ): Promise<HTMLImageElement | null> {
+    if (!composeOptions.visibilityOverrides?.showQRCode) return null;
+    const qrGen = this.imageComposer.qrGenerator;
+    if (!qrGen) return null;
+    const qrOptions = {
+      style: "modern",
+      margin: 1,
+      darkMode: false,
+      bluePropType: options.bluePropType,
+      redPropType: options.redPropType,
+      deckName: options.deckName,
+    } as const;
+    return options.qrUrl
+      ? qrGen.generateUrlAsImage(options.qrUrl, 600, qrOptions)
+      : qrGen.generateAsImage(sequence, 600, qrOptions);
   }
 
   async renderBack(
@@ -144,7 +200,7 @@ export class PrintCardRenderer {
     } catch (err) {
       console.warn(
         "[PrintCardRenderer] new back path failed, falling back to DOM renderer:",
-        err,
+        err
       );
       return renderCardBack(sequence, {
         width: canvasWidth,
@@ -155,7 +211,10 @@ export class PrintCardRenderer {
     }
   }
 
-  async renderInfoCardFront(theme?: string, deckNumber?: number): Promise<HTMLCanvasElement> {
+  async renderInfoCardFront(
+    theme?: string,
+    deckNumber?: number
+  ): Promise<HTMLCanvasElement> {
     return renderInfoCardFront({
       width: MPC_WIDTH,
       height: MPC_HEIGHT,

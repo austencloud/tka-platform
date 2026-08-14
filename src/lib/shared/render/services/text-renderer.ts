@@ -1,8 +1,6 @@
 import type { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { getTextScalingFactors } from "./dimension-calculator";
-import type {
-  TextRenderOptions,
-} from "../domain/models/sequence-export-options";
+import type { TextRenderOptions } from "../domain/models/sequence-export-options";
 import {
   renderHeader,
   renderFooter,
@@ -26,6 +24,7 @@ export interface WordHeaderOptions {
   canvas: RenderCanvas;
   word: string;
   headerHeight: number;
+  indicatorSizeScale?: number;
   difficultyLevel?: number;
   showDifficultyBadge?: boolean;
   darkMode?: boolean;
@@ -72,7 +71,8 @@ export class TextRenderer {
 
   async preloadGlyphImages(): Promise<void> {
     if (this.glyphImageCache.size > 0) return;
-    const { getGlyphCache } = await import("$lib/shared/render/get-glyph-cache");
+    const { getGlyphCache } =
+      await import("$lib/shared/render/get-glyph-cache");
     const cache = getGlyphCache();
     await cache.initialize();
 
@@ -156,8 +156,7 @@ export class TextRenderer {
       return;
     }
 
-    const scalingFactors =
-      getTextScalingFactors(stepCount);
+    const scalingFactors = getTextScalingFactors(stepCount);
 
     const titleHeight = this.calculateTitleHeight(
       stepCount,
@@ -244,13 +243,15 @@ export class TextRenderer {
 
     const glyphImages = this.buildGlyphMap(opts.word ?? "");
     const segments = opts.word ? compressWord(opts.word) : undefined;
-    const hasCompression =
-      segments?.some((s: CompressedSegment) => s.repeat > 1);
+    const hasCompression = segments?.some(
+      (s: CompressedSegment) => s.repeat > 1
+    );
 
     renderHeader(ctx, {
       canvasWidth: opts.canvas.width,
       headerHeight: opts.headerHeight,
       word: opts.word ?? "",
+      indicatorSizeScale: opts.indicatorSizeScale,
       difficultyLevel: opts.difficultyLevel ?? 1,
       showDifficultyBadge: opts.showDifficultyBadge ?? true,
       loopComponents: packageComponents,
@@ -285,7 +286,9 @@ export class TextRenderer {
           ? opts.notes
           : undefined;
 
-    const iconImage = opts.iconPath ? await loadFooterIcon(opts.iconPath) : undefined;
+    const iconImage = opts.iconPath
+      ? await loadFooterIcon(opts.iconPath)
+      : undefined;
 
     renderFooter(ctx, {
       canvasWidth: opts.canvas.width,
