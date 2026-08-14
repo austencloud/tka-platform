@@ -291,6 +291,7 @@
       modalUrlState:
         import("$lib/shared/application/state/ui/modal-url-state.svelte"),
       cacheBuster: import("$lib/shared/utils/cache-buster"),
+      nativeInitializer: import("$lib/shared/platform/get-native-initializer"),
     };
     // Prod-only: preload MainApp too. In dev, AppShellLoader's own import() is
     // fast enough - adding it here pulls too many deps into initial parallel
@@ -414,6 +415,15 @@
     if (!preloadedImports) preloadedImports = startAppImports();
     const imports = preloadedImports;
 
+    // A QR scan can resume Android before the app's dependency container has
+    // loaded. Start the native listener now so that intent is retained while
+    // the rest of the app catches up behind the launch screen.
+    void imports.nativeInitializer
+      .then(({ getNativeInitializer }) => getNativeInitializer().initialize())
+      .catch((err: unknown) =>
+        console.warn("[Layout] Native init skipped:", err)
+      );
+
     // Set inside runDeferred() once library-sync-retry loads; unsubscribed
     // in this function's cleanup below.
     let unsubscribeLibrarySyncRetry: (() => void) | undefined;
@@ -457,16 +467,6 @@
     } else {
       setTimeout(preloadGlyphs, 0);
     }
-
-    // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
-    // No-op on web - the isNative check inside returns immediately.
-    const { getNativeInitializer } =
-      await import("$lib/shared/platform/get-native-initializer");
-    getNativeInitializer()
-      .initialize()
-      .catch((err: unknown) =>
-        console.warn("[Layout] Native init skipped:", err)
-      );
 
     // Initialize desktop Tauri features (window state, updater).
     // No-op on web/mobile - the isDesktop check inside returns immediately.

@@ -11,6 +11,17 @@ const mocks = vi.hoisted(() => ({
   markTransitionStage: vi.fn(),
   markViewerFailed: vi.fn(),
   isViewerReady: vi.fn(() => false),
+  addAppListener: vi.fn(),
+  getLaunchUrl: vi.fn(),
+  registerShareTarget: vi.fn<() => Promise<void>>(),
+  appUrlOpenCallback: null as
+    | null
+    | ((event: { url: string }) => Promise<void>),
+}));
+
+vi.mock("$lib/shared/platform/services/platform-detector", () => ({
+  isNative: () => true,
+  isAndroid: () => false,
 }));
 
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
@@ -26,6 +37,34 @@ vi.mock("@capacitor/splash-screen", () => ({
     hide: mocks.hideSplash,
     show: mocks.showSplash,
   },
+}));
+
+vi.mock("@capacitor/app", () => ({
+  App: {
+    addListener: mocks.addAppListener,
+    getLaunchUrl: mocks.getLaunchUrl,
+    exitApp: vi.fn(),
+  },
+}));
+
+vi.mock("@capacitor/status-bar", () => ({
+  StatusBar: {
+    setStyle: vi.fn().mockResolvedValue(undefined),
+    setOverlaysWebView: vi.fn().mockResolvedValue(undefined),
+  },
+  Style: { Dark: "DARK" },
+}));
+
+vi.mock("@capacitor/keyboard", () => ({
+  Keyboard: {
+    setResizeMode: vi.fn().mockResolvedValue(undefined),
+    setScroll: vi.fn().mockResolvedValue(undefined),
+  },
+  KeyboardResize: { None: "none" },
+}));
+
+vi.mock("$lib/shared/share-intake/get-share-intake", () => ({
+  ensureShareTargetRegistered: mocks.registerShareTarget,
 }));
 
 vi.mock("$lib/shared/platform/services/native-scan-viewer-readiness", () => ({
@@ -48,6 +87,48 @@ describe("NativeInitializer deep-link readiness", () => {
     mocks.showSplash.mockResolvedValue();
     mocks.waitForLoadingSurface.mockResolvedValue("ready");
     mocks.isViewerReady.mockReturnValue(false);
+    mocks.getLaunchUrl.mockResolvedValue(null);
+    mocks.registerShareTarget.mockResolvedValue();
+    mocks.appUrlOpenCallback = null;
+    mocks.addAppListener.mockImplementation(
+      async (
+        eventName: string,
+        callback: (event: { url: string }) => Promise<void>
+      ) => {
+        if (eventName === "appUrlOpen") mocks.appUrlOpenCallback = callback;
+        return { remove: vi.fn() };
+      }
+    );
+  });
+
+  it("captures a QR intent before slower native startup work settles", async () => {
+    let releaseShareTarget!: () => void;
+    mocks.registerShareTarget.mockReturnValue(
+      new Promise<void>((resolve) => {
+        releaseShareTarget = resolve;
+      })
+    );
+    mocks.awaitAuthSettled.mockResolvedValue();
+
+    const initializer = new NativeInitializer();
+    const initialization = initializer.initialize();
+
+    await vi.waitFor(() => {
+      expect(mocks.appUrlOpenCallback).toBeTypeOf("function");
+      expect(mocks.registerShareTarget).toHaveBeenCalledOnce();
+    });
+
+    await mocks.appUrlOpenCallback?.({
+      url: "https://tka.run/EARLY42?bp=club&rp=club",
+    });
+
+    expect(mocks.goto).toHaveBeenCalledWith(
+      "/browse/gallery?bp=club&rp=club&v=EARLY42"
+    );
+    expect(mocks.showSplash).toHaveBeenCalled();
+
+    releaseShareTarget();
+    await initialization;
   });
 
   it("waits for app startup before navigating a QR launch URL", async () => {

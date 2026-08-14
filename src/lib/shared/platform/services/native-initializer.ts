@@ -11,9 +11,16 @@ import {
 export class NativeInitializer {
   private deepLinkTransitionToken = 0;
   private launchScanTraceCode: string | null = null;
+  private appUrlListenerRegistration: Promise<void> | null = null;
 
   async initialize(): Promise<void> {
     if (!isNative()) return;
+
+    // Android can deliver the QR intent as soon as it brings our activity to
+    // the foreground. Attach this before share intake, auth, or the app shell
+    // can delay startup; otherwise the scan is lost and the user keeps staring
+    // at the launch cover with no sequence queued behind it.
+    await this.registerAppUrlListener();
 
     // initAppLifecycle navigates off the marketing landing (the native shell
     // loads "/") into the app. Hide the splash only AFTER that navigation so
@@ -114,7 +121,15 @@ export class NativeInitializer {
     if (!openedViaDeepLink) {
       await this.bootIntoApp();
     }
+  }
 
+  private registerAppUrlListener(): Promise<void> {
+    this.appUrlListenerRegistration ??= this.attachAppUrlListener();
+    return this.appUrlListenerRegistration;
+  }
+
+  private async attachAppUrlListener(): Promise<void> {
+    const { App } = await import("@capacitor/app");
     await App.addListener("appUrlOpen", async ({ url }) => {
       await this.handleDeepLink(url, true);
     });
