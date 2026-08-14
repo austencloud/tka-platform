@@ -197,7 +197,7 @@ export class FirestoreRest {
 
   constructor(
     private readonly credentials: ServiceAccountCredentials,
-    private readonly fetchImpl: typeof fetch = fetch
+    private readonly fetchImpl?: typeof fetch
   ) {}
 
   get projectId(): string {
@@ -252,7 +252,18 @@ export class FirestoreRest {
     const token = await this.getAccessToken();
     const headers = new Headers(init.headers);
     headers.set("Authorization", `Bearer ${token}`);
-    return this.fetchImpl(input, { ...init, headers });
+    return this.request(input, { ...init, headers });
+  }
+
+  private request(input: string, init: RequestInit): Promise<Response> {
+    if (this.fetchImpl) {
+      // Calling an injected fetch through `this.fetchImpl(...)` gives it the
+      // Firestore client as its receiver. Cloudflare rejects that receiver
+      // before the request leaves the Worker.
+      const fetchImpl = this.fetchImpl;
+      return fetchImpl(input, init);
+    }
+    return fetch(input, init);
   }
 
   private async getAccessToken(): Promise<string> {
@@ -276,7 +287,7 @@ export class FirestoreRest {
       this.credentials,
       Math.floor(Date.now() / 1000)
     );
-    const response = await this.fetchImpl(TOKEN_URL, {
+    const response = await this.request(TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
