@@ -13,10 +13,13 @@
     PLAYBACK_MIN_BPM,
     PLAYBACK_MAX_BPM,
   } from "$lib/shared/animation-engine/domain/constants/timing";
-
-  const PRESETS = [15, 30, 60, 90, 120, 150] as const;
-  const TAP_TIMEOUT_MS = 2000;
-  const MAX_TAP_HISTORY = 8;
+  import {
+    NUMERIC_TEMPO_PRESETS,
+    TEMPO_TAP_TIMEOUT_MS,
+    calculateTapTempo,
+    clampTempoBpm,
+    recordTempoTap,
+  } from "$lib/shared/animation-engine/domain/tempo-behavior";
 
   interface Props {
     bpm: number;
@@ -35,10 +38,6 @@
     onClose,
   }: Props = $props();
 
-  function clamp(v: number): number {
-    return Math.max(min, Math.min(max, v));
-  }
-
   // Typed exact entry — a local draft committed on Enter / blur / Set, so a
   // partial number ("1" while typing "120") never clamps the live tempo.
   let draft = $state(String(bpm));
@@ -53,7 +52,7 @@
   function commitDraft() {
     const n = Number.parseInt(draft, 10);
     if (Number.isFinite(n)) {
-      const c = clamp(n);
+      const c = clampTempoBpm(n, min, max);
       draft = String(c);
       if (c !== bpm) onBpmChange(c);
     } else {
@@ -63,7 +62,7 @@
   }
 
   function pickPreset(v: number) {
-    const c = clamp(v);
+    const c = clampTempoBpm(v, min, max);
     if (c !== bpm) onBpmChange(c);
     onClose?.();
   }
@@ -76,20 +75,12 @@
   function handleTap() {
     const now = Date.now();
     if (tapTimeout !== null) clearTimeout(tapTimeout);
-    tapTimes = [...tapTimes, now].slice(-MAX_TAP_HISTORY);
+    tapTimes = recordTempoTap(tapTimes, now);
 
-    if (tapTimes.length >= 2) {
-      const intervals: number[] = [];
-      for (let i = 1; i < tapTimes.length; i++) {
-        const cur = tapTimes[i];
-        const prev = tapTimes[i - 1];
-        if (cur !== undefined && prev !== undefined) intervals.push(cur - prev);
-      }
-      const avg = intervals.reduce((s, v) => s + v, 0) / intervals.length;
-      if (avg > 0) onBpmChange(clamp(Math.round(60000 / avg)));
-    }
+    const nextBpm = calculateTapTempo(tapTimes, min, max);
+    if (nextBpm !== null) onBpmChange(nextBpm);
 
-    tapTimeout = setTimeout(() => (tapTimes = []), TAP_TIMEOUT_MS);
+    tapTimeout = setTimeout(() => (tapTimes = []), TEMPO_TAP_TIMEOUT_MS);
   }
 
   $effect(() => () => {
@@ -99,7 +90,7 @@
 
 <div class="bpm-quick" role="group" aria-label="Set tempo">
   <div class="bq-presets">
-    {#each PRESETS as preset}
+    {#each NUMERIC_TEMPO_PRESETS as preset}
       <button
         type="button"
         class="bq-preset"

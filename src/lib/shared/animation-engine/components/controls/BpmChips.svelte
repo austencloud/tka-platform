@@ -10,15 +10,23 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-
-  // Constants
-  const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
+  import {
+    PLAYBACK_MAX_BPM,
+    PLAYBACK_MIN_BPM,
+  } from "$lib/shared/animation-engine/domain/constants/timing";
+  import {
+    NUMERIC_TEMPO_PRESETS,
+    TEMPO_TAP_TIMEOUT_MS,
+    calculateTapTempo,
+    clampTempoBpm,
+    recordTempoTap,
+  } from "$lib/shared/animation-engine/domain/tempo-behavior";
 
   // Props
   let {
     bpm = $bindable(60),
-    min = 15,
-    max = 180,
+    min = PLAYBACK_MIN_BPM,
+    max = PLAYBACK_MAX_BPM,
     step = 1,
     variant = "full",
     onBpmChange,
@@ -34,8 +42,6 @@
   // Tap tempo state (full variant only)
   let tapTimes: number[] = $state([]);
   let tapTimeout: ReturnType<typeof setTimeout> | null = null;
-  const TAP_TIMEOUT_MS = 2000;
-  const MAX_TAP_HISTORY = 8;
 
   // Custom popover state (compact variant only)
   let showCustomPopover = $state(false);
@@ -44,23 +50,24 @@
   let popoverY = $state(0);
 
   // Derived
-  let isPresetValue = $derived(BPM_PRESETS.includes(bpm));
+  let isPresetValue = $derived(NUMERIC_TEMPO_PRESETS.includes(bpm));
 
   // Handlers
   function selectPreset(presetBpm: number) {
-    bpm = presetBpm;
-    onBpmChange?.(presetBpm);
+    const newBpm = clampTempoBpm(presetBpm, min, max);
+    bpm = newBpm;
+    onBpmChange?.(newBpm);
     showCustomPopover = false;
   }
 
   function decreaseBpm() {
-    const newBpm = Math.max(min, bpm - step);
+    const newBpm = clampTempoBpm(bpm - step, min, max);
     bpm = newBpm;
     onBpmChange?.(newBpm);
   }
 
   function increaseBpm() {
-    const newBpm = Math.min(max, bpm + step);
+    const newBpm = clampTempoBpm(bpm + step, min, max);
     bpm = newBpm;
     onBpmChange?.(newBpm);
   }
@@ -73,29 +80,17 @@
       clearTimeout(tapTimeout);
     }
 
-    tapTimes = [...tapTimes, now].slice(-MAX_TAP_HISTORY);
+    tapTimes = recordTempoTap(tapTimes, now);
 
-    if (tapTimes.length >= 2) {
-      const intervals: number[] = [];
-      for (let i = 1; i < tapTimes.length; i++) {
-        const current = tapTimes[i];
-        const previous = tapTimes[i - 1];
-        if (current !== undefined && previous !== undefined) {
-          intervals.push(current - previous);
-        }
-      }
-
-      const avgInterval =
-        intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
-      const calculatedBpm = Math.round(60000 / avgInterval);
-      const newBpm = Math.max(min, Math.min(max, calculatedBpm));
+    const newBpm = calculateTapTempo(tapTimes, min, max);
+    if (newBpm !== null) {
       bpm = newBpm;
       onBpmChange?.(newBpm);
     }
 
     tapTimeout = setTimeout(() => {
       tapTimes = [];
-    }, TAP_TIMEOUT_MS);
+    }, TEMPO_TAP_TIMEOUT_MS);
   }
 
   onDestroy(() => {
@@ -187,7 +182,7 @@
       </div>
 
       <div class="preset-chips">
-        {#each BPM_PRESETS as presetBpm}
+        {#each NUMERIC_TEMPO_PRESETS as presetBpm}
           <button
             class="preset-chip"
             class:active={bpm === presetBpm}
@@ -204,7 +199,7 @@
 {:else}
   <!-- Compact variant: chips only + custom popover -->
   <div class="bpm-chips compact">
-    {#each BPM_PRESETS as presetBpm}
+    {#each NUMERIC_TEMPO_PRESETS as presetBpm}
       <button
         class="preset-chip"
         class:active={bpm === presetBpm && !showCustomPopover}

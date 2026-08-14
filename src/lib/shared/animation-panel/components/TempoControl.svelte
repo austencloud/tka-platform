@@ -19,14 +19,14 @@
     PLAYBACK_MIN_BPM,
     PLAYBACK_MAX_BPM,
   } from "$lib/shared/animation-engine/domain/constants/timing";
-
-  const PRESETS = [
-    { label: "Slow", bpm: 15 },
-    { label: "Med", bpm: 60 },
-    { label: "Fast", bpm: 120 },
-  ] as const;
-
-  const NUMERIC_PRESETS = [15, 30, 60, 90, 120, 150] as const;
+  import {
+    NUMERIC_TEMPO_PRESETS,
+    SEMANTIC_TEMPO_PRESETS,
+    TEMPO_TAP_TIMEOUT_MS,
+    calculateTapTempo,
+    clampTempoBpm,
+    recordTempoTap,
+  } from "$lib/shared/animation-engine/domain/tempo-behavior";
 
   // Engine-derived: offering a BPM the playback clamp rejects makes the
   // buttons silent no-ops (readout freezes at the real ceiling).
@@ -37,8 +37,6 @@
   const HOLD_DELAY_MS = 500;
   const HOLD_TICK_MS = 100;
   const HOLD_ACCEL_MS = 2000;
-  const TAP_TIMEOUT_MS = 2000;
-  const MAX_TAP_HISTORY = 8;
 
   interface Props {
     bpm: number;
@@ -91,19 +89,15 @@
 
   // Active preset
   let activePreset = $derived(
-    PRESETS.find((p) => p.bpm === bpm)?.label ?? null
+    SEMANTIC_TEMPO_PRESETS.find((preset) => preset.bpm === bpm)?.label ?? null
   );
 
   // --- Handlers ---
 
-  function clampBpm(value: number): number {
-    return Math.max(BPM_MIN, Math.min(BPM_MAX, value));
-  }
-
   function adjustBpm(direction: 1 | -1) {
     const elapsed = performance.now() - holdStartTime;
     const step = elapsed > HOLD_ACCEL_MS ? STEP_FAST : STEP_NORMAL;
-    const newBpm = clampBpm(bpm + direction * step);
+    const newBpm = clampTempoBpm(bpm + direction * step);
     if (newBpm !== bpm) {
       onBpmChange(newBpm);
     }
@@ -138,28 +132,16 @@
       clearTimeout(tapTimeout);
     }
 
-    tapTimes = [...tapTimes, now].slice(-MAX_TAP_HISTORY);
+    tapTimes = recordTempoTap(tapTimes, now);
 
-    if (tapTimes.length >= 2) {
-      const intervals: number[] = [];
-      for (let i = 1; i < tapTimes.length; i++) {
-        const current = tapTimes[i];
-        const previous = tapTimes[i - 1];
-        if (current !== undefined && previous !== undefined) {
-          intervals.push(current - previous);
-        }
-      }
-
-      const avgInterval =
-        intervals.reduce((sum, val) => sum + val, 0) / intervals.length;
-      const calculatedBpm = Math.round(60000 / avgInterval);
-      const newBpm = clampBpm(calculatedBpm);
+    const newBpm = calculateTapTempo(tapTimes);
+    if (newBpm !== null) {
       onBpmChange(newBpm);
     }
 
     tapTimeout = setTimeout(() => {
       tapTimes = [];
-    }, TAP_TIMEOUT_MS) as ReturnType<typeof setTimeout>;
+    }, TEMPO_TAP_TIMEOUT_MS) as ReturnType<typeof setTimeout>;
   }
 
   function selectPreset(presetBpm: number) {
@@ -253,7 +235,7 @@
   <!-- Semantic presets (hidden on mobile / in popover mode) -->
   {#if showPresets && presetsMode === "inline"}
     <div class="presets">
-      {#each PRESETS as preset}
+      {#each SEMANTIC_TEMPO_PRESETS as preset}
         <button
           class="preset-btn"
           class:active={activePreset === preset.label}
@@ -288,7 +270,7 @@
 {#if showPopover && presetsMode === "popover"}
   <div class="bpm-popover" role="dialog" tabindex="-1" aria-label={t("compose_custom_bpm")} onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); closePopover(); } }}>
     <div class="bpm-popover-presets">
-      {#each NUMERIC_PRESETS as preset}
+      {#each NUMERIC_TEMPO_PRESETS as preset}
         <button
           type="button"
           class="preset-btn"
