@@ -11,7 +11,8 @@
     fishDebugConfig,
     type QualityLevel,
   } from "@austencloud/backgrounds";
-  import { ChipToggle, ChipGroup } from '@austencloud/chip-toggle';
+  import * as BackgroundsPackage from "@austencloud/backgrounds";
+  import { ChipToggle, ChipGroup } from "@austencloud/chip-toggle";
   import CollapsibleLabSection from "$lib/shared/components/lab/CollapsibleLabSection.svelte";
   import LabStatusBar from "$lib/shared/components/lab/LabStatusBar.svelte";
   import PersonalityBars from "./PersonalityBars.svelte";
@@ -34,7 +35,58 @@
   // The backgrounds package's FishMoodManager reads `_manualMoodSetAt` at runtime
   // (FishMoodManager.js) but the published FishMarineLife type omits it. Declare a
   // local augmentation so we can write the timestamp without an `as any` cast.
-  type ManualMoodFish = FishMarineLife & { _manualMoodSetAt?: number };
+  type CharacterFish = FishMarineLife & {
+    _manualMoodSetAt?: number;
+    resident?: boolean;
+    identitySeed?: number;
+    intent?: string;
+    intentTimer?: number;
+    attention?: {
+      kind: "none" | "cursor" | "fish" | "home";
+      salience: number;
+      dwellRemaining: number;
+    };
+    perception?: {
+      cursorThreat: number;
+      cursorInterest: number;
+      cursorSpeed: number;
+      socialOpportunity: number;
+      homeDisplacement: number;
+    };
+    memory?: {
+      cursorFamiliarity: number;
+      cursorAlarm: number;
+      socialAffinity: Map<number, number>;
+    };
+    escapeEventCount?: number;
+    escapeManeuver?: {
+      phase: "coil" | "propulsion" | "coast" | "stabilize";
+      source: { kind: "cursor" | "alarm" | "predator" };
+      elapsed: number;
+      totalDuration: number;
+      curvature: number;
+      accelerationBodyLengths: number;
+      jerkBodyLengths: number;
+      peakAccelerationBodyLengths: number;
+      peakJerkBodyLengths: number;
+      peakObservedSpeedBodyLengths: number;
+      minimumClearanceBodyLengths: number;
+    };
+    lastEscapeMetrics?: {
+      sourceKind: "cursor" | "alarm" | "predator";
+      duration: number;
+      peakSpeedBodyLengths: number;
+      minimumClearanceBodyLengths: number;
+      peakAccelerationBodyLengths: number;
+      peakJerkBodyLengths: number;
+    };
+  };
+  type ManualMoodFish = CharacterFish;
+  type CharacterBackgroundExports = {
+    setOceanFishSimulationSeed?: (seed: string | number) => void;
+    getOceanFishSimulationSeed?: () => number;
+  };
+  const characterBackgrounds = BackgroundsPackage as CharacterBackgroundExports;
 
   // Canvas reference
   let canvas: HTMLCanvasElement | null = $state(null);
@@ -71,9 +123,11 @@
   let lastStatsUpdate = 0;
 
   // Fish behavior state
-  let fishList: FishMarineLife[] = $state([]);
+  let fishList: CharacterFish[] = $state([]);
   let selectedFishIndex = $state(0);
   let showOverlay = $state(true);
+  let simulationSeed = $state("resident-cast-17");
+  let didSelectInitialResident = false;
 
   // Track active trigger buttons for visual feedback
   let activeMoodTrigger = $state<FishMood | null>(null);
@@ -87,51 +141,98 @@
     { icon: "fa-fish", value: stats.fish, label: "Fish" },
     { icon: "fa-disease", value: stats.jellyfish, label: "Jellyfish" },
     { icon: "fa-circle", value: stats.bubbles, label: "Bubbles" },
-    ...(showCoral ? [{ icon: "fa-seedling", value: coralCount, label: "Coral" }] : []),
+    ...(showCoral
+      ? [{ icon: "fa-seedling", value: coralCount, label: "Coral" }]
+      : []),
   ]);
 
   // Status chips for selected fish
   let statusChips = $derived.by(() => {
     if (!selectedFish) return [];
     return [
-      { label: selectedFish.behavior, color: getBehaviorChipColor(selectedFish.behavior) },
-      { label: selectedFish.mood ?? "calm", color: getMoodChipColor(selectedFish.mood ?? "calm") },
+      {
+        label: selectedFish.resident ? "resident" : "ambient",
+        color: selectedFish.resident ? "cyan" : "gray",
+      },
+      {
+        label: selectedFish.behavior,
+        color: getBehaviorChipColor(selectedFish.behavior),
+      },
+      {
+        label: selectedFish.mood ?? "calm",
+        color: getMoodChipColor(selectedFish.mood ?? "calm"),
+      },
     ];
   });
 
-  function getBehaviorChipColor(behavior: string): "cyan" | "orange" | "red" | "purple" | "gray" {
+  function getBehaviorChipColor(
+    behavior: string
+  ): "cyan" | "orange" | "red" | "purple" | "gray" {
     switch (behavior) {
-      case "cruising": return "cyan";
-      case "turning": return "orange";
-      case "darting": return "red";
-      case "schooling": return "purple";
-      default: return "gray";
+      case "cruising":
+        return "cyan";
+      case "turning":
+        return "orange";
+      case "darting":
+        return "red";
+      case "bursting":
+        return "orange";
+      case "schooling":
+        return "purple";
+      case "investigating":
+        return "purple";
+      case "socializing":
+        return "cyan";
+      case "resting":
+        return "gray";
+      case "returning":
+        return "orange";
+      default:
+        return "gray";
     }
   }
 
-  function getMoodChipColor(mood: string): "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray" {
+  function getMoodChipColor(
+    mood: string
+  ): "cyan" | "blue" | "green" | "orange" | "red" | "purple" | "gray" {
     switch (mood) {
-      case "calm": return "cyan";
-      case "curious": return "purple";
-      case "alert": return "orange";
-      case "playful": return "green";
-      case "hungry": return "red";
-      case "tired": return "gray";
-      case "social": return "purple";
-      default: return "gray";
+      case "calm":
+        return "cyan";
+      case "curious":
+        return "purple";
+      case "alert":
+        return "orange";
+      case "playful":
+        return "green";
+      case "hungry":
+        return "red";
+      case "tired":
+        return "gray";
+      case "social":
+        return "purple";
+      default:
+        return "gray";
     }
   }
 
   function getMoodColor(mood: FishMood): string {
     switch (mood) {
-      case "calm": return "#22d3ee";
-      case "curious": return "#a855f7";
-      case "alert": return "#f59e0b";
-      case "playful": return "#22c55e";
-      case "hungry": return "#ef4444";
-      case "tired": return "#6b7280";
-      case "social": return "#ec4899";
-      default: return "#ffffff";
+      case "calm":
+        return "#22d3ee";
+      case "curious":
+        return "#a855f7";
+      case "alert":
+        return "#f59e0b";
+      case "playful":
+        return "#22c55e";
+      case "hungry":
+        return "#ef4444";
+      case "tired":
+        return "#6b7280";
+      case "social":
+        return "#ec4899";
+      default:
+        return "#ffffff";
     }
   }
 
@@ -139,7 +240,9 @@
     if (!canvas) return;
 
     // Wait for layout to be computed
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve())
+    );
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -163,7 +266,9 @@
 
       if (system) {
         const dimensions = { width: canvas.width, height: canvas.height };
-        await system.initialize(dimensions, quality, { spawnFishOnScreen: true });
+        await system.initialize(dimensions, quality, {
+          spawnFishOnScreen: true,
+        });
 
         system.setLayerVisibility(layers);
         stats = system.getStats();
@@ -189,7 +294,12 @@
 
   function updateFishList() {
     if (!backgroundSystem) return;
-    fishList = backgroundSystem.getFish?.() ?? [];
+    fishList = (backgroundSystem.getFish?.() ?? []) as CharacterFish[];
+    if (!didSelectInitialResident) {
+      const residentIndex = fishList.findIndex((fish) => fish.resident);
+      if (residentIndex >= 0) selectedFishIndex = residentIndex;
+      didSelectInitialResident = true;
+    }
   }
 
   function startAnimation() {
@@ -216,9 +326,24 @@
         // Draw coral layers after the background system (back -> mid -> front)
         if (showCoral && coralRenderer.isReady()) {
           coralRenderer.update(frameMultiplier);
-          coralRenderer.drawLayer(ctx, "back", dimensions.width, dimensions.height);
-          coralRenderer.drawLayer(ctx, "mid", dimensions.width, dimensions.height);
-          coralRenderer.drawLayer(ctx, "front", dimensions.width, dimensions.height);
+          coralRenderer.drawLayer(
+            ctx,
+            "back",
+            dimensions.width,
+            dimensions.height
+          );
+          coralRenderer.drawLayer(
+            ctx,
+            "mid",
+            dimensions.width,
+            dimensions.height
+          );
+          coralRenderer.drawLayer(
+            ctx,
+            "front",
+            dimensions.width,
+            dimensions.height
+          );
         }
       } catch {
         // Swallow frame errors from backgrounds package (e.g. unknown wobble types)
@@ -258,7 +383,10 @@
     animationFrame = requestAnimationFrame(animate);
   }
 
-  function drawSelectionIndicator(ctx: CanvasRenderingContext2D, f: FishMarineLife) {
+  function drawSelectionIndicator(
+    ctx: CanvasRenderingContext2D,
+    f: FishMarineLife
+  ) {
     const headJoint = f.spineJoints?.[0];
     const x = headJoint?.x ?? f.x;
     const y = headJoint?.y ?? f.y;
@@ -273,7 +401,7 @@
     ctx.restore();
   }
 
-  function drawFishOverlay(ctx: CanvasRenderingContext2D, f: FishMarineLife) {
+  function drawFishOverlay(ctx: CanvasRenderingContext2D, f: CharacterFish) {
     const headJoint = f.spineJoints?.[0];
     const x = headJoint?.x ?? f.x;
     const y = (headJoint?.y ?? f.y) - f.bodyLength - 20;
@@ -282,7 +410,21 @@
     ctx.font = "12px monospace";
     ctx.textAlign = "center";
     ctx.fillStyle = getMoodColor(f.mood ?? "calm");
-    ctx.fillText(`${f.behavior} · ${f.mood ?? "calm"}`, x, y);
+    ctx.fillText(
+      `${f.behavior} · ${f.intent ?? "cruise"} · ${f.mood ?? "calm"}`,
+      x,
+      y
+    );
+
+    if (f.focusPoint && f.attention?.kind !== "none") {
+      ctx.strokeStyle = "rgba(34, 211, 238, 0.28)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath();
+      ctx.moveTo(x, headJoint?.y ?? f.y);
+      ctx.lineTo(f.focusPoint.x, f.focusPoint.y);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -354,7 +496,9 @@
       ctx.save();
 
       const isChasing = hunt.state === "chasing";
-      ctx.strokeStyle = isChasing ? "rgba(239, 68, 68, 0.6)" : "rgba(249, 115, 22, 0.4)";
+      ctx.strokeStyle = isChasing
+        ? "rgba(239, 68, 68, 0.6)"
+        : "rgba(249, 115, 22, 0.4)";
       ctx.lineWidth = isChasing ? 2 : 1;
       ctx.setLineDash(isChasing ? [] : [6, 6]);
 
@@ -366,7 +510,11 @@
       ctx.font = "10px monospace";
       ctx.textAlign = "center";
       ctx.fillStyle = isChasing ? "#ef4444" : "#f97316";
-      ctx.fillText(hunt.state.toUpperCase(), predatorX, predatorY - predator.bodyLength - 8);
+      ctx.fillText(
+        hunt.state.toUpperCase(),
+        predatorX,
+        predatorY - predator.bodyLength - 8
+      );
 
       ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 2;
@@ -412,7 +560,12 @@
       backgroundSystem.handleResize?.(oldDimensions, newDimensions);
 
       if (coralRenderer.isReady()) {
-        coralRenderer.handleResize(oldWidth, oldHeight, canvas.width, canvas.height);
+        coralRenderer.handleResize(
+          oldWidth,
+          oldHeight,
+          canvas.width,
+          canvas.height
+        );
       }
     }
   }
@@ -425,6 +578,22 @@
     coralRenderer.cleanup();
     backgroundSystem = null;
     await initializeSystem();
+  }
+
+  async function replaySeed() {
+    const seed = simulationSeed.trim();
+    if (!seed) {
+      toast.error("Enter a replay seed first.");
+      return;
+    }
+    if (!characterBackgrounds.setOceanFishSimulationSeed) {
+      toast.error("This backgrounds build does not include fish replay yet.");
+      return;
+    }
+    characterBackgrounds.setOceanFishSimulationSeed(seed);
+    selectedFishIndex = 0;
+    didSelectInitialResident = false;
+    await regenerate();
   }
 
   function spawnFish() {
@@ -488,7 +657,8 @@
 
   function selectPrevFish() {
     if (fishList.length === 0) return;
-    selectedFishIndex = (selectedFishIndex - 1 + fishList.length) % fishList.length;
+    selectedFishIndex =
+      (selectedFishIndex - 1 + fishList.length) % fishList.length;
   }
 
   function triggerMood(mood: FishMood) {
@@ -543,7 +713,12 @@
     window.removeEventListener("resize", handleResize);
   });
 
-  const moodOptions: { mood: FishMood; label: string; icon: string; color: ColorPreset }[] = [
+  const moodOptions: {
+    mood: FishMood;
+    label: string;
+    icon: string;
+    color: ColorPreset;
+  }[] = [
     { mood: "calm", label: "Calm", icon: "water", color: "cyan" },
     { mood: "curious", label: "Curious", icon: "search", color: "default" },
     { mood: "alert", label: "Alert", icon: "exclamation", color: "amber" },
@@ -552,7 +727,12 @@
     { mood: "social", label: "Social", icon: "users", color: "rose" },
   ];
 
-  const wobbleOptions: { type: NonNullable<FishMarineLife["wobbleType"]>; label: string; icon: string; color: ColorPreset }[] = [
+  const wobbleOptions: {
+    type: NonNullable<FishMarineLife["wobbleType"]>;
+    label: string;
+    icon: string;
+    color: ColorPreset;
+  }[] = [
     { type: "curious_tilt", label: "Curious", icon: "search", color: "blue" },
     { type: "startled_dart", label: "Startle", icon: "bolt", color: "amber" },
     { type: "playful_wiggle", label: "Wiggle", icon: "star", color: "emerald" },
@@ -560,7 +740,12 @@
   ];
 
   // Rare behavior options for manual triggering
-  const rareBehaviorOptions: { type: string; label: string; icon: string; color: ColorPreset }[] = [
+  const rareBehaviorOptions: {
+    type: string;
+    label: string;
+    icon: string;
+    color: ColorPreset;
+  }[] = [
     { type: "barrel_roll", label: "Roll", icon: "sync", color: "cyan" },
     { type: "freeze", label: "Freeze", icon: "snowflake", color: "blue" },
     { type: "double_take", label: "Look", icon: "eye", color: "amber" },
@@ -574,9 +759,21 @@
   // Hunt stats for display
   let huntStats = $derived.by(() => {
     const fishAnimator = backgroundSystem?.getFishAnimator?.();
-    if (!fishAnimator) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
+    if (!fishAnimator)
+      return {
+        activeHunts: 0,
+        totalHunts: 0,
+        successfulCatches: 0,
+        escapes: 0,
+      };
     const huntingHandler = fishAnimator.getHuntingHandler?.();
-    if (!huntingHandler) return { activeHunts: 0, totalHunts: 0, successfulCatches: 0, escapes: 0 };
+    if (!huntingHandler)
+      return {
+        activeHunts: 0,
+        totalHunts: 0,
+        successfulCatches: 0,
+        escapes: 0,
+      };
     return huntingHandler.getStats();
   });
 
@@ -596,12 +793,16 @@
     // If selected is a predator, find prey
     // If selected is prey, find a predator to hunt it
     if (huntingHandler.isPredator(selected)) {
-      const prey = actualFish.find((f) => huntingHandler.isPrey(f) && f !== selected);
+      const prey = actualFish.find(
+        (f) => huntingHandler.isPrey(f) && f !== selected
+      );
       if (prey) {
         huntingHandler.forceHunt(selected, prey, performance.now() / 1000);
       }
     } else if (huntingHandler.isPrey(selected)) {
-      const predator = actualFish.find((f) => huntingHandler.isPredator(f) && f !== selected);
+      const predator = actualFish.find(
+        (f) => huntingHandler.isPredator(f) && f !== selected
+      );
       if (predator) {
         huntingHandler.forceHunt(predator, selected, performance.now() / 1000);
       }
@@ -624,7 +825,8 @@
     // Set wobble animation with appropriate duration
     const wobbleType = type as FishMarineLife["wobbleType"];
     f.wobbleType = wobbleType;
-    f.wobbleTimer = type === "barrel_roll" ? 0.8 : type === "freeze" ? 0.6 : 0.5;
+    f.wobbleTimer =
+      type === "barrel_roll" ? 0.8 : type === "freeze" ? 0.6 : 0.5;
     f.wobbleIntensity = 1;
 
     if (partner && type === "sync_swim") {
@@ -653,44 +855,158 @@
 
     <!-- Quick Commands -->
     <ChipGroup>
-      <ChipToggle icon="sync" label="Regen" layout="vertical" color="cyan" onclick={regenerate} />
-      <ChipToggle icon="plus" label="Fish" layout="vertical" color="cyan" onclick={spawnFish} />
-      <ChipToggle icon="plus" label="Jelly" layout="vertical" color="cyan" onclick={spawnJellyfish} />
-      <ChipToggle icon="eye" label="All On" layout="vertical" color="cyan" onclick={enableAllLayers} />
+      <ChipToggle
+        icon="sync"
+        label="Regen"
+        layout="vertical"
+        color="cyan"
+        onclick={regenerate}
+      />
+      <ChipToggle
+        icon="plus"
+        label="Fish"
+        layout="vertical"
+        color="cyan"
+        onclick={spawnFish}
+      />
+      <ChipToggle
+        icon="plus"
+        label="Jelly"
+        layout="vertical"
+        color="cyan"
+        onclick={spawnJellyfish}
+      />
+      <ChipToggle
+        icon="eye"
+        label="All On"
+        layout="vertical"
+        color="cyan"
+        onclick={enableAllLayers}
+      />
     </ChipGroup>
 
     <!-- Scene Layers -->
-    <CollapsibleLabSection title="Layers" icon="fa-layer-group" defaultOpen={true} accentColor="cyan">
+    <CollapsibleLabSection
+      title="Layers"
+      icon="fa-layer-group"
+      defaultOpen={true}
+      accentColor="cyan"
+    >
       <ChipGroup>
-        <ChipToggle label="Gradient" icon="fill-drip" active={layers.gradient} color="cyan" onclick={() => toggleLayer("gradient")} />
-        <ChipToggle label="Rays" icon="sun" active={layers.lightRays} color="cyan" onclick={() => toggleLayer("lightRays")} />
-        <ChipToggle label="Caustics" icon="water" active={layers.caustics} color="cyan" onclick={() => toggleLayer("caustics")} />
-        <ChipToggle label="Particles" icon="dot-circle" active={layers.particles} color="cyan" onclick={() => toggleLayer("particles")} />
-        <ChipToggle label="Bubbles" icon="circle" active={layers.bubbles} color="cyan" onclick={() => toggleLayer("bubbles")} />
-        <ChipToggle label="Fish" icon="fish" active={layers.fish} color="cyan" onclick={() => toggleLayer("fish")} />
-        <ChipToggle label="Jellyfish" icon="disease" active={layers.jellyfish} color="cyan" onclick={() => toggleLayer("jellyfish")} />
-        <ChipToggle label="Coral" icon="seedling" active={showCoral} color="cyan" onclick={toggleCoral} />
+        <ChipToggle
+          label="Gradient"
+          icon="fill-drip"
+          active={layers.gradient}
+          color="cyan"
+          onclick={() => toggleLayer("gradient")}
+        />
+        <ChipToggle
+          label="Rays"
+          icon="sun"
+          active={layers.lightRays}
+          color="cyan"
+          onclick={() => toggleLayer("lightRays")}
+        />
+        <ChipToggle
+          label="Caustics"
+          icon="water"
+          active={layers.caustics}
+          color="cyan"
+          onclick={() => toggleLayer("caustics")}
+        />
+        <ChipToggle
+          label="Particles"
+          icon="dot-circle"
+          active={layers.particles}
+          color="cyan"
+          onclick={() => toggleLayer("particles")}
+        />
+        <ChipToggle
+          label="Bubbles"
+          icon="circle"
+          active={layers.bubbles}
+          color="cyan"
+          onclick={() => toggleLayer("bubbles")}
+        />
+        <ChipToggle
+          label="Fish"
+          icon="fish"
+          active={layers.fish}
+          color="cyan"
+          onclick={() => toggleLayer("fish")}
+        />
+        <ChipToggle
+          label="Jellyfish"
+          icon="disease"
+          active={layers.jellyfish}
+          color="cyan"
+          onclick={() => toggleLayer("jellyfish")}
+        />
+        <ChipToggle
+          label="Coral"
+          icon="seedling"
+          active={showCoral}
+          color="cyan"
+          onclick={toggleCoral}
+        />
       </ChipGroup>
     </CollapsibleLabSection>
 
     <!-- Quality -->
-    <CollapsibleLabSection title="Quality" icon="fa-sliders-h" defaultOpen={false} accentColor="cyan">
+    <CollapsibleLabSection
+      title="Quality"
+      icon="fa-sliders-h"
+      defaultOpen={false}
+      accentColor="cyan"
+    >
       <ChipGroup>
-        <ChipToggle label="High" active={quality === "high"} color="cyan" onclick={() => setQuality("high")} />
-        <ChipToggle label="Medium" active={quality === "medium"} color="cyan" onclick={() => setQuality("medium")} />
-        <ChipToggle label="Low" active={quality === "low"} color="cyan" onclick={() => setQuality("low")} />
+        <ChipToggle
+          label="High"
+          active={quality === "high"}
+          color="cyan"
+          onclick={() => setQuality("high")}
+        />
+        <ChipToggle
+          label="Medium"
+          active={quality === "medium"}
+          color="cyan"
+          onclick={() => setQuality("medium")}
+        />
+        <ChipToggle
+          label="Low"
+          active={quality === "low"}
+          color="cyan"
+          onclick={() => setQuality("low")}
+        />
       </ChipGroup>
     </CollapsibleLabSection>
 
     <!-- Fish Behavior Section -->
-    <CollapsibleLabSection title="Fish Behavior" icon="fa-fish" defaultOpen={false} accentColor="cyan">
+    <CollapsibleLabSection
+      title="Fish Behavior"
+      icon="fa-fish"
+      defaultOpen={false}
+      accentColor="cyan"
+    >
       <!-- Fish Selector -->
       <div class="fish-selector">
-        <button class="nav-btn" onclick={selectPrevFish} disabled={fishList.length <= 1} aria-label="Previous fish">
+        <button
+          class="nav-btn"
+          onclick={selectPrevFish}
+          disabled={fishList.length <= 1}
+          aria-label="Previous fish"
+        >
           <i class="fas fa-chevron-left"></i>
         </button>
-        <span class="fish-index">{selectedFishIndex + 1} / {fishList.length}</span>
-        <button class="nav-btn" onclick={selectNextFish} disabled={fishList.length <= 1} aria-label="Next fish">
+        <span class="fish-index"
+          >{selectedFishIndex + 1} / {fishList.length}</span
+        >
+        <button
+          class="nav-btn"
+          onclick={selectNextFish}
+          disabled={fishList.length <= 1}
+          aria-label="Next fish"
+        >
           <i class="fas fa-chevron-right"></i>
         </button>
       </div>
@@ -705,7 +1021,13 @@
 
       <!-- Display Options -->
       <div class="display-options">
-        <ChipToggle icon="eye" label="Overlay" color="cyan" active={showOverlay} onclick={() => showOverlay = !showOverlay} />
+        <ChipToggle
+          icon="eye"
+          label="Overlay"
+          color="cyan"
+          active={showOverlay}
+          onclick={() => (showOverlay = !showOverlay)}
+        />
       </div>
 
       <!-- Mood Triggers -->
@@ -762,13 +1084,16 @@
       </div>
       <div class="hunt-stats">
         <span class="hunt-stat">
-          <i class="fas fa-bullseye"></i> {huntStats.activeHunts} active
+          <i class="fas fa-bullseye"></i>
+          {huntStats.activeHunts} active
         </span>
         <span class="hunt-stat">
-          <i class="fas fa-check"></i> {huntStats.successfulCatches} catches
+          <i class="fas fa-check"></i>
+          {huntStats.successfulCatches} catches
         </span>
         <span class="hunt-stat">
-          <i class="fas fa-running"></i> {huntStats.escapes} escapes
+          <i class="fas fa-running"></i>
+          {huntStats.escapes} escapes
         </span>
       </div>
 
@@ -784,15 +1109,173 @@
             <span class="info-label">Speed</span>
             <span class="info-value">{selectedFish.speed.toFixed(0)} px/s</span>
           </div>
+          <div class="info-item">
+            <span class="info-label">Cast</span>
+            <span class="info-value"
+              >{selectedFish.resident ? "Resident" : "Ambient"}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Intent</span>
+            <span class="info-value">{selectedFish.intent ?? "Cruise"}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Attention</span>
+            <span class="info-value"
+              >{selectedFish.attention?.kind ?? "None"}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Salience</span>
+            <span class="info-value"
+              >{Math.round(
+                (selectedFish.attention?.salience ?? 0) * 100
+              )}%</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Familiarity</span>
+            <span class="info-value"
+              >{Math.round(
+                (selectedFish.memory?.cursorFamiliarity ?? 0) * 100
+              )}%</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Alarm</span>
+            <span class="info-value"
+              >{Math.round(
+                (selectedFish.memory?.cursorAlarm ?? 0) * 100
+              )}%</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Known Fish</span>
+            <span class="info-value"
+              >{selectedFish.memory?.socialAffinity.size ?? 0}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Identity</span>
+            <span class="info-value identity-value"
+              >{selectedFish.identitySeed ?? "Classic"}</span
+            >
+          </div>
+        </div>
+        <div class="subsection-label">Fast-start Trace</div>
+        <div class="info-grid motion-trace">
+          <div class="info-item">
+            <span class="info-label">Phase</span>
+            <span class="info-value"
+              >{selectedFish.escapeManeuver?.phase ??
+                (selectedFish.lastEscapeMetrics ? "Complete" : "Idle")}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Events</span>
+            <span class="info-value">{selectedFish.escapeEventCount ?? 0}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Stimulus</span>
+            <span class="info-value"
+              >{selectedFish.escapeManeuver?.source.kind ??
+                selectedFish.lastEscapeMetrics?.sourceKind ??
+                "None"}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Clock</span>
+            <span class="info-value"
+              >{selectedFish.escapeManeuver
+                ? `${selectedFish.escapeManeuver.elapsed.toFixed(2)} / ${selectedFish.escapeManeuver.totalDuration.toFixed(2)} s`
+                : `${(selectedFish.lastEscapeMetrics?.duration ?? 0).toFixed(2)} s`}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Speed</span>
+            <span class="info-value"
+              >{(selectedFish.speed / Math.max(1, selectedFish.bodyLength)).toFixed(
+                2
+              )} BL/s</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Peak</span>
+            <span class="info-value"
+              >{(
+                selectedFish.escapeManeuver?.peakObservedSpeedBodyLengths ??
+                selectedFish.lastEscapeMetrics?.peakSpeedBodyLengths ??
+                0
+              ).toFixed(2)} BL/s</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Curvature</span>
+            <span class="info-value"
+              >{(selectedFish.escapeManeuver?.curvature ?? 0).toFixed(2)}</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Clearance</span>
+            <span class="info-value"
+              >{(
+                selectedFish.escapeManeuver?.minimumClearanceBodyLengths ??
+                selectedFish.lastEscapeMetrics?.minimumClearanceBodyLengths ??
+                0
+              ).toFixed(2)} BL</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Acceleration</span>
+            <span class="info-value"
+              >{(
+                selectedFish.escapeManeuver?.accelerationBodyLengths ??
+                selectedFish.lastEscapeMetrics?.peakAccelerationBodyLengths ??
+                0
+              ).toFixed(1)} BL/s²</span
+            >
+          </div>
+          <div class="info-item">
+            <span class="info-label">Jerk</span>
+            <span class="info-value"
+              >{(
+                selectedFish.escapeManeuver?.jerkBodyLengths ??
+                selectedFish.lastEscapeMetrics?.peakJerkBodyLengths ??
+                0
+              ).toFixed(1)} BL/s³</span
+            >
+          </div>
         </div>
         {#if selectedFish.personality}
           <PersonalityBars personality={selectedFish.personality} />
         {/if}
       {/if}
+
+      <div class="subsection-label">Replay</div>
+      <div class="seed-control">
+        <label for="fish-simulation-seed">Simulation seed</label>
+        <div class="seed-row">
+          <input
+            id="fish-simulation-seed"
+            class="seed-input"
+            bind:value={simulationSeed}
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="seed-button" type="button" onclick={replaySeed}>
+            Reset cast
+          </button>
+        </div>
+      </div>
     </CollapsibleLabSection>
 
     <!-- Debug -->
-    <CollapsibleLabSection title="Debug" icon="fa-bug" defaultOpen={false} accentColor="red">
+    <CollapsibleLabSection
+      title="Debug"
+      icon="fa-bug"
+      defaultOpen={false}
+      accentColor="red"
+    >
       <div class="subsection-label">Rendering</div>
       <ChipGroup>
         <ChipToggle
@@ -800,28 +1283,35 @@
           label="Spine"
           color="red"
           active={fishDebugConfig.useSpineRendering}
-          onclick={() => fishDebugConfig.useSpineRendering = !fishDebugConfig.useSpineRendering}
+          onclick={() =>
+            (fishDebugConfig.useSpineRendering =
+              !fishDebugConfig.useSpineRendering)}
         />
         <ChipToggle
           icon="wave-square"
           label="Wobble"
           color="red"
           active={fishDebugConfig.enableWobble}
-          onclick={() => fishDebugConfig.enableWobble = !fishDebugConfig.enableWobble}
+          onclick={() =>
+            (fishDebugConfig.enableWobble = !fishDebugConfig.enableWobble)}
         />
         <ChipToggle
           icon="wind"
           label="Tail"
           color="red"
           active={fishDebugConfig.enableTailOscillation}
-          onclick={() => fishDebugConfig.enableTailOscillation = !fishDebugConfig.enableTailOscillation}
+          onclick={() =>
+            (fishDebugConfig.enableTailOscillation =
+              !fishDebugConfig.enableTailOscillation)}
         />
         <ChipToggle
           icon="rocket"
           label="Propulsion"
           color="red"
           active={fishDebugConfig.enablePropulsion}
-          onclick={() => fishDebugConfig.enablePropulsion = !fishDebugConfig.enablePropulsion}
+          onclick={() =>
+            (fishDebugConfig.enablePropulsion =
+              !fishDebugConfig.enablePropulsion)}
         />
       </ChipGroup>
 
@@ -832,35 +1322,43 @@
           label="Flocking"
           color="amber"
           active={fishDebugConfig.enableFlocking}
-          onclick={() => fishDebugConfig.enableFlocking = !fishDebugConfig.enableFlocking}
+          onclick={() =>
+            (fishDebugConfig.enableFlocking = !fishDebugConfig.enableFlocking)}
         />
         <ChipToggle
           icon="handshake"
           label="Interact"
           color="amber"
           active={fishDebugConfig.enableInteractions}
-          onclick={() => fishDebugConfig.enableInteractions = !fishDebugConfig.enableInteractions}
+          onclick={() =>
+            (fishDebugConfig.enableInteractions =
+              !fishDebugConfig.enableInteractions)}
         />
         <ChipToggle
           icon="magic"
           label="Rare"
           color="amber"
           active={fishDebugConfig.enableRareBehaviors}
-          onclick={() => fishDebugConfig.enableRareBehaviors = !fishDebugConfig.enableRareBehaviors}
+          onclick={() =>
+            (fishDebugConfig.enableRareBehaviors =
+              !fishDebugConfig.enableRareBehaviors)}
         />
         <ChipToggle
           icon="home"
           label="Zones"
           color="amber"
           active={fishDebugConfig.enableHomeZones}
-          onclick={() => fishDebugConfig.enableHomeZones = !fishDebugConfig.enableHomeZones}
+          onclick={() =>
+            (fishDebugConfig.enableHomeZones =
+              !fishDebugConfig.enableHomeZones)}
         />
         <ChipToggle
           icon="crosshairs"
           label="Hunting"
           color="red"
           active={fishDebugConfig.enableHunting}
-          onclick={() => fishDebugConfig.enableHunting = !fishDebugConfig.enableHunting}
+          onclick={() =>
+            (fishDebugConfig.enableHunting = !fishDebugConfig.enableHunting)}
         />
       </ChipGroup>
 
@@ -871,28 +1369,37 @@
           label="Show Homes"
           color="cyan"
           active={fishDebugConfig.showHomeZones}
-          onclick={() => fishDebugConfig.showHomeZones = !fishDebugConfig.showHomeZones}
+          onclick={() =>
+            (fishDebugConfig.showHomeZones = !fishDebugConfig.showHomeZones)}
         />
         <ChipToggle
           icon="bolt"
           label="Show Interact"
           color="cyan"
           active={fishDebugConfig.showInteractions}
-          onclick={() => fishDebugConfig.showInteractions = !fishDebugConfig.showInteractions}
+          onclick={() =>
+            (fishDebugConfig.showInteractions =
+              !fishDebugConfig.showInteractions)}
         />
         <ChipToggle
           icon="crosshairs"
           label="Show Hunts"
           color="red"
           active={fishDebugConfig.showHunts}
-          onclick={() => fishDebugConfig.showHunts = !fishDebugConfig.showHunts}
+          onclick={() =>
+            (fishDebugConfig.showHunts = !fishDebugConfig.showHunts)}
         />
       </ChipGroup>
       <p class="debug-hint">Also: window.fishDebugConfig</p>
     </CollapsibleLabSection>
 
     <!-- Stats -->
-    <CollapsibleLabSection title="Stats" icon="fa-chart-bar" defaultOpen={false} accentColor="cyan">
+    <CollapsibleLabSection
+      title="Stats"
+      icon="fa-chart-bar"
+      defaultOpen={false}
+      accentColor="cyan"
+    >
       <div class="stats-grid">
         <div class="stat">
           <span class="stat-value">{stats.fish}</span>
@@ -974,7 +1481,11 @@
 
   .badge {
     padding: 4px 10px;
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(34, 211, 238, 0.3));
+    background: linear-gradient(
+      135deg,
+      rgba(6, 182, 212, 0.3),
+      rgba(34, 211, 238, 0.3)
+    );
     border: 1px solid rgba(34, 211, 238, 0.4);
     border-radius: 20px;
     font-size: var(--font-size-compact, 0.75rem);
@@ -1090,6 +1601,64 @@
     font-weight: 600;
     color: #22d3ee;
     text-transform: capitalize;
+  }
+
+  .identity-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    text-transform: none;
+  }
+
+  .seed-control {
+    display: grid;
+    gap: 6px;
+  }
+
+  .seed-control label {
+    color: #9ca3af;
+    font-size: 0.875rem;
+  }
+
+  .seed-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .seed-input,
+  .seed-button {
+    min-height: 40px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.875rem;
+  }
+
+  .seed-input {
+    min-width: 0;
+    padding: 0 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #e5e7eb;
+  }
+
+  .seed-button {
+    padding: 0 12px;
+    background: rgba(34, 211, 238, 0.12);
+    color: #67e8f9;
+    cursor: pointer;
+  }
+
+  .seed-input:focus-visible,
+  .seed-button:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    .seed-button:hover {
+      background: rgba(34, 211, 238, 0.2);
+      border-color: rgba(34, 211, 238, 0.35);
+    }
   }
 
   /* Stats Grid */
