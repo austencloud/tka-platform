@@ -18,8 +18,9 @@ const config: CapacitorConfig = {
       launchAutoHide: false,
       launchShowDuration: 3000,
       launchFadeOutDuration: 0,
-      backgroundColor: '#0b1d2a',
-      androidScaleType: 'CENTER_CROP'
+      backgroundColor: '#06070f',
+      androidScaleType: 'CENTER_CROP',
+      layoutName: 'launch_screen'
     },
     StatusBar: {
       style: 'DARK',

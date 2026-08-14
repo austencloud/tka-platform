@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/launch_splash_base" />
+    <item
+        android:width="420dp"
+        android:height="204dp"
+        android:gravity="center">
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/splash_wordmark" />
+    </item>
+    <item
+        android:width="112dp"
+        android:height="17dp"
+        android:bottom="22dp"
+        android:gravity="bottom|center_horizontal">
+        <bitmap
+            android:gravity="fill"
+            android:src="@drawable/splash_signature" />
+    </item>
+</layer-list>

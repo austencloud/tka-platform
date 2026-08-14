@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="370" viewBox="0 0 760 370" role="img" aria-labelledby="title desc">
+  <title id="title">Flow Arts Composer wordmark</title>
+  <desc id="desc">The Kinetic Alphabet above the Flow Arts Composer marketing wordmark and choreography subtitle.</desc>
+  <style>
+    @font-face {
+      font-family: "Fraunces";
+      font-style: italic;
+      font-weight: 700;
+      src: url("../static/fonts/fraunces/fraunces-700-italic-latin.woff2") format("woff2");
+    }
+    .brand-title {
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 104px;
+      font-style: italic;
+      font-weight: 700;
+      letter-spacing: -2.6px;
+    }
+    .ui {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+  </style>
+  <defs>
+    <linearGradient id="accent" x1="0" x2="1">
+      <stop offset="0" stop-color="#6f8cff"/>
+      <stop offset="1" stop-color="#8b6cff"/>
+    </linearGradient>
+    <filter id="title-glow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="28" flood-color="#4b3fb4" flood-opacity=".32"/>
+    </filter>
+    <filter id="line-glow" x="-100%" y="-500%" width="300%" height="1100%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g text-anchor="middle">
+    <text class="ui" x="380" y="28" fill="#aeb9f4" font-size="17" font-weight="640" letter-spacing="3.25">THE KINETIC ALPHABET</text>
+    <g class="brand-title" fill="#f7f6fc" filter="url(#title-glow)">
+      <text x="380" y="142">Flow Arts</text>
+      <text x="380" y="242">Composer</text>
+    </g>
+    <text class="ui" x="380" y="313" fill="#a6a9bd" font-size="25" letter-spacing=".38">Flow arts software for choreography</text>
+    <rect x="322" y="353" width="116" height="4" rx="2" fill="url(#accent)" filter="url(#line-glow)"/>
+  </g>
+</svg>
