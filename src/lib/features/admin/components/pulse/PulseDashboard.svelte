@@ -12,7 +12,8 @@
    * Spec: docs/superpowers/specs/2026-07-09-pulse-activity-system-design.md
    */
   import { onMount } from "svelte";
-  import { auth, getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+  import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
   import {
     collection,
     query as fsQuery,
@@ -85,20 +86,22 @@
     type: string,
     extra?: Record<string, unknown>
   ): Promise<unknown[][]> {
-    const user = auth.currentUser;
-    if (!user) throw new Error("Not signed in");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/analytics", {
+    const response = await authedFetch("/api/admin/analytics", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type, ...extra }),
     });
-    if (!response.ok) throw new Error(`Analytics proxy ${response.status}`);
-    const body = await response.json();
-    if (!body.success) throw new Error(body.message ?? "Query failed");
+    const body = (await response.json().catch(() => null)) as {
+      success?: boolean;
+      results?: unknown[][];
+      message?: string;
+    } | null;
+    if (!response.ok) {
+      throw new Error(body?.message ?? `Analytics proxy ${response.status}`);
+    }
+    if (!body?.success) throw new Error(body?.message ?? "Query failed");
     return body.results ?? [];
   }
 

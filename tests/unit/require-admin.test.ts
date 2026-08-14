@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   requireFirebaseUser: vi.fn(),
@@ -29,6 +29,10 @@ describe("requireAdmin live authorization", () => {
       tokensValidAfterTime: "2026-01-01T00:00:00.000Z",
       customClaims: { admin: true, role: "admin" },
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("accepts a valid enabled user with current live admin claims", async () => {
@@ -82,5 +86,48 @@ describe("requireAdmin live authorization", () => {
       customClaims: { role: "user", admin: false, isAdmin: false },
     });
     await expect(requireAdmin(event)).rejects.toMatchObject({ status: 403 });
+  });
+
+  it("treats a deleted live user as an invalid session", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.getUser.mockRejectedValue(
+      Object.assign(new Error("No user record"), {
+        code: "auth/user-not-found",
+      })
+    );
+
+    await expect(requireAdmin(event)).rejects.toMatchObject({
+      status: 401,
+      body: { message: "Admin session is no longer valid" },
+    });
+  });
+
+  it.each([
+    "auth/internal-error",
+    "auth/project-not-found",
+    "auth/insufficient-permission",
+  ])("reports Firebase lookup failure %s as unavailable", async (code) => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    mocks.getUser.mockRejectedValue(
+      Object.assign(new Error("Firebase lookup failed"), { code })
+    );
+
+    await expect(requireAdmin(event)).rejects.toMatchObject({
+      status: 503,
+      body: { message: "Admin authorization is temporarily unavailable" },
+    });
+    expect(consoleError).toHaveBeenCalledWith(
+      "[requireAdmin] Failed to resolve live Auth user:",
+      expect.objectContaining({ uid: "admin", code })
+    );
+  });
+
+  it("fails closed on an unclassified live-user lookup error", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mocks.getUser.mockRejectedValue(new Error("Network disconnected"));
+
+    await expect(requireAdmin(event)).rejects.toMatchObject({ status: 503 });
   });
 });

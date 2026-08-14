@@ -231,6 +231,22 @@ describe("admin analytics endpoint", () => {
     });
   });
 
+  it("preserves an unavailable admin authorization response", async () => {
+    mocks.requireAdmin.mockRejectedValueOnce({
+      status: 503,
+      body: { message: "Admin authorization is temporarily unavailable" },
+    });
+
+    const response = await POST(event({ type: "seo-scorecard" }) as never);
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      message: "Admin authorization is temporarily unavailable",
+      code: "authorize",
+    });
+  });
+
   it("retries a PostHog gateway timeout instead of failing the dashboard", async () => {
     // The SEO dashboard blanked on a one-off 504 from PostHog's query pool.
     const fetchMock = vi

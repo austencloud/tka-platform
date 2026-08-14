@@ -1,5 +1,5 @@
 /** Strict client for the named per-user analytics contracts. */
-import { auth } from "$lib/shared/auth/firebase";
+import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
 import type {
   ContentMetrics,
   ModuleActivityBreakdown,
@@ -33,14 +33,10 @@ export class PostHogUserAnalytics {
     sessionId: string,
     signal?: AbortSignal
   ): Promise<PostHogReplayAccess> {
-    const user = auth.currentUser;
-    if (!user) throw new AnalyticsResponseError("Admin session expired", 401);
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/session-replay", {
+    const response = await authedFetch("/api/admin/session-replay", {
       method: "POST",
       signal,
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sessionId }),
@@ -61,7 +57,9 @@ export class PostHogUserAnalytics {
       };
     }
     throw new AnalyticsResponseError(
-      `Replay request failed (${response.status})`,
+      typeof body?.message === "string"
+        ? body.message
+        : `Replay request failed (${response.status})`,
       response.status
     );
   }
@@ -142,14 +140,10 @@ export class PostHogUserAnalytics {
     extra: Record<string, unknown>,
     signal?: AbortSignal
   ): Promise<unknown> {
-    const user = auth.currentUser;
-    if (!user) throw new AnalyticsResponseError("Admin session expired", 401);
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/analytics", {
+    const response = await authedFetch("/api/admin/analytics", {
       method: "POST",
       signal,
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type, userId, ...extra }),

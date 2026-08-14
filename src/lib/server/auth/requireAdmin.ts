@@ -22,14 +22,36 @@ export function hasAdminClaim(user: {
   return user.admin === true || user.isAdmin === true || user.role === "admin";
 }
 
+function firebaseErrorCode(cause: unknown): string | null {
+  if (typeof cause !== "object" || cause === null || !("code" in cause)) {
+    return null;
+  }
+  const code = (cause as { code?: unknown }).code;
+  return typeof code === "string" && code ? code : null;
+}
+
 export async function requireAdmin(event: RequestEvent): Promise<FirebaseUser> {
   const caller = await requireFirebaseUser(event);
   let liveUser;
   try {
     liveUser = await getAdminAuth().getUser(caller.uid);
   } catch (cause) {
-    console.error("[requireAdmin] Failed to resolve live Auth user:", cause);
-    throw error(401, "Admin session is no longer valid");
+    const code = firebaseErrorCode(cause);
+    console.error("[requireAdmin] Failed to resolve live Auth user:", {
+      uid: caller.uid,
+      code: code ?? "unknown",
+      message: cause instanceof Error ? cause.message : String(cause),
+    });
+
+    if (code === "auth/user-not-found") {
+      throw error(401, "Admin session is no longer valid");
+    }
+
+    // A Firebase outage, bad server credential, or permission failure says
+    // nothing about the browser's login. Access still fails closed, but the
+    // caller gets a retryable service response instead of being told to sign
+    // in again for a session that may be healthy.
+    throw error(503, "Admin authorization is temporarily unavailable");
   }
 
   if (liveUser.disabled) {

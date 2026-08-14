@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { auth } from "$lib/shared/auth/firebase";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
   import {
     parseSeoHistoryRows,
     seoDashboardSnapshotSchema,
@@ -31,13 +31,9 @@
   );
 
   async function analyticsQuery(type: string): Promise<unknown[][]> {
-    const user = auth.currentUser;
-    if (!user) throw new Error("Sign in as an admin to read SEO evidence.");
-    const token = await user.getIdToken();
-    const response = await fetch("/api/admin/analytics", {
+    const response = await authedFetch("/api/admin/analytics", {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + token,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type }),
