@@ -5,7 +5,12 @@
   import { updateProfile, type User } from "firebase/auth";
 
   import { getUserDocumentManager } from "$lib/shared/auth/get-user-document-manager";
-  import { generateAndUploadAvatar } from "$lib/shared/auth/services/profile-picture-manager";
+  import {
+    deletePreviousStoredProfilePhoto,
+    generateAndUploadAvatar,
+    uploadProfilePhoto,
+  } from "$lib/shared/auth/services/profile-picture-manager";
+  import { ProfilePhotoError } from "$lib/shared/auth/services/profile-photo-image";
   import { getAccountManager } from "$lib/shared/auth/get-account-manager";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
@@ -282,72 +287,50 @@
     }
   }
 
-  async function uploadProfilePhoto(user: User, file: File): Promise<string> {
-    const { getStorageInstance } = await import("$lib/shared/auth/firebase");
-    const { ref, uploadBytes, getDownloadURL } =
-      await import("firebase/storage");
-    const storage = await getStorageInstance();
-    const extension = file.name.split(".").pop() || "jpg";
-    const storageRef = ref(
-      storage,
-      `avatars/${user.uid}/${Date.now()}.${extension}`
-    );
-
-    await uploadBytes(storageRef, file, {
-      contentType: file.type || "image/jpeg",
-      customMetadata: {
-        userId: user.uid,
-        originalName: file.name,
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    return getDownloadURL(storageRef);
-  }
-
   async function handlePhotoSelected(selection: PhotoSelection) {
     const user = authState.user;
-    if (!user) return;
+    if (!user) {
+      throw new ProfilePhotoError(
+        "signed-out",
+        "Sign in again, then retry the photo upload."
+      );
+    }
 
     hapticService?.trigger("selection");
     const userDocumentManager = getUserDocumentManager();
+    const previousPhotoURL = user.photoURL;
+    let newPhotoURL: string | null = null;
 
-    try {
-      let newPhotoURL: string | null = null;
+    switch (selection.type) {
+      case "upload":
+        if (selection.file) {
+          newPhotoURL = await uploadProfilePhoto(user, selection.file);
+        }
+        break;
+      case "google":
+      case "facebook":
+        newPhotoURL = selection.url ?? null;
+        break;
+      case "generated":
+        if (selection.generatedData) {
+          newPhotoURL = await generateAndUploadAvatar(
+            user,
+            selection.generatedData
+          );
+        }
+        break;
+    }
 
-      switch (selection.type) {
-        case "upload":
-          if (selection.file) {
-            newPhotoURL = await uploadProfilePhoto(user, selection.file);
-            await updateProfile(user, { photoURL: newPhotoURL });
-          }
-          break;
-        case "google":
-        case "facebook":
-          if (selection.url) {
-            newPhotoURL = selection.url;
-            await updateProfile(user, { photoURL: newPhotoURL });
-          }
-          break;
-        case "generated":
-          if (selection.generatedData) {
-            newPhotoURL = await generateAndUploadAvatar(
-              user,
-              selection.generatedData
-            );
-          }
-          break;
-      }
-
-      if (newPhotoURL) {
-        await userDocumentManager.updatePhotoURL(user.uid, newPhotoURL);
-        await refreshUser();
-        hapticService?.trigger("success");
-      }
-    } catch (error) {
-      console.error("Failed to update profile photo:", error);
-      hapticService?.trigger("error");
-      toast.error("Profile photo could not be updated. Try again.");
+    if (newPhotoURL) {
+      await updateProfile(user, { photoURL: newPhotoURL });
+      await userDocumentManager.updatePhotoURL(user, newPhotoURL);
+      await refreshUser();
+      hapticService?.trigger("success");
+      void deletePreviousStoredProfilePhoto(
+        user.uid,
+        previousPhotoURL,
+        newPhotoURL
+      );
     }
   }
 </script>

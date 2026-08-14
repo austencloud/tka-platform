@@ -8,19 +8,26 @@ import { updateProfile, type User } from "firebase/auth";
 import type { GeneratedAvatarData } from "./types";
 import { getStorageInstance } from "$lib/shared/auth/firebase";
 import { PROP_TYPE_DISPLAY_REGISTRY } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+import { prepareProfilePhoto } from "./profile-photo-image";
 
 /**
  * Update Facebook profile picture to high resolution if needed.
  * Skipped if user has Google account linked (Google photos are more reliable).
  */
-export async function updateFacebookProfilePictureIfNeeded(user: User): Promise<void> {
+export async function updateFacebookProfilePictureIfNeeded(
+  user: User
+): Promise<void> {
   try {
-    const facebookData = user.providerData.find((data) => data.providerId === "facebook.com");
+    const facebookData = user.providerData.find(
+      (data) => data.providerId === "facebook.com"
+    );
     if (!facebookData?.uid) return;
 
     if (user.photoURL?.includes("firebasestorage.googleapis.com")) return;
 
-    const hasGoogle = user.providerData.some((data) => data.providerId === "google.com");
+    const hasGoogle = user.providerData.some(
+      (data) => data.providerId === "google.com"
+    );
     if (hasGoogle) return;
 
     if (user.photoURL?.includes("graph.facebook.com")) return;
@@ -29,7 +36,10 @@ export async function updateFacebookProfilePictureIfNeeded(user: User): Promise<
     const photoURL = `https://graph.facebook.com/${facebookData.uid}/picture?type=large`;
     await updateProfile(user, { photoURL });
   } catch (err) {
-    console.error(`[profile-picture-manager] Failed to update Facebook profile picture:`, err);
+    console.error(
+      `[profile-picture-manager] Failed to update Facebook profile picture:`,
+      err
+    );
   }
 }
 
@@ -37,16 +47,24 @@ export async function updateFacebookProfilePictureIfNeeded(user: User): Promise<
  * Update Google profile picture if needed.
  * Google photos are preferred over Facebook (no access tokens, more reliable).
  */
-export async function updateGoogleProfilePictureIfNeeded(user: User): Promise<void> {
+export async function updateGoogleProfilePictureIfNeeded(
+  user: User
+): Promise<void> {
   try {
-    const googleData = user.providerData.find((data) => data.providerId === "google.com");
+    const googleData = user.providerData.find(
+      (data) => data.providerId === "google.com"
+    );
     if (!googleData?.uid) return;
 
-    const isCustomAvatar = user.photoURL?.includes("firebasestorage.googleapis.com");
+    const isCustomAvatar = user.photoURL?.includes(
+      "firebasestorage.googleapis.com"
+    );
     if (isCustomAvatar) return;
 
     if (googleData.photoURL) {
-      const isCurrentlyGoogle = user.photoURL?.includes("googleusercontent.com");
+      const isCurrentlyGoogle = user.photoURL?.includes(
+        "googleusercontent.com"
+      );
       const isSameAsProvider = user.photoURL === googleData.photoURL;
 
       if (!user.photoURL || !isCurrentlyGoogle || !isSameAsProvider) {
@@ -54,12 +72,18 @@ export async function updateGoogleProfilePictureIfNeeded(user: User): Promise<vo
       }
     }
   } catch (err) {
-    console.error(`[profile-picture-manager] Failed to update Google profile picture:`, err);
+    console.error(
+      `[profile-picture-manager] Failed to update Google profile picture:`,
+      err
+    );
   }
 }
 
 /** Get provider-specific IDs for storing in user document. */
-export function getProviderIds(user: User): { googleId?: string; facebookId?: string } {
+export function getProviderIds(user: User): {
+  googleId?: string;
+  facebookId?: string;
+} {
   const result: { googleId?: string; facebookId?: string } = {};
 
   for (const provider of user.providerData) {
@@ -73,10 +97,81 @@ export function getProviderIds(user: User): { googleId?: string; facebookId?: st
   return result;
 }
 
+/** Normalize a device photo before it reaches the public avatar bucket. */
+export async function uploadProfilePhoto(
+  user: User,
+  file: File
+): Promise<string> {
+  const prepared = await prepareProfilePhoto(file);
+  const { ref, uploadBytes, getDownloadURL } = await import("firebase/storage");
+  const storage = await getStorageInstance();
+  const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.webp`);
+
+  await uploadBytes(storageRef, prepared.blob, {
+    contentType: "image/webp",
+    cacheControl: "public,max-age=31536000,immutable",
+    customMetadata: {
+      userId: user.uid,
+      sourceContentType: file.type,
+      sourceBytes: String(file.size),
+      width: String(prepared.width),
+      height: String(prepared.height),
+      uploadedAt: new Date().toISOString(),
+    },
+  });
+
+  return getDownloadURL(storageRef);
+}
+
+/** Remove the superseded Storage object after the new profile is durable. */
+export async function deletePreviousStoredProfilePhoto(
+  userId: string,
+  previousPhotoURL: string | null,
+  currentPhotoURL: string
+): Promise<void> {
+  if (!previousPhotoURL || previousPhotoURL === currentPhotoURL) return;
+  if (
+    !previousPhotoURL.startsWith("gs://") &&
+    !previousPhotoURL.includes("firebasestorage.googleapis.com")
+  ) {
+    return;
+  }
+
+  try {
+    const { ref, deleteObject } = await import("firebase/storage");
+    const storage = await getStorageInstance();
+    const previousRef = ref(storage, previousPhotoURL);
+    if (!previousRef.fullPath.startsWith(`avatars/${userId}/`)) return;
+    await deleteObject(previousRef);
+  } catch (error) {
+    if (
+      (error as { code?: string } | null)?.code === "storage/object-not-found"
+    ) {
+      return;
+    }
+
+    const reportedError =
+      error instanceof Error ? error : new Error(String(error));
+    const { reportErrorTelemetry } =
+      await import("$lib/shared/error/services/error-telemetry-reporter");
+    await reportErrorTelemetry({
+      message: "Old profile photo could not be removed",
+      technicalDetails: reportedError.message,
+      error: reportedError,
+      severity: "warning",
+      context: {
+        module: "settings",
+        tab: "profile",
+        action: "delete-previous-profile-photo",
+      },
+    });
+  }
+}
+
 async function drawGradient(
   ctx: CanvasRenderingContext2D,
   cssGradient: string,
-  size: number,
+  size: number
 ): Promise<void> {
   const match = cssGradient.match(/linear-gradient\((\d+)deg,\s*(.+)\)/);
 
@@ -128,7 +223,7 @@ async function drawGradient(
 async function drawPropSilhouette(
   ctx: CanvasRenderingContext2D,
   imageSrc: string,
-  size: number,
+  size: number
 ): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -179,7 +274,7 @@ async function drawPropSilhouette(
 /** Generate a custom avatar image and upload to Firebase Storage. */
 export async function generateAndUploadAvatar(
   user: User,
-  avatarData: GeneratedAvatarData,
+  avatarData: GeneratedAvatarData
 ): Promise<string> {
   const { gradient, propType, gradientId } = avatarData;
 
@@ -210,7 +305,7 @@ export async function generateAndUploadAvatar(
         else reject(new Error("Failed to create blob"));
       },
       "image/png",
-      0.95,
+      0.95
     );
   });
 
@@ -231,7 +326,5 @@ export async function generateAndUploadAvatar(
   });
 
   const downloadUrl = await getDownloadURL(storageRef);
-  await updateProfile(user, { photoURL: downloadUrl });
-
   return downloadUrl;
 }

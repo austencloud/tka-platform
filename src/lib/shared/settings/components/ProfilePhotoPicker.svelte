@@ -11,6 +11,11 @@
   } from "$lib/shared/settings/domain/avatar-gradients";
   import { detectLayout } from "$lib/shared/settings/services/photo-picker-layout-detector";
   import type { PhotoSelection } from "$lib/shared/settings/domain/photo-picker-types";
+  import {
+    assertProfilePhotoInput,
+    getProfilePhotoErrorMessage,
+  } from "$lib/shared/auth/services/profile-photo-image";
+  import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
 
   import PhotoOptionsList from "$lib/shared/settings/components/photo-picker/PhotoOptionsList.svelte";
   import AvatarGenerator from "$lib/shared/settings/components/photo-picker/AvatarGenerator.svelte";
@@ -28,7 +33,14 @@
     savedGooglePhotoUrl?: string | null;
   }
 
-  let { isOpen = $bindable(), onClose, onPhotoSelected, profileColor, onColorChange, savedGooglePhotoUrl }: Props = $props();
+  let {
+    isOpen = $bindable(),
+    onClose,
+    onPhotoSelected,
+    profileColor,
+    onColorChange,
+    savedGooglePhotoUrl,
+  }: Props = $props();
 
   let activeTab = $state<"options" | "generate">("options");
   let selectedGradientId = $state<string>("twilight");
@@ -42,9 +54,7 @@
   let wizardStep = $state<"style" | "shade" | "prop" | "confirm">("style");
 
   const user = $derived(authState.user);
-  const providerIds = $derived(
-    user ? getProviderIds(user) : {}
-  );
+  const providerIds = $derived(user ? getProviderIds(user) : {});
 
   const googlePhotoUrl = $derived.by(() => {
     if (!user) return null;
@@ -109,20 +119,37 @@
     fileInputRef?.click();
   }
 
+  function handleSelectionError(
+    error: unknown,
+    action: string,
+    additionalData?: Record<string, unknown>
+  ) {
+    errorMessage = getProfilePhotoErrorMessage(error);
+    const reportedError =
+      error instanceof Error ? error : new Error(String(error));
+    void reportErrorTelemetry({
+      message: "Profile photo update failed",
+      technicalDetails: reportedError.message,
+      error: reportedError,
+      severity: "warning",
+      context: {
+        module: "settings",
+        tab: "profile",
+        action,
+        ...(additionalData ? { additionalData } : {}),
+      },
+    });
+  }
+
   async function handleFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_FILE_SIZE) {
-      errorMessage = "Image must be smaller than 5MB";
-      input.value = "";
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      errorMessage = "Please select an image file";
+    try {
+      assertProfilePhotoInput(file);
+    } catch (error) {
+      errorMessage = getProfilePhotoErrorMessage(error);
       input.value = "";
       return;
     }
@@ -132,11 +159,11 @@
     try {
       await onPhotoSelected({ type: "upload", file });
       handleClose();
-    } catch (err) {
-      errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to upload photo. Please try again.";
+    } catch (error) {
+      handleSelectionError(error, "upload-profile-photo", {
+        fileType: file.type,
+        fileBytes: file.size,
+      });
     } finally {
       saving = false;
       input.value = "";
@@ -150,11 +177,8 @@
     try {
       await onPhotoSelected({ type: "google", url: googlePhotoUrl });
       handleClose();
-    } catch (err) {
-      errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to use Google photo. Please try again.";
+    } catch (error) {
+      handleSelectionError(error, "use-google-profile-photo");
     } finally {
       saving = false;
     }
@@ -168,11 +192,8 @@
       const url = `https://graph.facebook.com/${providerIds.facebookId}/picture?type=large`;
       await onPhotoSelected({ type: "facebook", url });
       handleClose();
-    } catch (err) {
-      errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to use Facebook photo. Please try again.";
+    } catch (error) {
+      handleSelectionError(error, "use-facebook-profile-photo");
     } finally {
       saving = false;
     }
@@ -191,11 +212,8 @@
         },
       });
       handleClose();
-    } catch (err) {
-      errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Failed to save avatar. Please try again.";
+    } catch (error) {
+      handleSelectionError(error, "generate-profile-photo");
     } finally {
       saving = false;
     }

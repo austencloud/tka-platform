@@ -20,7 +20,13 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { getBytes, listAll, ref, uploadBytes } from "firebase/storage";
+import {
+  deleteObject,
+  getBytes,
+  listAll,
+  ref,
+  uploadBytes,
+} from "firebase/storage";
 
 let testEnv: RulesTestEnvironment;
 
@@ -82,6 +88,77 @@ function adminCtx() {
     isAdmin: true,
   });
 }
+
+describe("profile photo storage", () => {
+  it("accepts normalized WebP and generated PNG avatars from the owner", async () => {
+    const storage = fullCtx().storage();
+
+    await assertSucceeds(
+      uploadBytes(
+        ref(storage, `avatars/${FULL_UID}/device-photo.webp`),
+        new Uint8Array([1, 2, 3]),
+        { contentType: "image/webp" }
+      )
+    );
+    await assertSucceeds(
+      uploadBytes(
+        ref(storage, `avatars/${FULL_UID}/generated.png`),
+        new Uint8Array([1, 2, 3]),
+        { contentType: "image/png" }
+      )
+    );
+  });
+
+  it("rejects raw JPEGs, oversized output, and cross-user writes", async () => {
+    const ownerStorage = fullCtx().storage();
+    const outsiderStorage = testEnv
+      .authenticatedContext("other-user", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .storage();
+
+    await assertFails(
+      uploadBytes(
+        ref(ownerStorage, `avatars/${FULL_UID}/raw.jpeg`),
+        new Uint8Array([1]),
+        { contentType: "image/jpeg" }
+      )
+    );
+    await assertFails(
+      uploadBytes(
+        ref(ownerStorage, `avatars/${FULL_UID}/too-large.webp`),
+        new Uint8Array(1024 * 1024),
+        { contentType: "image/webp" }
+      )
+    );
+    await assertFails(
+      uploadBytes(
+        ref(outsiderStorage, `avatars/${FULL_UID}/outsider.webp`),
+        new Uint8Array([1]),
+        { contentType: "image/webp" }
+      )
+    );
+  });
+
+  it("keeps avatars public and lets only the owner remove old versions", async () => {
+    const path = `avatars/${FULL_UID}/replace-me.webp`;
+    const ownerStorage = fullCtx().storage();
+    const outsiderStorage = testEnv
+      .authenticatedContext("other-user", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .storage();
+
+    await assertSucceeds(
+      uploadBytes(ref(ownerStorage, path), new Uint8Array([1]), {
+        contentType: "image/webp",
+      })
+    );
+    await assertSucceeds(getBytes(ref(outsiderStorage, path)));
+    await assertFails(deleteObject(ref(outsiderStorage, path)));
+    await assertSucceeds(deleteObject(ref(ownerStorage, path)));
+  });
+});
 
 describe("saved Art admin preview", () => {
   it("allows admin reads while keeping cross-user creates and updates blocked", async () => {

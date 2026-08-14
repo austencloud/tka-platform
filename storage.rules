@@ -98,12 +98,13 @@ service firebase.storage {
 
     // User avatars - generated profile pictures
     match /avatars/{userId}/{fileName} {
-      // Owner can write their own avatars
-      allow write: if request.auth != null && request.auth.uid == userId
-        // Only allow PNG images
-        && request.resource.contentType == 'image/png'
+      // Device photos are normalized to WebP; generated avatars remain PNG.
+      allow create, update: if request.auth != null && request.auth.uid == userId
+        && (request.resource.contentType == 'image/png'
+          || request.resource.contentType == 'image/webp')
         // Limit file size to 1MB
         && request.resource.size < 1024 * 1024;
+      allow delete: if request.auth != null && request.auth.uid == userId;
       // Anyone can read avatars (for displaying in profiles, comments, etc.)
       allow read: if true;
     }
