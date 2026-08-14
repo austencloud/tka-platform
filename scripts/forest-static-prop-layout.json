@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 10,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "visibility": "default-forest-only",
   "sourceGate": "Forest Gate 10.1 approved composition revision",
@@ -7,28 +7,28 @@
   "frameTrees": [
     {
       "id": "upstage-west-canopy-frame",
-      "assetId": "canopy-beech",
+      "assetId": "mature-broad-canopy",
       "position": [-11.5, 9.5],
       "scale": 1.06,
       "rotationDegrees": 18
     },
     {
       "id": "upstage-east-middle-frame",
-      "assetId": "forked-elm",
+      "assetId": "gnarled-spreader",
       "position": [13.0, 10.8],
       "scale": 1.14,
       "rotationDegrees": -31
     },
     {
       "id": "upstage-west-depth-frame",
-      "assetId": "canopy-beech",
+      "assetId": "semantic-oak",
       "position": [-21.0, 20.0],
-      "scale": 0.98,
+      "scale": 0.82,
       "rotationDegrees": 42
     },
     {
       "id": "upstage-east-depth-frame",
-      "assetId": "pale-willow",
+      "assetId": "riparian-spreader",
       "position": [19.0, 21.0],
       "scale": 1.02,
       "rotationDegrees": -12
@@ -69,7 +69,7 @@
   "vignettes": [
     {
       "id": "upstage-west-root-shelf",
-      "cause": "The mature west beech catches one windfall and one displaced stone, forming the left wall of the natural stage bowl.",
+      "cause": "The mature west canopy catches one windfall and one displaced stone, forming the left wall of the natural stage bowl.",
       "anchorTreeId": "upstage-west-canopy-frame",
       "props": [
         {
@@ -92,7 +92,7 @@
     },
     {
       "id": "upstage-east-runoff-bank",
-      "cause": "Runoff below the forked elm exposes a large boulder and a pale stone, making the right wall visually heavier without becoming symmetrical.",
+      "cause": "Runoff below the gnarled east spreader exposes a large boulder and a pale stone, making the right wall visually heavier without becoming symmetrical.",
       "anchorTreeId": "upstage-east-middle-frame",
       "props": [
         {
@@ -115,7 +115,7 @@
     },
     {
       "id": "west-depth-stone-break",
-      "cause": "The larch ridge breaks through the soil as two differently scaled stones, stepping the eye toward the distant trail opening.",
+      "cause": "The west fir ridge breaks through the soil as two differently scaled stones, stepping the eye toward the distant trail opening.",
       "anchorTreeId": "upstage-west-depth-frame",
       "props": [
         {
@@ -138,7 +138,7 @@
     },
     {
       "id": "east-depth-windthrow",
-      "cause": "A smaller windthrow and earth-tone rock sit below the pale willow, carrying the eye beyond the stage without closing the trail mouth.",
+      "cause": "A smaller windthrow and earth-tone rock sit below the riparian spreader, carrying the eye beyond the stage without closing the trail mouth.",
       "anchorTreeId": "upstage-east-depth-frame",
       "props": [
         {
@@ -186,7 +186,7 @@
     {
       "id": "audience-left-meadow",
       "center": [-10.0, -8.0],
-      "radii": [6.2, 3.8],
+      "radii": [12.5, 8.5],
       "rotationDegrees": 18,
       "count": 142,
       "palette": "lush",
@@ -195,7 +195,7 @@
     {
       "id": "audience-right-meadow",
       "center": [16.0, -15.5],
-      "radii": [4.8, 2.8],
+      "radii": [10.5, 7.0],
       "rotationDegrees": 14,
       "count": 116,
       "palette": "base",
@@ -208,7 +208,7 @@
       "rotationDegrees": 34,
       "count": 126,
       "palette": "shade",
-      "cause": "Grass gathers beneath the west beech and softens the rise into the natural proscenium."
+      "cause": "Grass gathers beneath the mature west canopy and softens the rise into the natural proscenium."
     },
     {
       "id": "east-stage-bank",
@@ -217,7 +217,7 @@
       "rotationDegrees": -24,
       "count": 110,
       "palette": "lush",
-      "cause": "Runoff keeps the elm-side grass taller and greener around the exposed boulder."
+      "cause": "Runoff keeps the east spreader grass taller and greener around the exposed boulder."
     },
     {
       "id": "trail-west-shoulder",
@@ -319,6 +319,58 @@
       "cause": "Dappled shade on the southwest slope carries low grass between litter-rich tree contacts."
     }
   ],
+  "groundEcosystem": {
+    "version": 7,
+    "sourceManifest": "scripts/forest-ground-ecosystem-assets.json",
+    "populationModel": "continuous deterministic summer-turf floor with tone-dithered habitat transitions and asymmetric, meandering, traffic-compressed trail wear",
+    "turfFloor": {
+      "role": "The turf is the Forest floor. Habitat patches alter its height and color but never fragment it into islands.",
+      "nearSpacingMetres": 0.46,
+      "middleSpacingMetres": 0.62,
+      "farSpacingMetres": 0.82,
+      "maximumRadiusMetres": 112.0,
+      "stageContactRadiusMetres": 3.7,
+      "outerBoundaryFadeMetres": 3.5,
+      "strata": {
+        "worn": "short flattened grass aligned with travel, leaving soil visible between irregular tufts",
+        "carpet": "dense low blades that visually weld physical grass into the meadow surface",
+        "meadow": "irregular medium blades that break the uniform turf silhouette",
+        "seed": "sparse grass-only flowering stems that carry summer maturity without adding forb islands"
+      },
+      "camp": {
+        "center": [36.5, -4.5],
+        "radii": [11.0, 9.5],
+        "rotationDegrees": -8,
+        "clearanceMarginMetres": 0.35
+      }
+    },
+    "distanceBandsMetres": {
+      "near": [0, 26],
+      "middle": [18, 58],
+      "far": [48, 96]
+    },
+    "patchGuilds": {
+      "audience-left-meadow": ["summer-sward"],
+      "audience-right-meadow": ["summer-sward"],
+      "west-stage-bank": ["woodland-grass"],
+      "east-stage-bank": ["woodland-grass"],
+      "trail-west-shoulder": ["woodland-grass"],
+      "trail-east-shoulder": ["summer-sward"],
+      "camp-threshold-north-ferns": ["woodland-grass"],
+      "camp-threshold-south-moss": ["woodland-grass"],
+      "damp-hollow-sedge-field": ["woodland-grass"],
+      "north-sunlit-hillside": ["summer-sward"],
+      "east-camp-hillside": ["summer-sward"],
+      "west-woodland-verge": ["woodland-grass"],
+      "south-summer-sward": ["summer-sward"],
+      "northeast-runoff-meadow": ["summer-sward"],
+      "southwest-dappled-slope": ["woodland-grass"]
+    },
+    "speciesPriority": ["woodland-grass", "summer-sward"],
+    "qualityTiers": {
+      "base": ["summer-sward", "woodland-grass"]
+    }
+  },
   "mushroomColonies": [
     {
       "id": "west-windfall-amanitas",

@@ -70,6 +70,14 @@ async function resizeDistanceTierTextures(input, output) {
         registerTexture(material.getMetallicRoughnessTexture(), 1024, 86);
         registerTexture(material.getNormalTexture(), 1024, 88);
         registerTexture(material.getOcclusionTexture(), 1024, 86);
+      } else if (isMassForestTree) {
+        // Keep the alpha-bearing color atlas at the full mass-tree tier. The
+        // surface-response maps do not carry silhouette information and can
+        // use the far-field tier without changing leaf edges or species read.
+        registerTexture(material.getBaseColorTexture(), 512, 82);
+        registerTexture(material.getMetallicRoughnessTexture(), 256, 84);
+        registerTexture(material.getNormalTexture(), 384, 86);
+        registerTexture(material.getOcclusionTexture(), 256, 84);
       } else {
         registerTexture(material.getBaseColorTexture(), maxSize, 84);
         registerTexture(material.getMetallicRoughnessTexture(), maxSize, 88);
@@ -142,7 +150,7 @@ async function resizeDistanceTierTextures(input, output) {
 
   await io.write(output, document);
   console.log(
-    `Resized ${resized} Forest textures: mass trees at 512 px, ground life at 1024 px`
+    `Resized ${resized} Forest textures: mass-tree color/alpha at 512 px, normals at 384 px, response at 256 px, and ground life at 1024 px`
   );
   console.log(
     `Simplified mass-tree prototypes from ${Math.round(treeTrianglesBefore).toLocaleString()} to ${Math.round(treeTrianglesAfter).toLocaleString()} triangles`

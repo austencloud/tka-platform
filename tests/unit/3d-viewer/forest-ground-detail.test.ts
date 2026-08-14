@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   MeshStandardMaterial,
   Texture,
+  Vector2,
   type WebGLProgramParametersWithUniforms,
 } from "three";
+import { patchRootedWindMaterial } from "$lib/shared/3d/environments/primitives/rooted-wind-material";
+import { FOREST_LIVING_GRASS_MATERIAL_PROFILE } from "$lib/shared/3d/environments/scenes/forest/forest-grass-material-profile";
 import {
   isForestGroundMaterial,
   getForestGroundDetailFamily,
@@ -12,6 +15,38 @@ import {
 } from "$lib/shared/3d/environments/scenes/forest/forest-ground-detail";
 
 describe("Forest ground detail", () => {
+  it("keeps living grass matte and stable across camera angles", () => {
+    const material = new MeshStandardMaterial();
+    const profile = FOREST_LIVING_GRASS_MATERIAL_PROFILE;
+    const uniforms = patchRootedWindMaterial(material, {
+      direction: new Vector2(0.72, -0.69).normalize(),
+      strength: 0.05,
+      normalUpBlend: profile.normalUpBlend,
+      minimumRoughness: profile.minimumRoughness,
+      specularScale: profile.specularScale,
+      cacheKey: "forest-grass-material-test",
+      storageKey: "forestGrassMaterialTest",
+    });
+    const shader = {
+      uniforms: {},
+      vertexShader: "#include <common>\n#include <begin_vertex>",
+      fragmentShader:
+        "#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n#include <roughnessmap_fragment>\n#include <lights_fragment_end>",
+    } as WebGLProgramParametersWithUniforms;
+
+    material.onBeforeCompile(shader, {} as never);
+
+    expect(uniforms.normalUpBlend.value).toBe(0.72);
+    expect(uniforms.minimumRoughness.value).toBe(0.99);
+    expect(uniforms.specularScale.value).toBe(0.02);
+    expect(shader.fragmentShader).toContain(
+      "clamp(uRootedWindNormalUpBlend, 0.0, 0.92)"
+    );
+    expect(shader.fragmentShader).toContain(
+      "reflectedLight.directSpecular *= uRootedWindSpecularScale"
+    );
+  });
+
   it("targets only authored Forest terrain families", () => {
     const terrain = new MeshStandardMaterial({ name: "Shade Moss" });
     const tree = new MeshStandardMaterial({ name: "polyhaven-oak-bark" });
@@ -65,9 +100,13 @@ describe("Forest ground detail", () => {
     expect(shader.vertexShader).toContain("vForestGroundWorldPosition");
     expect(shader.fragmentShader).toContain("forestGroundPoint / 2.8");
     expect(shader.fragmentShader).toContain("secondaryUv");
+    expect(shader.fragmentShader).toContain("familyFeather");
     expect(shader.fragmentShader).toContain("forestSurfaceGradient");
     expect(shader.fragmentShader).toContain(
-      "0.34 * uForestGroundDetailStrength"
+      "0.18 * uForestGroundDetailStrength"
+    );
+    expect(shader.fragmentShader).toContain(
+      "clamp(uForestGroundNormalResponse, 0.0, 0.32)"
     );
     expect(shader.fragmentShader).toContain(
       "roughnessFactor,\n            uForestGroundRoughnessFloor"
@@ -75,7 +114,7 @@ describe("Forest ground detail", () => {
 
     const clone = material.clone();
     inheritForestGroundDetailPatch(material, clone);
-    expect(clone.customProgramCacheKey()).toContain("forest-ground-detail-v5");
+    expect(clone.customProgramCacheKey()).toContain("forest-ground-detail-v8");
     expect(clone.userData.forestGroundDetailPatch).toBeDefined();
 
     patch.dispose();

@@ -127,7 +127,7 @@
     {
       "id": "hazel-edge-south",
       "habitatId": "sunlit-hazel-edge",
-      "center": [25, -29],
+      "center": [27, -32],
       "radii": [8, 6],
       "rotationDegrees": 17,
       "densityScale": 0.88,
@@ -169,7 +169,7 @@
     {
       "id": "path-shoulder-southeast-near",
       "habitatId": "sparse-path-shoulder",
-      "center": [10, -42],
+      "center": [20, -59],
       "radii": [7, 3.5],
       "rotationDegrees": -75,
       "densityScale": 0.82,

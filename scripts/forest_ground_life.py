@@ -14,6 +14,8 @@ import random
 import bpy
 from mathutils import Vector
 
+from forest_ground_ecosystem import create_forest_ground_ecosystem
+
 
 VARIANT_DEFINITIONS = {
     "hazel-wide": {
@@ -768,8 +770,8 @@ def _meadow_distance_weight(x, y, tier):
     walking camera can actually resolve them.
     """
     distance = math.hypot(x, y)
-    broad_fade = 1.0 - _smoothstep(28.0, 62.0, distance)
-    exponent = {"Base": 0.72, "Medium": 1.12, "High": 1.58}[tier]
+    broad_fade = 1.0 - _smoothstep(36.0, 86.0, distance)
+    exponent = {"Base": 0.68, "Medium": 1.08, "High": 1.52}[tier]
     return broad_fade**exponent
 
 
@@ -794,9 +796,8 @@ def _append_meadow_blade(
     start = len(vertices)
     sections = (
         (0.0, 1.0, 0.0),
-        (0.30, 0.82, 0.13),
-        (0.58, 0.58, 0.38),
-        (0.82, 0.30, 0.70),
+        (0.42, 0.72, 0.20),
+        (0.76, 0.36, 0.62),
     )
     for height_fraction, width_fraction, lean_fraction in sections:
         center_x = root_x + lean_x * lean * lean_fraction
@@ -831,10 +832,91 @@ def _append_meadow_blade(
         (
             (start, start + 1, start + 3, start + 2),
             (start + 2, start + 3, start + 5, start + 4),
-            (start + 4, start + 5, start + 7, start + 6),
-            (start + 6, start + 7, start + 8),
+            (start + 4, start + 5, start + 6),
         )
     )
+
+
+def _append_meadow_seed_head(
+    vertices,
+    faces,
+    vertex_uvs,
+    root_x,
+    root_y,
+    root_z,
+    yaw,
+    stem_height,
+    lean_angle,
+    lean,
+):
+    """Append one restrained grass inflorescence above a slender stem."""
+    _append_meadow_blade(
+        vertices,
+        faces,
+        vertex_uvs,
+        root_x,
+        root_y,
+        root_z,
+        yaw,
+        0.0045,
+        stem_height,
+        lean_angle,
+        lean,
+    )
+    crown_x = root_x + math.cos(lean_angle) * lean * 0.82
+    crown_y = root_y + math.sin(lean_angle) * lean * 0.82
+    crown_z = root_z + stem_height * 0.78
+    for index, angle_offset in enumerate((-0.34, 0.38)):
+        branch_yaw = yaw + angle_offset
+        branch_height = stem_height * (0.105 - index * 0.006)
+        _append_meadow_blade(
+            vertices,
+            faces,
+            vertex_uvs,
+            crown_x,
+            crown_y,
+            crown_z + index * stem_height * 0.037,
+            branch_yaw,
+            0.0036,
+            branch_height,
+            branch_yaw,
+            branch_height * 0.62,
+        )
+
+
+def _sample_meadow_colony_centers(rng, base_count, radius_x, radius_y):
+    """Create irregular macro-colonies instead of an even point field."""
+    center_count = max(3, min(12, round(base_count / 38.0)))
+    centers = []
+    for _index in range(center_count):
+        angle = rng.uniform(0.0, math.tau)
+        normalized_radius = math.sqrt(rng.random()) * 0.72
+        centers.append(
+            (
+                math.cos(angle) * radius_x * normalized_radius,
+                math.sin(angle) * radius_y * normalized_radius,
+                rng.uniform(0.13, 0.27) * radius_x,
+                rng.uniform(0.13, 0.27) * radius_y,
+            )
+        )
+    return centers
+
+
+def _sample_meadow_colony_point(rng, centers, radius_x, radius_y):
+    """Sample a point from an authored patch's overlapping plant colonies."""
+    if rng.random() < 0.88:
+        center_x, center_y, spread_x, spread_y = rng.choice(centers)
+        local_x = center_x + rng.gauss(0.0, spread_x)
+        local_y = center_y + rng.gauss(0.0, spread_y)
+    else:
+        angle = rng.uniform(0.0, math.tau)
+        normalized_radius = math.sqrt(rng.random())
+        local_x = math.cos(angle) * radius_x * normalized_radius
+        local_y = math.sin(angle) * radius_y * normalized_radius
+    normalized_radius = math.sqrt(
+        (local_x / radius_x) ** 2 + (local_y / radius_y) ** 2
+    )
+    return local_x, local_y, normalized_radius
 
 
 def _create_near_frame_grass(
@@ -849,9 +931,9 @@ def _create_near_frame_grass(
     minimum_core_radius = float(rules["minimumGrassCoreRadiusMetres"])
     path_margin = float(rules["minimumGrassPathCoreMarginMetres"])
     palette_colors = {
-        "base": (0.205, 0.355, 0.075),
-        "lush": (0.145, 0.405, 0.085),
-        "shade": (0.145, 0.275, 0.075),
+        "base": (0.115, 0.285, 0.045),
+        "lush": (0.085, 0.335, 0.050),
+        "shade": (0.075, 0.215, 0.038),
     }
     materials = {
         palette: _flat_material(
@@ -862,9 +944,37 @@ def _create_near_frame_grass(
         for palette, color in palette_colors.items()
     }
     tiers = {
-        "Base": {"attemptScale": 2.00, "spacing": 0.115, "blades": (6, 9)},
-        "Medium": {"attemptScale": 1.40, "spacing": 0.098, "blades": (6, 10)},
-        "High": {"attemptScale": 1.60, "spacing": 0.084, "blades": (7, 11)},
+        "Base": {
+            "attemptScale": 1.34,
+            "spacing": 0.34,
+            "blades": (28, 38),
+            "colonyRadius": (0.32, 0.52),
+            "forms": (("fine", 0.63), ("basal", 0.25), ("broad", 0.12)),
+        },
+        "Medium": {
+            "attemptScale": 0.90,
+            "spacing": 0.48,
+            "blades": (18, 26),
+            "colonyRadius": (0.34, 0.56),
+            "forms": (
+                ("fine", 0.32),
+                ("broad", 0.38),
+                ("arching", 0.25),
+                ("seed", 0.05),
+            ),
+        },
+        "High": {
+            "attemptScale": 0.44,
+            "spacing": 0.60,
+            "blades": (10, 16),
+            "colonyRadius": (0.36, 0.60),
+            "forms": (
+                ("fine", 0.16),
+                ("broad", 0.26),
+                ("arching", 0.42),
+                ("seed", 0.16),
+            ),
+        },
     }
     positions_by_tier_palette = {
         tier: {palette: [] for palette in palette_colors} for tier in tiers
@@ -874,8 +984,9 @@ def _create_near_frame_grass(
     tier_patch_counts = {
         tier: {patch["id"]: 0 for patch in layout["grassPatches"]} for tier in tiers
     }
-    occupied = {}
-    cell_size = min(tier["spacing"] for tier in tiers.values())
+    blade_counts = {tier: 0 for tier in tiers}
+    form_counts = Counter()
+    occupied_by_tier = {tier: {} for tier in tiers}
 
     for patch in layout["grassPatches"]:
         palette = patch["palette"]
@@ -892,15 +1003,19 @@ def _create_near_frame_grass(
                 int(layout["version"]) * 100003
                 + _stable_seed(f"{patch['id']}:{tier}")
             )
+            colony_centers = _sample_meadow_colony_centers(
+                rng, base_count, radius_x, radius_y
+            )
             attempts = round(base_count * tier_rules["attemptScale"])
             for _attempt in range(attempts):
-                angle = rng.uniform(0.0, math.tau)
-                normalized_radius = math.sqrt(rng.random())
-                local_x = math.cos(angle) * radius_x * normalized_radius
-                local_y = math.sin(angle) * radius_y * normalized_radius
+                local_x, local_y, normalized_radius = _sample_meadow_colony_point(
+                    rng, colony_centers, radius_x, radius_y
+                )
+                if normalized_radius >= 1.0:
+                    continue
                 x = center_x + local_x * cosine - local_y * sine
                 y = center_y + local_x * sine + local_y * cosine
-                habitat_weight = 1.0 - _smoothstep(0.72, 1.0, normalized_radius)
+                habitat_weight = 1.0 - _smoothstep(0.78, 1.0, normalized_radius)
                 habitat_weight *= _meadow_distance_weight(x, y, tier)
                 if rng.random() > habitat_weight:
                     continue
@@ -917,9 +1032,11 @@ def _create_near_frame_grass(
                     for mx, my in mushroom_positions
                 ):
                     continue
+                spacing = float(tier_rules["spacing"])
+                cell_size = spacing
+                occupied = occupied_by_tier[tier]
                 cell_x = math.floor(x / cell_size)
                 cell_y = math.floor(y / cell_size)
-                spacing = float(tier_rules["spacing"])
                 if any(
                     (x - ox) ** 2 + (y - oy) ** 2 < spacing**2
                     for nx in range(cell_x - 2, cell_x + 3)
@@ -940,67 +1057,133 @@ def _create_near_frame_grass(
             if not positions:
                 continue
             rng = random.Random(71003 + _stable_seed(f"{tier}:{palette}"))
-            vertices = []
-            faces = []
-            vertex_uvs = []
             height_scale = {"base": 0.92, "lush": 1.08, "shade": 0.84}[palette]
             minimum_blades, maximum_blades = tiers[tier]["blades"]
-            for clump_x, clump_y, _patch_id in positions:
+            radius_minimum, radius_maximum = tiers[tier]["colonyRadius"]
+            forms = tiers[tier]["forms"]
+            form_names = [item[0] for item in forms]
+            form_weights = [item[1] for item in forms]
+            mesh_form_counts = Counter()
+            prototypes = []
+            prototype_count = 4
+            for prototype_index in range(prototype_count):
+                vertices = []
+                faces = []
+                vertex_uvs = []
                 blade_count = rng.randint(minimum_blades, maximum_blades)
-                for blade_index in range(blade_count):
+                colony_radius = rng.uniform(radius_minimum, radius_maximum)
+                prototype_form_counts = Counter()
+                for _blade_index in range(blade_count):
                     offset_angle = rng.uniform(0.0, math.tau)
-                    offset_radius = math.sqrt(rng.random()) * 0.14
-                    root_x = clump_x + math.cos(offset_angle) * offset_radius
-                    root_y = clump_y + math.sin(offset_angle) * offset_radius
-                    root_z = terrain_height(root_x, root_y) + 0.010
+                    offset_radius = math.sqrt(rng.random()) * colony_radius
+                    root_x = math.cos(offset_angle) * offset_radius
+                    root_y = math.sin(offset_angle) * offset_radius
                     yaw = rng.uniform(0.0, math.tau)
-                    lean_angle = yaw + rng.uniform(-0.78, 0.78)
-                    width = rng.uniform(0.0065, 0.0155)
-                    height = rng.uniform(0.18, 0.47) * height_scale
-                    if blade_index == 0 and rng.random() < 0.18:
-                        height *= rng.uniform(1.08, 1.22)
-                    lean = height * rng.uniform(0.11, 0.28)
-                    _append_meadow_blade(
-                        vertices,
-                        faces,
-                        vertex_uvs,
-                        root_x,
-                        root_y,
-                        root_z,
-                        yaw,
-                        width,
-                        height,
-                        lean_angle,
-                        lean,
-                    )
-            mesh = bpy.data.meshes.new(
-                f"Forest Clearing Grass {tier} {palette.title()} Mesh"
-            )
-            mesh.from_pydata(vertices, [], faces)
-            mesh.update()
-            mesh.materials.append(materials[palette])
-            uv_layer = mesh.uv_layers.new(name="Forest Grass Root Weight")
-            for polygon in mesh.polygons:
-                for loop_index in polygon.loop_indices:
-                    vertex_index = mesh.loops[loop_index].vertex_index
-                    uv_layer.data[loop_index].uv = vertex_uvs[vertex_index]
-            obj = bpy.data.objects.new(
-                f"Forest_Grass_{tier}_{palette.title()}", mesh
-            )
-            bpy.context.scene.collection.objects.link(obj)
-            obj["tka_role"] = "near-frame-grass"
-            obj["tka_export_layer"] = "near-frame"
-            obj["tka_static_prop_layout_version"] = int(layout["version"])
-            obj["tka_static_prop_layout_sha256"] = layout_sha256
-            obj["tka_meadow_system_version"] = 1
-            obj["tka_grass_quality_tier"] = tier.lower()
-            obj["tka_grass_clumps"] = len(positions)
-            obj["tka_grass_patch_ids"] = "|".join(
-                sorted({item[2] for item in positions})
-            )
-            created.append(obj)
+                    form = rng.choices(form_names, weights=form_weights, k=1)[0]
+                    lean_angle = yaw + rng.uniform(-0.62, 0.62)
+                    if form == "basal":
+                        width = rng.uniform(0.010, 0.021)
+                        height = rng.uniform(0.075, 0.16) * height_scale
+                        lean = height * rng.uniform(0.52, 0.92)
+                    elif form == "broad":
+                        width = rng.uniform(0.016, 0.031)
+                        height = rng.uniform(0.14, 0.30) * height_scale
+                        lean = height * rng.uniform(0.34, 0.68)
+                    elif form == "arching":
+                        width = rng.uniform(0.008, 0.016)
+                        height = rng.uniform(0.27, 0.50) * height_scale
+                        lean = height * rng.uniform(0.30, 0.54)
+                    elif form == "seed":
+                        width = 0.0045
+                        height = rng.uniform(0.44, 0.68) * height_scale
+                        lean = height * rng.uniform(0.08, 0.18)
+                    else:
+                        width = rng.uniform(0.0065, 0.0135)
+                        height = rng.uniform(0.12, 0.31) * height_scale
+                        lean = height * rng.uniform(0.14, 0.36)
 
-    return created, patch_counts, tier_counts, tier_patch_counts
+                    if form == "seed":
+                        _append_meadow_seed_head(
+                            vertices,
+                            faces,
+                            vertex_uvs,
+                            root_x,
+                            root_y,
+                            0.0,
+                            yaw,
+                            height,
+                            lean_angle,
+                            lean,
+                        )
+                    else:
+                        _append_meadow_blade(
+                            vertices,
+                            faces,
+                            vertex_uvs,
+                            root_x,
+                            root_y,
+                            0.0,
+                            yaw,
+                            width,
+                            height,
+                            lean_angle,
+                            lean,
+                        )
+                    prototype_form_counts[form] += 1
+
+                mesh = bpy.data.meshes.new(
+                    f"Forest Clearing Grass {tier} {palette.title()} Prototype {prototype_index + 1} Mesh"
+                )
+                mesh.from_pydata(vertices, [], faces)
+                mesh.update()
+                mesh.materials.append(materials[palette])
+                uv_layer = mesh.uv_layers.new(name="Forest Grass Root Weight")
+                for polygon in mesh.polygons:
+                    for loop_index in polygon.loop_indices:
+                        vertex_index = mesh.loops[loop_index].vertex_index
+                        uv_layer.data[loop_index].uv = vertex_uvs[vertex_index]
+                prototypes.append((mesh, prototype_form_counts))
+
+            for clump_x, clump_y, _patch_id in positions:
+                prototype_index = rng.randrange(prototype_count)
+                mesh, prototype_form_counts = prototypes[prototype_index]
+                obj = bpy.data.objects.new(
+                    f"Forest_Grass_{tier}_{palette.title()}_{len(created) + 1:04d}",
+                    mesh,
+                )
+                bpy.context.scene.collection.objects.link(obj)
+                obj.location = (
+                    clump_x,
+                    clump_y,
+                    terrain_height(clump_x, clump_y) + 0.010,
+                )
+                obj.rotation_euler.z = rng.uniform(0.0, math.tau)
+                scale = rng.uniform(0.82, 1.18)
+                obj.scale = (scale, scale * rng.uniform(0.88, 1.12), scale)
+                obj["tka_role"] = "near-frame-grass"
+                obj["tka_export_layer"] = "near-frame"
+                obj["tka_static_prop_layout_version"] = int(layout["version"])
+                obj["tka_static_prop_layout_sha256"] = layout_sha256
+                obj["tka_meadow_system_version"] = 3
+                obj["tka_grass_quality_tier"] = tier.lower()
+                obj["tka_grass_clumps"] = 1
+                obj["tka_grass_blades"] = sum(prototype_form_counts.values())
+                obj["tka_grass_forms"] = "|".join(sorted(prototype_form_counts))
+                obj["tka_grass_patch_ids"] = _patch_id
+                created.append(obj)
+                for form, count in prototype_form_counts.items():
+                    mesh_form_counts[form] += count
+                    form_counts[form] += count
+                    blade_counts[tier] += count
+
+    return (
+        created,
+        patch_counts,
+        tier_counts,
+        tier_patch_counts,
+        blade_counts,
+        dict(form_counts),
+    )
 
 
 def _resample_polyline(points, spacing, maximum_length):
@@ -1255,6 +1438,9 @@ def build_ground_life(
         "grassClumpCount": 0,
         "grassTierCounts": {},
         "grassTierPatchCounts": {},
+        "grassBladeCounts": {},
+        "grassFormCounts": {},
+        "groundEcosystem": None,
         "mushroomColonies": [],
         "mushroomPartCount": 0,
         "trail": None,
@@ -1475,24 +1661,25 @@ def build_ground_life(
             near_frame_metrics["mushroomColonies"].append(colony["id"])
             near_frame_metrics["mushroomPartCount"] += len(created)
 
-        (
-            grass_objects,
-            grass_patch_counts,
-            grass_tier_counts,
-            grass_tier_patch_counts,
-        ) = _create_near_frame_grass(
-            near_frame_layout,
-            near_frame_layout_sha256,
-            terrain_height,
-            distance_to_path,
-            paths,
-            mushroom_positions,
+        grass_objects, ecosystem_metrics = create_forest_ground_ecosystem(
+            project_root=project_root,
+            layout=near_frame_layout,
+            layout_sha256=near_frame_layout_sha256,
+            terrain_height=terrain_height,
+            terrain_boundary_radius=terrain_boundary_radius,
+            clearing_edge_radius=clearing_edge_radius,
+            distance_to_path=distance_to_path,
+            paths=paths,
+            mushroom_positions=mushroom_positions,
         )
         near_frame_objects.extend(grass_objects)
-        near_frame_metrics["grassPatchCounts"] = grass_patch_counts
-        near_frame_metrics["grassClumpCount"] = sum(grass_patch_counts.values())
-        near_frame_metrics["grassTierCounts"] = grass_tier_counts
-        near_frame_metrics["grassTierPatchCounts"] = grass_tier_patch_counts
+        near_frame_metrics["grassPatchCounts"] = ecosystem_metrics["patchCounts"]
+        near_frame_metrics["grassClumpCount"] = sum(
+            ecosystem_metrics["speciesCounts"].values()
+        )
+        near_frame_metrics["grassTierCounts"] = ecosystem_metrics["tierCounts"]
+        near_frame_metrics["grassTierPatchCounts"] = ecosystem_metrics["tierPatchCounts"]
+        near_frame_metrics["groundEcosystem"] = ecosystem_metrics
 
         trail_object, trail_metrics = _create_near_frame_trail(
             near_frame_layout,

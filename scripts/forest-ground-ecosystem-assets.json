@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "license": "CC0",
+  "candidates": [
+    {
+      "id": "summer-sward",
+      "label": "Bermuda summer grass",
+      "family": "grass",
+      "targetHeightMetres": 0.32,
+      "roles": ["sunlit-sward", "audience-meadow", "path-shoulder"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "grass_bermuda_01",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/grass_bermuda_01/grass_bermuda_01_1k.gltf",
+        "provenance": "Poly Haven grass_bermuda_01",
+        "license": "CC0",
+        "opacityMap": "grass_bermuda_01_alpha_1k.png"
+      }
+    },
+    {
+      "id": "woodland-grass",
+      "label": "Medium woodland grass",
+      "family": "grass",
+      "targetHeightMetres": 0.42,
+      "roles": ["woodland-verge", "shade-edge", "broken-sward"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "grass_medium_02",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/grass_medium_02/grass_medium_02_1k.gltf",
+        "provenance": "Poly Haven grass_medium_02",
+        "license": "CC0",
+        "opacityMap": "grass_medium_02_alpha_1k.png"
+      }
+    },
+    {
+      "id": "bracken-fern",
+      "label": "Woodland fern",
+      "family": "fern",
+      "targetHeightMetres": 0.78,
+      "roles": ["shade-edge", "deadwood", "root-contact"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "fern_02",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/fern_02/fern_02_1k.gltf",
+        "provenance": "Poly Haven fern_02",
+        "license": "CC0",
+        "opacityMap": "fern_02_alpha_1k.png"
+      }
+    },
+    {
+      "id": "summer-forb",
+      "label": "Summer broadleaf forb",
+      "family": "forb",
+      "targetHeightMetres": 0.54,
+      "roles": ["sunlit-edge", "runoff", "meadow-diversity"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "weed_plant_02",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/weed_plant_02/weed_plant_02_1k.gltf",
+        "provenance": "Poly Haven weed_plant_02",
+        "license": "CC0",
+        "opacityMap": "weed_plant_02_alpha_1k.png"
+      }
+    },
+    {
+      "id": "nettle-colony",
+      "label": "Woodland nettle",
+      "family": "forb",
+      "targetHeightMetres": 0.84,
+      "roles": ["nitrogen-rich-edge", "deadwood", "camp-threshold"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "nettle_plant",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/nettle_plant/nettle_plant_1k.gltf",
+        "provenance": "Poly Haven nettle_plant",
+        "license": "CC0",
+        "opacityMap": "nettle_plant_alpha_1k.png"
+      }
+    },
+    {
+      "id": "periwinkle-patch",
+      "label": "Periwinkle groundcover",
+      "family": "flower",
+      "targetHeightMetres": 0.32,
+      "roles": ["dappled-groundcover", "moist-edge", "summer-bloom"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "periwinkle_plant",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/periwinkle_plant/periwinkle_plant_1k.gltf",
+        "provenance": "Poly Haven periwinkle_plant",
+        "license": "CC0",
+        "opacityMap": "periwinkle_plant_opacity_1k.png"
+      }
+    },
+    {
+      "id": "forest-moss",
+      "label": "Forest floor moss",
+      "family": "moss",
+      "targetHeightMetres": 0.07,
+      "roles": ["root-contact", "deadwood", "damp-hollow"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "moss_01",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/moss_01/moss_01_1k.gltf",
+        "provenance": "Poly Haven moss_01",
+        "license": "CC0",
+        "opacityMap": "moss_01_alpha_1k.png"
+      }
+    },
+    {
+      "id": "summer-wildflower",
+      "label": "Summer dandelion",
+      "family": "flower",
+      "targetHeightMetres": 0.28,
+      "roles": ["sunlit-edge", "meadow-bloom", "disturbance-colonizer"],
+      "source": {
+        "kind": "polyhaven-gltf",
+        "assetId": "dandelion_01",
+        "resolution": "1k",
+        "localPath": "assets/3d-source/forest/ground-ecosystem/dandelion_01/dandelion_01_1k.gltf",
+        "provenance": "Poly Haven dandelion_01",
+        "license": "CC0",
+        "opacityMap": "dandelion_01_alpha_1k.png"
+      }
+    }
+  ]
+}

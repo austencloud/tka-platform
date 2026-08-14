@@ -54,6 +54,11 @@
       target: [9, 0.15, 2],
       fov: 46,
     },
+    meadow: {
+      position: [-10, 1.45, -3],
+      target: [-7, 0.28, -12],
+      fov: 54,
+    },
     camp: {
       position: [29, 7.05, 23.5],
       target: [35, 1.25, 2.5],

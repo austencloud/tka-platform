@@ -60,7 +60,24 @@ describe("Forest registered atmosphere anchors", () => {
 
     expect(materials?.foliageTint).toBe("#ffffff");
     expect(materials?.groundLifeTint).toBe("#ffffff");
-    expect(materials?.foliageHighlightStrength).toBeLessThanOrEqual(0.55);
+    expect(materials?.foliageHighlightStrength).toBeLessThanOrEqual(0.8);
+  });
+
+  it("keeps Day key-led so leaf cards retain directional depth", () => {
+    const day = createForestAtmosphereAnchor("day").config;
+    const lighting = day.lighting!;
+
+    expect(lighting.key.intensity).toBeGreaterThanOrEqual(2);
+    expect(lighting.fill.intensity).toBe(0.32);
+    expect(lighting.ambient.intensity).toBe(0.11);
+    expect(
+      lighting.fill.intensity / lighting.key.intensity
+    ).toBeLessThanOrEqual(0.14);
+    expect(
+      lighting.ambient.intensity / lighting.key.intensity
+    ).toBeLessThanOrEqual(0.046);
+    expect(day.hemisphereLight.intensity).toBe(1);
+    expect(day.fog.density).toBeLessThanOrEqual(0.006);
   });
 
   it("returns fresh configs so review changes cannot mutate another anchor", () => {

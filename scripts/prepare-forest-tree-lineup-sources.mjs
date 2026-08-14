@@ -83,6 +83,21 @@ for (const candidate of manifest.candidates) {
         expectedMd5: dependency.md5,
       });
     }
+
+    const opacityMapName = candidate.source.opacityMap;
+    if (opacityMapName) {
+      const opacity =
+        files.Alpha?.[resolution]?.png ?? files.opacity?.[resolution]?.png;
+      if (!opacity?.url) {
+        throw new Error(
+          `Poly Haven did not return a ${resolution} Alpha PNG for ${candidate.source.assetId}`
+        );
+      }
+      downloads.set(opacity.url, {
+        destination: resolve(dirname(localPath), "textures", opacityMapName),
+        expectedMd5: opacity.md5,
+      });
+    }
   }
 }
 

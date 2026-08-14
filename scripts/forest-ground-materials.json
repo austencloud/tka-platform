@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 4,
   "status": "approved",
   "sourceDecisionId": "UwbTSR6CvVN9M925ZB2T",
   "coordinateFrame": "Blender x/y metres; runtime x/-z",
@@ -24,10 +24,10 @@
       "roughness": "static/textures/terrain/grass/roughness.jpg",
       "repeatMetres": 3.2,
       "colorGrade": {
-        "brightness": 1.08,
-        "saturation": 1.08,
-        "tint": [58, 108, 45],
-        "tintStrength": 0.08
+        "brightness": 0.9,
+        "saturation": 1.34,
+        "tint": [27, 108, 34],
+        "tintStrength": 0.52
       }
     },
     "litter": {
@@ -87,7 +87,7 @@
     "nearTreeContactRadiusMetres": 4.2,
     "campShelfTrafficRadiusScale": 0.82,
     "maximumBakedContactDarkening": 0.24,
-    "minimumOpenMeadowWeight": 0.58,
+    "minimumOpenMeadowWeight": 0.95,
     "requiresHabitatDrivenBlend": true,
     "requiresBrokenPathEdges": true,
     "forbidsUniformClearingTint": true,

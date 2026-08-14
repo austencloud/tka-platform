@@ -245,8 +245,8 @@
   <ForestGroundDetail
     scene={$forestEnvironment.scene}
     strength={isNightMaster ? 0.18 : 0.9}
-    normalResponse={isNightMaster ? 0.14 : 0.72}
-    roughnessFloor={isNightMaster ? 0.96 : 0.82}
+    normalResponse={isNightMaster ? 0.12 : 0.3}
+    roughnessFloor={isNightMaster ? 0.99 : 0.98}
   />
   {#if activeConfig.materialResponse}
     <ForestAtmosphereMaterials

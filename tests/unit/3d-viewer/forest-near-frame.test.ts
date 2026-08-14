@@ -25,14 +25,46 @@ describe("Forest close-frame visibility", () => {
       isForestGrassTierVisible("Forest_Grass_Medium_Base", QualityTier.LOW)
     ).toBe(false);
     expect(
-      isForestGrassTierVisible(
-        "Forest_Grass_Medium_Shade",
-        QualityTier.MEDIUM
-      )
+      isForestGrassTierVisible("Forest_Grass_Medium_Shade", QualityTier.MEDIUM)
     ).toBe(true);
     expect(
       isForestGrassTierVisible("Forest_Grass_High_Lush", QualityTier.HIGH)
     ).toBe(true);
-    expect(getForestGrassTierFromName("ForestNearFrameMushroom_Cap")).toBeNull();
+    expect(
+      isForestGrassTierVisible(
+        "Forest Clearing Grass Base Lush Prototype 2 Mesh",
+        QualityTier.LOW
+      )
+    ).toBe(true);
+    expect(
+      isForestGrassTierVisible(
+        "Forest Clearing Grass High Shade Prototype 3 Mesh",
+        QualityTier.MEDIUM
+      )
+    ).toBe(false);
+    expect(
+      getForestGrassTierFromName("ForestNearFrameMushroom_Cap")
+    ).toBeNull();
+  });
+
+  it("keeps scanned ecosystem guilds behind the same cumulative quality owner", () => {
+    expect(
+      isForestGrassTierVisible(
+        "Forest_Ecosystem_Base_summer-sward_01_0001",
+        QualityTier.LOW
+      )
+    ).toBe(true);
+    expect(
+      isForestGrassTierVisible(
+        "Forest_Ecosystem_Medium_bracken-fern_02_0012",
+        QualityTier.LOW
+      )
+    ).toBe(false);
+    expect(
+      isForestGrassTierVisible(
+        "Forest_Ecosystem_High_periwinkle-patch_04_0003",
+        QualityTier.HIGH
+      )
+    ).toBe(true);
   });
 });

@@ -1,18 +1,22 @@
 import {
   DoubleSide,
-  Vector2,
   type Mesh,
   type MeshStandardMaterial,
+  type Vector2,
   type WebGLProgramParametersWithUniforms,
 } from "three";
 
 export interface RootedWindUniforms {
   time: { value: number };
   strength: { value: number };
+  restStrength: { value: number };
   direction: { value: Vector2 };
   spatialVariation: { value: number };
   rootDarkening: { value: number };
   colorVariation: { value: number };
+  normalUpBlend: { value: number };
+  minimumRoughness: { value: number };
+  specularScale: { value: number };
 }
 
 interface RootedWindOptions {
@@ -23,6 +27,9 @@ interface RootedWindOptions {
   spatialVariation?: number;
   rootDarkening?: number;
   colorVariation?: number;
+  normalUpBlend?: number;
+  minimumRoughness?: number;
+  specularScale?: number;
 }
 
 interface RootedWindPatchState {
@@ -58,10 +65,14 @@ export function patchRootedWindMaterial(
   const uniforms: RootedWindUniforms = {
     time: { value: 0 },
     strength: { value: options.strength },
+    restStrength: { value: options.strength },
     direction: { value: options.direction.clone() },
     spatialVariation: { value: options.spatialVariation ?? 0 },
     rootDarkening: { value: options.rootDarkening ?? 0 },
     colorVariation: { value: options.colorVariation ?? 0 },
+    normalUpBlend: { value: options.normalUpBlend ?? 0 },
+    minimumRoughness: { value: options.minimumRoughness ?? 0 },
+    specularScale: { value: options.specularScale ?? 1 },
   };
   const previousCompile = material.onBeforeCompile.bind(material);
   const previousCacheKey = material.customProgramCacheKey.bind(material);
@@ -77,6 +88,9 @@ export function patchRootedWindMaterial(
     shader.uniforms.uRootedWindSpatialVariation = uniforms.spatialVariation;
     shader.uniforms.uRootedWindRootDarkening = uniforms.rootDarkening;
     shader.uniforms.uRootedWindColorVariation = uniforms.colorVariation;
+    shader.uniforms.uRootedWindNormalUpBlend = uniforms.normalUpBlend;
+    shader.uniforms.uRootedWindMinimumRoughness = uniforms.minimumRoughness;
+    shader.uniforms.uRootedWindSpecularScale = uniforms.specularScale;
     shader.vertexShader = shader.vertexShader.replace(
       "#include <common>",
       /* glsl */ `#include <common>
@@ -105,9 +119,14 @@ export function patchRootedWindMaterial(
             rootedWindWorldPos.xz,
             rootedWindCrossDirection
           );
-          float rootedWindPrimary = sin(uRootedWindTime * 0.72 + rootedWindPhase * 0.44);
-          float rootedWindFlutter = sin(uRootedWindTime * 2.05 + rootedWindPhase * 1.17) * 0.24;
-          float rootedWindGust = 0.72 + 0.28 * sin(uRootedWindTime * 0.19 + rootedWindPhase * 0.08);
+          float rootedWindPrimary = sin(uRootedWindTime * 0.68 + rootedWindPhase * 0.44);
+          float rootedWindFlutter = sin(uRootedWindTime * 2.17 + rootedWindPhase * 1.17) * 0.19;
+          float rootedWindGustWave = sin(
+            uRootedWindTime * 0.16
+            + rootedWindPhase * 0.075
+            - rootedWindCrossPhase * 0.034
+          );
+          float rootedWindGust = 0.58 + 0.42 * smoothstep(-0.28, 0.72, rootedWindGustWave);
           float rootedWindZone =
             sin(
               uRootedWindTime * 0.11
@@ -152,6 +171,9 @@ export function patchRootedWindMaterial(
         /* glsl */ `#include <common>
           uniform float uRootedWindRootDarkening;
           uniform float uRootedWindColorVariation;
+          uniform float uRootedWindNormalUpBlend;
+          uniform float uRootedWindMinimumRoughness;
+          uniform float uRootedWindSpecularScale;
           varying float vRootedWindWeight;
           varying vec3 vRootedWindWorldPosition;
 
@@ -176,6 +198,32 @@ export function patchRootedWindMaterial(
             rootedWindColorNoise
           );
           diffuseColor.rgb *= rootedWindRootShade * rootedWindColorScale;`
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        /* glsl */ `#include <normal_fragment_maps>
+          vec3 rootedWindUpNormal = normalize(
+            mat3(viewMatrix) * vec3(0.0, 1.0, 0.0)
+          );
+          normal = normalize(mix(
+            normal,
+            rootedWindUpNormal,
+            clamp(uRootedWindNormalUpBlend, 0.0, 0.92)
+          ));`
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        /* glsl */ `#include <roughnessmap_fragment>
+          roughnessFactor = max(
+            roughnessFactor,
+            uRootedWindMinimumRoughness
+          );`
+      )
+      .replace(
+        "#include <lights_fragment_end>",
+        /* glsl */ `#include <lights_fragment_end>
+          reflectedLight.directSpecular *= uRootedWindSpecularScale;
+          reflectedLight.indirectSpecular *= uRootedWindSpecularScale;`
       );
   };
   material.customProgramCacheKey = () =>
@@ -201,10 +249,10 @@ export function inheritRootedWindPatch(
     (value): value is RootedWindPatchState =>
       Boolean(
         value &&
-          typeof value === "object" &&
-          "uniforms" in value &&
-          "onBeforeCompile" in value &&
-          "customProgramCacheKey" in value
+        typeof value === "object" &&
+        "uniforms" in value &&
+        "onBeforeCompile" in value &&
+        "customProgramCacheKey" in value
       )
   );
   if (!patch) return;

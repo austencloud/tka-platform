@@ -44,26 +44,30 @@ const expectedTreeVariants = treeLayout.assets.flatMap((asset) => {
   }));
 });
 const expectedTreeSourceMeshes = Array.from(
-  expectedTreeVariants.reduce((groups, variant) => {
-    const existing = groups.get(variant.sourcePath);
-    if (existing) {
-      existing.count += variant.count;
-      existing.variantIds.push(variant.variantId);
-    } else {
-      groups.set(variant.sourcePath, {
-        meshName: variant.meshName,
-        sourcePath: variant.sourcePath,
-        count: variant.count,
-        variantIds: [variant.variantId],
-      });
-    }
-    return groups;
-  }, new Map())
-  .values()
+  expectedTreeVariants
+    .reduce((groups, variant) => {
+      const existing = groups.get(variant.sourcePath);
+      if (existing) {
+        existing.count += variant.count;
+        existing.variantIds.push(variant.variantId);
+      } else {
+        groups.set(variant.sourcePath, {
+          meshName: variant.meshName,
+          sourcePath: variant.sourcePath,
+          count: variant.count,
+          variantIds: [variant.variantId],
+        });
+      }
+      return groups;
+    }, new Map())
+    .values()
 );
 const expectedTreeCount = Object.values(expectedTreeAssetCounts).reduce(
   (total, count) => total + count,
   0
+);
+const largestExpectedTreeSourceShare = Math.max(
+  ...expectedTreeSourceMeshes.map((source) => source.count / expectedTreeCount)
 );
 const groundLayoutPath = resolve("scripts/forest-ground-life-layout.json");
 const groundLayoutBytes = readFileSync(groundLayoutPath);
@@ -215,7 +219,8 @@ invariant(
   `Unexpected Forest macro diffuse: ${terrain.tka_macro_diffuse}`
 );
 invariant(
-  Number(terrain.tka_ground_material_version) === groundMaterialContract.version,
+  Number(terrain.tka_ground_material_version) ===
+    groundMaterialContract.version,
   `Unexpected Forest living-ground contract version: ${terrain.tka_ground_material_version}`
 );
 invariant(
@@ -255,6 +260,10 @@ const treeAssetIds = String(terrain.tka_tree_asset_ids ?? "").split("|");
 const treeAssetCounts = Array.from(terrain.tka_tree_asset_counts ?? []).map(
   Number
 );
+const treeVariantIds = String(terrain.tka_tree_variant_ids ?? "").split("|");
+const treeVariantCounts = Array.from(terrain.tka_tree_variant_counts ?? []).map(
+  Number
+);
 const treeClusterNames = String(terrain.tka_tree_cluster_names ?? "").split(
   "|"
 );
@@ -275,6 +284,21 @@ invariant(
   `Unexpected Forest tree count: ${terrain.tka_tree_count}`
 );
 invariant(
+  expectedTreeSourceMeshes.length >= 10,
+  `Forest tree diversity collapsed to ${expectedTreeSourceMeshes.length} structural sources`
+);
+invariant(
+  largestExpectedTreeSourceShare <= 0.2,
+  `One Forest tree source owns ${(largestExpectedTreeSourceShare * 100).toFixed(1)}% of the woodland`
+);
+for (const cluster of treeLayout.clusters) {
+  invariant(
+    Object.values(cluster.counts).filter((count) => Number(count) > 0).length >=
+      5,
+    `Forest cluster ${cluster.id} lost its mixed-age structure`
+  );
+}
+invariant(
   treeAssetIds.length === expectedTreeAssetIds.length &&
     treeAssetIds.every(
       (assetId, index) => assetId === expectedTreeAssetIds[index]
@@ -288,6 +312,19 @@ invariant(
         count === expectedTreeAssetCounts[expectedTreeAssetIds[index]]
     ),
   `Unexpected Forest tree asset counts: ${treeAssetCounts.join(", ")}`
+);
+invariant(
+  treeVariantIds.length === expectedTreeVariants.length &&
+    treeVariantIds.every(
+      (variantId, index) => variantId === expectedTreeVariants[index].variantId
+    ) &&
+    treeVariantCounts.length === expectedTreeVariants.length &&
+    treeVariantCounts.every(
+      (count, index) => count === expectedTreeVariants[index].count
+    ),
+  `Unexpected Forest tree source counts: ${treeVariantIds
+    .map((variantId, index) => `${variantId}:${treeVariantCounts[index]}`)
+    .join(", ")}`
 );
 invariant(
   treeClusterNames.length === treeLayout.clusters.length &&
@@ -431,10 +468,7 @@ for (const node of treeSourceNodes) {
   const source = expectedTreeSourceMeshes.find(
     (candidate) => candidate.meshName === meshName
   );
-  invariant(
-    source,
-    `Unexpected instanced Forest tree mesh: ${meshName}`
-  );
+  invariant(source, `Unexpected instanced Forest tree mesh: ${meshName}`);
   exportedTreeSourceMeshCounts[source.meshName] += translationCount;
 }
 for (const source of expectedTreeSourceMeshes) {
@@ -535,12 +569,13 @@ invariant(
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
 );
-const [{ NodeIO }, { ALL_EXTENSIONS }, { MeshoptDecoder }, draco3d] = await Promise.all([
-  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
-  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
-  import(pathToFileURL(requireFromCli.resolve("meshoptimizer"))),
-  import(pathToFileURL(requireFromCli.resolve("draco3dgltf"))),
-]);
+const [{ NodeIO }, { ALL_EXTENSIONS }, { MeshoptDecoder }, draco3d] =
+  await Promise.all([
+    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
+    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
+    import(pathToFileURL(requireFromCli.resolve("meshoptimizer"))),
+    import(pathToFileURL(requireFromCli.resolve("draco3dgltf"))),
+  ]);
 await MeshoptDecoder.ready;
 const dracoDecoder = await draco3d.createDecoderModule();
 const io = new NodeIO()
@@ -590,7 +625,9 @@ invariant(
   "Optimized Forest GLB lost the continuous ground surface"
 );
 invariant(
-  [...materialTriangles.keys()].filter((name) => expectedMaterialZones.includes(name)).length === 1,
+  [...materialTriangles.keys()].filter((name) =>
+    expectedMaterialZones.includes(name)
+  ).length === 1,
   "Optimized Forest terrain split back into hard-edged material islands"
 );
 
@@ -611,7 +648,8 @@ const livingGroundHeights = vertices
 const livingGroundRelief =
   Math.max(...livingGroundHeights) - Math.min(...livingGroundHeights);
 invariant(
-  terrain.tka_living_ground_relief_required === true && livingGroundRelief >= 0.12,
+  terrain.tka_living_ground_relief_required === true &&
+    livingGroundRelief >= 0.12,
   `Optimized Forest clearing lost living relief: ${livingGroundRelief.toFixed(4)}m`
 );
 
@@ -709,9 +747,14 @@ console.log(
           ])
         ),
         authoredVariantCounts: Object.fromEntries(
-          expectedTreeVariants.map((variant) => [variant.variantId, variant.count])
+          treeVariantIds.map((variantId, index) => [
+            variantId,
+            treeVariantCounts[index],
+          ])
         ),
         sourceMeshCounts: exportedTreeSourceMeshCounts,
+        structuralSourceCount: expectedTreeSourceMeshes.length,
+        largestSourceShare: largestExpectedTreeSourceShare,
         instancingNodes: treeInstancingNodes.length,
         standaloneLowFrequencyNodes:
           treeSourceNodes.length - treeInstancingNodes.length,

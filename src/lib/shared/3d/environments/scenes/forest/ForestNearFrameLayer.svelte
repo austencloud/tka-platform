@@ -27,7 +27,6 @@
     dracoLoader: useDraco("/draco/"),
     meshoptDecoder: useMeshopt(),
   });
-
   $effect(() => {
     if (!$nearFrame || readinessReported) return;
     readinessReported = true;

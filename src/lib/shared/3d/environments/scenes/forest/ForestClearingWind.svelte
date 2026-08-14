@@ -20,6 +20,7 @@
     getForestGrassTierFromName,
     isForestGrassTierVisible,
   } from "./forest-grass-tier";
+  import { FOREST_LIVING_GRASS_MATERIAL_PROFILE } from "./forest-grass-material-profile";
 
   interface Props {
     scene: Object3D | null;
@@ -30,7 +31,6 @@
 
   const windDirection = new Vector2(0.72, -0.69).normalize();
   const activeUniforms = new Set<RootedWindUniforms>();
-  const strength = 0.105;
 
   $effect(() => {
     const loadedScene = scene;
@@ -45,9 +45,30 @@
       const mesh = child as Mesh;
       if (!mesh.isMesh) return;
 
+      const species = String(child.userData?.tka_ground_species ?? "");
+      const stratum = String(child.userData?.tka_ground_stratum ?? "");
+      const isEcosystem =
+        child.userData?.tka_role === "near-frame-ground-ecosystem";
+      const isLivingGrass =
+        isEcosystem && child.userData?.tka_ground_family === "grass";
+      const baseStrength = isEcosystem
+        ? species === "forest-moss"
+          ? 0.018
+          : species === "bracken-fern" || species === "nettle-colony"
+            ? 0.062
+            : 0.075
+        : 0.082;
+      const authoredWindResponse = Number(
+        child.userData?.tka_wind_response ?? 1
+      );
+      const strength = baseStrength * authoredWindResponse;
+      const rootDarkening = isEcosystem
+        ? FOREST_LIVING_GRASS_MATERIAL_PROFILE.rootDarkening
+        : 0.36;
+
       mesh.castShadow = false;
       mesh.receiveShadow = true;
-      expandBoundsForRootedWind(mesh, 0.22, "forestWindBoundsExpanded");
+      expandBoundsForRootedWind(mesh, 0.28, "forestWindBoundsExpanded");
       const materials = Array.isArray(mesh.material)
         ? mesh.material
         : [mesh.material];
@@ -57,10 +78,25 @@
           patchRootedWindMaterial(material, {
             direction: windDirection,
             strength,
-            spatialVariation: 0.19,
-            rootDarkening: 0.24,
-            colorVariation: 0.09,
-            cacheKey: "forest-rooted-wind-v2",
+            spatialVariation: stratum === "carpet" ? 0.18 : 0.32,
+            rootDarkening,
+            colorVariation: isEcosystem
+              ? FOREST_LIVING_GRASS_MATERIAL_PROFILE.colorVariation
+              : 0.07,
+            // Real turf scatters light through thousands of narrow blades. A
+            // strongly face-normal response turns instanced cards into pale
+            // sheets as the camera rises. Bent vegetation normals keep their
+            // summer-green value stable while the wind still changes shape.
+            normalUpBlend: isLivingGrass
+              ? FOREST_LIVING_GRASS_MATERIAL_PROFILE.normalUpBlend
+              : 0,
+            minimumRoughness: isLivingGrass
+              ? FOREST_LIVING_GRASS_MATERIAL_PROFILE.minimumRoughness
+              : 0,
+            specularScale: isLivingGrass
+              ? FOREST_LIVING_GRASS_MATERIAL_PROFILE.specularScale
+              : 1,
+            cacheKey: `forest-rooted-wind-v7-${species || "legacy"}-${stratum || "legacy"}`,
             storageKey: "forestWindUniforms",
           })
         );
@@ -73,7 +109,7 @@
 
   useTask((delta) => {
     for (const uniforms of activeUniforms) {
-      uniforms.strength.value = strength * motionScale;
+      uniforms.strength.value = uniforms.restStrength.value * motionScale;
       uniforms.time.value += delta * motionScale;
     }
   });

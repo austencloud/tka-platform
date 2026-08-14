@@ -8,6 +8,16 @@
   } from "three";
   import { onMount } from "svelte";
   import { inheritForestGroundDetailPatch } from "./forest-ground-detail";
+  import {
+    FOREST_FOLIAGE_GREEN_SIGNAL_END,
+    FOREST_FOLIAGE_GREEN_SIGNAL_START,
+    FOREST_FOLIAGE_SKY_EXPOSURE_END,
+    FOREST_FOLIAGE_SKY_EXPOSURE_START,
+    resolveForestFoliageGradeCoverage,
+    resolveForestFoliageGreenSignalFloor,
+    resolveForestFoliageIndirectDepth,
+    resolveForestFoliageLuminanceScale,
+  } from "./forest-foliage-grade";
   import { inheritRootedWindPatch } from "../../primitives/rooted-wind-material";
   import type { ForestMaterialResponseConfig } from "../../domain/models/scene-configs/forest-scene-config";
 
@@ -24,6 +34,10 @@
   interface FoliageGradeUniforms {
     tint: { value: Color };
     strength: { value: number };
+    coverage: { value: number };
+    greenSignalFloor: { value: number };
+    luminanceScale: { value: number };
+    indirectDepth: { value: number };
   }
 
   interface Props {
@@ -81,7 +95,16 @@
     if (TERRAIN_MATERIALS.has(materialName)) return "forestFloorTint";
     if (
       materialName.startsWith("PaletteMaterial") ||
-      materialName.startsWith("Forest Clearing Grass")
+      materialName.startsWith("Forest Clearing Grass") ||
+      materialName.startsWith("Forest Ecosystem Living Grass") ||
+      materialName.includes("grass_bermuda_01") ||
+      materialName.includes("grass_medium_02") ||
+      materialName.includes("fern_02") ||
+      materialName.includes("weed_plant_02") ||
+      materialName.includes("nettle_plant") ||
+      materialName.includes("periwinkle_plant") ||
+      materialName.includes("dandelion_01") ||
+      materialName.includes("moss_01")
     ) {
       return "groundLifeTint";
     }
@@ -100,46 +123,101 @@
 
   function addFoliageHighlightGrade(
     material: MeshStandardMaterial,
-    category: MaterialCategory
+    category: MaterialCategory,
+    materialScope: MaterialScope
   ): FoliageGradeUniforms | null {
     if (category !== "foliageTint") return null;
 
     const uniforms: FoliageGradeUniforms = {
       tint: { value: new Color("#3d7e34") },
       strength: { value: 0 },
+      coverage: { value: resolveForestFoliageGradeCoverage(material.name) },
+      greenSignalFloor: {
+        value: resolveForestFoliageGreenSignalFloor(material.name),
+      },
+      luminanceScale: {
+        value: resolveForestFoliageLuminanceScale(material.name),
+      },
+      indirectDepth: {
+        value: resolveForestFoliageIndirectDepth(materialScope),
+      },
     };
-    material.onBeforeCompile = (shader) => {
+    const previousCompile = material.onBeforeCompile.bind(material);
+    const previousCacheKey = material.customProgramCacheKey.bind(material);
+
+    material.onBeforeCompile = (shader, renderer) => {
+      previousCompile(shader, renderer);
       shader.uniforms.uForestFoliageHighlightTint = uniforms.tint;
       shader.uniforms.uForestFoliageHighlightStrength = uniforms.strength;
+      shader.uniforms.uForestFoliageGradeCoverage = uniforms.coverage;
+      shader.uniforms.uForestFoliageGreenSignalFloor =
+        uniforms.greenSignalFloor;
+      shader.uniforms.uForestFoliageLuminanceScale = uniforms.luminanceScale;
+      shader.uniforms.uForestFoliageIndirectDepth = uniforms.indirectDepth;
       shader.fragmentShader = shader.fragmentShader
         .replace(
           "uniform vec3 diffuse;",
           `uniform vec3 diffuse;
 uniform vec3 uForestFoliageHighlightTint;
-uniform float uForestFoliageHighlightStrength;`
+uniform float uForestFoliageHighlightStrength;
+uniform float uForestFoliageGradeCoverage;
+uniform float uForestFoliageGreenSignalFloor;
+uniform float uForestFoliageLuminanceScale;
+uniform float uForestFoliageIndirectDepth;`
         )
         .replace(
           "#include <map_fragment>",
           `#include <map_fragment>
 float forestLuminance = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+float forestGreenSignal = smoothstep(
+  ${FOREST_FOLIAGE_GREEN_SIGNAL_START.toFixed(2)},
+  ${FOREST_FOLIAGE_GREEN_SIGNAL_END.toFixed(2)},
+  diffuseColor.g - max(diffuseColor.r, diffuseColor.b)
+);
+forestGreenSignal = max(
+  forestGreenSignal,
+  uForestFoliageGreenSignalFloor
+);
 float forestTintLuminance = max(
   dot(uForestFoliageHighlightTint, vec3(0.2126, 0.7152, 0.0722)),
   0.001
 );
-float forestLeafLuminance = max(
-  forestLuminance,
-  0.16 + 0.10 * uForestFoliageHighlightStrength
-);
 vec3 forestLeafColor = uForestFoliageHighlightTint
-  * (forestLeafLuminance / forestTintLuminance);
+  * (
+    forestLuminance
+    * uForestFoliageLuminanceScale
+    / forestTintLuminance
+  );
+float forestLeafGradeWeight = uForestFoliageHighlightStrength
+  * uForestFoliageGradeCoverage
+  * forestGreenSignal;
 diffuseColor.rgb = mix(
   diffuseColor.rgb,
   forestLeafColor,
-  clamp(uForestFoliageHighlightStrength, 0.0, 1.0)
+  clamp(forestLeafGradeWeight, 0.0, 1.0)
 );`
+        )
+        .replace(
+          "#include <lights_fragment_end>",
+          `#include <lights_fragment_end>
+vec3 forestWorldUpInView = normalize(
+  (viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz
+);
+float forestSkyExposure = smoothstep(
+  ${FOREST_FOLIAGE_SKY_EXPOSURE_START.toFixed(2)},
+  ${FOREST_FOLIAGE_SKY_EXPOSURE_END.toFixed(2)},
+  dot(normal, forestWorldUpInView)
+);
+float forestIndirectRetention = mix(
+  1.0 - uForestFoliageIndirectDepth,
+  1.0,
+  forestSkyExposure
+);
+reflectedLight.indirectDiffuse *= forestIndirectRetention;`
         );
     };
-    material.customProgramCacheKey = () => "forest-foliage-highlight-grade-v4";
+    material.customProgramCacheKey = () =>
+      `${previousCacheKey()}|forest-foliage-highlight-grade-v10`;
     return uniforms;
   }
 
@@ -164,7 +242,7 @@ diffuseColor.rgb = mix(
       baseColor: original.color.clone(),
       baseEmissiveIntensity: original.emissiveIntensity,
       category,
-      foliageGrade: addFoliageHighlightGrade(clone, category),
+      foliageGrade: addFoliageHighlightGrade(clone, category, materialScope),
     });
     return clone;
   }

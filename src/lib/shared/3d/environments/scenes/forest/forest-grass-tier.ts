@@ -9,9 +9,24 @@ const GRASS_TIER_ORDER: Record<QualityTier, number> = {
 export function getForestGrassTierFromName(
   objectName: string
 ): QualityTier | null {
-  if (objectName.startsWith("Forest_Grass_Base_")) return QualityTier.LOW;
-  if (objectName.startsWith("Forest_Grass_Medium_")) return QualityTier.MEDIUM;
-  if (objectName.startsWith("Forest_Grass_High_")) return QualityTier.HIGH;
+  if (
+    objectName.startsWith("Forest_Grass_Base_") ||
+    objectName.startsWith("Forest Clearing Grass Base ") ||
+    objectName.startsWith("Forest_Ecosystem_Base_")
+  )
+    return QualityTier.LOW;
+  if (
+    objectName.startsWith("Forest_Grass_Medium_") ||
+    objectName.startsWith("Forest Clearing Grass Medium ") ||
+    objectName.startsWith("Forest_Ecosystem_Medium_")
+  )
+    return QualityTier.MEDIUM;
+  if (
+    objectName.startsWith("Forest_Grass_High_") ||
+    objectName.startsWith("Forest Clearing Grass High ") ||
+    objectName.startsWith("Forest_Ecosystem_High_")
+  )
+    return QualityTier.HIGH;
   return null;
 }
 

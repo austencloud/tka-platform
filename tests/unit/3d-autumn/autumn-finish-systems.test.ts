@@ -36,13 +36,17 @@ describe("Autumn finish systems", () => {
       direction: new Vector2(0.86, 0.5).normalize(),
       strength: 0.14,
       spatialVariation: 0.16,
+      normalUpBlend: 0.34,
+      minimumRoughness: 0.97,
+      specularScale: 0.08,
       cacheKey: "autumn-finish-test",
       storageKey: "autumnFinishTestUniforms",
     });
     const shader = {
       uniforms: {},
       vertexShader: "#include <common>\n#include <begin_vertex>",
-      fragmentShader: "#include <common>\n#include <map_fragment>",
+      fragmentShader:
+        "#include <common>\n#include <map_fragment>\n#include <normal_fragment_maps>\n#include <roughnessmap_fragment>\n#include <lights_fragment_end>",
     };
 
     material.onBeforeCompile(shader as never, {} as never);
@@ -53,24 +57,28 @@ describe("Autumn finish systems", () => {
     expect(shader.vertexShader).toContain("rootedWindZoneStrength");
     expect(shader.fragmentShader).toContain("uRootedWindRootDarkening");
     expect(shader.fragmentShader).toContain("rootedWindColorNoise");
+    expect(shader.fragmentShader).toContain("rootedWindUpNormal");
+    expect(shader.fragmentShader).toContain("uRootedWindMinimumRoughness");
+    expect(shader.fragmentShader).toContain("uRootedWindSpecularScale");
     expect(uniforms.rootDarkening.value).toBe(0);
     expect(uniforms.colorVariation.value).toBe(0);
+    expect(uniforms.normalUpBlend.value).toBe(0.34);
+    expect(uniforms.minimumRoughness.value).toBe(0.97);
+    expect(uniforms.specularScale.value).toBe(0.08);
 
     const clone = material.clone();
     inheritRootedWindPatch(material, clone);
     expect(clone.onBeforeCompile).toBe(material.onBeforeCompile);
-    expect(clone.customProgramCacheKey()).toBe(material.customProgramCacheKey());
+    expect(clone.customProgramCacheKey()).toBe(
+      material.customProgramCacheKey()
+    );
   });
 
   it("combines leaf-scale colour with the authored ground atlas", () => {
     const material = new MeshStandardMaterial();
     material.name = "Autumn Living Forest Floor";
     const detailMap = new Texture();
-    const patch = patchAutumnGroundDetailMaterial(
-      material,
-      detailMap,
-      0.72
-    );
+    const patch = patchAutumnGroundDetailMaterial(material, detailMap, 0.72);
     const shader = {
       uniforms: {},
       vertexShader: "#include <common>\n#include <uv_vertex>",
@@ -127,11 +135,7 @@ describe("Autumn finish systems", () => {
   it("keeps adjacent hero and depth trees inside one fog-value range", () => {
     const globalDensity = 0.016;
     const heroFog = calculateAutumnDepthFogFactor(41, globalDensity, 1);
-    const importedFog = calculateAutumnDepthFogFactor(
-      62,
-      globalDensity,
-      0.8
-    );
+    const importedFog = calculateAutumnDepthFogFactor(62, globalDensity, 0.8);
 
     expect(heroFog).toBeCloseTo(0.35, 2);
     expect(importedFog).toBeCloseTo(0.47, 2);

@@ -1,104 +1,179 @@
 {
-  "version": 3,
+  "version": 5,
   "seed": 194611,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "outerBoundaryFraction": 0.8,
   "spacingFactor": 0.56,
   "assets": [
     {
-      "id": "canopy-beech",
-      "label": "Natural Broad Canopy",
+      "id": "mature-broad-canopy",
+      "label": "Mature Broad Canopy",
       "family": "Poly Haven Natural",
-      "roles": ["mature-canopy"],
+      "roles": ["mature-canopy", "clearing-rim"],
+      "habitatAffinity": ["sunlit-rim", "mixed-woodland"],
       "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
       "stagedPath": "blender/forest-composition-sources/canopy-beech.glb",
-      "variants": [
-        {
-          "id": "jacaranda-broad-canopy",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
-          "stagedPath": "blender/forest-composition-sources/canopy-beech.glb"
-        }
-      ],
-      "targetHeightMetres": 16,
-      "scaleRange": [0.84, 1.17],
+      "targetHeightMetres": 15.5,
+      "scaleRange": [0.86, 1.14],
+      "aspectRange": [0.92, 1.08],
+      "heightVariationRange": [0.97, 1.04],
+      "leanDegrees": 1.2,
       "footprintRadius": 6.2,
       "pathClearance": 1.8,
       "clearingSetback": 4.2
     },
     {
-      "id": "forked-elm",
-      "label": "Natural Irregular Broadleaf",
+      "id": "semantic-oak",
+      "label": "Veteran English Oak",
+      "family": "Meshy Semantic Summer R1",
+      "roles": ["mature-canopy", "hero-anchor", "clearing-rim"],
+      "habitatAffinity": ["sunlit-rim", "old-growth-pocket"],
+      "sourcePath": "static/models/forest/trees/candidates/semantic-summer-r1/broad-english-oak-r1_semantic_proof.glb",
+      "stagedPath": "blender/forest-composition-sources/semantic-oak-r1.glb",
+      "targetHeightMetres": 15.5,
+      "scaleRange": [0.92, 1.08],
+      "aspectRange": [0.96, 1.04],
+      "heightVariationRange": [0.98, 1.03],
+      "leanDegrees": 0.8,
+      "footprintRadius": 7.8,
+      "pathClearance": 2.1,
+      "clearingSetback": 5.0
+    },
+    {
+      "id": "gnarled-spreader",
+      "label": "Gnarled Broadleaf Spreader",
       "family": "Poly Haven Natural",
-      "roles": ["irregular-middle"],
+      "roles": ["irregular-middle", "clearing-rim"],
+      "habitatAffinity": ["runoff-bank", "mixed-woodland"],
       "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
-      "stagedPath": "blender/forest-composition-sources/forked-elm-island.glb",
-      "variants": [
-        {
-          "id": "island-gnarled-spreader",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-01.glb",
-          "stagedPath": "blender/forest-composition-sources/forked-elm-island.glb"
-        },
-        {
-          "id": "slender-broadleaf",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
-          "stagedPath": "blender/forest-composition-sources/forked-elm-slender.glb"
-        }
-      ],
-      "targetHeightMetres": 11,
-      "scaleRange": [0.82, 1.18],
-      "footprintRadius": 4.5,
-      "pathClearance": 1.5,
-      "clearingSetback": 3.3
+      "stagedPath": "blender/forest-composition-sources/canopy-beech-gnarled.glb",
+      "targetHeightMetres": 10.5,
+      "scaleRange": [0.84, 1.18],
+      "aspectRange": [0.9, 1.1],
+      "heightVariationRange": [0.96, 1.05],
+      "leanDegrees": 1.8,
+      "footprintRadius": 4.8,
+      "pathClearance": 1.55,
+      "clearingSetback": 3.4
     },
     {
-      "id": "young-hornbeam",
-      "label": "Lush Summer Understory Mix",
+      "id": "slender-broadleaf",
+      "label": "Slender Summer Broadleaf",
       "family": "Poly Haven Natural",
-      "roles": ["young", "understory"],
-      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
-      "stagedPath": "blender/forest-composition-sources/young-hornbeam-jacaranda.glb",
-      "variants": [
-        {
-          "id": "young-jacaranda-canopy",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
-          "stagedPath": "blender/forest-composition-sources/young-hornbeam-jacaranda.glb"
-        },
-        {
-          "id": "young-slender-broadleaf",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
-          "stagedPath": "blender/forest-composition-sources/young-hornbeam-slender.glb"
-        },
-        {
-          "id": "young-riparian-spreader",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
-          "stagedPath": "blender/forest-composition-sources/young-hornbeam-riparian.glb"
-        }
-      ],
-      "targetHeightMetres": 5,
-      "scaleRange": [0.78, 1.22],
-      "footprintRadius": 2.5,
-      "pathClearance": 1.0,
-      "clearingSetback": 2.4
+      "roles": ["irregular-middle", "young"],
+      "habitatAffinity": ["woodland-gap", "path-shoulder"],
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/tree-small-02.glb",
+      "stagedPath": "blender/forest-composition-sources/forked-elm-slender.glb",
+      "targetHeightMetres": 8.0,
+      "scaleRange": [0.8, 1.2],
+      "aspectRange": [0.9, 1.1],
+      "heightVariationRange": [0.94, 1.07],
+      "leanDegrees": 2.8,
+      "footprintRadius": 3.4,
+      "pathClearance": 1.25,
+      "clearingSetback": 2.8
     },
     {
-      "id": "pale-willow",
-      "label": "Natural Riparian Spreader",
+      "id": "riparian-spreader",
+      "label": "Riparian Broadleaf Spreader",
       "family": "Poly Haven Natural",
       "roles": ["irregular-middle", "damp-hollow"],
+      "habitatAffinity": ["damp-hollow", "runoff-bank"],
       "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
       "stagedPath": "blender/forest-composition-sources/pale-willow.glb",
+      "targetHeightMetres": 8.5,
+      "scaleRange": [0.84, 1.16],
+      "aspectRange": [0.91, 1.09],
+      "heightVariationRange": [0.96, 1.05],
+      "leanDegrees": 2.0,
+      "footprintRadius": 4.4,
+      "pathClearance": 1.55,
+      "clearingSetback": 3.5
+    },
+    {
+      "id": "summer-understory",
+      "label": "Lush Summer Understory",
+      "family": "Poly Haven Natural",
+      "roles": ["young", "understory"],
+      "habitatAffinity": ["woodland-gap", "canopy-edge"],
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-03.glb",
+      "stagedPath": "blender/forest-composition-sources/young-hornbeam-island.glb",
+      "targetHeightMetres": 5.2,
+      "scaleRange": [0.78, 1.22],
+      "aspectRange": [0.88, 1.12],
+      "heightVariationRange": [0.92, 1.1],
+      "leanDegrees": 3.5,
+      "footprintRadius": 2.6,
+      "pathClearance": 1.0,
+      "clearingSetback": 2.3
+    },
+    {
+      "id": "mature-fir",
+      "label": "Mature Fir Ridge Family",
+      "family": "Poly Haven Natural",
+      "roles": ["mature-conifer", "distant-silhouette"],
+      "habitatAffinity": ["cool-rise", "depth-ridge"],
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-tree-01-a.glb",
+      "stagedPath": "blender/forest-composition-sources/narrow-larch-fir-a.glb",
       "variants": [
         {
-          "id": "riparian-spreader",
-          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/island-tree-02.glb",
-          "stagedPath": "blender/forest-composition-sources/pale-willow.glb"
+          "id": "mature-fir-a",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-tree-01-a.glb",
+          "stagedPath": "blender/forest-composition-sources/narrow-larch-fir-a.glb"
+        },
+        {
+          "id": "mature-fir-b",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-tree-01-b.glb",
+          "stagedPath": "blender/forest-composition-sources/narrow-larch-fir-b.glb"
+        },
+        {
+          "id": "mature-fir-c",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-tree-01-c.glb",
+          "stagedPath": "blender/forest-composition-sources/narrow-larch-fir-c.glb"
         }
       ],
-      "targetHeightMetres": 11,
-      "scaleRange": [0.86, 1.14],
-      "footprintRadius": 5.0,
-      "pathClearance": 1.8,
-      "clearingSetback": 4.0
+      "targetHeightMetres": 16.5,
+      "scaleRange": [0.85, 1.17],
+      "aspectRange": [1.03, 1.14],
+      "heightVariationRange": [0.95, 1.06],
+      "leanDegrees": 1.6,
+      "footprintRadius": 3.4,
+      "pathClearance": 1.45,
+      "clearingSetback": 3.4
+    },
+    {
+      "id": "fir-understory",
+      "label": "Fir Understory Family",
+      "family": "Poly Haven Natural",
+      "roles": ["young", "understory", "distant-silhouette"],
+      "habitatAffinity": ["cool-rise", "canopy-gap"],
+      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-sapling-medium-a.glb",
+      "stagedPath": "blender/forest-composition-sources/young-hornbeam-fir-a.glb",
+      "variants": [
+        {
+          "id": "fir-understory-a",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-sapling-medium-a.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-fir-a.glb"
+        },
+        {
+          "id": "fir-understory-b",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-sapling-medium-b.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-fir-b.glb"
+        },
+        {
+          "id": "fir-understory-c",
+          "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/fir-sapling-medium-c.glb",
+          "stagedPath": "blender/forest-composition-sources/young-hornbeam-fir-c.glb"
+        }
+      ],
+      "targetHeightMetres": 6.2,
+      "scaleRange": [0.78, 1.24],
+      "aspectRange": [0.92, 1.08],
+      "heightVariationRange": [0.9, 1.12],
+      "leanDegrees": 3.2,
+      "footprintRadius": 2.2,
+      "pathClearance": 0.95,
+      "clearingSetback": 2.2
     }
   ],
   "openings": [
@@ -124,135 +199,213 @@
   "clusters": [
     {
       "id": "north-rim",
+      "habitat": "mixed clearing rim with broad crowns and a dark conifer backbeat",
       "center": [0, 56],
       "radii": [50, 24],
       "rotationDegrees": 0,
       "counts": {
-        "canopy-beech": 8,
-        "forked-elm": 11,
-        "young-hornbeam": 12
+        "mature-broad-canopy": 6,
+        "semantic-oak": 1,
+        "gnarled-spreader": 7,
+        "slender-broadleaf": 6,
+        "riparian-spreader": 3,
+        "summer-understory": 6,
+        "mature-fir": 1,
+        "fir-understory": 1
       }
     },
     {
       "id": "northeast-rise",
+      "habitat": "cool ridge where vertical firs interrupt the broadleaf canopy",
       "center": [66, 54],
       "radii": [35, 38],
       "rotationDegrees": 25,
       "counts": {
-        "canopy-beech": 7,
-        "forked-elm": 10,
-        "young-hornbeam": 12
+        "mature-broad-canopy": 7,
+        "gnarled-spreader": 6,
+        "slender-broadleaf": 5,
+        "riparian-spreader": 3,
+        "summer-understory": 6,
+        "mature-fir": 1,
+        "fir-understory": 1
       }
     },
     {
       "id": "east-hollow",
+      "habitat": "damp runoff hollow with low spreaders and dense regeneration",
       "center": [76, -12],
       "radii": [34, 48],
       "rotationDegrees": -15,
       "counts": {
-        "canopy-beech": 5,
-        "forked-elm": 9,
-        "young-hornbeam": 12,
-        "pale-willow": 3
+        "mature-broad-canopy": 4,
+        "gnarled-spreader": 5,
+        "slender-broadleaf": 6,
+        "riparian-spreader": 7,
+        "summer-understory": 6,
+        "mature-fir": 0,
+        "fir-understory": 1
       }
     },
     {
       "id": "southeast-shoulder",
+      "habitat": "sunlit transition from camp meadow into mixed young woodland",
       "center": [48, -70],
       "radii": [32, 34],
       "rotationDegrees": 15,
       "counts": {
-        "canopy-beech": 5,
-        "forked-elm": 8,
-        "young-hornbeam": 10
+        "mature-broad-canopy": 4,
+        "semantic-oak": 1,
+        "gnarled-spreader": 4,
+        "slender-broadleaf": 6,
+        "riparian-spreader": 3,
+        "summer-understory": 5,
+        "mature-fir": 0,
+        "fir-understory": 0
       }
     },
     {
       "id": "southwest-grove",
+      "habitat": "dappled mixed grove with uneven ages and fir pockets",
       "center": [-47, -64],
       "radii": [43, 32],
       "rotationDegrees": -15,
       "counts": {
-        "canopy-beech": 7,
-        "forked-elm": 10,
-        "young-hornbeam": 12
+        "mature-broad-canopy": 5,
+        "gnarled-spreader": 7,
+        "slender-broadleaf": 5,
+        "riparian-spreader": 4,
+        "summer-understory": 6,
+        "mature-fir": 1,
+        "fir-understory": 1
       }
     },
     {
       "id": "west-loop-grove",
+      "habitat": "irregular path-side woodland with broad middle-story rhythm",
       "center": [-67, 0],
       "radii": [30, 50],
       "rotationDegrees": 8,
       "counts": {
-        "canopy-beech": 6,
-        "forked-elm": 10,
-        "young-hornbeam": 12
+        "mature-broad-canopy": 6,
+        "gnarled-spreader": 6,
+        "slender-broadleaf": 6,
+        "riparian-spreader": 4,
+        "summer-understory": 5,
+        "mature-fir": 0,
+        "fir-understory": 1
       }
     },
     {
       "id": "northwest-gateway",
+      "habitat": "cool trail gateway where conifers frame the exit without closing it",
       "center": [-65, 68],
       "radii": [35, 35],
       "rotationDegrees": -25,
       "counts": {
-        "canopy-beech": 6,
-        "forked-elm": 9,
-        "young-hornbeam": 11
+        "mature-broad-canopy": 5,
+        "gnarled-spreader": 6,
+        "slender-broadleaf": 5,
+        "riparian-spreader": 3,
+        "summer-understory": 5,
+        "mature-fir": 1,
+        "fir-understory": 1
       }
     },
     {
       "id": "far-north-depth",
+      "habitat": "layered depth ridge with fir spires above younger crowns",
       "center": [16, 113],
       "radii": [70, 24],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 9, "forked-elm": 9 }
+      "counts": {
+        "mature-broad-canopy": 4,
+        "gnarled-spreader": 3,
+        "slender-broadleaf": 4,
+        "riparian-spreader": 1,
+        "summer-understory": 4,
+        "mature-fir": 1,
+        "fir-understory": 1
+      }
     },
     {
       "id": "far-west-depth",
+      "habitat": "mixed distant wall with narrow conifer breaks",
       "center": [-112, -24],
       "radii": [24, 65],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 9, "forked-elm": 9 }
+      "counts": {
+        "mature-broad-canopy": 5,
+        "gnarled-spreader": 4,
+        "slender-broadleaf": 3,
+        "riparian-spreader": 1,
+        "summer-understory": 4,
+        "mature-fir": 1,
+        "fir-understory": 0
+      }
     },
     {
       "id": "far-east-depth",
+      "habitat": "damp eastern depth with riparian crowns mixed into the ridge",
       "center": [115, -5],
       "radii": [25, 70],
       "rotationDegrees": 0,
       "counts": {
-        "canopy-beech": 9,
-        "forked-elm": 9,
-        "pale-willow": 1
+        "mature-broad-canopy": 1,
+        "semantic-oak": 1,
+        "gnarled-spreader": 3,
+        "slender-broadleaf": 3,
+        "riparian-spreader": 6,
+        "summer-understory": 4,
+        "mature-fir": 0,
+        "fir-understory": 1
       }
     },
     {
       "id": "far-south-depth",
+      "habitat": "mixed southern skyline with fir and broadleaf alternation",
       "center": [0, -118],
       "radii": [70, 23],
       "rotationDegrees": 0,
-      "counts": { "canopy-beech": 9, "forked-elm": 9 }
+      "counts": {
+        "mature-broad-canopy": 4,
+        "gnarled-spreader": 4,
+        "slender-broadleaf": 4,
+        "riparian-spreader": 1,
+        "summer-understory": 3,
+        "mature-fir": 1,
+        "fir-understory": 1
+      }
     },
     {
       "id": "northeast-depth-bridge",
+      "habitat": "young mixed connector between the rise and far ridge",
       "center": [71, 91],
       "radii": [43, 26],
       "rotationDegrees": 28,
       "counts": {
-        "canopy-beech": 4,
-        "forked-elm": 4,
-        "young-hornbeam": 5
+        "mature-broad-canopy": 3,
+        "gnarled-spreader": 2,
+        "slender-broadleaf": 2,
+        "riparian-spreader": 2,
+        "summer-understory": 3,
+        "mature-fir": 1,
+        "fir-understory": 0
       }
     },
     {
       "id": "southwest-depth-bridge",
+      "habitat": "dappled regeneration bridge carrying the grove into the south ridge",
       "center": [-72, -96],
       "radii": [47, 25],
       "rotationDegrees": 20,
       "counts": {
-        "canopy-beech": 3,
-        "forked-elm": 5,
-        "young-hornbeam": 5,
-        "pale-willow": 1
+        "mature-broad-canopy": 2,
+        "gnarled-spreader": 2,
+        "slender-broadleaf": 4,
+        "riparian-spreader": 3,
+        "summer-understory": 2,
+        "mature-fir": 1,
+        "fir-understory": 0
       }
     }
   ]

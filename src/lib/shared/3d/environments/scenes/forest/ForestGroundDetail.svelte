@@ -30,8 +30,8 @@
   let {
     scene = null,
     strength = 0.9,
-    normalResponse = 0.72,
-    roughnessFloor = 0.82,
+    normalResponse = 0.3,
+    roughnessFloor = 0.98,
   }: Props = $props();
   const { renderer } = useThrelte();
   let detailMaps = $state<Partial<Record<ForestGroundDetailFamily, Texture>>>(

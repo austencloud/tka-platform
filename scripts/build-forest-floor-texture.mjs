@@ -8,9 +8,15 @@ import sharp from "sharp";
 const MATERIAL_CONTRACT_PATH = resolve("scripts/forest-ground-materials.json");
 const PATH_LAYOUT_PATH = resolve("scripts/forest-path-layout.json");
 const TREE_LAYOUT_PATH = resolve("scripts/forest-tree-layout.json");
-const GROUND_LIFE_LAYOUT_PATH = resolve("scripts/forest-ground-life-layout.json");
-const STATIC_PROP_LAYOUT_PATH = resolve("scripts/forest-static-prop-layout.json");
-const COMPOSITION_LAYOUT_PATH = resolve("scripts/forest-composition-revision.json");
+const GROUND_LIFE_LAYOUT_PATH = resolve(
+  "scripts/forest-ground-life-layout.json"
+);
+const STATIC_PROP_LAYOUT_PATH = resolve(
+  "scripts/forest-static-prop-layout.json"
+);
+const COMPOSITION_LAYOUT_PATH = resolve(
+  "scripts/forest-composition-revision.json"
+);
 const OUTPUT = resolve("static/textures/forest-floor/forest-floor-zoned.jpg");
 const MASK_OUTPUT = resolve(
   "docs/superpowers/specs/moonlit-firefly-forest/evidence/living-ground/forest-floor-ecology-mask.png"
@@ -70,9 +76,8 @@ function valueNoise(x, y) {
   const blendY = smoothstep(0, 1, fract(y));
   const hash = (offsetX, offsetY) =>
     fract(
-      Math.sin(
-        (cellX + offsetX) * 127.1 + (cellY + offsetY) * 311.7
-      ) * 43758.5453
+      Math.sin((cellX + offsetX) * 127.1 + (cellY + offsetY) * 311.7) *
+        43758.5453
     );
   return mix(
     mix(hash(0, 0), hash(1, 0), blendX),
@@ -99,7 +104,8 @@ function ellipseMetric(x, y, center, radii, rotationDegrees = 0) {
 }
 
 function ellipseInfluence(x, y, definition, inner = 0.45, outer = 1.18) {
-  return 1 -
+  return (
+    1 -
     smoothstep(
       inner,
       outer,
@@ -110,13 +116,15 @@ function ellipseInfluence(x, y, definition, inner = 0.45, outer = 1.18) {
         definition.radii,
         definition.rotationDegrees ?? 0
       )
-    );
+    )
+  );
 }
 
 function harmonicRadius(angle, definition) {
   return definition.harmonics.reduce((radius, harmonic) => {
     const phase = angle * harmonic.frequency + harmonic.phase;
-    const wave = harmonic.function === "cos" ? Math.cos(phase) : Math.sin(phase);
+    const wave =
+      harmonic.function === "cos" ? Math.cos(phase) : Math.sin(phase);
     return radius + harmonic.amplitude * wave;
   }, definition.baseRadius);
 }
@@ -154,7 +162,8 @@ function pathMasks(x, y, noise) {
     const brokenEdge = (noise - 0.5) * 0.46;
     core = Math.max(
       core,
-      1 - smoothstep(path.halfWidth * 0.52, path.halfWidth + brokenEdge, distance)
+      1 -
+        smoothstep(path.halfWidth * 0.52, path.halfWidth + brokenEdge, distance)
     );
     shoulder = Math.max(
       shoulder,
@@ -186,9 +195,14 @@ const staticProps = [
   ...staticPropLayout.zoneProps,
 ];
 const spatialZones = Object.fromEntries(
-  compositionLayout.spatialZones.map((zone) => [zone.id, runtimeEllipseToBlender(zone)])
+  compositionLayout.spatialZones.map((zone) => [
+    zone.id,
+    runtimeEllipseToBlender(zone),
+  ])
 );
-const campShelf = runtimeEllipseToBlender(compositionLayout.campRelocation.shelf);
+const campShelf = runtimeEllipseToBlender(
+  compositionLayout.campRelocation.shelf
+);
 
 function maximumPatchInfluence(x, y, definitions, filter = () => true) {
   let influence = 0;
@@ -208,14 +222,20 @@ function radialContact(x, y, center, radius, noise, directional = 0) {
     0.2 * Math.sin(angle * 3 + directional) +
     0.12 * Math.sin(angle * 7 - directional * 0.6) +
     (noise - 0.5) * 0.18;
-  return 1 - smoothstep(radius * 0.22, radius * lobe, Math.hypot(deltaX, deltaY));
+  return (
+    1 - smoothstep(radius * 0.22, radius * lobe, Math.hypot(deltaX, deltaY))
+  );
 }
 
 function ecologicalWeights(x, y) {
   const radius = Math.hypot(x, y);
   const noise = ecologicalNoise(x, y);
-  const clearingEdge = harmonicRadius(Math.atan2(y, x), pathLayout.clearingEdge);
-  const insideClearing = 1 - smoothstep(clearingEdge - 5.5, clearingEdge + 2.5, radius);
+  const clearingEdge = harmonicRadius(
+    Math.atan2(y, x),
+    pathLayout.clearingEdge
+  );
+  const insideClearing =
+    1 - smoothstep(clearingEdge - 5.5, clearingEdge + 2.5, radius);
   const paths = pathMasks(x, y, noise);
 
   const grassPatch = maximumPatchInfluence(x, y, grassPatches);
@@ -244,8 +264,20 @@ function ecologicalWeights(x, y) {
     (patch) => patch.habitatId === "sparse-path-shoulder"
   );
 
-  const audienceMeadow = ellipseInfluence(x, y, spatialZones["audience-meadow"], 0.1, 1.16);
-  const dampHollow = ellipseInfluence(x, y, spatialZones["damp-hollow"], 0.1, 1.18);
+  const audienceMeadow = ellipseInfluence(
+    x,
+    y,
+    spatialZones["audience-meadow"],
+    0.1,
+    1.16
+  );
+  const dampHollow = ellipseInfluence(
+    x,
+    y,
+    spatialZones["damp-hollow"],
+    0.1,
+    1.18
+  );
   const campTraffic = ellipseInfluence(x, y, campShelf, 0.2, 1.06);
   const campScreens = Math.max(
     ellipseInfluence(x, y, spatialZones["camp-threshold-north"]),
@@ -290,40 +322,43 @@ function ecologicalWeights(x, y) {
     noise,
     2.4
   );
-  const stageCore = 1 -
+  const stageCore =
+    1 -
     smoothstep(
       materialContract.rules.performanceCoreRadiusMetres * 0.68,
       materialContract.rules.performanceCoreRadiusMetres,
       radius
     );
 
-  const sunBreaks = clamp(0.44 + (noise - 0.5) * 0.9 + Math.sin(x * 0.08 - y * 0.05) * 0.12);
+  const sunBreaks = clamp(
+    0.44 + (noise - 0.5) * 0.9 + Math.sin(x * 0.08 - y * 0.05) * 0.12
+  );
   const summerSlope = clamp(
-    0.48 +
-      sunBreaks * 0.34 +
-      grassPatch * 0.34 -
-      canopy * 0.16 -
-      paths.core * 0.92
+    0.92 +
+      sunBreaks * 0.12 +
+      grassPatch * 0.12 -
+      canopy * 0.025 -
+      paths.core * 0.96
   );
   const openMeadow = clamp(
     insideClearing *
       (materialContract.rules.minimumOpenMeadowWeight + sunBreaks * 0.26) +
-      (1 - insideClearing) * summerSlope * 0.72
+      (1 - insideClearing) * summerSlope
   );
   let meadow = clamp(
     openMeadow +
-      grassPatch * 0.48 +
-      audienceMeadow * 0.28 -
-      stageCore * 0.46 -
+      grassPatch * 0.18 +
+      audienceMeadow * 0.2 -
+      stageCore * 0.18 -
       paths.core * 0.95 -
-      rootContact * 0.72 -
-      campTraffic * 0.42
+      rootContact * 0.08 -
+      campTraffic * 0.62
   );
   let litter = clamp(
-    canopy * (0.38 + (1 - sunBreaks) * 0.34) +
-      litterHabitat * 0.75 +
-      rootContact * 0.88 +
-      campScreens * 0.36 -
+    canopy * (0.035 + (1 - sunBreaks) * 0.055) +
+      litterHabitat * 0.1 +
+      rootContact * 0.18 +
+      campScreens * 0.06 -
       paths.core * 0.78 -
       insideClearing * audienceMeadow * 0.22
   );
@@ -347,11 +382,11 @@ function ecologicalWeights(x, y) {
 
   const distantQuiet = smoothstep(112 + noise * 8, 154 + noise * 12, radius);
   const neutral = clamp(
-    0.14 +
-      maintained * 0.58 +
-      paths.shoulder * 0.35 +
-      distantQuiet * 0.44 +
-      (1 - insideClearing) * (0.16 + canopy * 0.2)
+    0.035 +
+      maintained * 0.7 +
+      paths.shoulder * 0.26 +
+      distantQuiet * 0.055 +
+      (1 - insideClearing) * (0.015 + canopy * 0.025)
   );
   const total = Math.max(neutral + meadow + litter + damp, 0.001);
   const contact = clamp(
@@ -408,13 +443,9 @@ async function loadTiledFamily(family) {
 
 function sampleFamily(family, x, y, channel) {
   const warpedX =
-    x +
-    0.74 * Math.sin(y * 0.031) +
-    0.29 * Math.cos((x + y) * 0.057);
+    x + 0.74 * Math.sin(y * 0.031) + 0.29 * Math.cos((x + y) * 0.057);
   const warpedY =
-    y +
-    0.68 * Math.cos(x * 0.029) -
-    0.27 * Math.sin((x - y) * 0.061);
+    y + 0.68 * Math.cos(x * 0.029) - 0.27 * Math.sin((x - y) * 0.061);
   const sourceX = Math.min(
     family.info.width - 1,
     Math.floor(fract(warpedX / family.repeatMetres) * family.info.width)
@@ -430,7 +461,10 @@ function sampleFamily(family, x, y, channel) {
 
 const familyTiles = Object.fromEntries(
   await Promise.all(
-    Object.entries(FAMILIES).map(async ([id, family]) => [id, await loadTiledFamily(family)])
+    Object.entries(FAMILIES).map(async ([id, family]) => [
+      id,
+      await loadTiledFamily(family),
+    ])
   )
 );
 
@@ -439,7 +473,8 @@ const responseMask = Buffer.allocUnsafe(MASK_SIZE * MASK_SIZE * 3);
 for (let pixelY = 0; pixelY < MASK_SIZE; pixelY += 1) {
   const worldY = WORLD_EXTENT - (pixelY / (MASK_SIZE - 1)) * WORLD_EXTENT * 2;
   for (let pixelX = 0; pixelX < MASK_SIZE; pixelX += 1) {
-    const worldX = -WORLD_EXTENT + (pixelX / (MASK_SIZE - 1)) * WORLD_EXTENT * 2;
+    const worldX =
+      -WORLD_EXTENT + (pixelX / (MASK_SIZE - 1)) * WORLD_EXTENT * 2;
     const weights = ecologicalWeights(worldX, worldY);
     const familyIndex = (pixelY * MASK_SIZE + pixelX) * 3;
     const responseIndex = (pixelY * MASK_SIZE + pixelX) * 3;
@@ -478,7 +513,10 @@ for (let pixelY = 0; pixelY < SIZE; pixelY += 1) {
       expandedFamilyMask[familyMaskIndex + 2] / 255,
       expandedResponseMask[responseMaskIndex] / 255,
     ];
-    const weightTotal = Math.max(weights.reduce((total, value) => total + value, 0), 0.001);
+    const weightTotal = Math.max(
+      weights.reduce((total, value) => total + value, 0),
+      0.001
+    );
     const contact = expandedResponseMask[responseMaskIndex + 1] / 255;
     const path = expandedResponseMask[responseMaskIndex + 2] / 255;
     const macro = ecologicalNoise(worldX * 0.76, worldY * 0.76);
@@ -491,13 +529,15 @@ for (let pixelY = 0; pixelY < SIZE; pixelY += 1) {
         sampleFamily(familyTiles.litter, worldX, worldY, channel),
         sampleFamily(familyTiles.damp, worldX, worldY, channel),
       ];
-      let value = familyValues.reduce(
-        (total, familyValue, index) => total + familyValue * weights[index],
-        0
-      ) / weightTotal;
+      let value =
+        familyValues.reduce(
+          (total, familyValue, index) => total + familyValue * weights[index],
+          0
+        ) / weightTotal;
       const macroDrift = 0.94 + macro * 0.12;
       value *= macroDrift;
-      value *= 1 - contact * materialContract.rules.maximumBakedContactDarkening;
+      value *=
+        1 - contact * materialContract.rules.maximumBakedContactDarkening;
       if (path > 0) {
         const pathGrade = channel === 0 ? 0.91 : channel === 1 ? 0.82 : 0.72;
         value *= mix(1, pathGrade, path * 0.42);
@@ -554,7 +594,11 @@ function planPoint([x, y]) {
 
 function polyline(points) {
   return points
-    .map((point) => planPoint(point).map((value) => value.toFixed(1)).join(","))
+    .map((point) =>
+      planPoint(point)
+        .map((value) => value.toFixed(1))
+        .join(",")
+    )
     .join(" ");
 }
 

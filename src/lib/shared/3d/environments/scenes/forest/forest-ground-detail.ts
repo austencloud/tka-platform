@@ -69,8 +69,8 @@ export function patchForestGroundDetailMaterial(
   const previousCompile = material.onBeforeCompile;
   const previousCacheKey = material.customProgramCacheKey;
   const previousColor = options.preserveColor?.clone() ?? null;
-  const normalResponse = options.normalResponse ?? 0.72;
-  const roughnessFloor = options.roughnessFloor ?? 0.82;
+  const normalResponse = options.normalResponse ?? 0.3;
+  const roughnessFloor = options.roughnessFloor ?? 0.98;
   if (previousColor) material.color.setRGB(1, 1, 1);
 
   material.onBeforeCompile = (
@@ -144,10 +144,26 @@ export function patchForestGroundDetailMaterial(
             (vForestGroundWorldPosition.x + 200.0) / 400.0,
             (vForestGroundWorldPosition.z + 200.0) / 400.0
           );
-          vec3 familyWeights = texture2D(
-            uForestGroundFamilyMask,
-            familyUv
-          ).rgb;
+          vec2 familyFeather = vec2(0.006);
+          vec3 familyWeights = (
+            texture2D(uForestGroundFamilyMask, familyUv).rgb * 2.0
+            + texture2D(
+              uForestGroundFamilyMask,
+              familyUv + vec2(familyFeather.x, 0.0)
+            ).rgb
+            + texture2D(
+              uForestGroundFamilyMask,
+              familyUv - vec2(familyFeather.x, 0.0)
+            ).rgb
+            + texture2D(
+              uForestGroundFamilyMask,
+              familyUv + vec2(0.0, familyFeather.y)
+            ).rgb
+            + texture2D(
+              uForestGroundFamilyMask,
+              familyUv - vec2(0.0, familyFeather.y)
+            ).rgb
+          ) / 6.0;
           float dampWeight = max(
             0.0,
             1.0 - familyWeights.r - familyWeights.g - familyWeights.b
@@ -181,20 +197,26 @@ export function patchForestGroundDetailMaterial(
           );
           vec3 familyVariation = clamp(
             detailColor - blurredFamilyColor,
-            vec3(-0.18),
-            vec3(0.18)
+            vec3(-0.12),
+            vec3(0.12)
           );
           float microValue = clamp((detailLuma - 0.42) * 0.82, -0.11, 0.11);
           vec3 modulation = vec3(1.0)
-            + familyVariation * (0.72 * uForestGroundDetailStrength)
+            + familyVariation * (0.60 * uForestGroundDetailStrength)
             + vec3(microValue * uForestGroundDetailStrength);
           float macro = forestGroundNoise(forestGroundPoint * 0.095);
+          float meadowBladeSignal = mix(
+            sin(dot(forestGroundPoint, vec2(8.4, 2.7))),
+            sin(dot(forestGroundPoint, vec2(-3.1, 10.6)) + 1.7),
+            forestGroundNoise(forestGroundPoint * 0.37)
+          ) * familyWeights.g;
           diffuseColor.rgb *= modulation;
           diffuseColor.rgb *= mix(
             vec3(0.94, 0.96, 0.91),
             vec3(1.04, 1.02, 0.93),
             macro
-          );`
+          );
+          diffuseColor.rgb *= 1.0 + meadowBladeSignal * 0.025;`
       )
       .replace(
         "#include <normal_fragment_maps>",
@@ -203,7 +225,7 @@ export function patchForestGroundDetailMaterial(
           normal = normalize(mix(
             forestGroundBaseNormal,
             normal,
-            clamp(uForestGroundNormalResponse, 0.0, 1.0)
+            clamp(uForestGroundNormalResponse, 0.0, 0.32)
           ));
           vec3 forestPositionDx = dFdx(vViewPosition);
           vec3 forestPositionDy = dFdy(vViewPosition);
@@ -218,7 +240,7 @@ export function patchForestGroundDetailMaterial(
           normal = normalize(
             abs(forestDeterminant) * normal
               - forestSurfaceGradient
-                * (0.34 * uForestGroundDetailStrength)
+                * (0.18 * uForestGroundDetailStrength)
           );`
       )
       .replace(
@@ -231,7 +253,7 @@ export function patchForestGroundDetailMaterial(
       );
   };
   material.customProgramCacheKey = () =>
-    `${previousCacheKey.call(material)}|forest-ground-detail-v5`;
+    `${previousCacheKey.call(material)}|forest-ground-detail-v8`;
 
   const patch: ForestGroundDetailPatch = {
     dispose: () => {

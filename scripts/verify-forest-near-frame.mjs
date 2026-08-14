@@ -24,7 +24,9 @@ const metricsPath = join(
   "forest_near_frame_metrics.json"
 );
 const metrics = JSON.parse(readFileSync(metricsPath, "utf8"));
-const maximumBytes = 13 * 1024 * 1024;
+const maximumBytes = 18 * 1024 * 1024;
+const meadowSystemVersion = 10;
+const groundEcosystemVersion = 7;
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -59,7 +61,7 @@ const propNodes = authoredNodes.filter(
   (node) => node.extras?.tka_role === "near-frame-static-prop"
 );
 const grassNodes = authoredNodes.filter(
-  (node) => node.extras?.tka_role === "near-frame-grass"
+  (node) => node.extras?.tka_role === "near-frame-ground-ecosystem"
 );
 const trailNodes = authoredNodes.filter(
   (node) => node.extras?.tka_role === "near-frame-trail"
@@ -85,6 +87,22 @@ const instancedMushroomCount = (gltf.nodes ?? []).reduce((count, node) => {
   }
   return count + Number(gltf.accessors?.[translationAccessor]?.count ?? 0);
 }, 0);
+const instancedGrassCount = (gltf.nodes ?? []).reduce((count, node) => {
+  const translationAccessor =
+    node.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
+  const meshName = gltf.meshes?.[node.mesh]?.name ?? "";
+  if (
+    !Number.isInteger(translationAccessor) ||
+    !meshName.startsWith("ForestEcosystemMesh_")
+  ) {
+    return count;
+  }
+  return count + Number(gltf.accessors?.[translationAccessor]?.count ?? 0);
+}, 0);
+const authoredGrassCount = (gltf.nodes ?? []).reduce((count, node) => {
+  if (node.extras?.tka_role !== "near-frame-ground-ecosystem") return count;
+  return count + Number(node.extras?.tka_grass_clumps ?? 0);
+}, 0);
 const expectedTrees = layout.frameTrees;
 const expectedProps = [
   ...layout.vignettes.flatMap((vignette) =>
@@ -105,10 +123,10 @@ const expectedHabitatZoneIds = new Set(
   layout.zoneProps.map(({ habitatZoneId }) => habitatZoneId)
 );
 const expectedGrassPatchIds = new Set(layout.grassPatches.map(({ id }) => id));
-const expectedGrassPalettes = new Set(
-  layout.grassPatches.map(({ palette }) => palette)
+const expectedGrassTiers = new Set(["base"]);
+const expectedGroundSpecies = new Set(
+  Object.values(layout.groundEcosystem.patchGuilds).flat()
 );
-const expectedGrassTiers = new Set(["base", "medium", "high"]);
 const expectedMushroomColonyIds = new Set(
   layout.mushroomColonies.map(({ id }) => id)
 );
@@ -148,8 +166,20 @@ invariant(
   `Expected ${expectedProps.length} static props, found ${propNodes.length}`
 );
 invariant(
-  grassNodes.length === expectedGrassPalettes.size * expectedGrassTiers.size,
-  `Expected ${expectedGrassPalettes.size * expectedGrassTiers.size} meadow tier/palette meshes, found ${grassNodes.length}`
+  instancedGrassCount > 0,
+  "Expected GPU-instanced ecosystem populations"
+);
+invariant(
+  grassNodes.every((node) => {
+    const species = node.extras?.tka_ground_species;
+    const isContinuousTurf =
+      species === "summer-sward" || species === "woodland-grass";
+    const isInstanced = Boolean(
+      node.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION != null
+    );
+    return isContinuousTurf ? isInstanced : true;
+  }),
+  "Continuous turf lost GPU instancing"
 );
 invariant(
   trailNodes.length === 1,
@@ -235,12 +265,27 @@ const grassNodeClumps = grassNodes.reduce(
   (sum, node) => sum + Number(node.extras.tka_grass_clumps ?? 0),
   0
 );
+const actualGroundSpecies = new Set(
+  grassNodes.map((node) => node.extras.tka_ground_species).filter(Boolean)
+);
+const actualGroundStrata = new Set(
+  grassNodes.map((node) => node.extras?.tka_ground_stratum).filter(Boolean)
+);
 
 invariant(
   grassNodes.every(
-    (node) => Number(node.extras.tka_meadow_system_version) === 1
+    (node) =>
+      Number(node.extras.tka_meadow_system_version) === meadowSystemVersion
   ),
-  "Near-frame grass did not come from the approved meadow-system builder"
+  "Near-frame plants did not come from the approved ecosystem builder"
+);
+invariant(
+  grassNodes.every(
+    (node) =>
+      Number(node.extras.tka_ground_ecosystem_version) ===
+      groundEcosystemVersion
+  ),
+  "Near-frame plants lost the ground-ecosystem contract"
 );
 invariant(
   [...expectedGrassTiers].every((tier) => actualGrassTiers.has(tier)),
@@ -257,6 +302,66 @@ invariant(
   ) === Number(metrics.groundLife.grassClumpCount),
   "Meadow quality-tier metrics do not sum to the authored clump total"
 );
+invariant(
+  Number(metrics.groundLife.groundEcosystem.turfFloor?.coverageSamples ?? 0) >=
+    90_000,
+  "Continuous turf floor lost the minimum production coverage"
+);
+invariant(
+  Number(metrics.groundLife.groundEcosystem.familyCounts.grass ?? 0) >=
+    Number(metrics.groundLife.groundEcosystem.instanceCount ?? 0),
+  "The ground population contains non-grass foliage islands"
+);
+invariant(
+  [...expectedGroundSpecies].every((species) =>
+    actualGroundSpecies.has(species)
+  ),
+  "Ground ecosystem lost one or more approved scanned species"
+);
+invariant(
+  ["worn", "carpet", "meadow", "seed"].every((stratum) =>
+    actualGroundStrata.has(stratum)
+  ),
+  "Continuous turf lost one or more grass-only structural strata"
+);
+invariant(
+  Number(
+    metrics.groundLife.groundEcosystem.turfFloor?.compressedTrafficSamples ?? 0
+  ) > 0,
+  "Path and camp edges lost their compressed-grass transition"
+);
+invariant(
+  Number(metrics.groundLife.groundEcosystem.turfFloor?.pathSamples ?? -1) === 0,
+  "Path cores must not delete grass samples"
+);
+invariant(
+  Number(
+    metrics.groundLife.groundEcosystem.turfFloor?.retainedPathCoreSamples ?? 0
+  ) > 0,
+  "Path cores lost their flattened living-grass layer"
+);
+const pathCoreRetention = Number(
+  metrics.groundLife.groundEcosystem.turfFloor?.pathCoreRetention ?? 0
+);
+invariant(
+  pathCoreRetention >= 0.58 && pathCoreRetention <= 0.74,
+  `Path core retention must stay between 58% and 74%: ${pathCoreRetention}`
+);
+const pathCoreSideCandidates =
+  metrics.groundLife.groundEcosystem.turfFloor?.pathCoreSideCandidates ?? {};
+const retainedPathCoreSideSamples =
+  metrics.groundLife.groundEcosystem.turfFloor?.retainedPathCoreSideSamples ??
+  {};
+invariant(
+  Number(pathCoreSideCandidates.left ?? 0) > 0 &&
+    Number(pathCoreSideCandidates.right ?? 0) > 0,
+  "Lived-in paths lost one side of their asymmetric traffic field"
+);
+invariant(
+  Number(retainedPathCoreSideSamples.left ?? 0) > 0 &&
+    Number(retainedPathCoreSideSamples.right ?? 0) > 0,
+  "Flattened path grass must survive on both sides of the travelled line"
+);
 
 invariant(
   trailNodes[0].extras.tka_trail_accent_id === layout.trailAccent.id &&
@@ -268,8 +373,10 @@ invariant(
   "Near-frame trail accent has too few samples to follow the path"
 );
 invariant(
-  [...expectedGrassPatchIds].every((id) => actualGrassPatchIds.has(id)),
-  "Near-frame grass lost one or more authored habitat patches"
+  [...expectedGrassPatchIds].every(
+    (id) => Number(metrics.groundLife.groundEcosystem.patchCounts[id] ?? 0) > 0
+  ),
+  "Ground ecosystem lost one or more authored habitat patches"
 );
 
 const actualMushroomColonyIds = new Set(
@@ -328,6 +435,13 @@ console.log(
       grassPatches: [...expectedGrassPatchIds],
       grassClumps: metrics.groundLife.grassClumpCount,
       grassTiers: metrics.groundLife.grassTierCounts,
+      ecosystemVersion: metrics.groundLife.groundEcosystem.version,
+      ecosystemSpecies: metrics.groundLife.groundEcosystem.speciesCounts,
+      ecosystemStrata:
+        metrics.groundLife.groundEcosystem.turfFloor.stratumCounts,
+      ecosystemFamilies: metrics.groundLife.groundEcosystem.familyCounts,
+      authoredGroundPopulations: authoredGrassCount,
+      instancedGroundPopulations: instancedGrassCount,
       trail: metrics.groundLife.trail,
       mushroomColonies: [...expectedMushroomColonyIds],
       mushroomParts: mushroomNodes.length + instancedMushroomCount,

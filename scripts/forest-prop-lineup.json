@@ -192,28 +192,28 @@
   "framingCandidates": [
     {
       "id": "upstage-west-canopy-frame",
-      "assetId": "canopy-beech",
+      "assetId": "mature-broad-canopy",
       "position": [-11.5, 9.5],
       "scale": 1.06,
       "rotationDegrees": 18
     },
     {
       "id": "upstage-east-middle-frame",
-      "assetId": "forked-elm",
+      "assetId": "gnarled-spreader",
       "position": [13.0, 10.8],
       "scale": 1.14,
       "rotationDegrees": -31
     },
     {
       "id": "upstage-west-depth-frame",
-      "assetId": "canopy-beech",
+      "assetId": "mature-fir",
       "position": [-21.0, 20.0],
       "scale": 0.98,
       "rotationDegrees": 42
     },
     {
       "id": "upstage-east-depth-frame",
-      "assetId": "pale-willow",
+      "assetId": "riparian-spreader",
       "position": [19.0, 21.0],
       "scale": 1.02,
       "rotationDegrees": -12

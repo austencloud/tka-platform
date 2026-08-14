@@ -797,6 +797,26 @@ def build_tree_placements():
                             float(asset["scaleRange"][0]),
                             float(asset["scaleRange"][1]),
                         ),
+                        "aspectVariation": rng.uniform(
+                            float(asset.get("aspectRange", [1.0, 1.0])[0]),
+                            float(asset.get("aspectRange", [1.0, 1.0])[1]),
+                        ),
+                        "heightVariation": rng.uniform(
+                            float(asset.get("heightVariationRange", [1.0, 1.0])[0]),
+                            float(asset.get("heightVariationRange", [1.0, 1.0])[1]),
+                        ),
+                        "leanX": math.radians(
+                            rng.uniform(
+                                -float(asset.get("leanDegrees", 0.0)),
+                                float(asset.get("leanDegrees", 0.0)),
+                            )
+                        ),
+                        "leanY": math.radians(
+                            rng.uniform(
+                                -float(asset.get("leanDegrees", 0.0)),
+                                float(asset.get("leanDegrees", 0.0)),
+                            )
+                        ),
                     }
                 )
                 break
@@ -1361,20 +1381,25 @@ def create_tree_composition(terrain):
             ]
             normalized_scale = float(asset["targetHeightMetres"]) / source_height
             scale = normalized_scale * placement["scaleVariation"]
+            aspect = placement["aspectVariation"]
+            height_scale = scale * placement["heightVariation"]
             tree = prototype.copy()
             tree.data = prototype.data
             bpy.context.collection.objects.link(tree)
             tree.name = f"ForestTree_{asset_id}_{index:03d}"
-            tree.scale = (scale, scale, scale)
+            tree.scale = (scale * aspect, scale / aspect, height_scale)
             # Imported glTF nodes use quaternion rotation mode. Switch the
             # linked instance before assigning its authored random yaw or the
             # Euler value is stored but omitted from the exported transform.
             tree.rotation_mode = "XYZ"
+            tree.rotation_euler[0] = placement["leanX"]
+            tree.rotation_euler[1] = placement["leanY"]
             tree.rotation_euler[2] = placement["rotation"]
             tree.location = (
                 placement["x"],
                 placement["y"],
-                terrain_height(placement["x"], placement["y"]) - source_min_z * scale,
+                terrain_height(placement["x"], placement["y"])
+                - source_min_z * height_scale,
             )
             tree["tka_role"] = "tree"
             tree["tka_phase"] = "forest-composition"
@@ -1396,6 +1421,21 @@ def create_tree_composition(terrain):
     terrain["tka_tree_count"] = len(placements)
     terrain["tka_tree_asset_ids"] = "|".join(TREE_ASSETS.keys())
     terrain["tka_tree_asset_counts"] = [counts[asset_id] for asset_id in TREE_ASSETS]
+    variant_order = [
+        variant.get("id", asset["id"])
+        for asset in TREE_ASSETS.values()
+        for variant in tree_source_variants(asset)
+    ]
+    variant_counts = {
+        variant_id: sum(
+            1 for placement in placements if placement.get("variantId") == variant_id
+        )
+        for variant_id in variant_order
+    }
+    terrain["tka_tree_variant_ids"] = "|".join(variant_order)
+    terrain["tka_tree_variant_counts"] = [
+        variant_counts[variant_id] for variant_id in variant_order
+    ]
     terrain["tka_tree_cluster_names"] = "|".join(
         cluster["id"] for cluster in TREE_LAYOUT["clusters"]
     )
@@ -1444,11 +1484,16 @@ def verify_tree_composition(placements, counts):
     if any(asset["family"] != "Poly Haven Natural" for asset in TREE_ASSETS.values()):
         raise RuntimeError("Forest tree composition still contains a non-natural tree family")
     variant_counts = {}
+    cluster_asset_counts = {}
     for placement in placements:
         variant_id = placement.get("variantId")
         if not variant_id:
             raise RuntimeError(f"Tree placement lost its source variant: {placement}")
         variant_counts[variant_id] = variant_counts.get(variant_id, 0) + 1
+        cluster_counts = cluster_asset_counts.setdefault(placement["clusterId"], {})
+        cluster_counts[placement["assetId"]] = (
+            cluster_counts.get(placement["assetId"], 0) + 1
+        )
     expected_variant_count = sum(
         len(tree_source_variants(asset)) for asset in TREE_ASSETS.values()
     )
@@ -1456,6 +1501,13 @@ def verify_tree_composition(placements, counts):
         raise RuntimeError(
             f"Expected {expected_variant_count} natural tree variants, used {len(variant_counts)}"
         )
+    largest_variant_share = max(variant_counts.values()) / len(placements)
+    if largest_variant_share > 0.2:
+        raise RuntimeError(
+            f"One Forest tree source owns {largest_variant_share:.1%} of the woodland"
+        )
+    if any(len(counts_by_asset) < 5 for counts_by_asset in cluster_asset_counts.values()):
+        raise RuntimeError("A Forest habitat cluster lost its mixed-age tree structure")
 
     metrics_path = os.path.join(QA_DIR, "forest_environment_tree_metrics.json")
     os.makedirs(QA_DIR, exist_ok=True)
@@ -1469,6 +1521,8 @@ def verify_tree_composition(placements, counts):
                 "assetCounts": counts,
                 "variantCounts": variant_counts,
                 "sourceVariantCount": len(variant_counts),
+                "largestSourceVariantShare": largest_variant_share,
+                "clusterAssetCounts": cluster_asset_counts,
                 "roleCounts": role_counts,
                 "minimumTrunkSpacingMetres": minimum_spacing,
                 "minimumPathShoulderClearanceMetres": minimum_path_clearance,
@@ -1758,7 +1812,10 @@ write_near_frame_metrics(
     camp_shelf_metrics,
 )
 near_frame_objects = near_frame_static_objects + near_frame_ground_life + [camp_shelf]
-setup_qa_render(near_frame_objects)
+if os.environ.get("TKA_FOREST_SKIP_QA") == "1":
+    bpy.ops.wm.save_as_mainfile(filepath=BLEND_PATH)
+else:
+    setup_qa_render(near_frame_objects)
 
 print("\nMoonlit Firefly Forest terrain, trees, ground ecology, and close frame authored")
 print(f"Blend: {BLEND_PATH}")

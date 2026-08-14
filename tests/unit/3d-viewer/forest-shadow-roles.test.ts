@@ -27,7 +27,7 @@ describe("Forest shadow roles", () => {
     });
   });
 
-  it("lets only the authored near-frame layer shape the clearing", () => {
+  it("keeps tree casting off while the foliage material owns internal depth", () => {
     expect(resolveForestNearFrameShadowRole("near-frame-tree", true)).toEqual({
       cast: false,
       receive: true,
