@@ -85,7 +85,9 @@ describe("connect state reader", () => {
   });
 
   it("resolves on complete", () => {
-    expect(readMetaConnectState({ status: "complete" }).status).toBe("complete");
+    expect(readMetaConnectState({ status: "complete" }).status).toBe(
+      "complete"
+    );
   });
 
   it("carries the failure code through, and falls back when it is missing", () => {
@@ -119,9 +121,9 @@ describe("callable error codes", () => {
   });
 
   it("passes a client error's own code straight through", () => {
-    expect(metaErrorCode(new MetaPublishClientError("meta/popup-blocked"))).toBe(
-      "meta/popup-blocked"
-    );
+    expect(
+      metaErrorCode(new MetaPublishClientError("meta/popup-blocked"))
+    ).toBe("meta/popup-blocked");
   });
 
   it("falls back for a plain error, a string and null", () => {
@@ -133,6 +135,12 @@ describe("callable error codes", () => {
   it("gives every code a message written for a person, not a log", () => {
     expect(metaErrorMessage("meta/popup-blocked")).toContain("popups");
     expect(metaErrorMessage("meta/no-pages")).toContain("Pages");
+    expect(metaErrorMessage("meta/account-type-required")).toContain(
+      "creator or business"
+    );
+    expect(metaErrorMessage("meta/app-configuration-mismatch")).toContain(
+      "Trying again will not fix this"
+    );
     expect(metaErrorMessage("meta/whatever-new")).toBe(
       "Meta couldn't complete that. Try again."
     );

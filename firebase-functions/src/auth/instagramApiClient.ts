@@ -43,10 +43,16 @@ export async function exchangeInstagramAuthorizationCode(input: {
     const professionalAccountRequired = /professional|business|creator/i.test(
       responseText
     );
+    const appConfigurationMismatch =
+      /redirect_uri|verification code|client secret|client_id/i.test(
+        responseText
+      );
     throw new InstagramAuthPolicyError(
       professionalAccountRequired
         ? "instagram/account-type-required"
-        : "instagram/provider-error"
+        : appConfigurationMismatch
+          ? "instagram/app-configuration-mismatch"
+          : "instagram/provider-error"
     );
   }
 

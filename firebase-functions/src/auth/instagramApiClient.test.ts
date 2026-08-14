@@ -42,4 +42,29 @@ describe("Instagram authorization-code exchange", () => {
     );
     expect(body.get("code")).toBe("fresh-code");
   });
+
+  it("classifies Meta's misleading redirect response as app configuration", async () => {
+    jest.spyOn(global, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error_type: "OAuthException",
+          code: 400,
+          error_message:
+            "Error validating verification code. Please make sure your redirect_uri is identical.",
+        }),
+        { status: 400 }
+      )
+    );
+
+    await expect(
+      exchangeInstagramAuthorizationCode({
+        code: "fresh-code",
+        appId: "app-id",
+        appSecret: "wrong-app-secret",
+        redirectUrl: "https://tkaflowarts.com/api/share/meta/callback",
+      })
+    ).rejects.toMatchObject({
+      code: "instagram/app-configuration-mismatch",
+    });
+  });
 });

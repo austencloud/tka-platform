@@ -71,6 +71,10 @@ export function metaErrorMessage(code: string): string {
       return "Your browser blocked the Meta window. Allow popups and try again.";
     case "meta/account-required":
       return "Sign in with a full account to post directly.";
+    case "meta/account-type-required":
+      return "Direct posting needs an Instagram creator or business account. You can still finish the post in Instagram.";
+    case "meta/app-configuration-mismatch":
+      return "Instagram's connection settings need an app update. Trying again will not fix this.";
     case "meta/session-required":
       return "Sign-in is still loading. Try again in a moment.";
     case "meta/no-pages":
@@ -264,7 +268,9 @@ function validateStartResponse(response: StartMetaConnectResponse): void {
   }
 }
 
-export function readMetaConnectState(data: DocumentData | undefined):
+export function readMetaConnectState(
+  data: DocumentData | undefined
+):
   | { status: "waiting" }
   | { status: "complete" }
   | { status: "error"; errorCode: string } {
@@ -315,9 +321,7 @@ async function waitForConnectState(
         );
         if (outcome.status === "complete") finish(resolve);
         if (outcome.status === "error") {
-          finish(() =>
-            reject(new MetaPublishClientError(outcome.errorCode))
-          );
+          finish(() => reject(new MetaPublishClientError(outcome.errorCode)));
         }
       },
       () => finish(() => reject(new MetaPublishClientError("meta/network")))

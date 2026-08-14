@@ -16,6 +16,7 @@ import * as functions from "firebase-functions";
 import { defineSecret } from "firebase-functions/params";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import { exchangeInstagramAuthorizationCode } from "../auth/instagramApiClient";
+import { InstagramAuthPolicyError } from "../auth/instagramAuthPolicy";
 import { isAllowedInstagramReturnOrigin } from "../auth/instagramAuthPolicy";
 import { sendProviderCallbackPage } from "../auth/providerCallbackPage";
 import {
@@ -131,8 +132,17 @@ function stringQueryValue(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function publicFailureCode(error: unknown): MetaConnectFailureCode {
-  return error instanceof MetaConnectError ? error.code : "meta/provider-error";
+export function metaConnectFailureCode(error: unknown): MetaConnectFailureCode {
+  if (error instanceof MetaConnectError) return error.code;
+  if (error instanceof InstagramAuthPolicyError) {
+    if (error.code === "instagram/account-type-required") {
+      return "meta/account-type-required";
+    }
+    if (error.code === "instagram/app-configuration-mismatch") {
+      return "meta/app-configuration-mismatch";
+    }
+  }
+  return "meta/provider-error";
 }
 
 /**
@@ -333,7 +343,7 @@ export const metaConnectCallback = onRequest(
         message: "Return to TKA — you can post from the share sheet now.",
       });
     } catch (error) {
-      const code = publicFailureCode(error);
+      const code = metaConnectFailureCode(error);
       if (claimed) {
         await markMetaConnectError(claimed.ref, code).catch((writeError) => {
           functions.logger.error("Could not record Meta connect failure", {

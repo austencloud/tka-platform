@@ -40,4 +40,10 @@ describe("Instagram callback page", () => {
       "Instagram could not complete sign-in."
     );
   });
+
+  it("stops people from retrying an app configuration failure", () => {
+    expect(
+      instagramFailureMessage("instagram/app-configuration-mismatch")
+    ).toContain("Trying again will not fix this");
+  });
 });

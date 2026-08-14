@@ -20,6 +20,8 @@ const LIFETIME_MS = 10 * 60 * 1000;
 export type MetaConnectStatus = "pending" | "processing" | "complete" | "error";
 
 export type MetaConnectFailureCode =
+  | "meta/account-type-required"
+  | "meta/app-configuration-mismatch"
   | "meta/cancelled"
   | "meta/state-invalid"
   | "meta/state-expired"
@@ -148,8 +150,14 @@ export async function getMetaConnectState(state: string): Promise<{
   };
 }
 
-export function metaConnectFailureMessage(code: MetaConnectFailureCode): string {
+export function metaConnectFailureMessage(
+  code: MetaConnectFailureCode
+): string {
   switch (code) {
+    case "meta/account-type-required":
+      return "Direct posting needs an Instagram creator or business account.";
+    case "meta/app-configuration-mismatch":
+      return "Instagram's connection settings need an app update. Trying again will not fix this.";
     case "meta/cancelled":
       return "Authorization was cancelled.";
     case "meta/no-pages":

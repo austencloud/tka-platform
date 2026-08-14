@@ -12,6 +12,8 @@ export function instagramFailureMessage(
       return "That Instagram account is connected to another TKA account.";
     case "instagram/account-type-required":
       return "Instagram login requires a creator or business account.";
+    case "instagram/app-configuration-mismatch":
+      return "Instagram's connection settings need an app update. Trying again will not fix this.";
     case "instagram/reauth-mismatch":
       return "That is not the Instagram account connected to this TKA account.";
     case "instagram/state-expired":

@@ -4,6 +4,7 @@ export type InstagramAuthIntent = "signin" | "link" | "reauth";
 
 export type InstagramAuthFailureCode =
   | "instagram/account-type-required"
+  | "instagram/app-configuration-mismatch"
   | "instagram/already-linked"
   | "instagram/cancelled"
   | "instagram/invalid-response"
