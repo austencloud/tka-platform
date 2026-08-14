@@ -2,15 +2,31 @@
   import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
 
   interface Props {
     word: string;
     posterUrl?: string | null;
     loadSequence: () => Promise<SequenceData | null>;
+    playbackActive?: boolean;
+    playbackMounted?: boolean;
+    onRequestPlayback?: () => void;
   }
 
-  let { word, posterUrl = null, loadSequence }: Props = $props();
+  let {
+    word,
+    posterUrl = null,
+    loadSequence,
+    playbackActive = true,
+    playbackMounted = playbackActive,
+    onRequestPlayback,
+  }: Props = $props();
+
+  const previewAnimationScope = createAnimationScope({
+    persistence: "ephemeral",
+  });
 
   type ResolutionState = "idle" | "loading" | "ready" | "unavailable";
 
@@ -21,12 +37,24 @@
   let visible = $state(false);
   let posterFailed = $state(false);
   let playerLoadState = $state<"idle" | "loading" | "loaded" | "error">("idle");
+  let playerReady = $state(false);
+  let playerRuntimeError = $state(false);
+  let playbackStep = $state(1);
   let resolutionPromise: Promise<SequenceData | null> | null = null;
 
-  const playerActive = $derived(playerRequested && sequence !== null);
+  const playerMounted = $derived(
+    playbackMounted && playerRequested && sequence !== null
+  );
+  const showCardLayer = $derived(
+    playerLoadState !== "error" &&
+      !playerRuntimeError &&
+      (!playerMounted || !playerReady)
+  );
   const loadingRequestedPlayer = $derived(
     playerRequested &&
-      (resolutionState === "loading" || playerLoadState === "loading")
+      (resolutionState === "loading" ||
+        playerLoadState === "loading" ||
+        (playerMounted && !playerReady))
   );
 
   function beginSequenceResolution(
@@ -97,6 +125,7 @@
 
   function requestPlayback(): void {
     playerRequested = true;
+    onRequestPlayback?.();
     void beginSequenceResolution();
   }
 
@@ -104,99 +133,156 @@
     playerRequested = true;
     void beginSequenceResolution(true);
   }
+
+  $effect(() => {
+    if (playerMounted) return;
+    playerReady = false;
+    playerRuntimeError = false;
+    playbackStep = 1;
+  });
 </script>
 
-{#snippet previewPoster()}
-  <div class="poster" class:with-image={posterUrl && !posterFailed}>
-    {#if posterUrl && !posterFailed}
-      <img
-        src={posterUrl}
-        alt=""
-        loading="lazy"
-        onerror={() => (posterFailed = true)}
-      />
-    {:else}
-      <div class="poster-glyph" aria-hidden="true">
-        {#if word && word !== "Sequence"}
-          <TKAWordGlyph {word} height={30} darkMode />
-        {:else}
-          <i class="fa-solid fa-arrows-rotate"></i>
-        {/if}
+<div
+  class="sequence-preview"
+  data-preview-state={showCardLayer ? "card" : "live"}
+  data-playback-active={playbackActive}
+  data-player-mounted={playerMounted}
+  data-carousel-step={playbackStep}
+  use:activatePreviewWhenNear
+  use:trackPreviewVisibility
+  role="group"
+  aria-label="{word} Choreo Card and animation preview"
+>
+  <div
+    class="live-presentation"
+    aria-hidden={showCardLayer}
+    inert={showCardLayer}
+  >
+    <div class="player-zone">
+      <div class="live-player">
+        <LazyMount
+          loader={() =>
+            import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
+          active={playerMounted}
+          keepAlive={false}
+          prefetch={nearViewport && sequence !== null}
+          debugName="inbox sequence preview"
+          onStatusChange={(status) => (playerLoadState = status)}
+          props={{
+            sequence,
+            autoPlay: true,
+            showControls: false,
+            chrome: "minimal",
+            fill: true,
+            interactive: true,
+            hoverHint: "none",
+            cornerToggle: true,
+            playbackAllowed: playbackActive && visible,
+            resumeWhenPlaybackAllowed: true,
+            externalBpm: 60,
+            disableContextMenu: true,
+            hideStepNumbers: true,
+            beatIndicators: false,
+            onStepChange: (step: number) => (playbackStep = step),
+            onReady: () => {
+              playerReady = true;
+              playerRuntimeError = false;
+            },
+            onLoadError: () => {
+              playerRuntimeError = true;
+            },
+            visibilityManagerOverride: previewAnimationScope.visibility,
+            effectsConfigState: previewAnimationScope.effects,
+            trailSettingsOverride: previewAnimationScope.settings.trail,
+          }}
+        >
+          {#snippet error(_caught, retry)}
+            <div class="preview-error" role="alert">
+              <span>The player could not load.</span>
+              <button type="button" onclick={retry}>Try again</button>
+            </div>
+          {/snippet}
+        </LazyMount>
       </div>
-    {/if}
+    </div>
 
-    <div class="poster-scrim"></div>
+    <div class="strip-zone">
+      <LazyMount
+        loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+        active={playerMounted}
+        keepAlive={false}
+        prefetch={nearViewport && sequence !== null}
+        debugName="inbox sequence step carousel"
+        props={{
+          sequence,
+          currentStep: playbackStep,
+          bpm: 60,
+          density: "compact",
+          fillHeight: true,
+          anchor: "center",
+          orientation: "horizontal",
+          loop: false,
+          stepPulse: false,
+        }}
+      />
+    </div>
+  </div>
 
-    {#if resolutionState === "unavailable"}
+  <div
+    class="card-layer"
+    class:visible={showCardLayer}
+    aria-hidden={!showCardLayer}
+  >
+    <div class="card-art">
+      {#if sequence}
+        <PropAwareThumbnail {sequence} eager />
+      {:else if posterUrl && !posterFailed}
+        <img
+          class="legacy-poster"
+          src={posterUrl}
+          alt=""
+          loading="lazy"
+          onerror={() => (posterFailed = true)}
+        />
+      {:else}
+        <div class="poster-glyph" aria-hidden="true">
+          {#if word && word !== "Sequence"}
+            <TKAWordGlyph {word} height={30} darkMode />
+          {:else}
+            <i class="fa-solid fa-arrows-rotate"></i>
+          {/if}
+        </div>
+      {/if}
+    </div>
+
+    {#if showCardLayer && resolutionState === "unavailable"}
       <div class="preview-error" role="alert">
         <span>Preview unavailable</span>
         <button type="button" onclick={retrySequence}>Try again</button>
       </div>
-    {:else}
+    {:else if showCardLayer}
       <button
         type="button"
         class="play-preview"
         onclick={requestPlayback}
         disabled={loadingRequestedPlayer}
+        aria-busy={loadingRequestedPlayer || undefined}
         aria-label="Play {word} preview"
       >
         {#if loadingRequestedPlayer}
           <span class="spinner" aria-hidden="true"></span>
-          <span>Loading</span>
         {:else}
-          <span class="play-disc" aria-hidden="true">
-            <i class="fa-solid fa-play"></i>
-          </span>
-          <span>Play preview</span>
+          <i class="fa-solid fa-play" aria-hidden="true"></i>
         {/if}
       </button>
     {/if}
-  </div>
-{/snippet}
-
-<div
-  class="sequence-preview"
-  data-preview-state={playerActive ? "live" : resolutionState}
-  use:activatePreviewWhenNear
-  use:trackPreviewVisibility
->
-  <div class="live-player">
-    <LazyMount
-      loader={() =>
-        import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
-      active={playerActive}
-      prefetch={nearViewport && sequence !== null}
-      placeholder={previewPoster}
-      debugName="inbox sequence preview"
-      onStatusChange={(status) => (playerLoadState = status)}
-      props={{
-        sequence,
-        autoPlay: true,
-        showControls: false,
-        chrome: "minimal",
-        fill: true,
-        interactive: true,
-        hoverHint: "none",
-        cornerToggle: true,
-        playbackAllowed: visible,
-        externalBpm: 60,
-        disableContextMenu: true,
-        hideStepNumbers: true,
-        beatIndicators: false,
-      }}
-    >
-      {#snippet error(_caught, retry)}
-        <div class="preview-error" role="alert">
-          <span>The player could not load.</span>
-          <button type="button" onclick={retry}>Try again</button>
-        </div>
-      {/snippet}
-    </LazyMount>
   </div>
 </div>
 
 <style>
   .sequence-preview {
+    --sequence-preview-stage-bg: #05070a;
+
     container-type: inline-size;
     position: relative;
     width: 100%;
@@ -205,33 +291,85 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 10px;
-    background: var(--theme-shadow, #05070a);
+    background: var(--sequence-preview-stage-bg);
     isolation: isolate;
   }
 
-  .poster,
-  .live-player,
+  .live-presentation,
   .preview-error {
     position: absolute;
     inset: 0;
   }
 
-  .poster {
+  .live-presentation {
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: var(--sequence-preview-stage-bg);
+  }
+
+  .player-zone {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .live-player {
+    position: absolute;
+    inset: 0;
+  }
+
+  .strip-zone {
+    flex: 0 0 clamp(3.75rem, 22%, 6.5rem);
+    min-width: 0;
+    min-height: 0;
+    padding: 0.25rem;
+    overflow: hidden;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .card-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
     display: grid;
     place-items: center;
     overflow: hidden;
-    background:
-      radial-gradient(
-        circle at 50% 42%,
-        color-mix(in srgb, var(--theme-accent, #22c55e) 20%, transparent),
-        transparent 48%
-      ),
-      var(--theme-shadow, #05070a);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    background: var(--sequence-preview-stage-bg);
+    transition:
+      opacity var(--duration-normal, 180ms) ease,
+      visibility 0s linear var(--duration-normal, 180ms);
   }
 
-  .poster img {
+  .card-layer.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  .card-art {
     position: absolute;
     inset: 0;
+    container-type: size;
+    container-name: image-container choreo-card;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+
+  .card-art > :global(.prop-thumbnail) {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .legacy-poster {
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -244,44 +382,32 @@
     place-items: center;
     color: var(--theme-text, #ffffff);
     opacity: 0.76;
-    transform: translateY(-1rem);
   }
 
   .poster-glyph i {
     font-size: clamp(2rem, 18cqw, 3.5rem);
   }
 
-  .poster-scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0.02) 35%,
-      rgba(0, 0, 0, 0.68) 100%
-    );
-    pointer-events: none;
-  }
-
   .play-preview {
     position: absolute;
     left: 50%;
-    bottom: clamp(0.75rem, 7cqw, 1.25rem);
-    display: inline-flex;
+    top: 50%;
+    display: grid;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    width: clamp(4rem, 24cqw, 5.5rem);
+    min-width: var(--touch-target-min, 44px);
+    aspect-ratio: 1;
     min-height: var(--touch-target-min, 44px);
-    padding: 0.5rem 0.875rem;
+    padding: 0;
     border: 1px solid rgba(255, 255, 255, 0.24);
     border-radius: 999px;
     color: #ffffff;
     background: rgba(7, 10, 14, 0.9);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.34);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
-    white-space: nowrap;
+    font-size: clamp(1.35rem, 8cqw, 2rem);
     cursor: pointer;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     transition:
       background var(--duration-fast, 120ms) ease,
       border-color var(--duration-fast, 120ms) ease,
@@ -291,7 +417,7 @@
   .play-preview:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--theme-accent, #22c55e) 72%, white);
     background: rgba(12, 17, 23, 0.96);
-    transform: translateX(-50%) translateY(-1px);
+    transform: translate(-50%, calc(-50% - 2px)) scale(1.03);
   }
 
   .play-preview:focus-visible,
@@ -305,25 +431,14 @@
     opacity: 0.78;
   }
 
-  .play-disc {
-    display: grid;
-    place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 50%;
-    color: #07100a;
-    background: var(--theme-accent, #22c55e);
-  }
-
-  .play-disc i {
-    padding-left: 0.1rem;
-    font-size: 0.75rem;
+  .play-preview i {
+    padding-left: 0.16em;
   }
 
   .live-player {
     min-width: 0;
     min-height: 0;
-    background: var(--theme-shadow, #05070a);
+    background: var(--sequence-preview-stage-bg);
   }
 
   .preview-error {
@@ -335,7 +450,7 @@
     gap: 0.75rem;
     padding: 1rem;
     color: var(--theme-text, #ffffff);
-    background: var(--theme-shadow, #05070a);
+    background: var(--sequence-preview-stage-bg);
     font-size: var(--font-size-min, 14px);
     text-align: center;
   }
@@ -373,6 +488,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .card-layer {
+      transition: none;
+    }
+
     .play-preview {
       transition: none;
     }

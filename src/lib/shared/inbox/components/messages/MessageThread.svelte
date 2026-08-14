@@ -24,6 +24,8 @@
   import EmptyMessages from "../empty-states/EmptyMessages.svelte";
   import TypingIndicator from "./TypingIndicator.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { messageHasSequencePreview } from "../../domain/message-link-parts";
+  import { createSequencePreviewCoordinator } from "../../state/sequence-preview-coordinator.svelte";
 
   interface Props {
     conversation: Conversation;
@@ -88,6 +90,12 @@
   const contextTarget = $derived(
     contextTargetId ? messagesById.get(contextTargetId) : undefined
   );
+  const sequencePreviewCoordinator = createSequencePreviewCoordinator({
+    isMessageAvailable: (messageId) => {
+      const message = messagesById.get(messageId);
+      return Boolean(message && messageHasSequencePreview(message));
+    },
+  });
 
   $effect(() => {
     const conversationId = conversation?.id ?? "";
@@ -98,6 +106,7 @@
     contextTargetId = null;
     highlightedMessageId = null;
     navigationAnnouncement = "";
+    sequencePreviewCoordinator.reset();
     previousLatestMessageId = null;
   });
 
@@ -347,6 +356,14 @@
                 : undefined}
               onNavigateToMessage={navigateToMessage}
               isHighlighted={message.id === highlightedMessageId}
+              sequencePlaybackActive={sequencePreviewCoordinator.isPlaybackActive(
+                message.id
+              )}
+              sequencePlaybackMounted={sequencePreviewCoordinator.isPlayerMounted(
+                message.id
+              )}
+              onSequencePlaybackRequest={() =>
+                sequencePreviewCoordinator.requestPlayback(message.id)}
             />
           {/each}
         {/each}

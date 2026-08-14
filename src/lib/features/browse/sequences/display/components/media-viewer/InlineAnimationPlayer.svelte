@@ -127,8 +127,10 @@
     hoverHint = "badge",
     cornerToggle = false,
     playbackAllowed = true,
+    resumeWhenPlaybackAllowed = false,
     onTogglePlaybackRef = undefined,
     onReady = undefined,
+    onLoadError = undefined,
     visibilityManagerOverride = undefined,
   }: {
     sequence: SequenceData;
@@ -264,12 +266,19 @@
     /** Pause this player while its host is not visible. Returning to view does
      *  not resume motion unless autoplay has not happened yet. */
     playbackAllowed?: boolean;
+    /** Resume a player that this host permission gate paused. User-paused
+     *  playback stays paused. Message previews use this while a hover briefly
+     *  lends the single live slot to another card. */
+    resumeWhenPlaybackAllowed?: boolean;
     /** Hands the internal play/pause toggle to the host (external keyboard
      *  control, demo acts). Same contract as AnimationPlayer's prop of the
      *  same name. */
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
     /** Fires after the sequence and its playback services are ready. */
     onReady?: () => void;
+    /** Reports an engine/data load failure to a host that keeps a poster above
+     *  the player until readiness is confirmed. */
+    onLoadError?: (message: string) => void;
     /** Per-instance visibility manager (ephemeral scope). Routes the
      *  orchestrator's effort/path-shape reads AND setSpeed's write-back away
      *  from the global singleton, so a public embed neither inherits the
@@ -317,9 +326,24 @@
     return () => clearInterval(interval);
   });
 
+  let pausedByPlaybackGate = false;
+
   $effect(() => {
-    if (playbackAllowed || !isPlaying || !playbackController) return;
+    if (!servicesReady || !playbackController) return;
     const controller = playbackController;
+
+    if (!playbackAllowed) {
+      if (!isPlaying) return;
+      pausedByPlaybackGate = resumeWhenPlaybackAllowed;
+      untrack(() => controller.togglePlayback());
+      return;
+    }
+
+    if (!resumeWhenPlaybackAllowed || !pausedByPlaybackGate || isPlaying) {
+      return;
+    }
+
+    pausedByPlaybackGate = false;
     untrack(() => controller.togglePlayback());
   });
 
@@ -401,7 +425,11 @@
       if (visibilityManagerOverride) {
         orchestrator.setVisibilityManager(visibilityManagerOverride);
       }
-      playbackController = new AnimationPlaybackController(orchestrator, loop);
+      playbackController = new AnimationPlaybackController(orchestrator, loop, {
+        // Inline players can sit beside Create. Their local clock must never
+        // drive the workspace's beat highlight for an unrelated sequence.
+        syncSharedWorkspaceState: false,
+      });
       playbackController.onLoopComplete(() => onLoopComplete?.());
       playbackController.onSequenceBoundary(() => {
         const handoff = onSequenceBoundary?.() ?? null;
@@ -582,6 +610,7 @@
     } catch (err) {
       console.error("Failed to load animation:", err);
       error = err instanceof Error ? err.message : "Failed to load animation";
+      onLoadError?.(error);
     } finally {
       loading = false;
     }

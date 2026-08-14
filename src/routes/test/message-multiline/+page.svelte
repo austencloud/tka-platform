@@ -9,6 +9,8 @@
    */
   import MessageBubble from "$lib/shared/inbox/components/messages/MessageBubble.svelte";
   import type { Message } from "$lib/shared/messaging/domain/models/message-models";
+  import { messageHasSequencePreview } from "$lib/shared/inbox/domain/message-link-parts";
+  import { createSequencePreviewCoordinator } from "$lib/shared/inbox/state/sequence-preview-coordinator.svelte";
 
   const SELF = "self-user";
   const OTHER = "other-user";
@@ -69,8 +71,23 @@
     }
   );
 
+  const sentSequence = msg("m10", "", {
+    attachments: [
+      {
+        type: "sequence",
+        url: "/q/YR0L",
+        name: "YR0L",
+        metadata: {
+          sequenceShortCode: "YR0L",
+          sequenceWord: "YR0L",
+          sequenceStepCount: 8,
+        },
+      },
+    ],
+  });
+
   const caption = msg(
-    "m10",
+    "m11",
     "Caption line one\nhttps://example.com/reference",
     {
       attachments: [
@@ -110,11 +127,24 @@
       own: false,
     },
     {
-      label: "10. Attachment caption links and preserves breaks",
+      label: "10. Official send uses the same sequence-card size",
+      m: sentSequence,
+      own: true,
+    },
+    {
+      label: "11. Attachment caption links and preserves breaks",
       m: caption,
       own: true,
     },
   ];
+
+  const messagesById = new Map(cases.map(({ m }) => [m.id, m] as const));
+  const sequencePreviewCoordinator = createSequencePreviewCoordinator({
+    isMessageAvailable: (messageId) => {
+      const message = messagesById.get(messageId);
+      return Boolean(message && messageHasSequencePreview(message));
+    },
+  });
 </script>
 
 <div class="harness" class:narrow>
@@ -137,6 +167,14 @@
           senderInfo={c.group
             ? ({ id: OTHER, displayName: "Paul" } as never)
             : undefined}
+          sequencePlaybackActive={sequencePreviewCoordinator.isPlaybackActive(
+            c.m.id
+          )}
+          sequencePlaybackMounted={sequencePreviewCoordinator.isPlayerMounted(
+            c.m.id
+          )}
+          onSequencePlaybackRequest={() =>
+            sequencePreviewCoordinator.requestPlayback(c.m.id)}
         />
       </div>
     </section>

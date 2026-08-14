@@ -1,6 +1,9 @@
 import { find } from "linkifyjs";
 import { extractScanCode } from "$lib/shared/qr/services/extract-scan-code";
-import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
+import type {
+  Message,
+  MessageAttachment,
+} from "$lib/shared/messaging/domain/models/message-models";
 
 export type MessageTextPart =
   | { kind: "text"; text: string }
@@ -143,4 +146,41 @@ export function buildDetectedSequenceAttachment(
         : { sequenceId: link.identifier }),
     },
   };
+}
+
+/**
+ * Matches MessageBubble's attachment precedence so thread autoplay selects a
+ * sequence card that will actually render, including previews detected from a
+ * pasted TKA link.
+ */
+export function messageHasSequencePreview(message: Message): boolean {
+  if (message.isDeleted) return false;
+
+  const attachments = message.attachments ?? [];
+  if (attachments.some((attachment) => attachment.type === "image")) {
+    return false;
+  }
+  if (attachments.some((attachment) => attachment.type === "sequence")) {
+    return true;
+  }
+  if (
+    attachments.some(
+      (attachment) =>
+        attachment.type === "collection" || attachment.type === "feedback"
+    )
+  ) {
+    return false;
+  }
+
+  return findMessageSequenceLink(message.content) !== null;
+}
+
+export function findLatestSequencePreviewMessageId(
+  messages: readonly Message[]
+): string | null {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index];
+    if (message && messageHasSequencePreview(message)) return message.id;
+  }
+  return null;
 }

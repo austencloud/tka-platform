@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDetectedSequenceAttachment,
+  findLatestSequencePreviewMessageId,
   findMessageSequenceLink,
+  messageHasSequencePreview,
   parseMessageText,
 } from "$lib/shared/inbox/domain/message-link-parts";
 
@@ -89,5 +91,38 @@ describe("message link parsing", () => {
         sequenceShortCode: "AB3D",
       },
     });
+  });
+
+  it("selects the newest sequence card that MessageBubble will render", () => {
+    const base = {
+      conversationId: "thread",
+      senderId: "person",
+      senderName: "Person",
+      createdAt: new Date("2026-08-14T12:00:00Z"),
+      readBy: [],
+    };
+    const messages = [
+      {
+        ...base,
+        id: "attached",
+        content: "",
+        attachments: [{ type: "sequence" as const, url: "/q/AB3D" }],
+      },
+      {
+        ...base,
+        id: "image-wins",
+        content: "https://tkaflowarts.com/sequence/YR0L",
+        attachments: [{ type: "image" as const, url: "/image.png" }],
+      },
+      {
+        ...base,
+        id: "linked",
+        content: "Latest: https://tkaflowarts.com/sequence/YR0L",
+      },
+    ];
+
+    expect(messageHasSequencePreview(messages[0]!)).toBe(true);
+    expect(messageHasSequencePreview(messages[1]!)).toBe(false);
+    expect(findLatestSequencePreviewMessageId(messages)).toBe("linked");
   });
 });

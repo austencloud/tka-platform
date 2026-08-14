@@ -10,10 +10,8 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { MessageAttachment } from "$lib/shared/messaging/domain/models/message-models";
-  import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import SequenceMessagePreview from "./SequenceMessagePreview.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
@@ -27,9 +25,18 @@
   interface Props {
     attachment: MessageAttachment;
     isOwn: boolean;
+    playbackActive?: boolean;
+    playbackMounted?: boolean;
+    onRequestPlayback?: () => void;
   }
 
-  let { attachment, isOwn }: Props = $props();
+  let {
+    attachment,
+    isOwn,
+    playbackActive = true,
+    playbackMounted = playbackActive,
+    onRequestPlayback,
+  }: Props = $props();
 
   // We don't pre-check if sequence exists - sequences can be in publicSequences OR user libraries
   // Instead we trust the attachment metadata and handle "not found" at navigation time
@@ -45,19 +52,6 @@
   // Extract sequence metadata
   const sequenceId = $derived(attachment.metadata?.sequenceId);
   const sequenceShortCode = $derived(attachment.metadata?.sequenceShortCode);
-  const attachedRoute = $derived(
-    attachment.url?.startsWith("/q/") ||
-      attachment.url?.startsWith("/sequence/")
-      ? attachment.url
-      : null
-  );
-  const shortCodeRoute = $derived(
-    attachedRoute?.startsWith("/q/")
-      ? attachedRoute
-      : sequenceShortCode && !attachedRoute
-        ? `/q/${encodeURIComponent(sequenceShortCode)}`
-        : null
-  );
   const sequenceWord = $derived(
     simplifyRepeatedWord(
       resolvedPreview?.sequenceWord ||
@@ -65,21 +59,6 @@
         attachment.metadata?.title ||
         "Sequence"
     )
-  );
-  const sequenceGlyphWord = $derived(
-    attachment.metadata?.sequenceWord ||
-      (resolvedPreview?.sequenceCloudWord
-        ? resolvedPreview.sequenceWord
-        : undefined)
-  );
-  const sequenceName = $derived(
-    resolvedPreview?.sequenceName || attachment.metadata?.sequenceName
-      ? simplifyRepeatedWord(
-          resolvedPreview?.sequenceName ||
-            attachment.metadata?.sequenceName ||
-            ""
-        )
-      : undefined
   );
   // Only durable URLs become posters. Guessing storage filenames generated a
   // stream of 404s for valid links such as YR0L; the live player now resolves
@@ -89,12 +68,6 @@
       attachment.metadata?.sequenceThumbnail ||
       attachment.thumbnailUrl ||
       null
-  );
-  const authorName = $derived(
-    resolvedPreview?.sequenceAuthor || attachment.metadata?.sequenceAuthor
-  );
-  const stepCount = $derived(
-    resolvedPreview?.sequenceStepCount || attachment.metadata?.sequenceStepCount
   );
 
   // Initialize haptic service
@@ -158,23 +131,6 @@
     return sequence ? buildSequenceSharePayload(sequence) : null;
   }
 
-  async function resolveSequenceRoute(): Promise<string | null> {
-    if (shortCodeRoute) return shortCodeRoute;
-
-    const legacySequence = decodeLegacySequenceAttachment(attachment);
-    if (legacySequence) {
-      const { code } = await getShortCodeManager().createShortCode(
-        legacySequence,
-        { embedSequenceData: true }
-      );
-      return `/q/${encodeURIComponent(code)}`;
-    }
-
-    if (attachedRoute) return attachedRoute;
-
-    return sequenceId ? `/sequence/${encodeURIComponent(sequenceId)}` : null;
-  }
-
   async function handleClick() {
     if (isDeleted || isChecking) return;
 
@@ -182,14 +138,24 @@
     isChecking = true;
 
     try {
-      const sequenceRoute = await resolveSequenceRoute();
-      if (!sequenceRoute) {
+      const sequence =
+        resolvedPreview?.sequence ?? (await loadPreviewSequence());
+      if (!sequence) {
         isDeleted = true;
         return;
       }
 
+      const [{ hydrateSequence }, { openSequenceViewer }] = await Promise.all([
+        import("$lib/shared/sequence-viewer/services/sequence-data-provider"),
+        import("$lib/shared/sequence-viewer/services/sequence-viewer-navigator"),
+      ]);
+      const viewerSequence = await hydrateSequence(sequence);
+
       inboxState.close();
-      await goto(sequenceRoute);
+      openSequenceViewer(viewerSequence, {
+        returnPath: window.location.pathname,
+        returnLabel: "Messages",
+      });
     } catch (caught) {
       const failure =
         caught instanceof Error ? caught : new Error(String(caught));
@@ -230,36 +196,10 @@
         word={sequenceWord}
         {posterUrl}
         loadSequence={loadPreviewSequence}
+        {playbackActive}
+        {playbackMounted}
+        {onRequestPlayback}
       />
-
-      <div class="card-info">
-        <h4 class="sequence-title">
-          {#if sequenceGlyphWord}
-            <TKAWordGlyph word={sequenceGlyphWord} height={16} darkMode />
-          {:else}
-            {sequenceWord}
-          {/if}
-        </h4>
-
-        {#if sequenceName && sequenceName !== sequenceWord}
-          <p class="sequence-name">{sequenceName}</p>
-        {/if}
-
-        <div class="meta-row">
-          {#if authorName}
-            <span class="author">
-              <i class="fas fa-user" aria-hidden="true"></i>
-              {authorName}
-            </span>
-          {/if}
-          {#if stepCount}
-            <span class="steps">
-              <i class="fas fa-music" aria-hidden="true"></i>
-              {stepCount} steps
-            </span>
-          {/if}
-        </div>
-      </div>
 
       <div class="card-footer">
         <button
@@ -273,7 +213,7 @@
             <span>Opening</span>
           {:else}
             <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-            <span>Open sequence</span>
+            <span>Open in Sequence Viewer</span>
           {/if}
         </button>
       </div>
@@ -293,7 +233,8 @@
     text-align: left;
     width: 100%;
     min-width: 0;
-    max-width: 20rem;
+    max-width: none;
+    box-sizing: border-box;
   }
 
   .sequence-card.own {
@@ -349,12 +290,6 @@
     flex-wrap: wrap;
   }
 
-  .card-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
   .sequence-title {
     margin: 0;
     font-size: var(--font-size-sm);
@@ -369,47 +304,9 @@
     color: white;
   }
 
-  .sequence-name {
-    margin: 0;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    line-height: 1.3;
-  }
-
-  .own .sequence-name {
-    color: rgba(255, 255, 255, 0.8);
-  }
-
-  .meta-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 4px;
-  }
-
-  .author,
-  .steps {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-  }
-
-  .own .author,
-  .own .steps {
-    color: rgba(255, 255, 255, 0.7);
-  }
-
-  .author i,
-  .steps i {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.8;
-  }
-
   .card-footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     padding-top: 8px;
     border-top: 1px solid var(--theme-stroke);
   }
@@ -420,13 +317,14 @@
     justify-content: center;
     gap: 4px;
     min-height: var(--touch-target-min, 44px);
-    padding: 0.5rem 0.875rem;
+    padding: 0.5rem;
     border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 999px;
     color: var(--theme-text, #ffffff);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
+    white-space: nowrap;
     cursor: pointer;
     transition:
       background var(--duration-fast, 120ms) ease,

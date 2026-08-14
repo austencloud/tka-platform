@@ -31,6 +31,7 @@
   import {
     buildDetectedSequenceAttachment,
     findMessageSequenceLink,
+    messageHasSequencePreview,
   } from "../../domain/message-link-parts";
 
   interface Props {
@@ -45,6 +46,9 @@
     replyTarget?: Message;
     onNavigateToMessage?: (messageId: string) => void;
     isHighlighted?: boolean;
+    sequencePlaybackActive?: boolean;
+    sequencePlaybackMounted?: boolean;
+    onSequencePlaybackRequest?: () => void;
   }
 
   let {
@@ -59,6 +63,9 @@
     replyTarget,
     onNavigateToMessage,
     isHighlighted = false,
+    sequencePlaybackActive = true,
+    sequencePlaybackMounted = sequencePlaybackActive,
+    onSequencePlaybackRequest,
   }: Props = $props();
 
   const showSender = $derived(isGroup && !isOwn && senderInfo);
@@ -102,6 +109,7 @@
       detectedSequenceAttachment
     )
   );
+  const hasSequencePreview = $derived(messageHasSequencePreview(message));
   const accessibleMessage = $derived(
     getMessagePreviewText(message.content, message.attachments)
   );
@@ -154,7 +162,13 @@
       <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
   {:else if sequenceAttachment}
-    <SequenceMessageCard attachment={sequenceAttachment} {isOwn} />
+    <SequenceMessageCard
+      attachment={sequenceAttachment}
+      {isOwn}
+      playbackActive={sequencePlaybackActive}
+      playbackMounted={sequencePlaybackMounted}
+      onRequestPlayback={onSequencePlaybackRequest}
+    />
     {#if message.content && !message.content.startsWith("Check out this sequence")}
       <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
@@ -177,7 +191,13 @@
     <RichMessageText content={message.content} {isOwn} />
     {#if detectedSequenceAttachment}
       <div class="detected-sequence-preview">
-        <SequenceMessageCard attachment={detectedSequenceAttachment} {isOwn} />
+        <SequenceMessageCard
+          attachment={detectedSequenceAttachment}
+          {isOwn}
+          playbackActive={sequencePlaybackActive}
+          playbackMounted={sequencePlaybackMounted}
+          onRequestPlayback={onSequencePlaybackRequest}
+        />
       </div>
     {/if}
   {/if}
@@ -243,6 +263,7 @@
         class:has-attachment={hasAttachment}
         class:has-reactions={hasReactions}
         class:has-sender={true}
+        class:has-sequence={hasSequencePreview}
         class:highlighted={isHighlighted}
         data-message-id={message.id}
         role="article"
@@ -265,6 +286,7 @@
       class:is-new={isNew}
       class:has-attachment={hasAttachment}
       class:has-reactions={hasReactions}
+      class:has-sequence={hasSequencePreview}
       class:highlighted={isHighlighted}
       data-message-id={message.id}
       role="article"
@@ -302,6 +324,17 @@
     margin-left: auto;
     align-items: flex-end;
     transform-origin: bottom right;
+  }
+
+  .message-bubble.has-sequence {
+    width: min(32rem, 96%);
+    max-width: min(32rem, 96%);
+  }
+
+  .message-bubble.has-sequence .bubble {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
   }
 
   .message-bubble.is-new {
