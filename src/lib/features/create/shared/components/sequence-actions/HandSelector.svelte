@@ -3,7 +3,7 @@
 
   Hand/color selector shared by Sequence Actions and the mandala viewer.
   Defaults to Left / Both / Right; callers can supply labels for the same
-  blue / purple / red visual states.
+  blue / blue-and-red / red visual states.
 
   Thin domain wrapper around the shared SegmentedControl. Prop tones live in
   that primitive, so every Left/Blue and Right/Red option follows the same
@@ -33,10 +33,10 @@
     (): {
       value: TargetHand;
       label: string;
-      tone: "blue" | "red" | "accent";
+      tone: "blue" | "red" | "both";
     }[] => [
       { value: "blue", label: labels.blue, tone: "blue" },
-      { value: "both", label: labels.both, tone: "accent" },
+      { value: "both", label: labels.both, tone: "both" },
       { value: "red", label: labels.red, tone: "red" },
     ]
   );

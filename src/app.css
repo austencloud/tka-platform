@@ -736,6 +736,29 @@ h6 {
   --dm-motion-blue: #3D44B8;
   --dm-motion-red: #DC2626;
 
+  /* Prop-selection washes. Keeping the host surface visible makes Blue, Red,
+     and Both read as related states instead of three blocks of solid paint. */
+  --dm-motion-both: color-mix(
+    in srgb,
+    var(--dm-motion-blue) 50%,
+    var(--dm-motion-red)
+  );
+  --dm-motion-blue-wash: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dm-motion-blue) 30%, transparent) 0%,
+    color-mix(in srgb, var(--dm-motion-blue) 16%, transparent) 100%
+  );
+  --dm-motion-red-wash: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dm-motion-red) 16%, transparent) 0%,
+    color-mix(in srgb, var(--dm-motion-red) 30%, transparent) 100%
+  );
+  --dm-motion-both-wash: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--dm-motion-blue) 30%, transparent) 0%,
+    color-mix(in srgb, var(--dm-motion-red) 30%, transparent) 100%
+  );
+
   /* Beat number overlay - stroke creates outline for visibility */
   --dm-beat-stroke: white;
 

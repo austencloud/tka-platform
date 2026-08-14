@@ -59,6 +59,12 @@
 
 <style>
   .segmented-group {
+    --hand-motion-blue: var(--dm-motion-blue, #3575e2);
+    --hand-motion-red: var(--dm-motion-red, #ed1c24);
+    --hand-motion-both: var(
+      --dm-motion-both,
+      color-mix(in srgb, var(--hand-motion-blue) 50%, var(--hand-motion-red))
+    );
     display: flex;
     border-radius: 8px;
     overflow: hidden;
@@ -115,15 +121,15 @@
   .segment.blue {
     color: color-mix(
       in srgb,
-      var(--prop-blue, #2e8bf0) 72%,
+      var(--hand-motion-blue) 72%,
       var(--theme-text, #fff)
     );
   }
 
-  .segment.both {
+  .segment.both:not(.active) {
     color: color-mix(
       in srgb,
-      var(--theme-accent, #8b6cff) 68%,
+      var(--hand-motion-both) 72%,
       var(--theme-text, #fff)
     );
   }
@@ -131,29 +137,52 @@
   .segment.red {
     color: color-mix(
       in srgb,
-      var(--prop-red, #ed1c24) 72%,
+      var(--hand-motion-red) 72%,
       var(--theme-text, #fff)
     );
   }
 
   /* Active states per hand color */
   .segment.blue.active {
-    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 30%, transparent);
-    color: color-mix(in srgb, var(--prop-blue, #2e8bf0) 52%, white);
+    background: var(
+      --dm-motion-blue-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--hand-motion-blue) 30%, transparent),
+        color-mix(in srgb, var(--hand-motion-blue) 16%, transparent)
+      )
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--hand-motion-blue) 52%, transparent);
+    color: var(--theme-text, white);
   }
 
   .segment.both.active {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 30%,
-      transparent
+    background: var(
+      --dm-motion-both-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--hand-motion-blue) 30%, transparent),
+        color-mix(in srgb, var(--hand-motion-red) 30%, transparent)
+      )
     );
-    color: color-mix(in srgb, var(--theme-accent, #8b6cff) 52%, white);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--hand-motion-both) 52%, transparent);
+    color: var(--theme-text, white);
   }
 
   .segment.red.active {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 30%, transparent);
-    color: color-mix(in srgb, var(--prop-red, #ed1c24) 52%, white);
+    background: var(
+      --dm-motion-red-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--hand-motion-red) 16%, transparent),
+        color-mix(in srgb, var(--hand-motion-red) 30%, transparent)
+      )
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--hand-motion-red) 52%, transparent);
+    color: var(--theme-text, white);
   }
 
   /* Hover */

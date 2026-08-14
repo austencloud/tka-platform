@@ -121,7 +121,7 @@ describe("SegmentedControl", () => {
     const onchange = vi.fn();
     const options = [
       { value: "blue", label: "Left", tone: "blue" as const },
-      { value: "both", label: "Both", tone: "accent" as const },
+      { value: "both", label: "Both", tone: "both" as const },
       { value: "red", label: "Right", tone: "red" as const },
     ];
     const screen = render(SegmentedControl, {
@@ -137,6 +137,16 @@ describe("SegmentedControl", () => {
     expect(
       document.querySelector<HTMLElement>(".indicator")?.dataset.tone
     ).toBe("blue");
+
+    await screen.rerender({
+      options,
+      value: "both",
+      onchange,
+      color: "accent",
+    });
+    expect(
+      document.querySelector<HTMLElement>(".indicator")?.dataset.tone
+    ).toBe("both");
 
     await screen.rerender({
       options,

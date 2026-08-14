@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
   /**
    * Generic segmented button group shared across app and public surfaces.
-   * Uses --theme-* and --prop-* CSS variables for consistent theming.
+   * Uses shared theme and motion-color variables for consistent theming.
    *
    * The option LIST may change at runtime (the construct picker swaps the turn
    * palette when the level changes: 4 buttons at L2, 8 at L3). Segments are
@@ -29,8 +29,8 @@
     count?: number | null;
     /** Not selectable (e.g. a "coming soon" size). Still rendered, dimmed. */
     disabled?: boolean;
-    /** Semantic option color. Use blue/red when the option means that prop. */
-    tone?: "blue" | "red" | "accent";
+    /** Semantic option color. Use blue/red/both when the option means those props. */
+    tone?: "blue" | "red" | "both" | "accent";
     /** Tab ID and controlled panel ID when semantics="tabs". */
     id?: string;
     controls?: string;
@@ -221,7 +221,17 @@
 
 <style>
   .segmented-control {
-    --segmented-selected-ink: white;
+    --segmented-selected-ink: var(--theme-text, white);
+    --segmented-motion-blue: var(--dm-motion-blue, #3575e2);
+    --segmented-motion-red: var(--dm-motion-red, #ed1c24);
+    --segmented-motion-both: var(
+      --dm-motion-both,
+      color-mix(
+        in srgb,
+        var(--segmented-motion-blue) 50%,
+        var(--segmented-motion-red)
+      )
+    );
     display: flex;
     position: relative;
     /* Fallbacks: this control also renders on marketing-chrome pages (shop
@@ -259,11 +269,42 @@
   }
 
   .indicator[data-tone="blue"] {
-    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 45%, black);
+    background: var(
+      --dm-motion-blue-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--segmented-motion-blue) 30%, transparent),
+        color-mix(in srgb, var(--segmented-motion-blue) 16%, transparent)
+      )
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--segmented-motion-blue) 52%, transparent);
   }
 
   .indicator[data-tone="red"] {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 45%, black);
+    background: var(
+      --dm-motion-red-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--segmented-motion-red) 16%, transparent),
+        color-mix(in srgb, var(--segmented-motion-red) 30%, transparent)
+      )
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--segmented-motion-red) 52%, transparent);
+  }
+
+  .indicator[data-tone="both"] {
+    background: var(
+      --dm-motion-both-wash,
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--segmented-motion-blue) 30%, transparent),
+        color-mix(in srgb, var(--segmented-motion-red) 30%, transparent)
+      )
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--segmented-motion-both) 52%, transparent);
   }
 
   .indicator[data-tone="accent"] {
@@ -364,7 +405,7 @@
   .segment[data-tone="blue"]:not(.selected) {
     color: color-mix(
       in srgb,
-      var(--prop-blue, #2e8bf0) 72%,
+      var(--segmented-motion-blue) 72%,
       var(--theme-text, #fff)
     );
   }
@@ -372,7 +413,15 @@
   .segment[data-tone="red"]:not(.selected) {
     color: color-mix(
       in srgb,
-      var(--prop-red, #ed1c24) 72%,
+      var(--segmented-motion-red) 72%,
+      var(--theme-text, #fff)
+    );
+  }
+
+  .segment[data-tone="both"]:not(.selected) {
+    color: color-mix(
+      in srgb,
+      var(--segmented-motion-both) 72%,
       var(--theme-text, #fff)
     );
   }
@@ -390,8 +439,8 @@
   }
 
   .segment.selected {
-    /* The selected fill is deliberately deepened above, so white ink clears
-       AA across the accent, blue, and red tones, including orange #ea580c. */
+    /* The wash keeps its host surface visible, so the theme's contrast-aware
+       text color remains the reliable ink in both light and dark themes. */
     color: var(--segmented-selected-ink);
   }
 

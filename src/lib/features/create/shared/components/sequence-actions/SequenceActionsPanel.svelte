@@ -25,7 +25,8 @@
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import { createSequenceActionsPanelState } from "../../state/sequence-actions-panel-state.svelte";
   import { createSequenceActionsOrchestrator } from "../../services/sequence-actions-orchestrator";
-  import { flyTransition, fadeTransition } from "$lib/shared/utils/transitions";
+  import { quintOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
   import { DURATION } from "$lib/shared/transitions/transitions";
 
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
@@ -190,31 +191,32 @@
   const backLabel = $derived(viewState.backLabel);
   const subViewSubtitle = $derived(viewState.subViewSubtitle);
 
-  /**
-   * Shared-axis (X) drill-down transition. The sub-view conceptually sits to the
-   * right of the actions grid, so the sub-view layer always travels from/to +x
-   * and the grid from/to −x — symmetric for both push (enter) and pop (back).
-   * Honors prefers-reduced-motion with a quick fade fallback (WCAG AAA).
-   */
-  const prefersReducedMotion = () =>
+  // This follows the same one-layer drill motion as SettingsDrillPanel. An
+  // outgoing transition would leave the old board interactive underneath the
+  // new one, so the old board exits synchronously and only the arriving board
+  // moves. That makes push and back exact counterparts.
+  let reducedMotion = $state(
     typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
-  function sharedAxis(node: Element, { x = 0 }: { x?: number } = {}) {
-    if (prefersReducedMotion()) {
-      return fadeTransition(node, { duration: DURATION.fast });
-    }
-    return flyTransition(node, { x, duration: DURATION.emphasis });
-  }
+  $effect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  });
 
-  /**
-   * +1 while drilling in, −1 while backing out. Every layer enters from
-   * `NAV_TRAVEL * navDirection` and leaves toward the opposite side, so a pop
-   * runs the push in reverse instead of sliding in from the right again.
-   */
   const NAV_TRAVEL = 30;
   const navEnterX = $derived(NAV_TRAVEL * viewState.navDirection);
-  const navExitX = $derived(-NAV_TRAVEL * viewState.navDirection);
+  const navDuration = $derived(reducedMotion ? 0 : DURATION.normal);
+  const navigationKey = $derived(
+    subView === "rotation"
+      ? `${subView}:${directionRoute}`
+      : (subView ?? "root")
+  );
 
   // Auto-save active sub-drawer to sessionStorage
   // Only clears if restoration is complete (prevents clearing saved state on mount)
@@ -671,21 +673,26 @@
     class:help-active={helpMode === "selecting"}
     class:workspace-context={useWorkspaceContextLayout}
   >
-    {#if subView}
-      <!-- Inline drill-down: sub-view swaps the panel content in place -->
-      {#key subView === "rotation" ? `${subView}:${directionRoute}` : subView}
-        <div
-          class="view-layer"
-          in:sharedAxis|local={{ x: navEnterX }}
-          out:sharedAxis|local={{ x: navExitX }}
-        >
+    {#key navigationKey}
+      <div
+        class="view-layer"
+        in:fly|local={{
+          x: navEnterX,
+          duration: navDuration,
+          easing: quintOut,
+        }}
+      >
+        {#if subView}
+          <!-- Inline drill-down: sub-view swaps the panel content in place -->
           <div class="compact-header sub">
             <button
+              type="button"
               class="icon-btn back"
               onclick={exitSubView}
               aria-label={backLabel}
             >
               <i class="fas fa-chevron-left" aria-hidden="true"></i>
+              <span class="button-label">Back</span>
             </button>
             <div class="sub-title">
               <h2 class="panel-title">{subViewTitle}</h2>
@@ -695,11 +702,13 @@
             </div>
             <div class="header-actions">
               <button
+                type="button"
                 class="icon-btn close"
                 onclick={handleClose}
                 aria-label="Close"
               >
                 <i class="fas fa-times" aria-hidden="true"></i>
+                <span class="button-label">Close</span>
               </button>
             </div>
           </div>
@@ -734,149 +743,118 @@
               />
             {/if}
           </div>
-        </div>
-      {/key}
-    {:else}
-      <div
-        class="view-layer"
-        in:sharedAxis|local={{ x: navEnterX }}
-        out:sharedAxis|local={{ x: navExitX }}
-      >
-        <!-- Simple header with title and actions -->
-        <div class="compact-header" class:dimmed={helpMode === "selecting"}>
-          <div class="header-lead">
-            <button
-              class="icon-btn back"
-              onclick={handleClose}
-              aria-label="Close panel"
-            >
-              <i class="fas fa-chevron-left" aria-hidden="true"></i>
-            </button>
-            <h2 class="panel-title">Sequence Actions</h2>
+        {:else}
+          <!-- Simple header with title and actions -->
+          <div class="compact-header" class:dimmed={helpMode === "selecting"}>
+            <div class="header-lead">
+              <button
+                type="button"
+                class="icon-btn back"
+                onclick={handleClose}
+                aria-label="Back to workspace"
+              >
+                <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                <span class="button-label">Back</span>
+              </button>
+              <h2 class="panel-title">Sequence Actions</h2>
+            </div>
+
+            {#if isMobileLayout}
+              <!-- Mobile: inline segmented hand selector in header -->
+              <MobileHandSelector
+                value={panelState.targetHand}
+                onChange={(hand) => panelState.setTargetHand(hand)}
+              />
+            {/if}
+
+            <div class="header-actions">
+              {#if isAdmin() && hasSequence}
+                <button
+                  type="button"
+                  class="icon-btn copy"
+                  onclick={handleCopySequenceJson}
+                  aria-label="Copy JSON for this sequence"
+                  title="Copy JSON for this sequence"
+                >
+                  <i class="fas fa-code" aria-hidden="true"></i>
+                  <span class="button-label">Copy JSON</span>
+                </button>
+              {/if}
+              {#if !isMobileLayout}
+                <button
+                  type="button"
+                  class="icon-btn help"
+                  class:active={helpMode === "selecting"}
+                  onclick={enterHelpMode}
+                  aria-label="Help with transform actions"
+                >
+                  <i class="fas fa-circle-question" aria-hidden="true"></i>
+                  <span class="button-label">Help</span>
+                </button>
+              {/if}
+              <button
+                type="button"
+                class="icon-btn close"
+                onclick={handleClose}
+                aria-label="Close"
+              >
+                <i class="fas fa-times" aria-hidden="true"></i>
+                <span class="button-label">Close</span>
+              </button>
+            </div>
           </div>
 
-          {#if isMobileLayout}
-            <!-- Mobile: inline segmented hand selector in header -->
-            <MobileHandSelector
-              value={panelState.targetHand}
-              onChange={(hand) => panelState.setTargetHand(hand)}
-            />
+          <!-- Hand selector for single-hand transforms (desktop only) -->
+          {#if !isMobileLayout}
+            <div class:dimmed={helpMode === "selecting"}>
+              <HandSelector
+                value={panelState.targetHand}
+                onChange={(hand) => panelState.setTargetHand(hand)}
+              />
+            </div>
           {/if}
 
-          <div class="header-actions">
-            {#if isAdmin() && hasSequence}
-              <button
-                class="icon-btn copy"
-                onclick={handleCopySequenceJson}
-                aria-label="Copy sequence JSON"
-                title="Copy sequence JSON"
-              >
-                <i class="fas fa-code" aria-hidden="true"></i>
-              </button>
-            {/if}
-            {#if !isMobileLayout}
-              <button
-                class="icon-btn help"
-                class:active={helpMode === "selecting"}
-                onclick={enterHelpMode}
-                aria-label="Help with transform actions"
-              >
-                <i class="fas fa-circle-question" aria-hidden="true"></i>
-              </button>
-            {/if}
-            <button
-              class="icon-btn close"
-              onclick={handleClose}
-              aria-label="Close"
+          <!-- Beat grid display: shows on mobile, takes all available space -->
+          {#if hasSequence && isSideBySideLayout === false && sequence && !useWorkspaceContextLayout}
+            <div
+              class="step-grid-wrapper"
+              class:dimmed={helpMode === "selecting"}
             >
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-          </div>
-        </div>
+              <StepGridSection
+                steps={sequence.steps}
+                startPosition={sequence.startPosition ||
+                  sequence.startingPosition ||
+                  null}
+                {selectedStepNumber}
+                isShiftMode={isShiftStartMode}
+                mobileMode={isMobileLayout}
+                onStepClick={isShiftStartMode
+                  ? handleShiftStartBeatSelect
+                  : handleStepSelect}
+                onStartClick={() =>
+                  isShiftStartMode ? null : handleStepSelect(0)}
+                onStepLongPress={handlePreview}
+                onCancelShiftMode={cancelShiftStart}
+              />
+            </div>
+          {/if}
 
-        <!-- Hand selector for single-hand transforms (desktop only) -->
-        {#if !isMobileLayout}
-          <div class:dimmed={helpMode === "selecting"}>
-            <HandSelector
-              value={panelState.targetHand}
-              onChange={(hand) => panelState.setTargetHand(hand)}
-            />
-          </div>
-        {/if}
-
-        <!-- Beat grid display: shows on mobile, takes all available space -->
-        {#if hasSequence && isSideBySideLayout === false && sequence && !useWorkspaceContextLayout}
-          <div
-            class="step-grid-wrapper"
-            class:dimmed={helpMode === "selecting"}
-          >
-            <StepGridSection
-              steps={sequence.steps}
-              startPosition={sequence.startPosition ||
-                sequence.startingPosition ||
-                null}
-              {selectedStepNumber}
-              isShiftMode={isShiftStartMode}
-              mobileMode={isMobileLayout}
-              onStepClick={isShiftStartMode
-                ? handleShiftStartBeatSelect
-                : handleStepSelect}
-              onStartClick={() =>
-                isShiftStartMode ? null : handleStepSelect(0)}
-              onStepLongPress={handlePreview}
-              onCancelShiftMode={cancelShiftStart}
-            />
-          </div>
-        {/if}
-
-        {#if isMobileLayout}
-          <!-- Mobile: compact toolbar with category tabs -->
-          <MobileActionToolbar
-            {hasSequence}
-            fillAvailableHeight={useWorkspaceContextLayout}
-            {hasSelection}
-            {isTransforming}
-            {canExtend}
-            {isExtending}
-            {canShiftStart}
-            shiftStartActive={isShiftStartMode}
-            initialCategory={initialActionCategory}
-            persistCategory={persistReviewState}
-            swapDisabled={isSwapDisabled}
-            showEditInConstructor={!isInConstructTab}
-            onHelpRequest={handleHelpRequest}
-            onTurns={handleOpenBeatEditor}
-            onMirror={handleMirror}
-            onFlip={handleFlip}
-            onInvert={handleInvert}
-            onRotateCW={handleRotateCW}
-            onRotateCCW={handleRotateCCW}
-            onSwap={handleSwap}
-            onRewind={gatedRewind}
-            onTurnPattern={gatedTurnPattern}
-            onRotationDirection={gatedRotationDirection}
-            onDuration={gatedDuration}
-            onExtend={gatedExtend}
-            onShiftStart={isShiftStartMode ? cancelShiftStart : gatedShiftStart}
-            onEditInConstructor={handleEditInConstructor}
-            {patternsLocked}
-          />
-        {:else}
-          <!-- Desktop: full grid of all actions -->
-          <div class="controls-content">
-            <SequenceTransformActions
+          {#if isMobileLayout}
+            <!-- Mobile: compact toolbar with category tabs -->
+            <MobileActionToolbar
               {hasSequence}
+              fillAvailableHeight={useWorkspaceContextLayout}
               {hasSelection}
               {isTransforming}
               {canExtend}
               {isExtending}
               {canShiftStart}
+              shiftStartActive={isShiftStartMode}
+              initialCategory={initialActionCategory}
+              persistCategory={persistReviewState}
               swapDisabled={isSwapDisabled}
               showEditInConstructor={!isInConstructTab}
-              isDesktopPanel={isSideBySideLayout}
-              compactMode={useCompactMode}
-              helpMode={helpMode === "selecting"}
-              onHelpSelect={selectTransformHelp}
+              onHelpRequest={handleHelpRequest}
               onTurns={handleOpenBeatEditor}
               onMirror={handleMirror}
               onFlip={handleFlip}
@@ -889,14 +867,49 @@
               onRotationDirection={gatedRotationDirection}
               onDuration={gatedDuration}
               onExtend={gatedExtend}
-              onShiftStart={gatedShiftStart}
+              onShiftStart={isShiftStartMode
+                ? cancelShiftStart
+                : gatedShiftStart}
               onEditInConstructor={handleEditInConstructor}
               {patternsLocked}
             />
-          </div>
+          {:else}
+            <!-- Desktop: full grid of all actions -->
+            <div class="controls-content">
+              <SequenceTransformActions
+                {hasSequence}
+                {hasSelection}
+                {isTransforming}
+                {canExtend}
+                {isExtending}
+                {canShiftStart}
+                swapDisabled={isSwapDisabled}
+                showEditInConstructor={!isInConstructTab}
+                isDesktopPanel={isSideBySideLayout}
+                compactMode={useCompactMode}
+                helpMode={helpMode === "selecting"}
+                onHelpSelect={selectTransformHelp}
+                onTurns={handleOpenBeatEditor}
+                onMirror={handleMirror}
+                onFlip={handleFlip}
+                onInvert={handleInvert}
+                onRotateCW={handleRotateCW}
+                onRotateCCW={handleRotateCCW}
+                onSwap={handleSwap}
+                onRewind={gatedRewind}
+                onTurnPattern={gatedTurnPattern}
+                onRotationDirection={gatedRotationDirection}
+                onDuration={gatedDuration}
+                onExtend={gatedExtend}
+                onShiftStart={gatedShiftStart}
+                onEditInConstructor={handleEditInConstructor}
+                {patternsLocked}
+              />
+            </div>
+          {/if}
         {/if}
       </div>
-    {/if}
+    {/key}
   </div>
 </CreatePanelDrawer>
 
@@ -941,6 +954,7 @@
     height: 100%;
     overflow: hidden;
     position: relative;
+    container: sequence-actions-panel / inline-size;
   }
 
   :global(body.sequence-actions-workspace-context .button-panel-wrapper),
@@ -950,8 +964,8 @@
     pointer-events: none;
   }
 
-  /* Each navigation layer fills the panel and stacks, so the outgoing and
-     incoming views overlap during the shared-axis transition (no reflow jump). */
+  /* The keyed navigation layer always fills the same box, so the arriving
+     board can move without changing the panel's layout. */
   .view-layer {
     position: absolute;
     inset: 0;
@@ -969,10 +983,11 @@
     gap: 8px;
     box-sizing: border-box;
     padding: 4px 12px;
-    /* Glassmorphic to match the translucent panel body (was opaque gray). */
-    background: rgba(15, 20, 30, 0.55);
-    backdrop-filter: var(--glass-backdrop);
-    -webkit-backdrop-filter: var(--glass-backdrop);
+    /* The drawer already owns the surface. A second translucent fill made the
+       header read as a separate blue-gray strip instead of its top edge. */
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     border-bottom: 1px solid var(--theme-stroke);
     height: calc(var(--min-touch-target, 44px) + 8px);
     flex-shrink: 0;
@@ -1004,7 +1019,7 @@
   /* Drill-down sub-view header: back-left, title-centered, close-right */
   .compact-header.sub {
     display: grid;
-    grid-template-columns: var(--min-touch-target) 1fr var(--min-touch-target);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     height: calc(var(--min-touch-target, 44px) + 8px);
@@ -1060,22 +1075,49 @@
   }
 
   .icon-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target);
+    width: auto;
+    min-width: var(--min-touch-target);
     height: var(--min-touch-target);
-    border-radius: 50%;
+    gap: 7px;
+    padding-inline: 12px;
+    border-radius: 999px;
     cursor: pointer;
-    font-size: var(--font-size-base);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
     transition: all var(--duration-fast) ease;
     border: 1px solid var(--theme-stroke-strong);
+    background: var(--theme-card-bg);
+  }
+
+  .icon-btn i {
+    width: 1rem;
+    font-size: var(--font-size-min, 14px);
+    text-align: center;
+  }
+
+  .button-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .icon-btn.copy {
-    background: rgba(59, 130, 246, 0.15);
-    color: rgba(59, 130, 246, 0.8);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 14%,
+      transparent
+    );
+    color: var(--semantic-info-text, #93c5fd);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-info, #3b82f6) 36%,
+      transparent
+    );
   }
 
   .icon-btn.copy:hover {
@@ -1112,42 +1154,53 @@
   }
 
   .icon-btn.close {
-    background: linear-gradient(
-      135deg,
-      rgba(100, 100, 120, 0.85),
-      rgba(70, 70, 90, 0.85)
-    );
-    color: white;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
   }
 
   .icon-btn.close:hover {
-    background: linear-gradient(
-      135deg,
-      rgba(120, 120, 140, 0.95),
-      rgba(90, 90, 110, 0.95)
-    );
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    color: var(--theme-text);
+    border-color: var(--theme-stroke-strong);
   }
 
-  /* Narrow screens */
-  @media (max-width: 400px) {
+  /* A short landscape workspace leaves roughly 25rem for the drawer. Keep all
+     actions legible there and let the dialog's accessible name carry the title. */
+  @container sequence-actions-panel (max-width: 34rem) {
+    .compact-header:not(.sub) .panel-title {
+      display: none;
+    }
+
+    .compact-header:not(.sub) .header-lead {
+      gap: 0;
+    }
+  }
+
+  /* At the phone floor, Back is the single exit from the root. The duplicate
+     Close and admin-only copy action yield to the title and hand selector. */
+  @container sequence-actions-panel (max-width: 25rem) {
     .compact-header {
       padding: 4px 10px;
     }
 
-    .compact-header:not(.sub) .icon-btn.copy {
+    .compact-header:not(.sub) .icon-btn.copy,
+    .compact-header:not(.sub) .icon-btn.close {
       display: none;
     }
 
-    /* Back and Close perform the same action at the root. Keeping both leaves
-       less room than the hand selector and title need on the iPhone SE. */
-    .compact-header:not(.sub) .icon-btn.back {
-      display: none;
+    .compact-header:not(.sub) .panel-title {
+      display: block;
     }
 
     .icon-btn {
-      width: var(--min-touch-target);
+      width: auto;
+      min-width: var(--min-touch-target);
       height: var(--min-touch-target);
-      font-size: var(--font-size-sm);
+      padding-inline: 10px;
+    }
+
+    .compact-header:not(.sub) .header-lead {
+      gap: 8px;
     }
   }
 
