@@ -1,13 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import FestivalSamplerSheetPreview from "./FestivalSamplerSheetPreview.svelte";
   import {
     FESTIVAL_SAMPLER_MAX_PACKS,
     FESTIVAL_SAMPLER_NAME,
     renderFestivalSamplerBatch,
     type FestivalSamplerPack,
   } from "../../services/festival-sampler-renderer";
-  import { mirrorFestivalSheetColumns } from "../../services/festival-sampler-sheet";
   import {
     exportCalibrationPDF,
     exportFixedSheetBatchPDF,
@@ -30,23 +30,38 @@
     { value: "backs", label: "Backs" },
   ];
   const PACK_COUNT_PRESETS = [10, 30, 60];
+  type PackQuantityMode = "10" | "30" | "60" | "custom";
+  const PACK_QUANTITY_OPTIONS: Array<{
+    value: PackQuantityMode;
+    label: string;
+  }> = [
+    { value: "10", label: "10" },
+    { value: "30", label: "30" },
+    { value: "60", label: "60" },
+    { value: "custom", label: "Custom" },
+  ];
   const printSettings = createFestivalSamplerPrintState(
-    typeof window === "undefined" ? null : window.localStorage
+    typeof window === "undefined" ? null : window.localStorage,
+    FESTIVAL_SAMPLER_MAX_PACKS
   );
 
   let packs = $state<FestivalSamplerPack[]>([]);
-  let previewPackIndex = $state(0);
   let output = $state<PrintPDFMode>("combined");
   let status = $state("Loading the festival sampler…");
   let progress = $state(0);
   let progressTotal = $state(0);
   let error = $state("");
   let isWorking = $state(false);
+  let customPackCount = $state(printSettings.packCount);
+  let quantityMode = $state<PackQuantityMode>(
+    PACK_COUNT_PRESETS.includes(printSettings.packCount)
+      ? (String(printSettings.packCount) as PackQuantityMode)
+      : "custom"
+  );
 
   const packCount = $derived(printSettings.packCount);
-  const pairs = $derived(packs[previewPackIndex]?.pairs ?? []);
   const ready = $derived(packs.length >= packCount);
-  const backPairs = $derived(mirrorFestivalSheetColumns(pairs));
+  const visiblePacks = $derived(packs.slice(0, packCount));
   const selectedSheets = $derived(
     packs.slice(0, packCount).map((pack) => pack.pairs)
   );
@@ -58,8 +73,6 @@
       return true;
     });
   });
-  const showFronts = $derived(output !== "backs");
-  const showBacks = $derived(output !== "fronts");
   const pageCount = $derived((output === "combined" ? 2 : 1) * packCount);
   const outputLabel = $derived(
     output === "combined" ? "Duplex" : output === "fronts" ? "Fronts" : "Backs"
@@ -69,10 +82,11 @@
       ? `${packCount} unique packs`
       : `${packCount} ${output === "fronts" ? "front" : "back"} sheets`
   );
-
-  $effect(() => {
-    if (previewPackIndex >= packCount) previewPackIndex = packCount - 1;
-  });
+  const displayStatus = $derived(
+    ready && status.endsWith("unique packs ready to print")
+      ? `${packCount} unique packs ready to print`
+      : status
+  );
 
   onMount(() => {
     let cancelled = false;
@@ -191,6 +205,21 @@
       isWorking = false;
     }
   }
+
+  function selectQuantityMode(mode: PackQuantityMode): void {
+    quantityMode = mode;
+    if (mode === "custom") {
+      printSettings.packCount = customPackCount;
+      return;
+    }
+    printSettings.packCount = Number(mode);
+  }
+
+  function setCustomPackCount(value: number): void {
+    quantityMode = "custom";
+    printSettings.packCount = value;
+    customPackCount = printSettings.packCount;
+  }
 </script>
 
 <div class="festival-print" data-testid="festival-sampler-print-view">
@@ -211,7 +240,7 @@
         {:else if ready}
           <i class="fas fa-check-circle" aria-hidden="true"></i>
         {/if}
-        <span>{status}</span>
+        <span>{displayStatus}</span>
         {#if !ready && !error}
           <small>{progress} / {progressTotal}</small>
         {/if}
@@ -225,74 +254,47 @@
       </div>
     {/if}
 
-    <nav class="pack-navigator" aria-label="Preview a unique festival pack">
-      <button
-        type="button"
-        aria-label="Previous pack"
-        disabled={previewPackIndex === 0}
-        onclick={() => {
-          previewPackIndex -= 1;
-        }}
-      >
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      </button>
-      <div>
-        <span>Previewing</span>
-        <strong>Pack {previewPackIndex + 1} of {packCount}</strong>
-      </div>
-      <button
-        type="button"
-        aria-label="Next pack"
-        disabled={!ready || previewPackIndex >= packCount - 1}
-        onclick={() => {
-          previewPackIndex += 1;
-        }}
-      >
-        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-      </button>
-    </nav>
-
-    <section class="sheets" aria-label="Festival sampler print preview">
-      {#if showFronts}
-        <article class="sheet-block">
-          <div class="sheet-heading">
-            <strong>Fronts</strong>
-            <span>Pack {previewPackIndex + 1} · Page 1</span>
-          </div>
-          <div class="paper" data-testid="festival-front-sheet">
-            <div class="card-grid">
-              {#each pairs as pair (pair.slot)}
-                <img
-                  src={pair.front.toDataURL("image/png")}
-                  alt={`${pair.name} front`}
+    <section class="pack-list" aria-label="All festival sampler packs">
+      {#if visiblePacks.length === 0}
+        <div class="preview-empty" aria-hidden="true"></div>
+      {:else}
+        {#each visiblePacks as pack (pack.packNumber)}
+          <article class="pack-row">
+            <header class="pack-heading">
+              <h2>Pack {String(pack.packNumber).padStart(2, "0")}</h2>
+            </header>
+            <div class="pack-sheets">
+              <section
+                class="sheet-block"
+                aria-label={`Pack ${pack.packNumber} fronts`}
+              >
+                <div class="sheet-heading">
+                  <strong>Fronts</strong>
+                  <span>9 cards</span>
+                </div>
+                <FestivalSamplerSheetPreview
+                  pairs={pack.pairs}
+                  side="front"
+                  packNumber={pack.packNumber}
                 />
-              {/each}
-            </div>
-          </div>
-        </article>
-      {/if}
-
-      {#if showBacks}
-        <article class="sheet-block">
-          <div class="sheet-heading">
-            <strong>Backs</strong>
-            <span
-              >Pack {previewPackIndex + 1} · {output === "combined"
-                ? "Page 2 · "
-                : ""}columns mirrored</span
-            >
-          </div>
-          <div class="paper" data-testid="festival-back-sheet">
-            <div class="card-grid">
-              {#each backPairs as pair (pair.slot)}
-                <img
-                  src={pair.back.toDataURL("image/png")}
-                  alt={`${pair.name} back`}
+              </section>
+              <section
+                class="sheet-block"
+                aria-label={`Pack ${pack.packNumber} backs`}
+              >
+                <div class="sheet-heading">
+                  <strong>Backs</strong>
+                  <span>Columns mirrored</span>
+                </div>
+                <FestivalSamplerSheetPreview
+                  pairs={pack.pairs}
+                  side="back"
+                  packNumber={pack.packNumber}
                 />
-              {/each}
+              </section>
             </div>
-          </div>
-        </article>
+          </article>
+        {/each}
       {/if}
     </section>
   </main>
@@ -311,29 +313,29 @@
     <section class="control-section">
       <h2>Pack quantity</h2>
       <div class="quantity-control">
-        <div class="quantity-presets" aria-label="Pack quantity presets">
-          {#each PACK_COUNT_PRESETS as count}
-            <button
-              type="button"
-              class:active={packCount === count}
-              aria-pressed={packCount === count}
-              onclick={() => {
-                printSettings.packCount = count;
-              }}>{count}</button
-            >
-          {/each}
-        </div>
+        <SegmentedControl
+          options={PACK_QUANTITY_OPTIONS}
+          value={quantityMode}
+          onchange={selectQuantityMode}
+          color="accent"
+          size="sm"
+          semantics="radiogroup"
+          ariaLabel="Pack quantity"
+        />
         <label class="custom-quantity">
-          <span>Custom</span>
+          <span>Custom pack count</span>
           <input
+            id="festival-sampler-pack-count"
+            name="festival-sampler-pack-count"
             type="number"
             min="1"
-            max="200"
+            max={FESTIVAL_SAMPLER_MAX_PACKS}
             step="1"
-            value={packCount}
+            value={customPackCount}
+            disabled={quantityMode !== "custom"}
             aria-label="Number of festival sample packs"
             onchange={(event) => {
-              printSettings.packCount = Number(event.currentTarget.value);
+              setCustomPackCount(Number(event.currentTarget.value));
             }}
           />
         </label>
@@ -448,23 +450,25 @@
 
 <style>
   .festival-print {
+    --min-touch-target: 44px;
+
     container-type: inline-size;
     display: flex;
     height: 100%;
     min-height: 0;
     color: var(--theme-text, #f7f7fb);
+    font-variant-numeric: tabular-nums;
   }
 
   .preview-area {
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    display: block;
     flex: 1;
     min-width: 0;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
     box-sizing: border-box;
     padding: clamp(18px, 2vw, 32px);
-    background: color-mix(in srgb, var(--theme-background, #11131a) 92%, black);
+    background: transparent;
   }
 
   .preview-header {
@@ -477,7 +481,7 @@
   }
 
   button {
-    min-height: 44px;
+    min-height: var(--min-touch-target);
     border: 0;
     border-radius: 10px;
     color: inherit;
@@ -505,6 +509,13 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
+  .back-button:hover:not(:disabled),
+  .secondary-action:hover:not(:disabled),
+  .test-button:hover:not(:disabled) {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
+    filter: brightness(1.08);
+  }
+
   .title-block h1,
   .title-block p,
   .title-block .eyebrow {
@@ -515,7 +526,7 @@
     display: block;
     margin-bottom: 3px !important;
     color: var(--theme-accent, #a78bfa);
-    font-size: 12px;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -575,79 +586,64 @@
     color: #fecaca;
   }
 
-  .pack-navigator {
+  .pack-list {
     display: grid;
-    grid-template-columns: 44px minmax(150px, auto) 44px;
-    align-items: center;
-    width: fit-content;
-    margin: 0 auto 20px;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-  }
-
-  .pack-navigator button {
-    min-width: 44px;
-    padding: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .pack-navigator button:first-child {
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .pack-navigator button:last-child {
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .pack-navigator div {
-    display: grid;
-    gap: 2px;
-    padding: 7px 16px;
-    text-align: center;
-  }
-
-  .pack-navigator span {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
-    font-size: 11px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .pack-navigator strong {
-    font-size: 14px;
-  }
-
-  .sheets {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr));
-    align-items: stretch;
-    gap: clamp(20px, 2vw, 32px);
-    min-height: 0;
+    gap: clamp(28px, 3vw, 48px);
     max-width: var(--shell-w, min(1720px, 92vw));
     width: 100%;
-    height: 100%;
     margin: 0 auto;
+    padding-bottom: clamp(24px, 4vw, 64px);
+  }
+
+  .preview-empty {
+    min-height: 60svh;
+  }
+
+  .pack-row {
+    display: grid;
+    gap: 10px;
+    padding-top: clamp(18px, 2vw, 28px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .pack-row:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .pack-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  .pack-heading h2 {
+    margin: 0;
+    color: var(--theme-text, #fff);
+    font-size: 16px;
+    letter-spacing: 0.06em;
+  }
+
+  .pack-sheets {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: clamp(12px, 2vw, 28px);
   }
 
   .sheet-block {
-    --preview-paper-width: min(100cqw, calc(77.2727cqh - 28px));
-
-    container-type: size;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
     justify-items: center;
+    justify-self: center;
+    width: min(100%, calc(68svh * 0.772727));
     min-width: 0;
-    min-height: 0;
   }
 
   .sheet-heading {
     display: flex;
     justify-content: space-between;
-    width: var(--preview-paper-width);
-    margin-bottom: 9px;
+    width: 100%;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
     font-size: 13px;
   }
@@ -657,32 +653,8 @@
     font-size: 15px;
   }
 
-  .paper {
-    position: relative;
-    width: var(--preview-paper-width);
-    aspect-ratio: 8.5 / 11;
-    overflow: hidden;
-    background: white;
-    box-shadow: 0 18px 52px rgba(0, 0, 0, 0.36);
-  }
-
-  .card-grid {
-    position: absolute;
-    inset: 2.2727% 5.8824%;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-  }
-
-  .card-grid img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: fill;
-  }
-
   .print-sidebar {
-    width: clamp(320px, 20vw, 410px);
+    width: clamp(320px, 18vw, 400px);
     flex: 0 0 auto;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
@@ -749,38 +721,16 @@
 
   .quantity-control {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 82px;
     gap: 10px;
-  }
-
-  .quantity-presets {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .quantity-presets button {
-    min-width: 0;
-    padding: 0 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-  }
-
-  .quantity-presets button.active {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b5cf6) 24%,
-      transparent
-    );
-    border-color: var(--theme-accent, #8b5cf6);
-    color: white;
   }
 
   .custom-quantity {
     display: grid;
-    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) 82px;
+    align-items: center;
+    gap: 10px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .custom-quantity input {
@@ -807,6 +757,11 @@
   .custom-quantity input:focus-visible {
     outline: 3px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
+  }
+
+  .custom-quantity input:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
   .quantity-note {
@@ -863,8 +818,12 @@
   .primary-action {
     min-height: 50px;
     padding: 11px 15px;
-    background: var(--theme-accent, #8b5cf6);
-    color: white;
+    background: color-mix(in srgb, var(--semantic-success, #10b981) 68%, black);
+    color: #fff;
+  }
+
+  .primary-action:hover:not(:disabled) {
+    filter: brightness(1.08);
   }
 
   .copy-note {
@@ -872,6 +831,12 @@
   }
 
   @media (min-width: 2600px) {
+    .festival-print {
+      --font-size-compact: 14px;
+      --font-size-min: 16px;
+      --min-touch-target: 52px;
+    }
+
     .preview-area {
       padding: 3rem;
     }
@@ -905,27 +870,13 @@
       padding-inline: 1rem;
     }
 
-    .pack-navigator {
-      grid-template-columns: 3rem minmax(12rem, auto) 3rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .pack-navigator button {
-      min-width: 3rem;
-      min-height: 3rem;
-    }
-
-    .pack-navigator span {
-      font-size: 0.8rem;
-    }
-
-    .pack-navigator strong,
+    .pack-heading h2,
     .sheet-heading strong {
       font-size: 1.1rem;
     }
 
     .print-sidebar {
-      width: clamp(30rem, 18vw, 40rem);
+      width: clamp(440px, 13vw, 520px);
     }
 
     .job-summary,
@@ -936,22 +887,20 @@
       padding: 1.5rem;
     }
 
-    .quantity-note,
-    .custom-quantity {
+    .quantity-note {
       font-size: 0.85rem;
     }
 
     .primary-action,
     .secondary-action,
     .test-button,
-    .quantity-presets button,
     .custom-quantity input {
       min-height: 3.25rem;
       font-size: 1rem;
     }
   }
 
-  @media (max-width: 980px) {
+  @media (max-width: 700px) {
     .festival-print {
       flex-direction: column;
       overflow-y: auto;
@@ -970,16 +919,19 @@
       border-left: 0;
     }
 
-    .sheets {
-      height: auto;
+    .sheet-block {
+      width: 100%;
+    }
+  }
+
+  @media (min-width: 701px) and (max-width: 1100px) {
+    .preview-header {
+      grid-template-columns: 1fr;
     }
 
-    .sheet-block {
-      --preview-paper-width: min(100cqw, calc((100svh - 210px) * 0.772727));
-
-      container-type: inline-size;
-      display: grid;
-      justify-items: center;
+    .back-button,
+    .job-status {
+      justify-self: start;
     }
   }
 
@@ -997,25 +949,24 @@
       padding: 14px;
     }
 
-    .sheet-block {
-      --preview-paper-width: min(100cqw, calc((100svh - 355px) * 0.772727));
+    .pack-list {
+      gap: 28px;
+    }
+
+    .sheet-heading span {
+      display: none;
     }
   }
 
   @media (min-width: 621px) and (max-height: 600px) {
     .preview-area {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-rows: auto minmax(0, 1fr);
-      flex: 0 0 100%;
+      flex: 1 1 auto;
       height: 100%;
-      overflow: hidden;
+      overflow-y: auto;
       padding: 10px 16px;
     }
 
     .preview-header {
-      grid-column: 1;
-      grid-row: 1;
       grid-template-columns: auto minmax(0, 1fr);
       gap: 12px;
       max-width: none;
@@ -1032,23 +983,8 @@
       font-size: 20px;
     }
 
-    .pack-navigator {
-      grid-column: 2;
-      grid-row: 1;
-      margin: 0 0 8px 12px;
-    }
-
-    .sheets {
-      grid-column: 1 / -1;
-      grid-row: 2;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      height: 100%;
-    }
-
     .sheet-block {
-      --preview-paper-width: min(100cqw, calc(77.2727cqh - 28px));
-
-      container-type: size;
+      width: min(100%, calc(62svh * 0.772727));
     }
 
     .sheet-heading span {

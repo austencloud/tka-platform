@@ -4,18 +4,18 @@
   "cards": [
     {
       "slot": "mirrored16",
-      "source": "publicSequences",
-      "id": "JIDCKIEC",
-      "name": "JIDCKIEC",
-      "word": "JIDCKIECJIDCKIEC",
+      "source": "packLocal",
+      "id": "festival-mirrored-01",
+      "name": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
+      "word": "Ω-TZ-Δ-ΛX-ΨΦΩ-TZ-Δ-ΛX-ΨΦ",
       "level": 1,
+      "turnIntensity": 0,
       "loopType": "mirrored",
       "sequenceLength": 16,
       "gridMode": "diamond",
-      "period": null,
+      "period": 2,
       "startPosition": "alpha1",
-      "endPosition": "alpha1",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/JIDCKIEC"
+      "endPosition": "alpha1"
     },
     {
       "slot": "mirrored8",
@@ -23,14 +23,16 @@
       "id": "DJII",
       "name": "DJII",
       "word": "DJIIDJII",
-      "level": 1,
+      "level": 3,
+      "turnIntensity": 0.5,
       "loopType": "mirrored",
       "sequenceLength": 8,
       "gridMode": "diamond",
       "period": null,
       "startPosition": "beta5",
       "endPosition": "beta5",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII"
+      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/DJII",
+      "turnPattern": "0.5|0-0.5|0-0.5|0.5-0.5|0-0.5|0-0.5|0-0.5|0.5-0.5|0"
     },
     {
       "slot": "rotated16",
@@ -39,6 +41,7 @@
       "name": "OVXΔ",
       "word": "OVXΔOVXΔOVXΔOVXΔ",
       "level": 1,
+      "turnIntensity": 0,
       "loopType": "rotated",
       "sequenceLength": 16,
       "gridMode": "diamond",
@@ -54,6 +57,7 @@
       "name": "MVNU",
       "word": "MVNUMVNU",
       "level": 1,
+      "turnIntensity": 0,
       "loopType": "rotated",
       "sequenceLength": 8,
       "gridMode": "diamond",
@@ -92,36 +96,40 @@
       "ratio": "3:1",
       "turnIntensity": 1,
       "startPosition": "alpha1",
-      "endPosition": "alpha1"
+      "endPosition": "alpha1",
+      "turnPattern": "0|1-1|0-0|1-1|0"
     },
     {
       "slot": "mirroredSwapped8",
       "source": "packLocal",
-      "id": "festival-falg-beta5",
-      "name": "FALG",
-      "word": "FALGFALG",
-      "level": 1,
+      "id": "festival-mirrored_swapped-01",
+      "name": "ΣXΔWΣXΔW",
+      "word": "ΣXΔWΣXΔW",
+      "level": 2,
+      "turnIntensity": 1,
       "loopType": "mirrored_swapped",
       "sequenceLength": 8,
       "gridMode": "diamond",
-      "period": null,
-      "startPosition": "beta5",
-      "endPosition": "beta5"
+      "period": 2,
+      "startPosition": "alpha1",
+      "endPosition": "alpha1",
+      "turnPattern": "0|1-0|1-0|1-0|1"
     },
     {
       "slot": "mirroredInverted8",
-      "source": "publicSequences",
-      "id": "BΦ-AΦ-",
-      "name": "BΦ-AΦ-",
-      "word": "BΦ-AΦ-BΦ-AΦ-",
-      "level": 1,
+      "source": "packLocal",
+      "id": "festival-mirrored_inverted-01",
+      "name": "ΣΛΛ-WΔΛΛ-X",
+      "word": "ΣΛΛ-WΔΛΛ-X",
+      "level": 2,
+      "turnIntensity": 1,
       "loopType": "mirrored_inverted",
       "sequenceLength": 8,
       "gridMode": "diamond",
-      "period": null,
+      "period": 2,
       "startPosition": "alpha1",
       "endPosition": "alpha1",
-      "sourceRef": "users/PBp3GSBO6igCKPwJyLZNmVEmamI3/sequences/BΦ-AΦ-"
+      "turnPattern": "1|0-1|1-1|0-1|1"
     }
   ]
 }

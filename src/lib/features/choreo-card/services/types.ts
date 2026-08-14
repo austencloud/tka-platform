@@ -101,6 +101,16 @@ export interface PrintRenderOptions {
   redPropType?: PropType;
   /** TnD elemental theme for front frame coloring. Omit for neutral gray. */
   tndElement?: TnDElement;
+  /**
+   * Card-front frame colors for print jobs with their own established palette.
+   * The content tint remains owned by `tndElement`; this only changes the frame.
+   */
+  frontFrameColors?: {
+    accent: string;
+    dark: string;
+    /** Ordered diagonal stripe colors; preserves repeated semantic bands. */
+    palette?: readonly string[];
+  };
   /** Show mandala fills in empty grid cells */
   showMandala?: boolean;
   /** Left-side footer label */

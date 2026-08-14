@@ -26,6 +26,7 @@ export interface FrontCardFrame {
   bleedPx: number;
   accent: string;
   dark: string;
+  palette?: readonly string[];
 }
 
 export interface FrontComposeResult {
@@ -39,7 +40,7 @@ export interface FrontComposeResult {
  */
 export function buildFrontComposeOptions(
   sequence: SequenceData,
-  options: PrintRenderOptions,
+  options: PrintRenderOptions
 ): FrontComposeResult {
   const canvasW = options.canvasWidth ?? MPC_WIDTH;
   const canvasH = options.canvasHeight ?? MPC_HEIGHT;
@@ -50,8 +51,14 @@ export function buildFrontComposeOptions(
   const contentW = canvasW - border * 2;
   const contentH = canvasH - border * 2;
 
-  const accent = options.tndElement?.accentColor ?? "#999999";
-  const dark = options.tndElement?.darkComplement ?? "#444444";
+  const accent =
+    options.frontFrameColors?.accent ??
+    options.tndElement?.accentColor ??
+    "#999999";
+  const dark =
+    options.frontFrameColors?.dark ??
+    options.tndElement?.darkComplement ??
+    "#444444";
 
   // Source word + pictograph visibility from the canonical locked profile.
   const canonical = buildCanonicalCardVisibility({
@@ -81,7 +88,12 @@ export function buildFrontComposeOptions(
     addReversalSymbols: true,
     combinedGrids: false,
     notes: options.notes ?? "",
-    showNotes: !!(options.notes || options.leftLabel || options.rightLabel || options.iconPath),
+    showNotes: !!(
+      options.notes ||
+      options.leftLabel ||
+      options.rightLabel ||
+      options.iconPath
+    ),
     leftLabel: options.leftLabel,
     rightLabel: options.rightLabel,
     iconPath: options.iconPath,
@@ -98,12 +110,23 @@ export function buildFrontComposeOptions(
       // showMandala stays deck-config (mandala fills in empty cells).
       showMandala: options.showMandala ?? false,
       // Explicit QR override (shop preview fan drops it); unset = canonical.
-      ...(options.showQRCode !== undefined && { showQRCode: options.showQRCode }),
+      ...(options.showQRCode !== undefined && {
+        showQRCode: options.showQRCode,
+      }),
     },
   };
 
   return {
     composeOptions,
-    frame: { canvasWidth: canvasW, canvasHeight: canvasH, bleedPx: bleed, accent, dark },
+    frame: {
+      canvasWidth: canvasW,
+      canvasHeight: canvasH,
+      bleedPx: bleed,
+      accent,
+      dark,
+      ...(options.frontFrameColors?.palette && {
+        palette: options.frontFrameColors.palette,
+      }),
+    },
   };
 }

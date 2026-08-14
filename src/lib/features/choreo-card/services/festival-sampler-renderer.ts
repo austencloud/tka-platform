@@ -1,21 +1,12 @@
-import { TND_BY_FAMILY } from "../domain/tnd-element";
-import { getCatalogLayoutPolicy } from "../domain/catalog-layout-policy";
-import { hydrateSequence } from "./catalog-loader";
-import { applyVariationDescriptor } from "./deck-variation";
 import { getPrintCardRenderer } from "../getPrintCardRenderer";
 import { renderSignupCardPair } from "./PrintCardRenderer";
-import type { CardPair, PrintRenderOptions } from "./types";
+import type { CardPair } from "./types";
 import { getImageComposer } from "$lib/shared/render/get-image-composer";
 import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { hydrate as hydrateCompositionalSequence } from "$lib/shared/foundation/services/sequence-hydrator";
 import uniquePackManifests from "../data/festival-sampler-manifests.json";
-import publicSnapshot from "../../../../../static/data/snapshots/public-sequences.json";
-import tndBaseWords from "../../../../../static/data/hero/tnd-base-words.json";
-import localSequences from "../../../../../docs/superpowers/specs/festival-sample-pack/evidence/festival-pack-local-sequences.json";
 import {
   FESTIVAL_SHEET_CARD_COUNT,
   placeFestivalSignupAtCenter,
@@ -23,15 +14,33 @@ import {
 import {
   festivalSamplerCardKey,
   festivalSamplerFingerprint,
+  festivalSamplerManifestRevision,
   type FestivalSamplerCardManifest,
 } from "./festival-sampler-manifest";
+import { resolveFestivalSamplerCardSequence } from "./festival-sampler-turns";
+import {
+  buildFestivalSamplerRenderOptions,
+  FESTIVAL_SAMPLER_NAME,
+} from "./festival-sampler-render-options";
+
+export {
+  buildFestivalSamplerRenderOptions,
+  FESTIVAL_SAMPLER_NAME,
+} from "./festival-sampler-render-options";
+
+export {
+  applyFestivalSamplerTurnAssignment,
+  findCompatibleFestivalSamplerTurnPattern,
+  loadFestivalSamplerBaseSequence,
+  resolveFestivalSamplerCardSequence,
+} from "./festival-sampler-turns";
 
 export {
   festivalSamplerCardKey,
   festivalSamplerFingerprint,
+  festivalSamplerManifestRevision,
 } from "./festival-sampler-manifest";
 
-export const FESTIVAL_SAMPLER_NAME = "Festival Sampler 2026";
 export const FESTIVAL_SAMPLER_CARD_COUNT = FESTIVAL_SHEET_CARD_COUNT;
 
 export type SelectedCard = FestivalSamplerCardManifest;
@@ -57,19 +66,8 @@ const packManifests = (uniquePackManifests.candidates ?? []) as Array<{
   cards: SelectedCard[];
 }>;
 export const FESTIVAL_SAMPLER_MAX_PACKS = packManifests.length;
-const publicDocuments = (publicSnapshot.documents ?? []) as unknown as Array<
-  Record<string, unknown>
->;
-const localTndRecords = new Map(
-  (tndBaseWords as Array<Record<string, unknown>>).map((record) => [
-    record.name as string,
-    record,
-  ])
-);
-const localSequenceRecords = (localSequences.records ?? {}) as Record<
-  string,
-  Record<string, unknown>
->;
+const FESTIVAL_SAMPLER_MANIFEST_REVISION =
+  festivalSamplerManifestRevision(packManifests);
 const CLASSIC_POSITIONS = new Set(["alpha1", "beta5", "gamma11"]);
 const THEME = "rainbow";
 
@@ -82,49 +80,9 @@ interface CachedBatchRender {
 // Moving between app modules destroys the deck-releaser component. Keep the
 // expensive card canvases alive for this browser session so reopening the
 // festival job restores the finished preview instead of drawing every card
-// again. A rejected render is removed below so Retry can do real work.
-const batchRenderCache = new Map<number, CachedBatchRender>();
-
-async function findPublicSequence(card: SelectedCard): Promise<SequenceData> {
-  const indexed = publicDocuments.find(
-    (sequence) =>
-      sequence.id === card.id && sequence.sourceRef === card.sourceRef
-  );
-  if (!indexed) throw new Error(`Published sequence not found: ${card.name}`);
-
-  // The pinned public snapshot carries the compositional source fields. The
-  // canonical hydrator reconstructs renderable steps locally, so opening this
-  // urgent print job never waits on a per-card Firestore source read.
-  const sequence = hydrateCompositionalSequence(hydrateSequence(indexed));
-  if (sequence.steps.length === 0) {
-    throw new Error(`Published sequence has no renderable steps: ${card.name}`);
-  }
-  return sequence;
-}
-
-async function loadCardSequence(card: SelectedCard): Promise<SequenceData> {
-  if (card.source === "publicSequences") return findPublicSequence(card);
-
-  if (card.source === "catalog") {
-    const record = localTndRecords.get(card.name);
-    if (!record)
-      throw new Error(`Festival sampler TnD source is missing: ${card.name}`);
-    const base = hydrateSequence(record);
-    if ((card.turnIntensity ?? 0) === 0) return base;
-    if (card.turnIntensity === 1) {
-      return applyVariationDescriptor(base, { turnPattern: "1|1" }, [])
-        .sequence;
-    }
-    throw new Error(
-      `Festival sampler does not support ${card.turnIntensity} turns for ${card.name}`
-    );
-  }
-
-  const localRecord = localSequenceRecords[card.name];
-  if (localRecord) return hydrateSequence(localRecord);
-
-  throw new Error(`Festival sampler source is missing: ${card.name}`);
-}
+// again. Include the frozen-manifest revision so regenerating a card recipe
+// cannot bring an older canvas back into the print job.
+const batchRenderCache = new Map<string, CachedBatchRender>();
 
 function assertClassicEndpoints(
   card: SelectedCard,
@@ -146,48 +104,12 @@ function assertClassicEndpoints(
   }
 }
 
-function buildOptions(
-  card: SelectedCard,
-  sequence: SequenceData
-): PrintRenderOptions {
-  const element = card.familyId ? TND_BY_FAMILY[card.familyId] : undefined;
-  const center = element
-    ? `${element.name} · ${element.element} · ${card.ratio}`
-    : FESTIVAL_SAMPLER_NAME;
-
-  return {
-    canvasWidth: 822,
-    canvasHeight: 1122,
-    bleedPx: 36,
-    includeStartPosition: true,
-    startPositionLayout: getCatalogLayoutPolicy(sequence.steps.length),
-    showMandala: true,
-    // The signup card owns the pack's funnel QR. The sample cards keep their
-    // info cell available for the mandala, including the 4×2 eight-step layout.
-    showQRCode: false,
-    theme: THEME,
-    tndElement: element,
-    bluePropType: PropType.STAFF,
-    redPropType: PropType.STAFF,
-    leftLabel: element?.element,
-    rightLabel: element
-      ? card.turnIntensity === 0
-        ? "no turns"
-        : `${card.turnIntensity} turn`
-      : undefined,
-    notes: center,
-    iconPath: element?.iconPath,
-    deckId: "festival-sampler-2026",
-    deckName: FESTIVAL_SAMPLER_NAME,
-  };
-}
-
 async function renderSequencePair(
   card: SelectedCard
 ): Promise<FestivalSamplerPair> {
-  const sequence = await loadCardSequence(card);
+  const sequence = await resolveFestivalSamplerCardSequence(card);
   assertClassicEndpoints(card, sequence);
-  const options = buildOptions(card, sequence);
+  const options = buildFestivalSamplerRenderOptions(card, sequence);
   const renderer = getPrintCardRenderer();
   const [front, back] = await Promise.all([
     renderer.renderFront(sequence, options),
@@ -303,7 +225,8 @@ export function renderFestivalSamplerBatch(
   onProgress?: (progress: FestivalSamplerProgress) => void
 ): Promise<FestivalSamplerPack[]> {
   const count = Math.floor(packCount);
-  const existing = batchRenderCache.get(count);
+  const cacheKey = `${FESTIVAL_SAMPLER_MANIFEST_REVISION}:${count}`;
+  const existing = batchRenderCache.get(cacheKey);
   if (existing) {
     if (onProgress) {
       existing.listeners.add(onProgress);
@@ -325,10 +248,10 @@ export function renderFestivalSamplerBatch(
     cached.progress = progress;
     for (const listener of cached.listeners) listener(progress);
   }).catch((cause) => {
-    batchRenderCache.delete(count);
+    batchRenderCache.delete(cacheKey);
     throw cause;
   });
-  batchRenderCache.set(count, cached);
+  batchRenderCache.set(cacheKey, cached);
 
   return cached.promise.finally(() => {
     if (onProgress) cached.listeners.delete(onProgress);

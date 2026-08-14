@@ -19,16 +19,24 @@ describe("buildFrontComposeOptions", () => {
   it("computes deckCard content size = canvas - 2*round(bleed*2.0)", () => {
     const { composeOptions } = buildFrontComposeOptions(SEQ, BASE_OPTS);
     // Defaults: 822x1122, bleed 36 → border = round(72) = 72 → content 678x978.
-    expect(composeOptions.deckCard).toEqual({ contentWidth: 678, contentHeight: 978 });
+    expect(composeOptions.deckCard).toEqual({
+      contentWidth: 678,
+      contentHeight: 978,
+    });
   });
 
   it("honors explicit canvas/bleed dims", () => {
-    const { composeOptions, frame } = buildFrontComposeOptions(
-      SEQ,
-      { ...BASE_OPTS, canvasWidth: 1644, canvasHeight: 2244, bleedPx: 72 },
-    );
+    const { composeOptions, frame } = buildFrontComposeOptions(SEQ, {
+      ...BASE_OPTS,
+      canvasWidth: 1644,
+      canvasHeight: 2244,
+      bleedPx: 72,
+    });
     // border = round(72*2) = 144 → content 1356x1956.
-    expect(composeOptions.deckCard).toEqual({ contentWidth: 1356, contentHeight: 1956 });
+    expect(composeOptions.deckCard).toEqual({
+      contentWidth: 1356,
+      contentHeight: 1956,
+    });
     expect(frame).toEqual({
       canvasWidth: 1644,
       canvasHeight: 2244,
@@ -61,10 +69,12 @@ describe("buildFrontComposeOptions", () => {
       iconPath: "/images/elements/water-v2.png",
       cardTintOpacity: 0.12,
     } as unknown as PrintRenderOptions["tndElement"];
-    const { composeOptions, frame } = buildFrontComposeOptions(
-      SEQ,
-      { ...BASE_OPTS, tndElement, iconPath: "/images/elements/water-v2.png", leftLabel: "Water" },
-    );
+    const { composeOptions, frame } = buildFrontComposeOptions(SEQ, {
+      ...BASE_OPTS,
+      tndElement,
+      iconPath: "/images/elements/water-v2.png",
+      leftLabel: "Water",
+    });
     expect(frame.accent).toBe("#3568a0");
     expect(frame.dark).toBe("#13284a");
     expect(composeOptions.accentColor).toBe("#3568a0");
@@ -83,6 +93,23 @@ describe("buildFrontComposeOptions", () => {
 
     expect(composeOptions.startPositionLayout).toBe("column");
     expect(composeOptions.columnCount).toBe(3);
+  });
+
+  it("uses an explicit print-job frame palette without tinting the content", () => {
+    const palette = ["#3568a0", "#ffde17"];
+    const { composeOptions, frame } = buildFrontComposeOptions(SEQ, {
+      ...BASE_OPTS,
+      frontFrameColors: {
+        accent: palette[0]!,
+        dark: palette[1]!,
+        palette,
+      },
+    });
+
+    expect(frame.accent).toBe("#3568a0");
+    expect(frame.dark).toBe("#ffde17");
+    expect(frame.palette).toEqual(palette);
+    expect(composeOptions.accentColor).toBeUndefined();
   });
 
   it("emits prop-type overrides only when provided", () => {

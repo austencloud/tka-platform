@@ -2,36 +2,43 @@ import type { DeckReleaserSessionStorage } from "./deck-releaser-session";
 
 const FESTIVAL_PACK_COUNT_KEY = "deckReleaser.festivalSampler.packCount";
 const DEFAULT_PACK_COUNT = 60;
-const MAX_PACK_COUNT = 200;
 
-export function normalizeFestivalPackCount(value: number): number {
-  if (!Number.isFinite(value)) return DEFAULT_PACK_COUNT;
-  return Math.min(MAX_PACK_COUNT, Math.max(1, Math.round(value)));
+export function normalizeFestivalPackCount(
+  value: number,
+  maxPackCount = DEFAULT_PACK_COUNT
+): number {
+  const fallback = Math.min(DEFAULT_PACK_COUNT, maxPackCount);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(maxPackCount, Math.max(1, Math.round(value)));
 }
 
-function loadPackCount(storage: DeckReleaserSessionStorage): number {
-  if (!storage) return DEFAULT_PACK_COUNT;
+function loadPackCount(
+  storage: DeckReleaserSessionStorage,
+  maxPackCount: number
+): number {
+  if (!storage) return Math.min(DEFAULT_PACK_COUNT, maxPackCount);
   try {
     const saved = storage.getItem(FESTIVAL_PACK_COUNT_KEY);
     return saved === null
-      ? DEFAULT_PACK_COUNT
-      : normalizeFestivalPackCount(Number(saved));
+      ? Math.min(DEFAULT_PACK_COUNT, maxPackCount)
+      : normalizeFestivalPackCount(Number(saved), maxPackCount);
   } catch {
-    return DEFAULT_PACK_COUNT;
+    return Math.min(DEFAULT_PACK_COUNT, maxPackCount);
   }
 }
 
 export function createFestivalSamplerPrintState(
-  storage: DeckReleaserSessionStorage
+  storage: DeckReleaserSessionStorage,
+  maxPackCount = DEFAULT_PACK_COUNT
 ) {
-  let packCount = $state(loadPackCount(storage));
+  let packCount = $state(loadPackCount(storage, maxPackCount));
 
   return {
     get packCount() {
       return packCount;
     },
     set packCount(value: number) {
-      packCount = normalizeFestivalPackCount(value);
+      packCount = normalizeFestivalPackCount(value, maxPackCount);
       try {
         storage?.setItem(FESTIVAL_PACK_COUNT_KEY, String(packCount));
       } catch {

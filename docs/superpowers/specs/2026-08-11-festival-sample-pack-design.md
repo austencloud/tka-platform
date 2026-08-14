@@ -14,24 +14,23 @@ in person; the page's job is account creation, not selling.
 
 ### Set composition (curated once, duplicated per pack)
 
-| Slot | Card |
-|---|---|
-| 1–2 | Mirrored LOOP: one 16-count, one 8-count |
-| 3–4 | Rotated LOOP: one 16-count, one 8-count |
-| 5–6 | VTG cards teaching basic Type 1 letters, turn intensity ≤ 2 |
-| 7–8 | Compound fun: one mirrored/swapped, one mirrored/inverted |
-| 9 | Signup card (new) |
+| Slot | Card                                                        |
+| ---- | ----------------------------------------------------------- |
+| 1–2  | Mirrored LOOP: one 16-count, one 8-count                    |
+| 3–4  | Rotated LOOP: one 16-count, one 8-count                     |
+| 5–6  | VTG cards teaching basic Type 1 letters, turn intensity ≤ 2 |
+| 7–8  | Compound fun: one mirrored/swapped, one mirrored/inverted   |
+| 9    | Signup card (new)                                           |
 
-Cards are selected at build time from **released catalogs** so every card is
-canonical with a working `/q/[code]` QR. The concrete 8-card list is proposed to
-Austen for sign-off before rendering (deck-release-expert territory; TnD catalog
-is variation authority).
+Cards mix published sequences with frozen output from the canonical LOOP
+generator. The signup card owns the pack's QR; sample-card mandala cells remain
+available for teaching instead of repeating eight more links.
 
 ### Sheet mechanics
 
-- New `scripts/festival-pack-9up.cjs`, cloned from `scripts/donation-cards-4up.cjs`
-  (which mirrors `codex-6up.cjs`): US Letter duplex PDF, rainbow border frame,
-  columns mirrored for long-edge duplex, shared cut lines.
+- `scripts/festival-pack-9up.cjs`: US Letter duplex PDF, semantic elemental
+  front frames, rainbow card backs, columns mirrored for long-edge duplex, and
+  shared cut lines.
 - 3×3 grid: poker cards at true 2.5"×3.5" (180×252 pt) fit 540×756 pt inside
   612×792 letter with margins.
 - Consumes the 8 card front/back PNGs from the Deck Releaser's existing MPC ZIP
@@ -89,6 +88,35 @@ apply, all-viewport verification required (primary audience is phones at a jam).
   referral/attribution tracking. The 8-card set can become a released deck later
   without reprinting.
 
+## Print-run revision: difficulty mix (2026-08-13)
+
+Every pack contains exactly three Level 2 cards chosen from all eight
+choreography slots. One of the other five is Level 3 with a maximum turn
+intensity of 0.5. The remaining four stay at Level 1 with zero turns.
+
+The 60-pack run contains all 56 possible three-card selections once, plus four
+balanced repeats. Each of the eight slots is selected for Level 2 22 or 23
+times, and for Level 3 7 or 8 times. Level 2 and Level 3 cards use cyclic turn
+motifs: a four-step structural unit repeats a one- or two-step motif, while an
+eight-step unit repeats a one-, two-, or four-step motif. The chosen motif tiles
+the quartered or halved LOOP structure and must still pass the canonical loop
+closure check. The slot choices, patterns, and generated sequences are frozen
+into the print manifests so reopening or printing the job does not reshuffle a
+pack.
+
+## Print-run revision: elemental frames (2026-08-13)
+
+LOOP front frames use the same geometry-based TnD classifier and six-element
+color registry as the rest of the app. Each classifiable step contributes its
+element color in sequence order; Type 2 steps contribute no invented gray band.
+A mixed word such as BΣTX therefore produces Water blue and Sun yellow. A
+Type 2-only word uses a deliberate black-and-paper frame because it has no TnD
+element to claim. TnD teaching cards keep their existing single-element frame.
+
+The shared `wrapContentInCardFrame` primitive accepts the ordered palette, so
+the sampler does not own a second frame renderer and existing deck output stays
+unchanged when no palette is supplied.
+
 ## Build order
 
 1. `/start` page (UI shown to Austen before finish)
@@ -99,12 +127,12 @@ apply, all-viewport verification required (primary audience is phones at a jam).
 
 ## Reuse ledger (never-hand-roll evidence)
 
-| Capability | Owner reused |
-|---|---|
-| Google sign-in | `src/lib/shared/auth/components/SocialAuthCompact.svelte` |
-| Magic link | `src/lib/shared/auth/components/EmailLinkAuth.svelte` + `email-link-completion.ts` |
-| Guest identity | `src/lib/shared/auth/services/guest-identity.ts` (`ensureGuestIdentity`) |
-| PWA install steps | `src/lib/shared/mobile/components/EnhancedPWAInstallGuide.svelte` + config |
-| n-up duplex PDF | `scripts/donation-cards-4up.cjs` (cloned, 3×3) |
-| Card PNGs | Deck Releaser MPC ZIP export |
-| Print-res card harness | `/test/insert-card` pattern |
+| Capability             | Owner reused                                                                       |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| Google sign-in         | `src/lib/shared/auth/components/SocialAuthCompact.svelte`                          |
+| Magic link             | `src/lib/shared/auth/components/EmailLinkAuth.svelte` + `email-link-completion.ts` |
+| Guest identity         | `src/lib/shared/auth/services/guest-identity.ts` (`ensureGuestIdentity`)           |
+| PWA install steps      | `src/lib/shared/mobile/components/EnhancedPWAInstallGuide.svelte` + config         |
+| n-up duplex PDF        | `scripts/donation-cards-4up.cjs` (cloned, 3×3)                                     |
+| Card PNGs              | Deck Releaser MPC ZIP export                                                       |
+| Print-res card harness | `/test/insert-card` pattern                                                        |

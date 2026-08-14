@@ -1,9 +1,9 @@
-// Builds the 50 festival sampler proposals Austen requested from published,
-// named Level-1 sequences. The comparison is intentionally honest: the scarce
-// mirrored/compound slots remain mostly fixed, while the rotated slots carry
-// the useful variation.
+// Builds the festival sampler proposals from a mix of published sequences and
+// generated LOOPs. Every supported pack gets its own generated mirrored and
+// compound cards so no slot is silently pinned across the print run.
 const fs = require("fs");
 const path = require("path");
+const { spawnSync } = require("child_process");
 
 const REPO = path.join(__dirname, "..");
 const SNAPSHOT = path.join(REPO, "static/data/snapshots/public-sequences.json");
@@ -19,6 +19,10 @@ const LOCAL_SEQUENCE_SNAPSHOT = path.join(
 const RUNTIME_MANIFEST = path.join(
   REPO,
   "src/lib/features/choreo-card/data/festival-sampler-manifests.json"
+);
+const TURN_PATTERN_FREEZER = path.join(
+  REPO,
+  "scripts/festival-pack-freeze-turn-patterns.ts"
 );
 
 const MIRRORED_8 = ["DJII", "EΦ-JΨ-DΦ-KΨ-"];
@@ -54,13 +58,6 @@ const ROTATED_8 = [
   "XΣΛS",
   "ΦAΦ-L",
 ];
-const MIRRORED_SWAPPED_8 = ["FALG"];
-
-const FIXED = {
-  mirrored16: "JIDCKIEC",
-  mirroredInverted8: "BΦ-AΦ-",
-};
-
 const SAME_DIRECTION_FAMILIES = new Set([
   "split-same",
   "tog-same",
@@ -82,6 +79,32 @@ const SLOT_REQUIREMENTS = {
     loopType: "mirrored_inverted",
     sequenceLength: 8,
   },
+};
+const FESTIVAL_SLOT_ORDER = [
+  "mirrored16",
+  "mirrored8",
+  "rotated16",
+  "rotated8",
+  "tndBase",
+  "tndTurn",
+  "mirroredSwapped8",
+  "mirroredInverted8",
+];
+const TURN_SCHEDULE_SEED = 0x4f2c8b17;
+const LEVEL_THREE_SCHEDULE_SEED = 0x68e31a4d;
+const TURN_PATTERN_UNITS = {
+  4: [
+    "1|1-0|0-1|1-0|0",
+    "1|0-0|1-1|0-0|1",
+    "1|0-1|0-1|0-1|0",
+    "0|1-0|1-0|1-0|1",
+  ],
+  8: [
+    "1|0-0|1-0|0-0|0-1|0-0|1-0|0-0|0",
+    "0|0-1|0-0|0-0|1-0|0-1|0-0|0-0|1",
+    "1|0-0|1-1|0-0|1-1|0-0|1-1|0-0|1",
+    "1|0-1|0-1|0-1|0-1|0-1|0-1|0-1|0",
+  ],
 };
 
 function isClassicPosition(position) {
@@ -139,6 +162,7 @@ function publishedCard(sequence, slot) {
     name: sequence.name,
     word: sequence.word,
     level: sequence.level,
+    turnIntensity: 0,
     loopType: sequence.loopType,
     sequenceLength: sequence.sequenceLength,
     gridMode: sequence.gridMode,
@@ -149,7 +173,7 @@ function publishedCard(sequence, slot) {
   };
 }
 
-function tndCard({ slot, record, ratio, turnIntensity, level }) {
+function tndCard({ slot, record }) {
   const name = record?.name;
   const familyId = record?.metadata?.familyId;
   const family = record?.metadata?.familyLabel;
@@ -172,16 +196,16 @@ function tndCard({ slot, record, ratio, turnIntensity, level }) {
   return {
     slot,
     source: "catalog",
-    catalogId: turnIntensity === 0 ? "l1-tnd-motions" : "tnd-3to1-motions",
-    docId: `${record.id}-${ratio.replace(":", "to")}`,
+    catalogId: "l1-tnd-motions",
+    docId: `${record.id}-1to1`,
     name,
     word: name,
-    level,
+    level: 1,
     sequenceLength: 4,
     familyId,
     vtgFamily: family,
-    ratio,
-    turnIntensity,
+    ratio: "1:1",
+    turnIntensity: 0,
     startPosition,
     endPosition,
   };
@@ -240,9 +264,17 @@ function localCard(record, slot) {
   const startPosition = record?.startPosition?.gridPosition;
   const endPosition = record?.steps?.at(-1)?.endPosition;
   const requirement = SLOT_REQUIREMENTS[slot];
+  const turns = (record?.steps ?? []).flatMap((step) => [
+    step?.motions?.blue?.turns,
+    step?.motions?.red?.turns,
+  ]);
+  const difficultyIsValid =
+    record?.level === 1 &&
+    record?.turnIntensity === 0 &&
+    turns.every((turn) => turn === 0);
   if (
     !requirement ||
-    record?.level !== 1 ||
+    !difficultyIsValid ||
     record?.loopType !== requirement.loopType ||
     record?.steps?.length !== requirement.sequenceLength ||
     record?.isCircular !== true ||
@@ -253,6 +285,7 @@ function localCard(record, slot) {
       `${record?.name ?? "local sequence"} does not satisfy ${slot}: ` +
         JSON.stringify({
           level: record?.level,
+          turnIntensity: record?.turnIntensity,
           loopType: record?.loopType,
           sequenceLength: record?.steps?.length,
           isCircular: record?.isCircular,
@@ -267,7 +300,8 @@ function localCard(record, slot) {
     id: record.id,
     name: record.name,
     word: record.word,
-    level: record.level,
+    level: 1,
+    turnIntensity: 0,
     loopType: record.loopType,
     sequenceLength: record.steps.length,
     gridMode: record.gridMode,
@@ -277,52 +311,222 @@ function localCard(record, slot) {
   };
 }
 
+function buildGeneratedPairs(localRecords) {
+  const records = Object.values(localRecords);
+  const mirrored = records
+    .filter((record) => record.loopType === "mirrored")
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const mirroredSwapped = records
+    .filter((record) => record.loopType === "mirrored_swapped")
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const mirroredInverted = records
+    .filter((record) => record.loopType === "mirrored_inverted")
+    .sort((a, b) => a.id.localeCompare(b.id));
+  if (
+    mirrored.length !== 60 ||
+    mirroredSwapped.length !== 60 ||
+    mirroredInverted.length !== 60
+  ) {
+    throw new Error(
+      `expected 60 generated cards in each local slot; found ${mirrored.length} mirrored, ${mirroredSwapped.length} mirrored+swapped, and ${mirroredInverted.length} mirrored+inverted`
+    );
+  }
+  return mirrored.map((plain, index) => {
+    const swapped = mirroredSwapped[index];
+    const inverted = mirroredInverted[index];
+    if (!plain || !swapped || !inverted) {
+      throw new Error(
+        `generated pack ${index + 1} is missing one of its three local LOOPs`
+      );
+    }
+    return {
+      mirrored16: plain.id,
+      mirroredSwapped8: swapped.id,
+      mirroredInverted8: inverted.id,
+    };
+  });
+}
+
+function createSeededRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildBalancedTurnSchedule() {
+  const combinations = [];
+  for (let first = 0; first < FESTIVAL_SLOT_ORDER.length - 2; first++) {
+    for (
+      let second = first + 1;
+      second < FESTIVAL_SLOT_ORDER.length - 1;
+      second++
+    ) {
+      for (
+        let third = second + 1;
+        third < FESTIVAL_SLOT_ORDER.length;
+        third++
+      ) {
+        combinations.push([
+          FESTIVAL_SLOT_ORDER[first],
+          FESTIVAL_SLOT_ORDER[second],
+          FESTIVAL_SLOT_ORDER[third],
+        ]);
+      }
+    }
+  }
+
+  // C(8, 3) is 56, so the 60-pack run contains every possible triple once.
+  // Four balanced repeats raise each slot from 21 appearances to 22 or 23.
+  const extras = [
+    [FESTIVAL_SLOT_ORDER[0], FESTIVAL_SLOT_ORDER[1], FESTIVAL_SLOT_ORDER[2]],
+    [FESTIVAL_SLOT_ORDER[3], FESTIVAL_SLOT_ORDER[4], FESTIVAL_SLOT_ORDER[5]],
+    [FESTIVAL_SLOT_ORDER[6], FESTIVAL_SLOT_ORDER[7], FESTIVAL_SLOT_ORDER[0]],
+    [FESTIVAL_SLOT_ORDER[1], FESTIVAL_SLOT_ORDER[3], FESTIVAL_SLOT_ORDER[6]],
+  ];
+  const schedule = [...combinations, ...extras];
+  const random = createSeededRandom(TURN_SCHEDULE_SEED);
+  for (let index = schedule.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [schedule[index], schedule[swapIndex]] = [
+      schedule[swapIndex],
+      schedule[index],
+    ];
+  }
+  return schedule;
+}
+
+function buildBalancedLevelThreeSchedule(levelTwoSchedule) {
+  const random = createSeededRandom(LEVEL_THREE_SCHEDULE_SEED);
+  const counts = new Map(FESTIVAL_SLOT_ORDER.map((slot) => [slot, 0]));
+  const schedule = levelTwoSchedule.map((levelTwoSlots) => {
+    const eligible = FESTIVAL_SLOT_ORDER.filter(
+      (slot) => !levelTwoSlots.includes(slot)
+    );
+    for (let index = eligible.length - 1; index > 0; index -= 1) {
+      const swapIndex = Math.floor(random() * (index + 1));
+      [eligible[index], eligible[swapIndex]] = [
+        eligible[swapIndex],
+        eligible[index],
+      ];
+    }
+    const minimum = Math.min(...eligible.map((slot) => counts.get(slot)));
+    const leastUsed = eligible.filter((slot) => counts.get(slot) === minimum);
+    const selected = leastUsed[Math.floor(random() * leastUsed.length)];
+    counts.set(selected, counts.get(selected) + 1);
+    return selected;
+  });
+
+  const distribution = [...counts.values()].sort((a, b) => a - b);
+  if (distribution.join(",") !== "7,7,7,7,8,8,8,8") {
+    throw new Error(
+      `festival Level 3 schedule is not balanced: ${distribution.join(",")}`
+    );
+  }
+  return schedule;
+}
+
+function buildTurnPattern(card, level, packIndex) {
+  const period = card.source === "catalog" ? 1 : Number(card.period ?? 1);
+  const unitLength = Number(card.sequenceLength) / period;
+  const patterns = TURN_PATTERN_UNITS[unitLength];
+  if (!patterns) {
+    throw new Error(
+      `${card.slot} has no festival turn pattern for a ${unitLength}-step structural unit`
+    );
+  }
+  const slotIndex = FESTIVAL_SLOT_ORDER.indexOf(card.slot);
+  const wholePattern =
+    patterns[(packIndex + slotIndex * 3 + level) % patterns.length];
+  return level === 3 ? wholePattern.replaceAll("1", "0.5") : wholePattern;
+}
+
+function applyTurnAssignment(card, levelTwoSlots, levelThreeSlot, packIndex) {
+  const isLevelTwo = levelTwoSlots.has(card.slot);
+  const isLevelThree = card.slot === levelThreeSlot;
+  if (isLevelTwo && isLevelThree) {
+    throw new Error(`${card.slot} cannot be both Level 2 and Level 3`);
+  }
+  const level = isLevelTwo ? 2 : isLevelThree ? 3 : 1;
+  const turnIntensity = isLevelTwo ? 1 : isLevelThree ? 0.5 : 0;
+  const turnPattern =
+    level === 1 ? undefined : buildTurnPattern(card, level, packIndex);
+  const assigned = {
+    ...card,
+    level,
+    turnIntensity,
+    ...(turnPattern && { turnPattern }),
+  };
+
+  if (card.source === "catalog") {
+    const ratio = isLevelTwo ? "3:1" : isLevelThree ? "2:1" : "1:1";
+    return {
+      ...assigned,
+      ratio,
+      catalogId: isLevelTwo
+        ? "tnd-3to1-motions"
+        : isLevelThree
+          ? "tnd-2to1-motions"
+          : "l1-tnd-motions",
+      docId: `${card.docId.replace(/-(?:1to1|2to1|3to1)$/, "")}-${ratio.replace(":", "to")}`,
+    };
+  }
+  return assigned;
+}
+
 function candidateKey(names) {
   return [
+    names.mirrored16,
     names.mirrored8,
     names.rotated16,
     names.rotated8,
     names.tndBase,
     names.tndTurn,
     names.mirroredSwapped8,
+    names.mirroredInverted8,
   ].join("|");
 }
 
 const FESTIVAL_COMPARISON_COUNT = 50;
-const FESTIVAL_BATCH_COUNT = 200;
+const FESTIVAL_BATCH_COUNT = 60;
 const FESTIVAL_COMPARISON_GENERATED_AT = "2026-08-12T17:26:16.217Z";
 
 function buildCandidateNames(
   count = FESTIVAL_COMPARISON_COUNT,
-  tndRecords = JSON.parse(fs.readFileSync(TND_BASE_WORDS, "utf8"))
+  tndRecords = JSON.parse(fs.readFileSync(TND_BASE_WORDS, "utf8")),
+  localRecords = JSON.parse(fs.readFileSync(LOCAL_SEQUENCE_SNAPSHOT, "utf8"))
+    .records
 ) {
   const tndPairs = buildTndPairs(tndRecords);
+  const generatedPairs = buildGeneratedPairs(localRecords);
   const selected = {
     mirrored8: "DJII",
     rotated16: "OVXΔ",
     rotated8: "MVNU",
     ...tndPairs[0],
-    mirroredSwapped8: "FALG",
+    ...generatedPairs[0],
   };
   const candidates = [selected];
   const seen = new Set([candidateKey(selected)]);
   outer: for (const mirrored8 of MIRRORED_8) {
-    for (const mirroredSwapped8 of MIRRORED_SWAPPED_8) {
-      for (const rotated16 of ROTATED_16) {
-        for (const rotated8 of ROTATED_8) {
-          const names = {
-            mirrored8,
-            rotated16,
-            rotated8,
-            ...tndPairs[candidates.length % tndPairs.length],
-            mirroredSwapped8,
-          };
-          const key = candidateKey(names);
-          if (seen.has(key)) continue;
-          seen.add(key);
-          candidates.push(names);
-          if (candidates.length === count) break outer;
-        }
+    for (const rotated16 of ROTATED_16) {
+      for (const rotated8 of ROTATED_8) {
+        const names = {
+          mirrored8,
+          rotated16,
+          rotated8,
+          ...tndPairs[candidates.length % tndPairs.length],
+          ...generatedPairs[candidates.length % generatedPairs.length],
+        };
+        const key = candidateKey(names);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        candidates.push(names);
+        if (candidates.length === count) break outer;
       }
     }
   }
@@ -331,30 +535,30 @@ function buildCandidateNames(
 
 function buildUniqueBatchNames(
   count = FESTIVAL_BATCH_COUNT,
-  tndRecords = JSON.parse(fs.readFileSync(TND_BASE_WORDS, "utf8"))
+  tndRecords = JSON.parse(fs.readFileSync(TND_BASE_WORDS, "utf8")),
+  localRecords = JSON.parse(fs.readFileSync(LOCAL_SEQUENCE_SNAPSHOT, "utf8"))
+    .records
 ) {
   const tndPairs = buildTndPairs(tndRecords);
+  const generatedPairs = buildGeneratedPairs(localRecords);
   const selected = {
     mirrored8: "DJII",
     rotated16: "OVXΔ",
     rotated8: "MVNU",
     ...tndPairs[0],
-    mirroredSwapped8: "FALG",
+    ...generatedPairs[0],
   };
   const combinations = [];
   // Mirrored-8 changes fastest, so an odd stride distributes both words
   // throughout the batch instead of exhausting one first.
   for (const rotated8 of ROTATED_8) {
     for (const rotated16 of ROTATED_16) {
-      for (const mirroredSwapped8 of MIRRORED_SWAPPED_8) {
-        for (const mirrored8 of MIRRORED_8) {
-          combinations.push({
-            mirrored8,
-            rotated16,
-            rotated8,
-            mirroredSwapped8,
-          });
-        }
+      for (const mirrored8 of MIRRORED_8) {
+        combinations.push({
+          mirrored8,
+          rotated16,
+          rotated8,
+        });
       }
     }
   }
@@ -377,6 +581,7 @@ function buildUniqueBatchNames(
         : {
             ...combinations[(index * 37) % combinations.length],
             ...tndPairs[index % tndPairs.length],
+            ...generatedPairs[index],
           };
     const key = candidateKey(names);
     if (seen.has(key)) continue;
@@ -397,42 +602,50 @@ function buildFestivalPackCuration(
   const lookup = (name) => findPublishedSequence(documents, name);
   const tndLookup = new Map(tndRecords.map((record) => [record.name, record]));
   const candidateNames = spreadForPrinting
-    ? buildUniqueBatchNames(count, tndRecords)
-    : buildCandidateNames(count, tndRecords);
-  const candidates = candidateNames.map((names, index) => ({
-    rank: index + 1,
-    selected: index === 0,
-    cards: [
-      publishedCard(lookup(FIXED.mirrored16), "mirrored16"),
+    ? buildUniqueBatchNames(count, tndRecords, localRecords)
+    : buildCandidateNames(count, tndRecords, localRecords);
+  const turnSchedule = buildBalancedTurnSchedule();
+  const levelThreeSchedule = buildBalancedLevelThreeSchedule(turnSchedule);
+  if (candidateNames.length > turnSchedule.length) {
+    throw new Error(
+      `festival turn schedule supports ${turnSchedule.length} packs; received ${candidateNames.length}`
+    );
+  }
+  const candidates = candidateNames.map((names, index) => {
+    const turnedSlots = new Set(turnSchedule[index]);
+    const levelThreeSlot = levelThreeSchedule[index];
+    const cards = [
+      localCard(localRecords[names.mirrored16], "mirrored16"),
       publishedCard(lookup(names.mirrored8), "mirrored8"),
       publishedCard(lookup(names.rotated16), "rotated16"),
       publishedCard(lookup(names.rotated8), "rotated8"),
       tndCard({
         slot: "tndBase",
         record: tndLookup.get(names.tndBase),
-        ratio: "1:1",
-        turnIntensity: 0,
-        level: 1,
       }),
       tndCard({
         slot: "tndTurn",
         record: tndLookup.get(names.tndTurn),
-        ratio: "3:1",
-        turnIntensity: 1,
-        level: 2,
       }),
       localCard(localRecords[names.mirroredSwapped8], "mirroredSwapped8"),
-      publishedCard(lookup(FIXED.mirroredInverted8), "mirroredInverted8"),
-    ],
-  }));
+      localCard(localRecords[names.mirroredInverted8], "mirroredInverted8"),
+    ];
+    return {
+      rank: index + 1,
+      selected: index === 0,
+      cards: cards.map((card) =>
+        applyTurnAssignment(card, turnedSlots, levelThreeSlot, index)
+      ),
+    };
+  });
 
   return {
     schemaVersion: 1,
     generatedAt: new Date().toISOString(),
     constraint:
-      "Type 1 and turn intensity <= 2 apply to the two VTG teaching cards; LOOP slots are published Level-1 sequences. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
+      "Exactly three of all eight choreography cards in every pack are Level 2 with sparse one-turn patterns. One of the remaining five is randomly assigned Level 3 with a sparse half-turn pattern; the other four stay Level 1 with zero turns. Every frozen turn pattern is selected through the canonical variation engine and must preserve loop closure. Across 60 packs, all 56 possible Level 2 triples appear, every slot receives Level 2 22 or 23 times, and every slot receives Level 3 7 or 8 times. Every card starts and ends in Alpha, Beta, or Gamma. Rotated 16-step cards are Quartered; rotated 8-step cards are Halved.",
     selectionReason:
-      "Candidate 1 keeps Austen's approved LOOP control and pairs a no-turn same-direction TnD card with a one-turn opposite-direction TnD card. The print batch rotates through 90 distinct TnD pairs before repeating a pair.",
+      "Every supported pack has three Level 2 cards and one Level 3 card chosen from the full eight-card assortment, its own generated 16-step mirrored, mirrored+swapped, and mirrored+inverted cards, a distinct TnD pairing, and varied published LOOP cards.",
     candidates,
     selected: candidates[0],
   };
@@ -472,6 +685,17 @@ function writeCuration() {
   fs.writeFileSync(batchPath, JSON.stringify(batch, null, 2) + "\n");
   fs.mkdirSync(path.dirname(RUNTIME_MANIFEST), { recursive: true });
   fs.writeFileSync(RUNTIME_MANIFEST, JSON.stringify(batch, null, 2) + "\n");
+  const freezeResult = spawnSync(
+    process.execPath,
+    ["--import", "tsx", TURN_PATTERN_FREEZER],
+    { cwd: REPO, encoding: "utf8" }
+  );
+  if (freezeResult.status !== 0) {
+    throw new Error(
+      `festival turn-pattern freeze failed:\n${freezeResult.stdout}${freezeResult.stderr}`
+    );
+  }
+  process.stdout.write(freezeResult.stdout);
   console.log(`wrote ${candidatesPath}`);
   console.log(`wrote ${selectedPath}`);
   console.log(`wrote ${batchPath}`);
@@ -486,7 +710,10 @@ function writeCuration() {
 if (require.main === module) writeCuration();
 
 module.exports = {
+  buildBalancedTurnSchedule,
+  buildBalancedLevelThreeSchedule,
   buildCandidateNames,
+  buildGeneratedPairs,
   buildTndPairs,
   buildUniqueBatchNames,
   buildFestivalPackCuration,
