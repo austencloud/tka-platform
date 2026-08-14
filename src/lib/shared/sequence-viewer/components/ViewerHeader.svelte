@@ -127,7 +127,9 @@
     sequence.word || sequence.displayName || sequence.name || "Sequence"
   );
   const activeWordStepNumber = $derived(
-    ctx.highlightedStepIndex !== null && ctx.highlightedStepIndex >= 0
+    ctx.editingPane !== "image" &&
+      ctx.highlightedStepIndex !== null &&
+      ctx.highlightedStepIndex >= 0
       ? ctx.highlightedStepIndex + 1
       : null
   );

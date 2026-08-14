@@ -193,6 +193,7 @@ describe("SequenceViewerShell host contract", () => {
     expect(viewerHeaderSource).toContain(
       "activeStepNumber={activeWordStepNumber}"
     );
+    expect(viewerHeaderSource).toContain('ctx.editingPane !== "image"');
     expect(shellSource).toContain(
       "sequence={ctx.effectiveSequence ?? sequence}"
     );

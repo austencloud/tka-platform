@@ -173,7 +173,11 @@ export function createViewerShellLayoutState(
     const ctx = inputs.getContext();
     ctx.ensureInteractiveServices();
     const previousMode = ctx.viewerState.viewerMode;
-    ctx.viewerState.exitExport();
+    // A person leaving Card should get the playback state they arrived with.
+    // Startup promotion is different: it has no prior viewing session to
+    // restore and should not announce that an export was closed.
+    if (track && ctx.editingPane === "image") ctx.exitEditMode();
+    else ctx.viewerState.exitExport();
     ctx.viewerState.setSplitConfig({
       leftPane: "animation",
       rightPane: "card",
@@ -190,16 +194,21 @@ export function createViewerShellLayoutState(
 
   function selectViewerMode(mode: ContentType, countIntent = true): void {
     const ctx = inputs.getContext();
-    if (mode !== "card") ctx.ensureInteractiveServices();
     const previousMode = ctx.viewerState.viewerMode;
+    if (previousMode === mode) return;
+    if (mode !== "card") ctx.ensureInteractiveServices();
+
     if (mode === "animation") {
+      if (ctx.editingPane === "image") ctx.exitEditMode();
       ctx.viewerState.enterExport("animation-export", "animation");
     } else if (mode === "animation-3d") {
+      if (ctx.editingPane === "image") ctx.exitEditMode();
       ctx.viewerState.enterExport("animation-export", "animation-3d");
     } else if (mode === "card") {
-      ctx.viewerState.enterExport("image-export");
+      ctx.enterEditMode("image");
     } else if (mode === "mandala" || mode === "tunnel") {
-      ctx.viewerState.exitExport();
+      if (ctx.editingPane === "image") ctx.exitEditMode();
+      else ctx.viewerState.exitExport();
       ctx.viewerState.setViewerMode(mode);
     }
     dependencies.captureScanViewChanged(previousMode, mode, "mode_switcher", {
@@ -211,7 +220,7 @@ export function createViewerShellLayoutState(
     const ctx = inputs.getContext();
     const wasPlaying = ctx.isPlayingLocal;
     selectViewerMode("animation", false);
-    if (!wasPlaying) ctx.handlePlaybackToggle();
+    if (!inputs.getContext().isPlayingLocal) ctx.handlePlaybackToggle();
     dependencies.captureScanPlaybackChanged({
       action: "qr_play",
       previous_value: wasPlaying,
