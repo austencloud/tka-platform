@@ -38,6 +38,10 @@
   const gridRows = $derived(
     includeStart && showMandala ? Math.max(2, stepRows) : stepRows
   );
+  // Match the canonical Choreo Card's mandala-to-cell ratio. A full-cell
+  // mandala pushes its outer glow into the cell edge and reads as cropped,
+  // especially in the large Fuse cards.
+  const mandalaSize = $derived(Math.round(Math.max(72, cellSize) * 0.78));
   const startPosition = $derived(
     sequence.startPosition ??
       sequence.startingPosition ??
@@ -122,7 +126,7 @@
         mode="card-back"
         style={"stroke"}
         show={side}
-        size={Math.max(72, cellSize)}
+        size={mandalaSize}
         darkMode={true}
         {bluePropType}
         {redPropType}

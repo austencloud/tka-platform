@@ -97,13 +97,14 @@
           {canShiftStart}
           showEditInConstructor={false}
           isDesktopPanel={false}
-          rotationDegrees={90}
+          rotationDegrees={45}
+          showRotationDegreesInLabel={true}
           shiftStartPlacement="transform"
           onMirror={() => apply({ kind: "mirror" })}
           onFlip={() => apply({ kind: "flip" })}
           onInvert={() => apply({ kind: "invert" })}
-          onRotateCW={() => apply({ kind: "rotate", quarterTurns: 1 })}
-          onRotateCCW={() => apply({ kind: "rotate", quarterTurns: -1 })}
+          onRotateCW={() => apply({ kind: "rotate", rotationSteps: 1 })}
+          onRotateCCW={() => apply({ kind: "rotate", rotationSteps: -1 })}
           onShiftStart={chooseFirstStep}
         />
       </div>
@@ -180,7 +181,12 @@
     border: 1px solid
       color-mix(in srgb, var(--source-color) 44%, var(--theme-stroke));
     border-radius: 18px;
-    background: var(--theme-panel-bg);
+    /* The source card stays visually busy while this palette is open. Layer
+       the themed panel color over an opaque theme-derived floor so arrows and
+       step numbers cannot ghost through the controls. */
+    background:
+      linear-gradient(var(--theme-panel-bg), var(--theme-panel-bg)),
+      color-mix(in srgb, var(--theme-text) 8%, black);
     box-shadow:
       0 24px 70px var(--theme-shadow),
       0 0 34px color-mix(in srgb, var(--source-color) 12%, transparent);

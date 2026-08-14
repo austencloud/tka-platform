@@ -24,7 +24,8 @@ describe("Fuse sequence actions contract", () => {
       'import SequenceTransformActions from "$lib/shared/create/components/SequenceTransformActions.svelte"'
     );
     expect(popover).toContain("<SequenceTransformActions");
-    expect(popover).toContain("rotationDegrees={90}");
+    expect(popover).toContain("rotationDegrees={45}");
+    expect(popover).toContain("showRotationDegreesInLabel={true}");
     expect(popover).toContain('shiftStartPlacement="transform"');
     expect(popover).not.toContain("onRewind=");
     expect(popover).not.toContain("onSwap=");
@@ -47,25 +48,13 @@ describe("Fuse sequence actions contract", () => {
     const popover = read(
       "src/lib/features/fuse/components/FuseSourceActionPopover.svelte"
     );
-    const navigator = read(
-      "src/lib/shared/sequence-viewer/services/sequence-viewer-navigator.ts"
-    );
-    const overlayState = read(
-      "src/lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte.ts"
-    );
-    const drawerHost = read(
-      "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte"
-    );
 
     expect(card).toContain('label: "View Choreo Card"');
-    expect(card).toContain('initialViewMode: "image"');
+    expect(card).toContain("<CardInspectModal");
+    expect(card).toContain('presentation="live"');
+    expect(card).toContain("browseViewMode={viewMode}");
     expect(card).toContain("compactTrigger={true}");
     expect(popover).toContain("compactTrigger?: boolean");
-    expect(navigator).toContain("initialViewMode: options.initialViewMode");
-    expect(overlayState).toContain(
-      "_initialViewMode = options?.initialViewMode"
-    );
-    expect(drawerHost).toContain("initialViewMode={overlay.initialViewMode}");
 
     const compactMenu = card.slice(
       card.indexOf("const compactSourceMenuItems"),

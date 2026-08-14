@@ -14,6 +14,8 @@ function relationshipState(): FuseState {
     isFusing: false,
     setMode: vi.fn(),
     setRelationship: vi.fn(),
+    previewRelationship: vi.fn().mockResolvedValue(undefined),
+    cancelRelationshipPreview: vi.fn(),
   } as unknown as FuseState;
 }
 
@@ -22,12 +24,17 @@ describe("FuseRelationshipComposer", () => {
     const state = relationshipState();
     render(FuseRelationshipComposerTestHarness, { state });
 
-    await page.getByRole("button", { name: "Change link" }).click();
     await page.getByRole("radio", { name: /Rotate 90/ }).click();
 
+    expect(state.previewRelationship).toHaveBeenLastCalledWith(
+      "blue",
+      "rotate90"
+    );
+
+    await page.getByRole("button", { name: "Use this relationship" }).click();
     expect(state.setRelationship).toHaveBeenCalledWith("blue", "rotate90");
 
     await page.getByRole("button", { name: "Cancel" }).click();
-    expect(state.setRelationship).toHaveBeenLastCalledWith("blue", "mirror");
+    expect(state.cancelRelationshipPreview).toHaveBeenCalled();
   });
 });

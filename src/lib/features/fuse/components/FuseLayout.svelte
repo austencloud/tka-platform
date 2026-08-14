@@ -10,6 +10,10 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { LibraryError } from "$lib/shared/library/domain/library-error";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import {
+    getBestFuseStepColumns,
+    resolveBalancedFuseWorkspaceSplit,
+  } from "../services/fuse-workspace-split";
   import { getFuseContext } from "../context/fuse-context";
   import FusePairingBar from "./FusePairingBar.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
@@ -18,6 +22,7 @@
   } from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
+  import FusePathBuilderDialog from "./FusePathBuilderDialog.svelte";
   import FuseWorkspaceHeader from "./FuseWorkspaceHeader.svelte";
 
   const { state: fuseState } = getFuseContext();
@@ -31,6 +36,8 @@
   let actionSide = $state<"blue" | "red" | null>(null);
   let firstStepOpen = $state(false);
   let inlineFirstStepSide = $state<"blue" | "red" | null>(null);
+  let pathBuilderOpen = $state(false);
+  let pathBuilderSide = $state<"blue" | "red" | null>(null);
   let isSavingResult = $state(false);
   // On the locked desktop layout the source cards sit in a tall column with
   // room to spare, so each pictograph stays large even with a start position
@@ -44,29 +51,35 @@
   // (ViewerContentRail): pointer-capture drag, col-resize handle, double-click
   // reset. Drives the grid's left track via --fuse-left.
   //
-  // Default is COMPUTED, not a fixed fraction: the canvas is square, so its
-  // column reaches minimal empty space exactly when its width equals the
-  // content-row height. The remaining width goes to the path column — and at
-  // ~16:9 that same point fits the stacked cards to width too, so both panes
-  // fill at once. A user drag is saved per approximate device size and wins over
-  // the computed default on the next visit at that size.
+  // Default is COMPUTED, not a fixed fraction. The source cards and the square
+  // animation frame each derive an ideal width from the available height, then
+  // share any surplus or deficit proportionally. A user drag is saved per
+  // approximate device size and wins over the computed default on the next
+  // visit at that size.
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const LAPTOP_MIN_LEFT = 560;
-  const WIDE_MIN_LEFT = 1050;
+  const WIDE_MIN_LEFT = 720;
+  const WIDE_MIN_LEFT_CAP = 1050;
   const WIDE_MAX_LEFT = 1400;
+  const NATIVE_4K_MAX_LEFT = 2000;
+  const NATIVE_4K_CANVAS_FLOOR = 1200;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const STEP_COL_CANDIDATES = [1, 2, 4, 6, 8] as const; // step columns to weigh (+1 context col)
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
+  const PREVIEW_CHROME_V = 190; // matches FusePreviewStage's square frame cap
+  const PREVIEW_HPAD = 48; // maximum desktop stage padding, both sides
 
   let containerWidth = $state(0);
+  let containerHeight = $state(0);
+  let workspaceGridWidth = $state(0);
   let contentH = $state(0); // measured content-row height (the left column fills it)
   let overrides = $state<Record<string, number>>(loadOverrides());
   let splitPx = $state<number | null>(null);
   let dragging = $state(false);
   let leftColEl = $state<HTMLDivElement | null>(null);
+  let workspaceEl = $state<HTMLDivElement | null>(null);
 
   function loadOverrides(): Record<string, number> {
     try {
@@ -103,38 +116,8 @@
   const cardBoxH = $derived(
     Math.max(0, (contentH - CARD_GAP) / 2 - CARD_CHROME_V)
   );
-  function cellSizeFor(leftW: number, sc: number): number {
-    const gridCols = sc + 1;
-    const rows = Math.max(Math.ceil(stepCount / sc), 2);
-    const boxW = Math.max(0, leftW - CARD_HPAD);
-    return Math.min(boxW / gridCols, cardBoxH / rows);
-  }
-  function stepColumnCandidates(): readonly number[] {
-    const twoRowCeiling = Math.max(1, Math.ceil(stepCount / 2));
-    return STEP_COL_CANDIDATES.filter((columns) => columns <= twoRowCeiling);
-  }
-  function emptyStepCells(sc: number): number {
-    return Math.max(0, Math.ceil(stepCount / sc) * sc - stepCount);
-  }
   function bestStepCols(leftW: number): number {
-    let best = stepColumnCandidates()[0] ?? 1;
-    let bestCell = -1;
-    for (const sc of stepColumnCandidates()) {
-      const cell = cellSizeFor(leftW, sc);
-      // A shallow card often makes multiple arrangements the same size. Prefer
-      // the one that fills its beat rows, then the denser option. This keeps an
-      // 8-beat LOOP at 4 × 2 instead of leaving most of row 2 empty.
-      if (
-        cell > bestCell + 0.5 ||
-        (Math.abs(cell - bestCell) <= 0.5 &&
-          (emptyStepCells(sc) < emptyStepCells(best) ||
-            (emptyStepCells(sc) === emptyStepCells(best) && sc > best)))
-      ) {
-        bestCell = cell;
-        best = sc;
-      }
-    }
-    return best;
+    return getBestFuseStepColumns(leftW, cardBoxH, stepCount, CARD_HPAD);
   }
   // Step columns the visible cards render with: whichever maximizes cell size for
   // the resolved seam. Recomputed live as the seam is dragged, so a wide box
@@ -148,40 +131,58 @@
     `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
   const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
 
-  const minLeft = () =>
+  const splitAvailableWidth = () => workspaceGridWidth || containerWidth;
+  const desiredMinLeft = () =>
     wideWorkspace
-      ? WIDE_MIN_LEFT
+      ? Math.round(
+          Math.min(
+            WIDE_MIN_LEFT_CAP,
+            Math.max(WIDE_MIN_LEFT, splitAvailableWidth() * 0.3)
+          )
+        )
       : containerWidth >= 1180
         ? LAPTOP_MIN_LEFT
         : MIN_LEFT;
-  const maxLeft = () =>
-    wideWorkspace
-      ? Math.min(WIDE_MAX_LEFT, containerWidth - CANVAS_FLOOR)
-      : Math.max(MIN_LEFT, containerWidth - CANVAS_FLOOR);
+  const minLeft = () =>
+    Math.min(
+      desiredMinLeft(),
+      Math.max(MIN_LEFT, splitAvailableWidth() - CANVAS_FLOOR)
+    );
+  const maxLeft = () => {
+    if (!wideWorkspace)
+      return Math.max(MIN_LEFT, splitAvailableWidth() - CANVAS_FLOOR);
+
+    const nativeFourK = containerWidth >= 2600 && contentH >= 1400;
+    return Math.max(
+      minLeft(),
+      Math.min(
+        nativeFourK ? NATIVE_4K_MAX_LEFT : WIDE_MAX_LEFT,
+        splitAvailableWidth() -
+          (nativeFourK ? NATIVE_4K_CANVAS_FLOOR : CANVAS_FLOOR)
+      )
+    );
+  };
   const clampSplit = (px: number) =>
     Math.round(Math.min(maxLeft(), Math.max(minLeft(), px)));
 
-  // Default seam: jointly pick the step-column count and the width that MAXIMIZE
-  // pictograph size. Each candidate's ideal width is its aspect-matched fill
-  // (gridCols/rows * cardBoxH), clamped by the canvas floor; take the candidate
-  // whose clamped width yields the largest cell. A wide container thus lands on
-  // more columns, a tall one on fewer — the size the user reaches by dragging.
+  // Default seam: jointly solve each source-card arrangement and the preview's
+  // height-capped square. Both sides receive the same proportion of their ideal
+  // width before the usability floors apply, so resizing never privileges one
+  // pane merely because it was scored first.
   function optimalSplit(): number {
-    if (contentH <= 0 || cardBoxH <= 0)
-      return clampSplit(containerWidth * 0.42);
-    let bestSeam = clampSplit(containerWidth * 0.42);
-    let bestCell = -1;
-    for (const sc of stepColumnCandidates()) {
-      const gridCols = sc + 1;
-      const rows = Math.max(Math.ceil(stepCount / sc), 2);
-      const seam = clampSplit((gridCols / rows) * cardBoxH + CARD_HPAD);
-      const cell = cellSizeFor(seam, sc);
-      if (cell > bestCell) {
-        bestCell = cell;
-        bestSeam = seam;
-      }
-    }
-    return bestSeam;
+    const previewIdealWidth = Math.max(
+      CANVAS_FLOOR,
+      containerHeight - PREVIEW_CHROME_V + PREVIEW_HPAD
+    );
+    return resolveBalancedFuseWorkspaceSplit({
+      availableWidth: splitAvailableWidth(),
+      cardBoxHeight: cardBoxH,
+      stepCount,
+      previewIdealWidth,
+      minLeft: minLeft(),
+      maxLeft: maxLeft(),
+      cardHorizontalChrome: CARD_HPAD,
+    }).splitPx;
   }
 
   // Resolve the seam whenever the layout changes and the user isn't dragging:
@@ -191,6 +192,29 @@
     if (!fullCard || dragging) return;
     const saved = overrides[deviceBucket];
     splitPx = saved != null ? clampSplit(saved) : optimalSplit();
+  });
+
+  // Read the grid's content box instead of guessing from the outer container.
+  // ResizeObserver excludes padding; subtracting the live column gap leaves the
+  // exact width the two tracks negotiate over at every responsive tier.
+  $effect(() => {
+    const el = workspaceEl;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = (contentWidth: number) => {
+      const columnGap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      workspaceGridWidth = Math.max(0, Math.round(contentWidth - columnGap));
+    };
+    const initialStyle = getComputedStyle(el);
+    measure(
+      el.clientWidth -
+        (Number.parseFloat(initialStyle.paddingLeft) || 0) -
+        (Number.parseFloat(initialStyle.paddingRight) || 0)
+    );
+    const ro = new ResizeObserver(([entry]) => {
+      measure(entry?.contentRect.width ?? 0);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   });
 
   // Measure the content-row height so optimalSplit targets a square canvas
@@ -279,6 +303,7 @@
         width > height &&
         aspectRatio <= LANDSCAPE_THRESHOLDS.WIDE_ASPECT_RATIO;
       containerWidth = width;
+      containerHeight = height;
     };
     updateLayoutMode(element.clientWidth, element.clientHeight);
 
@@ -377,6 +402,16 @@
     inlineFirstStepSide = null;
   }
 
+  function openPathBuilder(side: "blue" | "red"): void {
+    pathBuilderSide = side;
+    pathBuilderOpen = true;
+  }
+
+  function closePathBuilder(): void {
+    pathBuilderOpen = false;
+    pathBuilderSide = null;
+  }
+
   function openSettings(destination: FuseSettingsDestination): void {
     settingsDestination = destination;
     settingsOpen = true;
@@ -386,6 +421,7 @@
 <div class="fuse-container" bind:this={containerElement}>
   <div
     class="fuse-workspace themed-scrollbar"
+    bind:this={workspaceEl}
     class:compact-workspace={compact}
     class:short-landscape-workspace={shortLandscape}
     class:landscape-workspace={landscapeSplit}
@@ -406,6 +442,7 @@
           full={true}
           {stepCols}
           onChooseFirstStep={openFirstStep}
+          onBuildPath={openPathBuilder}
           firstStepPickerActive={inlineFirstStepSide === "blue"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
@@ -415,6 +452,7 @@
           full={true}
           {stepCols}
           onChooseFirstStep={openFirstStep}
+          onBuildPath={openPathBuilder}
           firstStepPickerActive={inlineFirstStepSide === "red"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
@@ -452,6 +490,7 @@
           side="blue"
           full={false}
           onChooseFirstStep={openFirstStep}
+          onBuildPath={openPathBuilder}
           firstStepPickerActive={inlineFirstStepSide === "blue"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
@@ -460,6 +499,7 @@
           side="red"
           full={false}
           onChooseFirstStep={openFirstStep}
+          onBuildPath={openPathBuilder}
           firstStepPickerActive={inlineFirstStepSide === "red"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
@@ -470,6 +510,7 @@
         side="blue"
         full={false}
         onChooseFirstStep={openFirstStep}
+        onBuildPath={openPathBuilder}
         firstStepPickerActive={inlineFirstStepSide === "blue"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
@@ -478,6 +519,7 @@
         side="red"
         full={false}
         onChooseFirstStep={openFirstStep}
+        onBuildPath={openPathBuilder}
         firstStepPickerActive={inlineFirstStepSide === "red"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
@@ -489,18 +531,27 @@
       onSave={handleSaveResult}
       isSaving={isSavingResult}
       onChooseFirstStep={openFirstStep}
+      onBuildPath={openPathBuilder}
       {compact}
+      defaultDecomposed={wideWorkspace}
     />
   </div>
 
   <FuseSettingsDrawer
     bind:isOpen={settingsOpen}
     bind:destination={settingsDestination}
+    desktopModal={fullCard}
   />
   <FuseFirstStepPanel
     bind:isOpen={firstStepOpen}
     side={actionSide}
     onClose={closeFirstStep}
+  />
+  <FusePathBuilderDialog
+    bind:isOpen={pathBuilderOpen}
+    side={pathBuilderSide}
+    desktopModal={fullCard}
+    onClose={closePathBuilder}
   />
 </div>
 

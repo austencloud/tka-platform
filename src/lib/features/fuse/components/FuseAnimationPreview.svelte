@@ -26,6 +26,7 @@
     decomposed = false,
     onError,
     onToggle,
+    onToggleDecomposed,
   }: {
     sequence: SequenceData;
     currentStep?: number;
@@ -35,6 +36,9 @@
     decomposed?: boolean;
     onError?: (error: Error) => void;
     onToggle?: () => void;
+    /** Keeps the dedicated Fuse control and the canvas context action on the
+     * same split-view state. */
+    onToggleDecomposed?: () => void;
   } = $props();
 
   // The engine boots with a "staff" default and only consults settings after the
@@ -49,6 +53,7 @@
   // relationship stays steady and a genuinely changing relationship changes
   // with the animation.
   fuseVisibility.setVisibility("elementalGlyph", true);
+  fuseVisibility.setVisibility("tkaGlyph", true);
   const previewTrailSettings = $derived({
     ...animationSettings.trail,
     // Fuse has no trail controls, so its preview follows the same prop contract
@@ -87,6 +92,7 @@
   });
 
   const gridMode = $derived(sequenceData?.gridMode ?? sequence.gridMode);
+  const activeLetter = $derived(stepData?.letter ?? null);
 
   function failInitialization(message: string, cause: unknown): void {
     const failure = cause instanceof Error ? cause : new Error(String(cause));
@@ -216,7 +222,7 @@
           visibilityManagerOverride={fuseVisibility}
           gridVisible={true}
           {gridMode}
-          letter={null}
+          letter={activeLetter}
           {stepData}
           {sequenceData}
           currentStep={animCurrentStep}
@@ -236,7 +242,7 @@
           tipEffectMap={FUSE_PREVIEW_TIP_EFFECT_MAP}
           gridVisible={true}
           {gridMode}
-          letter={null}
+          letter={activeLetter}
           {stepData}
           {sequenceData}
           currentStep={animCurrentStep}
@@ -244,12 +250,14 @@
           visibilityManagerOverride={fuseVisibility}
           word={null}
           hideProgressBar={true}
-          hideTkaGlyph={true}
+          hideTkaGlyph={false}
           hideStepNumbers={true}
           progressBarVariant="minimal"
           fillContainer={true}
           tapToToggle={true}
           onPlaybackToggle={() => onToggle?.()}
+          externalToggleDisassemble={onToggleDecomposed}
+          externalDisassembled={decomposed}
           hoverHint="badge"
         />
       </div>

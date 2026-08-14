@@ -16,18 +16,32 @@
     onShare,
     onSave,
     onChooseFirstStep,
+    onBuildPath,
     compact = false,
+    defaultDecomposed = false,
     isSaving = false,
   }: {
     onOpenViewer: () => Promise<void>;
     onShare: () => Promise<void>;
     onSave: () => Promise<void>;
     onChooseFirstStep: (side: FuseSide) => void;
+    onBuildPath: (side: FuseSide) => void;
     compact?: boolean;
+    /** Large workspaces have enough height to show both source canvases and
+     * the combined result as one composed animation object. */
+    defaultDecomposed?: boolean;
     isSaving?: boolean;
   } = $props();
   const { state: fuseState } = getFuseContext();
   let tempoOpen = $state(false);
+  let decompositionOverride = $state<boolean | null>(null);
+  const previewDecomposed = $derived(
+    decompositionOverride ?? (compact || defaultDecomposed)
+  );
+
+  function toggleDecomposition(): void {
+    decompositionOverride = !previewDecomposed;
+  }
 
   const blueName = $derived.by(() =>
     fuseState.blue.sequence
@@ -59,10 +73,32 @@
       <span class="preview-eyebrow">Result</span>
       <h3 id="fuse-preview-heading">Combined preview</h3>
     </div>
-    <span class="preview-meta">
-      {fuseState.appliedLength ?? fuseState.requestedLength} steps · {fuseState.bpm}
-      BPM
-    </span>
+    <div class="preview-heading-tools">
+      <span class="preview-meta">
+        {fuseState.appliedLength ?? fuseState.requestedLength} steps · {fuseState.bpm}
+        BPM
+      </span>
+      {#if !compact}
+        <div class="assembly-control">
+          <PanelButton
+            variant="secondary"
+            disabled={!fuseState.previewSequence}
+            ariaLabel={previewDecomposed
+              ? "Reassemble combined preview"
+              : "Disassemble combined preview"}
+            onclick={toggleDecomposition}
+          >
+            <i
+              class="fas {previewDecomposed
+                ? 'fa-compress'
+                : 'fa-table-columns'}"
+              aria-hidden="true"
+            ></i>
+            {previewDecomposed ? "Reassemble" : "Disassemble"}
+          </PanelButton>
+        </div>
+      {/if}
+    </div>
   </header>
 
   {#if compact}
@@ -72,12 +108,14 @@
         compactHero={true}
         toolbarOnly={true}
         {onChooseFirstStep}
+        {onBuildPath}
       />
       <FuseSourceCard
         side="red"
         compactHero={true}
         toolbarOnly={true}
         {onChooseFirstStep}
+        {onBuildPath}
       />
     </div>
   {/if}
@@ -89,8 +127,9 @@
           sequence={fuseState.previewSequence}
           currentStep={fuseState.currentStep}
           isPlaying={fuseState.clockRunning}
-          decomposed={compact}
+          decomposed={previewDecomposed}
           onToggle={() => fuseState.toggleClock()}
+          onToggleDecomposed={toggleDecomposition}
           onError={(failure) => fuseState.reportPreviewFailure(failure)}
         />
       {:else}
@@ -331,6 +370,24 @@
 
   .preview-heading > div {
     min-width: 0;
+  }
+
+  .preview-heading-tools {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--settings-spacing-sm, 10px);
+  }
+
+  .assembly-control {
+    flex: 0 0 auto;
+  }
+
+  .assembly-control :global(.panel-btn) {
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 14px;
+    border-radius: var(--settings-radius-md, 12px);
+    white-space: nowrap;
   }
 
   .preview-heading h3 {
@@ -577,6 +634,16 @@
      on one line. Give Share the deliberate full-width row, then keep tempo,
      save, and viewer equally readable beneath it. */
   @container fuse-preview (max-width: 620px) {
+    .preview-heading {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .preview-heading-tools {
+      width: 100%;
+      justify-content: space-between;
+    }
+
     .stage-controls {
       grid-template-columns: 110px repeat(2, minmax(0, 1fr));
       grid-template-areas:

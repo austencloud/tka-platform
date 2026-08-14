@@ -53,6 +53,7 @@ export interface GeneratedSoloLoop {
 }
 
 export interface SoloLoopGenerationRecipe {
+  readonly gridMode: GridMode;
   readonly level: TurnLevel;
   readonly maxTurnIntensity: number;
   readonly constraintPreset: "smooth" | "mixed" | "choppy";
@@ -67,6 +68,7 @@ export type SoloLoopTraversalDirection = "clockwise" | "counterclockwise";
 
 export const DEFAULT_SOLO_LOOP_RECIPE: SoloLoopGenerationRecipe = Object.freeze(
   {
+    gridMode: GridMode.DIAMOND,
     level: 2,
     maxTurnIntensity: 1,
     constraintPreset: "mixed",
@@ -99,7 +101,10 @@ export function isStructuredSoloLoop(solo: SoloPropData): boolean {
   return detectSoloLOOP(soloStepsToEngineMotions(solo.steps)).isLoop;
 }
 
-let diamondMotionTemplates: Promise<readonly MotionData[]> | null = null;
+const motionTemplatesByGrid = new Map<
+  GridMode,
+  Promise<readonly MotionData[]>
+>();
 
 function motionSignature(motion: MotionData): string {
   return [
@@ -112,11 +117,14 @@ function motionSignature(motion: MotionData): string {
   ].join(":");
 }
 
-async function loadDiamondMotionTemplates(): Promise<readonly MotionData[]> {
-  if (diamondMotionTemplates) return diamondMotionTemplates;
+async function loadMotionTemplatesForGrid(
+  gridMode: GridMode
+): Promise<readonly MotionData[]> {
+  const cached = motionTemplatesByGrid.get(gridMode);
+  if (cached) return cached;
 
-  diamondMotionTemplates = letterQueryHandler
-    .getAllPictographVariations(GridMode.DIAMOND)
+  const pending = letterQueryHandler
+    .getAllPictographVariations(gridMode)
     .then((pictographs) => {
       const unique = new Map<string, MotionData>();
       for (const pictograph of pictographs) {
@@ -133,11 +141,11 @@ async function loadDiamondMotionTemplates(): Promise<readonly MotionData[]> {
       return [...unique.values()];
     })
     .catch((error) => {
-      diamondMotionTemplates = null;
+      motionTemplatesByGrid.delete(gridMode);
       throw error;
     });
-
-  return diamondMotionTemplates;
+  motionTemplatesByGrid.set(gridMode, pending);
+  return pending;
 }
 
 function randomItem<T>(items: readonly T[], random: () => number): T {
@@ -146,12 +154,25 @@ function randomItem<T>(items: readonly T[], random: () => number): T {
   return items[Math.floor(random() * items.length) % items.length]!;
 }
 
-const CARDINAL_START_LOCATIONS: readonly GridLocation[] = [
+const DIAMOND_START_LOCATIONS: readonly GridLocation[] = [
   GridLocation.NORTH,
   GridLocation.EAST,
   GridLocation.SOUTH,
   GridLocation.WEST,
 ];
+
+const BOX_START_LOCATIONS: readonly GridLocation[] = [
+  GridLocation.NORTHEAST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+  GridLocation.NORTHWEST,
+];
+
+function startLocationsForGrid(gridMode: GridMode): readonly GridLocation[] {
+  return gridMode === GridMode.BOX
+    ? BOX_START_LOCATIONS
+    : DIAMOND_START_LOCATIONS;
+}
 
 export interface FuseFlowerGenerationVariation {
   readonly flower: Flower;
@@ -331,7 +352,9 @@ function startLocationsWithMotions(
   if (recipe.startLocation) {
     return byStart.has(recipe.startLocation) ? [recipe.startLocation] : [];
   }
-  return CARDINAL_START_LOCATIONS.filter((location) => byStart.has(location));
+  return startLocationsForGrid(recipe.gridMode).filter((location) =>
+    byStart.has(location)
+  );
 }
 
 function chooseStartOrientation(
@@ -681,11 +704,11 @@ export async function generateSoloLoop(
     random: () => number,
     recipe: SoloLoopGenerationRecipe
   ) => Promise<SoloPropData> = loadRandomFlowerSolo,
-  loadMotionTemplates: () => Promise<
-    readonly MotionData[]
-  > = loadDiamondMotionTemplates
+  loadMotionTemplates: (
+    gridMode: GridMode
+  ) => Promise<readonly MotionData[]> = loadMotionTemplatesForGrid
 ): Promise<GeneratedSoloLoop> {
-  if (length === 4) {
+  if (length === 4 && recipe.gridMode === GridMode.DIAMOND) {
     const prefersGenericPath =
       recipe.constraintPreset === "choppy" ||
       recipe.handPathMode === "choppy" ||
@@ -702,7 +725,7 @@ export async function generateSoloLoop(
       }
     }
   }
-  const templates = await loadMotionTemplates();
+  const templates = await loadMotionTemplates(recipe.gridMode);
   return generateStructuredSoloLoopFromMotions(
     templates,
     length,

@@ -24,9 +24,10 @@
     compactMode?: boolean;
     /** True when help mode is active - buttons show help instead of applying transforms/patterns */
     helpMode?: boolean;
-    /** The Create workspace pivots by 45°. Fixed-grid consumers such as Fuse
-        may use the same action surface with 90° as their smallest legal turn. */
+    /** Degrees applied by each spatial rotation action. */
     rotationDegrees?: 45 | 90;
+    /** Include the increment in compact button labels when descriptions are hidden. */
+    showRotationDegreesInLabel?: boolean;
     desktopColumns?: 2 | 3;
     /** Other sequence surfaces provide only the callbacks that are valid in
         their context; absent callbacks remove those tiles. */
@@ -69,6 +70,7 @@
     compactMode = false,
     helpMode = false,
     rotationDegrees = 45,
+    showRotationDegreesInLabel = false,
     desktopColumns = 2,
     secondarySectionLabel = "Patterns",
     shiftStartPlacement = "secondary",
@@ -275,7 +277,9 @@
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
         </div>
         <div class="btn-text">
-          <span class="btn-label">Rotate L</span>
+          <span class="btn-label">
+            {showRotationDegreesInLabel ? `${rotationDegrees}° L` : "Rotate L"}
+          </span>
           <span class="btn-desc">Pivot {rotationDegrees}°</span>
         </div>
       </button>
@@ -295,7 +299,9 @@
           <i class="fas fa-rotate-right" aria-hidden="true"></i>
         </div>
         <div class="btn-text">
-          <span class="btn-label">Rotate R</span>
+          <span class="btn-label">
+            {showRotationDegreesInLabel ? `${rotationDegrees}° R` : "Rotate R"}
+          </span>
           <span class="btn-desc">Pivot {rotationDegrees}°</span>
         </div>
       </button>

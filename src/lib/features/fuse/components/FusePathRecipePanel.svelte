@@ -1,18 +1,13 @@
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
   import ChoiceCard from "$lib/features/create/generate/components/cards/ChoiceCard.svelte";
-  import LevelCard from "$lib/features/create/generate/components/cards/LevelCard.svelte";
-  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import StyleExpandPanel from "$lib/features/create/generate/components/StyleExpandPanel.svelte";
   import { startOrientationsForLevel } from "$lib/features/create/generate/domain/level-orientation-policy";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import {
-    maxTurnIntensitiesForLevel,
-    type TurnLevel,
-  } from "$lib/shared/create/services/level-turn-values";
-  import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
-  import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
-  import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+    GridLocation,
+    GridMode,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     Orientation,
     type Orientation as OrientationValue,
@@ -20,14 +15,19 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import type { SoloLoopTraversalDirection } from "../services/solo-loop-generator";
-  import { FUSE_LENGTHS } from "../state/fuse-state.svelte";
 
-  type RecipeSection = "basics" | "style" | "starting";
+  type RecipeSection = "style" | "starting";
   type LocationChoice = "random" | GridLocation;
   type OrientationChoice = "random" | OrientationValue;
   type TraversalChoice = "random" | SoloLoopTraversalDirection;
 
-  let { section }: { section: RecipeSection } = $props();
+  let {
+    section,
+    presentation = "drawer",
+  }: {
+    section: RecipeSection;
+    presentation?: "drawer" | "modal";
+  } = $props();
   const { state: fuseState } = getFuseContext();
 
   const styleBaseline = {
@@ -35,12 +35,19 @@
     handPathMode: "mixed",
     motionTypeFilter: null,
   } as const;
-  const locationOptions = [
+  const diamondLocationOptions = [
     { value: "random", label: "Random" },
     { value: GridLocation.NORTH, label: "North", shortLabel: "N" },
     { value: GridLocation.EAST, label: "East", shortLabel: "E" },
     { value: GridLocation.SOUTH, label: "South", shortLabel: "S" },
     { value: GridLocation.WEST, label: "West", shortLabel: "W" },
+  ] as const;
+  const boxLocationOptions = [
+    { value: "random", label: "Random" },
+    { value: GridLocation.NORTHEAST, label: "Northeast", shortLabel: "NE" },
+    { value: GridLocation.SOUTHEAST, label: "Southeast", shortLabel: "SE" },
+    { value: GridLocation.SOUTHWEST, label: "Southwest", shortLabel: "SW" },
+    { value: GridLocation.NORTHWEST, label: "Northwest", shortLabel: "NW" },
   ] as const;
   const orientationCatalog = [
     { value: Orientation.IN, label: "In" },
@@ -61,22 +68,15 @@
     },
   ] as const;
 
-  const levelMap: Record<TurnLevel, DifficultyLevel> = {
-    1: DifficultyLevel.BEGINNER,
-    2: DifficultyLevel.INTERMEDIATE,
-    3: DifficultyLevel.ADVANCED,
-  };
-  const reverseLevelMap: Record<DifficultyLevel, TurnLevel> = {
-    [DifficultyLevel.BEGINNER]: 1,
-    [DifficultyLevel.INTERMEDIATE]: 2,
-    [DifficultyLevel.ADVANCED]: 3,
-    [DifficultyLevel.SKEWED]: 3,
-  };
-
   const disabled = $derived(
     fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing
+  );
+  const cardHeaderSize = $derived(
+    presentation === "modal"
+      ? "var(--recipe-detail-title-size)"
+      : "var(--font-size-compact, 0.75rem)"
   );
   const locationChoice = $derived<LocationChoice>(
     fuseState.startLocation ?? "random"
@@ -86,6 +86,11 @@
   );
   const traversalChoice = $derived<TraversalChoice>(
     fuseState.traversalDirection ?? "random"
+  );
+  const locationOptions = $derived(
+    fuseState.gridMode === GridMode.BOX
+      ? boxLocationOptions
+      : diamondLocationOptions
   );
   const orientationOptions = $derived([
     { value: "random" as const, label: "Random" },
@@ -100,36 +105,6 @@
       settingsService.settings.backgroundType ?? BackgroundType.WINTER
     )
   );
-  const lengthIndex = $derived(FUSE_LENGTHS.indexOf(fuseState.requestedLength));
-  const allowedTurnIntensities = $derived(
-    fuseState.generationLevel === 1
-      ? [0]
-      : [...maxTurnIntensitiesForLevel(fuseState.generationLevel)]
-  );
-  const displayedTurnIntensity = $derived(
-    fuseState.generationLevel === 1 ? 0 : fuseState.maxTurnIntensity
-  );
-
-  function changeLength(offset: -1 | 1): void {
-    if (disabled) return;
-    const nextIndex = Math.max(
-      0,
-      Math.min(FUSE_LENGTHS.length - 1, lengthIndex + offset)
-    );
-    const nextLength = FUSE_LENGTHS[nextIndex];
-    if (nextLength !== undefined) void fuseState.setLength(nextLength);
-  }
-
-  function selectLevel(level: DifficultyLevel): void {
-    if (disabled) return;
-    fuseState.setGenerationLevel(reverseLevelMap[level]);
-  }
-
-  function selectTurnIntensity(value: number): void {
-    if (disabled || fuseState.generationLevel === 1) return;
-    fuseState.setMaxTurnIntensity(value);
-  }
-
   function selectLocation(value: LocationChoice): void {
     fuseState.setStartLocation(value === "random" ? null : value);
   }
@@ -143,59 +118,11 @@
   }
 </script>
 
-{#if section === "basics"}
-  <div class="drill-fill recipe-stage">
-    <div class="recipe-grid basics-grid">
-      <div class="card-wrapper length-card">
-        <StepperCard
-          title="Length"
-          currentValue={fuseState.requestedLength}
-          minValue={FUSE_LENGTHS[0]}
-          maxValue={FUSE_LENGTHS[FUSE_LENGTHS.length - 1]}
-          onIncrement={() => changeLength(1)}
-          onDecrement={() => changeLength(-1)}
-          formatValue={(value) => String(value)}
-          subtitle="steps"
-          color={cardColors.length.color}
-          shadowColor={cardColors.length.shadowColor}
-          gridColumnSpan={6}
-        />
-      </div>
-      <div class="card-wrapper">
-        <LevelCard
-          currentLevel={levelMap[fuseState.generationLevel]}
-          onLevelChange={selectLevel}
-          gridColumnSpan={3}
-        />
-      </div>
-      <div class="card-wrapper">
-        {#if fuseState.generationLevel === 1}
-          <StepperCard
-            title="Max turns"
-            currentValue={0}
-            minValue={0}
-            maxValue={0}
-            onIncrement={() => undefined}
-            onDecrement={() => undefined}
-            formatValue={() => "0"}
-            description="No turns at Level 1"
-            color={cardColors.turnIntensity.color}
-            shadowColor={cardColors.turnIntensity.shadowColor}
-            gridColumnSpan={3}
-          />
-        {:else}
-          <TurnIntensityCard
-            currentIntensity={displayedTurnIntensity}
-            allowedValues={allowedTurnIntensities}
-            onIntensityChange={selectTurnIntensity}
-            gridColumnSpan={3}
-          />
-        {/if}
-      </div>
-    </div>
-  </div>
-{:else if section === "style"}
-  <div class="drill-fill detail-stack">
+{#if section === "style"}
+  <div
+    class="drill-fill detail-stack"
+    class:modal-detail={presentation === "modal"}
+  >
     <StyleExpandPanel
       constraintPreset={fuseState.constraintPreset}
       handPathMode={fuseState.handPathMode}
@@ -209,7 +136,10 @@
     />
   </div>
 {:else}
-  <div class="drill-fill recipe-stage">
+  <div
+    class="drill-fill recipe-stage"
+    class:modal-detail={presentation === "modal"}
+  >
     <div class="recipe-grid starting-grid">
       <div class="card-wrapper">
         <ChoiceCard
@@ -227,6 +157,7 @@
           shadowColor={cardColors.startEnd.shadowColor}
           ariaLabel="Generated LOOP start point"
           gridColumnSpan={6}
+          headerFontSize={cardHeaderSize}
         />
       </div>
       <div class="card-wrapper">
@@ -245,6 +176,7 @@
           shadowColor={cardColors.continuity.shadowColor}
           ariaLabel="Generated LOOP start orientation"
           gridColumnSpan={6}
+          headerFontSize={cardHeaderSize}
         />
       </div>
       <div class="card-wrapper">
@@ -263,6 +195,7 @@
           shadowColor={cardColors.mode.shadowColor}
           ariaLabel="Generated LOOP traversal direction"
           gridColumnSpan={6}
+          headerFontSize={cardHeaderSize}
         />
       </div>
     </div>
@@ -291,10 +224,6 @@
     max-height: 48rem;
   }
 
-  .basics-grid {
-    grid-template-rows: minmax(12rem, 1.15fr) minmax(13rem, 1fr);
-  }
-
   .starting-grid {
     grid-template-rows: repeat(3, minmax(10rem, 1fr));
   }
@@ -305,10 +234,6 @@
     grid-column: span 6;
     min-width: 0;
     min-height: 0;
-  }
-
-  .basics-grid .card-wrapper:not(.length-card) {
-    grid-column: span 3;
   }
 
   .card-wrapper > :global(*) {
@@ -329,6 +254,36 @@
     justify-content: flex-start;
   }
 
+  .detail-stack.modal-detail {
+    justify-content: center;
+    width: min(100%, 72rem);
+    margin-inline: auto;
+    padding: clamp(1rem, 4cqh, 3rem);
+  }
+
+  .recipe-stage.modal-detail {
+    --recipe-detail-title-size: clamp(1rem, 4.5cqh, 1.25rem);
+    --card-text-size: clamp(1.75rem, 7cqh, 3rem);
+    align-items: center;
+    padding: clamp(0.75rem, 2cqh, 1.5rem) 0;
+  }
+
+  .modal-detail :global(.choice-control .segment) {
+    font-size: clamp(1rem, 2.5cqh, 1.25rem);
+  }
+
+  .modal-detail .recipe-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: minmax(18rem, 1fr);
+    min-height: 0;
+    max-height: 40rem;
+    height: min(100%, 40rem);
+  }
+
+  .modal-detail .card-wrapper {
+    grid-column: span 2;
+  }
+
   @media (max-width: 560px) {
     .recipe-stage {
       align-items: flex-start;
@@ -339,14 +294,6 @@
       min-height: auto;
       max-height: none;
       gap: 0.6rem;
-    }
-
-    .basics-grid {
-      grid-template-rows: 9rem 10rem 10rem;
-    }
-
-    .basics-grid .card-wrapper:not(.length-card) {
-      grid-column: span 6;
     }
 
     .starting-grid {

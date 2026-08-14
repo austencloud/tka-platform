@@ -74,6 +74,53 @@ const ringTemplates = [
   }),
 ];
 
+const boxRingTemplates = [
+  createMotionData({
+    color: MotionColor.BLUE,
+    gridMode: GridMode.BOX,
+    motionType: MotionType.PRO,
+    rotationDirection: RotationDirection.CLOCKWISE,
+    startLocation: GridLocation.NORTHEAST,
+    endLocation: GridLocation.SOUTHEAST,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.OUT,
+    turns: 0,
+  }),
+  createMotionData({
+    color: MotionColor.RED,
+    gridMode: GridMode.BOX,
+    motionType: MotionType.ANTI,
+    rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+    startLocation: GridLocation.SOUTHEAST,
+    endLocation: GridLocation.SOUTHWEST,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.OUT,
+    turns: 0,
+  }),
+  createMotionData({
+    color: MotionColor.BLUE,
+    gridMode: GridMode.BOX,
+    motionType: MotionType.PRO,
+    rotationDirection: RotationDirection.CLOCKWISE,
+    startLocation: GridLocation.SOUTHWEST,
+    endLocation: GridLocation.NORTHWEST,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.OUT,
+    turns: 0,
+  }),
+  createMotionData({
+    color: MotionColor.RED,
+    gridMode: GridMode.BOX,
+    motionType: MotionType.ANTI,
+    rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+    startLocation: GridLocation.NORTHWEST,
+    endLocation: GridLocation.NORTHEAST,
+    startOrientation: Orientation.IN,
+    endOrientation: Orientation.OUT,
+    turns: 0,
+  }),
+];
+
 function makeRecipe(overrides: Partial<typeof DEFAULT_SOLO_LOOP_RECIPE> = {}) {
   return { ...DEFAULT_SOLO_LOOP_RECIPE, ...overrides };
 }
@@ -428,6 +475,39 @@ describe("Fuse solo LOOP generator", () => {
     expect(generated.solo.steps[0]!.startLocation).toBe(
       generated.solo.steps.at(-1)!.endLocation
     );
+  });
+
+  it("uses the selected Box vocabulary instead of the Diamond flower pool", async () => {
+    const loadFourCountSolo = vi.fn(async () => {
+      throw new Error("Box generation must not use the Diamond flower pool");
+    });
+    const loadMotionTemplates = vi.fn(async () => boxRingTemplates);
+
+    const generated = await generateSoloLoop(
+      4,
+      makeRecipe({
+        gridMode: GridMode.BOX,
+        level: 1,
+        maxTurnIntensity: 0,
+        traversalDirection: "clockwise",
+      }),
+      () => 0,
+      loadFourCountSolo,
+      loadMotionTemplates
+    );
+
+    expect(loadFourCountSolo).not.toHaveBeenCalled();
+    expect(loadMotionTemplates).toHaveBeenCalledWith(GridMode.BOX);
+    expect(
+      generated.solo.steps.every((step) =>
+        [
+          GridLocation.NORTHEAST,
+          GridLocation.SOUTHEAST,
+          GridLocation.SOUTHWEST,
+          GridLocation.NORTHWEST,
+        ].includes(step.startLocation)
+      )
+    ).toBe(true);
   });
 
   it("varies a flower's first step, prop orientation, and traversal independently", () => {

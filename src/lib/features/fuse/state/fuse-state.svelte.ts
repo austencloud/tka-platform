@@ -25,7 +25,10 @@ import {
 import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
 import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  GridLocation,
+  GridMode,
+} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type {
   MotionColor,
@@ -188,7 +191,7 @@ export interface SourceOrigin {
 }
 
 export type FuseSourceAdjustment =
-  | { kind: "rotate"; quarterTurns: -1 | 1 }
+  | { kind: "rotate"; rotationSteps: -1 | 1 }
   | { kind: "mirror" }
   | { kind: "flip" }
   | { kind: "invert" }
@@ -224,6 +227,7 @@ interface PersistedFuseState {
   mode?: FuseMode;
   driverSide?: FuseSide;
   transformId?: FuseTransformId;
+  gridMode?: GridMode;
   generationLevel?: TurnLevel;
   maxTurnIntensity?: number;
   constraintPreset?: SoloLoopGenerationRecipe["constraintPreset"];
@@ -234,12 +238,31 @@ interface PersistedFuseState {
   traversalDirection?: SoloLoopTraversalDirection | null;
 }
 
-const FUSE_START_LOCATIONS = [
+export const FUSE_DIAMOND_START_LOCATIONS = [
   GridLocation.NORTH,
   GridLocation.EAST,
   GridLocation.SOUTH,
   GridLocation.WEST,
 ] as const;
+
+export const FUSE_BOX_START_LOCATIONS = [
+  GridLocation.NORTHEAST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTHWEST,
+  GridLocation.NORTHWEST,
+] as const;
+
+export function startLocationsForFuseGrid(
+  gridMode: GridMode
+): readonly GridLocation[] {
+  return gridMode === GridMode.BOX
+    ? FUSE_BOX_START_LOCATIONS
+    : FUSE_DIAMOND_START_LOCATIONS;
+}
+
+function isFuseGridMode(value: unknown): value is GridMode {
+  return value === GridMode.DIAMOND || value === GridMode.BOX;
+}
 
 function isContinuityPreference(
   value: unknown
@@ -253,10 +276,11 @@ function isMotionTypeFilter(
   return value === null || value === "no-dash" || value === "prefer-dash";
 }
 
-function isFuseStartLocation(value: unknown): value is GridLocation {
-  return FUSE_START_LOCATIONS.includes(
-    value as (typeof FUSE_START_LOCATIONS)[number]
-  );
+function isFuseStartLocation(
+  value: unknown,
+  gridMode: GridMode
+): value is GridLocation {
+  return startLocationsForFuseGrid(gridMode).includes(value as GridLocation);
 }
 
 function isSoloTraversalDirection(
@@ -365,6 +389,9 @@ function readPersistedState(): PersistedFuseState {
     if (isFuseTransformId(record.transformId)) {
       result.transformId = record.transformId;
     }
+    if (isFuseGridMode(record.gridMode)) {
+      result.gridMode = record.gridMode;
+    }
     if (
       typeof record.generationLevel === "number" &&
       Number.isFinite(record.generationLevel)
@@ -389,9 +416,11 @@ function readPersistedState(): PersistedFuseState {
     if (isMotionTypeFilter(record.motionTypeFilter)) {
       result.motionTypeFilter = record.motionTypeFilter;
     }
+    const persistedGridMode =
+      result.gridMode ?? DEFAULT_SOLO_LOOP_RECIPE.gridMode;
     if (
       record.startLocation === null ||
-      isFuseStartLocation(record.startLocation)
+      isFuseStartLocation(record.startLocation, persistedGridMode)
     ) {
       result.startLocation = record.startLocation;
     }
@@ -514,6 +543,9 @@ export function createFuseState({
   let requestedLength = $state<FuseLength>(initialLength);
   let appliedLength = $state<FuseLength | null>(null);
   let bpm = $state(normalizeBpm(persisted.bpm));
+  let gridMode = $state<GridMode>(
+    persisted.gridMode ?? DEFAULT_SOLO_LOOP_RECIPE.gridMode
+  );
   let generationLevel = $state<TurnLevel>(
     persisted.generationLevel ?? DEFAULT_SOLO_LOOP_RECIPE.level
   );
@@ -553,6 +585,11 @@ export function createFuseState({
   let initialLoadPromise: Promise<void> | null = null;
   let lengthGeneration = 0;
   let buildGeneration = 0;
+  let previewLetterGeneration = 0;
+  let activePreviewLetterDerivation: {
+    generation: number;
+    promise: Promise<SequenceData>;
+  } | null = null;
   let blueGeneration = 0;
   let redGeneration = 0;
   let disposed = false;
@@ -695,11 +732,49 @@ export function createFuseState({
   }
 
   /**
+   * Publish motion immediately, then decorate that exact preview with the
+   * canonical fused letters. Letter derivation must never hold up an in-place
+   * path swap, and the generation guard prevents a late result from replacing
+   * a newer Shuffle, Back, or relationship preview.
+   */
+  function publishPreview(
+    preview: SequenceData,
+    { syncSymmetry = false }: { syncSymmetry?: boolean } = {}
+  ): void {
+    const generation = ++previewLetterGeneration;
+    previewSequence = preview;
+    if (syncSymmetry) symmetryPreview = preview;
+    const derivation = deriveLetters(preview);
+    activePreviewLetterDerivation = { generation, promise: derivation };
+
+    void (async () => {
+      try {
+        const derived = await derivation;
+        if (disposed || generation !== previewLetterGeneration) return;
+        previewSequence = derived;
+        if (syncSymmetry) symmetryPreview = derived;
+      } catch (derivationError) {
+        if (disposed || generation !== previewLetterGeneration) return;
+        reportUnexpected(
+          "Couldn't identify the live fused letter.",
+          derivationError,
+          "derive-preview-letters"
+        );
+      } finally {
+        if (activePreviewLetterDerivation?.generation === generation) {
+          activePreviewLetterDerivation = null;
+        }
+      }
+    })();
+  }
+
+  /**
    * The pool sequence committed for an injected side must have exactly `length`
    * steps (canFuseNow checks it) and carry the length-tiled solo (so a later
    * counterpart shuffle re-derives from the full-length path, not the shorter
-   * source). Take both from the freshly-built preview, keeping the source's
-   * identity fields (id/word/name) for display and persistence.
+   * source). Project that tiled solo through the canonical adapter instead of
+   * copying the paired preview steps back into a one-hand source. Source
+   * identity fields remain stable for display and persistence.
    */
   function lengthMatchedInjectedSide(
     side: FuseSide,
@@ -707,13 +782,37 @@ export function createFuseState({
     preview: SequenceData,
     length: FuseLength
   ): SequenceData {
+    const tiledSolo =
+      side === "blue" ? preview.blueSoloProp : preview.redSoloProp;
+    if (!tiledSolo) {
+      throw new Error(`The ${side} preview is missing its solo path`);
+    }
+
+    const projected = sequenceForSolo(side, tiledSolo);
     return {
       ...injected,
-      steps: preview.steps,
+      ...projected,
+      // Keep the source's identity for display and persistence, but never its
+      // paired choreography. The projected sequence is the sole owner of the
+      // source steps, start pose, and compositional fields.
+      id: injected.id,
+      name: injected.name,
+      displayName: injected.displayName,
+      intendedWord: injected.intendedWord,
+      word: injected.word,
+      tags: injected.tags,
+      metadata: {
+        ...injected.metadata,
+        ...projected.metadata,
+      },
       sequenceLength: length,
-      ...(side === "blue"
-        ? { blueSoloProp: preview.blueSoloProp }
-        : { redSoloProp: preview.redSoloProp }),
+      blueSoloProp: side === "blue" ? tiledSolo : undefined,
+      redSoloProp: side === "red" ? tiledSolo : undefined,
+      stepPairings: undefined,
+      bluePathHash: side === "blue" ? projected.bluePathHash : undefined,
+      redPathHash: side === "red" ? projected.redPathHash : undefined,
+      blueSoloHash: side === "blue" ? projected.blueSoloHash : undefined,
+      redSoloHash: side === "red" ? projected.redSoloHash : undefined,
     };
   }
 
@@ -852,6 +951,7 @@ export function createFuseState({
 
   function generationRecipe(): SoloLoopGenerationRecipe {
     return {
+      gridMode,
       level: generationLevel,
       maxTurnIntensity: generationLevel === 1 ? 0 : maxTurnIntensity,
       constraintPreset,
@@ -866,6 +966,7 @@ export function createFuseState({
   function persistGenerationRecipe(): void {
     persisted = {
       ...persisted,
+      gridMode,
       generationLevel,
       maxTurnIntensity,
       constraintPreset,
@@ -920,8 +1021,20 @@ export function createFuseState({
     persistGenerationRecipe();
   }
 
+  function setGridMode(value: GridMode): void {
+    if (!isFuseGridMode(value)) return;
+    gridMode = value;
+    if (
+      startLocation !== null &&
+      !isFuseStartLocation(startLocation, gridMode)
+    ) {
+      startLocation = null;
+    }
+    persistGenerationRecipe();
+  }
+
   function setStartLocation(value: GridLocation | null): void {
-    if (value !== null && !isFuseStartLocation(value)) return;
+    if (value !== null && !isFuseStartLocation(value, gridMode)) return;
     startLocation = value;
     persistGenerationRecipe();
   }
@@ -1074,6 +1187,8 @@ export function createFuseState({
     isFusing = false;
     error = null;
     readyMessage = "Both paths are ready.";
+    previewLetterGeneration += 1;
+    activePreviewLetterDerivation = null;
     previewSequence = null;
     bluePool.reset([], length);
     redPool.reset([], length);
@@ -1153,7 +1268,7 @@ export function createFuseState({
             if (redRestored.redSoloProp) {
               setBaseSolo("red", redRestored.redSoloProp);
             }
-            previewSequence = preview;
+            publishPreview(preview);
             appliedLength = length;
             hasLoadedPair = true;
             persistSelection(blueRestored, redRestored, length);
@@ -1244,7 +1359,7 @@ export function createFuseState({
           );
         }
       }
-      previewSequence = preview;
+      publishPreview(preview);
       appliedLength = length;
       hasLoadedPair = true;
       persistSelection(blueCandidate.sequence, redCandidate.sequence, length);
@@ -1343,7 +1458,7 @@ export function createFuseState({
       // owns previewSequence — so skip publishing it (isDeriving keeps Fuse blocked
       // until the derive lands).
       if (!(mode === "symmetry" && side === driverSide))
-        previewSequence = preview;
+        publishPreview(preview);
       persistSelection(blue, red, appliedLength);
       if (!generateSoloLoop) pool.prefetchNext();
       // Shuffling changes one path at the beat already on screen. Resetting the
@@ -1421,8 +1536,18 @@ export function createFuseState({
         const closed = fitSoloPathToLoop(solo, length);
         solo = closed.solo;
         effectiveOrigin = { ...origin, loopSpec: closed.loopSpec };
-      } else if (!isStructuredSoloLoop(solo)) {
-        throw new Error("The selected one-hand path is not a structured LOOP");
+      } else if (
+        origin.kind === "custom"
+          ? !isSeamlesslyLoopable(
+              soloPropToSequence(solo, side === "blue" ? "left" : "right")
+            )
+          : !isStructuredSoloLoop(solo)
+      ) {
+        throw new Error(
+          origin.kind === "custom"
+            ? "The built one-hand path does not close cleanly"
+            : "The selected one-hand path is not a structured LOOP"
+        );
       }
 
       const injected: SequenceData =
@@ -1448,7 +1573,7 @@ export function createFuseState({
       // Symmetry: deriveFollower owns previewSequence; don't flash the driver's
       // independent fusion (isDeriving keeps Fuse blocked until it resolves).
       if (!(mode === "symmetry" && side === driverSide))
-        previewSequence = preview;
+        publishPreview(preview);
       const blueForPersist = side === "blue" ? committed : counterpartSeq;
       const redForPersist = side === "red" ? committed : counterpartSeq;
       persistSelection(blueForPersist, redForPersist, length);
@@ -1510,7 +1635,7 @@ export function createFuseState({
         case "rotate":
           transformed = await rotateSequence(
             transformed,
-            adjustment.quarterTurns * 2,
+            adjustment.rotationSteps,
             side
           );
           break;
@@ -1565,7 +1690,7 @@ export function createFuseState({
         solo
       );
       if (!(mode === "symmetry" && side === driverSide)) {
-        previewSequence = preview;
+        publishPreview(preview);
       }
       const blueForPersist = side === "blue" ? committed : counterpart;
       const redForPersist = side === "red" ? committed : counterpart;
@@ -1733,8 +1858,7 @@ export function createFuseState({
         return;
       }
 
-      symmetryPreview = preview;
-      previewSequence = preview;
+      publishPreview(preview, { syncSymmetry: true });
       error = null;
       readyMessage = symmetryReadyMessage();
     } catch (deriveError) {
@@ -1784,7 +1908,7 @@ export function createFuseState({
       ) {
         return;
       }
-      previewSequence = preview;
+      publishPreview(preview);
       error = null;
       const driverLabel = nextDriver === "blue" ? "Blue" : "Red";
       const followerLabel = nextDriver === "blue" ? "Red" : "Blue";
@@ -1818,7 +1942,7 @@ export function createFuseState({
     symmetryGeneration += 1;
     isDeriving = false;
     if (baseline) {
-      previewSequence = baseline;
+      publishPreview(baseline);
       error = null;
       readyMessage =
         mode === "symmetry" ? symmetryReadyMessage() : "Both paths are ready.";
@@ -1836,7 +1960,7 @@ export function createFuseState({
     const redSequence = redPool.sequence;
     if (!blueSequence || !redSequence || appliedLength === null) return;
     try {
-      previewSequence = createPreview(blueSequence, redSequence, appliedLength);
+      publishPreview(createPreview(blueSequence, redSequence, appliedLength));
       error = null;
       readyMessage = "Both paths are ready.";
     } catch (restoreError) {
@@ -1934,7 +2058,7 @@ export function createFuseState({
         setInjectedOrigin(side, currentOrigin, previousSolo);
       }
       if (!(mode === "symmetry" && side === driverSide))
-        previewSequence = preview;
+        publishPreview(preview);
       persistSelection(blue, red, appliedLength);
       // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;
@@ -1970,7 +2094,12 @@ export function createFuseState({
     stopClock();
 
     try {
-      const derived = await deriveLetters(snapshot);
+      const pendingPreviewDerivation = activePreviewLetterDerivation;
+      const derived = snapshot.steps.every((step) => step.letter)
+        ? snapshot
+        : pendingPreviewDerivation?.generation === previewLetterGeneration
+          ? await pendingPreviewDerivation.promise
+          : await deriveLetters(snapshot);
       if (disposed || generation !== buildGeneration) return null;
 
       const missingLetters = derived.steps.filter(
@@ -2056,6 +2185,8 @@ export function createFuseState({
     blueGeneration += 1;
     redGeneration += 1;
     buildGeneration += 1;
+    previewLetterGeneration += 1;
+    activePreviewLetterDerivation = null;
     stopClock();
   }
 
@@ -2097,6 +2228,9 @@ export function createFuseState({
     },
     get bpm() {
       return bpm;
+    },
+    get gridMode() {
+      return gridMode;
     },
     get generationLevel() {
       return generationLevel;
@@ -2193,6 +2327,7 @@ export function createFuseState({
     setConstraintPreset,
     setHandPathMode,
     setMotionTypeFilter,
+    setGridMode,
     setStartLocation,
     setStartOrientation,
     setTraversalDirection,

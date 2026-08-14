@@ -11,9 +11,11 @@
   let {
     onCancel,
     onApply,
+    presentation = "drawer",
   }: {
     onCancel?: () => void;
     onApply?: () => void;
+    presentation?: "drawer" | "modal";
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -60,7 +62,11 @@
   }
 </script>
 
-<section class="pairing-editor" aria-labelledby="pairing-editor-title">
+<section
+  class="pairing-editor"
+  class:modal-editor={presentation === "modal"}
+  aria-labelledby="pairing-editor-title"
+>
   <header class="pairing-intro">
     <p class="eyebrow">Pairing</p>
     <h3 id="pairing-editor-title">Choose how the paths stay linked</h3>
@@ -115,6 +121,19 @@
     min-width: 0;
     max-width: 34rem;
     margin-inline: auto;
+  }
+
+  .pairing-editor.modal-editor {
+    align-content: center;
+    max-width: 80rem;
+    min-height: 100%;
+    padding: clamp(0.75rem, 2.5cqh, 2rem) 0;
+  }
+
+  .modal-editor :global(.transform-picker.embedded.relationship-layout) {
+    grid-template-columns: minmax(16rem, 0.72fr) minmax(0, 2.5fr);
+    align-items: stretch;
+    max-width: none;
   }
 
   .pairing-intro {

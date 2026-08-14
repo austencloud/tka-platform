@@ -12,6 +12,7 @@
   import FuseSourceActionPopover from "./FuseSourceActionPopover.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
   import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
   import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -31,6 +32,7 @@
     toolbarOnly = false,
     stepCols = 4,
     onChooseFirstStep,
+    onBuildPath,
     firstStepPickerActive = false,
     onFirstStepComplete,
     onCancelFirstStep,
@@ -49,6 +51,7 @@
     // current seam width and length. Only used in full (desktop) mode.
     stepCols?: number;
     onChooseFirstStep: (side: FuseSide) => void;
+    onBuildPath: (side: FuseSide) => void;
     firstStepPickerActive?: boolean;
     onFirstStepComplete?: (side: FuseSide) => void;
     onCancelFirstStep?: () => void;
@@ -86,9 +89,15 @@
   const isSymmetryFollower = $derived(
     fuseState.mode === "symmetry" && side !== fuseState.driverSide
   );
-  const displaySequence = $derived(
-    isSymmetryFollower ? fuseState.symmetryPreview : source.sequence
-  );
+  const displaySequence = $derived.by(() => {
+    if (!isSymmetryFollower) return source.sequence;
+
+    const preview = fuseState.symmetryPreview;
+    const solo = side === "blue" ? preview?.blueSoloProp : preview?.redSoloProp;
+    if (!solo) return null;
+
+    return soloPropToSequence(solo, side === "blue" ? "left" : "right");
+  });
   const followerTransformLabel = $derived(
     FUSE_TRANSFORMS.find((transform) => transform.id === fuseState.transformId)
       ?.label ?? "Mirror"
@@ -326,6 +335,11 @@
       action: openVtgPicker,
     },
     {
+      label: "Build a path",
+      icon: "fas fa-route",
+      action: (): void => onBuildPath(side),
+    },
+    {
       label: isSavingLoop ? "Saving LOOP..." : "Save LOOP",
       icon: isSavingLoop ? "fas fa-spinner fa-spin" : "fas fa-bookmark",
       action: (): void => {
@@ -512,6 +526,14 @@
           <i class="fas fa-fan" aria-hidden="true"></i>
           Shape path
         </PanelButton>
+        <PanelButton
+          variant="secondary"
+          disabled={sourceControlsDisabled}
+          onclick={() => onBuildPath(side)}
+        >
+          <i class="fas fa-route" aria-hidden="true"></i>
+          Build path
+        </PanelButton>
         <FuseSourceActionPopover
           {side}
           disabled={sourceControlsDisabled || !source.sequence}
@@ -579,6 +601,7 @@
 <style>
   .source-card {
     --source-color: var(--prop-blue, #2196f3);
+    container: fuse-source / inline-size;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -732,9 +755,16 @@
 
   .source-actions {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  .source-actions :global(.panel-btn) {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 10px;
+    white-space: nowrap;
   }
 
   .first-step-toolbar {
@@ -993,10 +1023,6 @@
   }
 
   @container fuse (min-width: 600px) and (max-width: 1500px) {
-    .source-actions {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
     .first-step-toolbar {
       min-height: calc(var(--min-touch-target, 44px) * 2 + 8px);
     }
@@ -1011,10 +1037,6 @@
     padding: 12px;
   }
 
-  .full-card .source-actions {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
   .full-card .notation-stage {
     min-height: 64px;
   }
@@ -1024,9 +1046,32 @@
       gap: 8px;
       padding: 12px;
     }
+  }
 
+  /* The toolbar responds to the source card, not the whole Fuse workspace.
+     This matters around split-pane and browser-zoom seams where the page can
+     be wide while the card itself is still too narrow for seven labels. */
+  @container fuse-source (min-width: 340px) {
     .source-actions {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container fuse-source (min-width: 340px) and (max-width: 519px) {
+    .source-actions > :global(:last-child) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container fuse-source (min-width: 520px) {
+    .source-actions {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container fuse-source (min-width: 940px) {
+    .source-actions {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
     }
   }
 

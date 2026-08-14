@@ -1,6 +1,8 @@
 <script lang="ts">
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getFuseContext } from "../context/fuse-context";
+  import FuseGenerationControls from "./FuseGenerationControls.svelte";
 
   let {
     onOpenRecipe = () => {},
@@ -12,10 +14,8 @@
   const optionsDisabled = $derived(
     fuseState.isLoadingLength || fuseState.isFusing
   );
-  const turnSummary = $derived(
-    fuseState.generationLevel === 1
-      ? "No turns"
-      : `Max ${fuseState.maxTurnIntensity} ${fuseState.maxTurnIntensity === 1 ? "turn" : "turns"}`
+  const gridSummary = $derived(
+    fuseState.gridMode === GridMode.BOX ? "Box" : "Diamond"
   );
 </script>
 
@@ -28,30 +28,47 @@
     <p>Build two one-hand LOOPs into one sequence.</p>
   </div>
 
-  <PanelButton
-    variant="secondary"
-    disabled={optionsDisabled}
-    onclick={onOpenRecipe}
-    ariaLabel="Open path generation recipe"
-  >
-    <i class="fas fa-sliders" aria-hidden="true"></i>
-    <span class="recipe-label">
-      <span>Path recipe</span>
-      <strong>
-        <span class="recipe-full">
-          {fuseState.requestedLength} steps · Level {fuseState.generationLevel}
-          · {turnSummary}
-        </span>
-        <span class="recipe-compact" aria-hidden="true">
-          {fuseState.requestedLength} steps · L{fuseState.generationLevel} ·
-          {fuseState.generationLevel === 1
-            ? "No turns"
-            : `≤${fuseState.maxTurnIntensity}`}
-        </span>
-      </strong>
-    </span>
-    <i class="fas fa-chevron-right recipe-chevron" aria-hidden="true"></i>
-  </PanelButton>
+  <div class="wide-recipe-controls">
+    <FuseGenerationControls />
+    <div class="customize-trigger">
+      <PanelButton
+        variant="secondary"
+        disabled={optionsDisabled}
+        onclick={onOpenRecipe}
+        ariaLabel="Open all path generation settings"
+      >
+        <i class="fas fa-sliders" aria-hidden="true"></i>
+        Customize
+      </PanelButton>
+    </div>
+  </div>
+
+  <div class="recipe-trigger">
+    <PanelButton
+      variant="secondary"
+      disabled={optionsDisabled}
+      onclick={onOpenRecipe}
+      ariaLabel="Open path generation recipe"
+    >
+      <i class="fas fa-sliders" aria-hidden="true"></i>
+      <span class="recipe-label">
+        <span>Path recipe</span>
+        <strong>
+          <span class="recipe-full">
+            {fuseState.requestedLength} steps · Level {fuseState.generationLevel}
+            · {gridSummary}{fuseState.generationLevel > 1
+              ? ` · ≤${fuseState.maxTurnIntensity} turns`
+              : ""}
+          </span>
+          <span class="recipe-compact" aria-hidden="true">
+            {fuseState.requestedLength} steps · L{fuseState.generationLevel} ·
+            {gridSummary}
+          </span>
+        </strong>
+      </span>
+      <i class="fas fa-chevron-right recipe-chevron" aria-hidden="true"></i>
+    </PanelButton>
+  </div>
 </header>
 
 <style>
@@ -85,6 +102,10 @@
     display: none;
   }
 
+  .wide-recipe-controls {
+    display: none;
+  }
+
   .title-block {
     display: grid;
     gap: 2px;
@@ -97,7 +118,11 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .fuse-header :global(.panel-btn) {
+  .recipe-trigger {
+    flex: 0 1 auto;
+  }
+
+  .recipe-trigger :global(.panel-btn) {
     flex: 0 1 auto;
     width: min(100%, 27rem);
     min-width: 17rem;
@@ -172,7 +197,7 @@
       display: none;
     }
 
-    .fuse-header :global(.panel-btn) {
+    .recipe-trigger :global(.panel-btn) {
       width: auto;
       min-width: 0;
       min-height: var(--min-touch-target, 48px);
@@ -182,22 +207,56 @@
 
   @container fuse (min-width: 1680px) and (min-height: 900px) {
     .fuse-header {
-      min-height: 72px;
+      min-height: 88px;
       padding-inline: 20px;
+    }
+
+    .title-block {
+      flex: 0 1 18rem;
     }
 
     h2 {
       font-size: 1.65rem;
     }
 
-    .fuse-header :global(.panel-btn) {
-      width: 31rem;
+    .recipe-trigger {
+      display: none;
+    }
+
+    .wide-recipe-controls {
+      display: flex;
+      align-items: end;
+      justify-content: flex-end;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .customize-trigger {
+      display: flex;
+      flex: 0 0 auto;
+    }
+
+    .customize-trigger :global(.panel-btn) {
+      width: auto;
+      min-width: 9.5rem;
+      min-height: var(--min-touch-target);
+      padding-inline: 1rem;
+      border-color: color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 52%,
+        var(--theme-stroke, transparent)
+      );
+      background: color-mix(
+        in srgb,
+        var(--semantic-warning, #f97316) 14%,
+        var(--theme-card-bg, #161821)
+      );
     }
   }
 
   @container fuse (min-width: 2600px) and (min-height: 1400px) {
     .fuse-header {
-      min-height: 96px;
+      min-height: 116px;
       padding-inline: 28px;
     }
 
@@ -205,9 +264,14 @@
       font-size: 2rem;
     }
 
-    .fuse-header :global(.panel-btn) {
-      width: 38rem;
-      min-height: 4rem;
+    .title-block {
+      flex-basis: 24rem;
+    }
+
+    .customize-trigger :global(.panel-btn) {
+      min-width: 12rem;
+      min-height: 4.5rem;
+      font-size: var(--font-size-min, 18px);
     }
   }
 </style>

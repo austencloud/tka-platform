@@ -10,13 +10,20 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   DEFAULT_SOLO_LOOP_RECIPE,
+  isStructuredSoloLoop,
   type GeneratedSoloLoop,
 } from "$lib/features/fuse/services/solo-loop-generator";
+import { buildFusePathSource } from "$lib/features/fuse/services/fuse-built-path";
+import { createBuilderStep } from "$lib/features/assemble-lab/services/builder-path-editor";
 import {
   GridLocation,
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -133,6 +140,37 @@ function createSoloGenerator() {
   });
 }
 
+function makeUnstructuredBuiltPath() {
+  const destinations = [
+    [GridLocation.EAST, RotationDirection.CLOCKWISE],
+    [GridLocation.NORTH, RotationDirection.COUNTER_CLOCKWISE],
+    [GridLocation.WEST, RotationDirection.COUNTER_CLOCKWISE],
+    [GridLocation.NORTH, RotationDirection.CLOCKWISE],
+    [GridLocation.EAST, RotationDirection.CLOCKWISE],
+    [GridLocation.SOUTH, RotationDirection.CLOCKWISE],
+    [GridLocation.WEST, RotationDirection.CLOCKWISE],
+    [GridLocation.NORTH, RotationDirection.CLOCKWISE],
+  ] as const;
+  let pose = {
+    location: GridLocation.NORTH,
+    orientation: Orientation.IN,
+  };
+  const steps = destinations.map(([destination, direction]) => {
+    const step = createBuilderStep(pose, destination, direction, 0);
+    pose = {
+      location: step.endPosition,
+      orientation: step.endOrientation,
+    };
+    return step;
+  });
+  return buildFusePathSource({
+    steps,
+    expectedLength: 8,
+    gridMode: GridMode.DIAMOND,
+    side: "blue",
+  });
+}
+
 describe("Fuse state", () => {
   // createFuseState persists the selected pair to localStorage ("fuse-tab-state",
   // fuse-state.svelte.ts:50) and initialize() restores it on mount, re-hydrating
@@ -166,6 +204,20 @@ describe("Fuse state", () => {
     expect(state.blue.canGoBack).toBe(true);
   });
 
+  it("classifies fused letters on the live preview", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+
+    await state.initialize();
+
+    await vi.waitFor(() =>
+      expect(
+        state.previewSequence?.steps.every((step) => step.letter === "A")
+      ).toBe(true)
+    );
+  });
+
   it("uses one persisted generation recipe for both Regenerate buttons", async () => {
     const generator = createSoloGenerator();
     const state = createState(createLoader([]), {
@@ -178,7 +230,8 @@ describe("Fuse state", () => {
     state.setConstraintPreset("smooth");
     state.setHandPathMode("choppy");
     state.setMotionTypeFilter("prefer-dash");
-    state.setStartLocation(GridLocation.SOUTH);
+    state.setGridMode(GridMode.BOX);
+    state.setStartLocation(GridLocation.SOUTHWEST);
     state.setStartOrientation(Orientation.CLOCK);
     state.setTraversalDirection("counterclockwise");
     expect(generator).toHaveBeenCalledTimes(2);
@@ -186,12 +239,13 @@ describe("Fuse state", () => {
     await state.shuffle("red");
 
     expect(generator).toHaveBeenLastCalledWith(8, {
+      gridMode: GridMode.BOX,
       level: 3,
       maxTurnIntensity: 0.5,
       constraintPreset: "smooth",
       handPathMode: "choppy",
       motionTypeFilter: "prefer-dash",
-      startLocation: GridLocation.SOUTH,
+      startLocation: GridLocation.SOUTHWEST,
       startOrientation: Orientation.CLOCK,
       traversalDirection: "counterclockwise",
     });
@@ -211,9 +265,24 @@ describe("Fuse state", () => {
     expect(restored.constraintPreset).toBe("smooth");
     expect(restored.handPathMode).toBe("choppy");
     expect(restored.motionTypeFilter).toBe("prefer-dash");
-    expect(restored.startLocation).toBe(GridLocation.SOUTH);
+    expect(restored.gridMode).toBe(GridMode.BOX);
+    expect(restored.startLocation).toBe(GridLocation.SOUTHWEST);
     expect(restored.startOrientation).toBeNull();
     expect(restored.traversalDirection).toBe("counterclockwise");
+  });
+
+  it("clears a start point that does not belong to the selected grid", () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+
+    state.setStartLocation(GridLocation.SOUTH);
+    state.setGridMode(GridMode.BOX);
+
+    expect(state.gridMode).toBe(GridMode.BOX);
+    expect(state.startLocation).toBeNull();
+    state.setStartLocation(GridLocation.NORTHEAST);
+    expect(state.startLocation).toBe(GridLocation.NORTHEAST);
   });
 
   it("chooses a new first step on one LOOP without changing its partner", async () => {
@@ -235,6 +304,72 @@ describe("Fuse state", () => {
     expect(state.canFuse).toBe(true);
   });
 
+  it("accepts a seamless custom path without requiring a Shape Matrix component", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+    const built = makeUnstructuredBuiltPath();
+
+    expect(built.ok).toBe(true);
+    if (!built.ok) return;
+    expect(isStructuredSoloLoop(built.solo)).toBe(false);
+
+    await state.setSource("blue", built.sequence, {
+      kind: "custom",
+      label: "Built path",
+    });
+
+    expect(state.error).toBeNull();
+    expect(state.blue.sequence?.blueSoloProp?.contentHash).toBe(
+      built.solo.contentHash
+    );
+    expect(state.blue.sequence?.redSoloProp).toBeUndefined();
+    expect(state.blue.sequence?.stepPairings).toBeUndefined();
+    expect(
+      state.blue.sequence?.steps.every(
+        (step) =>
+          isVisibleMotion(step.motions.blue) &&
+          !isVisibleMotion(step.motions.red)
+      )
+    ).toBe(true);
+    expect(state.canFuse).toBe(true);
+  });
+
+  it("rotates one source in 45-degree steps while preserving its partner", async () => {
+    const state = createState(createLoader([]), {
+      generateSoloLoop: createSoloGenerator(),
+    });
+    await state.initialize();
+
+    const originalRedHash = state.red.sequence?.redSoloProp?.contentHash;
+    await state.adjustSource("blue", { kind: "rotate", rotationSteps: 1 });
+
+    expect(state.error).toBeNull();
+    expect(state.blue.sequence?.blueSoloProp?.startLocation).toBe(
+      GridLocation.NORTHEAST
+    );
+    expect(state.red.sequence?.redSoloProp?.contentHash).toBe(originalRedHash);
+    expect(state.previewSequence?.gridMode).toBe(GridMode.SKEWED);
+    expect(
+      state.previewSequence?.steps.every(
+        (step) => step.motions.blue?.gridMode === GridMode.BOX
+      )
+    ).toBe(true);
+    expect(
+      state.previewSequence?.steps.every(
+        (step) => step.motions.red?.gridMode === GridMode.DIAMOND
+      )
+    ).toBe(true);
+
+    await state.adjustSource("blue", { kind: "rotate", rotationSteps: 1 });
+
+    expect(state.blue.sequence?.blueSoloProp?.startLocation).toBe(
+      GridLocation.EAST
+    );
+    expect(state.previewSequence?.gridMode).toBe(GridMode.DIAMOND);
+  });
+
   it("keeps one-hand LOOP closure through every independent source transform", async () => {
     const state = createState(createLoader([]), {
       generateSoloLoop: createSoloGenerator(),
@@ -242,8 +377,8 @@ describe("Fuse state", () => {
     await state.initialize();
 
     const adjustments = [
-      { kind: "rotate", quarterTurns: 1 },
-      { kind: "rotate", quarterTurns: -1 },
+      { kind: "rotate", rotationSteps: 1 },
+      { kind: "rotate", rotationSteps: -1 },
       { kind: "mirror" },
       { kind: "flip" },
       { kind: "invert" },

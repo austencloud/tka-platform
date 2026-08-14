@@ -82,6 +82,17 @@ function buildMotionFromSoloPropStep(
 	});
 }
 
+function resolveFusedGridMode(
+	blueGridMode: GridMode,
+	redGridMode: GridMode
+): GridMode {
+	const mixesDiamondAndBox =
+		(blueGridMode === GridMode.DIAMOND && redGridMode === GridMode.BOX) ||
+		(blueGridMode === GridMode.BOX && redGridMode === GridMode.DIAMOND);
+
+	return mixesDiamondAndBox ? GridMode.SKEWED : blueGridMode;
+}
+
 /**
  * Builds minimal SoloPropStepData entries from a location sequence.
  * Used when the input was a bare HandPathData without full step info.
@@ -200,8 +211,14 @@ export function fuseSequences(
 			handPath: redHandPath,
 		};
 
-	// Determine grid mode from inputs
-	const gridMode = blueSoloProp.impliedGridMode ?? redSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+	// A 45-degree adjustment can place one source on Box while its partner stays
+	// on Diamond. Preserve each motion's native frame and describe the combined
+	// sequence as skewed when those frames differ.
+	const blueGridMode =
+		blueSoloProp.impliedGridMode ?? redSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+	const redGridMode =
+		redSoloProp.impliedGridMode ?? blueSoloProp.impliedGridMode ?? GridMode.DIAMOND;
+	const gridMode = resolveFusedGridMode(blueGridMode, redGridMode);
 
 	// Build proper steps with motion data so ensureMotionData short-circuits
 	const steps: StepData[] = [];
@@ -219,8 +236,8 @@ export function fuseSequences(
 			startPosition: null,
 			endPosition: null,
 			motions: {
-				blue: buildMotionFromSoloPropStep(blueStep, MotionColor.BLUE, gridMode),
-				red: buildMotionFromSoloPropStep(redStep, MotionColor.RED, gridMode),
+				blue: buildMotionFromSoloPropStep(blueStep, MotionColor.BLUE, blueGridMode),
+				red: buildMotionFromSoloPropStep(redStep, MotionColor.RED, redGridMode),
 			},
 		});
 	}
