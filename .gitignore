@@ -71,6 +71,7 @@ poi-recon/ignis-extracted/
 .claude-artifacts/
 .claude/scheduled_tasks.lock
 .tmp-*
+/scratchpad/
 
 # Test / debug output artifacts (regenerated; never commit)
 test-output.txt
@@ -375,6 +376,12 @@ static/models/**/*_raw.glb
 static/models/**/*_decimated.glb
 static/models/**/*_meshoptwebp.glb
 static/models/**/_tmp_*.glb
+
+# Forest semantic authoring intermediates. Runtime *_semantic.glb assets and
+# compact visual evidence remain eligible for source control.
+/static/models/forest/trees/candidates/semantic-summer-*/*_semantic_review.glb
+/static/models/forest/trees/candidates/semantic-summer-*/*_semantic_proof.glb
+/docs/superpowers/specs/moonlit-firefly-forest/evidence/semantic-tree-*/*-base-color.png
 
 # Local KTX-Software / texture-tool binaries (platform-specific, not source).
 .tools/
