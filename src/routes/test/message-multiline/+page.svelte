@@ -63,7 +63,10 @@
 
   const sequenceLink = msg(
     "m9",
-    "This Fuse result is cool: https://tkaflowarts.com/sequence/O263"
+    "Got this from Fuse and it is very cool!\nhttps://tkaflowarts.com/sequence/YR0L",
+    {
+      reactions: [{ emoji: "💗", userIds: [SELF] }],
+    }
   );
 
   const caption = msg(
@@ -129,6 +132,7 @@
         <MessageBubble
           message={c.m}
           isOwn={c.own}
+          currentUserId={SELF}
           isGroup={c.group ?? false}
           senderInfo={c.group
             ? ({ id: OTHER, displayName: "Paul" } as never)

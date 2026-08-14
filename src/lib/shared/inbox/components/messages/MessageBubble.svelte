@@ -218,6 +218,7 @@
       <MessageReactions
         reactions={message.reactions}
         onToggleReaction={handleToggleReaction}
+        {currentUserId}
       />
     </div>
   {/if}
@@ -249,7 +250,7 @@
         aria-label="{message.senderName}: {accessibleMessage}"
       >
         <span class="sender-name">{senderInfo.displayName}</span>
-        <div class="bubble">
+        <div class="bubble" data-message-action-anchor="true">
           {@render bubbleContent()}
           {@render reactionBadge()}
         </div>
@@ -270,7 +271,7 @@
       tabindex="-1"
       aria-label="{isOwn ? 'You' : message.senderName}: {accessibleMessage}"
     >
-      <div class="bubble">
+      <div class="bubble" data-message-action-anchor="true">
         {@render bubbleContent()}
         {@render reactionBadge()}
       </div>
@@ -375,25 +376,26 @@
     border-bottom-left-radius: 6px;
   }
 
-  /* ===== Reaction badge: Messenger-style corner sticker =====
-     Positioned so it sits half-in, half-out of the bubble bottom edge.
-     The badge is 20px tall, so bottom: -10px centers it on the edge. */
+  /* The 44px interaction box stays transparent. Its compact visible capsule
+     straddles the bubble edge, while the opposite-corner anchor keeps it clear
+     of the timestamp and read receipt. */
   .reaction-badge {
     position: absolute;
-    bottom: -10px;
-    right: 8px;
-    z-index: 1;
+    right: 0.625rem;
+    bottom: calc(var(--touch-target-min, 44px) / -2);
+    z-index: 2;
     pointer-events: auto;
   }
 
-  .message-bubble:not(.own) .reaction-badge {
+  .message-bubble.own .reaction-badge {
     right: auto;
-    left: 8px;
+    left: 0.625rem;
   }
 
-  /* Clearance below bubble so the badge doesn't overlap the next message */
+  /* The thread contributes another 8px between messages, bringing the full
+     44px reaction hit box clear of the next bubble without a visible gap. */
   .message-bubble.has-reactions {
-    margin-bottom: 12px;
+    margin-bottom: 0.875rem;
   }
 
   /* ===== Group message layout ===== */
@@ -434,7 +436,7 @@
   }
 
   .has-attachment .bubble {
-    max-width: 300px;
+    max-width: min(22rem, 100%);
   }
 
   /* ===== Meta (timestamp, edited, read receipt) ===== */

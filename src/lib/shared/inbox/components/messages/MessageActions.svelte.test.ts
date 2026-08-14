@@ -1,4 +1,5 @@
 import { createRawSnippet } from "svelte";
+import { page } from "vitest/browser";
 import { render } from "vitest-browser-svelte";
 import { describe, expect, it, vi } from "vitest";
 import type { Message } from "$lib/shared/messaging/domain/models/message-models";
@@ -81,5 +82,38 @@ describe("MessageActions selection boundary", () => {
     });
     wrapper!.dispatchEvent(bubbleMenu);
     expect(bubbleMenu.defaultPrevented).toBe(true);
+  });
+
+  it("reveals the message action trigger on focus and opens the existing menu", async () => {
+    const children = createRawSnippet(() => ({
+      render: () =>
+        '<article role="article"><div data-message-action-anchor="true"><p data-message-selectable="true">Selectable message copy</p></div></article>',
+    }));
+
+    render(MessageActions, { message, isOwn: false, children });
+
+    const trigger = page.getByRole("button", {
+      name: "Actions for message from Morgan",
+    });
+    const triggerElement = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Actions for message from Morgan"]'
+    );
+    expect(triggerElement).not.toBeNull();
+    expect(getComputedStyle(triggerElement!).opacity).toBe("0");
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "false");
+
+    triggerElement!.focus();
+    await expect.element(trigger).toHaveFocus();
+    await expect.element(trigger).toBeVisible();
+
+    await trigger.click();
+
+    await expect.element(trigger).toHaveAttribute("aria-expanded", "true");
+    await expect
+      .element(page.getByRole("menu", { name: "Message actions" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("menuitem", { name: "Copy" }))
+      .toBeVisible();
   });
 });

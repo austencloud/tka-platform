@@ -1,10 +1,11 @@
 <!--
   MessageActions.svelte
 
-  Facebook Messenger-style reaction bar with modern action menu.
-  - Long-press (mobile) or hover (desktop) shows floating emoji bar
-  - Small "more" button opens action menu (Reply, Copy, Copy for AI, Edit, Delete)
-  - Prevents native context menu for seamless experience
+  Message reactions and actions.
+  - Hovering or focusing a message reveals an ellipsis beside its bubble
+  - Long-press keeps the action menu available on touch devices
+  - Clicking a message or long-pressing it opens the reaction bar
+  - Right-click remains available away from selectable message text
   - Pointer/tail connects bar to message bubble
 -->
 <script lang="ts">
@@ -38,9 +39,12 @@
   let menuOpensAbove = $state(false);
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let wrapperEl: HTMLDivElement | undefined = $state();
-  let reactionBarEl: HTMLDivElement | undefined = $state();
   let moreButtonEl: HTMLButtonElement | undefined = $state();
+  let actionMenuAnchorEl: HTMLDivElement | undefined = $state();
   let moreMenuEl: HTMLDivElement | undefined = $state();
+  let actionTriggerLeft = $state(0);
+  let actionTriggerTop = $state(0);
+  let actionTriggerReady = $state(false);
   let touchStartX = 0;
   let touchStartY = 0;
   let touchStartTime = 0;
@@ -55,8 +59,23 @@
 
   onMount(() => {
     hapticService = getHapticFeedback();
+    let positionFrame = requestAnimationFrame(updateActionTriggerPosition);
+    const messageBubble = wrapperEl?.querySelector<HTMLElement>(
+      '[data-message-action-anchor="true"]'
+    );
+    const resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(positionFrame);
+      positionFrame = requestAnimationFrame(updateActionTriggerPosition);
+    });
+
+    if (wrapperEl) resizeObserver.observe(wrapperEl);
+    if (messageBubble) resizeObserver.observe(messageBubble);
+    if (moreButtonEl) resizeObserver.observe(moreButtonEl);
+
     return () => {
       if (longPressTimer) clearTimeout(longPressTimer);
+      cancelAnimationFrame(positionFrame);
+      resizeObserver.disconnect();
     };
   });
 
@@ -79,6 +98,11 @@
   );
   const canEdit = $derived(isOwn && !message.isDeleted);
   const canDelete = $derived(isOwn && !message.isDeleted);
+  const messageActionLabel = $derived(
+    isOwn
+      ? "Actions for your message"
+      : `Actions for message from ${message.senderName || "this sender"}`
+  );
   const swipeProgress = $derived(
     Math.min(1, swipeDistance / REPLY_SWIPE_THRESHOLD)
   );
@@ -235,6 +259,55 @@
     );
   }
 
+  function updateActionTriggerPosition(): void {
+    const messageBubble = wrapperEl?.querySelector<HTMLElement>(
+      '[data-message-action-anchor="true"]'
+    );
+    if (!wrapperEl || !messageBubble) return;
+
+    const bubbleOffset = getOffsetWithin(messageBubble, wrapperEl);
+    const messageRight = bubbleOffset.left + messageBubble.offsetWidth;
+    const triggerWidth = moreButtonEl?.offsetWidth || 44;
+    // The 44px hit area overlaps the bubble by 2px, while the inset 32px
+    // surface remains 4px away. The control reads as part of the message
+    // without sacrificing its touch target.
+    const triggerGap = -2;
+    const desiredLeft = isOwn
+      ? bubbleOffset.left - triggerWidth - triggerGap
+      : messageRight + triggerGap;
+
+    actionTriggerLeft = Math.max(
+      0,
+      Math.min(wrapperEl.clientWidth - triggerWidth, desiredLeft)
+    );
+    actionTriggerTop = bubbleOffset.top + messageBubble.offsetHeight / 2;
+    actionTriggerReady = true;
+  }
+
+  function getOffsetWithin(
+    element: HTMLElement,
+    ancestor: HTMLElement
+  ): { left: number; top: number } {
+    let left = 0;
+    let top = 0;
+    let current: HTMLElement | null = element;
+
+    while (current && current !== ancestor) {
+      left += current.offsetLeft;
+      top += current.offsetTop;
+      current = current.offsetParent as HTMLElement | null;
+    }
+
+    if (current === ancestor) return { left, top };
+
+    const elementRect = element.getBoundingClientRect();
+    const ancestorRect = ancestor.getBoundingClientRect();
+    return {
+      left: elementRect.left - ancestorRect.left,
+      top: elementRect.top - ancestorRect.top,
+    };
+  }
+
   // Copy message text to clipboard
   async function handleCopyText() {
     showReactions = false;
@@ -364,33 +437,33 @@
   }
 
   function updateMenuPlacement(
-    reactionBar: HTMLDivElement,
+    actionAnchor: HTMLDivElement,
     menu: HTMLDivElement
   ): void {
-    const barRect = reactionBar.getBoundingClientRect();
-    // offsetHeight is layout-sized and unaffected by the bar's pop animation.
+    const anchorRect = actionAnchor.getBoundingClientRect();
+    // offsetHeight is layout-sized and unaffected by the menu's animation.
     // getBoundingClientRect() would measure the transient scale and can choose
     // the wrong side while the menu is opening.
     const menuHeight = menu.offsetHeight;
-    const bounds = getVerticalCollisionBounds(reactionBar);
+    const bounds = getVerticalCollisionBounds(actionAnchor);
     const requiredSpace = menuHeight + 8;
-    const spaceAbove = barRect.top - bounds.top;
-    const spaceBelow = bounds.bottom - barRect.bottom;
+    const spaceAbove = anchorRect.top - bounds.top;
+    const spaceBelow = bounds.bottom - anchorRect.bottom;
 
     menuOpensAbove = spaceBelow < requiredSpace && spaceAbove >= requiredSpace;
   }
 
   $effect(() => {
-    const reactionBar = reactionBarEl;
+    const actionAnchor = actionMenuAnchorEl;
     const menu = moreMenuEl;
 
-    if (!showMoreMenu || !reactionBar || !menu) {
+    if (!showMoreMenu || !actionAnchor || !menu) {
       menuOpensAbove = false;
       return;
     }
 
     let placementFrame = requestAnimationFrame(() =>
-      updateMenuPlacement(reactionBar, menu)
+      updateMenuPlacement(actionAnchor, menu)
     );
     menu
       .querySelector<HTMLButtonElement>('[role="menuitem"]')
@@ -398,7 +471,7 @@
     const handleLayoutChange = () => {
       cancelAnimationFrame(placementFrame);
       placementFrame = requestAnimationFrame(() =>
-        updateMenuPlacement(reactionBar, menu)
+        updateMenuPlacement(actionAnchor, menu)
       );
     };
 
@@ -439,7 +512,10 @@
     }
   }
 
-  function handleMoreClick() {
+  function handleMoreClick(event: MouseEvent) {
+    event.stopPropagation();
+    updateActionTriggerPosition();
+    hapticService?.trigger("selection");
     showMoreMenu = !showMoreMenu;
   }
 
@@ -525,7 +601,8 @@
   class="message-wrapper"
   class:own={isOwn}
   bind:this={wrapperEl}
-  onmouseenter={() => !isMobile && (showReactions = true)}
+  onmouseenter={updateActionTriggerPosition}
+  onfocusin={updateActionTriggerPosition}
   onmouseleave={() => {
     if (!isMobile) {
       showReactions = false;
@@ -557,49 +634,30 @@
     {@render children()}
   </div>
 
-  <!-- Floating reaction bar (Facebook Messenger style) -->
-  {#if showReactions && !message.isDeleted}
-    <div class="reaction-bar" class:own={isOwn} bind:this={reactionBarEl}>
-      <!-- Emoji reactions with staggered animation -->
-      {#each REACTIONS as emoji, i}
-        <button
-          type="button"
-          class="emoji-btn"
-          style="--delay: {i * 30}ms"
-          onclick={() => handleReaction(emoji)}
-          aria-label="React with {emoji}"
-        >
-          {emoji}
-        </button>
-      {/each}
-
+  {#if !message.isDeleted}
+    <div
+      class="action-menu-anchor"
+      class:own={isOwn}
+      class:open={showMoreMenu}
+      class:ready={actionTriggerReady}
+      style:left="{actionTriggerLeft}px"
+      style:top="{actionTriggerTop}px"
+      bind:this={actionMenuAnchorEl}
+    >
       <button
         type="button"
-        class="reply-btn"
-        onclick={() => handleReply()}
-        aria-label="Reply to message from {message.senderName}"
-      >
-        <i class="fa-solid fa-reply" aria-hidden="true"></i>
-      </button>
-
-      <!-- More button -->
-      <button
-        type="button"
-        class="more-btn"
+        class="message-action-trigger"
         class:active={showMoreMenu}
         bind:this={moreButtonEl}
         onclick={handleMoreClick}
-        aria-label="More options"
+        aria-label={messageActionLabel}
         aria-haspopup="menu"
         aria-expanded={showMoreMenu}
+        title="Message actions"
       >
         <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
       </button>
 
-      <!-- Pointer/tail -->
-      <div class="pointer"></div>
-
-      <!-- More menu dropdown -->
       {#if showMoreMenu}
         <div
           class="more-menu"
@@ -666,6 +724,36 @@
       {/if}
     </div>
   {/if}
+
+  <!-- Floating reaction bar (Facebook Messenger style) -->
+  {#if showReactions && !message.isDeleted}
+    <div class="reaction-bar" class:own={isOwn}>
+      <!-- Emoji reactions with staggered animation -->
+      {#each REACTIONS as emoji, i}
+        <button
+          type="button"
+          class="emoji-btn"
+          style="--delay: {i * 30}ms"
+          onclick={() => handleReaction(emoji)}
+          aria-label="React with {emoji}"
+        >
+          {emoji}
+        </button>
+      {/each}
+
+      <button
+        type="button"
+        class="reply-btn"
+        onclick={() => handleReply()}
+        aria-label="Reply to message from {message.senderName}"
+      >
+        <i class="fa-solid fa-reply" aria-hidden="true"></i>
+      </button>
+
+      <!-- Pointer/tail -->
+      <div class="pointer"></div>
+    </div>
+  {/if}
 </div>
 
 <!-- Delete confirmation -->
@@ -705,6 +793,100 @@
 
   .swipe-content.swiping {
     transition: none;
+  }
+
+  .action-menu-anchor {
+    position: absolute;
+    z-index: 102;
+    transform: translateY(-50%);
+  }
+
+  .action-menu-anchor.open {
+    z-index: 200;
+  }
+
+  .message-action-trigger {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--touch-target-min, 44px);
+    height: var(--touch-target-min, 44px);
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    background: transparent;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-fast, 120ms) ease;
+  }
+
+  .message-action-trigger::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    transform: scale(0.88);
+    transition:
+      transform var(--duration-fast, 120ms) ease,
+      background var(--duration-fast, 120ms) ease,
+      border-color var(--duration-fast, 120ms) ease;
+  }
+
+  .message-action-trigger i {
+    position: relative;
+    z-index: 1;
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .message-action-trigger:focus,
+  .message-action-trigger.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .message-action-trigger:hover,
+  .message-action-trigger:focus,
+  .message-action-trigger.active {
+    color: var(--theme-text, #ffffff);
+  }
+
+  .message-action-trigger:hover::before,
+  .message-action-trigger:focus::before,
+  .message-action-trigger.active::before {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.14));
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 42%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12))
+    );
+    transform: scale(1);
+  }
+
+  .message-action-trigger:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .message-wrapper:hover .action-menu-anchor.ready .message-action-trigger {
+      opacity: 0.82;
+      pointer-events: auto;
+    }
+
+    .message-wrapper:hover .message-action-trigger::before {
+      transform: scale(1);
+    }
+
+    .message-wrapper:hover .message-action-trigger:hover,
+    .message-wrapper:hover .message-action-trigger:focus,
+    .message-wrapper:hover .message-action-trigger.active {
+      opacity: 1;
+    }
   }
 
   .reply-swipe-cue {
@@ -822,9 +1004,7 @@
     transform: scale(1.5);
   }
 
-  /* More button (ellipsis) */
-  .reply-btn,
-  .more-btn {
+  .reply-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -846,10 +1026,7 @@
   }
 
   .reply-btn:hover,
-  .reply-btn:focus-visible,
-  .more-btn:hover,
-  .more-btn.active,
-  .more-btn:focus-visible {
+  .reply-btn:focus-visible {
     background: rgba(255, 255, 255, 0.15);
     color: var(--theme-text, #ffffff);
   }
@@ -858,10 +1035,15 @@
   .more-menu {
     position: absolute;
     top: calc(100% + 8px);
-    right: 0;
+    left: 0;
     min-width: 140px;
     padding: 6px;
-    background: var(--theme-panel-bg, rgba(30, 30, 40, 0.98));
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, rgba(30, 30, 40, 0.98)),
+        var(--theme-panel-bg, rgba(30, 30, 40, 0.98))
+      ),
+      #121218;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     animation: menu-slide var(--duration-fast) ease-out;
@@ -874,9 +1056,9 @@
     animation-name: menu-slide-up;
   }
 
-  .reaction-bar.own .more-menu {
-    right: auto;
-    left: 0;
+  .action-menu-anchor.own .more-menu {
+    right: 0;
+    left: auto;
   }
 
   @keyframes menu-slide {
@@ -970,7 +1152,8 @@
     }
 
     .swipe-content,
-    .reply-swipe-cue {
+    .reply-swipe-cue,
+    .message-action-trigger {
       transition: none;
     }
 
