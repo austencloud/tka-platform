@@ -90,7 +90,12 @@
     border-radius: 12px;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    transition:
+      transform var(--transition-spring),
+      box-shadow var(--transition-fast),
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      color var(--transition-fast);
   }
 
   .axis-card:hover {
@@ -100,6 +105,7 @@
   }
 
   .axis-card.selected {
+    transform: translateY(-1px) scale(1.01);
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 24%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
@@ -110,11 +116,15 @@
     color: var(--theme-text, #fff);
   }
 
+  .axis-card:active {
+    transform: scale(0.98);
+  }
+
   .axis-icon {
     font-size: 22px;
     color: var(--accent);
     opacity: 0.6;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--transition-fast);
   }
 
   .axis-card:hover .axis-icon,
@@ -128,7 +138,7 @@
   }
 
   .axis-card-sub {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
   }
 

@@ -23,8 +23,8 @@
     onCancel,
   }: Props = $props();
 
-  let name = $state(initialName);
-  let description = $state(initialDescription);
+  let name = $state("");
+  let description = $state("");
   let nameInput = $state<HTMLInputElement | null>(null);
 
   // Reset fields each time the modal opens so a prior cancel doesn't leak in.
@@ -50,13 +50,19 @@
   }
 </script>
 
-<BaseModal {open} size="sm" onclose={onCancel} closeOnBackdrop={!isReleasing} closeOnEscape={!isReleasing}>
+<BaseModal
+  {open}
+  size="sm"
+  onclose={onCancel}
+  closeOnBackdrop={!isReleasing}
+  closeOnEscape={!isReleasing}
+>
   {#snippet header()}
     <ModalHeader
       title="Name this deck"
       subtitle={deckLabel}
       icon="fa-stamp"
-      iconColor="#10b981"
+      iconColor="var(--semantic-success)"
       showClose={!isReleasing}
       onClose={onCancel}
     />
@@ -77,7 +83,9 @@
     </label>
 
     <label class="field">
-      <span class="label-text">Description <span class="optional">(optional)</span></span>
+      <span class="label-text"
+        >Description <span class="optional">(optional)</span></span
+      >
       <textarea
         class="text-input textarea"
         bind:value={description}
@@ -91,10 +99,20 @@
 
   {#snippet footer()}
     <ModalFooter align="between">
-      <button type="button" class="secondary" onclick={onCancel} disabled={isReleasing}>
+      <button
+        type="button"
+        class="secondary"
+        onclick={onCancel}
+        disabled={isReleasing}
+      >
         Cancel
       </button>
-      <button type="button" class="primary" onclick={confirm} disabled={!canConfirm}>
+      <button
+        type="button"
+        class="primary"
+        onclick={confirm}
+        disabled={!canConfirm}
+      >
         {#if isReleasing}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
           Releasing…
@@ -141,7 +159,10 @@
     border-radius: 10px;
     color: var(--theme-text, #fff);
     font-size: 15px;
-    transition: border-color 0.15s;
+    transition:
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .text-input:focus {
@@ -164,8 +185,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #10b981;
-    color: #fff;
+    background: var(--semantic-success);
+    color: var(--theme-text);
     font-weight: 700;
   }
 

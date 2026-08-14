@@ -371,7 +371,7 @@
     letter-spacing: 0.05em;
   }
   .sub-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 600;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     text-transform: uppercase;
@@ -429,7 +429,7 @@
     font-variant-numeric: tabular-nums;
   }
   .slider-pool {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     text-align: right;
     font-variant-numeric: tabular-nums;

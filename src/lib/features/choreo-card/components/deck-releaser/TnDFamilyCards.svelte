@@ -41,7 +41,7 @@
   {#if onSelectAll || onClear}
     <div class="bulk-row">
       {#if onSelectAll}<FilterChipBase label="All" icon="fas fa-check-double" mode="action" onclick={onSelectAll} />{/if}
-      {#if onClear}<FilterChipBase label="None" icon="fas fa-xmark" mode="action" chipColor="#f87171" onclick={onClear} />{/if}
+      {#if onClear}<FilterChipBase label="None" icon="fas fa-xmark" mode="action" chipColor="var(--semantic-error)" onclick={onClear} />{/if}
     </div>
   {/if}
   <div class="cards-mid">
@@ -114,7 +114,11 @@
     border-radius: 12px;
     color: var(--theme-text, #fff);
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    transition:
+      transform var(--transition-spring),
+      box-shadow var(--transition-fast),
+      border-color var(--transition-fast),
+      background var(--transition-fast);
   }
 
   .family-btn:hover {
@@ -124,6 +128,7 @@
   }
 
   .family-btn.selected {
+    transform: translateY(-1px) scale(1.01);
     background: linear-gradient(
       135deg,
       color-mix(in srgb, var(--accent) 24%, var(--theme-card-bg, rgba(255, 255, 255, 0.04))),
@@ -133,13 +138,17 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
   }
 
+  .family-btn:active {
+    transform: scale(0.98);
+  }
+
   .family-icon {
     width: 44px;
     height: 44px;
     object-fit: contain;
     filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
     opacity: 0.55;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--transition-fast);
   }
 
   .family-btn:hover .family-icon,
@@ -154,7 +163,7 @@
   }
 
   .family-count {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 

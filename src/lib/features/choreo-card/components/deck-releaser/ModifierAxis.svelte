@@ -75,7 +75,7 @@
   }
 
   .axis-hint {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.38));
   }
 
