@@ -2,8 +2,8 @@
   /**
    * SequenceMessageCard
    *
-   * Renders a sequence as a tappable card within a message.
-   * Links directly to the sequence in Browse for viewing.
+   * Renders a playable sequence preview within a message.
+   * Opens the canonical full viewer through a separate action.
    * Shows deleted state if the sequence no longer exists.
    */
 
@@ -13,8 +13,8 @@
   import { goto } from "$app/navigation";
   import { inboxState } from "../../state/inbox-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { buildThumbnailUrl } from "../../state/send-sequence-state.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import SequenceMessagePreview from "./SequenceMessagePreview.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
@@ -36,6 +36,8 @@
   let isDeleted = $state(false);
   let isChecking = $state(false);
   let resolvedPreview = $state<SequenceSharePayload | null>(null);
+
+  const PREVIEW_RESOLVE_RETRY_DELAY_MS = 900;
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
@@ -79,57 +81,15 @@
         )
       : undefined
   );
-  // sequenceCloudWord is the raw sequence.word used as the cloud storage filename.
-  // New messages include this explicitly. Old messages don't have it, so we fall
-  // back to sequenceName (which is seq.name) then sequenceWord (display name).
-  const sequenceCloudWord = $derived(
-    resolvedPreview?.sequenceCloudWord || attachment.metadata?.sequenceCloudWord
+  // Only durable URLs become posters. Guessing storage filenames generated a
+  // stream of 404s for valid links such as YR0L; the live player now resolves
+  // the sequence independently and the poster falls back to a local word mark.
+  const posterUrl = $derived(
+    resolvedPreview?.sequenceThumbnail ||
+      attachment.metadata?.sequenceThumbnail ||
+      attachment.thumbnailUrl ||
+      null
   );
-
-  // Build an ordered list of thumbnail URLs to try. The <img> onerror handler
-  // cycles through these so old messages (which may have mismatched keys) still
-  // have a chance to show a thumbnail.
-  const thumbnailCandidates: string[] = $derived.by(() => {
-    const candidates: string[] = [];
-    const seen = new Set<string>();
-
-    function add(word: string | undefined | null) {
-      if (!word || word === "Sequence") return;
-      const url = buildThumbnailUrl(String(word), "staff", false);
-      if (!seen.has(url)) {
-        seen.add(url);
-        candidates.push(url);
-      }
-    }
-
-    const resolvedThumbnail = resolvedPreview?.sequenceThumbnail;
-    if (resolvedThumbnail) {
-      seen.add(resolvedThumbnail);
-      candidates.push(resolvedThumbnail);
-    }
-
-    // Best: explicit cloud word (new messages)
-    add(sequenceCloudWord);
-    // Next: sequenceWord - for public sequences this is usually the raw word
-    // (displayName and intendedWord are typically undefined)
-    add(sequenceWord);
-    // Last: sequenceName (seq.name) - can have prefixes like "Circular" that
-    // don't match cloud storage, so try this after the raw word
-    add(sequenceName);
-
-    // Also try whatever was stored at send time (could be a different format)
-    const stored =
-      attachment.metadata?.sequenceThumbnail || attachment.thumbnailUrl;
-    if (stored && !seen.has(stored)) {
-      candidates.push(stored);
-    }
-
-    return candidates;
-  });
-
-  // Index into the candidates list - incremented by onerror
-  let candidateIndex = $state(0);
-  const thumbnailUrl = $derived(thumbnailCandidates[candidateIndex] ?? null);
   const authorName = $derived(
     resolvedPreview?.sequenceAuthor || attachment.metadata?.sequenceAuthor
   );
@@ -140,23 +100,23 @@
   // Initialize haptic service
   onMount(() => {
     hapticService = getHapticFeedback();
-
-    let cancelled = false;
-    const needsPreviewResolution =
-      !attachment.metadata?.sequenceWord &&
-      !attachment.metadata?.sequenceThumbnail &&
-      !attachment.thumbnailUrl;
-
-    if (needsPreviewResolution) {
-      void resolvePreviewMetadata().then((payload) => {
-        if (!cancelled) resolvedPreview = payload;
-      });
-    }
-
-    return () => {
-      cancelled = true;
-    };
   });
+
+  async function loadPreviewSequence(): Promise<SequenceData | null> {
+    let payload = await resolvePreviewMetadata();
+    if (!payload) {
+      // Inbox messages can render before the authenticated Firestore stream is
+      // ready. One delayed retry keeps a valid shared link from flashing a
+      // permanent unavailable state during that startup window.
+      await new Promise((resolve) =>
+        setTimeout(resolve, PREVIEW_RESOLVE_RETRY_DELAY_MS)
+      );
+      payload = await resolvePreviewMetadata();
+    }
+    if (!payload) return null;
+    resolvedPreview = payload;
+    return payload.sequence;
+  }
 
   async function resolvePreviewMetadata(): Promise<SequenceSharePayload | null> {
     try {
@@ -253,12 +213,7 @@
   }
 </script>
 
-<div
-  class="sequence-card"
-  class:own={isOwn}
-  class:deleted={isDeleted}
-  class:clickable={!isDeleted && !isChecking}
->
+<div class="sequence-card" class:own={isOwn} class:deleted={isDeleted}>
   {#if isDeleted}
     <!-- Deleted state -->
     <div class="card-header">
@@ -270,40 +225,12 @@
     <h4 class="sequence-title deleted-title">{sequenceWord}</h4>
     <p class="deleted-notice">This sequence is no longer available</p>
   {:else}
-    <!-- Normal state -->
-    <button
-      class="card-content"
-      onclick={handleClick}
-      type="button"
-      disabled={isChecking}
-    >
-      {#if thumbnailUrl}
-        <div class="thumbnail-container">
-          <img
-            src={thumbnailUrl}
-            alt={sequenceWord}
-            class="thumbnail"
-            loading="lazy"
-            onerror={(e) => {
-              console.warn(
-                `[SequenceMessageCard] thumbnail failed (${candidateIndex + 1}/${thumbnailCandidates.length}):`,
-                thumbnailUrl
-              );
-              // Try the next candidate URL before giving up
-              if (candidateIndex < thumbnailCandidates.length - 1) {
-                candidateIndex++;
-              } else {
-                console.warn(
-                  `[SequenceMessageCard] all candidates exhausted for "${sequenceWord}". metadata:`,
-                  attachment.metadata
-                );
-                const parent = (e.currentTarget as HTMLElement).parentElement;
-                if (parent) parent.style.display = "none";
-              }
-            }}
-          />
-        </div>
-      {/if}
+    <div class="card-content">
+      <SequenceMessagePreview
+        word={sequenceWord}
+        {posterUrl}
+        loadSequence={loadPreviewSequence}
+      />
 
       <div class="card-info">
         <h4 class="sequence-title">
@@ -335,19 +262,22 @@
       </div>
 
       <div class="card-footer">
-        {#if isChecking}
-          <span class="checking-hint">
+        <button
+          type="button"
+          class="open-sequence"
+          onclick={handleClick}
+          disabled={isChecking}
+        >
+          {#if isChecking}
             <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Checking sequence...
-          </span>
-        {:else}
-          <span class="tap-hint">
+            <span>Opening</span>
+          {:else}
             <i class="fas fa-external-link-alt" aria-hidden="true"></i>
-            Tap to view
-          </span>
-        {/if}
+            <span>Open sequence</span>
+          {/if}
+        </button>
       </div>
-    </button>
+    </div>
   {/if}
 </div>
 
@@ -362,24 +292,13 @@
     border: 1px solid var(--theme-stroke);
     text-align: left;
     width: 100%;
-    min-width: 200px;
-    max-width: 280px;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .sequence-card.clickable:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-accent, var(--semantic-info));
-    transform: translateY(-1px);
+    min-width: 0;
+    max-width: 20rem;
   }
 
   .sequence-card.own {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  .sequence-card.own.clickable:hover {
-    background: rgba(255, 255, 255, 0.15);
   }
 
   /* Deleted state */
@@ -416,23 +335,11 @@
     font-style: italic;
   }
 
-  /* Inner button for clickable state */
   .card-content {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    text-align: left;
     width: 100%;
-    color: inherit;
-  }
-
-  .card-content:disabled {
-    cursor: default;
   }
 
   .card-header {
@@ -440,22 +347,6 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-  }
-
-  /* Thumbnail */
-  .thumbnail-container {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border-radius: 8px;
-    overflow: hidden;
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  .thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: rgba(0, 0, 0, 0.1);
   }
 
   .card-info {
@@ -523,26 +414,47 @@
     border-top: 1px solid var(--theme-stroke);
   }
 
-  .tap-hint,
-  .checking-hint {
+  .open-sequence {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
+    min-height: var(--touch-target-min, 44px);
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    border-radius: 999px;
+    color: var(--theme-text, #ffffff);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 120ms) ease,
+      border-color var(--duration-fast, 120ms) ease;
+  }
+
+  .open-sequence i {
     font-size: var(--font-size-compact);
-    color: var(--theme-accent, var(--semantic-info));
-    opacity: 0.8;
   }
 
-  .checking-hint {
-    color: var(--theme-text-dim);
+  .open-sequence:hover:not(:disabled) {
+    border-color: var(--theme-accent, var(--semantic-info));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.14));
   }
 
-  .own .tap-hint {
-    color: rgba(255, 255, 255, 0.8);
+  .open-sequence:focus-visible {
+    outline: 2px solid var(--theme-accent, var(--semantic-info));
+    outline-offset: 2px;
   }
 
-  .tap-hint i,
-  .checking-hint i {
-    font-size: var(--font-size-compact);
+  .open-sequence:disabled {
+    cursor: wait;
+    opacity: 0.72;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .open-sequence {
+      transition: none;
+    }
   }
 </style>

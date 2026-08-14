@@ -124,6 +124,9 @@
     gridVisible = true,
     disableContextMenu = false,
     interactive = true,
+    hoverHint = "badge",
+    cornerToggle = false,
+    playbackAllowed = true,
     onTogglePlaybackRef = undefined,
     onReady = undefined,
     visibilityManagerOverride = undefined,
@@ -253,6 +256,14 @@
      *  so a locked hero is a pure continuous loop the visitor can't pause or
      *  scrub. Default true (every existing minimal caller keeps tap-to-play). */
     interactive?: boolean;
+    /** Pointer-only affordance for the minimal canvas. Hosts that expose the
+     *  corner control can suppress the center badge without disabling taps. */
+    hoverHint?: "badge" | "none";
+    /** Show the canvas-owned keyboard-accessible play/pause button. */
+    cornerToggle?: boolean;
+    /** Pause this player while its host is not visible. Returning to view does
+     *  not resume motion unless autoplay has not happened yet. */
+    playbackAllowed?: boolean;
     /** Hands the internal play/pause toggle to the host (external keyboard
      *  control, demo acts). Same contract as AnimationPlayer's prop of the
      *  same name. */
@@ -304,6 +315,12 @@
     checkPlaying();
     const interval = setInterval(checkPlaying, 50);
     return () => clearInterval(interval);
+  });
+
+  $effect(() => {
+    if (playbackAllowed || !isPlaying || !playbackController) return;
+    const controller = playbackController;
+    untrack(() => controller.togglePlayback());
   });
 
   // Derived state for canvas
@@ -466,7 +483,13 @@
     // the async load completes, so an `autoPlay` that was already true (the
     // showcase scrolled into view before load finished) would arm once, miss,
     // and never retry.
-    if (!autoPlay || !servicesReady || !animationState.sequenceData) return;
+    if (
+      !autoPlay ||
+      !playbackAllowed ||
+      !servicesReady ||
+      !animationState.sequenceData
+    )
+      return;
     if (!playbackController) return;
     const loadId = lastLoadedSequenceId;
     if (autoPlayedForLoadId === loadId) return;
@@ -474,13 +497,21 @@
       autoPlayedForLoadId = loadId;
       return;
     }
-    autoPlayedForLoadId = loadId;
     const pc = playbackController;
-    setTimeout(() => {
+    const autoplayTimer = setTimeout(() => {
       untrack(() => {
-        if (pc === playbackController) pc.togglePlayback();
+        if (
+          pc === playbackController &&
+          autoPlay &&
+          playbackAllowed &&
+          autoPlayedForLoadId !== loadId
+        ) {
+          autoPlayedForLoadId = loadId;
+          pc.togglePlayback();
+        }
       });
     }, 300);
+    return () => clearTimeout(autoplayTimer);
   });
 
   // Watch for sequence changes and reload animation
@@ -679,12 +710,13 @@
         positionGlyphVisible={showPositionGlyph}
         tapToToggle={minimal && interactive}
         progressLine={minimal && interactive}
-        hoverHint={minimal && interactive ? "badge" : "none"}
+        hoverHint={minimal && interactive ? hoverHint : "none"}
         fillContainer={fill}
         {hideTkaGlyph}
         {hideStepNumbers}
         hideHeader={fill && !showWordHeader}
         hideProgressBar={fill && !scrubbable}
+        {cornerToggle}
         onProgressBarSeek={scrubbable ? handleSeek : null}
         onProgressBarScrubStart={scrubbable ? handleScrubStart : null}
         onProgressBarScrubEnd={scrubbable ? handleScrubEnd : null}

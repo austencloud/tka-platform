@@ -31,12 +31,12 @@ describe("message link parsing", () => {
   it("detects canonical sequence and short-code links", () => {
     expect(
       findMessageSequenceLink(
-        "Fuse result: https://tkaflowarts.com/sequence/O263?bp=staff#viewer"
+        "Fuse result: https://tkaflowarts.com/sequence/YR0L?bp=staff#viewer"
       )
     ).toEqual({
-      href: "https://tkaflowarts.com/sequence/O263?bp=staff#viewer",
-      route: "/sequence/O263?bp=staff#viewer",
-      identifier: "O263",
+      href: "https://tkaflowarts.com/sequence/YR0L?bp=staff#viewer",
+      route: "/sequence/YR0L?bp=staff#viewer",
+      identifier: "YR0L",
     });
 
     expect(findMessageSequenceLink("Open tka.run/ab3d.")).toEqual({
