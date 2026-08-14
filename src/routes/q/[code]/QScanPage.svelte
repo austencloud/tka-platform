@@ -1043,6 +1043,7 @@
         word={loaderWord}
         {glyphsReady}
         progress={loadProgress}
+        fitToParent
       />
     </div>
   {:else if pageState.kind === "error"}

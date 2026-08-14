@@ -7,6 +7,7 @@
     glyphsReady?: boolean;
     progress?: number;
     fill?: boolean;
+    fitToParent?: boolean;
   }
 
   let {
@@ -14,6 +15,7 @@
     glyphsReady = false,
     progress = 0,
     fill = false,
+    fitToParent = true,
   }: Props = $props();
 </script>
 
@@ -26,7 +28,7 @@
 >
   {#if glyphsReady && word}
     <div class="word-loader">
-      <TKAWordGlyph {word} height={40} darkMode fitToParent />
+      <TKAWordGlyph {word} height={40} darkMode {fitToParent} />
     </div>
     <div class="loader-progress">
       <ProgressBar percent={progress} height={4} />
