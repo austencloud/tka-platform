@@ -22,10 +22,10 @@ describe("seedOverrideResolvers", () => {
   it("a seeded global adjustment resolves through the registered resolver", () => {
     seedOverrideResolvers({
       default: [], special: [], propGeometry: [],
-      global: [{ gridMode: "diamond", oriKey: "from_layer1", letter: "A", turnsTuple: "(0, 0)", arrowKey: "blue", propType: "fan", otherPropType: "fan", adjustmentX: 5, adjustmentY: 6 } as never],
+      global: [{ placementFrame: "canonical", oriKey: "from_layer1", letter: "A", turnsTuple: "(0, 0)", arrowKey: "blue", propType: "fan", otherPropType: "fan", adjustmentX: 5, adjustmentY: 6 } as never],
     });
     const r = getGlobalAdjustmentResolver()!(
-      { gridMode: "diamond", oriKey: "from_layer1", letter: "A", turnsTuple: "(0, 0)", arrowKey: "blue", propType: "fan", otherPropType: "fan" } as never,
+      { placementFrame: "canonical", oriKey: "from_layer1", letter: "A", turnsTuple: "(0, 0)", arrowKey: "blue", propType: "fan", otherPropType: "fan" } as never,
       "fan", "fan",
     );
     expect(r!.adjustment.x).toBe(5);

@@ -54,13 +54,13 @@ const expectedHashes: Record<keyof typeof factories, string> = {
   createDefaultForestFireflyConfig:
     "cf1c3bb1de132b2d8cc79c70271a1affa94ce3e3ae62dcec739342ea035a329d",
   createDefaultOceanAbyssConfig:
-    "dd6e6f77065d6ffc6b3957e39d256e09e7f72fdabb6130cf9a8b82e5b259bd84",
+    "eae14dd630091ff87a777a0b7bd540c2af79b37b84e340bedc4487eec4f38981",
   createDefaultOceanCinematicConfig:
-    "dd6e6f77065d6ffc6b3957e39d256e09e7f72fdabb6130cf9a8b82e5b259bd84",
+    "eae14dd630091ff87a777a0b7bd540c2af79b37b84e340bedc4487eec4f38981",
   createDefaultOceanMysticalConfig:
-    "dd6e6f77065d6ffc6b3957e39d256e09e7f72fdabb6130cf9a8b82e5b259bd84",
+    "eae14dd630091ff87a777a0b7bd540c2af79b37b84e340bedc4487eec4f38981",
   createDefaultOceanReefConfig:
-    "dd6e6f77065d6ffc6b3957e39d256e09e7f72fdabb6130cf9a8b82e5b259bd84",
+    "eae14dd630091ff87a777a0b7bd540c2af79b37b84e340bedc4487eec4f38981",
   createDefaultRainbowConfig:
     "3ea39eb50e9d9e320800490827c555d0dd65a73cb9e4cc1326e1ec498ee99fca",
   createDefaultVoidConfig:

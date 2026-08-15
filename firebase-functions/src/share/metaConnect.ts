@@ -24,11 +24,11 @@ import {
   exchangeFacebookLongLivedToken,
   exchangeInstagramLongLivedToken,
   fetchInstagramAccount,
-  GRAPH_VERSION,
   listFacebookPages,
   listPermissionStatuses,
   revokeFacebookPermissions,
 } from "./metaGraphClient";
+import { GRAPH_VERSION } from "./metaGraphConfig";
 import {
   clearConnection,
   readConnections,

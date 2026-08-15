@@ -1,4 +1,4 @@
-import { GRAPH_VERSION } from "./metaGraphClient";
+import { GRAPH_VERSION } from "./metaGraphConfig";
 import type { MetaPublishFailureCode } from "./metaPublishPolicy";
 
 interface TimestampLike {

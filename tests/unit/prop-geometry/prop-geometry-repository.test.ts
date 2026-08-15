@@ -17,7 +17,7 @@ function makePersister() {
 }
 
 const input: PropGeometryAdjustmentInput = {
-  gridMode: "diamond",
+  placementFrame: "canonical",
   propType: "staff",
   otherPropType: "staff",
   positionType: "beta",
@@ -31,7 +31,7 @@ const input: PropGeometryAdjustmentInput = {
 };
 
 const key: PropGeometryKey = {
-  gridMode: "diamond",
+  placementFrame: "canonical",
   propType: "staff",
   otherPropType: "staff",
   positionType: "beta",

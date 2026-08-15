@@ -101,7 +101,7 @@ describe("scene-level particle batching contract", () => {
     expect(BLOOM).toContain("writeHistory");
     expect(BLOOM_MATERIAL).toContain("vStreak");
     expect(BLOOM_MATERIAL).toContain("vSpikes");
-    expect(BLOOM_MATERIAL).toContain("vChromatic");
+    expect(BLOOM_MATERIAL).toContain("vFalloff");
     expect(
       existsSync(
         resolve("src/lib/shared/3d/effects/post-processing/BloomBillboard3D.svelte")

@@ -35,7 +35,7 @@ describe("derivePropGeometryKey", () => {
     const red = makeMotion({ color: "red", motionType: "static", endOrientation: "in", turns: 0 });
     const key = derivePropGeometryKey(makePictograph(blue, red), blue, "blue");
     expect(key).toEqual({
-      gridMode: "diamond",
+      placementFrame: "canonical",
       propType: "staff",
       otherPropType: "staff",
       positionType: "gamma",

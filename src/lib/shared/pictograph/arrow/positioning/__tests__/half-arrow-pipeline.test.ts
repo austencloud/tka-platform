@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { calculateArrowPoint } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
 import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
 import { calculateOrientationAt } from "$lib/shared/animation-engine/services/orientation-at";
@@ -19,6 +19,15 @@ import {
   poseAt,
   type HalfwayMotion,
 } from "../../../../../../routes/(public)/guide/level-2/_data/halfway-pose";
+
+vi.mock("$lib/shared/net/asset-fetch", () => ({
+  assetFetch: vi.fn(async () =>
+    new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })
+  ),
+}));
 
 type Target = {
   name: string;

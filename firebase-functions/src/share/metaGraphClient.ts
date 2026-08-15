@@ -18,13 +18,13 @@
  */
 
 import * as functions from "firebase-functions";
+import { GRAPH_VERSION } from "./metaGraphConfig";
 import {
   MetaPublishError,
   mapMetaError,
   type MetaErrorPayload,
 } from "./metaPublishPolicy";
 
-export const GRAPH_VERSION = "v26.0";
 const IG_GRAPH = `https://graph.instagram.com`;
 const FB_GRAPH = `https://graph.facebook.com/${GRAPH_VERSION}`;
 const FB_RUPLOAD = `https://rupload.facebook.com/video-upload/${GRAPH_VERSION}`;

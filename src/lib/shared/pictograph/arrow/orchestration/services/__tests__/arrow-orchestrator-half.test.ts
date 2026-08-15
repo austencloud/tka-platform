@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { setDefaultOverrideResolver } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import { calculateArrowPoint } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
 import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
@@ -18,6 +18,15 @@ import {
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { ArrowPlacer } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import { SimpleJsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
+
+vi.mock("$lib/shared/net/asset-fetch", () => ({
+  assetFetch: vi.fn(async () =>
+    new Response("{}", {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })
+  ),
+}));
 
 const HALF = { t0: 0, t1: 0.5 };
 
