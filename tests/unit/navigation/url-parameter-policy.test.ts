@@ -45,18 +45,18 @@ describe("route-scoped URL parameters", () => {
     expect(generateUrl.search).toBe("");
   });
 
-  it("keeps an environment link only on the Theme page", () => {
+  it("keeps a theme link only on the Theme page", () => {
     const themeUrl = new URL(
-      "https://tkaflowarts.com/settings/theme?environment=autumn"
+      "https://tkaflowarts.com/settings/theme?theme=autumn"
     );
     const profileUrl = new URL(
-      "https://tkaflowarts.com/settings/profile?environment=autumn"
+      "https://tkaflowarts.com/settings/profile?theme=autumn"
     );
 
     pruneRouteScopedParams(themeUrl, themeUrl.pathname);
     pruneRouteScopedParams(profileUrl, profileUrl.pathname);
 
-    expect(themeUrl.search).toBe("?environment=autumn");
+    expect(themeUrl.search).toBe("?theme=autumn");
     expect(profileUrl.search).toBe("");
   });
 });

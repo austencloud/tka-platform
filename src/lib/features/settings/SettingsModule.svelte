@@ -137,7 +137,7 @@
   // Use navigation state's active tab
   const activeTab = $derived(navigationState.activeTab);
   const linkedThemePreview = $derived(
-    getShowroomThemeFromId(page.url.searchParams.get("environment"))
+    getShowroomThemeFromId(page.url.searchParams.get("theme"))
   );
 
   // Swipe-to-exit gesture state
