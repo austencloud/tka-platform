@@ -1,7 +1,6 @@
 import { calculateMotionEndpoints } from "$lib/shared/animation-engine/services/endpoint-calculator";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { DURATION } from "$lib/shared/transitions/transitions";
 
 /** A readable base pace for ordinary motions, including most zero-turn shifts. */
 export const PICTOGRAPH_ARRIVAL_PROP_MOTION_MIN_MS = 850;
@@ -36,6 +35,11 @@ export function getPictographArrivalPropMotionDurationMs(
   );
 }
 
-/** The card and grid settle together as one landing gesture. */
-export const PICTOGRAPH_ARRIVAL_LANDING_MS = DURATION.emphasis;
-export const PICTOGRAPH_ARRIVAL_LANDING_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+/**
+ * The card and grid settle together as one landing gesture, so the landing runs
+ * on the same clock as every other grid layout change.
+ */
+export {
+  GRID_LAYOUT_TRANSITION_MS as PICTOGRAPH_ARRIVAL_LANDING_MS,
+  GRID_LAYOUT_TRANSITION_EASING as PICTOGRAPH_ARRIVAL_LANDING_EASING,
+} from "$lib/shared/transitions/layout-flip";

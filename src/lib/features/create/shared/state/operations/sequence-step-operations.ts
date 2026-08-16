@@ -21,6 +21,14 @@ import {
   withLoopCertificateCleared,
   invalidateLoopDisplayCache,
 } from "$lib/shared/create/services/loop-certificate";
+import { DURATION } from "$lib/shared/transitions/transitions";
+
+/**
+ * How long a leaving cell recedes before the grid takes its new step list.
+ * Must match the `.step-container.deleting` animation in WorkspaceGrid, which
+ * runs on `--duration-normal`.
+ */
+const STEP_EXIT_ANIMATION_MS = DURATION.normal;
 
 export interface StepOperationsConfig {
   coreState: SequenceCoreState;
@@ -178,7 +186,9 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
 
       animationState.startRemovingBeat(stepIndex);
 
-      // Wait for fade animation (updated to match new faster animation: 250ms)
+      // Let the cell finish receding, then hand the grid its new step list. The
+      // grid's own layout transition carries the survivors from there, so this
+      // must not hold the removing flag past the mutation.
       setTimeout(() => {
         try {
           if (!coreState.currentSequence) return;
@@ -192,6 +202,7 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
             updatedSequence =
               ReversalDetector.processReversals(updatedSequence);
           }
+          animationState.endRemovingBeat();
           coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
           invalidateLoopDisplayCache();
           selectionState.adjustSelectionForRemovedStep(stepIndex);
@@ -199,17 +210,12 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
           onSave?.().catch((err) =>
             console.error("Failed to auto-save after beat removal:", err)
           );
-
-          // Wait for slide animation (updated to match new faster animation: 200ms)
-          setTimeout(() => {
-            animationState.endRemovingBeat();
-            onComplete?.();
-          }, 200);
+          onComplete?.();
         } catch (error) {
           handleError("Failed to remove beat", error);
           animationState.endRemovingBeat();
         }
-      }, 250);
+      }, STEP_EXIT_ANIMATION_MS);
     },
 
     removeStepAndSubsequent(stepIndex: number) {
@@ -248,8 +254,6 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
         removingIndices.push(i);
       }
 
-      const fadeAnimationDuration = 250;
-
       // Add ALL steps to removing set at once - they all fade simultaneously
       animationState.startRemovingBeats(removingIndices);
 
@@ -267,6 +271,7 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
             updatedSequence =
               ReversalDetector.processReversals(updatedSequence);
           }
+          animationState.endRemovingBeats();
           coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
           invalidateLoopDisplayCache();
           // NOTE: Don't clear selection here - the onComplete callback will select the appropriate next beat
@@ -275,17 +280,12 @@ export function createSequenceStepOperations(config: StepOperationsConfig) {
           onSave?.().catch((err) =>
             console.error("Failed to auto-save after beat removal:", err)
           );
-
-          // Small delay for visual feedback before completing
-          setTimeout(() => {
-            animationState.endRemovingBeats();
-            onComplete?.();
-          }, 50);
+          onComplete?.();
         } catch (error) {
           handleError("Failed to remove beat and subsequent steps", error);
           animationState.endRemovingBeats();
         }
-      }, fadeAnimationDuration);
+      }, STEP_EXIT_ANIMATION_MS);
     },
 
     updateStep(stepIndex: number, stepData: Partial<StepData>) {

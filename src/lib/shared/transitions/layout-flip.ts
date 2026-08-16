@@ -1,0 +1,231 @@
+/**
+ * layout-flip — FLIP for a container that recomposes.
+ *
+ * One owner for "this surface glides from its old layout to its new one".
+ * Capture every tracked element's rectangle BEFORE the DOM updates, then play
+ * after: each element starts from where it used to be and eases to where it
+ * now is, so a delete, a column-count change, or a mode switch reads as
+ * movement instead of a snap.
+ *
+ * Two things it does that `svelte/animate`'s `flip` cannot:
+ *
+ * 1. It scales x and y independently, so a cell whose aspect ratio changes
+ *    (a timeline cell widening by its duration multiplier, a grid cell
+ *    reflowing into a shorter row) travels without distorting.
+ * 2. It spans element families that live in different keyed blocks — or in no
+ *    keyed block at all — so step cells, the start tile, and the mandala cells
+ *    all move on one clock.
+ *
+ * Capture reads each rectangle BEFORE cancelling any animation still running on
+ * it, so an interrupted transition chains from the position it had reached
+ * rather than jumping to its destination first.
+ */
+
+import { DURATION } from "./transitions";
+
+/** The clock every step-grid layout change runs on, including arrival landing. */
+export const GRID_LAYOUT_TRANSITION_MS = DURATION.emphasis;
+export const GRID_LAYOUT_TRANSITION_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+/** Below these a move is invisible and not worth an animation. */
+const MIN_TRANSLATE_PX = 0.5;
+const MIN_SCALE_DELTA = 0.005;
+
+export interface LayoutFlipGroup {
+  /** Attribute selector matching the family, e.g. `[data-history-step-identity]`. */
+  selector: string;
+  /** `dataset` property holding each member's stable key. */
+  datasetKey: string;
+}
+
+export interface LayoutFlipConfig {
+  getRoot: () => HTMLElement | null | undefined;
+  groups: LayoutFlipGroup[];
+  /** Descendant that receives the transform. Falls back to the member itself. */
+  transformTargetSelector?: string;
+  /**
+   * Descendants whose in-flight animations are cancelled on capture, so a
+   * second transition doesn't stack on top of a first.
+   */
+  cancelSelectors?: string[];
+  /** Reduced-motion-aware duration in ms. 0 disables the transition. */
+  getDuration?: () => number;
+  easing?: string;
+}
+
+export interface LayoutFlip {
+  /** Snapshot current geometry. Returns false when there is nothing to track. */
+  capture(): boolean;
+  /** Animate from the snapshot to current geometry. Consumes the snapshot. */
+  play(): Animation[];
+  /** Drop a snapshot without playing it. */
+  discard(): void;
+  /** Cancel anything this instance is currently animating. */
+  cancel(): void;
+  readonly hasCapture: boolean;
+}
+
+function collectMembers(
+  root: HTMLElement,
+  groups: LayoutFlipGroup[]
+): Map<string, HTMLElement> {
+  const members = new Map<string, HTMLElement>();
+  groups.forEach((group, groupIndex) => {
+    for (const element of root.querySelectorAll<HTMLElement>(group.selector)) {
+      const key = element.dataset[group.datasetKey];
+      // A group whose members carry no key (the lone start tile) still needs a
+      // stable identity — the selector itself is unique enough for a singleton.
+      members.set(`${groupIndex}:${key ?? ""}`, element);
+    }
+  });
+  return members;
+}
+
+function cancelMemberAnimations(
+  element: HTMLElement,
+  cancelSelectors: string[]
+): void {
+  for (const animation of element.getAnimations()) animation.cancel();
+  for (const selector of cancelSelectors) {
+    const target = element.querySelector<HTMLElement>(selector);
+    if (!target) continue;
+    for (const animation of target.getAnimations()) animation.cancel();
+  }
+}
+
+function animateGeometry(
+  element: HTMLElement,
+  beforeRect: DOMRect,
+  duration: number,
+  easing: string,
+  transformTargetSelector: string | undefined
+): Animation | null {
+  if (duration <= 0) return null;
+
+  const afterRect = element.getBoundingClientRect();
+  const deltaX = beforeRect.left - afterRect.left;
+  const deltaY = beforeRect.top - afterRect.top;
+  const scaleX = afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
+  const scaleY = afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
+
+  const moved =
+    Math.abs(deltaX) > MIN_TRANSLATE_PX ||
+    Math.abs(deltaY) > MIN_TRANSLATE_PX ||
+    Math.abs(scaleX - 1) > MIN_SCALE_DELTA ||
+    Math.abs(scaleY - 1) > MIN_SCALE_DELTA;
+  if (!moved) return null;
+
+  const target = transformTargetSelector
+    ? (element.querySelector<HTMLElement>(transformTargetSelector) ?? element)
+    : element;
+
+  const animation = target.animate(
+    [
+      {
+        transformOrigin: "top left",
+        transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
+      },
+      { transformOrigin: "top left", transform: "none" },
+    ],
+    { duration, easing, fill: "both" }
+  );
+  // fill: "both" holds the final frame, which would pin a `transform: none`
+  // onto the element forever and defeat the next transition's measurement.
+  animation.onfinish = () => animation.cancel();
+  return animation;
+}
+
+export function createLayoutFlip(config: LayoutFlipConfig): LayoutFlip {
+  const {
+    getRoot,
+    groups,
+    transformTargetSelector,
+    cancelSelectors = [],
+    getDuration = () => GRID_LAYOUT_TRANSITION_MS,
+    easing = GRID_LAYOUT_TRANSITION_EASING,
+  } = config;
+
+  let snapshot: Map<string, DOMRect> | null = null;
+  let running: Animation[] = [];
+
+  function cancel(): void {
+    for (const animation of running) animation.cancel();
+    running = [];
+  }
+
+  return {
+    get hasCapture() {
+      return snapshot !== null;
+    },
+
+    capture(): boolean {
+      snapshot = null;
+
+      const root = getRoot();
+      // Nothing is being measured on these paths, so there is no mid-flight
+      // position to preserve — drop whatever is running.
+      if (!root || getDuration() <= 0) {
+        cancel();
+        return false;
+      }
+
+      const members = collectMembers(root, groups);
+      if (members.size === 0) {
+        cancel();
+        return false;
+      }
+
+      const rects = new Map<string, DOMRect>();
+      for (const [key, element] of members) {
+        // Rect first, then cancel — and never a blanket cancel ahead of the
+        // loop, which would snap an in-flight transition to its destination
+        // before it was measured. An interrupted transition has to chain from
+        // the position it had actually reached on screen.
+        rects.set(key, element.getBoundingClientRect());
+        cancelMemberAnimations(element, cancelSelectors);
+      }
+      // The loop above cancelled everything this instance had running.
+      running = [];
+
+      snapshot = rects;
+      return true;
+    },
+
+    play(): Animation[] {
+      const rects = snapshot;
+      snapshot = null;
+      if (!rects) return [];
+
+      const root = getRoot();
+      if (!root) return [];
+
+      const duration = getDuration();
+      const members = collectMembers(root, groups);
+      const animations: Animation[] = [];
+
+      for (const [key, beforeRect] of rects) {
+        const element = members.get(key);
+        // Absent members left the layout (a deleted step, a mandala that only
+        // exists in the other mode). Nothing to move them to.
+        if (!element) continue;
+        const animation = animateGeometry(
+          element,
+          beforeRect,
+          duration,
+          easing,
+          transformTargetSelector
+        );
+        if (animation) animations.push(animation);
+      }
+
+      running = animations;
+      return animations;
+    },
+
+    discard(): void {
+      snapshot = null;
+    },
+
+    cancel,
+  };
+}

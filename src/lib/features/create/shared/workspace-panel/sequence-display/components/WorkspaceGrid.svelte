@@ -1,9 +1,7 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
-  import { flip } from "svelte/animate";
   import { tick } from "svelte";
   import { fade } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
@@ -43,9 +41,11 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { motionDuration } from "$lib/shared/transitions/motion";
   import {
-    PICTOGRAPH_ARRIVAL_LANDING_EASING,
-    PICTOGRAPH_ARRIVAL_LANDING_MS,
-  } from "../domain/pictograph-arrival-motion";
+    createLayoutFlip,
+    GRID_LAYOUT_TRANSITION_EASING,
+    GRID_LAYOUT_TRANSITION_MS,
+  } from "$lib/shared/transitions/layout-flip";
+  import { computeGridLayoutSignature } from "../domain/grid-layout-signature";
   import type {
     MandalaPathShape,
     MandalaRenderOptions,
@@ -53,6 +53,9 @@
   import type { HistoryTransitionPlan } from "$lib/features/create/shared/services/history-transition-planner";
 
   const MANDALA_CELL_SCALE = 0.78;
+  /** Undo/redo's content-change pulse — a highlight, not a movement. */
+  const HISTORY_FLOURISH_MS = 240;
+  const HISTORY_FLOURISH_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
   const hapticService = getHapticFeedback();
 
   let {
@@ -135,6 +138,13 @@
 
   function isArrivalDestinationHidden(stepIndex: number): boolean {
     return isArrivalDestination(stepIndex) && arrivalRequest?.owner === "stage";
+  }
+
+  // Single-step deletion reports through removingStepIndex and multi-step
+  // deletion through removingStepIndices. Both mean the same thing to the cell:
+  // play your exit, you are about to leave the layout.
+  function isStepLeaving(stepIndex: number): boolean {
+    return removingStepIndices.has(stepIndex) || removingStepIndex === stepIndex;
   }
 
   const cellSize = $derived(
@@ -242,57 +252,66 @@
     }));
   });
 
-  // Reading the grid geometry here ensures Svelte measures the keyed cells
-  // whenever their tracks change, even when the underlying sequence objects
-  // themselves did not move. The cells then glide and scale from their old
-  // rectangles instead of repainting at the new size in one frame.
+  // These no longer carry a layout version to force re-measurement: the layout
+  // transition below measures the real rectangles itself, before and after.
   const standardStartCells = $derived.by(() => {
-    const layoutVersion = `${gridLayout.columns}:${gridLayout.cellSize}`;
     if (isTimelineMode || !hasStartPosition || !startPosition) return [];
-    return [{ key: "start-position", startPosition, layoutVersion }];
+    return [{ key: "start-position", startPosition }];
   });
 
   const standardStepCells = $derived.by(() => {
-    const layoutVersion = `${gridLayout.columns}:${gridLayout.cellSize}`;
     if (isTimelineMode) return [];
     return steps.map((step, index) => ({
       step,
       index,
       identity: getStepKey(step, index),
-      layoutVersion,
     }));
   });
 
-  function getLayoutFlipDuration(): number {
-    if (
-      (activeMode !== "construct" && historyTransition === null) ||
-      removingStepIndex !== null ||
-      isClearing ||
-      displayState.isClearingForGeneration
-    ) {
-      return 0;
-    }
-    return motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
-  }
-
-  function getDeclarativeLayoutFlipDuration(): number {
-    // Arrival owns the complete before/after geometry change. Letting Svelte's
-    // keyed-list FLIP or the surface translate transition run at the same time
-    // would apply a second transform and make the landing wobble.
-    return arrivalRequest ? 0 : getLayoutFlipDuration();
-  }
-
   let gridSurfaceRef: HTMLDivElement | null = null;
   let gridHistoryAnimation: Animation | null = null;
-  let arrivalLayoutAnimations: Animation[] = [];
 
-  interface ArrivalLayoutSnapshot {
-    stepRects: Map<string, DOMRect>;
-    startRect: DOMRect | null;
-    mandalaRects: Map<string, DOMRect>;
-  }
+  // Every layout change in this grid — a delete, a mid-sequence insert, a
+  // column-count change, the timeline toggle, the start tile appearing, an
+  // arrival landing — is the same gesture: cells leave one arrangement and
+  // arrive at another. One owner runs all of them, so nothing can apply a
+  // second transform on top of a first and make the motion wobble.
+  const layoutFlip = createLayoutFlip({
+    getRoot: () => gridSurfaceRef,
+    groups: [
+      { selector: "[data-history-step-identity]", datasetKey: "historyStepIdentity" },
+      { selector: "[data-history-start-position]", datasetKey: "historyStartPosition" },
+      { selector: "[data-layout-mandala-key]", datasetKey: "layoutMandalaKey" },
+    ],
+    transformTargetSelector: ".history-layout-shell",
+    cancelSelectors: [".history-layout-shell", ".step-cell"],
+    getDuration: () => motionDuration(GRID_LAYOUT_TRANSITION_MS),
+    easing: GRID_LAYOUT_TRANSITION_EASING,
+  });
 
-  let pendingArrivalLayoutSnapshot: ArrivalLayoutSnapshot | null = null;
+  /** What the grid looks like, reduced to a string. Changes here mean cells
+   * moved, which is what the layout transition exists to carry. */
+  const layoutSignature = $derived.by(() =>
+    computeGridLayoutSignature({
+      isTimelineMode,
+      columns: gridLayout.columns,
+      totalColumns: gridLayout.totalColumns,
+      rows: gridLayout.rows,
+      hasStartPosition,
+      timelineRowSizes: isTimelineMode
+        ? timelineRows.map((row) => row.steps.length)
+        : [],
+      stepIdentities: steps.map((step, index) => getStepKey(step, index)),
+    })
+  );
+
+  let lastLayoutSignature: string | null = null;
+  let lastHistoryEpoch = 0;
+  let layoutTransitionToken = 0;
+  // Arrival captures at a precise moment inside its own flushSync, before it
+  // measures the destination cell. While that transaction is open the automatic
+  // capture stands aside rather than overwriting its snapshot.
+  let arrivalCapturePending = false;
 
   function getHistoryMembershipDuration(identity: string): number {
     if (!historyTransition) return 0;
@@ -317,235 +336,110 @@
     );
   }
 
-  function getStartLayoutElement(): HTMLElement | null {
-    return (
-      gridSurfaceRef?.querySelector<HTMLElement>(
-        "[data-history-start-position]"
-      ) ?? null
-    );
+  /**
+   * Undo and redo carry more than a layout change: cells whose CONTENT changed
+   * get a brightness pulse so the edit that was reverted is visible, and a
+   * change to the whole sequence's shape flashes the surface. The geometry half
+   * of the gesture belongs to the layout transition, same as everywhere else.
+   */
+  function playHistoryFlourishes(plan: HistoryTransitionPlan): void {
+    const duration = motionDuration(HISTORY_FLOURISH_MS);
+    if (duration <= 0) return;
+
+    const surface = gridSurfaceRef;
+    if (
+      surface &&
+      (plan.startPositionChanged ||
+        plan.gridModeChanged ||
+        plan.circularityChanged)
+    ) {
+      const animation = surface.animate(
+        [
+          { opacity: 0.68, filter: "brightness(1.14)" },
+          { opacity: 1, filter: "brightness(1)" },
+        ],
+        { duration, easing: HISTORY_FLOURISH_EASING }
+      );
+      gridHistoryAnimation = animation;
+      animation.onfinish = () => {
+        animation.cancel();
+        if (gridHistoryAnimation === animation) gridHistoryAnimation = null;
+      };
+    }
+
+    const elements = getStepLayoutElements();
+    for (const transition of plan.steps) {
+      if (transition.fromIndex === null || transition.toIndex === null) continue;
+
+      const element = elements.get(transition.identity);
+      if (!element) continue;
+
+      const selectionAffected =
+        plan.selectionChanged &&
+        (element.dataset.stepNumber === String(plan.fromSelectedStepNumber) ||
+          element.dataset.stepNumber === String(plan.toSelectedStepNumber));
+      if (transition.changes.size === 0 && !selectionAffected) continue;
+
+      element.querySelector<HTMLElement>(".step-cell")?.animate(
+        [
+          { opacity: 0.58, filter: "brightness(1.22)" },
+          { opacity: 1, filter: "brightness(1)" },
+        ],
+        { duration, easing: HISTORY_FLOURISH_EASING }
+      );
+    }
   }
 
-  function getMandalaLayoutElements(): Map<string, HTMLElement> {
-    if (!gridSurfaceRef) return new Map();
-    return new Map(
-      Array.from(
-        gridSurfaceRef.querySelectorAll<HTMLElement>(
-          "[data-layout-mandala-key]"
-        )
-      ).map((element) => [element.dataset.layoutMandalaKey!, element])
-    );
-  }
-
-  function cancelLayoutAnimations(element: HTMLElement): void {
-    element.getAnimations().forEach((animation) => animation.cancel());
-    const shell = element.querySelector<HTMLElement>(".history-layout-shell");
-    shell?.getAnimations().forEach((animation) => animation.cancel());
-    element
-      .querySelector<HTMLElement>(".step-cell")
-      ?.getAnimations()
-      .forEach((animation) => animation.cancel());
-  }
-
-  function animateLayoutGeometry(
-    element: HTMLElement,
-    beforeRect: DOMRect,
-    duration: number
-  ): Animation | null {
-    const animationTarget =
-      element.querySelector<HTMLElement>(".history-layout-shell") ?? element;
-    if (duration <= 0) return null;
-
-    const afterRect = element.getBoundingClientRect();
-    const deltaX = beforeRect.left - afterRect.left;
-    const deltaY = beforeRect.top - afterRect.top;
-    const scaleX = afterRect.width > 0 ? beforeRect.width / afterRect.width : 1;
-    const scaleY =
-      afterRect.height > 0 ? beforeRect.height / afterRect.height : 1;
-    const geometryChanged =
-      Math.abs(deltaX) > 0.5 ||
-      Math.abs(deltaY) > 0.5 ||
-      Math.abs(scaleX - 1) > 0.005 ||
-      Math.abs(scaleY - 1) > 0.005;
-    if (!geometryChanged) return null;
-
-    const animation = animationTarget.animate(
-      [
-        {
-          transformOrigin: "top left",
-          transform: `translate(${deltaX}px, ${deltaY}px) scale(${scaleX}, ${scaleY})`,
-        },
-        { transformOrigin: "top left", transform: "none" },
-      ],
-      {
-        duration,
-        easing: PICTOGRAPH_ARRIVAL_LANDING_EASING,
-        fill: "both",
-      }
-    );
-    animation.onfinish = () => animation.cancel();
-    return animation;
-  }
-
+  // The one transition. Capture before Svelte updates the DOM, play after —
+  // the same pre/tick pair the arrival landing has always used, now driven by
+  // the layout itself rather than by one feature asking for it.
   $effect.pre(() => {
-    const plan = historyTransition;
+    const signature = layoutSignature;
     const epoch = historyTransitionEpoch;
-    if (!plan || !gridSurfaceRef) return;
+    const plan = historyTransition;
+    const suspended = isClearing || displayState.isClearingForGeneration;
+
+    const previousSignature = lastLayoutSignature;
+    const previousEpoch = lastHistoryEpoch;
+    lastLayoutSignature = signature;
+    lastHistoryEpoch = epoch;
+
+    // An arrival that was cancelled mid-flight (undo, a replacement option)
+    // would otherwise leave the automatic capture standing aside forever.
+    if (arrivalCapturePending && !arrivalRequest) {
+      arrivalCapturePending = false;
+      layoutFlip.discard();
+    }
+
+    const layoutChanged =
+      previousSignature !== null && previousSignature !== signature;
+    const historyChanged = plan !== null && epoch !== previousEpoch;
+    if (!layoutChanged && !historyChanged) return;
+    if (suspended || !gridSurfaceRef) return;
 
     gridHistoryAnimation?.cancel();
     gridHistoryAnimation = null;
 
-    const beforeElements = getStepLayoutElements();
-    const beforeRects = new Map<string, DOMRect>();
-    for (const [identity, element] of beforeElements) {
-      beforeRects.set(identity, element.getBoundingClientRect());
-      cancelLayoutAnimations(element);
-    }
-    const beforeStartElement = getStartLayoutElement();
-    const beforeStartRect = beforeStartElement?.getBoundingClientRect() ?? null;
-    if (beforeStartElement) cancelLayoutAnimations(beforeStartElement);
+    const captured =
+      layoutChanged && !arrivalCapturePending && layoutFlip.capture();
+    const token = ++layoutTransitionToken;
 
     void tick().then(() => {
-      if (epoch !== historyTransitionEpoch || plan !== historyTransition)
-        return;
-
-      const duration = motionDuration(300);
-      const currentElements = getStepLayoutElements();
-      const currentStartElement = getStartLayoutElement();
-
-      if (
-        duration > 0 &&
-        (plan.startPositionChanged ||
-          plan.gridModeChanged ||
-          plan.circularityChanged)
-      ) {
-        const surface = gridSurfaceRef;
-        if (!surface) return;
-        gridHistoryAnimation = surface.animate(
-          [
-            { opacity: 0.68, filter: "brightness(1.14)" },
-            { opacity: 1, filter: "brightness(1)" },
-          ],
-          {
-            duration: motionDuration(240),
-            easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-          }
-        );
-        if (gridHistoryAnimation) {
-          const animation = gridHistoryAnimation;
-          animation.onfinish = () => {
-            animation.cancel();
-            if (gridHistoryAnimation === animation) {
-              gridHistoryAnimation = null;
-            }
-          };
-        }
-      }
-
-      if (beforeStartRect && currentStartElement) {
-        animateLayoutGeometry(currentStartElement, beforeStartRect, duration);
-      }
-
-      for (const transition of plan.steps) {
-        if (transition.fromIndex === null || transition.toIndex === null) {
-          continue;
-        }
-
-        const beforeRect = beforeRects.get(transition.identity);
-        const element = currentElements.get(transition.identity);
-        if (!beforeRect || !element) continue;
-
-        animateLayoutGeometry(element, beforeRect, duration);
-
-        const selectionAffected =
-          plan.selectionChanged &&
-          (element.dataset.stepNumber === String(plan.fromSelectedStepNumber) ||
-            element.dataset.stepNumber === String(plan.toSelectedStepNumber));
-        if (
-          duration > 0 &&
-          (transition.changes.size > 0 || selectionAffected)
-        ) {
-          const content = element.querySelector<HTMLElement>(".step-cell");
-          content?.animate(
-            [
-              { opacity: 0.58, filter: "brightness(1.22)" },
-              { opacity: 1, filter: "brightness(1)" },
-            ],
-            {
-              duration: motionDuration(240),
-              easing: "cubic-bezier(0.16, 1, 0.3, 1)",
-            }
-          );
-        }
+      if (token !== layoutTransitionToken) return;
+      if (captured) layoutFlip.play();
+      if (historyChanged && plan === historyTransition) {
+        playHistoryFlourishes(plan);
       }
     });
   });
 
   export function captureArrivalLayout(): void {
-    for (const animation of arrivalLayoutAnimations) animation.cancel();
-    arrivalLayoutAnimations = [];
-    pendingArrivalLayoutSnapshot = null;
-    if (historyTransition || !gridSurfaceRef) return;
-
-    const beforeSteps = getStepLayoutElements();
-    const beforeStepRects = new Map<string, DOMRect>();
-    for (const [identity, element] of beforeSteps) {
-      beforeStepRects.set(identity, element.getBoundingClientRect());
-      cancelLayoutAnimations(element);
-    }
-
-    const beforeStart = getStartLayoutElement();
-    const beforeStartRect = beforeStart?.getBoundingClientRect() ?? null;
-    if (beforeStart) cancelLayoutAnimations(beforeStart);
-
-    const beforeMandalas = getMandalaLayoutElements();
-    const beforeMandalaRects = new Map<string, DOMRect>();
-    for (const [identity, element] of beforeMandalas) {
-      beforeMandalaRects.set(identity, element.getBoundingClientRect());
-      cancelLayoutAnimations(element);
-    }
-
-    pendingArrivalLayoutSnapshot = {
-      stepRects: beforeStepRects,
-      startRect: beforeStartRect,
-      mandalaRects: beforeMandalaRects,
-    };
+    arrivalCapturePending = layoutFlip.capture();
   }
 
   export function playArrivalLayout(): void {
-    const snapshot = pendingArrivalLayoutSnapshot;
-    pendingArrivalLayoutSnapshot = null;
-    if (!snapshot) return;
-
-    const duration = motionDuration(PICTOGRAPH_ARRIVAL_LANDING_MS);
-    const animations: Animation[] = [];
-    const currentSteps = getStepLayoutElements();
-    const currentStart = getStartLayoutElement();
-    const currentMandalas = getMandalaLayoutElements();
-
-    if (snapshot.startRect && currentStart) {
-      const animation = animateLayoutGeometry(
-        currentStart,
-        snapshot.startRect,
-        duration
-      );
-      if (animation) animations.push(animation);
-    }
-
-    for (const [identity, beforeRect] of snapshot.stepRects) {
-      const element = currentSteps.get(identity);
-      if (!element) continue;
-      const animation = animateLayoutGeometry(element, beforeRect, duration);
-      if (animation) animations.push(animation);
-    }
-
-    for (const [identity, beforeRect] of snapshot.mandalaRects) {
-      const element = currentMandalas.get(identity);
-      if (!element) continue;
-      const animation = animateLayoutGeometry(element, beforeRect, duration);
-      if (animation) animations.push(animation);
-    }
-
-    arrivalLayoutAnimations = animations;
+    arrivalCapturePending = false;
+    layoutFlip.play();
   }
 
   const timelineStartMandalas = $derived.by(() => {
@@ -665,12 +559,9 @@
     class:timeline={isTimelineMode}
     class:assemble-surface={activeMode === "assemble"}
     class:clearing={isClearing || displayState.isClearingForGeneration}
-    class:layout-motion-enabled={getDeclarativeLayoutFlipDuration() > 0}
     data-arrival-phase={arrivalRequest?.phase}
     style:--cell-size="{cellSize}px"
     style:--grid-center-offset="{standardGridCenterOffset}px"
-    style:--grid-layout-duration="{getDeclarativeLayoutFlipDuration()}ms"
-    style:--grid-layout-easing={PICTOGRAPH_ARRIVAL_LANDING_EASING}
     style:--grid-rows={gridLayout.rows}
     style:--grid-cols={gridLayout.totalColumns}
     style:--timeline-padding="{timelinePadding}px"
@@ -746,11 +637,7 @@
             {#each row.steps as { stepIndex, duration } (getStepKey(steps[stepIndex]!, stepIndex))}
               {@const step = steps[stepIndex]!}
               {@const identity = getStepKey(step, stepIndex)}
-              {@const isDeleting = removingStepIndices.has(stepIndex)}
-              {@const shouldSlide =
-                removingStepIndex !== null &&
-                !isDeleting &&
-                stepIndex > removingStepIndex}
+              {@const isDeleting = isStepLeaving(stepIndex)}
               {@const musicalPosition = getDurationDisplay(stepIndex)}
               {@const effectiveDuration = getEffectiveMultiplier(
                 stepIndex,
@@ -759,7 +646,6 @@
               <div
                 class="timeline-cell step-container"
                 class:deleting={isDeleting}
-                class:sliding={shouldSlide}
                 class:arrival-destination={isArrivalDestination(stepIndex)}
                 class:arrival-destination-hidden={isArrivalDestinationHidden(
                   stepIndex
@@ -782,9 +668,6 @@
                   : undefined}
                 inert={isArrivalDestinationHidden(stepIndex)}
                 style:--duration-multiplier={effectiveDuration}
-                style:animation-delay={shouldSlide
-                  ? `${Math.min(stepIndex - removingStepIndex - 1, 5) * 50}ms`
-                  : "0ms"}
                 in:fade={{ duration: getHistoryMembershipDuration(identity) }}
                 out:fade={{ duration: getHistoryMembershipDuration(identity) }}
               >
@@ -834,12 +717,6 @@
           data-history-start-position
           style:grid-row="1"
           style:grid-column="1"
-          animate:flip={{
-            duration: historyTransition
-              ? 0
-              : getDeclarativeLayoutFlipDuration(),
-            easing: cubicOut,
-          }}
           in:fade={{ duration: getHistoryStartDuration() }}
           out:fade={{ duration: getHistoryStartDuration() }}
         >
@@ -863,16 +740,11 @@
 
       {#each standardStepCells as { step, index, identity } (identity)}
         {@const position = calculateStepPosition(index, gridLayout.columns)}
-        {@const isDeleting = removingStepIndices.has(index)}
-        {@const shouldSlide =
-          removingStepIndex !== null &&
-          !isDeleting &&
-          index > removingStepIndex}
+        {@const isDeleting = isStepLeaving(index)}
         {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="step-container"
           class:deleting={isDeleting}
-          class:sliding={shouldSlide}
           class:arrival-destination={isArrivalDestination(index)}
           class:arrival-destination-hidden={isArrivalDestinationHidden(index)}
           class:hidden-for-sequential={displayState.shouldBeatBeHidden(index)}
@@ -888,15 +760,6 @@
           inert={isArrivalDestinationHidden(index)}
           style:grid-row={position.row}
           style:grid-column={position.column}
-          style:animation-delay={shouldSlide
-            ? `${Math.min(index - removingStepIndex - 1, 5) * 50}ms`
-            : "0ms"}
-          animate:flip={{
-            duration: historyTransition
-              ? 0
-              : getDeclarativeLayoutFlipDuration(),
-            easing: cubicOut,
-          }}
           in:fade={{ duration: getHistoryMembershipDuration(identity) }}
           out:fade={{ duration: getHistoryMembershipDuration(identity) }}
         >
@@ -928,10 +791,6 @@
           data-layout-mandala-key={cell.key}
           style:grid-row={cell.row}
           style:grid-column={cell.column}
-          animate:flip={{
-            duration: getDeclarativeLayoutFlipDuration(),
-            easing: cubicOut,
-          }}
         >
           {#if onMandalaClick}
             <button
@@ -1058,14 +917,6 @@
     translate: 0 var(--grid-center-offset, 0px);
   }
 
-  .grid-surface.standard.layout-motion-enabled {
-    transition:
-      opacity 300ms ease-out,
-      transform 300ms ease-out,
-      translate var(--grid-layout-duration, 280ms)
-        var(--grid-layout-easing, cubic-bezier(0.4, 0, 0.2, 1));
-  }
-
   /* Assemble grows one continuous record beside the interactive grid. Filling
      the unused cells keeps shorter final rows from cutting a staircase into
      the canvas while the sequence is still changing. */
@@ -1106,13 +957,11 @@
     transform-origin: center;
   }
 
+  /* The leaving cell recedes in place while its neighbours hold still. The
+     moment it is gone the layout transition carries every survivor to its new
+     home, so the two halves read as one continuous gesture. */
   .step-container.deleting {
-    animation: fadeOutDisintegrate var(--duration-normal) ease-out forwards;
-  }
-
-  .step-container.sliding {
-    animation: slideIntoPlace var(--duration-normal)
-      cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    animation: fadeOutCollapse var(--duration-normal, 200ms) ease-out forwards;
   }
 
   .step-container.hidden-for-sequential {
@@ -1340,34 +1189,15 @@
   }
 
   /* ===== Keyframes ===== */
-  @keyframes fadeOutDisintegrate {
-    0% {
+  @keyframes fadeOutCollapse {
+    from {
       opacity: 1;
-      transform: scale(1) rotate(0deg);
-      filter: blur(0px);
+      transform: scale(1);
     }
-    50% {
-      opacity: 0.6;
-      transform: scale(0.9) rotate(-2deg);
-      filter: blur(1px);
-    }
-    100% {
+    to {
       opacity: 0;
-      transform: scale(0.7) rotate(-5deg);
-      filter: blur(3px);
+      transform: scale(0.86);
       pointer-events: none;
-    }
-  }
-
-  @keyframes slideIntoPlace {
-    0% {
-      transform: translateX(0) translateY(0);
-    }
-    50% {
-      transform: translateX(-10px) translateY(-5px);
-    }
-    100% {
-      transform: translateX(0) translateY(0);
     }
   }
 
@@ -1376,8 +1206,7 @@
       transition: none;
     }
 
-    .step-container.deleting,
-    .step-container.sliding {
+    .step-container.deleting {
       animation: none;
     }
   }
