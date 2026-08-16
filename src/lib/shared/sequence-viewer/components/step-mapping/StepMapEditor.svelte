@@ -353,11 +353,21 @@
       return;
     }
 
+    // Space is play/pause, the way it is on every other video surface. It used
+    // to place a mark, which put the two most-used keys of the run on the same
+    // one: rewinding to re-watch a landing is part of marking now, so transport
+    // gets reached for throughout the run rather than once at the start, and a
+    // Space pressed meaning "pause" would have dropped a mark instead.
+    // A focused button keeps Space for itself - activating the control you
+    // tabbed to is what the browser does and what the user meant.
+    if (event.code === "Space" && !(target instanceof HTMLButtonElement)) {
+      event.preventDefault();
+      togglePlayPause();
+      return;
+    }
+
     if (mode === "mark") {
-      // Space on a focused button already activates it, so only the cases the
-      // browser will not handle need intercepting.
-      if (event.code === "Space" || event.key === "Enter") {
-        if (target instanceof HTMLButtonElement) return;
+      if (event.key === "t" || event.key === "T") {
         event.preventDefault();
         markArrival();
       }
@@ -457,6 +467,7 @@
           class="stage-play"
           onclick={togglePlayPause}
           aria-label={isPlaying ? "Pause" : "Play"}
+          title={isPlaying ? "Pause (Space)" : "Play (Space)"}
         >
           <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
           ></i>
@@ -532,6 +543,7 @@
           type="button"
           class="tap-target"
           class:flash={flashing}
+          title="Mark this move (T)"
           onclick={markArrival}
           disabled={placed >= totalMarks}
         >
@@ -570,7 +582,7 @@
                 {supersededCount}
                 {supersededCount === 1 ? "mark" : "marks"} after it
               {:else}
-                <span class="kbd-hint">Space works too</span>
+                <span class="kbd-hint">T marks it · Space plays</span>
               {/if}
             </span>
           </span>
