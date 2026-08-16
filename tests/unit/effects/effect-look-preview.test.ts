@@ -5,7 +5,9 @@ import {
   getRegistration,
 } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import { createEffectLookPreview } from "$lib/shared/animation-engine/components/effects-panel/effect-look-preview";
-import { describeBloomLook } from "$lib/shared/animation-engine/components/effects-panel/thumbnails/bloom-look-copy";
+// bloom-look-copy was folded into the shared look-copy module in 8dcbd1cb6f,
+// where the per-effect describeBloomLook became one preset-keyed describeLook.
+import { describeLook } from "$lib/shared/animation-engine/components/effects-panel/thumbnails/look-copy";
 
 describe("effect look previews", () => {
   it("gives every named look a semantic visual model", () => {
@@ -82,7 +84,7 @@ describe("effect look previews", () => {
     const bloomPresets = getRegistration("bloom")!.presetGroup.presets;
 
     for (const preset of bloomPresets) {
-      const description = describeBloomLook(preset.id);
+      const description = describeLook(preset.id);
       expect(description, preset.id).not.toBeNull();
       expect(description, preset.id).not.toMatch(/px|%|\d/);
     }

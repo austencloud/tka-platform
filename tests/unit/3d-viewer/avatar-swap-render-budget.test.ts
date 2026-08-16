@@ -24,6 +24,13 @@ const hubSource = readFileSync(
   resolve("src/lib/shared/3d/components/controls/PerformerHubDetail.svelte"),
   "utf8"
 );
+// The performer command bar (954f5c4a49) moved the avatar list markup out of
+// the hub and into this picker. The hub still owns the intent/commit logic and
+// hands the picker its callbacks, so the budget contract spans both files.
+const pickerSource = readFileSync(
+  resolve("src/lib/shared/3d/components/controls/PerformerAvatarPicker.svelte"),
+  "utf8"
+);
 
 describe("avatar swap render budget", () => {
   it("prepares avatar data when pointer or keyboard intent is known", () => {
@@ -31,13 +38,23 @@ describe("avatar swap render budget", () => {
       "prepareAvatarForDisplay(getAvatarModelPath(id))"
     );
     expect(hubSource).toContain("queueAvatarSelectionIntent");
-    expect(hubSource).toContain("onpointerleave={cancelAvatarSelectionIntent}");
-    expect(hubSource).toContain("onblur={cancelAvatarSelectionIntent}");
+    // The hub wires its intent handlers into the picker...
+    expect(hubSource).toContain("onIntent={queueAvatarSelectionIntent}");
+    expect(hubSource).toContain("onCancelIntent={cancelAvatarSelectionIntent}");
+    // ...and the picker binds them to the pointer and focus pair, so an intent
+    // that never becomes a selection is always withdrawn.
+    expect(pickerSource).toContain("onpointerenter={() => onIntent(");
+    expect(pickerSource).toContain("onpointerleave={onCancelIntent}");
+    expect(pickerSource).toContain("onfocus={() => onIntent(");
+    expect(pickerSource).toContain("onblur={onCancelIntent}");
   });
 
   it("keeps the current avatar visible until its replacement is prepared", () => {
+    // The commit path awaits the prepare — the fire-and-forget
+    // `void prepareAvatarSelection(id)` is the hover-intent warmup, a
+    // different call site that sits further down the file.
     const prepareSelection = hubSource.indexOf(
-      "void prepareAvatarSelection(id)"
+      "await prepareAvatarSelection(id)"
     );
     const commitSelection = hubSource.indexOf(
       "applyToScope((p) => p?.setAvatarModel(id))",
@@ -47,7 +64,11 @@ describe("avatar swap render budget", () => {
     expect(prepareSelection).toBeGreaterThan(-1);
     expect(commitSelection).toBeGreaterThan(prepareSelection);
     expect(hubSource).toContain("pendingAvatarId = id");
-    expect(hubSource).toContain("class:preparing={pendingAvatarId === def.id}");
+    // The pending flag crosses into the picker, which paints the slot it marks.
+    expect(hubSource).toContain("{pendingAvatarId}");
+    expect(pickerSource).toContain(
+      "class:preparing={pendingAvatarId === definition.id}"
+    );
   });
 
   it("compiles active material variants before committing the replacement root", () => {

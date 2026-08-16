@@ -73,7 +73,10 @@ describe("scene-level particle batching contract", () => {
   });
 
   it("initializes the scene coordinator with its parent or Threlte's direct Scene value", () => {
-    expect(COORDINATOR).toContain("manager.initialize(parent ?? scene)");
+    // Trailing args are open by design — the renderer was added as a second
+    // parameter. What this guards is the `parent ?? scene` shape and, below,
+    // that Threlte's `scene` is read directly rather than through `.current`.
+    expect(COORDINATOR).toContain("manager.initialize(parent ?? scene");
     expect(COORDINATOR).not.toContain("scene.current");
   });
 

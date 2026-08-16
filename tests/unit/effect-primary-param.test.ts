@@ -7,13 +7,16 @@ import {
 } from "../../src/lib/shared/animation-engine/components/effects-panel/effect-primary-param";
 
 describe("effect-primary-param", () => {
-  it("has an entry for all 14 effects with primary params", () => {
+  it("has an entry for every effect with a primary param", () => {
     const ids = Object.keys(PRIMARY_PARAMS).sort();
     expect(ids).toEqual([
+      "animal",
       "bloom",
       "bubbles",
       "charcoal",
       "fire",
+      // frost is retired from the roster (Animal took its slot) but keeps its
+      // primary param so persisted configs saved before the swap still resolve.
       "frost",
       // Echo→Ghost and Water→Goo (5931d08ec2) — onion-skin prop sprites and the
       // goo emitter. Renamed across registry, presets, renderers, and the
@@ -23,6 +26,8 @@ describe("effect-primary-param", () => {
       "ink",
       "led",
       "petals",
+      "pulse",
+      "silk",
       "smoke",
       "sparkles",
       "trails",

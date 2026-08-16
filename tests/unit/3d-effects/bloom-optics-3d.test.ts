@@ -141,7 +141,14 @@ describe("Bloom Kinetic Optics response", () => {
       supernova.params.historyLifetimeSeconds
     );
     expect(halo.frame.radiusWorld).toBeGreaterThan(supernova.frame.radiusWorld);
-    expect(halo.frame.coreStrength).toBeLessThan(comet.frame.coreStrength);
+    // Halo's core was measured up from 0.04 to 0.20 (7e4671ee5c): at 0.04 it
+    // peaked at 66 of 255 and read as a smudge on a dark stage. That put it
+    // just above Comet, so coreStrength no longer separates the two — radius
+    // and the streak/spike shape below do. What still has to hold is that the
+    // core stays a diffuse orb: past ~0.30 it collapses to a pinpoint and the
+    // preset stops being a halo.
+    expect(halo.frame.coreStrength).toBeLessThan(0.3);
+    expect(halo.frame.coreStrength).toBeLessThan(supernova.frame.coreStrength);
     expect(halo.frame.streak).toBe(0);
     expect(halo.frame.spikes).toBe(0);
   });

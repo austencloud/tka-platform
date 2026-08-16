@@ -12,9 +12,12 @@ describe("Charcoal motion profiles", () => {
       glow: 0.96,
       emissionStyle: "steel-wool",
     });
+    // Spread tightened 0.42 → 0.30 in 21202c1904: at 0.42 Forge Burst sat
+    // between Steel Wool and Cinder Fan without being either, measuring within
+    // 10 RGB of both. See the rationale on the preset itself.
     expect(byId.get("charcoal-forge-cinder")?.patch).toMatchObject({
       intensity: 0.9,
-      spread: 0.42,
+      spread: 0.3,
       glow: 0.8,
       emissionStyle: "forge-burst",
     });
@@ -24,10 +27,13 @@ describe("Charcoal motion profiles", () => {
       glow: 0.68,
       emissionStyle: "cinder-fan",
     });
+    // A banked fire is damped down for the night, so this is the set's quiet
+    // warm anchor: intensity 0.34, not 0.62. Six of the eight presets used to
+    // sit at intensity >= 0.5, leaving the low end represented only by Ash.
     expect(byId.get("charcoal-banked-ember")?.patch).toMatchObject({
-      intensity: 0.62,
+      intensity: 0.34,
       spread: 0.25,
-      glow: 0.56,
+      glow: 0.62,
       emissionStyle: "banked-ember",
     });
 
