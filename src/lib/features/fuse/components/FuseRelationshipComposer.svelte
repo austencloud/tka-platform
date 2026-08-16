@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import {
@@ -15,7 +16,7 @@
   }: {
     onCancel?: () => void;
     onApply?: () => void;
-    presentation?: "drawer" | "modal";
+    presentation?: "drawer" | "modal" | "popover";
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -39,8 +40,16 @@
   );
 
   $effect(() => {
-    void fuseState.previewRelationship(draftDriver, draftTransform);
-    return () => fuseState.cancelRelationshipPreview();
+    const driver = draftDriver;
+    const transform = draftTransform;
+
+    untrack(() => {
+      void fuseState.previewRelationship(driver, transform);
+    });
+
+    return () => {
+      untrack(() => fuseState.cancelRelationshipPreview());
+    };
   });
 
   function chooseDriver(side: FuseSide): void {
@@ -65,6 +74,7 @@
 <section
   class="pairing-editor"
   class:modal-editor={presentation === "modal"}
+  class:popover-editor={presentation === "popover"}
   aria-labelledby="pairing-editor-title"
 >
   <header class="pairing-intro">
@@ -128,6 +138,11 @@
     max-width: 80rem;
     min-height: 100%;
     padding: clamp(0.75rem, 2.5cqh, 2rem) 0;
+  }
+
+  .pairing-editor.popover-editor {
+    max-width: 52rem;
+    margin: 0;
   }
 
   .modal-editor :global(.transform-picker.embedded.relationship-layout) {

@@ -15,11 +15,9 @@
     resolveBalancedFuseWorkspaceSplit,
   } from "../services/fuse-workspace-split";
   import { getFuseContext } from "../context/fuse-context";
-  import FusePairingBar from "./FusePairingBar.svelte";
+  import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
   import FusePreviewStage from "./FusePreviewStage.svelte";
-  import FuseSettingsDrawer, {
-    type FuseSettingsDestination,
-  } from "./FuseSettingsDrawer.svelte";
+  import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
   import FusePathBuilderDialog from "./FusePathBuilderDialog.svelte";
@@ -434,7 +432,6 @@
       fuseState.isFusing}
   >
     <FuseWorkspaceHeader onOpenRecipe={() => openSettings(null)} />
-    <FusePairingBar onOpenPairing={() => openSettings("pairing")} />
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
@@ -540,7 +537,6 @@
   <FuseSettingsDrawer
     bind:isOpen={settingsOpen}
     bind:destination={settingsDestination}
-    desktopModal={fullCard}
   />
   <FuseFirstStepPanel
     bind:isOpen={firstStepOpen}
@@ -580,10 +576,9 @@
        container, and auto rows in an overflowing grid collapse to the items'
        minimum contribution (zero for the overflow-hidden cards), stacking the
        cards on top of each other. max-content rows never shrink below content. */
-    grid-template-rows: repeat(5, max-content);
+    grid-template-rows: repeat(4, max-content);
     grid-template-areas:
       "header"
-      "mode"
       "blue"
       "red"
       "preview";
@@ -599,10 +594,9 @@
   }
 
   .fuse-workspace.compact-workspace {
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "mode"
       "preview";
     gap: var(--settings-spacing-sm, 8px);
     padding: var(--settings-spacing-sm, 8px);
@@ -612,10 +606,9 @@
   @container fuse (min-width: 600px) {
     .fuse-workspace:not(.compact-workspace) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(4, max-content);
+      grid-template-rows: repeat(3, max-content);
       grid-template-areas:
         "header header"
-        "mode mode"
         "blue red"
         "preview preview";
       gap: clamp(10px, 1.4cqw, 14px);
@@ -629,10 +622,7 @@
      collapses auto rows in the scroll layouts, so it must not leak there). */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .fuse-workspace:not(.compact-workspace) {
-      grid-template-rows: max-content max-content minmax(0, 0.9fr) minmax(
-          0,
-          1.7fr
-        );
+      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.7fr);
       align-content: stretch;
       overflow: hidden;
     }
@@ -643,10 +633,9 @@
      preview now owns the full content-row height instead of a shallow row. */
   .fuse-workspace.landscape-workspace {
     grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.15fr);
-    grid-template-rows: max-content max-content minmax(0, 1fr);
+    grid-template-rows: max-content minmax(0, 1fr);
     grid-template-areas:
       "header header"
-      "mode mode"
       "left preview";
     align-content: stretch;
     overflow: hidden;
@@ -657,10 +646,9 @@
      and give the result the wider pane, all inside the available height. */
   .fuse-workspace.compact-workspace.short-landscape-workspace {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: max-content max-content minmax(0, 1fr);
+    grid-template-rows: max-content minmax(0, 1fr);
     grid-template-areas:
       "header"
-      "mode"
       "preview";
   }
 
@@ -669,10 +657,9 @@
      and grid on opposite sides of the seam, creating implicit columns. */
   .fuse-workspace.full-card-workspace {
     grid-template-columns: var(--fuse-left, 1.8fr) minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "header header"
-      "mode mode"
       "left preview";
     align-content: stretch;
     overflow: hidden;
@@ -736,10 +723,9 @@
       --font-size-sm: 17px;
       --min-touch-target: 48px;
       grid-template-columns: var(--fuse-left, 1400px) minmax(0, 1fr);
-      grid-template-rows: max-content max-content minmax(0, 1fr);
+      grid-template-rows: max-content minmax(0, 1fr);
       grid-template-areas:
         "header header"
-        "mode preview"
         "left preview";
       gap: 18px;
       padding: 24px;

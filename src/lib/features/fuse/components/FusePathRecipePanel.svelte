@@ -14,6 +14,7 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
+  import { FUSE_STYLE_BASELINE } from "../domain/fuse-recipe-summaries";
   import type { SoloLoopTraversalDirection } from "../services/solo-loop-generator";
 
   type RecipeSection = "style" | "starting";
@@ -26,15 +27,10 @@
     presentation = "drawer",
   }: {
     section: RecipeSection;
-    presentation?: "drawer" | "modal";
+    presentation?: "drawer" | "modal" | "popover";
   } = $props();
   const { state: fuseState } = getFuseContext();
 
-  const styleBaseline = {
-    constraintPreset: "mixed",
-    handPathMode: "mixed",
-    motionTypeFilter: null,
-  } as const;
   const diamondLocationOptions = [
     { value: "random", label: "Random" },
     { value: GridLocation.NORTH, label: "North", shortLabel: "N" },
@@ -122,12 +118,13 @@
   <div
     class="drill-fill detail-stack"
     class:modal-detail={presentation === "modal"}
+    class:popover-detail={presentation === "popover"}
   >
     <StyleExpandPanel
       constraintPreset={fuseState.constraintPreset}
       handPathMode={fuseState.handPathMode}
       motionTypeFilter={fuseState.motionTypeFilter}
-      baseline={styleBaseline}
+      baseline={FUSE_STYLE_BASELINE}
       haptic={null}
       onPropsChange={fuseState.setConstraintPreset}
       onHandsChange={fuseState.setHandPathMode}
@@ -139,6 +136,7 @@
   <div
     class="drill-fill recipe-stage"
     class:modal-detail={presentation === "modal"}
+    class:popover-detail={presentation === "popover"}
   >
     <div class="recipe-grid starting-grid">
       <div class="card-wrapper">
@@ -284,6 +282,33 @@
     grid-column: span 2;
   }
 
+  .detail-stack.popover-detail {
+    width: 100%;
+    padding: 0.25rem;
+  }
+
+  .recipe-stage.popover-detail {
+    --recipe-detail-title-size: var(--font-size-min, 14px);
+    --card-text-size: clamp(1.35rem, 4cqh, 2rem);
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .popover-detail :global(.choice-control .segment) {
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .popover-detail .recipe-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: minmax(12rem, 15rem);
+    min-height: 0;
+    max-height: none;
+  }
+
+  .popover-detail .card-wrapper {
+    grid-column: span 1;
+  }
+
   @media (max-width: 560px) {
     .recipe-stage {
       align-items: flex-start;
@@ -305,6 +330,17 @@
     .recipe-grid {
       min-height: min(64rem, 68cqh);
       max-height: 72rem;
+    }
+  }
+
+  @media (min-width: 2600px) and (min-height: 1400px) {
+    .recipe-stage.popover-detail {
+      --recipe-detail-title-size: 1rem;
+      --card-text-size: 2.25rem;
+    }
+
+    .popover-detail .recipe-grid {
+      grid-template-rows: minmax(15rem, 18rem);
     }
   }
 </style>

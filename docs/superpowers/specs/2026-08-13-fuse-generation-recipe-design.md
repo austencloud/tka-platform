@@ -13,21 +13,27 @@ The recipe describes how a fresh one-hand LOOP should be generated. Pairing
 describes how two existing paths relate. Both use one responsive Fuse settings
 drawer with separate drill-in destinations.
 
-The main workspace stays compact:
+The main workspace adapts its recipe controls to the space available:
 
-- The header contains the title and one clickable recipe summary.
-- A separate pairing bar summarizes the active relationship.
-- Detailed recipe and pairing controls live in the drawer.
+- Spacious desktop and 4K headers contain six stable summary tiles: Length,
+  Level, Grid, Style, Starting conditions, and Pairing.
+- Every summary tile opens a focused anchored popover for that one setting.
+- Level owns Max turns. Max turns is not shown when Level 1 is selected.
+- Smaller headers replace the six tiles with one clickable recipe summary. It
+  opens the existing Generate drawer / mobile bottom sheet with the same six
+  destinations.
+- There is no duplicated Customize modal and no separate Pairing row.
 - Changing recipe settings never rewrites a visible path. A source changes only
   when its Regenerate action is selected.
 
 ## Responsive interaction
 
-- Desktop and 4K use a right-side drawer that can cover part of the animation
-  canvas without reflowing the workspace.
+- Spacious desktop and 4K use anchored popovers. They do not obscure the whole
+  workspace or create a second representation of the recipe.
+- Compact desktop uses the recipe summary and responsive Generate settings
+  drawer.
 - Mobile uses the same content in a bottom sheet.
-- Opening the recipe summary starts on the Path recipe drill page.
-- Opening Change link starts on the Pairing drill page.
+- Opening the recipe summary starts on the six-destination recipe list.
 - The drawer follows the existing Generate customization pattern, including
   familiar drill navigation and style controls.
 - Fuse owns its recipe state. It must not share Generate's persisted settings or
@@ -94,13 +100,12 @@ or direction.
 
 ## Pairing
 
-The tall inline relationship composer is replaced with a compact summary such
-as `Linked · Blue → Mirror + Invert → Red`.
+The tall inline relationship composer and the separate Pairing row are replaced
+with the Pairing summary tile, such as `Blue → Mirror + Invert → Red`.
 
-- Separate and Linked remain directly accessible in the workspace.
-- Change link opens the Fuse settings drawer on the Pairing drill page.
-- The drawer owns driver selection, transformation selection, the live equation,
-  Cancel, and Use this relationship.
+- The Pairing tile opens driver selection, transformation selection, the live
+  equation, Cancel, and Use this relationship.
+- Compact layouts expose the same editor through the Pairing drill destination.
 - Transformation choices use a bounded natural-width grid instead of stretching
   across the available 4K width.
 - A draft relationship continues to preview without mutating the applied
@@ -115,14 +120,18 @@ fallback.
 
 ## Approved implementation task list
 
-- [ ] Replace header Length, Level, and Max turns widgets with a clickable recipe
-      summary.
-- [ ] Convert Fuse settings into one responsive right drawer / mobile bottom
-      sheet with Path recipe and Pairing drill pages.
-- [ ] Move Length, Level, and Max turns into Path recipe > Basics.
-- [ ] Share the Generate Style control presentation and add Fuse-local prop,
+- [x] Render Length, Level, Max turns, and Grid through shared Generate card
+      editors.
+- [x] Replace the duplicated header controls, Customize modal, and Pairing row
+      with six stable header summary tiles and focused anchored popovers.
+- [x] Hide Max turns at Level 1 and keep it inside the Level destination.
+- [x] Collapse the six tiles to one clickable recipe summary when they no longer
+      fit.
+- [x] Convert compact Fuse settings into the Generate right drawer / mobile
+      bottom sheet with the same six drill destinations.
+- [x] Share the Generate Style control presentation and add Fuse-local prop,
       hand, and dash preferences.
-- [ ] Add random-by-default start location, allowed orientation, and traversal
+- [x] Add random-by-default start location, allowed orientation, and traversal
       direction controls.
 - [ ] Extend the solo-loop generation contract so both Blue and Red Regenerate
       consume the same Fuse-local recipe.
@@ -131,10 +140,10 @@ fallback.
 - [ ] Enforce the three-level orientation policy across all Fuse lengths.
 - [ ] Randomize four-step flower location and clockwise/counterclockwise
       traversal, with authored-candidate scoring and a valid generic fallback.
-- [ ] Replace the expanded pairing section with the compact mode and relationship
-      summary bar.
-- [ ] Move driver, transform, equation, and apply controls to the Pairing drill
-      page and constrain the transform grid width.
+- [x] Remove the expanded Pairing section and summarize the applied relationship
+      in its recipe tile.
+- [x] Move driver, transform, equation, and apply controls to the Pairing
+      popover / drill destination and constrain the transform grid width.
 - [ ] Preserve both visible paths when settings change; regenerate only the
       selected source after an explicit Regenerate action.
 - [ ] Add silent-bug coverage for recipe mapping, orientation bounds, style

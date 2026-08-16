@@ -11,7 +11,10 @@
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import {
+    AnimationVisibilityStateManager,
+    getAnimationVisibilityManager,
+  } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     FUSE_PREVIEW_TIP_EFFECT_MAP,
@@ -48,6 +51,17 @@
   const fuseVisibility = new AnimationVisibilityStateManager({
     ephemeral: true,
   });
+  const sharedVisibility = getAnimationVisibilityManager();
+
+  // Fuse owns a few display choices (such as its elemental glyph), but it must
+  // not invent a second motion-path setting. Copy the user's path policy before
+  // either the combined or split canvas mounts, then keep both canvases aligned
+  // whenever the main animation controls change it.
+  function syncFusePathPolicy(): void {
+    fuseVisibility.setPathPolicy(sharedVisibility.getPathPolicy());
+  }
+
+  syncFusePathPolicy();
   // A classified pair should identify itself while it moves. The canonical
   // canvas glyph derives the element from each live step, so a four-step VTG
   // relationship stays steady and a genuinely changing relationship changes
@@ -108,6 +122,11 @@
     } catch (cause) {
       failInitialization("Preview unavailable", cause);
     }
+  });
+
+  onMount(() => {
+    sharedVisibility.registerObserver(syncFusePathPolicy);
+    return () => sharedVisibility.unregisterObserver(syncFusePathPolicy);
   });
 
   onDestroy(() => {
