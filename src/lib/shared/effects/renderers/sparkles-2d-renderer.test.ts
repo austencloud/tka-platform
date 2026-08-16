@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { Sparkles2DRenderer } from "./sparkles-2d-renderer";
 import type { Sparkles2DParams } from "../translators/canvas2d-types";
 import type { EmitterTip } from "./emitter-tip";
@@ -20,9 +20,13 @@ function toEmitters(s: PosBag): EmitterTip[] {
   return out;
 }
 
+/**
+ * Target context. Mirrors the app surface the renderer composites onto.
+ * The draw contract is one cached glow blit (`drawImage`) plus a live stroked
+ * star (`stroke`) per particle, so both are spied here.
+ */
 function makeCtx(): CanvasRenderingContext2D {
-  const fillStyles: string[] = [];
-  const ctx = {
+  return {
     globalCompositeOperation: "source-over",
     globalAlpha: 1,
     fillStyle: "",
@@ -40,19 +44,55 @@ function makeCtx(): CanvasRenderingContext2D {
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
+    drawImage: vi.fn(),
     getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
     setTransform: vi.fn(),
-    _fillStyles: fillStyles,
-  } as unknown as CanvasRenderingContext2D & { _fillStyles: string[] };
-  Object.defineProperty(ctx, "fillStyle", {
-    get() {
-      return "";
+  } as unknown as CanvasRenderingContext2D;
+}
+
+/**
+ * Install a sprite-capable offscreen canvas. Without this the renderer finds no
+ * gradient-capable 2D context and correctly reports sprites unavailable, so
+ * tests that exercise the draw path opt in here.
+ *
+ * Stubs `OffscreenCanvas` rather than `document.createElement` for two reasons:
+ * this suite runs in the node environment (no `document` at all), and
+ * OffscreenCanvas is the branch the QR/video export worker actually takes.
+ * Safe per-file: vitest config has `isolate: true`.
+ */
+function enableSprites(): void {
+  const gradient = { addColorStop: vi.fn() };
+  const spriteCtx = {
+    globalCompositeOperation: "source-over",
+    globalAlpha: 1,
+    fillStyle: "",
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    translate: vi.fn(),
+    setTransform: vi.fn(),
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    closePath: vi.fn(),
+    fill: vi.fn(),
+    createRadialGradient: vi.fn(() => gradient),
+    createLinearGradient: vi.fn(() => gradient),
+  };
+  vi.stubGlobal(
+    "OffscreenCanvas",
+    class {
+      width: number;
+      height: number;
+      constructor(w: number, h: number) {
+        this.width = w;
+        this.height = h;
+      }
+      getContext(kind: string) {
+        return kind === "2d" ? spriteCtx : null;
+      }
     },
-    set(v: string) {
-      fillStyles.push(v);
-    },
-  });
-  return ctx;
+  );
 }
 
 function makeParams(overrides: Partial<Sparkles2DParams> = {}): Sparkles2DParams {
@@ -90,7 +130,12 @@ const WITH_LAYER: EmitterTip[] = [
   { x: 420, y: 100, propIndex: 3, tipIndex: 1, end: "B", color: "#cc4488" },
 ];
 
-describe("Sparkles2DRenderer", () => {
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
+
+describe("Sparkles2DRenderer simulation", () => {
   it("caps the live particle count at MAX_PARTICLES", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
@@ -102,45 +147,29 @@ describe("Sparkles2DRenderer", () => {
       redPosB: { x: 110, y: 0 },
     });
     for (let i = 0; i < 300; i++) r.render(ctx, params, tips, 1 / 60);
-    // Hard MAX_PARTICLES cap (currently 1500). Lock that some cap exists
-    // and we never exceed the hard ceiling regardless of rate.
     expect((r as any).particles.length).toBeLessThanOrEqual(1500);
   });
 
   it("spawns from tunnel layer emitters (propIndex >= 2)", () => {
     const rBase = new Sparkles2DRenderer();
     const rLayered = new Sparkles2DRenderer();
-    const ctxBase = makeCtx();
-    const ctxLayered = makeCtx();
-    // Low rate keeps the live cap above the spawn demand so the per-emitter
-    // budget split isn't the limiter - more emitters then yield more particles,
-    // proving the propIndex>=2 layers actually spawn rather than getting starved.
     const params = makeParams({ rate: 1.0, lifetime: 5.0, mode: "stream" });
-    // One frame: each enabled emitter spawns its share. Layered input has 8
-    // emitters vs 4 base, so it must produce strictly more particles.
-    rBase.render(ctxBase, params, BASE_TIPS, 1 / 60);
-    rLayered.render(ctxLayered, params, WITH_LAYER, 1 / 60);
-    const baseCount = (rBase as any).particles.length;
-    const layeredCount = (rLayered as any).particles.length;
-    expect(layeredCount).toBeGreaterThan(baseCount);
+    rBase.render(makeCtx(), params, BASE_TIPS, 1 / 60);
+    rLayered.render(makeCtx(), params, WITH_LAYER, 1 / 60);
+    expect((rLayered as any).particles.length).toBeGreaterThan((rBase as any).particles.length);
   });
 
   it("decrements particle life over time and removes dead particles", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, lifetime: 0.1, mode: "stream" });
-    const tips = toEmitters({
-      bluePosA: { x: 0, y: 0 },
-    });
+    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
     r.render(ctx, params, tips, 1 / 60);
-    const beforeCount = (r as any).particles.length;
-    expect(beforeCount).toBeGreaterThan(0);
-    // Advance well past lifetime - older particles die; check life monotonicity.
+    expect((r as any).particles.length).toBeGreaterThan(0);
     for (let i = 0; i < 20; i++) r.render(ctx, params, tips, 1 / 60);
     const lives = (r as any).particles.map((p: any) => p.life);
-    // Lifetime is jittered up to 1.4× the base in the renderer, so use a
-    // generous upper bound for this assertion - the point is monotonicity,
-    // not the exact cap.
+    // Lifetime is jittered up to 1.4× the base, so bound generously - the point
+    // is monotonic decay, not the exact cap.
     expect(Math.max(...lives, 0)).toBeLessThanOrEqual(params.lifetime * 1.4);
   });
 
@@ -153,9 +182,7 @@ describe("Sparkles2DRenderer", () => {
       rate: 1.0,
       mode: "stream",
     });
-    const tips = toEmitters({
-      bluePosA: { x: 0, y: 0 },
-    });
+    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
     for (let i = 0; i < 30; i++) r.render(ctx, params, tips, 1 / 60);
     const colors = new Set((r as any).particles.map((p: any) => p.color));
     const overlap = ["#aaaaaa", "#bbbbbb", "#cccccc"].filter((c) => colors.has(c));
@@ -166,112 +193,197 @@ describe("Sparkles2DRenderer", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, mode: "burst", lifetime: 5.0 });
-    const tips = toEmitters({
-      bluePosA: { x: 50, y: 50 },
-    });
-    // First call seeds last-position; subsequent calls with same tip = no motion.
+    const tips = toEmitters({ bluePosA: { x: 50, y: 50 } });
     for (let i = 0; i < 10; i++) r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBe(0);
   });
 
-  it("dispose() clears the particle pool", () => {
+  it("dispose() clears the particle pool and sprite cache", () => {
     const r = new Sparkles2DRenderer();
     const ctx = makeCtx();
     const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
-    const tips = toEmitters({
-      bluePosA: { x: 0, y: 0 },
-    });
+    const tips = toEmitters({ bluePosA: { x: 0, y: 0 } });
     r.render(ctx, params, tips, 1 / 60);
     expect((r as any).particles.length).toBeGreaterThan(0);
     r.dispose();
     expect((r as any).particles.length).toBe(0);
+    expect((r as any).spriteCache.size).toBe(0);
+    expect((r as any).clock).toBe(0);
   });
 });
 
-function mockCtx(): CanvasRenderingContext2D {
-  return {
-    save: vi.fn(),
-    restore: vi.fn(),
-    translate: vi.fn(),
-    rotate: vi.fn(),
-    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
-    setTransform: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    arc: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    globalAlpha: 1,
-    globalCompositeOperation: "source-over",
-    fillStyle: "#000",
-    strokeStyle: "#000",
-    lineWidth: 1,
-    lineCap: "butt",
-  } as unknown as CanvasRenderingContext2D;
-}
-
-const baseParams: Sparkles2DParams = {
-  rate: 1,
-  size: 1,
-  lifetime: 1,
-  color: "#ffffff",
-  palette: [],
-  colorMode: "solid",
-  spread: 10,
-  gravity: 0.5,
-  mode: "stream",
-  poolSize: 256,
-  baseRadius: 4,
-  sizeScaleBase: 0.65,
-  blendMode: "lighter",
-};
-
-describe("Sparkles2DRenderer scale", () => {
-  it("at scale=1, particle arc radius uses baseRadius directly (regression)", () => {
+describe("Sparkles2DRenderer color", () => {
+  it("rainbow spawns DISTINCT hues within a single frame", () => {
+    // Regression: the old renderer derived one hue from Date.now() and applied
+    // it to every particle, so "rainbow" rendered as a drifting monochrome.
     const r = new Sparkles2DRenderer();
-    const ctx = mockCtx();
-    // Seed one frame so a particle exists
-    r.render(ctx, baseParams, toEmitters({ bluePosA: { x: 10, y: 10 } }), 1 / 60, 1);
-    // Draw frame - triggers ctx.arc for the particle pinpoint
-    const ctx2 = mockCtx();
-    r.render(ctx2, baseParams, toEmitters({ bluePosA: { x: 10, y: 10 } }), 1 / 60, 1);
-    const arcCalls = (ctx2.arc as unknown as { mock: { calls: unknown[][] } }).mock?.calls ?? [];
-    // At least one arc should have been drawn
-    expect(arcCalls.length).toBeGreaterThan(0);
+    const params = makeParams({ colorMode: "rainbow", rate: 1.0, mode: "stream", lifetime: 5 });
+    r.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+    const colors = (r as any).particles.map((p: any) => p.color);
+    expect(colors.length).toBeGreaterThan(2);
+    expect(new Set(colors).size).toBeGreaterThan(1);
   });
 
-  it("at scale=0.5, gravity is halved", () => {
-    // We observe this indirectly: with gravity halved, a particle starting at y=0
-    // with vy=0 should land at half the y after the same dt.
-    const r1 = new Sparkles2DRenderer();
-    const r2 = new Sparkles2DRenderer();
-    const ctx = mockCtx();
-    const tip = toEmitters({ bluePosA: { x: 0, y: 0 } });
+  it("solid mode jitters hue/lightness instead of emitting one flat color", () => {
+    const r = new Sparkles2DRenderer();
+    const params = makeParams({ colorMode: "solid", color: "#fbbf24", rate: 1.0, mode: "stream", lifetime: 5 });
+    r.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+    const colors = (r as any).particles.map((p: any) => p.color);
+    expect(new Set(colors).size).toBeGreaterThan(1);
+    for (const c of colors) expect(c).toMatch(/^hsl\(/);
+  });
 
-    // Prime both with one frame at stream mode to spawn identical particles.
-    // Use a fixed RNG by mocking Math.random so velocities match.
-    const rng = vi.spyOn(Math, "random").mockReturnValue(0.5);
+  it("color is independent of wall-clock time (export determinism)", () => {
+    // Two renderers fed identical dt sequences must produce identical colors even
+    // when Date.now() differs between them - the QR/video export path replays
+    // frames off a virtual clock.
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0.42);
     try {
-      r1.render(ctx, baseParams, tip, 0, 1); // dt=0, just spawn
-      r2.render(ctx, baseParams, tip, 0, 0.5);
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2020-01-01T00:00:00Z"));
+      const a = new Sparkles2DRenderer();
+      const params = makeParams({ colorMode: "rainbow", rate: 1.0, mode: "stream", lifetime: 5 });
+      for (let i = 0; i < 5; i++) a.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+
+      vi.setSystemTime(new Date("2021-06-15T12:34:56Z"));
+      const b = new Sparkles2DRenderer();
+      for (let i = 0; i < 5; i++) b.render(makeCtx(), params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60);
+
+      const ca = (a as any).particles.map((p: any) => p.color);
+      const cb = (b as any).particles.map((p: any) => p.color);
+      expect(ca.length).toBeGreaterThan(0);
+      expect(ca).toEqual(cb);
     } finally {
       rng.mockRestore();
     }
+  });
+});
 
-    // Step one 1s frame. gravity * 200 * dt² / 2 is the fall.
-    // We can't easily read internal particle state without exposing it, so
-    // this test exists primarily as a behavioural sanity check that the
-    // scale argument flows through without throwing.
-    expect(() => r1.render(ctx, baseParams, tip, 1, 1)).not.toThrow();
-    expect(() => r2.render(ctx, baseParams, tip, 1, 0.5)).not.toThrow();
+describe("Sparkles2DRenderer draw", () => {
+  it("blits one cached glow bed per live particle", () => {
+    enableSprites();
+    const r = new Sparkles2DRenderer();
+    const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
+    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
+    r.render(makeCtx(), params, tips, 1 / 60);
+
+    const ctx = makeCtx();
+    r.render(ctx, params, tips, 1 / 60);
+    const calls = (ctx.drawImage as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.length).toBeLessThanOrEqual((r as any).particles.length);
   });
 
-  it("scale argument is accepted (contract test)", () => {
+  it("reuses sprites across particles rather than authoring one each", () => {
+    enableSprites();
     const r = new Sparkles2DRenderer();
-    const ctx = mockCtx();
-    expect(() =>
-      r.render(ctx, baseParams, toEmitters({}), 1 / 60, 0.25),
-    ).not.toThrow();
+    // Solid mode jitters color per particle; quantized keys must collapse those
+    // into a small bucket set instead of a sprite per particle.
+    const params = makeParams({ colorMode: "solid", rate: 1.0, mode: "stream", lifetime: 5.0 });
+    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
+    for (let i = 0; i < 10; i++) r.render(makeCtx(), params, tips, 1 / 60);
+    const particles = (r as any).particles.length;
+    const sprites = (r as any).spriteCache.size;
+    expect(particles).toBeGreaterThan(20);
+    expect(sprites).toBeGreaterThan(0);
+    expect(sprites).toBeLessThan(particles);
+    expect(sprites).toBeLessThanOrEqual(48);
+  });
+
+  it("still strokes the star when the platform cannot author glow sprites", () => {
+    // The global test canvas mock has no gradient methods. The glow bed is the
+    // only cached part, so losing it must cost the halo and nothing else - the
+    // star itself is stroked live and has to keep drawing.
+    const r = new Sparkles2DRenderer();
+    const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0 });
+    const tips = toEmitters({ bluePosA: { x: 10, y: 10 } });
+    const ctx = makeCtx();
+    expect(() => {
+      for (let i = 0; i < 5; i++) r.render(ctx, params, tips, 1 / 60);
+    }).not.toThrow();
+    expect((r as any).spritesUnavailable).toBe(true);
+    expect((r as any).particles.length).toBeGreaterThan(0);
+    expect((ctx.drawImage as unknown as { mock: { calls: unknown[][] } }).mock.calls.length).toBe(0);
+    expect((ctx.stroke as unknown as { mock: { calls: unknown[][] } }).mock.calls.length).toBeGreaterThan(0);
+  });
+});
+
+describe("Sparkles2DRenderer ejection", () => {
+  /** Mean unit heading of the pool, as a vector. Length ~1 = coherent spray. */
+  function meanHeading(r: Sparkles2DRenderer) {
+    const ps = (r as any).particles as { vx: number; vy: number }[];
+    let sx = 0;
+    let sy = 0;
+    for (const p of ps) {
+      const m = Math.hypot(p.vx, p.vy);
+      if (m > 1e-6) {
+        sx += p.vx / m;
+        sy += p.vy / m;
+      }
+    }
+    return { x: sx / ps.length, y: sy / ps.length, n: ps.length };
+  }
+
+  it("throws sparks along the tip's travel direction", () => {
+    const r = new Sparkles2DRenderer();
+    const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0, spread: 4, gravity: 0 });
+    const ctx = makeCtx();
+    // Tip sweeping +x fast enough to close the cone toward its tight limit.
+    let x = 0;
+    for (let i = 0; i < 12; i++) {
+      r.render(ctx, params, toEmitters({ bluePosA: { x, y: 100 } }), 1 / 60);
+      x += 900 / 60;
+    }
+    const h = meanHeading(r);
+    expect(h.n).toBeGreaterThan(20);
+    // Coherent, and pointed the way the tip went.
+    expect(Math.hypot(h.x, h.y)).toBeGreaterThan(0.6);
+    expect(h.x).toBeGreaterThan(0.5);
+  });
+
+  it("falls back to an isotropic puff when the tip is at rest", () => {
+    const r = new Sparkles2DRenderer();
+    const params = makeParams({ rate: 1.0, mode: "stream", lifetime: 5.0, spread: 4, gravity: 0 });
+    const ctx = makeCtx();
+    const tips = toEmitters({ bluePosA: { x: 50, y: 50 } });
+    for (let i = 0; i < 12; i++) r.render(ctx, params, tips, 1 / 60);
+    const h = meanHeading(r);
+    expect(h.n).toBeGreaterThan(20);
+    // No lateral preference: with a full-circle cone the x components cancel.
+    // (y carries the deliberate upward launch bias, so it is not symmetric.)
+    expect(Math.abs(h.x)).toBeLessThan(0.2);
+  });
+});
+
+describe("Sparkles2DRenderer scale", () => {
+  it("accepts the scale argument across the range without throwing", () => {
+    const r = new Sparkles2DRenderer();
+    const ctx = makeCtx();
+    const params = makeParams();
+    expect(() => r.render(ctx, params, toEmitters({}), 1 / 60, 0.25)).not.toThrow();
+    expect(() => r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60, 1)).not.toThrow();
+    expect(() => r.render(ctx, params, toEmitters({ bluePosA: { x: 0, y: 0 } }), 1 / 60, 4)).not.toThrow();
+  });
+
+  it("scales gravity with the canvas so fall speed is resolution-invariant", () => {
+    const rng = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    let full: number, half: number;
+    try {
+      const r1 = new Sparkles2DRenderer();
+      const r2 = new Sparkles2DRenderer();
+      const params = makeParams({ gravity: 1, spread: 0, mode: "stream" });
+      const tip = toEmitters({ bluePosA: { x: 0, y: 0 } });
+      r1.render(makeCtx(), params, tip, 0, 1);
+      r2.render(makeCtx(), params, tip, 0, 0.5);
+      r1.render(makeCtx(), params, tip, 0.5, 1);
+      r2.render(makeCtx(), params, tip, 0.5, 0.5);
+      full = (r1 as any).particles[0].vy;
+      half = (r2 as any).particles[0].vy;
+    } finally {
+      rng.mockRestore();
+    }
+    // vy = initialBias*scale + gravity*200*scale*dt — every term is linear in
+    // scale, so halving the canvas halves the velocity exactly.
+    expect(half).toBeCloseTo(full / 2, 5);
   });
 });
