@@ -3,8 +3,9 @@
 
   Graduated from Lab (Mar 2026). Five tabs:
     - Video Trails: prop endpoint detection, fire/LED effects, training data
-    - Video Lab: beat mapping, BPM-synced playback, video-to-notation alignment
+    - Video Lab: step mapping, BPM-synced playback, video-to-notation alignment
     - Skel2TKA: video-to-TKA notation pipeline
+    - LED Notation: prop tracking lab
     - Curator: human review, metadata, performer, and sequence linking for the video catalog
 
   Navigation between tabs is handled by the sidebar - no internal tab bar needed.

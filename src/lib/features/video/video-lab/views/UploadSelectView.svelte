@@ -17,6 +17,7 @@
     StepMap,
   } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   const STORAGE_KEY = "video-lab-sequence";
 
@@ -40,6 +41,13 @@
   let selectedVideoId = $state<string | null>(null);
   let selectedStepMap = $state<StepMap | undefined>(undefined);
   let videoEl: HTMLVideoElement | undefined = $state();
+  let fileInputEl: HTMLInputElement | undefined = $state();
+  let dragActive = $state(false);
+  let fileError = $state("");
+  let videoRatio = $state("16 / 9");
+  // Set once the blob URL is handed to the mapping view, which then owns it.
+  // Revoking it here on unmount left the mapping view with a dead <video>.
+  let handedOff = false;
 
   let selectedSequence = $state<SequenceData | null>(null);
   let pickerOpen = $state(false);
@@ -48,11 +56,16 @@
   let videosError = $state("");
   let videoRequest = 0;
 
+  const stepCount = $derived(selectedSequence?.steps?.length ?? 0);
   const canStart = $derived(
-    !!videoUrl && !!selectedSequence && videoDuration > 0
+    !!videoUrl && !!selectedSequence && videoDuration > 0 && stepCount > 0
   );
-  const stepCount = $derived(
-    selectedSequence?.steps?.length || selectedSequence?.word?.length || 0
+  const sequenceLabel = $derived(
+    selectedSequence
+      ? simplifyRepeatedWord(
+          selectedSequence.word ?? selectedSequence.name ?? ""
+        )
+      : ""
   );
 
   $effect(() => {
@@ -119,11 +132,14 @@
     }
   }
 
-  function handleFileSelect(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+  function acceptFile(file: File | null | undefined) {
     if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      fileError = `${file.name} is not a video. Choose an MP4, WebM, or MOV file.`;
+      return;
+    }
     cleanupVideo();
+    fileError = "";
     videoUrl = URL.createObjectURL(file);
     videoFileName = file.name;
     videoFileSize = file.size;
@@ -131,15 +147,34 @@
     selectedStepMap = undefined;
   }
 
+  function handleFileSelect(event: Event) {
+    acceptFile((event.target as HTMLInputElement).files?.[0]);
+  }
+
+  function handleDrop(event: DragEvent) {
+    event.preventDefault();
+    dragActive = false;
+    acceptFile(event.dataTransfer?.files?.[0]);
+  }
+
   function handleVideoLoaded() {
     if (!videoEl) return;
     videoDuration = videoEl.duration;
+    if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+      videoRatio = `${videoEl.videoWidth} / ${videoEl.videoHeight}`;
+    }
     if (videoEl.currentTime === 0) videoEl.currentTime = 0.1;
   }
 
   function cleanupVideo() {
-    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+    // A handed-off URL belongs to the mapping view now; revoking it here would
+    // kill the video that view is about to play.
+    if (!handedOff && videoUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(videoUrl);
+    }
+    handedOff = false;
     videoUrl = null;
+    videoRatio = "16 / 9";
     videoDuration = 0;
     videoFileSize = 0;
     videoFileName = "";
@@ -159,14 +194,13 @@
 
   function clearVideo() {
     cleanupVideo();
-    const input = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement | null;
-    if (input) input.value = "";
+    fileError = "";
+    if (fileInputEl) fileInputEl.value = "";
   }
 
   function handleStart() {
-    if (!videoUrl || !selectedSequence || videoDuration <= 0) return;
+    if (!canStart || !videoUrl || !selectedSequence) return;
+    handedOff = videoUrl.startsWith("blob:");
     onStartMapping(
       videoUrl,
       videoDuration,
@@ -219,6 +253,7 @@
             controls
             preload="auto"
             class="video-player"
+            style="--video-ratio: {videoRatio}"
           ></video>
           <div class="card-footer">
             <div class="card-info">
@@ -235,17 +270,30 @@
           </div>
         </div>
       {:else}
-        <label class="drop-zone">
+        <label
+          class="drop-zone"
+          class:drag-active={dragActive}
+          ondragover={(event) => {
+            event.preventDefault();
+            dragActive = true;
+          }}
+          ondragleave={() => (dragActive = false)}
+          ondrop={handleDrop}
+        >
           <input
+            bind:this={fileInputEl}
             type="file"
             accept="video/*"
             onchange={handleFileSelect}
-            hidden
+            class="file-input"
           />
           <i class="fas fa-film drop-icon" aria-hidden="true"></i>
           <span class="drop-label">Drop a video here or click to browse</span>
           <span class="drop-hint">MP4, WebM, MOV</span>
         </label>
+        {#if fileError}
+          <p class="field-error" role="alert">{fileError}</p>
+        {/if}
       {/if}
     </div>
 
@@ -269,10 +317,11 @@
           {/if}
           <div class="card-footer">
             <div class="card-info">
-              <span class="card-name"
-                >{selectedSequence.word ?? selectedSequence.name}</span
+              <span class="card-name">{sequenceLabel}</span>
+              <span class="card-sub"
+                >{stepCount}
+                {stepCount === 1 ? "step" : "steps"}</span
               >
-              <span class="card-sub">{stepCount} steps</span>
             </div>
             <button
               type="button"
@@ -317,8 +366,13 @@
         {:else if savedVideos.length === 0}
           <div class="library-state">
             <i class="fas fa-video-slash" aria-hidden="true"></i>
-            No saved performances for this sequence yet. Choose a local video above
-            to begin.
+            {#if videoUrl}
+              No saved performances for this sequence yet. Map the video you
+              chose to add the first one.
+            {:else}
+              No saved performances for this sequence yet. Choose a local video
+              above to begin.
+            {/if}
           </div>
         {:else}
           <div class="saved-grid">
@@ -327,6 +381,7 @@
                 type="button"
                 class:selected={selectedVideoId === video.id}
                 class="saved-video"
+                aria-pressed={selectedVideoId === video.id}
                 onclick={() => selectSavedVideo(video)}
               >
                 <span class="saved-thumb">
@@ -617,9 +672,34 @@
       background 0.15s;
   }
 
-  .drop-zone:hover {
+  .drop-zone:hover,
+  .drop-zone.drag-active {
     border-color: var(--theme-accent, #6366f1);
     background: rgba(99, 102, 241, 0.04);
+  }
+
+  /* `hidden` would take the input out of the tab order, leaving no keyboard
+     path to choosing a video. This keeps it focusable and label-named. */
+  .file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .drop-zone:has(.file-input:focus-visible) {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .field-error {
+    margin: 0;
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact);
   }
 
   .drop-icon {
@@ -644,10 +724,17 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
   }
 
+  /* Performance video is usually shot in portrait. A fixed-height landscape box
+     pillarboxed it to ~81% black, so the box takes the source's own ratio and
+     is centred. The 16/9 default reserves the box before metadata arrives, so
+     nothing reflows on load. */
   .video-player {
-    width: 100%;
-    height: var(--setup-preview-height);
     display: block;
+    width: auto;
+    max-width: 100%;
+    height: var(--setup-preview-height);
+    aspect-ratio: var(--video-ratio, 16 / 9);
+    margin-inline: auto;
     background: #000;
     object-fit: contain;
   }

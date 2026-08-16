@@ -186,7 +186,7 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   }
 
   function enterRenameMode() {
-    // TODO: Implement rename mode if needed
+    editorController?.openRename();
   }
 
   function selectVideo(video: ShowcaseVideo) {
@@ -419,7 +419,14 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
           onclick={() => selectVideo(video)}
           role="button"
           tabindex="0"
-          onkeydown={(e) => e.key === "Enter" && selectVideo(video)}
+          onkeydown={(e) => {
+            // role="button" owes Space as well as Enter, and Space would
+            // otherwise scroll the grid out from under the card.
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              selectVideo(video);
+            }
+          }}
         >
           <div class="video-thumbnail">
             <CroppedVideoPlayer
@@ -559,7 +566,10 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
 
   .stats-bar {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    /* Tracks follow the children: the cache stat only appears once something
+       is cached, and a fixed 7 left an empty column the rest of the time. */
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 0.75rem;
   }
 
@@ -792,6 +802,7 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
     }
 
     .stats-bar {
+      grid-auto-flow: row;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0.5rem;
     }

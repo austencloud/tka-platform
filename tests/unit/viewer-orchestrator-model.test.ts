@@ -38,10 +38,14 @@ describe("viewer orchestrator model", () => {
   });
 
   it("derives edit and export modes from the canonical viewer state", () => {
-    expect(resolveEditingPane("split", "animation-export")).toBe("animation");
-    expect(resolveEditingPane("split", "image-export")).toBe("image");
-    expect(resolveEditingPane("videos", null)).toBe("video-upload");
-    expect(resolveEditingPane("card", null)).toBeNull();
+    expect(resolveEditingPane("split", "animation-export", false)).toBe(
+      "animation"
+    );
+    expect(resolveEditingPane("split", "image-export", false)).toBe("image");
+    // Videos mode alone is the gallery; the pane only opens once upload does.
+    expect(resolveEditingPane("videos", null, true)).toBe("video-upload");
+    expect(resolveEditingPane("videos", null, false)).toBeNull();
+    expect(resolveEditingPane("card", null, false)).toBeNull();
     expect(resolveExportType("animation")).toBe("animation");
     expect(resolveExportType("image")).toBe("image");
     expect(resolveExportType("video-upload")).toBeNull();

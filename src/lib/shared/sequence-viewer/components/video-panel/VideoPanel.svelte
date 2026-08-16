@@ -23,19 +23,31 @@
     type ThumbnailResult,
   } from "$lib/shared/video-collaboration/utils/thumbnail-extractor";
   import StepMapEditor from "../step-mapping/StepMapEditor.svelte";
+  import DeleteConfirmDialog from "../DeleteConfirmDialog.svelte";
 
   interface Props {
     sequence: SequenceData;
     isOwned: boolean;
     bpm: number;
+    /** Opens straight into the timing editor for this video, when the gallery
+     *  asked for it rather than for an upload. */
+    initialMappingVideoId?: string | null;
     onSaveFirst: () => Promise<void>;
     onClose: () => void;
   }
 
-  let { sequence, isOwned, bpm, onSaveFirst, onClose }: Props = $props();
+  let {
+    sequence,
+    isOwned,
+    bpm,
+    initialMappingVideoId = null,
+    onSaveFirst,
+    onClose,
+  }: Props = $props();
 
   type PanelState =
     | "loading"
+    | "load-error"
     | "save-first"
     | "empty"
     | "upload"
@@ -56,6 +68,7 @@
   let isUploading = $state(false);
   let uploadProgress = $state(0);
   let uploadError = $state<string | null>(null);
+  let loadError = $state<string | null>(null);
 
   let isDragOver = $state(false);
 
@@ -64,6 +77,8 @@
   let playingVideoId = $state<string | null>(null);
 
   let beatMappingVideo = $state<CollaborativeVideo | null>(null);
+  let pendingDeleteVideo = $state<CollaborativeVideo | null>(null);
+  let isDeleting = $state(false);
 
   const uploadService = getVideoUploader();
   const hapticService = getHapticFeedback() as HapticFeedback | undefined;
@@ -85,14 +100,27 @@
     try {
       const result = await getVideosForSequence(sequence.id);
       videos = result;
+      loadError = null;
+
+      // The gallery can ask for one video's timing editor directly.
+      const requested = initialMappingVideoId
+        ? videos.find((video) => video.id === initialMappingVideoId)
+        : undefined;
+      if (requested) {
+        beatMappingVideo = requested;
+        panelState = "step-mapping";
+        return;
+      }
+
       panelState = videos.length > 0 ? "gallery" : "empty";
     } catch (error) {
+      // "No videos yet" would be a lie here - the list never arrived.
       videos = [];
-      uploadError =
+      loadError =
         error instanceof Error
           ? error.message
-          : "Performance videos could not be loaded. Try again.";
-      panelState = "empty";
+          : "Performance videos could not be loaded.";
+      panelState = "load-error";
     }
   }
 
@@ -190,8 +218,11 @@
         sequence.id,
         selectedFile,
         {
+          // Report the real transfer. Scaling it to 90% left the bar stuck
+          // there through the whole upload, and permanently so when the
+          // optional thumbnail step failed.
           onProgress: (progress: number) => {
-            uploadProgress = Math.round(progress * 0.9);
+            uploadProgress = Math.min(99, Math.round(progress));
           },
         }
       );
@@ -208,7 +239,6 @@
             videoTimestamp
           );
           thumbnailUrl = thumbnailResult.url;
-          uploadProgress = 100;
         } catch {
           // Optional
         }
@@ -230,6 +260,7 @@
       });
 
       await saveVideo(video);
+      uploadProgress = 100;
 
       hapticService?.trigger("success");
       toast.success("Video uploaded");
@@ -256,14 +287,20 @@
     playingVideoId = playingVideoId === videoId ? null : videoId;
   }
 
-  async function handleDeleteVideo(videoId: string) {
+  async function confirmDeleteVideo() {
+    const video = pendingDeleteVideo;
+    if (!video) return;
+    isDeleting = true;
     try {
-      await deleteVideo(videoId);
+      await deleteVideo(video.id);
       hapticService?.trigger("selection");
+      pendingDeleteVideo = null;
       await loadVideos();
     } catch (e) {
       console.error("Delete failed:", e);
       toast.error("Failed to delete video");
+    } finally {
+      isDeleting = false;
     }
   }
 
@@ -278,7 +315,7 @@
         : v
     );
 
-    toast.success("Beat map saved");
+    toast.success("Timing saved");
     hapticService?.trigger("success");
 
     beatMappingVideo = null;
@@ -317,6 +354,15 @@
     onClose();
   }
 
+  // The one back control names where it actually goes, which is not always the
+  // videos list — from mapping and from an add-flow it returns to the gallery.
+  const backLabel = $derived(
+    panelState === "step-mapping" ||
+      ((panelState === "empty" || panelState === "upload") && videos.length > 0)
+      ? "Back to gallery"
+      : "Back to Videos"
+  );
+
   function formatDuration(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -345,19 +391,29 @@
   />
 
   <div class="panel-content">
-    <button
-      type="button"
-      class="back-to-videos"
-      onclick={handleBack}
-    >
+    <button type="button" class="back-to-videos" onclick={handleBack}>
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
-      Back to Videos
+      {backLabel}
     </button>
     {#if panelState === "loading"}
       <div class="center-state">
         <i class="fas fa-spinner fa-spin loading-spinner" aria-hidden="true"
         ></i>
         <span class="state-label">Loading videos...</span>
+      </div>
+    {:else if panelState === "load-error"}
+      <div class="center-state" role="alert">
+        <div class="state-icon">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        </div>
+        <span class="state-title">Videos didn't load</span>
+        <span class="state-hint">{loadError}</span>
+        <div class="state-actions">
+          <button type="button" class="primary-btn" onclick={loadVideos}>
+            <i class="fas fa-rotate-right" aria-hidden="true"></i>
+            Try again
+          </button>
+        </div>
       </div>
     {:else if panelState === "save-first"}
       <div class="center-state">
@@ -388,18 +444,6 @@
         </div>
       </div>
     {:else if panelState === "empty"}
-      {#if videos.length > 0}
-        <button
-          type="button"
-          class="back-to-gallery"
-          onclick={() => {
-            panelState = "gallery";
-          }}
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          Back to gallery
-        </button>
-      {/if}
       <button
         class="drop-zone"
         class:drag-over={isDragOver}
@@ -548,7 +592,7 @@
                 <button
                   type="button"
                   class="gallery-action-btn delete-video"
-                  onclick={() => handleDeleteVideo(video.id)}
+                  onclick={() => (pendingDeleteVideo = video)}
                   title="Delete video"
                 >
                   <i class="fas fa-trash" aria-hidden="true"></i>
@@ -585,6 +629,21 @@
       </div>
     {/if}
   </div>
+
+  {#if pendingDeleteVideo}
+    <DeleteConfirmDialog
+      {isDeleting}
+      positioning="absolute"
+      title="Delete performance?"
+      body="This {formatDuration(
+        pendingDeleteVideo.duration
+      )} performance video will be permanently removed{pendingDeleteVideo.beatMap
+        ? ', along with its saved timing'
+        : ''}. This cannot be undone."
+      onConfirm={confirmDeleteVideo}
+      onCancel={() => (pendingDeleteVideo = null)}
+    />
+  {/if}
 </div>
 
 <style>
@@ -593,6 +652,8 @@
     flex-direction: column;
     height: 100%;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    /* Anchors the delete confirmation to the panel, not the whole viewport. */
+    position: relative;
   }
 
   .panel-content {
@@ -1063,27 +1124,6 @@
     border-color: var(--theme-accent, #6366f1);
     color: var(--theme-accent, #6366f1);
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.02));
-  }
-
-  .back-to-gallery {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: none;
-    border: none;
-    color: var(--theme-accent, #6366f1);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    align-self: flex-start;
-    border-radius: 6px;
-    transition: background 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .back-to-gallery:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .error-banner {

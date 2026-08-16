@@ -79,7 +79,7 @@ export function loadViewerMode(): ViewerMode {
 		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore a stale
 		// video-gallery preference when its supporting upload tools are withheld.
 		if (raw === 'videos' && !VIDEO_UPLOAD_ENABLED) return 'split';
-		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'mandala' || raw === 'tunnel' || raw === 'split') {
+		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'tunnel' || raw === 'split') {
 			return raw;
 		}
 		return 'split';

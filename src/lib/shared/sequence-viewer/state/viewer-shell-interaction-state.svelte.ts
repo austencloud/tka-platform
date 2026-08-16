@@ -63,6 +63,7 @@ export function createViewerShellInteractionState(
   >();
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
+  let mappingRequestVideoId = $state<string | null>(null);
 
   const headerActions = $derived(
     buildHeaderActions(inputs.getContext(), "full", {
@@ -206,6 +207,18 @@ export function createViewerShellInteractionState(
 
   function handleGalleryVideoUpload(): void {
     dependencies.captureScanAction("video_upload");
+    mappingRequestVideoId = null;
+    void inputs.getContext().handleVideoUpload();
+  }
+
+  /**
+   * The gallery can say a performance has no timing but cannot map it - the
+   * editor lives in the upload pane. This carries the chosen video across so
+   * "Map timing" opens the pane already on that video's editor.
+   */
+  function handleGalleryMapTiming(videoId: string): void {
+    dependencies.captureScanAction("video_upload");
+    mappingRequestVideoId = videoId;
     void inputs.getContext().handleVideoUpload();
   }
 
@@ -655,6 +668,9 @@ export function createViewerShellInteractionState(
     get showInlineProgress() {
       return showInlineProgress;
     },
+    get mappingRequestVideoId() {
+      return mappingRequestVideoId;
+    },
     mount,
     recordOpenApp,
     handleAccountOpenApp,
@@ -668,6 +684,7 @@ export function createViewerShellInteractionState(
     handleSave,
     handleHeaderVideoUpload,
     handleGalleryVideoUpload,
+    handleGalleryMapTiming,
     handlePublish,
     handleUnpublish,
     handleDeleteRequest,

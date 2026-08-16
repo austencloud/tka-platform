@@ -53,6 +53,13 @@ export function createViewerShellLayoutState(
   const isSidebarExportActive = $derived(
     isAnyExportActive && !isRecordSceneActive
   );
+  // The upload panel is a sidebar occupant, so it keeps the export layout, but
+  // it must not evict the gallery from the viewer body: a person uploading is
+  // still browsing this sequence's videos and returns to them on close.
+  const showVideoGallery = $derived(
+    inputs.getContext().viewerState.viewerMode === "videos" &&
+      (!isSidebarExportActive || isVideoUploadActive)
+  );
 
   const exportSidebarMinWidth = $derived.by(() => {
     let persistedRailWidth: string | null = null;
@@ -273,6 +280,9 @@ export function createViewerShellLayoutState(
     },
     get isSidebarExportActive() {
       return isSidebarExportActive;
+    },
+    get showVideoGallery() {
+      return showVideoGallery;
     },
     get effectiveMobile() {
       return effectiveMobile;

@@ -1,50 +1,76 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition';
+  import { fade } from "svelte/transition";
   import {
     getVideosForSequence,
     deleteVideo,
-  } from '$lib/shared/video-collaboration/services/collaborative-video-manager';
-  import type { CollaborativeVideo } from '$lib/shared/video-collaboration/domain/collaborative-video';
-  import type { SequenceData } from '$lib/shared/foundation/domain/models/sequence-data';
-  import { authState } from '$lib/shared/auth/state/auth-state.svelte';
+  } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
 
   interface Props {
     sequence: SequenceData;
     isOwned: boolean;
     isLoggedIn?: boolean;
     onUpload?: () => void;
+    /** Opens the timing editor for one performance. The editor lives in the
+     *  upload pane, so the gallery hands the id up rather than mounting it. */
+    onMapTiming?: (videoId: string) => void;
   }
 
-  let { sequence, isOwned, isLoggedIn = false, onUpload }: Props = $props();
+  let {
+    sequence,
+    isOwned,
+    isLoggedIn = false,
+    onUpload,
+    onMapTiming,
+  }: Props = $props();
 
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(true);
+  let loadError = $state("");
   let selectedVideoId = $state<string | null>(null);
+  let pendingDeleteId = $state<string | null>(null);
+  let isDeleting = $state(false);
+  let deleteError = $state("");
+  let reloadToken = $state(0);
   let videoAspectRatios = $state<Record<string, number>>({});
-  let videoWorkspaceElement = $state<HTMLDivElement | null>(null);
-  let playerStageSize = $state<{ inlineSize: number; blockSize: number } | null>(null);
 
   /** Get creator display name from the collaborators list */
   function getCreatorName(video: CollaborativeVideo): string {
-    const creator = video.collaborators.find(c => c.role === 'creator');
-    return creator?.displayName || 'Anonymous';
+    const creator = video.collaborators.find((c) => c.role === "creator");
+    return creator?.displayName || "Anonymous";
   }
 
   $effect(() => {
     const seqId = sequence?.id;
+    // Re-runs when a retry bumps the token.
+    void reloadToken;
     if (!seqId) {
       videos = [];
       loading = false;
       return;
     }
     loading = true;
+    loadError = "";
     getVideosForSequence(seqId)
       .then((v) => {
         videos = v;
         selectedVideoId = v[0]?.id ?? null;
       })
-      .catch(() => { videos = []; })
-      .finally(() => { loading = false; });
+      .catch((error) => {
+        // A failed load is not an empty gallery. Say which one it was so a
+        // person knows whether to retry or to record something.
+        videos = [];
+        loadError =
+          error instanceof Error
+            ? error.message
+            : "Performance videos could not be loaded.";
+      })
+      .finally(() => {
+        loading = false;
+      });
   });
 
   function formatDuration(seconds: number): string {
@@ -81,7 +107,11 @@
     if (width <= 0 || height <= 0) return;
 
     const aspectRatio = width / height;
-    if (!Number.isFinite(aspectRatio) || videoAspectRatios[videoId] === aspectRatio) return;
+    if (
+      !Number.isFinite(aspectRatio) ||
+      videoAspectRatios[videoId] === aspectRatio
+    )
+      return;
 
     videoAspectRatios = { ...videoAspectRatios, [videoId]: aspectRatio };
   }
@@ -92,65 +122,40 @@
     preview.currentTime = Math.min(1, preview.duration / 2);
   }
 
-  async function handleDelete(id: string) {
-    await deleteVideo(id);
-    const remainingVideos = videos.filter((video) => video.id !== id);
-    videos = remainingVideos;
-    if (selectedVideoId === id) {
-      selectedVideoId = remainingVideos[0]?.id ?? null;
+  async function confirmDelete() {
+    const id = pendingDeleteId;
+    if (!id) return;
+    isDeleting = true;
+    deleteError = "";
+    try {
+      await deleteVideo(id);
+      const remainingVideos = videos.filter((video) => video.id !== id);
+      videos = remainingVideos;
+      if (selectedVideoId === id) {
+        selectedVideoId = remainingVideos[0]?.id ?? null;
+      }
+      pendingDeleteId = null;
+    } catch (error) {
+      // Removing the row on a failed delete would claim the video is gone
+      // while the record survives. Keep it, and say what happened.
+      deleteError =
+        error instanceof Error
+          ? error.message
+          : "That performance could not be deleted.";
+    } finally {
+      isDeleting = false;
     }
   }
 
   const selectedVideo = $derived(
     videos.find((video) => video.id === selectedVideoId) ?? null
   );
+  const pendingDeleteVideo = $derived(
+    videos.find((video) => video.id === pendingDeleteId) ?? null
+  );
   const selectedVideoAspectRatio = $derived(
     selectedVideo ? (videoAspectRatios[selectedVideo.id] ?? 16 / 9) : 16 / 9
   );
-
-  $effect(() => {
-    const workspace = videoWorkspaceElement;
-    const aspectRatio = selectedVideoAspectRatio;
-    if (!workspace) {
-      playerStageSize = null;
-      return;
-    }
-
-    const resizePlayerStage = () => {
-      const gallery = workspace.closest<HTMLElement>(".video-gallery");
-      const firstGridTrack = Number.parseFloat(
-        getComputedStyle(workspace).gridTemplateColumns
-      );
-      const availableInlineSize = Number.isFinite(firstGridTrack)
-        ? firstGridTrack
-        : workspace.clientWidth;
-      const availableBlockSize = Math.min(
-        window.innerHeight * 0.62,
-        (gallery?.clientWidth ?? workspace.clientWidth) * 0.75
-      );
-
-      if (availableInlineSize <= 0 || availableBlockSize <= 0) return;
-
-      const blockSize = Math.min(
-        availableBlockSize,
-        availableInlineSize / aspectRatio
-      );
-      playerStageSize = {
-        inlineSize: Math.round(blockSize * aspectRatio),
-        blockSize: Math.round(blockSize),
-      };
-    };
-
-    const resizeObserver = new ResizeObserver(resizePlayerStage);
-    resizeObserver.observe(workspace);
-    window.addEventListener("resize", resizePlayerStage);
-    resizePlayerStage();
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", resizePlayerStage);
-    };
-  });
 </script>
 
 <div class="video-gallery" in:fade={{ duration: 200 }}>
@@ -159,6 +164,21 @@
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       <span>Loading videos...</span>
     </div>
+  {:else if loadError}
+    <div class="gallery-empty error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <span>{loadError}</span>
+      <button
+        type="button"
+        class="upload-btn"
+        onclick={() => {
+          reloadToken += 1;
+        }}
+      >
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+        Try again
+      </button>
+    </div>
   {:else if videos.length === 0}
     <div class="gallery-empty">
       <i class="fas fa-video" aria-hidden="true"></i>
@@ -166,7 +186,7 @@
       {#if isLoggedIn && onUpload}
         <button type="button" class="upload-btn" onclick={onUpload}>
           <i class="fas fa-upload" aria-hidden="true"></i>
-          Record your performance
+          Upload a performance
         </button>
       {:else if !isLoggedIn}
         <span class="sign-in-hint">Sign in to upload performances</span>
@@ -186,13 +206,14 @@
       {/if}
     </div>
     {#if selectedVideo}
-      <div class="video-workspace" bind:this={videoWorkspaceElement}>
-        <section class="featured-performance" aria-labelledby="selected-performance-title">
+      <div class="video-workspace">
+        <section
+          class="featured-performance"
+          aria-labelledby="selected-performance-title"
+        >
           <div
             class="player-stage"
-            style={playerStageSize
-              ? `inline-size: ${playerStageSize.inlineSize}px; block-size: ${playerStageSize.blockSize}px`
-              : undefined}
+            style="--stage-ratio: {selectedVideoAspectRatio}"
           >
             {#key selectedVideo.id}
               <!-- svelte-ignore a11y_media_has_caption -->
@@ -212,7 +233,9 @@
                 }}
               ></video>
             {/key}
-            <span class="duration-badge">{formatDuration(selectedVideo.duration)}</span>
+            <span class="duration-badge"
+              >{formatDuration(selectedVideo.duration)}</span
+            >
           </div>
           <div class="performance-details">
             <div>
@@ -220,20 +243,43 @@
               <h3 id="selected-performance-title">
                 {getCreatorName(selectedVideo)}
               </h3>
-              <p>{formatDate(selectedVideo.createdAt)} · {getTimingLabel(selectedVideo)}</p>
+              <p>
+                {formatDate(selectedVideo.createdAt)} · {getTimingLabel(
+                  selectedVideo
+                )}
+              </p>
               {#if selectedVideo.description}
-                <p class="performance-description">{selectedVideo.description}</p>
+                <p class="performance-description">
+                  {selectedVideo.description}
+                </p>
               {/if}
             </div>
-            {#if isOwned && selectedVideo.creatorId === authState.user?.uid}
-              <button
-                type="button"
-                class="delete-performance"
-                onclick={() => handleDelete(selectedVideo.id)}
-              >
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                Delete performance
-              </button>
+            {#if selectedVideo.creatorId === authState.user?.uid}
+              <div class="performance-tools">
+                {#if onMapTiming}
+                  <button
+                    type="button"
+                    class="map-timing"
+                    onclick={() => onMapTiming(selectedVideo.id)}
+                  >
+                    <i class="fas fa-music" aria-hidden="true"></i>
+                    {selectedVideo.beatMap ? "Edit timing" : "Map timing"}
+                  </button>
+                {/if}
+                {#if isOwned}
+                  <button
+                    type="button"
+                    class="delete-performance"
+                    onclick={() => {
+                      deleteError = "";
+                      pendingDeleteId = selectedVideo.id;
+                    }}
+                  >
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                    Delete performance
+                  </button>
+                {/if}
+              </div>
             {/if}
           </div>
         </section>
@@ -249,8 +295,10 @@
                 type="button"
                 class="performance-option"
                 class:selected={video.id === selectedVideo.id}
-                onclick={() => { selectedVideoId = video.id; }}
-                aria-current={video.id === selectedVideo.id ? "true" : undefined}
+                onclick={() => {
+                  selectedVideoId = video.id;
+                }}
+                aria-pressed={video.id === selectedVideo.id}
               >
                 <div class="option-thumbnail">
                   {#if video.id === selectedVideo.id}
@@ -280,6 +328,21 @@
         </aside>
       </div>
     {/if}
+  {/if}
+
+  {#if pendingDeleteVideo}
+    <DeleteConfirmDialog
+      {isDeleting}
+      positioning="absolute"
+      title="Delete performance?"
+      body={deleteError ||
+        `${getCreatorName(pendingDeleteVideo)}'s performance from ${formatDate(pendingDeleteVideo.createdAt)} will be permanently removed. This cannot be undone.`}
+      onConfirm={confirmDelete}
+      onCancel={() => {
+        pendingDeleteId = null;
+        deleteError = "";
+      }}
+    />
   {/if}
 </div>
 
@@ -316,6 +379,11 @@
     opacity: 0.5;
   }
 
+  .gallery-empty.error {
+    color: var(--semantic-error);
+    text-align: center;
+  }
+
   .sign-in-hint {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
     font-size: var(--font-size-compact, 12px);
@@ -335,7 +403,9 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     cursor: pointer;
-    transition: filter 120ms ease, transform 120ms ease;
+    transition:
+      filter 120ms ease,
+      transform 120ms ease;
   }
 
   .upload-btn:hover {
@@ -403,13 +473,16 @@
     max-inline-size: 100%;
   }
 
+  /* The stage takes the source's own ratio, so portrait performance video fills
+     the box instead of pillarboxing inside a landscape one. The 16/9 fallback
+     reserves the box before metadata arrives, so nothing reflows on load. */
   .player-stage {
     position: relative;
     display: grid;
     place-items: center;
     align-self: center;
     block-size: min(62vh, 75cqw);
-    aspect-ratio: 16 / 9;
+    aspect-ratio: var(--stage-ratio, 16 / 9);
     max-inline-size: 100%;
     background: #050507;
     overflow: hidden;
@@ -458,6 +531,35 @@
     color: var(--theme-text, #fff);
   }
 
+  .performance-tools {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .map-timing {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.75rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .map-timing:hover {
+    border-color: var(--theme-accent, #6366f1);
+    color: var(--theme-accent, #6366f1);
+  }
+
   .delete-performance {
     display: inline-flex;
     flex: 0 0 auto;
@@ -466,9 +568,14 @@
     gap: 0.5rem;
     min-height: var(--min-touch-target, 44px);
     padding: 0.625rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #f87171) 55%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #f87171) 55%, transparent);
     border-radius: 0.75rem;
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 9%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 9%,
+      transparent
+    );
     color: var(--semantic-error, #f87171);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
@@ -476,7 +583,11 @@
   }
 
   .delete-performance:hover {
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 16%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 16%,
+      transparent
+    );
   }
 
   .performance-list {
@@ -540,8 +651,16 @@
   }
 
   .performance-option.selected {
-    border-color: color-mix(in srgb, var(--theme-accent, #818cf8) 70%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #818cf8) 12%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 70%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 12%,
+      transparent
+    );
   }
 
   .option-thumbnail {
@@ -634,8 +753,13 @@
     }
 
     .upload-btn,
+    .map-timing,
     .delete-performance {
       width: 100%;
+    }
+
+    .performance-tools {
+      flex-direction: column;
     }
 
     .performance-list-items {

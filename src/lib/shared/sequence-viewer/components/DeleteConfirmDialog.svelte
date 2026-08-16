@@ -1,12 +1,13 @@
 <!--
   Delete Confirmation Dialog
 
-  Shown when the user taps "Delete" on a sequence they own.
-  Used by both the drawer host and the full-page viewer.
+  The viewer's one confirmation surface for irreversible deletes. Defaults read
+  as a sequence delete (the drawer host and the full-page viewer); the video
+  gallery and video panel pass their own title and body for performance videos.
 -->
 <script lang="ts">
   interface Props {
-    /** The word/name shown in the confirmation message */
+    /** The word/name shown in the default confirmation message */
     word?: string;
     /** Whether the delete is currently in progress */
     isDeleting: boolean;
@@ -19,6 +20,10 @@
      * "fixed" covers the full viewport (standalone page).
      */
     positioning?: "absolute" | "fixed";
+    /** Overrides the heading for non-sequence deletes. */
+    title?: string;
+    /** Overrides the body copy for non-sequence deletes. */
+    body?: string;
   }
 
   let {
@@ -27,7 +32,16 @@
     onConfirm,
     onCancel,
     positioning = "fixed",
+    title = "Delete sequence?",
+    body,
   }: Props = $props();
+
+  const message = $derived(
+    body ??
+      (word
+        ? `"${word}" will be permanently removed from your library.`
+        : "This sequence will be permanently removed from your library.")
+  );
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") onCancel();
@@ -45,12 +59,8 @@
   onkeydown={handleKeydown}
 >
   <div class="delete-confirm-dialog">
-    <h2 id="delete-confirm-title">Delete sequence?</h2>
-    <p>
-      {word
-        ? `"${word}" will be permanently removed from your library.`
-        : "This sequence will be permanently removed from your library."}
-    </p>
+    <h2 id="delete-confirm-title">{title}</h2>
+    <p>{message}</p>
     <div class="delete-confirm-actions">
       <button
         type="button"

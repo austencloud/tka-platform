@@ -1,14 +1,17 @@
 <!--
   StepMapEditor.svelte
 
-  Full beat annotation UI for mapping performance video timestamps to sequence
-  beats. Combines a video player, transport controls, the draggable StepMapTimeline,
+  Full annotation UI for mapping performance video timestamps to sequence steps.
+  Combines a video player, transport controls, the draggable StepMapTimeline,
   tap-to-place mode for quick sequential marking, and save/cancel actions.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
-  import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import {
+    generateEvenBeatTimestamps,
+    getHighlightedBeatFromVideo,
+  } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import StepMapTimeline from "./StepMapTimeline.svelte";
 
@@ -75,6 +78,12 @@
   // ---- Save state ----
   let isSaving = $state(false);
   let saveError = $state<string | null>(null);
+  // Non-error feedback, e.g. "your previous markers were kept".
+  let notice = $state<string | null>(null);
+
+  // Reserving the video's real shape stops the panel from resizing when the
+  // file loads, and keeps portrait footage from sitting in a letterbox.
+  let videoRatio = $state("16 / 9");
 
   // ---- Beat placement flash ----
   let flashBeatIndex = $state(-1);
@@ -85,19 +94,24 @@
     !isSaving && placedCount === stepCount && stepCount > 0
   );
 
-  // The currently active beat based on playback position
-  let activeStepIndex = $derived.by(() => {
-    const ts = isTapMode ? tapTimestamps : beatTimestamps;
-    for (let i = ts.length - 1; i >= 0; i--) {
-      if (currentTime >= ts[i]!) return i;
-    }
-    return -1;
-  });
+  // The currently active step based on playback position
+  let activeStepIndex = $derived(
+    getHighlightedBeatFromVideo(
+      currentTime,
+      isTapMode ? tapTimestamps : beatTimestamps
+    )
+  );
 
   // ---- Video event handlers ----
 
   function handleTimeUpdate() {
     if (videoEl) currentTime = videoEl.currentTime;
+  }
+
+  function handleLoadedMetadata() {
+    if (videoEl?.videoWidth && videoEl.videoHeight) {
+      videoRatio = `${videoEl.videoWidth} / ${videoEl.videoHeight}`;
+    }
   }
 
   function handlePlay() {
@@ -172,6 +186,7 @@
     isTapMode = true;
     tapPlacedCount = 0;
     tapTimestamps = [];
+    notice = null;
     // Start playing so the user can tap along
     if (videoEl) {
       videoEl.currentTime = 0;
@@ -184,10 +199,23 @@
 
   function exitTapMode(): void {
     isTapMode = false;
-    // Commit whatever was placed
-    if (tapTimestamps.length > 0) {
-      beatTimestamps = [...tapTimestamps];
+
+    if (tapTimestamps.length === stepCount) {
+      beatTimestamps = sortedTimestamps(tapTimestamps);
+      notice = null;
+    } else if (tapTimestamps.length > 0) {
+      // Committing a partial run would replace a full set of markers with a
+      // handful, so the existing markers stay and the user is told why.
+      notice = `Stopped after ${tapTimestamps.length} of ${stepCount} moves, so your previous markers were kept.`;
     }
+
+    tapTimestamps = [];
+    tapPlacedCount = 0;
+  }
+
+  /** Markers can be dragged past each other; every consumer reads them in order. */
+  function sortedTimestamps(values: readonly number[]): number[] {
+    return [...values].sort((a, b) => a - b);
   }
 
   function markBeat(): void {
@@ -248,8 +276,9 @@
   // ---- Reset ----
 
   function resetToEvenSpacing(): void {
-    beatTimestamps = generateEvenBeatTimestamps(videoDuration, stepCount, bpm);
     if (isTapMode) exitTapMode();
+    beatTimestamps = generateEvenBeatTimestamps(videoDuration, stepCount, bpm);
+    notice = null;
   }
 
   // ---- Save ----
@@ -267,7 +296,7 @@
     }
 
     const beatMap: StepMap = {
-      beatTimestamps: [...finalTimestamps],
+      beatTimestamps: sortedTimestamps(finalTimestamps),
       stepCount,
       source: "manual",
       updatedAt: new Date(),
@@ -276,7 +305,7 @@
     try {
       await onSave(beatMap);
     } catch (e) {
-      saveError = e instanceof Error ? e.message : "Failed to save beat map";
+      saveError = e instanceof Error ? e.message : "Failed to save the timing";
     } finally {
       isSaving = false;
     }
@@ -290,188 +319,204 @@
 
 <svelte:window onkeydown={handleKeyboard} />
 
-<div class="beat-map-editor">
-  <div class="mapping-intro">
-    <div>
-      <span class="eyebrow">Move timing</span>
-      <h3>
-        {isTapMode
-          ? `Mark move ${Math.min(tapPlacedCount + 1, stepCount)} of ${stepCount}`
-          : "Synchronize the performance"}
-      </h3>
-      <p>
-        {isTapMode
-          ? `Press Space or tap Mark when ${stepLabel(tapPlacedCount)} begins.`
-          : "Play the video, mark each move, then fine-tune the markers on the timeline."}
-      </p>
+<!-- The shell exists to be queried. A container query resolves against an
+     ANCESTOR container, so rules that recompose .beat-map-editor itself cannot
+     live behind its own container-type - they silently never applied. -->
+<div class="step-map-shell">
+  <div class="beat-map-editor">
+    <div class="mapping-intro">
+      <div>
+        <span class="eyebrow">Move timing</span>
+        <h3>
+          {isTapMode
+            ? `Mark move ${Math.min(tapPlacedCount + 1, stepCount)} of ${stepCount}`
+            : "Synchronize the performance"}
+        </h3>
+        <p>
+          {isTapMode
+            ? `Press Space or tap Mark when ${stepLabel(tapPlacedCount)} begins.`
+            : "Play the video, mark each move, then fine-tune the markers on the timeline."}
+        </p>
+      </div>
+      <strong
+        class:complete={placedCount === stepCount}
+        class="mapping-progress"
+      >
+        {placedCount}/{stepCount}
+      </strong>
     </div>
-    <strong class:complete={placedCount === stepCount} class="mapping-progress">
-      {placedCount}/{stepCount}
-    </strong>
-  </div>
-  <!-- Video player -->
-  <div class="video-section">
-    <video
-      bind:this={videoEl}
-      src={videoUrl}
-      playsinline
-      ontimeupdate={handleTimeUpdate}
-      onplay={handlePlay}
-      onpause={handlePause}
-      onended={handleEnded}
-    >
-      <track kind="captions" />
-    </video>
-  </div>
-
-  <!-- Transport controls -->
-  <div class="transport">
-    <button
-      class="transport-btn"
-      onclick={() => stepToBeat(-1)}
-      type="button"
-      aria-label="Previous beat"
-    >
-      <i class="fas fa-step-backward" aria-hidden="true"></i>
-    </button>
-
-    <button
-      class="transport-btn play-btn"
-      onclick={togglePlayPause}
-      type="button"
-      aria-label={isPlaying ? "Pause" : "Play"}
-    >
-      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
-      ></i>
-    </button>
-
-    <button
-      class="transport-btn"
-      onclick={() => stepToBeat(1)}
-      type="button"
-      aria-label="Next beat"
-    >
-      <i class="fas fa-step-forward" aria-hidden="true"></i>
-    </button>
-
-    <span class="transport-time">
-      {formatTime(currentTime)} / {formatTime(videoDuration)}
-    </span>
-  </div>
-
-  <!-- Timeline -->
-  <div class="timeline-section">
-    <StepMapTimeline
-      duration={videoDuration}
-      {currentTime}
-      beatTimestamps={isTapMode ? tapTimestamps : beatTimestamps}
-      {activeStepIndex}
-      onTimestampChange={handleTimestampChange}
-      onSeek={handleSeek}
-    />
-  </div>
-
-  <div class="step-strip" aria-label="Sequence move timing">
-    {#each Array(stepCount) as _, index}
-      <button
-        type="button"
-        class:active={activeStepIndex === index}
-        class:placed={index < placedCount}
-        disabled={(isTapMode ? tapTimestamps : beatTimestamps)[index] ===
-          undefined}
-        aria-label={`Seek to ${stepLabel(index)}`}
-        onclick={() =>
-          seekTo((isTapMode ? tapTimestamps : beatTimestamps)[index] ?? 0)}
+    <!-- Video player -->
+    <div class="video-section">
+      <video
+        bind:this={videoEl}
+        src={videoUrl}
+        playsinline
+        style="--video-ratio: {videoRatio}"
+        onloadedmetadata={handleLoadedMetadata}
+        ontimeupdate={handleTimeUpdate}
+        onplay={handlePlay}
+        onpause={handlePause}
+        onended={handleEnded}
       >
-        <span>{index + 1}</span>
-        <strong>{stepLabel(index)}</strong>
-      </button>
-    {/each}
-  </div>
+        <track kind="captions" />
+      </video>
+    </div>
 
-  <!-- Mode controls -->
-  <div class="mode-controls">
-    {#if isTapMode}
+    <!-- Transport controls -->
+    <div class="transport">
       <button
-        class="mark-beat-btn"
-        class:flash={flashBeatIndex >= 0}
-        onclick={markBeat}
-        disabled={tapPlacedCount >= stepCount}
+        class="transport-btn"
+        onclick={() => stepToBeat(-1)}
         type="button"
+        aria-label="Previous move"
       >
-        <i class="fas fa-drum" aria-hidden="true"></i>
-        Mark move {Math.min(tapPlacedCount + 1, stepCount)}
+        <i class="fas fa-step-backward" aria-hidden="true"></i>
       </button>
 
       <button
-        class="mode-btn"
-        onclick={undoLastMarker}
-        disabled={tapPlacedCount === 0}
+        class="transport-btn play-btn"
+        onclick={togglePlayPause}
         type="button"
+        aria-label={isPlaying ? "Pause" : "Play"}
       >
-        <i class="fas fa-undo" aria-hidden="true"></i>
-        Undo marker
+        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
+        ></i>
       </button>
 
-      <button class="mode-btn" onclick={exitTapMode} type="button">
-        <i class="fas fa-times" aria-hidden="true"></i>
-        Stop marking
-      </button>
-    {:else}
-      <button class="mode-btn" onclick={enterTapMode} type="button">
-        <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-        Mark moves
+      <button
+        class="transport-btn"
+        onclick={() => stepToBeat(1)}
+        type="button"
+        aria-label="Next move"
+      >
+        <i class="fas fa-step-forward" aria-hidden="true"></i>
       </button>
 
-      <button class="mode-btn" onclick={resetToEvenSpacing} type="button">
-        <i class="fas fa-redo" aria-hidden="true"></i>
-        Even spacing
-      </button>
+      <span class="transport-time">
+        {formatTime(currentTime)} / {formatTime(videoDuration)}
+      </span>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-section">
+      <StepMapTimeline
+        duration={videoDuration}
+        {currentTime}
+        beatTimestamps={isTapMode ? tapTimestamps : beatTimestamps}
+        {activeStepIndex}
+        onTimestampChange={handleTimestampChange}
+        onSeek={handleSeek}
+      />
+    </div>
+
+    <div class="step-strip" aria-label="Sequence move timing">
+      {#each Array(stepCount) as _, index}
+        <button
+          type="button"
+          class:active={activeStepIndex === index}
+          class:placed={index < placedCount}
+          disabled={(isTapMode ? tapTimestamps : beatTimestamps)[index] ===
+            undefined}
+          aria-label={`Seek to ${stepLabel(index)}`}
+          onclick={() =>
+            seekTo((isTapMode ? tapTimestamps : beatTimestamps)[index] ?? 0)}
+        >
+          <span>{index + 1}</span>
+          <strong>{stepLabel(index)}</strong>
+        </button>
+      {/each}
+    </div>
+
+    <!-- Mode controls -->
+    <div class="mode-controls">
+      {#if isTapMode}
+        <button
+          class="mark-beat-btn"
+          class:flash={flashBeatIndex >= 0}
+          onclick={markBeat}
+          disabled={tapPlacedCount >= stepCount}
+          type="button"
+        >
+          <i class="fas fa-drum" aria-hidden="true"></i>
+          Mark move {Math.min(tapPlacedCount + 1, stepCount)}
+        </button>
+
+        <button
+          class="mode-btn"
+          onclick={undoLastMarker}
+          disabled={tapPlacedCount === 0}
+          type="button"
+        >
+          <i class="fas fa-undo" aria-hidden="true"></i>
+          Undo marker
+        </button>
+
+        <button class="mode-btn" onclick={exitTapMode} type="button">
+          <i class="fas fa-times" aria-hidden="true"></i>
+          Stop marking
+        </button>
+      {:else}
+        <button class="mode-btn" onclick={enterTapMode} type="button">
+          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+          Mark moves
+        </button>
+
+        <button class="mode-btn" onclick={resetToEvenSpacing} type="button">
+          <i class="fas fa-redo" aria-hidden="true"></i>
+          Even spacing
+        </button>
+      {/if}
+    </div>
+
+    <!-- Feedback -->
+    {#if saveError}
+      <div class="error-banner" role="alert">
+        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+        <span>{saveError}</span>
+      </div>
+    {:else if notice}
+      <div class="notice-banner" role="status">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        <span>{notice}</span>
+      </div>
     {/if}
 
-    <span class="beat-counter">
-      {placedCount} / {stepCount} moves
-    </span>
-  </div>
+    <!-- Action bar -->
+    <div class="action-bar">
+      <button
+        class="cancel-btn"
+        onclick={onClose}
+        disabled={isSaving}
+        type="button"
+      >
+        Cancel
+      </button>
 
-  <!-- Error -->
-  {#if saveError}
-    <div class="error-banner" role="alert">
-      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      <span>{saveError}</span>
+      <button
+        data-save-shortcut
+        class="save-btn"
+        onclick={handleSave}
+        disabled={!canSave}
+        type="button"
+      >
+        {#if isSaving}
+          <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+          Saving...
+        {:else}
+          <i class="fas fa-check" aria-hidden="true"></i>
+          Save timing
+        {/if}
+      </button>
     </div>
-  {/if}
-
-  <!-- Action bar -->
-  <div class="action-bar">
-    <button
-      class="cancel-btn"
-      onclick={onClose}
-      disabled={isSaving}
-      type="button"
-    >
-      Cancel
-    </button>
-
-    <button
-      data-save-shortcut
-      class="save-btn"
-      onclick={handleSave}
-      disabled={!canSave}
-      type="button"
-    >
-      {#if isSaving}
-        <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-        Saving...
-      {:else}
-        <i class="fas fa-check" aria-hidden="true"></i>
-        Save timing
-      {/if}
-    </button>
   </div>
 </div>
 
 <style>
+  .step-map-shell {
+    container-type: inline-size;
+    height: 100%;
+  }
+
   .beat-map-editor {
     display: flex;
     flex-direction: column;
@@ -542,6 +587,13 @@
    * ============================================================ */
 
   .video-section {
+    display: grid;
+    place-items: center;
+    /* Hugs the footage. A full-width black box around a portrait or square
+       clip reads as dead panel, not as a player. */
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
     border-radius: 12px;
     overflow: hidden;
     background: #000;
@@ -550,8 +602,13 @@
 
   .video-section video {
     display: block;
-    width: 100%;
-    max-height: 280px;
+    width: auto;
+    max-width: 100%;
+    /* Sized off the viewport, not the container: the height must be definite
+       before layout so the aspect ratio can resolve the width, and a tall
+       screen should give the performance more room than a laptop does. */
+    height: clamp(11rem, 26vh, 22rem);
+    aspect-ratio: var(--video-ratio, 16 / 9);
     object-fit: contain;
   }
 
@@ -628,8 +685,11 @@
 
   .step-strip {
     display: grid;
-    grid-auto-columns: minmax(5.5rem, 1fr);
+    /* Capped, not 1fr: a four-step sequence must not stretch four tiles
+       across a 4K panel just because the room is there. */
+    grid-auto-columns: minmax(5.5rem, 11rem);
     grid-auto-flow: column;
+    justify-content: start;
     gap: 0.4rem;
     min-height: 3.5rem;
     padding-bottom: 0.25rem;
@@ -791,11 +851,18 @@
    * ERROR
    * ============================================================ */
 
-  .error-banner {
+  .error-banner,
+  .notice-banner {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
+    border-radius: 10px;
+    font-size: var(--font-size-min, 14px);
+    flex-shrink: 0;
+  }
+
+  .error-banner {
     background: color-mix(
       in srgb,
       var(--semantic-error, #ef4444) 10%,
@@ -803,10 +870,18 @@
     );
     border: 1px solid
       color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
-    border-radius: 10px;
     color: var(--semantic-error, #ef4444);
-    font-size: var(--font-size-min, 14px);
-    flex-shrink: 0;
+  }
+
+  .notice-banner {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 10%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+    color: var(--theme-text, #ffffff);
   }
 
   /* ============================================================
@@ -816,13 +891,23 @@
   .action-bar {
     display: flex;
     gap: 10px;
+    justify-content: flex-end;
     flex-shrink: 0;
     margin-top: auto;
     padding-top: 8px;
   }
 
+  /* Below this width the two buttons genuinely want the full row; above it
+     they size to their labels instead of growing into a progress bar. */
+  @container (max-width: 30rem) {
+    .action-bar > * {
+      flex: 1 1 auto;
+    }
+  }
+
   .cancel-btn {
-    flex: 1;
+    flex: 0 0 auto;
+    min-width: 8rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -854,7 +939,8 @@
   }
 
   .save-btn {
-    flex: 2;
+    flex: 0 0 auto;
+    min-width: 11rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -915,14 +1001,66 @@
     }
   }
 
+  /* Wide panels get a real recomposition, not a taller single column: the
+     player sits beside the timeline it is being scrubbed against, so both
+     stay on screen together instead of the page dead-ending below the fold. */
   @container (min-width: 70rem) {
     .beat-map-editor {
-      gap: 1rem;
+      display: grid;
+      /* The player column is exactly as wide as the footage. A fractional
+         column strands a portrait or square clip in a field of empty panel. */
+      grid-template-columns: auto minmax(0, 1fr);
+      /* The transport belongs to the player, the mode buttons to the timeline
+         they act on, so each column carries its own controls. The feedback row
+         absorbs the slack, which keeps the actions on the floor of the panel
+         instead of opening a void in the middle of the work area. */
+      grid-template-areas:
+        "intro     intro"
+        "video     timeline"
+        "video     strip"
+        "transport controls"
+        "feedback  feedback"
+        "actions   actions";
+      grid-template-rows: auto auto auto auto 1fr auto;
+      gap: 1rem 1.5rem;
       padding: 1.5rem;
     }
 
+    .mapping-intro {
+      grid-area: intro;
+    }
+    .video-section {
+      grid-area: video;
+      align-self: start;
+    }
+    .transport {
+      grid-area: transport;
+      flex-wrap: wrap;
+      align-self: start;
+    }
+    .timeline-section {
+      grid-area: timeline;
+      align-self: end;
+    }
+    .step-strip {
+      grid-area: strip;
+      align-self: start;
+    }
+    .mode-controls {
+      grid-area: controls;
+      align-self: start;
+    }
+    .error-banner,
+    .notice-banner {
+      grid-area: feedback;
+      align-self: start;
+    }
+    .action-bar {
+      grid-area: actions;
+    }
+
     .video-section video {
-      max-height: 34rem;
+      height: clamp(14rem, 42vh, 32rem);
     }
 
     .mapping-intro h3 {
@@ -934,6 +1072,87 @@
     .transport-time,
     .step-strip button {
       font-size: var(--font-size-min);
+    }
+  }
+
+  /* A 4K panel at 100% scaling gets no help from the operating system, so the
+     controls have to step themselves. Without this the whole editor stays at
+     1080p proportions on a canvas three times the width. */
+  @container (min-width: 162.5rem) {
+    .beat-map-editor {
+      --timeline-bar-height: 5rem;
+      gap: 1.75rem 3rem;
+      padding: 2.5rem;
+    }
+
+    .video-section video {
+      height: clamp(24rem, 46vh, 48rem);
+    }
+
+    .mapping-intro h3 {
+      font-size: 2.25rem;
+    }
+
+    .mapping-intro p,
+    .mode-btn,
+    .transport-time,
+    .step-strip button {
+      font-size: 1.125rem;
+    }
+
+    .eyebrow {
+      font-size: 1rem;
+    }
+
+    .mapping-progress {
+      font-size: 1.5rem;
+      padding: 0.5rem 1.25rem;
+    }
+
+    .step-strip {
+      grid-auto-columns: minmax(8rem, 16rem);
+      gap: 0.75rem;
+      min-height: 5rem;
+    }
+
+    .step-strip button {
+      min-height: 4.75rem;
+      gap: 0.75rem;
+    }
+
+    .step-strip button > span {
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1rem;
+    }
+
+    .transport-btn {
+      width: 4rem;
+      height: 4rem;
+      font-size: 1.25rem;
+    }
+
+    .transport-btn.play-btn {
+      width: 5rem;
+      height: 5rem;
+      font-size: 1.5rem;
+    }
+
+    .mode-btn,
+    .mark-beat-btn,
+    .cancel-btn,
+    .save-btn {
+      min-height: 3.75rem;
+      padding-inline: 1.75rem;
+      font-size: 1.125rem;
+    }
+
+    .cancel-btn {
+      min-width: 11rem;
+    }
+
+    .save-btn {
+      min-width: 15rem;
     }
   }
 </style>

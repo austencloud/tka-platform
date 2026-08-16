@@ -531,13 +531,16 @@
               />
             </div>
           {/if}
-          {#if ctx.viewerState.viewerMode === "videos" && !layout.isSidebarExportActive}
+          {#if layout.showVideoGallery}
             <VideoGallery
               {sequence}
               isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
               isLoggedIn={ctx.isLoggedIn}
               onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
                 ? interactions.handleGalleryVideoUpload
+                : undefined}
+              onMapTiming={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                ? interactions.handleGalleryMapTiming
                 : undefined}
             />
           {:else}
@@ -747,6 +750,7 @@
                   {sequence}
                   isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
                   bpm={ctx.bpmLocal}
+                  initialMappingVideoId={interactions.mappingRequestVideoId}
                   onSaveFirst={interactions.handleVideoUploadSaveFirst}
                   onClose={interactions.handleVideoUploadClose}
                 />
@@ -1023,6 +1027,28 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* The settings column never grew with the viewport, so on a big screen its
+     panels stayed a phone-width strip and paid for it in height: the effects
+     inspector spent four rows on eight looks and scrolled. Wider here is
+     cheaper than taller — the extra width lets the inspector put its looks
+     beside its controls and fit one screen (4k-native-layout.md, the 1680
+     seam). The canvas beside it is still the larger half at every tier. */
+  @media (min-width: 1680px) {
+    .viewer-and-export {
+      --export-sidebar-width: 800px;
+    }
+  }
+
+  /* At 4K@100% and on a jam TV nothing is scaling for you, so this tier has to
+     step the composition, not nudge it: 1000px puts the effects inspector past
+     its 52rem seam, where each look becomes a horizontal study instead of a
+     stacked card. The canvas is still well over half the screen at 3840. */
+  @media (min-width: 2600px) {
+    .viewer-and-export {
+      --export-sidebar-width: 1000px;
+    }
   }
 
   .viewer-and-export:not(.desktop) {

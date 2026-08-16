@@ -27,6 +27,20 @@
   let timelineEl: HTMLDivElement | undefined = $state();
   let draggingIndex = $state(-1);
   let isScrubbing = $state(false);
+  let timelineWidth = $state(0);
+
+  /**
+   * How many markers to skip between visible numbers. Twenty labels across a
+   * narrow timeline would overlap into an unreadable run, so the numbers thin
+   * out as the markers crowd together. The active one always shows.
+   */
+  const LABEL_MIN_GAP_PX = 26;
+  const labelStride = $derived.by(() => {
+    const count = beatTimestamps.length;
+    if (count < 2 || timelineWidth <= 0) return 1;
+    const spacing = timelineWidth / count;
+    return Math.max(1, Math.ceil(LABEL_MIN_GAP_PX / spacing));
+  });
 
   // The fraction of the timeline that's been played (0 to 1)
   let progressFraction = $derived(
@@ -103,6 +117,7 @@
 <div
   class="timeline-container"
   bind:this={timelineEl}
+  bind:clientWidth={timelineWidth}
   onpointerdown={handleTimelinePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
@@ -114,17 +129,19 @@
   aria-valuenow={currentTime}
   tabindex={0}
 >
-  <!-- Beat number labels above the bar -->
-  <div class="beat-labels">
+  <!-- Move number labels above the bar -->
+  <div class="beat-labels" aria-hidden="true">
     {#each beatTimestamps as ts, i}
       {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
-      <span
-        class="beat-label"
-        class:active={i === activeStepIndex}
-        style="left: {pct}%"
-      >
-        {i + 1}
-      </span>
+      {#if i === activeStepIndex || i % labelStride === 0}
+        <span
+          class="beat-label"
+          class:active={i === activeStepIndex}
+          style="left: {pct}%"
+        >
+          {i + 1}
+        </span>
+      {/if}
     {/each}
   </div>
 
@@ -178,12 +195,40 @@
   }
 
   /* ============================================================
+   * MOVE NUMBER LABELS
+   * ============================================================ */
+
+  .beat-labels {
+    position: relative;
+    /* Reserved so the row never changes height as labels thin in and out. */
+    height: 1rem;
+  }
+
+  .beat-label {
+    position: absolute;
+    top: 0;
+    transform: translateX(-50%);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  .beat-label.active {
+    color: var(--theme-accent, #6366f1);
+    font-weight: 700;
+  }
+
+  /* ============================================================
    * TIMELINE BAR
    * ============================================================ */
 
   .timeline-bar {
     position: relative;
-    height: 48px;
+    /* The host scales this on very wide panels, where a 48px bar spanning
+       2700px reads as a hairline rather than a scrubbing surface. */
+    height: var(--timeline-bar-height, 48px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 8px;

@@ -8,6 +8,7 @@
     3. Synced Playback - side-by-side video + choreo card preview
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { updateStepMap } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
@@ -42,6 +43,7 @@
     existingStepMap?: StepMap,
     videoId?: string
   ): void {
+    releaseVideoUrl();
     videoUrl = url;
     videoDuration = duration;
     videoFileSize = fileSize;
@@ -50,6 +52,16 @@
     collaborativeVideoId = videoId ?? null;
     activeView = "mapping";
   }
+
+  // The lab owns the handed-off blob URL for as long as any view can play it.
+  // The setup view used to revoke it when it unmounted, which left the mapping
+  // view with a dead <video>.
+  function releaseVideoUrl(): void {
+    if (videoUrl?.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+    videoUrl = null;
+  }
+
+  onDestroy(releaseVideoUrl);
 
   async function handleStepMapSaved(saved: StepMap): Promise<void> {
     if (collaborativeVideoId) {
@@ -78,13 +90,11 @@
   <div class="view-container">
     {#if activeView === "upload"}
       <UploadSelectView onStartMapping={handleStartMapping} />
-    {:else if activeView === "mapping" && videoUrl && selectedSequence}
+    {:else if activeView === "mapping" && videoUrl && selectedSequence?.steps?.length}
       <StepMappingView
         {videoUrl}
         {videoDuration}
-        stepCount={selectedSequence.steps?.length ||
-          selectedSequence.word?.length ||
-          8}
+        stepCount={selectedSequence.steps.length}
         sequence={selectedSequence}
         existingStepMap={beatMap}
         onSave={handleStepMapSaved}

@@ -86,7 +86,8 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
 
   function exitEditMode(): void {
     inputs.interactive.hapticService?.trigger("selection");
-    if (inputs.viewerState.videoUploadOpen) {
+    const wasVideoUpload = inputs.viewerState.videoUploadOpen;
+    if (wasVideoUpload) {
       inputs.viewerState.closeVideoUpload();
     } else {
       inputs.viewerState.exitExport();
@@ -101,7 +102,9 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
       inputs.interactive.playbackController.togglePlayback();
     }
     playbackRestoreOnExit = false;
-    inputs.accessibilityHelper.announce("Export closed");
+    inputs.accessibilityHelper.announce(
+      wasVideoUpload ? "Upload closed. Back to videos." : "Export closed"
+    );
   }
 
   /** Resolves `false` when the coordinator refused the request — see its doc. */
