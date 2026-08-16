@@ -39,17 +39,20 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import { onDestroy } from "svelte";
 
   interface Props {
     performer?: AvatarInstanceState | null;
     /** All-Performers mode: apply every change to this whole group. */
     performers?: AvatarInstanceState[] | null;
     onSettingChange?: ViewerControlSink;
+    presentation?: "standard" | "performer-hub";
   }
   let {
     performer = null,
     performers = null,
     onSettingChange,
+    presentation = "standard",
   }: Props = $props();
 
   // Non-empty group => broadcast scope (All-Performers). Takes precedence over
@@ -89,7 +92,7 @@
     key: "motion" as const,
     label: "Motion",
     icon: "wind",
-    color: "#22d3ee",
+    color: "var(--semantic-info)",
   };
   const motionEnabled = $derived(isEnabled("motion"));
 
@@ -217,10 +220,7 @@
   );
   const activePresetId = $derived.by(() => {
     if (!activeEffectId || !activeRegistration) return null;
-    const effectConfig = config.effect(activeEffectId) as unknown as Record<
-      string,
-      unknown
-    >;
+    const effectConfig = { ...config.effect(activeEffectId) };
     return matchPresetId(activeRegistration.presetGroup, effectConfig);
   });
   const presetSummary = $derived(
@@ -232,6 +232,7 @@
       : undefined
   );
   let showAdvanced = $state(false);
+  let drilldownEffect = $state<EffectType | null>(null);
   const hasAdvanced = $derived(
     activeEffectId ? advancedControls(activeEffectId).length > 0 : false
   );
@@ -239,6 +240,28 @@
   // --- Footer: Copy Diagnostic / Save Defaults / Reset ---
   let copyStatus = $state<"idle" | "copied" | "failed">("idle");
   let copyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onDestroy(() => {
+    if (copyTimer) clearTimeout(copyTimer);
+  });
+
+  function openEffectDetail(effect: EffectType): void {
+    if (!isEnabled(effect)) toggle(effect);
+    drilldownEffect = effect;
+    showAdvanced = false;
+  }
+
+  function closeEffectDetail(): void {
+    drilldownEffect = null;
+    showAdvanced = false;
+  }
+
+  function disableDrilldownEffect(): void {
+    if (drilldownEffect && isEnabled(drilldownEffect)) {
+      toggle(drilldownEffect);
+    }
+    closeEffectDetail();
+  }
 
   async function copyDiagnostic() {
     const diagnostic = Object.fromEntries(
@@ -362,138 +385,244 @@
   }
 </script>
 
-<section class="effects-settings">
-  <h3>{t("viewer3d_effects")}</h3>
-
-  <!-- Effect Chips Grid -->
-  <div class="effect-chips">
-    {#each effectChips as effect}
-      {@const enabled = isEnabled(effect.key)}
-      <button
-        class="effect-chip"
-        class:active={enabled}
-        style="--color: {effect.color}"
-        onclick={() => toggle(effect.key)}
-        aria-label={enabled ? effect.label : `Enable ${effect.label}`}
-        aria-pressed={enabled}
-        title={enabled ? effect.label : "Click to enable"}
-      >
-        <i class="fas fa-{effect.icon}" aria-hidden="true"></i>
-        <span>{effect.label}</span>
-      </button>
-    {/each}
-  </div>
-
-  <div class="scene-modifier">
-    <span class="scene-modifier-label">Scene</span>
-    <button
-      class="effect-chip modifier-chip"
-      class:active={motionEnabled}
-      style="--color: {motionChip.color}"
-      onclick={() => toggle(motionChip.key)}
-      aria-label={motionEnabled
-        ? motionChip.label
-        : `Enable ${motionChip.label}`}
-      aria-pressed={motionEnabled}
-      title={motionEnabled ? motionChip.label : "Click to enable"}
-    >
-      <i class="fas fa-{motionChip.icon}" aria-hidden="true"></i>
-      <span>{motionChip.label}</span>
-    </button>
-  </div>
-
-  {#if activeRegistration}
-    <div class="effect-presets">
-      <EffectPresetsSection
-        presetGroup={activeRegistration.presetGroup}
-        {activePresetId}
-        onSelectPreset={selectPreset}
-        effectLabel={activeRegistration.meta.label}
-        accentColor={activeRegistration.meta.color}
-        summary={presetSummary}
-        showSummary={false}
-        showCustomize={false}
-      />
-    </div>
-  {/if}
-
-  <!-- Active effect's controls, from the shared manifest (same controls 2D
-       renders). Shown automatically while that effect is on — no double-click. -->
-  {#if activeEffectId}
-    <div class="effect-controls">
-      <EffectControlStack
-        effect={activeEffectId}
-        {config}
-        propType={trackingPropType}
-        overrides={controlOverrides}
-        onSettingChange={handleEffectSettingChange}
-      />
-      {#if hasAdvanced}
-        <button
-          type="button"
-          class="advanced-toggle"
-          aria-expanded={showAdvanced}
-          onclick={toggleAdvanced}
-        >
-          <i
-            class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}"
-            aria-hidden="true"
-          ></i>
-          Advanced
+<section
+  class="effects-settings"
+  class:hub-presentation={presentation === "performer-hub"}
+>
+  {#if presentation === "performer-hub"}
+    {#if drilldownEffect && activeEffectId === drilldownEffect && activeRegistration}
+      <div class="effect-drill-header">
+        <button class="back-button" type="button" onclick={closeEffectDetail}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>All effects</span>
         </button>
-        {#if showAdvanced}
-          <EffectControlStack
-            effect={activeEffectId}
-            {config}
-            propType={trackingPropType}
-            overrides={controlOverrides}
-            tiers={["advanced"]}
-            onSettingChange={handleEffectSettingChange}
-          />
+        <div class="effect-drill-title">
+          <strong>{activeRegistration.meta.label}</strong>
+          <span>Presets and controls</span>
+        </div>
+        <button
+          class="disable-effect"
+          type="button"
+          onclick={disableDrilldownEffect}
+        >
+          Disable
+        </button>
+      </div>
+
+      <div class="effect-presets">
+        <EffectPresetsSection
+          presetGroup={activeRegistration.presetGroup}
+          {activePresetId}
+          onSelectPreset={selectPreset}
+          effectLabel={activeRegistration.meta.label}
+          accentColor={activeRegistration.meta.color}
+          summary={presetSummary}
+          showSummary={false}
+          showCustomize={false}
+        />
+      </div>
+
+      <div class="effect-controls">
+        <EffectControlStack
+          effect={activeEffectId}
+          {config}
+          propType={trackingPropType}
+          overrides={controlOverrides}
+          onSettingChange={handleEffectSettingChange}
+        />
+        {#if hasAdvanced}
+          <button
+            type="button"
+            class="advanced-toggle"
+            aria-expanded={showAdvanced}
+            onclick={toggleAdvanced}
+          >
+            <i
+              class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}"
+              aria-hidden="true"
+            ></i>
+            Advanced
+          </button>
+          {#if showAdvanced}
+            <EffectControlStack
+              effect={activeEffectId}
+              {config}
+              propType={trackingPropType}
+              overrides={controlOverrides}
+              tiers={["advanced"]}
+              onSettingChange={handleEffectSettingChange}
+            />
+          {/if}
         {/if}
-      {/if}
-    </div>
-  {/if}
+      </div>
+    {:else}
+      <div class="effects-intro">
+        <strong>Choose an effect</strong>
+        <span
+          >Selection applies to the current performer scope. Open any effect to
+          tune it.</span
+        >
+      </div>
 
-  <!-- Quick Info -->
-  {#if multi || performer}
-    {#if performerEffect && performerEffect !== "none"}
-      <div class="active-count">1 effect active</div>
+      <div class="effect-chips hub-effect-grid">
+        {#each effectChips as effect}
+          {@const enabled = isEnabled(effect.key)}
+          <button
+            class="effect-chip"
+            class:active={enabled}
+            style="--color: {effect.color}"
+            onclick={() => openEffectDetail(effect.key)}
+            aria-label={`${enabled ? "Tune" : "Enable"} ${effect.label}`}
+            aria-pressed={enabled}
+          >
+            <i class="fas fa-{effect.icon}" aria-hidden="true"></i>
+            <span>{effect.label}</span>
+          </button>
+        {/each}
+      </div>
+
+      <div class="scene-modifier hub-scene-modifier">
+        <div class="scene-copy">
+          <strong>Scene Motion</strong>
+          <span>Global motion blur and speed lines</span>
+        </div>
+        <button
+          class="effect-chip modifier-chip"
+          class:active={motionEnabled}
+          style="--color: {motionChip.color}"
+          onclick={() => toggle(motionChip.key)}
+          aria-label={motionEnabled
+            ? "Disable Scene Motion"
+            : "Enable Scene Motion"}
+          aria-pressed={motionEnabled}
+        >
+          <i class="fas fa-{motionChip.icon}" aria-hidden="true"></i>
+          <span>{motionEnabled ? "On" : "Off"}</span>
+        </button>
+      </div>
     {/if}
-  {:else if globalEnabledCount > 0}
-    <div class="active-count">
-      {globalEnabledCount} effect{globalEnabledCount > 1 ? "s" : ""} active
+  {:else}
+    <h3>{t("viewer3d_effects")}</h3>
+    <div class="effect-chips">
+      {#each effectChips as effect}
+        {@const enabled = isEnabled(effect.key)}
+        <button
+          class="effect-chip"
+          class:active={enabled}
+          style="--color: {effect.color}"
+          onclick={() => toggle(effect.key)}
+          aria-label={enabled ? effect.label : `Enable ${effect.label}`}
+          aria-pressed={enabled}
+          title={enabled ? effect.label : "Click to enable"}
+        >
+          <i class="fas fa-{effect.icon}" aria-hidden="true"></i>
+          <span>{effect.label}</span>
+        </button>
+      {/each}
+    </div>
+
+    <div class="scene-modifier">
+      <span class="scene-modifier-label">Scene</span>
+      <button
+        class="effect-chip modifier-chip"
+        class:active={motionEnabled}
+        style="--color: {motionChip.color}"
+        onclick={() => toggle(motionChip.key)}
+        aria-label={motionEnabled
+          ? motionChip.label
+          : `Enable ${motionChip.label}`}
+        aria-pressed={motionEnabled}
+      >
+        <i class="fas fa-{motionChip.icon}" aria-hidden="true"></i>
+        <span>{motionChip.label}</span>
+      </button>
+    </div>
+
+    {#if activeRegistration}
+      <div class="effect-presets">
+        <EffectPresetsSection
+          presetGroup={activeRegistration.presetGroup}
+          {activePresetId}
+          onSelectPreset={selectPreset}
+          effectLabel={activeRegistration.meta.label}
+          accentColor={activeRegistration.meta.color}
+          summary={presetSummary}
+          showSummary={false}
+          showCustomize={false}
+        />
+      </div>
+    {/if}
+
+    {#if activeEffectId}
+      <div class="effect-controls">
+        <EffectControlStack
+          effect={activeEffectId}
+          {config}
+          propType={trackingPropType}
+          overrides={controlOverrides}
+          onSettingChange={handleEffectSettingChange}
+        />
+        {#if hasAdvanced}
+          <button
+            type="button"
+            class="advanced-toggle"
+            aria-expanded={showAdvanced}
+            onclick={toggleAdvanced}
+          >
+            <i
+              class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}"
+              aria-hidden="true"
+            ></i>
+            Advanced
+          </button>
+          {#if showAdvanced}
+            <EffectControlStack
+              effect={activeEffectId}
+              {config}
+              propType={trackingPropType}
+              overrides={controlOverrides}
+              tiers={["advanced"]}
+              onSettingChange={handleEffectSettingChange}
+            />
+          {/if}
+        {/if}
+      </div>
+    {/if}
+
+    {#if multi || performer}
+      {#if performerEffect && performerEffect !== "none"}
+        <div class="active-count">1 effect active</div>
+      {/if}
+    {:else if globalEnabledCount > 0}
+      <div class="active-count">
+        {globalEnabledCount} effect{globalEnabledCount > 1 ? "s" : ""} active
+      </div>
+    {/if}
+
+    <div class="tune-footer">
+      <button
+        class="footer-btn copy-btn"
+        class:copied={copyStatus === "copied"}
+        class:failed={copyStatus === "failed"}
+        onclick={startCopyDiagnostic}
+        title="Copy current effect tuning as JSON"
+      >
+        {copyLabel}
+      </button>
+      <button
+        data-save-shortcut
+        class="footer-btn"
+        onclick={saveDefaults}
+        title="Save current tuning as the default Reset returns to"
+        >Save Defaults</button
+      >
+      <button
+        class="footer-btn"
+        onclick={resetDefaults}
+        title="Reset tuning to the saved default">Reset</button
+      >
     </div>
   {/if}
-
-  <!-- Tuning footer: copy current tuning, save as baseline, reset to baseline.
-       Tuning is global, so this shows in every scope. -->
-  <div class="tune-footer">
-    <button
-      class="footer-btn copy-btn"
-      class:copied={copyStatus === "copied"}
-      class:failed={copyStatus === "failed"}
-      onclick={startCopyDiagnostic}
-      title="Copy current effect tuning as JSON (paste to bake into defaults)"
-    >
-      {copyLabel}
-    </button>
-    <button
-      data-save-shortcut
-      class="footer-btn"
-      onclick={saveDefaults}
-      title="Save current tuning as the default Reset returns to"
-    >
-      Save Defaults
-    </button>
-    <button
-      class="footer-btn"
-      onclick={resetDefaults}
-      title="Reset tuning to the saved default"
-    >
-      Reset
-    </button>
-  </div>
 </section>
 
 <style>
@@ -502,6 +631,41 @@
     background: var(--theme-card-bg);
     border-radius: 12px;
     border: 1px solid var(--theme-stroke);
+    container-type: inline-size;
+  }
+
+  .effects-settings.hub-presentation {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .effects-intro,
+  .effect-drill-title,
+  .scene-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .effects-intro {
+    margin-bottom: 10px;
+  }
+
+  .effects-intro strong,
+  .effect-drill-title strong,
+  .scene-copy strong {
+    color: var(--theme-text);
+    font-size: 15px;
+    line-height: 1.2;
+  }
+
+  .effects-intro span,
+  .effect-drill-title span,
+  .scene-copy span {
+    color: var(--theme-text-dim);
+    font-size: 14px;
+    line-height: 1.35;
   }
 
   h3 {
@@ -541,7 +705,7 @@
     border: 1px solid var(--theme-stroke);
     border-radius: 14px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 12px);
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast);
@@ -596,7 +760,7 @@
   .scene-modifier-label {
     min-width: 3rem;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 14px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -627,10 +791,11 @@
     background: none;
     border: none;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    min-height: 44px;
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    padding: 0.2rem 0;
+    padding: 0 0.6rem;
   }
   .advanced-toggle:hover {
     color: var(--theme-text);
@@ -641,7 +806,7 @@
 
   .active-count {
     margin-top: 0.75rem;
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 14px;
     color: var(--theme-text-dim);
     text-align: center;
   }
@@ -661,13 +826,13 @@
   .footer-btn {
     flex: 1;
     min-width: 0;
-    min-height: 36px;
+    min-height: 44px;
     padding: 0 0.4rem;
     background: var(--theme-panel-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
@@ -683,13 +848,88 @@
   }
 
   .copy-btn.copied {
-    color: var(--theme-success, #4ade80);
-    border-color: var(--theme-success, #4ade80);
+    color: var(--semantic-success);
+    border-color: var(--semantic-success);
   }
 
   .copy-btn.failed {
-    color: var(--theme-danger, #f87171);
-    border-color: var(--theme-danger, #f87171);
+    color: var(--semantic-error);
+    border-color: var(--semantic-error);
+  }
+
+  .hub-effect-grid {
+    grid-auto-flow: row;
+    grid-template-rows: none;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    gap: 8px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .hub-effect-grid .effect-chip {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hub-scene-modifier {
+    justify-content: space-between;
+    min-height: 68px;
+    padding: 8px 10px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 10px;
+    background: var(--surface-inset);
+  }
+
+  .effect-drill-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .back-button,
+  .disable-effect {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 9px;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .back-button:hover {
+    background: var(--theme-card-hover-bg);
+  }
+
+  .disable-effect {
+    color: var(--semantic-error);
+    border-color: color-mix(in srgb, var(--semantic-error) 38%, transparent);
+  }
+
+  .disable-effect:hover {
+    background: color-mix(in srgb, var(--semantic-error) 12%, transparent);
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  @container (min-width: 560px) {
+    .hub-effect-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 400px) {
@@ -699,6 +939,19 @@
     .effect-chip {
       width: 56px;
       height: 56px;
+    }
+
+    .hub-effect-grid .effect-chip {
+      width: 100%;
+    }
+
+    .effect-drill-header {
+      grid-template-columns: 1fr auto;
+    }
+
+    .effect-drill-title {
+      grid-row: 2;
+      grid-column: 1 / -1;
     }
   }
 </style>

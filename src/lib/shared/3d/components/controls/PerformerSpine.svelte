@@ -39,9 +39,8 @@
 
   function selectPerformer(i: number): void {
     const previous = scopeValue(selectedIndex);
-    const newIndex = selectedIndex === i ? null : i;
+    const newIndex = i;
     viewer.selectPerformerScope(newIndex);
-    if (newIndex === null) viewer.closePopover();
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_performer",
@@ -124,9 +123,9 @@
     width: 48px;
     height: 48px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke);
     border-radius: 12px;
-    color: rgba(255, 255, 255, 0.62);
+    color: var(--theme-text-dim);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -138,7 +137,7 @@
 
   .spine-chip:hover:not(:disabled) {
     transform: scale(1.08);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg);
   }
 
   .spine-chip i {
@@ -152,19 +151,11 @@
 
   /* All chip */
   .all-chip[aria-pressed="true"] {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #4a9eff) 18%,
-      transparent
-    );
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #4a9eff) 50%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
+    background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    color: color-mix(in srgb, var(--theme-accent) 60%, var(--theme-text));
     box-shadow: 0 4px 20px
-      color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
+      color-mix(in srgb, var(--theme-accent) 25%, transparent);
   }
 
   /* Performer chip */
@@ -211,13 +202,13 @@
   .separator {
     width: 32px;
     height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg);
     flex-shrink: 0;
   }
 
   /* ─── Focus-visible ─── */
   .spine-chip:focus-visible {
-    outline: 2px solid var(--performer-color, #4a9eff);
+    outline: 2px solid var(--performer-color, var(--theme-accent));
     outline-offset: 2px;
   }
 

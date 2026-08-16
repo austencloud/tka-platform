@@ -17,10 +17,7 @@ import {
 } from "./avatar-sync-state.svelte";
 import { getDefaultPositions, MAX_PERFORMERS } from "@austencloud/scene-3d";
 // propInterpolator / sequenceConverter injected as module functions; no imports needed here
-import type {
-  AvatarId,
-  FormationPreset,
-} from "@austencloud/scene-3d";
+import type { AvatarId, FormationPreset } from "@austencloud/scene-3d";
 import { createFormationManager } from "@austencloud/scene-3d";
 import {
   sampleInterruptibleAngle,
@@ -74,7 +71,7 @@ export interface PerformerManagerDeps {
 /**
  * Create performer manager state
  */
-export function createPerformerManager(deps: PerformerManagerDeps) {
+function buildPerformerManager(deps: PerformerManagerDeps) {
   const { initialAvatarId } = deps;
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
   const getDefaults = deps.getDefaults;
@@ -170,7 +167,9 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
 
     let done = false;
     for (const member of transition.members) {
-      const performer = performerStates.find((candidate) => candidate.id === member.id);
+      const performer = performerStates.find(
+        (candidate) => candidate.id === member.id
+      );
       if (!performer) continue;
 
       const x = sampleInterruptibleHermite(
@@ -226,18 +225,21 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       members: performerStates.flatMap((performer, index) => {
         const end = targets[index];
         if (!end) return [];
-        return [{
-          id: performer.id,
-          start: {
-            position: { ...performer.position },
-            facingAngle: performer.facingAngle,
+        return [
+          {
+            id: performer.id,
+            start: {
+              position: { ...performer.position },
+              facingAngle: performer.facingAngle,
+            },
+            end: {
+              position: { ...end.position },
+              facingAngle: end.facingAngle,
+            },
+            startVelocity:
+              carriedVelocities.get(performer.id) ?? zeroLayoutVelocity(),
           },
-          end: {
-            position: { ...end.position },
-            facingAngle: end.facingAngle,
-          },
-          startVelocity: carriedVelocities.get(performer.id) ?? zeroLayoutVelocity(),
-        }];
+        ];
       }),
     };
 
@@ -402,19 +404,25 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   }
 
   /**
-   * Remove the last performer
+   * Remove a performer. Existing callers that omit an index retain the
+   * original remove-last behavior used by snapshot restoration.
    */
-  function removePerformer(): PerformerLayoutSnapshot[] | null {
+  function removePerformer(
+    index = performerStates.length - 1
+  ): PerformerLayoutSnapshot[] | null {
     if (performerStates.length <= 1) return null;
+    if (index < 0 || index >= performerStates.length) return null;
 
     const nowMs = performance.now();
     const carriedVelocities = sampleLayoutTransition(nowMs);
     const previousLayout = captureLayout();
-    const removed = performerStates[performerStates.length - 1];
+    const removed = performerStates[index];
     if (!removed) return null;
     removed.destroy();
 
-    performerStates = performerStates.slice(0, -1);
+    performerStates = performerStates.filter(
+      (_, performerIndex) => performerIndex !== index
+    );
     const layoutTargets = transitionAfterCountChange(
       previousLayout,
       carriedVelocities,
@@ -426,9 +434,13 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
       activePerformerIndex = performerStates.length - 1;
     }
 
-    // Destroy sync if down to 1 performer
-    if (performerStates.length < 2) {
-      syncState?.destroy();
+    // Removing either member of the synchronized pair changes its owners.
+    syncState?.destroy();
+    const first = performerStates[0];
+    const second = performerStates[1];
+    if (first && second) {
+      syncState = createAvatarSyncState(first, second);
+    } else {
       syncState = null;
     }
 
@@ -543,4 +555,10 @@ export function createPerformerManager(deps: PerformerManagerDeps) {
   };
 }
 
-export type PerformerManager = ReturnType<typeof createPerformerManager>;
+export type PerformerManager = ReturnType<typeof buildPerformerManager>;
+
+export function createPerformerManager(
+  deps: PerformerManagerDeps
+): PerformerManager {
+  return buildPerformerManager(deps);
+}

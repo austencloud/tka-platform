@@ -13,20 +13,34 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 // propInterpolator / sequenceConverter are now module-level functions; no type imports needed
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
 import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
-import type { DefaultsDomainSnapshot, PerformerPositionSnapshot, ViewerDomainSnapshot, VisibilityDomainSnapshot } from "../undo/scene-undo-types";
+import type {
+  DefaultsDomainSnapshot,
+  PerformerPositionSnapshot,
+  ViewerDomainSnapshot,
+  VisibilityDomainSnapshot,
+} from "../undo/scene-undo-types";
 import { Plane, PlaneMode } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
-import type { DefaultPerformerSettings, CascadeCategory } from "./performer-settings-types";
+import type {
+  DefaultPerformerSettings,
+  CascadeCategory,
+} from "./performer-settings-types";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
-import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
+import {
+  createPerformerManager,
+  type PerformerManager,
+} from "./performer-manager.svelte";
 import { DEFAULT_AVATAR_ID } from "@austencloud/scene-3d";
 import { STAGE } from "@austencloud/scene-3d";
 import type { FormationPreset } from "@austencloud/scene-3d";
 import { calculateFacingAngle } from "@austencloud/scene-3d";
-import { PRESET_VALID_COUNTS, createFormationFromPreset } from "@austencloud/scene-3d";
+import {
+  PRESET_VALID_COUNTS,
+  createFormationFromPreset,
+} from "@austencloud/scene-3d";
 import { isWebGL2Available } from "../capabilities/webgl-capabilities";
 import { fits3DViewportNow } from "../capabilities/viewport-3d-gate.svelte";
 import { userProportionsState } from "@austencloud/scene-3d";
@@ -39,12 +53,22 @@ import {
 import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 import type { TimedTransition } from "../camera/transitions";
 
-
 // ============================================
 // Popover Stack
 // ============================================
 
-export type PopoverId = "formation" | "tempo" | "export" | "camera" | "planes" | "info" | "scene" | "effects" | "prop" | "effort" | "dev";
+export type PopoverId =
+  | "formation"
+  | "tempo"
+  | "export"
+  | "camera"
+  | "planes"
+  | "info"
+  | "scene"
+  | "effects"
+  | "prop"
+  | "effort"
+  | "dev";
 
 // ============================================
 // Persistence
@@ -93,7 +117,8 @@ function loadPersistedDefaultProp(): PropType {
   if (typeof localStorage === "undefined") return PropType.STAFF;
   try {
     const v = localStorage.getItem(STORAGE_KEY_DEFAULT_PROP);
-    if (v && Object.values(PropType).includes(v as PropType)) return v as PropType;
+    if (v && Object.values(PropType).includes(v as PropType))
+      return v as PropType;
     return PropType.STAFF;
   } catch {
     return PropType.STAFF;
@@ -194,7 +219,10 @@ function loadPersistedPlanes(): Set<Plane> | null {
 function persistPlanes(planes: Set<Plane>) {
   if (typeof localStorage === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify([...planes]));
+    localStorage.setItem(
+      STORAGE_KEY_VISIBLE_PLANES,
+      JSON.stringify([...planes])
+    );
   } catch {
     // Storage full or unavailable
   }
@@ -258,7 +286,7 @@ function persistSelectedIndex(value: number | null): void {
   try {
     localStorage.setItem(
       STORAGE_KEY_SELECTED_INDEX,
-      value === null ? "null" : String(value),
+      value === null ? "null" : String(value)
     );
   } catch {
     // Quota exceeded or unavailable
@@ -401,7 +429,7 @@ export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
   sceneFeatures?: Record<string, boolean>;
 }
 
-export function createViewer3DState(seed?: Viewer3DStateSeed) {
+function buildViewer3DState(seed?: Viewer3DStateSeed) {
   const sceneUndo = getSceneUndoManager();
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
@@ -452,11 +480,17 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   let renderMode = $state<"2d" | "3d">(_persistedMode);
   let showPerf = $state(false);
 
-  const _persistedOceanVariant = seeded(seed?.oceanVariant as OceanVariant | undefined, () => {
-    try {
-      return (localStorage.getItem(STORAGE_KEY_OCEAN_VARIANT) ?? "abyss") as OceanVariant;
-    } catch { return "abyss" as OceanVariant; }
-  });
+  const _persistedOceanVariant = seeded(
+    seed?.oceanVariant as OceanVariant | undefined,
+    () => {
+      try {
+        return (localStorage.getItem(STORAGE_KEY_OCEAN_VARIANT) ??
+          "abyss") as OceanVariant;
+      } catch {
+        return "abyss" as OceanVariant;
+      }
+    }
+  );
   let oceanVariant = $state<OceanVariant>(_persistedOceanVariant);
 
   // Exclusive popover stack: only one popover can be open at a time.
@@ -480,7 +514,8 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     // an unknown value falls through to the persisted default rather than
     // poisoning the cascade.
     prop:
-      seed?.defaultProp && Object.values(PropType).includes(seed.defaultProp as PropType)
+      seed?.defaultProp &&
+      Object.values(PropType).includes(seed.defaultProp as PropType)
         ? (seed.defaultProp as PropType)
         : loadPersistedDefaultProp(),
     effortId: "linear" as EffortId,
@@ -581,7 +616,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
       const shot = computeBehindPerformerShot(performer, stageGroundOffset);
       snapCameraTo(
         { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-        { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+        { x: shot.target.x, y: shot.target.y, z: shot.target.z }
       );
     } else {
       const shot = computeChoreographerShot(
@@ -591,7 +626,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
       );
       snapCameraTo(
         { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-        { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+        { x: shot.target.x, y: shot.target.y, z: shot.target.z }
       );
     }
   }
@@ -642,19 +677,28 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   }
 
   function setDefaultEffort(effortId: EffortId): void {
-    sceneUndo.captureState("change-default-effort", `Default effort: ${effortId}`);
+    sceneUndo.captureState(
+      "change-default-effort",
+      `Default effort: ${effortId}`
+    );
     _defaultSettings.effortId = effortId;
     sceneUndo.commitState();
   }
 
   function setDefaultPlaneMode(mode: PlaneMode): void {
-    sceneUndo.captureState("change-default-planes", `Default plane mode: ${mode}`);
+    sceneUndo.captureState(
+      "change-default-planes",
+      `Default plane mode: ${mode}`
+    );
     _defaultSettings.planeMode = mode;
     sceneUndo.commitState();
   }
 
   function setDefaultHandPlane(hand: "blue" | "red", plane: Plane): void {
-    sceneUndo.captureState("change-default-planes", `Default ${hand}: ${plane}`);
+    sceneUndo.captureState(
+      "change-default-planes",
+      `Default ${hand}: ${plane}`
+    );
     if (hand === "blue") _defaultSettings.customBluePlane = plane;
     else _defaultSettings.customRedPlane = plane;
     _defaultSettings.planeMode = derivePlaneModeFromHands(
@@ -669,7 +713,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   // ============================================
 
   function overrideCountForCategory(cat: CascadeCategory): number {
-    return performerManager.performers.filter(p => p.hasOverride[cat]).length;
+    return performerManager.performers.filter((p) => p.hasOverride[cat]).length;
   }
 
   function resetAllPerformersProp(): void {
@@ -719,10 +763,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
       for (const p of targets) p.setHandPlane(hand, plane);
     });
     const afterSnap = captureViewerSnapshot();
-    sceneUndo.pushSelfRestoringEntry("set-hand-plane", `All ${hand}: ${plane}`, {
-      undo: () => restoreViewerSnapshot(beforeSnap),
-      redo: () => restoreViewerSnapshot(afterSnap),
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "set-hand-plane",
+      `All ${hand}: ${plane}`,
+      {
+        undo: () => restoreViewerSnapshot(beforeSnap),
+        redo: () => restoreViewerSnapshot(afterSnap),
+      }
+    );
   }
 
   /**
@@ -741,13 +789,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   let activeFormation = $state<FormationPreset | "manual">("manual");
 
   function captureViewerSnapshot(): ViewerDomainSnapshot {
-    const performerSnapshots: PerformerPositionSnapshot[] = performerManager.performers.map((p) => ({
-      id: p.id,
-      position: { x: p.position.x, z: p.position.z },
-      facingAngle: p.facingAngle,
-      customBluePlane: p.customBluePlane,
-      customRedPlane: p.customRedPlane,
-    }));
+    const performerSnapshots: PerformerPositionSnapshot[] =
+      performerManager.performers.map((p) => ({
+        id: p.id,
+        position: { x: p.position.x, z: p.position.z },
+        facingAngle: p.facingAngle,
+        customBluePlane: p.customBluePlane,
+        customRedPlane: p.customRedPlane,
+      }));
 
     return structuredClone({
       performers: performerSnapshots,
@@ -798,7 +847,8 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   }
 
   function spawnPerformerFromUI(): void {
-    if (performerManager.performers.length >= STAGE.MAX_VIEWER_PERFORMERS) return;
+    if (performerManager.performers.length >= STAGE.MAX_VIEWER_PERFORMERS)
+      return;
 
     sceneUndo.captureState("spawn-performer", "Add performer");
 
@@ -829,12 +879,13 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
 
     sceneUndo.captureState("remove-performer", "Remove performer");
 
-    const removedIndex = performerManager.performers.length - 1;
-    const layoutTargets = performerManager.removePerformer();
-
-    if (selectedPerformerIndex !== null && selectedPerformerIndex >= removedIndex) {
-      selectedPerformerIndex = Math.max(0, removedIndex - 1);
-    }
+    const removedIndex =
+      selectedPerformerIndex ?? performerManager.performers.length - 1;
+    const layoutTargets = performerManager.removePerformer(removedIndex);
+    selectedPerformerIndex = Math.min(
+      removedIndex,
+      performerManager.performers.length - 1
+    );
 
     sceneUndo.commitState();
     if (layoutTargets) framePerformerGroup(layoutTargets);
@@ -850,27 +901,36 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     activeFormation = preset;
 
     const targetFormation = createFormationFromPreset(preset, count);
-    const afterPerformers: PerformerPositionSnapshot[] = performerManager.performers.map((p, i) => {
-      const slot = targetFormation.slots.find((s) => s.index === i);
-      const facing = slot ? calculateFacingAngle(slot, targetFormation) : p.facingAngle;
-      return {
-        id: p.id,
-        position: slot ? { x: slot.position.x, z: slot.position.z } : { x: p.position.x, z: p.position.z },
-        facingAngle: facing,
-        customBluePlane: p.customBluePlane,
-        customRedPlane: p.customRedPlane,
-      };
-    });
+    const afterPerformers: PerformerPositionSnapshot[] =
+      performerManager.performers.map((p, i) => {
+        const slot = targetFormation.slots.find((s) => s.index === i);
+        const facing = slot
+          ? calculateFacingAngle(slot, targetFormation)
+          : p.facingAngle;
+        return {
+          id: p.id,
+          position: slot
+            ? { x: slot.position.x, z: slot.position.z }
+            : { x: p.position.x, z: p.position.z },
+          facingAngle: facing,
+          customBluePlane: p.customBluePlane,
+          customRedPlane: p.customRedPlane,
+        };
+      });
     const afterSnap: ViewerDomainSnapshot = {
       performers: afterPerformers,
       selectedPerformerIndex,
       activeFormation: preset,
     };
 
-    sceneUndo.pushSelfRestoringEntry("apply-formation", `Formation: ${preset}`, {
-      undo: () => restoreViewerSnapshot(beforeSnap),
-      redo: () => restoreViewerSnapshot(afterSnap),
-    });
+    sceneUndo.pushSelfRestoringEntry(
+      "apply-formation",
+      `Formation: ${preset}`,
+      {
+        undo: () => restoreViewerSnapshot(beforeSnap),
+        redo: () => restoreViewerSnapshot(afterSnap),
+      }
+    );
     framePerformerGroup(afterPerformers);
   }
 
@@ -887,10 +947,16 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     if (sceneUndo.isUndoDisabled || !_spatialBeforeSnapshot) return;
     const before = _spatialBeforeSnapshot;
     const after = captureViewerSnapshot();
-    sceneUndo.pushSelfRestoringEntryCoalescing("spatial-edit", "Move performer", {
-      undo: () => restoreViewerSnapshot(before),
-      redo: () => restoreViewerSnapshot(after),
-    }, "spatial-edit", 300);
+    sceneUndo.pushSelfRestoringEntryCoalescing(
+      "spatial-edit",
+      "Move performer",
+      {
+        undo: () => restoreViewerSnapshot(before),
+        redo: () => restoreViewerSnapshot(after),
+      },
+      "spatial-edit",
+      300
+    );
     _spatialBeforeSnapshot = null;
   }
 
@@ -943,26 +1009,44 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     seeded(seed?.effectToggles, loadPersistedEffectToggles)
   );
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
-  let navMode = $state<ViewerNavMode>(seeded(seed?.navMode, loadPersistedNavMode));
-  let activePreset = $state<string | null>((() => {
-    if (typeof localStorage === "undefined") return "behind";
-    try { return localStorage.getItem(STORAGE_KEY_PRESET) || "behind"; } catch { return "behind"; }
-  })());
-  let activeCameraPreset = $state<string>((() => {
-    if (typeof localStorage === "undefined") return "main";
-    try { return localStorage.getItem(STORAGE_KEY_CAM_PRESET) || "main"; } catch { return "main"; }
-  })());
+  let navMode = $state<ViewerNavMode>(
+    seeded(seed?.navMode, loadPersistedNavMode)
+  );
+  let activePreset = $state<string | null>(
+    (() => {
+      if (typeof localStorage === "undefined") return "behind";
+      try {
+        return localStorage.getItem(STORAGE_KEY_PRESET) || "behind";
+      } catch {
+        return "behind";
+      }
+    })()
+  );
+  let activeCameraPreset = $state<string>(
+    (() => {
+      if (typeof localStorage === "undefined") return "main";
+      try {
+        return localStorage.getItem(STORAGE_KEY_CAM_PRESET) || "main";
+      } catch {
+        return "main";
+      }
+    })()
+  );
   // visiblePlanes: which grid planes are currently shown. Empty set = grid hidden.
   // On first visit, default to null (no planes shown). When the user enables the
   // grid for the first time, we auto-select only the planes the sequence uses.
   let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
-  let showGridLabels = $state<boolean>((() => {
-    if (typeof localStorage === "undefined") return false;
-    try {
-      const v = localStorage.getItem(STORAGE_KEY_GRID_LABELS);
-      return v === "true";
-    } catch { return false; }
-  })());
+  let showGridLabels = $state<boolean>(
+    (() => {
+      if (typeof localStorage === "undefined") return false;
+      try {
+        const v = localStorage.getItem(STORAGE_KEY_GRID_LABELS);
+        return v === "true";
+      } catch {
+        return false;
+      }
+    })()
+  );
   let webglCanvas = $state<HTMLCanvasElement | null>(null);
   let stageGroundOffset = $state(0);
 
@@ -985,10 +1069,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   // doesn't eat CPU/GPU time and stutter the active 2D animation.
   let _loopPausedFor2D = false;
   $effect(() => {
-    if (renderMode === '2d' && threltePauseAutoLoop && !isExporting) {
+    if (renderMode === "2d" && threltePauseAutoLoop && !isExporting) {
       threltePauseAutoLoop();
       _loopPausedFor2D = true;
-    } else if (renderMode === '3d' && threlteResumeAutoLoop && _loopPausedFor2D) {
+    } else if (
+      renderMode === "3d" &&
+      threlteResumeAutoLoop &&
+      _loopPausedFor2D
+    ) {
       threlteResumeAutoLoop();
       _loopPausedFor2D = false;
     }
@@ -1028,19 +1116,20 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   // facing angle, or hand planes change. The rune tracker re-runs this
   // on any write reached through the expression below.
   $effect(() => {
-    const snapshots: StoredPerformerSnapshot[] = performerManager.performers.map((p) => ({
-      position: { x: p.position.x, z: p.position.z },
-      facingAngle: p.facingAngle,
-      customBluePlane: p.customBluePlane,
-      customRedPlane: p.customRedPlane,
-      name: p.displayName,
-      settings: {
-        prop: p.settings.prop,
-        effortId: p.settings.effortId,
-        effect: p.settings.effect,
-        staffLengthCm: p.settings.staffLengthCm,
-      },
-    }));
+    const snapshots: StoredPerformerSnapshot[] =
+      performerManager.performers.map((p) => ({
+        position: { x: p.position.x, z: p.position.z },
+        facingAngle: p.facingAngle,
+        customBluePlane: p.customBluePlane,
+        customRedPlane: p.customRedPlane,
+        name: p.displayName,
+        settings: {
+          prop: p.settings.prop,
+          effortId: p.settings.effortId,
+          effect: p.settings.effect,
+          staffLengthCm: p.settings.staffLengthCm,
+        },
+      }));
     if (!_performersPersistReady) return;
     persistPerformers(snapshots);
   });
@@ -1092,10 +1181,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
           p.setHandPlane("red", snap.customRedPlane);
           p.setDisplayName(snap.name ?? null);
           if (snap.settings) {
-            if (snap.settings.prop !== null) p.setProp(snap.settings.prop as PropType);
-            if (snap.settings.effortId !== null) p.setEffort(snap.settings.effortId as EffortId);
-            if (snap.settings.effect !== null) p.setEffect(snap.settings.effect as EffectType);
-            if (snap.settings.staffLengthCm !== null) p.setStaffLengthCm(snap.settings.staffLengthCm);
+            if (snap.settings.prop !== null)
+              p.setProp(snap.settings.prop as PropType);
+            if (snap.settings.effortId !== null)
+              p.setEffort(snap.settings.effortId as EffortId);
+            if (snap.settings.effect !== null)
+              p.setEffect(snap.settings.effect as EffectType);
+            if (snap.settings.staffLengthCm !== null)
+              p.setStaffLengthCm(snap.settings.staffLengthCm);
           }
         });
       });
@@ -1211,7 +1304,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     );
     snapCameraTo(
       { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-      { x: shot.target.x, y: shot.target.y, z: shot.target.z },
+      { x: shot.target.x, y: shot.target.y, z: shot.target.z }
     );
   }
 
@@ -1235,7 +1328,7 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     target: { x: number; y: number; z: number },
     spherical?: { azimuth: number; polar: number },
     animate: boolean = true,
-    transitionTiming?: TimedTransition,
+    transitionTiming?: TimedTransition
   ) {
     _snapToFn?.(position, target, spherical, animate, transitionTiming);
   }
@@ -1336,7 +1429,9 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
     undo,
     redo,
     // Default settings cascade
-    get defaultSettings() { return _defaultSettings; },
+    get defaultSettings() {
+      return _defaultSettings;
+    },
     setDefaultProp,
     setDefaultEffort,
     setDefaultPlaneMode,
@@ -1385,7 +1480,10 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
      * Toggle a single grid plane on or off.
      */
     togglePlane(plane: Plane) {
-      sceneUndo.captureState("toggle-plane-visibility", `Toggle ${plane} plane`);
+      sceneUndo.captureState(
+        "toggle-plane-visibility",
+        `Toggle ${plane} plane`
+      );
       const next = new Set(visiblePlanes);
       if (next.has(plane)) next.delete(plane);
       else next.add(plane);
@@ -1525,6 +1623,14 @@ export function createViewer3DState(seed?: Viewer3DStateSeed) {
   };
 }
 
+export type Viewer3DState = ReturnType<typeof buildViewer3DState>;
+
+export function createViewer3DState(
+  seed?: Viewer3DStateSeed
+): Viewer3DState {
+  return buildViewer3DState(seed);
+}
+
 /**
  * Serializable subset of viewer-3d-state that is backed by the scattered
  * `tka-viewer3d-*` localStorage keys. The save-a-3D-scene feature captures this
@@ -1557,7 +1663,9 @@ export interface Viewer3DPersistConfig {
  * group mask applies selectively). Best-effort per key so a single quota
  * failure doesn't abort the rest. Call BEFORE mounting the viewer.
  */
-export function writeViewer3DConfig(config: Partial<Viewer3DPersistConfig>): void {
+export function writeViewer3DConfig(
+  config: Partial<Viewer3DPersistConfig>
+): void {
   if (typeof localStorage === "undefined") return;
   const set = (key: string, value: string) => {
     try {
@@ -1568,21 +1676,31 @@ export function writeViewer3DConfig(config: Partial<Viewer3DPersistConfig>): voi
   };
   set(STORAGE_KEY_MODE, "3d");
   if (config.camera) set(STORAGE_KEY_CAMERA, JSON.stringify(config.camera));
-  if (config.performers) set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));
-  if (config.activeFormation !== undefined) set(STORAGE_KEY_ACTIVE_FORMATION, config.activeFormation);
+  if (config.performers)
+    set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));
+  if (config.activeFormation !== undefined)
+    set(STORAGE_KEY_ACTIVE_FORMATION, config.activeFormation);
   if (config.selectedPerformerIndex !== undefined) {
     set(
       STORAGE_KEY_SELECTED_INDEX,
-      config.selectedPerformerIndex === null ? "null" : String(config.selectedPerformerIndex),
+      config.selectedPerformerIndex === null
+        ? "null"
+        : String(config.selectedPerformerIndex)
     );
   }
-  if (config.defaultProp !== undefined) set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
-  if (config.oceanVariant !== undefined) set(STORAGE_KEY_OCEAN_VARIANT, config.oceanVariant);
+  if (config.defaultProp !== undefined)
+    set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
+  if (config.oceanVariant !== undefined)
+    set(STORAGE_KEY_OCEAN_VARIANT, config.oceanVariant);
   if (config.navMode !== undefined) set(STORAGE_KEY_NAV_MODE, config.navMode);
-  if (config.activePreset !== undefined) set(STORAGE_KEY_PRESET, config.activePreset ?? "");
-  if (config.activeCameraPreset !== undefined) set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
-  if (config.showGridLabels !== undefined) set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
-  if (config.visiblePlanes) set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
+  if (config.activePreset !== undefined)
+    set(STORAGE_KEY_PRESET, config.activePreset ?? "");
+  if (config.activeCameraPreset !== undefined)
+    set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
+  if (config.showGridLabels !== undefined)
+    set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
+  if (config.visiblePlanes)
+    set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
   if (config.effectToggles) {
     set(STORAGE_KEY_EFFECT_TOGGLES, JSON.stringify(config.effectToggles));
   }

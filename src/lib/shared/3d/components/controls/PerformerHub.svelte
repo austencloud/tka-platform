@@ -19,7 +19,9 @@
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const performers = $derived(viewer.performerManager.performers);
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff"
+    selectedIndex !== null
+      ? getPerformerColor(selectedIndex)
+      : "var(--theme-accent)"
   );
 
   let detailCollapsed = $state(true);
@@ -93,18 +95,19 @@
 
   .spine-panel {
     padding: 8px 6px;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--panel-color) 10%, rgba(20, 22, 32, 0.85)),
-      color-mix(in srgb, var(--panel-color) 4%, rgba(20, 22, 32, 0.85))
-    );
-    backdrop-filter: blur(28px) saturate(160%);
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--panel-color) 9%, var(--theme-panel-bg)),
+        color-mix(in srgb, var(--panel-color) 3%, var(--theme-panel-bg))
+      ),
+      black;
     border: 1px solid
-      color-mix(in srgb, var(--panel-color) 22%, rgba(255, 255, 255, 0.07));
+      color-mix(in srgb, var(--panel-color) 22%, var(--theme-stroke));
     border-radius: 14px;
     box-shadow:
-      0 6px 32px rgba(0, 0, 0, 0.55),
-      0 1px 0 inset rgba(255, 255, 255, 0.04);
+      var(--theme-panel-shadow),
+      0 1px 0 inset color-mix(in srgb, var(--theme-text) 4%, transparent);
     flex-shrink: 0;
     transition:
       border-radius 220ms ease,
@@ -120,20 +123,21 @@
 
   .detail-panel {
     position: relative;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--panel-color) 12%, rgba(20, 22, 32, 0.85)),
-      color-mix(in srgb, var(--panel-color) 4%, rgba(20, 22, 32, 0.85))
-    );
-    backdrop-filter: blur(28px) saturate(160%);
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--panel-color) 11%, var(--theme-panel-bg)),
+        color-mix(in srgb, var(--panel-color) 3%, var(--theme-panel-bg))
+      ),
+      black;
     border: 1px solid
-      color-mix(in srgb, var(--panel-color) 28%, rgba(255, 255, 255, 0.07));
+      color-mix(in srgb, var(--panel-color) 28%, var(--theme-stroke));
     border-left: none;
     border-radius: 0 14px 14px 0;
     box-shadow:
-      0 6px 32px rgba(0, 0, 0, 0.55),
-      0 1px 0 inset rgba(255, 255, 255, 0.04),
-      inset 1px 0 0 rgba(255, 255, 255, 0.03);
+      var(--theme-panel-shadow),
+      0 1px 0 inset color-mix(in srgb, var(--theme-text) 4%, transparent),
+      inset 1px 0 0 color-mix(in srgb, var(--theme-text) 3%, transparent);
     overflow: hidden;
     max-width: calc(100vw - 140px);
   }
@@ -147,8 +151,12 @@
     height: 44px;
     border-radius: 0 14px 0 14px;
     border: none;
-    background: color-mix(in srgb, var(--panel-color) 15%, rgba(0, 0, 0, 0.4));
-    color: rgba(255, 255, 255, 0.4);
+    background: color-mix(
+      in srgb,
+      var(--panel-color) 15%,
+      var(--surface-darker)
+    );
+    color: var(--theme-text-dim);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -160,8 +168,12 @@
   }
 
   .close-tab:hover {
-    background: color-mix(in srgb, var(--panel-color) 30%, rgba(0, 0, 0, 0.5));
-    color: white;
+    background: color-mix(
+      in srgb,
+      var(--panel-color) 30%,
+      var(--surface-darker)
+    );
+    color: var(--theme-text);
     transform: scale(1.08);
   }
 
@@ -171,7 +183,7 @@
 
   /* ─── Focus-visible ─── */
   button:focus-visible {
-    outline: 2px solid var(--panel-color, #4a9eff);
+    outline: 2px solid var(--panel-color, var(--theme-accent));
     outline-offset: 2px;
   }
 

@@ -82,6 +82,33 @@ describe("performer manager count transitions", () => {
     manager.destroy();
   });
 
+  it("removes the requested performer without replacing another cast member", () => {
+    const manager = createPerformerManager({
+      initialAvatarId: DEFAULT_AVATAR_ID,
+      maxPerformers: 8,
+    });
+    manager.initialize();
+    manager.addPerformer();
+    manager.updateFormationTransition(now + 320);
+
+    now = 2_000;
+    manager.addPerformer();
+    manager.updateFormationTransition(now + 320);
+
+    const originalIds = manager.performers.map((performer) => performer.id);
+    expect(originalIds).toEqual(["performer-0", "performer-1", "performer-2"]);
+
+    now = 3_000;
+    manager.removePerformer(1);
+
+    expect(manager.performers.map((performer) => performer.id)).toEqual([
+      "performer-0",
+      "performer-2",
+    ]);
+
+    manager.destroy();
+  });
+
   it("carries performer velocity through a rapid count retarget", () => {
     const manager = createPerformerManager({
       initialAvatarId: DEFAULT_AVATAR_ID,

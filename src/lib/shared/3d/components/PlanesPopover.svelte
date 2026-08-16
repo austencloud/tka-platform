@@ -201,23 +201,25 @@
       class:with-hand={handAssigned}
       class:hidden-row={!visible}
     >
-      <div class="plane-left">
-        <button
+      <button
+        class="plane-left"
+        onclick={(e) => handlePlaneToggleClick(e, plane)}
+        aria-pressed={visible}
+        aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
+      >
+        <span
           class="plane-toggle"
           class:visible
           class:hidden={!visible}
           style="--dot-color: {color};"
-          onclick={(e) => handlePlaneToggleClick(e, plane)}
-          aria-pressed={visible}
-          aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
         >
           <i
             class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
             aria-hidden="true"
           ></i>
-        </button>
+        </span>
         <span class="plane-label">{label}</span>
-      </div>
+      </button>
       <div class="plane-right">
         <button
           class="hand-slot blue"
@@ -301,19 +303,19 @@
     padding: 6px 12px;
     min-height: 44px;
     border-radius: 10px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-inset-deep);
+    border: 1px solid var(--theme-stroke);
     transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .plane-row:hover {
-    background: rgba(0, 0, 0, 0.45);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--surface-darker);
+    border-color: var(--theme-stroke-strong);
   }
 
   .plane-row.with-hand {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.14);
+    background: var(--theme-card-bg);
+    border-color: var(--theme-stroke-strong);
   }
 
   .plane-row.hidden-row {
@@ -326,6 +328,12 @@
     gap: 10px;
     flex: 1;
     min-width: 0;
+    min-height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
   }
 
   .plane-right {
@@ -336,8 +344,8 @@
   }
 
   .plane-toggle {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid;
@@ -348,20 +356,20 @@
     background: transparent;
     flex-shrink: 0;
     padding: 0;
-    color: #fff;
+    color: var(--theme-text);
   }
 
   .plane-eye {
-    font-size: 12px;
+    font-size: 14px;
     line-height: 1;
-    text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 0 2px var(--surface-darker);
   }
 
   .plane-toggle.visible {
     background: var(--dot-color);
     border-color: var(--dot-color);
     box-shadow: 0 0 14px color-mix(in srgb, var(--dot-color) 45%, transparent);
-    color: #fff;
+    color: var(--theme-text);
   }
 
   .plane-toggle.hidden {
@@ -375,18 +383,18 @@
   }
 
   .plane-label {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--theme-text);
   }
 
   .plane-row.hidden-row .plane-label {
-    color: rgba(255, 255, 255, 0.55);
+    color: var(--theme-text-dim);
   }
 
   .hand-slot {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     border: 2px dashed;
     cursor: pointer;
@@ -397,32 +405,32 @@
   }
 
   .hand-slot.blue {
-    border-color: rgba(74, 144, 217, 0.4);
+    border-color: color-mix(in srgb, var(--prop-blue) 40%, transparent);
   }
   .hand-slot.red {
-    border-color: rgba(217, 74, 74, 0.4);
+    border-color: color-mix(in srgb, var(--prop-red) 40%, transparent);
   }
 
   .hand-slot:hover:not(.filled).blue {
-    border-color: rgba(74, 144, 217, 0.7);
-    box-shadow: 0 0 10px rgba(74, 144, 217, 0.2);
+    border-color: color-mix(in srgb, var(--prop-blue) 70%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-blue) 20%, transparent);
   }
 
   .hand-slot:hover:not(.filled).red {
-    border-color: rgba(217, 74, 74, 0.7);
-    box-shadow: 0 0 10px rgba(217, 74, 74, 0.2);
+    border-color: color-mix(in srgb, var(--prop-red) 70%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-red) 20%, transparent);
   }
 
   .hand-slot.filled.blue {
-    background: #4a90d9;
-    border: 2px solid #4a90d9;
-    box-shadow: 0 0 12px rgba(74, 144, 217, 0.5);
+    background: var(--prop-blue);
+    border: 2px solid var(--prop-blue);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-blue) 50%, transparent);
   }
 
   .hand-slot.filled.red {
-    background: #d94a4a;
-    border: 2px solid #d94a4a;
-    box-shadow: 0 0 12px rgba(217, 74, 74, 0.5);
+    background: var(--prop-red);
+    border: 2px solid var(--prop-red);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-red) 50%, transparent);
   }
 
   .planes-footer {
@@ -436,12 +444,12 @@
     align-items: center;
     gap: 5px;
     padding: 6px 12px;
-    min-height: 30px;
+    min-height: 44px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.55);
-    font-size: 11px;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     position: relative;
@@ -449,9 +457,9 @@
   }
 
   .reset-btn:hover {
-    color: rgba(255, 255, 255, 0.95);
-    border-color: rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--theme-text);
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
     transform: translateY(-1px);
   }
 
@@ -462,22 +470,26 @@
     padding: 8px 12px;
     margin-top: 6px;
     border-radius: 10px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-inset);
+    border: 1px solid var(--theme-stroke);
   }
 
   .toggle-label {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--theme-text-dim);
   }
 
   .label-toggle {
     position: relative;
     background: none;
     border: none;
+    min-width: 44px;
+    min-height: 44px;
     padding: 0;
     cursor: pointer;
+    display: grid;
+    place-items: center;
   }
 
   .toggle-track {
@@ -485,13 +497,13 @@
     width: 36px;
     height: 20px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-stroke-strong);
     transition: background 180ms ease;
     position: relative;
   }
 
   .label-toggle.active .toggle-track {
-    background: rgba(139, 92, 246, 0.7);
+    background: color-mix(in srgb, var(--theme-accent) 70%, transparent);
   }
 
   .toggle-thumb {
@@ -501,7 +513,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--theme-text);
     transition: transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
@@ -516,7 +528,7 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: var(--semantic-warning, #f59e0b);
-    border: 1.5px solid rgba(20, 22, 32, 1);
+    background: var(--semantic-warning);
+    border: 1.5px solid var(--surface-darker);
   }
 </style>
