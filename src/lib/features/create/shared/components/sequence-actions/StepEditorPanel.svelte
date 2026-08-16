@@ -511,6 +511,9 @@
           <button
             class="beta-swap-badge active"
             onclick={() => onBetaSwapToggle?.()}
+            data-ghost={onBetaSwapToggle ? "safe" : undefined}
+            data-ghost-kind={onBetaSwapToggle ? "step-edit" : undefined}
+            data-ghost-label="Beta swap"
             title="Beta offset swapped (B to toggle)"
             aria-label="Beta offset swapped, press B to toggle"
             aria-pressed="true">β⇄</button
@@ -519,6 +522,9 @@
           <button
             class="beta-swap-badge"
             onclick={() => onBetaSwapToggle?.()}
+            data-ghost={onBetaSwapToggle ? "safe" : undefined}
+            data-ghost-kind={onBetaSwapToggle ? "step-edit" : undefined}
+            data-ghost-label="Beta swap"
             title="Swap beta offset (B)"
             aria-label="Swap beta offset, press B to toggle"
             aria-pressed="false">β⇄</button

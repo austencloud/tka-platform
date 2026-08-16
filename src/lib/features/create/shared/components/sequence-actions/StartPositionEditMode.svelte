@@ -103,6 +103,7 @@
         disabled={isRepositioning}
         onOrientationChange={(nextOrientation) =>
           onOrientationChange(color, nextOrientation)}
+        ghostKind="step-edit"
       />
     </div>
   </div>

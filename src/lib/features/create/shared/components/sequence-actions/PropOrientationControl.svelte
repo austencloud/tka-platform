@@ -20,6 +20,12 @@
     allowedOrientations?: readonly string[];
     compact?: boolean;
     disabled?: boolean;
+    /**
+     * Opt this control into the attract presenter, per host. Absent by default:
+     * the same control sits in the generate customizer, which the presenter is
+     * not meant to reach. Only the step editor passes it.
+     */
+    ghostKind?: "step-edit";
   }
 
   let {
@@ -30,6 +36,7 @@
     allowedOrientations,
     compact = false,
     disabled = false,
+    ghostKind,
   }: Props = $props();
 
   interface OrientationOption {
@@ -85,6 +92,7 @@
     density={compact ? "compact" : "standard"}
     semantics="radiogroup"
     ariaLabel="{color === 'blue' ? 'Blue' : 'Red'} start orientation"
+    {ghostKind}
   />
 </div>
 

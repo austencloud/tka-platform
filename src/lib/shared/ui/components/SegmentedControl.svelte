@@ -64,7 +64,7 @@
      * moves nothing, which reads as a misclick rather than a decision. Absent
      * by default — the presenter cannot see a control that has not opted in.
      */
-    ghostKind?: "turn" | "option-filter" | "tempo" | "curio";
+    ghostKind?: "turn" | "option-filter" | "tempo" | "curio" | "step-edit";
   }
 
   let {
