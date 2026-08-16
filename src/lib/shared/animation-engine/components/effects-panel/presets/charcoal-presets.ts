@@ -29,9 +29,13 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
     id: "charcoal-forge-cinder",
     name: "Forge Burst",
     previewColor: "#ff7a1a",
+    // Spread 0.30, not 0.42. A burst is punchy and close - at 0.42 it sat
+    // between Steel Wool and Cinder Fan without being either, and measured
+    // within 10 RGB of both. Tightening it gives the set a hot mid-spread look
+    // that is about shape rather than volume.
     patch: {
       intensity: 0.9,
-      spread: 0.42,
+      spread: 0.3,
       glow: 0.8,
       emissionStyle: "forge-burst",
       coreColor: [255, 238, 190],
@@ -57,10 +61,14 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
     id: "charcoal-banked-ember",
     name: "Banked Ember",
     previewColor: "#d83b16",
+    // A banked fire is one damped down for the night, so this is the set's
+    // quiet warm anchor: intensity 0.34, not 0.62. Six of the eight presets
+    // used to sit at intensity >= 0.5, which left the low end of the range
+    // represented only by Ash.
     patch: {
-      intensity: 0.62,
+      intensity: 0.34,
       spread: 0.25,
-      glow: 0.56,
+      glow: 0.62,
       emissionStyle: "banked-ember",
       coreColor: [255, 210, 142],
       midColor: [214, 52, 14],
@@ -84,10 +92,16 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
     id: "charcoal-hot-coal",
     name: "Hot Coal",
     previewColor: "#ef4444",
+    // Was 0.88/0.88/0.8, which measured within 3/255 of Cinder Fan's mean hue
+    // at 98% coverage - two slots doing one job, the louder of which was this
+    // one. A hot coal is a FEW heavy embers that hang, so intensity drops hard
+    // and glow rises: sparse, fat, slow, against Cinder Fan's many-and-fine.
+    // Intensity has to go this low because glow widens every ember's halo, so
+    // 0.4/0.92 measured BUSIER than the fan it was meant to differ from.
     patch: {
-      intensity: 0.88,
-      spread: 0.88,
-      glow: 0.8,
+      intensity: 0.24,
+      spread: 0.85,
+      glow: 0.85,
       coreColor: [255, 240, 200],
       midColor: [255, 80, 20],
       coolColor: [180, 20, 0],
@@ -110,10 +124,13 @@ export const CHARCOAL_PRESETS: EffectPreset<"charcoal">[] = [
     id: "charcoal-ash",
     name: "Ash",
     previewColor: "#9ca3af",
+    // Ash drifts, it does not fall: spread 0.55, not 0.3. At 0.3/0.3/0.2 it
+    // measured 5.5% lit - not subtle, just absent. Glow 0.3 keeps it the
+    // faintest look in the set while leaving something to see.
     patch: {
       intensity: 0.3,
-      spread: 0.3,
-      glow: 0.2,
+      spread: 0.55,
+      glow: 0.3,
       coreColor: [220, 220, 230], // near-white
       midColor: [140, 140, 155], // medium gray
       coolColor: [60, 60, 70], // dark gray

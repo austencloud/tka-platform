@@ -23,6 +23,16 @@ const LOOK_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "fire-blue-flame": "Cold gas-blue burn",
   "fire-spirit": "Violet ghost flame",
   "fire-liquid": "Flowing molten body",
+
+  // Coal
+  "charcoal-steel-wool": "Dense white-hot shower",
+  "charcoal-forge-cinder": "Tight burst of hot sparks",
+  "charcoal-cinder-fan": "Wide far-thrown fan",
+  "charcoal-banked-ember": "Few embers, short fall",
+  "charcoal-violet-ember": "Violet sparks, soft drift",
+  "charcoal-hot-coal": "Few fat embers, long hang",
+  "charcoal-jade-dust": "Sparse green motes",
+  "charcoal-ash": "Faint grey drift",
 };
 
 /** Null when a look has no copy yet, so the caller can fall back to its trait. */

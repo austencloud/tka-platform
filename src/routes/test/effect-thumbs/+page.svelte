@@ -5,9 +5,21 @@
   import TrailThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/TrailThumbnail.svelte";
   import FireThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/FireThumbnail.svelte";
   import BloomThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/BloomThumbnail.svelte";
+  import { CHARCOAL_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/charcoal-presets";
+  import CoalThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/CoalThumbnail.svelte";
 </script>
 
 <div class="page">
+  <h2>Coal</h2>
+  <div class="grid">
+    {#each CHARCOAL_PRESETS as preset (preset.id)}
+      <figure>
+        <figcaption>{preset.name}</figcaption>
+        <div class="tile"><CoalThumbnail {preset} /></div>
+      </figure>
+    {/each}
+  </div>
+
   <h2>Trails</h2>
   <div class="grid">
     {#each TRAIL_PRESETS as preset (preset.id)}
