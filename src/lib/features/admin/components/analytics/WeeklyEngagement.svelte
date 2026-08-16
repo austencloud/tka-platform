@@ -9,7 +9,10 @@
    */
   import { onMount } from "svelte";
   import { getSystemStateManager } from "$lib/features/admin/get-system-state-manager";
-  import type { CachedUserMetadata } from "../../services/types";
+  import type {
+    AdminUserAccountSummary,
+    CachedUserMetadata,
+  } from "../../services/types";
   import type { SystemStateManager } from "../../services/system-state-manager";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -17,6 +20,7 @@
   let isLoading = $state(true);
   let loadError = $state(false);
   let users = $state<CachedUserMetadata[]>([]);
+  let accountSummary = $state<AdminUserAccountSummary | null>(null);
   let cacheAge = $state<string>("");
 
   // Calculate date boundary
@@ -27,7 +31,7 @@
   const metrics = $derived(() => {
     // Real accounts only — exclude un-upgraded anonymous guest sessions.
     const realUsers = users.filter((u) => !u.isAnonymous);
-    const totalUsers = realUsers.length;
+    const totalUsers = accountSummary?.registeredAccounts ?? realUsers.length;
 
     // New users this week
     const newThisWeek = realUsers.filter(
@@ -43,6 +47,9 @@
       totalUsers,
       newThisWeek,
       activeThisWeek,
+      registeredProfiles:
+        accountSummary?.registeredProfiles ?? realUsers.length,
+      missingProfiles: accountSummary?.missingRegisteredProfiles ?? null,
     };
   });
 
@@ -53,6 +60,7 @@
       const systemStateService = getSystemStateManager();
       const state = await systemStateService.getSystemState();
       users = state.users;
+      accountSummary = state.accountSummary;
 
       // Show cache age
       const ageMs = Date.now() - state.loadedAt;
@@ -115,8 +123,22 @@
             {metrics().totalUsers}
           </div>
           <div class="metric-label">{t("admin_total_users")}</div>
+          <div class="metric-detail">
+            {metrics().registeredProfiles} profiles
+            {#if metrics().missingProfiles === null}
+              · Auth count unavailable
+            {:else}
+              · {metrics().missingProfiles} missing
+            {/if}
+          </div>
           <span class="sr-only">
-            {metrics().totalUsers} total registered users
+            {metrics().totalUsers} total registered users.
+            {metrics().registeredProfiles} profiles.
+            {#if metrics().missingProfiles === null}
+              The Firebase Auth count is unavailable.
+            {:else}
+              {metrics().missingProfiles} registered users are missing profiles.
+            {/if}
           </span>
         </div>
 
@@ -206,6 +228,13 @@
     font-size: var(--font-size-min);
     font-weight: 500;
     color: var(--theme-text);
+  }
+
+  .metric-detail {
+    margin-top: 4px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.3;
   }
 
   .error-state {

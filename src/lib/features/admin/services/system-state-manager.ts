@@ -7,10 +7,12 @@
 
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
+import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
 import type {
   SystemState,
   CachedUserMetadata,
   CachedAnnouncement,
+  AdminUserAccountSummary,
 } from "./types";
 
 // Cache TTL: 2-3 minutes for ops work (stale data is acceptable)
@@ -70,14 +72,16 @@ export class SystemStateManager {
       const expiresAt = now + SYSTEM_STATE_CACHE_TTL_MS;
 
       // Load all collections in parallel
-      const [users, announcements] = await Promise.all([
+      const [users, announcements, accountSummary] = await Promise.all([
         this.loadUsers(),
         this.loadAnnouncements(),
+        this.loadAccountSummary(),
       ]);
 
       const systemState: SystemState = {
         users,
         announcements,
+        accountSummary,
         loadedAt: now,
         expiresAt,
       };
@@ -88,6 +92,45 @@ export class SystemStateManager {
     } catch (error) {
       console.error("Failed to load system state:", error);
       return this.getEmptySystemState();
+    }
+  }
+
+  private async loadAccountSummary(): Promise<AdminUserAccountSummary | null> {
+    try {
+      const response = await withTimeout(
+        authedFetch("/api/admin/user-summary"),
+        QUERY_TIMEOUT_MS,
+        null
+      );
+      if (!response?.ok) {
+        throw new Error(
+          response
+            ? `Account summary returned ${response.status}`
+            : "Account summary timed out"
+        );
+      }
+
+      const summary = (await response.json()) as Record<string, unknown>;
+      const fields: Array<keyof AdminUserAccountSummary> = [
+        "totalAuthAccounts",
+        "registeredAccounts",
+        "anonymousAccounts",
+        "totalProfiles",
+        "registeredProfiles",
+        "anonymousProfiles",
+        "missingRegisteredProfiles",
+      ];
+      for (const field of fields) {
+        const value = summary[field];
+        if (!Number.isInteger(value) || (value as number) < 0) {
+          throw new Error(`Account summary has an invalid ${field}`);
+        }
+      }
+
+      return summary as unknown as AdminUserAccountSummary;
+    } catch (error) {
+      console.error("Failed to load registered account summary:", error);
+      return null;
     }
   }
 
@@ -293,6 +336,7 @@ export class SystemStateManager {
     return {
       users: [],
       announcements: [],
+      accountSummary: null,
       loadedAt: Date.now(),
       expiresAt: Date.now(),
     };

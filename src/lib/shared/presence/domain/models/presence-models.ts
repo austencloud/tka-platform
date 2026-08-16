@@ -37,10 +37,15 @@ export function parseCloudflareGeo(
     const n = typeof v === "number" ? v : Number.parseFloat(v);
     return Number.isFinite(n) ? n : null;
   };
-  const country = (cf?.country as string) || headers.get("cf-ipcountry") || null;
+  const country =
+    (cf?.country as string) || headers.get("cf-ipcountry") || null;
   const city = (cf?.city as string) || headers.get("cf-ipcity") || null;
-  const lat = parseCoord((cf?.latitude as string) ?? headers.get("cf-iplatitude"));
-  const lng = parseCoord((cf?.longitude as string) ?? headers.get("cf-iplongitude"));
+  const lat = parseCoord(
+    (cf?.latitude as string) ?? headers.get("cf-iplatitude")
+  );
+  const lng = parseCoord(
+    (cf?.longitude as string) ?? headers.get("cf-iplongitude")
+  );
   const hasGeo = !!(country || city || (lat !== null && lng !== null));
   return hasGeo ? { city, country, lat, lng } : null;
 }
@@ -63,7 +68,9 @@ export function locationsEqual(
 }
 
 /** Human label for a location: "City, CC" / "CC" / "". */
-export function formatLocationLabel(loc: PresenceLocation | null | undefined): string {
+export function formatLocationLabel(
+  loc: PresenceLocation | null | undefined
+): string {
   if (!loc) return "";
   if (loc.city && loc.country) return `${loc.city}, ${loc.country}`;
   if (loc.country) return loc.country;
@@ -118,6 +125,20 @@ export interface UserPresence {
   /** Coarse IP-derived location from Cloudflare edge headers (admin view). */
   location?: PresenceLocation;
 }
+
+/**
+ * User-level container for presence written by connection-aware clients.
+ * Each browser tab owns one child so one tab disconnecting cannot mark another
+ * tab offline.
+ */
+export interface MultiConnectionPresence {
+  schemaVersion?: 2;
+  lastSeen?: number;
+  connections?: Record<string, UserPresence>;
+}
+
+/** Stored RTDB shape during the flat-record to per-connection rollout. */
+export type StoredPresence = UserPresence | MultiConnectionPresence;
 
 /**
  * Presence data for admin dashboard display

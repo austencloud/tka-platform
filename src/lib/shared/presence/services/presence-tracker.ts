@@ -8,7 +8,6 @@
 
 import {
   ref,
-  set,
   update,
   onValue,
   onDisconnect,
@@ -16,8 +15,14 @@ import {
   off,
   get,
   remove,
+  push,
 } from "firebase/database";
-import { doc, getDoc, setDoc, serverTimestamp as fsServerTimestamp } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp as fsServerTimestamp,
+} from "firebase/firestore";
 import posthog from "posthog-js";
 import { database, auth, getFirestoreInstance } from "../../auth/firebase";
 import { BREAKPOINTS } from "../../device/domain/constants/device-constants";
@@ -27,14 +32,25 @@ import type {
   PresenceStats,
   ActivityStatus,
   PresenceLocation,
+  StoredPresence,
 } from "../domain/models/presence-models";
-import { computeActivityStatus, locationsEqual } from "../domain/models/presence-models";
+import {
+  IDLE_TIMEOUT_MINUTES,
+  locationsEqual,
+} from "../domain/models/presence-models";
+import {
+  aggregatePresenceTree,
+  aggregateStoredPresence,
+} from "../domain/presence-aggregation";
 import { ActivityTracker } from "../utils/activity-tracker";
 
 export class PresenceTracker {
   private currentPresence: UserPresence | null = null;
   private initialized = false;
-  private presenceRef: ReturnType<typeof ref> | null = null;
+  private userPresenceRef: ReturnType<typeof ref> | null = null;
+  private connectionRef: ReturnType<typeof ref> | null = null;
+  private unsubscribeConnectionState: (() => void) | null = null;
+  private connectionGeneration = 0;
   private activityTracker: ActivityTracker | null = null;
   private userDeleted = false;
   private pendingLocation: PresenceLocation | null = null;
@@ -108,10 +124,11 @@ export class PresenceTracker {
   private async cleanupDeletedUser(): Promise<void> {
     this.userDeleted = true;
     this.stopActivityTracking();
+    this.stopConnectionTracking();
 
-    if (this.presenceRef) {
+    if (this.userPresenceRef) {
       try {
-        await remove(this.presenceRef);
+        await remove(this.userPresenceRef);
       } catch {
         // Could not remove presence
       }
@@ -119,7 +136,8 @@ export class PresenceTracker {
 
     this.currentPresence = null;
     this.initialized = false;
-    this.presenceRef = null;
+    this.userPresenceRef = null;
+    this.connectionRef = null;
   }
 
   /**
@@ -149,9 +167,9 @@ export class PresenceTracker {
     if (!user) return;
 
     // 1) Live location on the presence record (for the map of online users).
-    if (this.presenceRef && this.currentPresence) {
+    if (this.connectionRef && this.currentPresence) {
       this.currentPresence.location = loc;
-      await update(this.presenceRef, { location: loc });
+      await this.writeCurrentConnection();
     }
 
     // 2) Persistent last-known location stays owner-private in Firestore.
@@ -183,7 +201,7 @@ export class PresenceTracker {
       return;
     }
 
-    this.presenceRef = ref(database, `presence/${userId}`);
+    this.userPresenceRef = ref(database, `presence/${userId}`);
 
     const now = Date.now();
 
@@ -207,28 +225,9 @@ export class PresenceTracker {
       ...(user.photoURL ? { photoURL: user.photoURL } : {}),
     };
 
-    // Set up onDisconnect handler FIRST
-    // This ensures we mark as offline even if the browser crashes
-    const disconnectData: Record<string, unknown> = {
-      online: false,
-      activityStatus: "offline",
-      lastSeen: serverTimestamp(),
-      lastActivity: serverTimestamp(),
-    };
-
-    await onDisconnect(this.presenceRef).update(disconnectData);
-
-    // Now set the presence data
-    await set(this.presenceRef, {
-      ...this.currentPresence,
-      lastSeen: serverTimestamp(),
-      lastActivity: serverTimestamp(),
-    });
-
-    // Start activity tracking
-    this.startActivityTracking();
-
     this.initialized = true;
+    this.startConnectionTracking(userId);
+    this.startActivityTracking();
 
     // Persist last-known location to the user doc (non-blocking).
     if (this.pendingLocation) {
@@ -236,12 +235,124 @@ export class PresenceTracker {
     }
   }
 
+  /**
+   * RTDB connections can drop and reconnect without remounting the app. Each
+   * reconnect receives a fresh child so an old server-side disconnect handler
+   * can remove only the connection that actually ended.
+   */
+  private startConnectionTracking(userId: string): void {
+    this.stopConnectionTracking();
+    const connectedRef = ref(database, ".info/connected");
+
+    this.unsubscribeConnectionState = onValue(connectedRef, (snapshot) => {
+      if (snapshot.val() !== true) {
+        this.connectionGeneration++;
+        this.connectionRef = null;
+        return;
+      }
+      const generation = ++this.connectionGeneration;
+      void this.registerConnection(userId, generation);
+    });
+  }
+
+  private stopConnectionTracking(): void {
+    this.unsubscribeConnectionState?.();
+    this.unsubscribeConnectionState = null;
+  }
+
+  private async registerConnection(
+    userId: string,
+    generation: number
+  ): Promise<void> {
+    if (!this.currentPresence || !this.userPresenceRef || this.userDeleted) {
+      return;
+    }
+
+    const nextConnection = push(
+      ref(database, `presence/${userId}/connections`)
+    );
+    const connectionKey = nextConnection.key;
+    if (!connectionKey) {
+      console.warn("[PresenceTracker] Could not allocate a connection ID");
+      return;
+    }
+
+    try {
+      // Queue cleanup before publishing the connection. Firebase runs these
+      // server-side even when a tab crashes or its network disappears.
+      await Promise.all([
+        onDisconnect(nextConnection).remove(),
+        onDisconnect(ref(database, `presence/${userId}/lastSeen`)).set(
+          serverTimestamp()
+        ),
+      ]);
+
+      if (
+        generation !== this.connectionGeneration ||
+        this.userDeleted ||
+        !this.currentPresence ||
+        !this.userPresenceRef
+      ) {
+        await remove(nextConnection);
+        return;
+      }
+
+      const now = Date.now();
+      this.currentPresence.online = true;
+      this.currentPresence.activityStatus = "active";
+      this.currentPresence.lastActivity = now;
+      this.currentPresence.lastSeen = now;
+
+      await update(this.userPresenceRef, {
+        schemaVersion: 2,
+        lastSeen: serverTimestamp(),
+        [`connections/${connectionKey}`]: {
+          ...this.currentPresence,
+          lastSeen: serverTimestamp(),
+          lastActivity: serverTimestamp(),
+        },
+      });
+      if (generation === this.connectionGeneration) {
+        this.connectionRef = nextConnection;
+      } else {
+        await remove(nextConnection);
+      }
+    } catch (error) {
+      console.warn("[PresenceTracker] Connection registration failed:", error);
+      if (this.connectionRef === nextConnection) {
+        this.connectionRef = null;
+      }
+    }
+  }
+
+  private async writeCurrentConnection(): Promise<void> {
+    const connectionKey = this.connectionRef?.key;
+    if (!connectionKey || !this.userPresenceRef || !this.currentPresence) {
+      return;
+    }
+
+    await update(this.userPresenceRef, {
+      schemaVersion: 2,
+      lastSeen: serverTimestamp(),
+      [`connections/${connectionKey}`]: {
+        ...this.currentPresence,
+        online: true,
+        lastSeen: serverTimestamp(),
+        lastActivity: serverTimestamp(),
+      },
+    });
+  }
+
   /** Start tracking user interactions for activity-based presence */
   private startActivityTracking(): void {
     if (this.activityTracker) return;
 
     this.activityTracker = new ActivityTracker({
-      onActivity: () => this.handleUserActivity(),
+      onActivity: () => {
+        void this.handleUserActivity().catch((error) =>
+          console.warn("[PresenceTracker] Activity update failed:", error)
+        );
+      },
     });
 
     this.activityTracker.start();
@@ -257,7 +368,7 @@ export class PresenceTracker {
 
   /** Handle detected user activity */
   private async handleUserActivity(): Promise<void> {
-    if (!this.presenceRef || !this.currentPresence) return;
+    if (!this.currentPresence) return;
     if (this.userDeleted) return;
 
     // Periodically verify user still exists (every ~30 activity updates)
@@ -274,22 +385,22 @@ export class PresenceTracker {
 
     const now = Date.now();
     this.currentPresence.lastActivity = now;
+    this.currentPresence.lastSeen = now;
+    this.currentPresence.online = true;
     this.currentPresence.activityStatus = "active";
 
-    // Update only activity-related fields to minimize writes
-    await update(this.presenceRef, {
-      lastActivity: serverTimestamp(),
-      activityStatus: "active",
-    });
+    // A full child write also repairs this connection if a legacy tab replaced
+    // the old flat user node during the rollout.
+    await this.writeCurrentConnection();
   }
 
   async updateLocation(module: string, tab?: string | null): Promise<void> {
     if (this.userDeleted) return;
 
-    if (!this.presenceRef || !this.currentPresence) {
+    if (!this.currentPresence) {
       // Try to initialize first
       await this.initialize();
-      if (!this.presenceRef || !this.currentPresence) return;
+      if (!this.currentPresence) return;
     }
 
     const now = Date.now();
@@ -297,35 +408,33 @@ export class PresenceTracker {
     this.currentPresence.currentTab = tab ?? null;
     this.currentPresence.lastSeen = now;
     this.currentPresence.lastActivity = now;
+    this.currentPresence.online = true;
     this.currentPresence.activityStatus = "active";
 
-    // Navigation counts as activity
-    if (this.activityTracker) {
-      this.activityTracker.forceActivityUpdate();
-    }
-
-    await set(this.presenceRef, {
-      ...this.currentPresence,
-      lastSeen: serverTimestamp(),
-      lastActivity: serverTimestamp(),
-    });
+    // Navigation counts as activity and publishes the full current connection.
+    await this.writeCurrentConnection();
   }
 
   async goOffline(): Promise<void> {
     // Stop activity tracking first
     this.stopActivityTracking();
+    this.stopConnectionTracking();
 
-    if (!this.presenceRef) return;
+    const connection = this.connectionRef;
+    const userPresence = this.userPresenceRef;
+    this.connectionGeneration++;
+    this.connectionRef = null;
 
-    await update(this.presenceRef, {
-      online: false,
-      activityStatus: "offline",
-      lastSeen: serverTimestamp(),
-      lastActivity: serverTimestamp(),
-    });
+    if (connection) {
+      await remove(connection);
+    }
+    if (userPresence) {
+      await update(userPresence, { lastSeen: serverTimestamp() });
+    }
 
     this.currentPresence = null;
     this.initialized = false;
+    this.userPresenceRef = null;
   }
 
   getCurrentPresence(): UserPresence | null {
@@ -336,53 +445,41 @@ export class PresenceTracker {
     callback: (users: UserPresenceWithId[]) => void
   ): () => void {
     const presenceListRef = ref(database, "presence");
+    let expiryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const emit = (data: Record<string, StoredPresence> | null) => {
+      if (expiryTimer) clearTimeout(expiryTimer);
+      const users = aggregatePresenceTree(data);
+      callback(users);
+
+      const nextExpiry = users
+        .filter((user) => user.activityStatus === "active")
+        .reduce(
+          (soonest, user) =>
+            Math.min(
+              soonest,
+              user.lastActivity + IDLE_TIMEOUT_MINUTES * 60_000
+            ),
+          Number.POSITIVE_INFINITY
+        );
+      if (Number.isFinite(nextExpiry)) {
+        expiryTimer = setTimeout(
+          () => emit(data),
+          Math.max(0, nextExpiry - Date.now() + 25)
+        );
+      }
+    };
 
     const handleValue = (snapshot: {
-      val: () => Record<string, UserPresence> | null;
+      val: () => Record<string, StoredPresence> | null;
     }) => {
-      const data = snapshot.val();
-      if (!data) {
-        callback([]);
-        return;
-      }
-
-      const users: UserPresenceWithId[] = Object.entries(data).map(
-        ([userId, presence]) => {
-          // Compute real-time activity status based on lastActivity
-          const computedStatus = computeActivityStatus(
-            presence.lastActivity ?? presence.lastSeen,
-            presence.online
-          );
-          return {
-            userId,
-            ...presence,
-            // Override stored status with computed status for accuracy
-            activityStatus: computedStatus,
-          };
-        }
-      );
-
-      // Sort: active first, then offline, then by lastActivity (most recent first)
-      users.sort((a, b) => {
-        const statusA = a.activityStatus ?? "offline";
-        const statusB = b.activityStatus ?? "offline";
-
-        // Active users first
-        if (statusA !== statusB) {
-          return statusA === "active" ? -1 : 1;
-        }
-        // Within same status, sort by most recent activity
-        const activityA = a.lastActivity ?? a.lastSeen;
-        const activityB = b.lastActivity ?? b.lastSeen;
-        return activityB - activityA;
-      });
-
-      callback(users);
+      emit(snapshot.val());
     };
 
     onValue(presenceListRef, handleValue);
 
     return () => {
+      if (expiryTimer) clearTimeout(expiryTimer);
       off(presenceListRef, "value", handleValue);
     };
   }
@@ -392,14 +489,34 @@ export class PresenceTracker {
     callback: (presence: UserPresence | null) => void
   ): () => void {
     const userPresenceRef = ref(database, `presence/${userId}`);
+    let expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const handleValue = (snapshot: { val: () => UserPresence | null }) => {
-      callback(snapshot.val());
+    const emit = (stored: StoredPresence | null) => {
+      if (expiryTimer) clearTimeout(expiryTimer);
+      const presence = stored ? aggregateStoredPresence(userId, stored) : null;
+      callback(presence);
+      if (presence?.activityStatus === "active") {
+        expiryTimer = setTimeout(
+          () => emit(stored),
+          Math.max(
+            0,
+            presence.lastActivity +
+              IDLE_TIMEOUT_MINUTES * 60_000 -
+              Date.now() +
+              25
+          )
+        );
+      }
+    };
+
+    const handleValue = (snapshot: { val: () => StoredPresence | null }) => {
+      emit(snapshot.val());
     };
 
     onValue(userPresenceRef, handleValue);
 
     return () => {
+      if (expiryTimer) clearTimeout(expiryTimer);
       off(userPresenceRef, "value", handleValue);
     };
   }
@@ -407,9 +524,11 @@ export class PresenceTracker {
   async getPresenceStats(): Promise<PresenceStats> {
     const presenceListRef = ref(database, "presence");
     const snapshot = await get(presenceListRef);
-    const data = snapshot.val() as Record<string, UserPresence> | null;
+    const users = aggregatePresenceTree(
+      snapshot.val() as Record<string, StoredPresence> | null
+    );
 
-    if (!data) {
+    if (users.length === 0) {
       return {
         activeCount: 0,
         inactiveCount: 0,
@@ -425,14 +544,8 @@ export class PresenceTracker {
       byDevice: { desktop: 0, mobile: 0, tablet: 0 },
     };
 
-    for (const presence of Object.values(data)) {
-      // Compute real-time activity status
-      const status = computeActivityStatus(
-        presence.lastActivity ?? presence.lastSeen,
-        presence.online
-      );
-
-      if (status === "active") {
+    for (const presence of users) {
+      if (presence.activityStatus === "active") {
         stats.activeCount++;
         stats.byModule[presence.currentModule] =
           (stats.byModule[presence.currentModule] ?? 0) + 1;
@@ -448,29 +561,21 @@ export class PresenceTracker {
   async isUserOnline(userId: string): Promise<boolean> {
     const userPresenceRef = ref(database, `presence/${userId}`);
     const snapshot = await get(userPresenceRef);
-    const presence = snapshot.val() as UserPresence | null;
+    const stored = snapshot.val() as StoredPresence | null;
 
-    if (!presence) return false;
+    if (!stored) return false;
 
-    // Use activity-based status, not just connection status
-    const status = computeActivityStatus(
-      presence.lastActivity ?? presence.lastSeen,
-      presence.online
-    );
-    return status === "active";
+    return aggregateStoredPresence(userId, stored).activityStatus === "active";
   }
 
   /** Get detailed activity status for a user */
   async getUserActivityStatus(userId: string): Promise<ActivityStatus> {
     const userPresenceRef = ref(database, `presence/${userId}`);
     const snapshot = await get(userPresenceRef);
-    const presence = snapshot.val() as UserPresence | null;
+    const stored = snapshot.val() as StoredPresence | null;
 
-    if (!presence) return "offline";
+    if (!stored) return "offline";
 
-    return computeActivityStatus(
-      presence.lastActivity ?? presence.lastSeen,
-      presence.online
-    );
+    return aggregateStoredPresence(userId, stored).activityStatus;
   }
 }

@@ -61,9 +61,21 @@ export interface CachedAnnouncement {
   actionLabel?: string;
   actionUrl?: string;
 }
+
+export interface AdminUserAccountSummary {
+  totalAuthAccounts: number;
+  registeredAccounts: number;
+  anonymousAccounts: number;
+  totalProfiles: number;
+  registeredProfiles: number;
+  anonymousProfiles: number;
+  missingRegisteredProfiles: number;
+}
+
 export interface SystemState {
   users: CachedUserMetadata[];
   announcements: CachedAnnouncement[];
+  accountSummary: AdminUserAccountSummary | null;
   loadedAt: number;
   expiresAt: number;
 }
