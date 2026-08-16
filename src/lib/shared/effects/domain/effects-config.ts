@@ -120,7 +120,11 @@ export interface CharcoalIntent {
   spread: number;
   /** 0-1. Semantic glow. */
   glow: number;
-  /** 3D emission behavior. The 2D renderer keeps its existing coal motion. */
+  /**
+   * Emission behavior. Honoured by BOTH renderers: 3D reads the full motion
+   * profile, 2D reads its spark-relevant half via semanticToCharcoalParams
+   * (it has no fragment class, so the fragment* fields do not apply).
+   */
   emissionStyle?: CharcoalEmissionStyle;
   /** Optional hottest spark color override (RGB 0-255). Null = use default curve. */
   coreColor?: [number, number, number];

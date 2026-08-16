@@ -7,6 +7,8 @@
  */
 
 import type { PropTipData } from "./fire-types";
+import type { CharcoalEmissionStyle } from "$lib/shared/effects/domain/effects-config";
+import { resolveCharcoal3DMotionProfile } from "$lib/shared/effects/translators/charcoal-3d-motion-profiles";
 
 // ============================================================================
 // Core Particle
@@ -214,6 +216,16 @@ export interface CharcoalSemanticValues {
 	spread: number;
 	/** 0 = subtle dim sparks, 1 = bright hot glow */
 	glow: number;
+	/**
+	 * Which emission behavior the look asks for. Optional: omitting it is the
+	 * neutral profile, identical to the values the three sliders produce alone.
+	 *
+	 * This used to be 3D-only, which meant four of the eight shipped Coal
+	 * presets selected an emission SHAPE that the 2D stage silently ignored -
+	 * a difference the user could pick and never receive. The 3D profile table
+	 * is the single source; the spark-relevant half of it applies here.
+	 */
+	emissionStyle?: CharcoalEmissionStyle;
 }
 
 /** Default semantic values that correspond to DEFAULT_CHARCOAL_PARAMS. */
@@ -245,31 +257,55 @@ export function semanticToCharcoalParams(
 		coolColor?: [number, number, number];
 	},
 ): CharcoalSparkParams {
-	const { intensity, spread, glow } = semantic;
+	const { intensity, spread, glow, emissionStyle } = semantic;
+
+	// The spark-relevant half of the 3D motion profile. 2D has no separate
+	// fragment class, so the fragment* fields have no analogue here and are
+	// deliberately not consumed - honouring the spark half is what makes the
+	// four styled presets actually differ on the 2D stage. Omitting the style
+	// gives the identity profile, so existing looks are byte-identical.
+	const p = emissionStyle ? resolveCharcoal3DMotionProfile(emissionStyle) : null;
+	const emission = p?.motionEmissionScale ?? 1;
+	const idle = p?.idleEmissionScale ?? 1;
+	const burstSpark = p?.burstSparkScale ?? 1;
+	const burstThresh = p?.burstThresholdScale ?? 1;
+	const cone = p?.coneScale ?? 1;
+	const velocity = p?.velocityScale ?? 1;
+	const sparkLife = p?.sparkLifetimeScale ?? 1;
+	const sparkSize = p?.sparkSizeScale ?? 1;
+	const gravityScale = p?.gravityScale ?? 1;
 
 	return {
 		// Intensity controls emission volume
-		ambientRate: Math.round(lerp(5, 260, intensity)),
-		burstMultiplier: Math.round(lerp(8, 130, intensity)),
-		burstMax: Math.round(lerp(40, 650, intensity)),
-		burstThreshold: Math.round(lerp(180, 15, intensity)),
+		ambientRate: Math.round(lerp(5, 260, intensity) * emission),
+		burstMultiplier: Math.round(lerp(8, 130, intensity) * burstSpark),
+		burstMax: Math.round(lerp(40, 650, intensity) * burstSpark),
+		burstThreshold: Math.round(lerp(180, 15, intensity) * burstThresh),
 		ambientSpeedThreshold: lerp(15, 3, intensity),
 		maxParticles: Math.round(lerp(200, 5000, intensity)),
-		idleRate: Math.round(lerp(0, 25, intensity)),
+		// idleEmissionScale is the one profile field that can raise a value from
+		// zero-ish to dominant: banked-ember idles at 0.85 while moving at 0.16,
+		// which is the whole character of a fire damped down.
+		idleRate: Math.round(lerp(0, 25, intensity) * idle),
 
 		// Spread controls how far sparks travel (floor raised - below old 20% was useless)
-		gravity: Math.round(lerp(480, 15, spread)),
+		gravity: Math.round(lerp(480, 15, spread) * gravityScale),
 		drag: lerp(0.88, 0.99, spread),
 		velocityInheritance: lerp(0.78, 0.3, spread),
-		perturbSpeedMin: Math.round(lerp(13, 50, spread)),
-		perturbSpeedMax: Math.round(lerp(52, 200, spread)),
-		spreadAngle: lerp(Math.PI * 0.24, Math.PI * 0.9, spread),
-		lifetimeMin: Number(lerp(0.84, 3.0, spread).toFixed(2)),
-		lifetimeMax: Number(lerp(2.24, 8.0, spread).toFixed(2)),
+		perturbSpeedMin: Math.round(lerp(13, 50, spread) * velocity),
+		perturbSpeedMax: Math.round(lerp(52, 200, spread) * velocity),
+		// Clamped: cinder-fan's 1.8x cone would otherwise push a wide preset past
+		// a full turn, which wraps and reads as a narrower spray, not a wider one.
+		spreadAngle: Math.min(
+			Math.PI,
+			lerp(Math.PI * 0.24, Math.PI * 0.9, spread) * cone
+		),
+		lifetimeMin: Number((lerp(0.84, 3.0, spread) * sparkLife).toFixed(2)),
+		lifetimeMax: Number((lerp(2.24, 8.0, spread) * sparkLife).toFixed(2)),
 
 		// Glow controls visual brightness
-		sizeMin: Math.round(lerp(3, 8, glow)),
-		sizeMax: Math.round(lerp(8, 18, glow)),
+		sizeMin: Math.round(lerp(3, 8, glow) * sparkSize),
+		sizeMax: Math.round(lerp(8, 18, glow) * sparkSize),
 		shrinkOverLife: true,
 		emberGlowRadius: Math.round(lerp(10, 40, glow)),
 		emberGlowIntensity: Number(lerp(0.4, 3.0, glow).toFixed(2)),

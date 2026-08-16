@@ -34,10 +34,11 @@
    * alike, were indistinguishable. Run the simulation and Steel Wool is a dense
    * tight shower, Cinder Fan is a wide slow drift, Ash is a thin grey dribble.
    *
-   * emissionStyle is deliberately ignored: it only reaches the 3D renderer
-   * (webgl3d-translator.ts), and CharcoalIntent says so in as many words - "the
-   * 2D renderer keeps its existing coal motion". A tile that varied on it would
-   * promise a difference the 2D stage does not deliver.
+   * emissionStyle is honoured, because it now reaches 2D. It used to be
+   * 3D-only, so the tile deliberately ignored it rather than promise a
+   * difference the 2D stage would not deliver; semanticToCharcoalParams folds
+   * the spark half of the 3D motion profile in, so the tile gets it for free
+   * and by construction shows exactly what the stage will do.
    */
   const CHARCOAL_DEFAULTS = DEFAULT_EFFECTS_CONFIG.charcoal;
 
@@ -245,6 +246,7 @@
         intensity: intent.intensity,
         spread: intent.spread,
         glow: intent.glow,
+        emissionStyle: intent.emissionStyle,
       },
       {
         coreColor: intent.coreColor,

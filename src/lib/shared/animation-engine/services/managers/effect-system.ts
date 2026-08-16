@@ -70,10 +70,10 @@ function getCharcoalParamsFromConfig(
   if (!ecs) {
     return semanticToCharcoalParams({ intensity: 0.5, spread: 0.5, glow: 0.6 });
   }
-  const { intensity, spread, glow, coreColor, midColor, coolColor } =
+  const { intensity, spread, glow, emissionStyle, coreColor, midColor, coolColor } =
     ecs.charcoal;
   return semanticToCharcoalParams(
-    { intensity, spread, glow },
+    { intensity, spread, glow, emissionStyle },
     { coreColor, midColor, coolColor }
   );
 }

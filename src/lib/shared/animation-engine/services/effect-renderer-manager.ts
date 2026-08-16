@@ -209,10 +209,10 @@ export class EffectRendererManager {
   /** Expose charcoal params from EffectsConfigState for the registry onInit hook. */
   getCharcoalParamsFromConfig(): CharcoalSparkParams | undefined {
     if (!this.effectsConfigState) return undefined;
-    const { intensity, spread, glow, coreColor, midColor, coolColor } =
+    const { intensity, spread, glow, emissionStyle, coreColor, midColor, coolColor } =
       this.effectsConfigState.charcoal;
     return semanticToCharcoalParams(
-      { intensity, spread, glow },
+      { intensity, spread, glow, emissionStyle },
       { coreColor, midColor, coolColor }
     );
   }
