@@ -22,7 +22,7 @@
     loopOptionTint,
     ORIENTATION_REPEAT_COLOR,
   } from "./loop-option-color";
-  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
+  import LOOPChoiceButton from "./LOOPChoiceButton.svelte";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 
   interface Props {
@@ -105,54 +105,26 @@
       <section class="options-section" transition:slide={{ duration: 200 }}>
         <div class="options-grid" data-count={choiceCount}>
           {#each directOptions as option}
-            <button
-              type="button"
-              class="loop-button"
-              style={loopTypeTint(option.loopType)}
-              onclick={() => handleDirectClick(option.loopType)}
+            <LOOPChoiceButton
+              components={parseLoopComponents(option.loopType)}
+              tint={loopTypeTint(option.loopType)}
+              name={option.name}
+              description={option.description}
               disabled={isApplying}
-            >
-              <!--
-              The same glyph badge these LOOPs already wear on a sequence card,
-              in the same brand colours — so the choice here and the thing it
-              produces are recognisably one object.
-            -->
-              <span class="loop-glyph" aria-hidden="true">
-                <LOOPIconStrip
-                  activeComponents={parseLoopComponents(option.loopType)}
-                  size={38}
-                  showFreeformWhenEmpty={false}
-                />
-              </span>
-              <span class="loop-text">
-                <span class="loop-name">{option.name}</span>
-                <span class="loop-desc">{option.description}</span>
-              </span>
-            </button>
+              onclick={() => handleDirectClick(option.loopType)}
+            />
           {/each}
 
           {#if orientationRepeat && onOrientationRepeat}
-            <button
-              type="button"
-              class="loop-button repeat"
-              style={repeatTint}
-              onclick={() => !isApplying && onOrientationRepeat?.()}
+            <LOOPChoiceButton
+              components={new Set()}
+              fallbackIcon="fa-repeat"
+              tint={repeatTint}
+              name={`Repeated ×${orientationRepeat.count}`}
+              description={`Back at the start position, but the props are turned. Repeating ${orientationRepeat.count} times returns their orientation too.`}
               disabled={isApplying}
-            >
-              <span class="loop-glyph" aria-hidden="true">
-                <i class="fas fa-repeat"></i>
-              </span>
-              <span class="loop-text">
-                <span class="loop-name"
-                  >Repeated &times;{orientationRepeat.count}</span
-                >
-                <span class="loop-desc">
-                  Back at the start position, but the props are turned.
-                  Repeating
-                  {orientationRepeat.count} times returns their orientation too.
-                </span>
-              </span>
-            </button>
+              onclick={() => !isApplying && onOrientationRepeat?.()}
+            />
           {/if}
         </div>
       </section>
@@ -182,22 +154,19 @@
               </div>
               <div class="bridge-loops">
                 {#each option.availableLOOPs as loop}
-                  <button
-                    type="button"
-                    class="loop-button bridge"
-                    style={loopTypeTint(loop.loopType)}
+                  <LOOPChoiceButton
+                    components={parseLoopComponents(loop.loopType)}
+                    tint={loopTypeTint(loop.loopType)}
+                    name={formatLOOPType(loop.loopType)}
+                    glyphSize={18}
+                    disabled={isApplying}
+                    title={loop.description || formatLOOPType(loop.loopType)}
                     onclick={() => {
                       const bridgeLetter = option.bridgeLetters[0];
                       if (bridgeLetter)
                         handleBridgeClick(bridgeLetter, loop.loopType);
                     }}
-                    disabled={isApplying}
-                    title={loop.description || formatLOOPType(loop.loopType)}
-                  >
-                    <span class="loop-name"
-                      >{formatLOOPType(loop.loopType)}</span
-                    >
-                  </button>
+                  />
                 {/each}
               </div>
             </div>
@@ -414,179 +383,18 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-
-    .loop-button {
-      min-height: 4.75rem;
-      padding: 0.75rem;
-      gap: 0.25rem;
-    }
   }
 
-  /*
-   * LOOP Buttons.
-   *
-   * --loop-c1 / --loop-c2 come from the option's own primitives (see
-   * loop-option-color.ts), so Swapped is green, Inverted is orange, and
-   * "Swapped / Inverted" sweeps green into orange — matching the badge the
-   * same LOOP carries on a sequence card. The theme accent is the fallback
-   * for any option whose type names no known primitive.
-   */
-  .loop-button {
-    --c1: var(--loop-c1, var(--theme-accent, #6366f1));
-    --c2: var(--loop-c2, var(--theme-accent, #6366f1));
-    --c2-mix: var(--loop-c2-mix, 9%);
-
-    display: flex;
-    flex: 0 1 var(--choice-basis);
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    min-width: 0;
-    min-height: 8.75rem;
-    padding: 1rem 0.875rem;
-    text-align: center;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--c1) 22%, transparent) 0%,
-      color-mix(in srgb, var(--c2) var(--c2-mix), transparent) 100%
-    );
-    border: 2px solid color-mix(in srgb, var(--c1) 45%, transparent);
-    border-radius: var(--settings-radius-md, 12px);
-    cursor: pointer;
-    color: var(--theme-text, #ffffff);
-    font-size: var(--font-size-md, 16px);
-    font-weight: 600;
-    transition: all var(--duration-normal) ease;
-    user-select: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .loop-button:hover:not(:disabled) {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--c1) 34%, transparent) 0%,
-      color-mix(in srgb, var(--c2) calc(var(--c2-mix) + 10%), transparent) 100%
-    );
-    border-color: var(--c1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--c1) 32%, transparent);
-  }
-
-  .loop-button:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .loop-button:focus-visible {
-    outline: 2px solid var(--c1);
-    outline-offset: 2px;
-  }
-
-  .loop-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .loop-button.bridge {
-    min-height: var(--min-touch-target);
-    font-size: var(--font-size-min, 14px);
-  }
-
-  .loop-glyph {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 2.375rem;
-    font-size: 2rem;
-    color: var(--c1);
-  }
-
-  .loop-text {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.375rem;
-    min-width: 0;
-  }
-
-  .loop-name {
-    font-size: 1rem;
-    line-height: 1.2;
-  }
-
-  .loop-desc {
-    max-width: 24ch;
-    font-size: 0.8125rem;
-    font-weight: 400;
-    line-height: 1.35;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
-  }
+  /* The choice buttons themselves live in LOOPChoiceButton, which Fuse's
+     pairing editor renders too. Only their placement is owned here. */
 
   @container loop-picker (min-width: 90rem) {
-    .picker-header h3,
-    .loop-name {
+    .picker-header h3 {
       font-size: 1.25rem;
     }
 
-    .subtitle,
-    .loop-desc {
+    .subtitle {
       font-size: 1rem;
-    }
-
-    .loop-button {
-      min-height: 10rem;
-      padding: 1.25rem 1rem;
-    }
-
-    .loop-glyph {
-      min-height: 3rem;
-      transform: scale(1.25);
-    }
-
-    .loop-desc {
-      max-width: 28ch;
-    }
-  }
-
-  /* Phone-width drawers read faster as compact horizontal rows. */
-  @container loop-picker (max-width: 31.999rem) {
-    .loop-button {
-      flex-direction: row;
-      justify-content: flex-start;
-      min-height: 5.25rem;
-      padding: 0.75rem 1rem;
-      text-align: left;
-    }
-
-    .loop-glyph {
-      flex: 0 0 3rem;
-    }
-
-    .loop-text {
-      align-items: flex-start;
-    }
-
-    .loop-desc {
-      max-width: none;
-    }
-  }
-
-  /*
-   * Descriptions are the first thing to go on a short viewport (a folded phone
-   * in landscape). A container query cannot ask this — the picker is
-   * `container-type: inline-size`, which answers inline-axis questions only,
-   * and switching it to `size` would make its height stop depending on its
-   * own content.
-   */
-  @media (max-height: 34rem) {
-    .loop-desc {
-      display: none;
-    }
-
-    .loop-button {
-      min-height: 4.75rem;
-      padding: 0.625rem 0.75rem;
-      gap: 0.25rem;
     }
   }
 
@@ -679,10 +487,15 @@
     gap: var(--settings-spacing-xs, 4px);
   }
 
-  .bridge-loops > .loop-button {
+  /* Bridge choices are a dense secondary list — the shared button, shrunk to a
+     touch-target row. */
+  .bridge-loops :global(.loop-button) {
     flex: 0 1 auto;
     min-width: 8rem;
     max-width: 16rem;
+    min-height: var(--min-touch-target);
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-min, 14px);
   }
 
   /* Applying overlay */
@@ -705,14 +518,4 @@
   }
 
   /* Reduced motion preference */
-  @media (prefers-reduced-motion: reduce) {
-    .loop-button {
-      transition: none;
-    }
-
-    .loop-button:hover:not(:disabled),
-    .loop-button:active:not(:disabled) {
-      transform: none;
-    }
-  }
 </style>

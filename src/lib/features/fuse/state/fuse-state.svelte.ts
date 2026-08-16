@@ -667,7 +667,18 @@ export function createFuseState({
   let symmetryPreview = $state<SequenceData | null>(null);
   let symmetryGeneration = 0;
   let relationshipDraftKey: string | null = null;
-  let relationshipPreviewBaseline: SequenceData | null = null;
+  // The draft the pairing editor is currently showing. While it is set, the
+  // follower card reads these instead of the committed values, so picking a
+  // rule rebuilds the follower's steps in place rather than only the fused
+  // canvas. Cancel restores both halves of the baseline.
+  let relationshipDraft = $state<{
+    driver: FuseSide;
+    transform: FuseTransformId;
+  } | null>(null);
+  let relationshipPreviewBaseline: {
+    preview: SequenceData | null;
+    symmetry: SequenceData | null;
+  } | null = null;
   // True while a symmetry follower derive is in flight. Blocks Fuse so a tap
   // mid-derive can't build the driver's stale independent preview — deriveFollower
   // is the sole writer of previewSequence in symmetry mode.
@@ -1888,9 +1899,13 @@ export function createFuseState({
     const length = appliedLength;
     const key = `${nextDriver}:${nextTransform}`;
     if (relationshipDraftKey === null) {
-      relationshipPreviewBaseline = previewSequence;
+      relationshipPreviewBaseline = {
+        preview: previewSequence,
+        symmetry: symmetryPreview,
+      };
     }
     relationshipDraftKey = key;
+    relationshipDraft = { driver: nextDriver, transform: nextTransform };
     const generation = ++symmetryGeneration;
     isDeriving = true;
 
@@ -1908,7 +1923,8 @@ export function createFuseState({
       ) {
         return;
       }
-      publishPreview(preview);
+      // syncSymmetry so the follower card re-renders its steps from this draft.
+      publishPreview(preview, { syncSymmetry: true });
       error = null;
       const driverLabel = nextDriver === "blue" ? "Blue" : "Red";
       const followerLabel = nextDriver === "blue" ? "Red" : "Blue";
@@ -1938,11 +1954,15 @@ export function createFuseState({
     if (relationshipDraftKey === null) return;
     const baseline = relationshipPreviewBaseline;
     relationshipDraftKey = null;
+    relationshipDraft = null;
     relationshipPreviewBaseline = null;
     symmetryGeneration += 1;
     isDeriving = false;
-    if (baseline) {
-      publishPreview(baseline);
+    if (baseline?.preview) {
+      // Publish without syncSymmetry, then restore the follower's own baseline,
+      // so the async letter derivation inside publishPreview cannot overwrite it.
+      publishPreview(baseline.preview);
+      symmetryPreview = baseline.symmetry;
       error = null;
       readyMessage =
         mode === "symmetry" ? symmetryReadyMessage() : "Both paths are ready.";
@@ -1971,6 +1991,7 @@ export function createFuseState({
   function setMode(next: FuseMode): void {
     if (next === mode) return;
     relationshipDraftKey = null;
+    relationshipDraft = null;
     relationshipPreviewBaseline = null;
     mode = next;
     persistModeState();
@@ -1995,6 +2016,7 @@ export function createFuseState({
     nextTransform: FuseTransformId
   ): void {
     relationshipDraftKey = null;
+    relationshipDraft = null;
     relationshipPreviewBaseline = null;
     const changed =
       mode !== "symmetry" ||
@@ -2302,6 +2324,22 @@ export function createFuseState({
     },
     get symmetryPreview() {
       return symmetryPreview;
+    },
+    /**
+     * What the workspace should show right now. While the pairing editor holds
+     * a draft these report the draft; otherwise they report the committed
+     * relationship. Display code reads these so the follower card previews the
+     * rule under the cursor; anything that persists or fuses reads the
+     * committed `mode` / `driverSide` / `transformId` above.
+     */
+    get isPreviewingRelationship() {
+      return relationshipDraft !== null;
+    },
+    get previewDriverSide(): FuseSide {
+      return relationshipDraft?.driver ?? driverSide;
+    },
+    get previewTransformId(): FuseTransformId {
+      return relationshipDraft?.transform ?? transformId;
     },
     blue,
     red,

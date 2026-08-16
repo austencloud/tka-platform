@@ -8,8 +8,9 @@
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import type { FuseMode } from "../state/fuse-state.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import {
-    FUSE_TRANSFORM_ICONS,
+    fuseTransformGlyph,
     fuseTransformTint,
   } from "../domain/fuse-transform-presentation";
   import FuseModeBar from "./FuseModeBar.svelte";
@@ -40,7 +41,7 @@
   const draftFollowerLabel = $derived(
     draftDriver === "blue" ? "Red path" : "Blue path"
   );
-  const draftTransformIcon = $derived(FUSE_TRANSFORM_ICONS[draftTransform]);
+  const draftGlyph = $derived(fuseTransformGlyph(draftTransform));
   const draftTransformTint = $derived(fuseTransformTint(draftTransform));
   const busy = $derived(
     fuseState.isLoadingLength ||
@@ -168,7 +169,13 @@
           </span>
           <i class="fas fa-arrow-right" aria-hidden="true"></i>
           <span class="rule-node" style={draftTransformTint}>
-            <i class="fas {draftTransformIcon}" aria-hidden="true"></i>
+            <LOOPIconStrip
+              activeComponents={draftGlyph.components}
+              reflectionAxis={draftGlyph.reflectionAxis}
+              rotationPeriod={draftGlyph.rotationPeriod}
+              size={16}
+              showFreeformWhenEmpty={false}
+            />
             <span class="node-copy">
               <span class="node-role">Rule</span>
               <strong>{draftTransformLabel}</strong>
@@ -442,10 +449,7 @@
     );
   }
 
-  .rule-node > i {
-    color: var(--c1);
-    font-size: var(--font-size-min, 14px);
-  }
+
 
   .editor-actions {
     display: grid;

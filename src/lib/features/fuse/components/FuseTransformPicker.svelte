@@ -7,13 +7,12 @@
   Shown by FuseLayout only while the tab is in symmetry mode.
 -->
 <script lang="ts">
-  import OptionChipRow from "$lib/shared/animation-engine/components/effects-panel/OptionChipRow.svelte";
+  import LOOPChoiceButton from "$lib/shared/components/loop-picker/LOOPChoiceButton.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import {
-    FUSE_TRANSFORM_ICONS,
-    fuseTransformAccent,
-    fuseTransformAccent2,
+    fuseTransformGlyph,
+    fuseTransformTint,
   } from "../domain/fuse-transform-presentation";
   import {
     FUSE_TRANSFORMS,
@@ -61,25 +60,19 @@
     ).map((option) => ({ ...option, disabled }))
   );
 
-  // Each rule wears the colour of the LOOP primitive it is; a combo wears both.
+  // Each rule IS a LOOP primitive, so each renders as the same choice button
+  // the Extend drawer uses — same glyph, same brand colours, and the same
+  // two-stop sweep when a rule composes two primitives.
   const transformOptions = $derived(
     FUSE_TRANSFORMS.map((transform) => ({
-      value: transform.id,
-      label: transform.label,
-      description: transform.description,
-      icon: FUSE_TRANSFORM_ICONS[transform.id],
-      accent: fuseTransformAccent(transform.id),
-      accent2: fuseTransformAccent2(transform.id),
+      ...transform,
+      glyph: fuseTransformGlyph(transform.id),
+      tint: fuseTransformTint(transform.id),
     }))
   );
 
   const followerLabel = $derived(selectedDriver === "blue" ? "Red" : "Blue");
   const driverLabel = $derived(selectedDriver === "blue" ? "Blue" : "Red");
-  const followerColor = $derived(
-    selectedDriver === "blue"
-      ? "var(--prop-red, #f44336)"
-      : "var(--prop-blue, #2196f3)"
-  );
 
   function handleDriver(value: FuseSide): void {
     if (onDriverChange) onDriverChange(value);
@@ -132,18 +125,31 @@
         </div>
       </div>
     {/if}
-    <OptionChipRow
-      label={relationshipLayout
+    <span class="options-label" id="fuse-rule-label">
+      {relationshipLayout
         ? `Rule applied to ${followerLabel}`
         : `${followerLabel} follows ${driverLabel}`}
-      ariaLabel="Follower transformation"
-      options={transformOptions}
-      value={selectedTransform}
-      onChange={handleTransform}
-      color={followerColor}
-      {disabled}
-      layout={relationshipLayout ? "tiles" : "stacked"}
-    />
+    </span>
+    <div
+      class="options-grid"
+      role="radiogroup"
+      aria-labelledby="fuse-rule-label"
+      data-count={transformOptions.length}
+    >
+      {#each transformOptions as option (option.id)}
+        <LOOPChoiceButton
+          components={option.glyph.components}
+          reflectionAxis={option.glyph.reflectionAxis}
+          rotationPeriod={option.glyph.rotationPeriod}
+          tint={option.tint}
+          name={option.label}
+          description={option.description}
+          selected={selectedTransform === option.id}
+          {disabled}
+          onclick={() => handleTransform(option.id)}
+        />
+      {/each}
+    </div>
   </div>
 </div>
 
@@ -200,6 +206,41 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  /* Naming the container `loop-picker` is what hands LOOPChoiceButton its own
+     responsive tiers — the same ones the Extend drawer's shelf gives it. */
+  .transform-options {
+    container-type: inline-size;
+    container-name: loop-picker;
+  }
+
+  .options-label {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  /* Nine choices, so the column count is pinned per tier and never chosen by
+     auto-fill: 9 % 3 == 0 keeps every row full, while 4 or 5 columns would
+     strand the last rule alone on its own line. */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    min-width: 0;
+  }
+
+  @container loop-picker (max-width: 34rem) {
+    .options-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container loop-picker (max-width: 20rem) {
+    .options-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .field-heading {
@@ -270,15 +311,6 @@
     width: 100%;
   }
 
-  .transform-options {
-    min-width: 0;
-  }
-
-  .transform-options :global(.chip) {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 650;
-  }
-
   @container fuse (max-width: 960px) {
     .transform-picker:not(.embedded) {
       grid-template-columns: minmax(0, 1fr);
@@ -297,7 +329,7 @@
     }
 
     .relationship-layout .field-help,
-    .relationship-layout .transform-options :global(.option-label) {
+    .relationship-layout .options-label {
       display: none;
     }
 

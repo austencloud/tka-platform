@@ -18,8 +18,9 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import {
-    FUSE_TRANSFORM_ICONS,
+    fuseTransformGlyph,
     fuseTransformTint,
   } from "../domain/fuse-transform-presentation";
   import {
@@ -95,8 +96,12 @@
   // Symmetry mode: the driver keeps its source + controls; the follower renders
   // the derived result (fuseState.symmetryPreview) read-only, so this card shows the
   // fused follower hand and hides Back/Shuffle/overflow while symmetry is on.
+  // While the pairing editor holds a draft, follow the draft: picking a rule
+  // rebuilds this card's steps under the cursor instead of only the fused
+  // canvas, and switching the driver moves which card is the derived one.
   const isSymmetryFollower = $derived(
-    fuseState.mode === "symmetry" && side !== fuseState.driverSide
+    (fuseState.isPreviewingRelationship || fuseState.mode === "symmetry") &&
+      side !== fuseState.previewDriverSide
   );
   const displaySequence = $derived.by(() => {
     if (!isSymmetryFollower) return source.sequence;
@@ -108,17 +113,18 @@
     return soloPropToSequence(solo, side === "blue" ? "left" : "right");
   });
   const followerTransformLabel = $derived(
-    FUSE_TRANSFORMS.find((transform) => transform.id === fuseState.transformId)
-      ?.label ?? "Mirror"
+    FUSE_TRANSFORMS.find(
+      (transform) => transform.id === fuseState.previewTransformId
+    )?.label ?? "Mirror"
   );
   const driverLabel = $derived(
-    fuseState.driverSide === "blue" ? "Blue" : "Red"
+    fuseState.previewDriverSide === "blue" ? "Blue" : "Red"
   );
-  const followerTransformIcon = $derived(
-    FUSE_TRANSFORM_ICONS[fuseState.transformId]
+  const followerGlyph = $derived(
+    fuseTransformGlyph(fuseState.previewTransformId)
   );
   const followerTransformTint = $derived(
-    fuseTransformTint(fuseState.transformId)
+    fuseTransformTint(fuseState.previewTransformId)
   );
 
   // The playing beat, mapped to a 0-based step index, so the card cell for the
@@ -458,7 +464,13 @@
           ? `Change pairing — currently ${followerTransformLabel} of ${driverLabel}`
           : `${followerTransformLabel} of ${driverLabel}`}
       >
-        <i class="fas {followerTransformIcon}" aria-hidden="true"></i>
+        <LOOPIconStrip
+          activeComponents={followerGlyph.components}
+          reflectionAxis={followerGlyph.reflectionAxis}
+          rotationPeriod={followerGlyph.rotationPeriod}
+          size={18}
+          showFreeformWhenEmpty={false}
+        />
       </svelte:element>
     {:else}
       <div class="compact-source-tools">
@@ -491,8 +503,14 @@
         ? `Change pairing — currently ${followerTransformLabel} of ${driverLabel}`
         : undefined}
     >
-      <span class="note-glyph" style={followerTransformTint} aria-hidden="true">
-        <i class="fas {followerTransformIcon}"></i>
+      <span class="note-glyph" style={followerTransformTint}>
+        <LOOPIconStrip
+          activeComponents={followerGlyph.components}
+          reflectionAxis={followerGlyph.reflectionAxis}
+          rotationPeriod={followerGlyph.rotationPeriod}
+          size={16}
+          showFreeformWhenEmpty={false}
+        />
       </span>
       <span class="note-copy">
         <span class="note-role">Rebuilt from {driverLabel}</span>
