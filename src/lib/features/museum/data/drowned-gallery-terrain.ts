@@ -226,6 +226,34 @@ export interface Point2 {
   z: number;
 }
 
+/**
+ * A piece of exhibit furniture the wing needs, placed by the same pass that
+ * places the room. Kept here rather than in the scene component so the boards,
+ * the graybox and the tests all read one source for where things stand.
+ *
+ * Every placement below is derived from a room rect, never typed in by eye.
+ */
+export interface ExhibitFixture {
+  id: string;
+  kind:
+    | "opener-dais"
+    | "opener-plinth"
+    | "case-showcase"
+    | "case-screen"
+    | "case-card";
+  /** Expanded word for case furniture; absent on the opener. */
+  caseWord?: string;
+  centre: Point2;
+  /** Footprint in metres, x by z. */
+  size: { x: number; z: number };
+  /** The floor datum the object stands on. */
+  baseY: number;
+  /** Metres above baseY. */
+  height: number;
+  /** Facing in radians about +Y. 0 looks toward +z. */
+  facing: number;
+}
+
 export interface DrownedGalleryLayout {
   /** Interior world rects of the three rooms on the water route. */
   approach: WorldRect;
@@ -280,6 +308,8 @@ export interface DrownedGalleryLayout {
   alcoves: Point2[];
   /** Rails along every walkway edge that faces water. */
   balustrades: WorldRect[];
+  /** The wing's exhibit furniture: the opener pair and the three case triptychs. */
+  exhibitFixtures: ExhibitFixture[];
 
   // ── corridors ──
   approachCorridor: WorldRect[];
@@ -787,6 +817,113 @@ export function buildDrownedGalleryLayout(
     { ...channel, minZ: channel.maxZ, maxZ: channel.maxZ + RAIL_T },
     { ...channel, maxX: channel.minX, minX: channel.minX - RAIL_T },
     { ...channel, minX: channel.maxX, maxX: channel.maxX + RAIL_T },
+  ];
+
+  // ── Exhibit furniture ─────────────────────────────────────────────────────
+  // The visitor enters at the apron, walks the procession west→east facing the
+  // cases across the channel, and leaves through the east threshold. So the
+  // opener meets them on arrival, the showcases sit on the shelf, the screens
+  // go on the shore wall behind each showcase, and the card signs sit on the
+  // near bank at the visitor's own eye level.
+  const CASE_WORDS = ["AAAA", "BBBB", "CCCC"] as const;
+
+  const SHOWCASE_FOOTPRINT = { x: 2.0, z: 2.0 };
+  const SCREEN_FOOTPRINT = { x: 2.2, z: 0.2 };
+  const CARD_FOOTPRINT = { x: 0.9, z: 0.45 };
+  const OPENER_DAIS_FOOTPRINT = { x: 2.4, z: 2.4 };
+  const OPENER_PLINTH_FOOTPRINT = { x: 0.9, z: 0.45 };
+
+  /** Facing +z: presenting itself to a visitor who stands north of it. */
+  const FACE_NORTH = 0;
+
+  const caseFixtures: ExhibitFixture[] = alcoves.flatMap((anchor, index) => {
+    const word = CASE_WORDS[index];
+    return [
+      {
+        id: `case-showcase-${word}`,
+        kind: "case-showcase" as const,
+        caseWord: word,
+        centre: { x: anchor.x, z: anchor.z },
+        size: SHOWCASE_FOOTPRINT,
+        baseY: SHELF_Y,
+        height: 2.0,
+        // The performer faces the visitor across the channel.
+        facing: FACE_NORTH,
+      },
+      {
+        id: `case-screen-${word}`,
+        kind: "case-screen" as const,
+        caseWord: word,
+        // Flat against the shore's back wall, directly behind the showcase.
+        centre: { x: anchor.x, z: shore.minZ + SCREEN_FOOTPRINT.z / 2 + 0.1 },
+        size: SCREEN_FOOTPRINT,
+        baseY: SHELF_Y,
+        height: 2.6,
+        facing: FACE_NORTH,
+      },
+      {
+        id: `case-card-${word}`,
+        kind: "case-card" as const,
+        caseWord: word,
+        // A lectern on the near bank, at the channel's edge, in line with its case.
+        centre: {
+          x: anchor.x,
+          z: procession.minZ + CARD_FOOTPRINT.z / 2 + 0.35,
+        },
+        size: CARD_FOOTPRINT,
+        baseY: CAUSEWAY_Y,
+        height: 1.05,
+        // Tilted to a visitor standing south of it, who then looks past it.
+        facing: FACE_NORTH,
+      },
+    ];
+  });
+
+  // The corridor arrives on the apron's east half, so the opener stands in the
+  // west half: seen on entry, walked past rather than walked around.
+  const openerX = apron.minX + (apron.maxX - apron.minX) * 0.3;
+
+  // The visitor arrives from +z, so the label plinth stands between them and the
+  // dais and both face them. The pool's south rail eats the apron's first
+  // RAIL_T of depth; the group centres in what is left rather than being shoved
+  // against either edge.
+  const OPENER_GAP = 0.85;
+  const openerGroupDepth =
+    OPENER_DAIS_FOOTPRINT.z + OPENER_GAP + OPENER_PLINTH_FOOTPRINT.z;
+  const openerBandMinZ = apron.minZ + RAIL_T;
+  const openerMargin = (apron.maxZ - openerBandMinZ - openerGroupDepth) / 2;
+  const openerDaisZ =
+    openerBandMinZ + openerMargin + OPENER_DAIS_FOOTPRINT.z / 2;
+  const openerPlinthZ =
+    openerDaisZ +
+    OPENER_DAIS_FOOTPRINT.z / 2 +
+    OPENER_GAP +
+    OPENER_PLINTH_FOOTPRINT.z / 2;
+
+  const openerFixtures: ExhibitFixture[] = [
+    {
+      id: "opener-dais",
+      kind: "opener-dais",
+      centre: { x: openerX, z: openerDaisZ },
+      size: OPENER_DAIS_FOOTPRINT,
+      baseY: CAUSEWAY_Y,
+      height: 0.25,
+      facing: FACE_NORTH,
+    },
+    {
+      id: "opener-plinth",
+      kind: "opener-plinth",
+      centre: { x: openerX, z: openerPlinthZ },
+      size: OPENER_PLINTH_FOOTPRINT,
+      baseY: CAUSEWAY_Y,
+      height: 1.05,
+      facing: FACE_NORTH,
+    },
+  ];
+
+  const exhibitFixtures: ExhibitFixture[] = [
+    ...openerFixtures,
+    ...caseFixtures,
   ];
 
   // ── Corridors ─────────────────────────────────────────────────────────────
@@ -1346,6 +1483,7 @@ export function buildDrownedGalleryLayout(
     thresholdOpening,
     alcoves,
     balustrades,
+    exhibitFixtures,
     approachCorridor,
     galleryCorridor,
     floorRects,
