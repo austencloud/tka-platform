@@ -138,11 +138,20 @@ describe("SequenceBuilder loopSpec path", () => {
       },
     });
 
-    expect(["alpha2", "alpha6", "beta2", "beta6"]).toContain(
-      result.sequence[0]?.startPosition
+    const detected = detectLOOPFromSteps(result.sequence);
+
+    // Box lives on the intercardinal locations, so its reflection lands on a
+    // grid-relative diagonal. WHICH diagonal is emergent, not requested:
+    // FusedExecutor transports the reflection along the hand path from the
+    // seam (translateHandPath with a reversed offset), so the axis follows
+    // whichever start position the beam happened to pick. Both diagonals are
+    // equally valid, and pinning one here would be grid mode implying an
+    // axis — the exact coupling 9464ac63f0 removed.
+    expect(["northeast-southwest", "northwest-southeast"]).toContain(
+      detected.reflectionAxis
     );
     expect(isSequenceCircular(result.sequence)).toBe(true);
-    expect(detectLOOPFromSteps(result.sequence).components).toEqual(
+    expect(detected.components).toEqual(
       expect.arrayContaining(["mirrored", "rotated"])
     );
   });
@@ -186,7 +195,29 @@ describe("SequenceBuilder loopSpec path", () => {
       [LOOPComponent.MIRRORED, { period: 2 }],
       [LOOPComponent.SWAPPED, { period: 2 }],
     ]);
-    const expectedComponents = ["mirrored", "rotated", "swapped"];
+    // The reflection component's NAME follows the emergent axis, not the
+    // request. A spec's MIRRORED/FLIPPED default axis only binds a pure
+    // reflection: once ROTATED shares the period, the reflection stage
+    // receives an already-closed inner block and transports itself along the
+    // hand path from the seam, so the axis is whatever the randomly chosen
+    // seed produces — north-south reads back as "mirrored", east-west as
+    // "flipped", and the two diagonals as "mirrored" with their axis named in
+    // `reflectionAxis`. Same LOOP either way, which is why SequenceBuilder's
+    // own identity check collapses the two names to one "reflection" token
+    // (normalizeReflectionComponents) and skips the axis comparison entirely
+    // when ROTATED is present (directReflectionAxisFromSpec). This test
+    // asserts that same normalized identity; asserting "mirrored" literally
+    // would pin an axis the generator does not promise.
+    const REFLECTION_COMPONENTS = new Set(["mirrored", "flipped"]);
+    const normalizeReflection = (components: readonly string[]): string[] =>
+      [
+        ...new Set(
+          components.map((component) =>
+            REFLECTION_COMPONENTS.has(component) ? "reflection" : component
+          )
+        ),
+      ].sort();
+    const expectedComponents = ["reflection", "rotated", "swapped"];
 
     for (let sample = 0; sample < 25; sample++) {
       const result = builder.build({
@@ -207,13 +238,14 @@ describe("SequenceBuilder loopSpec path", () => {
         },
       });
 
-      const functional = [...detectLOOPFromSteps(result.sequence).components]
-        .map(String)
-        .sort();
+      const detected = detectLOOPFromSteps(result.sequence);
+      const rawFunctional = [...detected.components].map(String).sort();
+      const functional = normalizeReflection(rawFunctional);
       const rich = loopDetectorClass.detectLOOPType(result.sequence);
-      const classBased = rich.spec?.blue
+      const rawClassBased = rich.spec?.blue
         ? [...rich.spec.blue.components.keys()].map(String).sort()
         : [];
+      const classBased = normalizeReflection(rawClassBased);
       const diagnostic = JSON.stringify({
         sample,
         word: result.sequence
@@ -223,14 +255,32 @@ describe("SequenceBuilder loopSpec path", () => {
         positions: result.sequence.map(
           (step) => `${step.startPosition}→${step.endPosition}`
         ),
-        functional,
-        classBased,
+        reflectionAxis: detected.reflectionAxis,
+        rawFunctional,
+        rawClassBased,
       });
 
       expect(result.sequence.slice(1)).toHaveLength(16);
       expect(isSequenceCircular(result.sequence)).toBe(true);
       expect(functional, diagnostic).toEqual(expectedComponents);
       expect(classBased, diagnostic).toEqual(expectedComponents);
+
+      // Exactly one reflection reading, and it names a real axis — the
+      // normalization above must not be able to hide a missing or doubled
+      // reflection component.
+      expect(
+        rawFunctional.filter((c) => REFLECTION_COMPONENTS.has(c)),
+        diagnostic
+      ).toHaveLength(1);
+      expect(
+        [
+          "north-south",
+          "east-west",
+          "northeast-southwest",
+          "northwest-southeast",
+        ],
+        diagnostic
+      ).toContain(detected.reflectionAxis);
     }
   });
 
