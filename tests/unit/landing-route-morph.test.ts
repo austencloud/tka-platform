@@ -428,11 +428,10 @@ describe("landing shared-element contract", () => {
       'import LoopExplorer from "$lib/shared/loop-explorer/components/LoopExplorer.svelte"'
     );
 
+    // The corpus is served from `static/` rather than bundled — see
+    // curated-seeds.ts. Its size is still the reason this guard exists.
     const corpusBytes = statSync(
-      resolve(
-        process.cwd(),
-        "src/lib/shared/loop-explorer/domain/curated-seeds.json"
-      )
+      resolve(process.cwd(), "static/data/loop-explorer/curated-seeds.json")
     ).size;
     const teaserBytes = statSync(
       resolve(

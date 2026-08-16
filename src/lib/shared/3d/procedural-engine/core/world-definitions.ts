@@ -25,7 +25,10 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
 
   terrain: {
     type: "real-terrain",
-    dataPath: "../data/hannons-camp-terrain.json",
+    // Served from `static/`, fetched at mount. Previously a relative path that
+    // resolved from nowhere, while the destination imported the 4 MB field
+    // directly — this is now the one address for the elevation data.
+    dataPath: "/data/hannons-camp/hannons-camp-terrain.json",
   },
 
   chunks: {

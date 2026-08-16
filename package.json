@@ -244,30 +244,31 @@
       }
     ]
   },
+  "//size-limit": "Paths are GLOBS, never content hashes. The previous config pinned four specific hashed chunk filenames; Vite rehashes every build, so all four targets vanished and the budget silently measured nothing while 8+ MB of JSON accumulated in the bundle. `running: false` skips @size-limit/time booting headless Chrome per entry, which is what made a run over the 900-chunk glob hang. Limits are the 2026-08-16 gzipped measurement plus headroom: initial load 32.4 kB, all client JS 7.44 MB, CSS 845 kB. The JS headroom is deliberately tight (~2%) — bundled JSON gzips about 14:1, so a multi-MB static-import regression is only a few hundred gzipped kB and a loose limit would miss it.",
   "size-limit": [
     {
-      "name": "Main bundle (JS)",
-      "path": ".svelte-kit/output/client/_app/immutable/chunks/C_cjnAVj.js",
-      "limit": "350 KB",
-      "gzip": true
+      "name": "Initial load (entry + root layout)",
+      "path": [
+        ".svelte-kit/output/client/_app/immutable/entry/app.*.js",
+        ".svelte-kit/output/client/_app/immutable/nodes/0.*.js"
+      ],
+      "limit": "40 KB",
+      "gzip": true,
+      "running": false
     },
     {
-      "name": "Vendor chunk (dependencies)",
-      "path": ".svelte-kit/output/client/_app/immutable/chunks/CqlUKxnS.js",
-      "limit": "270 KB",
-      "gzip": true
-    },
-    {
-      "name": "Core domain logic",
-      "path": ".svelte-kit/output/client/_app/immutable/chunks/Df4sM1ji.js",
-      "limit": "150 KB",
-      "gzip": true
+      "name": "All client JS",
+      "path": ".svelte-kit/output/client/_app/immutable/**/*.js",
+      "limit": "7.6 MB",
+      "gzip": true,
+      "running": false
     },
     {
       "name": "Total CSS",
-      "path": ".svelte-kit/output/client/_app/immutable/assets/index.BrW9jqdU.css",
-      "limit": "90 KB",
-      "gzip": true
+      "path": ".svelte-kit/output/client/_app/immutable/assets/*.css",
+      "limit": "900 KB",
+      "gzip": true,
+      "running": false
     }
   ],
   "dependencies": {

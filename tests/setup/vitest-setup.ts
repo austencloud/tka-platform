@@ -1,5 +1,58 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
+// Serve root-relative URLs out of `static/`, the way the real server does.
+//
+// Bulk data (sequence snapshots, terrain fields, seed corpora) is FETCHED from
+// `static/` rather than imported, so it stays out of the JS bundle. Under node
+// a root-relative fetch has no base and throws ERR_INVALID_URL, which would
+// force every test touching that data to hand-roll its own stub. This resolves
+// `/data/x.json` to `static/data/x.json` on disk instead.
+//
+// The content-type matters: SimpleJsonCache treats a non-JSON content-type as
+// "file not found", because SvelteKit answers missing static files with its
+// HTML fallback at status 200.
+// `process.cwd()`, not `import.meta.url`: vite transforms this setup file, so
+// its `import.meta.url` is not a file:// URL the way the vitest config's is.
+// Vitest resolves setupFiles against the repo root, which is the cwd here.
+const STATIC_ROOT = path.resolve(process.cwd(), "static");
+const CONTENT_TYPES: Record<string, string> = {
+  json: "application/json",
+  svg: "image/svg+xml",
+  txt: "text/plain",
+};
+
+const upstreamFetch = globalThis.fetch;
+
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === "string" ? input : input.toString();
+
+  if (!url.startsWith("/")) {
+    if (!upstreamFetch) throw new Error(`No fetch available for ${url}`);
+    return upstreamFetch(input, init);
+  }
+
+  // Strip any query string before hitting the filesystem.
+  const relativePath = url.slice(1).split("?")[0];
+  const extension = relativePath.split(".").pop()?.toLowerCase() ?? "";
+
+  try {
+    const body = await readFile(path.join(STATIC_ROOT, relativePath), "utf8");
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "content-type": CONTENT_TYPES[extension] ?? "application/octet-stream",
+      },
+    });
+  } catch {
+    return new Response("Not found", {
+      status: 404,
+      headers: { "content-type": "text/plain" },
+    });
+  }
+}) as typeof globalThis.fetch;
 
 // Mock browser APIs BEFORE any imports that might use them
 Object.defineProperty(window, "matchMedia", {

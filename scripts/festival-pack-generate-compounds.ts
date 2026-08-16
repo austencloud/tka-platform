@@ -13,7 +13,7 @@ const OUTPUT = path.join(
 );
 const RUNTIME_OUTPUT = path.join(
   REPO,
-  "src/lib/features/choreo-card/data/festival-sampler-sequences.json"
+  "static/data/choreo-card/festival-sampler-sequences.json"
 );
 const PACK_COUNT = 60;
 const CLASSIC_POSITIONS = ["alpha1", "beta5", "gamma11"] as const;

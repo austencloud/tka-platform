@@ -120,7 +120,7 @@ export async function generateVerifiedExample(
     }
   }
 
-  const curated = findCuratedSeed(loopType, effectiveSlice);
+  const curated = await findCuratedSeed(loopType, effectiveSlice);
   if (curated) {
     const interval = defaultInterval(curated.steps.length, effectiveSlice);
     const relations = extractPairRelations(curated.steps, interval);

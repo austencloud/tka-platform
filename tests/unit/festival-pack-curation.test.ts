@@ -11,7 +11,7 @@ import {
   festivalSamplerManifestRevision,
 } from "$lib/features/choreo-card/services/festival-sampler-manifest";
 import uniquePackManifests from "$lib/features/choreo-card/data/festival-sampler-manifests.json";
-import localSequenceData from "$lib/features/choreo-card/data/festival-sampler-sequences.json";
+import localSequenceData from "../../static/data/choreo-card/festival-sampler-sequences.json";
 import { FESTIVAL_TURN_PATTERN_PRESETS } from "$lib/features/choreo-card/services/festival-sampler-turns";
 
 const require = createRequire(import.meta.url);

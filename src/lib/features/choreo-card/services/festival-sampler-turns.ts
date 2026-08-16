@@ -5,28 +5,68 @@ import {
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import { hydrate as hydrateCompositionalSequence } from "$lib/shared/foundation/services/sequence-hydrator";
-import publicSnapshot from "../../../../../static/data/snapshots/public-sequences.json";
-import tndBaseWords from "../../../../../static/data/hero/tnd-base-words.json";
-import localSequences from "../data/festival-sampler-sequences.json";
+import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
 import type { FestivalSamplerCardManifest } from "./festival-sampler-manifest";
 
-const publicDocuments = (publicSnapshot.documents ?? []) as unknown as Array<
-  Record<string, unknown>
->;
-const localTndRecords = new Map(
-  (tndBaseWords as Array<Record<string, unknown>>).map((record) => [
-    record.name as string,
-    record,
-  ])
-);
-const localSequenceRecords = (localSequences.records ?? {}) as Record<
-  string,
-  Record<string, unknown>
->;
+/**
+ * These three corpora are FETCHED, never imported.
+ *
+ * Together they are ~7.5 MB of JSON. A top-level `import` compiles all of it
+ * into the deck-releaser chunk as a `JSON.parse` string literal, so every
+ * visitor to that route paid the parse cost whether or not they opened the
+ * festival sampler — and the two snapshots below are ALSO served out of
+ * `static/`, so the bytes shipped twice.
+ *
+ * `jsonCache` dedups concurrent requests and caches the parsed result, so the
+ * repeated `await`s below cost one network round trip per corpus per session.
+ */
+const PUBLIC_SNAPSHOT_URL = "/data/snapshots/public-sequences.json";
+const TND_BASE_WORDS_URL = "/data/hero/tnd-base-words.json";
+const PACK_LOCAL_SEQUENCES_URL =
+  "/data/choreo-card/festival-sampler-sequences.json";
+
+async function loadPublicDocuments(): Promise<
+  Array<Record<string, unknown>>
+> {
+  const snapshot = await jsonCache.get<{
+    documents?: Array<Record<string, unknown>>;
+  }>(PUBLIC_SNAPSHOT_URL);
+  return snapshot.documents ?? [];
+}
+
+/**
+ * Indexed by name because that is the only key a `catalog` card carries. Built
+ * once per session and held alongside the cached JSON rather than rebuilt per
+ * lookup — a 12k-entry Map rebuild per card is not free during a deck render.
+ */
+let tndRecordsByName: Map<string, Record<string, unknown>> | null = null;
+
+async function loadTndRecords(): Promise<
+  Map<string, Record<string, unknown>>
+> {
+  if (tndRecordsByName) return tndRecordsByName;
+
+  const records =
+    await jsonCache.get<Array<Record<string, unknown>>>(TND_BASE_WORDS_URL);
+  tndRecordsByName = new Map(
+    records.map((record) => [record.name as string, record])
+  );
+  return tndRecordsByName;
+}
+
+async function loadPackLocalSequences(): Promise<
+  Record<string, Record<string, unknown>>
+> {
+  const pack = await jsonCache.get<{
+    records?: Record<string, Record<string, unknown>>;
+  }>(PACK_LOCAL_SEQUENCES_URL);
+  return pack.records ?? {};
+}
 
 async function findPublicSequence(
   card: FestivalSamplerCardManifest
 ): Promise<SequenceData> {
+  const publicDocuments = await loadPublicDocuments();
   const indexed = publicDocuments.find(
     (sequence) =>
       sequence.id === card.id && sequence.sourceRef === card.sourceRef
@@ -46,13 +86,14 @@ export async function loadFestivalSamplerBaseSequence(
   if (card.source === "publicSequences") return findPublicSequence(card);
 
   if (card.source === "catalog") {
-    const record = localTndRecords.get(card.name);
+    const record = (await loadTndRecords()).get(card.name);
     if (!record) {
       throw new Error(`Festival sampler TnD source is missing: ${card.name}`);
     }
     return hydrateSequence(record);
   }
 
+  const localSequenceRecords = await loadPackLocalSequences();
   const localRecord = localSequenceRecords[card.id ?? card.name];
   if (localRecord) return hydrateSequence(localRecord);
 

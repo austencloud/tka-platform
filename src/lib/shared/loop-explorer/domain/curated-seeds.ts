@@ -11,9 +11,15 @@
  * Seeds hydrate on demand and cache by pool position. Editorial routes import
  * the dedicated teaser fixture instead, so this complete fallback corpus is
  * only parsed when the Loop Explorer itself needs it.
+ *
+ * The corpus is FETCHED, not imported. At 1.3 MB it was the third-largest JSON
+ * literal in the bundle, and it is a LAST-RESORT fallback — reached only after
+ * live generation has exhausted its retries — so the common path paid for a
+ * corpus it never touched. Accessors are async for that reason; both call sites
+ * were already inside async functions.
  */
 
-import curatedSeedsJson from "./curated-seeds.json";
+import { jsonCache } from "$lib/shared/pictograph/shared/services/simple-json-cache";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
@@ -27,18 +33,25 @@ type CuratedSeedsWire = Record<
   Partial<Record<LoopSlice, readonly CuratedSequenceWire[]>>
 >;
 
-const RAW = curatedSeedsJson as unknown as CuratedSeedsWire;
+const CURATED_SEEDS_URL = "/data/loop-explorer/curated-seeds.json";
+
 const cache = new Map<string, SequenceData | null>();
 
-function hydrateAt(
+/** `jsonCache` dedups in-flight requests, so concurrent callers share one load. */
+function loadRaw(): Promise<CuratedSeedsWire> {
+  return jsonCache.get<CuratedSeedsWire>(CURATED_SEEDS_URL);
+}
+
+async function hydrateAt(
   loopType: LOOPType,
   slice: LoopSlice,
   index: number
-): SequenceData | null {
+): Promise<SequenceData | null> {
   const key = `${loopType}:${slice}:${index}`;
   if (cache.has(key)) return cache.get(key) ?? null;
 
-  const wire = RAW[loopType]?.[slice]?.[index];
+  const raw = await loadRaw();
+  const wire = raw[loopType]?.[slice]?.[index];
   if (!wire) {
     cache.set(key, null);
     return null;
@@ -60,7 +73,7 @@ export function getCuratedSeed(
   loopType: LOOPType,
   slice: LoopSlice,
   index = 0
-): SequenceData | null {
+): Promise<SequenceData | null> {
   return hydrateAt(loopType, slice, index);
 }
 
@@ -69,16 +82,17 @@ export function getCuratedSeed(
  * continue through the pool instead of turning a single bad fixture into a
  * page-level failure.
  */
-export function findCuratedSeed(
+export async function findCuratedSeed(
   loopType: LOOPType,
   slice: LoopSlice
-): SequenceData | null {
-  const pool = RAW[loopType]?.[slice];
+): Promise<SequenceData | null> {
+  const raw = await loadRaw();
+  const pool = raw[loopType]?.[slice];
   if (!pool?.length) return null;
 
   const startIndex = Math.floor(Math.random() * pool.length);
   for (let offset = 0; offset < pool.length; offset += 1) {
-    const sequence = hydrateAt(
+    const sequence = await hydrateAt(
       loopType,
       slice,
       (startIndex + offset) % pool.length
