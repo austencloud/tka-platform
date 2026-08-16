@@ -418,6 +418,8 @@
             y: collider.position[1],
             z: collider.position[2],
           },
+          // Ramps are tilted slabs, so the body carries the tilt.
+          rotation: collider.rotation,
         },
         {
           type: "box",

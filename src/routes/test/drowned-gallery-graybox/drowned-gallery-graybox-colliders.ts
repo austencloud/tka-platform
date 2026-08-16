@@ -4,7 +4,7 @@
  * The GLB is visual only. Colliders rebuild from buildDrownedGalleryLayout —
  * the same call the Blender manifest serialises — translated to the GLB's
  * authoring origin (the water bay centre), so physics and the Blender geometry
- * cannot drift apart. Ramps become step stacks under the walker's auto-step.
+ * cannot drift apart. Ramps are single tilted slabs — see buildRampSlab.
  */
 import { buildVulcanCaveFloorPlan } from "$lib/features/museum/data/vulcan-cave-floor-plan";
 import {
@@ -22,11 +22,11 @@ export interface DrownedGalleryCollider {
   shape: "box";
   position: [number, number, number];
   size: [number, number, number];
+  /** Only ramps carry one. Absent means axis-aligned. */
+  rotation?: { x: number; y: number; z: number; w: number };
 }
 
 const FLOOR_T = 0.5;
-/** Rise per generated ramp step; must stay under the walker's 0.45 auto-step. */
-const STEP_RISE = 0.35;
 /**
  * How far a running jump carries horizontally. Any floor inside this radius of
  * a basin is a launch pad for it.
@@ -102,6 +102,66 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
     });
   };
 
+  /**
+   * A ramp is ONE tilted slab, never a stack of steps.
+   *
+   * Step stacks were the original shape here, and they made the surfacing
+   * stair unwalkable: 0.35 m risers sit close enough to the walker's 0.45 m
+   * auto-step that Rapier's step-up loses to the gravity term in the same
+   * frame's desired motion, and the player sticks against a riser until they
+   * jump. Austen hit it surfacing out of the flooded gallery, which is the
+   * worst possible place for it — that beat is supposed to be one unbroken
+   * walk up into the air.
+   *
+   * The slab's top face IS the ramp line, so the joins with the flat floors
+   * above and below are exactly flush and there is no riser to step over at
+   * all. Its footprint is identical to the rect: half-length L/2 projected
+   * back onto the run axis is run/2 by construction.
+   */
+  const rampSlab = (
+    id: string,
+    floor: { kind: string; rect: WorldRect; fromY: number; toY: number }
+  ): void => {
+    const { rect } = floor;
+    const width = rect.maxX - rect.minX;
+    const depth = rect.maxZ - rect.minZ;
+    const rise = floor.toY - floor.fromY;
+    const midY = (floor.fromY + floor.toY) / 2;
+    const cx = (rect.minX + rect.maxX) / 2 - origin.x;
+    const cz = (rect.minZ + rect.maxZ) / 2 - origin.z;
+    const half = FLOOR_T / 2;
+
+    if (floor.kind === "ramp-z") {
+      // fromY sits at minZ, toY at maxZ. Rotating by -theta about X sends the
+      // slab's local +Z to (0, sin theta, cos theta) — the ramp's direction.
+      const theta = Math.atan2(rise, depth);
+      const a = -theta;
+      colliders.push({
+        id,
+        shape: "box",
+        position: [cx, midY - half * Math.cos(a), cz - half * Math.sin(a)],
+        size: [width, FLOOR_T, Math.hypot(depth, rise)],
+        rotation: { x: Math.sin(a / 2), y: 0, z: 0, w: Math.cos(a / 2) },
+      });
+      return;
+    }
+
+    // ramp-x: fromY at minX, toY at maxX. Rotating by +theta about Z sends the
+    // slab's local +X to (cos theta, sin theta, 0).
+    const theta = Math.atan2(rise, width);
+    colliders.push({
+      id,
+      shape: "box",
+      position: [
+        cx + half * Math.sin(theta),
+        midY - half * Math.cos(theta),
+        cz,
+      ],
+      size: [Math.hypot(width, rise), FLOOR_T, depth],
+      rotation: { x: 0, y: 0, z: Math.sin(theta / 2), w: Math.cos(theta / 2) },
+    });
+  };
+
   for (const floor of layout.floorRects) {
     if (["pool-bottom", "channel-bed", "shore-shelf"].includes(floor.id)) {
       continue; // basins are fenced below, not walked
@@ -110,29 +170,7 @@ export function buildDrownedGalleryWalkSetup(): DrownedGalleryWalkSetup {
       box(`floor-${floor.id}`, floor.rect, floor.fromY - FLOOR_T, floor.fromY);
       continue;
     }
-    const alongZ = floor.kind === "ramp-z";
-    const run = alongZ
-      ? floor.rect.maxZ - floor.rect.minZ
-      : floor.rect.maxX - floor.rect.minX;
-    const rise = floor.toY - floor.fromY;
-    const steps = Math.max(1, Math.ceil(Math.abs(rise) / STEP_RISE));
-    for (let index = 0; index < steps; index += 1) {
-      const t0 = index / steps;
-      const t1 = (index + 1) / steps;
-      const stepTop = floor.fromY + rise * (t0 + t1) / 2;
-      const rect: WorldRect = alongZ
-        ? {
-            ...floor.rect,
-            minZ: floor.rect.minZ + run * t0,
-            maxZ: floor.rect.minZ + run * t1,
-          }
-        : {
-            ...floor.rect,
-            minX: floor.rect.minX + run * t0,
-            maxX: floor.rect.minX + run * t1,
-          };
-      box(`floor-${floor.id}-step-${index}`, rect, stepTop - FLOOR_T, stepTop);
-    }
+    rampSlab(`floor-${floor.id}`, floor);
   }
 
   for (const wall of layout.wallRects) {
