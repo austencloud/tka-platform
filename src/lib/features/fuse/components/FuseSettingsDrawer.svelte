@@ -35,7 +35,7 @@
       traversalDirection: fuseState.traversalDirection,
       mode: fuseState.mode,
       driverSide: fuseState.driverSide,
-      transformId: fuseState.transformId,
+      rule: fuseState.rule,
     })
   );
   const drillItems = $derived<SettingsDrillItem[]>([

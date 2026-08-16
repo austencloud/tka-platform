@@ -1,8 +1,20 @@
 /*
- * Customize accent palette — single source of truth for the cyan surface
- * treatment shared by CustomizeExpandedOverlay (inline card overlay) and
- * CustomizeDrawer (drawer/bottom-sheet host). Previously this gradient was
- * duplicated verbatim in both components.
+ * Customize surface palette — single source of truth for the accented surface
+ * shared by GenerationSettingsOverlay (inline card overlay) and
+ * GenerationSettingsDrawer (drawer/bottom-sheet host). Previously this gradient
+ * was duplicated verbatim in both components.
+ *
+ * The accent used to be a hardcoded cyan (#06b6d4) over a hardcoded navy
+ * (#1a1a2e), so this surface was the one panel in the app that ignored the
+ * background theme entirely — a cyan drawer over a Winter or Autumn workspace.
+ * It now takes the theme's own accent and panel wash, so it belongs to whatever
+ * background the user picked.
+ *
+ * Three layers, because --theme-panel-bg is a translucent wash on the dark
+ * themes and a drawer must not let the workspace show through it:
+ *   background-color: var(--customize-surface-solid)   <- opaque ground
+ *   background-image: gradient, wash                   <- accent over wash
+ * Consumers paint all three; painting only the gradient leaves it transparent.
  *
  * Deliberately feature-local: the properties are scoped to an opt-in class,
  * not :root, so they don't become global design tokens. Components import
@@ -10,13 +22,21 @@
  * variables.
  */
 .customize-accent-scope {
-  --customize-accent: #06b6d4;
-  --customize-accent-strong: #0891b2;
-  --customize-surface-base: #1a1a2e;
+  --customize-accent: var(--theme-accent, #8b6cff);
+  --customize-accent-strong: var(
+    --theme-accent-strong,
+    var(--customize-accent)
+  );
+  --customize-surface-solid: #12141c;
+  --customize-surface-wash: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   --customize-surface-gradient: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--customize-accent) 20%, var(--customize-surface-base)) 0%,
-    color-mix(in srgb, var(--customize-accent-strong) 12%, var(--customize-surface-base)) 50%,
-    color-mix(in srgb, var(--customize-accent) 16%, var(--customize-surface-base)) 100%
+    color-mix(in srgb, var(--customize-accent) 22%, transparent) 0%,
+    color-mix(in srgb, var(--customize-accent-strong) 11%, transparent) 50%,
+    color-mix(in srgb, var(--customize-accent) 17%, transparent) 100%
+  );
+  --customize-surface-wash-layer: linear-gradient(
+    var(--customize-surface-wash),
+    var(--customize-surface-wash)
   );
 }

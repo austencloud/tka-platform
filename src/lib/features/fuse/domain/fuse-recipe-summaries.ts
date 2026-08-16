@@ -12,11 +12,8 @@ import type {
   SoloLoopGenerationRecipe,
   SoloLoopTraversalDirection,
 } from "../services/solo-loop-generator";
-import {
-  FUSE_TRANSFORMS,
-  type FuseMode,
-  type FuseTransformId,
-} from "../state/fuse-state.svelte";
+import type { FuseMode } from "../state/fuse-state.svelte";
+import { fuseRuleLabel, type FuseRule } from "./fuse-rule";
 import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 import type { FuseRecipeDestination } from "./fuse-recipe-destination";
 
@@ -50,7 +47,7 @@ export interface FuseRecipeSummaryInput {
   traversalDirection: SoloLoopTraversalDirection | null;
   mode: FuseMode;
   driverSide: FuseSide;
-  transformId: FuseTransformId;
+  rule: FuseRule;
 }
 
 export type FuseRecipeSummaries = Record<FuseRecipeDestination, string>;
@@ -83,9 +80,7 @@ export function buildFuseRecipeSummaries(
     input.traversalDirection === null;
   const driver = input.driverSide === "blue" ? "Blue" : "Red";
   const follower = input.driverSide === "blue" ? "Red" : "Blue";
-  const transform =
-    FUSE_TRANSFORMS.find((item) => item.id === input.transformId)?.label ??
-    "Mirror";
+  const transform = fuseRuleLabel(input.rule);
   const turnLabel = input.maxTurnIntensity === 1 ? "turn" : "turns";
 
   return {

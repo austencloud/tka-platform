@@ -20,13 +20,11 @@
   import { getFuseContext } from "../context/fuse-context";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import {
-    fuseTransformGlyph,
-    fuseTransformTint,
+    fuseRuleGlyph,
+    fuseRuleTint,
   } from "../domain/fuse-transform-presentation";
-  import {
-    FUSE_TRANSFORMS,
-    type FuseSourceAdjustment,
-  } from "../state/fuse-state.svelte";
+  import { fuseRuleLabel } from "../domain/fuse-rule";
+  import type { FuseSourceAdjustment } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
 
@@ -113,19 +111,13 @@
     return soloPropToSequence(solo, side === "blue" ? "left" : "right");
   });
   const followerTransformLabel = $derived(
-    FUSE_TRANSFORMS.find(
-      (transform) => transform.id === fuseState.previewTransformId
-    )?.label ?? "Mirror"
+    fuseRuleLabel(fuseState.previewRule)
   );
   const driverLabel = $derived(
     fuseState.previewDriverSide === "blue" ? "Blue" : "Red"
   );
-  const followerGlyph = $derived(
-    fuseTransformGlyph(fuseState.previewTransformId)
-  );
-  const followerTransformTint = $derived(
-    fuseTransformTint(fuseState.previewTransformId)
-  );
+  const followerGlyph = $derived(fuseRuleGlyph(fuseState.previewRule));
+  const followerTransformTint = $derived(fuseRuleTint(fuseState.previewRule));
 
   // The playing beat, mapped to a 0-based step index, so the card cell for the
   // step currently on the animation canvas lights up in lockstep. The shared

@@ -60,6 +60,14 @@ import {
   type SoloLoopGenerationRecipe,
   type SoloLoopTraversalDirection,
 } from "../services/solo-loop-generator";
+import {
+  DEFAULT_RULE,
+  fuseRuleKey,
+  fuseRuleLabel,
+  fuseRulesEqual,
+  parseFuseRule,
+  type FuseRule,
+} from "../domain/fuse-rule";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
 import {
   createFuseShufflePool,
@@ -82,63 +90,12 @@ export type FuseLength = (typeof FUSE_LENGTHS)[number];
  * a transform. Persisted per-device. */
 export type FuseMode = "shuffle" | "symmetry";
 
-/** The transforms the symmetry follower can derive through: five of the six LOOP
- * components (Swapped is the driver↔follower role-swap, not a follower transform,
- * so it's omitted), with Rotated offered at both 90° and 180°, plus three curated
- * pairs. One is always active (default `mirror`). */
-export type FuseTransformId =
-  | "mirror"
-  | "flip"
-  | "rotate90"
-  | "rotate180"
-  | "invert"
-  | "rewind"
-  | "rotate-mirror"
-  | "mirror-invert"
-  | "rotate-invert";
-
-export interface FuseTransformOption {
-  id: FuseTransformId;
-  label: string;
-  description: string;
-}
-
-/** Display catalog for the transform picker — a single source of truth shared by
- * the picker UI and this state's apply logic (keyed by the same id union). */
-export const FUSE_TRANSFORMS: readonly FuseTransformOption[] = [
-  { id: "mirror", label: "Mirror", description: "Reflect left and right" },
-  { id: "flip", label: "Flip", description: "Reflect top and bottom" },
-  { id: "rotate90", label: "Rotate 90", description: "Turn one quarter" },
-  { id: "rotate180", label: "Rotate 180", description: "Turn halfway" },
-  { id: "invert", label: "Invert", description: "Reverse every turn" },
-  { id: "rewind", label: "Rewind", description: "Reverse the step order" },
-  {
-    id: "rotate-mirror",
-    label: "Rotate + Mirror",
-    description: "Quarter turn, then mirror",
-  },
-  {
-    id: "mirror-invert",
-    label: "Mirror + Invert",
-    description: "Mirror, then reverse turns",
-  },
-  {
-    id: "rotate-invert",
-    label: "Rotate + Invert",
-    description: "Quarter turn, then reverse turns",
-  },
-];
-
-function isFuseTransformId(value: unknown): value is FuseTransformId {
-  return (
-    typeof value === "string" &&
-    FUSE_TRANSFORMS.some((option) => option.id === value)
-  );
-}
-
-function fuseTransformLabel(id: FuseTransformId): string {
-  return FUSE_TRANSFORMS.find((option) => option.id === id)?.label ?? "Mirror";
-}
+/**
+ * The rule the symmetry follower derives through. Its four axes and the order
+ * they apply in live in domain/fuse-rule.ts; this state owns only which rule is
+ * active and how it reaches the transform layer.
+ */
+export type { FuseRule, FuseReflection } from "../domain/fuse-rule";
 
 export type FuseErrorKind =
   | "catalog"
@@ -226,7 +183,7 @@ interface PersistedFuseState {
   currentStep?: number;
   mode?: FuseMode;
   driverSide?: FuseSide;
-  transformId?: FuseTransformId;
+  rule?: FuseRule;
   gridMode?: GridMode;
   generationLevel?: TurnLevel;
   maxTurnIntensity?: number;
@@ -386,8 +343,12 @@ function readPersistedState(): PersistedFuseState {
     if (record.driverSide === "blue" || record.driverSide === "red") {
       result.driverSide = record.driverSide;
     }
-    if (isFuseTransformId(record.transformId)) {
-      result.transformId = record.transformId;
+    // `transformId` is the legacy key — one of nine flat ids. parseFuseRule
+    // maps it onto the rule it always meant, so an existing device keeps its
+    // pairing instead of snapping back to the default.
+    const storedRule = parseFuseRule(record.rule ?? record.transformId);
+    if (storedRule) {
+      result.rule = storedRule;
     }
     if (isFuseGridMode(record.gridMode)) {
       result.gridMode = record.gridMode;
@@ -663,7 +624,7 @@ export function createFuseState({
   // just rebuilds the independent preview from them.
   let mode = $state<FuseMode>(persisted.mode ?? "shuffle");
   let driverSide = $state<FuseSide>(persisted.driverSide ?? "blue");
-  let transformId = $state<FuseTransformId>(persisted.transformId ?? "mirror");
+  let rule = $state<FuseRule>(persisted.rule ?? DEFAULT_RULE);
   let symmetryPreview = $state<SequenceData | null>(null);
   let symmetryGeneration = 0;
   let relationshipDraftKey: string | null = null;
@@ -673,7 +634,7 @@ export function createFuseState({
   // canvas. Cancel restores both halves of the baseline.
   let relationshipDraft = $state<{
     driver: FuseSide;
-    transform: FuseTransformId;
+    transform: FuseRule;
   } | null>(null);
   let relationshipPreviewBaseline: {
     preview: SequenceData | null;
@@ -956,7 +917,7 @@ export function createFuseState({
 
   function persistModeState(): void {
     // Merge so the mode write never drops the persisted pair, length, or step.
-    persisted = { ...persisted, mode, driverSide, transformId };
+    persisted = { ...persisted, mode, driverSide, rule };
     writePersistedState(persisted);
   }
 
@@ -1723,34 +1684,27 @@ export function createFuseState({
     }
   }
 
-  /** Apply one transform (single or curated pair) to just the driver hand. The
-   * pair transforms rotate 90° then compose with the second op, matching the
-   * curated symmetry set (Rotate+Mirror, Mirror+Invert, Rotate+Invert). */
-  async function applyDriverTransform(
+  /**
+   * Apply a rule to just the driver hand, one axis at a time in the order the
+   * rule declares: rotate, reflect, invert, rewind. The nine curated ids this
+   * replaced each composed the same operations in this order, so every one of
+   * them still produces the sequence it always did — the difference is that the
+   * rotation is now whatever amount the rule carries instead of a hardcoded 90°.
+   */
+  async function applyDriverRule(
     sequence: SequenceData,
-    id: FuseTransformId,
+    nextRule: FuseRule,
     hand: FuseSide
   ): Promise<SequenceData> {
-    switch (id) {
-      case "mirror":
-        return mirrorSequence(sequence, hand);
-      case "flip":
-        return flipSequence(sequence, hand);
-      case "rotate90":
-        return rotateSequence(sequence, 2, hand);
-      case "rotate180":
-        return rotateSequence(sequence, 4, hand);
-      case "invert":
-        return invertSequence(sequence, hand);
-      case "rewind":
-        return rewindSequence(sequence, hand);
-      case "rotate-mirror":
-        return mirrorSequence(await rotateSequence(sequence, 2, hand), hand);
-      case "mirror-invert":
-        return invertSequence(await mirrorSequence(sequence, hand), hand);
-      case "rotate-invert":
-        return invertSequence(await rotateSequence(sequence, 2, hand), hand);
+    let result = sequence;
+    if (nextRule.rotationSteps > 0) {
+      result = await rotateSequence(result, nextRule.rotationSteps, hand);
     }
+    if (nextRule.reflect === "mirror") result = await mirrorSequence(result, hand);
+    if (nextRule.reflect === "flip") result = await flipSequence(result, hand);
+    if (nextRule.invert) result = await invertSequence(result, hand);
+    if (nextRule.rewind) result = await rewindSequence(result, hand);
+    return result;
   }
 
   /**
@@ -1763,10 +1717,10 @@ export function createFuseState({
   async function deriveFollowerSolo(
     driverSequence: SequenceData,
     driver: FuseSide,
-    id: FuseTransformId
+    nextRule: FuseRule
   ): Promise<SoloPropData> {
     const follower: FuseSide = driver === "blue" ? "red" : "blue";
-    const transformed = await applyDriverTransform(driverSequence, id, driver);
+    const transformed = await applyDriverRule(driverSequence, nextRule, driver);
 
     // Only the driver hand was transformed, so `transformed`'s start position and
     // its other-color (follower-color) motions still hold the original source's
@@ -1802,14 +1756,12 @@ export function createFuseState({
   function symmetryReadyMessage(): string {
     const followerLabel = driverSide === "blue" ? "Red" : "Blue";
     const driverLabel = driverSide === "blue" ? "Blue" : "Red";
-    return `${followerLabel} follows ${driverLabel} (${fuseTransformLabel(
-      transformId
-    )}).`;
+    return `${followerLabel} follows ${driverLabel} (${fuseRuleLabel(rule)}).`;
   }
 
   async function createRelationshipPreview(
     nextDriver: FuseSide,
-    nextTransform: FuseTransformId,
+    nextRule: FuseRule,
     length: FuseLength
   ): Promise<SequenceData | null> {
     const driverSequence = poolFor(nextDriver).sequence;
@@ -1822,7 +1774,7 @@ export function createFuseState({
     const followerSolo = await deriveFollowerSolo(
       driverSequence,
       nextDriver,
-      nextTransform
+      nextRule
     );
     const blueSolo = nextDriver === "blue" ? driverSolo : followerSolo;
     const redSolo = nextDriver === "blue" ? followerSolo : driverSolo;
@@ -1849,7 +1801,7 @@ export function createFuseState({
     try {
       const preview = await createRelationshipPreview(
         driverSide,
-        transformId,
+        rule,
         length
       );
       if (!preview) return;
@@ -1893,11 +1845,11 @@ export function createFuseState({
    * this method owns only their temporary rendered result. */
   async function previewRelationship(
     nextDriver: FuseSide,
-    nextTransform: FuseTransformId
+    nextRule: FuseRule
   ): Promise<void> {
     if (disposed || appliedLength === null) return;
     const length = appliedLength;
-    const key = `${nextDriver}:${nextTransform}`;
+    const key = `${nextDriver}:${fuseRuleKey(nextRule)}`;
     if (relationshipDraftKey === null) {
       relationshipPreviewBaseline = {
         preview: previewSequence,
@@ -1905,14 +1857,14 @@ export function createFuseState({
       };
     }
     relationshipDraftKey = key;
-    relationshipDraft = { driver: nextDriver, transform: nextTransform };
+    relationshipDraft = { driver: nextDriver, transform: nextRule };
     const generation = ++symmetryGeneration;
     isDeriving = true;
 
     try {
       const preview = await createRelationshipPreview(
         nextDriver,
-        nextTransform,
+        nextRule,
         length
       );
       if (
@@ -1928,8 +1880,8 @@ export function createFuseState({
       error = null;
       const driverLabel = nextDriver === "blue" ? "Blue" : "Red";
       const followerLabel = nextDriver === "blue" ? "Red" : "Blue";
-      readyMessage = `Previewing ${driverLabel} → ${fuseTransformLabel(
-        nextTransform
+      readyMessage = `Previewing ${driverLabel} → ${fuseRuleLabel(
+        nextRule
       )} → ${followerLabel}.`;
     } catch (previewError) {
       if (
@@ -2013,7 +1965,7 @@ export function createFuseState({
    * driver or transform while the user is still deciding. */
   function setRelationship(
     nextDriver: FuseSide,
-    nextTransform: FuseTransformId
+    nextRule: FuseRule
   ): void {
     relationshipDraftKey = null;
     relationshipDraft = null;
@@ -2021,14 +1973,14 @@ export function createFuseState({
     const changed =
       mode !== "symmetry" ||
       driverSide !== nextDriver ||
-      transformId !== nextTransform;
+      !fuseRulesEqual(rule, nextRule);
     if (!changed) {
       void deriveFollower();
       return;
     }
 
     driverSide = nextDriver;
-    transformId = nextTransform;
+    rule = nextRule;
     mode = "symmetry";
     persistModeState();
     void deriveFollower();
@@ -2041,9 +1993,9 @@ export function createFuseState({
     if (mode === "symmetry") void deriveFollower();
   }
 
-  function setTransform(id: FuseTransformId): void {
-    if (id === transformId) return;
-    transformId = id;
+  function setRule(nextRule: FuseRule): void {
+    if (fuseRulesEqual(nextRule, rule)) return;
+    rule = nextRule;
     persistModeState();
     if (mode === "symmetry") void deriveFollower();
   }
@@ -2319,8 +2271,8 @@ export function createFuseState({
     get driverSide() {
       return driverSide;
     },
-    get transformId() {
-      return transformId;
+    get rule(): FuseRule {
+      return rule;
     },
     get symmetryPreview() {
       return symmetryPreview;
@@ -2330,7 +2282,7 @@ export function createFuseState({
      * a draft these report the draft; otherwise they report the committed
      * relationship. Display code reads these so the follower card previews the
      * rule under the cursor; anything that persists or fuses reads the
-     * committed `mode` / `driverSide` / `transformId` above.
+     * committed `mode` / `driverSide` / `rule` above.
      */
     get isPreviewingRelationship() {
       return relationshipDraft !== null;
@@ -2338,8 +2290,8 @@ export function createFuseState({
     get previewDriverSide(): FuseSide {
       return relationshipDraft?.driver ?? driverSide;
     },
-    get previewTransformId(): FuseTransformId {
-      return relationshipDraft?.transform ?? transformId;
+    get previewRule(): FuseRule {
+      return relationshipDraft?.transform ?? rule;
     },
     blue,
     red,
@@ -2355,7 +2307,7 @@ export function createFuseState({
     previewRelationship,
     cancelRelationshipPreview,
     setDriver,
-    setTransform,
+    setRule,
     buildFusedSequence,
     reportPreviewFailure,
     reportViewerFailure,

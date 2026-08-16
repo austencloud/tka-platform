@@ -56,7 +56,9 @@
     gap: 8px;
     padding: 16px;
     overflow: hidden;
-    background: var(--customize-surface-gradient);
+    background-color: var(--customize-surface-solid);
+    background-image: var(--customize-surface-gradient),
+      var(--customize-surface-wash-layer);
     border: 2px solid
       color-mix(in srgb, var(--customize-accent) 40%, transparent);
     border-radius: 16px;

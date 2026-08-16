@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createFuseRule } from "$lib/features/fuse/domain/fuse-rule";
 import {
   buildFuseRecipeSummaries,
   type FuseRecipeSummaryInput,
@@ -25,7 +26,7 @@ function recipe(
     traversalDirection: null,
     mode: "shuffle",
     driverSide: "blue",
-    transformId: "mirror",
+    rule: createFuseRule({ reflect: "mirror" }),
     ...overrides,
   };
 }
@@ -49,7 +50,7 @@ describe("Fuse recipe summaries", () => {
         maxTurnIntensity: 1.5,
         mode: "symmetry",
         driverSide: "red",
-        transformId: "mirror-invert",
+        rule: createFuseRule({ reflect: "mirror", invert: true }),
       })
     );
 

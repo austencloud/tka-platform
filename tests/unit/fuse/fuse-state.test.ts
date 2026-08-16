@@ -3,6 +3,7 @@ import {
   createFuseState,
   type FuseStateDeps,
 } from "$lib/features/fuse/state/fuse-state.svelte";
+import { createFuseRule } from "$lib/features/fuse/domain/fuse-rule";
 import { fuseSequences } from "$lib/features/fuse/services/sequence-fuser";
 import { PLAYBACK_MAX_BPM } from "$lib/shared/animation-engine/domain/constants/timing";
 import type { HandPathData } from "$lib/shared/foundation/domain/models/hand-path-data";
@@ -400,26 +401,26 @@ describe("Fuse state", () => {
 
     expect(state.mode).toBe("shuffle");
     expect(state.driverSide).toBe("blue");
-    expect(state.transformId).toBe("mirror");
+    expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
 
-    state.setRelationship("red", "rotate90");
+    state.setRelationship("red", createFuseRule({ rotationSteps: 2 }));
 
     expect(state.mode).toBe("symmetry");
     expect(state.driverSide).toBe("red");
-    expect(state.transformId).toBe("rotate90");
+    expect(state.rule).toEqual(createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90).");
+      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90°).");
     });
     expect(state.canFuse).toBe(true);
   });
 
-  it("rebuilds the follower geometry when the symmetry transform changes", async () => {
+  it("rebuilds the follower geometry when the symmetry rule changes", async () => {
     const state = createState(createLoader([]), {
       generateSoloLoop: createSoloGenerator(),
     });
     await state.initialize();
 
-    state.setRelationship("blue", "mirror");
+    state.setRelationship("blue", createFuseRule({ reflect: "mirror" }));
     await vi.waitFor(() => {
       expect(state.statusMessage).toBe("Red follows Blue (Mirror).");
     });
@@ -427,9 +428,9 @@ describe("Fuse state", () => {
       (step) => step.motions.red
     );
 
-    state.setTransform("rotate90");
+    state.setRule(createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Red follows Blue (Rotate 90).");
+      expect(state.statusMessage).toBe("Red follows Blue (Rotate 90°).");
     });
     const rotatedMotions = state.symmetryPreview?.steps.map(
       (step) => step.motions.red
@@ -447,26 +448,29 @@ describe("Fuse state", () => {
     await state.initialize();
 
     const independentPreview = state.previewSequence;
-    await state.previewRelationship("red", "rotate90");
+    await state.previewRelationship(
+      "red",
+      createFuseRule({ rotationSteps: 2 })
+    );
 
     expect(state.mode).toBe("shuffle");
     expect(state.driverSide).toBe("blue");
-    expect(state.transformId).toBe("mirror");
+    expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
     expect(state.previewSequence).not.toEqual(independentPreview);
 
     state.cancelRelationshipPreview();
     expect(state.mode).toBe("shuffle");
     expect(state.driverSide).toBe("blue");
-    expect(state.transformId).toBe("mirror");
+    expect(state.rule).toEqual(createFuseRule({ reflect: "mirror" }));
     expect(state.previewSequence).toEqual(independentPreview);
 
-    state.setRelationship("red", "rotate90");
+    state.setRelationship("red", createFuseRule({ rotationSteps: 2 }));
     await vi.waitFor(() => {
-      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90).");
+      expect(state.statusMessage).toBe("Blue follows Red (Rotate 90°).");
     });
     expect(state.mode).toBe("symmetry");
     expect(state.driverSide).toBe("red");
-    expect(state.transformId).toBe("rotate90");
+    expect(state.rule).toEqual(createFuseRule({ rotationSteps: 2 }));
   });
 
   it("distinguishes a catalog failure from an exact-length empty pool", async () => {

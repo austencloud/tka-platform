@@ -1,18 +1,18 @@
 /**
- * How a Fuse follower transform presents itself: its glyph, and the LOOP
- * primitives it is built from.
+ * How a Fuse follower rule presents itself: its glyph, and the LOOP primitives
+ * it is built from.
  *
- * Every rule Fuse can apply to the follower path IS a LOOP transformation
+ * Every operation Fuse can apply to the follower path IS a LOOP transformation
  * primitive, and those primitives already carry brand colors and glyphs that
  * sequence cards, export headers, and the Extend drawer all render. Fuse used
- * to paint all nine rules in one accent, so Mirror and Invert looked identical
- * here while looking nothing alike everywhere else.
+ * to paint every rule in one accent, so Mirror and Invert looked identical here
+ * while looking nothing alike everywhere else.
  *
  * The color VALUES and the glyphs stay owned by loop-option-color.ts and
- * LOOPIconStrip. This module only maps Fuse's transform ids onto the
- * primitives they compose, and onto the two modifiers the icon strip needs to
- * tell same-colour primitives apart — the reflection axis (Mirror vs Flip) and
- * the rotation period (Rotate 90 vs Rotate 180).
+ * LOOPIconStrip. This module only maps a rule onto the primitives it composes,
+ * and onto the two modifiers the icon strip needs to tell same-colour
+ * primitives apart — the reflection axis (Mirror vs Flip) and the rotation
+ * period.
  */
 
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -22,89 +22,86 @@ import {
   loopComponentColors,
   loopOptionTint,
 } from "$lib/shared/components/loop-picker/loop-option-color";
-import type { FuseTransformId } from "../state/fuse-state.svelte";
+import type { FuseRule } from "./fuse-rule";
 
-/** Everything LOOPIconStrip needs to draw one transform the canonical way. */
+/** Everything LOOPIconStrip needs to draw one rule the canonical way. */
 export interface FuseTransformGlyph {
   components: Set<LOOPComponent>;
   reflectionAxis?: LoopReflectionAxis;
   rotationPeriod?: Period;
 }
 
-/**
- * Mirror and Flip are both reflections and share `#6F2DA8`; the icon strip
- * separates them by rotating the arrow to the axis. Rotate 90 and Rotate 180
- * are both ROTATED; the strip separates them by period (fa-arrows-spin vs
- * fa-rotate). Passing those modifiers here is what makes these nine rules read
- * as the same objects the rest of the app already draws.
- */
-const TRANSFORM_GLYPHS: Record<FuseTransformId, FuseTransformGlyph> = {
-  mirror: {
-    components: new Set([LOOPComponent.MIRRORED]),
-    reflectionAxis: "north-south",
-  },
-  flip: {
-    components: new Set([LOOPComponent.FLIPPED]),
-    reflectionAxis: "east-west",
-  },
-  rotate90: {
-    components: new Set([LOOPComponent.ROTATED]),
-    rotationPeriod: Period.QUARTERED,
-  },
-  rotate180: {
-    components: new Set([LOOPComponent.ROTATED]),
-    rotationPeriod: Period.HALVED,
-  },
-  invert: { components: new Set([LOOPComponent.INVERTED]) },
-  rewind: { components: new Set([LOOPComponent.REWOUND]) },
-  "rotate-mirror": {
-    components: new Set([LOOPComponent.ROTATED, LOOPComponent.MIRRORED]),
-    reflectionAxis: "north-south",
-    rotationPeriod: Period.QUARTERED,
-  },
-  "mirror-invert": {
-    components: new Set([LOOPComponent.MIRRORED, LOOPComponent.INVERTED]),
-    reflectionAxis: "north-south",
-  },
-  "rotate-invert": {
-    components: new Set([LOOPComponent.ROTATED, LOOPComponent.INVERTED]),
-    rotationPeriod: Period.QUARTERED,
-  },
-};
-
-const FALLBACK_GLYPH: FuseTransformGlyph = {
-  components: new Set<LOOPComponent>(),
-};
 const FALLBACK_ACCENT = "var(--theme-accent, #8b5cf6)";
 
-/** The canonical LOOP glyph for one transform, ready for LOOPIconStrip. */
-export function fuseTransformGlyph(id: FuseTransformId): FuseTransformGlyph {
-  return TRANSFORM_GLYPHS[id] ?? FALLBACK_GLYPH;
+/**
+ * The canonical LOOP glyph for one rule, ready for LOOPIconStrip.
+ *
+ * `Period` is a LOOP-domain concept with exactly two members, so it cannot name
+ * a 45° slice. It is only ever a disambiguator between two rotation glyphs
+ * here, and the rotation control states the amount in degrees right beside the
+ * glyph, so a half rotation draws as HALVED and every other amount as
+ * QUARTERED rather than inventing a Period member Fuse alone would use.
+ */
+export function fuseRuleGlyph(rule: FuseRule): FuseTransformGlyph {
+  const components = new Set<LOOPComponent>();
+  let reflectionAxis: LoopReflectionAxis | undefined;
+  let rotationPeriod: Period | undefined;
+
+  if (rule.rotationSteps > 0) {
+    components.add(LOOPComponent.ROTATED);
+    rotationPeriod = rule.rotationSteps === 4 ? Period.HALVED : Period.QUARTERED;
+  }
+  if (rule.reflect === "mirror") {
+    components.add(LOOPComponent.MIRRORED);
+    reflectionAxis = "north-south";
+  }
+  if (rule.reflect === "flip") {
+    components.add(LOOPComponent.FLIPPED);
+    reflectionAxis = "east-west";
+  }
+  if (rule.invert) components.add(LOOPComponent.INVERTED);
+  if (rule.rewind) components.add(LOOPComponent.REWOUND);
+
+  return { components, reflectionAxis, rotationPeriod };
 }
 
-/** Canonical-order colors for one transform. One entry, or two for a combo. */
-export function fuseTransformColors(id: FuseTransformId): string[] {
-  return loopComponentColors(fuseTransformGlyph(id).components);
+/** Canonical-order colors for one rule. One entry per primitive it composes. */
+export function fuseRuleColors(rule: FuseRule): string[] {
+  return loopComponentColors(fuseRuleGlyph(rule).components);
+}
+
+/**
+ * The brand color of ONE primitive, for a control that edits a single axis of
+ * the rule — the rotation row, an Invert toggle. The axis wears the same hue
+ * its glyph does everywhere else, so the control and the result chain agree.
+ */
+export function fuseComponentColor(component: LOOPComponent): string {
+  return loopComponentColors([component])[0] ?? FALLBACK_ACCENT;
+}
+
+/** `--loop-c1/--loop-c2/--loop-c2-mix` for one primitive's own control. */
+export function fuseComponentTint(component: LOOPComponent): string {
+  return loopOptionTint(loopComponentColors([component]));
 }
 
 /** The accent a single-color surface (a token, a glyph) should paint. */
-export function fuseTransformAccent(id: FuseTransformId): string {
-  return fuseTransformColors(id)[0] ?? FALLBACK_ACCENT;
+export function fuseRuleAccent(rule: FuseRule): string {
+  return fuseRuleColors(rule)[0] ?? FALLBACK_ACCENT;
 }
 
 /**
- * The second stop for a combo, or the same color again for a primitive — the
- * caller decides whether to sweep between them.
+ * The second stop for a composite, or the same color again for a single
+ * primitive — the caller decides whether to sweep between them.
  */
-export function fuseTransformAccent2(id: FuseTransformId): string {
-  const colors = fuseTransformColors(id);
+export function fuseRuleAccent2(rule: FuseRule): string {
+  const colors = fuseRuleColors(rule);
   return colors[colors.length - 1] ?? FALLBACK_ACCENT;
 }
 
 /**
- * `--loop-c1/--loop-c2/--loop-c2-mix` for a transform, in the same shape the
- * LOOP option buttons consume, so a Fuse surface can reuse that styling.
+ * `--loop-c1/--loop-c2/--loop-c2-mix` for a rule, in the same shape the LOOP
+ * option buttons consume, so a Fuse surface can reuse that styling.
  */
-export function fuseTransformTint(id: FuseTransformId): string {
-  return loopOptionTint(fuseTransformColors(id));
+export function fuseRuleTint(rule: FuseRule): string {
+  return loopOptionTint(fuseRuleColors(rule));
 }

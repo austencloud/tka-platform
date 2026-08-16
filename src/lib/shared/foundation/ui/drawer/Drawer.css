@@ -348,6 +348,10 @@ dialog.drawer-content {
    * - Left placement: vertical bar on right edge
    * - Top placement: horizontal bar at bottom
    */
+/* `--drawer-handle-color` lets a host paint the grab bar in its own surface's
+   accent. Default is the neutral white bar every drawer has always used; a
+   host that sets the variable is stating its surface is tinted enough that a
+   white bar reads as unpainted rather than as neutral. */
 .drawer-handle {
   position: relative;
   width: 10px;
@@ -355,7 +359,7 @@ dialog.drawer-content {
   min-height: 10px;
   margin: 10px auto 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--drawer-handle-color, rgba(255, 255, 255, 0.45));
   flex-shrink: 0;
   cursor: grab;
 }
@@ -377,7 +381,7 @@ dialog.drawer-content {
   margin: 0;
   border-radius: 999px;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--drawer-handle-color, rgba(255, 255, 255, 0.45));
 }
 
 /* Handle for left placement - vertical on right edge */
@@ -390,7 +394,7 @@ dialog.drawer-content {
   margin: 0;
   border-radius: 999px;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--drawer-handle-color, rgba(255, 255, 255, 0.45));
 }
 
 /* Handle for top placement - horizontal on bottom edge */

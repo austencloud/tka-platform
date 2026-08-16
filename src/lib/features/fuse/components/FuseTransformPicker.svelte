@@ -1,43 +1,51 @@
 <!--
-  FuseTransformPicker — symmetry-mode controls.
+  FuseTransformPicker — the symmetry rule editor.
 
-  A color-coded SegmentedControl chooses the driver. The shared wrapping
-  OptionChipRow handles the larger transform family without crushing nine labels
-  into one equal-width row. Both values are owned + persisted by fuse-state.
-  Shown by FuseLayout only while the tab is in symmetry mode.
+  Two decisions, in order: which path you edit, and the rule the other one is
+  rebuilt through. The rule used to be one of nine flat tiles, which put an
+  AMOUNT (rotation) and three independent operations on the same list — so five
+  of the eight rotations were unreachable and a stretched tile in the last row
+  read as the most important choice. It is now the three axes the rule actually
+  has, each with its own control and its own primitive's colour.
+
+  Both values are owned + persisted by fuse-state; the composer passes drafts.
 -->
 <script lang="ts">
   import LOOPChoiceButton from "$lib/shared/components/loop-picker/LOOPChoiceButton.svelte";
+  import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { getFuseContext } from "../context/fuse-context";
   import {
-    fuseTransformGlyph,
-    fuseTransformTint,
+    fuseComponentColor,
+    fuseComponentTint,
+    fuseRuleGlyph,
   } from "../domain/fuse-transform-presentation";
   import {
-    FUSE_TRANSFORMS,
-    type FuseTransformId,
-  } from "../state/fuse-state.svelte";
+    FUSE_REFLECTIONS,
+    FUSE_ROTATIONS,
+    createFuseRule,
+    type FuseReflection,
+    type FuseRule,
+  } from "../domain/fuse-rule";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
   let {
-    embedded = false,
     driver,
-    transform,
+    rule,
     onDriverChange,
-    onTransformChange,
-    relationshipLayout = false,
+    onRuleChange,
   }: {
-    embedded?: boolean;
     driver?: FuseSide;
-    transform?: FuseTransformId;
+    rule?: FuseRule;
     onDriverChange?: (side: FuseSide) => void;
-    onTransformChange?: (id: FuseTransformId) => void;
-    relationshipLayout?: boolean;
+    onRuleChange?: (rule: FuseRule) => void;
   } = $props();
+
   const { state: fuseState } = getFuseContext();
   const selectedDriver = $derived(driver ?? fuseState.driverSide);
-  const selectedTransform = $derived(transform ?? fuseState.transformId);
+  const selectedRule = $derived(rule ?? fuseState.rule);
 
   // Inert while a length load or a fuse is in flight, so a change can't race the
   // derive it would trigger.
@@ -60,16 +68,42 @@
     ).map((option) => ({ ...option, disabled }))
   );
 
-  // Each rule IS a LOOP primitive, so each renders as the same choice button
-  // the Extend drawer uses — same glyph, same brand colours, and the same
-  // two-stop sweep when a rule composes two primitives.
-  const transformOptions = $derived(
-    FUSE_TRANSFORMS.map((transform) => ({
-      ...transform,
-      glyph: fuseTransformGlyph(transform.id),
-      tint: fuseTransformTint(transform.id),
+  // The amount is a single-select over the eight steps the transform layer
+  // accepts, so it is a SegmentedControl — the accent it slides in is the
+  // ROTATED primitive's own colour, not the app accent.
+  const rotationOptions = $derived(
+    FUSE_ROTATIONS.map((option) => ({
+      value: String(option.steps),
+      label: option.steps === 0 ? "No rotation" : `${option.label} clockwise`,
+      shortLabel: option.steps === 0 ? "None" : option.label,
+      disabled,
     }))
   );
+  const rotationAccent = fuseComponentColor(LOOPComponent.ROTATED);
+
+  // Mirror and Flip are the same purple with different axes, so each carries the
+  // glyph that separates them — the one a sequence card would show.
+  const reflectionOptions = $derived(
+    FUSE_REFLECTIONS.map((option) => {
+      const glyph = fuseRuleGlyph(createFuseRule({ reflect: option.value }));
+      const component =
+        option.value === "mirror"
+          ? LOOPComponent.MIRRORED
+          : option.value === "flip"
+            ? LOOPComponent.FLIPPED
+            : null;
+      return {
+        ...option,
+        glyph,
+        tint: component ? fuseComponentTint(component) : "",
+      };
+    })
+  );
+
+  const invertColor = fuseComponentColor(LOOPComponent.INVERTED);
+  const rewoundColor = fuseComponentColor(LOOPComponent.REWOUND);
+  const invertGlyph = new Set([LOOPComponent.INVERTED]);
+  const rewindGlyph = new Set([LOOPComponent.REWOUND]);
 
   const followerLabel = $derived(selectedDriver === "blue" ? "Red" : "Blue");
   const driverLabel = $derived(selectedDriver === "blue" ? "Blue" : "Red");
@@ -79,27 +113,35 @@
     else fuseState.setDriver(value);
   }
 
-  function handleTransform(value: FuseTransformId): void {
-    if (onTransformChange) onTransformChange(value);
-    else fuseState.setTransform(value);
+  function commit(next: FuseRule): void {
+    if (onRuleChange) onRuleChange(next);
+    else fuseState.setRule(next);
+  }
+
+  function chooseRotation(value: string): void {
+    commit({ ...selectedRule, rotationSteps: Number(value) });
+  }
+
+  function chooseReflection(value: FuseReflection): void {
+    commit({ ...selectedRule, reflect: value });
+  }
+
+  function toggleInvert(): void {
+    commit({ ...selectedRule, invert: !selectedRule.invert });
+  }
+
+  function toggleRewind(): void {
+    commit({ ...selectedRule, rewind: !selectedRule.rewind });
   }
 </script>
 
-<div
-  class="transform-picker"
-  class:embedded
-  class:relationship-layout={relationshipLayout}
->
+<div class="transform-picker">
   <div class="field" role="group" aria-label="Path you will edit">
     <div class="field-heading">
-      {#if relationshipLayout}<span class="step-number">1</span>{/if}
+      <span class="step-number">1</span>
       <div>
-        <span class="field-label">
-          {relationshipLayout ? "Path you will edit" : "Driver"}
-        </span>
-        {#if relationshipLayout}
-          <span class="field-help">{driverLabel} stays editable</span>
-        {/if}
+        <span class="field-label">Path you will edit</span>
+        <span class="field-help">{driverLabel} stays editable</span>
       </div>
     </div>
     <div class="field-control driver-control">
@@ -113,138 +155,221 @@
     </div>
   </div>
 
-  <div class="transform-options">
-    <!-- One heading, not a heading plus a label repeating it: the rule and the
-         path it rebuilds fit in the same two lines. -->
-    {#if relationshipLayout}
-      <div class="field-heading" id="fuse-rule-label">
-        <span class="step-number">2</span>
-        <div>
-          <span class="field-label">Rule applied to {followerLabel}</span>
-          <span class="field-help">
-            Each choice previews a new {followerLabel} path
-          </span>
-        </div>
+  <div class="rule-field">
+    <div class="field-heading">
+      <span class="step-number">2</span>
+      <div>
+        <span class="field-label">Rule applied to {followerLabel}</span>
+        <span class="field-help">
+          Every change previews a new {followerLabel} path
+        </span>
       </div>
-    {:else}
-      <span class="options-label" id="fuse-rule-label">
-        {followerLabel} follows {driverLabel}
-      </span>
-    {/if}
-    <div
-      class="options-grid"
-      role="radiogroup"
-      aria-labelledby="fuse-rule-label"
-      data-count={transformOptions.length}
-    >
-      {#each transformOptions as option (option.id)}
-        <LOOPChoiceButton
-          components={option.glyph.components}
-          reflectionAxis={option.glyph.reflectionAxis}
-          rotationPeriod={option.glyph.rotationPeriod}
-          tint={option.tint}
-          name={option.label}
-          description={option.description}
-          selected={selectedTransform === option.id}
-          dense={true}
-          glyphSize={24}
-          {disabled}
-          onclick={() => handleTransform(option.id)}
+    </div>
+
+    <div class="axis">
+      <span class="axis-label" id="fuse-rotation-label">Rotate</span>
+      <div class="rotation-control" style="--rotation-accent: {rotationAccent}">
+        <SegmentedControl
+          options={rotationOptions}
+          value={String(selectedRule.rotationSteps)}
+          onchange={chooseRotation}
+          color="accent"
+          size="sm"
+          density="compact"
+          semantics="radiogroup"
+          ariaLabelledby="fuse-rotation-label"
         />
-      {/each}
+      </div>
+    </div>
+
+    <div class="axis">
+      <span class="axis-label" id="fuse-reflect-label">Reflect</span>
+      <div class="reflect-grid" role="radiogroup" aria-labelledby="fuse-reflect-label">
+        {#each reflectionOptions as option (option.value)}
+          <LOOPChoiceButton
+            components={option.glyph.components}
+            reflectionAxis={option.glyph.reflectionAxis}
+            tint={option.tint}
+            name={option.label}
+            description={option.description}
+            title={option.description}
+            fallbackIcon="fa-ban"
+            selected={selectedRule.reflect === option.value}
+            dense={true}
+            glyphSize={22}
+            {disabled}
+            onclick={() => chooseReflection(option.value)}
+          />
+        {/each}
+      </div>
+    </div>
+
+    <div class="axis">
+      <span class="axis-label">Also</span>
+      <div class="toggle-row" role="group" aria-label="Additional operations">
+        <FilterChipBase
+          mode="toggle"
+          label="Invert"
+          ariaLabel="Invert — reverse every turn"
+          active={selectedRule.invert}
+          chipColor={invertColor}
+          {disabled}
+          onclick={toggleInvert}
+        >
+          {#snippet iconSnippet()}
+            <LOOPIconStrip
+              activeComponents={invertGlyph}
+              size={14}
+              showFreeformWhenEmpty={false}
+            />
+          {/snippet}
+        </FilterChipBase>
+        <FilterChipBase
+          mode="toggle"
+          label="Rewind"
+          ariaLabel="Rewind — reverse the step order"
+          active={selectedRule.rewind}
+          chipColor={rewoundColor}
+          {disabled}
+          onclick={toggleRewind}
+        >
+          {#snippet iconSnippet()}
+            <LOOPIconStrip
+              activeComponents={rewindGlyph}
+              size={14}
+              showFreeformWhenEmpty={false}
+            />
+          {/snippet}
+        </FilterChipBase>
+      </div>
     </div>
   </div>
 </div>
 
 <style>
   .transform-picker {
-    display: grid;
-    grid-template-columns: minmax(11rem, 0.72fr) minmax(22rem, 3fr);
-    align-items: flex-end;
-    flex: 4 1 46rem;
-    gap: var(--settings-spacing-md, 12px);
-    width: auto;
-    min-width: 0;
-    padding: var(--settings-spacing-sm, 10px) var(--settings-spacing-md, 14px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-lg, 20px);
-    background: var(--theme-panel-bg, rgba(12, 14, 22, 0.94));
-  }
-
-  .transform-picker.embedded {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--settings-spacing-md, 14px);
-    width: 100%;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-  }
-
-  .transform-picker.embedded.relationship-layout {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-    gap: var(--settings-spacing-md, 14px);
-    width: 100%;
-    max-width: 34rem;
-    margin-inline: auto;
-  }
-
-  .field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--settings-spacing-md, 14px);
+    width: 100%;
     min-width: 0;
   }
 
-  .relationship-layout .field,
-  .relationship-layout .transform-options {
+  .field,
+  .rule-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
     padding: clamp(12px, 0.45cqw, 17px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--settings-radius-md, 14px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  .relationship-layout .transform-options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
   /* Naming the container `loop-picker` is what hands LOOPChoiceButton its own
-     responsive tiers — the same ones the Extend drawer's shelf gives it. */
-  .transform-options {
+     responsive tiers — the same ones the Extend drawer's shelf gives it.
+
+     The card stays content-sized. Stretching it to reach the pinned footer put
+     ~100px between each axis, which read as three unrelated rows; the same
+     pixels left as panel background below the card read as a form that has
+     simply finished. */
+  .rule-field {
     container-type: inline-size;
     container-name: loop-picker;
   }
 
-  .options-label {
-    color: var(--theme-text, white);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+  /* Room to spend means the choices explain themselves rather than the card
+     growing empty rows. LOOPChoiceButton hides a dense choice's description by
+     default; this outranks that inside the reflect row only.
+
+     The seam is 1000px, not 900: at a 900-tall viewport the three descriptions
+     make the form 22px taller than the drawer body, which pushes the commit row
+     below the fold — the one place the footer must never be. */
+  @media (min-height: 1000px) {
+    .reflect-grid :global(.dense .loop-desc) {
+      display: block;
+      max-width: none;
+    }
+
+    .reflect-grid :global(.dense .loop-text) {
+      gap: 0.125rem;
+    }
+
+    /* A description needs the whole row to read as a sentence, so the tiles
+       stack sooner once they carry one. */
+    @container loop-picker (max-width: 26rem) {
+      .reflect-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
   }
 
-  /* The editor only ever renders in the recipe drawer, which is 480–620px wide,
-     so two columns of dense rows is the shape: 9 rows of 60px fits the panel
-     where 9 tiles of 140px could not. The column count is pinned per tier and
-     never chosen by auto-fill. */
-  .options-grid {
+  .axis {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .axis-label {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 750;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Each axis slides in its own primitive's hue, so the control and the rule it
+     builds carry the same colour the glyph does on a sequence card. */
+  .rotation-control {
+    --theme-accent: var(--rotation-accent);
+    min-width: 0;
+  }
+
+  /* Eight amounts, each a short numeral, so the row is only as wide as its
+     labels — the segments trim their padding rather than the row growing a
+     second line. */
+  .rotation-control :global(.segment) {
+    padding-inline: 0.25rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Three named choices, three columns. A pinned count, never auto-fill, so the
+     row can't strand one of them on its own line. */
+  .reflect-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     min-width: 0;
   }
 
-  /* Nine into two columns strands the ninth. It takes the full width instead,
-     which reads as the closing row rather than an orphan. */
-  .options-grid > :global(:last-child) {
-    grid-column: 1 / -1;
-  }
-
-  @container loop-picker (max-width: 20rem) {
-    .options-grid {
+  /* Below the width three glyph-plus-label tiles need, they stack — still one
+     per line, no orphan. */
+  @container loop-picker (max-width: 21rem) {
+    .reflect-grid {
       grid-template-columns: minmax(0, 1fr);
     }
+  }
+
+  .reflect-grid :global(.loop-button.dense) {
+    gap: 0.5rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .reflect-grid :global(.dense .loop-glyph) {
+    flex: 0 0 1.5rem;
+  }
+
+  .toggle-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .toggle-row :global(.filter-chip) {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .field-heading {
@@ -280,13 +405,6 @@
   }
 
   .field-label {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
-
-  .relationship-layout .field-label {
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     font-weight: 750;
@@ -307,39 +425,8 @@
     width: 100%;
   }
 
-  .relationship-layout .driver-control {
-    padding-block: 8px;
-  }
-
   .field-control :global(.segmented-control) {
     width: 100%;
-  }
-
-  @container fuse (max-width: 960px) {
-    .transform-picker:not(.embedded) {
-      grid-template-columns: minmax(0, 1fr);
-      width: 100%;
-    }
-
-    .transform-picker.embedded.relationship-layout {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  @container fuse (min-width: 1181px) and (max-width: 1679px) and (min-height: 780px) {
-    .relationship-layout .field,
-    .relationship-layout .transform-options {
-      padding: 10px;
-    }
-
-    .relationship-layout .field-help {
-      display: none;
-    }
-
-    .relationship-layout .driver-control {
-      margin-block: auto;
-      padding-block: 4px;
-    }
   }
 
   /* Same trade as the composer's short-viewport tiers: the step cards keep their
@@ -347,29 +434,22 @@
      The drawer is portalled out of the `fuse` container, so these are media
      queries. */
   @media (max-height: 1250px) {
-    .relationship-layout .field,
-    .relationship-layout .transform-options {
-      padding: 8px 10px;
-    }
-
-    .relationship-layout .transform-options {
+    .field,
+    .rule-field {
       gap: 8px;
-    }
-
-    .relationship-layout .driver-control {
-      padding-block: 0;
+      padding: 8px 10px;
     }
   }
 
   @media (max-height: 950px) {
-    .relationship-layout .field-help {
+    .field-help {
       display: none;
     }
   }
 
-  @container fuse (min-width: 2600px) and (min-height: 1400px) {
-    .relationship-layout .field,
-    .relationship-layout .transform-options {
+  @media (min-width: 2600px) and (min-height: 1400px) {
+    .field,
+    .rule-field {
       padding: 20px;
     }
 

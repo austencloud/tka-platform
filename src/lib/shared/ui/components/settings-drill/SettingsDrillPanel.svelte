@@ -215,6 +215,15 @@ named in .claude/rules/crossfade-primitive.md.
     max-width: 100%;
   }
 
+  /* Opt-in for a form that pins its own footer to the bottom of the pane. It
+     takes the remaining height like `.drill-fill`, but never shrinks below its
+     own content — so on a pane too short for the form, the overflow reaches
+     this body's scroller instead of the form clipping itself. */
+  .layer-body > :global(.drill-grow) {
+    flex: 1 0 auto;
+    max-width: 100%;
+  }
+
   .row-list {
     display: flex;
     flex-direction: column;
