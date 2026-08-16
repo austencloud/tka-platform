@@ -50,27 +50,11 @@ export interface DisplayAnimationState {
 }
 
 /**
- * Event detail for beat letter animation
- */
-export interface StepLetterAnimatedEvent {
-  stepIndex: number;
-  letter: string;
-  totalSteps: number;
-}
-
-/**
  * Event detail for sequence animation preparation
  */
 export interface PrepareSequenceAnimationEvent {
   isSequential: boolean;
   stepCount: number;
-}
-
-/**
- * Event detail for sequential animation completion
- */
-export interface SequentialAnimationCompleteEvent {
-  totalSteps: number;
 }
 
 /**
@@ -114,8 +98,14 @@ export const DEFAULT_GRID_SIZING: GridSizingConstraints = {
  * Animation timing configuration
  */
 export interface AnimationTiming {
-  /** Delay between sequential beat animations (ms) */
-  sequentialDelay: number;
+  /**
+   * Gap between consecutive diagonal bands of the generation reveal (ms).
+   *
+   * The wave crosses the grid one band at a time, so the reveal's total length
+   * is this times the number of bands — which grows with the grid's diagonal,
+   * not with the step count. Sixteen steps take one band longer than eight.
+   */
+  waveBandDelay: number;
   /** Duration of beat entrance animation (ms) */
   entranceDuration: number;
   /** Duration of beat exit animation (ms) */
@@ -130,8 +120,8 @@ export interface AnimationTiming {
  * Default animation timing values
  */
 export const DEFAULT_ANIMATION_TIMING: AnimationTiming = {
-  sequentialDelay: 60,
-  entranceDuration: 400,
+  waveBandDelay: 55,
+  entranceDuration: 380,
   exitDuration: 500,
   clearDuration: 300,
   cleanupDelay: 600,

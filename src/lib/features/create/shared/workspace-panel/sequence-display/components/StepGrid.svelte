@@ -29,6 +29,7 @@
   import {
     calculateGridVerticalCenterOffset,
     calculateGridLayout,
+    calculateStepWaveBand,
     calculateTimelineRowsByBeatCount,
     calculateTimelineUnitSize,
     calculateTimelinePadding,
@@ -381,6 +382,14 @@
     handleSingleStepAddition(currentStepCount - 1);
   });
 
+  // How many diagonal bands the reveal wave spans for the current grid. The
+  // last step sits on the furthest band, so it bounds the whole reveal.
+  const maxWaveBand = $derived(
+    steps.length > 0
+      ? calculateStepWaveBand(steps.length - 1, gridLayout.columns)
+      : 0
+  );
+
   // Helper to trigger animations
   async function triggerFullAnimation() {
     if (!containerRef) return;
@@ -391,7 +400,12 @@
     const mode = displayState.isSequentialMode ? "sequential" : "all-at-once";
 
     if (mode === "sequential") {
-      await displayState.triggerSequentialAnimation(steps, dispatchEvent);
+      await displayState.triggerSequentialAnimation(
+        steps,
+        dispatchEvent,
+        0,
+        maxWaveBand
+      );
     } else {
       displayState.triggerAllAtOnceAnimation();
     }
@@ -406,7 +420,8 @@
     await displayState.triggerSequentialAnimation(
       steps,
       dispatchEvent,
-      startFromIndex
+      startFromIndex,
+      maxWaveBand
     );
   }
 

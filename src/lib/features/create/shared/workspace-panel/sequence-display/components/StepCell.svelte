@@ -158,10 +158,6 @@
     return animationState.enableTransitions;
   });
 
-  const currentAnimationName = $derived.by(() => {
-    return animationState.animationName;
-  });
-
   // The entrance keyframes live on this element. Pictograph internals bubble
   // their own animation events through here, and an entrance that is cancelled
   // (a layout transition sweeping the grid, a mode switch) never reports an end
@@ -173,26 +169,6 @@
     animationManager.onAnimationEnd(shouldAnimateIn);
     animationState = animationManager.getState();
   }
-
-  // Listen for animation changes from the AnimationSelector
-  onMount(() => {
-    const handleAnimationChange = (event: CustomEvent) => {
-      animationManager.setAnimationName(event.detail.animation);
-      animationState = animationManager.getState();
-    };
-
-    window.addEventListener(
-      "animation-change",
-      handleAnimationChange as EventListener
-    );
-
-    return () => {
-      window.removeEventListener(
-        "animation-change",
-        handleAnimationChange as EventListener
-      );
-    };
-  });
 
   // Auto-focus when this cell becomes selected (e.g., after deleting another step)
   // This enables continuous Delete key presses to delete steps one by one
@@ -331,11 +307,6 @@
     practiceAnimationStyle.current === "wave"}
   class:highlighted={!!highlightStyle}
   class:long-pressing={isLongPressing}
-  class:anim-gentleBloom={currentAnimationName === "gentleBloom"}
-  class:anim-softCascade={currentAnimationName === "softCascade"}
-  class:anim-springPop={currentAnimationName === "springPop"}
-  class:anim-microFade={currentAnimationName === "microFade"}
-  class:anim-glassBlur={currentAnimationName === "glassBlur"}
   style:--highlight-bg={highlightStyle?.bg}
   style:--highlight-border={highlightStyle?.border}
   onclick={handleClick}
@@ -445,33 +416,23 @@
     transform: scale(0.3);
   }
 
-  /* Default animation (Spring Pop) */
+  /**
+   * The entrance gesture. `--wave-band` is the cell's diagonal distance from
+   * the start position, set by WorkspaceGrid; multiplying it by the band delay
+   * spaces the reveal into a front that sweeps out of the start tile. The
+   * compositor runs this, so the stagger survives the main-thread work that
+   * generation does while the pictographs render.
+   *
+   * Cells outside a whole-sequence reveal get band 0 and land immediately.
+   *
+   * `both` matters: the backwards fill holds the 0% frame through the delay, so
+   * a cell waiting its turn shows the gesture's starting pose rather than the
+   * `.invisible` scale(0.3) it would otherwise flash.
+   */
   .step-cell.animate {
-    animation: springPop var(--duration-dramatic)
-      cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
-
-  /* Animation overrides based on selected animation */
-  .step-cell.animate.anim-gentleBloom {
-    animation: gentleBloom 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  }
-
-  .step-cell.animate.anim-softCascade {
-    animation: softCascade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  .step-cell.animate.anim-springPop {
-    animation: springPop var(--duration-dramatic)
-      cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  }
-
-  .step-cell.animate.anim-microFade {
-    animation: microFade var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1)
-      both;
-  }
-
-  .step-cell.animate.anim-glassBlur {
-    animation: glassBlur 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    animation: stepCascade var(--step-entrance-duration, 380ms)
+      cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--wave-band, 0) * var(--wave-band-delay, 55ms));
   }
 
   .step-cell:hover {
@@ -792,105 +753,52 @@
       0 0 48px rgba(251, 191, 36, 0.3);
   }
 
-  /* FAVORITE: Gentle Bloom - soft float-up with blur */
-  @keyframes gentleBloom {
+  /**
+   * Cascade with depth: the cell rises into the plane rather than fading in
+   * place. Blur clearing as it rises is the depth cue — it reads as pulling
+   * focus — and the brief overshoot past 1 gives it something to land against.
+   *
+   * Transform, opacity and filter only. Nothing here can reflow a neighbour.
+   */
+  @keyframes stepCascade {
     0% {
-      transform: scale(0.7) translateY(10px);
       opacity: 0;
-      filter: blur(2px);
+      transform: translate3d(0, 14px, 0) scale(0.86);
+      filter: blur(3px);
     }
-    60% {
-      opacity: 0.8;
-      filter: blur(0px);
+    55% {
+      opacity: 1;
+      filter: blur(0);
+    }
+    75% {
+      transform: translate3d(0, -2px, 0) scale(1.015);
     }
     100% {
-      transform: scale(1) translateY(0);
       opacity: 1;
-      filter: blur(0px);
+      transform: none;
+      filter: blur(0);
     }
   }
 
-  /* OPTION 2: Soft Cascade - smooth slide from left with fade */
-  @keyframes softCascade {
-    0% {
-      transform: translateX(-20px) scale(0.9);
-      opacity: 0;
-    }
-    50% {
-      opacity: 0.6;
-    }
-    100% {
-      transform: translateX(0) scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* OPTION 3: Spring Pop - elastic bounce (TRENDY 2025!) */
-  @keyframes springPop {
-    0% {
-      transform: scale(0.3);
-      opacity: 0;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* OPTION 4: Micro Fade - minimal, fast, modern */
-  @keyframes microFade {
-    0% {
-      transform: scale(0.95);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* OPTION 5: Glass Blur - glassmorphism trend */
-  @keyframes glassBlur {
-    0% {
-      transform: scale(0.8);
-      opacity: 0;
-      filter: blur(8px);
-      backdrop-filter: blur(0px);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-      filter: blur(0px);
-      backdrop-filter: blur(4px);
-    }
-  }
-
-  /* Accessibility: Respect user's motion preferences (WCAG AAA) */
+  /**
+   * Accessibility: Respect user's motion preferences (WCAG AAA)
+   *
+   * The entrance collapses to an instant rather than to `animation: none`.
+   * Visibility is released by `hasAnimated`, which is only ever set from an
+   * animation event — remove the animation outright and no event fires, so
+   * every step stays parked at `opacity: 0` forever. A hair-thin duration runs
+   * the same single code path, still reports its end, and is imperceptible.
+   * The wave delay goes with it: nobody should wait out a stagger they
+   * cannot see.
+   */
   @media (prefers-reduced-motion: reduce) {
-    .animate {
-      animation: none;
+    .step-cell.animate {
+      animation-duration: 0.01ms;
+      animation-delay: 0s;
     }
     .step-cell.selected::before {
       animation: none;
       opacity: 1;
-    }
-    .anim-gentleBloom {
-      animation: none;
-    }
-    .anim-softCascade {
-      animation: none;
-    }
-    .anim-springPop {
-      animation: none;
-    }
-    .anim-microFade {
-      animation: none;
-    }
-    .anim-glassBlur {
-      animation: none;
     }
     .practice-intense {
       animation: none;

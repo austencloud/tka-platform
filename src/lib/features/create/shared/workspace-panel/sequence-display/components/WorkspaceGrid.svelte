@@ -18,6 +18,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     calculateStepPosition,
+    calculateStepWaveBand,
     getTimelineWidthMultiplier,
   } from "$lib/shared/create/utils/grid-calculations";
   import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
@@ -568,6 +569,9 @@
     style:--grid-rows={gridLayout.rows}
     style:--grid-cols={gridLayout.totalColumns}
     style:--timeline-padding="{timelinePadding}px"
+    style:--wave-band-delay="{displayState.animationTiming.waveBandDelay}ms"
+    style:--step-entrance-duration="{displayState.animationTiming
+      .entranceDuration}ms"
   >
     {#if isTimelineMode}
       <!-- ===== Timeline layout: start column + flexbox rows ===== -->
@@ -637,9 +641,11 @@
       <div class="timeline-rows">
         {#each timelineRows as row, rowIndex (rowIndex)}
           <div class="timeline-row">
-            {#each row.steps as { stepIndex, duration } (getStepKey(steps[stepIndex]!, stepIndex))}
+            {#each row.steps as { stepIndex, duration }, columnIndex (getStepKey(steps[stepIndex]!, stepIndex))}
               {@const step = steps[stepIndex]!}
               {@const identity = getStepKey(step, stepIndex)}
+              <!-- Row plus column, offset past the start tile's band 0. -->
+              {@const waveBand = rowIndex + columnIndex + 1}
               {@const isDeleting = isStepLeaving(stepIndex)}
               {@const musicalPosition = getDurationDisplay(stepIndex)}
               {@const effectiveDuration = getEffectiveMultiplier(
@@ -671,6 +677,7 @@
                   : undefined}
                 inert={isArrivalDestinationHidden(stepIndex)}
                 style:--duration-multiplier={effectiveDuration}
+                style:--wave-band={displayState.isCascadeReveal ? waveBand : 0}
                 in:fade={{ duration: getHistoryMembershipDuration(identity) }}
                 out:fade={{ duration: getHistoryMembershipDuration(identity) }}
               >
@@ -743,6 +750,7 @@
 
       {#each standardStepCells as { step, index, identity } (identity)}
         {@const position = calculateStepPosition(index, gridLayout.columns)}
+        {@const waveBand = calculateStepWaveBand(index, gridLayout.columns)}
         {@const isDeleting = isStepLeaving(index)}
         {@const musicalPosition = getDurationDisplay(index)}
         <div
@@ -763,6 +771,7 @@
           inert={isArrivalDestinationHidden(index)}
           style:grid-row={position.row}
           style:grid-column={position.column}
+          style:--wave-band={displayState.isCascadeReveal ? waveBand : 0}
           in:fade={{ duration: getHistoryMembershipDuration(identity) }}
           out:fade={{ duration: getHistoryMembershipDuration(identity) }}
         >

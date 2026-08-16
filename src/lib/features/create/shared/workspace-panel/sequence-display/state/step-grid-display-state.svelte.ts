@@ -10,7 +10,6 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type {
   AnimationMode,
   AnimationTiming,
-  StepLetterAnimatedEvent,
 } from "../domain/models/step-grid-display-models";
 import { DEFAULT_ANIMATION_TIMING } from "../domain/models/step-grid-display-models";
 
@@ -151,83 +150,50 @@ export function createStepGridDisplayState() {
   }
 
   /**
-   * Trigger sequential animation with progressive reveal
+   * Reveal the sequence as one diagonal wave.
+   *
+   * Every step is marked to animate in a single tick; the spacing between them
+   * is CSS `animation-delay`, keyed off each cell's `--wave-band`. That matters
+   * because generation blocks the main thread for hundreds of milliseconds
+   * while the pictographs render — a JS-timer stagger fires late and clumps
+   * under that load, which is what made the reveal read as cells popping in
+   * rather than a wave crossing the grid. The compositor honours the delays
+   * regardless of how busy the main thread is.
+   *
+   * Resolves when the last cell has landed, so callers can await the reveal.
+   *
+   * `maxWaveBand` is how many bands the wave actually spans. Callers that know
+   * the grid's column count should pass it; the step count is a safe upper
+   * bound otherwise, since a wave never has more bands than it has steps except
+   * in a single-column grid.
    */
   async function triggerSequentialAnimation(
     steps: readonly StepData[],
-    dispatchEvent: (event: CustomEvent) => void,
-    startFromIndex: number = 0
+    _dispatchEvent: (event: CustomEvent) => void,
+    startFromIndex: number = 0,
+    maxWaveBand?: number
   ): Promise<void> {
     // Increment generation to cancel any previous running animation
     const thisGeneration = ++animationGeneration;
     const stepCount = steps.length;
 
-    // Small delay to ensure DOM has updated
+    for (let i = startFromIndex; i < stepCount; i++) {
+      stepsToAnimate.add(i);
+    }
+    stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
+
+    const bands = Math.max(0, maxWaveBand ?? stepCount);
+    const revealDuration =
+      bands * animationTiming.waveBandDelay + animationTiming.entranceDuration;
+
     await new Promise((resolve) =>
-      setTimeout(resolve, animationTiming.sequentialDelay / 6)
+      setTimeout(resolve, revealDuration + animationTiming.cleanupDelay)
     );
 
-    // Check if this animation was superseded by a newer one
-    if (thisGeneration !== animationGeneration) {
+    // Only cleanup if this animation is still current
+    if (thisGeneration === animationGeneration) {
       cleanupAnimation();
-      return;
     }
-
-    // Trigger steps sequentially (from startFromIndex onward)
-    for (let i = startFromIndex; i < stepCount; i++) {
-      // Check if this animation was superseded by a newer one
-      if (thisGeneration !== animationGeneration) {
-        cleanupAnimation();
-        return;
-      }
-
-      // Add this beat to stepsToAnimate to trigger its animation
-      stepsToAnimate.add(i);
-      stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
-
-      // Dispatch event with the letter from this beat
-      const beat = steps[i];
-      if (beat?.letter) {
-        const event = new CustomEvent<StepLetterAnimatedEvent>(
-          "beat-letter-animated",
-          {
-            detail: {
-              stepIndex: i,
-              letter: beat.letter,
-              totalSteps: stepCount,
-            },
-            bubbles: true,
-          }
-        );
-        dispatchEvent(event);
-      }
-
-      // Wait before next beat
-      await new Promise((resolve) =>
-        setTimeout(resolve, animationTiming.sequentialDelay)
-      );
-    }
-
-    // Only proceed if this animation is still current
-    if (thisGeneration !== animationGeneration) {
-      cleanupAnimation();
-      return;
-    }
-
-    // Dispatch completion event
-    const completeEvent = new CustomEvent("sequential-animation-complete", {
-      detail: { totalSteps: stepCount },
-      bubbles: true,
-    });
-    dispatchEvent(completeEvent);
-
-    // Clear animation state after all steps have animated
-    setTimeout(() => {
-      // Only cleanup if this animation is still current
-      if (thisGeneration === animationGeneration) {
-        cleanupAnimation();
-      }
-    }, animationTiming.cleanupDelay);
   }
 
   /**
@@ -368,6 +334,14 @@ export function createStepGridDisplayState() {
       return isPreparingFullAnimation;
     },
     get isWaitingForSequentialAnimation() {
+      return isWaitingForSequentialAnimation;
+    },
+    /**
+     * True while a whole-sequence wave is in flight. Cells consult this before
+     * taking a wave delay so a single step committed in Construct still lands
+     * immediately instead of waiting out the band it happens to sit on.
+     */
+    get isCascadeReveal() {
       return isWaitingForSequentialAnimation;
     },
     get isClearingForGeneration() {

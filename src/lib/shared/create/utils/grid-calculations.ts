@@ -248,6 +248,25 @@ export function calculateStepPosition(
 }
 
 /**
+ * Which diagonal band a cell sits on, counted out from the start position.
+ *
+ * The generation reveal sweeps one front across the grid rather than filling a
+ * list, so cells share a delay when they share a diagonal. Row plus column also
+ * means the reveal's length tracks the diagonal (rows + columns) instead of the
+ * step count: sixteen steps take one band longer than eight, not twice as long.
+ *
+ * The start position occupies row 1, column 1, so it is band 0 and leads the
+ * front without needing a case of its own.
+ */
+export function calculateStepWaveBand(
+  stepIndex: number,
+  columns: number
+): number {
+  const { row, column } = calculateStepPosition(stepIndex, columns);
+  return row - 1 + (column - 1);
+}
+
+/**
  * Keep a grid vertically centered while it fits, then pin it to the top once
  * it needs to scroll. Returning the offset as a number lets the workspace
  * animate between row counts instead of relying on non-animatable auto margins.

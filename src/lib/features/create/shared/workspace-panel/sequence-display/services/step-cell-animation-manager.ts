@@ -10,7 +10,7 @@
 
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { StepCellAnimationState, StepCellAnimationConfig } from "./types";
+import type { StepCellAnimationState } from "./types";
 
 /**
  * Creates a pictograph signature representing the fundamental structure
@@ -32,7 +32,6 @@ function getPictographSignature(stepData: StepData): string {
 export class StepCellAnimationManager {
   // Animation state
   private hasAnimated = false;
-  private animationName: string;
   private enableTransitions = false;
 
   // Tracking for change detection
@@ -44,14 +43,9 @@ export class StepCellAnimationManager {
   // Timer for disabling transitions after animation completes
   private transitionTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(config: StepCellAnimationConfig = {}) {
-    this.animationName = config.initialAnimationName ?? "gentleBloom";
-  }
-
   getState(): StepCellAnimationState {
     return {
       hasAnimated: this.hasAnimated,
-      animationName: this.animationName,
       enableTransitions: this.enableTransitions,
     };
   }
@@ -131,10 +125,6 @@ export class StepCellAnimationManager {
     }
   }
 
-  setAnimationName(name: string): void {
-    this.animationName = name;
-  }
-
   reset(): void {
     this.hasAnimated = false;
     this.enableTransitions = false;
@@ -154,8 +144,6 @@ export class StepCellAnimationManager {
  * Factory function for creating StepCellAnimationManager instances.
  * Each StepCell component should create its own instance.
  */
-export function createStepCellAnimationManager(
-  config?: StepCellAnimationConfig
-): StepCellAnimationManager {
-  return new StepCellAnimationManager(config);
+export function createStepCellAnimationManager(): StepCellAnimationManager {
+  return new StepCellAnimationManager();
 }
