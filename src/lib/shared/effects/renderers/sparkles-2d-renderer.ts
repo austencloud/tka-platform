@@ -63,6 +63,22 @@ const REF_TIP_SPEED = 600;
 const CONE_AT_REST = Math.PI;
 const CONE_AT_SPEED = Math.PI * 0.28;
 
+/**
+ * Air drag, as an exponential velocity decay rate (1/s). Without it velocity is
+ * conserved forever, so every spark walks to the edge of the frame and the
+ * field flattens into a uniform starfield — density stops falling off from the
+ * tip and the throw becomes unreadable. Decay caps a particle's travel at
+ * roughly v0 / DRAG_PER_SEC px, which is what makes the spray read as a plume
+ * anchored to the prop.
+ */
+const DRAG_PER_SEC = 2.6;
+/**
+ * px/s² per unit of the gravity dial. Higher than the old 200 because drag now
+ * caps fall speed at gravity/DRAG rather than letting it accumulate — this
+ * keeps the heavy presets (Starfall, Confetti) falling at their previous rate.
+ */
+const GRAVITY_PX_PER_UNIT = 420;
+
 /** Rainbow mode: degrees of hue drift per second. */
 const RAINBOW_DRIFT_DEG_PER_SEC = 45;
 /** Rainbow mode: width of the simultaneous hue band, in degrees. */
@@ -164,13 +180,18 @@ export class Sparkles2DRenderer {
     for (const id of this.lastTipPos.keys()) if (!seen.has(id)) this.lastTipPos.delete(id);
 
     // 2. Step physics + cull dead particles (in-place compaction - zero allocation).
-    const gravityPx = params.gravity * 200 * scale;
+    const gravityPx = params.gravity * GRAVITY_PX_PER_UNIT * scale;
+    // Exponential decay, evaluated once per frame rather than per particle.
+    const damp = Math.exp(-DRAG_PER_SEC * dt);
     let writeIdx = 0;
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i]!;
       p.life += dt;
       if (p.life >= p.maxLife) continue;
-      p.vy += gravityPx * dt;
+      // Drag first, then gravity: fall speed settles at gravityPx / DRAG_PER_SEC
+      // instead of accelerating without limit.
+      p.vx *= damp;
+      p.vy = p.vy * damp + gravityPx * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.rotation += p.spinSpeed * dt;
