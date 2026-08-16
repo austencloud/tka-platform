@@ -1,5 +1,8 @@
 import { BackgroundType } from "@austencloud/backgrounds";
 import type { SceneId } from "$lib/features/lab/tabs/scene-lab/domain/scene-lab-types";
+// Reading BackgroundType.PRIDE directly leaves this theme with an undefined
+// background on any bundle that still calls the environment Rainbow.
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 
 export type ThemeId =
   | "ocean"
@@ -60,7 +63,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
     label: "Rainbow",
     icon: "fa-rainbow",
     color: "#f59e0b",
-    backgroundType: BackgroundType.PRIDE,
+    backgroundType: PRIDE_BACKGROUND_TYPE,
     sceneId: "rainbow",
   },
   {

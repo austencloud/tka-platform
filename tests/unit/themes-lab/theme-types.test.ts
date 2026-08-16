@@ -5,6 +5,7 @@ import {
   getThemeOption,
   type ThemeId,
 } from "$lib/features/themes-lab/domain/theme-types";
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 
 describe("THEME_OPTIONS", () => {
   it("has exactly 10 themes", () => {
@@ -35,9 +36,9 @@ describe("THEME_OPTIONS", () => {
     expect(cosmic?.sceneId).toBe("cosmic");
   });
 
-  it("maps the Rainbow tab to the package's Pride background identifier", () => {
+  it("maps the Rainbow tab to whichever name the loaded bundle gives that background", () => {
     const rainbow = getThemeOption("rainbow");
-    expect(rainbow?.backgroundType).toBe(BackgroundType.PRIDE);
+    expect(rainbow?.backgroundType).toBe(PRIDE_BACKGROUND_TYPE);
     expect(rainbow?.sceneId).toBe("rainbow");
   });
 

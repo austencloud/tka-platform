@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BackgroundType } from "@austencloud/backgrounds";
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 
 // Mock localStorage
 const mockStorage = new Map<string, string>();
@@ -131,9 +131,13 @@ describe("createThemesLabState", () => {
     const state = createThemesLabState();
     state.setTheme("rainbow");
     expect(mockSetSceneId).toHaveBeenCalledWith("rainbow");
+    // Asserted against the resolved identifier, not BackgroundType.PRIDE. On a
+    // bundle that still calls the environment Rainbow that member is undefined,
+    // so this assertion used to pass by comparing undefined to undefined and
+    // proved nothing about what the tab actually persists.
     expect(mockUpdateSetting).toHaveBeenCalledWith(
       "backgroundType",
-      BackgroundType.PRIDE
+      PRIDE_BACKGROUND_TYPE
     );
   });
 });

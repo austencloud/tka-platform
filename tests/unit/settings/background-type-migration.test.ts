@@ -4,11 +4,16 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeBackgroundType,
   resolvePrideBackgroundType,
+  PRIDE_BACKGROUND_TYPE,
 } from "$lib/shared/settings/domain/background-type-migration";
 
 describe("background type migration", () => {
-  it("migrates the former Rainbow identifier to Pride", () => {
-    expect(normalizeBackgroundType("rainbow")).toBe(BackgroundType.PRIDE);
+  // Asserted against the resolved identifier rather than BackgroundType.PRIDE,
+  // so this holds on both the bundle that calls the environment Rainbow and the
+  // one that calls it Pride. Pinning the enum member asserts which package
+  // version is installed, which is not what this migration promises.
+  it("migrates the former Rainbow identifier to whichever name the bundle uses", () => {
+    expect(normalizeBackgroundType("rainbow")).toBe(PRIDE_BACKGROUND_TYPE);
   });
 
   it("uses the former Rainbow member while an older dependency bundle is still loaded", () => {

@@ -3,6 +3,10 @@ import {
   resolvePetalSize,
   type PetalSpriteShape,
 } from "$lib/shared/effects/domain/petal-palettes";
+// Keying on BackgroundType.PRIDE directly writes an "undefined" key on any
+// bundle that still calls the environment Rainbow, which drops that background
+// through to the neutral profile and its zero contrast.
+import { PRIDE_BACKGROUND_TYPE } from "$lib/shared/settings/domain/background-type-migration";
 
 export interface PetalEnvironmentProfile3D {
   /** Approximate linear-space luminance behind the performer. */
@@ -128,7 +132,7 @@ const PETAL_ENVIRONMENT_PROFILES: Record<
     motionEmissionScale: 0.9,
     ambientEmissionScale: 0.7,
   },
-  [BackgroundType.PRIDE]: {
+  [PRIDE_BACKGROUND_TYPE]: {
     backdropLuminance: 0.28,
     minimumSurfaceLuminance: 0.18,
     maximumSurfaceLuminance: 0.58,
