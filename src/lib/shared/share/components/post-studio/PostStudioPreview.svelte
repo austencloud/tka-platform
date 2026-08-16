@@ -8,11 +8,14 @@
   let {
     sequence,
     cardRenderOptions,
+    durationLabel,
     onRootReady,
     onEditRegion,
   }: {
     sequence: SequenceData;
     cardRenderOptions?: Partial<SequenceExportOptions> | null;
+    /** Output length, shown beside the format so the canvas needs no header. */
+    durationLabel?: string;
     onRootReady?: (root: HTMLElement | null) => void;
     onEditRegion?: () => void;
   } = $props();
@@ -226,9 +229,11 @@
   </div>
 
   <div class="preview-meta">
-    <span class="format"
-      ><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> 9:16</span
-    >
+    <span class="format">
+      <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i>
+      9:16{#if durationLabel}<span class="duration"> · {durationLabel}</span
+        >{/if}
+    </span>
     <span class="edit-hint"
       ><i class="fa-solid fa-arrow-pointer" aria-hidden="true"></i> Select a region
       to edit</span
@@ -413,6 +418,13 @@
     align-items: center;
     gap: 0.35rem;
     color: var(--theme-text, #fff);
+  }
+
+  /* Length changes as layouts and performances swap; tabular digits keep the
+     edit hint from sliding when 5.0 becomes 17.0. */
+  .duration {
+    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.66));
+    font-variant-numeric: tabular-nums;
   }
 
   .edit-hint {

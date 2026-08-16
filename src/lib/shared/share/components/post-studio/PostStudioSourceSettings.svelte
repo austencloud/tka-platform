@@ -72,14 +72,23 @@
 
   /* The sequence viewer deliberately centers a narrow settings column. Post
      Studio already supplies a dedicated inspector region, so its editor uses
-     that whole region and starts at the top like a desktop property panel. */
+     that whole region and starts at the top like a desktop property panel.
+
+     `margin-block` is the half that actually does it. The shared panel sets
+     `margin: auto 0`, which floated the section in the middle of the rail —
+     at 1920 that left 234px of dead space above the first control and the
+     same again below it. Releasing `max-width` alone never touched it. */
   .animation-settings :global(.panel-center-inner) {
     max-width: none;
+    margin-block: 0;
+    align-self: stretch;
   }
 
-  .animation-settings
-    :global(.panel-center-inner:has(.effects-panel.detail-view)) {
-    margin-block: 0;
+  /* The rail centers itself independently of the section it navigates. Once
+     the section starts at the top, a centered rail leaves an L-shaped hole in
+     the corner between them — both have to agree on the top edge. */
+  .animation-settings :global(.icon-rail) {
+    justify-content: flex-start;
   }
 
   .card-settings {
@@ -101,6 +110,39 @@
     .animation-settings :global(.panel-title),
     .animation-settings :global(.effects-panel.detail-view > .sb-footer) {
       display: none;
+    }
+  }
+
+  /* The studio chrome steps up at 105rem / 180rem (PostStudio.svelte), but the
+     embedded sequence-viewer panels size themselves from the global type and
+     touch-target tokens, so at 4K the rails grew and their contents stayed at
+     12px / 44px. Redefining the tokens on the wrapper carries the step through
+     every chip, label and row inside without forking the shared panel CSS. */
+  @container post-studio (min-width: 105rem) {
+    .animation-settings,
+    .card-settings {
+      --font-size-compact: 0.8125rem;
+      --font-size-min: 0.9375rem;
+      --min-touch-target: 3rem;
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .animation-settings,
+    .card-settings {
+      --font-size-compact: 1.0625rem;
+      --font-size-min: 1.25rem;
+      --min-touch-target: 3.75rem;
+    }
+
+    /* The icon rail is laid out in px and has no token to ride. */
+    .animation-settings :global(.icon-rail) {
+      width: 12rem;
+    }
+
+    .animation-settings :global(.rail-btn) {
+      height: 4.25rem;
+      font-size: 1.5rem;
     }
   }
 </style>

@@ -201,8 +201,7 @@
 
 <section class="timeline" class:advanced aria-labelledby="post-studio-timing">
   <div class="timeline-heading">
-    <div>
-      <span class="eyebrow">Playback</span>
+    <div class="heading-title">
       <div class="title-row">
         <h3 id="post-studio-timing">Timing</h3>
         {#if alignmentLabel}
@@ -243,8 +242,9 @@
         >
       </div>
       {#if composition.tempoBpm !== null}
-        <div class="tempo-editor">
-          <span>Tempo</span>
+        <!-- No "Tempo" label: the control already reads "… BPM". The group
+             role carries the name for assistive tech instead. -->
+        <div class="tempo-editor" role="group" aria-label="Tempo">
           <TempoControl
             bpm={composition.tempoBpm}
             onBpmChange={composition.setTempoBpm}
@@ -254,17 +254,17 @@
           />
         </div>
       {/if}
-      <button
-        type="button"
-        class:active={advanced}
-        class="advanced-toggle"
-        aria-expanded={advanced}
-        onclick={onToggleAdvanced}
-      >
-        <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-        {advanced ? "Hide timeline" : "Advanced timing"}
-      </button>
     </div>
+    <button
+      type="button"
+      class:active={advanced}
+      class="advanced-toggle"
+      aria-expanded={advanced}
+      onclick={onToggleAdvanced}
+    >
+      <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+      {advanced ? "Hide timeline" : "Advanced timing"}
+    </button>
   </div>
 
   {#if advanced}
@@ -378,18 +378,24 @@
     min-width: 42rem;
   }
 
+  /* Three zones, not two ends. Spanning the full workspace, `space-between`
+     would have thrown the title and the transport ~3000px apart at 4K. The
+     centre track keeps the transport near the frame it drives while the
+     title and the mode toggle hold the edges, and the outer 1fr columns stay
+     equal so the centre stays centred as the title text changes. */
   .timeline-heading {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
   }
 
-  .eyebrow {
-    display: block;
-    margin-bottom: 0.2rem;
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.6));
-    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
+  .heading-title {
+    min-width: 0;
+  }
+
+  .advanced-toggle {
+    justify-self: end;
   }
 
   .timeline-help {
@@ -415,6 +421,13 @@
   .alignment {
     display: flex;
     align-items: center;
+  }
+
+  /* Both sit in the heading's flexible first column. Without this they wrap to
+     three lines at tablet widths rather than letting the column shrink. */
+  .alignment,
+  .map-timing {
+    white-space: nowrap;
   }
 
   .map-timing {
@@ -462,13 +475,12 @@
   }
 
   .primary-controls {
-    justify-content: flex-end;
+    justify-content: center;
     gap: var(--spacing-lg);
     min-width: 0;
   }
 
   .tempo-editor {
-    gap: var(--spacing-sm);
     color: var(--theme-text-dim);
     font-size: var(--studio-meta-size, var(--font-size-compact));
   }
@@ -733,8 +745,8 @@
     }
 
     .timeline-heading {
+      grid-template-columns: minmax(0, 1fr);
       align-items: start;
-      flex-direction: column;
     }
 
     .primary-controls {
@@ -782,22 +794,9 @@
     }
   }
 
-  @container post-studio (min-width: 70.0625rem) and (max-width: 90rem) {
-    .timeline-heading {
-      align-items: flex-start;
-      flex-wrap: wrap;
-    }
-
-    .primary-controls {
-      flex: 1 1 100%;
-      justify-content: flex-start;
-      gap: var(--spacing-sm);
-    }
-
-    .advanced-toggle {
-      margin-left: auto;
-    }
-  }
+  /* The 70–90rem tier used to force the controls onto their own line: at that
+     width the row could not fit inside the canvas column. Spanning the
+     workspace it fits on one line from 70rem up, so the tier is gone. */
 
   @container post-studio (min-width: 105rem) {
     .lane {
@@ -810,8 +809,7 @@
     }
 
     .clip,
-    .lane-label,
-    .eyebrow {
+    .lane-label {
       font-size: var(--studio-body-size, 0.9375rem);
     }
   }

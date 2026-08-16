@@ -107,15 +107,17 @@
 
   {#if composition.selectedRegion && transform}
     {#if hasSourceSettings}
-      <SegmentedControl
-        options={VIEW_OPTIONS}
-        value={view}
-        onchange={(value) => (view = value)}
-        ariaLabel="Choose layer settings or placement"
-        semantics="tabs"
-        size="sm"
-        color="accent"
-      />
+      <div class="switch-row">
+        <SegmentedControl
+          options={VIEW_OPTIONS}
+          value={view}
+          onchange={(value) => (view = value)}
+          ariaLabel="Choose layer settings or placement"
+          semantics="tabs"
+          size="sm"
+          color="accent"
+        />
+      </div>
     {/if}
 
     {#if view === "source" && hasSourceSettings}
@@ -130,15 +132,17 @@
       {#if composition.selectedSupportsFit}
         <div class="control-group">
           <span class="group-label">Frame fit</span>
-          <SegmentedControl
-            options={FIT_OPTIONS}
-            value={composition.selectedRegion.fit}
-            onchange={composition.setSelectedFit}
-            ariaLabel="How the source fits the selected area"
-            semantics="radiogroup"
-            size="sm"
-            color="accent"
-          />
+          <div class="switch-row wide">
+            <SegmentedControl
+              options={FIT_OPTIONS}
+              value={composition.selectedRegion.fit}
+              onchange={composition.setSelectedFit}
+              ariaLabel="How the source fits the selected area"
+              semantics="radiogroup"
+              size="sm"
+              color="accent"
+            />
+          </div>
         </div>
       {/if}
 
@@ -310,6 +314,18 @@
     grid-template-rows: auto auto minmax(0, 1fr);
     height: 100%;
     align-content: stretch;
+  }
+
+  /* SegmentedControl is width:100% by design, so a full-width parent stretches
+     two short words across the whole rail — 359px per tab at 1920, 507px at
+     4K. The switch is a control, not a progress bar: size it from the control
+     height so it steps with the studio's own 105rem / 180rem tiers. */
+  .switch-row {
+    width: min(100%, calc(var(--studio-control-height, 2.75rem) * 8));
+  }
+
+  .switch-row.wide {
+    width: min(100%, calc(var(--studio-control-height, 2.75rem) * 11));
   }
 
   .inspector-heading,

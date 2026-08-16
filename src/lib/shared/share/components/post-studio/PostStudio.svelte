@@ -124,7 +124,6 @@
   let workspaceHeight = $state(0);
   let workspaceWasAdjusted = $state(false);
   let workspaceSizes = $state([22, 72, 44]);
-  let timingSizes = $state([3, 1]);
 
   const compactWorkspace = $derived(
     workspaceWidth === 0 || workspaceWidth <= 1120 || workspaceHeight <= 640
@@ -192,12 +191,22 @@
     if (workspaceWasAdjusted || width <= 0) return;
 
     const available = Math.max(0, width - 16);
-    const assets = Math.min(640, Math.max(256, available * 0.15));
-    const inspector =
-      width >= 1680
-        ? Math.min(1120, Math.max(760, available * 0.31))
-        : Math.min(512, Math.max(320, available * 0.32));
-    const canvas = Math.max(480, available - assets - inspector);
+
+    // Both rails hold a bounded amount of content, so they get a share with a
+    // ceiling and the canvas takes what is left. Letting the inspector absorb
+    // the remainder instead handed it 2021px at 4K — half the workspace for a
+    // grid of chips. The canvas is the right home for genuine surplus: the
+    // 9:16 frame is height-bound, so extra column width becomes symmetric
+    // matting around the hero rather than a panel stretched past its content.
+    const assets = Math.min(720, Math.max(288, available * 0.185));
+    const inspector = Math.min(
+      1280,
+      Math.max(width >= 1680 ? 720 : 320, available * 0.3)
+    );
+    const canvas = Math.max(
+      width >= 1680 ? 640 : 480,
+      available - assets - inspector
+    );
     workspaceSizes = [assets, canvas, inspector];
   });
 
@@ -535,14 +544,11 @@
 
   {#snippet canvasPanel()}
     <main class="canvas-panel" aria-label="Post canvas">
-      <div class="canvas-heading">
-        <span>Canvas</span>
-        <span>9:16 · {composition.durationSeconds.toFixed(1)} seconds</span>
-      </div>
       <div class="canvas-stage">
         <PostStudioPreview
           {sequence}
           cardRenderOptions={synchronizedCardRenderOptions}
+          durationLabel={`${composition.durationSeconds.toFixed(1)}s`}
           onRootReady={setPreviewRoot}
           onEditRegion={() => (focusedPanel = "edit")}
         />
@@ -582,72 +588,51 @@
     </div>
   {/snippet}
 
-  {#snippet centerPanel()}
-    {#if timingAdvanced}
+  <!-- Timing spans the workspace rather than riding inside the canvas column.
+       It is a composition-wide control — one playhead, one tempo, every
+       region's clips — so scoping it to the canvas was backwards twice over:
+       the transport row's intrinsic width (~1000px) exceeded the narrowest
+       column and got clipped, and the height it claimed came straight out of
+       the 9:16 frame, which is the one thing on this page that is the
+       product. Full width also gives clip trimming a track worth dragging. -->
+  <div class="studio-body">
+    <div
+      class="workspace"
+      bind:clientWidth={workspaceWidth}
+      bind:clientHeight={workspaceHeight}
+    >
       <PanelGroup
-        direction="vertical"
+        direction="horizontal"
         panels={[
+          {
+            id: "assets",
+            content: assetPanel,
+            defaultSize: workspaceSizes[0],
+            minSize: workspaceWidth >= 1680 ? 288 : 256,
+            maxSize: 720,
+          },
           {
             id: "canvas",
             content: canvasPanel,
-            defaultSize: 3,
-            minSize: 360,
+            defaultSize: workspaceSizes[1],
+            minSize: workspaceWidth >= 1680 ? 640 : 480,
           },
           {
-            id: "timeline",
-            content: timelinePanel,
-            defaultSize: 1,
-            minSize: 224,
-            maxSize: 560,
+            id: "inspector",
+            content: inspectorPanel,
+            defaultSize: workspaceSizes[2],
+            minSize: workspaceWidth >= 1680 ? 720 : 320,
+            maxSize: 1280,
           },
         ]}
-        bind:sizes={timingSizes}
+        bind:sizes={workspaceSizes}
+        onSizesChange={() => (workspaceWasAdjusted = true)}
         gap={8}
         flattened={compactWorkspace}
       />
-    {:else}
-      <div class="canvas-timeline-stack">
-        {@render canvasPanel()}
-        {@render timelinePanel()}
-      </div>
-    {/if}
-  {/snippet}
+    </div>
 
-  <div
-    class:timing-advanced={timingAdvanced}
-    class="workspace"
-    bind:clientWidth={workspaceWidth}
-    bind:clientHeight={workspaceHeight}
-  >
-    <PanelGroup
-      direction="horizontal"
-      panels={[
-        {
-          id: "assets",
-          content: assetPanel,
-          defaultSize: workspaceSizes[0],
-          minSize: workspaceWidth >= 1680 ? 288 : 256,
-          maxSize: 720,
-        },
-        {
-          id: "canvas",
-          content: centerPanel,
-          defaultSize: workspaceSizes[1],
-          minSize: workspaceWidth >= 1680 ? 640 : 480,
-        },
-        {
-          id: "inspector",
-          content: inspectorPanel,
-          defaultSize: workspaceSizes[2],
-          minSize: workspaceWidth >= 1680 ? 720 : 320,
-          maxSize: 1280,
-        },
-      ]}
-      bind:sizes={workspaceSizes}
-      onSizesChange={() => (workspaceWasAdjusted = true)}
-      gap={8}
-      flattened={compactWorkspace}
-    />
+    {@render timelinePanel()}
   </div>
 
   <nav class="focused-nav" aria-label="Post Studio tools">
@@ -727,23 +712,23 @@
     color: var(--theme-text);
   }
 
+  /* Columns above, timing across the full width below. The scale tokens live
+     here rather than on .workspace so the timing bar steps with the columns
+     at the 105rem / 180rem tiers instead of staying frozen at base size. */
+  .studio-body {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .workspace {
     display: flex;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
     background: var(--theme-panel-bg);
-  }
-
-  .canvas-timeline-stack {
-    display: grid;
-    grid-template-areas:
-      "canvas"
-      "timeline";
-    grid-template-rows: minmax(0, 1fr) auto;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
   }
 
   .asset-rail,
@@ -817,10 +802,13 @@
     outline-offset: 2px;
   }
 
+  /* No header row: it repeated the 9:16 the preview already states, and its
+     reserved control-height band cost the vertical space the 9:16 frame is
+     sized from. Format and length now ride the preview's own meta line. */
   .canvas-panel {
     grid-area: canvas;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     min-width: 0;
     min-height: 0;
     padding: var(--studio-canvas-padding);
@@ -829,22 +817,6 @@
       var(--theme-card-bg) 48%,
       var(--theme-panel-bg)
     );
-  }
-
-  .canvas-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-md);
-    min-height: var(--studio-control-height);
-    color: var(--theme-text-dim);
-    font-size: var(--studio-meta-size);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .canvas-heading > span:first-child {
-    color: var(--theme-text);
-    font-weight: 750;
   }
 
   .canvas-stage {
@@ -858,7 +830,6 @@
   }
 
   .timeline-dock {
-    grid-area: timeline;
     min-width: 0;
     min-height: 0;
     padding: var(--studio-canvas-padding) var(--studio-panel-padding);
@@ -875,7 +846,7 @@
   }
 
   @container post-studio (min-width: 105rem) {
-    .workspace {
+    .studio-body {
       --studio-control-height: 3.25rem;
       --studio-body-size: 0.9375rem;
       --studio-meta-size: 0.8125rem;
@@ -887,7 +858,7 @@
   }
 
   @container post-studio (min-width: 180rem) {
-    .workspace {
+    .studio-body {
       --studio-control-height: 4.25rem;
       --studio-body-size: 1.25rem;
       --studio-meta-size: 1.0625rem;
@@ -899,7 +870,7 @@
   }
 
   @media (min-width: 70.0625rem) and (max-height: 70rem) {
-    .workspace {
+    .studio-body {
       --studio-panel-gap: 0.75rem;
       --studio-panel-padding: 1rem;
       --studio-canvas-padding: 0.75rem;
@@ -911,6 +882,10 @@
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
+    /* One panel at a time, each filling the body. The timing bar is a sibling
+       of the columns now, so the columns step aside when timing is showing
+       rather than collapsing to an empty row above it. */
+    .studio-body,
     .workspace {
       position: relative;
       display: block;
@@ -918,8 +893,12 @@
       overflow: hidden;
     }
 
-    .canvas-timeline-stack {
-      display: contents;
+    .workspace {
+      height: 100%;
+    }
+
+    .post-studio[data-mobile-panel="timing"] .workspace {
+      display: none;
     }
 
     .asset-rail,
@@ -986,6 +965,7 @@
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
 
+    .studio-body,
     .workspace {
       position: relative;
       display: block;
@@ -993,8 +973,12 @@
       overflow: hidden;
     }
 
-    .canvas-timeline-stack {
-      display: contents;
+    .workspace {
+      height: 100%;
+    }
+
+    .post-studio[data-mobile-panel="timing"] .workspace {
+      display: none;
     }
 
     .asset-rail,
