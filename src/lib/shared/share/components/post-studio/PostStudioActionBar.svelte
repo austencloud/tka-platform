@@ -1,16 +1,24 @@
 <script lang="ts">
+  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
+  import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import type { PostStudioExportProgress } from "$lib/shared/media-composition/services/post-studio-exporter";
+  import type { PostStudioRoleKey } from "$lib/shared/media-composition/domain/post-studio-presets";
+  import type { PostStudioSlotId } from "$lib/shared/media-composition/domain/post-studio-slots";
+  import { ROLE_ICON, buildSourceMenuItems } from "./post-studio-source-menu";
 
   /**
-   * Post Studio's own actions — nothing else.
+   * What the post is made of, and the thing that turns it into a file.
    *
-   * This replaced a full title bar that carried Back, the sequence word, a
-   * Close X and a "Ready" pill. All four were redundant or empty once the
-   * studio became a sequence-viewer surface: the viewer header owns the word
-   * and the close, the content rail owns going back, and "Ready" was the
-   * `{:else}` of the missing-sources warning — it announced the absence of a
-   * problem. What is left is the same shape the viewer's other export panels
-   * take: the thing you press to get a file, and its progress.
+   * The two source pickers used to float on the artwork as chips sitting over
+   * the top and bottom slots — they covered the picture they described, and a
+   * control drawn on top of media reads as clutter. They belong here: the bar
+   * runs left to right in the same order the slots run top to bottom, so the
+   * post's whole recipe is one line, and picking what goes where is the most
+   * prominent thing on the page rather than a chip you have to notice.
+   *
+   * It also gives the bar something to hold. Before this it carried a single
+   * right-aligned Render button across the full width, which at 4K was a band
+   * of nothing with a button parked at the end of it.
    */
   interface Props {
     missingCount: number;
@@ -40,6 +48,40 @@
     onCancelExport,
   }: Props = $props();
 
+  const composition = getMediaCompositionContext();
+
+  const SLOTS: Array<{
+    id: PostStudioSlotId;
+    position: string;
+    glyph: string;
+  }> = [
+    { id: "top", position: "Top", glyph: "fa-solid fa-arrow-up" },
+    { id: "bottom", position: "Bottom", glyph: "fa-solid fa-arrow-down" },
+  ];
+
+  /**
+   * Every slot, occupied or not, in a fixed order. An empty slot keeps its
+   * place and offers the same menu — so the bar's geometry never changes as
+   * sources come and go, and adding a slot back is the same gesture as
+   * changing one.
+   */
+  const slotEntries = $derived(
+    SLOTS.map((slot) => {
+      const roleKey = composition.roleForRegion(slot.id) as
+        | PostStudioRoleKey
+        | null;
+      const binding = roleKey ? composition.bindingForRole(roleKey) : null;
+      return {
+        ...slot,
+        roleKey,
+        label: binding?.label ?? "Empty",
+        icon: roleKey ? ROLE_ICON[roleKey] : "fa-solid fa-plus",
+        missing: Boolean(roleKey) && binding?.status === "missing",
+        selected: composition.selectedRegion?.id === slot.id,
+      };
+    })
+  );
+
   const exportLabel = $derived(
     exportProgress?.phase === "audio"
       ? "Adding sound"
@@ -50,6 +92,34 @@
 </script>
 
 <div class="actionbar">
+  <div class="slots">
+    {#each slotEntries as slot (slot.id)}
+      <div class="slot-picker" class:selected={slot.selected}>
+        <OverflowMenu
+          items={buildSourceMenuItems(composition, slot.id, slot.roleKey)}
+          placement="bottom"
+          align="left"
+          triggerClass="slot-trigger"
+          ariaLabel={`${slot.position} slot: ${slot.label}. Change or remove.`}
+        >
+          {#snippet trigger()}
+            <!-- Phone widths cannot carry the word TOP alongside a source name
+                 without truncating the name, which is the part that changes.
+                 The arrow replaces the word there; the trigger's aria-label
+                 still reads "Top slot: …" either way. -->
+            <i class={`slot-glyph ${slot.glyph}`} aria-hidden="true"></i>
+            <i class={`slot-icon ${slot.icon}`} aria-hidden="true"></i>
+            <span class="slot-position">{slot.position}</span>
+            <span class="slot-label" class:missing={slot.missing}
+              >{slot.label}</span
+            >
+            <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+          {/snippet}
+        </OverflowMenu>
+      </div>
+    {/each}
+  </div>
+
   <div class="state">
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
@@ -103,11 +173,77 @@
   .actionbar {
     display: flex;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     min-height: 3.5rem;
     padding: 0.5rem var(--spacing-md);
     border-bottom: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
+  }
+
+  .slots {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;
+  }
+
+  .slot-picker :global(.slot-trigger) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-min);
+    cursor: pointer;
+  }
+
+  .slot-picker :global(.slot-trigger:hover) {
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .slot-picker.selected :global(.slot-trigger) {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
+  }
+
+  .slot-glyph {
+    display: none;
+    color: var(--theme-text-dim);
+    font-size: 0.8em;
+  }
+
+  .slot-position {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* The source name changes width as the slot changes — Animation, Choreo
+     card, Performance, 3D view. Without a floor, picking a shorter one drags
+     the second picker leftwards past it. Sized to the longest label so the two
+     pickers hold station. */
+  .slot-label {
+    min-width: 8.5ch;
+    overflow: hidden;
+    font-weight: 600;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .slot-label.missing {
+    color: var(--semantic-warning);
+  }
+
+  .caret {
+    color: var(--theme-text-dim);
+    font-size: 0.7em;
   }
 
   .state,
@@ -123,6 +259,7 @@
      reserved band of dead air. */
   .state {
     flex: 1;
+    justify-content: flex-end;
   }
 
   .missing-state {
@@ -235,7 +372,8 @@
     .missing-state,
     .secondary-button,
     .render-button,
-    .download-button {
+    .download-button,
+    .slot-picker :global(.slot-trigger) {
       min-height: 3.25rem;
     }
 
@@ -245,14 +383,15 @@
 
     .secondary-button,
     .render-button,
-    .download-button {
+    .download-button,
+    .slot-picker :global(.slot-trigger) {
       font-size: 0.9375rem;
     }
   }
 
   @container post-studio (min-width: 180rem) {
     .actionbar {
-      gap: 2.5rem;
+      gap: 1.5rem;
       min-height: 5rem;
       padding: 0.75rem 2.5rem;
     }
@@ -262,10 +401,15 @@
       gap: 1rem;
     }
 
+    .slots {
+      gap: 1rem;
+    }
+
     .missing-state,
     .secondary-button,
     .render-button,
-    .download-button {
+    .download-button,
+    .slot-picker :global(.slot-trigger) {
       min-height: 3.75rem;
     }
 
@@ -275,7 +419,8 @@
 
     .secondary-button,
     .render-button,
-    .download-button {
+    .download-button,
+    .slot-picker :global(.slot-trigger) {
       padding-inline: 1.25rem;
       font-size: 1.125rem;
     }
@@ -297,10 +442,61 @@
     }
   }
 
+  /* Phone width: both pickers and the render action stay on ONE row. Wrapping
+     the pickers below gave the render button a row of its own, which is the
+     lone-button-on-an-empty-band shape this bar exists to avoid — at 375 it
+     cost 22% of the screen height to say one word. */
   @container post-studio (max-width: 35rem) {
     .actionbar {
+      gap: var(--spacing-sm);
       min-height: 3rem;
       padding-inline: var(--spacing-sm);
+    }
+
+    .slots {
+      order: 0;
+      flex: 1 1 auto;
+      gap: var(--spacing-xs);
+      min-width: 0;
+    }
+
+    .slot-picker {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .slot-picker :global(.slot-trigger) {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 0.35rem;
+      padding-inline: 0.5rem;
+    }
+
+    /* The arrow says which slot; the source name says what is in it. The
+       source's own glyph is the one thing here that repeats information the
+       name already carries, so it is what goes when space runs out. */
+    .slot-glyph {
+      display: inline;
+    }
+
+    .slot-icon,
+    .slot-position {
+      display: none;
+    }
+
+    .slot-label {
+      min-width: 0;
+    }
+
+    .state {
+      order: 1;
+      flex: 0 1 auto;
+      justify-content: flex-start;
+    }
+
+    .export-actions {
+      order: 2;
+      flex: 0 0 auto;
     }
 
     .render-button,
@@ -314,6 +510,15 @@
     .download-button i {
       font-size: var(--font-size-min);
     }
+
+    .missing-state {
+      padding-inline: 0.5rem;
+      font-size: 0;
+    }
+
+    .missing-state i {
+      font-size: var(--font-size-min);
+    }
   }
 
   @media (max-height: 40rem) {
@@ -325,6 +530,16 @@
     .rerender-button,
     .export-progress {
       display: none;
+    }
+
+    /* Short viewports drop the word for the arrow rather than dropping the
+       position cue entirely — two chips with no top/bottom marker is a guess. */
+    .slot-position {
+      display: none;
+    }
+
+    .slot-glyph {
+      display: inline;
     }
   }
 </style>

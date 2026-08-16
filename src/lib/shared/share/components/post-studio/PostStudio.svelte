@@ -195,13 +195,16 @@
     const frame = height > 0 ? (height - 44) * 0.5625 : 480;
     const canvasFloor = width >= 1680 ? 640 : 480;
     const inspectorFloor = width >= 1680 ? 720 : 320;
-    // Surplus past that appetite goes to the inspector, but only up to a share
-    // of the workspace — handing it every spare pixel makes the panel the
-    // dominant column in a studio whose product is the frame, and stretches a
-    // grid of one-word tiles to fill it.
+    const inspectorCap = width >= 2600 ? 1600 : 1280;
+    // Matting around the frame is the stage and it should be generous, but past
+    // roughly twice the frame's width it stops reading as a stage and starts
+    // reading as black rail. Everything beyond that goes to the inspector,
+    // which answers extra width with more columns rather than a wider gutter.
+    // A fixed 900px inspector floor used to pin this: at 1920 it left the
+    // canvas 943px to hold a 447px frame, so half the column was rail.
     const inspector = Math.min(
-      Math.max(900, available * 0.32),
-      Math.max(inspectorFloor, available - (frame + 240))
+      inspectorCap,
+      Math.max(inspectorFloor, available * 0.3, available - (frame * 2.2 + 48))
     );
     const canvas = Math.max(canvasFloor, available - inspector);
     workspaceSizes = [canvas, Math.max(inspectorFloor, available - canvas)];
@@ -604,7 +607,7 @@
             content: inspectorPanel,
             defaultSize: workspaceSizes[1],
             minSize: workspaceWidth >= 1680 ? 720 : 320,
-            maxSize: 1280,
+            maxSize: workspaceWidth >= 2600 ? 1600 : 1280,
           },
         ]}
         bind:sizes={workspaceSizes}
@@ -884,7 +887,7 @@
 
     .focused-nav {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       border-top: 1px solid var(--theme-stroke);
       background: var(--theme-panel-bg);
     }
@@ -961,7 +964,7 @@
 
     .focused-nav {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       border-top: 1px solid var(--theme-stroke);
       background: var(--theme-panel-bg);
     }

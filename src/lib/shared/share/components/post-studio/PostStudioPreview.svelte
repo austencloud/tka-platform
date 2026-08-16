@@ -2,15 +2,10 @@
   import type { EvaluatedFrameLayer } from "$lib/shared/media-composition/services/frame-evaluator";
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import PostStudioMediaLayer from "./PostStudioMediaLayer.svelte";
-  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-  import {
-    POST_STUDIO_SOURCES,
-    POST_STUDIO_SOURCE_ORDER,
-    type PostStudioRoleKey,
-  } from "$lib/shared/media-composition/domain/post-studio-presets";
   import type { PostStudioSlotId } from "$lib/shared/media-composition/domain/post-studio-slots";
+  import { sourceIcon } from "./post-studio-source-menu";
 
   let {
     sequence,
@@ -152,61 +147,8 @@
     });
   }
 
-  function sourceIcon(kind: string): string {
-    if (kind === "video") return "fa-solid fa-video";
-    if (kind === "sequence-animation") return "fa-solid fa-person-running";
-    if (kind === "choreo-card") return "fa-solid fa-table-cells-large";
-    if (kind === "tunnel") return "fa-solid fa-circle-notch";
-    if (kind === "scene-3d") return "fa-solid fa-cube";
-    if (kind === "mandala") return "fa-solid fa-asterisk";
-    return "fa-solid fa-photo-film";
-  }
-
-  const ROLE_ICON: Record<PostStudioRoleKey, string> = {
-    "sequence-animation": "fa-solid fa-person-running",
-    "performance-video": "fa-solid fa-video",
-    "choreo-card": "fa-solid fa-table-cells-large",
-    "sequence-tunnel": "fa-solid fa-circle-notch",
-    "sequence-scene-3d": "fa-solid fa-cube",
-    "sequence-mandala": "fa-solid fa-asterisk",
-  };
-
   function isSlot(regionId: string): regionId is PostStudioSlotId {
     return regionId === "top" || regionId === "bottom";
-  }
-
-  /**
-   * The whole source list for one slot, plus Remove. This is the entire
-   * "choose what goes here" interaction — it replaced a rail of layout
-   * templates and a rail of sources, neither of which could express a pairing
-   * the four presets did not already contain.
-   */
-  function sourceMenuItems(slot: PostStudioSlotId, current: string | null) {
-    const canRemove = composition.regions.length > 1;
-    const items = POST_STUDIO_SOURCE_ORDER.map((roleKey) => {
-      const source = POST_STUDIO_SOURCES[roleKey];
-      const blocked = !composition.slotAccepts(slot, roleKey);
-      return {
-        label: source.label,
-        icon: ROLE_ICON[roleKey],
-        selected: current === roleKey,
-        disabled: blocked,
-        hint: blocked ? "Already in the other slot" : undefined,
-        action: () => composition.setSlotSource(slot, roleKey),
-      };
-    });
-
-    return canRemove
-      ? [
-          ...items,
-          {
-            label: "Remove",
-            icon: "fa-solid fa-trash-can",
-            variant: "danger" as const,
-            action: () => composition.clearSlot(slot),
-          },
-        ]
-      : items;
   }
 
   /**
@@ -220,25 +162,6 @@
     event.preventDefault();
     composition.clearSlot(regionId);
   }
-
-  const canSwap = $derived(
-    composition.regions.length === 2 &&
-      composition.regions.every((region) => isSlot(region.id))
-  );
-
-  /** The seam between the two slots, as a percentage from the top. */
-  const seamPercent = $derived(
-    (composition.regions.find((region) => region.id === "bottom")?.y ?? 0.5) *
-      100
-  );
-
-  const emptySlot = $derived<PostStudioSlotId | null>(
-    composition.regions.length === 1 && isSlot(composition.regions[0]!.id)
-      ? composition.regions[0]!.id === "top"
-        ? "bottom"
-        : "top"
-      : null
-  );
 </script>
 
 <div class="preview-shell">
@@ -252,10 +175,10 @@
       {@const roleKey = roleForLayers(region.id, layers)}
       {@const binding = roleKey ? composition.bindingForRole(roleKey) : null}
       {@const hasVisibleSource = hasReadyLayer(layers)}
-      <!-- The slot chip is a menu trigger, so it cannot nest inside the drag
-           surface — a button in a button is invalid and the inner one would
-           never receive its own clicks. They are siblings in a positioned
-           wrapper instead, both independently focusable. -->
+      <!-- Nothing is drawn on top of the artwork. The source pickers used to
+           float here as chips over each slot; they cover the picture they
+           describe, so they live in the composition bar above the frame. What
+           remains inside the frame is the post. -->
       <div
         class="region"
         class:selected={composition.selectedRegion?.id === region.id}
@@ -311,68 +234,18 @@
             </span>
           {/if}
         </button>
-
-        {#if isSlot(region.id)}
-          {@const slot = region.id}
-          <div class="region-chip">
-            <OverflowMenu
-              items={sourceMenuItems(slot, roleKey)}
-              placement="bottom"
-              align="left"
-              triggerClass="chip-trigger"
-              ariaLabel={`${region.label ?? "Slot"} source; change or remove`}
-            >
-              {#snippet trigger()}
-                <i class={ROLE_ICON[roleKey as PostStudioRoleKey]} aria-hidden="true"
-                ></i>
-                <span>{region.label ?? "Slot"}</span>
-                <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
-              {/snippet}
-            </OverflowMenu>
-          </div>
-        {/if}
       </div>
     {/each}
 
-    {#if canSwap}
-      <button
-        type="button"
-        class="seam-swap"
-        style={`top:${seamPercent}%`}
-        onclick={() => composition.swapSlots()}
-        aria-label="Swap the top and bottom slots"
-        title="Swap slots"
-      >
-        <i class="fa-solid fa-arrow-up-arrow-down" aria-hidden="true"></i>
-      </button>
-    {/if}
-
-    {#if emptySlot}
-      <!-- The collapsed state is a genuine full-frame single, so there is no
-           empty box to click. The affordance rides the edge the new slot would
-           appear on instead. -->
-      <div class="add-slot" class:at-top={emptySlot === "top"}>
-        <OverflowMenu
-          items={sourceMenuItems(emptySlot, null)}
-          placement={emptySlot === "top" ? "bottom" : "top"}
-          align="left"
-          triggerClass="chip-trigger add-trigger"
-          ariaLabel={`Add a ${emptySlot} slot`}
-        >
-          {#snippet trigger()}
-            <i class="fa-solid fa-plus" aria-hidden="true"></i>
-            <span>Add {emptySlot} slot</span>
-          {/snippet}
-        </OverflowMenu>
-      </div>
-    {/if}
-
     {#if composition.safeZonesVisible}
+      <!-- The shading is the whole message: warm where Instagram's own chrome
+           will sit, clear where it will not. It was captioned "Keep key details
+           here", which is what a dashed rectangle already says. -->
       <div class="instagram-chrome" aria-hidden="true">
         <div class="top-zone"></div>
         <div class="right-zone"></div>
         <div class="bottom-zone"></div>
-        <div class="safe-frame"><span>Keep key details here</span></div>
+        <div class="safe-frame"></div>
       </div>
     {/if}
   </div>
@@ -468,108 +341,6 @@
     outline-offset: -4px;
   }
 
-  .region-chip {
-    position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
-    z-index: 21;
-  }
-
-  /* Shared by the slot chip and the add-slot chip, both of which are triggers
-     inside OverflowMenu rather than plain buttons. */
-  .region-chip :global(.chip-trigger),
-  .add-slot :global(.chip-trigger) {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    min-height: 2rem;
-    padding: 0.3rem 0.6rem;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 999px;
-    background: rgba(5, 5, 9, 0.82);
-    color: rgba(255, 255, 255, 0.9);
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
-    line-height: 1;
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast, 120ms) ease,
-      background var(--duration-fast, 120ms) ease;
-  }
-
-  .region-chip :global(.chip-trigger:hover),
-  .add-slot :global(.chip-trigger:hover) {
-    border-color: var(--theme-accent, #8b7cff);
-    background: rgba(5, 5, 9, 0.94);
-  }
-
-  .region-chip :global(.chip-trigger:focus-visible),
-  .add-slot :global(.chip-trigger:focus-visible) {
-    outline: 2px solid var(--theme-accent, #8b7cff);
-    outline-offset: 2px;
-  }
-
-  .region-chip :global(.caret) {
-    font-size: 0.62em;
-    opacity: 0.65;
-  }
-
-  /* Straddles the seam so it reads as belonging to both slots rather than to
-     whichever one happens to sit behind it — but on the right edge, not the
-     centre: the slot chips are top-left in each region, and at a 240px-wide
-     frame a centred swap lands on top of the lower one. */
-  .seam-swap {
-    position: absolute;
-    right: 0.5rem;
-    z-index: 22;
-    display: grid;
-    place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    translate: 0 -50%;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b7cff) 70%, transparent);
-    border-radius: 999px;
-    /* It floats over whatever the two slots happen to be showing, which at 9:16
-       is usually dark video. A 20%-white hairline on near-black vanished into
-       it; the accent edge plus an opaque ground is what makes it a control. */
-    background: #0b0b12;
-    box-shadow: 0 0 0 3px rgba(5, 5, 9, 0.7);
-    color: var(--theme-accent, #8b7cff);
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast, 120ms) ease,
-      background var(--duration-fast, 120ms) ease,
-      color var(--duration-fast, 120ms) ease;
-  }
-
-  .seam-swap:hover {
-    border-color: var(--theme-accent, #8b7cff);
-    background: var(--theme-accent, #8b7cff);
-    color: #0b0b12;
-  }
-
-  .seam-swap:focus-visible {
-    outline: 2px solid var(--theme-accent, #8b7cff);
-    outline-offset: 2px;
-  }
-
-  .add-slot {
-    position: absolute;
-    bottom: 0.75rem;
-    left: 50%;
-    z-index: 22;
-    translate: -50% 0;
-  }
-
-  .add-slot.at-top {
-    top: 0.75rem;
-    bottom: auto;
-  }
-
-  .add-slot :global(.add-trigger) {
-    border-style: dashed;
-  }
-
   .empty-source {
     display: grid;
     justify-items: center;
@@ -635,17 +406,6 @@
     border-radius: 0.4rem;
   }
 
-  .safe-frame span {
-    position: absolute;
-    right: 0.35rem;
-    bottom: 0.35rem;
-    padding: 0.2rem 0.35rem;
-    border-radius: 0.3rem;
-    background: rgba(8, 8, 12, 0.72);
-    color: rgba(255, 222, 196, 0.9);
-    font-size: max(var(--font-size-compact, 0.75rem), 0.75rem);
-  }
-
   .preview-meta {
     display: flex;
     align-items: center;
@@ -681,21 +441,8 @@
       --preview-width: min(100%, calc((100cqb - 3.25rem) * 0.5625), 56rem);
     }
 
-    .safe-frame span,
     .preview-meta {
       font-size: var(--studio-body-size, 1rem);
-    }
-
-    .region-chip :global(.chip-trigger),
-    .add-slot :global(.chip-trigger) {
-      min-height: var(--studio-control-height, 2.5rem);
-      padding-inline: 0.85rem;
-      font-size: var(--studio-body-size, 1rem);
-    }
-
-    .seam-swap {
-      width: var(--studio-control-height, 2.75rem);
-      height: var(--studio-control-height, 2.75rem);
     }
   }
 
@@ -705,37 +452,27 @@
     }
   }
 
-  /* Wide-and-short (a folded Fold in landscape) starves the 9:16 frame down to
-     ~112px, where a chip carrying its source name is wider than the whole
-     preview. The name drops to the trigger's aria-label and the glyph carries
-     it — the caret still says "this opens something". */
-  @container post-studio-stage (max-height: 22rem) {
-    .region-chip :global(.chip-trigger span),
-    .add-slot :global(.chip-trigger span) {
-      display: none;
-    }
-
-    .seam-swap {
-      width: 1.75rem;
-      height: 1.75rem;
-    }
-  }
-
+  /* One panel at a time below 70rem, so the frame gets the whole body height
+     and should use it. Sizing off a viewport fraction (45dvh) instead left a
+     820x1180 tablet with a 350px frame under 300px of empty stage — the width
+     cap is a ceiling, not the driver. */
   @container post-studio (max-width: 70rem) {
     .preview-shell {
-      --preview-width: min(100%, clamp(17rem, min(52cqi, 45dvh), 34rem));
+      --preview-width: min(100%, calc((100cqb - 2.75rem) * 0.5625), 34rem);
     }
   }
 
   @container post-studio (max-width: 38rem) {
     .preview-shell {
-      --preview-width: min(100%, min(19rem, 36dvh));
+      --preview-width: min(100%, calc((100cqb - 2.75rem) * 0.5625), 21rem);
     }
   }
 
   @media (max-height: 40rem) {
     .preview-shell {
-      --preview-width: min(100%, 7rem);
+      /* The meta line is hidden here, so the frame takes the stage's full
+         height rather than reserving a row for it. */
+      --preview-width: min(100%, calc((100cqb - 0.5rem) * 0.5625));
     }
 
     .preview-meta {

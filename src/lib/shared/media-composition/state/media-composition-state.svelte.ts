@@ -25,7 +25,6 @@ import {
   withClearedSlot,
   withSlotSource,
   withSlotSplit,
-  withSwappedSlots,
   type PostStudioSlotId,
 } from "$lib/shared/media-composition/domain/post-studio-slots";
 
@@ -310,16 +309,10 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     commitPreset(withClearedSlot(preset, slot));
   }
 
-  function swapSlots(): void {
-    const preset = getActivePreset();
-    if (!slotIsOccupied(preset, "top") || !slotIsOccupied(preset, "bottom")) {
-      return;
-    }
-    commitPreset(withSwappedSlots(preset));
-    if (selectedRegionId === "top" || selectedRegionId === "bottom") {
-      selectedRegionId = selectedRegionId === "top" ? "bottom" : "top";
-    }
-  }
+  // No swapSlots here. It existed for a circular button hanging off the seam of
+  // the preview, which read as a rendering artefact rather than a control, and
+  // swapping is two picks in the composition bar once the sources are named
+  // there. `withSwappedSlots` remains in the slots module as a pure transform.
 
   function setSlotSplit(split: number): void {
     commitPreset(withSlotSplit(getActivePreset(), split));
@@ -678,7 +671,6 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     slotAccepts,
     setSlotSource,
     clearSlot,
-    swapSlots,
     setSlotSplit,
     selectPreset,
     addPreset,
