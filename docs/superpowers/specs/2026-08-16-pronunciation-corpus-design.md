@@ -190,6 +190,12 @@ costs:
   carrier-phrase method bought by construction and the main risk of harvesting
   from natural reads.
 
+Segmentation discards the audio of every inter-letter transition — surviving
+islands are divided by more than the merge gap, and edge padding is far too
+small to bridge it, so two tokens never share a sample even when they came from
+neighbouring letters of the same word. Every join is therefore a real join
+between clips that were never adjacent. The join cost is not a refinement.
+
 Any cue with an empty candidate set rejects the whole word, preserving the
 existing all-or-nothing rule so human and synthetic voices never mix inside one
 word.
@@ -232,9 +238,9 @@ through to synthesis.
 
 ## Testing
 
-- **Trimmer segmentation** (Phase 0): per-letter boundary error and exact-count
-  rate against hand-marked truth on the ten-word sample. This is measurement, not
-  a regression test.
+- **Trimmer segmentation** (Phase 0): exact-count rate across the ten-word
+  sample, plus a listening pass over every written slice. This is measurement,
+  not a regression test, and no boundaries are hand-marked.
 - **Coverage planner:** given synthetic coverage counts, asserts it biases toward
   starved slots, mixes lengths, and terminates.
 - **Selector:** given a fixture token bank, asserts position mismatch is

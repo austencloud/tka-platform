@@ -43,11 +43,29 @@ is a second plan, written after Phase 0 settles the segmenter.
 `suggestPronunciationTrim` already finds every speech island and then throws all
 but one away. Extract the finding so a caller can keep them all.
 
+> **Amended 2026-08-16 after code review. The snippets below are superseded.**
+> The shipped signature is `segmentWordByEnergy(samples, sampleRate): TrimRange[]`.
+> The `WordSegmentation` interface and the `expectedSegments` parameter were cut:
+> `detectedSegments` was provably `segments.length`, and `expectedSegments` could
+> only set a boolean the caller computes itself — while making
+> `segmentWordByEnergy(anything, 0, 0)` report a match on invalid input. Callers
+> compare `segments.length` against their own expected count. Padding is now
+> applied through a shared `toPaddedRange` helper used by both this function and
+> `suggestPronunciationTrim`, so the "edge padding matches the single-take
+> trimmer" invariant is enforced rather than merely asserted in a comment.
+>
+> One factual correction that matters downstream: adjacent letter ranges **never
+> overlap**. Islands survive separately only when more than `MERGE_GAP_SECONDS`
+> (0.2s) of quiet divides them, while padding adds `2 × EDGE_PADDING_SECONDS`
+> (0.07s), leaving over 100ms of silence between neighbours at every sample rate.
+> The audio of each inter-letter transition is discarded. Task 6's join cost is
+> therefore joining two clips that were never adjacent in the source recording.
+
 **Files:**
 - Modify: `src/lib/features/lab/pronunciation-recorder/domain/voice-activity-trimmer.ts:87-124`
 - Test: `tests/unit/pronunciation/word-segmentation.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/pronunciation/word-segmentation.test.ts`:
 
@@ -123,7 +141,7 @@ describe("segmentWordByEnergy", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/word-segmentation.test.ts
@@ -131,7 +149,7 @@ npm run test:ci -- tests/unit/pronunciation/word-segmentation.test.ts
 
 Expected: FAIL. `segmentWordByEnergy` is not exported by the trimmer module.
 
-- [ ] **Step 3: Extract island finding and add the new export**
+- [x] **Step 3: Extract island finding and add the new export**
 
 In `voice-activity-trimmer.ts`, add this exported interface next to `TrimSuggestion`:
 
@@ -243,7 +261,7 @@ export function segmentWordByEnergy(
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/
@@ -254,7 +272,7 @@ Expected: PASS, including the pre-existing `pronunciation-recorder`,
 behaviour-preserving; if `pronunciation-recorder.test.ts` fails, the extraction
 changed behaviour and must be corrected rather than the test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): segment a whole word into per-letter ranges" -- src/lib/features/lab/pronunciation-recorder/domain/voice-activity-trimmer.ts tests/unit/pronunciation/word-segmentation.test.ts
@@ -417,16 +435,17 @@ function main(): void {
       readFileSync(join(directory, entry.file))
     );
     const expected = plan.cues.length;
-    const result = segmentWordByEnergy(samples, sampleRate, expected);
-    if (result.matchesExpected) matched += 1;
+    const segments = segmentWordByEnergy(samples, sampleRate);
+    const isExact = segments.length === expected;
+    if (isExact) matched += 1;
 
     console.log(
-      `${entry.file}  ${entry.word}  expected ${expected}  found ${result.detectedSegments}  ${
-        result.matchesExpected ? "MATCH" : "MISMATCH"
+      `${entry.file}  ${entry.word}  expected ${expected}  found ${segments.length}  ${
+        isExact ? "MATCH" : "MISMATCH"
       }`
     );
 
-    result.segments.forEach((segment, index) => {
+    segments.forEach((segment, index) => {
       const start = Math.floor(segment.startSeconds * sampleRate);
       const end = Math.floor(segment.endSeconds * sampleRate);
       const label = plan.cues[index]?.assetKey ?? `extra-${index}`;
