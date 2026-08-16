@@ -4,6 +4,7 @@
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
     clampDisplayedBeatNumber,
     displayedBeatNumber,
@@ -14,15 +15,24 @@
     sequence,
     sequencePosition,
     playing,
+    bluePropType,
+    redPropType,
   }: {
     sequence: SequenceData;
     sequencePosition: number;
     playing: boolean;
+    bluePropType?: PropType;
+    redPropType?: PropType;
   } = $props();
 
   const stateManager = new AnimationStateManager();
   const orchestrator = new SequenceAnimationOrchestrator(stateManager);
-  let initializedSequence = $state<SequenceData | null>(null);
+  // Create hands Post Studio a reactive sequence proxy. Ordinary `$state`
+  // wraps that value again, so an identity check against the prop never
+  // matches and the canvas stays at its empty grid. This value is only a
+  // readiness marker; keeping the exact reference lets both Create and the
+  // Sequence Viewer drive the same animation layer.
+  let initializedSequence = $state.raw<SequenceData | null>(null);
   let blueProp = $state<PropState | null>(null);
   let redProp = $state<PropState | null>(null);
 
@@ -75,6 +85,8 @@
     sequenceData={sequence}
     currentStep={sequencePosition}
     isPlaying={playing}
+    {bluePropType}
+    {redPropType}
     word={null}
     previewDarkMode
     hideProgressBar

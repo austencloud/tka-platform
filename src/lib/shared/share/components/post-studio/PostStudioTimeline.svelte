@@ -6,9 +6,13 @@
 
   let {
     advanced = false,
+    performanceAlignmentDetail = null,
+    onMapPerformance,
     onToggleAdvanced,
   }: {
     advanced?: boolean;
+    performanceAlignmentDetail?: string | null;
+    onMapPerformance?: () => void;
     onToggleAdvanced: () => void;
   } = $props();
 
@@ -98,6 +102,15 @@
   }
 
   const alignmentLabel = $derived.by(() => {
+    if (performanceAlignmentDetail) {
+      if (performanceAlignmentDetail.startsWith("Unmapped")) {
+        return "Even timing estimate";
+      }
+      if (performanceAlignmentDetail.includes("needs repair")) {
+        return "Timing map needs repair";
+      }
+      return performanceAlignmentDetail;
+    }
     const source = composition.sequenceTimeMap?.source;
     if (!source) return null;
     if (source === "tempo-grid") return "Even timing";
@@ -106,6 +119,12 @@
     if (source === "hybrid") return "Audio + motion aligned";
     return "Beat aligned";
   });
+  const alignmentNeedsMapping = $derived(
+    Boolean(
+      performanceAlignmentDetail?.startsWith("Unmapped") ||
+      performanceAlignmentDetail?.includes("needs repair")
+    )
+  );
 
   function onScrub(event: Event): void {
     const input = event.currentTarget as HTMLInputElement;
@@ -196,6 +215,11 @@
             <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
             {alignmentLabel}
           </span>
+        {/if}
+        {#if alignmentNeedsMapping && onMapPerformance}
+          <button type="button" class="map-timing" onclick={onMapPerformance}>
+            Map performance
+          </button>
         {/if}
       </div>
     </div>
@@ -393,6 +417,19 @@
     align-items: center;
   }
 
+  .map-timing {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--theme-accent);
+    border-radius: var(--radius-2026-full);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+    font-weight: 700;
+    cursor: pointer;
+  }
+
   .title-row {
     gap: 0.55rem;
   }
@@ -487,6 +524,7 @@
   }
 
   .play-button:focus-visible,
+  .map-timing:focus-visible,
   .advanced-toggle:focus-visible,
   input:focus-visible {
     outline: 3px solid var(--theme-accent, #8b7cff);
@@ -741,6 +779,23 @@
 
     .clip {
       padding-inline: 0.3rem;
+    }
+  }
+
+  @container post-studio (min-width: 70.0625rem) and (max-width: 90rem) {
+    .timeline-heading {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .primary-controls {
+      flex: 1 1 100%;
+      justify-content: flex-start;
+      gap: var(--spacing-sm);
+    }
+
+    .advanced-toggle {
+      margin-left: auto;
     }
   }
 

@@ -69,6 +69,11 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
   let selectedRegionId = $state<string | null>(
     seededPreset.regions[0]?.id ?? null
   );
+  let selectedRoleKey = $state<string | null>(
+    seededPreset.clips.find(
+      (clip) => clip.kind === "visual" && clip.regionId === selectedRegionId
+    )?.sourceRole ?? null
+  );
   let safeZonesVisible = $state(true);
   let previewSeconds = $state(0);
   let isPlaying = $state(false);
@@ -164,6 +169,10 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     if (!next) return;
     activePresetId = id;
     selectedRegionId = next.regions[0]?.id ?? null;
+    selectedRoleKey =
+      next.clips.find(
+        (clip) => clip.kind === "visual" && clip.regionId === selectedRegionId
+      )?.sourceRole ?? null;
     previewSeconds = 0;
     isPlaying = false;
   }
@@ -193,9 +202,17 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     });
   }
 
-  function selectRegion(id: string): void {
+  function selectRegion(id: string, roleKey?: string | null): void {
     if (!getRegions().some((region) => region.id === id)) return;
     selectedRegionId = id;
+    const clips = getActivePreset().clips.filter(
+      (clip): clip is VisualPresetClip =>
+        clip.kind === "visual" && clip.regionId === id
+    );
+    selectedRoleKey =
+      clips.find((clip) => clip.sourceRole === roleKey)?.sourceRole ??
+      clips[0]?.sourceRole ??
+      null;
   }
 
   function selectRole(roleKey: string): void {
@@ -205,6 +222,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     );
     if (currentClip?.kind === "visual") {
       selectedRegionId = currentClip.regionId;
+      selectedRoleKey = roleKey;
       return;
     }
 
@@ -220,6 +238,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     );
     selectedRegionId =
       matchingClip?.kind === "visual" ? matchingClip.regionId : null;
+    selectedRoleKey = matchingClip?.kind === "visual" ? roleKey : null;
   }
 
   function setSelectedFit(fit: LayoutRegion["fit"]): void {
@@ -240,12 +259,11 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
   }
 
   function selectedRegionSupportsFit(): boolean {
-    return getSelectedVisualClips().some((clip) => {
-      const binding = getBindings().find(
-        (candidate) => candidate.roleKey === clip.sourceRole
-      );
-      return (binding?.renderMode ?? "external-media") === "external-media";
-    });
+    if (!selectedRoleKey) return false;
+    const binding = getBindings().find(
+      (candidate) => candidate.roleKey === selectedRoleKey
+    );
+    return (binding?.renderMode ?? "external-media") === "external-media";
   }
 
   function setTempoBpm(value: number): void {
@@ -268,7 +286,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     if (!selectedRegion) return [];
     return getActivePreset().clips.filter(
       (clip): clip is VisualPresetClip =>
-        clip.kind === "visual" && clip.regionId === selectedRegion.id
+        clip.kind === "visual" &&
+        clip.regionId === selectedRegion.id &&
+        (!selectedRoleKey || clip.sourceRole === selectedRoleKey)
     );
   }
 
@@ -284,7 +304,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
       [activePresetId]: {
         ...preset,
         clips: preset.clips.map((clip) =>
-          clip.kind === "visual" && clip.regionId === selectedRegion.id
+          clip.kind === "visual" &&
+          clip.regionId === selectedRegion.id &&
+          (!selectedRoleKey || clip.sourceRole === selectedRoleKey)
             ? update(clip)
             : clip
         ),
@@ -519,6 +541,12 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     },
     get selectedRegion() {
       return getSelectedRegion();
+    },
+    get selectedRole() {
+      return selectedRoleKey;
+    },
+    get selectedBinding() {
+      return selectedRoleKey ? bindingForRole(selectedRoleKey) : null;
     },
     get selectedTransform() {
       return getSelectedVisualClips()[0]?.transform ?? null;

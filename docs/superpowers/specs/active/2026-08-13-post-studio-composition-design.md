@@ -617,6 +617,63 @@ surface has no document overflow or unintended scrolling. Phone Canvas, Edit,
 and Timing views fit their controls without horizontal clipping; the dedicated
 Timing view exposes the full advanced timeline.
 
+#### Catalog video alignment audit, 2026-08-14
+
+The persisted sequence-to-video workflow already owns the first version of this
+capability. `CollaborativeVideo` records carry both `sequenceId` and an optional
+`StepMap`. `VideoPanel` loads those records with `getVideosForSequence`, opens
+the existing `StepMapEditor`, and persists marker changes through
+`updateStepMap`. The editor already supports tap placement, seeking, draggable
+markers, and an even-spacing reset.
+
+The sequence-viewer entry point was behind a kill switch for two documented
+reasons: R2 playback was missing from `media-src`, and opening the video panel
+replaced the viewer canvas. Both blockers are now resolved. The required R2
+origins are covered by the CSP and its focused regression test, while the
+current viewer shell places the video editor beside the canvas. The existing
+upload and beat-mapping action can therefore be restored without creating a
+second video catalog or editor.
+
+Post Studio already queries the same database videos, but its selection adapter
+currently reduces a `CollaborativeVideo` to URL, duration, and label. That drops
+the record ID and saved `beatMap`. Post Studio consequently creates an even
+tempo grid even when a manually mapped performance exists. This is the missing
+handoff. The synchronization path after that handoff is already present:
+
+```text
+CollaborativeVideo.beatMap
+  -> migrateLegacyStepMap
+  -> SequenceTimeMap
+  -> frame evaluator
+  -> animation position + choreo-card highlight
+  -> preview and exported MP4
+```
+
+The next implementation slice must preserve the selected collaborative-video
+identity, migrate its complete legacy map through the existing adapter, and
+bind the resulting `SequenceTimeMap` to the composition. It must visibly label
+the alignment as Saved manual map, Assisted candidate, Even timing, or Unmapped.
+Changing videos must replace the entire binding so a map from one performance
+cannot leak into another.
+
+The marker workspace will evolve the existing `StepMapEditor` and
+`StepMapTimeline`; it will not introduce another timeline or timestamp schema.
+The normal view pairs the performance video with the synchronized card and a
+pictograph strip. Mark next, tap-to-place, drag, seek, keyboard nudge, undo, and
+save are the primary controls. A WaveSurfer waveform can be added as a derived
+lane using the installed library and established cleanup pattern. The existing
+BPM analyzer may propose a tempo grid with confidence, but a visible first-beat
+offset remains mandatory because tempo detection does not establish phase.
+Motion holds may become a second suggestion source later. Manual anchors remain
+the saved truth.
+
+This bridge is complete only when one real database video with intentionally
+uneven timing can be selected in Post Studio, scrubbed across every saved
+marker, and shown to drive the same pictograph highlight and animation position
+in the live preview and decoded export. Focused tests must also prove legacy-map
+migration, missing and incomplete map behavior, video-identity replacement, and
+the absence of cross-video timing leakage.
+
 ### Gate 6: Instagram delivery
 
 - Consume the proven Meta connection and publishing capability on a real eligible account.

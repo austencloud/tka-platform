@@ -74,7 +74,15 @@
   data-render-mode={binding.renderMode ?? "external-media"}
 >
   {#if binding.renderMode === "sequence-animation" && sequencePosition !== undefined}
-    <PostStudioSequenceAnimationLayer {sequence} {sequencePosition} {playing} />
+    <PostStudioSequenceAnimationLayer
+      {sequence}
+      {sequencePosition}
+      {playing}
+      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+      redPropType={cardRenderOptions?.redPropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+    />
   {:else if binding.renderMode === "choreo-card" && displayedBeatNumber !== undefined}
     <PostStudioChoreoLayer
       {sequence}

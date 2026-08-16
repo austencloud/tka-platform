@@ -1,7 +1,15 @@
 <script lang="ts">
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
 
-  let { onEditSource }: { onEditSource?: () => void } = $props();
+  let {
+    performanceAlignmentDetail = null,
+    performanceLibraryError = "",
+    onEditSource,
+  }: {
+    performanceAlignmentDetail?: string | null;
+    performanceLibraryError?: string;
+    onEditSource?: () => void;
+  } = $props();
 
   const composition = getMediaCompositionContext();
 
@@ -15,11 +23,15 @@
   function statusCopy(roleKey: string, status: string, used: boolean): string {
     if (status === "preparing") return "Preparing";
     if (status === "missing") {
+      if (!used) return "Optional for this layout";
       return roleKey === "performance-video"
         ? "Choose a video"
         : roleKey === "sequence-animation"
           ? "Create animation"
           : "Prepare source";
+    }
+    if (roleKey === "performance-video" && performanceAlignmentDetail) {
+      return performanceAlignmentDetail;
     }
     return used ? "Used in this layout" : "Available";
   }
@@ -56,7 +68,7 @@
         type="button"
         class="source-row"
         class:used
-        class:missing={binding.status === "missing"}
+        class:missing={binding.status === "missing" && used}
         onclick={() => activateSource(binding.roleKey, binding.status)}
       >
         <span class="source-icon" aria-hidden="true">
@@ -71,13 +83,20 @@
           <small>{statusCopy(binding.roleKey, binding.status, used)}</small>
         </span>
         {#if binding.status === "missing"}
-          <span class="source-action">Choose</span>
+          <span class="source-action">{used ? "Choose" : "Add"}</span>
         {:else if used}
           <i class="fa-solid fa-check source-check" aria-hidden="true"></i>
         {/if}
       </button>
     {/each}
   </div>
+
+  {#if performanceLibraryError}
+    <p class="library-error" role="alert">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      {performanceLibraryError}
+    </p>
+  {/if}
 
   <p class:ready={composition.isReady} class="readiness" role="status">
     <i
@@ -87,7 +106,7 @@
       aria-hidden="true"
     ></i>
     {composition.isReady
-      ? "This layout has everything it needs."
+      ? "Ready to render this layout."
       : `${composition.missingRequiredRoles.length} source${composition.missingRequiredRoles.length === 1 ? "" : "s"} needed before render.`}
   </p>
 </section>
@@ -234,6 +253,16 @@
   }
 
   .readiness {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    margin: 0;
+    color: var(--semantic-warning);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+    line-height: 1.4;
+  }
+
+  .library-error {
     display: flex;
     align-items: flex-start;
     gap: var(--spacing-sm);

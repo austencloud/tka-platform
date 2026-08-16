@@ -1,32 +1,48 @@
 <script lang="ts">
-  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import {
+    getVideosForSequence,
+    updateStepMap,
+  } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-
-  interface SelectedPerformance {
-    url: string;
-    duration?: number;
-    label: string;
-  }
+  import type { SequenceRevisionRef } from "$lib/shared/media-composition/domain/sequence-time-map";
+  import StepMapEditor from "$lib/shared/sequence-viewer/components/step-mapping/StepMapEditor.svelte";
+  import {
+    createCatalogPerformanceSelection,
+    createUnmappedPerformanceSelection,
+    type PostStudioPerformanceSelection,
+  } from "./post-studio-performance-selection";
 
   interface Props {
     open: boolean;
     sequence: SequenceData;
+    sequenceRef: SequenceRevisionRef;
+    bpm: number;
     currentUrl: string | null;
     onClose: () => void;
-    onSelect: (selection: SelectedPerformance) => void;
+    onSelect: (selection: PostStudioPerformanceSelection) => void;
     onChooseFile: (file: File) => Promise<void>;
   }
 
-  let { open, sequence, currentUrl, onClose, onSelect, onChooseFile }: Props =
-    $props();
+  let {
+    open,
+    sequence,
+    sequenceRef,
+    bpm,
+    currentUrl,
+    onClose,
+    onSelect,
+    onChooseFile,
+  }: Props = $props();
 
   let videos = $state<CollaborativeVideo[]>([]);
   let loading = $state(false);
   let loadError = $state("");
   let actionError = $state("");
   let uploadOpen = $state(false);
+  let mappingVideo = $state<CollaborativeVideo | null>(null);
   let fileInput = $state<HTMLInputElement | null>(null);
   let requestVersion = 0;
 
@@ -58,18 +74,61 @@
   $effect(() => {
     if (!open) return;
     const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !uploadOpen) onClose();
+      if (event.key !== "Escape" || uploadOpen) return;
+      if (mappingVideo) mappingVideo = null;
+      else onClose();
     };
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
   });
 
   function selectVideo(video: CollaborativeVideo): void {
-    onSelect({
-      url: video.videoUrl,
-      duration: video.duration,
-      label: video.description?.trim() || "TKA performance video",
-    });
+    onSelect(createCatalogPerformanceSelection(video, sequenceRef));
+  }
+
+  function closePicker(): void {
+    mappingVideo = null;
+    onClose();
+  }
+
+  function selectLinkedVideo(): void {
+    const catalogVideo = uniqueVideos.find(
+      (video) => video.videoUrl === sequence.performanceVideoUrl
+    );
+    if (catalogVideo) {
+      selectVideo(catalogVideo);
+      return;
+    }
+    onSelect(
+      createUnmappedPerformanceSelection({
+        id: `linked-performance:${sequence.id}`,
+        url: sequence.performanceVideoUrl!,
+        label: "Linked performance video",
+      })
+    );
+  }
+
+  async function saveMappedVideo(beatMap: StepMap): Promise<void> {
+    if (!mappingVideo) return;
+    const video = mappingVideo;
+    await updateStepMap(video.id, beatMap);
+    const updatedVideo: CollaborativeVideo = {
+      ...video,
+      beatMap,
+      updatedAt: new Date(),
+    };
+    videos = videos.map((candidate) =>
+      candidate.id === video.id ? updatedVideo : candidate
+    );
+    mappingVideo = null;
+    onSelect(createCatalogPerformanceSelection(updatedVideo, sequenceRef));
+  }
+
+  function alignmentLabel(video: CollaborativeVideo): string {
+    if (!video.beatMap) return "Unmapped";
+    return video.beatMap.source === "manual"
+      ? "Saved manual map"
+      : "Assisted candidate";
   }
 
   async function chooseFile(event: Event): Promise<void> {
@@ -117,7 +176,7 @@
       type="button"
       class="picker-backdrop"
       aria-label="Close performance video picker"
-      onclick={onClose}
+      onclick={closePicker}
     ></button>
     <div
       class="performance-picker themed-scrollbar"
@@ -125,148 +184,204 @@
       aria-modal="true"
       aria-labelledby="performance-picker-title"
     >
-      <header>
-        <div>
-          <span class="eyebrow">Performance source</span>
-          <h2 id="performance-picker-title">Choose the video for this post</h2>
-          <p>
-            Use a linked TKA performance or bring in a video from this device.
-          </p>
-        </div>
-        <button
-          type="button"
-          class="close-button"
-          aria-label="Close performance video picker"
-          onclick={onClose}
-        >
-          <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-        </button>
-      </header>
-
-      <div class="picker-actions">
-        <button
-          type="button"
-          class="primary-action"
-          onclick={() => fileInput?.click()}
-        >
-          <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
-          Use a video from this device
-        </button>
-        <button
-          type="button"
-          class="secondary-action"
-          disabled={!sequence.id}
-          onclick={() => (uploadOpen = true)}
-        >
-          <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-          Upload to TKA
-        </button>
-        <input
-          bind:this={fileInput}
-          class="file-input"
-          type="file"
-          accept="video/*"
-          onchange={chooseFile}
-        />
-      </div>
-
-      {#if actionError}
-        <p class="error-message" role="alert">{actionError}</p>
-      {/if}
-
-      {#if sequence.performanceVideoUrl}
-        <section class="linked-video" aria-labelledby="linked-video-title">
-          <div class="section-heading">
-            <h3 id="linked-video-title">Linked to this sequence</h3>
+      {#if mappingVideo}
+        <header>
+          <div>
+            <span class="eyebrow">Performance timing</span>
+            <h2 id="performance-picker-title">Match the video to the card</h2>
+            <p>
+              Mark each move as it happens. Saving applies this timing to
+              preview and export.
+            </p>
           </div>
           <button
             type="button"
-            class:selected={currentUrl === sequence.performanceVideoUrl}
-            class="video-row"
-            aria-label="Use the performance video linked to this sequence"
-            onclick={() =>
-              onSelect({
-                url: sequence.performanceVideoUrl!,
-                label: "Linked performance video",
-              })}
+            class="close-button"
+            aria-label="Back to performance videos"
+            onclick={() => (mappingVideo = null)}
           >
-            <span class="video-icon">
-              <i class="fa-solid fa-link" aria-hidden="true"></i>
-            </span>
-            <span>
-              <strong>Linked performance video</strong>
-              <small>Already attached to this sequence</small>
-            </span>
-            {#if currentUrl === sequence.performanceVideoUrl}
-              <i class="fa-solid fa-check selected-check" aria-hidden="true"
-              ></i>
-            {/if}
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
           </button>
-        </section>
-      {/if}
+        </header>
+        <div class="mapping-workspace">
+          <StepMapEditor
+            videoUrl={mappingVideo.videoUrl}
+            videoDuration={mappingVideo.duration}
+            stepCount={sequence.steps.length}
+            stepLabels={sequence.steps.map(
+              (step, index) => step.letter || `${index + 1}`
+            )}
+            initialStepMap={mappingVideo.beatMap}
+            {bpm}
+            onSave={saveMappedVideo}
+            onClose={() => (mappingVideo = null)}
+          />
+        </div>
+      {:else}
+        <header>
+          <div>
+            <span class="eyebrow">Performance source</span>
+            <h2 id="performance-picker-title">
+              Choose the video for this post
+            </h2>
+            <p>
+              Use a linked TKA performance or bring in a video from this device.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="close-button"
+            aria-label="Close performance video picker"
+            onclick={closePicker}
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
 
-      <section class="library-section" aria-labelledby="tka-video-library">
-        <div class="section-heading">
-          <h3 id="tka-video-library">TKA video library</h3>
-          {#if !loading}
-            <span>{uniqueVideos.length}</span>
-          {/if}
+        <div class="picker-actions">
+          <button
+            type="button"
+            class="primary-action"
+            onclick={() => fileInput?.click()}
+          >
+            <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+            Use a video from this device
+          </button>
+          <button
+            type="button"
+            class="secondary-action"
+            disabled={!sequence.id}
+            onclick={() => (uploadOpen = true)}
+          >
+            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+            Upload to TKA
+          </button>
+          <input
+            bind:this={fileInput}
+            class="file-input"
+            type="file"
+            accept="video/*"
+            onchange={chooseFile}
+          />
         </div>
 
-        {#if loading}
-          <div class="state-panel" role="status">
-            <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
-            Loading performance videos
-          </div>
-        {:else if loadError}
-          <div class="state-panel error-state">
-            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-            <p>{loadError}</p>
-            <button type="button" onclick={() => void loadVideos()}
-              >Try again</button
-            >
-          </div>
-        {:else if uniqueVideos.length === 0}
-          <div class="state-panel">
-            <i class="fa-solid fa-video-slash" aria-hidden="true"></i>
-            <p>No performance videos are attached to this sequence yet.</p>
-            <button type="button" onclick={() => (uploadOpen = true)}>
-              Upload the first one
-            </button>
-          </div>
-        {:else}
-          <div class="video-grid">
-            {#each uniqueVideos as video (video.id)}
-              <button
-                type="button"
-                class:selected={currentUrl === video.videoUrl}
-                class="video-card"
-                aria-label={`Use performance video from ${formatDate(video.createdAt)}, ${formatDuration(video.duration)}`}
-                onclick={() => selectVideo(video)}
-              >
-                <span class="thumbnail">
-                  {#if video.thumbnailUrl}
-                    <img src={video.thumbnailUrl} alt="" />
-                  {:else}
-                    <i class="fa-solid fa-play" aria-hidden="true"></i>
-                  {/if}
-                  <span>{formatDuration(video.duration)}</span>
-                </span>
-                <span class="video-copy">
-                  <strong
-                    >{video.description?.trim() || "Performance video"}</strong
-                  >
-                  <small>{formatDate(video.createdAt)}</small>
-                </span>
-                {#if currentUrl === video.videoUrl}
-                  <i class="fa-solid fa-check selected-check" aria-hidden="true"
-                  ></i>
-                {/if}
-              </button>
-            {/each}
-          </div>
+        {#if actionError}
+          <p class="error-message" role="alert">{actionError}</p>
         {/if}
-      </section>
+
+        {#if sequence.performanceVideoUrl}
+          <section class="linked-video" aria-labelledby="linked-video-title">
+            <div class="section-heading">
+              <h3 id="linked-video-title">Linked to this sequence</h3>
+            </div>
+            <button
+              type="button"
+              class:selected={currentUrl === sequence.performanceVideoUrl}
+              class="video-row"
+              aria-label="Use the performance video linked to this sequence"
+              onclick={selectLinkedVideo}
+            >
+              <span class="video-icon">
+                <i class="fa-solid fa-link" aria-hidden="true"></i>
+              </span>
+              <span>
+                <strong>Linked performance video</strong>
+                <small>Already attached to this sequence</small>
+              </span>
+              {#if currentUrl === sequence.performanceVideoUrl}
+                <i class="fa-solid fa-check selected-check" aria-hidden="true"
+                ></i>
+              {/if}
+            </button>
+          </section>
+        {/if}
+
+        <section class="library-section" aria-labelledby="tka-video-library">
+          <div class="section-heading">
+            <h3 id="tka-video-library">TKA video library</h3>
+            {#if !loading}
+              <span>{uniqueVideos.length}</span>
+            {/if}
+          </div>
+
+          {#if loading}
+            <div class="state-panel" role="status">
+              <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"
+              ></i>
+              Loading performance videos
+            </div>
+          {:else if loadError}
+            <div class="state-panel error-state">
+              <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"
+              ></i>
+              <p>{loadError}</p>
+              <button type="button" onclick={() => void loadVideos()}
+                >Try again</button
+              >
+            </div>
+          {:else if uniqueVideos.length === 0}
+            <div class="state-panel">
+              <i class="fa-solid fa-video-slash" aria-hidden="true"></i>
+              <p>No performance videos are attached to this sequence yet.</p>
+              <button type="button" onclick={() => (uploadOpen = true)}>
+                Upload the first one
+              </button>
+            </div>
+          {:else}
+            <div class="video-grid">
+              {#each uniqueVideos as video (video.id)}
+                <article
+                  class:selected={currentUrl === video.videoUrl}
+                  class="video-card"
+                >
+                  <button
+                    type="button"
+                    class="video-card-main"
+                    aria-label={`Use performance video from ${formatDate(video.createdAt)}, ${formatDuration(video.duration)}`}
+                    onclick={() => selectVideo(video)}
+                  >
+                    <span class="thumbnail">
+                      {#if video.thumbnailUrl}
+                        <img src={video.thumbnailUrl} alt="" />
+                      {:else}
+                        <i class="fa-solid fa-play" aria-hidden="true"></i>
+                      {/if}
+                      <span>{formatDuration(video.duration)}</span>
+                    </span>
+                    <span class="video-copy">
+                      <strong
+                        >{video.description?.trim() ||
+                          "Performance video"}</strong
+                      >
+                      <small>{formatDate(video.createdAt)}</small>
+                      <span
+                        class:mapped={!!video.beatMap}
+                        class="alignment-badge"
+                      >
+                        {alignmentLabel(video)}
+                      </span>
+                    </span>
+                    {#if currentUrl === video.videoUrl}
+                      <i
+                        class="fa-solid fa-check selected-check"
+                        aria-hidden="true"
+                      ></i>
+                    {/if}
+                  </button>
+                  <button
+                    type="button"
+                    class="map-action"
+                    onclick={() => (mappingVideo = video)}
+                  >
+                    <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
+                    {video.beatMap ? "Edit timing" : "Map timing"}
+                  </button>
+                </article>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/if}
     </div>
   </div>
 {/if}
@@ -312,6 +427,21 @@
     background: var(--theme-panel-bg);
     color: var(--theme-text);
     box-shadow: 0 1.5rem 5rem var(--theme-shadow);
+  }
+
+  .performance-picker:has(.mapping-workspace) {
+    grid-template-rows: auto minmax(0, 1fr);
+    width: min(92rem, 100%);
+    height: min(68rem, calc(100% - 2rem));
+    overflow: hidden;
+  }
+
+  .mapping-workspace {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-md);
   }
 
   header,
@@ -396,7 +526,8 @@
   .primary-action:focus-visible,
   .secondary-action:focus-visible,
   .video-row:focus-visible,
-  .video-card:focus-visible,
+  .video-card-main:focus-visible,
+  .map-action:focus-visible,
   .state-panel button:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
@@ -423,8 +554,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .video-row,
-  .video-card {
+  .video-row {
     position: relative;
     display: grid;
     align-items: center;
@@ -478,8 +608,58 @@
   }
 
   .video-card {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+  }
+
+  .video-card-main {
+    display: grid;
     grid-template-columns: 6rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
     padding: var(--spacing-sm);
+    border: 0;
+    background: transparent;
+    color: var(--theme-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .alignment-badge {
+    justify-self: start;
+    margin-top: 0.25rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: var(--radius-2026-full);
+    background: color-mix(in srgb, var(--semantic-warning) 13%, transparent);
+    color: var(--semantic-warning);
+    font-size: var(--font-size-compact);
+    font-weight: 700;
+  }
+
+  .alignment-badge.mapped {
+    background: color-mix(in srgb, var(--semantic-success) 13%, transparent);
+    color: var(--semantic-success);
+  }
+
+  .map-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    min-height: 2.75rem;
+    border: 0;
+    border-top: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-accent) 7%, transparent);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--font-size-min);
+    font-weight: 700;
+    cursor: pointer;
   }
 
   .thumbnail {
@@ -564,6 +744,39 @@
 
     .video-grid {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @container post-studio (min-width: 180rem) {
+    .performance-picker {
+      width: min(74rem, 100%);
+      padding: 2rem;
+    }
+
+    .performance-picker:has(.mapping-workspace) {
+      width: min(140rem, 100%);
+      height: min(92rem, calc(100% - 3rem));
+    }
+
+    h2 {
+      font-size: 2rem;
+    }
+
+    h3,
+    .primary-action,
+    .secondary-action,
+    .video-card-main,
+    .map-action,
+    .state-panel {
+      font-size: 1.125rem;
+    }
+
+    header p,
+    .video-row small,
+    .video-copy small,
+    .alignment-badge,
+    .section-heading > span {
+      font-size: 1rem;
     }
   }
 </style>

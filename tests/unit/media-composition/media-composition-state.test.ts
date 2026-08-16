@@ -91,7 +91,7 @@ describe("createMediaCompositionState", () => {
     expect(state.selectedRegion?.id).toBe("performance");
   });
 
-  it("keeps every clip in a selected area aligned when its placement changes", () => {
+  it("keeps placement scoped to the selected layer in a shared area", () => {
     const state = createMediaCompositionState({
       presets: POST_STUDIO_PRESETS,
       initialPresetId: "performance-breakdown",
@@ -107,25 +107,36 @@ describe("createMediaCompositionState", () => {
     state.setSelectedOpacity(0.72);
     flushSync();
 
-    const selectedClips = state.activePreset.clips.filter(
+    const sharedClips = state.activePreset.clips.filter(
       (clip) => clip.kind === "visual" && clip.regionId === "performance"
+    );
+    const performanceClip = sharedClips.find(
+      (clip) => clip.sourceRole === POST_STUDIO_ROLE.performance
+    );
+    const animationClip = sharedClips.find(
+      (clip) => clip.sourceRole === POST_STUDIO_ROLE.animation
     );
     const cardClip = state.activePreset.clips.find(
       (clip) => clip.kind === "visual" && clip.regionId === "card"
     );
 
-    expect(selectedClips).toHaveLength(2);
+    expect(sharedClips).toHaveLength(2);
+    expect(performanceClip?.kind).toBe("visual");
     expect(
-      selectedClips.every(
-        (clip) =>
-          clip.kind === "visual" &&
-          clip.transform.scale === 1.35 &&
-          clip.transform.translateX === 0.18 &&
-          clip.transform.translateY === -0.12 &&
-          clip.transform.rotationDegrees === 8 &&
-          clip.opacity === 0.72
-      )
-    ).toBe(true);
+      performanceClip?.kind === "visual" && performanceClip.transform
+    ).toEqual({
+      scale: 1.35,
+      translateX: 0.18,
+      translateY: -0.12,
+      rotationDegrees: 8,
+    });
+    expect(performanceClip?.kind === "visual" && performanceClip.opacity).toBe(
+      0.72
+    );
+    expect(
+      animationClip?.kind === "visual" && animationClip.transform.scale
+    ).toBe(1);
+    expect(animationClip?.kind === "visual" && animationClip.opacity).toBe(1);
     expect(cardClip?.kind === "visual" && cardClip.transform.scale).toBe(1);
 
     state.resetSelectedAppearance();
@@ -240,6 +251,14 @@ describe("createMediaCompositionState", () => {
     state.selectPreset("performance-breakdown");
     flushSync();
     expect(state.selectedSupportsFit).toBe(true);
+    expect(state.selectedBinding?.roleKey).toBe(POST_STUDIO_ROLE.performance);
+
+    state.selectRole(POST_STUDIO_ROLE.animation);
+    flushSync();
+    expect(state.selectedRegion?.id).toBe("performance");
+    expect(state.selectedRole).toBe(POST_STUDIO_ROLE.animation);
+    expect(state.selectedSupportsFit).toBe(false);
+
     state.selectRegion("card");
     flushSync();
     expect(state.selectedSupportsFit).toBe(false);

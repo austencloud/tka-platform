@@ -33,6 +33,10 @@
     showQRCode={cardRenderOptions?.visibilityOverrides?.showQRCode ?? false}
     showMandala={cardRenderOptions?.visibilityOverrides?.showMandala ?? false}
     handPathMode={cardRenderOptions?.visibilityOverrides?.handPathMode ?? false}
+    bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+      cardRenderOptions?.propTypeOverride}
+    redPropType={cardRenderOptions?.redPropTypeOverride ??
+      cardRenderOptions?.propTypeOverride}
     columnCount={cardRenderOptions?.columnCount ?? null}
     startPositionLayoutOverride={cardRenderOptions?.startPositionLayout ?? null}
     forceContain

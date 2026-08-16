@@ -1380,6 +1380,7 @@
         {sequence}
         {cardPreviewUrl}
         cardRenderOptions={postStudioCardOptions}
+        {resolvedCardAutoLayout}
         animationPreviewUrl={null}
         isPreparingCard={!cardPreviewUrl}
         isPreparingAnimation={false}

@@ -51,7 +51,7 @@
   }
 
   function selectRegion(regionId: string, roleKey: string | null): void {
-    composition.selectRegion(regionId);
+    composition.selectRegion(regionId, roleKey);
     if (!roleKey) return;
     const binding = composition.bindingForRole(roleKey);
     if (binding?.status === "missing") composition.requestSource(roleKey);
@@ -72,7 +72,7 @@
     regionId: string,
     roleKey: string | null
   ): void {
-    composition.selectRegion(regionId);
+    composition.selectRegion(regionId, roleKey);
     const binding = roleKey ? composition.bindingForRole(roleKey) : null;
     if (binding?.status === "missing" || !composition.selectedTransform) return;
     const region = event.currentTarget as HTMLElement;

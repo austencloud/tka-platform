@@ -2,6 +2,18 @@
   import { onDestroy, onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+  import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
+  import { getExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import {
+    getEffectsConfigContext,
+    setEffectsConfigContext,
+  } from "$lib/shared/effects/state/effects-config-context";
+  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+  import {
+    getAnimationVisibilityContext,
+    setAnimationVisibilityContext,
+  } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
@@ -24,8 +36,11 @@
     saveMediaCompositionPreset,
   } from "$lib/shared/media-composition/services/media-composition-preset-repository";
   import { getVideoFileMetadata } from "$lib/shared/video-collaboration/helpers/create-video-from-upload";
+  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import { getUser } from "$lib/shared/auth/state/auth-state.svelte";
+  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PostStudioTopBar from "./PostStudioTopBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
   import PostStudioPresetPicker from "./PostStudioPresetPicker.svelte";
@@ -34,14 +49,16 @@
   import PostStudioTimeline from "./PostStudioTimeline.svelte";
   import PostStudioDeliveryPanel from "./PostStudioDeliveryPanel.svelte";
   import PostStudioPerformancePicker from "./PostStudioPerformancePicker.svelte";
+  import {
+    createCatalogPerformanceSelection,
+    createPostStudioSequenceRef,
+    createUnmappedPerformanceSelection,
+    type PostStudioPerformanceSelection,
+  } from "./post-studio-performance-selection";
+  import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import { withPostStudioPropType } from "./post-studio-prop-render-options";
 
   type FocusedPanel = "canvas" | "layout" | "edit" | "timing";
-
-  interface PerformanceSelection {
-    url: string;
-    duration?: number;
-    label: string;
-  }
 
   interface Props {
     sequence: SequenceData;
@@ -49,6 +66,7 @@
     animationPreviewUrl: string | null;
     animationPreviewType?: "video" | "image";
     cardRenderOptions?: Partial<SequenceExportOptions> | null;
+    resolvedCardAutoLayout?: ResolvedAutoLayout | null;
     performanceDurationSeconds?: number;
     sequenceTimeMap?: SequenceTimeMap | null;
     isPreparingCard?: boolean;
@@ -65,6 +83,7 @@
     animationPreviewUrl,
     animationPreviewType = "video",
     cardRenderOptions = null,
+    resolvedCardAutoLayout = null,
     performanceDurationSeconds,
     sequenceTimeMap = null,
     isPreparingCard = false,
@@ -75,21 +94,112 @@
     onExported,
   }: Props = $props();
 
-  let chosenPerformanceUrl = $state<string | null>(null);
-  let chosenPerformanceDuration = $state<number | undefined>(undefined);
+  const exportOptions = getExportOptionsState();
+  const effectsConfig =
+    getEffectsConfigContext() ??
+    createEffectsConfigState(undefined, { persist: false });
+  setEffectsConfigContext(effectsConfig);
+  const animationVisibility =
+    getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
+  setAnimationVisibilityContext(animationVisibility);
+
+  let selectedPropType = $state<PropType>(
+    settingsService.settings.bluePropType ?? PropType.STAFF
+  );
+  const synchronizedCardRenderOptions = $derived(
+    withPostStudioPropType(cardRenderOptions, selectedPropType)
+  );
+
+  let chosenPerformance = $state<PostStudioPerformanceSelection | null>(null);
+  let performanceSelectionTouched = false;
   let localPerformanceUrl: string | null = null;
   let performancePickerOpen = $state(false);
+  let performanceLibraryError = $state("");
+  let performanceLibraryRequest = 0;
   let focusedPanel = $state<FocusedPanel>("canvas");
   let timingAdvanced = $state(false);
   let performanceHasAudio = $state<boolean | null>(null);
   let audioInspectionVersion = 0;
+  let workspaceWidth = $state(0);
+  let workspaceHeight = $state(0);
+  let workspaceWasAdjusted = $state(false);
+  let workspaceSizes = $state([22, 72, 44]);
+  let timingSizes = $state([3, 1]);
 
+  const compactWorkspace = $derived(
+    workspaceWidth === 0 || workspaceWidth <= 1120 || workspaceHeight <= 640
+  );
+
+  const sequenceRef = $derived(createPostStudioSequenceRef(sequence));
   const performanceUrl = $derived(
-    chosenPerformanceUrl ?? sequence.performanceVideoUrl ?? null
+    chosenPerformance?.url ?? sequence.performanceVideoUrl ?? null
   );
   const performanceDuration = $derived(
-    chosenPerformanceDuration ?? performanceDurationSeconds
+    chosenPerformance?.duration ?? performanceDurationSeconds
   );
+  const resolvedSequenceTimeMap = $derived(
+    chosenPerformance ? chosenPerformance.sequenceTimeMap : sequenceTimeMap
+  );
+  const performanceAlignmentDetail = $derived.by(() => {
+    if (!performanceUrl) return null;
+    if (chosenPerformance) return chosenPerformance.alignmentDetail;
+    if (sequenceTimeMap?.source === "manual") return "Saved manual map";
+    if (
+      sequenceTimeMap?.source === "audio-detected" ||
+      sequenceTimeMap?.source === "motion-detected" ||
+      sequenceTimeMap?.source === "hybrid"
+    ) {
+      return "Assisted candidate";
+    }
+    return "Unmapped · even timing preview";
+  });
+
+  $effect(() => {
+    const sequenceId = sequence.id;
+    const linkedUrl = sequence.performanceVideoUrl;
+    const ref = sequenceRef;
+    const request = ++performanceLibraryRequest;
+    performanceLibraryError = "";
+    if (!sequenceId || !linkedUrl || performanceSelectionTouched) return;
+
+    void getVideosForSequence(sequenceId)
+      .then((videos) => {
+        if (
+          request !== performanceLibraryRequest ||
+          performanceSelectionTouched
+        )
+          return;
+        const linkedVideo = videos.find(
+          (video) => video.videoUrl === linkedUrl
+        );
+        if (linkedVideo) {
+          chosenPerformance = createCatalogPerformanceSelection(
+            linkedVideo,
+            ref
+          );
+        }
+      })
+      .catch(() => {
+        if (request === performanceLibraryRequest) {
+          performanceLibraryError =
+            "Saved timing could not be checked. This preview is using even timing.";
+        }
+      });
+  });
+
+  $effect(() => {
+    const width = workspaceWidth;
+    if (workspaceWasAdjusted || width <= 0) return;
+
+    const available = Math.max(0, width - 16);
+    const assets = Math.min(640, Math.max(256, available * 0.15));
+    const inspector =
+      width >= 1680
+        ? Math.min(1120, Math.max(760, available * 0.31))
+        : Math.min(512, Math.max(320, available * 0.32));
+    const canvas = Math.max(480, available - assets - inspector);
+    workspaceSizes = [assets, canvas, inspector];
+  });
 
   const bindings = $derived.by((): CompositionSourceBinding[] => [
     {
@@ -146,22 +256,14 @@
     getBindings: () => bindings,
     getSequenceSteps: () => sequence.steps,
     getSequenceTimeMap: (durationSeconds) =>
-      sequenceTimeMap ??
+      resolvedSequenceTimeMap ??
       createTempoGridTimeMap({
-        sequenceRef: {
-          sequenceId: sequence.id,
-          revisionId: [
-            "preview",
-            sequence.canonicalSignature ?? sequence.canonicalHandPath ?? "",
-            sequence.bluePathHash ?? "",
-            sequence.redPathHash ?? "",
-            sequence.word,
-            sequence.steps.length,
-          ].join(":"),
-        },
-        mediaSourceId: performanceUrl
-          ? `performance:${sequence.id}`
-          : `animation:${sequence.id}`,
+        sequenceRef,
+        mediaSourceId:
+          chosenPerformance?.id ??
+          (performanceUrl
+            ? `performance:${sequence.id}`
+            : `animation:${sequence.id}`),
         mediaDurationSeconds: durationSeconds,
         motionDurations: sequence.steps.map((step) => step.duration ?? 1),
       }),
@@ -264,6 +366,10 @@
     audioModeTouched = true;
   }
 
+  function setPropType(propType: PropType): void {
+    selectedPropType = propType;
+  }
+
   async function loadSavedPresets(
     isStale: () => boolean = () => false
   ): Promise<void> {
@@ -286,13 +392,14 @@
     composition.requestSource(firstMissingSource.roleKey);
   }
 
-  function choosePerformance(selection: PerformanceSelection): void {
+  function choosePerformance(selection: PostStudioPerformanceSelection): void {
     if (localPerformanceUrl) {
       URL.revokeObjectURL(localPerformanceUrl);
       localPerformanceUrl = null;
     }
-    chosenPerformanceUrl = selection.url;
-    chosenPerformanceDuration = selection.duration;
+    performanceSelectionTouched = true;
+    chosenPerformance = selection;
+    performanceLibraryError = "";
     performancePickerOpen = false;
     composition.selectRole(POST_STUDIO_ROLE.performance);
     focusedPanel = "edit";
@@ -308,8 +415,14 @@
     const metadata = await getVideoFileMetadata(file);
     if (localPerformanceUrl) URL.revokeObjectURL(localPerformanceUrl);
     localPerformanceUrl = URL.createObjectURL(file);
-    chosenPerformanceUrl = localPerformanceUrl;
-    chosenPerformanceDuration = metadata.duration;
+    performanceSelectionTouched = true;
+    chosenPerformance = createUnmappedPerformanceSelection({
+      id: `local-performance:${file.name}:${file.size}:${file.lastModified}`,
+      url: localPerformanceUrl,
+      duration: metadata.duration,
+      label: file.name,
+    });
+    performanceLibraryError = "";
     performancePickerOpen = false;
     composition.selectRole(POST_STUDIO_ROLE.performance);
     focusedPanel = "edit";
@@ -366,6 +479,10 @@
     exportCancelled = true;
   }
 
+  function toggleTimingAdvanced(): void {
+    timingAdvanced = !timingAdvanced;
+  }
+
   async function saveCurrentPreset(name: string): Promise<void> {
     const preset = composition.createPreset(name, presetOwnerId);
     await saveMediaCompositionPreset(preset);
@@ -396,7 +513,7 @@
     onCancelExport={cancelExport}
   />
 
-  <div class:timing-advanced={timingAdvanced} class="workspace">
+  {#snippet assetPanel()}
     <aside class="asset-rail" aria-label="Layouts and sources">
       <PostStudioPresetPicker rail onSavePreset={saveCurrentPreset} />
       {#if presetLoadError}
@@ -408,9 +525,15 @@
         </div>
       {/if}
       <div class="rail-divider"></div>
-      <PostStudioSourcePanel onEditSource={() => (focusedPanel = "edit")} />
+      <PostStudioSourcePanel
+        {performanceAlignmentDetail}
+        {performanceLibraryError}
+        onEditSource={() => (focusedPanel = "edit")}
+      />
     </aside>
+  {/snippet}
 
+  {#snippet canvasPanel()}
     <main class="canvas-panel" aria-label="Post canvas">
       <div class="canvas-heading">
         <span>Canvas</span>
@@ -419,15 +542,23 @@
       <div class="canvas-stage">
         <PostStudioPreview
           {sequence}
-          {cardRenderOptions}
+          cardRenderOptions={synchronizedCardRenderOptions}
           onRootReady={setPreviewRoot}
           onEditRegion={() => (focusedPanel = "edit")}
         />
       </div>
     </main>
+  {/snippet}
 
+  {#snippet inspectorPanel()}
     <aside class="inspector-rail" aria-label="Inspector and export settings">
-      <PostStudioInspector />
+      <PostStudioInspector
+        {sequence}
+        {exportOptions}
+        {selectedPropType}
+        onPropChange={setPropType}
+        resolvedAutoLayout={resolvedCardAutoLayout}
+      />
       {#if canKeepOriginalAudio}
         <PostStudioDeliveryPanel
           {audioMode}
@@ -438,13 +569,85 @@
         />
       {/if}
     </aside>
+  {/snippet}
 
+  {#snippet timelinePanel()}
     <div class="timeline-dock">
       <PostStudioTimeline
         advanced={timingAdvanced}
-        onToggleAdvanced={() => (timingAdvanced = !timingAdvanced)}
+        {performanceAlignmentDetail}
+        onMapPerformance={() => (performancePickerOpen = true)}
+        onToggleAdvanced={toggleTimingAdvanced}
       />
     </div>
+  {/snippet}
+
+  {#snippet centerPanel()}
+    {#if timingAdvanced}
+      <PanelGroup
+        direction="vertical"
+        panels={[
+          {
+            id: "canvas",
+            content: canvasPanel,
+            defaultSize: 3,
+            minSize: 360,
+          },
+          {
+            id: "timeline",
+            content: timelinePanel,
+            defaultSize: 1,
+            minSize: 224,
+            maxSize: 560,
+          },
+        ]}
+        bind:sizes={timingSizes}
+        gap={8}
+        flattened={compactWorkspace}
+      />
+    {:else}
+      <div class="canvas-timeline-stack">
+        {@render canvasPanel()}
+        {@render timelinePanel()}
+      </div>
+    {/if}
+  {/snippet}
+
+  <div
+    class:timing-advanced={timingAdvanced}
+    class="workspace"
+    bind:clientWidth={workspaceWidth}
+    bind:clientHeight={workspaceHeight}
+  >
+    <PanelGroup
+      direction="horizontal"
+      panels={[
+        {
+          id: "assets",
+          content: assetPanel,
+          defaultSize: workspaceSizes[0],
+          minSize: workspaceWidth >= 1680 ? 288 : 256,
+          maxSize: 720,
+        },
+        {
+          id: "canvas",
+          content: centerPanel,
+          defaultSize: workspaceSizes[1],
+          minSize: workspaceWidth >= 1680 ? 640 : 480,
+        },
+        {
+          id: "inspector",
+          content: inspectorPanel,
+          defaultSize: workspaceSizes[2],
+          minSize: workspaceWidth >= 1680 ? 720 : 320,
+          maxSize: 1280,
+        },
+      ]}
+      bind:sizes={workspaceSizes}
+      onSizesChange={() => (workspaceWasAdjusted = true)}
+      gap={8}
+      flattened={compactWorkspace}
+    />
   </div>
 
   <nav class="focused-nav" aria-label="Post Studio tools">
@@ -492,6 +695,8 @@
   <PostStudioPerformancePicker
     open={performancePickerOpen}
     {sequence}
+    {sequenceRef}
+    bpm={composition.tempoBpm ?? 60}
     currentUrl={performanceUrl}
     onClose={() => (performancePickerOpen = false)}
     onSelect={choosePerformance}
@@ -523,22 +728,22 @@
   }
 
   .workspace {
-    display: grid;
-    grid-template-areas:
-      "assets canvas inspector"
-      "assets timeline inspector";
-    grid-template-columns: minmax(16rem, 19rem) minmax(25rem, 1fr) minmax(
-        19rem,
-        23rem
-      );
-    grid-template-rows: minmax(0, 1fr) auto;
+    display: flex;
     min-width: 0;
     min-height: 0;
+    overflow: hidden;
     background: var(--theme-panel-bg);
   }
 
-  .workspace.timing-advanced {
-    grid-template-rows: minmax(0, 1fr) clamp(16rem, 29dvh, 19rem);
+  .canvas-timeline-stack {
+    display: grid;
+    grid-template-areas:
+      "canvas"
+      "timeline";
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .asset-rail,
@@ -573,6 +778,8 @@
 
   .inspector-rail {
     grid-area: inspector;
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
     border-left: 1px solid var(--theme-stroke);
   }
 
@@ -676,38 +883,26 @@
       --studio-panel-gap: var(--spacing-xl);
       --studio-panel-padding: var(--spacing-xl);
       --studio-canvas-padding: var(--spacing-lg);
-      grid-template-columns: minmax(20rem, 22rem) minmax(40rem, 92rem) minmax(
-          23rem,
-          27rem
-        );
-      grid-template-rows: minmax(0, 1fr) auto;
-      justify-content: center;
-    }
-
-    .workspace.timing-advanced {
-      grid-template-rows: minmax(0, 1fr) clamp(20rem, 29dvh, 22rem);
     }
   }
 
   @container post-studio (min-width: 180rem) {
     .workspace {
-      --studio-control-height: 3.75rem;
-      --studio-body-size: 1.125rem;
-      --studio-meta-size: 1rem;
-      --studio-section-title-size: 1.5rem;
-      --studio-panel-gap: 2.5rem;
-      --studio-panel-padding: 2.5rem;
-      --studio-canvas-padding: 2rem;
-      grid-template-columns: minmax(30rem, 34rem) minmax(72rem, 92rem) minmax(
-          34rem,
-          40rem
-        );
-      grid-template-rows: minmax(0, 1fr) auto;
-      justify-content: center;
+      --studio-control-height: 4.25rem;
+      --studio-body-size: 1.25rem;
+      --studio-meta-size: 1.0625rem;
+      --studio-section-title-size: 1.75rem;
+      --studio-panel-gap: 2.75rem;
+      --studio-panel-padding: 3rem;
+      --studio-canvas-padding: 2.5rem;
     }
+  }
 
-    .workspace.timing-advanced {
-      grid-template-rows: minmax(0, 1fr) 26rem;
+  @media (min-width: 70.0625rem) and (max-height: 70rem) {
+    .workspace {
+      --studio-panel-gap: 0.75rem;
+      --studio-panel-padding: 1rem;
+      --studio-canvas-padding: 0.75rem;
     }
   }
 
@@ -721,6 +916,10 @@
       display: block;
       min-height: 0;
       overflow: hidden;
+    }
+
+    .canvas-timeline-stack {
+      display: contents;
     }
 
     .asset-rail,
@@ -792,6 +991,10 @@
       display: block;
       min-height: 0;
       overflow: hidden;
+    }
+
+    .canvas-timeline-stack {
+      display: contents;
     }
 
     .asset-rail,
