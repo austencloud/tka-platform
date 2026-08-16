@@ -17,10 +17,10 @@
  *
  * Two things follow, and both show up in real sequences:
  *
- *   Level 1 has only zero turns, so no prop can ever cross, and every level 1
- *   sequence is stuck in the layer it started in. Level 2 has whole turns only
- *   and is stuck the same way. Half turns arrive at level 3, and from there
- *   every signature is reachable.
+ *   Non-radial is a level 3 idea. Level 1 has no turns and level 2 has only
+ *   whole ones, so no prop below level 3 can leave radial at all: those
+ *   sequences are not just frozen, they are frozen in layer 1. Half turns
+ *   arrive at level 3, and from there every signature is reachable.
  *
  *   A sequence that repeats needs each prop to cross an even number of times,
  *   or the second time through starts in a different layer than the first and
@@ -153,8 +153,8 @@ export function retargetMotionFlip(
   const half = nearest(crossing, turns + 0.5);
 
   if (half === undefined) {
-    // This is level 1 and level 2. Neither has a half turn to offer, so nothing
-    // in them can ever change layer — the request is honestly unreachable.
+    // This is level 1 and level 2. Neither has a half turn to offer, so no prop
+    // in them can leave radial — the request is honestly unreachable.
     return {
       motion,
       satisfied: false,

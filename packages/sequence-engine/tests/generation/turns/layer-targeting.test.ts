@@ -165,7 +165,7 @@ describe("retargetMotionFlip", () => {
     expect(flipsLayer(result.motion)).toBe(true);
   });
 
-  it("cannot make a prop cross at level 1 or level 2 — neither has a half turn", () => {
+  it("cannot take a prop off radial below level 3 — neither level has a half turn", () => {
     for (const level of [1, 2]) {
       const result = retargetMotionFlip(motion(0, { turns: 0 }), true, { level });
       expect(result.satisfied, `level ${level}`).toBe(false);

@@ -24,9 +24,12 @@
  * a completely different word produces the same signature — which is why a turn
  * pattern is worth naming and saving on its own (see `LayerPattern` below).
  *
- * A consequence worth knowing before you go looking for variety: sequences
- * below level 3 have no half turns and no floats, so their signature can never
- * change. Every level 1 and level 2 sequence is a flat run of one layer.
+ * A consequence worth knowing before you go looking for variety: non-radial is
+ * a level 3 idea. Level 1 has no turns and level 2 has only whole ones, and
+ * only a half turn or a float can take a prop off radial, so nothing below
+ * level 3 ever leaves layer 1. Their signature is not merely flat, it is
+ * `111…1`, and it carries no information at all. The signature is a level 3
+ * object; below that there is nothing to read.
  *
  * This lives in the engine, next to the orientation calculator whose behaviour
  * it summarises, because generation needs it too: knowing which turn values
@@ -77,7 +80,7 @@ export interface LayerMetrics {
   readonly desync: number;
   /** Length of the shortest repeating chunk of the signature. */
   readonly period: number;
-  /** True when the signature never changes — every level 1 and 2 sequence. */
+  /** True when the signature never changes — always true below level 3. */
   readonly frozen: boolean;
 }
 

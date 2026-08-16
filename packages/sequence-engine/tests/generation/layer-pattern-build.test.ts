@@ -214,10 +214,12 @@ describe("SequenceBuilder — targetLayerPattern", () => {
     ).toThrow(/Unreadable layer pattern/);
   });
 
-  it("leaves level 1 and level 2 in the layer they started in", () => {
-    // Neither level has a half turn to offer, so no prop in them can cross,
-    // and asking for one changes nothing rather than smuggling in a turn value
-    // the level does not have.
+  it("keeps level 1 and level 2 in layer 1, because non-radial starts at level 3", () => {
+    // Only a half turn or a float takes a prop off radial, and neither exists
+    // below level 3. So these are not merely frozen wherever they began — both
+    // props are radial throughout, which is layer 1 and nothing else. Asking
+    // for a crossing changes nothing rather than smuggling in a turn value the
+    // level does not have.
     for (const level of [1, 2]) {
       const result = builder().build({
         word: "ABCD",
