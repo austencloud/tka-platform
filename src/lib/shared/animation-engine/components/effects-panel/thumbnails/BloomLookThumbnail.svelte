@@ -15,28 +15,66 @@
   const { preset, active = false }: Props = $props();
   let canvas: HTMLCanvasElement;
 
-  const WIDTH = 480;
-  const HEIGHT = 180;
-  // Standalone optical study: the preset is the subject.
-  const COMET_FRAMES = 40;
+  // 2.67:1 to match the tile the panel gives us, supersampled ~1.5x so the
+  // downscale to ~304px stays crisp.
+  const WIDTH = 720;
+  const HEIGHT = 270;
 
-  function lightSource(x: number, y: number, color: string): BloomTipInput {
-    return { x, y, tipIndex: 0, propIndex: 0, color };
+  /**
+   * The preset radii were tuned against the production stage, which sits around
+   * 900px wide. Scaling by the same ratio is what makes the tile honest: a
+   * radius-62 halo covers the same fraction of this tile that it covers of the
+   * real canvas. It also means a preset whose spikes run off the stage in the
+   * app runs off the tile here too, which is information, not a framing bug.
+   */
+  const REFERENCE_STAGE_WIDTH = 900;
+  const SCALE = WIDTH / REFERENCE_STAGE_WIDTH;
+
+  /**
+   * Every preset gets the SAME scene: two prop-coloured tips sweeping the same
+   * arc for the same number of frames. The preset patch is the only variable,
+   * so the tiles compare looks instead of comparing staged illustrations.
+   */
+  const FRAMES = 40;
+  const CY = HEIGHT / 2;
+  // Ends the sweep near the middle of the tile rather than at its right edge:
+  // presets with no afterglow only ever show the final frame, so a path that
+  // finishes far right leaves them stranded against the border.
+  const X_LEFT = 60;
+  const X_RIGHT = 480;
+  const ARC_HEIGHT = 60;
+
+  // The canonical prop blue/red. `prop-matched` presets resolve to these in the
+  // app, so the tile has to show them rather than a flattering hand-picked hue.
+  const BLUE = DEFAULT_EFFECTS_CONFIG.trails.blueColor;
+  const RED = DEFAULT_EFFECTS_CONFIG.trails.redColor;
+
+  /**
+   * Both tips ride one open swoop, red trailing blue by a fixed phase - the way
+   * two props actually travel, one behind the other on the same shape. Mirrored
+   * or antipodal paths were tried first and both are wrong: they share
+   * endpoints, so a long afterglow closes them into a ring or a lens, and the
+   * tile ends up showing a geometric figure instead of the look. Red enters
+   * from just off-frame, which is why its trail has no visible start.
+   */
+  const RED_PHASE_LAG = 0.28;
+
+  function tipAt(t: number, tipIndex: number, color: string): BloomTipInput {
+    return {
+      x: X_LEFT + t * (X_RIGHT - X_LEFT),
+      y: CY + ARC_HEIGHT * Math.sin(t * Math.PI),
+      propIndex: tipIndex,
+      tipIndex,
+      color,
+    };
   }
 
   function scene(frame: number): BloomTipInput[] {
-    if (preset.id === "bloom-comet") {
-      const progress = frame / (COMET_FRAMES - 1);
-      const x = 62 + progress * 356;
-      const y = 130 - progress * 72 - Math.sin(progress * Math.PI) * 25;
-      return [lightSource(x, y, "#fbbf24")];
-    }
-
-    if (preset.id === "bloom-supernova") {
-      return [lightSource(WIDTH / 2, HEIGHT / 2, "#dbeafe")];
-    }
-
-    return [lightSource(WIDTH / 2, HEIGHT / 2, "#e0e7ff")];
+    const progress = frame / (FRAMES - 1);
+    return [
+      tipAt(progress, 0, BLUE),
+      tipAt(progress - RED_PHASE_LAG, 1, RED),
+    ];
   }
 
   function drawStage(ctx: CanvasRenderingContext2D): void {
@@ -45,19 +83,6 @@
     background.addColorStop(0.58, "#050712");
     background.addColorStop(1, "#020309");
     ctx.fillStyle = background;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-    const pool = ctx.createRadialGradient(
-      WIDTH / 2,
-      HEIGHT / 2,
-      0,
-      WIDTH / 2,
-      HEIGHT / 2,
-      210
-    );
-    pool.addColorStop(0, "rgba(96, 112, 168, 0.1)");
-    pool.addColorStop(1, "rgba(2, 3, 9, 0)");
-    ctx.fillStyle = pool;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
   }
 
@@ -72,13 +97,13 @@
       ...(preset.patch ?? {}),
     };
     const params = resolveBloom2D(intent);
-    const frameCount = preset.id === "bloom-comet" ? COMET_FRAMES : 1;
-    const scale = preset.id === "bloom-halo" ? 1.08 : 0.9;
 
-    for (let frame = 0; frame < frameCount; frame += 1) {
+    // Replay the whole sweep so afterglow and streak accumulate the way they do
+    // during playback. The last frame is what the tile ends up showing.
+    for (let frame = 0; frame < FRAMES; frame += 1) {
       ctx.clearRect(0, 0, WIDTH, HEIGHT);
       drawStage(ctx);
-      renderer.render(ctx, params, scene(frame), scale);
+      renderer.render(ctx, params, scene(frame), SCALE);
     }
 
     return () => renderer.dispose();
