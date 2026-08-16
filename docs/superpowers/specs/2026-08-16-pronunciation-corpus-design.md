@@ -58,22 +58,26 @@ function is the segmenter and no forced-alignment dependency is needed. If
 letters run together, islands merge and the count check fails.
 
 **The experiment:** record ten words of mixed length (2, 3, 4, 6, 8 letters), run
-`suggestPronunciationTrim` variants over each with `expectedSegments` set to the
-letter count, and record the exact-match rate plus the boundary error against
-hand-marked truth.
+whole-word segmentation over each with the expected island count set to the
+letter count, and write every slice out as its own WAV.
+
+Boundary accuracy is judged by ear, not by hand-marked truth. Hand-marking forty
+boundaries to validate a segmenter is more work than the segmenter saves, and the
+real acceptance criterion for this bank was always the listening pass. A slice
+either sounds like a clean whole letter or it does not.
 
 **Decision rule**, measured over the ten words:
 
-- Exact island count on at least 8 of 10 words, and median boundary error under
-  40 ms against hand-marked truth: energy segmentation is the primary path. No
-  Python enters the project. Flagged words go to the review screen.
+- Exact island count on at least 8 of 10 words, and slices that sound like clean
+  whole letters: energy segmentation is the primary path. No Python enters the
+  project. Flagged words go to the review screen.
 - Anything below that: add forced alignment (WhisperX or Montreal Forced
   Aligner) as the primary segmenter, run as a batch CLI step over the session
   WAV plus the prompt log. Everything downstream in this document is unchanged.
 
-40 ms is roughly the edge padding the trimmer already applies
-(`EDGE_PADDING_SECONDS = 0.035`), so an error inside that window is absorbed by
-padding rather than clipping a consonant.
+The same ten recordings also answer a second question, since the harness reports
+measured loudness and edge pitch per slice: whether the join-cost inputs behave
+sensibly on real speech before the selector is built to trust them.
 
 Run Phase 0 before implementing the rest. Its result changes one component and
 nothing else.
