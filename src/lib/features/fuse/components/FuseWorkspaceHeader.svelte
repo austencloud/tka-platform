@@ -11,8 +11,10 @@
 
   let {
     onOpenRecipe = () => {},
+    onOpenSetting = () => {},
   }: {
     onOpenRecipe?: () => void;
+    onOpenSetting?: (destination: FuseRecipeDestination) => void;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -86,11 +88,13 @@
       align: "center" as const,
       ...cardColors.startEnd,
     },
+    // Pairing opens the recipe drawer, not a popover — width and align below
+    // are the popover's, and this tile never renders one.
     {
       id: "pairing" as const,
       title: "Pairing",
       icon: "fas fa-link",
-      width: "56rem",
+      width: "34rem",
       align: "end" as const,
       ...cardColors.mode,
     },
@@ -146,6 +150,9 @@
         open={activeSetting === tile.id}
         disabled={optionsDisabled}
         onOpenChange={(open) => setTileOpen(tile.id, open)}
+        onActivate={tile.id === "pairing"
+          ? () => onOpenSetting("pairing")
+          : undefined}
       />
     {/each}
   </div>

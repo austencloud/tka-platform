@@ -46,6 +46,12 @@
     fallbackIcon?: string;
     glyphSize?: number;
     title?: string;
+    /**
+     * Glyph beside the name on one short row, description dropped. For shelves
+     * with many choices in a narrow panel, where nine tall tiles would be
+     * taller than the panel holding them.
+     */
+    dense?: boolean;
   }
 
   let {
@@ -61,6 +67,7 @@
     fallbackIcon,
     glyphSize = 38,
     title,
+    dense = false,
   }: Props = $props();
 
   const selectable = $derived(selected !== undefined);
@@ -70,6 +77,7 @@
   type="button"
   class="loop-button"
   class:selected
+  class:dense
   style={tint}
   role={selectable ? "radio" : undefined}
   aria-checked={selectable ? selected : undefined}
@@ -278,6 +286,59 @@
       min-height: 4.75rem;
       padding: 0.625rem 0.75rem;
       gap: 0.25rem;
+    }
+  }
+
+  /*
+   * Dense is a caller decision, not a width one, so it outranks every tier
+   * above by carrying two classes. A nine-choice shelf in a 480px drawer has
+   * no room for nine descriptions; the glyph and the name carry the choice and
+   * the box drops to a comfortable touch row.
+   */
+  .loop-button.dense {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    min-height: 3.75rem;
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+  }
+
+  /* One slot wide enough for a two-primitive composite, so single-primitive
+     names still start on the same x as their neighbours'. */
+  .dense .loop-glyph {
+    flex: 0 0 3.25rem;
+    min-height: 0;
+  }
+
+  .dense .loop-text {
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .dense .loop-name {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .dense .loop-desc {
+    display: none;
+  }
+
+  /* A tall panel has the room back, so it spends it on the description rather
+     than on empty space below the last choice. Still a row — the panel is only
+     as wide as it was. */
+  @media (min-height: 1400px) {
+    .loop-button.dense {
+      min-height: 4.75rem;
+    }
+
+    .dense .loop-text {
+      gap: 0.125rem;
+    }
+
+    .dense .loop-desc {
+      display: block;
+      max-width: none;
     }
   }
 

@@ -1,3 +1,12 @@
+<!--
+  FuseRecipePopover — one tile on the header's recipe rail.
+
+  Most tiles answer their question in a popover hung under the tile. A tile that
+  passes `onActivate` instead opens the recipe drawer at its own section: the
+  pairing editor is a nine-choice, two-step form, and a popover could only show
+  it by clipping itself into an inner scroller. One editor, one presentation —
+  the same panel the follower card's "Rebuilt from" button opens.
+-->
 <script lang="ts">
   import { Popover } from "bits-ui";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
@@ -16,6 +25,7 @@
     open = false,
     disabled = false,
     onOpenChange = () => {},
+    onActivate,
   }: {
     destination: FuseRecipeDestination;
     title: string;
@@ -29,6 +39,8 @@
     open?: boolean;
     disabled?: boolean;
     onOpenChange?: (open: boolean) => void;
+    /** Route this tile to the recipe drawer instead of a popover. */
+    onActivate?: () => void;
   } = $props();
 
   const titleId = `fuse-recipe-${destination}-title`;
@@ -38,66 +50,77 @@
   }
 </script>
 
-<Popover.Root {open} {onOpenChange}>
-  <Popover.Trigger>
-    {#snippet child({ props })}
-      <button
-        {...props}
-        type="button"
-        class="recipe-tile"
-        class:open
-        {disabled}
-        aria-label="Edit {title}: {summary}"
-        style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
+{#snippet tile(triggerProps: Record<string, unknown>)}
+  <button
+    {...triggerProps}
+    type="button"
+    class="recipe-tile"
+    class:open
+    {disabled}
+    aria-label="Edit {title}: {summary}"
+    style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
+  >
+    <span class="tile-icon" aria-hidden="true">
+      <i class={icon}></i>
+    </span>
+    <span class="tile-copy">
+      <span class="tile-label">{title}</span>
+      <strong>{summary}</strong>
+    </span>
+    <i
+      class="fas {onActivate ? 'fa-chevron-right' : 'fa-chevron-down'} tile-chevron"
+      aria-hidden="true"
+    ></i>
+  </button>
+{/snippet}
+
+{#if onActivate}
+  {@render tile({ onclick: onActivate })}
+{:else}
+  <Popover.Root {open} {onOpenChange}>
+    <Popover.Trigger>
+      {#snippet child({ props })}
+        {@render tile(props)}
+      {/snippet}
+    </Popover.Trigger>
+
+    <Popover.Portal>
+      <Popover.Content
+        side="bottom"
+        {align}
+        sideOffset={10}
+        collisionPadding={18}
+        class="fuse-recipe-popover"
+        aria-labelledby={titleId}
+        style="--popover-width: {width}; --recipe-color: {color}; --recipe-shadow: {shadowColor};"
       >
-        <span class="tile-icon" aria-hidden="true">
-          <i class={icon}></i>
-        </span>
-        <span class="tile-copy">
-          <span class="tile-label">{title}</span>
-          <strong>{summary}</strong>
-        </span>
-        <i class="fas fa-chevron-down tile-chevron" aria-hidden="true"></i>
-      </button>
-    {/snippet}
-  </Popover.Trigger>
+        <header class="popover-header">
+          <div>
+            <span>Fuse recipe</span>
+            <h3 id={titleId}>{title}</h3>
+          </div>
+          <button
+            type="button"
+            class="close-popover"
+            onclick={close}
+            aria-label="Close {title} settings"
+          >
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
 
-  <Popover.Portal>
-    <Popover.Content
-      side="bottom"
-      {align}
-      sideOffset={10}
-      collisionPadding={18}
-      class="fuse-recipe-popover"
-      aria-labelledby={titleId}
-      style="--popover-width: {width}; --recipe-color: {color}; --recipe-shadow: {shadowColor};"
-    >
-      <header class="popover-header">
-        <div>
-          <span>Fuse recipe</span>
-          <h3 id={titleId}>{title}</h3>
+        <div class="popover-body">
+          <FuseRecipeSettingContent
+            {destination}
+            presentation="popover"
+            onCancel={close}
+            onApply={close}
+          />
         </div>
-        <button
-          type="button"
-          class="close-popover"
-          onclick={close}
-          aria-label="Close {title} settings"
-        >
-          <i class="fas fa-xmark" aria-hidden="true"></i>
-        </button>
-      </header>
-
-      <div class="popover-body">
-        <FuseRecipeSettingContent
-          {destination}
-          presentation="popover"
-          onCancel={close}
-          onApply={close}
-        />
-      </div>
-    </Popover.Content>
-  </Popover.Portal>
-</Popover.Root>
+      </Popover.Content>
+    </Popover.Portal>
+  </Popover.Root>
+{/if}
 
 <style>
   .recipe-tile {

@@ -22,5 +22,7 @@
 {:else if destination === "style" || destination === "starting"}
   <FusePathRecipePanel section={destination} {presentation} />
 {:else}
-  <FuseRelationshipComposer {presentation} {onCancel} {onApply} />
+  <!-- Pairing has one presentation: the drawer. It is a two-step form with nine
+       choices, which a popover could only show by clipping itself. -->
+  <FuseRelationshipComposer {onCancel} {onApply} />
 {/if}

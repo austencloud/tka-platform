@@ -114,22 +114,23 @@
   </div>
 
   <div class="transform-options">
+    <!-- One heading, not a heading plus a label repeating it: the rule and the
+         path it rebuilds fit in the same two lines. -->
     {#if relationshipLayout}
-      <div class="field-heading">
+      <div class="field-heading" id="fuse-rule-label">
         <span class="step-number">2</span>
         <div>
-          <span class="field-label">How the other path is rebuilt</span>
+          <span class="field-label">Rule applied to {followerLabel}</span>
           <span class="field-help">
             Each choice previews a new {followerLabel} path
           </span>
         </div>
       </div>
+    {:else}
+      <span class="options-label" id="fuse-rule-label">
+        {followerLabel} follows {driverLabel}
+      </span>
     {/if}
-    <span class="options-label" id="fuse-rule-label">
-      {relationshipLayout
-        ? `Rule applied to ${followerLabel}`
-        : `${followerLabel} follows ${driverLabel}`}
-    </span>
     <div
       class="options-grid"
       role="radiogroup"
@@ -145,6 +146,8 @@
           name={option.label}
           description={option.description}
           selected={selectedTransform === option.id}
+          dense={true}
+          glyphSize={24}
           {disabled}
           onclick={() => handleTransform(option.id)}
         />
@@ -221,20 +224,21 @@
     font-weight: 700;
   }
 
-  /* Nine choices, so the column count is pinned per tier and never chosen by
-     auto-fill: 9 % 3 == 0 keeps every row full, while 4 or 5 columns would
-     strand the last rule alone on its own line. */
+  /* The editor only ever renders in the recipe drawer, which is 480–620px wide,
+     so two columns of dense rows is the shape: 9 rows of 60px fits the panel
+     where 9 tiles of 140px could not. The column count is pinned per tier and
+     never chosen by auto-fill. */
   .options-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     min-width: 0;
   }
 
-  @container loop-picker (max-width: 34rem) {
-    .options-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  /* Nine into two columns strands the ninth. It takes the full width instead,
+     which reads as the closing row rather than an orphan. */
+  .options-grid > :global(:last-child) {
+    grid-column: 1 / -1;
   }
 
   @container loop-picker (max-width: 20rem) {
@@ -328,14 +332,38 @@
       padding: 10px;
     }
 
-    .relationship-layout .field-help,
-    .relationship-layout .options-label {
+    .relationship-layout .field-help {
       display: none;
     }
 
     .relationship-layout .driver-control {
       margin-block: auto;
       padding-block: 4px;
+    }
+  }
+
+  /* Same trade as the composer's short-viewport tiers: the step cards keep their
+     numbers and their frames and give up padding first, then the helper line.
+     The drawer is portalled out of the `fuse` container, so these are media
+     queries. */
+  @media (max-height: 1250px) {
+    .relationship-layout .field,
+    .relationship-layout .transform-options {
+      padding: 8px 10px;
+    }
+
+    .relationship-layout .transform-options {
+      gap: 8px;
+    }
+
+    .relationship-layout .driver-control {
+      padding-block: 0;
+    }
+  }
+
+  @media (max-height: 950px) {
+    .relationship-layout .field-help {
+      display: none;
     }
   }
 

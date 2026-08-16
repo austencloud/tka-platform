@@ -437,7 +437,10 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
   >
-    <FuseWorkspaceHeader onOpenRecipe={() => openSettings(null)} />
+    <FuseWorkspaceHeader
+      onOpenRecipe={() => openSettings(null)}
+      onOpenSetting={openSettings}
+    />
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
