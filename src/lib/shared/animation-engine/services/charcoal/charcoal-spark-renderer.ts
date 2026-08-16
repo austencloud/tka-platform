@@ -180,6 +180,10 @@ export class CharcoalSparkRenderer {
 
 	// Ambient emission accumulator per tip (fractional spark carry)
 	private ambientAccumulators: Map<string, number> = new Map();
+	// Burst count comes from jerk, not from elapsed time, so it would fire at
+	// full strength in every sub-step. Each step takes its share and carries the
+	// fractional remainder here, keeping a frame's burst total step-independent.
+	private burstAccumulators: Map<string, number> = new Map();
 
 	// Current params (updated externally via setParams)
 	private currentParams: CharcoalSparkParams = { ...DEFAULT_CHARCOAL_PARAMS };
@@ -234,6 +238,24 @@ export class CharcoalSparkRenderer {
 	// resolveSpawnOrigin so the spawn helpers stay single-argument-per-concern.
 	private spawnOriginX = 0;
 	private spawnOriginY = 0;
+	// Round-robin write position into the particle pool. See findInactiveSlot.
+	private spawnCursor = 0;
+	// The slice of this frame's tip travel the current sub-step is responsible
+	// for, as fractions of prev->current. See the sub-stepping loop.
+	private segU0 = 0;
+	private segU1 = 1;
+	// Whether the tip being emitted from jumped rather than travelled.
+	private segmentIsTeleport = false;
+
+	// Physics has to advance in small steps or drag integration diverges and
+	// fast sparks tunnel. A stuttering frame is therefore split into this many
+	// steps at most, each no longer than one 60fps tick.
+	private static readonly MAX_STEP_SECONDS = 1 / 60;
+	private static readonly MAX_SUB_STEPS = 6;
+
+	// Emission throttle, 0..1. See applyEmissionBudget.
+	private emissionScale = 1;
+	private spawnsThisFrame = 0;
 
 	// ======================================================================
 	// IFireOverlayRenderer implementation
@@ -330,17 +352,14 @@ export class CharcoalSparkRenderer {
 		const srcDt =
 			input.dt ?? (this.lastTime > 0 ? (now - this.lastTime) / 1000 : 0);
 		this.lastTime = now;
-		let dt = Math.min(srcDt, 0.033);
-		if (this.reducedMotion) dt *= 0.2;
-		if (dt <= 0) dt = 0.016;
-
-		// Emission counts follow real elapsed time, not the physics-safe clamp,
-		// so a long frame emits the sparks its distance earned instead of
-		// thinning the stream out exactly where the tip covered the most ground.
-		// Still capped, or returning from a backgrounded tab would dump the pool.
-		let emitDt = Math.min(srcDt, 0.1);
-		if (this.reducedMotion) emitDt *= 0.2;
-		if (emitDt <= 0) emitDt = dt;
+		// One simulated span per frame, used for BOTH emission and physics. It
+		// follows real elapsed time so a long frame emits the sparks its distance
+		// earned instead of thinning the stream out exactly where the tip covered
+		// the most ground. Capped, or returning from a backgrounded tab would
+		// dump the whole pool in one frame.
+		let simDt = Math.min(srcDt, 0.1);
+		if (this.reducedMotion) simDt *= 0.2;
+		if (simDt <= 0) simDt = 0.016;
 
 		// On loop: seamless sequences keep sparks continuous; non-seamless deactivate
 		// existing particles so they don't linger at old positions.
@@ -350,13 +369,36 @@ export class CharcoalSparkRenderer {
 
 		const params = this.currentParams;
 
-		// Emission
-		for (const tip of input.tips) {
-			this.emitFromTip(tip, params, dt, emitDt);
+		// Emission and physics, sub-stepped. A long frame is split into slices of
+		// at most one 60fps tick; each slice emits its own share of the tip's
+		// travel and then ages the pool by exactly that slice.
+		//
+		// This is what closes the last of the stutter holes. The old code clamped
+		// physics to 33ms while emission ran on the real elapsed time, so a 100ms
+		// frame spawned 100ms worth of sparks and then aged everything by 33ms.
+		// The shower's age ordering stopped matching its spatial ordering and a
+		// seam appeared at the join - measured at 16ms of missing trail, which at
+		// a 1.5 rev/s spin is a 59px hole. Advancing in bounded steps keeps the
+		// two in lockstep no matter how long the frame ran.
+		const steps = Math.min(
+			CharcoalSparkRenderer.MAX_SUB_STEPS,
+			Math.max(1, Math.ceil(simDt / CharcoalSparkRenderer.MAX_STEP_SECONDS))
+		);
+		const stepDt = simDt / steps;
+		this.spawnsThisFrame = 0;
+
+		for (let step = 0; step < steps; step++) {
+			this.segU0 = step / steps;
+			this.segU1 = (step + 1) / steps;
+
+			for (const tip of input.tips) {
+				this.emitFromTip(tip, params, stepDt, srcDt);
+			}
+
+			this.updateParticles(params, stepDt);
 		}
 
-		// Physics update
-		this.updateParticles(params, dt);
+		this.applyEmissionBudget(params, simDt);
 
 		// Render
 		this.draw(input, params);
@@ -367,6 +409,8 @@ export class CharcoalSparkRenderer {
 			p.active = false;
 		}
 		this.ambientAccumulators.clear();
+		this.burstAccumulators.clear();
+		this.emissionScale = 1;
 		// Blank the visible default framebuffer too. preserveDrawingBuffer:true
 		// retains the last spark frame in the drawing buffer; when this renderer is
 		// parked warm (canvas hidden via keep-warm) then re-shown, the browser
@@ -422,6 +466,7 @@ export class CharcoalSparkRenderer {
 
 	private allocateParticlePool(count: number): void {
 		this.maxParticles = count;
+		this.spawnCursor = 0;
 		this.particles = [];
 		for (let i = 0; i < count; i++) {
 			this.particles.push({
@@ -462,29 +507,95 @@ export class CharcoalSparkRenderer {
 	 * batch draws a visible picket fence of sparks along the path.
 	 */
 	private resolveSpawnOrigin(tip: PropTipData, index: number, count: number): number {
-		const dx = tip.x - tip.prevX;
-		const dy = tip.y - tip.prevY;
-
-		if (dx * dx + dy * dy > this.teleportDistance * this.teleportDistance) {
+		if (this.segmentIsTeleport) {
 			this.spawnOriginX = tip.x;
 			this.spawnOriginY = tip.y;
 			return 0;
 		}
 
-		// u = 0 is the start of the frame (oldest spark), u = 1 the end.
-		const u = (index + Math.random()) / count;
-		this.spawnOriginX = tip.prevX + dx * u;
-		this.spawnOriginY = tip.prevY + dy * u;
-		return 1 - u;
+		// local = 0 is the start of THIS sub-step (oldest spark of the slice),
+		// 1 the end. Position maps it into the sub-step's share of the frame's
+		// travel; age is local to the sub-step, since the remaining sub-steps
+		// will age the spark the rest of the way themselves.
+		const local = (index + Math.random()) / count;
+		const u = this.segU0 + (this.segU1 - this.segU0) * local;
+		this.spawnOriginX = tip.prevX + (tip.x - tip.prevX) * u;
+		this.spawnOriginY = tip.prevY + (tip.y - tip.prevY) * u;
+		return 1 - local;
+	}
+
+	/**
+	 * Holds emission to what the particle pool can actually sustain.
+	 *
+	 * A pool holds (spawn rate x lifetime) sparks in equilibrium. Every coal
+	 * preset asks for far more than that: at intensity 0.90 forge-burst emits
+	 * around 49,000 sparks a second into a 4,520 slot pool against a nominal
+	 * 1.96s lifetime, which is 15x oversubscribed. The pool is therefore always
+	 * full and every spawn recycles a living spark, so sparks survive 130ms of
+	 * the ~2s they were given - 7% of their lifetime.
+	 *
+	 * That is what made the shower read as fat slices rather than coal. The
+	 * whole pool is packed into the 130ms of trail nearest the tip, where
+	 * additive blending saturates it to flat white lumps, and there is nothing
+	 * behind them because every older spark was recycled to feed the front.
+	 *
+	 * Throttling emission to the sustainable rate spends the same pool over the
+	 * full lifetime instead: the same number of sparks on screen, spread across
+	 * a trail ~15x longer, at a density that reads as individual embers.
+	 *
+	 * The scale is derived from the PREVIOUS frame's demand, which makes this a
+	 * feedback loop - so it is computed against the unthrottled rate, or the
+	 * throttle would relax as soon as it took effect and oscillate. Eased
+	 * rather than applied outright so a speed change does not step the density.
+	 */
+	private applyEmissionBudget(params: CharcoalSparkParams, simDt: number): void {
+		if (simDt <= 0 || this.maxParticles <= 0) return;
+
+		const avgLifetime = Math.max(0.05, (params.lifetimeMin + params.lifetimeMax) / 2);
+		const sustainableRate = this.maxParticles / avgLifetime;
+		const unthrottledRate =
+			this.spawnsThisFrame / simDt / Math.max(0.01, this.emissionScale);
+
+		const target =
+			unthrottledRate > sustainableRate
+				? Math.max(0.01, sustainableRate / unthrottledRate)
+				: 1;
+
+		this.emissionScale += (target - this.emissionScale) * 0.2;
+	}
+
+	/**
+	 * A jump-cut and a stuttering frame both hand us a large prev->current
+	 * distance, and distance alone cannot separate them - both are bounded by
+	 * the canvas, not by time. The frame's duration is the tiebreaker: a seek
+	 * arrives on an ordinary-length frame, while a stutter's distance is large
+	 * precisely BECAUSE the frame ran long. So the threshold grows with the
+	 * frame, up to a bound.
+	 *
+	 * Biased toward interpolating: mistaking travel for a teleport dumps the
+	 * whole frame's emission on one point, which is the visible hole this work
+	 * exists to remove. Mistaking a seek for travel draws a faint streak that
+	 * fades within a spark lifetime.
+	 */
+	private resolveSegmentKind(tip: PropTipData, frameDt: number): void {
+		const dx = tip.x - tip.prevX;
+		const dy = tip.y - tip.prevY;
+		const slack = Math.min(3, Math.max(1, frameDt * 60));
+		const limit = this.teleportDistance * slack;
+		this.segmentIsTeleport = dx * dx + dy * dy > limit * limit;
 	}
 
 	private emitFromTip(
 		tip: PropTipData,
 		params: CharcoalSparkParams,
-		dt: number,
-		emitDt: number
+		stepDt: number,
+		frameDt: number
 	): void {
+		this.resolveSegmentKind(tip, frameDt);
+
 		const scale = this.canvasScale;
+		const stepShare = this.segU1 - this.segU0;
+		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
 		// tip.jerk and tip.speed are derivatives of a canvas-pixel position, so
 		// they shrink with the container. Thresholds authored against the
 		// reference canvas have to shrink with them or a small preview never
@@ -499,41 +610,48 @@ export class CharcoalSparkRenderer {
 		// travel segment for that reason: at max rate it IS the stream.
 		if (tip.jerk > params.burstThreshold * motion) {
 			const excess = tip.jerk - params.burstThreshold * motion;
-			const count = Math.min(
-				Math.floor((excess / motion) * params.burstMultiplier * scale),
-				Math.floor(params.burstMax * scale)
+			const frameCount = Math.min(
+				(excess / motion) * params.burstMultiplier * scale,
+				params.burstMax * scale
 			);
+			const accumulated =
+				(this.burstAccumulators.get(tipKey) ?? 0) +
+				frameCount * stepShare * this.emissionScale;
+			const count = Math.floor(accumulated);
+			this.burstAccumulators.set(tipKey, accumulated - count);
+
 			for (let i = 0; i < count; i++) {
-				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, count) * dt);
+				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, count) * stepDt);
 			}
+			this.spawnsThisFrame += count;
 		}
 
 		// Ambient emission during sustained movement - proportional to speed.
 		// Scaled by canvas area so small previews aren't overwhelmed.
-		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
-
 		if (tip.speed > params.ambientSpeedThreshold * motion) {
 			const speedFactor = tip.speed / (150 * motion);
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.ambientRate * speedFactor * scale * emitDt;
+				params.ambientRate * speedFactor * scale * stepDt * this.emissionScale;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
 
 			for (let i = 0; i < toEmit; i++) {
-				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * dt);
+				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * stepDt);
 			}
+			this.spawnsThisFrame += toEmit;
 		} else if (params.idleRate > 0) {
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.idleRate * scale * emitDt;
+				params.idleRate * scale * stepDt * this.emissionScale;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
+			this.spawnsThisFrame += toEmit;
 
 			for (let i = 0; i < toEmit; i++) {
-				this.spawnIdleParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * dt);
+				this.spawnIdleParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * stepDt);
 			}
 		}
 	}
@@ -556,8 +674,21 @@ export class CharcoalSparkRenderer {
 		// Sparks carry the tip's momentum - they fly where the tip was going
 		// but slower, so the tip leaves them behind. On direction reversals,
 		// the burst system (jerk detection) creates the dramatic spark pops.
-		const inheritedVx = tip.velocityX * params.velocityInheritance;
-		const inheritedVy = tip.velocityY * params.velocityInheritance;
+		//
+		// Jittered per spark, and that jitter is load-bearing rather than
+		// decoration. A frame's batch is spawned spread along the segment the
+		// tip swept, but every spark then flies at the SAME fraction of the tip's
+		// speed, so the batch translates as a rigid body and closes back up to
+		// (1 - inheritance) of the segment it was spread across. Consecutive
+		// frames therefore land as separate packets with clear air between them:
+		// the shower breaks into discrete slices instead of reading as a stream.
+		// Varying the fraction makes each batch shear out and overlap its
+		// neighbours, which is also the truer behaviour - embers do not all
+		// leave the prop with the same grip. The mean is left on the authored
+		// parameter so preset tuning still means what it meant.
+		const inherit = params.velocityInheritance * (0.55 + Math.random() * 0.9);
+		const inheritedVx = tip.velocityX * inherit;
+		const inheritedVy = tip.velocityY * inherit;
 
 		// Add random perturbation centered on the tip's velocity direction.
 		// If the tip is nearly stationary, use a fully random direction.
@@ -625,20 +756,29 @@ export class CharcoalSparkRenderer {
 
 	private findInactiveSlot(): CharcoalSpark | null {
 		// First pass: find any inactive slot
-		for (const p of this.particles) {
-			if (!p.active) return p;
-		}
+		if (this.particles.length === 0) return null;
 
-		// Pool full: recycle the oldest particle (lowest remaining life)
-		let oldest: CharcoalSpark | null = null;
-		let lowestLife = Infinity;
-		for (const p of this.particles) {
-			if (p.life < lowestLife) {
-				lowestLife = p.life;
-				oldest = p;
-			}
-		}
-		return oldest;
+		// Hand out slots in a fixed cycle. Because slots are written in cyclic
+		// order, the one the cursor is pointing at is always the slot written
+		// longest ago - which is exactly "recycle the spark that has been alive
+		// the longest", so the shower truncates cleanly at its tail.
+		//
+		// Two bugs died here. The old code scanned the whole pool for the lowest
+		// REMAINING life, which is only the same as oldest when every spark
+		// shares a maxLife - and they do not, maxLife is randomised across a
+		// factor of ~2.7. Remaining life is therefore uncorrelated with position
+		// along the trail, so recycling killed sparks at random points in the
+		// middle of the visible shower and punched holes in it.
+		//
+		// It was also the single most expensive thing this renderer did. The
+		// scan is O(pool) and runs once PER SPAWN: 828 spawns a frame over a
+		// 4,520 slot pool at intensity 0.90 is 3.7 million comparisons a frame,
+		// which measured at 10.9ms - two thirds of the entire 16.7ms frame
+		// budget, for the whole app, spent finding array indices. That is what
+		// was making playback stutter in the first place.
+		const slot = this.particles[this.spawnCursor]!;
+		this.spawnCursor = (this.spawnCursor + 1) % this.particles.length;
+		return slot;
 	}
 
 	// ======================================================================
@@ -1102,6 +1242,7 @@ export class CharcoalSparkRenderer {
 		this.emberProgram = null;
 		this.particles = [];
 		this.ambientAccumulators.clear();
+		this.burstAccumulators.clear();
 
 		if (this.canvas) {
 			if (typeof (this.canvas as any).remove === "function") {
