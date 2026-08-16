@@ -168,7 +168,9 @@
   // so once an entrance starts the compositor owns it and the stagger survives
   // whatever the main thread is doing.
   const START_TILE_REVEAL_KEY = -1;
-  const MANDALA_REVEAL_KEY = -2;
+  /** Mandala slots take negative keys of their own, one per slot. */
+  const MANDALA_REVEAL_KEY_BASE = -100;
+  const mandalaRevealKey = (slot: number) => MANDALA_REVEAL_KEY_BASE - slot;
   const EMPTY_REVEAL_DELAYS: ReadonlyMap<number, number> = new Map();
 
   let armedEpoch = $state(-1);
@@ -202,19 +204,6 @@
       : EMPTY_REVEAL_DELAYS
   );
 
-  /** The band the mandala sits on: one behind the last step. */
-  const maxStepWaveBand = $derived.by(() => {
-    if (isTimelineMode) {
-      let max = 0;
-      timelineRows.forEach((row, rowIndex) => {
-        if (row.steps.length === 0) return;
-        max = Math.max(max, rowIndex + row.steps.length);
-      });
-      return max;
-    }
-    if (steps.length === 0) return 0;
-    return calculateStepWaveBand(steps.length - 1, gridLayout.columns);
-  });
 
   function syncRevealEpoch(): void {
     const epoch = displayState.animationEpoch;
@@ -250,8 +239,13 @@
     for (const [key, band] of byBand) {
       if (band !== currentBand) {
         currentBand = band;
-        landsAt = Math.max(waveStartedAt + band * bandDelay, revealBandFloor, now);
-        revealBandFloor = landsAt + bandDelay;
+        const onSchedule = waveStartedAt + band * bandDelay;
+        landsAt = Math.max(onSchedule, revealBandFloor, now);
+        // Only a band that had to be pushed late raises the floor. A band that
+        // made its own time leaves it alone, so scheduling a far band early —
+        // a mandala arming at wave start — cannot drag the nearer bands behind
+        // it into the future.
+        if (landsAt > onSchedule) revealBandFloor = landsAt + bandDelay;
       }
       const delay = landsAt - now;
       next.set(key, delay);
@@ -268,58 +262,39 @@
     if (revealDelays.has(key)) return;
     pendingRevealBands.set(key, band);
     armPendingReveals();
-    maybeArmMandala();
   }
-
-  /** How many cells must report before the sequence has fully arrived. */
-  const expectedRevealKeys = $derived(steps.length + (hasStartPosition ? 1 : 0));
 
   /**
-   * The mandala is drawn from the WHOLE sequence, so it goes last — one band
-   * behind whatever the final step turned out to be, including a wave that ran
-   * late. It waits for every step to report, then takes its place at the back of
-   * the queue. `force` is the fallback: a step that never reports must not be
-   * able to keep the mandala off the grid, so the wave's own schedule releases
-   * it regardless.
+   * A mandala has no prepare step to wait on — its artwork comes from sequence
+   * data that is already in hand — so the wave itself is its readiness signal.
+   *
+   * They go into the pending map rather than arming themselves, so they are
+   * sorted in among the cells that reported before the wave started and take
+   * their place by band. Arming them separately put them behind whatever the
+   * first batch of steps had already pushed the floor to, which is how a
+   * band-1 mandala ended up waiting 770ms.
    */
-  function maybeArmMandala(force = false): void {
-    if (displayState.waveStartedAt === 0) return;
-    if (revealDelays.has(MANDALA_REVEAL_KEY)) return;
-    if (!force && revealDelays.size < expectedRevealKeys) return;
-    pendingRevealBands.set(MANDALA_REVEAL_KEY, maxStepWaveBand + 1);
-    armPendingReveals();
+  function queueMandalaSlots(): void {
+    for (const { key, band } of mandalaRevealSlots) {
+      if (revealDelays.has(key)) continue;
+      pendingRevealBands.set(key, band);
+    }
   }
-
-  let mandalaReleaseTimer: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => {
     const waveStartedAt = displayState.waveStartedAt;
     const epoch = displayState.animationEpoch;
+    const slots = mandalaRevealSlots;
     untrack(() => {
       void epoch;
+      void slots;
       syncRevealEpoch();
       if (waveStartedAt === 0) return;
-      // Cells that reported before the wave had a clock to schedule against.
+      queueMandalaSlots();
+      // Plus every cell that reported before the wave had a clock to schedule
+      // against.
       armPendingReveals();
-      maybeArmMandala();
-      const nominalEnd =
-        waveStartedAt +
-        (maxStepWaveBand + 1) * displayState.animationTiming.waveBandDelay;
-      mandalaReleaseTimer = setTimeout(
-        () => {
-          mandalaReleaseTimer = null;
-          maybeArmMandala(true);
-        },
-        Math.max(0, nominalEnd - performance.now())
-      );
     });
-
-    return () => {
-      if (mandalaReleaseTimer !== null) {
-        clearTimeout(mandalaReleaseTimer);
-        mandalaReleaseTimer = null;
-      }
-    };
   });
 
   /**
@@ -352,11 +327,12 @@
   const isStartTileCascading = $derived(
     displayState.shouldAnimateStartPosition && !isStartTileAwaiting
   );
-  const isMandalaAwaiting = $derived(isAwaitingReveal(MANDALA_REVEAL_KEY));
-  const isMandalaCascading = $derived(isGatedReveal && !isMandalaAwaiting);
-  const mandalaRevealDelay = $derived(
-    revealDelayFor(MANDALA_REVEAL_KEY, maxStepWaveBand + 1)
-  );
+  const isMandalaAwaiting = (slot: number) =>
+    isAwaitingReveal(mandalaRevealKey(slot));
+  const isMandalaCascading = (slot: number) =>
+    isGatedReveal && !isMandalaAwaiting(slot);
+  const mandalaRevealDelay = (slot: number, band: number) =>
+    revealDelayFor(mandalaRevealKey(slot), band);
 
   // Effective prop for the step-grid mandalas: an explicit override wins, else
   // the user's selected prop, else staff. The mandala derives its tip count
@@ -684,6 +660,35 @@
     });
   });
 
+  /**
+   * The mandalas ride the same diagonal as everything else.
+   *
+   * They used to wait for the whole sequence and land one band behind the final
+   * step, which read as a second, separate arrival after the reveal was already
+   * over — and it looked especially detached because they sit in the LEFT
+   * column, where the wave front passed long before. Their artwork comes from
+   * sequence data that is complete the moment the wave starts, so there is
+   * nothing for them to wait on: each takes the band of the cell it occupies
+   * and comes in as the front sweeps past it, exactly as a step does.
+   *
+   * Timeline: the start column is column 0, so slot N is band N — straight down
+   * from the start tile's band 0. Standard: the placement's own grid position,
+   * measured the way `calculateStepWaveBand` measures a step's.
+   */
+  const mandalaRevealSlots = $derived.by(() =>
+    isTimelineMode
+      ? timelineStartMandalas
+          .filter((cell) => cell.show !== null)
+          .map((cell) => ({
+            key: mandalaRevealKey(cell.index),
+            band: cell.index,
+          }))
+      : standardMandalaCells.map((cell, slot) => ({
+          key: mandalaRevealKey(slot),
+          band: cell.row - 1 + (cell.column - 1),
+        }))
+  );
+
   const mandalaSize = $derived(Math.round(cellSize * MANDALA_CELL_SCALE));
 
   // --- Context menu ---
@@ -821,10 +826,10 @@
                    the entrance gesture being cancelled along with it. -->
               <div
                 class="timeline-cell mandala-slot"
-                class:cascading={isMandalaCascading}
-                class:awaiting-reveal={isMandalaAwaiting}
+                class:cascading={isMandalaCascading(cell.index)}
+                class:awaiting-reveal={isMandalaAwaiting(cell.index)}
                 data-layout-mandala-key={`timeline-start:${cell.index}`}
-                style:--reveal-delay={mandalaRevealDelay}
+                style:--reveal-delay={mandalaRevealDelay(cell.index, cell.index)}
               >
                 {#if onMandalaClick}
                   <button
@@ -1030,15 +1035,16 @@
         </div>
       {/each}
 
-      {#each standardMandalaCells as cell (cell.key)}
+      {#each standardMandalaCells as cell, slot (cell.key)}
+        {@const waveBand = cell.row - 1 + (cell.column - 1)}
         <div
           class="mandala-layout-item"
-          class:cascading={isMandalaCascading}
-          class:awaiting-reveal={isMandalaAwaiting}
+          class:cascading={isMandalaCascading(slot)}
+          class:awaiting-reveal={isMandalaAwaiting(slot)}
           data-layout-mandala-key={cell.key}
           style:grid-row={cell.row}
           style:grid-column={cell.column}
-          style:--reveal-delay={mandalaRevealDelay}
+          style:--reveal-delay={mandalaRevealDelay(slot, waveBand)}
         >
           {#if onMandalaClick}
             <button
