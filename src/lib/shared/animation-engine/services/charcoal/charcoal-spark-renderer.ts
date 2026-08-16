@@ -191,10 +191,39 @@ export class CharcoalSparkRenderer {
 	// the reference size need to shrink proportionally on smaller canvases
 	// so the halo stays the same fraction of the frame.
 	private sizeScale = 1.0;
+	// Linear scale for everything measured in canvas units per unit TIME:
+	// spawn speeds, gravity, and the tip speed/jerk thresholds that gate
+	// emission. Tip positions arrive in canvas-pixel space (see the note at the
+	// top of this file), so a tip tracing the same choreography on a 250px
+	// canvas moves at roughly a quarter the pixels-per-second it does at 950.
+	// Particle size and emission count already scaled with the canvas; motion
+	// did not, so on a small container gravity of 480 px/s^2 cleared the whole
+	// frame in under a second and the shower was gone before you could see it -
+	// while the unscaled thresholds meant the slower tip often failed to trigger
+	// ambient or burst emission at all. Scaling motion by the same linear ratio
+	// makes trajectories geometrically similar: a spark covers the same
+	// FRACTION of the frame in the same time at any size.
+	//
+	// Deliberately NOT clamped at 1.0 the way sizeScale is. Above the reference
+	// the error runs the other way - fixed gravity is proportionally too weak,
+	// so sparks hang and drift - and there is no reason to cap correctness.
+	private motionScale = 1.0;
 	// Charcoal default params (sizeMin/Max, emberGlowRadius) were tuned on
 	// a 950px canvas, so the linear size-scale is referenced to 950 - not
 	// the project-wide 500 - to preserve the look at full size.
 	private static readonly REFERENCE_SIZE = 950;
+
+	/**
+	 * Recompute every canvas-size-derived scale. Called from both context
+	 * creation and resize so the two can never drift apart.
+	 */
+	private updateScales(width: number, height: number): void {
+		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
+		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
+		const minDim = Math.min(width, height);
+		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
+		this.motionScale = Math.max(0.1, minDim / CharcoalSparkRenderer.REFERENCE_SIZE);
+	}
 
 	// ======================================================================
 	// IFireOverlayRenderer implementation
@@ -229,10 +258,7 @@ export class CharcoalSparkRenderer {
 	}
 
 	private initGLContext(width: number, height: number, isDom: boolean): boolean {
-		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
-		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
-		const minDim = Math.min(width, height);
-		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
+		this.updateScales(width, height);
 
 		this.gl = this.canvas!.getContext("webgl2", {
 			alpha: true,
@@ -282,10 +308,7 @@ export class CharcoalSparkRenderer {
 		// Scale emission density by canvas area relative to reference size.
 		// A 300px canvas gets ~10% of the particles of a 950px canvas,
 		// keeping visual density proportional instead of overwhelming small previews.
-		const areaRatio = (width * height) / (CharcoalSparkRenderer.REFERENCE_SIZE ** 2);
-		this.canvasScale = Math.max(0.1, Math.min(1.0, areaRatio));
-		const minDim = Math.min(width, height);
-		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
+		this.updateScales(width, height);
 	}
 
 	renderCharcoal(input: FireFrameInput, _config: FireOverlayConfig): void {
@@ -412,12 +435,17 @@ export class CharcoalSparkRenderer {
 		dt: number
 	): void {
 		const scale = this.canvasScale;
+		// tip.jerk and tip.speed are derivatives of a canvas-pixel position, so
+		// they shrink with the container. Thresholds authored against the
+		// reference canvas have to shrink with them or a small preview never
+		// clears the gate and emits nothing.
+		const motion = this.motionScale;
 
 		// Burst emission on high jerk (direction reversals)
-		if (tip.jerk > params.burstThreshold) {
-			const excess = tip.jerk - params.burstThreshold;
+		if (tip.jerk > params.burstThreshold * motion) {
+			const excess = tip.jerk - params.burstThreshold * motion;
 			const count = Math.min(
-				Math.floor(excess * params.burstMultiplier * scale),
+				Math.floor((excess / motion) * params.burstMultiplier * scale),
 				Math.floor(params.burstMax * scale)
 			);
 			for (let i = 0; i < count; i++) {
@@ -429,8 +457,8 @@ export class CharcoalSparkRenderer {
 		// Scaled by canvas area so small previews aren't overwhelmed.
 		const tipKey = `${tip.propIndex}_${tip.tipIndex}`;
 
-		if (tip.speed > params.ambientSpeedThreshold) {
-			const speedFactor = tip.speed / 150;
+		if (tip.speed > params.ambientSpeedThreshold * motion) {
+			const speedFactor = tip.speed / (150 * motion);
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
 				params.ambientRate * speedFactor * scale * dt;
@@ -470,14 +498,19 @@ export class CharcoalSparkRenderer {
 		// Add random perturbation centered on the tip's velocity direction.
 		// If the tip is nearly stationary, use a fully random direction.
 		const perturbAngle =
-			tip.speed > 1
+			tip.speed > this.motionScale
 				? Math.atan2(tip.velocityY, tip.velocityX) +
 					(Math.random() - 0.5) * 2.0 * params.spreadAngle
 				: Math.random() * Math.PI * 2;
 
+		// Inherited velocity already scales - it comes from a tip moving in
+		// canvas pixels. The perturbation does not, so it gets motionScale or
+		// it would fling sparks clean off a small frame while the inherited
+		// component barely moved them.
 		const perturbSpeed =
-			params.perturbSpeedMin +
-			Math.random() * (params.perturbSpeedMax - params.perturbSpeedMin);
+			(params.perturbSpeedMin +
+				Math.random() * (params.perturbSpeedMax - params.perturbSpeedMin)) *
+			this.motionScale;
 
 		slot.x = tip.x;
 		slot.y = tip.y;
@@ -505,7 +538,7 @@ export class CharcoalSparkRenderer {
 
 		// Random direction, very low speed (just enough to spread slightly)
 		const angle = Math.random() * Math.PI * 2;
-		const speed = params.perturbSpeedMin * 0.3;
+		const speed = params.perturbSpeedMin * 0.3 * this.motionScale;
 
 		slot.x = tip.x;
 		slot.y = tip.y;
@@ -550,8 +583,11 @@ export class CharcoalSparkRenderer {
 		for (const p of this.particles) {
 			if (!p.active) continue;
 
-			// Apply gravity (positive = downward in viewbox Y-down space)
-			p.vy += params.gravity * dt;
+			// Apply gravity (positive = downward in viewbox Y-down space).
+			// Scaled so an ember falls the same fraction of the frame per
+			// second at any container size - unscaled, 480 px/s^2 dropped a
+			// spark clean out of a 250px preview in well under a second.
+			p.vy += params.gravity * this.motionScale * dt;
 
 			// Apply drag
 			p.vx *= dragPerFrame;
