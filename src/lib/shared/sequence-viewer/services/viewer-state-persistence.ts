@@ -1,7 +1,13 @@
 import { VIDEO_UPLOAD_ENABLED } from '../config/viewer-feature-flags';
 
 export type ContentType = 'animation' | 'animation-3d' | 'card' | 'videos' | 'mandala' | 'tunnel';
-export type ViewerMode = 'split' | ContentType;
+/**
+ * `post-studio` is a viewer mode but deliberately NOT a ContentType: it is a
+ * full-body composition workspace, not something that can sit in half of a
+ * split pane. It is also never restored on load (see `loadViewerMode`) —
+ * opening a sequence should show the sequence, never drop you into an editor.
+ */
+export type ViewerMode = 'split' | 'post-studio' | ContentType;
 export type ExportContext = 'animation-export' | 'image-export' | null;
 
 export interface SplitConfig {
@@ -79,6 +85,9 @@ export function loadViewerMode(): ViewerMode {
 		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore a stale
 		// video-gallery preference when its supporting upload tools are withheld.
 		if (raw === 'videos' && !VIDEO_UPLOAD_ENABLED) return 'split';
+		// 'post-studio' is intentionally absent from this whitelist — restoring an
+		// editor would mean opening a sequence lands you in a workspace instead of
+		// on the sequence you came to look at.
 		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'tunnel' || raw === 'split') {
 			return raw;
 		}

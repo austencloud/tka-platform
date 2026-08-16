@@ -37,6 +37,7 @@
   import ExportImagePanel from "./ExportImagePanel.svelte";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import PracticeBar from "./PracticeBar.svelte";
+  import PostStudioPane from "./PostStudioPane.svelte";
   import PracticeSetupBar from "./PracticeSetupBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -234,8 +235,35 @@
    * request differs, and the pane's inline preview is suppressed while the
    * sheet owns it.
    */
+  /**
+   * A rendered post supersedes every other video the share sheet could offer.
+   * Post Studio composes the 9:16 file deliberately, so once one exists it is
+   * unambiguously what "share the video" means — the same way a mandala or
+   * tunnel bake takes the slot when the share came from those surfaces.
+   */
+  let postStudioVideoUrl = $state<string | null>(null);
+  function adoptPostStudioRender(blob: Blob): void {
+    if (postStudioVideoUrl) URL.revokeObjectURL(postStudioVideoUrl);
+    postStudioVideoUrl = URL.createObjectURL(blob);
+  }
+  onDestroy(() => {
+    if (postStudioVideoUrl) URL.revokeObjectURL(postStudioVideoUrl);
+  });
+
   const artShareVideo = $derived.by(() => {
     const target = share.artShare;
+
+    if (postStudioVideoUrl && !target) {
+      return {
+        blobUrl: postStudioVideoUrl,
+        exporting: false,
+        progress: null,
+        label: "Post",
+        // Post Studio owns re-rendering; the sheet must not kick off an
+        // animation export that would replace the composed post.
+        request: () => Promise.resolve(),
+      };
+    }
 
     if (target?.artType === "mandala") {
       const mandala = target.mandalaController;
@@ -531,7 +559,13 @@
               />
             </div>
           {/if}
-          {#if layout.showVideoGallery}
+          {#if layout.showPostStudio}
+            <PostStudioPane
+              sequence={ctx.effectiveSequence}
+              resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
+              onExported={adoptPostStudioRender}
+            />
+          {:else if layout.showVideoGallery}
             <VideoGallery
               {sequence}
               isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
@@ -885,6 +919,7 @@
     initialArtifact={share.artShare || share.sceneShare ? "video" : "card"}
     resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
     onSendInTka={() => share.sendToInbox()}
+    onOpenPostStudio={() => layout.selectViewerMode("post-studio")}
     onClose={() => share.setPostSheetOpen(false)}
   />
 </div>

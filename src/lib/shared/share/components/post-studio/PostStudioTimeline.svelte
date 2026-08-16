@@ -113,7 +113,11 @@
     }
     const source = composition.sequenceTimeMap?.source;
     if (!source) return null;
-    if (source === "tempo-grid") return "Even timing";
+    // "Even timing" said nothing. A tempo grid is what you get when there is no
+    // performance to align to, which is the default for an animation-and-card
+    // post — so the label was permanently on and permanently uninformative.
+    // The alignment chip now appears only when alignment is a real fact.
+    if (source === "tempo-grid") return null;
     if (source === "audio-detected") return "Audio aligned";
     if (source === "motion-detected") return "Motion aligned";
     if (source === "hybrid") return "Audio + motion aligned";
@@ -207,7 +211,7 @@
         {#if alignmentLabel}
           <span
             class="alignment"
-            title={composition.sequenceTimeMap?.source === "tempo-grid"
+            title={alignmentNeedsMapping
               ? "A starting grid. Drag the timing handles to match the performance."
               : "The performance, animation, and card use the same beat map."}
           >

@@ -288,6 +288,59 @@ rail → a "VISIBILITY" header is three nav levels to reach a toggle.
       frame (measured) — step 1 is the sequence's start pose, where the rotated
       copies coincide. Paused at any later frame it holds the full ring. The
       viewer never shows this because its tunnel auto-plays.
+- [x] **P3c — Post Studio becomes a viewer surface; presets become templates.**
+      Austen (2026-08-16), on reaching the studio through Share → a small
+      button: *"the post studio isn't even a drawer it's a full screen
+      experience that you have to X out of which isn't even consistent with the
+      rest of our patterns ... this back button that goes back to share which
+      itself is a modal not even a destination."* Plus the "Ready" pill that
+      "means absolutely nothing", "even timing" next to Timing, and the word in
+      the top-left instead of top-centre.
+
+      The root cause was ownership, not chrome: the studio sat on the
+      distribute side of the compose/distribute line. The viewer already owns
+      every other way a sequence becomes an artifact — card export, video
+      export, tunnel, mandala, practice — and already hands finished renders
+      out to Share through `artShareVideo`. So `post-studio` joined
+      `VIEWER_MODE_OPTIONS` and the shell grew a `showPostStudio` body branch
+      beside the video gallery. Four complaints die structurally:
+      the viewer header owns the centred word and the close, the content rail
+      owns going back, and `PostStudioTopBar.svelte` is deleted in favour of
+      `PostStudioActionBar.svelte` (render/download only). "Ready" was the
+      `{:else}` of the missing-sources warning — it announced the absence of a
+      problem. "Even timing" was the label for `tempo-grid`, which is what you
+      get when there is no performance to align to, so it was permanently on
+      and permanently uninformative; the chip now appears only when alignment
+      is a fact. `post-studio` is deliberately NOT a `ContentType` (it cannot
+      be half a split pane) and is deliberately absent from `loadViewerMode`'s
+      whitelist (opening a sequence must never drop you into an editor).
+
+      `PostStudioPane.svelte` needed the same rendered card the share sheet was
+      producing, so that pipeline moved to `card-preview-state.svelte.ts` and
+      `PostShareSheet` migrated onto it — one owner, two consumers, per
+      `never-hand-roll.md`. The sheet now links to the studio and closes.
+
+      Presets: saved captions were raw global literals, and `removeCustomPreset`
+      had zero call sites repo-wide. Austen: *"I have this Dpsi preset that I
+      created but why would I want that for a different sequence that isn't D
+      PSI."* They are stored as templates now (`{word}` / `{link}`) and the chip
+      carries an X. `FilterChipBase` was extended with `aria-pressed` on its
+      duo-main button rather than forked (`chip-primitives.md`).
+
+      Caught in browser verification, not by types: naive substring replacement
+      templatised "Amazing A run" as "{word}m{word}zing {word} run". TKA words
+      are short — one letter is normal — so the word is matched only on Unicode
+      letter/digit boundaries. `\b` is ASCII-defined and fires mid-Ψ, so it is
+      not usable here. Covered by `caption-presets.test.ts` (9 cases).
+
+      Evidence: 0 errors from `svelte-check` and `tsc --noEmit`; 9/9 caption
+      tests, 38/38 relevant shell-contract tests; screenshots at 1920 / 2560 /
+      3840 / 1440×900 / 820×1180 / 960×412 / 375×667.
+
+      Composition still owed to P6, seen in those frames: at 3840 the stage
+      column holds ~1700px the height-capped 9:16 preview cannot use, and the
+      action bar carries one right-aligned button across the full width. 2560
+      is the best tier. 960×412 survives but the preview is too small to judge.
 - [ ] **P4 — Compositor branches.** `tunnel`, `scene-3d`, `mandala` capture paths
       in `post-studio-frame-compositor.ts`. Verify an actual export of each.
 - [ ] **P5 — Multi-clip tracks.** `appendClipToSlot`, `removeClip`, crossfade at

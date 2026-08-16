@@ -26,6 +26,14 @@ describe('viewerModeOptions', () => {
 		expect(ids).toContain('card');
 		expect(ids).toContain('split');
 	});
+
+	// Post Studio's entire reason for being a viewer mode is that it has a real
+	// entry point in both switchers instead of a button buried inside the share
+	// modal. It composes 2D media, so no capability gate applies to it.
+	it('offers Post Studio on every device', () => {
+		expect(viewerModeOptions(false, false).some((m) => m.id === 'post-studio')).toBe(true);
+		expect(viewerModeOptions(true, true).some((m) => m.id === 'post-studio')).toBe(true);
+	});
 });
 
 describe('coerce3DContent', () => {

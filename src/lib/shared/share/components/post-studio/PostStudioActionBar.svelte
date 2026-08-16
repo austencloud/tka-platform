@@ -1,9 +1,18 @@
 <script lang="ts">
   import type { PostStudioExportProgress } from "$lib/shared/media-composition/services/post-studio-exporter";
-  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
+  /**
+   * Post Studio's own actions — nothing else.
+   *
+   * This replaced a full title bar that carried Back, the sequence word, a
+   * Close X and a "Ready" pill. All four were redundant or empty once the
+   * studio became a sequence-viewer surface: the viewer header owns the word
+   * and the close, the content rail owns going back, and "Ready" was the
+   * `{:else}` of the missing-sources warning — it announced the absence of a
+   * problem. What is left is the same shape the viewer's other export panels
+   * take: the thing you press to get a file, and its progress.
+   */
   interface Props {
-    sequenceName: string;
     missingCount: number;
     missingLabel?: string;
     canRender: boolean;
@@ -12,15 +21,12 @@
     exportPercent: number;
     exportedUrl: string | null;
     exportFilename: string;
-    onBack?: () => void;
-    onClose?: () => void;
     onFixMissing: () => void;
     onRender: () => void;
     onCancelExport: () => void;
   }
 
   let {
-    sequenceName,
     missingCount,
     missingLabel = "source",
     canRender,
@@ -29,8 +35,6 @@
     exportPercent,
     exportedUrl,
     exportFilename,
-    onBack,
-    onClose,
     onFixMissing,
     onRender,
     onCancelExport,
@@ -45,29 +49,8 @@
   );
 </script>
 
-<header class="topbar">
-  <div class="navigation-actions">
-    {#if onBack}
-      <button
-        type="button"
-        class="icon-button back-button"
-        aria-label="Share, back to sharing"
-        onclick={onBack}
-      >
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        <span>Share</span>
-      </button>
-    {/if}
-  </div>
-
-  <div class="title-block">
-    <span>Post Studio</span>
-    <h2 id="post-studio-title" aria-label={sequenceName}>
-      <TKAWordGlyph word={sequenceName} height={26} darkMode fitToParent />
-    </h2>
-  </div>
-
-  <div class="project-state">
+<div class="actionbar">
+  <div class="state">
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
@@ -75,11 +58,6 @@
           ? `${missingLabel} needed`
           : `${missingCount} sources needed`}
       </button>
-    {:else}
-      <span class="ready-state">
-        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        Ready
-      </span>
     {/if}
   </div>
 
@@ -118,102 +96,51 @@
         Render post
       </button>
     {/if}
-
-    {#if onClose}
-      <button
-        type="button"
-        class="icon-button close-button"
-        aria-label="Close Post Studio"
-        onclick={onClose}
-      >
-        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-      </button>
-    {/if}
   </div>
-</header>
+</div>
 
 <style>
-  .topbar {
-    /* Flex, not tracks. The grid existed to seat a preset name beside the
-       ready pill; with the preset concept gone every remaining item sizes to
-       its own content, and a 1fr track around any of them is dead air — 3101px
-       of it at 3840. Identity left, actions right, slack in between. */
+  .actionbar {
     display: flex;
     align-items: center;
     gap: var(--spacing-lg);
-    min-height: 4.5rem;
-    padding: 0.625rem var(--spacing-md);
+    min-height: 3.5rem;
+    padding: 0.5rem var(--spacing-md);
     border-bottom: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
   }
 
-  .navigation-actions,
-  .export-actions,
-  .project-state {
+  .state,
+  .export-actions {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
     min-width: 0;
   }
 
-  .title-block {
-    /* Takes the slack so the state and export controls sit hard right. */
-    margin-inline-end: auto;
-    display: grid;
-    gap: 0.1rem;
-    min-width: 0;
+  /* The warning takes the slack so the render action sits hard right. Empty in
+     the healthy case, which is the common one — a zero-width flex child, not a
+     reserved band of dead air. */
+  .state {
+    flex: 1;
   }
 
-  .title-block > span {
-    color: var(--theme-accent);
-    font-size: var(--font-size-compact);
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  h2 {
-    display: flex;
-    align-items: center;
-    min-height: 1.8rem;
-    margin: 0;
-    overflow: hidden;
-    color: var(--theme-text);
-    font-size: 1.2rem;
-    line-height: 1.1;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ready-state,
-  .missing-state {
-    min-height: 2.75rem;
-    border-radius: var(--radius-2026-sm);
-    font-size: var(--font-size-compact);
-  }
-
-  .ready-state,
   .missing-state {
     display: inline-flex;
     align-items: center;
     gap: var(--spacing-sm);
+    min-height: 2.75rem;
     padding: 0 0.75rem;
-  }
-
-  .ready-state {
-    color: var(--semantic-success);
-  }
-
-  .missing-state {
     border: 1px solid
       color-mix(in srgb, var(--semantic-warning) 48%, transparent);
+    border-radius: var(--radius-2026-sm);
     background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
     color: var(--semantic-warning);
     font: inherit;
+    font-size: var(--font-size-compact);
     cursor: pointer;
   }
 
-  .icon-button,
   .secondary-button,
   .render-button,
   .download-button {
@@ -232,19 +159,9 @@
     cursor: pointer;
   }
 
-  .icon-button,
   .secondary-button {
     border: 1px solid var(--theme-stroke);
     background: var(--theme-card-bg);
-  }
-
-  .icon-button {
-    padding-inline: 0.75rem;
-  }
-
-  .close-button {
-    width: 2.75rem;
-    padding: 0;
   }
 
   .render-button {
@@ -268,12 +185,10 @@
     cursor: not-allowed;
   }
 
-  .icon-button:hover,
   .secondary-button:hover:not(:disabled) {
     border-color: var(--theme-stroke-strong);
   }
 
-  .icon-button:focus-visible,
   .secondary-button:focus-visible,
   .render-button:focus-visible,
   .download-button:focus-visible,
@@ -312,89 +227,57 @@
   }
 
   @container post-studio (min-width: 105rem) {
-    .topbar {
-      min-height: 5rem;
-      padding: 0.75rem 1.25rem;
+    .actionbar {
+      min-height: 4rem;
+      padding: 0.625rem 1.25rem;
     }
 
-    .title-block > span,
-    .ready-state,
-    .missing-state {
-      font-size: 0.8125rem;
-    }
-
-    h2 {
-      font-size: 1.35rem;
-    }
-
-    .ready-state,
     .missing-state,
-    .icon-button,
     .secondary-button,
     .render-button,
     .download-button {
       min-height: 3.25rem;
     }
 
-    .icon-button,
+    .missing-state {
+      font-size: 0.8125rem;
+    }
+
     .secondary-button,
     .render-button,
     .download-button {
       font-size: 0.9375rem;
     }
-
-    .close-button {
-      width: 3.25rem;
-    }
   }
 
   @container post-studio (min-width: 180rem) {
-    .topbar {
+    .actionbar {
       gap: 2.5rem;
-      min-height: 6rem;
-      padding: 1rem 2.5rem;
+      min-height: 5rem;
+      padding: 0.75rem 2.5rem;
     }
 
-    .navigation-actions,
-    .export-actions,
-    .project-state {
+    .state,
+    .export-actions {
       gap: 1rem;
     }
 
-    .title-block {
-      gap: 0.25rem;
-    }
-
-    .title-block > span,
-    .ready-state,
-    .missing-state {
-      font-size: 1rem;
-    }
-
-    h2 {
-      font-size: 1.75rem;
-    }
-
-    .ready-state,
     .missing-state,
-    .icon-button,
     .secondary-button,
     .render-button,
     .download-button {
       min-height: 3.75rem;
     }
 
-    .icon-button,
+    .missing-state {
+      font-size: 1rem;
+    }
+
     .secondary-button,
     .render-button,
     .download-button {
       padding-inline: 1.25rem;
       font-size: 1.125rem;
-    }
-
-    .close-button {
-      width: 3.75rem;
-      padding: 0;
     }
 
     .export-progress {
@@ -404,37 +287,20 @@
   }
 
   @container post-studio (max-width: 70rem) {
-    .topbar {
+    .actionbar {
       gap: var(--spacing-sm);
     }
 
-    .project-state {
-      display: none;
-    }
-
-    .export-actions {
-      justify-content: end;
-    }
-
     .rerender-button,
-    .export-progress,
-    .back-button span {
+    .export-progress {
       display: none;
     }
   }
 
   @container post-studio (max-width: 35rem) {
-    .topbar {
-      min-height: 4rem;
+    .actionbar {
+      min-height: 3rem;
       padding-inline: var(--spacing-sm);
-    }
-
-    .title-block > span {
-      display: none;
-    }
-
-    h2 {
-      font-size: 1rem;
     }
 
     .render-button,
@@ -448,24 +314,16 @@
     .download-button i {
       font-size: var(--font-size-min);
     }
-
-    .back-button {
-      width: 2.75rem;
-      padding: 0;
-    }
   }
 
   @media (max-height: 40rem) {
-    .topbar {
-      min-height: 3.5rem;
+    .actionbar {
+      min-height: 3rem;
       padding-block: var(--spacing-xs);
     }
 
-    .title-block > span,
-    .project-state,
     .rerender-button,
-    .export-progress,
-    .back-button span {
+    .export-progress {
       display: none;
     }
   }

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import type { ContentType, ViewerMode } from '../state/viewer-state.svelte';
-	import { viewerModeOptions, PRACTICE_OPTION } from '../services/viewer-modes';
+	import {
+		viewerModeOptions,
+		PRACTICE_OPTION,
+		type SelectableViewerMode
+	} from '../services/viewer-modes';
 	import { viewportFits3D } from '$lib/shared/3d/capabilities/viewport-3d-gate.svelte';
 	import NavButton from '$lib/shared/navigation/components/buttons/NavButton.svelte';
 
@@ -14,7 +18,7 @@
 		 * QR scan page disables it in its portrait bottom bar.
 		 */
 		allowSplit?: boolean;
-		onSelectMode: (mode: ContentType) => void;
+		onSelectMode: (mode: SelectableViewerMode) => void;
 		onSelectSplit: () => void;
 		onPracticeToggle?: () => void;
 	}
@@ -35,7 +39,7 @@
 
 	function selectMode(id: ViewerMode) {
 		if (id === 'split') onSelectSplit();
-		else onSelectMode(id as ContentType);
+		else onSelectMode(id as SelectableViewerMode);
 	}
 </script>
 

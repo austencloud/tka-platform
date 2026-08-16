@@ -36,7 +36,7 @@
   import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import PostStudioTopBar from "./PostStudioTopBar.svelte";
+  import PostStudioActionBar from "./PostStudioActionBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
   import PostStudioInspector from "./PostStudioInspector.svelte";
   import PostStudioTimeline from "./PostStudioTimeline.svelte";
@@ -69,8 +69,6 @@
     isPreparingCard?: boolean;
     isPreparingAnimation?: boolean;
     onRequestAnimation: () => void;
-    onBack?: () => void;
-    onClose?: () => void;
     onExported?: (blob: Blob) => void;
   }
 
@@ -86,8 +84,6 @@
     isPreparingCard = false,
     isPreparingAnimation = false,
     onRequestAnimation,
-    onBack,
-    onClose,
     onExported,
   }: Props = $props();
 
@@ -517,10 +513,9 @@
 <section
   class="post-studio"
   data-mobile-panel={focusedPanel}
-  aria-labelledby="post-studio-title"
+  aria-label={`Post Studio, ${sequenceName}`}
 >
-  <PostStudioTopBar
-    {sequenceName}
+  <PostStudioActionBar
     missingCount={composition.missingRequiredRoles.length}
     missingLabel={firstMissingSource?.label}
     {canRender}
@@ -529,8 +524,6 @@
     {exportPercent}
     {exportedUrl}
     {exportFilename}
-    {onBack}
-    {onClose}
     onFixMissing={fixFirstMissingSource}
     onRender={renderPost}
     onCancelExport={cancelExport}
@@ -807,13 +800,13 @@
 
   /* A container query cannot style its own container, so the scale steps land
      on every direct child instead of on `.post-studio`. All of them, not just
-     the body: the top bar carries the layouts menu and the render button, and
-     leaving it out froze those at 12px on a 3840 screen while the columns
-     underneath stepped to 20px. */
+     the body: the action bar carries the render button, and leaving it out
+     froze that at 12px on a 3840 screen while the columns underneath stepped
+     to 20px. */
   @container post-studio (min-width: 105rem) {
     .studio-body,
     .studio-notice,
-    .post-studio > :global(.topbar) {
+    .post-studio > :global(.actionbar) {
       --studio-control-height: 3.25rem;
       --studio-body-size: 0.9375rem;
       --studio-meta-size: 0.8125rem;
@@ -827,7 +820,7 @@
   @container post-studio (min-width: 180rem) {
     .studio-body,
     .studio-notice,
-    .post-studio > :global(.topbar) {
+    .post-studio > :global(.actionbar) {
       --studio-control-height: 4.25rem;
       --studio-body-size: 1.25rem;
       --studio-meta-size: 1.0625rem;

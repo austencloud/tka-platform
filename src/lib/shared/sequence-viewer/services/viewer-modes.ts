@@ -31,8 +31,23 @@ export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 	{ id: 'videos', icon: 'fa-video', label: 'Videos' },
 	// Tunnel remains a direct art view. Mandala opens from the workspace card,
 	// where its collection and creation controls already live.
-	{ id: 'tunnel', icon: 'fa-fan', label: 'Tunnel' }
+	{ id: 'tunnel', icon: 'fa-fan', label: 'Tunnel' },
+	// Composing a vertical post is a viewer surface, not a child of the share
+	// sheet: the viewer already owns every other way a sequence is turned into
+	// something (card export, video export, tunnel, mandala, practice), and
+	// Share owns distribution. Listing it here is what gives it a real entry
+	// point in both switchers instead of a button buried two clicks into a modal.
+	{ id: 'post-studio', icon: 'fa-wand-magic-sparkles', label: 'Post Studio' }
 ];
+
+/**
+ * What a switcher hands back when one of its options is picked. `split` is
+ * excluded because both switchers route it to their own `onSelectSplit` — it
+ * configures two panes rather than selecting a single view. Everything else,
+ * including surfaces like `post-studio` that are not legal split-pane contents,
+ * is selectable.
+ */
+export type SelectableViewerMode = Exclude<ViewerMode, 'split'>;
 
 /** Practice is a toggle, not a ViewerMode. Rendered as its own item in both switchers. */
 export const PRACTICE_OPTION = { icon: 'fa-signal', label: 'Practice' } as const;

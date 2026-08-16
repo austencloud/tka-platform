@@ -3,6 +3,7 @@ import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ContentType } from "./viewer-state.svelte";
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
+import type { SelectableViewerMode } from "../services/viewer-modes";
 import { resolveExportSidebarMinWidth } from "../services/viewer-shell-model";
 
 interface ViewerShellLayoutInputs {
@@ -59,6 +60,13 @@ export function createViewerShellLayoutState(
   const showVideoGallery = $derived(
     inputs.getContext().viewerState.viewerMode === "videos" &&
       (!isSidebarExportActive || isVideoUploadActive)
+  );
+  // Post Studio takes the whole viewer body, the same way the video gallery
+  // does. It owns its own export, so an export sidebar alongside it would be
+  // two render buttons for two different files.
+  const showPostStudio = $derived(
+    inputs.getContext().viewerState.viewerMode === "post-studio" &&
+      !isSidebarExportActive
   );
 
   const exportSidebarMinWidth = $derived.by(() => {
@@ -199,7 +207,10 @@ export function createViewerShellLayoutState(
     }
   }
 
-  function selectViewerMode(mode: ContentType, countIntent = true): void {
+  function selectViewerMode(
+    mode: SelectableViewerMode,
+    countIntent = true
+  ): void {
     const ctx = inputs.getContext();
     const previousMode = ctx.viewerState.viewerMode;
     if (previousMode === mode) return;
@@ -222,6 +233,12 @@ export function createViewerShellLayoutState(
       ctx.viewerState.setViewerMode(mode);
     } else if (mode === "mandala" || mode === "tunnel") {
       if (ctx.editingPane === "image") ctx.exitEditMode();
+      else ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode(mode);
+    } else if (mode === "post-studio") {
+      // Same shape as the gallery: the studio owns the whole viewer body and
+      // its own render, so any open inspector has to close before it appears.
+      if (ctx.editingPane) ctx.exitEditMode();
       else ctx.viewerState.exitExport();
       ctx.viewerState.setViewerMode(mode);
     }
@@ -283,6 +300,9 @@ export function createViewerShellLayoutState(
     },
     get showVideoGallery() {
       return showVideoGallery;
+    },
+    get showPostStudio() {
+      return showPostStudio;
     },
     get effectiveMobile() {
       return effectiveMobile;

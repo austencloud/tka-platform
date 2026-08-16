@@ -1,6 +1,10 @@
 <script lang="ts">
   import type { ContentType, ViewerMode } from "../state/viewer-state.svelte";
-  import { viewerModeOptions, PRACTICE_OPTION } from "../services/viewer-modes";
+  import {
+    viewerModeOptions,
+    PRACTICE_OPTION,
+    type SelectableViewerMode,
+  } from "../services/viewer-modes";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
 
   const RAIL_WIDTH_KEY = "tka-viewer-rail-width";
@@ -19,7 +23,7 @@
     /** Use the icon rail without overwriting the user's preferred wide width. */
     compact?: boolean;
     practiceActive?: boolean;
-    onSelectMode: (mode: ContentType) => void;
+    onSelectMode: (mode: SelectableViewerMode) => void;
     onSelectSplit: () => void;
     onPracticeToggle?: () => void;
     /** Optional contextual action pinned to the rail's bottom. */
@@ -181,7 +185,7 @@
         onclick={() => {
           if (mode.id === "split") onSelectSplit();
           else if (mode.id === "practice") onPracticeToggle?.();
-          else onSelectMode(mode.id as ContentType);
+          else onSelectMode(mode.id as SelectableViewerMode);
         }}
         onkeydown={(e) => handleKeydown(e, i)}
       >

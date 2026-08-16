@@ -27,7 +27,6 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import InstagramIcon from "$lib/shared/auth/components/icons/InstagramIcon.svelte";
   import FacebookIcon from "$lib/shared/auth/components/icons/FacebookIcon.svelte";
-  import PostStudio from "$lib/shared/share/components/post-studio/PostStudio.svelte";
   import InstagramPostReview from "$lib/shared/share/components/instagram/InstagramPostReview.svelte";
   import { createPostDeliveryState } from "$lib/shared/share/state/post-delivery-state.svelte";
   import { setPostDeliveryContext } from "$lib/shared/share/context/post-delivery-context";
@@ -36,14 +35,11 @@
   import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
-  import { getSharer } from "$lib/shared/share/get-sharer";
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
   import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
-  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
-  import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import { getCaptionPresetManager } from "$lib/shared/share/state/caption-presets.svelte";
+  import { createCardPreviewState } from "$lib/shared/share/state/card-preview-state.svelte";
   import {
     buildArtifactFilename,
     buildPostLink,
@@ -143,6 +139,14 @@
      * set."
      */
     resolvedCardAutoLayout?: ResolvedAutoLayout | null;
+    /**
+     * Sends the user to Post Studio, which is a sequence-viewer surface rather
+     * than a child of this modal. The sheet links to it and closes, so leaving
+     * the studio lands on the viewer — a destination — instead of backing into
+     * a modal. Hosts without a viewer body to switch (the visual harness) omit
+     * it, and the tile does not appear.
+     */
+    onOpenPostStudio?: () => void;
   }
 
   let {
@@ -160,6 +164,7 @@
     videoLabel = "Video",
     initialArtifact = "card",
     resolvedCardAutoLayout = null,
+    onOpenPostStudio,
   }: Props = $props();
 
   const postDeliveryState = createPostDeliveryState({
@@ -248,46 +253,29 @@
   /** The viewer turned the render down. See {@link requestVideo}. */
   let videoRefused = $state(false);
 
-  let cardBlob = $state<Blob | null>(null);
-  let cardPreviewUrl = $state<string | null>(null);
-  let postStudioCardOptions = $state<ReturnType<
-    typeof buildCardRenderOptions
-  > | null>(null);
-  /** Card settings the blob in hand was rendered from; re-render when it moves. */
-  let renderedCardKey: string | null = null;
-  /**
-   * And which sequence it was rendered from. Two different sequences of the same
-   * length with the same settings serialize to the same key, so the key alone
-   * would hold the previous sequence's card on screen under the new word.
-   */
-  let renderedCardTarget: SequenceData | null = null;
   let videoBlob = $state<Blob | null>(null);
-  /** A Post Studio render supersedes the viewer's plain animation render. */
-  let studioVideoUrl = $state<string | null>(null);
-  let studioOpen = $state(false);
   let instagramReviewOpen = $state(false);
   let activeHasAudio = $state<boolean | null>(false);
   let audioInspectionVersion = 0;
 
   /**
-   * Neither the card-composition manager nor the visibility manager is
-   * rune-backed — both publish through observer callbacks — so reading them
-   * inside an effect subscribes to nothing at all. Without these counters the
-   * Customize panel changes a setting and the card above it never redraws,
-   * which is the one thing Share has to get right. ExportImagePanel carries the
-   * same two counters, for the same reason.
+   * The card the sheet previews and posts. Post Studio shows the same picture,
+   * so the render, its cache key, and the observer plumbing that keeps it
+   * reactive live in the shared owner rather than twice.
+   *
+   * Gated on `isOpen`: a viewer that never shares never pays the render.
+   * `exportOptions.imageDarkMode`, not the composition manager's own darkMode —
+   * the Card pane's on-screen preview reads this one, and the file has to match
+   * the card the user was looking at when they pressed Share.
    */
-  const composition = getImageCompositionManager();
-  const visibility = getVisibilityStateManager();
-  let cardSettingsVersion = $state(0);
-  function onCardSettingsChanged(): void {
-    cardSettingsVersion++;
-  }
-  composition.registerObserver(onCardSettingsChanged);
-  visibility.registerObserver(onCardSettingsChanged, ["all"]);
-  onDestroy(() => {
-    composition.unregisterObserver(onCardSettingsChanged);
-    visibility.unregisterObserver(onCardSettingsChanged);
+  const cardPreview = createCardPreviewState({
+    getSequence: () => sequence,
+    getEnabled: () => isOpen,
+    getDarkMode: () => exportOptions.imageDarkMode,
+    getResolvedAutoLayout: () => resolvedCardAutoLayout,
+    onError: () => {
+      statusMessage = "Couldn't render the card";
+    },
   });
 
   /** Post link for this sequence, once the code lands. */
@@ -346,12 +334,17 @@
     })
   );
 
-  const activeBlob = $derived(artifact === "video" ? videoBlob : cardBlob);
+  const activeBlob = $derived(
+    artifact === "video" ? videoBlob : cardPreview.blob
+  );
 
   const filename = $derived(buildArtifactFilename(word, artifact));
-  const activeVideoUrl = $derived(studioVideoUrl ?? videoBlobUrl);
+  // The shell decides what the video slot holds — a Post Studio render, a
+  // mandala bake, a tunnel bake, or the plain animation export. The sheet just
+  // shows whatever arrives.
+  const activeVideoUrl = $derived(videoBlobUrl);
   const reviewPreviewUrl = $derived(
-    artifact === "video" ? activeVideoUrl : cardPreviewUrl
+    artifact === "video" ? activeVideoUrl : cardPreview.url
   );
 
   $effect(() => {
@@ -560,7 +553,7 @@
 
   const previewReady = $derived(
     !qrDataUrl &&
-      ((artifact === "card" && !!cardPreviewUrl) ||
+      ((artifact === "card" && !!cardPreview.url) ||
         (artifact === "video" && !!activeVideoUrl))
   );
 
@@ -630,7 +623,6 @@
     wasOpen = isOpen;
     if (!isOpen) return;
     artifact = initialArtifact;
-    studioOpen = false;
     // Every share starts on the short path: the settings you already have, one
     // press from the destination. Customize is there when the answer is no.
     customizeOpen = false;
@@ -642,74 +634,6 @@
     ) {
       requestVideo();
     }
-  });
-
-  // Card first: getCardImageBlob is cached, so the sheet is actionable the
-  // moment it opens. Runs on open rather than at module scope so a viewer that
-  // never shares never pays the render.
-  //
-  // Building the options HERE, rather than letting getCardImageBlob build them
-  // out of sight, is what subscribes this effect to the user's card settings.
-  // Change dark mode, columns, the QR, the mandala, the footer — the preview and
-  // the file that gets posted both re-render. What you press Share on is what
-  // goes out.
-  $effect(() => {
-    if (!isOpen || !sequence) return;
-
-    const target = sequence;
-    // Subscribes this effect to every card setting the Customize panel can
-    // reach. buildCardRenderOptions reads both managers, but through plain
-    // method calls that no rune is watching — this is the dependency.
-    void cardSettingsVersion;
-    // exportOptions.imageDarkMode, not the composition manager's own darkMode:
-    // the Card pane's on-screen preview reads this one, and the file has to
-    // match the card the user was looking at when they pressed Share.
-    const darkMode = exportOptions.imageDarkMode;
-    const cardOptions = buildCardRenderOptions(target, {
-      darkMode,
-      isHandPath: !!target.metadata?.isHandPathVisualization,
-      resolvedAutoLayout: resolvedCardAutoLayout,
-    });
-    postStudioCardOptions = cardOptions;
-    // The visibility snapshot rides along because TKA, TnD, positions and
-    // non-radial points never enter cardOptions — the composer inherits them
-    // from the global manager at render time. Keyed on the options alone, this
-    // guard returns early on the one class of setting it cannot see, and the
-    // Customize panel's TKA chip moves nothing. (sharer.ts keys its blob cache
-    // on the same snapshot, for the same reason.)
-    const settingsKey = `${JSON.stringify(cardOptions)}|${JSON.stringify(
-      visibility.getState()
-    )}`;
-    if (settingsKey === renderedCardKey && target === renderedCardTarget)
-      return;
-
-    let stale = false;
-
-    void (async () => {
-      try {
-        const blob = await getSharer().getCardImageBlob(target, {
-          darkMode,
-          resolvedAutoLayout: resolvedCardAutoLayout,
-        });
-        if (stale) return;
-        if (cardPreviewUrl) URL.revokeObjectURL(cardPreviewUrl);
-        cardBlob = blob;
-        cardPreviewUrl = URL.createObjectURL(blob);
-        renderedCardKey = settingsKey;
-        renderedCardTarget = target;
-      } catch (error) {
-        console.error("[PostShareSheet] Card render failed:", error);
-        if (!stale) statusMessage = "Couldn't render the card";
-      }
-    })();
-
-    return () => {
-      stale = true;
-    };
-  });
-
-  onDestroy(() => {
-    if (studioVideoUrl) URL.revokeObjectURL(studioVideoUrl);
   });
 
   // The viewer owns the export; this only adopts the resulting blob.
@@ -787,12 +711,6 @@
     if (first) caption = first.text;
   });
 
-  $effect(() => {
-    return () => {
-      if (cardPreviewUrl) URL.revokeObjectURL(cardPreviewUrl);
-    };
-  });
-
   // Which Meta accounts are connected, live. Only while the sheet is open —
   // a viewer that never shares should not hold a Firestore listener.
   $effect(() => {
@@ -828,10 +746,17 @@
     }
   }
 
+  /**
+   * Post Studio is a sequence-viewer surface now, not a full-screen takeover
+   * inside this modal. The sheet links to it and gets out of the way, so
+   * leaving the studio lands on the viewer — a destination — instead of
+   * backing into a modal.
+   */
   function openPostStudio(): void {
     statusMessage = "";
     qrDataUrl = null;
-    studioOpen = true;
+    onOpenPostStudio?.();
+    onClose();
   }
 
   function openInstagramReview(): void {
@@ -857,7 +782,7 @@
             altText: null,
             cropPreviewRevision:
               artifact === "card"
-                ? renderedCardKey || "current-card"
+                ? cardPreview.revision || "current-card"
                 : renderedVideoKey || "current-video",
           },
         ],
@@ -926,23 +851,6 @@
     statusMessage = "Download the post, then finish it in Instagram.";
   }
 
-  function closePostStudio(): void {
-    studioOpen = false;
-  }
-
-  function noop(): void {}
-
-  function handleStudioExported(blob: Blob): void {
-    if (studioVideoUrl) URL.revokeObjectURL(studioVideoUrl);
-    studioVideoUrl = URL.createObjectURL(blob);
-    videoBlob = blob;
-    renderedVideoKey = null;
-    artifact = "video";
-    postedPermalinks = {};
-    statusMessage = "Post Studio render ready";
-    studioOpen = false;
-  }
-
   /**
    * The viewer refuses a render for reasons the sheet cannot see from its props
    * — the take-it-home account gate, an animation canvas that has not mounted,
@@ -966,8 +874,19 @@
   }
 
   function saveCurrentAsPreset(): void {
-    captions.saveCustomPreset(caption);
+    // The sequence in view becomes the template's tokens, so this caption is
+    // reusable rather than a literal that follows you onto every other post.
+    captions.saveCustomPreset(caption, {
+      word: alphabetWord || sequence?.displayName || "",
+      url: postUrl,
+    });
     statusMessage = "Saved as a preset";
+  }
+
+  function removePreset(preset: (typeof presets)[number]): void {
+    if (!preset.template) return;
+    captions.removeCustomPreset(preset.template);
+    statusMessage = "Preset removed";
   }
 
   async function sendToPhone(): Promise<void> {
@@ -1372,24 +1291,9 @@
   ariaLabel="Share this sequence"
   {onClose}
   narrow={!!qrDataUrl}
-  expanded={studioOpen}
 >
   {#snippet children(surface)}
-    {#if studioOpen && sequence}
-      <PostStudio
-        {sequence}
-        {cardPreviewUrl}
-        cardRenderOptions={postStudioCardOptions}
-        {resolvedCardAutoLayout}
-        animationPreviewUrl={null}
-        isPreparingCard={!cardPreviewUrl}
-        isPreparingAnimation={false}
-        onRequestAnimation={noop}
-        onBack={closePostStudio}
-        {onClose}
-        onExported={handleStudioExported}
-      />
-    {:else if instagramReviewOpen && reviewPreviewUrl}
+    {#if instagramReviewOpen && reviewPreviewUrl}
       <InstagramPostReview
         previewUrl={reviewPreviewUrl}
         mediaKind={artifact === "video" ? "video" : "image"}
@@ -1464,14 +1368,17 @@
               size="sm"
               color="accent"
             />
-            <button
-              type="button"
-              class="studio-launch"
-              onclick={openPostStudio}
-            >
-              <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
-              Post Studio
-            </button>
+            {#if onOpenPostStudio}
+              <button
+                type="button"
+                class="studio-launch"
+                onclick={openPostStudio}
+              >
+                <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"
+                ></i>
+                Post Studio
+              </button>
+            {/if}
           </div>
         {/if}
 
@@ -1485,10 +1392,10 @@
                 Back
               </button>
             </div>
-          {:else if artifact === "card" && cardPreviewUrl}
+          {:else if artifact === "card" && cardPreview.url}
             <img
               class="preview"
-              src={cardPreviewUrl}
+              src={cardPreview.url}
               alt="Sequence card preview"
             />
           {:else if artifact === "video" && activeVideoUrl}
@@ -1598,6 +1505,10 @@
                   active={caption === preset.text}
                   size="sm"
                   onclick={() => applyPreset(preset.text)}
+                  onremove={preset.template
+                    ? () => removePreset(preset)
+                    : undefined}
+                  removeAriaLabel={`Delete the preset ${preset.label}`}
                 />
               {/each}
               <FilterChipBase

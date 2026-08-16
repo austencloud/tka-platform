@@ -182,6 +182,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
       class:solid={emphasis === "solid"}
       class:size-sm={size === "sm"}
       type="button"
+      aria-pressed={mode === "toggle" ? active : undefined}
       aria-label={ariaLabel ?? `${label}${count != null ? ` (${count})` : ""}`}
       {disabled}
       {onclick}
