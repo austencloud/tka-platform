@@ -86,6 +86,17 @@
     };
   });
 
+  // Only categories with entries earn a column. The empty ones an admin still
+  // needs are collected into a single compact row underneath.
+  const populatedCategories = $derived(
+    CHANGELOG_CATEGORIES.filter((c) => groupedChangelog[c].length > 0)
+  );
+  const emptyCategories = $derived(
+    isAdmin
+      ? CHANGELOG_CATEGORIES.filter((c) => groupedChangelog[c].length === 0)
+      : []
+  );
+
   function showToast(msg: string, type: ToastType) {
     toastMessage = msg;
     toastType = type;
@@ -375,8 +386,8 @@
       {#if !hasChangelog && isAdmin}<p class="hint">
           No entries yet. Add some below:
         </p>{/if}
-      {#each CHANGELOG_CATEGORIES as cat}
-        {#if groupedChangelog[cat].length > 0 || isAdmin}
+      <div class="change-groups" data-groups={populatedCategories.length}>
+        {#each populatedCategories as cat (cat)}
           <ChangeGroupSection
             category={cat}
             entries={groupedChangelog[cat]}
@@ -396,8 +407,34 @@
             {contributorMap}
             onUpdateEntryContributors={(i, ids) => handleUpdateEntryContributors(cat, i, ids)}
           />
-        {/if}
-      {/each}
+        {/each}
+      </div>
+
+      {#if emptyCategories.length > 0}
+        <div class="empty-adders" data-groups={emptyCategories.length}>
+          {#each emptyCategories as cat (cat)}
+            <ChangeGroupSection
+              category={cat}
+              entries={groupedChangelog[cat]}
+              {isAdmin}
+              isAddingEntry={addingToCategory === cat}
+              bind:newEntryText
+              {currentlyEditingId}
+              onSaveEntry={(i, t) => handleSave(cat, i, t)}
+              onDeleteEntry={(i) => handleDelete(cat, i)}
+              onOpenFeedback={openFeedback}
+              onStartAdd={() => startAdd(cat)}
+              onCancelAdd={cancelAdd}
+              onConfirmAdd={confirmAdd}
+              onStartEdit={startEdit}
+              onEndEdit={endEdit}
+              {allContributors}
+              {contributorMap}
+              onUpdateEntryContributors={(i, ids) => handleUpdateEntryContributors(cat, i, ids)}
+            />
+          {/each}
+        </div>
+      {/if}
     </section>
   {:else}
     <NoChangelogState />
@@ -451,13 +488,140 @@
     flex-direction: column;
     flex: 1;
     min-height: 0;
-    padding: 24px 32px;
+    padding: clamp(1.5rem, 1.6vw, 3rem) clamp(1.5rem, 2vw, 4rem);
     overflow-y: auto;
-    max-width: 800px;
+    container-type: inline-size;
   }
 
   section {
-    margin-bottom: 24px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* One column on narrow panes; the three categories sit side by side once
+     there is room, so a wide canvas gains columns instead of dead rail. */
+  .change-groups {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(1rem, 1.5vw, 2.5rem);
+    align-items: start;
+  }
+
+  /* The gap owns the spacing now, not each group's own bottom margin. */
+  .change-groups :global(.change-group) {
+    margin-bottom: 0;
+  }
+
+  /* One column per category that actually has entries, so the row is always
+     balanced no matter which categories a release happens to use. */
+  @container (min-width: 950px) {
+    .change-groups[data-groups="2"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .change-groups[data-groups="3"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Wide columns would fling the count badge to the far edge, stranding it
+     from the title it belongs to. Keep it next to the label. */
+  .change-groups :global(.group-title .count),
+  .empty-adders :global(.group-title .count) {
+    margin-left: 0;
+  }
+
+  /* A release with one or two categories spreads that category's own entries
+     instead of running a single long column down a wide canvas. */
+  .change-groups :global(.change-list) {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .change-groups :global(.change-list li) {
+    margin-bottom: 0;
+  }
+
+  @container (min-width: 1800px) {
+    .change-groups[data-groups="1"] :global(.change-list) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 2600px) {
+    .change-groups[data-groups="1"] :global(.change-list) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .change-groups[data-groups="2"] :global(.change-list) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Admin-only: categories with nothing in them collapse to one quiet row of
+     add buttons rather than each holding an empty column. */
+  .empty-adders {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(0.75rem, 1vw, 1.5rem);
+    margin-top: clamp(1rem, 1.5vw, 2rem);
+    padding-top: clamp(1rem, 1.5vw, 2rem);
+    border-top: 1px solid var(--theme-stroke);
+    opacity: 0.75;
+  }
+
+  .empty-adders:hover,
+  .empty-adders:focus-within {
+    opacity: 1;
+  }
+
+  @container (min-width: 900px) {
+    .empty-adders[data-groups="2"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .empty-adders[data-groups="3"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Very wide canvases: step the scale so the page reads at TV distance
+     instead of shrinking into the corner. */
+  @container (min-width: 2000px) {
+    .version-detail-body {
+      gap: 1.5rem;
+      --font-size-compact: 1.05rem;
+      --font-size-sm: 1.25rem;
+      --font-size-lg: 1.6rem;
+      --font-size-xl: 2rem;
+    }
+  }
+
+  /* Rows gain real presence at these sizes, so the pane reads as a page
+     rather than a strip of text pinned to the top edge. */
+  @container (min-width: 2000px) {
+    .change-groups :global(.change-item) {
+      padding: 1.1rem 1.4rem;
+      border-radius: 0.9rem;
+    }
+
+    .change-groups :global(.change-list) {
+      gap: 0.75rem;
+    }
+
+    .change-groups :global(.add-entry-btn),
+    .empty-adders :global(.add-entry-btn) {
+      padding: 1rem 1.4rem;
+      border-radius: 0.9rem;
+    }
+  }
+
+  @container (min-width: 2800px) {
+    .version-detail-body {
+      --font-size-compact: 1.25rem;
+      --font-size-sm: 1.5rem;
+      --font-size-lg: 1.9rem;
+      --font-size-xl: 2.4rem;
+    }
   }
 
   section h3 {

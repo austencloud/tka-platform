@@ -6,6 +6,9 @@
   import VersionListItem from "./release-notes/VersionListItem.svelte";
   import VersionDetailContent from "./release-notes/VersionDetailContent.svelte";
   import VersionDetailPanel from "./release-notes/VersionDetailPanel.svelte";
+  import VersionHistoryEntry from "./release-notes/VersionHistoryEntry.svelte";
+  import { getContributorLoader } from "$lib/shared/feedback/get-contributor-loader";
+  import type { Contributor } from "$lib/shared/versioning/domain/models/contributor-models";
 
   const versionState = createVersionState();
 
@@ -17,16 +20,62 @@
   let selectedVersion = $state<AppVersion | null>(null);
   let isPanelOpen = $state(false);
 
-  // Auto-select first version when versions load
+  // No auto-selection: the stream shows every release read-only, and a release
+  // only becomes the editor when it is explicitly picked.
+
+  // The history stream renders every release, not just the selected one — this
+  // page is the record of the work, so the record is what the canvas shows.
+  // Mount in batches so 40+ releases don't all build at once.
+  const STREAM_BATCH = 8;
+  let visibleCount = $state(STREAM_BATCH);
+  let streamElement = $state<HTMLElement | null>(null);
+  let allContributors = $state<Contributor[]>([]);
+  const contributorMap = $derived(
+    new Map(allContributors.map((c) => [c.id, c]))
+  );
+
+  const streamVersions = $derived(
+    versionState.versions.slice(0, visibleCount)
+  );
+
   $effect(() => {
-    if (versionState.versions.length > 0 && !selectedVersion) {
-      selectedVersion = versionState.versions[0] ?? null;
-    }
+    getContributorLoader()
+      .getAll()
+      .then((list) => {
+        allContributors = list;
+      });
   });
 
-  /** Wide mode: select version for inline detail panel */
+  /** Grows the stream when its tail scrolls into view. */
+  function revealOnScroll(node: HTMLElement) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((e) => e.isIntersecting)) return;
+        if (visibleCount >= versionState.versions.length) return;
+        visibleCount += STREAM_BATCH;
+      },
+      { root: streamElement, rootMargin: "600px" }
+    );
+    observer.observe(node);
+    return { destroy: () => observer.disconnect() };
+  }
+
+  /** Wide mode: select a version for editing and bring it into view */
   function selectVersion(version: AppVersion) {
     selectedVersion = version;
+
+    const index = versionState.versions.findIndex(
+      (v) => v.version === version.version
+    );
+    if (index >= visibleCount) {
+      visibleCount = index + STREAM_BATCH;
+    }
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`release-${version.version}`)
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
   }
 
   /** Narrow mode: select version and open drawer */
@@ -135,14 +184,43 @@
       {/if}
     </aside>
 
-    <!-- Detail: inline content (wide mode only) -->
-    <main class="version-detail-panel themed-scrollbar">
-      {#if selectedVersion}
-        <VersionDetailContent
-          version={selectedVersion}
-          onVersionUpdated={handleVersionUpdated}
-          showCloseButton={false}
-        />
+    <!-- Detail: the full release history (wide mode only) -->
+    <main
+      class="version-detail-panel themed-scrollbar"
+      bind:this={streamElement}
+    >
+      {#if versionState.versions.length > 0}
+        <div class="history-stream">
+          {#each streamVersions as version (version.version)}
+            <div id="release-{version.version}" class="stream-section">
+              {#if selectedVersion?.version === version.version}
+                <VersionDetailContent
+                  {version}
+                  onVersionUpdated={handleVersionUpdated}
+                  showCloseButton={false}
+                />
+              {:else}
+                <VersionHistoryEntry
+                  {version}
+                  {contributorMap}
+                  onOpenFeedback={() => selectVersion(version)}
+                  onSelect={() => selectVersion(version)}
+                />
+              {/if}
+            </div>
+          {/each}
+
+          {#if visibleCount < versionState.versions.length}
+            <div class="stream-sentinel" use:revealOnScroll aria-hidden="true">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              Loading earlier releases
+            </div>
+          {:else}
+            <p class="stream-end">
+              {versionState.versions.length} releases, back to the beginning.
+            </p>
+          {/if}
+        </div>
       {:else}
         <div class="no-selection">
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -198,7 +276,7 @@
     gap: 0;
   }
 
-  /* Master panel */
+  /* Master panel — floor of 280px, grows with the canvas */
   .version-list-panel {
     flex-shrink: 0;
     width: 280px;
@@ -211,8 +289,43 @@
   .version-detail-panel {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+  }
+
+  .history-stream {
+    display: flex;
+    flex-direction: column;
+    padding: 0 clamp(1.5rem, 2vw, 4rem) clamp(2rem, 3vw, 5rem);
+  }
+
+  /* The stream owns the horizontal band; the selected release's own editor
+     padding would otherwise double it up. */
+  .history-stream :global(.version-detail-body) {
+    padding-inline: 0;
+    overflow: visible;
+  }
+
+  .stream-section:first-child :global(.history-entry) {
+    border-top: none;
+  }
+
+  .stream-sentinel,
+  .stream-end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: clamp(1.5rem, 2vw, 3rem) 0;
+    margin: 0;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim);
+  }
+
+  .stream-end {
+    border-top: 1px solid var(--theme-stroke);
   }
 
   /* Default: wide mode - show compact list and detail */
@@ -266,6 +379,33 @@
 
     .version-detail-panel {
       display: none;
+    }
+  }
+
+  /* Wide canvases: the rail grows instead of stranding the detail pane */
+  @container (min-width: 1400px) {
+    .version-list-panel {
+      width: 21rem;
+    }
+  }
+
+  /* The rail steps with the stream so the index doesn't read as fine print
+     next to it. */
+  @container (min-width: 2000px) {
+    .version-list-panel {
+      width: 25rem;
+      --font-size-compact: 1.05rem;
+      --font-size-sm: 1.25rem;
+      --font-size-base: 1.25rem;
+    }
+  }
+
+  @container (min-width: 2800px) {
+    .version-list-panel {
+      width: 30rem;
+      --font-size-compact: 1.2rem;
+      --font-size-sm: 1.45rem;
+      --font-size-base: 1.45rem;
     }
   }
 
