@@ -40,21 +40,39 @@
   type Point = { x: number; y: number };
 
   /**
-   * One prop's path across the tile: a long horizontal sweep with a vertical
-   * lobe, mirrored for the second prop so the two ribbons cross near the
-   * middle. Crossing is what makes a trail read as two props rather than one
+   * One prop's path across the tile: a horizontal infinity.
+   *
+   * This is the lemniscate of Bernoulli, not a sine lobe. The figure-eight is
+   * the shape a flow artist actually traces, so it is the shape that reads as
+   * "trail" at a glance - the earlier crossing sweep was a curve nobody spins.
+   * Bernoulli rather than Gerono because its lobes are round and its waist is
+   * pinched, which is the ∞ glyph; Gerono's are teardrops.
+   *
+   *   x = cos t / (1 + sin²t)      y = sin t cos t / (1 + sin²t)
+   *
+   * y peaks at 1/3 (t = π/4), so the vertical term is tripled to reach the
+   * requested half-height rather than filling a third of it.
+   *
+   * The second prop runs half a period out of phase, which for this curve is a
+   * horizontal mirror: the two props sit on opposite lobes and meet at the
+   * waist. Crossing is what makes a trail read as two props rather than one
    * doubled stroke.
    */
   function path(mirror: boolean): Point[] {
     const pts: Point[] = [];
-    const STEPS = 220;
+    const STEPS = 260;
+    const RX = WIDTH / 2 - 54;
+    const AMP = (HEIGHT / 2 - 30) * 3;
+    const cx = WIDTH / 2;
+    const cy = HEIGHT / 2;
     for (let i = 0; i < STEPS; i += 1) {
-      const t = i / (STEPS - 1);
-      const a = t * Math.PI * 2;
-      const x = 90 + t * (WIDTH - 180);
-      const lobe = Math.sin(a) * 74 + Math.sin(a * 2 + 0.9) * 22;
-      const y = HEIGHT / 2 + (mirror ? -lobe : lobe);
-      pts.push({ x, y });
+      const a = (i / (STEPS - 1)) * Math.PI * 2 + (mirror ? Math.PI : 0);
+      const s = Math.sin(a);
+      const denom = 1 + s * s;
+      pts.push({
+        x: cx + (Math.cos(a) / denom) * RX,
+        y: cy + ((s * Math.cos(a)) / denom) * AMP,
+      });
     }
     return pts;
   }

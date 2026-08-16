@@ -258,10 +258,20 @@
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    const baseY = HEIGHT - 6;
+    // The flame roots inside the frame, not on its edge. At HEIGHT - 6 the
+    // bases were cropped by the tile boundary, so the fire read as something
+    // growing up out of the bottom of the screen with its origin cut off -
+    // wrong for TKA, where fire burns off a prop head and is a complete object
+    // hanging in space. Rooting it 38px up gives the flame a visible bottom and
+    // its own dark beneath.
+    const baseY = HEIGHT - 30;
     // Intensity is a slider, not a preset field, so it reads from the default -
     // but honouring it keeps the tile correct if a preset ever patches it.
-    const scale = 0.86 + 0.28 * intent.intensity;
+    // The 0.86 pays for the lifted root: the tallest lick is 212 * scale, which
+    // at full height would now clip against the top edge instead of the bottom.
+    // Sized so that tallest lick lands ~30px under the top edge, i.e. the flame
+    // is bounded by the tile on both ends rather than running off either.
+    const scale = (0.86 + 0.28 * intent.intensity) * 0.86;
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
