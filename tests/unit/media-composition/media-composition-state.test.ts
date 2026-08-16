@@ -77,18 +77,23 @@ describe("createMediaCompositionState", () => {
     expect(state.selectedRegion?.fit).toBe("contain");
   });
 
-  it("selects a preset that contains a source role", () => {
+  it("leaves the arrangement alone when a role is not in the active layout", () => {
     const state = createMediaCompositionState({
       presets: POST_STUDIO_PRESETS,
       initialPresetId: "card-focus",
       getBindings: readyBindings,
     });
 
+    // Selecting a source used to search the other presets for one containing it
+    // and switch, rearranging the post behind the user's back. Selection is now
+    // selection only — an absent role is a no-op, and the way to get a source
+    // into a slot is to choose it in that slot.
     state.selectRole(POST_STUDIO_ROLE.performance);
     flushSync();
 
-    expect(state.activePresetId).toBe("performance-breakdown");
-    expect(state.selectedRegion?.id).toBe("performance");
+    expect(state.activePresetId).toBe("card-focus");
+    expect(state.selectedRegion?.id).toBe("top");
+    expect(state.selectedRole).toBe(POST_STUDIO_ROLE.card);
   });
 
   it("keeps placement scoped to the selected layer in a shared area", () => {
@@ -108,7 +113,7 @@ describe("createMediaCompositionState", () => {
     flushSync();
 
     const sharedClips = state.activePreset.clips.filter(
-      (clip) => clip.kind === "visual" && clip.regionId === "performance"
+      (clip) => clip.kind === "visual" && clip.regionId === "top"
     );
     const performanceClip = sharedClips.find(
       (clip) => clip.sourceRole === POST_STUDIO_ROLE.performance
@@ -117,7 +122,7 @@ describe("createMediaCompositionState", () => {
       (clip) => clip.sourceRole === POST_STUDIO_ROLE.animation
     );
     const cardClip = state.activePreset.clips.find(
-      (clip) => clip.kind === "visual" && clip.regionId === "card"
+      (clip) => clip.kind === "visual" && clip.regionId === "bottom"
     );
 
     expect(sharedClips).toHaveLength(2);
@@ -255,11 +260,11 @@ describe("createMediaCompositionState", () => {
 
     state.selectRole(POST_STUDIO_ROLE.animation);
     flushSync();
-    expect(state.selectedRegion?.id).toBe("performance");
+    expect(state.selectedRegion?.id).toBe("top");
     expect(state.selectedRole).toBe(POST_STUDIO_ROLE.animation);
     expect(state.selectedSupportsFit).toBe(false);
 
-    state.selectRegion("card");
+    state.selectRegion("bottom");
     flushSync();
     expect(state.selectedSupportsFit).toBe(false);
   });

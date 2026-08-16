@@ -185,6 +185,31 @@ rail → a "VISIBILITY" header is three nav levels to reach a toggle.
       Evidence: 21/21 unit tests, `svelte-check` 0/0, zero console errors, and
       screenshots at 1920 / 3840 / 1440 / 960×412 / 375×667. Skipped 2560 —
       it sits between two verified tiers with no seam of its own.
+- [x] **P2b — Presets removed entirely.** Austen, seeing the Layouts menu
+      (2026-08-15): *"I think we should just have the ability to pick the top
+      thing and the bottom thing rather than giving us 4 presets. Top or bottom
+      can be anyone of our regular media types."* Correct — two chips reach
+      every pairing, so a four-template list is a second, narrower way to say
+      the same thing. The menu, the saved-layout repository wiring, the save
+      form, and the `presetName` / `layouts` props on the top bar are gone.
+      `POST_STUDIO_PRESETS` survives as test fixtures; the studio boots into
+      `DEFAULT_POST_LAYOUT` (animation over card) and is edited from there.
+
+      The top bar was a four-track grid built to seat a preset name beside the
+      ready pill. With the name gone a 1fr track wrapped one small pill — 805px
+      of dead air at 1920, 3101px at 3840 once the slack moved to the title. It
+      is now flex: identity left, state and actions hard right, slack in
+      between, and the three tiers no longer redeclare columns.
+
+      Three `media-composition-state` tests still asserted the pre-P1 contract
+      (`selectRole` switching presets behind the user; region ids `performance`
+      / `card`) and were failing. Updated to the normalised `top` / `bottom`
+      ids and to selection-is-only-selection.
+
+      Evidence: `svelte-check` 0/0, 70/70 unit tests across
+      `tests/unit/post-studio-slots.test.ts` + `tests/unit/media-composition`,
+      zero console errors, screenshots at 1920 / 3840 / 1440 / 960×412 /
+      375×667 (2560 skipped as above).
 - [ ] **P3 — Source registry + three new modes.** Registry of six. Mandala via
       pure renderer; Tunnel via seekable `AnimatorCanvas` wrapper; 3D via context
       bootstrap with the one-slot policy.

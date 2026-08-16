@@ -1,17 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import type { PostStudioExportProgress } from "$lib/shared/media-composition/services/post-studio-exporter";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequenceName: string;
-    presetName: string;
-    /**
-     * Saved layouts, as one control rather than a column. The arrangement is
-     * now built by choosing sources in the preview, so a preset list is a
-     * shortcut to a known arrangement — top-bar weight, not rail weight.
-     */
-    layouts?: Snippet;
     missingCount: number;
     missingLabel?: string;
     canRender: boolean;
@@ -29,8 +21,6 @@
 
   let {
     sequenceName,
-    presetName,
-    layouts,
     missingCount,
     missingLabel = "source",
     canRender,
@@ -78,11 +68,6 @@
   </div>
 
   <div class="project-state">
-    {#if layouts}
-      {@render layouts()}
-    {:else}
-      <span class="preset-name">{presetName}</span>
-    {/if}
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
@@ -149,8 +134,11 @@
 
 <style>
   .topbar {
-    display: grid;
-    grid-template-columns: auto minmax(12rem, 0.7fr) minmax(16rem, 1fr) auto;
+    /* Flex, not tracks. The grid existed to seat a preset name beside the
+       ready pill; with the preset concept gone every remaining item sizes to
+       its own content, and a 1fr track around any of them is dead air — 3101px
+       of it at 3840. Identity left, actions right, slack in between. */
+    display: flex;
     align-items: center;
     gap: var(--spacing-lg);
     min-height: 4.5rem;
@@ -169,6 +157,8 @@
   }
 
   .title-block {
+    /* Takes the slack so the state and export controls sit hard right. */
+    margin-inline-end: auto;
     display: grid;
     gap: 0.1rem;
     min-width: 0;
@@ -195,28 +185,11 @@
     white-space: nowrap;
   }
 
-  .project-state {
-    justify-content: center;
-  }
-
-  .preset-name,
   .ready-state,
   .missing-state {
     min-height: 2.75rem;
     border-radius: var(--radius-2026-sm);
     font-size: var(--font-size-compact);
-  }
-
-  .preset-name {
-    display: inline-flex;
-    align-items: center;
-    max-width: 15rem;
-    padding: 0 0.75rem;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text-dim);
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .ready-state,
@@ -340,13 +313,11 @@
 
   @container post-studio (min-width: 105rem) {
     .topbar {
-      grid-template-columns: auto minmax(14rem, 0.8fr) minmax(20rem, 1fr) auto;
       min-height: 5rem;
       padding: 0.75rem 1.25rem;
     }
 
     .title-block > span,
-    .preset-name,
     .ready-state,
     .missing-state {
       font-size: 0.8125rem;
@@ -356,7 +327,6 @@
       font-size: 1.35rem;
     }
 
-    .preset-name,
     .ready-state,
     .missing-state,
     .icon-button,
@@ -380,7 +350,6 @@
 
   @container post-studio (min-width: 180rem) {
     .topbar {
-      grid-template-columns: auto minmax(18rem, 0.8fr) minmax(26rem, 1fr) auto;
       gap: 2.5rem;
       min-height: 6rem;
       padding: 1rem 2.5rem;
@@ -397,7 +366,6 @@
     }
 
     .title-block > span,
-    .preset-name,
     .ready-state,
     .missing-state {
       font-size: 1rem;
@@ -407,12 +375,6 @@
       font-size: 1.75rem;
     }
 
-    .preset-name {
-      max-width: 24rem;
-      padding-inline: 1.25rem;
-    }
-
-    .preset-name,
     .ready-state,
     .missing-state,
     .icon-button,
@@ -443,7 +405,6 @@
 
   @container post-studio (max-width: 70rem) {
     .topbar {
-      grid-template-columns: auto minmax(0, 1fr) auto;
       gap: var(--spacing-sm);
     }
 

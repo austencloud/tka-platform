@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
@@ -19,7 +19,7 @@
   import type { SequenceTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
   import { createTempoGridTimeMap } from "$lib/shared/media-composition/domain/sequence-time-map";
   import {
-    POST_STUDIO_PRESETS,
+    DEFAULT_POST_LAYOUT,
     POST_STUDIO_ROLE,
   } from "$lib/shared/media-composition/domain/post-studio-presets";
   import {
@@ -31,14 +31,9 @@
     exportPostStudioVideo,
     type PostStudioExportProgress,
   } from "$lib/shared/media-composition/services/post-studio-exporter";
-  import {
-    loadMediaCompositionPresets,
-    saveMediaCompositionPreset,
-  } from "$lib/shared/media-composition/services/media-composition-preset-repository";
   import { getVideoFileMetadata } from "$lib/shared/video-collaboration/helpers/create-video-from-upload";
   import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
-  import { getUser } from "$lib/shared/auth/state/auth-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PostStudioTopBar from "./PostStudioTopBar.svelte";
@@ -54,7 +49,6 @@
     type PostStudioPerformanceSelection,
   } from "./post-studio-performance-selection";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
-  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import { withPostStudioPropType } from "./post-studio-prop-render-options";
 
   type FocusedPanel = "canvas" | "edit" | "timing";
@@ -123,9 +117,6 @@
   let workspaceHeight = $state(0);
   let workspaceWasAdjusted = $state(false);
   let workspaceSizes = $state([72, 44]);
-  let savingLayout = $state(false);
-  let layoutName = $state("");
-  let layoutSaveError = $state("");
 
   const compactWorkspace = $derived(
     workspaceWidth === 0 || workspaceWidth <= 1120 || workspaceHeight <= 640
@@ -265,9 +256,13 @@
     },
   ]);
 
+  // One starting arrangement, not a menu of four. A post is a top slot and a
+  // bottom slot, and both are picked in the preview — a template list is a
+  // second way to say the same thing, and a worse one, since it can only offer
+  // the pairings someone thought to enumerate.
   const composition = createMediaCompositionState({
-    presets: POST_STUDIO_PRESETS,
-    initialPresetId: "sequence-breakdown",
+    presets: [DEFAULT_POST_LAYOUT],
+    initialPresetId: DEFAULT_POST_LAYOUT.id,
     getBindings: () => bindings,
     getSequenceSteps: () => sequence.steps,
     getSequenceTimeMap: (durationSeconds) =>
@@ -298,10 +293,7 @@
   let exportProgress = $state<PostStudioExportProgress | null>(null);
   let exportError = $state("");
   let exportedUrl = $state<string | null>(null);
-  let presetLoadError = $state("");
-  let loadingSavedPresets = $state(false);
   let exportCancelled = false;
-  let presetOwnerId = "local";
 
   const performanceBinding = $derived(
     bindings.find(
@@ -357,15 +349,6 @@
     });
   });
 
-  onMount(() => {
-    presetOwnerId = getUser()?.uid ?? "local";
-    let stale = false;
-    void loadSavedPresets(() => stale);
-    return () => {
-      stale = true;
-    };
-  });
-
   onDestroy(() => {
     exportCancelled = true;
     if (exportedUrl) URL.revokeObjectURL(exportedUrl);
@@ -383,23 +366,6 @@
 
   function setPropType(propType: PropType): void {
     selectedPropType = propType;
-  }
-
-  async function loadSavedPresets(
-    isStale: () => boolean = () => false
-  ): Promise<void> {
-    if (loadingSavedPresets) return;
-    loadingSavedPresets = true;
-    presetLoadError = "";
-    try {
-      const presets = await loadMediaCompositionPresets(presetOwnerId);
-      if (isStale()) return;
-      for (const preset of presets) composition.addPreset(preset);
-    } catch {
-      if (!isStale()) presetLoadError = "Saved layouts could not be loaded.";
-    } finally {
-      if (!isStale()) loadingSavedPresets = false;
-    }
   }
 
   function fixFirstMissingSource(): void {
@@ -498,43 +464,6 @@
     timingAdvanced = !timingAdvanced;
   }
 
-  async function saveCurrentPreset(): Promise<void> {
-    const name = layoutName.trim();
-    if (!name || savingLayout) return;
-    savingLayout = true;
-    layoutSaveError = "";
-    try {
-      const preset = composition.createPreset(name, presetOwnerId);
-      await saveMediaCompositionPreset(preset);
-      composition.addPreset(preset, true);
-      layoutName = "";
-    } catch (error) {
-      layoutSaveError =
-        error instanceof Error ? error.message : "Could not save this layout.";
-    } finally {
-      savingLayout = false;
-    }
-  }
-
-  // Presets stopped being the way a post is built — the preview's slot chips
-  // are — so the four-card rail collapses to a list behind the name that was
-  // already sitting in the top bar.
-  const layoutMenuItems = $derived([
-    ...composition.presets.map((preset) => ({
-      label: preset.name,
-      icon: "fa-solid fa-table-cells-large",
-      selected: composition.activePresetId === preset.id,
-      action: () => composition.selectPreset(preset.id),
-    })),
-    {
-      label: "Save this layout",
-      icon: "fa-solid fa-bookmark",
-      action: () => {
-        layoutSaveError = "";
-        layoutName = `${composition.activePreset.name} copy`;
-      },
-    },
-  ]);
 </script>
 
 <section
@@ -542,28 +471,8 @@
   data-mobile-panel={focusedPanel}
   aria-labelledby="post-studio-title"
 >
-  {#snippet layoutsMenu()}
-    <div class="layouts-menu">
-      <OverflowMenu
-        items={layoutMenuItems}
-        placement="bottom"
-        align="right"
-        triggerClass="layouts-trigger"
-        ariaLabel="Saved layouts"
-      >
-        {#snippet trigger()}
-          <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
-          <span>{composition.activePreset.name}</span>
-          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
-        {/snippet}
-      </OverflowMenu>
-    </div>
-  {/snippet}
-
   <PostStudioTopBar
     {sequenceName}
-    presetName={composition.activePreset.name}
-    layouts={layoutsMenu}
     missingCount={composition.missingRequiredRoles.length}
     missingLabel={firstMissingSource?.label}
     {canRender}
@@ -625,52 +534,12 @@
     </div>
   {/snippet}
 
-  <!-- Timing spans the workspace rather than riding inside the canvas column.
-       It is a composition-wide control — one playhead, one tempo, every
-       region's clips — so scoping it to the canvas was backwards twice over:
-       the transport row's intrinsic width (~1000px) exceeded the narrowest
-       column and got clipped, and the height it claimed came straight out of
-       the 9:16 frame, which is the one thing on this page that is the
-       product. Full width also gives clip trimming a track worth dragging. -->
-  {#if layoutName || presetLoadError || performanceLibraryError}
+  {#if performanceLibraryError}
     <div class="studio-notice">
-      {#if layoutName}
-        <form class="save-layout" onsubmit={(e) => {
-          e.preventDefault();
-          void saveCurrentPreset();
-        }}>
-          <label for="post-studio-layout-name">Layout name</label>
-          <input
-            id="post-studio-layout-name"
-            bind:value={layoutName}
-            maxlength="120"
-            autocomplete="off"
-          />
-          <button type="submit" disabled={!layoutName.trim() || savingLayout}>
-            {savingLayout ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            class="dismiss"
-            aria-label="Cancel saving layout"
-            onclick={() => (layoutName = "")}
-          >
-            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
-          </button>
-        </form>
-      {/if}
-      {#if layoutSaveError}<p role="alert">{layoutSaveError}</p>{/if}
-      {#if presetLoadError}
-        <p role="alert">
-          {presetLoadError}
-          <button type="button" onclick={() => void loadSavedPresets()}>
-            Try again
-          </button>
-        </p>
-      {/if}
-      {#if performanceLibraryError}
-        <p role="alert">{performanceLibraryError}</p>
-      {/if}
+      <p role="alert">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        {performanceLibraryError}
+      </p>
     </div>
   {/if}
 
@@ -704,6 +573,13 @@
       />
     </div>
 
+    <!-- Timing spans the workspace rather than riding inside the canvas column.
+         It is a composition-wide control — one playhead, one tempo, every
+         region's clips — so scoping it to the canvas was backwards twice over:
+         the transport row's intrinsic width (~1000px) exceeded the narrowest
+         column and got clipped, and the height it claimed came straight out of
+         the 9:16 frame, which is the one thing on this page that is the
+         product. Full width also gives clip trimming a track worth dragging. -->
     {@render timelinePanel()}
   </div>
 
@@ -791,31 +667,6 @@
     overflow: hidden;
   }
 
-  .layouts-menu :global(.layouts-trigger) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-height: var(--studio-control-height);
-    padding: 0 0.85rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-full);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    font-size: var(--studio-meta-size);
-    font-weight: 650;
-    cursor: pointer;
-  }
-
-  .layouts-menu :global(.layouts-trigger:hover) {
-    border-color: var(--theme-stroke-strong);
-  }
-
-  .layouts-menu :global(.layouts-trigger:focus-visible) {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
   .studio-notice {
     display: grid;
     gap: var(--spacing-sm);
@@ -831,52 +682,6 @@
     margin: 0;
     color: var(--semantic-warning);
     font-size: var(--studio-meta-size);
-  }
-
-  .save-layout {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    font-size: var(--studio-meta-size);
-  }
-
-  .save-layout input {
-    flex: 1;
-    min-width: 0;
-    min-height: var(--studio-control-height);
-    padding: 0 0.75rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-sm);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-  }
-
-  .studio-notice button {
-    min-height: var(--studio-control-height);
-    padding: 0 0.9rem;
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: var(--radius-2026-sm);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .studio-notice button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .studio-notice button:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
-  }
-
-  .save-layout .dismiss {
-    min-width: var(--studio-control-height);
-    padding: 0;
   }
 
   .workspace {

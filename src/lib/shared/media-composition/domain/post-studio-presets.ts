@@ -281,8 +281,13 @@ export const POST_STUDIO_SOURCE_ORDER: readonly PostStudioRoleKey[] = [
 ];
 
 /**
- * The four structural starting points shown in Post Studio. They bind by role,
- * never by one sequence's concrete URLs, so the same preset can be reused.
+ * Structural arrangements, kept as fixtures rather than as a product feature.
+ * Post Studio no longer offers these as a template menu — a post is a top slot
+ * and a bottom slot, both picked in the preview, which reaches every pairing
+ * including the ones nobody enumerated here. `DEFAULT_POST_LAYOUT` is the one
+ * the studio boots into; the rest exist for tests and for reference.
+ *
+ * They bind by role, never by one sequence's concrete URLs.
  */
 export const POST_STUDIO_PRESETS: readonly MediaCompositionPreset[] = [
   preset({
@@ -395,3 +400,8 @@ export const POST_STUDIO_PRESETS: readonly MediaCompositionPreset[] = [
     clips: [visualClip("card", POST_STUDIO_ROLE.card, "card")],
   }),
 ];
+
+/** Animation over the choreo card — where every post starts before editing. */
+export const DEFAULT_POST_LAYOUT: MediaCompositionPreset =
+  POST_STUDIO_PRESETS.find((entry) => entry.id === "sequence-breakdown") ??
+  POST_STUDIO_PRESETS[0]!;
