@@ -3,7 +3,7 @@
   import ChoreoCard from "./ChoreoCard.svelte";
   import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
   import type { ViewerCompanionSurfaceProps } from "./viewer-split-pane-types";
-  import VideoGallery from "./VideoGallery.svelte";
+  import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
 
   let {
     side,
@@ -113,11 +113,16 @@
     class="media-pane content-overlay"
     class:content-overlay-hidden={!videos.shown}
   >
-    <VideoGallery
+    <!-- Browse only. Uploading and timing happen on the full Videos surface,
+         which onVideoUpload switches the viewer to. -->
+    <SequenceVideos
       {sequence}
       isOwned={false}
       {isLoggedIn}
-      onUpload={onVideoUpload}
+      canUpload={!!onVideoUpload}
+      onUploadOpenChange={(open) => {
+        if (open) onVideoUpload?.();
+      }}
     />
   </div>
 {/if}

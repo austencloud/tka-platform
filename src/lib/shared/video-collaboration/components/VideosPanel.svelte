@@ -1,12 +1,17 @@
 <!--
   VideosPanel.svelte
 
-  Full-panel overlay for browsing and managing videos for a sequence.
-  Replaces inline SequenceVideosSection with a dedicated, spacious interface.
+  Full-panel overlay for browsing and managing videos for a sequence, inside
+  the Create module's sequence drawer.
+
+  A separate presentation from the viewer's SequenceVideos - different host,
+  different layout, its own upload sheet - but not a separate list. Both read
+  the shared per-sequence store, so a video added in either place shows up in
+  the other. See .claude/rules/canonical-capabilities.md.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { CollaborativeVideo } from "../domain/collaborative-video";
   import { onMount } from "svelte";
@@ -26,26 +31,17 @@
   } = $props();
 
   const hapticService = getHapticFeedback();
-  let videos = $state<CollaborativeVideo[]>([]);
-  let loading = $state(true);
-  let error = $state<string | null>(null);
+  const store = $derived(getSequenceVideosStore(sequence.id));
   let showUploadSheet = $state(false);
   let selectedVideo = $state<CollaborativeVideo | null>(null);
 
-  onMount(() => {
-    loadVideos();
-  });
+  const videos = $derived(store.videos);
+  const loading = $derived(store.loading);
+  const error = $derived(store.error || null);
 
-  async function loadVideos() {
-    try {
-      videos = await getVideosForSequence(sequence.id);
-    } catch (e) {
-      console.error("Failed to load videos:", e);
-      error = e instanceof Error ? e.message : "Failed to load";
-    } finally {
-      loading = false;
-    }
-  }
+  onMount(() => {
+    void store.load();
+  });
 
   function handleVideoClick(video: CollaborativeVideo) {
     hapticService?.trigger("selection");
@@ -63,7 +59,8 @@
   }
 
   function handleVideoUploaded() {
-    loadVideos();
+    // The sheet saves the record itself, so re-read rather than insert.
+    void store.reload();
   }
 
   function closeVideoPlayer() {
