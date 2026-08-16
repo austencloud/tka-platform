@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "bridgeId": "forest-plantcatalog-r1",
+  "phase": "preflight",
+  "installedPlantFactoryVersion": "4.8.0.0",
+  "executable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
+  "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
+  "activeExportSet": "proof",
+  "activeJobs": [
+    "quercus-robur-forest-hd-s41"
+  ],
+  "sourceResults": [
+    {
+      "id": "quercus-robur-forest-hd-s41",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest HD_~~.tpf",
+      "bytes": 100188,
+      "sha256": "d3aa44a882358cddff3bbe4a99eb5259f42b685b2c20baa75b77ad6d1dee98cf"
+    }
+  ],
+  "apiSignaturesVerified": true,
+  "plantFactoryProofComplete": false
+}

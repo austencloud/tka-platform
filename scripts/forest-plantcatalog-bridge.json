@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "bridgeId": "forest-plantcatalog-r1",
+  "museumTrackerItem": "YmJWyFZKDT6sCFn6Htrt",
+  "activeExportSet": "proof",
+  "source": {
+    "plantFactoryExecutable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
+    "plantFactoryProductVersion": "4.8.0.0",
+    "pythonApiPath": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
+    "plantCatalogRoot": "C:/ProgramData/e-onsoftware/PlantCatalog",
+    "licenseReference": "https://www.bentley.com/software/e-on-software-free-downloads/",
+    "commercialProjectEmbeddingAllowed": true,
+    "standaloneAssetRedistributionAllowed": false
+  },
+  "paths": {
+    "rawRoot": "blender/plantcatalog-bridge-r1/raw",
+    "conditionedRoot": "blender/plantcatalog-bridge-r1/conditioned",
+    "statePath": "blender/plantcatalog-bridge-r1/state/plantfactory-export-state.json",
+    "completionPath": "blender/plantcatalog-bridge-r1/state/plantfactory-export-complete.json",
+    "candidateRoot": "static/models/forest/trees/candidates/plantcatalog-r1",
+    "evidenceRoot": "docs/superpowers/specs/moonlit-firefly-forest/evidence/plantcatalog-bridge-r1"
+  },
+  "export": {
+    "presetConstant": "EExportPreset_EP_Unity",
+    "extension": ".fbx",
+    "options": {
+      "TextureMapFormat": "png",
+      "AlphaTreatment": 2,
+      "MergeExtension": "png",
+      "DoubleSided": 0,
+      "TexturePathMode": 0,
+      "TexturesSubFolder": 0,
+      "SmoothingGroups": 1,
+      "Scale": 1,
+      "AxesSystem": 0,
+      "InvertAlpha": 0,
+      "InvertGreen": 0
+    }
+  },
+  "conditioning": {
+    "foliageAlphaCutoff": 0.48,
+    "foliageRoughness": 0.9,
+    "woodRoughness": 0.94,
+    "maximumRuntimeBytes": 25165824,
+    "maximumRuntimeTriangles": 600000,
+    "optimizedTextureSize": 1024
+  },
+  "exportSets": {
+    "proof": [
+      "quercus-robur-forest-hd-s41"
+    ],
+    "productionWaveR1": []
+  },
+  "jobs": [
+    {
+      "id": "quercus-robur-forest-hd-s41",
+      "label": "English oak, forest form, seed 41",
+      "species": "Quercus robur",
+      "morphology": "mature forest oak",
+      "catalogSpeciesName": "Quercus robur forest",
+      "sourceRelativePath": "Broadleaf Trees/Quercus robur forest HD_~~.tpf",
+      "sourceLod": "HD",
+      "sourceBytes": 100188,
+      "sourceSha256": "d3aa44a882358cddff3bbe4a99eb5259f42b685b2c20baa75b77ad6d1dee98cf",
+      "seed": 41,
+      "ageYears": 55.0,
+      "maximumAgeYears": 100.0,
+      "health": 1.0,
+      "seasonDay": 172.0,
+      "targetHeightMetres": 16.0,
+      "habitatRole": "near-to-middle broad-canopy structure",
+      "rawSubdirectory": "quercus-robur-forest-hd-s41",
+      "candidateFilename": "quercus-robur-forest-hd-s41.glb"
+    }
+  ]
+}
