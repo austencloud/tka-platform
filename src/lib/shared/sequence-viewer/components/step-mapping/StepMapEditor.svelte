@@ -140,8 +140,19 @@
     if (videoEl) videoEl.playbackRate = next;
   }
 
+  /**
+   * The footage's own aspect, which sizes the stage column on wide panels.
+   * 16:9 until the file says otherwise; most performance clips are portrait
+   * and would otherwise be a strip in a wide black box.
+   */
+  let videoRatio = $state(16 / 9);
+
   function handleLoadedMetadata(): void {
-    if (videoEl) videoEl.playbackRate = rate;
+    if (!videoEl) return;
+    videoEl.playbackRate = rate;
+    if (videoEl.videoWidth > 0 && videoEl.videoHeight > 0) {
+      videoRatio = videoEl.videoWidth / videoEl.videoHeight;
+    }
   }
 
   function togglePlayPause(): void {
@@ -180,7 +191,18 @@
   function markArrival(): void {
     if (mode !== "mark" || marks.length >= totalMarks) return;
 
-    marks = [...marks, currentTime];
+    // Straight off the element, not the `currentTime` state: timeupdate fires
+    // about four times a second, so the state can be a quarter second stale at
+    // the instant of the tap - which is most of a move at 0.5x.
+    const at = videoEl?.currentTime ?? currentTime;
+
+    // A tap that lands on the mark before it is a double-fire, not a move of
+    // zero length. Dropping it keeps the marks strictly increasing, which is
+    // what every consumer of beatTimestamps assumes.
+    const previous = marks[marks.length - 1];
+    if (previous !== undefined && at - previous < FRAME) return;
+
+    marks = [...marks, at];
 
     flashing = true;
     if (flashTimeout) clearTimeout(flashTimeout);
@@ -318,7 +340,7 @@
 <!-- The shell exists to be queried. A container query resolves against an
      ANCESTOR container, so rules that recompose .editor itself cannot live
      behind its own container-type - they silently never applied. -->
-<div class="step-map-shell">
+<div class="step-map-shell" style="--video-ratio: {videoRatio}">
   <div class="editor">
     <div class="stage">
       <!-- svelte-ignore a11y_media_has_caption -->
@@ -929,10 +951,18 @@
      still spans the full width, because it is a ruler. */
   @container (min-width: 52rem) {
     .editor {
-      /* The column grows with the canvas rather than freezing at a 1080p
-         width, so a 4K panel does not leave the controls marooned. */
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, clamp(26rem, 26cqw, 40rem));
+      /* The stage column is sized from the footage, not from whatever is left
+         over. Performance clips are usually shot on a phone in portrait, and a
+         9:16 clip given a 1fr column renders as a narrow strip stranded in
+         800px of black. Sizing the column by ratio x height puts the video and
+         the controls next to each other in the middle of the frame instead.
+         The controls column grows with the canvas so a 4K panel does not leave
+         them marooned either. */
+      grid-template-columns:
+        minmax(0, min(52cqw, calc(var(--video-ratio, 1.7778) * 78dvh)))
+        minmax(18rem, clamp(24rem, 24cqw, 36rem));
       grid-template-rows: minmax(0, 1fr) auto auto;
+      justify-content: center;
     }
 
     .timeline-row {
@@ -1000,6 +1030,47 @@
     .action-bar {
       grid-column: 1 / -1;
       grid-row: 3;
+    }
+  }
+
+  /* 4K at 100%, or a TV across the room. Nothing is scaling for you at this
+     size, so the ceilings step up rather than leaving the controls beside a
+     1700px-tall video as fine print. 1920 (4K at 200%) stays on the tier
+     above, where it already reads correctly. */
+  @container (min-width: 150rem) {
+    /* SegmentedControl sizes itself from these, so raising them on the wrapper
+       scales the rate chips through the primitive's own seam. */
+    .rate-control {
+      --font-size-sm: 1.15rem;
+      --font-size-compact: 1.05rem;
+    }
+
+    .tap-face,
+    .selected-face {
+      max-inline-size: clamp(26rem, 24cqw, 36rem);
+    }
+
+    .tap-copy strong {
+      font-size: clamp(1.5rem, 1.6cqw, 2.5rem);
+    }
+
+    .tap-progress,
+    .selected-label {
+      font-size: 1.5rem;
+    }
+
+    .tap-key,
+    .rate-hint,
+    .selected-time {
+      font-size: 1.1rem;
+    }
+
+    .aux-btn,
+    .cancel-btn,
+    .save-btn {
+      min-block-size: 60px;
+      padding-inline: 1.4rem;
+      font-size: 1.15rem;
     }
   }
 
