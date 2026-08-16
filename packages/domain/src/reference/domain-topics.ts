@@ -83,6 +83,81 @@ TKA defines 1 turn as 180 degrees of additional prop rotation beyond base behavi
 This also makes the orientation parity rules intuitive: each additional turn (180 degrees) flips orientation once, so even turns preserve and odd turns reverse.`,
   },
 
+  "layers": {
+    title: "Layers and the Layer Signature",
+    content: `## Layers and the Layer Signature
+
+At any moment each prop is either **radial** (in or out, along the line from the
+performer's center) or **nonradial** (clock or counter, across that line). Take
+both props together and there are exactly four combinations. These are the
+**layers**, and the name is long-standing TKA terminology.
+
+| Layer | Blue | Red |
+|-------|------|-----|
+| 1 | radial | radial |
+| 2 | nonradial | nonradial |
+| 3 | radial | nonradial |
+| 4 | nonradial | radial |
+
+Layers 3 and 4 are mirror images: mirroring a sequence swaps blue and red, which
+turns every 3 into a 4. So they collapse to a single "layer 3" for display, the
+same way A, B and C collapse. Keep all four when calculating; collapse only when
+showing.
+
+Read one layer per step and you get the sequence's **layer signature**, a string
+like \`1233341112333411\`.
+
+### Layers are a Level 3 concept
+
+Only two things take a prop from radial to nonradial: a **half turn**, and a
+**float** whose hand path travels around the circle. Level 1 has no turns and
+Level 2 has only whole turns, so nothing below Level 3 can leave radial at all.
+
+Every Level 1 and Level 2 sequence is in layer 1 from start to finish. Its
+signature is \`111...1\` and carries no information. The layer signature is
+something Level 3 introduces, not something the lower levels happen not to use.
+
+### The signature comes from the turns, not the letters
+
+This is the useful part. Nothing about the letters, the positions, or the hand
+paths moves a prop between radial and nonradial. Only the turn values do:
+
+- **Whole turns never change layer.** A whole turn either preserves the
+  orientation or reverses it, and in/out are both radial while clock/counter are
+  both nonradial, so either way the prop stays where it was.
+- **Half turns always change layer.** A half turn lands 90 degrees away, which is
+  exactly the step between radial and nonradial.
+- **A float changes layer only when its hand travels around the circle.** A float
+  whose hand crosses through the middle or stays put leaves the prop alone.
+- **Quarter turns (Level 6) land on interradial orientations**, which sit off this
+  four-way reading entirely.
+
+Because of this, the turn pattern is worth naming on its own. The same pattern
+laid over a completely different word produces the same signature, and unrelated
+words in the sequence library do share signatures.
+
+### Repeats and closure
+
+A prop that changes layer an odd number of times across a sequence does not come
+home. Put that sequence on repeat and the second pass starts in a different layer
+than the first, so it looks different even though the letters are identical. A
+sequence whose layers close needs each prop to change layer an **even** number of
+times.
+
+This is the same fact as a four-repetition orientation cycle approached from the
+other side: forcing an odd count per prop is what makes the orientation pattern
+take four passes to come back around instead of two.
+
+### How large the space is
+
+For a sequence of N steps there are 4^N possible signatures, 3^N once layers 3
+and 4 are collapsed for display, and 4^(N-1) of them close. Every signature is
+reachable from any starting layer, and at Level 3 every signature is reachable on
+any word. Below Level 3 exactly one is reachable: \`111...1\`.
+
+See also: **orientation-algebra** for the per-prop rules this is built on, and
+**loops** for what closure means to a repeating sequence.`
+  },
   "orientation-algebra": {
     title: "Orientation Algebra",
     content: `## Orientation Algebra

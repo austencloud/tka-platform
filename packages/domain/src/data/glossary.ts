@@ -639,6 +639,30 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     relatedTerms: ["dash", "shift", "static", "centric", "tau", "motion", "hand-path-modifier"],
     category: "motion"
   },
+  "radial": {
+    definition: "A prop orientation that lies along the line between the performer's center point and the hand: in (pointing toward center) or out (pointing away). Radial and nonradial describe prop ORIENTATION. Cardinal and intercardinal describe grid point LOCATION. The two are independent and must never be conflated.",
+    examples: ["in and out are the two radial orientations", "A prop at 0 turns from a radial start stays radial", "Level 1 and Level 2 sequences are radial throughout, because only a half turn or a float can leave radial"],
+    relatedTerms: ["nonradial", "interradial", "orientation", "layer"],
+    category: "rotation"
+  },
+  "nonradial": {
+    definition: "A prop orientation that lies across the line between the performer's center point and the hand: clock or counter. Written non-radial in some code. A prop reaches nonradial from radial by a half turn or by a float on a curved hand path, so nonradial orientation does not exist below Level 3.",
+    examples: ["clock and counter are the two nonradial orientations", "A half turn takes a prop from radial to nonradial", "Level 3 is where nonradial first becomes possible"],
+    relatedTerms: ["radial", "interradial", "orientation", "layer", "level"],
+    category: "rotation"
+  },
+  "layer": {
+    definition: "Which of the four radial/nonradial combinations the two props are in at a given step. Layer 1: both props radial. Layer 2: both props nonradial. Layer 3: blue radial, red nonradial. Layer 4: blue nonradial, red radial. Layers 3 and 4 are mirror images of each other, so they are collapsed to a single 'layer 3' for display, the same way A, B and C collapse. Layer is a Level 3 concept: nonradial orientation does not exist below Level 3, so every Level 1 and Level 2 sequence is in layer 1 from start to finish.",
+    examples: ["Layer 1: both props pointing in or out", "Layer 2: both props lying across the radius", "Layers 3 and 4 read as busy, because one prop is flat to the circle and the other is on edge", "Level 1 and Level 2 sequences never leave layer 1"],
+    relatedTerms: ["layer-signature", "radial", "nonradial", "orientation", "level"],
+    category: "rotation"
+  },
+  "layer-signature": {
+    definition: "The layer of each step of a sequence read in order, written as a string such as 1233341112333411. It is decided entirely by the pattern of turns and does not depend on the letters at all, so the same turn pattern laid over a completely different word produces the same signature. A sequence that repeats needs each prop to change layer an even number of times, or the second pass through starts in a different layer than the first.",
+    examples: ["1111111111111111: a sequence that never leaves layer 1, which is every Level 1 and Level 2 sequence", "1233341112333411: the same signature appears on unrelated words", "A repeating sequence whose props change layer an odd number of times takes two passes to come back around"],
+    relatedTerms: ["layer", "turns", "loop", "level"],
+    category: "sequence"
+  },
   "interradial": {
     definition: "The four orientations at 45 degrees between the base cardinal orientations, introduced at Level 6. These double the angular precision of the orientation system from 4 values to 8. The four interradial orientations are: clockIn (between clock and in), clockOut (between clock and out), counterIn (between counter and in), counterOut (between counter and out). Quarter turns (0.25, 0.75, etc.) produce interradial orientations using the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn.",
     examples: ["clockIn: prop faces 45° between clock and in", "Level 6 doubles orientation vocabulary from 4 to 8", "Quarter turns step through the 8-point radial cycle"],
