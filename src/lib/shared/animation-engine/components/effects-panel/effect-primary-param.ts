@@ -11,6 +11,7 @@
  */
 
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import { SILK_INTENSITY_MAX } from "$lib/shared/effects/domain/effects-config";
 
 export interface PrimaryParamSpec {
   readonly label: string;
@@ -151,6 +152,35 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     format: fmt2,
     get: (s) => s.frost.intensity,
     set: (s, v) => s.updateEffect("frost", { intensity: v }),
+  },
+  // Silk's intensity is capped below 1 in the manifest (SILK_INTENSITY_MAX);
+  // the slider honours that ceiling rather than offering unreachable travel.
+  silk: {
+    label: "Intensity",
+    min: 0,
+    max: SILK_INTENSITY_MAX,
+    step: 0.01,
+    format: fmt2,
+    get: (s) => s.silk.intensity,
+    set: (s, v) => s.updateEffect("silk", { intensity: v }),
+  },
+  animal: {
+    label: "Intensity",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    format: fmt2,
+    get: (s) => s.animal.intensity,
+    set: (s, v) => s.updateEffect("animal", { intensity: v }),
+  },
+  pulse: {
+    label: "Intensity",
+    min: 0,
+    max: 1,
+    step: 0.01,
+    format: fmt2,
+    get: (s) => s.pulse.intensity,
+    set: (s, v) => s.updateEffect("pulse", { intensity: v }),
   },
 };
 

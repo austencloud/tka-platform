@@ -7,19 +7,14 @@
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
   import EffectsInspector from "./EffectsInspector.svelte";
-  import {
-    EFFECT_COLORS,
-    EFFECT_LABELS,
-    EFFECTS,
-    getRegistration,
-  } from "./effect-registry";
+  import EffectDock from "./EffectDock.svelte";
+  import { EFFECT_LABELS, getRegistration } from "./effect-registry";
   import type { EffectRegistration } from "./effect-registry";
   import { matchPresetId, valuesEqual } from "./presets/match-preset";
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
-  import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import EffectsPlaybackBar from "./EffectsPlaybackBar.svelte";
@@ -79,14 +74,11 @@
   const registration = $derived<EffectRegistration | undefined>(
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
-  const hasPresetChoices = $derived(
-    (registration?.presetGroup.presets.length ?? 0) > 0
-  );
-
-  // Desktop has two deliberate states: browse the roster or work on one
-  // effect. Keeping the inspector separate removes the old wall of effects,
-  // presets, and controls competing for attention at the same time.
-  let sidebarDetailOpen = $state(effectsConfigState.activeEffect !== "none");
+  // Always opens on the roster, even when an effect is already active from a
+  // previous session. The inspector is somewhere you choose to go, never where
+  // the panel drops you - landing in it is the same trap as navigating on
+  // select, just triggered by boot instead of a click.
+  let sidebarDetailOpen = $state(false);
   const sidebarView = $derived(
     sidebarDetailOpen && activeEffect !== "none" && registration
       ? `detail-${activeEffect}`
@@ -241,30 +233,41 @@
   });
 
   function handleEffectSelect(effectId: string): void {
-    const previous = activeEffect;
-    customizeOpen = false;
-    CustomizeComponent = null;
     if (effectId === activeEffect) {
-      effectsConfigState.setActiveEffect("none");
-      reportSetting("active_effect", previous, "none");
+      void handleCustomizeOpen();
       return;
     }
-    if (isEffectId(effectId)) {
-      effectsConfigState.setActiveEffect(effectId);
-      reportSetting("active_effect", previous, effectId);
-    }
-  }
-
-  function handleSidebarEffectSelect(effectId: string): void {
     if (!isEffectId(effectId)) return;
     const previous = activeEffect;
     customizeOpen = false;
     CustomizeComponent = null;
-    if (effectId !== activeEffect) {
-      effectsConfigState.setActiveEffect(effectId);
-      reportSetting("active_effect", previous, effectId);
+    effectsConfigState.setActiveEffect(effectId);
+    reportSetting("active_effect", previous, effectId);
+  }
+
+  function handleGridDisable(): void {
+    const previous = activeEffect;
+    customizeOpen = false;
+    CustomizeComponent = null;
+    effectsConfigState.setActiveEffect("none");
+    reportSetting("active_effect", previous, "none");
+  }
+
+  // Same contract as the mobile picker: selecting an effect applies it live and
+  // leaves you in the roster, so comparing sixteen effects costs sixteen clicks
+  // instead of thirty-two plus sixteen screen transitions. Clicking the effect
+  // you already have on is the drill gesture into its inspector.
+  function handleSidebarEffectSelect(effectId: string): void {
+    if (!isEffectId(effectId)) return;
+    if (effectId === activeEffect) {
+      sidebarDetailOpen = true;
+      return;
     }
-    sidebarDetailOpen = true;
+    const previous = activeEffect;
+    customizeOpen = false;
+    CustomizeComponent = null;
+    effectsConfigState.setActiveEffect(effectId);
+    reportSetting("active_effect", previous, effectId);
   }
 
   function handleSidebarDisable(): void {
@@ -384,10 +387,9 @@
     CustomizeComponent = null;
   }
 
-  function handleSliderInput(ev: Event): void {
+  function setPrimaryValue(v: number): void {
     if (!primarySpec) return;
     const previous = primaryValue;
-    const v = parseFloat((ev.currentTarget as HTMLInputElement).value);
     primarySpec.set(effectsConfigState, v);
     reportSetting(`primary_${activeEffect}`, previous, v, true);
   }
@@ -460,6 +462,23 @@
             onPrewarm={handleEffectPrewarm}
             activeAction="tune"
           />
+
+          {#if activeEffect !== "none" && registration}
+            <EffectDock
+              {registration}
+              {activePresetId}
+              defaultChipId={DEFAULT_CHIP_ID}
+              customChipId={CUSTOM_CHIP_ID}
+              {customDisabled}
+              {customColors}
+              primarySpec={primarySpec}
+              {primaryValue}
+              onSelectPreset={handlePresetSelect}
+              onPrimaryInput={setPrimaryValue}
+              onTune={() => (sidebarDetailOpen = true)}
+              wrapLooks
+            />
+          {/if}
         </div>
       {:else if activeEffect !== "none" && registration}
         <EffectsInspector
@@ -568,6 +587,8 @@
         </div>
       {:else if stripView === "detail" && registration && activeEffect !== "none"}
         <div class="drill-view">
+          <!-- The dock carries this effect's identity, so the head is just the
+               way back to the picker. -->
           <div class="detail-head">
             <button
               type="button"
@@ -577,97 +598,23 @@
             >
               <i class="fas fa-arrow-left" aria-hidden="true"></i>
             </button>
-            <i
-              class="fas {EFFECTS.find((e) => e.id === activeEffect)
-                ?.icon} detail-icon"
-              style:color={EFFECT_COLORS[activeEffect]}
-              aria-hidden="true"
-            ></i>
-            <span class="detail-name"
-              >{EFFECT_LABELS[activeEffect] ?? activeEffect}</span
-            >
+            <span class="detail-name">All effects</span>
           </div>
 
-          {#if hasPresetChoices}
-            <div
-              class="preset-wrap"
-              role="radiogroup"
-              aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
-            >
-              {#each registration.presetGroup.presets as preset (preset.id)}
-                {@const isActive = activePresetId === preset.id}
-                <button
-                  type="button"
-                  class="preset-chip"
-                  class:active={isActive}
-                  role="radio"
-                  aria-checked={isActive}
-                  onclick={() => handlePresetSelect(preset.id)}
-                >
-                  {#if preset.previewColor === "rainbow"}
-                    <span class="swatch rainbow" aria-hidden="true"></span>
-                  {:else if preset.previewColor === "custom"}
-                    <span class="swatch custom" aria-hidden="true"></span>
-                  {:else if preset.previewColor2}
-                    <span class="swatch dual" aria-hidden="true">
-                      <span class="half" style:background={preset.previewColor}
-                      ></span>
-                      <span class="half" style:background={preset.previewColor2}
-                      ></span>
-                    </span>
-                  {:else}
-                    <span
-                      class="swatch"
-                      style:background={preset.previewColor}
-                      aria-hidden="true"
-                    ></span>
-                  {/if}
-                  {preset.name}
-                </button>
-              {/each}
-            </div>
-          {:else}
-            <EffectTuneStrip
-              effectId={activeEffect}
-              config={effectsConfigState}
-              propType={animationSettings.currentPropType}
-              overrides={tuneOverrides}
-              onSettingChange={(setting, previousValue, value, coalesce) =>
-                reportSetting(
-                  `tuning_${activeEffect}_${setting}`,
-                  previousValue,
-                  value,
-                  coalesce
-                )}
-            />
-          {/if}
-
-          {#if hasPresetChoices && primarySpec}
-            <div class="slider-row">
-              <span class="slider-label">{primarySpec.label}</span>
-              <input
-                type="range"
-                class="slider"
-                min={primarySpec.min}
-                max={primarySpec.max}
-                step={primarySpec.step}
-                value={primaryValue}
-                oninput={handleSliderInput}
-                aria-label="{primarySpec.label} for {EFFECT_LABELS[
-                  activeEffect
-                ] ?? activeEffect}"
-              />
-              <span class="slider-val">{primarySpec.format(primaryValue)}</span>
-            </div>
-            <button
-              type="button"
-              class="more-btn"
-              onclick={handleCustomizeOpen}
-            >
-              <span>More tuning…</span>
-              <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            </button>
-          {/if}
+          <EffectDock
+            {registration}
+            {activePresetId}
+            defaultChipId={DEFAULT_CHIP_ID}
+            customChipId={CUSTOM_CHIP_ID}
+            {customDisabled}
+            {customColors}
+            primarySpec={primarySpec}
+            {primaryValue}
+            onSelectPreset={handlePresetSelect}
+            onPrimaryInput={setPrimaryValue}
+            onTune={handleCustomizeOpen}
+            tuneLabel="More"
+          />
         </div>
       {:else}
         <div class="drill-view">
@@ -722,90 +669,48 @@
       {@render customizeAnchors()}
       <CustomizeComponent onBack={handleCustomizeClose} />
     {:else}
+      <!-- Re-clicking the active tile now drills into tuning rather than
+           disabling, so the popover needs its own explicit kill switch - the
+           same Off chip the mobile picker uses. -->
+      <div class="picker-bar">
+        <button
+          type="button"
+          class="off-chip"
+          class:active={activeEffect === "none"}
+          aria-pressed={activeEffect === "none"}
+          onclick={handleGridDisable}
+        >
+          <i class="fas fa-ban" aria-hidden="true"></i>
+          <span
+            >{activeEffect === "none"
+              ? "Off"
+              : `Turn off ${EFFECT_LABELS[activeEffect] ?? ""}`}</span
+          >
+        </button>
+      </div>
+
       <EffectSelector
         {activeEffect}
         onSelect={handleEffectSelect}
         onPrewarm={handleEffectPrewarm}
+        activeAction="tune"
       />
 
       {#if activeEffect !== "none" && registration}
-        {#if hasPresetChoices}
-          <div
-            class="preset-strip"
-            role="radiogroup"
-            aria-label="{EFFECT_LABELS[activeEffect] ?? activeEffect} presets"
-          >
-            {#each registration.presetGroup.presets as preset (preset.id)}
-              {@const isActive = activePresetId === preset.id}
-              <button
-                type="button"
-                class="preset-chip"
-                class:active={isActive}
-                role="radio"
-                aria-checked={isActive}
-                onclick={() => handlePresetSelect(preset.id)}
-              >
-                {#if preset.previewColor === "rainbow"}
-                  <span class="swatch rainbow" aria-hidden="true"></span>
-                {:else if preset.previewColor === "custom"}
-                  <span class="swatch custom" aria-hidden="true"></span>
-                {:else if preset.previewColor2}
-                  <span class="swatch dual" aria-hidden="true">
-                    <span class="half" style:background={preset.previewColor}
-                    ></span>
-                    <span class="half" style:background={preset.previewColor2}
-                    ></span>
-                  </span>
-                {:else}
-                  <span
-                    class="swatch"
-                    style:background={preset.previewColor}
-                    aria-hidden="true"
-                  ></span>
-                {/if}
-                {preset.name}
-              </button>
-            {/each}
-          </div>
-        {:else}
-          <EffectControlStack
-            effect={activeEffect}
-            config={effectsConfigState}
-            tiers={["primary", "tracking", "advanced"]}
-            propType={animationSettings.currentPropType}
-            overrides={tuneOverrides}
-            onSettingChange={(setting, previousValue, value, coalesce) =>
-              reportSetting(
-                `tuning_${activeEffect}_${setting}`,
-                previousValue,
-                value,
-                coalesce
-              )}
-          />
-        {/if}
-
-        {#if hasPresetChoices && primarySpec}
-          <div class="slider-row">
-            <span class="slider-label">{primarySpec.label}</span>
-            <input
-              type="range"
-              class="slider"
-              min={primarySpec.min}
-              max={primarySpec.max}
-              step={primarySpec.step}
-              value={primaryValue}
-              oninput={handleSliderInput}
-              aria-label="{primarySpec.label} for {EFFECT_LABELS[
-                activeEffect
-              ] ?? activeEffect}"
-            />
-            <span class="slider-val">{primarySpec.format(primaryValue)}</span>
-          </div>
-          <button type="button" class="more-btn" onclick={handleCustomizeOpen}>
-            <span>More tuning…</span>
-            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-          </button>
-        {/if}
+        <EffectDock
+          {registration}
+          {activePresetId}
+          defaultChipId={DEFAULT_CHIP_ID}
+          customChipId={CUSTOM_CHIP_ID}
+          {customDisabled}
+          {customColors}
+          primarySpec={primarySpec}
+          {primaryValue}
+          onSelectPreset={handlePresetSelect}
+          onPrimaryInput={setPrimaryValue}
+          onTune={handleCustomizeOpen}
+          tuneLabel="More"
+        />
       {/if}
     {/if}
   </div>
@@ -904,9 +809,17 @@
   }
 
   /* ── Global factory reset (panel footer) ── */
+  /* Sinks to the bottom whenever a host gives the panel a definite height; when
+     the panel is content-sized it simply trails the dock. The dock's own height
+     varies with how many looks an effect has (Ghost 2 chips, Coal 10), so this
+     footer is the only thing that moves as you browse - the roster above it and
+     the dock's top edge both hold still, which is what matters for the pointer
+     hopping around the grid (no-layout-shift.md). */
   .sb-footer {
     display: flex;
     justify-content: center;
+    margin-top: auto;
+    border-bottom: none;
   }
 
   .reset-all-btn {
@@ -997,17 +910,6 @@
     gap: 10px;
   }
 
-  .preset-strip {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .preset-strip::-webkit-scrollbar {
-    display: none;
-  }
-
   /* ── Mobile drill-down (strip layout) ── */
   .mep.strip-layout,
   .drill-view {
@@ -1080,178 +982,12 @@
   .back-btn:hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
   }
-  .detail-icon {
-    font-size: 18px;
-  }
   .detail-name {
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--theme-text, white);
-  }
-
-  /* Detail presets wrap — the screen has the whole tray, so every look is
-     visible instead of h-scrolled. */
-  .preset-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .preset-chip {
-    flex-shrink: 0;
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: all 150ms ease;
-  }
-  .preset-chip.active {
-    background: color-mix(
-      in srgb,
-      var(--fx-accent) 18%,
-      var(--theme-panel-bg, rgba(20, 22, 32, 0.6))
-    );
-    border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
-    color: var(--fx-accent-text);
-  }
-  .preset-chip .swatch {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  /* Deliberate effect-color swatch data, not UI chrome: these hexes preview the
-     rainbow / custom preset colors themselves, so they stay literal. */
-  .preset-chip .swatch.rainbow {
-    background: conic-gradient(
-      from 0deg,
-      #ef4444,
-      #f59e0b,
-      #eab308,
-      #22c55e,
-      #06b6d4,
-      #3b82f6,
-      #8b5cf6,
-      #ef4444
-    );
-  }
-  .preset-chip .swatch.custom {
-    background: linear-gradient(135deg, #666 50%, #aaa 50%);
-  }
-  .preset-chip .swatch.dual {
-    display: flex;
-    overflow: hidden;
-    border-radius: 50%;
-  }
-  .preset-chip .swatch.dual .half {
-    flex: 1;
-  }
-
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    border-radius: 10px;
-  }
-  .strip-layout .slider-row {
-    gap: 8px;
-    padding: 6px 10px;
-  }
-  .slider-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-    /* min-width (not fixed width): "Brightness" at the 12px floor overflows the
-       old 72px slot; let long labels grow instead of clipping. */
-    min-width: 72px;
-    flex-shrink: 0;
-  }
-  .slider {
-    flex: 1;
-    height: 22px;
-    appearance: none;
-    -webkit-appearance: none;
-    background: transparent;
-    cursor: pointer;
-  }
-  .slider::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-  .slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    margin-top: -5px;
-    border-radius: 50%;
-    background: var(--theme-text, white);
-    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4));
-    cursor: pointer;
-  }
-  .slider::-moz-range-track {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.08));
-  }
-  .slider::-moz-range-progress {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--fx-accent);
-  }
-  .slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border: none;
-    border-radius: 50%;
-    background: var(--theme-text, white);
-    box-shadow: 0 2px 6px var(--theme-shadow, rgba(0, 0, 0, 0.4));
-    cursor: pointer;
-  }
-  .slider-val {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    color: var(--fx-accent-text);
-    min-width: 44px;
-    text-align: right;
-  }
-
-  .more-btn {
-    height: 40px;
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: all 150ms ease;
-  }
-  .more-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
   }
 
   .back-row {
