@@ -211,6 +211,8 @@
   let playerPosition = $state({ x: bootPoint.x, y: bootPoint.y, z: bootPoint.z });
   let playerYaw = $state(bootPoint.yaw);
   let targetPlayerYaw = $state(bootPoint.yaw);
+  /** Non-null only for the tick the review bridge is aiming the camera. */
+  let reviewYaw = $state<number | null>(null);
   /** Physics-owned position, mirrored each frame so a reload can resume here. */
   let livePosition = { x: bootPoint.x, y: bootPoint.y, z: bootPoint.z };
   let resumeSaveElapsed = 0;
@@ -302,6 +304,13 @@
     playerPosition = target;
     playerYaw = spawn.yaw;
     targetPlayerYaw = spawn.yaw;
+    // Same seam as the review bridge: the camera's yaw is the controller's, so
+    // a reset that only rewrites the avatar's facing leaves the view where the
+    // visitor last pointed it.
+    reviewYaw = spawn.yaw;
+    setTimeout(() => {
+      reviewYaw = null;
+    }, 0);
     clearResumePoint();
   }
 
@@ -322,7 +331,16 @@
         playerPosition = target;
         return target;
       },
-      /** Face a plan-space point from wherever the player is standing. */
+      /**
+       * Face a plan-space point from wherever the player is standing.
+       *
+       * The camera's yaw belongs to UnifiedCameraController, not to the avatar:
+       * every frame it pushes its own yaw back down through `snapFacingAngle`.
+       * Writing `playerYaw` here therefore lasted exactly one frame and the view
+       * never turned. The controller's `externalYaw` prop is the seam for this;
+       * it is released on the next tick so the mouse still owns the camera the
+       * moment a human takes over.
+       */
       lookAt(planX: number, planZ: number) {
         const angle = Math.atan2(
           planX - origin.x - playerPosition.x,
@@ -330,6 +348,10 @@
         );
         playerYaw = angle;
         targetPlayerYaw = angle;
+        reviewYaw = angle;
+        setTimeout(() => {
+          reviewYaw = null;
+        }, 0);
         return angle;
       },
       where: () => ({ ...playerPosition, yaw: playerYaw, origin }),
@@ -574,6 +596,7 @@
     enabled={true}
     initialYaw={spawn.yaw}
     initialPitch={0}
+    externalYaw={reviewYaw}
     allowedModes={[CameraMode.FIRST_PERSON]}
     disableModeToggle={true}
     moveSpeed={3.2}
