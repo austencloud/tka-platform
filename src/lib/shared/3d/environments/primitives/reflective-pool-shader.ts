@@ -44,6 +44,18 @@ export interface ReflectivePoolUniformValues {
   foamOpacity: number;
   /** Metres over which the rim colour gives way to the deep colour. */
   shoreFade: number;
+  /**
+   * Wave amplitude at the plane's u=0 and u=1 edges, interpolated across it.
+   * 1 is the surface as authored; 0 is dead flat. Both default to 1, so a
+   * surface that does not ask for a ramp behaves exactly as before.
+   *
+   * This exists so a long body of water can change state along its length
+   * without being cut into separate surfaces. Cutting it would put a foam line
+   * at every internal edge, because the shoreline term below foams wherever
+   * water meets an authored edge.
+   */
+  waveAmplitudeStart: number;
+  waveAmplitudeEnd: number;
 }
 
 export const REFLECTIVE_POOL_DEFAULTS: ReflectivePoolUniformValues = {
@@ -58,6 +70,8 @@ export const REFLECTIVE_POOL_DEFAULTS: ReflectivePoolUniformValues = {
   foamWidth: 0.22,
   foamOpacity: 0.55,
   shoreFade: 2.2,
+  waveAmplitudeStart: 1,
+  waveAmplitudeEnd: 1,
 };
 
 export const ReflectivePoolShader = {
@@ -80,6 +94,12 @@ export const ReflectivePoolShader = {
     uFoamWidth: { value: REFLECTIVE_POOL_DEFAULTS.foamWidth },
     uFoamOpacity: { value: REFLECTIVE_POOL_DEFAULTS.foamOpacity },
     uShoreFade: { value: REFLECTIVE_POOL_DEFAULTS.shoreFade },
+    uWaveAmplitude: {
+      value: new Vector2(
+        REFLECTIVE_POOL_DEFAULTS.waveAmplitudeStart,
+        REFLECTIVE_POOL_DEFAULTS.waveAmplitudeEnd
+      ),
+    },
     uShorelineCount: { value: 4 },
     uShorelineStarts: {
       value: [
@@ -136,6 +156,7 @@ export const ReflectivePoolShader = {
     uniform float uFoamWidth;
     uniform float uFoamOpacity;
     uniform float uShoreFade;
+    uniform vec2 uWaveAmplitude;
     uniform float uShorelineCount;
     uniform vec2 uShorelineStarts[16];
     uniform vec2 uShorelineEnds[16];
@@ -194,6 +215,15 @@ export const ReflectivePoolShader = {
       float h = waveHeight( rippleP, uTime );
       float dx = waveHeight( rippleP + vec2( EPS, 0.0 ), uTime ) - h;
       float dz = waveHeight( rippleP + vec2( 0.0, EPS ), uTime ) - h;
+
+      // Scale the wave and its slope together across the plane's length, so a
+      // single surface can run from dead still to fully rippling. Scaling the
+      // slope as well as the height is what makes the normal, the glint and
+      // the foam wobble all agree at every point along the ramp.
+      float amplitude = mix( uWaveAmplitude.x, uWaveAmplitude.y, vPlaneUv.x );
+      h *= amplitude;
+      dx *= amplitude;
+      dz *= amplitude;
 
       // Horizontal surface: the ripple frame is world XZ around a +Y normal.
       // The XZ scale is deliberately small. Real ripples on an indoor pool tilt

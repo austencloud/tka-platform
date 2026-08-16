@@ -39,6 +39,14 @@
     foamOpacity?: number;
     /** Metres over which the rim colour gives way to the deep colour. */
     shoreFade?: number;
+    /**
+     * Wave amplitude at the surface's west (u=0) and east (u=1) edges,
+     * interpolated across it. 1 is the surface as authored, 0 is dead flat.
+     * Lets one long body of water change state along its length instead of
+     * being cut into separate surfaces, which would foam at every internal cut.
+     */
+    waveAmplitudeStart?: number;
+    waveAmplitudeEnd?: number;
     /** Ripple speed multiplier. Still water is not motionless water. */
     flowSpeed?: number;
     active?: boolean;
@@ -93,6 +101,11 @@
     uFoamWidth: props.foamWidth ?? defaults.foamWidth,
     uFoamOpacity: props.foamOpacity ?? defaults.foamOpacity,
     uShoreFade: props.shoreFade ?? defaults.shoreFade,
+    // A fresh Vector2 per pool: two pools must never share one instance.
+    uWaveAmplitude: new Vector2(
+      props.waveAmplitudeStart ?? defaults.waveAmplitudeStart,
+      props.waveAmplitudeEnd ?? defaults.waveAmplitudeEnd
+    ),
     uShorelineCount: shoreline.length,
     uShorelineStarts: shorelineStarts,
     uShorelineEnds: shorelineEnds,
