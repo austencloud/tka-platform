@@ -223,7 +223,17 @@ export class CharcoalSparkRenderer {
 		const minDim = Math.min(width, height);
 		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 		this.motionScale = Math.max(0.1, minDim / CharcoalSparkRenderer.REFERENCE_SIZE);
+		this.teleportDistance = minDim * 0.5;
 	}
+
+	// A tip that moves further than this in one frame did not travel - it wrapped
+	// a loop seam or the scene changed. Spawning a batch along that jump would
+	// draw a spark ribbon across a path the prop never took.
+	private teleportDistance = CharcoalSparkRenderer.REFERENCE_SIZE * 0.5;
+	// Spawn origin for the particle currently being created, set by
+	// resolveSpawnOrigin so the spawn helpers stay single-argument-per-concern.
+	private spawnOriginX = 0;
+	private spawnOriginY = 0;
 
 	// ======================================================================
 	// IFireOverlayRenderer implementation
@@ -324,6 +334,14 @@ export class CharcoalSparkRenderer {
 		if (this.reducedMotion) dt *= 0.2;
 		if (dt <= 0) dt = 0.016;
 
+		// Emission counts follow real elapsed time, not the physics-safe clamp,
+		// so a long frame emits the sparks its distance earned instead of
+		// thinning the stream out exactly where the tip covered the most ground.
+		// Still capped, or returning from a backgrounded tab would dump the pool.
+		let emitDt = Math.min(srcDt, 0.1);
+		if (this.reducedMotion) emitDt *= 0.2;
+		if (emitDt <= 0) emitDt = dt;
+
 		// On loop: seamless sequences keep sparks continuous; non-seamless deactivate
 		// existing particles so they don't linger at old positions.
 		if (input.loopDetected && !input.isSeamlesslyLoopable) {
@@ -334,7 +352,7 @@ export class CharcoalSparkRenderer {
 
 		// Emission
 		for (const tip of input.tips) {
-			this.emitFromTip(tip, params, dt);
+			this.emitFromTip(tip, params, dt, emitDt);
 		}
 
 		// Physics update
@@ -429,10 +447,42 @@ export class CharcoalSparkRenderer {
 	// Emission
 	// ======================================================================
 
+	/**
+	 * Place the spawn origin for particle `index` of a batch of `count`.
+	 *
+	 * Every particle a frame emits used to spawn at the tip's end-of-frame
+	 * position. At a steady 60fps the tip barely moves between frames and that
+	 * reads as a stream; the moment a frame runs long the tip jumps, and the
+	 * whole batch lands in one spot with a gap behind it - coal arriving in fat
+	 * slices instead of a continuous shower. Spreading the batch along the
+	 * segment the tip actually swept restores the stream: the particles were
+	 * emitted over that span of time, so they belong over that span of space.
+	 *
+	 * Stratified with a jittered offset rather than evenly spaced, or a large
+	 * batch draws a visible picket fence of sparks along the path.
+	 */
+	private resolveSpawnOrigin(tip: PropTipData, index: number, count: number): number {
+		const dx = tip.x - tip.prevX;
+		const dy = tip.y - tip.prevY;
+
+		if (dx * dx + dy * dy > this.teleportDistance * this.teleportDistance) {
+			this.spawnOriginX = tip.x;
+			this.spawnOriginY = tip.y;
+			return 0;
+		}
+
+		// u = 0 is the start of the frame (oldest spark), u = 1 the end.
+		const u = (index + Math.random()) / count;
+		this.spawnOriginX = tip.prevX + dx * u;
+		this.spawnOriginY = tip.prevY + dy * u;
+		return 1 - u;
+	}
+
 	private emitFromTip(
 		tip: PropTipData,
 		params: CharcoalSparkParams,
-		dt: number
+		dt: number,
+		emitDt: number
 	): void {
 		const scale = this.canvasScale;
 		// tip.jerk and tip.speed are derivatives of a canvas-pixel position, so
@@ -441,7 +491,12 @@ export class CharcoalSparkRenderer {
 		// clears the gate and emits nothing.
 		const motion = this.motionScale;
 
-		// Burst emission on high jerk (direction reversals)
+		// Burst emission on high jerk (direction reversals). Note that for a tip
+		// on a spinning prop this gate is effectively always open - a 1.5 rev/s
+		// spin reports a jerk around 33,000 against a threshold of 23 at high
+		// intensity - so the burst behaves as a second, saturated ambient
+		// channel rather than an occasional reversal pop. It is spread along the
+		// travel segment for that reason: at max rate it IS the stream.
 		if (tip.jerk > params.burstThreshold * motion) {
 			const excess = tip.jerk - params.burstThreshold * motion;
 			const count = Math.min(
@@ -449,7 +504,7 @@ export class CharcoalSparkRenderer {
 				Math.floor(params.burstMax * scale)
 			);
 			for (let i = 0; i < count; i++) {
-				this.spawnParticle(tip, params);
+				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, count) * dt);
 			}
 		}
 
@@ -461,29 +516,38 @@ export class CharcoalSparkRenderer {
 			const speedFactor = tip.speed / (150 * motion);
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.ambientRate * speedFactor * scale * dt;
+				params.ambientRate * speedFactor * scale * emitDt;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
 
 			for (let i = 0; i < toEmit; i++) {
-				this.spawnParticle(tip, params);
+				this.spawnParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * dt);
 			}
 		} else if (params.idleRate > 0) {
 			const accumulated =
 				(this.ambientAccumulators.get(tipKey) ?? 0) +
-				params.idleRate * scale * dt;
+				params.idleRate * scale * emitDt;
 			const toEmit = Math.floor(accumulated);
 
 			this.ambientAccumulators.set(tipKey, accumulated - toEmit);
 
 			for (let i = 0; i < toEmit; i++) {
-				this.spawnIdleParticle(tip, params);
+				this.spawnIdleParticle(tip, params, this.resolveSpawnOrigin(tip, i, toEmit) * dt);
 			}
 		}
 	}
 
-	private spawnParticle(tip: PropTipData, params: CharcoalSparkParams): void {
+	/**
+	 * @param age Seconds elapsed since this spark was conceptually emitted, from
+	 *   0 (end of frame) up to dt. Catching each spark up by its own age keeps a
+	 *   batch from being born as one synchronised cohort that then dies as one.
+	 */
+	private spawnParticle(
+		tip: PropTipData,
+		params: CharcoalSparkParams,
+		age: number
+	): void {
 		// Find an inactive slot (oldest first)
 		const slot = this.findInactiveSlot();
 		if (!slot) return;
@@ -512,14 +576,14 @@ export class CharcoalSparkRenderer {
 				Math.random() * (params.perturbSpeedMax - params.perturbSpeedMin)) *
 			this.motionScale;
 
-		slot.x = tip.x;
-		slot.y = tip.y;
 		slot.vx = inheritedVx + Math.cos(perturbAngle) * perturbSpeed;
 		slot.vy = inheritedVy + Math.sin(perturbAngle) * perturbSpeed;
+		slot.x = this.spawnOriginX + slot.vx * age;
+		slot.y = this.spawnOriginY + slot.vy * age;
 		slot.maxLife =
 			params.lifetimeMin +
 			Math.random() * (params.lifetimeMax - params.lifetimeMin);
-		slot.life = slot.maxLife;
+		slot.life = Math.max(0.001, slot.maxLife - age);
 		slot.size =
 			(params.sizeMin + Math.random() * (params.sizeMax - params.sizeMin)) *
 			this.sizeScale;
@@ -532,7 +596,11 @@ export class CharcoalSparkRenderer {
 	 * Minimal horizontal velocity - gravity pulls them straight down
 	 * like embers falling off a still-burning prop.
 	 */
-	private spawnIdleParticle(tip: PropTipData, params: CharcoalSparkParams): void {
+	private spawnIdleParticle(
+		_tip: PropTipData,
+		params: CharcoalSparkParams,
+		age: number
+	): void {
 		const slot = this.findInactiveSlot();
 		if (!slot) return;
 
@@ -540,14 +608,14 @@ export class CharcoalSparkRenderer {
 		const angle = Math.random() * Math.PI * 2;
 		const speed = params.perturbSpeedMin * 0.3 * this.motionScale;
 
-		slot.x = tip.x;
-		slot.y = tip.y;
 		slot.vx = Math.cos(angle) * speed;
 		slot.vy = Math.sin(angle) * speed;
+		slot.x = this.spawnOriginX + slot.vx * age;
+		slot.y = this.spawnOriginY + slot.vy * age;
 		slot.maxLife =
 			params.lifetimeMin +
 			Math.random() * (params.lifetimeMax - params.lifetimeMin) * 0.6;
-		slot.life = slot.maxLife;
+		slot.life = Math.max(0.001, slot.maxLife - age);
 		slot.size =
 			(params.sizeMin + Math.random() * (params.sizeMax - params.sizeMin) * 0.5) *
 			this.sizeScale;
