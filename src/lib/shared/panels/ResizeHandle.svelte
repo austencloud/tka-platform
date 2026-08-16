@@ -27,6 +27,10 @@
     onDragEnd?: () => void;
     /** Keyboard resizing stays with the host because it owns the size bounds. */
     onKeydown?: (event: KeyboardEvent) => void;
+    /** Accessible description of the two regions this handle resizes. */
+    ariaLabel?: string;
+    /** Current leading-panel share, expressed as a percentage. */
+    ariaValueNow?: number;
     /** Visual size of the handle in pixels */
     size?: number;
     /** Whether handle is disabled */
@@ -39,6 +43,8 @@
     onDrag,
     onDragEnd,
     onKeydown,
+    ariaLabel,
+    ariaValueNow = 50,
     size = 6,
     disabled = false,
   }: Props = $props();
@@ -50,6 +56,8 @@
     if (disabled) return;
 
     e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).focus();
     isDragging = true;
     startPos = direction === "horizontal" ? e.clientX : e.clientY;
 
@@ -98,8 +106,14 @@
   onpointercancel={handlePointerUp}
   onkeydown={onKeydown}
   role="separator"
-  aria-orientation={direction}
+  aria-label={ariaLabel}
+  aria-orientation={direction === "horizontal" ? "vertical" : "horizontal"}
   aria-disabled={disabled}
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-valuenow={Math.round(ariaValueNow)}
+  data-keyboard-shortcuts-ignore
+  title="Drag or use arrow keys to resize"
   tabindex={disabled ? -1 : 0}
 >
   <div class="handle-visual"></div>

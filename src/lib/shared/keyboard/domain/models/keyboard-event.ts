@@ -127,10 +127,23 @@ export class NormalizedKeyboardEvent implements KeyboardEventDetails {
   }
 
   /**
+   * Some composite widgets own keys that also exist as application shortcuts.
+   * The marker can live on the widget root so nested visual elements inherit it.
+   */
+  private isLocallyHandledTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLElement &&
+      target.closest("[data-keyboard-shortcuts-ignore]") !== null
+    );
+  }
+
+  /**
    * Check if this event should be ignored for shortcuts
    * (e.g., when typing in an input field, or activating a button)
    */
   shouldIgnore(isSingleKeyShortcut: boolean): boolean {
+    if (this.isLocallyHandledTarget(this.target)) return true;
+
     // Single-key shortcuts should be ignored when typing in inputs
     if (isSingleKeyShortcut && this.isInputTarget) return true;
 

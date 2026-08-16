@@ -44,6 +44,11 @@
     onSizesChange?: (sizes: number[]) => void;
     /** Gap size for handles */
     gap?: number;
+    /**
+     * Keep the panel contents but remove the split-pane wrappers and handles.
+     * Useful when a compact layout presents one panel at a time.
+     */
+    flattened?: boolean;
   }
 
   let {
@@ -52,6 +57,7 @@
     sizes = $bindable([]),
     onSizesChange,
     gap = 6,
+    flattened = false,
   }: Props = $props();
 
   let containerRef = $state<HTMLDivElement | null>(null);
@@ -157,6 +163,25 @@
     activeDragIndex = null;
   }
 
+  function handleKeydown(index: number, event: KeyboardEvent): void {
+    const decreaseKey = direction === "horizontal" ? "ArrowLeft" : "ArrowUp";
+    const increaseKey = direction === "horizontal" ? "ArrowRight" : "ArrowDown";
+    if (event.key !== decreaseKey && event.key !== increaseKey) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    dragStartSizes = [...sizes];
+    const step = event.shiftKey ? 48 : 16;
+    handleDrag(index, event.key === decreaseKey ? -step : step);
+    handleDragEnd();
+  }
+
+  function handleValue(index: number): number {
+    const leading = sizes[index] ?? 1;
+    const trailing = sizes[index + 1] ?? 1;
+    return (leading / (leading + trailing)) * 100;
+  }
+
   // Get flex style for a panel
   function getFlexStyle(index: number): string {
     return `flex: ${sizes[index] ?? 1}`;
@@ -168,6 +193,7 @@
   class:horizontal={direction === "horizontal"}
   class:vertical={direction === "vertical"}
   class:dragging={activeDragIndex !== null}
+  class:flattened
   style:--panel-gap="{gap}px"
   bind:this={containerRef}
 >
@@ -183,13 +209,16 @@
     </div>
 
     <!-- Resize handle between panels -->
-    {#if i < panels.length - 1}
+    {#if !flattened && i < panels.length - 1}
       <ResizeHandle
         direction={direction === "horizontal" ? "horizontal" : "vertical"}
         size={gap}
         onDragStart={() => handleDragStart(i)}
         onDrag={(delta) => handleDrag(i, delta)}
         onDragEnd={handleDragEnd}
+        onKeydown={(event) => handleKeydown(i, event)}
+        ariaLabel={`Resize ${panel.id ?? `panel ${i + 1}`} and ${panels[i + 1]?.id ?? `panel ${i + 2}`}`}
+        ariaValueNow={handleValue(i)}
       />
     {/if}
   {/each}
@@ -210,6 +239,11 @@
 
   .panel-group.vertical {
     flex-direction: column;
+  }
+
+  .panel-group.flattened,
+  .panel-group.flattened .panel-wrapper {
+    display: contents;
   }
 
   .panel-wrapper {
