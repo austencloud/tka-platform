@@ -23,8 +23,14 @@ export interface EffectLookPreviewModel {
   motif: EffectLookMotif;
   variant: string;
   colors: string[];
+  /** 0-1 - how much of it there is (rate, intensity, brightness). */
   energy: number;
+  /** 0-1 - how far it reaches (spread, radius, thickness). */
   extent: number;
+  /** 0-1 - how big each individual mark is (size, grain, scale). */
+  grain: number;
+  /** 0-1 - how hard it falls (gravity, weight). 0 for effects with no gravity. */
+  fall: number;
   trait: string;
   signature: string;
 }
@@ -223,6 +229,93 @@ function traitFor(
   }
 }
 
+// ── Sparkle field ────────────────────────────────────────────────────────
+//
+// The sparkles motif can't be a fixed row of diamonds: five presets that differ
+// in density, glint size, fall and spawn mode all rendered identically apart
+// from hue, which made the picker useless for choosing between them. These
+// helpers lay out a field that actually derives from the preset, so Glitter
+// reads as fine dust hugging the path and Aurora as a handful of big slow
+// glints - the same difference you see on the canvas.
+
+/** The swept tip path the field hangs off, in the 120x56 preview viewBox. */
+export const SPARKLE_ARC = { x0: 8, y0: 46, cx: 58, cy: 4, x1: 114, y1: 12 };
+export const SPARKLE_ARC_PATH = `M${SPARKLE_ARC.x0} ${SPARKLE_ARC.y0} Q${SPARKLE_ARC.cx} ${SPARKLE_ARC.cy} ${SPARKLE_ARC.x1} ${SPARKLE_ARC.y1}`;
+
+export interface SparkleGlint {
+  x: number;
+  y: number;
+  /** Arm half-length in viewBox units. */
+  r: number;
+  /** Index into the model's colors. */
+  ci: number;
+  /** Degrees. */
+  rot: number;
+  opacity: number;
+}
+
+/** Deterministic PRNG - the field must be stable across re-renders. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(value: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    h ^= value.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Point on the arc at parameter t. */
+function arcAt(t: number): { x: number; y: number } {
+  const u = 1 - t;
+  const { x0, y0, cx, cy, x1, y1 } = SPARKLE_ARC;
+  return {
+    x: u * u * x0 + 2 * u * t * cx + t * t * x1,
+    y: u * u * y0 + 2 * u * t * cy + t * t * y1,
+  };
+}
+
+export function createSparkleField(model: EffectLookPreviewModel): SparkleGlint[] {
+  const rand = mulberry32(hashString(model.signature));
+  const count = 4 + Math.round(model.energy * 16);
+  const arm = 1.1 + model.grain * 7;
+  const scatter = 3 + model.extent * 10;
+  const drop = model.fall * 18;
+  const burst = model.variant === "burst";
+  const trail = model.variant === "trail";
+  // Trail spawns along the path itself, so it stays tight to the arc; burst
+  // pops in clumps; stream spreads out as it drifts.
+  const cling = trail ? 0.45 : 1;
+
+  const glints: SparkleGlint[] = [];
+  for (let i = 0; i < count; i++) {
+    const t = burst
+      ? [0.18, 0.52, 0.84][i % 3]! + (rand() - 0.5) * 0.16
+      : (i + 0.5) / count + (rand() - 0.5) * (0.7 / count);
+    const base = arcAt(Math.max(0, Math.min(1, t)));
+    // Age drives both how far it has drifted and how far it has faded.
+    const age = rand();
+    glints.push({
+      x: base.x + (rand() - 0.5) * scatter * cling * (burst ? 1.5 : 1),
+      y: base.y + (rand() - 0.5) * scatter * 0.7 * cling + drop * age,
+      r: arm * (0.6 + rand() * 0.8),
+      ci: i % Math.max(1, model.colors.length),
+      rot: rand() * 90,
+      opacity: 0.45 + (1 - age) * 0.55,
+    });
+  }
+  return glints;
+}
+
 export function createEffectLookPreview(
   effectType: string,
   preset: EffectPreset
@@ -241,6 +334,8 @@ export function createEffectLookPreview(
   const extent = normalizeMetric(
     numberAt(patch, ["spread", "radius", "width", "thickness", "reach"], 0.55)
   );
+  const grain = clamp01(numberAt(patch, ["size", "grain", "scale"], 0.4));
+  const fall = clamp01(numberAt(patch, ["gravity", "weight"], 0));
   const trait = traitFor(effectType, patch, variant);
   const signature = JSON.stringify({
     motif,
@@ -248,8 +343,10 @@ export function createEffectLookPreview(
     colors,
     energy,
     extent,
+    grain,
+    fall,
     trait,
   });
 
-  return { motif, variant, colors, energy, extent, trait, signature };
+  return { motif, variant, colors, energy, extent, grain, fall, trait, signature };
 }

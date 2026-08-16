@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { EffectLookPreviewModel } from "./effect-look-preview";
+  import { SPARKLE_ARC_PATH, createSparkleField } from "./effect-look-preview";
 
   interface Props {
     model: EffectLookPreviewModel;
@@ -10,6 +11,10 @@
   const colorA = $derived(model.colors[0] ?? "#94a3b8");
   const colorB = $derived(model.colors[1] ?? colorA);
   const colorC = $derived(model.colors[2] ?? colorB);
+  // Seeded off model.signature, so the field is stable until the preset changes.
+  const sparkleField = $derived(
+    model.motif === "sparkles" ? createSparkleField(model) : []
+  );
 </script>
 
 <div
@@ -93,15 +98,25 @@
         />
       {/if}
     {:else if model.motif === "sparkles"}
-      <path class="dim-line" d="M4 42 C27 12 51 43 76 18 S103 19 116 8" />
-      {#each [[14, 39, 3], [31, 24, 5], [47, 35, 2], [64, 22, 4], [82, 15, 3], [101, 13, 5], [113, 7, 2]] as spark, i}
-        <path
-          class:fill-a={i % 3 === 0}
-          class:fill-b={i % 3 === 1}
-          class:fill-c={i % 3 === 2}
-          class="motion-pulse"
-          d={`M${spark[0]} ${spark[1] - spark[2]} L${spark[0] + spark[2]} ${spark[1]} L${spark[0]} ${spark[1] + spark[2]} L${spark[0] - spark[2]} ${spark[1]} Z`}
-        />
+      <!-- Four-point stars on a swept arc, laid out from the preset's own
+           density / glint size / fall / spawn mode - see createSparkleField. -->
+      <path class="dim-line" d={SPARKLE_ARC_PATH} />
+      {#each sparkleField as glint, i (i)}
+        <g
+          transform={`translate(${glint.x.toFixed(2)} ${glint.y.toFixed(2)}) rotate(${glint.rot.toFixed(1)})`}
+          style:--glint-color={model.colors[glint.ci] ?? colorA}
+          style:opacity={glint.opacity}
+        >
+          <!-- Twinkle lives on an inner group so the keyframed opacity composes
+               with the per-glint age opacity above instead of replacing it. -->
+          <g class="glint" style:animation-delay={`${(i % 5) * -0.38}s`}>
+            <path
+              class="glint-star"
+              d={`M0 ${-glint.r} Q${glint.r * 0.16} ${-glint.r * 0.16} ${glint.r} 0 Q${glint.r * 0.16} ${glint.r * 0.16} 0 ${glint.r} Q${-glint.r * 0.16} ${glint.r * 0.16} ${-glint.r} 0 Q${-glint.r * 0.16} ${-glint.r * 0.16} 0 ${-glint.r} Z`}
+            />
+            <circle class="glint-core" r={Math.max(0.35, glint.r * 0.22)} />
+          </g>
+        </g>
       {/each}
     {:else if model.motif === "ghost"}
       {#each [0, 1, 2, 3] as i}
@@ -362,6 +377,17 @@
     fill: white;
   }
 
+  .glint-star {
+    fill: var(--glint-color);
+    filter: drop-shadow(0 0 2.5px var(--glint-color));
+  }
+  .glint-core {
+    fill: #fff;
+  }
+  .active .glint {
+    animation: preview-twinkle 1.9s ease-in-out infinite;
+  }
+
   .active .motion-pulse {
     animation: preview-pulse 1.8s ease-in-out infinite;
     transform-box: fill-box;
@@ -409,10 +435,22 @@
     }
   }
 
+  /* Opacity only - the parent group owns the glint's transform. */
+  @keyframes preview-twinkle {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .active .motion-pulse,
     .active .motion-drift,
-    .active .motion-spin {
+    .active .motion-spin,
+    .active .glint {
       animation: none;
     }
   }

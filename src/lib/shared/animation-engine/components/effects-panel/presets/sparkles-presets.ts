@@ -1,71 +1,97 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 
 /**
- * Five looks, each occupying a distinct corner of the parameter space so no two
+ * Six looks, each occupying a distinct corner of the parameter space so no two
  * read as the same preset with a different hex code. The axes they spread
  * across: colorMode (solid / rainbow / palette), spawn mode (stream / trail /
- * burst), gravity (0.05 floaty → 0.85 heavy), density, and glint size.
+ * burst), gravity (0.02 clinging → 0.9 falling), density, and glint size.
+ *
+ * On size: the dial maps 0→1 onto a 0.25–0.65 base scale, and the renderer
+ * draws a star roughly 5x that in reference px. Anything past ~0.25 reads as
+ * chunky diamonds rather than sparkle at the sizes these actually run at, so
+ * five of the six sit at 0.07–0.20 and lean on RATE for presence instead.
+ * Aurora is the deliberate exception - it exists to hold down the sparse-and-
+ * large corner, and it buys that size by dropping rate to 0.16.
+ *
+ * Six rather than five so the two-up picker grid fills three even rows with no
+ * orphan (see EffectPresetsSection).
  */
 export const SPARKLES_PRESETS: EffectPreset<"sparkles">[] = [
   {
-    // Warm, dense, near-weightless. The ambient shimmer that hangs in the air.
+    // Warm, fine, near-weightless. The ambient shimmer that hangs in the air.
     id: "sparkles-fairy-dust",
     name: "Fairy Dust",
     previewColor: "#fde047",
     patch: {
-      rate: 0.42, size: 0.4, lifetime: 2.0,
+      rate: 0.55, size: 0.16, lifetime: 1.8,
       color: "#fde047", colorMode: "solid",
-      spread: 8, gravity: 0.06, mode: "stream",
+      spread: 5, gravity: 0.05, mode: "stream",
     },
   },
   {
-    // Cool and heavy, spawned along the tip path so glints peel off the arc and
-    // rain down. The only trail-mode preset.
-    id: "sparkles-starfall",
-    name: "Starfall",
-    previewColor: "#dbeafe",
-    patch: {
-      rate: 0.6, size: 0.3, lifetime: 1.5,
-      color: "#dbeafe", colorMode: "solid",
-      spread: 5, gravity: 0.8, mode: "trail",
-    },
-  },
-  {
-    // Full-spectrum drift. Showcases the hue band — particles alive at the same
-    // instant differ from each other rather than sharing one global hue.
-    id: "sparkles-prism",
-    name: "Prism",
-    previewColor: "#a78bfa",
-    patch: {
-      rate: 0.5, size: 0.5, lifetime: 1.7,
-      colorMode: "rainbow",
-      spread: 9, gravity: 0.2, mode: "stream",
-    },
-  },
-  {
-    // Big, loud, heavy, and only on motion — pops when the prop moves and
-    // settles when it doesn't.
+    // A dense multicolour stream off the tip that falls as it goes. Burst mode
+    // was tried here first and reverted - it throws detached clumps that drift
+    // off on their own, which reads as scattered debris rather than a ribbon of
+    // confetti pouring off the prop.
     id: "sparkles-confetti",
     name: "Confetti",
     previewColor: "#ec4899",
     patch: {
-      rate: 0.75, size: 0.72, lifetime: 2.2,
+      rate: 0.92, size: 0.12, lifetime: 1.5,
       colorMode: "palette",
       palette: ["#ec4899", "#22d3ee", "#fbbf24", "#4ade80", "#a855f7"],
-      spread: 14, gravity: 0.85, mode: "burst",
+      spread: 5, gravity: 0.5, mode: "stream",
     },
   },
   {
-    // Sparse, large, slow, cold. The restrained one — a few big glints holding
-    // in the air rather than a field of small ones.
+    // Full-spectrum drift. Showcases the hue band - particles alive at the same
+    // instant differ from each other rather than sharing one global hue.
+    id: "sparkles-prism",
+    name: "Prism",
+    previewColor: "rainbow",
+    patch: {
+      rate: 0.65, size: 0.15, lifetime: 1.5,
+      colorMode: "rainbow",
+      spread: 6, gravity: 0.18, mode: "stream",
+    },
+  },
+  {
+    // Cold and heavy, spawned along the tip path so glints peel off the arc and
+    // rain down. The only trail-mode preset.
+    id: "sparkles-starfall",
+    name: "Starfall",
+    previewColor: "#bfdbfe",
+    patch: {
+      rate: 0.6, size: 0.2, lifetime: 1.3,
+      color: "#bfdbfe", colorMode: "solid",
+      spread: 4, gravity: 0.9, mode: "trail",
+    },
+  },
+  {
+    // Micro-dust at maximum density and minimum hang, so it clings to the prop
+    // as a moving sheath instead of drifting off as a field.
+    id: "sparkles-glitter",
+    name: "Glitter",
+    previewColor: "#f1f5f9",
+    patch: {
+      rate: 1.0, size: 0.07, lifetime: 0.9,
+      color: "#f1f5f9", colorMode: "solid",
+      spread: 3, gravity: 0.02, mode: "stream",
+    },
+  },
+  {
+    // Large, slow, cold. The restrained one - big glints holding in the air
+    // rather than a field of small ones. Rate was 0.16 first and the canvas
+    // read as empty, which looks like a broken effect rather than a quiet one;
+    // 0.42 is the floor where "sparse" still reads as deliberate.
     id: "sparkles-aurora",
     name: "Aurora",
     previewColor: "#67e8f9",
     patch: {
-      rate: 0.24, size: 0.85, lifetime: 2.8,
+      rate: 0.42, size: 0.42, lifetime: 2.6,
       colorMode: "palette",
       palette: ["#67e8f9", "#5eead4", "#c4b5fd"],
-      spread: 6, gravity: 0.05, mode: "stream",
+      spread: 5, gravity: 0.04, mode: "stream",
     },
   },
 ];

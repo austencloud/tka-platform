@@ -415,7 +415,11 @@
     outline-offset: 2px;
   }
 
-  @container looks (min-width: 30rem) {
+  /* 17rem, not 30rem. The effects side panel is ~22rem, so a 30rem seam never
+     fired there and every effect shipped as a single column - five stacked
+     cards that pushed Customize and the controls below the fold for no reason.
+     Two 8:3 previews fit comfortably at 17rem. */
+  @container looks (min-width: 17rem) {
     .preset-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -425,7 +429,11 @@
     }
   }
 
-  @container looks (min-width: 42rem) {
+  /* Odd counts (bloom, ink and zap have 3) end on a single normal-width card.
+     Spanning it across both columns was tried and reverted: the preview keeps
+     its 8:3 ratio, so a double-wide last card grows 53% taller than its
+     siblings and dominates the group. A half-filled final row reads better. */
+  @container looks (min-width: 33rem) {
     .preset-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
