@@ -27,6 +27,11 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import StepMapTimeline from "./StepMapTimeline.svelte";
+  import { mirrorBeat } from "$lib/shared/create/services/step-transforms";
+  import { mirrorStartPosition } from "$lib/shared/create/services/start-position-transforms";
+  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   interface Props {
     videoUrl: string;
@@ -56,6 +61,8 @@
   const FRAME = 1 / 30;
   /** Slow enough to see a landing, fast enough not to feel like a chore. */
   const MARKING_RATE = 0.5;
+  /** One move's worth of footage, give or take: enough to re-watch a landing. */
+  const SKIP_SECONDS = 3;
 
   const moveCount = $derived(steps.length);
   const totalMarks = $derived(moveCount + 1);
@@ -96,16 +103,31 @@
 
   const complete = $derived(marks.length >= totalMarks);
   const canSave = $derived(!isSaving && complete && moveCount > 0);
+
+  /**
+   * How far into the run the playhead sits: how many marks it is at or past.
+   * Deriving the run's position from the playhead rather than from a counter is
+   * what makes rewinding safe - scrub back and the face, the count and the
+   * timeline all return to that moment, while every mark stays exactly where it
+   * was. Only a tap commits the re-take.
+   */
+  const placed = $derived(
+    marks.filter((mark) => mark <= currentTime + FRAME).length
+  );
+  /** Marks the next tap would replace. Zero unless the playhead was rewound. */
+  const supersededCount = $derived(Math.max(0, marks.length - placed));
   /** The mark the next tap will place - and so the move to watch for. */
-  const pendingIndex = $derived(Math.min(marks.length, totalMarks - 1));
+  const pendingIndex = $derived(Math.min(placed, totalMarks - 1));
 
   /**
    * Mark 0 is the opening pose. Mark i is the landing of move i, so the face
    * shows the move that is happening right now, and you tap when it finishes.
    */
   function faceFor(index: number): StepData | StartPositionData | null {
-    if (index <= 0) return startPosition;
-    return steps[index - 1] ?? null;
+    const showMirrored = mirrored && mirroredSteps !== null;
+    const source = showMirrored ? mirroredSteps! : steps;
+    if (index <= 0) return showMirrored ? mirroredStart : startPosition;
+    return source[index - 1] ?? null;
   }
 
   function letterFor(index: number): string {
@@ -173,6 +195,46 @@
     if (videoEl) videoEl.currentTime = clamped;
   }
 
+  /** Jump by a few seconds, for when the landing went past before the tap. */
+  function skip(seconds: number): void {
+    seekTo((videoEl?.currentTime ?? currentTime) + seconds);
+  }
+
+  // ---- Audience view ----
+
+  /**
+   * A performer works in their own frame; the camera sees it reflected, so a
+   * hand that goes west in the notation appears to go east in the footage.
+   * Mirroring flips the pictographs across the vertical axis so they read the
+   * way the clip does.
+   *
+   * The video is deliberately NOT the thing that flips - footage often carries
+   * titles or a watermark, and mirroring those wrecks them.
+   *
+   * This is a view, not an edit: `marks` and everything handed to onSave are
+   * untouched. Letters are invariant under mirroring (proven across every row
+   * of both dataframes), so the glyphs stay correct as the geometry flips.
+   */
+  let mirrored = $state(false);
+  let mirroredSteps = $state<StepData[] | null>(null);
+  let mirroredStart = $state<StartPositionData | null>(null);
+
+  async function toggleMirror(): Promise<void> {
+    mirrored = !mirrored;
+    if (!mirrored || mirroredSteps) return;
+
+    mirroredSteps = await Promise.all(
+      steps.map((step) =>
+        mirrorBeat(
+          step,
+          step.motions[MotionColor.BLUE]?.gridMode ?? GridMode.DIAMOND,
+          motionQueryHandler
+        )
+      )
+    );
+    mirroredStart = startPosition ? mirrorStartPosition(startPosition) : null;
+  }
+
   // ---- Marking ----
 
   function startMarking(): void {
@@ -189,20 +251,24 @@
   }
 
   function markArrival(): void {
-    if (mode !== "mark" || marks.length >= totalMarks) return;
+    if (mode !== "mark") return;
 
     // Straight off the element, not the `currentTime` state: timeupdate fires
     // about four times a second, so the state can be a quarter second stale at
     // the instant of the tap - which is most of a move at 0.5x.
     const at = videoEl?.currentTime ?? currentTime;
 
-    // A tap that lands on the mark before it is a double-fire, not a move of
-    // zero length. Dropping it keeps the marks strictly increasing, which is
-    // what every consumer of beatTimestamps assumes.
-    const previous = marks[marks.length - 1];
-    if (previous !== undefined && at - previous < FRAME) return;
+    // A tap claims this instant and everything after it. Rewinding and tapping
+    // again therefore picks the run back up at that point instead of being
+    // swallowed by the ordering rule, and a double-fire overwrites rather than
+    // duplicating. Either way the marks stay strictly increasing, which is what
+    // every consumer of beatTimestamps assumes.
+    const kept = marks.filter((mark) => mark < at - FRAME);
+    if (kept.length >= totalMarks) return;
 
-    marks = [...marks, at];
+    marks = [...kept, at];
+    // Keeps the face in step with the tap rather than with the next timeupdate.
+    currentTime = at;
 
     flashing = true;
     if (flashTimeout) clearTimeout(flashTimeout);
@@ -218,8 +284,16 @@
 
   function undoMark(): void {
     if (marks.length === 0) return;
+    const undone = marks[marks.length - 1];
     marks = marks.slice(0, -1);
-    if (mode === "review") selectedMark = Math.min(selectedMark, marks.length - 1);
+
+    if (mode === "review") {
+      selectedMark = Math.min(selectedMark, marks.length - 1);
+      return;
+    }
+    // Put the playhead back where the rejected mark was, so that moment can be
+    // watched again instead of hunted for.
+    if (undone !== undefined) seekTo(undone - FRAME);
   }
 
   function useEvenSpacing(): void {
@@ -337,6 +411,19 @@
 
 <svelte:window onkeydown={handleKeyboard} />
 
+{#snippet mirrorToggle()}
+  <button
+    type="button"
+    class="aux-btn mirror-btn"
+    class:on={mirrored}
+    aria-pressed={mirrored}
+    onclick={toggleMirror}
+  >
+    <i class="fas fa-arrows-left-right" aria-hidden="true"></i>
+    Mirror
+  </button>
+{/snippet}
+
 <!-- The shell exists to be queried. A container query resolves against an
      ANCESTOR container, so rules that recompose .editor itself cannot live
      behind its own container-type - they silently never applied. -->
@@ -358,6 +445,15 @@
       <div class="stage-bar">
         <button
           type="button"
+          class="stage-skip"
+          onclick={() => skip(-SKIP_SECONDS)}
+          aria-label="Back {SKIP_SECONDS} seconds"
+        >
+          <i class="fas fa-rotate-left" aria-hidden="true"></i>
+          <span class="skip-label">{SKIP_SECONDS}s</span>
+        </button>
+        <button
+          type="button"
           class="stage-play"
           onclick={togglePlayPause}
           aria-label={isPlaying ? "Pause" : "Play"}
@@ -365,26 +461,38 @@
           <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
           ></i>
         </button>
+        <button
+          type="button"
+          class="stage-skip"
+          onclick={() => skip(SKIP_SECONDS)}
+          aria-label="Forward {SKIP_SECONDS} seconds"
+        >
+          <i class="fas fa-rotate-right" aria-hidden="true"></i>
+          <span class="skip-label">{SKIP_SECONDS}s</span>
+        </button>
         <span class="stage-time">
           {formatTime(currentTime)} / {formatTime(videoDuration)}
         </span>
       </div>
     </div>
 
-    {#if mode === "review"}
-      <div class="timeline-row">
-        <StepMapTimeline
-          duration={videoDuration}
-          {currentTime}
-          beatTimestamps={marks}
-          activeStepIndex={selectedMark}
-          markerLabels={markLabels}
-          onTimestampChange={moveMark}
-          onSelect={selectMark}
-          onSeek={seekTo}
-        />
-      </div>
-    {/if}
+    <!-- Present while marking too, so overshooting a landing is a scrub back
+         rather than a start-over. The marks show as ticks there: a 44px drag
+         handle on each one would swallow the pointer-downs used to reach them. -->
+    <div class="timeline-row">
+      <StepMapTimeline
+        duration={videoDuration}
+        {currentTime}
+        beatTimestamps={marks}
+        activeStepIndex={mode === "review" ? selectedMark : placed - 1}
+        markerLabels={markLabels}
+        readOnlyMarks={mode === "mark"}
+        provisionalFrom={mode === "mark" ? placed : Number.POSITIVE_INFINITY}
+        onTimestampChange={moveMark}
+        onSelect={mode === "review" ? selectMark : undefined}
+        onSeek={seekTo}
+      />
+    </div>
 
     {#if mode === "mark"}
       <div class="control-bar mark-bar">
@@ -404,7 +512,20 @@
               ariaLabel="Playback speed"
             />
           </span>
-          <span class="rate-hint">Slow it down to catch the landing</span>
+          {@render mirrorToggle()}
+          <!-- Sized to the longer of the two sentences at whatever width the
+               row happens to be, so toggling Mirror cannot add a line here and
+               push the tap button down. -->
+          <span class="rate-hint">
+            <span class="hint-sizer" aria-hidden="true"
+              >Pictographs face the camera, like the audience sees it</span
+            >
+            <span class="hint-live">
+              {mirrored
+                ? "Pictographs face the camera, like the audience sees it"
+                : "Slow it down to catch the landing"}
+            </span>
+          </span>
         </div>
 
         <button
@@ -412,7 +533,7 @@
           class="tap-target"
           class:flash={flashing}
           onclick={markArrival}
-          disabled={complete}
+          disabled={placed >= totalMarks}
         >
           <span class="tap-face">
             {#if pendingFace}
@@ -429,7 +550,7 @@
                 : "Tap when this move lands"}
             </strong>
             <span class="tap-progress">
-              {marks.length} of {totalMarks} marked
+              {placed} of {totalMarks} marked
               {#if letterFor(pendingIndex)}
                 <span class="tap-letter">
                   <TKAWordGlyph
@@ -440,7 +561,18 @@
                 </span>
               {/if}
             </span>
-            <span class="tap-key">Space works too</span>
+            <!-- Two lines are always reserved: this swaps to a longer sentence
+                 the moment the playhead is rewound, and growing here would
+                 shove every control under it. -->
+            <span class="tap-key">
+              {#if supersededCount > 0}
+                Tapping re-takes from here, replacing the
+                {supersededCount}
+                {supersededCount === 1 ? "mark" : "marks"} after it
+              {:else}
+                <span class="kbd-hint">Space works too</span>
+              {/if}
+            </span>
           </span>
         </button>
 
@@ -523,6 +655,7 @@
             <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
             Even spacing
           </button>
+          {@render mirrorToggle()}
           <span class="review-progress" class:complete>
             {marks.length} of {totalMarks} marked
           </span>
@@ -624,6 +757,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* The stage is only as wide as the footage, and a portrait clip beside the
+       controls leaves it narrow. Wrapping costs a strip of video; clipping
+       would cost a control. */
+    flex-wrap: wrap;
     gap: 0.75rem;
     padding: 0.5rem;
   }
@@ -639,6 +776,27 @@
     color: #04141a;
     font-size: 1rem;
     cursor: pointer;
+  }
+
+  .stage-skip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    min-inline-size: 44px;
+    block-size: 44px;
+    padding-inline: 0.6rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0.6rem;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+
+  .stage-skip:hover {
+    border-color: var(--theme-accent, #22b8cf);
   }
 
   .stage-time {
@@ -671,8 +829,17 @@
   }
 
   .rate-hint {
+    display: inline-grid;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
     font-size: 0.8125rem;
+  }
+
+  .rate-hint > * {
+    grid-area: 1 / 1;
+  }
+
+  .hint-sizer {
+    visibility: hidden;
   }
 
   /* The whole point of the screen, sized like it. */
@@ -759,8 +926,22 @@
   }
 
   .tap-key {
+    /* Reserved for the longer re-take sentence, so swapping to it moves
+       nothing below. */
+    min-block-size: 2.4em;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
     font-size: 0.75rem;
+  }
+
+  /* Pressed state is the whole control, not a bar down one edge. */
+  .mirror-btn.on {
+    border-color: var(--theme-accent, #22b8cf);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22b8cf) 22%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
+    );
+    color: var(--theme-text, #fff);
   }
 
   .selected-row {
@@ -907,30 +1088,40 @@
   @container (max-width: 34rem) {
     /* The controls are heavy enough on a phone to squeeze the stage out of
        existence, and the video is the thing you are watching. Floor it, and let
-       the surface scroll rather than hide the tap button. */
+       the surface scroll rather than hide the tap button.
+       The floor is set for a PORTRAIT clip, which is what a performance video
+       almost always is: at 7rem such a clip renders about 60px wide, too small
+       to see which point a prop arrived at, which is the only question this
+       screen asks. The height comes back out of the tap card below. */
     .editor {
-      grid-template-rows: minmax(7rem, 1fr) auto auto auto;
+      grid-template-rows: minmax(11rem, 1fr) auto auto auto;
       gap: 0.5rem;
       padding: 0.5rem;
       overflow-y: auto;
     }
 
+    /* A thumb-width bar is already a comfortable scrub target, and every pixel
+       it gives back is one the tap button stays above the fold with. */
+    .timeline-row {
+      --timeline-bar-height: 32px;
+    }
+
+    /* Face beside the copy rather than above it. Stacked, the card alone was a
+       third of a phone screen, and it was taking that height from the video. */
     .tap-target {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.5rem;
+      gap: 0.75rem;
       padding: 0.625rem;
-      text-align: center;
     }
 
     .tap-face {
-      inline-size: 100%;
-      max-inline-size: 6.5rem;
-      margin-inline: auto;
+      flex: 0 0 auto;
+      inline-size: 6.5rem;
     }
 
-    /* No hardware keyboard to tell them about. */
-    .tap-key,
+    /* No hardware keyboard to tell them about. The slot itself stays - it also
+       carries the re-take notice, which matters most on the tier where the
+       timeline is smallest and overshooting is easiest. */
+    .kbd-hint,
     .rate-hint {
       display: none;
     }
@@ -1031,6 +1222,24 @@
       grid-column: 1 / -1;
       grid-row: 3;
     }
+
+    /* Short as well as wide - a folded phone held sideways. A portrait stage
+       column leaves most of the canvas unused here, so the controls spend that
+       width rather than wrapping the action buttons into a second row there is
+       no height for. */
+    @media (max-height: 34rem) {
+      .editor {
+        grid-template-columns:
+          minmax(0, min(30cqw, calc(var(--video-ratio, 1.7778) * 78dvh)))
+          minmax(18rem, 44rem);
+      }
+
+      /* Wide enough that both variants of the notice are one line, so the slot
+         no longer has to reserve a second one to hold its neighbours still. */
+      .tap-key {
+        min-block-size: 1.2em;
+      }
+    }
   }
 
   /* 4K at 100%, or a TV across the room. Nothing is scaling for you at this
@@ -1077,13 +1286,57 @@
   /* Wide and short - a folded phone held sideways. Everything optional goes so
      the stage and the tap button both stay above the fold. */
   @media (max-height: 34rem) {
-    .tap-key,
+    .kbd-hint,
     .rate-hint {
       display: none;
     }
 
-    .tap-face {
+    /* The timeline reads out the clock a few pixels below, and three buttons
+       plus a clock will not cross a portrait stage column. The skip buttons
+       keep their icons and their aria-labels, and lose only the duration they
+       repeat from them. */
+    .stage-time,
+    .skip-label {
+      display: none;
+    }
+
+    .editor {
+      gap: 0.5rem;
+      padding: 0.5rem;
+    }
+
+    .control-bar {
+      gap: 0.5rem;
+    }
+
+    /* Back to a strip. Stacked, the face and the copy together are taller than
+       the row the two-column layout can give them here, and the column spills
+       over the timeline underneath it. */
+    .tap-target,
+    .selected-row {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem;
+      text-align: start;
+    }
+
+    .tap-face,
+    .selected-face {
       inline-size: clamp(3rem, 6cqw, 4.5rem);
+      margin-inline: 0;
+    }
+
+    .tap-progress,
+    .selected-label,
+    .nudge {
+      justify-content: flex-start;
+    }
+
+    /* A scrub bar still has to be grabbable here, but not at the expense of the
+       stage - this is the tier with the least height to spend. */
+    .timeline-row {
+      --timeline-bar-height: 26px;
     }
   }
 </style>

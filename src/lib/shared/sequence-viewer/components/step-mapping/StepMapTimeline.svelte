@@ -17,6 +17,17 @@
      * opening pose first, so it passes "start" then the move numbers.
      */
     markerLabels?: readonly string[];
+    /**
+     * Show the marks but do not let them be grabbed. While a run is being
+     * marked the bar is for scrubbing, and a 44px drag handle sitting on every
+     * mark would swallow exactly the pointer-downs used to rewind to one.
+     */
+    readOnlyMarks?: boolean;
+    /**
+     * Index of the first mark the host considers provisional - everything the
+     * next tap would replace. Drawn faint, so rewinding shows what is at stake.
+     */
+    provisionalFrom?: number;
     onTimestampChange: (index: number, newTime: number) => void;
     onSeek: (time: number) => void;
     /** Touching a marker makes it the one the host is showing details for. */
@@ -29,6 +40,8 @@
     beatTimestamps,
     activeStepIndex,
     markerLabels,
+    readOnlyMarks = false,
+    provisionalFrom = Number.POSITIVE_INFINITY,
     onTimestampChange,
     onSeek,
     onSelect,
@@ -171,23 +184,37 @@
     <!-- Beat markers -->
     {#each beatTimestamps as ts, i}
       {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="beat-marker"
-        class:active={i === activeStepIndex}
-        class:dragging={i === draggingIndex}
-        style="left: {pct}%"
-        onpointerdown={(e) => handleMarkerPointerDown(e, i)}
-        role="slider"
-        aria-label="Mark {labelFor(i)} at {formatTime(ts)}"
-        aria-valuemin={0}
-        aria-valuemax={duration}
-        aria-valuenow={ts}
-        tabindex={0}
-      >
-        <div class="marker-line"></div>
-        <div class="marker-handle"></div>
-      </div>
+      {#if readOnlyMarks}
+        <!-- Decorative: the container slider already reports the position, and
+             these cannot be adjusted while a run is being marked. -->
+        <div
+          class="beat-marker readonly"
+          class:active={i === activeStepIndex}
+          class:provisional={i >= provisionalFrom}
+          style="left: {pct}%"
+          aria-hidden="true"
+        >
+          <div class="marker-line"></div>
+        </div>
+      {:else}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="beat-marker"
+          class:active={i === activeStepIndex}
+          class:dragging={i === draggingIndex}
+          style="left: {pct}%"
+          onpointerdown={(e) => handleMarkerPointerDown(e, i)}
+          role="slider"
+          aria-label="Mark {labelFor(i)} at {formatTime(ts)}"
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={ts}
+          tabindex={0}
+        >
+          <div class="marker-line"></div>
+          <div class="marker-handle"></div>
+        </div>
+      {/if}
     {/each}
   </div>
 
@@ -299,6 +326,21 @@
   .beat-marker:active,
   .beat-marker.dragging {
     cursor: grabbing;
+  }
+
+  /* Ticks, not handles: every pointer-down goes through to the bar underneath,
+     so the crowded area around a mark is still scrubbable. */
+  .beat-marker.readonly {
+    width: 2px;
+    transform: translateX(-1px);
+    pointer-events: none;
+    cursor: default;
+  }
+
+  /* Marks the next tap would replace, drawn faint so rewinding shows the cost
+     before it is paid. */
+  .beat-marker.provisional .marker-line {
+    opacity: 0.35;
   }
 
   .marker-line {
