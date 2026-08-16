@@ -38,7 +38,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   import { buildStartEndOptions } from "./customize-start-end-options";
   import {
     buildCustomizeSummary,
-    ORIENTATION_SHORT,
     PRODUCTION_STYLE_BASELINE,
     type CustomizeStyleBaseline,
   } from "./customize-summary";
@@ -136,14 +135,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   );
   const availableStartOrientations = $derived(startOrientationsForLevel(level));
 
-  // Abbreviations come from the summary resolver so the row and the collapsed
-  // card can't drift into two vocabularies.
-  const oriDisplay = $derived.by(() => {
-    const b = localBlueOri ?? Orientation.IN;
-    const r = localRedOri ?? Orientation.IN;
-    return `${ORIENTATION_SHORT[b] ?? b} · ${ORIENTATION_SHORT[r] ?? r}`;
-  });
-
   // Current preset (All / Classic 3 / Custom) derived from the blocked list.
   const currentPreset = $derived(
     detectPresetFromBlocked(localBlockedPositions, gridMode)
@@ -220,9 +211,14 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     return isDefault ? "Default" : facts.join(" · ");
   });
 
-  // The four rows. End Position stays present and locked when LOOP owns it —
-  // dropping the row would change the list length and move the row below it,
-  // and leave a user who saw the setting once with no explanation.
+  // The three rows. Start orientation used to be a fourth, which asked the user
+  // to set where the props start in one place and which way they point in
+  // another — the same decision, split in two. It now lives under Start
+  // Position, where the picker is already drawing the props it describes.
+  //
+  // End Position stays present and locked when LOOP owns it — dropping the row
+  // would change the list length and move the row below it, and leave a user
+  // who saw the setting once with no explanation.
   const drillItems = $derived<SettingsDrillItem[]>([
     { id: "style", label: "Style", value: styleSummary },
     { id: "startPos", label: "Start Position", value: startPosDisplay },
@@ -233,7 +229,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       disabled: !isFreeformMode,
       disabledReason: "Set by LOOP",
     },
-    { id: "startOri", label: "Start Orientation", value: oriDisplay },
   ]);
 
   function handleClose() {
@@ -374,6 +369,29 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               presets={startPositionPresets}
               {gridMode}
             />
+            <!-- Under the picker, not on a screen of its own: the props above
+                 redraw as these change, so the setting and its result are
+                 visible at the same time. -->
+            <div class="ori-block">
+              <div class="ori-row">
+                <span class="ori-color-label ori-blue">Blue</span>
+                <PropOrientationControl
+                  color="blue"
+                  orientation={localBlueOri}
+                  allowedOrientations={availableStartOrientations}
+                  onOrientationChange={handleBlueOriChange}
+                />
+              </div>
+              <div class="ori-row">
+                <span class="ori-color-label ori-red">Red</span>
+                <PropOrientationControl
+                  color="red"
+                  orientation={localRedOri}
+                  allowedOrientations={availableStartOrientations}
+                  onOrientationChange={handleRedOriChange}
+                />
+              </div>
+            </div>
           </div>
         {:else if id === "endPos"}
           <div class="drill-fill grid-fill">
@@ -384,28 +402,6 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               redStartOrientation={localRedOri}
               {gridMode}
             />
-          </div>
-        {:else if id === "startOri"}
-          <p class="detail-note">Level {level}</p>
-          <div class="drill-fill spread">
-            <div class="ori-row">
-              <span class="ori-color-label ori-blue">Blue</span>
-              <PropOrientationControl
-                color="blue"
-                orientation={localBlueOri}
-                allowedOrientations={availableStartOrientations}
-                onOrientationChange={handleBlueOriChange}
-              />
-            </div>
-            <div class="ori-row">
-              <span class="ori-color-label ori-red">Red</span>
-              <PropOrientationControl
-                color="red"
-                orientation={localRedOri}
-                allowedOrientations={availableStartOrientations}
-                onOrientationChange={handleRedOriChange}
-              />
-            </div>
           </div>
         {/if}
       {/snippet}
@@ -527,15 +523,19 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     min-height: 0;
   }
 
-  .detail-note {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: rgba(255, 255, 255, 0.55);
+  /* Sits under the position grid, which already claimed the width it wants.
+     The top margin is what separates "where the props start" from "which way
+     they point" now that both live on one screen. */
+  .ori-block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
   }
 
-  /* Capped: the cycler is a compact control, and letting the row stretch to a
-     wide detail pane parked the Blue/Red label a third of a pane away from the
-     buttons it names. */
+  /* Capped: four short labels are a compact control, and letting the row
+     stretch to a wide detail pane parked the Blue/Red label a third of a pane
+     away from the buttons it names. */
   .ori-row {
     display: flex;
     align-items: center;
