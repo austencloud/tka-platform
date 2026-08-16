@@ -68,10 +68,12 @@
         }
       : intent
   );
-  // Every manifest control whose conditional visibility is currently satisfied.
+  // Every mobile-safe manifest control whose conditional visibility is currently
+  // satisfied. The full desktop inspector also exposes fine optical controls
+  // whose compact flag is false.
   const controls = $derived(
     EFFECT_CONTROLS[effectId].filter(
-      (c) => !c.showWhen || c.showWhen(intentView)
+      (c) => c.compact !== false && (!c.showWhen || c.showWhen(intentView))
     )
   );
 

@@ -78,6 +78,12 @@
     onPlaybackToggle?: () => void;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onBpmChange?: (bpm: number) => void;
+    /** Hide tempo controls when the host follows a source duration instead of
+     *  a sequence tempo. Path-shape controls remain available. */
+    showTempoControls?: boolean;
+    /** Hide the Effects section's inline playback row when the host already
+     *  provides persistent playback controls beside the canvas. */
+    showEffectsPlayback?: boolean;
     selectedPropType?: PropType;
     onPropChange?: (propType: PropType) => void;
     onExport?: () => void;
@@ -111,6 +117,8 @@
     onPlaybackToggle,
     onPlaybackModeChange,
     onBpmChange,
+    showTempoControls = true,
+    showEffectsPlayback = true,
     selectedPropType,
     onPropChange,
     onExport,
@@ -309,7 +317,9 @@
 
   const playbackSummary = $derived.by(() => {
     void vmVersion;
-    return computePlaybackSummary(bpm, vm.getPlaybackMode());
+    return showTempoControls
+      ? computePlaybackSummary(bpm, vm.getPlaybackMode())
+      : "Path shape";
   });
 
   const displaySummary = $derived.by(() => {
@@ -509,7 +519,12 @@
       onBpmChange={onBpmChange ?? (() => {})}
       {isPlaying}
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
-      showPlayback={!!(onPlaybackToggle && onBpmChange)}
+      showPlayback={!!(
+        showEffectsPlayback &&
+        showTempoControls &&
+        onPlaybackToggle &&
+        onBpmChange
+      )}
       onSettingChange={(setting, previous, value, coalesce) =>
         reportSetting("effects", setting, previous, value, coalesce)}
     />
@@ -527,17 +542,19 @@
     </div>
   {:else if activePill === "playback"}
     <div class="section-pad playback-rows">
-      <div class="rt-section">
-        <span class="rt-section-label">Tempo</span>
-        <TempoControl
-          {bpm}
-          onBpmChange={onBpmChange ?? (() => {})}
-          showPresets={layout === "sidebar"}
-          showPractice={false}
-          presetsMode={layout === "sidebar" ? "inline" : "popover"}
-          vertical={layout === "sidebar"}
-        />
-      </div>
+      {#if showTempoControls}
+        <div class="rt-section">
+          <span class="rt-section-label">Tempo</span>
+          <TempoControl
+            {bpm}
+            onBpmChange={onBpmChange ?? (() => {})}
+            showPresets={layout === "sidebar"}
+            showPractice={false}
+            presetsMode={layout === "sidebar" ? "inline" : "popover"}
+            vertical={layout === "sidebar"}
+          />
+        </div>
+      {/if}
       {#if onPlaybackModeChange}
         <div class="rt-section">
           <span class="rt-section-label">Mode</span>
@@ -1149,6 +1166,7 @@
     width: 100%;
     max-width: 100%;
     height: 100%;
+    container: animation-sidebar / inline-size;
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     overflow: hidden;
   }

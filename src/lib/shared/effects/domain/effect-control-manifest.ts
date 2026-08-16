@@ -52,6 +52,9 @@ export interface ControlDescriptor {
   swatch?: "rainbow";
   // conditional visibility (e.g. tint only when palette === "custom")
   showWhen?: (intent: Record<string, unknown>) => boolean;
+  /** Keep this control out of the compact mobile tune strip while preserving
+   *  it in the full desktop inspector. Defaults to true. */
+  compact?: boolean;
 }
 
 const TRACK_OPTS = [
@@ -215,8 +218,9 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     { id: "bloom-palette", label: "Palette", type: "paletteSwatches", field: "palette", tier: "advanced", showWhen: (i) => i.colorMode === "palette" },
     slider("bloom", "pulse", "Pulse", { tier: "advanced" }),
     slider("bloom", "pulseRate", "Rate", { min: 0.25, max: 4, step: 0.25, pct: false, tier: "advanced" }),
-    // Trimmed for mobile (streak/spikes/afterglow): optical fine-tuning
-    // a flow artist rarely touches — still driven by presets, just not hand-tunable.
+    slider("bloom", "streak", "Streak", { tier: "advanced", compact: false }),
+    slider("bloom", "spikes", "Spikes", { tier: "advanced", compact: false }),
+    slider("bloom", "afterglow", "Afterglow", { tier: "advanced", compact: false }),
   ],
   goo: [
     ...paletteColor("goo", [
@@ -339,8 +343,11 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     ] },
     slider("pulse", "lifetime", "Lifetime", { min: 0.2, max: 3, step: 0.1, pct: false, tier: "advanced" }),
     slider("pulse", "thickness", "Thickness", { tier: "advanced" }),
-    // Trimmed for mobile (velocityScale/asymmetry/chromatic/flash/harmonics):
-    // ring-shaping fringe params a flow artist rarely touches — preset-driven only.
+    slider("pulse", "velocityScale", "Velocity", { tier: "advanced", compact: false }),
+    slider("pulse", "asymmetry", "Asymmetry", { tier: "advanced", compact: false }),
+    slider("pulse", "chromatic", "Chromatic", { tier: "advanced", compact: false }),
+    slider("pulse", "flash", "Flash", { tier: "advanced", compact: false }),
+    slider("pulse", "harmonics", "Harmonics", { tier: "advanced", compact: false }),
   ],
 };
 

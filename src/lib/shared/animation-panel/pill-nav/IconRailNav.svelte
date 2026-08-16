@@ -112,6 +112,7 @@
           style:background={pill.accentColor ?? "#94a3b8"}
         ></span>
       {/if}
+      <span class="rail-label">{pill.label}</span>
     </button>
   {/each}
 </div>
@@ -131,6 +132,7 @@
   /* Mirrors the 3D viewer rail-chip visual language (ViewerPopover.svelte .rail-chip):
      glassmorphic chips, blur, drop shadow, scale-on-hover — clearly clickable. */
   .rail-btn {
+    box-sizing: border-box;
     width: 56px;
     height: 56px;
     border-radius: 14px;
@@ -160,16 +162,67 @@
   }
 
   .rail-btn[aria-selected="true"] {
-    background: color-mix(in srgb, var(--pill-accent, #8b5cf6) 18%, transparent);
-    border-color: color-mix(in srgb, var(--pill-accent, #a855f7) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--pill-accent, #8b5cf6) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--pill-accent, #a855f7) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--pill-accent, #d4b4ff) 100%, white);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--pill-accent, #8b5cf6) 25%, transparent);
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--pill-accent, #8b5cf6) 25%, transparent);
   }
 
   .effort-dot {
     width: 14px;
     height: 14px;
     border-radius: 50%;
+  }
+
+  .rail-label {
+    display: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 650;
+  }
+
+  /* The wide effects sidebar has room to name its sections. Keeping the
+     compact rail icon-only preserves canvas width on small workspaces. */
+  @container animation-sidebar (min-width: 40rem) {
+    .icon-rail {
+      width: 8.5rem;
+      align-items: stretch;
+      padding-inline: 6px;
+    }
+
+    .rail-btn {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 9px;
+      padding: 0 12px;
+      font-size: 18px;
+    }
+
+    .rail-btn i,
+    .effort-dot {
+      flex: 0 0 auto;
+    }
+
+    .rail-btn i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .rail-label {
+      display: block;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -6,7 +6,7 @@
     type EffectId,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import EffectSelector from "./EffectSelector.svelte";
-  import EffectPresetsSection from "./EffectPresetsSection.svelte";
+  import EffectsInspector from "./EffectsInspector.svelte";
   import {
     EFFECT_COLORS,
     EFFECT_LABELS,
@@ -22,13 +22,12 @@
   import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import EffectsPlaybackBar from "./EffectsPlaybackBar.svelte";
 
   /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
   /** Synthetic chip id for the user's auto-captured custom look. */
   const CUSTOM_CHIP_ID = "__custom__";
-  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
-  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import type { PrimaryParamSpec } from "./effect-primary-param";
 
   interface Props {
@@ -82,6 +81,16 @@
   );
   const hasPresetChoices = $derived(
     (registration?.presetGroup.presets.length ?? 0) > 0
+  );
+
+  // Desktop has two deliberate states: browse the roster or work on one
+  // effect. Keeping the inspector separate removes the old wall of effects,
+  // presets, and controls competing for attention at the same time.
+  let sidebarDetailOpen = $state(effectsConfigState.activeEffect !== "none");
+  const sidebarView = $derived(
+    sidebarDetailOpen && activeEffect !== "none" && registration
+      ? `detail-${activeEffect}`
+      : "browser"
   );
 
   // Trails and fire keep a few values outside their effect intent. Both viewer
@@ -246,6 +255,27 @@
     }
   }
 
+  function handleSidebarEffectSelect(effectId: string): void {
+    if (!isEffectId(effectId)) return;
+    const previous = activeEffect;
+    customizeOpen = false;
+    CustomizeComponent = null;
+    if (effectId !== activeEffect) {
+      effectsConfigState.setActiveEffect(effectId);
+      reportSetting("active_effect", previous, effectId);
+    }
+    sidebarDetailOpen = true;
+  }
+
+  function handleSidebarDisable(): void {
+    const previous = activeEffect;
+    sidebarDetailOpen = false;
+    customizeOpen = false;
+    CustomizeComponent = null;
+    effectsConfigState.setActiveEffect("none");
+    reportSetting("active_effect", previous, "none");
+  }
+
   // ── Mobile drill-down (layout="strip") ────────────────────────────────────
   // The Instagram-filter contract: tapping a tile applies the effect live and
   // STAYS in the picker (browsing costs zero navigation); tapping the
@@ -389,64 +419,64 @@
 {/snippet}
 
 {#if layout === "sidebar"}
-  <div class="effects-panel">
+  <div class="effects-panel" class:detail-view={sidebarView !== "browser"}>
     {#if showPlayback}
-      <div class="sb-section">
-        <TempoControl
-          {bpm}
-          {onBpmChange}
-          showPresets={false}
-          showPractice={false}
-          presetsMode="popover"
-        />
-        {#if showTransport}
-          <TransportControls
-            {isPlaying}
-            {onPlaybackToggle}
-            onStepHalfBeatForward={onHalfStepForward}
-            onStepHalfBeatBackward={onHalfStepBackward}
-            onStepFullBeatForward={onStepForward}
-            onStepFullBeatBackward={onStepBackward}
-          />
-        {/if}
-      </div>
+      <EffectsPlaybackBar
+        {bpm}
+        {onBpmChange}
+        {isPlaying}
+        {onPlaybackToggle}
+        {onStepForward}
+        {onStepBackward}
+        {onHalfStepForward}
+        {onHalfStepBackward}
+        {showTransport}
+      />
     {/if}
 
-    <div class="sb-section">
-      <span class="sb-label">EFFECTS</span>
-      <EffectSelector
-        {activeEffect}
-        onSelect={handleEffectSelect}
-        onPrewarm={handleEffectPrewarm}
-      />
-    </div>
-
-    {#if activeEffect !== "none" && !customizeOpen && registration && hasPresetChoices}
-      <div class="sb-section">
-        <EffectPresetsSection
-          presetGroup={registration.presetGroup}
+    <Crossfade key={sidebarView}>
+      {#if sidebarView === "browser"}
+        <div class="sb-section sb-browser">
+          <div class="sb-browser-head">
+            <span class="sb-label">Effects</span>
+            <button
+              type="button"
+              class="sb-off-btn"
+              class:active={activeEffect === "none"}
+              aria-pressed={activeEffect === "none"}
+              onclick={handleSidebarDisable}
+            >
+              <i class="fas fa-power-off" aria-hidden="true"></i>
+              <span>
+                {activeEffect === "none"
+                  ? "Effects off"
+                  : `Turn off ${EFFECT_LABELS[activeEffect] ?? "effect"}`}
+              </span>
+            </button>
+          </div>
+          <EffectSelector
+            {activeEffect}
+            onSelect={handleSidebarEffectSelect}
+            onPrewarm={handleEffectPrewarm}
+            activeAction="tune"
+          />
+        </div>
+      {:else if activeEffect !== "none" && registration}
+        <EffectsInspector
+          effect={activeEffect}
+          {registration}
+          config={effectsConfigState}
           {activePresetId}
           defaultChipId={DEFAULT_CHIP_ID}
           customChipId={CUSTOM_CHIP_ID}
           {customDisabled}
           {customColors}
-          onSelectPreset={handlePresetSelect}
-          onCustomize={handleCustomizeOpen}
-          effectLabel={EFFECT_LABELS[activeEffect] ?? ""}
-          accentColor={EFFECT_COLORS[activeEffect] ?? "#8b5cf6"}
           summary={currentSummary}
-        />
-      </div>
-    {/if}
-
-    {#if activeEffect !== "none" && registration && !hasPresetChoices}
-      <div class="sb-section">
-        <EffectControlStack
-          effect={activeEffect}
-          config={effectsConfigState}
-          tiers={["primary", "tracking", "advanced"]}
           propType={animationSettings.currentPropType}
           overrides={tuneOverrides}
+          onBack={() => (sidebarDetailOpen = false)}
+          onDisable={handleSidebarDisable}
+          onSelectPreset={handlePresetSelect}
           onSettingChange={(setting, previousValue, value, coalesce) =>
             reportSetting(
               `tuning_${activeEffect}_${setting}`,
@@ -455,15 +485,8 @@
               coalesce
             )}
         />
-      </div>
-    {/if}
-
-    {#if customizeOpen && CustomizeComponent}
-      <div class="sb-section">
-        {@render customizeAnchors()}
-        <CustomizeComponent onBack={handleCustomizeClose} />
-      </div>
-    {/if}
+      {/if}
+    </Crossfade>
 
     {#if children}{@render children()}{/if}
 
@@ -820,13 +843,64 @@
   }
 
   .sb-label {
-    display: block;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.35));
-    margin-bottom: 8px;
+    color: var(--theme-text, rgba(255, 255, 255, 0.82));
+  }
+
+  .sb-browser {
+    display: grid;
+    gap: 10px;
+  }
+
+  .sb-browser-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sb-off-btn {
+    min-height: var(--min-touch-target, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    max-width: 70%;
+    padding: 0 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .sb-off-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sb-off-btn:hover {
+    color: var(--theme-text, white);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+  }
+
+  .sb-off-btn.active {
+    color: var(--fx-accent-text);
+    border-color: color-mix(in srgb, var(--fx-accent) 45%, transparent);
+    background: color-mix(in srgb, var(--fx-accent) 12%, transparent);
+  }
+
+  .sb-off-btn:focus-visible {
+    outline: 2px solid var(--fx-accent);
+    outline-offset: 2px;
   }
 
   /* ── Global factory reset (panel footer) ── */

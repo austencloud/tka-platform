@@ -129,11 +129,8 @@
         <span class="ctl-value">{formatEffectSliderValue(c, get(c.field))}</span
         >
       </div>
-    {:else if c.type === "segmented" || c.type === "palette"}
-      {@const opts =
-        c.type === "palette"
-          ? c.paletteOptions!.map((p) => ({ value: p.value, label: p.label }))
-          : resolveEffectControlOptions(c, propType)}
+    {:else if c.type === "segmented"}
+      {@const opts = resolveEffectControlOptions(c, propType)}
       <div class="ctl-row ctl-row-wide">
         {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <SegmentedControl
@@ -143,6 +140,31 @@
           color="accent"
           size="sm"
         />
+      </div>
+    {:else if c.type === "palette"}
+      <div class="ctl-row ctl-row-wide">
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
+        <div class="ctl-options" role="radiogroup" aria-label={c.label}>
+          {#each c.paletteOptions ?? [] as option (option.value)}
+            <button
+              type="button"
+              class="ctl-option"
+              class:active={get(c.field) === option.value}
+              role="radio"
+              aria-checked={get(c.field) === option.value}
+              onclick={() => set(c.field, option.value)}
+            >
+              {#if option.swatch}
+                <span
+                  class="ctl-option-swatch"
+                  style:background={option.swatch}
+                  aria-hidden="true"
+                ></span>
+              {/if}
+              <span>{option.label}</span>
+            </button>
+          {/each}
+        </div>
       </div>
     {:else if c.type === "toggle"}
       <div class="ctl-row">
@@ -264,6 +286,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    container: effect-controls / inline-size;
   }
 
   .ctl-row {
@@ -294,6 +317,80 @@
   .ctl-label {
     font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim);
+  }
+
+  /* Named palettes have too many meaningful choices for a compressed slider
+     indicator. A small option grid keeps every name readable and selectable. */
+  .ctl-options {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .ctl-option {
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 9px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .ctl-option:hover {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    color: var(--theme-text, white);
+  }
+
+  .ctl-option.active {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 55%,
+      transparent
+    );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    color: var(--theme-text, white);
+  }
+
+  .ctl-option:focus-visible {
+    outline: 2px solid var(--theme-accent, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  .ctl-option-swatch {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    border-radius: 50%;
+  }
+
+  /* The phone tuner reveals one control at a time. Keep its palette on one
+     scrollable rail so choosing a color does not push the canvas upward. */
+  .hide-label .ctl-options {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .hide-label .ctl-options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-label .ctl-option {
+    flex: 0 0 auto;
+    padding-inline: 12px;
   }
 
   /* paletteSwatches: a compact row of round color wells. */
@@ -480,5 +577,12 @@
   }
   .ctl-toggle.on .ctl-toggle-dot {
     left: 20px;
+  }
+
+  @container effect-controls (max-width: 24rem) {
+    .ctl-row-wide {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
   }
 </style>
