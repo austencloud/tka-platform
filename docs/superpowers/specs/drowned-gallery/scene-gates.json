@@ -92,9 +92,43 @@
     {
       "id": "C-007",
       "class": "invention",
-      "statement": "Three water surfaces along the channel: glass in front of AAAA, a slow ripple in front of BBBB, mist in front of CCCC. Decoration in walk order. It deliberately encodes nothing about the three sequences - A and B are the matched pair and C is the hybrid, which is not a three-step progression - and no elemental word is spoken anywhere in the wing. Proposal only, tracker aBjf7lxTY4ZUfUtF5A0p.",
+      "statement": "ONE water surface along the channel, ramped along its length: dead still in front of AAAA, a slow ripple in front of BBBB, mist in front of CCCC. Decoration in walk order. It deliberately encodes nothing about the three sequences - A and B are the matched pair and C is the hybrid, which is not a three-step progression - and no elemental word is spoken anywhere in the wing. Steam at CCCC is Austen's explicit direction on 2026-08-15: 'I'd love to have steam at the junction of water and fire.' Tracker SyTa9smQMqHC20urZcs3.",
       "evidence": [
         "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
+      ]
+    },
+    {
+      "id": "C-010",
+      "class": "literal",
+      "statement": "The grotto already renders real water, not a translucent plate: DrownedGalleryWalkScene mounts one ReflectivePool per water plane at GROTTO_WATERLINE_Y - the channel and the mirror pool - on the shared ReflectivePoolShader, which carries planar reflection, Schlick Fresnel at F0 0.02, four drifting sine-train ripple normals, depth absorption and a shoreline foam band. Glass and moving water are both inside what it already does.",
+      "evidence": [
+        "src/routes/test/drowned-gallery-graybox/DrownedGalleryWalkScene.svelte",
+        "src/lib/shared/3d/environments/primitives/ReflectivePool.svelte",
+        "src/lib/shared/3d/environments/primitives/reflective-pool-shader.ts"
+      ]
+    },
+    {
+      "id": "C-011",
+      "class": "literal",
+      "statement": "Splitting the channel into three surfaces would be a visual defect, not only a cost: the shader measures an authored shoreline and draws foam wherever water meets an edge, so the two internal cuts would render as foam lines across the middle of the channel. One surface with the wave ramped along its length has no internal edge and keeps the single reflection pass.",
+      "evidence": [
+        "src/lib/shared/3d/environments/primitives/reflective-pool-shader.ts"
+      ]
+    },
+    {
+      "id": "C-012",
+      "class": "literal",
+      "statement": "Each reflective surface re-renders the visible room into its own 1024x1024 buffer every frame. Measured in the running graybox standing at the Fire threshold looking at the cases: 31 draw calls and 2720 triangles per frame with both surfaces hidden, 89 and 8072 with them visible - about 29 calls and 2700 triangles per surface. Frame time was pinned at 33.3 ms in both states, so no headroom claim is made and the draw-call figure is the load-bearing one.",
+      "evidence": [
+        "src/routes/test/drowned-gallery-graybox/DrownedGalleryWalkScene.svelte"
+      ]
+    },
+    {
+      "id": "C-013",
+      "class": "literal",
+      "statement": "The mist at CCCC reuses the Fire wing's existing steam column: FirstFireSteamVent drives EmberFountains with warm-grey colours, near-zero gravity and a waist-height plume cap. Its authored limits bind here unchanged - white blows out to a peach smear under AgX on additive blending, a full-height column becomes a flat pale wash that removes the room's depth, and inside a couple of metres the visitor is standing within the cloud. CCCC sits on a walkway the route passes within a metre of, so the plume stays low and thin.",
+      "evidence": [
+        "src/lib/shared/3d/environments/scenes/first-fire/FirstFireSteamVent.svelte"
       ]
     },
     {
@@ -115,6 +149,14 @@
     }
   ],
   "supersededClaims": [
+    {
+      "supersededBy": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+      "note": "The three-separate-surfaces version of the water treatment is withdrawn on 2026-08-15 after reading the shader and measuring the running graybox. Two findings retired it: the shader foams every authored edge, so three surfaces would draw foam lines across the middle of the channel; and each surface re-renders the whole visible room, so a third and fourth surface would cost two more full passes. Replaced by one surface with the wave ramped along its length. Tracker SyTa9smQMqHC20urZcs3.",
+      "statements": [
+        "Three water surfaces along the channel, one in front of each case, dividing the channel in exact thirds.",
+        "The treatment costs one shader parameter per case."
+      ]
+    },
     {
       "supersededBy": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
       "note": "The parapet viewing deck was rejected by Austen on 2026-08-12: nobody walks to a corner spot just to stand in it, and the three-across sightline was already available from the walk along the water. The deck, its standing point, and the pool-splitting work it required are all withdrawn. The payoff view moved to the Fire threshold, which is existing geometry every visitor passes through. Tracker aBjf7lxTY4ZUfUtF5A0p.",
@@ -181,7 +223,7 @@
         {
           "kind": "floor-plan",
           "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
-          "note": "Sheets P-01 (whole walk, 1 grid = 5 m) and P-02 (the grotto at 1 grid = 1 m) with entry, exit, doors, blocked rects, performer shelf, opener, and the channel divided in thirds for the three water surfaces."
+          "note": "Sheets P-01 (whole walk, 1 grid = 5 m) and P-02 (the grotto at 1 grid = 1 m) with entry, exit, doors, blocked rects, performer shelf, opener, and the channel drawn as one surface whose ripple and mist ramp along its length with no internal edge."
         },
         {
           "kind": "vertical-section",
