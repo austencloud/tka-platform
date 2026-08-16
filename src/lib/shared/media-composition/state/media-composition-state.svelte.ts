@@ -99,7 +99,10 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
       (clip) => clip.kind === "visual" && clip.regionId === selectedRegionId
     )?.sourceRole ?? null
   );
-  let safeZonesVisible = $state(true);
+  // Off by default. The dashed rectangle and its warm bands are a measuring
+  // aid, not part of the post — leaving them on means every glance at the
+  // canvas is a glance at scaffolding. The composition bar carries the switch.
+  let safeZonesVisible = $state(false);
   let previewSeconds = $state(0);
   let isPlaying = $state(false);
   let durationOverrides = $state<Record<string, number>>({});

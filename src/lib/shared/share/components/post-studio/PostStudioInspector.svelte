@@ -28,13 +28,21 @@
 
   const composition = getMediaCompositionContext();
 
-  type InspectorView = "source" | "placement";
+  /**
+   * "Fit", not "Placement". A slot's content is centred in its half of the
+   * frame and stays there — the horizontal, vertical and rotation controls
+   * (and the canvas drag that shadowed them) are gone, because off-centre is
+   * not a thing this post format wants. What is left is how the source fills
+   * the slot it has: crop or letterbox, how far in, how solid.
+   */
+  type InspectorView = "source" | "fit";
   const VIEW_OPTIONS: Array<{ value: InspectorView; label: string }> = [
     { value: "source", label: "Look" },
-    { value: "placement", label: "Placement" },
+    { value: "fit", label: "Fit" },
   ];
 
   let view = $state<InspectorView>("source");
+  const canReset = $derived(view === "fit");
   let previousRole = $state<string | null>(null);
   const selectedBinding = $derived(composition.selectedBinding);
   // Everything the studio draws itself has a Look to edit; only dropped-in
@@ -56,7 +64,7 @@
     const role = composition.selectedRole;
     if (role === previousRole) return;
     previousRole = role;
-    view = hasSourceSettings ? "source" : "placement";
+    view = hasSourceSettings ? "source" : "fit";
   });
 
   const FIT_OPTIONS: Array<{ value: LayoutRegion["fit"]; label: string }> = [
@@ -68,14 +76,7 @@
   const transform = $derived(composition.selectedTransform);
   const opacity = $derived(composition.selectedOpacity ?? 1);
   const changed = $derived(
-    Boolean(
-      transform &&
-      (transform.scale !== 1 ||
-        transform.rotationDegrees !== 0 ||
-        transform.translateX !== 0 ||
-        transform.translateY !== 0 ||
-        opacity !== 1)
-    )
+    Boolean(transform && (transform.scale !== 1 || opacity !== 1))
   );
 
   function numberFrom(event: Event): number {
@@ -101,12 +102,12 @@
           "Canvas"}
       </h3>
     </div>
-    {#if view === "placement"}
+    {#if canReset}
       <button
         type="button"
         class="reset-button"
         disabled={!changed}
-        aria-label="Reset selected layer placement"
+        aria-label="Reset how the selected layer fills its slot"
         onclick={composition.resetSelectedAppearance}
       >
         <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>
@@ -122,7 +123,7 @@
           options={VIEW_OPTIONS}
           value={view}
           onchange={(value) => (view = value)}
-          ariaLabel="Choose layer settings or placement"
+          ariaLabel="Choose layer settings or how it fills its slot"
           semantics="tabs"
           size="sm"
           color="accent"
@@ -156,13 +157,9 @@
         </div>
       {/if}
 
-      <div class="control-group placement-controls">
+      <div class="control-group fill-controls">
         <div class="group-heading">
-          <span class="group-label">Placement</span>
-          <span class="drag-hint">
-            <i class="fa-solid fa-up-down-left-right" aria-hidden="true"></i>
-            Drag on canvas
-          </span>
+          <span class="group-label">Fill</span>
         </div>
 
         <div class="slider-row">
@@ -186,81 +183,6 @@
             unit="%"
             showLabel={false}
             onchange={(value) => setTransform("scale", value / 100)}
-          />
-        </div>
-
-        <div class="slider-row">
-          <span>Horizontal</span>
-          <input
-            type="range"
-            min="-100"
-            max="100"
-            step="1"
-            value={Math.round(transform.translateX * 100)}
-            aria-label="Horizontal position"
-            aria-valuetext={`${Math.round(transform.translateX * 100)} percent`}
-            oninput={(event) =>
-              setTransform("translateX", numberFrom(event) / 100)}
-          />
-          <ScrubbableNumber
-            label="Horizontal position"
-            value={transform.translateX * 100}
-            min={-100}
-            max={100}
-            step={1}
-            unit="%"
-            showLabel={false}
-            onchange={(value) => setTransform("translateX", value / 100)}
-          />
-        </div>
-
-        <div class="slider-row">
-          <span>Vertical</span>
-          <input
-            type="range"
-            min="-100"
-            max="100"
-            step="1"
-            value={Math.round(transform.translateY * 100)}
-            aria-label="Vertical position"
-            aria-valuetext={`${Math.round(transform.translateY * 100)} percent`}
-            oninput={(event) =>
-              setTransform("translateY", numberFrom(event) / 100)}
-          />
-          <ScrubbableNumber
-            label="Vertical position"
-            value={transform.translateY * 100}
-            min={-100}
-            max={100}
-            step={1}
-            unit="%"
-            showLabel={false}
-            onchange={(value) => setTransform("translateY", value / 100)}
-          />
-        </div>
-
-        <div class="slider-row">
-          <span>Rotation</span>
-          <input
-            type="range"
-            min="-180"
-            max="180"
-            step="1"
-            value={Math.round(transform.rotationDegrees)}
-            aria-label="Rotation"
-            aria-valuetext={`${Math.round(transform.rotationDegrees)} degrees`}
-            oninput={(event) =>
-              setTransform("rotationDegrees", numberFrom(event))}
-          />
-          <ScrubbableNumber
-            label="Rotation"
-            value={transform.rotationDegrees}
-            min={-180}
-            max={180}
-            step={1}
-            unit="°"
-            showLabel={false}
-            onchange={(value) => setTransform("rotationDegrees", value)}
           />
         </div>
 
@@ -289,25 +211,11 @@
           />
         </div>
       </div>
-
-      <button
-        type="button"
-        class:active={composition.safeZonesVisible}
-        class="guide-toggle"
-        aria-pressed={composition.safeZonesVisible}
-        onclick={composition.toggleSafeZones}
-      >
-        <i class="fa-solid fa-border-all" aria-hidden="true"></i>
-        <span>
-          <strong>Instagram safe area</strong>
-          <small>Show where interface controls cover the post.</small>
-        </span>
-      </button>
     {/if}
   {:else}
     <div class="inspector-empty">
       <i class="fa-solid fa-arrow-pointer" aria-hidden="true"></i>
-      <p>Select an area on the canvas to edit its placement.</p>
+      <p>Select a slot on the canvas to edit what is in it.</p>
     </div>
   {/if}
 </section>
@@ -388,7 +296,6 @@
   }
 
   .reset-button:focus-visible,
-  .guide-toggle:focus-visible,
   input:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
@@ -399,17 +306,9 @@
     gap: 0.75rem;
   }
 
-  .placement-controls {
+  .fill-controls {
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--theme-stroke);
-  }
-
-  .drag-hint {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    color: var(--theme-accent);
-    font-size: var(--studio-meta-size, var(--font-size-compact));
   }
 
   .slider-row {
@@ -428,53 +327,6 @@
     margin: 0;
     accent-color: var(--theme-accent);
     cursor: ew-resize;
-  }
-
-  .guide-toggle {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.75rem;
-    min-height: calc(var(--studio-control-height, 2.75rem) + 1.25rem);
-    padding: 0.625rem 0.75rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-sm);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .guide-toggle > i {
-    color: var(--theme-text-dim);
-  }
-
-  .guide-toggle > span {
-    display: grid;
-    gap: 0.15rem;
-  }
-
-  .guide-toggle strong {
-    font-size: var(--studio-body-size, var(--font-size-min));
-  }
-
-  .guide-toggle small {
-    color: var(--theme-text-dim);
-    font-size: var(--studio-meta-size, var(--font-size-compact));
-    line-height: 1.35;
-  }
-
-  .guide-toggle.active {
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-warning) 52%,
-      var(--theme-stroke)
-    );
-  }
-
-  .guide-toggle.active > i {
-    color: var(--semantic-warning);
   }
 
   .inspector-empty {

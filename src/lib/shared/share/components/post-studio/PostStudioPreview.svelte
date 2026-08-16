@@ -30,16 +30,6 @@
   });
 
   const composition = getMediaCompositionContext();
-  let drag = $state<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    startTranslateX: number;
-    startTranslateY: number;
-    region: HTMLElement;
-    moved: boolean;
-  } | null>(null);
-  let suppressClick = false;
 
   const orderedRegions = $derived(
     [...composition.regions].sort((left, right) => left.zIndex - right.zIndex)
@@ -62,56 +52,17 @@
     if (binding?.status === "missing") composition.requestSource(roleKey);
   }
 
+  /**
+   * A slot fills its half of the frame and its content is centred there. That
+   * is the right answer essentially always, so dragging a source off-centre
+   * was an affordance that mostly created accidents: the whole gesture, and
+   * the offsets it wrote, are gone. Clicking a slot selects it and opens its
+   * settings, which is the only thing the surface was really for.
+   */
   function handleRegionClick(regionId: string, roleKey: string | null): void {
-    if (suppressClick) {
-      suppressClick = false;
-      return;
-    }
     selectRegion(regionId, roleKey);
     const binding = roleKey ? composition.bindingForRole(roleKey) : null;
     if (binding?.status !== "missing") onEditRegion?.();
-  }
-
-  function beginDrag(
-    event: PointerEvent,
-    regionId: string,
-    roleKey: string | null
-  ): void {
-    composition.selectRegion(regionId, roleKey);
-    const binding = roleKey ? composition.bindingForRole(roleKey) : null;
-    if (binding?.status === "missing" || !composition.selectedTransform) return;
-    const region = event.currentTarget as HTMLElement;
-    region.setPointerCapture(event.pointerId);
-    drag = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      startTranslateX: composition.selectedTransform.translateX,
-      startTranslateY: composition.selectedTransform.translateY,
-      region,
-      moved: false,
-    };
-  }
-
-  function moveDrag(event: PointerEvent): void {
-    if (!drag || event.pointerId !== drag.pointerId) return;
-    const bounds = drag.region.getBoundingClientRect();
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (Math.abs(deltaX) + Math.abs(deltaY) > 4) drag.moved = true;
-    composition.setSelectedTransform({
-      translateX: drag.startTranslateX + deltaX / bounds.width,
-      translateY: drag.startTranslateY + deltaY / bounds.height,
-    });
-  }
-
-  function endDrag(event: PointerEvent): void {
-    if (!drag || event.pointerId !== drag.pointerId) return;
-    suppressClick = drag.moved;
-    if (drag.region.hasPointerCapture(event.pointerId)) {
-      drag.region.releasePointerCapture(event.pointerId);
-    }
-    drag = null;
   }
 
   function layersForRegion(regionId: string): EvaluatedFrameLayer[] {
@@ -190,10 +141,6 @@
           class="region-surface"
           aria-pressed={composition.selectedRegion?.id === region.id}
           aria-label={`Edit ${region.label ?? "region"}${binding?.status === "missing" ? "; source missing" : ""}`}
-          onpointerdown={(event) => beginDrag(event, region.id, roleKey)}
-          onpointermove={moveDrag}
-          onpointerup={endDrag}
-          onpointercancel={endDrag}
           onkeydown={(event) => handleRegionKeydown(event, region.id)}
           onclick={() => handleRegionClick(region.id, roleKey)}
         >
@@ -321,7 +268,6 @@
     background: rgba(255, 255, 255, 0.025);
     color: inherit;
     cursor: pointer;
-    touch-action: none;
   }
 
   /* Selection marks the WHOLE slot — a ring, never a bar down one edge. The
@@ -330,10 +276,6 @@
   .region.selected {
     border-color: color-mix(in srgb, var(--theme-accent, #8b7cff) 85%, white);
     box-shadow: inset 0 0 0 2px var(--theme-accent, #8b7cff);
-  }
-
-  .region.selected:not(.missing) .region-surface {
-    cursor: move;
   }
 
   .region-surface:focus-visible {

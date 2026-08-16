@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
+  import { isCardLayoutAutomatic } from "$lib/shared/share/services/card-render-options";
+  import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 
   let {
     sequence,
@@ -15,6 +18,32 @@
 
   const highlightedStepIndex = $derived(
     displayedBeatNumber < 1 ? -1 : displayedBeatNumber - 1
+  );
+
+  // The composition manager publishes through observers rather than runes, so
+  // reading it inside a derived subscribes to nothing without this counter.
+  const compositionManager = getImageCompositionManager();
+  let compositionVersion = $state(0);
+  function onCardSettingsChanged(): void {
+    compositionVersion++;
+  }
+  compositionManager.registerObserver(onCardSettingsChanged);
+  onDestroy(() => compositionManager.unregisterObserver(onCardSettingsChanged));
+
+  /**
+   * A slot is a different frame from the Card pane, so on Auto the card gets to
+   * measure this one. Pinned columns are a deliberate choice and still carry.
+   */
+  const automatic = $derived.by(() => {
+    void compositionVersion;
+    return isCardLayoutAutomatic(sequence.steps?.length ?? 0);
+  });
+
+  const columnCount = $derived(
+    automatic ? null : (cardRenderOptions?.columnCount ?? null)
+  );
+  const startPositionLayoutOverride = $derived(
+    automatic ? null : (cardRenderOptions?.startPositionLayout ?? null)
   );
 </script>
 
@@ -37,8 +66,8 @@
       cardRenderOptions?.propTypeOverride}
     redPropType={cardRenderOptions?.redPropTypeOverride ??
       cardRenderOptions?.propTypeOverride}
-    columnCount={cardRenderOptions?.columnCount ?? null}
-    startPositionLayoutOverride={cardRenderOptions?.startPositionLayout ?? null}
+    {columnCount}
+    {startPositionLayoutOverride}
     forceContain
     fitWidth
   />

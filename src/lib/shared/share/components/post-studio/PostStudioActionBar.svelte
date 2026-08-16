@@ -120,6 +120,22 @@
     {/each}
   </div>
 
+  <!-- The safe-area overlay is scaffolding: it belongs beside the thing that
+       says what the post is made of, not buried in a per-layer panel where it
+       reads as a property of the selected slot. Off by default, one click
+       away when the composition needs measuring against Instagram's chrome. -->
+  <button
+    type="button"
+    class="guide-toggle"
+    class:active={composition.safeZonesVisible}
+    aria-pressed={composition.safeZonesVisible}
+    aria-label="Instagram safe area overlay"
+    title="Instagram safe area — where the app's own controls sit over the post"
+    onclick={composition.toggleSafeZones}
+  >
+    <i class="fa-solid fa-border-all" aria-hidden="true"></i>
+  </button>
+
   <div class="state">
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
@@ -246,6 +262,36 @@
     font-size: 0.7em;
   }
 
+  .guide-toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min);
+    cursor: pointer;
+  }
+
+  .guide-toggle:hover {
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+
+  .guide-toggle.active {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-warning) 58%,
+      var(--theme-stroke)
+    );
+    background: color-mix(in srgb, var(--semantic-warning) 12%, transparent);
+    color: var(--semantic-warning);
+  }
+
   .state,
   .export-actions {
     display: flex;
@@ -329,6 +375,7 @@
   .secondary-button:focus-visible,
   .render-button:focus-visible,
   .download-button:focus-visible,
+  .guide-toggle:focus-visible,
   .missing-state:focus-visible {
     outline: 3px solid var(--theme-accent);
     outline-offset: 2px;
@@ -373,8 +420,14 @@
     .secondary-button,
     .render-button,
     .download-button,
+    .guide-toggle,
     .slot-picker :global(.slot-trigger) {
       min-height: 3.25rem;
+    }
+
+    .guide-toggle {
+      width: 3.25rem;
+      font-size: 0.9375rem;
     }
 
     .missing-state {
@@ -409,8 +462,14 @@
     .secondary-button,
     .render-button,
     .download-button,
+    .guide-toggle,
     .slot-picker :global(.slot-trigger) {
       min-height: 3.75rem;
+    }
+
+    .guide-toggle {
+      width: 3.75rem;
+      font-size: 1.125rem;
     }
 
     .missing-state {
@@ -448,7 +507,7 @@
      cost 22% of the screen height to say one word. */
   @container post-studio (max-width: 35rem) {
     .actionbar {
-      gap: var(--spacing-sm);
+      gap: var(--spacing-xs);
       min-height: 3rem;
       padding-inline: var(--spacing-sm);
     }
@@ -484,18 +543,35 @@
       display: none;
     }
 
+    /* The chevron is the next thing to go after the source glyph. It only
+       advertises that the chip opens a menu, which the chip's own border and
+       press already do — whereas the label is the answer to "what is in this
+       slot", and at 375 it was clipping to "Anima…". Sixteen pixels back per
+       picker is the difference between the full word and an ellipsis. */
+    .caret {
+      display: none;
+    }
+
     .slot-label {
       min-width: 0;
     }
 
-    .state {
+    /* Every child carries an explicit order here. An unset order is 0, which
+       silently outranks its siblings and once put the render button alone on
+       a row of its own above the pickers. */
+    .guide-toggle {
       order: 1;
+      width: 2.5rem;
+    }
+
+    .state {
+      order: 2;
       flex: 0 1 auto;
       justify-content: flex-start;
     }
 
     .export-actions {
-      order: 2;
+      order: 3;
       flex: 0 0 auto;
     }
 

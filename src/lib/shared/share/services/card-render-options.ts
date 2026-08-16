@@ -47,6 +47,25 @@ export interface CardRenderOptionsInput {
 }
 
 /**
+ * Whether the card's grid is on Auto for a sequence of this length — the user
+ * has pinned no step-column count, so the shape is decided by whatever
+ * container the card is drawn into.
+ *
+ * `buildCardRenderOptions` below always emits a CONCRETE `columnCount` and
+ * `startPositionLayout`, because the compositor renders to a bare canvas with
+ * no container to measure and needs the geometry handed to it. A surface that
+ * has its own container must ask this FIRST: the Post Studio slot is half a
+ * 9:16 frame — wider than tall — while the Card pane that resolved those
+ * numbers is tall. Passing the pane's answer through pinned a 16-step card to
+ * start-on-top inside a container where start-on-the-left fits a third larger.
+ * On Auto, hand the live card nothing and let it re-fit; honor the pins only
+ * when they really are pins.
+ */
+export function isCardLayoutAutomatic(stepCount: number): boolean {
+  return getImageCompositionManager().getColumnCountForStepCount(stepCount) === null;
+}
+
+/**
  * Build the complete `renderSequenceToBlob` options from the user's card settings.
  * Output excludes pure output-format concerns (stepSize/format/quality) — the
  * caller spreads those in.
