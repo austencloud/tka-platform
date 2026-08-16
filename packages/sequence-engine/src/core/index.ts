@@ -13,6 +13,7 @@ export {
   calculateOrientations,
   getHandpathDirection,
   switchOrientation,
+  RADIAL_CW_CYCLE,
 } from "./orientation/OrientationCalculator.js";
 export type { Orientation, OrientationInput } from "./orientation/OrientationCalculator.js";
 export type {
@@ -20,6 +21,40 @@ export type {
   IOrientationPropagator,
 } from "./orientation/IOrientationPropagator.js";
 export { OrientationCalculator, OrientationPropagator } from "./orientation/OrientationPropagator.js";
+
+// Layer signature — the radial/non-radial reading of both props, step by step
+export {
+  orientationClass,
+  isRadialOrientation,
+  layerOf,
+  collapseLayer,
+  layerClassDelta,
+  flipsLayer,
+  flipVectorOf,
+  applyFlip,
+  flipBetween,
+  layerSignature,
+  layerPatternOf,
+  signatureFromPattern,
+  patternFromSignature,
+  isLayerClosed,
+  mirrorPattern,
+  layerMetrics,
+  signaturePeriod,
+  formatSignature,
+  formatPattern,
+  parsePattern,
+  parseSignature,
+} from "./orientation/layer-signature.js";
+export type {
+  LayerId,
+  CollapsedLayerId,
+  FlipVector,
+  LayerPattern,
+  LayerMetrics,
+  LayerMotionInput,
+  LayerStepInput,
+} from "./orientation/layer-signature.js";
 
 // Transition graph
 export type { ITransitionGraph } from "./transition-graph/ITransitionGraph.js";

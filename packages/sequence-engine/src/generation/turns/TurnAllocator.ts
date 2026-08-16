@@ -30,6 +30,28 @@ function getPossibleTurnsForLevel(level: number): (number | "fl")[] {
   }
 }
 
+/**
+ * Every turn value a step is allowed to take at this level, once the request's
+ * own intensity cap is applied.
+ *
+ * This is the single answer to "what turns may this sequence use", so anything
+ * that rewrites a turn after allocation — layer targeting, for one — asks here
+ * rather than deciding for itself. Writing a half turn into a level 2 sequence
+ * because it happened to be under the cap is exactly the mistake this prevents.
+ */
+export function getTurnPool(
+  level: number,
+  maxTurnIntensity?: number,
+  options?: { allowFloat?: boolean }
+): (number | "fl")[] {
+  const effectiveMax = maxTurnIntensity ?? (level >= 2 ? 3 : 0);
+  const pool = getPossibleTurnsForLevel(level).filter((t) => {
+    if (t === "fl") return options?.allowFloat !== false;
+    return typeof t === "number" && t <= effectiveMax;
+  });
+  return pool.length > 0 ? pool : [0];
+}
+
 function randomChoice<T>(array: T[], random: () => number): T {
   if (array.length === 0) {
     throw new Error("Cannot choose from empty array");
@@ -87,21 +109,10 @@ export function allocateTurns(
   maxTurnIntensity?: number,
   options?: TurnAllocationOptions
 ): TurnAllocation {
-  const possibleTurns = getPossibleTurnsForLevel(level);
-
-  // Default max intensity based on level
   const effectiveMax = maxTurnIntensity ?? (level >= 2 ? 3 : 0);
-
-  // Filter possible turns by max intensity.
-  // "fl" always passes the filter — it's a special motion state, not a numeric intensity.
-  const validTurns = possibleTurns.filter((t) => {
-    if (t === "fl" && options?.allowFloat === false) return false;
-    if (t === "fl") return true;
-    return typeof t === "number" && t <= effectiveMax;
+  const turnsPool = getTurnPool(level, maxTurnIntensity, {
+    allowFloat: options?.allowFloat !== false,
   });
-
-  // If filtering removed everything except possibly "fl", ensure we have at least 0
-  const turnsPool = validTurns.length > 0 ? validTurns : [0];
   const requiredTurns = options?.requiredTurns;
   const random = options?.random ?? Math.random;
 

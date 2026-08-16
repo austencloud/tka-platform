@@ -40,6 +40,14 @@ import {
   type TurnAllocationOptions,
 } from "../turns/TurnAllocator.js";
 import { materializeTurn } from "../turns/TurnMaterializer.js";
+import {
+  applyLayerPattern,
+  enforceHandFlipParity,
+} from "../turns/layer-targeting.js";
+import {
+  parsePattern,
+  type LayerPattern,
+} from "../../core/orientation/layer-signature.js";
 import { BeamSearch, type BeamSearchResult } from "./BeamSearch.js";
 import { Type6Constraint } from "../constraints/domain/Type6Constraint.js";
 import { PositionContinuityConstraint } from "../constraints/domain/PositionContinuityConstraint.js";
@@ -107,6 +115,46 @@ function shouldForcePeriod4OrientationCycle(
   return !ROTATED_LOOP_TYPES.has(loop.type);
 }
 
+/**
+ * What the request wants done to the layers, if anything.
+ *
+ * A named pattern takes precedence: the caller has said exactly which layers
+ * they want and how many crossings that implies is their business. Otherwise a
+ * four-repetition request becomes the weaker "each prop crosses an odd number
+ * of times", which is what makes the orientations take two passes to come back
+ * around without dictating where the crossings land.
+ */
+function resolveLayerShaping(options: BuildOptions):
+  | {
+      pattern?: LayerPattern;
+      handFlipParity?: "odd" | "even";
+      level?: number;
+      maxTurnIntensity?: number;
+    }
+  | undefined {
+  const { level, maxTurnIntensity } = options;
+
+  if (options.targetLayerPattern) {
+    const pattern =
+      typeof options.targetLayerPattern === "string"
+        ? parsePattern(options.targetLayerPattern)
+        : options.targetLayerPattern;
+    if (!pattern) {
+      throw new Error(
+        `Unreadable layer pattern "${String(options.targetLayerPattern)}" — ` +
+          `expected a starting layer and one of . B R X per step, like "1:.XB."`
+      );
+    }
+    return { pattern, level, maxTurnIntensity };
+  }
+
+  if (shouldForcePeriod4OrientationCycle(options.loop)) {
+    return { handFlipParity: "odd", level, maxTurnIntensity };
+  }
+
+  return undefined;
+}
+
 function resolveTurnAllocationOptions(
   options: BuildOptions
 ): TurnAllocationOptions {
@@ -168,6 +216,21 @@ export interface BuildOptions {
 
   /** Maximum turn intensity cap (0-3). Undefined = level default. */
   maxTurnIntensity?: number;
+
+  /**
+   * Ask for a specific layer signature — which of the four radial/non-radial
+   * combinations the props sit in, step by step. Give it either a pattern
+   * object or its written form, `"1:.XB."`: a starting layer and one symbol per
+   * step saying which props cross there (`.` neither, `B` blue, `R` red, `X`
+   * both).
+   *
+   * The pattern is independent of the word, so the same one laid over a
+   * different word produces the same signature. Needs level 3 — half turns are
+   * the only thing that moves a prop between radial and non-radial, and levels
+   * 1 and 2 do not have them, which is why every level 1 and 2 sequence sits in
+   * one layer from beginning to end.
+   */
+  targetLayerPattern?: LayerPattern | string;
 
   /** LOOP extension options. When present, the seed sequence is extended. */
   loop?: LoopOptions;
@@ -651,7 +714,8 @@ export class SequenceBuilder {
       {
         blueStartOrientation: options.blueStartOrientation,
         redStartOrientation: options.redStartOrientation,
-      }
+      },
+      resolveLayerShaping(options)
     );
 
     // Stage 6: LOOP extension (if requested)
@@ -1060,7 +1124,8 @@ export class SequenceBuilder {
       {
         blueStartOrientation: options.blueStartOrientation,
         redStartOrientation: options.redStartOrientation,
-      }
+      },
+      resolveLayerShaping(options)
     );
 
     // Stage 6: LOOP extension (if requested)
@@ -1195,6 +1260,15 @@ export class SequenceBuilder {
     orientationOverrides?: {
       blueStartOrientation?: string;
       redStartOrientation?: string;
+    },
+    layerShaping?: {
+      /** Put the sequence in these layers, step by step. */
+      pattern?: LayerPattern;
+      /** Or just settle how many times each prop crosses, and leave where to it. */
+      handFlipParity?: "odd" | "even";
+      /** Keeps the rewritten turns inside the values this level actually has. */
+      level?: number;
+      maxTurnIntensity?: number;
     }
   ): BuildResult {
     const bridgeIndices = new Set(searchResult.bridgeStepIndices);
@@ -1286,6 +1360,27 @@ export class SequenceBuilder {
       });
     }
 
+    // Shape the layers before orientations are worked out, because the layers
+    // ARE the orientations read coarsely and both come from the same turns.
+    //
+    // This has to happen here rather than back at turn allocation: allocation
+    // runs before the beam search picks variations, so at that point nobody
+    // knows whether a step's "fl" will become a real float (which crosses) or
+    // fall back to zero turns (which does not). By now every motion is decided,
+    // so the crossing count is exact.
+    let shaped = sequence;
+    if (layerShaping?.pattern) {
+      shaped = applyLayerPattern(shaped, layerShaping.pattern, {
+        level: layerShaping.level,
+        maxTurnIntensity: layerShaping.maxTurnIntensity,
+      }).steps;
+    } else if (layerShaping?.handFlipParity) {
+      shaped = enforceHandFlipParity(shaped, layerShaping.handFlipParity, {
+        level: layerShaping.level,
+        maxTurnIntensity: layerShaping.maxTurnIntensity,
+      }).steps;
+    }
+
     // Propagate orientations through the sequence. The CSV data has
     // orientations for 0-turn variations. After applying non-zero turns,
     // the end orientations must be recalculated: each step's start
@@ -1295,15 +1390,15 @@ export class SequenceBuilder {
       new OrientationCalculatorImpl()
     );
     const blueStartOrientation = (orientationOverrides?.blueStartOrientation ||
-      sequence[0]?.motions.blue.endOrientation ||
+      shaped[0]?.motions.blue.endOrientation ||
       "in") as Orientation;
     let propagated = propagator.propagateForColor(
-      sequence,
+      shaped,
       "blue",
       blueStartOrientation
     );
     const redStartOrientation = (orientationOverrides?.redStartOrientation ||
-      sequence[0]?.motions.red.endOrientation ||
+      shaped[0]?.motions.red.endOrientation ||
       "in") as Orientation;
     propagated = propagator.propagateForColor(
       propagated,

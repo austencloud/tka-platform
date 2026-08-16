@@ -143,7 +143,7 @@ const CENTER_CW_CYCLE: Orientation[] = [
  * Each step = 45 degrees of prop rotation.
  * Covers all 4 cardinal + 4 interradial orientations.
  */
-const RADIAL_CW_CYCLE: Orientation[] = [
+export const RADIAL_CW_CYCLE: Orientation[] = [
   "in", "clockIn", "clock", "clockOut",
   "out", "counterOut", "counter", "counterIn",
 ];

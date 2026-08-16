@@ -166,6 +166,14 @@ export {
   type TurnMaterializationSource,
   type TurnValue,
 } from "./turns/TurnMaterializer.js";
+export {
+  applyLayerPattern,
+  enforceHandFlipParity,
+  retargetMotionFlip,
+  type LayerTargetOptions,
+  type LayerTargetMiss,
+  type LayerTargetResult,
+} from "./turns/layer-targeting.js";
 
 // Reporting
 export {

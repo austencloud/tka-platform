@@ -10,10 +10,12 @@
 
 import { describe, it, expect } from "vitest";
 import corpusFixture from "../fixtures/layer-signature-corpus.json";
-import {
-  calculateEndOrientation,
-  RADIAL_CW_CYCLE,
-} from "$lib/shared/render/core/calculations/orientation";
+// The app's own end-orientation calculation, checked against the layer rule
+// that now lives in the engine. Two independent copies agreeing is the point:
+// if the app's renderer and the engine's generator ever drift on what a turn
+// does to an orientation, this test is where it surfaces.
+import { calculateEndOrientation } from "$lib/shared/render/core/calculations/orientation";
+import { RADIAL_CW_CYCLE } from "@tka/sequence-engine/core";
 import {
   applyFlip,
   collapseLayer,

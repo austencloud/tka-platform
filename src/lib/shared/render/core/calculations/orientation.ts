@@ -158,11 +158,10 @@ const CENTER_CW_CYCLE: Orientation[] = [
 ];
 
 // The eight orientations a prop can hold, in clockwise order — one step is 45
-// degrees of prop rotation. Exported because it is the ONLY place that fixes
-// which orientations sit next to which: the layer-signature domain reads this
-// order to tell a radial prop (in/out) from a non-radial one (clock/counter),
-// and a second copy of the order would silently disagree the day it drifts.
-export const RADIAL_CW_CYCLE: Orientation[] = [
+// degrees of prop rotation. This order is what tells a radial prop (in/out)
+// from a non-radial one (clock/counter); the engine holds the copy that the
+// layer-signature rules read, so keep the two in step if either ever changes.
+const RADIAL_CW_CYCLE: Orientation[] = [
   "in", "clockIn", "clock", "clockOut",
   "out", "counterOut", "counter", "counterIn",
 ];
