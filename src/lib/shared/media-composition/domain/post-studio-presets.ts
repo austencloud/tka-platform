@@ -33,10 +33,22 @@ export const POST_STUDIO_ROLE = {
   performance: "performance-video",
   animation: "sequence-animation",
   card: "choreo-card",
+  tunnel: "sequence-tunnel",
+  scene3d: "sequence-scene-3d",
+  mandala: "sequence-mandala",
 } as const;
 
 export type PostStudioRoleKey =
   (typeof POST_STUDIO_ROLE)[keyof typeof POST_STUDIO_ROLE];
+
+/** How a layer element is built and how the compositor reads a frame from it. */
+export type PostStudioRenderMode =
+  | "external-media"
+  | "sequence-animation"
+  | "choreo-card"
+  | "tunnel"
+  | "scene-3d"
+  | "mandala";
 
 function role(
   key: PostStudioRoleKey,
@@ -136,18 +148,137 @@ const CARD_ROLE = role(
   "linked-choreo-card",
   ["choreo-card"]
 );
+// These labels name a slot in the preview and an option in its source chooser,
+// so they are the short spoken names — "Animation", not "Sequence animation".
 const ANIMATION_ROLE = role(
   POST_STUDIO_ROLE.animation,
-  "Sequence animation",
+  "Animation",
   "linked-sequence-animation",
   ["sequence-animation"]
 );
 const PERFORMANCE_ROLE = role(
   POST_STUDIO_ROLE.performance,
-  "Performance video",
+  "Performance",
   "selected-video",
   ["video"]
 );
+const TUNNEL_ROLE = role(
+  POST_STUDIO_ROLE.tunnel,
+  "Tunnel",
+  "linked-sequence-derived",
+  ["tunnel"]
+);
+const SCENE_3D_ROLE = role(
+  POST_STUDIO_ROLE.scene3d,
+  "3D view",
+  "linked-sequence-derived",
+  ["scene-3d"]
+);
+const MANDALA_ROLE = role(
+  POST_STUDIO_ROLE.mandala,
+  "Mandala",
+  "linked-sequence-derived",
+  ["mandala"]
+);
+
+export interface PostStudioSource {
+  readonly key: PostStudioRoleKey;
+  readonly label: string;
+  readonly role: PresetSourceRole;
+  readonly renderMode: PostStudioRenderMode;
+  /** Whether the source fills its slot or is letterboxed inside it. */
+  readonly defaultFit: LayoutRegion["fit"];
+  /**
+   * A still image has no timeline of its own. The compositor renders one frame
+   * and holds it, and the timeline lane draws it as a hold rather than a strip.
+   */
+  readonly isStill: boolean;
+  /**
+   * WebGL scenes are expensive enough that two live contexts in one preview is
+   * a hardware-tier gamble, so 3D is limited to one slot at a time.
+   */
+  readonly exclusive: boolean;
+  readonly clip: (id: string, regionId: string) => PresetClip;
+}
+
+function source(
+  key: PostStudioRoleKey,
+  presetRole: PresetSourceRole,
+  renderMode: PostStudioRenderMode,
+  defaultFit: LayoutRegion["fit"],
+  options: { isStill?: boolean; exclusive?: boolean } = {}
+): PostStudioSource {
+  return {
+    key,
+    label: presetRole.label,
+    role: presetRole,
+    renderMode,
+    defaultFit,
+    isStill: options.isStill ?? false,
+    exclusive: options.exclusive ?? false,
+    clip: (id, regionId) => visualClip(id, key, regionId),
+  };
+}
+
+/**
+ * Every media type a slot can hold. This is the list the empty-slot chooser
+ * renders and the only place a new source type has to be declared — the slot
+ * verbs in `post-studio-slots.ts` read roles, fit and clip shape from here
+ * rather than each carrying their own switch.
+ */
+export const POST_STUDIO_SOURCES: Readonly<
+  Record<PostStudioRoleKey, PostStudioSource>
+> = {
+  [POST_STUDIO_ROLE.animation]: source(
+    POST_STUDIO_ROLE.animation,
+    ANIMATION_ROLE,
+    "sequence-animation",
+    "cover"
+  ),
+  [POST_STUDIO_ROLE.performance]: source(
+    POST_STUDIO_ROLE.performance,
+    PERFORMANCE_ROLE,
+    "external-media",
+    "cover"
+  ),
+  [POST_STUDIO_ROLE.card]: source(
+    POST_STUDIO_ROLE.card,
+    CARD_ROLE,
+    "choreo-card",
+    "contain"
+  ),
+  [POST_STUDIO_ROLE.tunnel]: source(
+    POST_STUDIO_ROLE.tunnel,
+    TUNNEL_ROLE,
+    "tunnel",
+    "cover"
+  ),
+  [POST_STUDIO_ROLE.scene3d]: source(
+    POST_STUDIO_ROLE.scene3d,
+    SCENE_3D_ROLE,
+    "scene-3d",
+    "cover",
+    { exclusive: true }
+  ),
+  [POST_STUDIO_ROLE.mandala]: source(
+    POST_STUDIO_ROLE.mandala,
+    MANDALA_ROLE,
+    "mandala",
+    "contain",
+    // The mandala is a whole-sequence fingerprint, not a frame at a time:
+    // `SequenceMandala` declares a `currentStep` prop and never reads it.
+    { isStill: true }
+  ),
+};
+
+export const POST_STUDIO_SOURCE_ORDER: readonly PostStudioRoleKey[] = [
+  POST_STUDIO_ROLE.animation,
+  POST_STUDIO_ROLE.performance,
+  POST_STUDIO_ROLE.card,
+  POST_STUDIO_ROLE.tunnel,
+  POST_STUDIO_ROLE.scene3d,
+  POST_STUDIO_ROLE.mandala,
+];
 
 /**
  * The four structural starting points shown in Post Studio. They bind by role,

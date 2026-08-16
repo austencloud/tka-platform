@@ -9,9 +9,24 @@ export const MediaSourceKindSchema = z.enum([
   "video",
   "sequence-animation",
   "choreo-card",
+  "tunnel",
+  "scene-3d",
+  "mandala",
   "image",
   "audio",
 ]);
+
+/**
+ * Kinds the app renders live from a sequence rather than reading from a file.
+ * They all resolve the same way — a sequence ref plus a renderer — so they
+ * share one schema shape and one `linked-sequence-derived` role resolution.
+ */
+export const SEQUENCE_DERIVED_SOURCE_KINDS = [
+  "sequence-animation",
+  "tunnel",
+  "scene-3d",
+  "mandala",
+] as const;
 
 export type MediaSourceKind = z.infer<typeof MediaSourceKindSchema>;
 
@@ -77,7 +92,7 @@ export const SequenceAnimationMediaSourceSchema = z
     id: NonEmptyIdSchema,
     role: NonEmptyIdSchema.optional(),
     label: z.string().trim().min(1).optional(),
-    kind: z.literal("sequence-animation"),
+    kind: z.enum(SEQUENCE_DERIVED_SOURCE_KINDS),
     sequenceRef: SequenceRevisionRefSchema,
   })
   .strict();

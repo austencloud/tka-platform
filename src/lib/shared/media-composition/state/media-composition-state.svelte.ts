@@ -13,6 +13,21 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MediaCompositionPresetSchema } from "$lib/shared/media-composition/domain/media-composition-preset-schema";
 import { clampTempoBpm } from "$lib/shared/animation-engine/domain/tempo-behavior";
 import { getStepDuration } from "$lib/shared/animation-engine/timeline/services/step-grid-calculator";
+import {
+  POST_STUDIO_SOURCES,
+  type PostStudioRenderMode,
+  type PostStudioRoleKey,
+} from "$lib/shared/media-composition/domain/post-studio-presets";
+import {
+  normalizePresetToSlots,
+  slotIsOccupied,
+  slotOccupancy,
+  withClearedSlot,
+  withSlotSource,
+  withSlotSplit,
+  withSwappedSlots,
+  type PostStudioSlotId,
+} from "$lib/shared/media-composition/domain/post-studio-slots";
 
 type VisualPresetClip = Extract<
   MediaCompositionPreset["clips"][number],
@@ -27,7 +42,7 @@ export interface CompositionSourceBinding {
   label: string;
   previewUrl: string | null;
   previewType?: "video" | "image";
-  renderMode?: "external-media" | "sequence-animation" | "choreo-card";
+  renderMode?: PostStudioRenderMode;
   durationSeconds?: number;
   hasAudio?: boolean;
   status: CompositionSourceStatus;
@@ -51,19 +66,30 @@ function clonePreset(preset: MediaCompositionPreset): MediaCompositionPreset {
   return JSON.parse(JSON.stringify(preset)) as MediaCompositionPreset;
 }
 
+/**
+ * Every preset entering the working set is put on the slot model first, so the
+ * rest of this file — and every consumer — can assume region ids are `top` and
+ * `bottom`. Built-ins name their regions `motion` / `card` / `performance`, and
+ * presets already saved to Firestore carry whatever they were built with.
+ */
+function adoptPreset(preset: MediaCompositionPreset): MediaCompositionPreset {
+  return normalizePresetToSlots(clonePreset(preset));
+}
+
 export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
   if (deps.presets.length === 0) {
     throw new Error("Media composition state needs at least one preset");
   }
 
-  const firstPreset = deps.presets[0]!;
+  const adopted = deps.presets.map(adoptPreset);
+  const firstPreset = adopted[0]!;
+  // Seeds are read from the ADOPTED copy, not the input. Reading region ids off
+  // the raw preset would seed the selection with `motion`, an id that no longer
+  // exists once the preset is on the slot model.
   const seededPreset =
-    deps.presets.find((preset) => preset.id === deps.initialPresetId) ??
-    firstPreset;
+    adopted.find((preset) => preset.id === deps.initialPresetId) ?? firstPreset;
   let workingPresets = $state<Record<string, MediaCompositionPreset>>(
-    Object.fromEntries(
-      deps.presets.map((preset) => [preset.id, clonePreset(preset)])
-    )
+    Object.fromEntries(adopted.map((preset) => [preset.id, preset]))
   );
   let activePresetId = $state(seededPreset.id);
   let selectedRegionId = $state<string | null>(
@@ -181,8 +207,8 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     input: MediaCompositionPreset,
     select = false
   ): MediaCompositionPreset {
-    const preset = MediaCompositionPresetSchema.parse(input);
-    workingPresets = { ...workingPresets, [preset.id]: clonePreset(preset) };
+    const preset = adoptPreset(MediaCompositionPresetSchema.parse(input));
+    workingPresets = { ...workingPresets, [preset.id]: preset };
     if (select) selectPreset(preset.id);
     return preset;
   }
@@ -215,30 +241,88 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
       null;
   }
 
+  /**
+   * Selects the layer carrying a role. If the role is not in the composition,
+   * nothing happens — this used to search the other presets and silently switch
+   * to one that contained the role, so clicking a source in the rail rearranged
+   * the layout without saying so. Putting a source somewhere is `setSlotSource`
+   * now, and it names the slot.
+   */
   function selectRole(roleKey: string): void {
-    const activePreset = getActivePreset();
-    const currentClip = activePreset.clips.find(
-      (clip) => clip.kind === "visual" && clip.sourceRole === roleKey
+    const clip = getActivePreset().clips.find(
+      (candidate) =>
+        candidate.kind === "visual" && candidate.sourceRole === roleKey
     );
-    if (currentClip?.kind === "visual") {
-      selectedRegionId = currentClip.regionId;
-      selectedRoleKey = roleKey;
+    if (clip?.kind !== "visual") return;
+    selectedRegionId = clip.regionId;
+    selectedRoleKey = roleKey;
+  }
+
+  function commitPreset(next: MediaCompositionPreset): void {
+    workingPresets = { ...workingPresets, [activePresetId]: next };
+
+    // A slot edit can delete the region or the role the selection pointed at,
+    // and can change the duration policy underneath the playhead.
+    const regions = next.regions;
+    if (!regions.some((region) => region.id === selectedRegionId)) {
+      selectedRegionId = regions[0]?.id ?? null;
+    }
+    const rolesInSelectedSlot = next.clips
+      .filter(
+        (clip) => clip.kind === "visual" && clip.regionId === selectedRegionId
+      )
+      .map((clip) => clip.sourceRole);
+    if (!selectedRoleKey || !rolesInSelectedSlot.includes(selectedRoleKey)) {
+      selectedRoleKey = rolesInSelectedSlot[0] ?? null;
+    }
+    previewSeconds = Math.min(previewSeconds, getDurationSeconds());
+  }
+
+  /** Which source roles occupy each slot, in time order. */
+  function getSlotOccupancy() {
+    return slotOccupancy(getActivePreset());
+  }
+
+  /**
+   * A source may be blocked from a slot even though it exists — today only 3D,
+   * which holds a live WebGL context and is limited to one slot at a time.
+   */
+  function slotAccepts(slot: PostStudioSlotId, roleKey: PostStudioRoleKey) {
+    if (!POST_STUDIO_SOURCES[roleKey]?.exclusive) return true;
+    const other: PostStudioSlotId = slot === "top" ? "bottom" : "top";
+    return !getSlotOccupancy()[other].includes(roleKey);
+  }
+
+  function setSlotSource(
+    slot: PostStudioSlotId,
+    roleKey: PostStudioRoleKey
+  ): void {
+    if (!slotAccepts(slot, roleKey)) return;
+    commitPreset(withSlotSource(getActivePreset(), slot, roleKey));
+    selectedRegionId = slot;
+    selectedRoleKey = roleKey;
+  }
+
+  /** Empties a slot. The survivor goes full frame; the last slot cannot go. */
+  function clearSlot(slot: PostStudioSlotId): void {
+    const preset = getActivePreset();
+    if (!slotIsOccupied(preset, slot)) return;
+    commitPreset(withClearedSlot(preset, slot));
+  }
+
+  function swapSlots(): void {
+    const preset = getActivePreset();
+    if (!slotIsOccupied(preset, "top") || !slotIsOccupied(preset, "bottom")) {
       return;
     }
+    commitPreset(withSwappedSlots(preset));
+    if (selectedRegionId === "top" || selectedRegionId === "bottom") {
+      selectedRegionId = selectedRegionId === "top" ? "bottom" : "top";
+    }
+  }
 
-    const matchingPreset = Object.values(workingPresets).find((preset) =>
-      preset.clips.some(
-        (clip) => clip.kind === "visual" && clip.sourceRole === roleKey
-      )
-    );
-    if (!matchingPreset) return;
-    activePresetId = matchingPreset.id;
-    const matchingClip = matchingPreset.clips.find(
-      (clip) => clip.kind === "visual" && clip.sourceRole === roleKey
-    );
-    selectedRegionId =
-      matchingClip?.kind === "visual" ? matchingClip.regionId : null;
-    selectedRoleKey = matchingClip?.kind === "visual" ? roleKey : null;
+  function setSlotSplit(split: number): void {
+    commitPreset(withSlotSplit(getActivePreset(), split));
   }
 
   function setSelectedFit(fit: LayoutRegion["fit"]): void {
@@ -588,6 +672,14 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     get sequenceTimeMap() {
       return deps.getSequenceTimeMap?.(getDurationSeconds()) ?? null;
     },
+    get slotOccupancy() {
+      return getSlotOccupancy();
+    },
+    slotAccepts,
+    setSlotSource,
+    clearSlot,
+    swapSlots,
+    setSlotSplit,
     selectPreset,
     addPreset,
     createPreset,

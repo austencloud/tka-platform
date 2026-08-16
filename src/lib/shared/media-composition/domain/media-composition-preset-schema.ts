@@ -7,6 +7,7 @@ import {
 } from "$lib/shared/media-composition/domain/media-layout-schema";
 import {
   MediaSourceKindSchema,
+  SEQUENCE_DERIVED_SOURCE_KINDS,
   type MediaSourceKind,
 } from "$lib/shared/media-composition/domain/media-source-schema";
 import {
@@ -46,6 +47,10 @@ export const PresetSourceRoleSchema = z
       "selected-video",
       "linked-sequence-animation",
       "linked-choreo-card",
+      // Tunnel, 3D view and mandala all resolve from the same sequence ref
+      // through a different renderer, so they share one resolution rather than
+      // adding a near-identical enum member each.
+      "linked-sequence-derived",
       "original-video-audio",
       "manual",
     ]),
@@ -74,6 +79,23 @@ export const PresetSourceRoleSchema = z
         code: "custom",
         path: ["acceptedKinds"],
         message: `${role.resolution} roles must accept ${requiredKind}`,
+      });
+    }
+
+    // This resolution covers several kinds rather than one, so it asserts
+    // membership in the derived set instead of naming a single kind.
+    if (
+      role.resolution === "linked-sequence-derived" &&
+      !role.acceptedKinds.some((kind) =>
+        SEQUENCE_DERIVED_SOURCE_KINDS.includes(
+          kind as (typeof SEQUENCE_DERIVED_SOURCE_KINDS)[number]
+        )
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["acceptedKinds"],
+        message: `linked-sequence-derived roles must accept one of ${SEQUENCE_DERIVED_SOURCE_KINDS.join(", ")}`,
       });
     }
   });
