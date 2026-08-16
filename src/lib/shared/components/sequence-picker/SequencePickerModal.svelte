@@ -2,6 +2,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import FilterWorkspace from "$lib/features/browse/gallery-home/FilterWorkspace.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
@@ -52,6 +53,7 @@
 
   let initialized = $state(false);
   let isSelectingSequence = $state(false);
+  let showResults = $state(false);
 
   $effect(() => {
     if (open && !initialized) {
@@ -60,6 +62,8 @@
     } else if (open && initialized) {
       engine.refresh();
     }
+
+    if (!open) showResults = false;
   });
 
   onDestroy(() => engine.destroy());
@@ -74,12 +78,18 @@
       isSelectingSequence = false;
     }
   }
+
+  function openResults(apply: () => void): void {
+    apply();
+    showResults = true;
+  }
 </script>
 
 <BaseModal
   bind:open
   onclose={() => onClose()}
   size="xl"
+  class="sequence-picker-modal"
   labelledBy="sequence-picker-title"
 >
   {#snippet header()}
@@ -92,13 +102,28 @@
   {/snippet}
 
   <div class="picker-body">
-    <BrowsePanel
-      {engine}
-      layout="compact"
-      onSelect={handleSelect}
-      {showSourceToggle}
-      eager
-    />
+    {#if showResults}
+      <div class="picker-results">
+        <BrowsePanel
+          {engine}
+          layout="compact"
+          onSelect={handleSelect}
+          onBack={() => (showResults = false)}
+          backLabel="Filters"
+          showFilterBar={false}
+          hideFilterChips
+          {showSourceToggle}
+          eager
+        />
+      </div>
+    {:else}
+      <FilterWorkspace
+        {engine}
+        onEject={openResults}
+        onClose={() => (showResults = true)}
+        {resultsPane}
+      />
+    {/if}
 
     {#if isSelectingSequence}
       <div class="loading-overlay">
@@ -107,6 +132,20 @@
     {/if}
   </div>
 </BaseModal>
+
+{#snippet resultsPane()}
+  <div class="picker-results">
+    <BrowsePanel
+      {engine}
+      layout="compact"
+      onSelect={handleSelect}
+      showFilterBar={false}
+      hideFilterChips
+      {showSourceToggle}
+      eager
+    />
+  </div>
+{/snippet}
 
 <style>
   .picker-header {
@@ -146,8 +185,23 @@
 
   .picker-body {
     position: relative;
+    display: flex;
     height: 60vh;
     min-height: 300px;
+    min-width: 0;
+  }
+
+  .picker-results {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .picker-results :global(.browse-panel) {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
   }
 
   .loading-overlay {
@@ -159,6 +213,30 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 10;
     border-radius: inherit;
+  }
+
+  /* The picker is a live workspace now. On large displays its filter catalog
+   * and sequence grid need room to remain side by side instead of floating as
+   * a narrow modal in the middle of the canvas. */
+  @media (min-width: 1680px) {
+    :global(dialog.base-modal.sequence-picker-modal[data-size="xl"]) {
+      width: min(calc(100dvw - 3rem), 112rem);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    :global(dialog.base-modal.sequence-picker-modal[data-size="xl"]) {
+      width: min(calc(100dvw - 5rem), 132rem);
+    }
+  }
+
+  @media (max-width: 520px) {
+    /* The unfiltered landing already offers Show all. Hiding its duplicate
+     * shortcut leaves the drill heading readable; filtered screens keep their
+     * own Done action in the rule strip. */
+    .picker-body :global(.workspace-close) {
+      display: none;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
