@@ -1,8 +1,11 @@
 <script lang="ts">
   import type {
+    AutomatedPursuitReport,
+    AutomatedPursuitState,
     CursorCaptureState,
     LiveCursorCaptureReport,
   } from "./cursor-escape-capture";
+  import { automatedPursuitPassed } from "./cursor-escape-capture";
 
   interface Props {
     state: CursorCaptureState;
@@ -11,8 +14,12 @@
     ready: boolean;
     controlledTrialActive: boolean;
     expectedManeuverMilliseconds: number;
+    maximumStageThreeStepDegrees: number;
+    pursuitState: AutomatedPursuitState;
+    pursuitReport: AutomatedPursuitReport | null;
     onArm: () => void;
     onCancel: () => void;
+    onRunPursuit: () => void;
   }
 
   let {
@@ -22,8 +29,12 @@
     ready,
     controlledTrialActive,
     expectedManeuverMilliseconds,
+    maximumStageThreeStepDegrees,
+    pursuitState,
+    pursuitReport,
     onArm,
     onCancel,
+    onRunPursuit,
   }: Props = $props();
 
   const busy = $derived(state === "armed" || state === "recording");
@@ -33,6 +44,14 @@
       : state === "complete"
         ? "Arm another capture"
         : "Arm cursor capture"
+  );
+  const pursuitPassed = $derived(automatedPursuitPassed(pursuitReport));
+  const pursuitButtonLabel = $derived(
+    pursuitState === "running"
+      ? "Running auto chase"
+      : pursuitState === "complete"
+        ? "Run auto chase again"
+        : "Run auto chase"
   );
   const endedEarly = $derived(
     report !== null &&
@@ -61,6 +80,10 @@
   class="cursor-capture-block"
   data-capture-state={state}
   data-capture-report={report ? JSON.stringify(report) : undefined}
+  data-pursuit-state={pursuitState}
+  data-pursuit-report={pursuitReport
+    ? JSON.stringify(pursuitReport)
+    : undefined}
 >
   <div class="section-heading">
     <div>
@@ -69,12 +92,24 @@
     </div>
     <strong class={`capture-state ${state}`}>{state}</strong>
   </div>
-  <button
-    class="capture-action"
-    type="button"
-    onclick={busy ? onCancel : onArm}
-    disabled={!ready || controlledTrialActive}>{buttonLabel}</button
-  >
+  <div class="capture-actions">
+    <button
+      class="capture-action"
+      type="button"
+      onclick={busy ? onCancel : onArm}
+      disabled={!ready || controlledTrialActive || pursuitState === "running"}
+      >{buttonLabel}</button
+    >
+    <button
+      class="pursuit-action"
+      type="button"
+      onclick={onRunPursuit}
+      disabled={!ready ||
+        controlledTrialActive ||
+        busy ||
+        pursuitState === "running"}>{pursuitButtonLabel}</button
+    >
+  </div>
   <p class="capture-instruction" aria-live="polite">{status}</p>
 
   <div class="capture-metrics" aria-label="Live cursor escape measurements">
@@ -127,7 +162,67 @@
       <span>Cursor travel</span>
       <strong>{format(report?.pointerPathBodyLengths)} BL</strong>
     </div>
+    <div>
+      <span>Stage-three turn</span>
+      <strong>{format(report?.stageThreeHeadingChangeDegrees, 0)}°</strong>
+    </div>
+    <div>
+      <span>Largest swim step</span>
+      <strong>{format(report?.maximumStageThreeHeadingStepDegrees)}°</strong>
+    </div>
+    <div>
+      <span>Live clearance</span>
+      <strong>{format(report?.minimumLiveClearanceBodyLengths)} BL</strong>
+    </div>
   </div>
+  <div
+    class="capture-metrics pursuit-metrics"
+    class:passed={pursuitPassed}
+    aria-label="Automated pursuit measurements"
+  >
+    <div>
+      <span>Retarget latency</span>
+      <strong>{format(pursuitReport?.retargetLatencyMilliseconds, 0)} ms</strong
+      >
+    </div>
+    <div>
+      <span>Largest heading step</span>
+      <strong>{format(pursuitReport?.maximumHeadingStepDegrees)}°</strong>
+    </div>
+    <div>
+      <span>Course change</span>
+      <strong>{format(pursuitReport?.retargetDegrees, 0)}°</strong>
+    </div>
+    <div>
+      <span>Late chase speed</span>
+      <strong
+        >{format(pursuitReport?.minimumLateChaseSpeedBodyLengths)} BL/s</strong
+      >
+    </div>
+    <div>
+      <span>Response at 6 s</span>
+      <strong
+        >{pursuitReport
+          ? pursuitReport.activeAfterBaseline
+            ? "active"
+            : "ended"
+          : "—"}</strong
+      >
+    </div>
+    <div>
+      <span>Escape events</span>
+      <strong>{pursuitReport?.escapeEventCount ?? "—"}</strong>
+    </div>
+  </div>
+  <p class:passed={pursuitPassed} class="pursuit-note">
+    {pursuitState === "running"
+      ? "The cursor is changing sides while the same fish remains in one escape."
+      : pursuitReport
+        ? pursuitPassed
+          ? `PASS: one continuous escape, capped at ${format(maximumStageThreeStepDegrees)}° per simulation step.`
+          : "CHECK: at least one pursuit gate fell outside its measured limit."
+        : "The automatic chase crosses behind the fish, keeps pursuing, then measures recovery."}
+  </p>
   <p class="capture-note">
     {report?.wrapped
       ? "The fish crossed a screen edge, so net displacement is withheld."
@@ -216,6 +311,16 @@
     cursor: pointer;
   }
 
+  .capture-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .pursuit-action {
+    border-color: color-mix(in srgb, var(--cursor-capture) 52%, transparent);
+  }
+
   button:hover:not(:disabled) {
     border-color: rgba(210, 240, 251, 0.58);
     background: rgba(16, 54, 75, 0.96);
@@ -247,6 +352,14 @@
     border-radius: 0.7rem;
   }
 
+  .pursuit-metrics {
+    margin-top: 0.7rem;
+  }
+
+  .pursuit-metrics.passed {
+    border-color: color-mix(in srgb, var(--cursor-capture) 42%, transparent);
+  }
+
   .capture-metrics div {
     display: grid;
     gap: 0.25rem;
@@ -265,6 +378,7 @@
   }
 
   .capture-metrics span,
+  .pursuit-note,
   .capture-note {
     color: var(--text-secondary);
     font-size: var(--font-size-compact, 0.75rem);
@@ -285,6 +399,15 @@
   .capture-note {
     margin: 0.65rem 0 0;
     line-height: 1.4;
+  }
+
+  .pursuit-note {
+    margin: 0.65rem 0 0;
+    line-height: 1.4;
+  }
+
+  .pursuit-note.passed {
+    color: var(--cursor-capture);
   }
 
   @media (min-width: 2200px) {

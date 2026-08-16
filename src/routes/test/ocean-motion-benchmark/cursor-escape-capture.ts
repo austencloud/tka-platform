@@ -2,6 +2,7 @@ import type { FishEscapePhase } from "@austencloud/backgrounds";
 
 export type CursorCapturePhase = FishEscapePhase | "escape-swim" | "recovery";
 export type CursorCaptureState = "idle" | "armed" | "recording" | "complete";
+export type AutomatedPursuitState = "idle" | "running" | "complete";
 
 export interface CursorEscapeCaptureSample {
   elapsed: number;
@@ -17,6 +18,8 @@ export interface CursorEscapeCaptureSample {
   bodyFlex: number;
   animationPhase: number;
   clearanceBodyLengths: number;
+  liveClearanceBodyLengths: number | null;
+  pursuitPressure: number;
   phase: CursorCapturePhase;
 }
 
@@ -47,6 +50,11 @@ export interface CursorEscapeCaptureReport {
   bodyLengthsPerWaveAfterTurn: number | null;
   travelEfficiency: number | null;
   pointerPathBodyLengths: number;
+  maximumStageThreeHeadingStepDegrees: number;
+  stageThreeHeadingChangeDegrees: number;
+  minimumLiveClearanceBodyLengths: number | null;
+  maximumPursuitPressure: number;
+  pursuedDurationMilliseconds: number;
   wrapped: boolean;
 }
 
@@ -55,6 +63,42 @@ export interface LiveCursorCaptureReport extends CursorEscapeCaptureReport {
   species: string;
   bodyLength: number;
   source: { x: number; y: number };
+}
+
+export interface AutomatedPursuitReport {
+  durationMilliseconds: number;
+  escapeEventCount: number;
+  retargetLatencyMilliseconds: number | null;
+  maximumHeadingStepDegrees: number;
+  maximumAllowedHeadingStepDegrees: number;
+  retargetDegrees: number;
+  maximumPursuitPressure: number;
+  minimumLateChaseSpeedBodyLengths: number | null;
+  requiredLateChaseSpeedBodyLengths: number;
+  activeAfterBaseline: boolean;
+  recoveryAfterReleaseMilliseconds: number | null;
+}
+
+export function automatedPursuitPassed(
+  report: AutomatedPursuitReport | null
+): boolean {
+  return (
+    report !== null &&
+    report.escapeEventCount === 1 &&
+    report.retargetLatencyMilliseconds !== null &&
+    report.retargetLatencyMilliseconds <= 34 &&
+    report.maximumHeadingStepDegrees <=
+      report.maximumAllowedHeadingStepDegrees + 0.05 &&
+    report.retargetDegrees >= 150 &&
+    report.maximumPursuitPressure >= 0.8 &&
+    report.minimumLateChaseSpeedBodyLengths !== null &&
+    report.minimumLateChaseSpeedBodyLengths >=
+      report.requiredLateChaseSpeedBodyLengths &&
+    report.activeAfterBaseline &&
+    report.recoveryAfterReleaseMilliseconds !== null &&
+    report.recoveryAfterReleaseMilliseconds >= 2600 &&
+    report.recoveryAfterReleaseMilliseconds <= 3100
+  );
 }
 
 const normalizeAngle = (angle: number): number => {
@@ -177,6 +221,47 @@ function bodyWaveCycles(samples: CursorEscapeCaptureSample[]): number {
   return phaseTravel / (Math.PI * 2);
 }
 
+function summarizeStageThree(samples: CursorEscapeCaptureSample[]): {
+  maximumHeadingStepDegrees: number;
+  headingChangeDegrees: number;
+  pursuedDurationMilliseconds: number;
+} {
+  const stageThree = samples.filter((sample) => sample.phase === "escape-swim");
+  const first = stageThree[0];
+  if (!first) {
+    return {
+      maximumHeadingStepDegrees: 0,
+      headingChangeDegrees: 0,
+      pursuedDurationMilliseconds: 0,
+    };
+  }
+
+  let maximumStep = 0;
+  let maximumChange = 0;
+  let pursuedDuration = 0;
+  for (let index = 1; index < stageThree.length; index += 1) {
+    const previous = stageThree[index - 1]!;
+    const current = stageThree[index]!;
+    maximumStep = Math.max(
+      maximumStep,
+      Math.abs(normalizeAngle(current.headingAngle - previous.headingAngle))
+    );
+    maximumChange = Math.max(
+      maximumChange,
+      Math.abs(normalizeAngle(current.headingAngle - first.headingAngle))
+    );
+    if (current.pursuitPressure >= 0.25) {
+      pursuedDuration += Math.max(0, current.elapsed - previous.elapsed);
+    }
+  }
+
+  return {
+    maximumHeadingStepDegrees: (maximumStep * 180) / Math.PI,
+    headingChangeDegrees: (maximumChange * 180) / Math.PI,
+    pursuedDurationMilliseconds: pursuedDuration * 1000,
+  };
+}
+
 export function summarizeCursorEscapeCapture(
   samples: CursorEscapeCaptureSample[],
   bodyLength: number,
@@ -201,6 +286,11 @@ export function summarizeCursorEscapeCapture(
       bodyLength
     : null;
   const postTurnWaves = bodyWaveCycles(postTurnSamples);
+  const stageThree = summarizeStageThree(samples);
+  const liveClearances = samples
+    .filter((sample) => sample.phase === "escape-swim")
+    .map((sample) => sample.liveClearanceBodyLengths)
+    .filter((value): value is number => value !== null);
   const maneuverSegments = eventSegments(
     samples,
     (sample) => sample.escapeEventId
@@ -317,6 +407,15 @@ export function summarizeCursorEscapeCapture(
         ? null
         : netDisplacement / bodyLength / entirePath.distance,
     pointerPathBodyLengths: pointerPathDistance(samples, bodyLength),
+    maximumStageThreeHeadingStepDegrees: stageThree.maximumHeadingStepDegrees,
+    stageThreeHeadingChangeDegrees: stageThree.headingChangeDegrees,
+    minimumLiveClearanceBodyLengths:
+      liveClearances.length > 0 ? Math.min(...liveClearances) : null,
+    maximumPursuitPressure: Math.max(
+      0,
+      ...samples.map((sample) => sample.pursuitPressure)
+    ),
+    pursuedDurationMilliseconds: stageThree.pursuedDurationMilliseconds,
     wrapped: entirePath.wrapped || postTurnPath.wrapped,
   };
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  automatedPursuitPassed,
   summarizeCursorEscapeCapture,
+  type AutomatedPursuitReport,
   type CursorEscapeCaptureSample,
 } from "../../src/routes/test/ocean-motion-benchmark/cursor-escape-capture";
 
@@ -21,12 +23,41 @@ function sample(
     bodyFlex: 0.1,
     animationPhase: 0,
     clearanceBodyLengths: 0.2,
+    liveClearanceBodyLengths: 0.2,
+    pursuitPressure: 0,
     phase: "coil",
     ...overrides,
   };
 }
 
 describe("cursor escape capture summary", () => {
+  it("requires a smooth, single-event response for the automated chase", () => {
+    const passing: AutomatedPursuitReport = {
+      durationMilliseconds: 7520,
+      escapeEventCount: 1,
+      retargetLatencyMilliseconds: 16,
+      maximumHeadingStepDegrees: 3.21,
+      maximumAllowedHeadingStepDegrees: 3.21,
+      retargetDegrees: 180,
+      maximumPursuitPressure: 1,
+      minimumLateChaseSpeedBodyLengths: 1.4,
+      requiredLateChaseSpeedBodyLengths: 1.3,
+      activeAfterBaseline: true,
+      recoveryAfterReleaseMilliseconds: 2830,
+    };
+
+    expect(automatedPursuitPassed(passing)).toBe(true);
+    expect(automatedPursuitPassed({ ...passing, escapeEventCount: 2 })).toBe(
+      false
+    );
+    expect(
+      automatedPursuitPassed({ ...passing, maximumHeadingStepDegrees: 8 })
+    ).toBe(false);
+    expect(
+      automatedPursuitPassed({ ...passing, activeAfterBaseline: false })
+    ).toBe(false);
+  });
+
   it("measures the actual distance traveled after a visible reversal", () => {
     const report = summarizeCursorEscapeCapture(
       [
@@ -156,6 +187,48 @@ describe("cursor escape capture summary", () => {
 
     expect(report?.pointerPathBodyLengths).toBeCloseTo(1);
     expect(report?.pathDistanceBodyLengths).toBeCloseTo(0.2);
+  });
+
+  it("measures smooth stage-three pursuit steering separately from the C-start", () => {
+    const report = summarizeCursorEscapeCapture(
+      [
+        sample({ elapsed: 0.47, headingAngle: Math.PI, phase: "stabilize" }),
+        sample({
+          elapsed: 0.5,
+          headingAngle: Math.PI,
+          phase: "escape-swim",
+          escapeEventId: null,
+          pursuitPressure: 0.4,
+          liveClearanceBodyLengths: 0.8,
+        }),
+        sample({
+          elapsed: 0.516,
+          headingAngle: Math.PI - 0.056,
+          phase: "escape-swim",
+          escapeEventId: null,
+          pursuitPressure: 0.8,
+          liveClearanceBodyLengths: 0.72,
+        }),
+        sample({
+          elapsed: 1.5,
+          headingAngle: 0.2,
+          phase: "escape-swim",
+          escapeEventId: null,
+          pursuitPressure: 1,
+          liveClearanceBodyLengths: 0.65,
+        }),
+      ],
+      80,
+      0
+    );
+
+    expect(report?.maximumStageThreeHeadingStepDegrees).toBeCloseTo(
+      ((Math.PI - 0.256) * 180) / Math.PI
+    );
+    expect(report?.stageThreeHeadingChangeDegrees).toBeGreaterThan(160);
+    expect(report?.minimumLiveClearanceBodyLengths).toBeCloseTo(0.65);
+    expect(report?.maximumPursuitPressure).toBe(1);
+    expect(report?.pursuedDurationMilliseconds).toBeCloseTo(1000);
   });
 
   it("reports no turn when heading never crosses ninety degrees", () => {
