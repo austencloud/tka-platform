@@ -24,6 +24,17 @@ import { calculateTargetStaffAngle } from "./motion-calculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 /**
+ * The concave petal path was built to give future teaching avatars a route
+ * that ducks inside an anti-spin. It makes multi-turn anti motions visibly
+ * split into separate dips, so 3D playback currently keeps every hand on the
+ * normal grid arc. Keep the interpolator below intact while that teaching
+ * work remains parked.
+ */
+const CONCAVE_PATHS_ENABLED_IN_3D = false;
+
+type ResolvedPathType = "arc" | "linear" | "concave";
+
+/**
  * Interpolate center path angle (position on grid).
  * Center path ALWAYS uses shortest-path interpolation.
  */
@@ -64,17 +75,28 @@ function interpolateDashPosition(
   return { worldPosition, centerPathAngle };
 }
 
-function resolvePathType(motionType: MotionType, motionPathShape?: "arc" | "linear" | "concave"): "arc" | "linear" | "concave" {
-  if (motionPathShape) return motionPathShape;
+function resolvePathType(
+  motionType: MotionType,
+  motionPathShape?: ResolvedPathType
+): ResolvedPathType {
+  if (motionPathShape) {
+    return !CONCAVE_PATHS_ENABLED_IN_3D && motionPathShape === "concave"
+      ? "arc"
+      : motionPathShape;
+  }
   if (motionType === MotionType.DASH) return "linear";
   if (motionType === MotionType.STATIC) return "arc";
 
   const vm = getAnimationVisibilityManager();
-  if (vm.getMotionAwarePaths()) {
+  if (CONCAVE_PATHS_ENABLED_IN_3D && vm.getMotionAwarePaths()) {
     if (motionType === MotionType.PRO) return "arc";
     if (motionType === MotionType.ANTI) return "concave";
   }
-  return vm.getPathShape();
+
+  const globalPathShape = vm.getPathShape();
+  return !CONCAVE_PATHS_ENABLED_IN_3D && globalPathShape === "concave"
+    ? "arc"
+    : globalPathShape;
 }
 
 function interpolateConcavePosition(

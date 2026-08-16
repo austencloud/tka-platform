@@ -32,6 +32,10 @@ export interface MotionColorsCache {
 export type TrailVisibility = "off" | "on";
 export type GridMode = "none" | "8point" | "auto";
 export type PlaybackMode = "continuous" | "step";
+export interface AnimationPathPolicy {
+  pathShape: "arc" | "linear" | "concave";
+  motionAwarePaths: boolean;
+}
 
 interface AnimationVisibilitySettings {
   // Animation-specific elements (no pictograph equivalent)
@@ -523,6 +527,31 @@ export class AnimationVisibilityStateManager {
 
   getPathShape(): "arc" | "linear" | "concave" {
     return this.settings.pathShape;
+  }
+
+  /**
+   * Return the whole path policy together so a preview can copy the exact
+   * choice that places the live props: one fixed shape or By Motion.
+   */
+  getPathPolicy(): AnimationPathPolicy {
+    return {
+      pathShape: this.settings.pathShape,
+      motionAwarePaths: this.settings.motionAwarePaths,
+    };
+  }
+
+  /**
+   * Apply a complete path policy in one notification. This keeps a receiving
+   * canvas from briefly drawing its props and mandala with different modes.
+   */
+  setPathPolicy(policy: AnimationPathPolicy): void {
+    if (
+      this.settings.pathShape === policy.pathShape &&
+      this.settings.motionAwarePaths === policy.motionAwarePaths
+    ) {
+      return;
+    }
+    this.updateSettings(policy);
   }
 
   setPathShape(shape: "arc" | "linear" | "concave"): void {

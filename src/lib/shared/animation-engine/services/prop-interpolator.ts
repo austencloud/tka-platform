@@ -32,12 +32,13 @@ function resolvePathType(
 
   const manager = vm ?? getAnimationVisibilityManager();
 
-  if (manager.getMotionAwarePaths()) {
+  const pathPolicy = manager.getPathPolicy();
+  if (pathPolicy.motionAwarePaths) {
     if (motionType === MotionType.PRO) return "arc";
     if (motionType === MotionType.ANTI) return "concave";
   }
 
-  return manager.getPathShape();
+  return pathPolicy.pathShape;
 }
 
 /**

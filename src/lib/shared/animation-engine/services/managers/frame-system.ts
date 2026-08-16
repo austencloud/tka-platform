@@ -78,9 +78,9 @@ export class FrameSystem {
       orchestrator: this.deps.lifecycleManager.orchestrator,
     });
 
-    const vm = buildDeps.getVM();
-    this.mandalaPathOptions.pathShape = vm.getPathShape();
-    this.mandalaPathOptions.motionAware = vm.getMotionAwarePaths();
+    const pathPolicy = buildDeps.getVM().getPathPolicy();
+    this.mandalaPathOptions.pathShape = pathPolicy.pathShape;
+    this.mandalaPathOptions.motionAware = pathPolicy.motionAwarePaths;
     params.mandalaVisible = this.state.visibilityState.mandala;
     params.mandalaSteps = props.sequenceData?.steps ?? null;
     params.mandalaPathOptions = this.mandalaPathOptions;

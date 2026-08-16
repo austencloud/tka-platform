@@ -8,8 +8,8 @@ import {
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { calculatePropState } from "$lib/shared/3d/services/prop-state-interpolator";
 import { GRID_RADIUS_3D } from "$lib/shared/3d/domain/constants/plane-transforms";
-import { BASE_DIP_RADIUS } from "$lib/shared/3d/services/petal-path";
 import type { MotionConfig3D } from "$lib/shared/3d/domain/models/motion-data-3d";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 function antiConfig(turns: number, concaveDepth?: number): MotionConfig3D {
   return {
@@ -31,26 +31,47 @@ function radius(config: MotionConfig3D, progress: number): number {
   return s.worldPosition.length() / GRID_RADIUS_3D;
 }
 
-describe("concave interpolation (petal model)", () => {
-  it("starts and ends on the grid radius", () => {
-    const c = antiConfig(0);
-    expect(radius(c, 0)).toBeCloseTo(1, 4);
-    expect(radius(c, 1)).toBeCloseTo(1, 4);
+describe("suspended concave interpolation", () => {
+  it("keeps an explicit one-turn anti concave request on the outer arc", () => {
+    const config = antiConfig(1);
+
+    for (const progress of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(radius(config, progress)).toBeCloseTo(1, 4);
+    }
   });
 
-  it("0 turns, k absent: mid-step dips to legacy reflection radius", () => {
-    expect(radius(antiConfig(0), 0.5)).toBeCloseTo(BASE_DIP_RADIUS, 3);
+  it("ignores stored concavity depth while the 3D path is suspended", () => {
+    expect(radius(antiConfig(1, 1), 0.25)).toBeCloseTo(1, 4);
   });
 
-  it("1 turn: valley at mid-step (radius back at 1), dips at quarter points", () => {
-    const c = antiConfig(1);
-    expect(radius(c, 0.5)).toBeCloseTo(1, 3);
-    expect(radius(c, 0.25)).toBeCloseTo(BASE_DIP_RADIUS, 3);
-    expect(radius(c, 0.75)).toBeCloseTo(BASE_DIP_RADIUS, 3);
+  it("normalizes a saved global concave preference to the outer arc", () => {
+    const visibility = getAnimationVisibilityManager();
+    const previousPathShape = visibility.getPathShape();
+    const previousMotionAwarePaths = visibility.getMotionAwarePaths();
+    const config = { ...antiConfig(1), pathShape: undefined };
+
+    try {
+      visibility.setMotionAwarePaths(false);
+      visibility.setPathShape("concave");
+
+      expect(radius(config, 0.25)).toBeCloseTo(1, 4);
+    } finally {
+      visibility.setPathShape(previousPathShape);
+      visibility.setMotionAwarePaths(previousMotionAwarePaths);
+    }
   });
 
-  it("concaveDepth=1 pulls dips to the center", () => {
-    expect(radius(antiConfig(0, 1), 0.5)).toBeCloseTo(0, 3);
-    expect(radius(antiConfig(1, 1), 0.25)).toBeCloseTo(0, 3);
+  it("keeps an explicit outer-arc override ahead of the saved preference", () => {
+    const visibility = getAnimationVisibilityManager();
+    const previousPathShape = visibility.getPathShape();
+    const config = { ...antiConfig(1), pathShape: "arc" as const };
+
+    try {
+      visibility.setPathShape("linear");
+
+      expect(radius(config, 0.5)).toBeCloseTo(1, 4);
+    } finally {
+      visibility.setPathShape(previousPathShape);
+    }
   });
 });

@@ -42,11 +42,12 @@
     if (motion.motionType === MotionType.STATIC) return "arc";
 
     const manager = vm ?? getAnimationVisibilityManager();
-    if (manager.getMotionAwarePaths()) {
+    const pathPolicy = manager.getPathPolicy();
+    if (pathPolicy.motionAwarePaths) {
       if (motion.motionType === MotionType.PRO) return "arc";
       if (motion.motionType === MotionType.ANTI) return "concave";
     }
-    return manager.getPathShape();
+    return pathPolicy.pathShape;
   }
 
   function buildPathD(motion: MotionData): string | null {
