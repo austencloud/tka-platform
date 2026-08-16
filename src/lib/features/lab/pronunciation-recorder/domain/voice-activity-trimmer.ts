@@ -10,12 +10,6 @@ export interface TrimSuggestion extends TrimRange {
   detectedSegments: number;
 }
 
-export interface WordSegmentation {
-  segments: TrimRange[];
-  detectedSegments: number;
-  matchesExpected: boolean;
-}
-
 interface SampleRange {
   start: number;
   end: number;
@@ -75,7 +69,8 @@ function findSpeechSegments(
     energies.push(Math.sqrt(sumSquares / Math.max(1, end - start)));
   }
 
-  const peak = Math.max(...energies);
+  let peak = 0;
+  for (const energy of energies) if (energy > peak) peak = energy;
   const noiseFloor = percentile(energies, 0.2);
   const threshold = Math.max(0.0015, noiseFloor * 3.2, peak * 0.055);
   const activeFrames = energies.map((energy) => energy >= threshold);
@@ -110,9 +105,25 @@ function findSpeechSegments(
 }
 
 /**
- * Find speech islands in a carrier phrase and select the island containing the
- * requested target. Short internal gaps stay joined so names such as
- * "Sigma dash" remain one editable region.
+ * Turn a detected island into a playable range, padded on both sides so the
+ * quiet attack and release either side of the detector's threshold survive.
+ */
+function toPaddedRange(
+  segment: SampleRange,
+  sampleRate: number,
+  totalSamples: number
+): TrimRange {
+  const padding = Math.round(sampleRate * EDGE_PADDING_SECONDS);
+  return {
+    startSeconds: Math.max(0, segment.start - padding) / sampleRate,
+    endSeconds: Math.min(totalSamples, segment.end + padding) / sampleRate,
+  };
+}
+
+/**
+ * Select the speech island the carrier phrase's target occupies, padded for
+ * playback. Falls back to the whole take when nothing is found, so the
+ * operator always has something to drag.
  */
 export function suggestPronunciationTrim(
   samples: Float32Array,
@@ -140,11 +151,9 @@ export function suggestPronunciationTrim(
     };
   }
 
-  const padding = Math.round(sampleRate * EDGE_PADDING_SECONDS);
   const expectedSegments = targetSegment === "only" ? 1 : 3;
   return {
-    startSeconds: Math.max(0, selected.start - padding) / sampleRate,
-    endSeconds: Math.min(samples.length, selected.end + padding) / sampleRate,
+    ...toPaddedRange(selected, sampleRate, samples.length),
     confidence:
       speechSegments.length === expectedSegments ? "strong" : "review",
     detectedSegments: speechSegments.length,
@@ -152,26 +161,21 @@ export function suggestPronunciationTrim(
 }
 
 /**
- * Split one spoken word into one range per letter. Edge padding matches the
- * single-take trimmer, so ranges of adjacent letters may overlap slightly;
- * that overlap preserves the natural release of the preceding letter.
+ * Split one spoken word into one range per letter. Each range gets the same
+ * edge padding as the single-take trimmer, because the detector only marks a
+ * letter from the frame where it clears the noise threshold: the breathy
+ * attack and the release either side of that sit below it and would be
+ * clipped off. The padding cannot merge two letters together — islands only
+ * survive as separate ranges when more than MERGE_GAP_SECONDS of quiet
+ * divides them, so EDGE_PADDING_SECONDS a side still leaves well over 100 ms
+ * of silence between neighbours. The audio of the transition between two
+ * letters is therefore never captured in either range.
  */
 export function segmentWordByEnergy(
   samples: Float32Array,
-  sampleRate: number,
-  expectedSegments: number
-): WordSegmentation {
-  const found = findSpeechSegments(samples, sampleRate);
-  const padding = Math.round(sampleRate * EDGE_PADDING_SECONDS);
-
-  const segments = found.map((segment) => ({
-    startSeconds: Math.max(0, segment.start - padding) / sampleRate,
-    endSeconds: Math.min(samples.length, segment.end + padding) / sampleRate,
-  }));
-
-  return {
-    segments,
-    detectedSegments: segments.length,
-    matchesExpected: segments.length === expectedSegments,
-  };
+  sampleRate: number
+): TrimRange[] {
+  return findSpeechSegments(samples, sampleRate).map((segment) =>
+    toPaddedRange(segment, sampleRate, samples.length)
+  );
 }
