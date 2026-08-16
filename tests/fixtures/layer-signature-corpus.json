@@ -1,0 +1,1804 @@
+[
+ {
+  "word": "VPY-ΩVPY-ΩVPY-ΩVPY-Ω",
+  "level": 3,
+  "name": "VPY-Ω",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "se",
+      "startOrientation": "out",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "out",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "sw",
+      "startOrientation": "counter",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "counter",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "se",
+      "startOrientation": "counter",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "se",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "counter",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "out",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "ne",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "counter",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "sw",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "word": "Θ-W-Φ-Φ-Θ-W-Φ-Φ-Θ-W-Φ-Φ-Θ-W-Φ-Φ-",
+  "level": 3,
+  "name": "Θ-W-Φ-Φ-Θ-W-Φ-Φ-",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "clock",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "counter",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "clock",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "counter",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "word": "DΦ-CJDΦ-CJDΦ-CJDΦ-CJ",
+  "level": 3,
+  "name": "DΦ-CJ",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "ne",
+      "endLocation": "sw",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "nw",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "se",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "counter",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "se",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "se",
+      "startOrientation": "counter",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "sw",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "nw",
+      "endLocation": "sw",
+      "startOrientation": "out",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "sw",
+      "endLocation": "ne",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "se",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "sw",
+      "endLocation": "nw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "ne",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "ne",
+      "startOrientation": "out",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0.5,
+      "rotationDirection": "ccw",
+      "startLocation": "ne",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "se",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "nw",
+      "endLocation": "se",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "se",
+      "endLocation": "nw",
+      "startOrientation": "clock",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "ccw",
+      "startLocation": "se",
+      "endLocation": "sw",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "nw",
+      "endLocation": "ne",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "ccw",
+      "startLocation": "sw",
+      "endLocation": "se",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1.5,
+      "rotationDirection": "cw",
+      "startLocation": "ne",
+      "endLocation": "se",
+      "startOrientation": "counter",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "word": "ΣWΣWΣWΣW",
+  "level": 2,
+  "name": "ΣW",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "w",
+      "endLocation": "w",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 2,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "e",
+      "endLocation": "e",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 2,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 3,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "e",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "s",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "e",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 3,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "w",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "w",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "no_rot",
+      "startLocation": "s",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "word": "Δ-ZΩZ-Δ-ZΩZ-",
+  "level": 3,
+  "name": "Δ-ZΩZ-",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "n",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "w",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "counter",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "s",
+      "startOrientation": "clock",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "e",
+      "startOrientation": "out",
+      "endOrientation": "counter"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "clock"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "n",
+      "startOrientation": "counter",
+      "endOrientation": "clock"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "w",
+      "startOrientation": "clock",
+      "endOrientation": "counter"
+     },
+     "red": {
+      "motionType": "static",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "clock",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0.5,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "s",
+      "startOrientation": "counter",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 1,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ },
+ {
+  "word": "ΔX-LΦΔX-LΦΔX-LΦΔX-LΦ",
+  "level": 1,
+  "name": "ΔX-LΦΔX-LΦ",
+  "steps": [
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "s",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "w",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "w",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "w",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "w",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "n",
+      "endLocation": "n",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "n",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "e",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "n",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "e",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "e",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "e",
+      "endLocation": "w",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     },
+     "red": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "s",
+      "endLocation": "e",
+      "startOrientation": "in",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "anti",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "w",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "pro",
+      "turns": 0,
+      "rotationDirection": "cw",
+      "startLocation": "e",
+      "endLocation": "s",
+      "startOrientation": "out",
+      "endOrientation": "out"
+     }
+    }
+   },
+   {
+    "motions": {
+     "blue": {
+      "motionType": "static",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "s",
+      "endLocation": "s",
+      "startOrientation": "in",
+      "endOrientation": "in"
+     },
+     "red": {
+      "motionType": "dash",
+      "turns": 0,
+      "rotationDirection": "noRotation",
+      "startLocation": "s",
+      "endLocation": "n",
+      "startOrientation": "out",
+      "endOrientation": "in"
+     }
+    }
+   }
+  ]
+ }
+]
