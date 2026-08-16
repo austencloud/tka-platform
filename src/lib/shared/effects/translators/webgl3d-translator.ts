@@ -50,6 +50,7 @@ import { resolveFrostPalette } from "../domain/frost-palettes";
 import { resolveSilkPalette } from "../domain/silk-palettes";
 import { resolveAnimalPalette } from "../domain/animal-palettes";
 import { resolvePulsePalette } from "../domain/pulse-palettes";
+import { resolveSmokeVolumeProfile3D } from "$lib/shared/3d/effects/smoke/smoke-volume-profile-3d";
 import { resolveCharcoal3DMotionProfile } from "./charcoal-3d-motion-profiles";
 
 /**
@@ -284,6 +285,7 @@ export function resolveSmoke3D(
     resolvedRiseSpeed: intent.riseSpeed * palette.riseBias * RISE_BASE_M,
     noiseScale: 0.5,
     riseBaseSpeed: RISE_BASE_M,
+    volumeProfile: resolveSmokeVolumeProfile3D(palette),
   };
   return { ...intent, ...defaults, ...override };
 }

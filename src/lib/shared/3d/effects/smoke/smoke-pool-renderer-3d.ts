@@ -1,4 +1,4 @@
-import { Object3D, PlaneGeometry } from "three";
+import { PlaneGeometry, type Object3D } from "three";
 import {
   ParticleInstancePool3D,
   type ParticleInstanceWrite,
@@ -11,6 +11,7 @@ import { SampledCurlGrid2D } from "./smoke-curl-field";
 import {
   getSmokeAtlasFrame,
   getSmokeTextureAtlas,
+  SMOKE_ATLAS_FRAME_COUNT,
 } from "./smoke-texture-atlas";
 
 const CAPACITY = 2048;
@@ -62,6 +63,21 @@ export class SmokePoolRenderer3D {
       billboard: true,
       texture,
       renderOrder: 101,
+      nearFadeStart: 0.08,
+      nearFadeEnd: 0.3,
+      farFadeStart: 12,
+      farFadeEnd: 28,
+      farFadeOpacity: 0.68,
+      farSoftness: 0.45,
+      fog: true,
+      colorManaged: true,
+      contrastAdaptation: {
+        backdropLuminance: 0.18,
+        minimumSurfaceLuminance: 0.12,
+        maximumSurfaceLuminance: 0.66,
+        strength: 0.48,
+        edgeStrength: 0.42,
+      },
     });
   }
 
@@ -116,17 +132,21 @@ export class SmokePoolRenderer3D {
       write.x = this.x[index]!;
       write.y = this.y[index]!;
       write.z = this.z[index]!;
-      write.scaleX = radius * 2;
-      write.scaleY = radius * 2;
+      write.scaleX = radius * 2 * (1.08 + Math.sin(this.phase[index]!) * 0.12);
+      write.scaleY = radius * 2 * (1.2 + life * 0.28);
       write.scaleZ = 1;
       write.red = 1;
       write.green = 1;
       write.blue = 1;
       write.alpha = Math.max(0, fadeIn * fadeOut * this.peakAlpha[index]!);
       write.uvX = this.uvX[index]!;
-      write.uvY = 0;
+      write.uvY =
+        Math.min(
+          SMOKE_ATLAS_FRAME_COUNT - 1,
+          Math.floor(life * SMOKE_ATLAS_FRAME_COUNT)
+        ) / SMOKE_ATLAS_FRAME_COUNT;
       write.uvWidth = this.uvWidth[index]!;
-      write.uvHeight = 1;
+      write.uvHeight = 1 / SMOKE_ATLAS_FRAME_COUNT;
       this.pool.write(write);
     }
     this.pool.commit();

@@ -291,7 +291,12 @@
           source = { ...base, effect, params: resolvedPetals };
           break;
         case "smoke":
-          source = { ...base, effect, params: resolvedSmoke };
+          source = {
+            ...base,
+            effect,
+            params: resolvedSmoke,
+            qualityTier,
+          };
           break;
         case "ink":
           source = { ...base, effect, params: resolvedInk };
@@ -333,6 +338,7 @@
         break;
       case "smoke":
         source.params = resolvedSmoke;
+        source.qualityTier = qualityTier;
         break;
       case "ink":
         source.params = resolvedInk;

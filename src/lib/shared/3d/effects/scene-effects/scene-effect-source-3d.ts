@@ -57,6 +57,7 @@ export interface PetalTipSource3D extends SceneEffectTipBase3D {
 export interface SmokeTipSource3D extends SceneEffectTipBase3D {
   effect: "smoke";
   params: Smoke3DParams;
+  qualityTier: QualityTier;
 }
 
 export interface InkTipSource3D extends SceneEffectTipBase3D {

@@ -2,7 +2,7 @@
   /** Advances all pooled effects once after every rig has published its tips. */
   import { useStage, useTask, useThrelte, type Stage } from "@threlte/core";
   import { onDestroy } from "svelte";
-  import type { Object3D } from "three";
+  import type { Object3D, WebGLRenderer } from "three";
   import {
     NEUTRAL_PETAL_ENVIRONMENT_PROFILE,
     type PetalEnvironmentProfile3D,
@@ -19,11 +19,13 @@
     parent,
     petalEnvironmentProfile = NEUTRAL_PETAL_ENVIRONMENT_PROFILE,
   }: Props = $props();
-  const { scene, mainStage, renderStage } = useThrelte() as unknown as {
-    scene: Object3D;
-    mainStage: Stage;
-    renderStage: Stage;
-  };
+  const { scene, mainStage, renderStage, renderer } =
+    useThrelte() as unknown as {
+      scene: Object3D;
+      mainStage: Stage;
+      renderStage: Stage;
+      renderer: WebGLRenderer;
+    };
   const effectsStage = useStage(Symbol("scene-particle-effects"), {
     after: mainStage,
     before: renderStage,
@@ -32,7 +34,7 @@
   useTask(
     (delta) => {
       manager.setPetalEnvironmentProfile(petalEnvironmentProfile);
-      manager.initialize(parent ?? scene);
+      manager.initialize(parent ?? scene, renderer);
       manager.update(delta);
     },
     { stage: effectsStage }

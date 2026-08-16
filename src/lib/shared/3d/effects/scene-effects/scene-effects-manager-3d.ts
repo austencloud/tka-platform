@@ -1,4 +1,4 @@
-import type { Object3D } from "three";
+import type { Object3D, WebGLRenderer } from "three";
 import { BubbleRenderer3D } from "../bubbles/bubble-renderer-3d";
 import { PetalPoolRenderer3D } from "../petals/petal-pool-renderer-3d";
 import {
@@ -7,6 +7,9 @@ import {
 } from "../petals/petal-world-art-direction";
 import { SparkleRenderer3D } from "../particles/sparkle-renderer-3d";
 import { SmokePoolRenderer3D } from "../smoke/smoke-pool-renderer-3d";
+import { SmokeVolumeRenderer3D } from "../smoke/smoke-volume-renderer-3d";
+import type { SmokeVolumeDebugSnapshot3D } from "../smoke/smoke-volume-solver-3d";
+import { QualityTier } from "../types";
 import { GooRenderer3D } from "../water/goo-renderer-3d";
 import { InkRenderer3D } from "../ink/ink-renderer-3d";
 import { SilkRenderer3D } from "../silk/silk-renderer-3d";
@@ -47,6 +50,8 @@ export class SceneEffectsManager3D {
   private readonly bubbles: BubbleTipSource3D[] = [];
   private readonly petals: PetalTipSource3D[] = [];
   private readonly smoke: SmokeTipSource3D[] = [];
+  private readonly volumeSmoke: SmokeTipSource3D[] = [];
+  private readonly fallbackSmoke: SmokeTipSource3D[] = [];
   private readonly ink: InkTipSource3D[] = [];
   private readonly silk: SilkTipSource3D[] = [];
   private readonly animal: AnimalTipSource3D[] = [];
@@ -56,7 +61,8 @@ export class SceneEffectsManager3D {
   private gooRenderer: GooRenderer3D | null = null;
   private bubbleRenderer: BubbleRenderer3D | null = null;
   private petalRenderer: PetalPoolRenderer3D | null = null;
-  private smokeRenderer: SmokePoolRenderer3D | null = null;
+  private smokeFallbackRenderer: SmokePoolRenderer3D | null = null;
+  private smokeVolumeRenderer: SmokeVolumeRenderer3D | null = null;
   private inkRenderer: InkRenderer3D | null = null;
   private silkRenderer: SilkRenderer3D | null = null;
   private animalRenderer: AnimalRenderer3D | null = null;
@@ -82,7 +88,7 @@ export class SceneEffectsManager3D {
     };
   }
 
-  initialize(parent: Object3D): void {
+  initialize(parent: Object3D, renderer?: WebGLRenderer): void {
     if (this.parent === parent) return;
     if (this.parent) this.disposeRenderers();
     this.parent = parent;
@@ -91,7 +97,9 @@ export class SceneEffectsManager3D {
     this.bubbleRenderer = new BubbleRenderer3D();
     this.petalRenderer = new PetalPoolRenderer3D();
     this.petalRenderer.setEnvironmentProfile(this.petalEnvironmentProfile);
-    this.smokeRenderer = new SmokePoolRenderer3D();
+    this.smokeFallbackRenderer = new SmokePoolRenderer3D();
+    if (renderer?.capabilities.isWebGL2 === true)
+      this.smokeVolumeRenderer = new SmokeVolumeRenderer3D();
     this.inkRenderer = new InkRenderer3D();
     this.silkRenderer = new SilkRenderer3D();
     this.animalRenderer = new AnimalRenderer3D();
@@ -101,7 +109,8 @@ export class SceneEffectsManager3D {
     this.gooRenderer.initialize(parent);
     this.bubbleRenderer.initialize(parent);
     this.petalRenderer.initialize(parent);
-    this.smokeRenderer.initialize(parent);
+    this.smokeFallbackRenderer.initialize(parent);
+    this.smokeVolumeRenderer?.initialize(parent);
     this.inkRenderer.initialize(parent);
     this.silkRenderer.initialize(parent);
     this.animalRenderer.initialize(parent);
@@ -122,6 +131,8 @@ export class SceneEffectsManager3D {
     this.bubbles.length = 0;
     this.petals.length = 0;
     this.smoke.length = 0;
+    this.volumeSmoke.length = 0;
+    this.fallbackSmoke.length = 0;
     this.ink.length = 0;
     this.silk.length = 0;
     this.animal.length = 0;
@@ -177,7 +188,17 @@ export class SceneEffectsManager3D {
     this.gooRenderer?.update(this.goo, delta);
     this.bubbleRenderer?.update(this.bubbles, delta);
     this.petalRenderer?.update(this.petals, delta);
-    this.smokeRenderer?.update(this.smoke, delta);
+    if (this.smokeVolumeRenderer) {
+      for (const source of this.smoke) {
+        if (source.qualityTier === QualityTier.LOW)
+          this.fallbackSmoke.push(source);
+        else this.volumeSmoke.push(source);
+      }
+      this.smokeVolumeRenderer.update(this.volumeSmoke, delta);
+      this.smokeFallbackRenderer?.update(this.fallbackSmoke, delta);
+    } else {
+      this.smokeFallbackRenderer?.update(this.smoke, delta);
+    }
     this.inkRenderer?.update(this.ink, delta);
     this.silkRenderer?.update(this.silk, delta);
     this.animalRenderer?.update(this.animal, delta);
@@ -189,7 +210,8 @@ export class SceneEffectsManager3D {
     this.gooRenderer?.clear();
     this.bubbleRenderer?.clear();
     this.petalRenderer?.clear();
-    this.smokeRenderer?.clear();
+    this.smokeFallbackRenderer?.clear();
+    this.smokeVolumeRenderer?.clear();
     this.inkRenderer?.clear();
     this.silkRenderer?.clear();
     this.animalRenderer?.clear();
@@ -208,7 +230,8 @@ export class SceneEffectsManager3D {
     this.gooRenderer?.dispose();
     this.bubbleRenderer?.dispose();
     this.petalRenderer?.dispose();
-    this.smokeRenderer?.dispose();
+    this.smokeFallbackRenderer?.dispose();
+    this.smokeVolumeRenderer?.dispose();
     this.inkRenderer?.dispose();
     this.silkRenderer?.dispose();
     this.animalRenderer?.dispose();
@@ -218,11 +241,16 @@ export class SceneEffectsManager3D {
     this.gooRenderer = null;
     this.bubbleRenderer = null;
     this.petalRenderer = null;
-    this.smokeRenderer = null;
+    this.smokeFallbackRenderer = null;
+    this.smokeVolumeRenderer = null;
     this.inkRenderer = null;
     this.silkRenderer = null;
     this.animalRenderer = null;
     this.pulseRenderer = null;
     this.bloomRenderer = null;
+  }
+
+  getSmokeDebugSnapshot(): SmokeVolumeDebugSnapshot3D | null {
+    return this.smokeVolumeRenderer?.getDebugSnapshot() ?? null;
   }
 }

@@ -231,6 +231,33 @@ export interface Smoke3DParams extends SmokeIntent {
   noiseScale: number;
   /** Base world-up rise magnitude in m/s before user/palette multipliers. Spec RISE_BASE ≈ 1.5. */
   riseBaseSpeed: number;
+  /** Hidden 3D art direction for the density solver and optical material. */
+  volumeProfile: SmokeVolumeProfile3D;
+}
+
+export interface SmokeVolumeProfile3D {
+  /** World-space radius of one density splat before intensity scaling. */
+  injectionRadiusWorld: number;
+  /** Density written by a fully active source. */
+  density: number;
+  /** Fraction of density lost per second. */
+  dissipation: number;
+  /** Heat added with density, which becomes upward motion. */
+  temperature: number;
+  /** Strength of rotational detail restored after advection. */
+  vorticity: number;
+  /** Sideways impulse applied at injection. */
+  lateralSpread: number;
+  /** Expansion impulse away from the source path. */
+  expansion: number;
+  /** Optical absorption through dense smoke. */
+  extinction: number;
+  /** Amount of soft directional light visible in the volume. */
+  scattering: number;
+  /** Sub-voxel turbulent warp used only while raymarching. */
+  detailWarp: number;
+  /** Genie-style color travel through the lifetime of the volume. */
+  hueShift: number;
 }
 
 export interface Ink3DParams extends InkIntent {
