@@ -541,6 +541,13 @@
     margin-bottom: 0;
   }
 
+  /* Entry text carries no size of its own; without this it stays at the
+     inherited 16px while the rest of the block steps up. */
+  .change-groups :global(.change-item) {
+    font-size: var(--font-size-base);
+    line-height: 1.55;
+  }
+
   @container (min-width: 1800px) {
     .change-groups[data-groups="1"] :global(.change-list) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -591,6 +598,7 @@
       gap: 1.5rem;
       --font-size-compact: 1.05rem;
       --font-size-sm: 1.25rem;
+      --font-size-base: 1.25rem;
       --font-size-lg: 1.6rem;
       --font-size-xl: 2rem;
     }
@@ -619,6 +627,7 @@
     .version-detail-body {
       --font-size-compact: 1.25rem;
       --font-size-sm: 1.5rem;
+      --font-size-base: 1.5rem;
       --font-size-lg: 1.9rem;
       --font-size-xl: 2.4rem;
     }

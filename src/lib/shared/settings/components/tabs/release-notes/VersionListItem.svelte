@@ -97,10 +97,8 @@
     width: 100%;
     padding: 12px 16px;
     background: transparent;
-    border: none;
-    border-left: 3px solid transparent;
-    border-bottom: 1px solid
-      color-mix(in srgb, var(--theme-stroke) 50%, transparent);
+    border: 1px solid transparent;
+    border-bottom-color: color-mix(in srgb, var(--theme-stroke) 50%, transparent);
     border-radius: 0;
     cursor: pointer;
     text-align: left;
@@ -117,13 +115,11 @@
     );
   }
 
+  /* The whole row marks the release you are reading — an accent bar on one
+     edge is the banned pattern (.claude/rules/no-left-edge-accent-bar.md). */
   .version-list-item.active {
-    border-left-color: var(--theme-accent);
-    background: color-mix(
-      in srgb,
-      var(--theme-accent) 12%,
-      transparent
-    );
+    border-color: color-mix(in srgb, var(--theme-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
   .version-list-item.active .version-number {

@@ -202,6 +202,13 @@
     gap: 0.5rem;
   }
 
+  /* The entry text carries no size of its own, so it would sit at the
+     inherited 16px while everything around it stepped up. */
+  .entry-groups :global(.change-item) {
+    font-size: var(--font-size-base);
+    line-height: 1.55;
+  }
+
   .entry-groups :global(.change-list li) {
     margin-bottom: 0;
   }
@@ -253,6 +260,7 @@
     .history-entry {
       --font-size-compact: 1.05rem;
       --font-size-sm: 1.25rem;
+      --font-size-base: 1.25rem;
       --font-size-lg: 1.6rem;
     }
 
@@ -270,6 +278,7 @@
     .history-entry {
       --font-size-compact: 1.25rem;
       --font-size-sm: 1.5rem;
+      --font-size-base: 1.5rem;
       --font-size-lg: 1.9rem;
     }
   }

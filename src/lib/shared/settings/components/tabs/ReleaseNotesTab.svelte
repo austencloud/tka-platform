@@ -46,6 +46,73 @@
       });
   });
 
+  // Which release the reader is actually on. Browse has a scroll-spy, but it
+  // reads positions out of its virtualizer, so there is nothing to reuse here.
+  let activeVersion = $state<string | null>(null);
+  let railElement = $state<HTMLElement | null>(null);
+
+  /**
+   * The release you are reading is the last one whose heading has passed the
+   * top quarter of the panel. Geometry, not intersection ratios: a tall release
+   * and a short one can both be fully on screen, and ratio can't tell you which
+   * one you're looking at.
+   */
+  function readActiveVersion() {
+    if (!streamElement) return;
+    const line =
+      streamElement.getBoundingClientRect().top +
+      Math.min(streamElement.clientHeight * 0.25, 160);
+    let current: string | null = null;
+    for (const section of streamElement.querySelectorAll<HTMLElement>(".stream-section")) {
+      if (section.getBoundingClientRect().top <= line) {
+        current = section.dataset.version ?? null;
+      } else break;
+    }
+    const first = streamElement.querySelector<HTMLElement>(".stream-section");
+    activeVersion = current ?? first?.dataset.version ?? null;
+  }
+
+  /** Tracks the current release while the stream scrolls. */
+  function spyOnScroll(node: HTMLElement) {
+    let queued = false;
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        readActiveVersion();
+      });
+    };
+    node.addEventListener("scroll", onScroll, { passive: true });
+    readActiveVersion();
+    return {
+      destroy: () => node.removeEventListener("scroll", onScroll),
+    };
+  }
+
+  // Newly mounted releases change what sits under the read line.
+  $effect(() => {
+    streamVersions.length;
+    readActiveVersion();
+  });
+
+  // Keep the current release visible in the rail as the stream scrolls.
+  $effect(() => {
+    if (!activeVersion || !railElement) return;
+    const item = railElement.querySelector<HTMLElement>(
+      `[data-rail-version="${CSS.escape(activeVersion)}"]`
+    );
+    if (!item) return;
+    const railRect = railElement.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    if (itemRect.top < railRect.top || itemRect.bottom > railRect.bottom) {
+      railElement.scrollTo({
+        top: item.offsetTop - railElement.clientHeight / 2 + item.clientHeight / 2,
+        behavior: "smooth",
+      });
+    }
+  });
+
   /** Grows the stream when its tail scrolls into view. */
   function revealOnScroll(node: HTMLElement) {
     const observer = new IntersectionObserver(
@@ -60,22 +127,27 @@
     return { destroy: () => observer.disconnect() };
   }
 
-  /** Wide mode: select a version for editing and bring it into view */
-  function selectVersion(version: AppVersion) {
-    selectedVersion = version;
-
+  /** Brings a release into view, mounting it first if the stream hasn't reached it. */
+  function jumpToVersion(version: AppVersion) {
     const index = versionState.versions.findIndex(
       (v) => v.version === version.version
     );
     if (index >= visibleCount) {
       visibleCount = index + STREAM_BATCH;
     }
+    activeVersion = version.version;
 
     requestAnimationFrame(() => {
       document
         .getElementById(`release-${version.version}`)
         ?.scrollIntoView({ block: "start", behavior: "smooth" });
     });
+  }
+
+  /** Wide mode: open a release in the editor, in place in the stream. */
+  function selectVersion(version: AppVersion) {
+    selectedVersion = version;
+    jumpToVersion(version);
   }
 
   /** Narrow mode: select version and open drawer */
@@ -86,10 +158,8 @@
 
   function handleListKeydown(e: KeyboardEvent) {
     if (!versionState.versions.length) return;
-    const currentIndex = selectedVersion
-      ? versionState.versions.findIndex(
-          (v) => v.version === selectedVersion?.version
-        )
+    const currentIndex = activeVersion
+      ? versionState.versions.findIndex((v) => v.version === activeVersion)
       : -1;
 
     let newIndex = currentIndex;
@@ -107,8 +177,9 @@
       newIndex = versionState.versions.length - 1;
     }
 
-    if (newIndex !== currentIndex && newIndex >= 0) {
-      selectedVersion = versionState.versions[newIndex] ?? null;
+    const target = versionState.versions[newIndex];
+    if (newIndex !== currentIndex && target) {
+      jumpToVersion(target);
     }
   }
 
@@ -136,7 +207,10 @@
 
   <div class="master-detail-layout">
     <!-- Master: version list -->
-    <aside class="version-list-panel themed-scrollbar">
+    <aside
+      class="version-list-panel themed-scrollbar"
+      bind:this={railElement}
+    >
       {#if versionState.isLoading && versionState.versions.length === 0}
         <div class="loading-state">
           <div class="skeleton-card"></div>
@@ -168,11 +242,13 @@
           onkeydown={handleListKeydown}
         >
           {#each versionState.versions as version (version.version)}
-            <VersionListItem
-              {version}
-              isActive={selectedVersion?.version === version.version}
-              onclick={() => selectVersion(version)}
-            />
+            <div class="rail-slot" data-rail-version={version.version}>
+              <VersionListItem
+                {version}
+                isActive={activeVersion === version.version}
+                onclick={() => jumpToVersion(version)}
+              />
+            </div>
           {/each}
         </div>
         <!-- Narrow mode: full cards -->
@@ -188,11 +264,16 @@
     <main
       class="version-detail-panel themed-scrollbar"
       bind:this={streamElement}
+      use:spyOnScroll
     >
       {#if versionState.versions.length > 0}
         <div class="history-stream">
           {#each streamVersions as version (version.version)}
-            <div id="release-{version.version}" class="stream-section">
+            <div
+              id="release-{version.version}"
+              class="stream-section"
+              data-version={version.version}
+            >
               {#if selectedVersion?.version === version.version}
                 <VersionDetailContent
                   {version}
