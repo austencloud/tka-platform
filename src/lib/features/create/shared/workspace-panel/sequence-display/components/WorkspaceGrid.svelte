@@ -579,6 +579,7 @@
         <div class="timeline-start-column">
           <div
             class="timeline-cell"
+            class:cascading={displayState.shouldAnimateStartPosition}
             class:cell-selected={selectedStepNumber === 0}
             class:cell-practice={practiceStepNumber === 0}
             data-history-start-position
@@ -654,6 +655,7 @@
               )}
               <div
                 class="timeline-cell step-container"
+                class:cascading={displayState.shouldBeatAnimate(stepIndex)}
                 class:deleting={isDeleting}
                 class:arrival-destination={isArrivalDestination(stepIndex)}
                 class:arrival-destination-hidden={isArrivalDestinationHidden(
@@ -724,6 +726,7 @@
       {#each standardStartCells as startCell (startCell.key)}
         <div
           class="step-container"
+          class:cascading={displayState.shouldAnimateStartPosition}
           data-history-start-position
           style:grid-row="1"
           style:grid-column="1"
@@ -755,6 +758,7 @@
         {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="step-container"
+          class:cascading={displayState.shouldBeatAnimate(index)}
           class:deleting={isDeleting}
           class:arrival-destination={isArrivalDestination(index)}
           class:arrival-destination-hidden={isArrivalDestinationHidden(index)}
@@ -900,7 +904,7 @@
     border-radius: 6px;
     /* Was overflow: hidden — clipped the gold selection border/glow of cells
        on the grid's bottom/edge rows. Visible lets a selected cell pop forward.
-       Child step-containers are opaque squares that fill their cells, so the
+       Each cell's layout shell is an opaque square filling its cell, so the
        6px corner radius still reads fine. */
     overflow: visible;
     margin: auto;
@@ -945,13 +949,23 @@
   }
 
   /* ===== Step container (shared) ===== */
+  /* The plate moved down to the layout shell — see .history-layout-shell. The
+     container is the element the layout transition transforms, and anything it
+     paints arrives at full size the instant the grid resizes. */
   .step-container {
     margin: 0;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--dm-pictograph-bg, #0a0a0f);
+    background: transparent;
+  }
+
+  /* Timeline's bare cells (row spacers, empty start-column slots) still paint
+     their own plate — they have no shell to hand it to. Any cell that DOES
+     carry a shell gives the plate up to it. */
+  .timeline-cell:has(.history-layout-shell) {
+    background: transparent;
   }
 
   .grid-surface.standard .step-container {
@@ -961,13 +975,41 @@
     min-height: 0;
   }
 
-  /* A sizing box only. The layout transition transforms the cell around it,
-     so this must not carry a background or a transform of its own. */
+  /* The cell's opaque plate. It lives here rather than on the container so it
+     can arrive WITH the pictograph instead of ahead of it: a plate on the
+     container painted the whole final grid black the moment the steps existed,
+     and the cascade then filled that black rectangle in. Here it rides the same
+     wave the cell does.
+
+     It must still carry no transform of its own — the layout transition
+     transforms the container around it, and a second transform in here would
+     make the motion wobble. */
   .history-layout-shell {
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
+    background: var(--dm-pictograph-bg, #0a0a0f);
+  }
+
+  /* Same duration, delay and easing as the cell's stepCascade, so plate and
+     pictograph are one arrival rather than two. Solid by 55%, which is where
+     the cell reaches full opacity — the overshoot tail then plays over a plate
+     that has already landed. */
+  .cascading .history-layout-shell {
+    animation: plateCascade var(--step-entrance-duration, 380ms)
+      cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--wave-band, 0) * var(--wave-band-delay, 55ms));
+  }
+
+  @keyframes plateCascade {
+    0% {
+      background-color: transparent;
+    }
+    55%,
+    100% {
+      background-color: var(--dm-pictograph-bg, #0a0a0f);
+    }
   }
 
   /* The leaving cell recedes in place while its neighbours hold still. The
@@ -1221,6 +1263,14 @@
 
     .step-container.deleting {
       animation: none;
+    }
+
+    /* Collapsed, not removed — same reason as the cell's own entrance. The
+       plate has to reach its 100% frame, and `animation: none` would leave it
+       transparent for good. */
+    .cascading .history-layout-shell {
+      animation-duration: 0.01ms;
+      animation-delay: 0s;
     }
   }
 </style>
