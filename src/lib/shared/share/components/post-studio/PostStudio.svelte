@@ -254,6 +254,39 @@
               : "missing",
       missingMessage: "Card preview unavailable",
     },
+    // Sequence-derived sources need nothing chosen. The sequence is already
+    // open — asking "click to choose a source" for a tunnel or a mandala is
+    // asking for the thing the studio was handed on the way in.
+    {
+      roleKey: POST_STUDIO_ROLE.tunnel,
+      kind: "tunnel",
+      label: "Tunnel",
+      previewUrl: null,
+      renderMode: "tunnel",
+      status: sequence.steps.length > 0 ? "ready" : "missing",
+      missingMessage: "No sequence motion",
+    },
+    {
+      roleKey: POST_STUDIO_ROLE.mandala,
+      kind: "mandala",
+      label: "Mandala",
+      previewUrl: null,
+      renderMode: "mandala",
+      status: sequence.steps.length > 0 ? "ready" : "missing",
+      missingMessage: "No sequence motion",
+    },
+    {
+      roleKey: POST_STUDIO_ROLE.scene3d,
+      kind: "scene-3d",
+      label: "3D view",
+      previewUrl: null,
+      renderMode: "scene-3d",
+      // The 3D scene needs a context installed before mount, a performer, and
+      // an async feature gate — none of which the preview slot builds yet.
+      // Say that, rather than implying a file is missing.
+      status: "missing",
+      missingMessage: "3D preview is not wired up yet",
+    },
   ]);
 
   // One starting arrangement, not a menu of four. A post is a top slot and a

@@ -210,9 +210,40 @@ rail → a "VISIBILITY" header is three nav levels to reach a toggle.
       `tests/unit/post-studio-slots.test.ts` + `tests/unit/media-composition`,
       zero console errors, screenshots at 1920 / 3840 / 1440 / 960×412 /
       375×667 (2560 skipped as above).
-- [ ] **P3 — Source registry + three new modes.** Registry of six. Mandala via
-      pure renderer; Tunnel via seekable `AnimatorCanvas` wrapper; 3D via context
-      bootstrap with the one-slot policy.
+- [~] **P3 — Source registry + three new modes.** Registry of six done in P1.
+      Mandala and Tunnel now render live in a slot; 3D still does not.
+
+      Austen (2026-08-15): *"When I select the tunnel or the mandala it should
+      not say Click to choose a source it should already know because I'm
+      already in there showing the sequence I want to show."* Right — the three
+      sequence-derived roles had no binding at all, so `bindingForRole` returned
+      nothing and the slot fell through to the generic chooser prompt. They bind
+      off the open sequence now and resolve `ready` with it.
+
+      Mandala: `PostStudioMandalaLayer` drives `renderMandalaFrameToCanvas` (the
+      export worker's own renderer) off the composition playhead, at the
+      viewer's defaults — arc, aurora flow, 5s breath, 90°/ref-period — so a
+      post matches the Art pane it came from. Tunnel: `PostStudioTunnelLayer`
+      mounts `TunnelArtView` with its own controller and a two-field playback
+      shim; it self-clocks off the studio tempo, which is right for the preview.
+      Seeking it frame-exactly is P4's problem, not the preview's.
+
+      `hasReadyLayer` in the preview listed render modes by name, so every new
+      source type shipped a slot that drew its media AND told the user it was
+      missing. It uses the same `!== "external-media"` rule the layer renders
+      by.
+
+      3D is honest instead of wrong: status `missing` with "3D preview is not
+      wired up yet", which surfaces as "3D view needed" in the top bar and
+      disables Render — so a blank 3D slot cannot be exported. The context
+      bootstrap (`setViewer3DContext` + `viewer.enter3D`, avatar, 15s gate) is
+      what remains of this phase.
+
+      Evidence: `svelte-check` 0/0, 70/70 unit tests, zero console errors, and
+      live at `/test/post-studio` — Mandala breathing and morphing with the
+      playhead at 0:05.9, Tunnel's kaleidoscope with spectrum arms at 0:04.8,
+      and Tunnel-over-Mandala (a pairing no preset could reach) both rendering
+      at 0:14.8.
 - [ ] **P4 — Compositor branches.** `tunnel`, `scene-3d`, `mandala` capture paths
       in `post-studio-frame-compositor.ts`. Verify an actual export of each.
 - [ ] **P5 — Multi-clip tracks.** `appendClipToSlot`, `removeClip`, crossfade at

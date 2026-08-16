@@ -141,11 +141,13 @@
   function hasReadyLayer(layers: EvaluatedFrameLayer[]): boolean {
     return layers.some((layer) => {
       const binding = composition.bindingForRole(layer.sourceRole);
+      // Same rule the layer itself renders by: everything except
+      // `external-media` draws from the sequence and needs no file. Listing the
+      // modes by name here meant every new source type shipped with its own
+      // slot both drawing the media AND telling the user it was missing.
       return (
         binding?.status === "ready" &&
-        (Boolean(binding.previewUrl) ||
-          binding.renderMode === "sequence-animation" ||
-          binding.renderMode === "choreo-card")
+        (Boolean(binding.previewUrl) || binding.renderMode !== "external-media")
       );
     });
   }

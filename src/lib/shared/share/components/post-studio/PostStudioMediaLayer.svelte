@@ -7,6 +7,8 @@
   import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
   import PostStudioSequenceAnimationLayer from "./PostStudioSequenceAnimationLayer.svelte";
   import PostStudioChoreoLayer from "./PostStudioChoreoLayer.svelte";
+  import PostStudioTunnelLayer from "./PostStudioTunnelLayer.svelte";
+  import PostStudioMandalaLayer from "./PostStudioMandalaLayer.svelte";
 
   interface Props {
     binding: CompositionSourceBinding;
@@ -88,6 +90,25 @@
       {sequence}
       {displayedBeatNumber}
       {cardRenderOptions}
+    />
+  {:else if binding.renderMode === "tunnel"}
+    <PostStudioTunnelLayer
+      {sequence}
+      {playing}
+      bpm={composition.tempoBpm ?? 60}
+      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+      redPropType={cardRenderOptions?.redPropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+    />
+  {:else if binding.renderMode === "mandala"}
+    <PostStudioMandalaLayer
+      {sequence}
+      {sourceTimeSeconds}
+      bluePropType={cardRenderOptions?.bluePropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
+      redPropType={cardRenderOptions?.redPropTypeOverride ??
+        cardRenderOptions?.propTypeOverride}
     />
   {:else if binding.previewType === "video" || binding.kind === "video"}
     <!-- svelte-ignore a11y_media_has_caption -->
