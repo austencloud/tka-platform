@@ -381,6 +381,23 @@
     composition.isReady && previewRoot !== null && !exporting
   );
 
+  /**
+   * A post is a moving thing, so the studio opens with it moving. It used to
+   * open on a still frame behind a play button, which reads as broken — the
+   * first question anyone asks of a composition is what it looks like running.
+   *
+   * Gated on isReady rather than mount so the clock does not start against
+   * half-resolved sources, and latched so it happens once: if you pause, it
+   * stays paused.
+   */
+  let autoPlayStarted = $state(false);
+  $effect(() => {
+    if (autoPlayStarted) return;
+    if (!composition.isReady || composition.isPlaying) return;
+    autoPlayStarted = true;
+    composition.togglePlayback();
+  });
+
   $effect(() => {
     if (audioModeTouched) return;
     audioMode = canKeepOriginalAudio ? "original" : "instagram";
