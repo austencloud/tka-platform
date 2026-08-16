@@ -17,6 +17,7 @@
     onSave,
     onChooseFirstStep,
     onBuildPath,
+    onEditPairing,
     compact = false,
     defaultDecomposed = false,
     isSaving = false,
@@ -26,6 +27,8 @@
     onSave: () => Promise<void>;
     onChooseFirstStep: (side: FuseSide) => void;
     onBuildPath: (side: FuseSide) => void;
+    /** Opens the Pairing editor from the derived follower's badge. */
+    onEditPairing?: () => void;
     compact?: boolean;
     /** Large workspaces have enough height to show both source canvases and
      * the combined result as one composed animation object. */
@@ -109,6 +112,7 @@
         toolbarOnly={true}
         {onChooseFirstStep}
         {onBuildPath}
+        {onEditPairing}
       />
       <FuseSourceCard
         side="red"
@@ -116,6 +120,7 @@
         toolbarOnly={true}
         {onChooseFirstStep}
         {onBuildPath}
+        {onEditPairing}
       />
     </div>
   {/if}

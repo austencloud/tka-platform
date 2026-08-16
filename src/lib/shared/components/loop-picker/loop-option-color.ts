@@ -43,14 +43,25 @@ const COMPONENT_COLORS: Partial<Record<LOOPComponent, string>> = {
 };
 
 /**
+ * The colors for a set of primitives, in canonical order. Callers that already
+ * know their components (Fuse's follower transforms) use this directly rather
+ * than round-tripping through a LOOP type string.
+ */
+export function loopComponentColors(
+  components: Iterable<LOOPComponent>
+): string[] {
+  const present = new Set(components);
+  return DISPLAY_ORDER.filter((c) => present.has(c))
+    .map((c) => COMPONENT_COLORS[c])
+    .filter((c): c is string => Boolean(c));
+}
+
+/**
  * The colors a LOOP type is built from, in canonical order. Empty only for a
  * type naming no known primitive, which callers fall back on.
  */
 export function loopTypeColors(loopType: LOOPType | string): string[] {
-  const components = parseLoopComponents(loopType);
-  return DISPLAY_ORDER.filter((c) => components.has(c))
-    .map((c) => COMPONENT_COLORS[c])
-    .filter((c): c is string => Boolean(c));
+  return loopComponentColors(parseLoopComponents(loopType));
 }
 
 /**

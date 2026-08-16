@@ -8,6 +8,10 @@
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import type { FuseMode } from "../state/fuse-state.svelte";
+  import {
+    FUSE_TRANSFORM_ICONS,
+    fuseTransformTint,
+  } from "../domain/fuse-transform-presentation";
   import FuseModeBar from "./FuseModeBar.svelte";
   import FuseTransformPicker from "./FuseTransformPicker.svelte";
 
@@ -36,6 +40,8 @@
   const draftFollowerLabel = $derived(
     draftDriver === "blue" ? "Red path" : "Blue path"
   );
+  const draftTransformIcon = $derived(FUSE_TRANSFORM_ICONS[draftTransform]);
+  const draftTransformTint = $derived(fuseTransformTint(draftTransform));
   const busy = $derived(
     fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
@@ -122,32 +128,64 @@
   {/if}
 
   <div class="relationship-commit">
-    <div class="relationship-flow" aria-live="polite">
-      <span class="flow-label">Preview</span>
+    <!-- Named Result, not Preview: it states what applying this does, and the
+         canvas behind the editor is already showing the live preview. -->
+    <div class="result" aria-live="polite">
+      <span class="result-label">Result</span>
       {#if draftMode === "shuffle"}
-        <span class="path-token" data-side="blue">
-          <span>Shuffles alone</span>
-          <strong>Blue path</strong>
-        </span>
-        <span class="path-token" data-side="red">
-          <span>Shuffles alone</span>
-          <strong>Red path</strong>
-        </span>
+        <p class="result-sentence">
+          Blue and Red each generate on their own. Editing one leaves the other
+          alone.
+        </p>
+        <div class="result-chain">
+          <span class="path-node" data-side="blue">
+            <span class="node-dot" aria-hidden="true"></span>
+            <span class="node-copy">
+              <span class="node-role">Shuffles alone</span>
+              <strong>Blue path</strong>
+            </span>
+          </span>
+          <span class="path-node" data-side="red">
+            <span class="node-dot" aria-hidden="true"></span>
+            <span class="node-copy">
+              <span class="node-role">Shuffles alone</span>
+              <strong>Red path</strong>
+            </span>
+          </span>
+        </div>
       {:else}
-        <span class="path-token" data-side={draftDriver}>
-          <span>You edit</span>
-          <strong>{draftDriverLabel}</strong>
-        </span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span class="transform-token">{draftTransformLabel}</span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span
-          class="path-token"
-          data-side={draftDriver === "blue" ? "red" : "blue"}
-        >
-          <span>Fuse rebuilds</span>
-          <strong>{draftFollowerLabel}</strong>
-        </span>
+        <p class="result-sentence">
+          {draftDriverLabel} stays yours to edit. Change it and Fuse rebuilds the
+          {draftFollowerLabel.toLowerCase()} by applying {draftTransformLabel}.
+        </p>
+        <div class="result-chain">
+          <span class="path-node" data-side={draftDriver}>
+            <span class="node-dot" aria-hidden="true"></span>
+            <span class="node-copy">
+              <span class="node-role">You edit</span>
+              <strong>{draftDriverLabel}</strong>
+            </span>
+          </span>
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          <span class="rule-node" style={draftTransformTint}>
+            <i class="fas {draftTransformIcon}" aria-hidden="true"></i>
+            <span class="node-copy">
+              <span class="node-role">Rule</span>
+              <strong>{draftTransformLabel}</strong>
+            </span>
+          </span>
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+          <span
+            class="path-node"
+            data-side={draftDriver === "blue" ? "red" : "blue"}
+          >
+            <span class="node-dot" aria-hidden="true"></span>
+            <span class="node-copy">
+              <span class="node-role">Fuse rebuilds</span>
+              <strong>{draftFollowerLabel}</strong>
+            </span>
+          </span>
+        </div>
       {/if}
     </div>
 
@@ -184,14 +222,26 @@
   }
 
   .pairing-editor.popover-editor {
-    max-width: 52rem;
+    gap: var(--settings-spacing-md, 14px);
+    max-width: none;
     margin: 0;
   }
 
-  .modal-editor :global(.transform-picker.embedded.relationship-layout) {
-    grid-template-columns: minmax(16rem, 0.72fr) minmax(0, 2.5fr);
-    align-items: stretch;
+  /* Wherever the editor gets real width, the two steps sit side by side and the
+     inner cards fill it. Left as one narrow column they stacked into a column
+     the popover then had to scroll — a control taller than the box holding it. */
+  .modal-editor :global(.transform-picker.embedded.relationship-layout),
+  .popover-editor :global(.transform-picker.embedded.relationship-layout) {
+    grid-template-columns: minmax(13rem, 0.52fr) minmax(0, 2.6fr);
     max-width: none;
+  }
+
+  /* Step 1 is a two-button decision; step 2 is nine tiles. Stretched to match,
+     step 1 became a hollow bordered box three times taller than its control, so
+     each card here keeps its own height. */
+  .modal-editor :global(.transform-picker.embedded.relationship-layout),
+  .popover-editor :global(.transform-picker.embedded.relationship-layout) {
+    align-items: start;
   }
 
   .pairing-intro {
@@ -205,7 +255,7 @@
   }
 
   .eyebrow,
-  .flow-label {
+  .result-label {
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
     font-weight: 750;
@@ -238,8 +288,44 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  .modal-editor .mode-field {
+  .modal-editor .mode-field,
+  .popover-editor .mode-field {
     max-width: none;
+  }
+
+  /* The intro and the mode switch answer the same question, so at popover width
+     they share a row instead of costing two full-width bands of height. */
+  .popover-editor .pairing-intro,
+  .popover-editor .mode-field {
+    grid-column: span 1;
+  }
+
+  .popover-editor {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .popover-editor :global(.transform-picker.embedded.relationship-layout),
+  .popover-editor .relationship-commit {
+    grid-column: 1 / -1;
+  }
+
+  /* Result and the commit buttons share a row at popover width — stacked, they
+     cost the popover a scrollbar for one row of buttons. */
+  .popover-editor .relationship-commit {
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 0.42fr);
+    align-items: end;
+    gap: var(--settings-spacing-md, 14px);
+  }
+
+  /* The popover clamps to the viewport, so below its natural width it goes back
+     to one column rather than splitting a 20rem box in half. */
+  @media (max-width: 1000px) {
+    .popover-editor,
+    .popover-editor .relationship-commit,
+    .popover-editor :global(.transform-picker.embedded.relationship-layout) {
+      grid-template-columns: minmax(0, 1fr);
+    }
   }
 
   .mode-heading {
@@ -271,60 +357,94 @@
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
-  .relationship-flow {
+  .result {
+    display: grid;
+    gap: 8px;
+  }
+
+  .result-sentence {
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.45;
+  }
+
+  .result-chain {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 7px;
+    gap: 10px;
   }
 
-  .relationship-flow > i {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+  .result-chain > i {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
   }
 
-  .path-token,
-  .transform-token {
+  .node-copy {
     display: grid;
     gap: 1px;
-    padding: 7px 11px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 999px;
-    color: var(--theme-text, #fff);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+    min-width: 0;
+  }
+
+  .node-role {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: var(--font-size-compact, 12px);
-    white-space: nowrap;
   }
 
-  .path-token > span {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+  .node-copy strong {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
   }
 
-  .path-token[data-side="blue"] {
-    border-color: color-mix(
-      in srgb,
-      var(--prop-blue, #2196f3) 54%,
-      var(--theme-stroke)
-    );
+  /* A path is identified by its prop colour, so a dot says it — no capsule, no
+     tinted plate. The name stays plain text and stays readable. */
+  .path-node {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
   }
 
-  .path-token[data-side="red"] {
-    border-color: color-mix(
-      in srgb,
-      var(--prop-red, #f44336) 54%,
-      var(--theme-stroke)
-    );
+  .node-dot {
+    flex: 0 0 auto;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--node-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-color) 22%, transparent);
   }
 
-  .transform-token {
+  .path-node[data-side="blue"] {
+    --node-color: var(--prop-blue, #2196f3);
+  }
+
+  .path-node[data-side="red"] {
+    --node-color: var(--prop-red, #f44336);
+  }
+
+  /* The rule is a thing you chose from the tiles above, so it looks like one of
+     those tiles: same LOOP colours, same two-stop sweep for a combo. */
+  .rule-node {
+    --c1: var(--loop-c1, var(--theme-accent, #8b5cf6));
+    --c2: var(--loop-c2, var(--c1));
     display: inline-flex;
     align-items: center;
-    color: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 78%,
-      var(--theme-text)
+    gap: 9px;
+    padding: 7px 12px;
+    border: 1.5px solid color-mix(in srgb, var(--c1) 62%, transparent);
+    border-radius: 10px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--c1) 24%, transparent) 0%,
+      color-mix(in srgb, var(--c2) var(--loop-c2-mix, 9%), transparent) 100%
     );
-    font-weight: 750;
+  }
+
+  .rule-node > i {
+    color: var(--c1);
+    font-size: var(--font-size-min, 14px);
   }
 
   .editor-actions {
@@ -337,36 +457,30 @@
     width: 100%;
   }
 
+  /* Phone: the chain becomes a top-to-bottom list, arrows turned to match, so
+     nothing has to shrink below its own words. */
   @media (max-width: 480px) {
     .pairing-editor {
       gap: var(--settings-spacing-md, 14px);
     }
 
-    .relationship-flow {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    .result-chain {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
     }
 
-    .flow-label {
-      grid-column: 1 / -1;
+    .result-chain > i {
+      justify-self: start;
+      transform: rotate(90deg);
     }
 
-    .path-token {
-      min-width: 0;
-      white-space: normal;
+    .rule-node {
+      justify-content: flex-start;
     }
 
-    .transform-token {
-      grid-column: 1 / -1;
-      justify-self: center;
-    }
-
-    .relationship-flow > i:first-of-type {
-      grid-column: 2;
-    }
-
-    .relationship-flow > i:last-of-type {
-      display: none;
+    .editor-actions {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

@@ -11,6 +11,11 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import {
+    FUSE_TRANSFORM_ICONS,
+    fuseTransformAccent,
+    fuseTransformAccent2,
+  } from "../domain/fuse-transform-presentation";
+  import {
     FUSE_TRANSFORMS,
     type FuseTransformId,
   } from "../state/fuse-state.svelte";
@@ -35,18 +40,6 @@
   const selectedDriver = $derived(driver ?? fuseState.driverSide);
   const selectedTransform = $derived(transform ?? fuseState.transformId);
 
-  const TRANSFORM_ICONS: Record<FuseTransformId, string> = {
-    mirror: "fa-left-right",
-    flip: "fa-up-down",
-    rotate90: "fa-rotate-right",
-    rotate180: "fa-arrows-rotate",
-    invert: "fa-circle-half-stroke",
-    rewind: "fa-backward",
-    "rotate-mirror": "fa-shuffle",
-    "mirror-invert": "fa-code-compare",
-    "rotate-invert": "fa-repeat",
-  };
-
   // Inert while a length load or a fuse is in flight, so a change can't race the
   // derive it would trigger.
   const disabled = $derived(
@@ -68,12 +61,15 @@
     ).map((option) => ({ ...option, disabled }))
   );
 
+  // Each rule wears the colour of the LOOP primitive it is; a combo wears both.
   const transformOptions = $derived(
     FUSE_TRANSFORMS.map((transform) => ({
       value: transform.id,
       label: transform.label,
       description: transform.description,
-      icon: TRANSFORM_ICONS[transform.id],
+      icon: FUSE_TRANSFORM_ICONS[transform.id],
+      accent: fuseTransformAccent(transform.id),
+      accent2: fuseTransformAccent2(transform.id),
     }))
   );
 

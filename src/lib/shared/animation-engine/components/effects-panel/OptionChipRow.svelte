@@ -22,6 +22,17 @@
     icon?: string;
     /** CSS color for a leading swatch dot (palette rows). */
     swatch?: string;
+    /**
+     * Per-option accent, overriding the row `color`. Opt-in: rows whose options
+     * carry no meaning of their own leave it unset and stay one accent.
+     */
+    accent?: string;
+    /**
+     * Second accent for an option that composes two things (Fuse's Mirror +
+     * Invert). Differing from `accent` turns the active chip into the same
+     * two-stop sweep a composite LOOP button paints.
+     */
+    accent2?: string;
   }
 
   interface Props {
@@ -61,10 +72,15 @@
   <span class="option-label">{label}</span>
   <div class="chip-group" role="radiogroup" aria-label={ariaLabel ?? label}>
     {#each options as option (option.value)}
+      {@const accent2 = option.accent2 ?? option.accent}
       <button
         class="chip"
         class:swatch-chip={option.swatch != null}
         class:active={value === option.value}
+        class:duotone={option.accent != null && accent2 !== option.accent}
+        style={option.accent
+          ? `--option-accent: ${option.accent}; --option-accent-2: ${accent2};`
+          : undefined}
         type="button"
         role="radio"
         aria-checked={value === option.value}
@@ -188,9 +204,11 @@
     font-size: var(--font-size-min, 14px);
   }
 
+  /* Selection is a property of the whole tile, so the whole tile carries it:
+     a full ring, never a strip down one edge. See no-left-edge-accent-bar.md. */
   .tiles .chip.active {
     box-shadow:
-      inset 3px 0 0 var(--option-accent),
+      0 0 0 1px color-mix(in srgb, var(--option-accent) 55%, transparent),
       0 8px 20px -16px var(--option-accent);
   }
 
@@ -199,6 +217,16 @@
   }
 
   @container fuse (max-width: 1180px) {
+    .tiles .chip-group {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* The settings sheet is portalled out of the `fuse` container, so the query
+     above never reaches it. On a phone that left three ~93px tiles wrapping
+     "Rotate 90 / Turn one quarter" over four lines. Viewport width is the only
+     signal available on the far side of the portal. */
+  @media (max-width: 620px) {
     .tiles .chip-group {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -250,6 +278,7 @@
   }
 
   .chip {
+    --option-accent-2: var(--option-accent);
     flex: 1 1 auto;
     min-width: max-content;
     display: flex;
@@ -279,6 +308,22 @@
     background: color-mix(in srgb, var(--option-accent) 17%, transparent);
     border-color: var(--option-accent);
     color: var(--theme-text, white);
+  }
+
+  /* An option that composes two things wears both colors, swept the same 135deg
+     as a composite LOOP button so the pairing reads identically in both places.
+     The second stop rides high (24%) because at the flat tint's 9% the second
+     colour simply vanished into the first. */
+  .chip.active.duotone {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--option-accent) 24%, transparent) 0%,
+      color-mix(in srgb, var(--option-accent-2) 24%, transparent) 100%
+    );
+    border-color: color-mix(in srgb, var(--option-accent) 78%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--option-accent-2) 62%, transparent),
+      0 8px 20px -16px var(--option-accent-2);
   }
 
   .chip:disabled {

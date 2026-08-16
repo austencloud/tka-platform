@@ -19,6 +19,10 @@
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import {
+    FUSE_TRANSFORM_ICONS,
+    fuseTransformTint,
+  } from "../domain/fuse-transform-presentation";
+  import {
     FUSE_TRANSFORMS,
     type FuseSourceAdjustment,
   } from "../state/fuse-state.svelte";
@@ -36,6 +40,7 @@
     firstStepPickerActive = false,
     onFirstStepComplete,
     onCancelFirstStep,
+    onEditPairing,
   }: {
     side: FuseSide;
     // Big desktop only: render the complete choreo card — start position plus
@@ -55,6 +60,10 @@
     firstStepPickerActive?: boolean;
     onFirstStepComplete?: (side: FuseSide) => void;
     onCancelFirstStep?: () => void;
+    /** Opens the Pairing editor. The follower's footer is the obvious place to
+     * click when you want to change the rule that built it, so when a host can
+     * open that editor the footer becomes the button rather than dead text. */
+    onEditPairing?: () => void;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -104,6 +113,12 @@
   );
   const driverLabel = $derived(
     fuseState.driverSide === "blue" ? "Blue" : "Red"
+  );
+  const followerTransformIcon = $derived(
+    FUSE_TRANSFORM_ICONS[fuseState.transformId]
+  );
+  const followerTransformTint = $derived(
+    fuseTransformTint(fuseState.transformId)
   );
 
   // The playing beat, mapped to a 0-based step index, so the card cell for the
@@ -432,13 +447,19 @@
 
   {#if compactHero}
     {#if isSymmetryFollower}
-      <span
+      <svelte:element
+        this={onEditPairing ? "button" : "span"}
         class="compact-derived-indicator"
+        class:interactive={Boolean(onEditPairing)}
+        type={onEditPairing ? "button" : undefined}
+        onclick={onEditPairing}
         title="{followerTransformLabel} of {driverLabel}"
-        aria-label="{followerTransformLabel} of {driverLabel}"
+        aria-label={onEditPairing
+          ? `Change pairing — currently ${followerTransformLabel} of ${driverLabel}`
+          : `${followerTransformLabel} of ${driverLabel}`}
       >
-        <i class="fas fa-link" aria-hidden="true"></i>
-      </span>
+        <i class="fas {followerTransformIcon}" aria-hidden="true"></i>
+      </svelte:element>
     {:else}
       <div class="compact-source-tools">
         <FuseSourceActionPopover
@@ -459,10 +480,28 @@
   {/if}
 
   {#if isSymmetryFollower && !compactHero}
-    <div class="follower-note" role="status">
-      <i class="fas fa-link" aria-hidden="true"></i>
-      <span>{followerTransformLabel} of {driverLabel}</span>
-    </div>
+    <svelte:element
+      this={onEditPairing ? "button" : "div"}
+      class="follower-note"
+      class:interactive={Boolean(onEditPairing)}
+      type={onEditPairing ? "button" : undefined}
+      role={onEditPairing ? undefined : "status"}
+      onclick={onEditPairing}
+      aria-label={onEditPairing
+        ? `Change pairing — currently ${followerTransformLabel} of ${driverLabel}`
+        : undefined}
+    >
+      <span class="note-glyph" style={followerTransformTint} aria-hidden="true">
+        <i class="fas {followerTransformIcon}"></i>
+      </span>
+      <span class="note-copy">
+        <span class="note-role">Rebuilt from {driverLabel}</span>
+        <strong>{followerTransformLabel}</strong>
+      </span>
+      {#if onEditPairing}
+        <i class="fas fa-pen-to-square note-edit" aria-hidden="true"></i>
+      {/if}
+    </svelte:element>
   {:else if !compactHero}
     {#if firstStepPickerActive}
       <div class="first-step-toolbar" role="status" aria-live="polite">
@@ -731,6 +770,15 @@
     font-size: var(--font-size-min, 14px);
   }
 
+  .compact-derived-indicator.interactive {
+    cursor: pointer;
+  }
+
+  .compact-derived-indicator.interactive:focus-visible {
+    outline: 2px solid var(--source-color);
+    outline-offset: 2px;
+  }
+
   .notation-skeleton {
     width: 100%;
     height: 100%;
@@ -799,27 +847,106 @@
     color: color-mix(in srgb, var(--source-color) 76%, white);
   }
 
-  /* Read-only footer for the derived follower in symmetry mode. Occupies the
-     same slot the action row would, at the touch-target height, so swapping in
-     and out of symmetry doesn't resize the card. */
+  /* Footer for the derived follower in symmetry mode. Occupies the same slot the
+     action row would, at the touch-target height, so swapping in and out of
+     symmetry doesn't resize the card. When the host can open the Pairing editor
+     this IS that button — a solid border and a hover, not dashed hint text. */
   .follower-note {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
+    width: 100%;
     min-height: var(--min-touch-target, 44px);
     margin-top: auto;
-    padding: 0 12px;
-    border: 1px dashed
-      color-mix(in srgb, var(--source-color) 40%, var(--theme-stroke));
+    padding: 6px 12px;
+    border: 1px solid
+      color-mix(in srgb, var(--source-color) 46%, var(--theme-stroke));
     border-radius: var(--settings-radius-md, 14px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--source-color) 12%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
     font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .follower-note.interactive {
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast, 120ms) ease,
+      background var(--duration-fast, 120ms) ease;
+  }
+
+  .follower-note.interactive:hover {
+    border-color: color-mix(in srgb, var(--source-color) 82%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--source-color) 22%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+  }
+
+  .follower-note.interactive:focus-visible {
+    outline: 2px solid var(--source-color);
+    outline-offset: 2px;
+  }
+
+  /* The rule's own LOOP colour, the same glyph and sweep the Pairing tiles use,
+     so the footer names the rule you picked instead of a generic link icon. */
+  .note-glyph {
+    --c1: var(--loop-c1, var(--theme-accent, #8b5cf6));
+    --c2: var(--loop-c2, var(--c1));
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border: 1.5px solid color-mix(in srgb, var(--c1) 58%, transparent);
+    border-radius: 9px;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--c1) 26%, transparent) 0%,
+      color-mix(in srgb, var(--c2) var(--loop-c2-mix, 9%), transparent) 100%
+    );
+    color: var(--c1);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .note-copy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .note-role {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
     font-weight: 600;
   }
 
-  .follower-note i {
-    color: color-mix(in srgb, var(--source-color) 80%, white);
+  .note-copy strong {
+    overflow: hidden;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Absolute so the identity stays centred in the bar; a right auto-margin
+     would drag it to the left edge and leave the middle empty. */
+  .note-edit {
+    position: absolute;
+    right: 12px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .follower-note.interactive:hover .note-edit {
+    color: var(--theme-text, #fff);
   }
 
   /* Shuffle is the primary action, tinted in the path's color; the word "Blue"
@@ -885,8 +1012,10 @@
       var(--theme-stroke, transparent)
     );
     border-radius: var(--settings-radius-md, 14px);
-    box-shadow: inset 0 3px 0
-      color-mix(in srgb, var(--source-color) 72%, transparent);
+    /* The prop identity belongs to the whole card — border, wash, and a full
+       ring — never a bar down one edge. See no-left-edge-accent-bar.md. */
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--source-color) 40%, transparent);
     background:
       linear-gradient(
         145deg,
@@ -903,8 +1032,6 @@
     min-height: var(--min-touch-target, 48px);
     padding: 3px 2px 3px 6px;
     overflow: visible;
-    box-shadow: inset 3px 0 0
-      color-mix(in srgb, var(--source-color) 78%, transparent);
   }
 
   .compact-toolbar .notation-stage {

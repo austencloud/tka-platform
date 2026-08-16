@@ -414,6 +414,12 @@
     settingsDestination = destination;
     settingsOpen = true;
   }
+
+  // The follower card's footer states the rule that built it, so clicking it
+  // opens the editor for that rule — the drawer, already scoped to Pairing.
+  function editPairing(): void {
+    openSettings("pairing");
+  }
 </script>
 
 <div class="fuse-container" bind:this={containerElement}>
@@ -443,6 +449,7 @@
           firstStepPickerActive={inlineFirstStepSide === "blue"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
+          onEditPairing={editPairing}
         />
         <FuseSourceCard
           side="red"
@@ -453,6 +460,7 @@
           firstStepPickerActive={inlineFirstStepSide === "red"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
+          onEditPairing={editPairing}
         />
         <div
           class="split-handle"
@@ -491,6 +499,7 @@
           firstStepPickerActive={inlineFirstStepSide === "blue"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
+          onEditPairing={editPairing}
         />
         <FuseSourceCard
           side="red"
@@ -500,6 +509,7 @@
           firstStepPickerActive={inlineFirstStepSide === "red"}
           onFirstStepComplete={closeInlineFirstStep}
           onCancelFirstStep={closeInlineFirstStep}
+          onEditPairing={editPairing}
         />
       </div>
     {:else if !compact}
@@ -511,6 +521,7 @@
         firstStepPickerActive={inlineFirstStepSide === "blue"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
+        onEditPairing={editPairing}
       />
       <FuseSourceCard
         side="red"
@@ -520,6 +531,7 @@
         firstStepPickerActive={inlineFirstStepSide === "red"}
         onFirstStepComplete={closeInlineFirstStep}
         onCancelFirstStep={closeInlineFirstStep}
+        onEditPairing={editPairing}
       />
     {/if}
     <FusePreviewStage
@@ -529,6 +541,7 @@
       isSaving={isSavingResult}
       onChooseFirstStep={openFirstStep}
       onBuildPath={openPathBuilder}
+      onEditPairing={editPairing}
       {compact}
       defaultDecomposed={wideWorkspace}
     />
