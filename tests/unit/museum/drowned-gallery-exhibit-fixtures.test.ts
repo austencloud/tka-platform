@@ -40,12 +40,19 @@ describe("drowned gallery exhibit fixtures", () => {
 		expect(kinds.filter((kind) => kind === "opener-plinth")).toHaveLength(1);
 	});
 
-	it("puts each showcase exactly on its alcove anchor, on the shelf", () => {
+	it("puts each showcase exactly on its alcove anchor, on its pedestal", () => {
+		// The performer no longer stands on the bare shelf. Every performer in
+		// the museum stands on a pedestal, and the pedestal is what holds the
+		// shelf floor — so the showcase's floor is the pedestal's top face and
+		// the pedestal's floor is the shelf.
+		// Spec: docs/superpowers/specs/2026-08-16-museum-pedestal-and-console-design.md
 		["AAAA", "BBBB", "CCCC"].forEach((word, index) => {
 			const showcase = byId(`case-showcase-${word}`);
+			const pedestal = byId(`case-pedestal-${word}`);
 			expect(showcase.centre.x).toBeCloseTo(layout.alcoves[index].x, 6);
 			expect(showcase.centre.z).toBeCloseTo(layout.alcoves[index].z, 6);
-			expect(showcase.baseY).toBe(SHELF_Y);
+			expect(pedestal.baseY).toBe(SHELF_Y);
+			expect(showcase.baseY).toBeCloseTo(pedestal.baseY + pedestal.height, 9);
 			expect(showcase.caseWord).toBe(word);
 		});
 	});

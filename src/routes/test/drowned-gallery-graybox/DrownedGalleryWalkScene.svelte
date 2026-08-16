@@ -25,6 +25,8 @@
     PlayerControllerState,
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
+  import PedestalMesh from "$lib/features/museum/components/graybox/PedestalMesh.svelte";
+  import { pedestalFaceDataUri } from "$lib/features/museum/services/pedestal-face";
   import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
   import EmberFountains from "$lib/shared/3d/environments/scenes/ember/EmberFountains.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -119,7 +121,67 @@
    * right place answers the only Gate 2 question — does the room read when you
    * walk it — and answers it without waiting on avatars or card art.
    */
-  const fixtureMeshes = layout.exhibitFixtures.map((fixture) => ({
+  /**
+   * Water's colour, and what the performers hold.
+   *
+   * Staff is BILATERAL — held at its centre, so both ends draw and the face
+   * carries two figures. Swapping to a unilateral prop at the console leaves
+   * the shape alone and halves the drawing, which is the lesson that button
+   * exists to deliver.
+   */
+  const WATER_TINT = "#7fd4e8";
+  const PEDESTAL_PROP = "staff";
+
+  const isPedestal = (kind: string) =>
+    kind === "pedestal" || kind === "opener-pedestal";
+
+  /**
+   * Pedestals render as their own object, not as graybox boxes: the whole point
+   * of the thread is the figure on the top face, and a box cannot carry it.
+   *
+   * The face is GENERATED from each case's bound sequence. The opener's is the
+   * bare hand path with no prop on it, which is why its pedestal is empty and
+   * why it is the one that animates — nothing stands on it to compete.
+   */
+  const pedestals = layout.exhibitFixtures
+    .filter((fixture) => isPedestal(fixture.kind))
+    .map((fixture) => {
+      const opener = fixture.kind === "opener-pedestal";
+      let faceUri: string | null = null;
+      let faceError: string | null = null;
+      if (fixture.sequenceId) {
+        try {
+          faceUri = pedestalFaceDataUri({
+            sequenceId: fixture.sequenceId,
+            propType: PEDESTAL_PROP,
+            tint: WATER_TINT,
+            handPathOnly: opener,
+          });
+        } catch (error) {
+          // Loud, not silent. A pedestal showing the wrong figure is worse
+          // than one showing none, so a bad binding must be visible in the
+          // console rather than degrading into a blank plate.
+          faceError = error instanceof Error ? error.message : String(error);
+          console.error("[pedestal]", faceError);
+        }
+      }
+      return {
+        id: fixture.id,
+        position: [
+          fixture.centre.x - origin.x,
+          fixture.baseY,
+          fixture.centre.z - origin.z,
+        ] as [number, number, number],
+        height: fixture.height,
+        diameter: fixture.size.x,
+        faceUri,
+        animated: opener,
+      };
+    });
+
+  const fixtureMeshes = layout.exhibitFixtures
+    .filter((fixture) => !isPedestal(fixture.kind))
+    .map((fixture) => ({
     id: fixture.id,
     kind: fixture.kind,
     position: [
@@ -556,6 +618,17 @@
     flowSpeed={0.8}
     waveAmplitudeStart={entry.isChannel ? 0 : 1}
     waveAmplitudeEnd={1}
+  />
+{/each}
+
+{#each pedestals as pedestal (pedestal.id)}
+  <PedestalMesh
+    position={pedestal.position}
+    height={pedestal.height}
+    diameter={pedestal.diameter}
+    faceUri={pedestal.faceUri}
+    tint={WATER_TINT}
+    animated={pedestal.animated}
   />
 {/each}
 

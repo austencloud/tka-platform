@@ -20,6 +20,10 @@
  * docs/superpowers/specs/2026-08-03-drowned-gallery-ring-flow-design.md.
  */
 import { tileKey } from "../domain/museum-grid-types";
+import {
+  PEDESTAL_DIAMETER,
+  sizePedestal,
+} from "../domain/pedestal-standard";
 import type {
   MuseumGrid,
   MuseumTerrainProgram,
@@ -238,11 +242,18 @@ export interface ExhibitFixture {
   kind:
     | "opener-dais"
     | "opener-plinth"
+    | "opener-pedestal"
+    | "pedestal"
     | "case-showcase"
     | "case-screen"
     | "case-card";
   /** Expanded word for case furniture; absent on the opener. */
   caseWord?: string;
+  /**
+   * Only pedestals carry one: the bound museum sequence whose figure is
+   * generated onto the top face. See services/pedestal-face.ts.
+   */
+  sequenceId?: string;
   centre: Point2;
   /** Footprint in metres, x by z. */
   size: { x: number; z: number };
@@ -826,27 +837,63 @@ export function buildDrownedGalleryLayout(
   // go on the shore wall behind each showcase, and the card signs sit on the
   // near bank at the visitor's own eye level.
   const CASE_WORDS = ["AAAA", "BBBB", "CCCC"] as const;
+  /** Parallel to CASE_WORDS: the bound sequence each pedestal face generates from. */
+  const CASE_SEQUENCE_IDS = [
+    "cave-water-seq-a",
+    "cave-water-seq-b",
+    "cave-water-seq-c",
+  ] as const;
 
-  const SHOWCASE_FOOTPRINT = { x: 2.0, z: 2.0 };
+  /**
+   * The performer, massed.
+   *
+   * This used to be a 2.0 x 2.0 x 2.0 block standing in for "the case". Once
+   * the pedestal became a real object carrying a real generated figure, that
+   * block was wider than the 1.6 m pedestal it stood on and capped the face
+   * completely — the one thing in the room the visitor is meant to read. A case
+   * is now a pedestal with a person on it, so the massing is a person.
+   */
+  const SHOWCASE_FOOTPRINT = { x: 0.55, z: 0.35 };
+  const PERFORMER_H = 1.75;
   const SCREEN_FOOTPRINT = { x: 2.2, z: 0.2 };
   const CARD_FOOTPRINT = { x: 0.9, z: 0.45 };
   const OPENER_DAIS_FOOTPRINT = { x: 2.4, z: 2.4 };
+  const OPENER_DAIS_H = 0.25;
   const OPENER_PLINTH_FOOTPRINT = { x: 0.9, z: 0.45 };
 
   /** Facing +z: presenting itself to a visitor who stands north of it. */
   const FACE_NORTH = 0;
 
+  // Every performer in the museum stands on the same object, sized by the same
+  // rule: the prop circle lands on the visitor's eye line. Water's cases sit on
+  // a shelf 0.7 m below the walking line, so here that rule produces a tall
+  // stanchion. On a level floor the identical object comes out a low disc.
+  const caseSizing = sizePedestal(SHELF_Y, CAUSEWAY_Y, EYE_ABOVE_FLOOR);
+
   const caseFixtures: ExhibitFixture[] = alcoves.flatMap((anchor, index) => {
     const word = CASE_WORDS[index];
     return [
+      {
+        id: `case-pedestal-${word}`,
+        kind: "pedestal" as const,
+        caseWord: word,
+        sequenceId: CASE_SEQUENCE_IDS[index],
+        centre: { x: anchor.x, z: anchor.z },
+        size: { x: PEDESTAL_DIAMETER, z: PEDESTAL_DIAMETER },
+        baseY: caseSizing.baseY,
+        height: caseSizing.height,
+        facing: FACE_NORTH,
+      },
       {
         id: `case-showcase-${word}`,
         kind: "case-showcase" as const,
         caseWord: word,
         centre: { x: anchor.x, z: anchor.z },
         size: SHOWCASE_FOOTPRINT,
-        baseY: SHELF_Y,
-        height: 2.0,
+        // The performer stands ON the pedestal, so the case volume starts at
+        // its top face rather than on the shelf.
+        baseY: caseSizing.topY,
+        height: PERFORMER_H,
         // The performer faces the visitor across the channel.
         facing: FACE_NORTH,
       },
@@ -900,14 +947,36 @@ export function buildDrownedGalleryLayout(
     OPENER_GAP +
     OPENER_PLINTH_FOOTPRINT.z / 2;
 
+  // The opener's propless avatar walks the hand path on a pedestal built to the
+  // same standard as the three cases, and empty of props. Its standing surface
+  // is the dais top, not the apron — the avatar stands on the dais, so that is
+  // the floor the eye-line rule measures from. Visitor and avatar are already
+  // within a hand's width of the same level here, so the rule resolves to the
+  // visible minimum: the same object the cases turn into a stanchion, reduced
+  // to a lit disc on a floor that needs no lift.
+  const openerDaisTopY = CAUSEWAY_Y + OPENER_DAIS_H;
+  const openerSizing = sizePedestal(openerDaisTopY, CAUSEWAY_Y, EYE_ABOVE_FLOOR);
+
   const openerFixtures: ExhibitFixture[] = [
+    {
+      id: "opener-pedestal",
+      kind: "opener-pedestal",
+      // The wing's own hand path, drawn at the hand rather than at a prop end.
+      // The first case applies a prop to this same figure.
+      sequenceId: CASE_SEQUENCE_IDS[0],
+      centre: { x: openerX, z: openerDaisZ },
+      size: { x: PEDESTAL_DIAMETER, z: PEDESTAL_DIAMETER },
+      baseY: openerSizing.baseY,
+      height: openerSizing.height,
+      facing: FACE_NORTH,
+    },
     {
       id: "opener-dais",
       kind: "opener-dais",
       centre: { x: openerX, z: openerDaisZ },
       size: OPENER_DAIS_FOOTPRINT,
       baseY: CAUSEWAY_Y,
-      height: 0.25,
+      height: OPENER_DAIS_H,
       facing: FACE_NORTH,
     },
     {

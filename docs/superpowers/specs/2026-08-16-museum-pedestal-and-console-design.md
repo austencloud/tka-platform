@@ -40,7 +40,7 @@ Two ideas drive everything below:
 | D8 | Cave control tier is three universal buttons plus one contextual | Decided 2026-08-16 |
 | D9 | "Show a different variation" is cut from the control set | Decided 2026-08-16 |
 | D10 | Water's three performers stand mid-pool on stanchions | Decided 2026-08-16 (trial: "let's see how it feels") |
-| E1 | Static vs. animated base lighting | **Open experiment** — build both, look at both |
+| E1 | Static vs. animated base lighting | **Settled 2026-08-16 by looking:** animated at the wing opener, static under the three cases (§6a) |
 | S1 | Wing opener form (propless avatar + unlabeled choreo card) | Sealed 2026-08-11, carried forward unchanged |
 
 ---
@@ -49,10 +49,25 @@ Two ideas drive everything below:
 
 ### Fixed museum-wide
 
-- **Height** — chest-high, so the prop circle above lands at visitor eye level
-  and is never cropped by the case's vertical framing.
+- **The eye line, not the height.** The constant is the *rule*, not a number:
+  the pedestal is however tall it must be to put the prop circle on the
+  visitor's eye line. Water settles this — its performers stand 0.7 m below the
+  walking line on a sunken shelf, so one fixed "chest-high" number cannot serve
+  both a level floor and a sunken alcove. Owner:
+  `sizePedestal(standingSurfaceY, visitorFloorY, eyeAboveFloor)` in
+  `src/lib/features/museum/domain/pedestal-standard.ts`. In Water the same call
+  emits a 0.25 m disc at the opener and a 0.95 m stanchion in the alcoves, and
+  both land their top face at exactly `y = -0.05`.
 - **Footprint diameter** and **edge profile** — identical in every wing.
-- **Top face** — carries the generated figure of the sequence performed above it.
+- **Top face** — carries the generated figure of the sequence performed above
+  it, sunk one inset below the rim in a well.
+- **The well is unlit.** Body and rim take the wing's light; the well floor and
+  the figure do not. This is load-bearing, not a shortcut: each Water alcove
+  hangs a warm lamp 1.4 m directly above its pedestal, and a *lit* well floor
+  resolves to mid-tan under that much irradiance even at a near-black albedo,
+  washing the figure off it. Unlit, the readout is the same dark box with the
+  same self-lit figure under a cave lamp, a forge, or daylight — which is what
+  makes it legible as one instrument across six very different rooms.
 
 ### Free per wing
 
@@ -137,6 +152,24 @@ ambient.**
 
 Neither Austen nor Claude can call this from a document. Build the wing's
 pedestals with real generated faces, light them both ways, and look.
+
+### 6a. Settled by looking (2026-08-16)
+
+Built both, walked the room, screenshotted the opener and the case row at every
+viewport. The recommendation above survives the look, unchanged:
+
+- **Opener: animated.** Standing on the apron at 2.6 m, the sweep reads exactly
+  as intended — a light travelling the circle, so the disc appears to be drawing
+  the hand path rather than displaying it. At a walking-pace four-second circuit
+  it is calm, not a strobe, and there is no performer above it to compete with.
+- **Cases: static.** Three moving lights under three moving performers in one
+  frame is restless, and the static faces hold the row together. Reserve the
+  motion for the trace button, where it is a payoff.
+
+Implementation matches: `animated` is `true` only for the `opener-pedestal`
+fixture. What made the case faces legible was not the lighting choice but the
+unlit well (§3) — before that fix the warm alcove lamp washed the figure out
+entirely, and the animated/static question could not honestly be judged.
 
 ---
 
