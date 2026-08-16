@@ -1210,6 +1210,21 @@
     align-self: center;
   }
 
+  /* Tracks the viewer's settings column, which widens at the same seams. A cap
+     left at 560px would keep the panel a narrow strip in a wide column and
+     strand the extra room as dead rail. */
+  @media (min-width: 1680px) {
+    .panel-center-inner {
+      max-width: 800px;
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .panel-center-inner {
+      max-width: 1000px;
+    }
+  }
+
   .section-hint {
     font-size: var(--font-size-compact, 12px);
     color: rgba(255, 255, 255, 0.6);

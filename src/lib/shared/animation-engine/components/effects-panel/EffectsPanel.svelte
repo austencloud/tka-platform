@@ -14,6 +14,7 @@
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -420,6 +421,53 @@
   </div>
 {/snippet}
 
+{#snippet effectDock(
+  onTune: () => void,
+  tuneLabel: string,
+  wrapLooks: boolean
+)}
+  <!-- Keyed on the effect, because switching effects on the roster is now the
+       primary gesture and it used to be the harshest thing in the panel: the
+       dock swapped identity, looks and slider in one frame while its height
+       stepped up to 150px (Ghost's two chips against Coal's ten), throwing
+       everything under it down the panel. Keyed here rather than inside
+       EffectDock so the empty state is part of the same clock - turning effects
+       off eases the dock away instead of deleting it.
+
+       The key is the effect alone: choosing a look or dragging the slider must
+       not remount, or a drag would drop mid-gesture.
+
+       Swap, not overlap: effects carry between 2 and 10 looks, so two docks
+       stacked mid-fade put one effect's slider row across the other's second
+       row of chips - legible garble for the length of the transition. Fading
+       the old one out before the new one arrives costs 150ms and removes the
+       collision entirely. The height still glides across the whole gesture. -->
+  <Crossfade
+    key={activeEffect}
+    animateHeight
+    mode="swap"
+    duration={DURATION.fast}
+  >
+    {#if activeEffect !== "none" && registration}
+      <EffectDock
+        {registration}
+        {activePresetId}
+        defaultChipId={DEFAULT_CHIP_ID}
+        customChipId={CUSTOM_CHIP_ID}
+        {customDisabled}
+        {customColors}
+        {primarySpec}
+        {primaryValue}
+        onSelectPreset={handlePresetSelect}
+        onPrimaryInput={setPrimaryValue}
+        {onTune}
+        {tuneLabel}
+        {wrapLooks}
+      />
+    {/if}
+  </Crossfade>
+{/snippet}
+
 {#if layout === "sidebar"}
   <div class="effects-panel" class:detail-view={sidebarView !== "browser"}>
     {#if showPlayback}
@@ -436,7 +484,19 @@
       />
     {/if}
 
-    <Crossfade key={sidebarView}>
+    <!-- The roster and the inspector are nothing like the same height (roughly
+         550px against 1130px), so the box has to travel with the fade. Without
+         animateHeight it arrives at the destination height on the first frame
+         and the fade then plays inside a container that has already jumped.
+         Swapped rather than overlapped for the same reason as the dock: a
+         4x4 tile grid dissolving through an inspector's stacked rows is two
+         unrelated layouts printed on top of each other. -->
+    <Crossfade
+      key={sidebarView}
+      animateHeight
+      mode="swap"
+      duration={DURATION.fast}
+    >
       {#if sidebarView === "browser"}
         <div class="sb-section sb-browser">
           <div class="sb-browser-head">
@@ -463,22 +523,7 @@
             activeAction="tune"
           />
 
-          {#if activeEffect !== "none" && registration}
-            <EffectDock
-              {registration}
-              {activePresetId}
-              defaultChipId={DEFAULT_CHIP_ID}
-              customChipId={CUSTOM_CHIP_ID}
-              {customDisabled}
-              {customColors}
-              primarySpec={primarySpec}
-              {primaryValue}
-              onSelectPreset={handlePresetSelect}
-              onPrimaryInput={setPrimaryValue}
-              onTune={() => (sidebarDetailOpen = true)}
-              wrapLooks
-            />
-          {/if}
+          {@render effectDock(() => (sidebarDetailOpen = true), "Tune", true)}
         </div>
       {:else if activeEffect !== "none" && registration}
         <EffectsInspector
@@ -524,7 +569,15 @@
        detail screen ⇄ deep tuning. Tap a tile = apply live + stay; tap the
        active tile = drill into its detail. -->
   <div class="mep strip-layout">
-    <Crossfade key={stripView}>
+    <!-- Same reason as the sidebar, and it matters more here: the tray sits at
+         the bottom of a phone screen, so a step in its height shoves the canvas
+         above it. -->
+    <Crossfade
+      key={stripView}
+      animateHeight
+      mode="swap"
+      duration={DURATION.fast}
+    >
       {#if stripView === "customize" && CustomizeComponent}
         <div class="drill-view">
           <!-- Slim one-line header: back + effect name + Default|Custom anchors,
@@ -601,20 +654,7 @@
             <span class="detail-name">All effects</span>
           </div>
 
-          <EffectDock
-            {registration}
-            {activePresetId}
-            defaultChipId={DEFAULT_CHIP_ID}
-            customChipId={CUSTOM_CHIP_ID}
-            {customDisabled}
-            {customColors}
-            primarySpec={primarySpec}
-            {primaryValue}
-            onSelectPreset={handlePresetSelect}
-            onPrimaryInput={setPrimaryValue}
-            onTune={handleCustomizeOpen}
-            tuneLabel="More"
-          />
+          {@render effectDock(handleCustomizeOpen, "More", false)}
         </div>
       {:else}
         <div class="drill-view">
@@ -696,22 +736,7 @@
         activeAction="tune"
       />
 
-      {#if activeEffect !== "none" && registration}
-        <EffectDock
-          {registration}
-          {activePresetId}
-          defaultChipId={DEFAULT_CHIP_ID}
-          customChipId={CUSTOM_CHIP_ID}
-          {customDisabled}
-          {customColors}
-          primarySpec={primarySpec}
-          {primaryValue}
-          onSelectPreset={handlePresetSelect}
-          onPrimaryInput={setPrimaryValue}
-          onTune={handleCustomizeOpen}
-          tuneLabel="More"
-        />
-      {/if}
+      {@render effectDock(handleCustomizeOpen, "More", false)}
     {/if}
   </div>
 {/if}
@@ -737,9 +762,12 @@
   }
 
   /* ── Sidebar layout ─────────────────────────────────────────────────────── */
+  /* Named so the inspector can recompose against the width it actually gets,
+     in every host, instead of only inside Post Studio's own container. */
   .effects-panel {
     display: flex;
     flex-direction: column;
+    container: effects-panel / inline-size;
   }
 
   .sb-section {

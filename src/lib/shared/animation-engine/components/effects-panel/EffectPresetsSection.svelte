@@ -429,11 +429,18 @@
     }
   }
 
-  /* Odd counts (bloom, ink and zap have 3) end on a single normal-width card.
-     Spanning it across both columns was tried and reverted: the preview keeps
-     its 8:3 ratio, so a double-wide last card grows 53% taller than its
-     siblings and dominates the group. A half-filled final row reads better. */
-  @container looks (min-width: 33rem) {
+  /* 26rem, not 33rem. The sidebar inspector's looks container is ~28rem, so a
+     33rem seam never fired there: eight looks stacked into four tall rows and
+     pushed the tuning controls, fine tuning and the footer below the fold. The
+     whole inspector has to fit one screen without scrolling, and a third column
+     is where that height comes from - three 8:3 previews are still legible at
+     ~9rem each.
+
+     Odd counts (bloom, ink and zap have 3) end on a half-filled final row.
+     Spanning the last card across the row was tried and reverted: the preview
+     keeps its 8:3 ratio, so a double-wide card grows 53% taller than its
+     siblings and dominates the group. */
+  @container looks (min-width: 26rem) {
     .preset-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }

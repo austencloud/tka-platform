@@ -65,7 +65,9 @@
 >
   <header class="inspector-header">
     <button class="back-action" type="button" onclick={onBack}>
-      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span class="back-arrow" aria-hidden="true">
+        <i class="fas fa-arrow-left"></i>
+      </span>
       <span>All effects</span>
     </button>
 
@@ -108,10 +110,10 @@
 
   <div class="tuning-column">
     <section class="inspector-section tune-section">
-      <div class="section-heading">
-        <span class="section-title">Tune the look</span>
-        <span class="section-help">Changes appear on the canvas</span>
-      </div>
+      <!-- No help line here. Every control in this section already writes to
+           the canvas the instant it moves, so saying so cost a row of height
+           and told the user nothing they were not about to see. -->
+      <span class="section-title">Tune the look</span>
       <EffectControlStack
         {effect}
         {config}
@@ -200,15 +202,47 @@
       color var(--duration-fast, 100ms) ease;
   }
 
+  /* Leaving the inspector is the one thing you reach for blind, so it is not
+     styled like its neighbour: accent-tinted at rest, a circular arrow badge
+     for a target the eye lands on without hunting, and a wider hit area. */
   .back-action {
     grid-area: back;
     justify-self: start;
+    gap: 0.5rem;
+    padding: 0 0.875rem 0 0.4375rem;
+    border-color: color-mix(in srgb, var(--effect-accent) 38%, transparent);
+    background: var(--effect-accent-soft);
+    font-size: 0.9375rem;
+  }
+
+  .back-arrow {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--effect-accent) 24%, transparent);
+    color: var(--effect-accent);
+    font-size: 0.875rem;
+  }
+
+  .back-arrow i {
+    transition: transform var(--duration-fast, 100ms) ease;
   }
 
   .back-action:hover {
-    border-color: color-mix(in srgb, var(--effect-accent) 55%, transparent);
-    background: var(--effect-accent-soft);
+    border-color: color-mix(in srgb, var(--effect-accent) 62%, transparent);
+    background: color-mix(in srgb, var(--effect-accent) 18%, transparent);
     color: var(--theme-text, white);
+  }
+
+  .back-action:hover .back-arrow {
+    background: color-mix(in srgb, var(--effect-accent) 40%, transparent);
+  }
+
+  .back-action:hover .back-arrow i {
+    transform: translateX(-2px);
   }
 
   .off-action {
@@ -247,17 +281,23 @@
     min-width: 0;
   }
 
+  /* Which effect am I in? The glyph answers that before the word does, so it
+     is sized to be read at a glance rather than to sit politely beside the
+     label - a full accent ring plus a tinted field, never a bar down one edge
+     (no-left-edge-accent-bar.md). */
   .effect-icon {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
+    width: 3.25rem;
+    height: 3.25rem;
+    flex: 0 0 3.25rem;
     display: grid;
     place-items: center;
-    border: 1px solid color-mix(in srgb, var(--effect-accent) 35%, transparent);
-    border-radius: 12px;
-    background: var(--effect-accent-soft);
+    border: 1px solid color-mix(in srgb, var(--effect-accent) 55%, transparent);
+    border-radius: 0.875rem;
+    background: color-mix(in srgb, var(--effect-accent) 16%, transparent);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--effect-accent) 16%, transparent) inset;
     color: var(--effect-accent);
-    font-size: 19px;
+    font-size: 1.5rem;
   }
 
   .effect-name {
@@ -289,7 +329,6 @@
     border-top: 0;
   }
 
-  .section-heading,
   .fine-copy {
     display: grid;
     gap: 2px;
@@ -355,7 +394,11 @@
     }
   }
 
-  @container effect-inspector (min-width: 32rem) {
+  /* 27rem, not 32rem. The sidebar inspector is ~30rem, so the wider seam never
+     fired there and the header spent two rows - 129px - on three controls that
+     fit one 78px row. That reclaimed height is what keeps the whole inspector
+     on one screen. */
+  @container effect-inspector (min-width: 27rem) {
     .inspector-header {
       grid-template-columns: auto minmax(0, 1fr) auto;
       grid-template-areas: "back identity off";
@@ -366,10 +409,15 @@
     }
   }
 
-  /* Post Studio uses the available height by placing the look gallery beside
-     its controls. The cards remain vertical at this first seam so their effect
-     previews are still readable in a moderately wide inspector. */
-  @container post-studio-animation-settings (min-width: 35rem) {
+  /* Once the panel is wide enough, the look gallery sits BESIDE the controls
+     instead of above them, so the inspector's height becomes the taller of the
+     two columns rather than their sum. That is what lets every effect - Goo's
+     seven looks, Pulse's palette grid - fit one screen without scrolling.
+
+     Keyed off the panel's own container rather than Post Studio's, so every
+     host that gives the panel this much width gets the composition. The cards
+     stay vertical at this first seam; their previews are still readable. */
+  @container effects-panel (min-width: 35rem) {
     .inspector {
       display: grid;
       grid-template-columns: minmax(0, 1.08fr) minmax(15rem, 0.92fr);
@@ -404,6 +452,19 @@
       padding: 18px 20px;
     }
 
+    /* Re-assert what .fine-section already says outside this block. The rule
+       above lands later in source order at equal specificity, so without this
+       the fine-tuning row paid 36px of section padding on top of the padding
+       its own button already carries - a doubled inset, and the 30px that put
+       Pulse over the fold at 1920x1080. */
+    .fine-section {
+      padding: 0;
+    }
+
+    .fine-toggle {
+      padding-inline: 20px;
+    }
+
     .looks-section :global(.anchor-grid) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -415,7 +476,7 @@
 
   /* A larger inspector turns each look into a horizontal study while keeping
      the same gallery-and-controls composition. */
-  @container post-studio-animation-settings (min-width: 52rem) {
+  @container effects-panel (min-width: 52rem) {
     .inspector {
       grid-template-columns: minmax(0, 1.12fr) minmax(20rem, 0.88fr);
     }
@@ -457,8 +518,13 @@
   @media (prefers-reduced-motion: reduce) {
     .back-action,
     .off-action,
+    .back-arrow i,
     .fine-toggle i {
       transition: none;
+    }
+
+    .back-action:hover .back-arrow i {
+      transform: none;
     }
   }
 </style>

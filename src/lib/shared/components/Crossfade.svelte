@@ -6,7 +6,7 @@
   fades out while the new content fades in, both pinned to the same cell so
   neither reflows the other and nothing downstream jitters during the transition.
 
-  Two sizing modes:
+  Three sizing modes:
   - default (grid-stack): a single-cell grid sizes to its largest child, and
     every `.layer` is forced to `grid-area: 1 / 1`. While the old layer is still
     outro-ing and the new layer is intro-ing, both occupy that one cell, so the
@@ -15,6 +15,14 @@
   - `fill`: layers become `position: absolute; inset: 0` inside a `relative`,
     parent-sized wrapper. Use when the crossfade must fill a sized parent (a
     panel, a fixed-size stage) rather than hug its content.
+  - `animateHeight`: the box takes an explicit measured height and EASES between
+    the outgoing and incoming natural heights on the same clock as the fade.
+    Default mode's jump-to-the-taller-of-the-two is right when the two layers
+    are close (a label, a status word): the box barely moves and siblings hold
+    still. It is wrong when they differ a lot — a 550px roster swapping for an
+    1130px inspector teleports the box on the first frame and then fades inside
+    an already-arrived container, which reads as a broken transition rather than
+    a transition. Turn this on when the layers differ by more than a hair.
 
   Both are the same no-layout-shift guarantee as the ghost-sizer idiom
   (PipelineEditorDock `.dock-title`), generalized to transitioning content.
@@ -43,6 +51,7 @@
     duration = DURATION.normal,
     mode = "crossfade",
     fill = false,
+    animateHeight = false,
     delay = 0,
     children,
   }: {
@@ -54,6 +63,12 @@
     mode?: Mode;
     /** Layers fill a sized parent (absolute/inset:0) instead of hugging content. */
     fill?: boolean;
+    /**
+     * Ease the box between the outgoing and incoming natural heights instead of
+     * snapping to the taller of the two. Ignored under `fill`, which is already
+     * sized by its parent.
+     */
+    animateHeight?: boolean;
     /** Deliberate in-transition stagger (ms) for `crossfade` mode. Ignored in
         `swap` mode, which computes its own delay (= out duration). */
     delay?: number;
@@ -85,12 +100,120 @@
   const inDelay = $derived(
     reducedMotion ? 0 : mode === "swap" ? duration : delay,
   );
+
+  const heightEnabled = $derived(animateHeight && !fill);
+
+  // ---- animateHeight ----------------------------------------------------
+  // The box is driven off the INCOMING layer's natural height. The outgoing
+  // layer shares the same grid cell but is pinned to the top (`align-self:
+  // start`) and no longer contributes, so a measurement taken mid-overlap is
+  // the destination height rather than the max of the two.
+  let box: HTMLElement | null = null;
+  let liveLayer: HTMLElement | null = null;
+  let heightAnimation: Animation | null = null;
+  let observer: ResizeObserver | null = null;
+  /** Set for exactly one measurement after a key change: the swap animates,
+   *  a content reflow at rest (a panel resize, a wrapped row gained) does not. */
+  let animateNextMeasure = false;
+
+  const HEIGHT_EASING = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+  function applyHeight(target: number): void {
+    if (!box) return;
+    const shouldAnimate = animateNextMeasure && effDuration > 0;
+    animateNextMeasure = false;
+
+    const from = box.getBoundingClientRect().height;
+    box.style.height = `${target}px`;
+    if (!shouldAnimate || Math.abs(from - target) < 0.5) return;
+
+    heightAnimation?.cancel();
+    heightAnimation = box.animate(
+      [{ height: `${from}px` }, { height: `${target}px` }],
+      {
+        duration: effDuration,
+        // Move the box on the same clock as the arriving content. In `swap`
+        // that means holding the old height while the old layer fades out, then
+        // resizing as the new one appears — resize it during the fade-out
+        // instead and the box sits empty at its new size for a beat.
+        delay: inDelay,
+        // The inline height is already the destination, so without a backwards
+        // fill the box would jump there and only then animate away from it.
+        fill: "backwards",
+        easing: HEIGHT_EASING,
+      },
+    );
+  }
+
+  function measure(): void {
+    if (!liveLayer) return;
+    applyHeight(liveLayer.getBoundingClientRect().height);
+  }
+
+  /**
+   * Claims the currently-mounted layer. `bind:this` cannot be used here: the
+   * outgoing block's binding tears down AFTER its outro, which would null out
+   * the reference to the layer that replaced it. Clearing only when the node
+   * being destroyed is still the live one keeps the newest layer authoritative.
+   */
+  function trackLayer(node: HTMLElement) {
+    liveLayer = node;
+    if (heightEnabled) {
+      observer?.disconnect();
+      observer = new ResizeObserver(measure);
+      observer.observe(node);
+      measure();
+    }
+    return {
+      destroy() {
+        if (liveLayer !== node) return;
+        liveLayer = null;
+        observer?.disconnect();
+        observer = null;
+      },
+    };
+  }
+
+  // Runs before the DOM swaps in the new layer, so the box still reports the
+  // height the user can currently see — the frame the animation starts from,
+  // even when a previous swap was interrupted partway.
+  $effect.pre(() => {
+    void key;
+    if (!heightEnabled || !box) return;
+    animateNextMeasure = true;
+  });
+
+  $effect(() => {
+    if (!heightEnabled) {
+      // Releasing control has to hand the box back to content sizing, or it
+      // stays frozen at whatever pixel height the last measurement wrote.
+      heightAnimation?.cancel();
+      heightAnimation = null;
+      observer?.disconnect();
+      observer = null;
+      if (box) box.style.height = "";
+      return;
+    }
+    if (!observer && liveLayer) trackLayer(liveLayer);
+    return () => {
+      heightAnimation?.cancel();
+      heightAnimation = null;
+      observer?.disconnect();
+      observer = null;
+    };
+  });
 </script>
 
-<div class="crossfade" class:fill>
+<div
+  bind:this={box}
+  class="crossfade"
+  class:fill
+  class:animate-height={heightEnabled}
+>
   {#key key}
     <div
       class="layer"
+      use:trackLayer
       in:fade={{ duration: effDuration, delay: inDelay }}
       out:fade={{ duration: effDuration }}
     >
@@ -126,5 +249,20 @@
   .crossfade.fill > .layer {
     position: absolute;
     inset: 0;
+  }
+
+  /* The box height is written from script; clipping keeps a taller outgoing
+     layer inside it while the box eases down. `clip` over `hidden` so the
+     margin below can let shadows and focus rings bleed — a hard clip would
+     shave the glow off a tile sitting on the boundary. */
+  .crossfade.animate-height {
+    overflow: clip;
+    overflow-clip-margin: 0.5rem;
+  }
+  /* Both layers keep their own intrinsic height instead of stretching to the
+     track, so the incoming layer measures as its natural size even while the
+     outgoing one is still stacked on top of it. */
+  .crossfade.animate-height > .layer {
+    align-self: start;
   }
 </style>
