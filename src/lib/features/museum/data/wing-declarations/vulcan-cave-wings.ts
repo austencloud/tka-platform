@@ -65,9 +65,10 @@ export const VULCAN_CAVE_WINGS: readonly WingDeclaration[] = [
 			},
 			{
 				kind: "payoff",
-				viewpointRef: "cave-water-parapet",
+				viewpointRef: "cave-water-fire-threshold",
 				visibleCases: ["AAAA", "BBBB", "CCCC"],
-				description: "A, B and C doubled in the pool from the parapet.",
+				description:
+					"The last look back from inside the Fire threshold: all three cases across the water at once, and each one doubled in it.",
 			},
 			{
 				kind: "exit",
@@ -77,8 +78,13 @@ export const VULCAN_CAVE_WINGS: readonly WingDeclaration[] = [
 		],
 		signatureProgram: {
 			id: "water-dive-passage",
+			// The submerged passage is real and built; the parapet it used to
+			// arrive at was withdrawn on 2026-08-12 — nobody walks to a corner
+			// spot just to stand in it, and the three-across sightline was
+			// already available from the walk. The passage now surfaces onto the
+			// grotto apron, where the opener meets the visitor.
 			description:
-				"The dive-through passage arriving at the mirror-pool parapet.",
+				"The dive-through passage: down the descent shaft, along the drowned gallery, surfacing onto the grotto apron.",
 		},
 		review: {
 			accentColor: "#38bdf8",
