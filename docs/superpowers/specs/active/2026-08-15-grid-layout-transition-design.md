@@ -58,6 +58,12 @@ Details that are load-bearing:
   exists in the other mode) are skipped — there is nowhere to move them to.
 - `getDuration()` returning 0 makes `capture()` decline, so reduced motion
   snaps rather than animating at zero length.
+- **The transform lands on the tracked element itself, never a descendant.** A
+  cell's background, border, and selection ring belong to its outer box. The
+  first cut targeted an inner `.history-layout-shell` wrapper, so the opaque
+  `--dm-pictograph-bg` box arrived at the destination instantly and the
+  pictograph slid over to cover it. The engine has no option to target a
+  descendant — offering one is what produced the bug.
 
 ### `grid-layout-signature.ts` — the trigger
 
@@ -145,3 +151,9 @@ Both surviving cells animated simultaneously, both changed geometry, and no
 residual transform was left on any cell afterward. A 1920×1080 frame held at
 110ms into the glide shows the cells mid-travel with nothing torn or
 overlapping.
+
+After moving the transform onto the keyed element, the same run at 110ms had
+all three animations on the outer boxes, zero on any inner shell, and every
+outer box short of its final slot (318/540/763 against finals of 338/579/820) —
+the background travels with its pictograph instead of waiting at the
+destination.

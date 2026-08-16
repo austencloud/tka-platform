@@ -41,8 +41,6 @@ export interface LayoutFlipGroup {
 export interface LayoutFlipConfig {
   getRoot: () => HTMLElement | null | undefined;
   groups: LayoutFlipGroup[];
-  /** Descendant that receives the transform. Falls back to the member itself. */
-  transformTargetSelector?: string;
   /**
    * Descendants whose in-flight animations are cancelled on capture, so a
    * second transition doesn't stack on top of a first.
@@ -93,12 +91,17 @@ function cancelMemberAnimations(
   }
 }
 
+/**
+ * The transform lands on the tracked element itself, never on a descendant.
+ * A cell's background, border, and selection ring belong to its outer box; move
+ * only the inside and the box arrives instantly, leaving its contents to slide
+ * over an already-parked square.
+ */
 function animateGeometry(
   element: HTMLElement,
   beforeRect: DOMRect,
   duration: number,
-  easing: string,
-  transformTargetSelector: string | undefined
+  easing: string
 ): Animation | null {
   if (duration <= 0) return null;
 
@@ -115,11 +118,7 @@ function animateGeometry(
     Math.abs(scaleY - 1) > MIN_SCALE_DELTA;
   if (!moved) return null;
 
-  const target = transformTargetSelector
-    ? (element.querySelector<HTMLElement>(transformTargetSelector) ?? element)
-    : element;
-
-  const animation = target.animate(
+  const animation = element.animate(
     [
       {
         transformOrigin: "top left",
@@ -139,7 +138,6 @@ export function createLayoutFlip(config: LayoutFlipConfig): LayoutFlip {
   const {
     getRoot,
     groups,
-    transformTargetSelector,
     cancelSelectors = [],
     getDuration = () => GRID_LAYOUT_TRANSITION_MS,
     easing = GRID_LAYOUT_TRANSITION_EASING,
@@ -208,13 +206,7 @@ export function createLayoutFlip(config: LayoutFlipConfig): LayoutFlip {
         // Absent members left the layout (a deleted step, a mandala that only
         // exists in the other mode). Nothing to move them to.
         if (!element) continue;
-        const animation = animateGeometry(
-          element,
-          beforeRect,
-          duration,
-          easing,
-          transformTargetSelector
-        );
+        const animation = animateGeometry(element, beforeRect, duration, easing);
         if (animation) animations.push(animation);
       }
 

@@ -283,7 +283,10 @@
       { selector: "[data-history-start-position]", datasetKey: "historyStartPosition" },
       { selector: "[data-layout-mandala-key]", datasetKey: "layoutMandalaKey" },
     ],
-    transformTargetSelector: ".history-layout-shell",
+    // The transform goes on the keyed element itself, never on an inner
+    // wrapper. The cell's opaque background lives on the outer box, so moving
+    // only the inside would park a black square at the destination and have the
+    // pictograph slide over to cover it.
     cancelSelectors: [".history-layout-shell", ".step-cell"],
     getDuration: () => motionDuration(GRID_LAYOUT_TRANSITION_MS),
     easing: GRID_LAYOUT_TRANSITION_EASING,
@@ -949,12 +952,13 @@
     min-height: 0;
   }
 
+  /* A sizing box only. The layout transition transforms the cell around it,
+     so this must not carry a background or a transform of its own. */
   .history-layout-shell {
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
-    transform-origin: center;
   }
 
   /* The leaving cell recedes in place while its neighbours hold still. The

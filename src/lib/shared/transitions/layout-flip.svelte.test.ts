@@ -167,7 +167,9 @@ describe("createLayoutFlip", () => {
     expect(remaining).toBeLessThan(100);
   });
 
-  it("transforms the configured descendant rather than the keyed element", () => {
+  it("moves the keyed element, never an inner wrapper", () => {
+    // The cell's background lives on the outer box. Transforming a descendant
+    // would park that box at the destination and slide its contents over it.
     const container = mountRow(["a", "b", "c"]);
     for (const outer of container.querySelectorAll<HTMLElement>(
       "[data-cell-key]"
@@ -178,21 +180,15 @@ describe("createLayoutFlip", () => {
       outer.append(shell);
     }
 
-    const flip = createLayoutFlip({
-      getRoot: () => container,
-      groups: [{ selector: "[data-cell-key]", datasetKey: "cellKey" }],
-      transformTargetSelector: ".shell",
-      getDuration: () => 280,
-    });
-
+    const flip = flipFor(container);
     flip.capture();
     cell(container, "b").remove();
     flip.play();
 
     const survivor = cell(container, "c");
-    expect(survivor.getAnimations()).toHaveLength(0);
+    expect(survivor.getAnimations()).toHaveLength(1);
     expect(
       survivor.querySelector<HTMLElement>(".shell")!.getAnimations()
-    ).toHaveLength(1);
+    ).toHaveLength(0);
   });
 });
