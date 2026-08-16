@@ -3,7 +3,7 @@
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import EffectPresetThumbnail from "./EffectPresetThumbnail.svelte";
   import { createEffectLookPreview } from "./effect-look-preview";
-  import { describeBloomLook } from "./thumbnails/bloom-look-copy";
+  import { describeLook } from "./thumbnails/look-copy";
 
   interface Props {
     presetGroup: EffectPresetGroup;
@@ -60,10 +60,7 @@
       return {
         preset,
         preview,
-        description:
-          presetGroup.effectType === "bloom"
-            ? (describeBloomLook(preset.id) ?? preview.trait)
-            : preview.trait,
+        description: describeLook(preset.id) ?? preview.trait,
       };
     })
   );

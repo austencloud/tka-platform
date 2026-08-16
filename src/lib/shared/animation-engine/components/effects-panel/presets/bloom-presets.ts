@@ -46,8 +46,13 @@ export const BLOOM_PRESETS: EffectPreset<"bloom">[] = [
     name: "Halo",
     previewColor: "#ffffff",
     patch: {
-      intensity: 0.58,
-      coreStrength: 0.04,
+      // Measured against the real renderer at production stage scale: the
+      // shipped 0.58/0.04 peaked at 66 of 255, so Halo was a smudge on a dark
+      // stage while Supernova hit 255. 0.95/0.20 peaks at 249 and still reads
+      // as Halo - a soft diffuse orb. Raising coreStrength further (0.30, 0.35)
+      // turns the core into a pinpoint and the preset stops being a halo.
+      intensity: 0.95,
+      coreStrength: 0.2,
       radius: 62,
       color: "#e0e7ff",
       palette: ["#f472b6", "#fbbf24", "#22d3ee"],
