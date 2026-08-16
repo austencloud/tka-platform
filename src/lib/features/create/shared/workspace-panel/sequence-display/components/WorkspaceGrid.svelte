@@ -1235,18 +1235,47 @@
      the cell reaches full opacity — the overshoot tail then plays over a plate
      that has already landed. */
   .cascading .history-layout-shell {
+    /* Tied to the cell, not to a fixed pixel count, so the bloom keeps its
+       proportion when the cells grow on a 4K canvas. */
+    --plate-bloom-radius: calc(var(--cell-size, 80px) * 0.17);
     animation: plateCascade var(--step-entrance-duration, 380ms)
       cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: var(--reveal-delay, 0ms);
   }
 
+  /**
+   * The plate takes a beat of accent light as it lands, then settles to its
+   * flat dark. Landing gets a moment instead of a state change — and since it
+   * decays over the back half of the entrance while the cell above it does the
+   * same in `stepCascade`, several bands are lit at once and the arriving edge
+   * reads as a ridge crossing the grid rather than as scattered pops.
+   */
   @keyframes plateCascade {
     0% {
       background-color: transparent;
+      box-shadow:
+        inset 0 0 0 1px transparent,
+        0 0 var(--plate-bloom-radius) transparent;
     }
-    55%,
+    45% {
+      /* A rim plus a little spill, not a body wash. Lifting the plate's fill on
+         its own only greys it — light on a near-black surface has to arrive as
+         an edge to read as light rather than as haze. */
+      background-color: color-mix(
+        in oklab,
+        var(--theme-accent, #7dd3fc) 9%,
+        var(--dm-pictograph-bg, #0a0a0f)
+      );
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--theme-accent, #7dd3fc) 62%, transparent),
+        0 0 var(--plate-bloom-radius)
+          color-mix(in srgb, var(--theme-accent, #7dd3fc) 26%, transparent);
+    }
     100% {
       background-color: var(--dm-pictograph-bg, #0a0a0f);
+      box-shadow:
+        inset 0 0 0 1px transparent,
+        0 0 var(--plate-bloom-radius) transparent;
     }
   }
 
@@ -1439,20 +1468,26 @@
     animation-delay: var(--reveal-delay, 0ms);
   }
 
+  /* Matches stepCascade's diagonal drift and landing bloom so a mandala reads
+     as one more thing the front picked up, not as a separate arrival. Slightly
+     gentler travel because the mandala is drawn thin and a hard blur eats it. */
   @keyframes mandalaCascade {
     0% {
       opacity: 0;
-      transform: scale(0.9);
-      filter: blur(3px);
+      transform: translate3d(-9px, -9px, 0) scale(0.9);
+      filter: blur(3px) brightness(1.4) saturate(1.3);
     }
     55% {
       opacity: 1;
-      filter: blur(0);
+      filter: blur(0) brightness(1.32) saturate(1.24);
+    }
+    75% {
+      transform: translate3d(1.5px, 1.5px, 0) scale(1.012);
     }
     100% {
       opacity: 1;
       transform: none;
-      filter: blur(0);
+      filter: blur(0) brightness(1) saturate(1);
     }
   }
 

@@ -773,23 +773,38 @@
    *
    * Transform, opacity and filter only. Nothing here can reflow a neighbour.
    */
+  /**
+   * The cell arrives ALONG the wave axis, not straight up.
+   *
+   * The front travels down-right (band = row + column), so a cell that rose
+   * vertically was moving across the gesture carrying it — which is why a grid
+   * of them read as separate pops rather than one sheet being drawn. Starting
+   * back up-left and settling down-right puts every cell on the same vector as
+   * the light passing over it, and the 75% overshoot carries a hair past the
+   * mark in that same direction before it sets.
+   */
   @keyframes stepCascade {
     0% {
       opacity: 0;
-      transform: translate3d(0, 14px, 0) scale(0.86);
-      filter: blur(3px);
+      transform: translate3d(-11px, -11px, 0) scale(0.88);
+      filter: blur(3px) brightness(1.4) saturate(1.3);
     }
     55% {
       opacity: 1;
-      filter: blur(0);
+      /* The moment it lands is the moment it is brightest. Because the stagger
+         is 55ms and this decays over the back 45% of a 380ms entrance, three or
+         four bands are lit at once — the front reads as a bright ridge moving
+         across the grid instead of 44 unrelated arrivals. The light lives in
+         the cell, so unlike an overlay it can never fall on empty canvas. */
+      filter: blur(0) brightness(1.32) saturate(1.24);
     }
     75% {
-      transform: translate3d(0, -2px, 0) scale(1.015);
+      transform: translate3d(1.5px, 1.5px, 0) scale(1.015);
     }
     100% {
       opacity: 1;
       transform: none;
-      filter: blur(0);
+      filter: blur(0) brightness(1) saturate(1);
     }
   }
 
