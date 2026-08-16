@@ -257,46 +257,6 @@ function collectCodeQuality() {
 }
 
 // ---------------------------------------------------------------------------
-// Dimension: Svelte 5 Compliance
-// ---------------------------------------------------------------------------
-
-function collectSvelte5() {
-  const findings = {};
-
-  // Legacy store imports
-  findings.storeImports = scanAll(
-    allFiles,
-    /from\s+['"]svelte\/store['"]/
-  );
-
-  // writable() / readable() usage
-  findings.writableReadable = scanAll(
-    allFiles,
-    /\b(writable|readable)\s*\(/
-  );
-
-  // $: reactive statements (legacy)
-  findings.dollarColon = scanAll(
-    svelteFiles,
-    /^\s*\$:\s/
-  );
-
-  // export let (legacy Svelte 4 props)
-  findings.exportLet = scanAll(
-    svelteFiles,
-    /^\s*export\s+let\s/
-  );
-
-  // createEventDispatcher (legacy event pattern)
-  findings.createEventDispatcher = scanAll(
-    svelteFiles,
-    /createEventDispatcher/
-  );
-
-  return findings;
-}
-
-// ---------------------------------------------------------------------------
 // Dimension: Accessibility
 // ---------------------------------------------------------------------------
 
@@ -668,7 +628,6 @@ function main() {
     dimensions: {
       architecture: collectArchitecture(),
       codeQuality: collectCodeQuality(),
-      svelte5: collectSvelte5(),
       accessibility: collectAccessibility(),
       uxStates: collectUxStates(),
       uiConsistency: collectUiConsistency(),

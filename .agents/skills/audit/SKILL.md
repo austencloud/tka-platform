@@ -1,6 +1,6 @@
 ---
 name: audit
-description: Use when assessing code quality of a feature or component across 8 dimensions
+description: Use when assessing code quality of a feature or component across 7 dimensions
 ---
 
 <!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
@@ -13,10 +13,15 @@ When explicitly invoked, treat the text after `$audit` as `<arguments>`.
 
 ## Quick Commands (pass-through)
 
+Prefer the repo-owned scripts when `scripts/audit-tracker.cjs` and
+`scripts/collect-evidence.cjs` exist. They are the current pipeline source and
+do not depend on the last published package version. Fall back to the package
+commands only in projects without those scripts.
+
 If the user passes a tracker command directly, just run it:
 
 ```powershell
-npx -p @austencloud/code-quality ac-audit <arguments>
+node scripts/audit-tracker.cjs <arguments>
 ```
 
 This handles: `list`, `targets`, `stats`, `status <target>`, `resolve-issue <target> <index>`
@@ -47,7 +52,7 @@ ac-audit --auto-claim → ac-evidence → audit-evaluator agent → record → p
 **No args (auto-select):**
 
 ```powershell
-npx -p @austencloud/code-quality ac-audit --auto-claim
+node scripts/audit-tracker.cjs --auto-claim
 ```
 
 Parse `CLAIMED_TARGET:` from output. If `AUTO_CLAIM_TARGET:` appears, the claim succeeded.
@@ -55,7 +60,7 @@ Parse `CLAIMED_TARGET:` from output. If `AUTO_CLAIM_TARGET:` appears, the claim 
 **With target specified** (e.g., `$audit src/lib/features/shop`):
 
 ```powershell
-npx -p @austencloud/code-quality ac-audit claim "<arguments>"
+node scripts/audit-tracker.cjs claim "<arguments>"
 ```
 
 **Large module protection:** If the claim command shows "MODULE TOO LARGE", pick a sub-feature from the list and claim that instead.
@@ -67,7 +72,7 @@ npx -p @austencloud/code-quality ac-audit claim "<arguments>"
 Run the deterministic evidence collector:
 
 ```powershell
-npx -p @austencloud/code-quality ac-evidence "<target>" --out .audit-evidence.json
+node scripts/collect-evidence.cjs "<target>" --out .audit-evidence.json
 ```
 
 This produces structured JSON with per-dimension findings. No LLM involved. Takes ~10 seconds.
@@ -85,10 +90,10 @@ Spawn the **audit-evaluator** agent (the project custom agent) with the evidence
 Parse the evaluator's `GRADES_JSON` and `ISSUES_JSON` from its response. Record to tracker:
 
 ```powershell
-npx -p @austencloud/code-quality ac-audit record "<target>" --grades "<A+,A,A,B,A,A,A+,A>" --issues-json '<json>'
+node scripts/audit-tracker.cjs record "<target>" --grades "<A+,A,B,A,A,A+,A>" --issues-json '<json>'
 ```
 
-Grade order: Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security.
+Grade order: Architecture, Code Quality, Accessibility, UX States, UI Consistency, Performance, Security.
 
 ---
 

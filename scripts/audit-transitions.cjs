@@ -15,7 +15,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
 // Files/folders to exclude
 const EXCLUDE_PATTERNS = [
@@ -33,14 +32,16 @@ const EXCLUDE_PATTERNS = [
 const TRANSITION_MAPPING = {
   fade: {
     replacement: "fadeStandard or fadeEmphasis",
-    import: "import { fadeStandard, fadeEmphasis } from '$lib/shared/transitions/transitions'",
+    import:
+      "import { fadeStandard, fadeEmphasis } from '$lib/shared/transitions/transitions'",
     notes: "fadeStandard for quick fades, fadeEmphasis for important content",
   },
   fly: {
     replacement: "flyUp, flyDown, flyLeft, or flyRight",
     import:
       "import { flyUp, flyDown, flyLeft, flyRight } from '$lib/shared/transitions/transitions'",
-    notes: "Choose based on direction; uses consistent DURATION and SLIDE_DISTANCE",
+    notes:
+      "Choose based on direction; uses consistent DURATION and SLIDE_DISTANCE",
   },
   slide: {
     replacement: "flyUp or flyDown with custom params",
@@ -49,7 +50,8 @@ const TRANSITION_MAPPING = {
   },
   scale: {
     replacement: "scalePop or scaleSpring",
-    import: "import { scalePop, scaleSpring } from '$lib/shared/transitions/transitions'",
+    import:
+      "import { scalePop, scaleSpring } from '$lib/shared/transitions/transitions'",
     notes: "scalePop for modals/cards, scaleSpring for bouncy interactions",
   },
   blur: {
@@ -82,24 +84,31 @@ function shouldExclude(filePath) {
 
 function findFilesWithSvelteTransitions() {
   const results = [];
+  const root = path.resolve(process.cwd(), searchDir);
 
-  try {
-    // Find files importing from svelte/transition
-    const grepResult = execSync(
-      `grep -r -l "from.*svelte/transition" --include="*.svelte" --include="*.ts" ${searchDir}`,
-      { encoding: "utf-8", cwd: process.cwd() }
-    );
-
-    const files = grepResult
-      .trim()
-      .split("\n")
-      .filter((f) => f && !shouldExclude(f));
-    results.push(...files);
-  } catch (e) {
-    // grep returns non-zero if no matches
+  function visit(directory) {
+    if (!fs.existsSync(directory) || shouldExclude(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolutePath);
+        continue;
+      }
+      if (!/\.(?:svelte|ts)$/.test(entry.name)) continue;
+      const relativePath = path.relative(process.cwd(), absolutePath);
+      if (shouldExclude(relativePath)) continue;
+      if (
+        /from\s*['"]svelte\/transition['"]/.test(
+          fs.readFileSync(absolutePath, "utf-8")
+        )
+      ) {
+        results.push(relativePath);
+      }
+    }
   }
 
-  return [...new Set(results)];
+  visit(root);
+  return results;
 }
 
 function analyzeFile(filePath) {
@@ -138,7 +147,9 @@ function analyzeFile(filePath) {
   }
 
   // Check if file also imports from centralized transitions
-  const usesCentralized = content.includes("$lib/shared/transitions/transitions");
+  const usesCentralized = content.includes(
+    "$lib/shared/transitions/transitions"
+  );
 
   return {
     filePath,
@@ -151,7 +162,9 @@ function analyzeFile(filePath) {
 }
 
 function main() {
-  console.log("Auditing svelte/transition imports...\n");
+  if (!jsonOutput) {
+    console.log("Auditing svelte/transition imports...\n");
+  }
 
   const files = findFilesWithSvelteTransitions();
   const analyses = files.map(analyzeFile).filter(Boolean);
@@ -221,12 +234,16 @@ function main() {
     console.log(`  ... and ${fullyMigratable.length - 10} more`);
   }
 
-  console.log(`\n⚠️  PARTIALLY MIGRATABLE (${partiallyMigratable.length} files):`);
+  console.log(
+    `\n⚠️  PARTIALLY MIGRATABLE (${partiallyMigratable.length} files):`
+  );
   console.log("These files use some transitions that should stay as-is\n");
   for (const analysis of partiallyMigratable.slice(0, 10)) {
     console.log(`  ${analysis.filePath}`);
     if (verbose) {
-      console.log(`    Migratable: ${analysis.replaceable.map((r) => r.name).join(", ")}`);
+      console.log(
+        `    Migratable: ${analysis.replaceable.map((r) => r.name).join(", ")}`
+      );
       console.log(`    Keep: ${analysis.keepAsIs.join(", ")}`);
     }
   }
@@ -235,7 +252,9 @@ function main() {
   }
 
   console.log(`\n✗ KEEP AS-IS (${keepAsIs.length} files):`);
-  console.log("These files only use transitions without centralized equivalents\n");
+  console.log(
+    "These files only use transitions without centralized equivalents\n"
+  );
   for (const analysis of keepAsIs.slice(0, 10)) {
     console.log(`  ${analysis.filePath}`);
     if (verbose) {

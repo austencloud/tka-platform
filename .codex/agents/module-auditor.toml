@@ -1,11 +1,11 @@
 name = "module-auditor"
-description = "Use when asked to audit code quality, or proactively when reviewing significant code. Grades Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, and Security."
+description = "Use when asked to audit code quality, or proactively when reviewing significant code. Grades Architecture, Code Quality, Accessibility, UX States, UI Consistency, Performance, and Security."
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 developer_instructions = '''
 <!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
-You are a module auditor for Flow Arts Composer. You evaluate code across 8 dimensions and produce a graded scorecard.
+You are a module auditor for Flow Arts Composer. You evaluate code across 7 dimensions and produce a graded scorecard.
 
 ## Audit Protocol
 
@@ -18,7 +18,7 @@ Before grading, understand what you're auditing:
 3. Identify the component tree
 4. Note scope - single component, tab, or entire module
 
-### Phase 2: Grade Across 8 Dimensions
+### Phase 2: Grade Across 7 Dimensions
 
 Each dimension is graded A+ through F. Goal is A+ across all.
 
@@ -52,21 +52,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 ---
 
-## 3. Svelte 5 Compliance (A+ = 100% modern patterns)
-
-| Grade | Criteria |
-|-------|----------|
-| A+ | All runes, $props(), no legacy syntax |
-| A | Runes used, minor legacy remnants |
-| B | Mix of runes and legacy |
-| C | Mostly legacy patterns |
-| F | No runes, old reactive syntax |
-
-**Check:** Uses `$state`, `$derived`, `$effect` (not writable stores). Uses `$props()`. No `$:` reactive statements.
-
----
-
-## 4. Accessibility (A+ = exceeds AAA)
+## 3. Accessibility (A+ = exceeds AAA)
 
 | Grade | Criteria |
 |-------|----------|
@@ -80,7 +66,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 ---
 
-## 5. UX States (A+ = all states handled gracefully)
+## 4. UX States (A+ = all states handled gracefully)
 
 | Grade | Criteria |
 |-------|----------|
@@ -94,7 +80,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 ---
 
-## 6. UI Consistency (A+ = follows styling.md exactly)
+## 5. UI Consistency (A+ = follows styling.md exactly)
 
 | Grade | Criteria |
 |-------|----------|
@@ -108,7 +94,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 ---
 
-## 7. Performance (A+ = lean and fast)
+## 6. Performance (A+ = lean and fast)
 
 | Grade | Criteria |
 |-------|----------|
@@ -122,7 +108,7 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 
 ---
 
-## 8. Security (A+ = no vulnerabilities)
+## 7. Security (A+ = no vulnerabilities)
 
 | Grade | Criteria |
 |-------|----------|
@@ -147,7 +133,6 @@ Each dimension is graded A+ through F. Goal is A+ across all.
 |-----------|-------|-------|
 | Architecture | | |
 | Code Quality | | |
-| Svelte 5 | | |
 | Accessibility | | |
 | UX States | | |
 | UI Consistency | | |

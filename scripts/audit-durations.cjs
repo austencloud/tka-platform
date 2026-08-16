@@ -16,7 +16,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
 // Files/folders to exclude
 const EXCLUDE_PATTERNS = [
@@ -33,30 +32,122 @@ const EXCLUDE_PATTERNS = [
 // Duration values and their recommended replacements
 const DURATION_MAPPING = {
   // In milliseconds
-  "50ms": { css: "var(--duration-instant)", js: "DURATION.instant", note: "Very short, consider if needed" },
-  "75ms": { css: "var(--duration-instant)", js: "DURATION.instant", note: "Round to instant" },
-  "100ms": { css: "var(--duration-instant)", js: "DURATION.instant", note: "Micro-feedback" },
-  "120ms": { css: "var(--duration-fast)", js: "DURATION.fast", note: "Round to fast" },
-  "150ms": { css: "var(--duration-fast)", js: "DURATION.fast", note: "Quick UI responses" },
-  "180ms": { css: "var(--duration-normal)", js: "DURATION.normal", note: "Round to normal" },
-  "200ms": { css: "var(--duration-normal)", js: "DURATION.normal", note: "Standard transitions" },
-  "250ms": { css: "var(--duration-normal)", js: "DURATION.normal", note: "Round to normal" },
-  "280ms": { css: "var(--duration-emphasis)", js: "DURATION.emphasis", note: "Emphasized changes" },
-  "300ms": { css: "var(--duration-emphasis)", js: "DURATION.emphasis", note: "Round to emphasis" },
-  "350ms": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Major transitions" },
-  "400ms": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Round to dramatic" },
-  "500ms": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Very slow, consider reducing" },
+  "50ms": {
+    css: "var(--duration-instant)",
+    js: "DURATION.instant",
+    note: "Very short, consider if needed",
+  },
+  "75ms": {
+    css: "var(--duration-instant)",
+    js: "DURATION.instant",
+    note: "Round to instant",
+  },
+  "100ms": {
+    css: "var(--duration-instant)",
+    js: "DURATION.instant",
+    note: "Micro-feedback",
+  },
+  "120ms": {
+    css: "var(--duration-fast)",
+    js: "DURATION.fast",
+    note: "Round to fast",
+  },
+  "150ms": {
+    css: "var(--duration-fast)",
+    js: "DURATION.fast",
+    note: "Quick UI responses",
+  },
+  "180ms": {
+    css: "var(--duration-normal)",
+    js: "DURATION.normal",
+    note: "Round to normal",
+  },
+  "200ms": {
+    css: "var(--duration-normal)",
+    js: "DURATION.normal",
+    note: "Standard transitions",
+  },
+  "250ms": {
+    css: "var(--duration-normal)",
+    js: "DURATION.normal",
+    note: "Round to normal",
+  },
+  "280ms": {
+    css: "var(--duration-emphasis)",
+    js: "DURATION.emphasis",
+    note: "Emphasized changes",
+  },
+  "300ms": {
+    css: "var(--duration-emphasis)",
+    js: "DURATION.emphasis",
+    note: "Round to emphasis",
+  },
+  "350ms": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Major transitions",
+  },
+  "400ms": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Round to dramatic",
+  },
+  "500ms": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Very slow, consider reducing",
+  },
   // In seconds
-  "0.05s": { css: "var(--duration-instant)", js: "DURATION.instant", note: "Very short" },
-  "0.1s": { css: "var(--duration-instant)", js: "DURATION.instant", note: "Micro-feedback" },
-  "0.15s": { css: "var(--duration-fast)", js: "DURATION.fast", note: "Quick UI responses" },
-  "0.2s": { css: "var(--duration-normal)", js: "DURATION.normal", note: "Standard transitions" },
-  "0.25s": { css: "var(--duration-normal)", js: "DURATION.normal", note: "Round to normal" },
-  "0.28s": { css: "var(--duration-emphasis)", js: "DURATION.emphasis", note: "Emphasized changes" },
-  "0.3s": { css: "var(--duration-emphasis)", js: "DURATION.emphasis", note: "Round to emphasis" },
-  "0.35s": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Major transitions" },
-  "0.4s": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Very slow" },
-  "0.5s": { css: "var(--duration-dramatic)", js: "DURATION.dramatic", note: "Very slow, consider reducing" },
+  "0.05s": {
+    css: "var(--duration-instant)",
+    js: "DURATION.instant",
+    note: "Very short",
+  },
+  "0.1s": {
+    css: "var(--duration-instant)",
+    js: "DURATION.instant",
+    note: "Micro-feedback",
+  },
+  "0.15s": {
+    css: "var(--duration-fast)",
+    js: "DURATION.fast",
+    note: "Quick UI responses",
+  },
+  "0.2s": {
+    css: "var(--duration-normal)",
+    js: "DURATION.normal",
+    note: "Standard transitions",
+  },
+  "0.25s": {
+    css: "var(--duration-normal)",
+    js: "DURATION.normal",
+    note: "Round to normal",
+  },
+  "0.28s": {
+    css: "var(--duration-emphasis)",
+    js: "DURATION.emphasis",
+    note: "Emphasized changes",
+  },
+  "0.3s": {
+    css: "var(--duration-emphasis)",
+    js: "DURATION.emphasis",
+    note: "Round to emphasis",
+  },
+  "0.35s": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Major transitions",
+  },
+  "0.4s": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Very slow",
+  },
+  "0.5s": {
+    css: "var(--duration-dramatic)",
+    js: "DURATION.dramatic",
+    note: "Very slow, consider reducing",
+  },
 };
 
 const args = process.argv.slice(2);
@@ -73,25 +164,29 @@ function shouldExclude(filePath) {
 
 function findFilesWithDurations() {
   const results = [];
+  const root = path.resolve(process.cwd(), searchDir);
+  const candidatePattern =
+    /(duration|transition|animation)[^;]*[0-9]+(?:ms|s)[^a-z]/i;
 
-  try {
-    // Find files with duration patterns in animation/transition contexts
-    // Looking for patterns like: duration: 200ms, transition: 0.3s, animation: 300ms
-    const grepResult = execSync(
-      `grep -r -l -E "(duration|transition|animation)[^;]*[0-9]+(ms|s)[^a-z]" --include="*.svelte" --include="*.css" --include="*.ts" ${searchDir}`,
-      { encoding: "utf-8", cwd: process.cwd() }
-    );
-
-    const files = grepResult
-      .trim()
-      .split("\n")
-      .filter((f) => f && !shouldExclude(f));
-    results.push(...files);
-  } catch (e) {
-    // grep returns non-zero if no matches
+  function visit(directory) {
+    if (!fs.existsSync(directory) || shouldExclude(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolutePath);
+        continue;
+      }
+      if (!/\.(?:svelte|css|ts)$/.test(entry.name)) continue;
+      const relativePath = path.relative(process.cwd(), absolutePath);
+      if (shouldExclude(relativePath)) continue;
+      if (candidatePattern.test(fs.readFileSync(absolutePath, "utf-8"))) {
+        results.push(relativePath);
+      }
+    }
   }
 
-  return [...new Set(results)];
+  visit(root);
+  return results;
 }
 
 function analyzeFile(filePath) {
@@ -100,7 +195,8 @@ function analyzeFile(filePath) {
   const occurrences = [];
 
   // Pattern to find duration values in animation/transition contexts
-  const durationPattern = /(?:duration|transition|animation)[^;{]*?(\d+(?:\.\d+)?)(ms|s)/gi;
+  const durationPattern =
+    /(?:duration|transition|animation)[^;{]*?(\d+(?:\.\d+)?)(ms|s)/gi;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -143,7 +239,9 @@ function analyzeFile(filePath) {
 }
 
 function main() {
-  console.log("Auditing hardcoded animation/transition durations...\n");
+  if (!jsonOutput) {
+    console.log("Auditing hardcoded animation/transition durations...\n");
+  }
 
   const files = findFilesWithDurations();
   const analyses = files.map(analyzeFile).filter((a) => a.count > 0);
@@ -188,7 +286,11 @@ function main() {
   );
 
   for (const [duration, count] of sortedDurations) {
-    const mapping = DURATION_MAPPING[duration] || { css: "?", js: "?", note: "" };
+    const mapping = DURATION_MAPPING[duration] || {
+      css: "?",
+      js: "?",
+      note: "",
+    };
     console.log(`  ${duration}: ${count} occurrences`);
     console.log(`    -> CSS: ${mapping.css}`);
     console.log(`    -> JS:  ${mapping.js}`);

@@ -1,5 +1,5 @@
 name = "audit-evaluator"
-description = "Read-only evaluator for Flow Arts Composer code quality audits. Grades evidence mechanically across 8 dimensions."
+description = "Read-only evaluator for Flow Arts Composer code quality audits. Grades evidence mechanically across 7 dimensions."
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = '''
@@ -19,7 +19,7 @@ Read the evidence file first.
 
 ## Grading Protocol
 
-For each of the 8 dimensions, assign a letter grade based on violation counts:
+For each of the 7 dimensions, assign a letter grade based on violation counts:
 
 | Grade | Meaning |
 |-------|---------|
@@ -30,16 +30,15 @@ For each of the 8 dimensions, assign a letter grade based on violation counts:
 | D | Multiple serious |
 | F | Critical violations |
 
-## The 8 Dimensions
+## The 7 Dimensions
 
 1. **Architecture** - Barrel imports, circular deps, boundary violations
 2. **Code Quality** - `any` types, bare catches, dead code, complexity
-3. **Svelte 5** - Legacy patterns (`export let`, `$:`, `writable`, `createEventDispatcher`)
-4. **Accessibility** - Missing labels, small fonts, `{@html}` without sanitization
-5. **UX States** - Loading, error, empty states handled
-6. **UI Consistency** - Hardcoded colors, durations, magic numbers
-7. **Performance** - Unclean effects, timers without cleanup, large bundles
-8. **Security** - `eval()`, hardcoded secrets, XSS vectors
+3. **Accessibility** - Missing labels, small fonts, `{@html}` without sanitization
+4. **UX States** - Loading, error, empty states handled
+5. **UI Consistency** - Hardcoded colors, durations, magic numbers
+6. **Performance** - Unclean effects, timers without cleanup, large bundles
+7. **Security** - `eval()`, hardcoded secrets, XSS vectors
 
 ## Rules
 
@@ -53,7 +52,7 @@ For each of the 8 dimensions, assign a letter grade based on violation counts:
 Present a scorecard table, then output two JSON blocks:
 
 ```
-GRADES_JSON: ["A+","A","B","A","A","A","A+","A"]
+GRADES_JSON: ["A+","A","B","A","A","A+","A"]
 ```
 
 ```

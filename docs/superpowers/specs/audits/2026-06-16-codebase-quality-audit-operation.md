@@ -29,14 +29,19 @@ numbers + wave log after each wave.
 ## What this is
 
 A rolling, wave-based pass over the whole codebase that grades every target on
-**8 dimensions**, fixes the real findings, verifies with a full typecheck, lands
+**7 dimensions**, fixes the real findings, verifies with a full typecheck, lands
 scoped per-module commits, and re-grades. Each wave takes ~10-14 audit-sized
 targets (one feature module or one `*/components` leaf each), runs parallel
 evaluator subagents to grade, parallel fixer subagents to repair, then one
 verification gate and one commit per scope.
 
-The 8 dimensions, in the **canonical order** the tracker expects:
-`Architecture, Code Quality, Svelte 5, Accessibility, UX States, UI Consistency, Performance, Security`.
+The 7 dimensions, in the **canonical order** the tracker expects:
+`Architecture, Code Quality, Accessibility, UX States, UI Consistency, Performance, Security`.
+
+Svelte 5 compliance left the scoring rubric on 2026-08-14. The codebase has
+held A+ there across repeated audit waves, so keeping it in the average no
+longer helps prioritize work. Modern Svelte remains a code-style requirement
+and typecheck concern.
 
 Grade scale per dimension: `A+` = 0 real violations · `A` = 1-2 minor · `B` =
 3-5 minor OR 1 moderate · `C` = multiple moderate OR 1 serious · `F` = systemic.
@@ -56,9 +61,9 @@ Grade scale per dimension: `A+` = 0 real violations · `A` = 1-2 minor · `B` =
    `summary` of raw regex match counts per dimension (these OVER-report).
 3. **Evaluate (parallel subagents, model: `sonnet`).** One agent per target.
    Each reads its evidence JSON + the actual flagged lines IN CONTEXT, applies
-   the calibration FP classes (below), grades 8 dims, and **writes**
+   the calibration FP classes (below), grades 7 dims, and **writes**
    `.audit-evidence/wave<N>-result-<safe>.json` =
-   `{"scope","grades":[8 in order],"issues":[{dimension,severity,file,line,description}],"notes"}`.
+   `{"scope","grades":[7 in order],"issues":[{dimension,severity,file,line,description}],"notes"}`.
    (Sonnet is correct for rubric grading with pre-collected evidence. Have the
    agent WRITE the result file — don't parse free text.)
 4. **Consolidate** the 11-12 result files into `.audit-evidence/wave<N>-issues.json`
@@ -84,7 +89,7 @@ Grade scale per dimension: `A+` = 0 real violations · `A` = 1-2 minor · `B` =
    commit those. Shared files (`messages/en.json`) go with the owning scope.
    Co-author trailer: `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`.
 9. **Re-grade + record.** `node scripts/audit-tracker.cjs record "<target>" --grades "A+,A,..." --notes "..."`
-   (8 grades, canonical order). A dimension only improves if its issues were
+   (7 grades, canonical order). A dimension only improves if its issues were
    actually fixed; deferred items keep their grade. Then
    `node scripts/audit-tracker.cjs stats` for the new distribution.
 

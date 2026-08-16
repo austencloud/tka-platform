@@ -35,7 +35,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 ### DELETE when:
 - File has no imports anywhere in codebase
 - Exports are not used by any other file
-- File is not an entry point (route, hook, service getter)
+- File is not an entry point (route, hook, DI container)
 - Not referenced in any config file
 
 ### DEFER when:
@@ -46,7 +46,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 
 ### FALSE POSITIVE when:
 - Dynamic imports (`await import(...)`)
-- Entry points (routes, hooks, service getters)
+- Entry points (routes, hooks, DI containers)
 - Files referenced in configs (vite.config.ts, etc.)
 - Test utilities only used by test files
 - Type-only files used via `/// <reference types="..." />`
@@ -74,7 +74,8 @@ Report summary: how many reviewed, deleted, false positive, deferred.
 ## What NOT to Delete
 
 Even if flagged as dead, never delete without checking:
-- Service getter files (`get*.ts` in `src/lib/shared/`)
+- Files in DI container directories
+- Files matching `*Container.ts`
 - Files in `src/routes/` - SvelteKit routing
 - Files with `// @ts-nocheck` at top
 - Anything the user says "wait, we need that"

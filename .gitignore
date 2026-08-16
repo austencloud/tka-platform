@@ -451,3 +451,6 @@ vite.debug*.config.mts
 
 # Throwaway review frames written by /api/dev/view-capture. Not assets.
 /static/captures/
+
+# Module audit outputs
+.audit-results/

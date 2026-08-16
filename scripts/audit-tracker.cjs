@@ -16,7 +16,7 @@
  *   node scripts/audit-tracker.cjs list               # List all audited targets with grades
  *   node scripts/audit-tracker.cjs targets            # List all auditable targets
  *   node scripts/audit-tracker.cjs status <target>    # Show detailed status for a target
- *   node scripts/audit-tracker.cjs record <target> --grades "A,A+,A,B,A,A,A,A+" [--notes "..."] [--issues-json '[...]']
+ *   node scripts/audit-tracker.cjs record <target> --grades "A,A+,B,A,A,A,A+" [--notes "..."] [--issues-json '[...]']
  *   node scripts/audit-tracker.cjs claim <target>     # Claim a target for auditing
  *   node scripts/audit-tracker.cjs release <target>   # Release a claim
  *   node scripts/audit-tracker.cjs resolve-issue <target> <index>  # Resolve a specific issue
@@ -46,11 +46,13 @@ const CLAIM_EXPIRY_MS = 4 * 60 * 60 * 1000;
 const GRADE_ORDER = ["A+", "A", "B", "C", "F"];
 const GRADE_SCORES = { "A+": 5, A: 4, B: 3, C: 2, F: 1 };
 
-// The 8 audit dimensions
+// Svelte 5 compliance was retired as a scored dimension in August 2026. The
+// codebase has been consistently modern for long enough that the slot no longer
+// helps rank work. Existing tracker records are normalized below so their old
+// svelte5 grade cannot inflate future overall scores.
 const DIMENSIONS = [
   { key: "architecture", name: "Architecture" },
   { key: "codeQuality", name: "Code Quality" },
-  { key: "svelte5", name: "Svelte 5" },
   { key: "accessibility", name: "Accessibility" },
   { key: "uxStates", name: "UX States" },
   { key: "uiConsistency", name: "UI Consistency" },
@@ -65,7 +67,17 @@ function readAuditData() {
   try {
     if (fs.existsSync(AUDIT_FILE)) {
       const data = fs.readFileSync(AUDIT_FILE, "utf-8");
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      for (const audit of Object.values(parsed.audits || {})) {
+        const activeGrades = {};
+        for (const dimension of DIMENSIONS) {
+          const grade = audit.grades?.[dimension.key];
+          if (grade) activeGrades[dimension.key] = grade;
+        }
+        audit.grades = activeGrades;
+        audit.overallGrade = calculateOverallGrade(activeGrades);
+      }
+      return parsed;
     }
   } catch (err) {
     console.error("Warning: Could not read audit file:", err.message);
@@ -604,7 +616,7 @@ function recordAudit(targetPath, gradesStr, notes) {
       console.log(
         `  Order: ${DIMENSIONS.map((d) => d.name).join(", ")}`
       );
-      console.log('  Example: --grades "A+,A,A,B,A,A,A+,A"\n');
+      console.log('  Example: --grades "A+,A,B,A,A,A+,A"\n');
       return;
     }
     DIMENSIONS.forEach((dim, idx) => {
@@ -627,7 +639,7 @@ function recordAudit(targetPath, gradesStr, notes) {
     console.log("  ⚠️  Interactive mode not available in script context.");
     console.log("  Use --grades flag to provide all grades at once:\n");
     console.log(
-      `  node scripts/audit-tracker.cjs record "${targetPath}" --grades "A+,A,A,B,A,A,A+,A"`
+      `  node scripts/audit-tracker.cjs record "${targetPath}" --grades "A+,A,B,A,A,A+,A"`
     );
     console.log(`\n  Dimensions in order:`);
     DIMENSIONS.forEach((dim, idx) => {
@@ -1018,7 +1030,7 @@ AUDITING
   --auto-claim           Find and claim the top priority target atomically
   claim <target>         Claim a specific target before auditing
   release <target>       Release a claim
-  record <target> --grades "A+,A,A,B,A,A,A+,A" [--notes "..."] [--issues-json '[...]']
+  record <target> --grades "A+,A,B,A,A,A+,A" [--notes "..."] [--issues-json '[...]']
                          Record audit results with optional structured issues
   resolve-issue <target> <index>
                          Mark a specific issue as resolved
@@ -1026,12 +1038,11 @@ AUDITING
 GRADE ORDER (for --grades flag):
   1. Architecture
   2. Code Quality
-  3. Svelte 5
-  4. Accessibility
-  5. UX States
-  6. UI Consistency
-  7. Performance
-  8. Security
+  3. Accessibility
+  4. UX States
+  5. UI Consistency
+  6. Performance
+  7. Security
 
 ISSUES JSON FORMAT (for --issues-json flag):
   [{"severity":"critical","dimension":"codeQuality","file":"path/File.ts","line":42,"description":"..."}]
@@ -1043,7 +1054,7 @@ EXAMPLES
   node scripts/audit-tracker.cjs --auto-claim             # Claim top priority target
   node scripts/audit-tracker.cjs claim features/compose   # Claim specific target
   node scripts/audit-tracker.cjs status features/compose  # Check status
-  node scripts/audit-tracker.cjs record features/compose --grades "A+,A,A,B,A,A,A+,A"
+  node scripts/audit-tracker.cjs record features/compose --grades "A+,A,B,A,A,A+,A"
   node scripts/audit-tracker.cjs resolve-issue features/compose 0  # Resolve issue #0
 `);
 }
@@ -1088,7 +1099,7 @@ function main() {
   } else if (args[0] === "record") {
     if (!args[1]) {
       console.log(
-        '\n  Usage: node scripts/audit-tracker.cjs record <target> --grades "A+,A,A,B,A,A,A+,A"\n'
+        '\n  Usage: node scripts/audit-tracker.cjs record <target> --grades "A+,A,B,A,A,A+,A"\n'
       );
       return;
     }

@@ -1,6 +1,6 @@
 ---
 name: ai-bust
-description: Use when writing or reviewing ANY user-facing text. Apply proactively while WRITING copy, not only when asked to review. Checks for AI writing patterns, banned words, robotic tone, and structural/template tells.
+description: Use when writing or reviewing user-facing text to check for AI writing patterns, banned words, or robotic tone
 ---
 
 <!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
@@ -71,39 +71,6 @@ Flag any paragraph starting with:
 - "painting a picture"
 - "crafting your..."
 
-### Category 6.5: Unsigned First Person
-
-Added 2026-07-17 (Austen): *"We should stick with facts. Avoid using anything
-with I as a pronoun — the user shouldn't have to ask who is writing this."*
-
-Flag `I / I'd / I've / my / me / we / our / us` in site copy that carries no
-byline or signature. The reader can't tell who "I" is, so the voice reads as
-an anonymous narrator (another generation tell). Fix: restate as fact
-("I trained double staves" → "The Kinetic Alphabet was developed on double
-staves"; "how we teach staves" → "how staves are taught"). First person is
-fine only in signed content (about page, quoted testimony, bylined posts).
-Severity: **HIGH**.
-
-### Category 7: Structural / Template Tells (page- and site-level)
-
-Added 2026-07-17 after Austen caught the per-prop notation pages reading as
-"mini bite-size episodes." Detector literature names these (Forbes 2026,
-StationX): *"if every subsection feels exactly as developed as the last,
-mechanical generation becomes likely"* + "low burstiness."
-
-| Pattern | Tell | Fix |
-|---------|------|-----|
-| Header-per-topic episodes | Every idea wrapped in an H2 + 1-2 same-size paragraphs | Continuous prose; zero or one internal header per page; let figures/demos punctuate instead |
-| Uniform section development | All sections the same weight | Deliberately unequal passages: one long winding one, one short, a one-liner paragraph |
-| Cross-page template reuse | Same page shape, caption sentence, CTA wording, or closer repeated across sibling pages | Every page gets its own shape (essay / short note / figure-led / stub / single Q-and-A answer); vary shared furniture |
-| "Here's..." pivots | "Here's what changes...", "Here's where the line is" | State the thing directly |
-| Label headers | H2s that are topic labels ("The Translation Rule") | Oblique or voice-carrying headers, or none |
-| Summary-sentence caboose | Each section closing by restating itself | End on the detail, not the recap |
-
-Severity: **CRITICAL** for header-per-topic episodes and cross-page template
-reuse. These read as generated even when every sentence individually passes
-Categories 1-6.
-
 ## Output Format
 
 For each violation found:
@@ -146,13 +113,6 @@ Skip:
 ## Burstiness Check
 
 After pattern-matching, check sentence rhythm. If most sentences are 15-25 words with uniform structure, flag as "uniform rhythm." Real writing varies length.
-
-## Proactive Mode (writing, not just reviewing)
-
-Standing directive from Austen (2026-07-17): invoke this skill automatically
-whenever WRITING user-facing copy, not only when asked to review. Run the
-full pattern set (Categories 1-7) against your own draft before showing it,
-and design the page shape (Category 7) before drafting a word.
 
 ## After Reporting
 

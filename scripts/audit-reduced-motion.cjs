@@ -16,7 +16,6 @@
 
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 
 // Files/folders to exclude
 const EXCLUDE_PATTERNS = [
@@ -77,28 +76,27 @@ function shouldExclude(filePath) {
 
 function findFilesWithKeyframes() {
   const results = [];
+  const root = path.resolve(process.cwd(), searchDir);
 
-  // Find all .svelte, .css, .ts, .tsx files with @keyframes
-  const extensions = ["svelte", "css"];
-
-  for (const ext of extensions) {
-    try {
-      const grepResult = execSync(
-        `grep -r -l "@keyframes" --include="*.${ext}" ${searchDir}`,
-        { encoding: "utf-8", cwd: process.cwd() }
-      );
-
-      const files = grepResult
-        .trim()
-        .split("\n")
-        .filter((f) => f && !shouldExclude(f));
-      results.push(...files);
-    } catch (e) {
-      // grep returns non-zero if no matches, which is fine
+  function visit(directory) {
+    if (!fs.existsSync(directory) || shouldExclude(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolutePath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolutePath);
+        continue;
+      }
+      if (!/\.(?:svelte|css)$/.test(entry.name)) continue;
+      const relativePath = path.relative(process.cwd(), absolutePath);
+      if (shouldExclude(relativePath)) continue;
+      if (fs.readFileSync(absolutePath, "utf-8").includes("@keyframes")) {
+        results.push(relativePath);
+      }
     }
   }
 
-  return [...new Set(results)]; // Remove duplicates
+  visit(root);
+  return results;
 }
 
 function analyzeFile(filePath) {
@@ -152,7 +150,9 @@ function analyzeFile(filePath) {
 }
 
 function main() {
-  console.log("Auditing for prefers-reduced-motion support...\n");
+  if (!jsonOutput) {
+    console.log("Auditing for prefers-reduced-motion support...\n");
+  }
 
   const files = findFilesWithKeyframes();
   const analyses = files.map(analyzeFile);
