@@ -1,6 +1,5 @@
 <!-- src/lib/shared/gamification/components/PropUnlockCelebration.svelte -->
 <script lang="ts">
-  import { onMount } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
@@ -116,13 +115,20 @@
     void loadReveal(generateFreshDemoLoop(), revealToken, remixArms());
   }
 
-  onMount(() => {
+  // This component is mounted unconditionally by CreateModule, so the playhead
+  // clock must be gated on the modal actually being open. It used to start on
+  // mount and re-arm every frame forever, guarding only the *work* and not the
+  // *loop* — a permanent rAF slot on every Create page, measured at ~1 tick per
+  // frame on /create/generate with no celebration anywhere in sight.
+  $effect(() => {
+    if (!propCelebration.isOpen) return;
+
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      if (propCelebration.isOpen && base && base.steps.length > 0) {
+      if (base && base.steps.length > 0) {
         playheadBeat = (playheadBeat + dt * SPEED) % base.steps.length;
       }
       raf = requestAnimationFrame(tick);
