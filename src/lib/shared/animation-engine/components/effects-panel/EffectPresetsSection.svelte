@@ -20,7 +20,8 @@
     onCustomize?: () => void;
     effectLabel: string;
     accentColor: string;
-    summary: string;
+    /** Only read when `showSummary`; hosts with their own controls omit it. */
+    summary?: string;
     /** Compact consumers already expose the raw controls directly. */
     showSummary?: boolean;
     showCustomize?: boolean;
@@ -37,7 +38,7 @@
     onCustomize,
     effectLabel,
     accentColor,
-    summary,
+    summary = "",
     showSummary = true,
     showCustomize = true,
   }: Props = $props();
@@ -64,6 +65,17 @@
       };
     })
   );
+
+  /**
+   * Columns at the widest tier. Three is the denser, preferred answer, but Fire
+   * has four looks and three columns strand the fourth alone on its own row -
+   * the "never a row of one" case in 4k-native-layout.md. Two columns only wins
+   * when it actually clears the orphan: seven looks orphan either way, so those
+   * stay at three rather than getting taller for nothing.
+   */
+  const wideCols = $derived(
+    presetModels.length % 3 === 1 && presetModels.length % 2 === 0 ? 2 : 3
+  );
 </script>
 
 <div class="presets-section">
@@ -75,7 +87,7 @@
     aria-label="Choose a {effectLabel} look"
   >
     {#if presetModels.length > 0}
-      <div class="preset-grid">
+      <div class="preset-grid" data-cols={wideCols}>
         {#each presetModels as item (item.preset.id)}
           {@const isActive = item.preset.id === activePresetId}
           <button
@@ -438,7 +450,7 @@
      keeps its 8:3 ratio, so a double-wide card grows 53% taller than its
      siblings and dominates the group. */
   @container looks (min-width: 26rem) {
-    .preset-grid {
+    .preset-grid[data-cols="3"] {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }

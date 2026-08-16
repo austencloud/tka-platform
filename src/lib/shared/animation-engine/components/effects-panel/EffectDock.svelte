@@ -1,5 +1,6 @@
 <script lang="ts">
   import EffectLookChips from "./EffectLookChips.svelte";
+  import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import type { EffectRegistration } from "./effect-registry";
   import type { PrimaryParamSpec } from "./effect-primary-param";
 
@@ -11,10 +12,8 @@
    * headline knob - lives here, under the grid, instead of behind a screen
    * transition. Deep tuning stays one click away via Tune.
    *
-   * Three fixed rows. All sixteen effects register a primary param and the Look
-   * rail always carries Default and Custom, so the dock's height never depends
-   * on which effect is selected and nothing below it jumps when you switch
-   * (no-layout-shift.md).
+   * How the looks present themselves is the host's call, because it depends
+   * entirely on the vertical room the host has - see `looks`.
    */
   interface Props {
     registration: EffectRegistration;
@@ -31,10 +30,24 @@
     /** Sidebar opens the full inspector; the popover opens deep tuning. */
     tuneLabel?: string;
     /**
-     * Show every look at once instead of on a scrolling rail. The tall desktop
-     * sidebar passes this; the phone tray and the popover cannot spare the rows.
+     * How much of each look to show, chosen by how much vertical room the host
+     * has:
+     *
+     * - `rail`  one scrolling row of chips. Constant height whatever the effect,
+     *           for the phone tray and the popover, which cannot spare rows.
+     * - `wrap`  the same chips on as many rows as it takes.
+     * - `tiles` the full thumbnail cards, the same presentation the inspector
+     *           uses. The desktop sidebar passes this: it had 250px of dead
+     *           space under the dock while the looks were reduced to a word and
+     *           a 10px dot, which is the one place a look cannot be judged. A
+     *           look you cannot see is a look you will not try.
+     *
+     * Height varies with the effect under `wrap` and `tiles` (looks run 2..10).
+     * The roster above the dock holds still either way and the panel footer is
+     * the only thing that moves, which is the arrangement no-layout-shift.md
+     * already settled on for this panel.
      */
-    wrapLooks?: boolean;
+    looks?: "rail" | "wrap" | "tiles";
   }
 
   const {
@@ -50,7 +63,7 @@
     onPrimaryInput,
     onTune,
     tuneLabel = "Tune",
-    wrapLooks = false,
+    looks = "rail",
   }: Props = $props();
 
   function handleSliderInput(ev: Event): void {
@@ -77,18 +90,40 @@
     </button>
   </div>
 
-  <EffectLookChips
-    presetGroup={registration.presetGroup}
-    {activePresetId}
-    {defaultChipId}
-    {customChipId}
-    {customDisabled}
-    {customColors}
-    accentColor={registration.meta.color}
-    effectLabel={registration.meta.label}
-    onSelect={onSelectPreset}
-    wrap={wrapLooks}
-  />
+  {#if looks === "tiles"}
+    <!-- The inspector's own Looks section, rendered here rather than
+         reimplemented: one owner for the thumbnail presentation, so the dock and
+         the inspector can never drift apart on what a look looks like
+         (never-hand-roll.md). The dock supplies its own identity header and
+         primary slider, so the summary row and the Customize button stay off -
+         Tune in the header already goes there. -->
+    <EffectPresetsSection
+      presetGroup={registration.presetGroup}
+      {activePresetId}
+      {defaultChipId}
+      {customChipId}
+      {customDisabled}
+      {customColors}
+      accentColor={registration.meta.color}
+      effectLabel={registration.meta.label}
+      {onSelectPreset}
+      showSummary={false}
+      showCustomize={false}
+    />
+  {:else}
+    <EffectLookChips
+      presetGroup={registration.presetGroup}
+      {activePresetId}
+      {defaultChipId}
+      {customChipId}
+      {customDisabled}
+      {customColors}
+      accentColor={registration.meta.color}
+      effectLabel={registration.meta.label}
+      onSelect={onSelectPreset}
+      wrap={looks === "wrap"}
+    />
+  {/if}
 
   {#if primarySpec}
     <div class="slider-row">

@@ -424,7 +424,7 @@
 {#snippet effectDock(
   onTune: () => void,
   tuneLabel: string,
-  wrapLooks: boolean
+  looks: "rail" | "wrap" | "tiles"
 )}
   <!-- Keyed on the effect, because switching effects on the roster is now the
        primary gesture and it used to be the harshest thing in the panel: the
@@ -462,7 +462,7 @@
         onPrimaryInput={setPrimaryValue}
         {onTune}
         {tuneLabel}
-        {wrapLooks}
+        {looks}
       />
     {/if}
   </Crossfade>
@@ -523,7 +523,7 @@
             activeAction="tune"
           />
 
-          {@render effectDock(() => (sidebarDetailOpen = true), "Tune", true)}
+          {@render effectDock(() => (sidebarDetailOpen = true), "Tune", "tiles")}
         </div>
       {:else if activeEffect !== "none" && registration}
         <EffectsInspector
@@ -654,7 +654,7 @@
             <span class="detail-name">All effects</span>
           </div>
 
-          {@render effectDock(handleCustomizeOpen, "More", false)}
+          {@render effectDock(handleCustomizeOpen, "More", "rail")}
         </div>
       {:else}
         <div class="drill-view">
@@ -736,7 +736,7 @@
         activeAction="tune"
       />
 
-      {@render effectDock(handleCustomizeOpen, "More", false)}
+      {@render effectDock(handleCustomizeOpen, "More", "rail")}
     {/if}
   </div>
 {/if}
