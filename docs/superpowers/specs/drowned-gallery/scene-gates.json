@@ -3,7 +3,7 @@
   "sceneId": "drowned-gallery",
   "title": "Water wing (SPLIT-SAME) — the drowned gallery and the grotto",
   "domainProofRequired": true,
-  "currentGate": 1,
+  "currentGate": 2,
   "authority": {
     "experienceSpec": "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
     "roomShellSource": "src/lib/features/museum/data/vulcan-cave-floor-plan.ts",
@@ -218,7 +218,7 @@
     },
     {
       "id": "measured-plan",
-      "status": "ready-for-review",
+      "status": "approved",
       "evidence": [
         {
           "kind": "floor-plan",
@@ -263,11 +263,18 @@
           "evidence": "The last look is taken from inside the carved Fire threshold, which is existing geometry and the room's only exit, so every visitor stands there facing the right way without being asked to. Reached by walking the procession west to east past A, B and C and turning east onto the walkway, with no backtracking; A reads smallest from there, so the three cases stack in walk order. No object is built for this view."
         }
       ],
-      "approval": null
+      "approval": {
+        "approvedBy": "Austen Cloud",
+        "approvedAt": "2026-08-16T03:11:40Z",
+        "quote": "I'm in. If you feel comfortable building it go ahead, alternatively you can give it to a sub agent who has fresh context straight from you and I'll compact you",
+        "museumTrackerItem": "SyTa9smQMqHC20urZcs3",
+        "visualComprehensionConfirmed": true,
+        "comprehensionBasis": "Not a requested read-back. On 2026-08-12 Austen independently rejected the parapet viewing deck on correct spatial grounds - that nobody would walk to a corner spot in order to stand in it, and that the three-across sightline was already available from the walk along the water. That is an unprompted correct read of the room's traffic and sightlines, and it changed the design rather than agreeing with it. On 2026-08-15 he then placed the steam himself at the water/fire junction, which is where the drawing puts CCCC relative to the Fire threshold."
+      }
     },
     {
       "id": "playable-graybox",
-      "status": "pending",
+      "status": "in-progress",
       "evidence": [],
       "checks": []
     },
