@@ -6,6 +6,7 @@
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import { buildFuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
+  import FuseModeBar from "./FuseModeBar.svelte";
   import FuseRecipePopover from "./FuseRecipePopover.svelte";
 
   let {
@@ -124,6 +125,13 @@
     <p>Build two one-hand LOOPs into one sequence.</p>
   </div>
 
+  <!-- Separate/Linked is the one recipe decision that changes what the whole tab
+       is, so it stays a visible switch instead of hiding behind the Pairing
+       popover. -->
+  <div class="mode-switch">
+    <FuseModeBar compact={true} />
+  </div>
+
   <div class="recipe-rail" aria-label="Fuse recipe controls">
     {#each tiles as tile (tile.id)}
       <FuseRecipePopover
@@ -202,6 +210,21 @@
     display: none;
   }
 
+  /* The lone auto margin in the row: it collects all the slack so the switch
+     stays beside the title instead of drifting to the middle. */
+  .mode-switch {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-right: auto;
+  }
+
+  /* Two short words — size to them, never to the rail's leftover space. */
+  .mode-switch :global(.fuse-mode-bar) {
+    width: min(100%, 14rem);
+    min-width: 9.5rem;
+  }
+
   .recipe-trigger {
     flex: 0 1 auto;
     min-width: 0;
@@ -241,6 +264,24 @@
   .recipe-chevron {
     color: var(--theme-text-dim);
     font-size: 11px;
+  }
+
+  @container fuse (max-width: 760px) {
+    .fuse-header {
+      flex-wrap: wrap;
+    }
+
+    /* The switch takes its own row rather than squeezing the recipe button
+       below a usable width. */
+    .mode-switch {
+      flex: 1 0 100%;
+      order: 3;
+      margin-right: 0;
+    }
+
+    .mode-switch :global(.fuse-mode-bar) {
+      width: 100%;
+    }
   }
 
   @container fuse (max-width: 520px) {
@@ -293,7 +334,6 @@
       flex: 1 1 auto;
       min-width: 0;
       max-width: 102rem;
-      margin-left: auto;
     }
   }
 
