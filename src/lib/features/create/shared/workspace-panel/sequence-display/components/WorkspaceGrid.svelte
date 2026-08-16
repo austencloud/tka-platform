@@ -1,6 +1,6 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import { fade } from "svelte/transition";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -150,6 +150,212 @@
 
   const cellSize = $derived(
     isTimelineMode ? timelineUnitSize : gridLayout.cellSize
+  );
+
+  // ===== Content-gated reveal =====
+  //
+  // The diagonal wave used to be pure arithmetic: every cell took
+  // `band * bandDelay` off one clock started before anything had rendered.
+  // Generation blocks the main thread for hundreds of milliseconds while the
+  // pictographs prepare, so cards routinely swept in empty — or still carrying
+  // the previous sequence's pictograph — and the gesture arrived ahead of the
+  // content it was supposed to be presenting.
+  //
+  // Each cell now reports when it is genuinely painting the step it was handed,
+  // and gets back the delay it should STILL wait: what remains of its band. A
+  // cell ready early holds its place in the wave; a cell whose content ran late
+  // goes as soon as it can. The answer is still a single CSS `animation-delay`,
+  // so once an entrance starts the compositor owns it and the stagger survives
+  // whatever the main thread is doing.
+  const START_TILE_REVEAL_KEY = -1;
+  const MANDALA_REVEAL_KEY = -2;
+  const EMPTY_REVEAL_DELAYS: ReadonlyMap<number, number> = new Map();
+
+  let armedEpoch = $state(-1);
+  let revealDelays = $state<Map<number, number>>(new Map());
+  // Reported ready, but with no wave yet to schedule against. Deliberately not
+  // reactive: nothing renders from it, it only feeds armPendingReveals.
+  const pendingRevealBands = new Map<number, number>();
+  // The earliest moment the next band may land. On a healthy reveal this trails
+  // the schedule and does nothing. When content runs late it becomes the whole
+  // stagger: a batch of cells whose turn has already passed still goes one band
+  // at a time behind this, instead of landing in one heap.
+  let revealBandFloor = 0;
+
+  /**
+   * Only a whole-sequence reveal is content-gated. A cycle extension keeps its
+   * existing cells on screen and must never hide one waiting for a report, so
+   * it stays on the plain band arithmetic.
+   */
+  const isGatedReveal = $derived(
+    displayState.isCascadeReveal && displayState.isPreparingFullAnimation
+  );
+
+  // Read through the epoch, so a second Generate invalidates every armed delay
+  // the instant the epoch bumps rather than whenever an effect next runs. That
+  // is what makes an interrupted reveal re-cascade: the `.cascading` class comes
+  // off every cell and goes back on when the new wave arms them, and a CSS
+  // animation only restarts when its class actually toggles.
+  const armedRevealDelays = $derived(
+    armedEpoch === displayState.animationEpoch
+      ? revealDelays
+      : EMPTY_REVEAL_DELAYS
+  );
+
+  /** The band the mandala sits on: one behind the last step. */
+  const maxStepWaveBand = $derived.by(() => {
+    if (isTimelineMode) {
+      let max = 0;
+      timelineRows.forEach((row, rowIndex) => {
+        if (row.steps.length === 0) return;
+        max = Math.max(max, rowIndex + row.steps.length);
+      });
+      return max;
+    }
+    if (steps.length === 0) return 0;
+    return calculateStepWaveBand(steps.length - 1, gridLayout.columns);
+  });
+
+  function syncRevealEpoch(): void {
+    const epoch = displayState.animationEpoch;
+    if (armedEpoch === epoch) return;
+    armedEpoch = epoch;
+    pendingRevealBands.clear();
+    revealBandFloor = 0;
+    revealDelays = new Map();
+  }
+
+  /**
+   * Hand every ready-and-waiting cell the delay it should still take.
+   *
+   * A cell that made its band gets exactly what remains of it, so a reveal whose
+   * content kept up looks like the plain diagonal it always did. A cell whose
+   * band has already gone by falls in behind `revealBandFloor` instead of
+   * starting immediately — twenty late cells arriving in one batch resume the
+   * wave a band at a time rather than dropping onto the grid at once. Bands are
+   * taken in order and a whole band lands together, which is what makes the
+   * catch-up read as the same gesture running late rather than a new one.
+   */
+  function armPendingReveals(): void {
+    const waveStartedAt = displayState.waveStartedAt;
+    if (waveStartedAt === 0 || pendingRevealBands.size === 0) return;
+
+    const now = performance.now();
+    const bandDelay = displayState.animationTiming.waveBandDelay;
+    const byBand = [...pendingRevealBands].sort((a, b) => a[1] - b[1]);
+
+    const next = new Map(revealDelays);
+    let currentBand: number | null = null;
+    let landsAt = 0;
+    for (const [key, band] of byBand) {
+      if (band !== currentBand) {
+        currentBand = band;
+        landsAt = Math.max(waveStartedAt + band * bandDelay, revealBandFloor, now);
+        revealBandFloor = landsAt + bandDelay;
+      }
+      const delay = landsAt - now;
+      next.set(key, delay);
+      // The wave is not over until the last cell to join it has landed.
+      displayState.noteRevealScheduled(delay);
+    }
+
+    pendingRevealBands.clear();
+    revealDelays = next;
+  }
+
+  function noteContentReady(key: number, band: number): void {
+    syncRevealEpoch();
+    if (revealDelays.has(key)) return;
+    pendingRevealBands.set(key, band);
+    armPendingReveals();
+    maybeArmMandala();
+  }
+
+  /** How many cells must report before the sequence has fully arrived. */
+  const expectedRevealKeys = $derived(steps.length + (hasStartPosition ? 1 : 0));
+
+  /**
+   * The mandala is drawn from the WHOLE sequence, so it goes last — one band
+   * behind whatever the final step turned out to be, including a wave that ran
+   * late. It waits for every step to report, then takes its place at the back of
+   * the queue. `force` is the fallback: a step that never reports must not be
+   * able to keep the mandala off the grid, so the wave's own schedule releases
+   * it regardless.
+   */
+  function maybeArmMandala(force = false): void {
+    if (displayState.waveStartedAt === 0) return;
+    if (revealDelays.has(MANDALA_REVEAL_KEY)) return;
+    if (!force && revealDelays.size < expectedRevealKeys) return;
+    pendingRevealBands.set(MANDALA_REVEAL_KEY, maxStepWaveBand + 1);
+    armPendingReveals();
+  }
+
+  let mandalaReleaseTimer: ReturnType<typeof setTimeout> | null = null;
+
+  $effect(() => {
+    const waveStartedAt = displayState.waveStartedAt;
+    const epoch = displayState.animationEpoch;
+    untrack(() => {
+      void epoch;
+      syncRevealEpoch();
+      if (waveStartedAt === 0) return;
+      // Cells that reported before the wave had a clock to schedule against.
+      armPendingReveals();
+      maybeArmMandala();
+      const nominalEnd =
+        waveStartedAt +
+        (maxStepWaveBand + 1) * displayState.animationTiming.waveBandDelay;
+      mandalaReleaseTimer = setTimeout(
+        () => {
+          mandalaReleaseTimer = null;
+          maybeArmMandala(true);
+        },
+        Math.max(0, nominalEnd - performance.now())
+      );
+    });
+
+    return () => {
+      if (mandalaReleaseTimer !== null) {
+        clearTimeout(mandalaReleaseTimer);
+        mandalaReleaseTimer = null;
+      }
+    };
+  });
+
+  /**
+   * What this cell should wait before starting its entrance. An armed cell gets
+   * the measured remainder of its band; everything else falls back to the band
+   * arithmetic, which is what non-gated animations have always used.
+   */
+  function revealDelayFor(key: number, band: number): string {
+    const armed = armedRevealDelays.get(key);
+    if (armed !== undefined) return `${Math.round(armed)}ms`;
+    const effectiveBand = displayState.isCascadeReveal ? band : 0;
+    return `calc(${effectiveBand} * var(--wave-band-delay, 55ms))`;
+  }
+
+  /** A gated cell stays out of sight until its content has reported in. */
+  function isAwaitingReveal(key: number): boolean {
+    return isGatedReveal && !armedRevealDelays.has(key);
+  }
+
+  function isStepCascading(stepIndex: number): boolean {
+    return (
+      displayState.shouldBeatAnimate(stepIndex) && !isAwaitingReveal(stepIndex)
+    );
+  }
+
+  const isStartTileAwaiting = $derived(
+    displayState.shouldAnimateStartPosition &&
+      isAwaitingReveal(START_TILE_REVEAL_KEY)
+  );
+  const isStartTileCascading = $derived(
+    displayState.shouldAnimateStartPosition && !isStartTileAwaiting
+  );
+  const isMandalaAwaiting = $derived(isAwaitingReveal(MANDALA_REVEAL_KEY));
+  const isMandalaCascading = $derived(isGatedReveal && !isMandalaAwaiting);
+  const mandalaRevealDelay = $derived(
+    revealDelayFor(MANDALA_REVEAL_KEY, maxStepWaveBand + 1)
   );
 
   // Effective prop for the step-grid mandalas: an explicit override wins, else
@@ -579,17 +785,19 @@
         <div class="timeline-start-column">
           <div
             class="timeline-cell"
-            class:cascading={displayState.shouldAnimateStartPosition}
+            class:cascading={isStartTileCascading}
+            class:awaiting-reveal={isStartTileAwaiting}
             class:cell-selected={selectedStepNumber === 0}
             class:cell-practice={practiceStepNumber === 0}
             data-history-start-position
+            style:--reveal-delay={revealDelayFor(START_TILE_REVEAL_KEY, 0)}
             in:fade={{ duration: getHistoryStartDuration() }}
             out:fade={{ duration: getHistoryStartDuration() }}
           >
             <div class="history-layout-shell">
               <StartTile
                 {startPosition}
-                shouldAnimate={displayState.shouldAnimateStartPosition}
+                shouldAnimate={isStartTileCascading}
                 isSelected={selectedStepNumber === 0}
                 isPracticeStep={practiceStepNumber === 0}
                 {activeMode}
@@ -600,35 +808,49 @@
                 isTimelineMode={true}
                 {bluePropTypeOverride}
                 {redPropTypeOverride}
+                onContentReady={() =>
+                  noteContentReady(START_TILE_REVEAL_KEY, 0)}
               />
             </div>
           </div>
           {#each timelineStartMandalas as cell (cell.index)}
             {#if cell.show !== null}
-              {#if onMandalaClick}
-                <button
-                  type="button"
-                  class="timeline-cell mandala-cell viewer-enabled"
-                  class:light-bg={isLightBackground}
-                  data-layout-mandala-key={`timeline-start:${cell.index}`}
-                  onclick={() => onMandalaClick(cell.show!, mandalaPathShape)}
-                  oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
-                  aria-label="Open mandala"
-                  title="Open mandala"
-                >
-                  {@render mandalaArtwork(cell.show)}
-                </button>
-              {:else}
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="timeline-cell mandala-cell"
-                  class:light-bg={isLightBackground}
-                  data-layout-mandala-key={`timeline-start:${cell.index}`}
-                  oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show!)}
-                >
-                  {@render mandalaArtwork(cell.show)}
-                </div>
-              {/if}
+              <!-- The slot is the layout member; the artwork inside it carries
+                   the reveal animation. Keeping the two on separate elements is
+                   what lets the layout transition transform the member without
+                   the entrance gesture being cancelled along with it. -->
+              <div
+                class="timeline-cell mandala-slot"
+                class:cascading={isMandalaCascading}
+                class:awaiting-reveal={isMandalaAwaiting}
+                data-layout-mandala-key={`timeline-start:${cell.index}`}
+                style:--reveal-delay={mandalaRevealDelay}
+              >
+                {#if onMandalaClick}
+                  <button
+                    type="button"
+                    class="mandala-cell viewer-enabled"
+                    class:light-bg={isLightBackground}
+                    onclick={() => onMandalaClick(cell.show!, mandalaPathShape)}
+                    oncontextmenu={(e) =>
+                      handleMandalaContextMenu(e, cell.show!)}
+                    aria-label="Open mandala"
+                    title="Open mandala"
+                  >
+                    {@render mandalaArtwork(cell.show)}
+                  </button>
+                {:else}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="mandala-cell"
+                    class:light-bg={isLightBackground}
+                    oncontextmenu={(e) =>
+                      handleMandalaContextMenu(e, cell.show!)}
+                  >
+                    {@render mandalaArtwork(cell.show)}
+                  </div>
+                {/if}
+              </div>
             {:else}
               <div
                 class="timeline-cell"
@@ -655,7 +877,8 @@
               )}
               <div
                 class="timeline-cell step-container"
-                class:cascading={displayState.shouldBeatAnimate(stepIndex)}
+                class:cascading={isStepCascading(stepIndex)}
+                class:awaiting-reveal={isAwaitingReveal(stepIndex)}
                 class:deleting={isDeleting}
                 class:arrival-destination={isArrivalDestination(stepIndex)}
                 class:arrival-destination-hidden={isArrivalDestinationHidden(
@@ -679,7 +902,7 @@
                   : undefined}
                 inert={isArrivalDestinationHidden(stepIndex)}
                 style:--duration-multiplier={effectiveDuration}
-                style:--wave-band={displayState.isCascadeReveal ? waveBand : 0}
+                style:--reveal-delay={revealDelayFor(stepIndex, waveBand)}
                 in:fade={{ duration: getHistoryMembershipDuration(identity) }}
                 out:fade={{ duration: getHistoryMembershipDuration(identity) }}
               >
@@ -691,7 +914,7 @@
                     onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
                     onDelete={() => onStepDelete?.(step.stepNumber)}
                     onLongPress={() => onStepLongPress?.(step.stepNumber)}
-                    shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
+                    shouldAnimate={isStepCascading(stepIndex)}
                     isSelected={selectedStepNumber === step.stepNumber}
                     isPracticeStep={practiceStepNumber === step.stepNumber}
                     {activeMode}
@@ -703,6 +926,7 @@
                     animationEpoch={displayState.animationEpoch}
                     {bluePropTypeOverride}
                     {redPropTypeOverride}
+                    onContentReady={() => noteContentReady(stepIndex, waveBand)}
                   />
                 </div>
                 {#if onDurationChange && selectedStepNumber === step.stepNumber}
@@ -726,17 +950,19 @@
       {#each standardStartCells as startCell (startCell.key)}
         <div
           class="step-container"
-          class:cascading={displayState.shouldAnimateStartPosition}
+          class:cascading={isStartTileCascading}
+          class:awaiting-reveal={isStartTileAwaiting}
           data-history-start-position
           style:grid-row="1"
           style:grid-column="1"
+          style:--reveal-delay={revealDelayFor(START_TILE_REVEAL_KEY, 0)}
           in:fade={{ duration: getHistoryStartDuration() }}
           out:fade={{ duration: getHistoryStartDuration() }}
         >
           <div class="history-layout-shell">
             <StartTile
               startPosition={startCell.startPosition}
-              shouldAnimate={displayState.shouldAnimateStartPosition}
+              shouldAnimate={isStartTileCascading}
               isSelected={selectedStepNumber === 0}
               isPracticeStep={practiceStepNumber === 0}
               {activeMode}
@@ -746,6 +972,7 @@
               animationEpoch={displayState.animationEpoch}
               {bluePropTypeOverride}
               {redPropTypeOverride}
+              onContentReady={() => noteContentReady(START_TILE_REVEAL_KEY, 0)}
             />
           </div>
         </div>
@@ -758,7 +985,8 @@
         {@const musicalPosition = getDurationDisplay(index)}
         <div
           class="step-container"
-          class:cascading={displayState.shouldBeatAnimate(index)}
+          class:cascading={isStepCascading(index)}
+          class:awaiting-reveal={isAwaitingReveal(index)}
           class:deleting={isDeleting}
           class:arrival-destination={isArrivalDestination(index)}
           class:arrival-destination-hidden={isArrivalDestinationHidden(index)}
@@ -775,7 +1003,7 @@
           inert={isArrivalDestinationHidden(index)}
           style:grid-row={position.row}
           style:grid-column={position.column}
-          style:--wave-band={displayState.isCascadeReveal ? waveBand : 0}
+          style:--reveal-delay={revealDelayFor(index, waveBand)}
           in:fade={{ duration: getHistoryMembershipDuration(identity) }}
           out:fade={{ duration: getHistoryMembershipDuration(identity) }}
         >
@@ -787,7 +1015,7 @@
               onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
               onDelete={() => onStepDelete?.(step.stepNumber)}
               onLongPress={() => onStepLongPress?.(step.stepNumber)}
-              shouldAnimate={displayState.shouldBeatAnimate(index)}
+              shouldAnimate={isStepCascading(index)}
               isSelected={selectedStepNumber === step.stepNumber}
               isPracticeStep={practiceStepNumber === step.stepNumber}
               {activeMode}
@@ -796,6 +1024,7 @@
               animationEpoch={displayState.animationEpoch}
               {bluePropTypeOverride}
               {redPropTypeOverride}
+              onContentReady={() => noteContentReady(index, waveBand)}
             />
           </div>
         </div>
@@ -804,9 +1033,12 @@
       {#each standardMandalaCells as cell (cell.key)}
         <div
           class="mandala-layout-item"
+          class:cascading={isMandalaCascading}
+          class:awaiting-reveal={isMandalaAwaiting}
           data-layout-mandala-key={cell.key}
           style:grid-row={cell.row}
           style:grid-column={cell.column}
+          style:--reveal-delay={mandalaRevealDelay}
         >
           {#if onMandalaClick}
             <button
@@ -999,7 +1231,7 @@
   .cascading .history-layout-shell {
     animation: plateCascade var(--step-entrance-duration, 380ms)
       cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: calc(var(--wave-band, 0) * var(--wave-band-delay, 55ms));
+    animation-delay: var(--reveal-delay, 0ms);
   }
 
   @keyframes plateCascade {
@@ -1020,6 +1252,14 @@
   }
 
   .step-container.hidden-for-sequential {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Content-gated: this cell's pictograph has not finished painting, so it has
+     no place in the wave yet. Held out of sight rather than swept in empty. The
+     wave's own deadline releases it even if the report never arrives. */
+  .awaiting-reveal {
     opacity: 0;
     pointer-events: none;
   }
@@ -1168,9 +1408,46 @@
     z-index: 2;
   }
 
-  .mandala-layout-item > .mandala-cell {
+  .mandala-layout-item > .mandala-cell,
+  .mandala-slot > .mandala-cell {
     width: 100%;
     height: 100%;
+  }
+
+  /* The timeline slot exists only to be the layout member. Its plate would sit
+     behind the artwork's own translucent wash and turn it opaque, so it gives
+     the background up the way a step cell gives it to its shell. */
+  .mandala-slot {
+    background: transparent;
+    padding: 0;
+  }
+
+  /* The mandala is drawn from the WHOLE sequence, so it arrives once the wave
+     that spelled the sequence out has passed — one band behind the last step.
+     `backwards` rather than `both`: the final frame is released when the
+     animation ends, so the cell's own hover scale still works afterwards. */
+  .mandala-layout-item.cascading > .mandala-cell,
+  .mandala-slot.cascading > .mandala-cell {
+    animation: mandalaCascade var(--step-entrance-duration, 380ms)
+      cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+
+  @keyframes mandalaCascade {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+      filter: blur(3px);
+    }
+    55% {
+      opacity: 1;
+      filter: blur(0);
+    }
+    100% {
+      opacity: 1;
+      transform: none;
+      filter: blur(0);
+    }
   }
 
   .mandala-cell {
@@ -1269,6 +1546,12 @@
        plate has to reach its 100% frame, and `animation: none` would leave it
        transparent for good. */
     .cascading .history-layout-shell {
+      animation-duration: 0.01ms;
+      animation-delay: 0s;
+    }
+
+    .mandala-layout-item.cascading > .mandala-cell,
+    .mandala-slot.cascading > .mandala-cell {
       animation-duration: 0.01ms;
       animation-delay: 0s;
     }

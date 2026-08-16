@@ -107,11 +107,16 @@ with pre-prepared data for better performance.
     transitionKey = null,
     // Musical position string (e.g., "1", "1.5", "2e") for beat number display (timeline mode)
     musicalPosition = undefined,
-    // Fires once after the first successful prepare has been applied and rendered
+    // Fires once the prepare for the CURRENT data has been applied and rendered
     // to the DOM. Lets offscreen/export rendering await readiness deterministically
     // instead of polling — PictographRenderer does all arrow/prop work synchronously
     // from prepared data, so once preparedData is committed the SVG content is present.
     onReady = undefined,
+    // Bump to ask for a fresh onReady report even though the data did not change.
+    // A long-lived container that is handed the same pictograph twice would
+    // otherwise stay silent, and a caller waiting on the second arrival waits
+    // forever.
+    readyEpoch = 0,
     // Per-instance step-number override. undefined = follow the global toggle;
     // true/false force it (the choreo sheet drives this from its own setting).
     stepNumberOverride = undefined,
@@ -171,6 +176,7 @@ with pre-prepared data for better performance.
     musicalPosition?: string;
     /** Fires once after the first prepared render commits to the DOM (deterministic export readiness signal). */
     onReady?: () => void;
+    readyEpoch?: number;
     /** Force step-number visibility on/off, overriding the global toggle. undefined = follow global. */
     stepNumberOverride?: boolean;
     /** Pictograph whose prepared prop positions define this motion's exact start pose. */
@@ -358,6 +364,11 @@ with pre-prepared data for better performance.
   let preparedData = $state<PreparedPictographData | null>(null);
   let preparedStartData = $state<PreparedPictographData | null>(null);
   let isLoading = $state(false);
+  // Which prepareKey the data currently on screen belongs to. A container that
+  // is reused for new data keeps painting the OLD pictograph while the new one
+  // prepares, so `preparedData !== null` alone cannot answer "is what I am
+  // showing what I was asked to show". Readiness needs that question.
+  let appliedPrepareKey = $state<string | null>(null);
 
   // Tracks whether the grid SVG has settled. PictographRenderer's GridSvg loads its
   // grid file asynchronously and independently of the prepared arrow/prop data, so
@@ -476,6 +487,7 @@ with pre-prepared data for better performance.
     if (!data || !key) {
       preparedData = null;
       preparedStartData = null;
+      appliedPrepareKey = null;
       prepareSequence = 0;
       lastAppliedSequence = 0;
       return;
@@ -516,6 +528,7 @@ with pre-prepared data for better performance.
           lastAppliedSequence = mySequence;
           preparedStartData = startResult;
           preparedData = result;
+          appliedPrepareKey = key;
         }
       } catch (error) {
         console.error("Failed to prepare pictograph:", error);
@@ -523,6 +536,10 @@ with pre-prepared data for better performance.
           lastAppliedSequence = mySequence;
           preparedStartData = startData as PreparedPictographData | null;
           preparedData = data as PreparedPictographData;
+          // A failed prepare still paints this key's data, unprepared. It is
+          // what the caller asked for, so it still counts as arrived —
+          // otherwise a reveal waiting on readiness would wait forever.
+          appliedPrepareKey = key;
         }
       } finally {
         if (mySequence >= lastAppliedSequence) {
@@ -572,15 +589,23 @@ with pre-prepared data for better performance.
     !!a11yLabel && a11yLabel !== "Pictograph (empty)"
   );
 
-  // Deterministic readiness signal for offscreen/export rendering.
-  // This effect runs after the DOM is updated, so once preparedData is committed
-  // PictographRenderer (and its synchronous arrows/props) are in the DOM. The grid,
-  // however, loads asynchronously inside GridSvg, so when it is shown we also wait
-  // for gridReady — otherwise a cold grid cache could serialize before the grid
-  // lines paint. tick() flushes any trailing state before we report. Fires once per
-  // mount — export mounts a fresh container per call, so the one-shot guard is right.
-  let hasReportedReady = false;
+  // Deterministic readiness signal: this container is now painting the data it
+  // was last handed. The effect runs after the DOM is updated, so once
+  // preparedData is committed PictographRenderer (and its synchronous arrows and
+  // props) are in the DOM. The grid, however, loads asynchronously inside
+  // GridSvg, so when it is shown we also wait for gridReady — otherwise a cold
+  // grid cache could serialize before the grid lines paint. tick() flushes any
+  // trailing state before we report.
+  //
+  // Reported once per prepareKey rather than once per mount. Offscreen export
+  // mounts a fresh container per call and only awaits the first report, so it is
+  // unaffected; long-lived consumers (a grid cell reused across generations)
+  // need a report each time their content genuinely changes, and used to get
+  // exactly one for the life of the cell.
+  let reportedReadySignature: string | null = null;
   $effect(() => {
+    const key = prepareKey;
+    const signature = `${readyEpoch}|${key}`;
     const gridSettled = !effectiveShowGrid || gridReady;
     const motionGeometryReady =
       motionProgress === null ||
@@ -588,12 +613,14 @@ with pre-prepared data for better performance.
       Boolean(preparedStartData?._prepared);
     if (
       preparedData &&
+      key &&
+      appliedPrepareKey === key &&
       gridSettled &&
       motionGeometryReady &&
-      !hasReportedReady &&
+      reportedReadySignature !== signature &&
       onReady
     ) {
-      hasReportedReady = true;
+      reportedReadySignature = signature;
       void tick().then(() => onReady());
     }
   });

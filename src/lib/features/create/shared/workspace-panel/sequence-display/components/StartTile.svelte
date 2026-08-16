@@ -21,6 +21,7 @@
     isTimelineMode = false,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    onContentReady = undefined,
   } = $props<{
     startPosition: StartPositionData | StepData;
     shouldAnimate?: boolean;
@@ -36,6 +37,8 @@
      *  settings) — same convention as StepCell/PictographContainer. */
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    /** Forwarded from the inner cell — see StepCell's onContentReady. */
+    onContentReady?: () => void;
   }>();
 
   const hapticService: HapticFeedback | null = getHapticFeedback();
@@ -80,6 +83,7 @@
     {animationEpoch}
     {bluePropTypeOverride}
     {redPropTypeOverride}
+    {onContentReady}
   />
 </div>
 

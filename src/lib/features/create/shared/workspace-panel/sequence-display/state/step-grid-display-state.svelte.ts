@@ -52,6 +52,14 @@ export function isPendingGenerationAnimation(): boolean {
 }
 
 /**
+ * How long past its scheduled band a cell may hold the reveal open waiting for
+ * its pictograph to finish painting. Beyond this the wave is treated as done
+ * whether or not every cell reported in, so a single stuck prepare cannot leave
+ * the grid hidden.
+ */
+const MAX_CONTENT_GATE_MS = 2000;
+
+/**
  * Create step grid display animation state
  */
 export function createStepGridDisplayState() {
@@ -85,6 +93,19 @@ export function createStepGridDisplayState() {
     ...DEFAULT_ANIMATION_TIMING,
   });
 
+  // When the current reveal wave began, in the performance.now() clock. Cells
+  // schedule themselves against it: a cell on band 3 is due at
+  // waveStartedAt + 3 * waveBandDelay, whenever it happens to become ready.
+  let waveStartedAt = $state(0);
+  // When the last cell scheduled so far will have finished landing. Content
+  // gating can push this past the nominal end of the wave, so cleanup waits on
+  // it rather than on arithmetic done before anything rendered.
+  let revealCompletesAt = 0;
+  let revealDeadline = 0;
+
+  const wait = (ms: number) =>
+    new Promise<void>((resolve) => setTimeout(resolve, ms));
+
   /**
    * Set animation mode (sequential vs all-at-once)
    */
@@ -106,16 +127,26 @@ export function createStepGridDisplayState() {
     isPreparingFullAnimation = true;
     shouldAnimateStartPosition = true;
     newlyAddedStepIndex = null;
+    // The previous wave's clock is dead the moment a new one is being set up.
+    // Leaving it running let a cell that reported ready during the gap schedule
+    // itself against the OLD wave start, which is already in the past — so it
+    // landed instantly instead of taking its place in the new wave.
+    waveStartedAt = 0;
+
+    // Reassigned, never cleared in place. A plain Set is not deeply reactive, so
+    // `.clear()` empties it without telling anyone — which meant a reveal
+    // interrupted by a second Generate never saw its cells leave the animating
+    // set, so their `.animate` class never came off, so the CSS animation never
+    // restarted and the incoming sequence simply appeared.
+    stepsToAnimate = new Set();
 
     if (mode === "sequential") {
       // Sequential mode: Start with empty stepsToAnimate
       shouldAnimateAllSteps = false;
-      stepsToAnimate.clear();
       isWaitingForSequentialAnimation = true;
     } else {
       // All at once mode: All steps animate immediately
       shouldAnimateAllSteps = true;
-      stepsToAnimate.clear();
       isWaitingForSequentialAnimation = false;
     }
   }
@@ -137,14 +168,18 @@ export function createStepGridDisplayState() {
     shouldAnimateStartPosition = false;
     shouldAnimateAllSteps = false;
     newlyAddedStepIndex = null;
+    // Same reason as prepareSequenceAnimation: the old wave's clock must not
+    // outlive it, or a cell reporting ready in the gap schedules against a t0
+    // that is already in the past and lands with no delay at all.
+    waveStartedAt = 0;
 
-    // Mark only the new beats (from existingBeatCount onward) as waiting
-    stepsToAnimate.clear();
-    // Pre-populate existing beats so they're not hidden
+    // Mark only the new beats (from existingBeatCount onward) as waiting.
+    // Pre-populate existing beats so they're not hidden.
+    const carried = new Set<number>();
     for (let i = 0; i < existingBeatCount; i++) {
-      stepsToAnimate.add(i);
+      carried.add(i);
     }
-    stepsToAnimate = new Set(stepsToAnimate);
+    stepsToAnimate = carried;
 
     isWaitingForSequentialAnimation = true;
   }
@@ -177,23 +212,50 @@ export function createStepGridDisplayState() {
     const thisGeneration = ++animationGeneration;
     const stepCount = steps.length;
 
+    const next = new Set(stepsToAnimate);
     for (let i = startFromIndex; i < stepCount; i++) {
-      stepsToAnimate.add(i);
+      next.add(i);
     }
-    stepsToAnimate = new Set(stepsToAnimate); // Trigger reactivity
+    stepsToAnimate = next; // Trigger reactivity
 
     const bands = Math.max(0, maxWaveBand ?? stepCount);
-    const revealDuration =
+    const nominalReveal =
       bands * animationTiming.waveBandDelay + animationTiming.entranceDuration;
 
-    await new Promise((resolve) =>
-      setTimeout(resolve, revealDuration + animationTiming.cleanupDelay)
-    );
+    waveStartedAt = performance.now();
+    revealCompletesAt = waveStartedAt + nominalReveal;
+    revealDeadline = revealCompletesAt + MAX_CONTENT_GATE_MS;
+
+    // Cells report the delay they actually took, so a pictograph that finished
+    // late pushes this out. Re-check rather than sleeping once: the wave is not
+    // over until the last cell that joined it has landed.
+    for (;;) {
+      const remaining = revealCompletesAt - performance.now();
+      if (remaining <= 0) break;
+      await wait(remaining);
+      if (thisGeneration !== animationGeneration) return;
+    }
+
+    await wait(animationTiming.cleanupDelay);
 
     // Only cleanup if this animation is still current
     if (thisGeneration === animationGeneration) {
       cleanupAnimation();
     }
+  }
+
+  /**
+   * A cell has scheduled its entrance `delayMs` from now. Holds the wave open
+   * long enough for it to finish, up to the content-gate deadline.
+   */
+  function noteRevealScheduled(delayMs: number) {
+    if (waveStartedAt === 0) return;
+    const landsAt =
+      performance.now() + delayMs + animationTiming.entranceDuration;
+    revealCompletesAt = Math.min(
+      Math.max(revealCompletesAt, landsAt),
+      revealDeadline
+    );
   }
 
   /**
@@ -224,7 +286,7 @@ export function createStepGridDisplayState() {
     newlyAddedStepIndex = stepIndex;
     shouldAnimateAllSteps = false;
     shouldAnimateStartPosition = false;
-    stepsToAnimate.clear();
+    stepsToAnimate = new Set();
     arrivalRequest = shouldStageArrival
       ? {
           intent: "commit",
@@ -281,8 +343,9 @@ export function createStepGridDisplayState() {
     isWaitingForSequentialAnimation = false;
     shouldAnimateStartPosition = false;
     shouldAnimateAllSteps = false;
-    stepsToAnimate.clear();
+    stepsToAnimate = new Set();
     arrivalRequest = null;
+    waveStartedAt = 0;
   }
 
   /**
@@ -350,6 +413,13 @@ export function createStepGridDisplayState() {
     get animationTiming() {
       return animationTiming;
     },
+    /**
+     * performance.now() timestamp the current reveal wave started at, or 0 when
+     * no wave is running. Cells schedule their own band against it.
+     */
+    get waveStartedAt() {
+      return waveStartedAt;
+    },
     get animationEpoch() {
       return animationEpoch;
     },
@@ -362,6 +432,7 @@ export function createStepGridDisplayState() {
     prepareSequenceAnimation,
     prepareCycleExtensionAnimation,
     triggerSequentialAnimation,
+    noteRevealScheduled,
     triggerAllAtOnceAnimation,
     handleSingleBeatAddition,
     beginArrivalLanding,

@@ -37,6 +37,7 @@
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
     transitionKey = null,
+    onContentReady = undefined,
   } = $props<{
     step: StepData;
     index?: number;
@@ -64,6 +65,12 @@
     redPropTypeOverride?: PropType;
     /** Stable history identity used to preserve prop and arrow motion through reordering. */
     transitionKey?: string | null;
+    /**
+     * Fires when this cell is painting the step it was handed — not merely
+     * mounted. The generation reveal waits on it so a card never sweeps in
+     * carrying the previous sequence's pictograph, or nothing at all.
+     */
+    onContentReady?: () => void;
   }>();
 
   // Services
@@ -335,6 +342,8 @@
     {transitionKey}
     {bluePropTypeOverride}
     {redPropTypeOverride}
+    onReady={onContentReady}
+    readyEpoch={animationEpoch}
   />
 </div>
 
@@ -417,13 +426,17 @@
   }
 
   /**
-   * The entrance gesture. `--wave-band` is the cell's diagonal distance from
-   * the start position, set by WorkspaceGrid; multiplying it by the band delay
-   * spaces the reveal into a front that sweeps out of the start tile. The
-   * compositor runs this, so the stagger survives the main-thread work that
-   * generation does while the pictographs render.
+   * The entrance gesture, staggered across the diagonal wave.
    *
-   * Cells outside a whole-sequence reveal get band 0 and land immediately.
+   * `--reveal-delay` is set by WorkspaceGrid on a whole-sequence reveal: it is
+   * what REMAINS of this cell's turn, measured at the moment the cell's
+   * pictograph finished painting. A cell ready early waits out its band; a cell
+   * whose content ran late goes as soon as it can. Once the animation starts the
+   * compositor owns it, so the stagger survives the main-thread work generation
+   * is still doing.
+   *
+   * Outside a whole-sequence reveal — a cycle extension, a single committed
+   * step — WorkspaceGrid still sets it, to the plain band arithmetic or to zero.
    *
    * `both` matters: the backwards fill holds the 0% frame through the delay, so
    * a cell waiting its turn shows the gesture's starting pose rather than the
@@ -432,7 +445,7 @@
   .step-cell.animate {
     animation: stepCascade var(--step-entrance-duration, 380ms)
       cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: calc(var(--wave-band, 0) * var(--wave-band-delay, 55ms));
+    animation-delay: var(--reveal-delay, 0ms);
   }
 
   .step-cell:hover {
