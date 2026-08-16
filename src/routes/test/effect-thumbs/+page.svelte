@@ -1,11 +1,23 @@
 <script lang="ts">
+  import { TRAIL_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/trail-presets";
   import { FIRE_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/fire-presets";
   import { BLOOM_PRESETS } from "$lib/shared/animation-engine/components/effects-panel/presets/bloom-presets";
+  import TrailThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/TrailThumbnail.svelte";
   import FireThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/FireThumbnail.svelte";
   import BloomThumbnail from "$lib/shared/animation-engine/components/effects-panel/thumbnails/BloomThumbnail.svelte";
 </script>
 
 <div class="page">
+  <h2>Trails</h2>
+  <div class="grid">
+    {#each TRAIL_PRESETS as preset (preset.id)}
+      <figure>
+        <figcaption>{preset.name}</figcaption>
+        <div class="tile"><TrailThumbnail {preset} /></div>
+      </figure>
+    {/each}
+  </div>
+
   <h2>Fire</h2>
   <div class="grid">
     {#each FIRE_PRESETS as preset (preset.id)}
@@ -16,7 +28,7 @@
     {/each}
   </div>
 
-  <h2>Bloom (shipped, for tone reference)</h2>
+  <h2>Bloom</h2>
   <div class="grid">
     {#each BLOOM_PRESETS as preset (preset.id)}
       <figure>

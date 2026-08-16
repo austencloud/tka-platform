@@ -4,6 +4,7 @@
   import EffectLookPreview from "./EffectLookPreview.svelte";
   import BloomThumbnail from "./thumbnails/BloomThumbnail.svelte";
   import FireThumbnail from "./thumbnails/FireThumbnail.svelte";
+  import TrailThumbnail from "./thumbnails/TrailThumbnail.svelte";
 
   interface Props {
     effectType: string;
@@ -19,6 +20,8 @@
   <BloomThumbnail preset={preset as EffectPreset<"bloom">} {active} />
 {:else if effectType === "fire"}
   <FireThumbnail preset={preset as EffectPreset<"fire">} {active} />
+{:else if effectType === "trails"}
+  <TrailThumbnail preset={preset as EffectPreset<"trails">} {active} />
 {:else}
   <!-- Each remaining effect replaces this fallback only after its thumbnail
        direction has passed the same visual review as Bloom: a stylised portrait

@@ -20,9 +20,21 @@ export const TRAIL_PRESETS: EffectPreset<"trails">[] = [
   {
     id: "trail-ember",
     name: "Ember Trail",
-    previewColor: "#f97316",
-    previewColor2: "#fbbf24",
-    patch: { thickness: 6, brightness: 0.9, blueColor: "#f97316", redColor: "#fbbf24" },
+    previewColor: "#ff4d1c",
+    previewColor2: "#ffc046",
+    // The shipped 6 / 0.9 / orange+amber was Neon in a warm hue: brightness a
+    // tenth off maximum is invisible against Neon's 1.0, and #f97316 next to
+    // #fbbf24 is close enough in hue that the two props read as one doubled
+    // stroke rather than two. Measured at tile size it covered 41% of the frame
+    // against Neon's 23% - a solid glowing mass, not a dying coal.
+    //
+    // An ember is the wide dim look, so it now takes the low end of the
+    // brightness range the panel exposes (0.3-1) and a wider ribbon, and the
+    // pair is pushed apart to deep fire-red and gold so the two props stay
+    // legible. brightness reaches 2D as maxOpacity with minOpacity at 30% of it
+    // (foldTrailIntentIntoSettings), so lowering it shortens the visible tail
+    // as well as dimming it - which is what makes it read as fading.
+    patch: { thickness: 8, brightness: 0.55, blueColor: "#ff4d1c", redColor: "#ffc046" },
   },
 ];
 

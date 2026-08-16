@@ -14,6 +14,10 @@ const LOOK_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "bloom-comet": "Long-exposure motion",
   "bloom-halo": "Soft photographic glow",
 
+  // Trails
+  "trail-neon": "Thin electric ribbons",
+  "trail-ember": "Wide fading coal glow",
+
   // Fire
   "fire-classic": "Natural orange burn",
   "fire-blue-flame": "Cold gas-blue burn",
