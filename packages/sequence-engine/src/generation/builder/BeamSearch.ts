@@ -17,7 +17,7 @@ import type {
   VariationScore,
   ConstraintReport,
 } from "../constraints/types.js";
-import type { TurnAllocation } from "../turns/TurnAllocator.js";
+import type { TurnSource } from "../turns/TurnSource.js";
 import { scoreAndRankVariations } from "./variation-scorer.js";
 import {
   createInitialState,
@@ -56,14 +56,14 @@ export type PropContinuityMode =
 function enrichWithTurns(
   variation: PictographData,
   stepIndex: number,
-  turnAllocation: TurnAllocation | undefined,
+  turnSource: TurnSource | undefined,
   previousSteps: PictographData[],
   propContinuity: PropContinuityMode | undefined
 ): PictographData {
-  if (!turnAllocation) return variation;
+  if (!turnSource) return variation;
 
-  const blueTurns = turnAllocation.blue[stepIndex];
-  const redTurns = turnAllocation.red[stepIndex];
+  const blueTurns = turnSource.at(stepIndex, "blue");
+  const redTurns = turnSource.at(stepIndex, "red");
 
   const enrichedBlue = enrichMotionDirection(
     variation.blueMotion,
@@ -203,7 +203,7 @@ export class BeamSearch {
     constraintSet: ConstraintSet,
     beamWidth?: number,
     requiredEndPositions?: Set<string>,
-    turnAllocation?: TurnAllocation,
+    turnSource?: TurnSource,
     propContinuity?: PropContinuityMode
   ): BeamSearchResult {
     const config: BeamSearchConfig = {
@@ -268,7 +268,7 @@ export class BeamSearch {
         const enriched = enrichWithTurns(
           scored.variation,
           0,
-          turnAllocation,
+          turnSource,
           initialState.steps,
           propContinuity
         );
@@ -353,7 +353,7 @@ export class BeamSearch {
             const enriched = enrichWithTurns(
               scored.variation,
               i,
-              turnAllocation,
+              turnSource,
               state.steps,
               propContinuity
             );
@@ -431,7 +431,7 @@ export class BeamSearch {
       mustNotContainLetters?: Set<string>;
       mustContainLetters?: Set<string>;
     },
-    turnAllocation?: TurnAllocation,
+    turnSource?: TurnSource,
     propContinuity?: PropContinuityMode,
     reachability?: ReachabilityResult
   ): BeamSearchResult {
@@ -553,7 +553,7 @@ export class BeamSearch {
         const enriched = enrichWithTurns(
           scored.variation,
           0,
-          turnAllocation,
+          turnSource,
           initialState.steps,
           propContinuity
         );
@@ -650,7 +650,7 @@ export class BeamSearch {
           const enriched = enrichWithTurns(
             scored.variation,
             i,
-            turnAllocation,
+            turnSource,
             state.steps,
             propContinuity
           );

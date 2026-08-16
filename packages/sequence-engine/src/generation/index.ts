@@ -160,6 +160,13 @@ export {
   type TurnAllocation,
 } from "./turns/TurnAllocator.js";
 export {
+  allocationSource,
+  patternSource,
+  type TurnColor,
+  type TurnLanes,
+  type TurnSource,
+} from "./turns/TurnSource.js";
+export {
   materializeTurn,
   type MaterializedTurn,
   type TurnMaterializationOptions,

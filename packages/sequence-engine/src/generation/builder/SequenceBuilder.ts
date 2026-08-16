@@ -39,6 +39,12 @@ import {
   type TurnAllocation,
   type TurnAllocationOptions,
 } from "../turns/TurnAllocator.js";
+import {
+  allocationSource,
+  patternSource,
+  type TurnLanes,
+  type TurnSource,
+} from "../turns/TurnSource.js";
 import { materializeTurn } from "../turns/TurnMaterializer.js";
 import {
   applyLayerPattern,
@@ -216,6 +222,19 @@ export interface BuildOptions {
 
   /** Maximum turn intensity cap (0-3). Undefined = level default. */
   maxTurnIntensity?: number;
+
+  /**
+   * Turns to use instead of rolling them at random, given as a repeating
+   * period per prop. `{ blue: [0, 1.5], red: [0.5] }` means blue alternates no
+   * turn and a turn and a half while red takes a half turn every step.
+   *
+   * The period is indexed modulo its own length, so it covers every step the
+   * search produces, including the bridge steps inserted between letters that
+   * have no direct transition. It is also visible to the constraint system
+   * while letters are being chosen, which is why a zeroed step will not be
+   * given a static letter that needs turns to be worth anything.
+   */
+  turnPattern?: TurnLanes;
 
   /**
    * Ask for a specific layer signature — which of the four radial/non-radial
@@ -575,12 +594,16 @@ export class SequenceBuilder {
     const constraintSet = this.assembleConstraints(options);
 
     // Stage 3: Allocate turns
-    const turnAllocation = allocateTurns(
-      letters.length,
-      options.level,
-      options.maxTurnIntensity,
-      resolveTurnAllocationOptions(options)
-    );
+    const turnSource: TurnSource = options.turnPattern
+      ? patternSource(options.turnPattern)
+      : allocationSource(
+          allocateTurns(
+            letters.length,
+            options.level,
+            options.maxTurnIntensity,
+            resolveTurnAllocationOptions(options)
+          )
+        );
 
     // Stage 4: Beam search
     // When LOOP is requested, the last letter must end at a position
@@ -668,7 +691,7 @@ export class SequenceBuilder {
           constraintSet,
           options.beamWidth ?? 10,
           target.requiredEnds,
-          turnAllocation,
+          turnSource,
           propContinuity
         );
 
@@ -708,7 +731,7 @@ export class SequenceBuilder {
     const propContinuity = this.resolveEffectivePropContinuity(options);
     const result = this.postProcess(
       searchResult,
-      turnAllocation,
+      turnSource,
       letters,
       propContinuity,
       {
@@ -780,12 +803,16 @@ export class SequenceBuilder {
     }
 
     // Stage 3: Allocate turns
-    const turnAllocation = allocateTurns(
-      length,
-      options.level,
-      options.maxTurnIntensity,
-      resolveTurnAllocationOptions(options)
-    );
+    const turnSource: TurnSource = options.turnPattern
+      ? patternSource(options.turnPattern)
+      : allocationSource(
+          allocateTurns(
+            length,
+            options.level,
+            options.maxTurnIntensity,
+            resolveTurnAllocationOptions(options)
+          )
+        );
 
     // Stage 4: Beam search by length
     // When generating a LOOP seed, the last step must end at a specific
@@ -943,7 +970,7 @@ export class SequenceBuilder {
         requiredEndPositions,
         loopPositionMap,
         searchOptions,
-        turnAllocation,
+        turnSource,
         propContinuity,
         reachability
       );
@@ -1063,7 +1090,7 @@ export class SequenceBuilder {
           requiredEndPositions,
           loopPositionMap,
           searchOptions,
-          turnAllocation,
+          turnSource,
           propContinuity,
           reachabilityRetry
         );
@@ -1118,7 +1145,7 @@ export class SequenceBuilder {
     const propContinuity = this.resolveEffectivePropContinuity(options);
     const result = this.postProcess(
       searchResult,
-      turnAllocation,
+      turnSource,
       letters,
       propContinuity,
       {
@@ -1254,7 +1281,7 @@ export class SequenceBuilder {
    */
   private postProcess(
     searchResult: BeamSearchResult,
-    turnAllocation: TurnAllocation,
+    turnSource: TurnSource,
     letters: string[],
     propContinuity?: "maximize" | "allow-reversals" | "force-reversals",
     orientationOverrides?: {
@@ -1284,14 +1311,13 @@ export class SequenceBuilder {
       // Apply turn allocation. Index 0 = start position (no turns),
       // letter steps are 1-indexed in the turn allocation arrays.
       const stepTurnIndex = i > 0 ? i - 1 : -1;
+      // The source owns the bounds question. A random allocation still runs out
+      // past its length, exactly as before; a pattern answers at every index,
+      // which is what lets it cover the bridge steps the search inserted.
       const blueTurns =
-        stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.blue.length
-          ? turnAllocation.blue[stepTurnIndex]
-          : undefined;
+        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "blue") : undefined;
       const redTurns =
-        stepTurnIndex >= 0 && stepTurnIndex < turnAllocation.red.length
-          ? turnAllocation.red[stepTurnIndex]
-          : undefined;
+        stepTurnIndex >= 0 ? turnSource.at(stepTurnIndex, "red") : undefined;
 
       // Get the previous step's rotation directions for continuity
       const prevStep =
@@ -1445,6 +1471,14 @@ export class SequenceBuilder {
     }
 
     const startPosition = propagated[0]!;
+
+    // Report what was actually used rather than what was allocated up front, so
+    // the numbers here cover the bridge steps too. Step 0 is the start position
+    // and carries no turns, hence the offset.
+    const turnAllocation: TurnAllocation = {
+      blue: propagated.slice(1).map((_, i) => turnSource.at(i, "blue") ?? 0),
+      red: propagated.slice(1).map((_, i) => turnSource.at(i, "red") ?? 0),
+    };
 
     return {
       sequence: propagated,
