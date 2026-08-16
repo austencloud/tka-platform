@@ -244,6 +244,50 @@ rail → a "VISIBILITY" header is three nav levels to reach a toggle.
       playhead at 0:05.9, Tunnel's kaleidoscope with spectrum arms at 0:04.8,
       and Tunnel-over-Mandala (a pairing no preset could reach) both rendering
       at 0:14.8.
+- [x] **P3b — Art controls in the inspector.** Austen (2026-08-15): *"We need
+      access to all of the ability to modify the tunnel in Mandala just like we
+      have in the sequence viewer when we have selected it as the chosen
+      layer."*
+
+      The viewer's own `ArtSettingsPanel` now renders in the inspector when the
+      selected layer is Tunnel or Mandala — the same component, unmodified in
+      behavior. What made that possible is ownership: `PostStudioArtControllers`
+      (`post-studio-art-context.svelte.ts`) builds both controllers in
+      `PostStudio.svelte`, above both the slot that draws the art and the
+      inspector that steers it, so a Look change lands on the instance the
+      canvas is reading. That is `ArtPane`'s pattern, not a new one. Tunnel
+      activation is refcounted (`retainTunnel`) because either slot can be a
+      tunnel and both can be at once.
+
+      `PostStudioMandalaLayer` dropped its hand-rolled `MandalaFrameSpec` and
+      mounts the viewer's `MandalaPane`, so the slot and the controls are one
+      renderer. Consequence, deliberate: the mandala self-clocks now instead of
+      scrubbing with the playhead — same as the tunnel, and P4 owns
+      frame-exact seeking for both.
+
+      Export is suppressed in the studio (`showExport={false}`, new on
+      `ArtSettingsPanelProps`): the studio's Render button makes the post, and
+      an "Export MP4" of one layer inside it is a second, quieter answer to the
+      same question. The mandala's Download section goes with it — its
+      resolution / fps / loop-count steer a render Post Studio never performs.
+      `ArtPane` doesn't pass the prop, so the viewer is unchanged.
+
+      `PostStudioInspector` had enumerated the modes that HAVE settings, which
+      meant every new source type shipped without its controls until someone
+      remembered the list. It excludes the two that have none instead
+      (`external-media`, `scene-3d`).
+
+      Evidence: `svelte-check` 0/0, 49/49 `tests/unit/media-composition`, zero
+      console messages, and live at `/test/post-studio` — Pinwheel applied from
+      the inspector redraws the slot as a 16-prop spectrum kaleidoscope; the
+      mandala stack reads Speed / Shape / Spin / Colors / Weight / Depth with
+      no Download; screenshots at 1920 / 2560 / 3840 / 375×667.
+
+      Not a bug, recorded so it isn't re-investigated: a tunnel paused at 0:00
+      draws two props. The renderer receives all 7 additional layers at that
+      frame (measured) — step 1 is the sequence's start pose, where the rotated
+      copies coincide. Paused at any later frame it holds the full ring. The
+      viewer never shows this because its tunnel auto-plays.
 - [ ] **P4 — Compositor branches.** `tunnel`, `scene-3d`, `mandala` capture paths
       in `post-studio-frame-compositor.ts`. Verify an actual export of each.
 - [ ] **P5 — Multi-clip tracks.** `appendClipToSlot`, `removeClip`, crossfade at

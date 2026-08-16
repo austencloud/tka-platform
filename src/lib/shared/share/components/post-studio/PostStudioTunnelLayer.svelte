@@ -1,8 +1,8 @@
 <script lang="ts">
   import TunnelArtView from "$lib/shared/sequence-viewer/tunnel/TunnelArtView.svelte";
-  import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
+  import { getPostStudioArtContext } from "./post-studio-art-context.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -22,10 +22,11 @@
     animationState: { sequenceData: sequence },
   } as unknown as ViewerPlaybackState;
 
-  const controller = new TunnelViewController({
-    getSequence: () => sequence,
-  });
-  controller.active = true;
+  // The studio owns the controller so the inspector's tunnel controls drive
+  // this canvas. Activation is refcounted — both slots can be tunnels.
+  const art = getPostStudioArtContext();
+  const controller = art.tunnel;
+  $effect(() => art.retainTunnel());
 </script>
 
 <div class="tunnel-slot">

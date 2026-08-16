@@ -37,9 +37,19 @@
   let view = $state<InspectorView>("source");
   let previousRole = $state<string | null>(null);
   const selectedBinding = $derived(composition.selectedBinding);
+  // Everything the studio draws itself has a Look to edit; only dropped-in
+  // media (a video file, an image) has nothing to steer. Naming the modes that
+  // DO have settings meant every new source type shipped without its controls
+  // until someone remembered to extend this list.
+  // Everything the studio draws itself has a Look to edit; the exceptions are
+  // dropped-in media (a video file has nothing to steer) and the 3D view, which
+  // isn't wired up yet. Listing the modes that DO have settings was the older
+  // shape, and it meant every new source type shipped without its controls
+  // until someone remembered to extend the list.
+  const WITHOUT_SOURCE_SETTINGS = ["external-media", "scene-3d"];
   const hasSourceSettings = $derived(
-    selectedBinding?.renderMode === "sequence-animation" ||
-      selectedBinding?.renderMode === "choreo-card"
+    Boolean(selectedBinding?.renderMode) &&
+      !WITHOUT_SOURCE_SETTINGS.includes(selectedBinding?.renderMode ?? "")
   );
 
   $effect(() => {

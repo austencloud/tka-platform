@@ -6,6 +6,8 @@
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import type { ResolvedAutoLayout } from "$lib/shared/render/services/container-aware-layout";
   import ExportImagePanel from "$lib/shared/sequence-viewer/components/ExportImagePanel.svelte";
+  import ArtSettingsPanel from "$lib/shared/sequence-viewer/components/ArtSettingsPanel.svelte";
+  import { getPostStudioArtContext } from "./post-studio-art-context.svelte";
 
   let {
     sequence,
@@ -23,6 +25,15 @@
 
   const composition = getMediaCompositionContext();
   const selectedBinding = $derived(composition.selectedBinding);
+
+  // The tunnel and mandala controls are the sequence viewer's, unchanged — the
+  // same panel, on the same controllers the slots render from. Export is off:
+  // the studio's Render button makes the post, and an "Export MP4" of one layer
+  // inside it would be a second, quieter answer to the same question.
+  const art = getPostStudioArtContext();
+  const artType = $derived(
+    selectedBinding?.renderMode === "tunnel" ? "tunnel" : "mandala"
+  );
 </script>
 
 {#if selectedBinding?.renderMode === "sequence-animation"}
@@ -49,6 +60,25 @@
       layout="inline"
       stepCount={sequence.steps.length}
       {resolvedAutoLayout}
+    />
+  </div>
+{:else if selectedBinding?.renderMode === "tunnel" || selectedBinding?.renderMode === "mandala"}
+  <div class="art-settings">
+    <ArtSettingsPanel
+      {artType}
+      controller={art.tunnel}
+      mandalaController={art.mandala}
+      layout="sidebar"
+      onExport={() => {}}
+      showExport={false}
+      bpm={composition.tempoBpm ?? 60}
+      isPlaying={composition.isPlaying}
+      onBpmChange={composition.tempoBpm === null
+        ? undefined
+        : composition.setTempoBpm}
+      onPlaybackToggle={composition.togglePlayback}
+      bluePropType={selectedPropType}
+      {onPropChange}
     />
   </div>
 {/if}
@@ -106,6 +136,36 @@
     background: transparent;
   }
 
+  .art-settings {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+  }
+
+  /* The viewer's art panel is a fixed-width card because it sits in a right
+     rail beside the art. Here it IS the rail, so it takes the whole inspector
+     column and drops the clamp that would otherwise cap it at 420px in a
+     region three times that wide at 4K. */
+  .art-settings :global(.art-settings-panel) {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+  }
+
+  /* Same centering the animation panel needed releasing: the shared section
+     sets `margin: auto 0`, which floats the controls in the middle of the rail
+     — 76px of nothing above the first control and the same below it. A property
+     panel starts at the top. */
+  .art-settings :global(.panel-center-inner) {
+    max-width: none;
+    margin-block: 0;
+    align-self: stretch;
+  }
+
+  .art-settings :global(.icon-rail) {
+    justify-content: flex-start;
+  }
+
   @container post-studio-animation-settings (min-width: 35rem) {
     .animation-settings :global(.panel-title),
     .animation-settings :global(.effects-panel.detail-view > .sb-footer) {
@@ -120,7 +180,8 @@
      every chip, label and row inside without forking the shared panel CSS. */
   @container post-studio (min-width: 105rem) {
     .animation-settings,
-    .card-settings {
+    .card-settings,
+    .art-settings {
       --font-size-compact: 0.8125rem;
       --font-size-min: 0.9375rem;
       --min-touch-target: 3rem;
@@ -129,7 +190,8 @@
 
   @container post-studio (min-width: 180rem) {
     .animation-settings,
-    .card-settings {
+    .card-settings,
+    .art-settings {
       --font-size-compact: 1.0625rem;
       --font-size-min: 1.25rem;
       --min-touch-target: 3.75rem;

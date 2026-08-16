@@ -104,7 +104,6 @@
   {:else if binding.renderMode === "mandala"}
     <PostStudioMandalaLayer
       {sequence}
-      {sourceTimeSeconds}
       bluePropType={cardRenderOptions?.bluePropTypeOverride ??
         cardRenderOptions?.propTypeOverride}
       redPropType={cardRenderOptions?.redPropTypeOverride ??

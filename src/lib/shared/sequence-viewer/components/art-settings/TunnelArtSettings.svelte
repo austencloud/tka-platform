@@ -35,6 +35,7 @@
     controller: TunnelViewController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
+    showExport: boolean;
     onSaveTunnel?: () => void;
     bpm: number;
     playbackMode: PlaybackMode;
@@ -53,6 +54,7 @@
     controller,
     layout,
     onExport,
+    showExport,
     onSaveTunnel,
     bpm,
     playbackMode,
@@ -226,7 +228,7 @@
     tabs={tunnelDockTabs}
     activeTab={openTunnelTab}
     onTabSelect={selectTunnelDock}
-    trailingAction={tunnelDockExport}
+    trailingAction={showExport ? tunnelDockExport : undefined}
     trayMaxHeight={openTunnelTab === "effects"
       ? "min(54vh, 360px)"
       : "min(33vh, 250px)"}
@@ -274,11 +276,13 @@
           </div>
         </div>
 
-        <ArtActionFooter
-          {onExport}
-          exportLabel="Export Video"
-          busy={exporting}
-        />
+        {#if showExport}
+          <ArtActionFooter
+            {onExport}
+            exportLabel="Export Video"
+            busy={exporting}
+          />
+        {/if}
       </div>
     </div>
   </ArtSettingsSidebarFrame>

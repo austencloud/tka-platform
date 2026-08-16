@@ -19,6 +19,7 @@
     mandalaController: MandalaViewerController;
     layout: "sidebar" | "bottom";
     onExport: () => void;
+    showExport: boolean;
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
@@ -28,6 +29,7 @@
     mandalaController,
     layout,
     onExport,
+    showExport,
     onArtSettingChange,
     exporting,
     reduceMotion,
@@ -56,8 +58,14 @@
   // Mandala shows ALL its controls stacked (each is a single compact row, so a
   // per-section rail would leave the tall panel mostly empty). The rail is kept
   // for the tunnel, whose sections carry real content.
-  const mandalaStack: { id: MandalaRailId; label: string }[] = mandalaRail.map(
-    ({ id, label }) => ({ id, label })
+  //
+  // Download is resolution / fps / loop-count for the mandala's own render, so
+  // it goes with the export button: a host that owns the render (Post Studio)
+  // never performs this one, and its settings would steer nothing.
+  const mandalaStack = $derived<{ id: MandalaRailId; label: string }[]>(
+    mandalaRail
+      .filter(({ id }) => showExport || id !== "download")
+      .map(({ id, label }) => ({ id, label }))
   );
 
   let openMandalaCat = $state<MandalaRailId | null>(null);
@@ -100,7 +108,7 @@
     tabs={mandalaDockTabs}
     activeTab={openMandalaCat}
     onTabSelect={selectMandalaDock}
-    trailingAction={mandalaDockExport}
+    trailingAction={showExport ? mandalaDockExport : undefined}
     trayMaxHeight="min(33vh, 250px)"
   >
     {#snippet tray()}
@@ -138,7 +146,9 @@
         {/each}
       </div>
 
-      <ArtActionFooter {onExport} exportLabel="Export MP4" />
+      {#if showExport}
+        <ArtActionFooter {onExport} exportLabel="Export MP4" />
+      {/if}
     </div>
   </ArtSettingsSidebarFrame>
 {/if}

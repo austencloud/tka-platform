@@ -20,13 +20,25 @@ export type ArtSettingChangeHandler = (
 ) => void;
 
 export interface ArtSettingsPanelProps {
-  sequence: SequenceData;
-  playback: ViewerPlaybackState;
+  /**
+   * Optional because the panel steers controllers, not the sequence — hosts
+   * without a viewer transport (Post Studio's inspector) have no playback
+   * object to hand it, and inventing one for a field nothing reads is worse
+   * than leaving it out.
+   */
+  sequence?: SequenceData;
+  playback?: ViewerPlaybackState;
   controller: TunnelViewController;
   mandalaController: MandalaViewerController;
   artType: ArtType;
   layout?: "sidebar" | "bottom";
+  /** Renders the art on its own. Ignored when `showExport` is false. */
   onExport: () => void;
+  /**
+   * False where the art is one layer of something bigger and that bigger thing
+   * owns the render — a mandala MP4 is not the post it sits in.
+   */
+  showExport?: boolean;
   onSaveTunnel?: () => void;
   bpm?: number;
   playbackMode?: PlaybackMode;

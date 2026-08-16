@@ -50,6 +50,10 @@
   } from "./post-studio-performance-selection";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
   import { withPostStudioPropType } from "./post-studio-prop-render-options";
+  import {
+    PostStudioArtControllers,
+    setPostStudioArtContext,
+  } from "./post-studio-art-context.svelte";
 
   type FocusedPanel = "canvas" | "edit" | "timing";
 
@@ -319,6 +323,17 @@
     },
   });
   setMediaCompositionContext(composition);
+
+  // Tunnel and mandala controllers live here, above both the slot that draws
+  // them and the inspector that steers them, so the Look / Spin / Colors
+  // controls change the instance the canvas is reading. Same ownership as
+  // ArtPane in the sequence viewer.
+  const artControllers = new PostStudioArtControllers({
+    getSequence: () => sequence,
+    getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
+    getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
+  });
+  setPostStudioArtContext(artControllers);
 
   let previewRoot = $state<HTMLElement | null>(null);
   let audioMode = $state<"original" | "instagram">("original");
