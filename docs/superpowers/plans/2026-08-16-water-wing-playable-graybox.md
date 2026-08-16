@@ -71,7 +71,7 @@
 - Modify: `src/lib/features/museum/data/drowned-gallery-terrain.ts`
 - Test: `tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts`:
 
@@ -168,7 +168,7 @@ describe("drowned gallery exhibit fixtures", () => {
 });
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 ```bash
 npx vitest run tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts
@@ -176,7 +176,7 @@ npx vitest run tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts
 
 Expected: FAIL — `exhibitFixtures` is not a property of the layout, and `ExhibitFixture` is not exported.
 
-- [ ] **Step 3: Add the type**
+- [x] **Step 3: Add the type**
 
 In `src/lib/features/museum/data/drowned-gallery-terrain.ts`, immediately after the `export interface WaterPlane extends WorldRect { … }` block, insert:
 
@@ -210,7 +210,7 @@ export interface ExhibitFixture {
 }
 ```
 
-- [ ] **Step 4: Add it to the layout interface**
+- [x] **Step 4: Add it to the layout interface**
 
 In the same file, inside `export interface DrownedGalleryLayout`, directly below the `balustrades: WorldRect[];` line in the grotto section, add:
 
@@ -219,7 +219,7 @@ In the same file, inside `export interface DrownedGalleryLayout`, directly below
   exhibitFixtures: ExhibitFixture[];
 ```
 
-- [ ] **Step 5: Derive the fixtures**
+- [x] **Step 5: Derive the fixtures**
 
 In `buildDrownedGalleryLayout`, after `alcoves` and `balustrades` are computed and before the layout object is returned, insert:
 
@@ -322,7 +322,7 @@ In `buildDrownedGalleryLayout`, after `alcoves` and `balustrades` are computed a
 
 Then add `exhibitFixtures,` to the returned layout object, next to `balustrades,`.
 
-- [ ] **Step 6: Run the test**
+- [x] **Step 6: Run the test**
 
 ```bash
 npx vitest run tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts
@@ -332,7 +332,18 @@ Expected: PASS, 6/6.
 
 If the clear-width or apron-containment assertions fail, adjust the derivation constants (`0.35` setback, `0.3` apron fraction, `2.35` dais setback) — **not** the assertions. The assertions are the room's requirements.
 
-- [ ] **Step 7: Run the existing terrain tests to prove nothing regressed**
+**Deviations taken while executing (2026-08-16, commit `a0ef3e99c5`):**
+
+1. `buildDrownedGalleryLayout` takes the grid and returns `DrownedGalleryLayout | null`. The test builds the layout as
+   `buildDrownedGalleryLayout(buildVulcanCaveFloorPlan().grid)!`, matching `drowned-gallery-terrain.test.ts:33-36`.
+2. The plan put the opener plinth **south** of the dais (`openerDaisZ − DAIS/2 − 0.85`). That overhangs `pool.maxZ`, which is
+   also `apron.minZ`, so both the apron-containment and the no-fixture-in-water assertions failed. Fixed in the derivation, per
+   the instruction above: the visitor arrives from **+z**, so the plinth now stands **north** of the dais — between the visitor
+   and it — and both face `FACE_NORTH`. The group's depth (`dais + gap + plinth`) is centred in the apron band that starts at
+   `apron.minZ + RAIL_T`, clearing the pool's south rail. `FACE_SOUTH` became unused and was removed.
+   Resulting values: dais at z 21.975, plinth at z 24.25, both at x 7.7.
+
+- [x] **Step 7: Run the existing terrain tests to prove nothing regressed**
 
 ```bash
 npx vitest run tests/unit/museum/drowned-gallery-terrain.test.ts tests/unit/museum/drowned-gallery-traversal.test.ts
@@ -340,7 +351,7 @@ npx vitest run tests/unit/museum/drowned-gallery-terrain.test.ts tests/unit/muse
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add tests/unit/museum/drowned-gallery-exhibit-fixtures.test.ts
