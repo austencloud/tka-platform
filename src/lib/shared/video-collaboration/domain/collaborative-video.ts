@@ -26,6 +26,14 @@ export interface VideoCollaborator {
 export interface StepMap {
   /** One timestamp per beat. beatTimestamps[0] = when beat 1 starts in seconds. */
   readonly beatTimestamps: number[];
+  /**
+   * When the last move lands, in seconds. A move's arrival is the next move's
+   * launch, so marking every arrival yields one more instant than there are
+   * moves - this is that final one. Optional because maps saved before the
+   * editor collected it have no value for it; consumers fall back to the end
+   * of the clip.
+   */
+  readonly endTimestamp?: number;
   readonly stepCount: number;
   readonly source: "manual" | "auto-detected" | "hybrid";
   readonly updatedAt: Date;

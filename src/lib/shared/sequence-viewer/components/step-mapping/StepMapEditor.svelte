@@ -1,25 +1,40 @@
 <!--
   StepMapEditor.svelte
 
-  Full annotation UI for mapping performance video timestamps to sequence steps.
-  Combines a video player, transport controls, the draggable StepMapTimeline,
-  tap-to-place mode for quick sequential marking, and save/cancel actions.
+  Maps a performance video's timing to a sequence, by tapping the pictograph.
+
+  The button's face is the move happening right now. You watch the performer,
+  you see that shape land, you hit the button. Every tap is the same action -
+  "the props arrived at that" - which is why the screen needs no instructions:
+  it is visual matching, not counting. Slow motion is what makes the match
+  findable, so marking runs at 0.5x by default.
+
+  Marking every arrival yields one more instant than there are moves: the
+  opening pose, then the landing of each move. A move's arrival IS the next
+  move's launch, so those marks map straight onto beatTimestamps (which has
+  always meant "when move i+1 starts") plus a final endTimestamp. Nothing
+  downstream changes. See
+  docs/superpowers/specs/2026-08-16-step-map-editor-redesign-design.md.
 -->
 <script lang="ts">
   import { onDestroy, untrack } from "svelte";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
-  import {
-    generateEvenBeatTimestamps,
-    getHighlightedBeatFromVideo,
-  } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import StepMapTimeline from "./StepMapTimeline.svelte";
 
   interface Props {
     videoUrl: string;
     videoDuration: number;
-    stepCount: number;
-    stepLabels?: readonly string[];
+    /** Every move, in order. Its length is the move count. */
+    steps: readonly StepData[];
+    /** The opening pose. The first mark is the performer settling into it. */
+    startPosition?: StartPositionData | null;
     initialStepMap?: StepMap;
     bpm: number;
     onSave: (beatMap: StepMap) => Promise<void>;
@@ -29,256 +44,239 @@
   let {
     videoUrl,
     videoDuration,
-    stepCount,
-    stepLabels = [],
+    steps,
+    startPosition = null,
     initialStepMap,
     bpm,
     onSave,
     onClose,
   }: Props = $props();
 
-  // ---- Video element ----
-  let videoEl: HTMLVideoElement | undefined = $state();
+  /** Nudging moves a mark by one frame of typical phone footage. */
+  const FRAME = 1 / 30;
+  /** Slow enough to see a landing, fast enough not to feel like a chore. */
+  const MARKING_RATE = 0.5;
 
-  // ---- Playback state ----
+  const moveCount = $derived(steps.length);
+  const totalMarks = $derived(moveCount + 1);
+
+  // ---- Video ----
+  let videoEl: HTMLVideoElement | undefined = $state();
   let isPlaying = $state(false);
   let currentTime = $state(0);
+  /**
+   * Marking opens slowed down, because the landing is what you are looking for.
+   * Re-timing an existing map opens on the timeline, where full speed is what
+   * you want to check the result against.
+   */
+  let rate = $state(untrack(() => initialStepMap) ? 1 : MARKING_RATE);
 
-  // ---- Beat timestamps ----
-  // Initialize from existing beat map or generate even spacing from BPM.
-  // We track "placed" count separately from the array length so that
-  // tap-to-place can fill slots incrementally.
-  let beatTimestamps = $state<number[]>(
-    untrack(() => initialStepMap)
-      ? [...untrack(() => initialStepMap)!.beatTimestamps]
-      : generateEvenBeatTimestamps(
-          untrack(() => videoDuration),
-          untrack(() => stepCount),
-          untrack(() => bpm)
-        )
+  // ---- Marks ----
+  /**
+   * One timestamp per arrival, in tap order. Shorter than totalMarks while a
+   * run is in progress.
+   */
+  let marks = $state<number[]>(
+    untrack(() => marksFromStepMap(initialStepMap, videoDuration))
   );
 
-  // ---- Tap-to-place mode ----
-  let isTapMode = $state(false);
-  // In tap mode we track how many beats have been placed via tapping.
-  // If entering tap mode fresh (no initial map), we clear all timestamps
-  // and place them one at a time. If editing an existing map, tapping
-  // overwrites from the beginning.
-  let tapPlacedCount = $state(0);
-  // Copy of timestamps used during tap mode. Uncommitted until tap mode
-  // exits or all beats are placed.
-  let tapTimestamps = $state<number[]>([]);
-
-  let nextStepToPlace = $derived(isTapMode ? tapPlacedCount : stepCount);
-
-  let placedCount = $derived(
-    isTapMode ? tapPlacedCount : beatTimestamps.length
+  /**
+   * Marking is the screen when there is no timing yet; an existing map opens on
+   * the timeline with its marks intact.
+   */
+  let mode = $state<"mark" | "review">(
+    untrack(() => initialStepMap) ? "review" : "mark"
   );
 
-  // ---- Save state ----
+  let selectedMark = $state(0);
   let isSaving = $state(false);
   let saveError = $state<string | null>(null);
-  // Non-error feedback, e.g. "your previous markers were kept".
-  let notice = $state<string | null>(null);
-
-  // Reserving the video's real shape stops the panel from resizing when the
-  // file loads, and keeps portrait footage from sitting in a letterbox.
-  let videoRatio = $state("16 / 9");
-
-  // ---- Beat placement flash ----
-  let flashBeatIndex = $state(-1);
+  let flashing = $state(false);
   let flashTimeout: ReturnType<typeof setTimeout> | undefined;
-  let autoExitTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  const canSave = $derived(
-    !isSaving && placedCount === stepCount && stepCount > 0
-  );
+  const complete = $derived(marks.length >= totalMarks);
+  const canSave = $derived(!isSaving && complete && moveCount > 0);
+  /** The mark the next tap will place - and so the move to watch for. */
+  const pendingIndex = $derived(Math.min(marks.length, totalMarks - 1));
 
-  // The currently active step based on playback position
-  let activeStepIndex = $derived(
-    getHighlightedBeatFromVideo(
-      currentTime,
-      isTapMode ? tapTimestamps : beatTimestamps
+  /**
+   * Mark 0 is the opening pose. Mark i is the landing of move i, so the face
+   * shows the move that is happening right now, and you tap when it finishes.
+   */
+  function faceFor(index: number): StepData | StartPositionData | null {
+    if (index <= 0) return startPosition;
+    return steps[index - 1] ?? null;
+  }
+
+  function letterFor(index: number): string {
+    if (index <= 0) return "";
+    return steps[index - 1]?.letter?.trim() ?? "";
+  }
+
+  /** Mark 0 is the opening pose, not move 0, so it is not a number. */
+  const markLabels = $derived(
+    Array.from({ length: totalMarks }, (_, index) =>
+      index === 0 ? "start" : String(index)
     )
   );
 
-  // ---- Video event handlers ----
+  const pendingFace = $derived(faceFor(pendingIndex));
+  const selectedFace = $derived(faceFor(selectedMark));
 
-  function handleTimeUpdate() {
-    if (videoEl) currentTime = videoEl.currentTime;
+  function marksFromStepMap(
+    map: StepMap | undefined,
+    duration: number
+  ): number[] {
+    if (!map) return [];
+    // The final arrival was added later, so a map saved before then ends at the
+    // clip rather than at a marked instant.
+    return [...map.beatTimestamps, map.endTimestamp ?? duration];
   }
 
-  function handleLoadedMetadata() {
-    if (videoEl?.videoWidth && videoEl.videoHeight) {
-      videoRatio = `${videoEl.videoWidth} / ${videoEl.videoHeight}`;
-    }
+  // ---- Playback ----
+
+  function applyRate(next: number): void {
+    rate = next;
+    if (videoEl) videoEl.playbackRate = next;
   }
 
-  function handlePlay() {
-    isPlaying = true;
+  function handleLoadedMetadata(): void {
+    if (videoEl) videoEl.playbackRate = rate;
   }
-
-  function handlePause() {
-    isPlaying = false;
-  }
-
-  function handleEnded() {
-    isPlaying = false;
-  }
-
-  // ---- Transport controls ----
 
   function togglePlayPause(): void {
     if (!videoEl) return;
     if (isPlaying) {
       videoEl.pause();
-    } else {
-      void videoEl.play().catch(() => {
-        saveError = "Playback could not start. Try the play button again.";
-      });
+      return;
     }
+    void videoEl.play().catch(() => {
+      saveError = "Playback could not start. Try the play button again.";
+    });
   }
 
   function seekTo(time: number): void {
     const clamped = Math.max(0, Math.min(time, videoDuration));
-    // Update display immediately - don't wait for the video to decode
+    // Move the readout now rather than waiting for the video to decode.
     currentTime = clamped;
     if (videoEl) videoEl.currentTime = clamped;
   }
 
-  function stepToBeat(direction: -1 | 1) {
-    const ts = isTapMode ? tapTimestamps : beatTimestamps;
-    if (ts.length === 0) return;
+  // ---- Marking ----
 
-    if (direction === 1) {
-      // Find the next beat after current position
-      const next = ts.find((t) => t > currentTime + 0.05);
-      if (next !== undefined) seekTo(next);
-    } else {
-      // Find the previous beat before current position
-      for (let i = ts.length - 1; i >= 0; i--) {
-        if (ts[i]! < currentTime - 0.15) {
-          seekTo(ts[i]!);
-          return;
-        }
-      }
-      seekTo(0);
-    }
-  }
-
-  // ---- Timeline callbacks ----
-
-  function handleTimestampChange(index: number, newTime: number) {
-    if (isTapMode) {
-      tapTimestamps[index] = newTime;
-    } else {
-      beatTimestamps[index] = newTime;
-    }
-  }
-
-  function handleSeek(time: number) {
-    seekTo(time);
-  }
-
-  // ---- Tap-to-place ----
-
-  function enterTapMode(): void {
-    isTapMode = true;
-    tapPlacedCount = 0;
-    tapTimestamps = [];
-    notice = null;
-    // Start playing so the user can tap along
+  function startMarking(): void {
+    mode = "mark";
+    marks = [];
+    saveError = null;
+    applyRate(MARKING_RATE);
+    seekTo(0);
     if (videoEl) {
-      videoEl.currentTime = 0;
-      currentTime = 0;
       void videoEl.play().catch(() => {
         saveError = "Playback could not start. Try the play button again.";
       });
     }
   }
 
-  function exitTapMode(): void {
-    isTapMode = false;
+  function markArrival(): void {
+    if (mode !== "mark" || marks.length >= totalMarks) return;
 
-    if (tapTimestamps.length === stepCount) {
-      beatTimestamps = sortedTimestamps(tapTimestamps);
-      notice = null;
-    } else if (tapTimestamps.length > 0) {
-      // Committing a partial run would replace a full set of markers with a
-      // handful, so the existing markers stay and the user is told why.
-      notice = `Stopped after ${tapTimestamps.length} of ${stepCount} moves, so your previous markers were kept.`;
-    }
+    marks = [...marks, currentTime];
 
-    tapTimestamps = [];
-    tapPlacedCount = 0;
-  }
-
-  /** Markers can be dragged past each other; every consumer reads them in order. */
-  function sortedTimestamps(values: readonly number[]): number[] {
-    return [...values].sort((a, b) => a - b);
-  }
-
-  function markBeat(): void {
-    if (!isTapMode || tapPlacedCount >= stepCount) return;
-
-    tapTimestamps = [...tapTimestamps, currentTime];
-    tapPlacedCount++;
-
-    // Flash feedback
-    flashBeatIndex = tapPlacedCount - 1;
+    flashing = true;
     if (flashTimeout) clearTimeout(flashTimeout);
-    flashTimeout = setTimeout(() => {
-      flashBeatIndex = -1;
-    }, 300);
+    flashTimeout = setTimeout(() => (flashing = false), 260);
 
-    // Auto-exit when all beats placed
-    if (tapPlacedCount >= stepCount) {
-      // Small delay so the user sees the last beat placed
-      if (autoExitTimeout) clearTimeout(autoExitTimeout);
-      autoExitTimeout = setTimeout(() => {
-        exitTapMode();
-        if (videoEl) videoEl.pause();
-      }, 400);
+    if (marks.length >= totalMarks) {
+      videoEl?.pause();
+      applyRate(1);
+      selectedMark = totalMarks - 1;
+      mode = "review";
     }
   }
 
-  function undoLastMarker(): void {
-    if (!isTapMode || tapPlacedCount === 0) return;
-    tapTimestamps = tapTimestamps.slice(0, -1);
-    tapPlacedCount -= 1;
-    flashBeatIndex = -1;
+  function undoMark(): void {
+    if (marks.length === 0) return;
+    marks = marks.slice(0, -1);
+    if (mode === "review") selectedMark = Math.min(selectedMark, marks.length - 1);
   }
 
-  function stepLabel(index: number): string {
-    return stepLabels[index]?.trim() || `Move ${index + 1}`;
+  function useEvenSpacing(): void {
+    marks = generateEvenBeatTimestamps(videoDuration, totalMarks, bpm);
+    selectedMark = 0;
+    mode = "review";
+    applyRate(1);
+    videoEl?.pause();
+    seekTo(marks[0] ?? 0);
   }
+
+  // ---- Review ----
+
+  function selectMark(index: number): void {
+    selectedMark = Math.max(0, Math.min(index, marks.length - 1));
+    const at = marks[selectedMark];
+    if (at !== undefined) seekTo(at);
+  }
+
+  /** Marks cannot cross their neighbours; every consumer reads them in order. */
+  function clampMark(index: number, time: number): number {
+    const gap = 0.03;
+    const min = index > 0 ? (marks[index - 1] ?? 0) + gap : 0;
+    const max =
+      index < marks.length - 1 ? (marks[index + 1] ?? videoDuration) - gap : videoDuration;
+    return Math.max(0, Math.min(Math.max(min, Math.min(max, time)), videoDuration));
+  }
+
+  function moveMark(index: number, time: number): void {
+    const next = [...marks];
+    next[index] = clampMark(index, time);
+    marks = next;
+  }
+
+  function nudgeSelected(frames: number): void {
+    const at = marks[selectedMark];
+    if (at === undefined) return;
+    moveMark(selectedMark, at + frames * FRAME);
+    const moved = marks[selectedMark];
+    if (moved !== undefined) seekTo(moved);
+  }
+
+  // ---- Keyboard ----
 
   function handleKeyboard(event: KeyboardEvent): void {
     const target = event.target;
     if (
       target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target instanceof HTMLButtonElement
+      target instanceof HTMLTextAreaElement
     ) {
       return;
     }
-    if (isTapMode && (event.code === "Space" || event.key === "Enter")) {
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
       event.preventDefault();
-      markBeat();
+      undoMark();
       return;
     }
-    if (isTapMode && (event.ctrlKey || event.metaKey) && event.key === "z") {
-      event.preventDefault();
-      undoLastMarker();
+
+    if (mode === "mark") {
+      // Space on a focused button already activates it, so only the cases the
+      // browser will not handle need intercepting.
+      if (event.code === "Space" || event.key === "Enter") {
+        if (target instanceof HTMLButtonElement) return;
+        event.preventDefault();
+        markArrival();
+      }
+      return;
     }
-  }
 
-  // ---- Reset ----
-
-  function resetToEvenSpacing(): void {
-    if (isTapMode) exitTapMode();
-    beatTimestamps = generateEvenBeatTimestamps(videoDuration, stepCount, bpm);
-    notice = null;
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      nudgeSelected(event.key === "ArrowLeft" ? -1 : 1);
+      return;
+    }
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      event.preventDefault();
+      selectMark(selectedMark + (event.key === "ArrowUp" ? -1 : 1));
+    }
   }
 
   // ---- Save ----
@@ -287,25 +285,24 @@
     isSaving = true;
     saveError = null;
 
-    const finalTimestamps = isTapMode ? tapTimestamps : beatTimestamps;
-
-    if (finalTimestamps.length !== stepCount) {
-      saveError = `Mark all ${stepCount} moves before saving.`;
+    const ordered = [...marks].sort((a, b) => a - b);
+    if (ordered.length !== totalMarks) {
+      saveError = `Mark all ${totalMarks} moments before saving.`;
       isSaving = false;
       return;
     }
 
-    const beatMap: StepMap = {
-      beatTimestamps: sortedTimestamps(finalTimestamps),
-      stepCount,
-      source: "manual",
-      updatedAt: new Date(),
-    };
-
     try {
-      await onSave(beatMap);
-    } catch (e) {
-      saveError = e instanceof Error ? e.message : "Failed to save the timing";
+      await onSave({
+        beatTimestamps: ordered.slice(0, moveCount),
+        endTimestamp: ordered[moveCount],
+        stepCount: moveCount,
+        source: "manual",
+        updatedAt: new Date(),
+      });
+    } catch (cause) {
+      saveError =
+        cause instanceof Error ? cause.message : "Failed to save the timing";
     } finally {
       isSaving = false;
     }
@@ -313,191 +310,226 @@
 
   onDestroy(() => {
     if (flashTimeout) clearTimeout(flashTimeout);
-    if (autoExitTimeout) clearTimeout(autoExitTimeout);
   });
 </script>
 
 <svelte:window onkeydown={handleKeyboard} />
 
 <!-- The shell exists to be queried. A container query resolves against an
-     ANCESTOR container, so rules that recompose .beat-map-editor itself cannot
-     live behind its own container-type - they silently never applied. -->
+     ANCESTOR container, so rules that recompose .editor itself cannot live
+     behind its own container-type - they silently never applied. -->
 <div class="step-map-shell">
-  <div class="beat-map-editor">
-    <div class="mapping-intro">
-      <div>
-        <span class="eyebrow">Move timing</span>
-        <h3>
-          {isTapMode
-            ? `Mark move ${Math.min(tapPlacedCount + 1, stepCount)} of ${stepCount}`
-            : "Synchronize the performance"}
-        </h3>
-        <p>
-          {isTapMode
-            ? `Press Space or tap Mark when ${stepLabel(tapPlacedCount)} begins.`
-            : "Play the video, mark each move, then fine-tune the markers on the timeline."}
-        </p>
-      </div>
-      <strong
-        class:complete={placedCount === stepCount}
-        class="mapping-progress"
-      >
-        {placedCount}/{stepCount}
-      </strong>
-    </div>
-    <!-- Video player -->
-    <div class="video-section">
+  <div class="editor">
+    <div class="stage">
+      <!-- svelte-ignore a11y_media_has_caption -->
       <video
         bind:this={videoEl}
         src={videoUrl}
         playsinline
-        style="--video-ratio: {videoRatio}"
         onloadedmetadata={handleLoadedMetadata}
-        ontimeupdate={handleTimeUpdate}
-        onplay={handlePlay}
-        onpause={handlePause}
-        onended={handleEnded}
-      >
-        <track kind="captions" />
-      </video>
-    </div>
+        ontimeupdate={() => videoEl && (currentTime = videoEl.currentTime)}
+        onplay={() => (isPlaying = true)}
+        onpause={() => (isPlaying = false)}
+        onended={() => (isPlaying = false)}
+      ></video>
 
-    <!-- Transport controls -->
-    <div class="transport">
-      <button
-        class="transport-btn"
-        onclick={() => stepToBeat(-1)}
-        type="button"
-        aria-label="Previous move"
-      >
-        <i class="fas fa-step-backward" aria-hidden="true"></i>
-      </button>
-
-      <button
-        class="transport-btn play-btn"
-        onclick={togglePlayPause}
-        type="button"
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
-        ></i>
-      </button>
-
-      <button
-        class="transport-btn"
-        onclick={() => stepToBeat(1)}
-        type="button"
-        aria-label="Next move"
-      >
-        <i class="fas fa-step-forward" aria-hidden="true"></i>
-      </button>
-
-      <span class="transport-time">
-        {formatTime(currentTime)} / {formatTime(videoDuration)}
-      </span>
-    </div>
-
-    <!-- Timeline -->
-    <div class="timeline-section">
-      <StepMapTimeline
-        duration={videoDuration}
-        {currentTime}
-        beatTimestamps={isTapMode ? tapTimestamps : beatTimestamps}
-        {activeStepIndex}
-        onTimestampChange={handleTimestampChange}
-        onSeek={handleSeek}
-      />
-    </div>
-
-    <div class="step-strip" aria-label="Sequence move timing">
-      {#each Array(stepCount) as _, index}
+      <div class="stage-bar">
         <button
           type="button"
-          class:active={activeStepIndex === index}
-          class:placed={index < placedCount}
-          disabled={(isTapMode ? tapTimestamps : beatTimestamps)[index] ===
-            undefined}
-          aria-label={`Seek to ${stepLabel(index)}`}
-          onclick={() =>
-            seekTo((isTapMode ? tapTimestamps : beatTimestamps)[index] ?? 0)}
+          class="stage-play"
+          onclick={togglePlayPause}
+          aria-label={isPlaying ? "Pause" : "Play"}
         >
-          <span>{index + 1}</span>
-          <strong>{stepLabel(index)}</strong>
+          <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
+          ></i>
         </button>
-      {/each}
+        <span class="stage-time">
+          {formatTime(currentTime)} / {formatTime(videoDuration)}
+        </span>
+      </div>
     </div>
 
-    <!-- Mode controls -->
-    <div class="mode-controls">
-      {#if isTapMode}
-        <button
-          class="mark-beat-btn"
-          class:flash={flashBeatIndex >= 0}
-          onclick={markBeat}
-          disabled={tapPlacedCount >= stepCount}
-          type="button"
-        >
-          <i class="fas fa-drum" aria-hidden="true"></i>
-          Mark move {Math.min(tapPlacedCount + 1, stepCount)}
-        </button>
+    {#if mode === "review"}
+      <div class="timeline-row">
+        <StepMapTimeline
+          duration={videoDuration}
+          {currentTime}
+          beatTimestamps={marks}
+          activeStepIndex={selectedMark}
+          markerLabels={markLabels}
+          onTimestampChange={moveMark}
+          onSelect={selectMark}
+          onSeek={seekTo}
+        />
+      </div>
+    {/if}
+
+    {#if mode === "mark"}
+      <div class="control-bar mark-bar">
+        <div class="rate-row">
+          <!-- Wrapped because SegmentedControl sets width:100%, which resolves
+               flex-basis:auto and stretches three short labels across the row. -->
+          <span class="rate-control">
+            <SegmentedControl
+              options={[
+                { value: 0.25, label: "0.25x", ariaLabel: "Quarter speed" },
+                { value: 0.5, label: "0.5x", ariaLabel: "Half speed" },
+                { value: 1, label: "1x", ariaLabel: "Full speed" },
+              ]}
+              value={rate}
+              onchange={applyRate}
+              size="sm"
+              ariaLabel="Playback speed"
+            />
+          </span>
+          <span class="rate-hint">Slow it down to catch the landing</span>
+        </div>
 
         <button
-          class="mode-btn"
-          onclick={undoLastMarker}
-          disabled={tapPlacedCount === 0}
           type="button"
+          class="tap-target"
+          class:flash={flashing}
+          onclick={markArrival}
+          disabled={complete}
         >
-          <i class="fas fa-undo" aria-hidden="true"></i>
-          Undo marker
+          <span class="tap-face">
+            {#if pendingFace}
+              <PictographContainer
+                pictographData={pendingFace}
+                disableTransitions={true}
+              />
+            {/if}
+          </span>
+          <span class="tap-copy">
+            <strong>
+              {pendingIndex === 0
+                ? "Tap when they set into this pose"
+                : "Tap when this move lands"}
+            </strong>
+            <span class="tap-progress">
+              {marks.length} of {totalMarks} marked
+              {#if letterFor(pendingIndex)}
+                <span class="tap-letter">
+                  <TKAWordGlyph
+                    word={letterFor(pendingIndex)}
+                    height={18}
+                    darkMode
+                  />
+                </span>
+              {/if}
+            </span>
+            <span class="tap-key">Space works too</span>
+          </span>
         </button>
 
-        <button class="mode-btn" onclick={exitTapMode} type="button">
-          <i class="fas fa-times" aria-hidden="true"></i>
-          Stop marking
-        </button>
-      {:else}
-        <button class="mode-btn" onclick={enterTapMode} type="button">
-          <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-          Mark moves
-        </button>
+        <div class="aux-row">
+          <button
+            type="button"
+            class="aux-btn"
+            onclick={undoMark}
+            disabled={marks.length === 0}
+          >
+            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+            Undo last
+          </button>
+          <button type="button" class="aux-btn" onclick={startMarking}>
+            <i class="fas fa-backward-fast" aria-hidden="true"></i>
+            Start over
+          </button>
+          <button type="button" class="aux-btn" onclick={useEvenSpacing}>
+            <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
+            Start from even spacing
+          </button>
+        </div>
+      </div>
+    {:else}
+      <div class="control-bar review-bar">
+        <div class="selected-row">
+          <span class="selected-face">
+            {#if selectedFace}
+              <PictographContainer
+                pictographData={selectedFace}
+                disableTransitions={true}
+              />
+            {/if}
+          </span>
+          <span class="selected-copy">
+            <span class="selected-label">
+              {selectedMark === 0 ? "Opening pose" : `Move ${selectedMark}`}
+              {#if letterFor(selectedMark)}
+                <span class="selected-letter">
+                  <TKAWordGlyph
+                    word={letterFor(selectedMark)}
+                    height={16}
+                    darkMode
+                  />
+                </span>
+              {/if}
+            </span>
+            <span class="selected-time">
+              lands at {formatTime(marks[selectedMark] ?? 0)}
+            </span>
+          </span>
+          <span class="nudge">
+            <button
+              type="button"
+              class="aux-btn"
+              onclick={() => nudgeSelected(-1)}
+              aria-label="Move this mark one frame earlier"
+            >
+              <i class="fas fa-angle-left" aria-hidden="true"></i>
+              a frame earlier
+            </button>
+            <button
+              type="button"
+              class="aux-btn"
+              onclick={() => nudgeSelected(1)}
+              aria-label="Move this mark one frame later"
+            >
+              a frame later
+              <i class="fas fa-angle-right" aria-hidden="true"></i>
+            </button>
+          </span>
+        </div>
 
-        <button class="mode-btn" onclick={resetToEvenSpacing} type="button">
-          <i class="fas fa-redo" aria-hidden="true"></i>
-          Even spacing
-        </button>
-      {/if}
-    </div>
+        <div class="aux-row">
+          <button type="button" class="aux-btn" onclick={startMarking}>
+            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+            Mark it again
+          </button>
+          <button type="button" class="aux-btn" onclick={useEvenSpacing}>
+            <i class="fas fa-ruler-horizontal" aria-hidden="true"></i>
+            Even spacing
+          </button>
+          <span class="review-progress" class:complete>
+            {marks.length} of {totalMarks} marked
+          </span>
+        </div>
+      </div>
+    {/if}
 
-    <!-- Feedback -->
     {#if saveError}
       <div class="error-banner" role="alert">
         <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
         <span>{saveError}</span>
       </div>
-    {:else if notice}
-      <div class="notice-banner" role="status">
-        <i class="fas fa-info-circle" aria-hidden="true"></i>
-        <span>{notice}</span>
-      </div>
     {/if}
 
-    <!-- Action bar -->
     <div class="action-bar">
       <button
+        type="button"
         class="cancel-btn"
         onclick={onClose}
         disabled={isSaving}
-        type="button"
       >
         Cancel
       </button>
-
       <button
         data-save-shortcut
+        type="button"
         class="save-btn"
         onclick={handleSave}
         disabled={!canSave}
-        type="button"
       >
         {#if isSaving}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -512,647 +544,475 @@
 </div>
 
 <style>
+  /* The one container every query in this file resolves against, so a rule that
+     recomposes .editor and a rule that recomposes its children cross the same
+     seam at the same width. */
   .step-map-shell {
     container-type: inline-size;
-    height: 100%;
+    block-size: 100%;
   }
 
-  .beat-map-editor {
-    display: flex;
-    flex-direction: column;
-    container-type: inline-size;
-    gap: 0.75rem;
-    height: 100%;
-    padding: 1rem;
-    background: var(--theme-panel-bg);
-    overflow-y: auto;
-  }
-
-  .mapping-intro {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .mapping-intro > div {
+  /* The stage takes what is left after the controls, so the tap button is
+     never the thing that falls below the fold. */
+  .editor {
     display: grid;
-    gap: 0.25rem;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    gap: clamp(0.75rem, 1.4cqw, 1.5rem);
+    block-size: 100%;
+    padding: clamp(0.75rem, 1.6cqw, 2rem);
+    background: var(--theme-panel-bg, #101018);
   }
 
-  .eyebrow {
-    color: var(--theme-accent);
-    font-size: var(--font-size-compact);
-    font-weight: 750;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-  }
-
-  .mapping-intro h3,
-  .mapping-intro p {
-    margin: 0;
-  }
-
-  .mapping-intro h3 {
-    color: var(--theme-text);
-    font-size: 1.25rem;
-  }
-
-  .mapping-intro p {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min);
-    line-height: 1.4;
-  }
-
-  .mapping-progress {
-    display: grid;
-    place-items: center;
-    min-width: 4rem;
-    min-height: 2.75rem;
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-warning) 45%, transparent);
-    border-radius: var(--radius-2026-full);
-    color: var(--semantic-warning);
-    font-size: var(--font-size-min);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .mapping-progress.complete {
-    border-color: color-mix(in srgb, var(--semantic-success) 45%, transparent);
-    color: var(--semantic-success);
-  }
-
-  /* ============================================================
-   * VIDEO PLAYER
-   * ============================================================ */
-
-  .video-section {
-    display: grid;
-    place-items: center;
-    /* Hugs the footage. A full-width black box around a portrait or square
-       clip reads as dead panel, not as a player. */
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: auto;
-    border-radius: 12px;
+  .stage {
+    position: relative;
+    grid-row: 1;
+    min-block-size: 0;
+    border-radius: 0.75rem;
     overflow: hidden;
-    background: #000;
-    flex-shrink: 0;
   }
 
-  .video-section video {
-    display: block;
-    width: auto;
-    max-width: 100%;
-    /* Sized off the viewport, not the container: the height must be definite
-       before layout so the aspect ratio can resolve the width, and a tall
-       screen should give the performance more room than a laptop does. */
-    height: clamp(11rem, 26vh, 22rem);
-    aspect-ratio: var(--video-ratio, 16 / 9);
+  /* Filling the stage absolutely rather than sizing to the file: a percentage
+     max-height against a 1fr grid area is treated as indefinite, so the video
+     kept its intrinsic 956px height and overflowed everything under it. */
+  .stage video {
+    position: absolute;
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
     object-fit: contain;
   }
 
-  /* ============================================================
-   * TRANSPORT CONTROLS
-   * ============================================================ */
-
-  .transport {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+  .timeline-row {
+    grid-row: 2;
   }
 
-  .transport-btn {
+  .control-bar {
+    grid-row: 3;
+  }
+
+  .action-bar {
+    grid-row: 4;
+  }
+
+  .stage-bar {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    font-size: 14px;
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
+    gap: 0.75rem;
+    padding: 0.5rem;
   }
 
-  .transport-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .transport-btn:active {
-    transform: scale(0.95);
-    transition-duration: 50ms;
-  }
-
-  .transport-btn.play-btn {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    border-color: transparent;
-    color: #ffffff;
-    font-size: 16px;
-  }
-
-  .transport-btn.play-btn:hover {
-    filter: brightness(1.1);
-    background: var(--theme-accent, #6366f1);
-  }
-
-  .transport-time {
-    margin-left: auto;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
-  }
-
-  /* ============================================================
-   * TIMELINE SECTION
-   * ============================================================ */
-
-  .timeline-section {
-    flex-shrink: 0;
-    padding: 0 4px;
-  }
-
-  .step-strip {
-    display: grid;
-    /* Capped, not 1fr: a four-step sequence must not stretch four tiles
-       across a 4K panel just because the room is there. */
-    grid-auto-columns: minmax(5.5rem, 11rem);
-    grid-auto-flow: column;
-    justify-content: start;
-    gap: 0.4rem;
-    min-height: 3.5rem;
-    padding-bottom: 0.25rem;
-    overflow-x: auto;
-  }
-
-  .step-strip button {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 3.25rem;
-    padding: 0.45rem 0.55rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-sm);
-    background: var(--theme-card-bg);
-    color: var(--theme-text-dim);
-    font: inherit;
-    font-size: var(--font-size-compact);
-    cursor: pointer;
-  }
-
-  .step-strip button > span {
+  .stage-play {
     display: grid;
     place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: var(--radius-2026-full);
-    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    inline-size: 44px;
+    block-size: 44px;
+    border: none;
+    border-radius: 50%;
+    background: var(--theme-accent, #22b8cf);
+    color: #04141a;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .stage-time {
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.85);
+    /* The clock changes every frame; proportional digits would jitter it. */
     font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
   }
 
-  .step-strip button strong {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .control-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    inline-size: min(44rem, 100%);
+    margin-inline: auto;
   }
 
-  .step-strip button.placed {
-    border-color: color-mix(
-      in srgb,
-      var(--semantic-success) 38%,
-      var(--theme-stroke)
-    );
-    color: var(--theme-text);
+  .rate-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .step-strip button.active {
-    border-color: var(--theme-accent);
+  .rate-control {
+    flex: 0 0 auto;
+    inline-size: max-content;
+  }
+
+  .rate-hint {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+    font-size: 0.8125rem;
+  }
+
+  /* The whole point of the screen, sized like it. */
+  .tap-target {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.75rem, 1.5cqw, 1.5rem);
+    padding: clamp(0.75rem, 1.2cqw, 1.25rem);
+    border: 2px solid var(--theme-accent, #22b8cf);
+    border-radius: 1rem;
     background: color-mix(
       in srgb,
-      var(--theme-accent) 14%,
-      var(--theme-card-bg)
+      var(--theme-accent, #22b8cf) 14%,
+      transparent
+    );
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+    transition:
+      background 120ms ease,
+      transform 120ms ease;
+  }
+
+  .tap-target:hover:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22b8cf) 22%,
+      transparent
     );
   }
 
-  .step-strip button:disabled {
+  .tap-target.flash {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22b8cf) 46%,
+      transparent
+    );
+    transform: scale(0.99);
+  }
+
+  .tap-target:disabled {
+    opacity: 0.5;
     cursor: default;
-    opacity: 0.5;
   }
 
-  .step-strip button:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
+  .tap-face {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    /* Reserved before the pictograph prepares, so arrival never reflows the
+       button or the row of controls under it. */
+    inline-size: clamp(5rem, 14cqw, 9rem);
+    aspect-ratio: 1;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
   }
 
-  /* ============================================================
-   * MODE CONTROLS
-   * ============================================================ */
+  .tap-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-inline-size: 0;
+  }
 
-  .mode-controls {
+  .tap-copy strong {
+    font-size: clamp(1rem, 1.5cqw, 1.5rem);
+    line-height: 1.2;
+  }
+
+  .tap-progress {
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    flex-shrink: 0;
+    gap: 0.5rem;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875rem;
   }
 
-  .mode-btn {
+  .tap-letter,
+  .selected-letter {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
+  }
+
+  .tap-key {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
+    font-size: 0.75rem;
+  }
+
+  .selected-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 0.75rem;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
   }
 
-  .mode-btn:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, #ffffff);
+  .selected-face {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    inline-size: 3rem;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
   }
 
-  .mark-beat-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    min-height: 48px;
-    border: none;
-    border-radius: 12px;
-    background: var(--semantic-success, #22c55e);
-    color: #ffffff;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    cursor: pointer;
-    transition:
-      transform 0.1s ease,
-      box-shadow 0.15s ease,
-      filter 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
+  .selected-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-inline-size: 0;
   }
 
-  .mark-beat-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 16px
-      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
-  }
-
-  .mark-beat-btn:active:not(:disabled) {
-    transform: scale(0.95);
-    transition-duration: 50ms;
-  }
-
-  .mark-beat-btn.flash {
-    animation: beat-flash 0.3s ease;
-  }
-
-  .mark-beat-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  @keyframes beat-flash {
-    0% {
-      box-shadow: 0 0 0 0
-        color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
-    }
-    50% {
-      box-shadow: 0 0 0 12px
-        color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
-    }
-    100% {
-      box-shadow: 0 0 0 0
-        color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
-    }
-  }
-
-  /* ============================================================
-   * ERROR
-   * ============================================================ */
-
-  .error-banner,
-  .notice-banner {
+  .selected-label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    font-size: var(--font-size-min, 14px);
-    flex-shrink: 0;
+    gap: 0.4rem;
+    font-weight: 600;
+  }
+
+  .selected-time {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+  }
+
+  .nudge {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+  }
+
+  .aux-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .aux-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-block-size: 44px;
+    padding: 0 0.85rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 0.6rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+
+  .aux-btn:hover:not(:disabled) {
+    border-color: var(--theme-accent, #22b8cf);
+  }
+
+  .aux-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .review-progress {
+    margin-inline-start: auto;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
+    font-size: 0.8125rem;
+  }
+
+  .review-progress.complete {
+    color: var(--semantic-success, #51cf66);
   }
 
   .error-banner {
-    background: color-mix(
-      in srgb,
-      var(--semantic-error, #ef4444) 10%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
-    color: var(--semantic-error, #ef4444);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.6rem;
+    background: color-mix(in srgb, #ff6b6b 18%, transparent);
+    color: #ffc9c9;
+    font-size: 0.875rem;
   }
-
-  .notice-banner {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #6366f1) 10%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-    color: var(--theme-text, #ffffff);
-  }
-
-  /* ============================================================
-   * ACTION BAR
-   * ============================================================ */
 
   .action-bar {
     display: flex;
-    gap: 10px;
     justify-content: flex-end;
-    flex-shrink: 0;
-    margin-top: auto;
-    padding-top: 8px;
+    gap: 0.6rem;
   }
 
-  /* Below this width the two buttons genuinely want the full row; above it
-     they size to their labels instead of growing into a progress bar. */
-  @container (max-width: 30rem) {
-    .action-bar > * {
-      flex: 1 1 auto;
-    }
+  .cancel-btn,
+  .save-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-block-size: 44px;
+    padding: 0 1.25rem;
+    border-radius: 0.6rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    cursor: pointer;
   }
 
   .cancel-btn {
-    flex: 0 0 auto;
-    min-width: 8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 44px;
-    padding: 10px 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .cancel-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    color: var(--theme-text, #ffffff);
-  }
-
-  .cancel-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: transparent;
+    color: inherit;
   }
 
   .save-btn {
-    flex: 0 0 auto;
-    min-width: 11rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 44px;
-    padding: 10px 24px;
     border: none;
-    border-radius: 10px;
-    background: var(--theme-accent, #6366f1);
-    color: #ffffff;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      filter 0.15s ease,
-      box-shadow 0.15s ease,
-      transform 0.1s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .save-btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    box-shadow: 0 4px 12px
-      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-  }
-
-  .save-btn:active:not(:disabled) {
-    transform: scale(0.98);
-    transition-duration: 50ms;
+    background: var(--theme-accent, #22b8cf);
+    color: #04141a;
   }
 
   .save-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    opacity: 0.4;
+    cursor: default;
   }
 
-  /* ============================================================
-   * REDUCED MOTION
-   * ============================================================ */
+  /* Narrow and in the hand: the stage and the tap button are the screen, and
+     the button's copy stacks under its pictograph rather than beside it. */
+  @container (max-width: 34rem) {
+    /* The controls are heavy enough on a phone to squeeze the stage out of
+       existence, and the video is the thing you are watching. Floor it, and let
+       the surface scroll rather than hide the tap button. */
+    .editor {
+      grid-template-rows: minmax(7rem, 1fr) auto auto auto;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      overflow-y: auto;
+    }
 
-  @media (prefers-reduced-motion: reduce) {
-    .transport-btn,
-    .mode-btn,
-    .mark-beat-btn,
+    .tap-target {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+      padding: 0.625rem;
+      text-align: center;
+    }
+
+    .tap-face {
+      inline-size: 100%;
+      max-inline-size: 6.5rem;
+      margin-inline: auto;
+    }
+
+    /* No hardware keyboard to tell them about. */
+    .tap-key,
+    .rate-hint {
+      display: none;
+    }
+
+    .action-bar {
+      justify-content: stretch;
+    }
+
     .cancel-btn,
     .save-btn {
-      transition: none !important;
-    }
-
-    .transport-btn:active,
-    .mark-beat-btn:active,
-    .save-btn:active {
-      transform: none !important;
-    }
-
-    .mark-beat-btn.flash {
-      animation: none !important;
+      flex: 1;
     }
   }
 
-  /* Wide panels get a real recomposition, not a taller single column: the
-     player sits beside the timeline it is being scrubbed against, so both
-     stay on screen together instead of the page dead-ending below the fold. */
-  @container (min-width: 70rem) {
-    .beat-map-editor {
-      display: grid;
-      /* The player column is exactly as wide as the footage. A fractional
-         column strands a portrait or square clip in a field of empty panel. */
-      grid-template-columns: auto minmax(0, 1fr);
-      /* The transport belongs to the player, the mode buttons to the timeline
-         they act on, so each column carries its own controls. The feedback row
-         absorbs the slack, which keeps the actions on the floor of the panel
-         instead of opening a void in the middle of the work area. */
-      grid-template-areas:
-        "intro     intro"
-        "video     timeline"
-        "video     strip"
-        "transport controls"
-        "feedback  feedback"
-        "actions   actions";
-      grid-template-rows: auto auto auto auto 1fr auto;
-      gap: 1rem 1.5rem;
-      padding: 1.5rem;
+  /* Wide enough for two columns: the controls move beside the stage instead of
+     under it, so the video gets the full height rather than half of it and the
+     rail either side of a portrait clip stops being dead space. The timeline
+     still spans the full width, because it is a ruler. */
+  @container (min-width: 52rem) {
+    .editor {
+      /* The column grows with the canvas rather than freezing at a 1080p
+         width, so a 4K panel does not leave the controls marooned. */
+      grid-template-columns: minmax(0, 1fr) minmax(20rem, clamp(26rem, 26cqw, 40rem));
+      grid-template-rows: minmax(0, 1fr) auto auto;
     }
 
-    .mapping-intro {
-      grid-area: intro;
-    }
-    .video-section {
-      grid-area: video;
-      align-self: start;
-    }
-    .transport {
-      grid-area: transport;
-      flex-wrap: wrap;
-      align-self: start;
-    }
-    .timeline-section {
-      grid-area: timeline;
-      align-self: end;
-    }
-    .step-strip {
-      grid-area: strip;
-      align-self: start;
-    }
-    .mode-controls {
-      grid-area: controls;
-      align-self: start;
-    }
-    .error-banner,
-    .notice-banner {
-      grid-area: feedback;
-      align-self: start;
-    }
-    .action-bar {
-      grid-area: actions;
+    .timeline-row {
+      /* A 48px bar spanning 2700px reads as a hairline, not a scrub target. */
+      --timeline-bar-height: clamp(48px, 3.5cqw, 88px);
     }
 
-    .video-section video {
-      height: clamp(14rem, 42vh, 32rem);
+    .control-bar {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: center;
+      /* Auto inline margins beat justify-self:stretch, so the column has to be
+         claimed explicitly or the controls shrink-to-fit and float in it. */
+      inline-size: 100%;
+      margin-inline: 0;
     }
 
-    .mapping-intro h3 {
-      font-size: 1.5rem;
+    /* In a column rather than a strip, the pictograph goes above the copy and
+       gets to be the size of the decision it is asking for. */
+    .tap-target {
+      flex-direction: column;
+      align-items: stretch;
+      text-align: center;
     }
 
-    .mapping-intro p,
-    .mode-btn,
-    .transport-time,
-    .step-strip button {
-      font-size: var(--font-size-min);
-    }
-  }
-
-  /* A 4K panel at 100% scaling gets no help from the operating system, so the
-     controls have to step themselves. Without this the whole editor stays at
-     1080p proportions on a canvas three times the width. */
-  @container (min-width: 162.5rem) {
-    .beat-map-editor {
-      --timeline-bar-height: 5rem;
-      gap: 1.75rem 3rem;
-      padding: 2.5rem;
+    .tap-face,
+    .selected-face {
+      inline-size: 100%;
+      max-inline-size: clamp(11rem, 18cqw, 26rem);
+      margin-inline: auto;
     }
 
-    .video-section video {
-      height: clamp(24rem, 46vh, 48rem);
+    .tap-progress {
+      justify-content: center;
     }
 
-    .mapping-intro h3 {
-      font-size: 2.25rem;
+    /* Review shows the same big face in the same place as marking did, so
+       checking a mark is the same gesture as placing one. */
+    .selected-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      padding: clamp(0.75rem, 1.2cqw, 1.25rem);
+      text-align: center;
     }
 
-    .mapping-intro p,
-    .mode-btn,
-    .transport-time,
-    .step-strip button {
-      font-size: 1.125rem;
+    .selected-copy {
+      flex: 0 0 auto;
     }
 
-    .eyebrow {
-      font-size: 1rem;
-    }
-
-    .mapping-progress {
-      font-size: 1.5rem;
-      padding: 0.5rem 1.25rem;
-    }
-
-    .step-strip {
-      grid-auto-columns: minmax(8rem, 16rem);
-      gap: 0.75rem;
-      min-height: 5rem;
-    }
-
-    .step-strip button {
-      min-height: 4.75rem;
-      gap: 0.75rem;
-    }
-
-    .step-strip button > span {
-      width: 2.5rem;
-      height: 2.5rem;
-      font-size: 1rem;
-    }
-
-    .transport-btn {
-      width: 4rem;
-      height: 4rem;
+    .selected-label {
       font-size: 1.25rem;
     }
 
-    .transport-btn.play-btn {
-      width: 5rem;
-      height: 5rem;
-      font-size: 1.5rem;
+    .selected-label,
+    .nudge {
+      justify-content: center;
     }
 
-    .mode-btn,
-    .mark-beat-btn,
-    .cancel-btn,
-    .save-btn {
-      min-height: 3.75rem;
-      padding-inline: 1.75rem;
-      font-size: 1.125rem;
+    .timeline-row {
+      grid-column: 1 / -1;
+      grid-row: 2;
     }
 
-    .cancel-btn {
-      min-width: 11rem;
+    .action-bar {
+      grid-column: 1 / -1;
+      grid-row: 3;
+    }
+  }
+
+  /* Wide and short - a folded phone held sideways. Everything optional goes so
+     the stage and the tap button both stay above the fold. */
+  @media (max-height: 34rem) {
+    .tap-key,
+    .rate-hint {
+      display: none;
     }
 
-    .save-btn {
-      min-width: 15rem;
+    .tap-face {
+      inline-size: clamp(3rem, 6cqw, 4.5rem);
     }
   }
 </style>

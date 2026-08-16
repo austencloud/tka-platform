@@ -214,10 +214,8 @@
     <StepMapEditor
       videoUrl={mappingVideo.videoUrl}
       videoDuration={mappingVideo.duration}
-      stepCount={sequence.steps.length}
-      stepLabels={sequence.steps.map(
-        (step, index) => step.letter || `${index + 1}`
-      )}
+      steps={sequence.steps}
+      startPosition={sequence.startPosition ?? sequence.startingPosition}
       initialStepMap={mappingVideo.beatMap}
       {bpm}
       onSave={handleStepMapSave}

@@ -92,6 +92,11 @@ function docToVideo(
   const beatMap: StepMap | undefined = beatMapData
     ? {
         beatTimestamps: (beatMapData.beatTimestamps as number[]) ?? [],
+        // saveVideo writes null for "absent"; updateStepMap omits the key.
+        endTimestamp:
+          typeof beatMapData.endTimestamp === "number"
+            ? beatMapData.endTimestamp
+            : undefined,
         stepCount: (beatMapData.stepCount as number) ?? 0,
         source: (beatMapData.source as StepMap["source"]) ?? "manual",
         updatedAt:
@@ -152,6 +157,7 @@ function videoToDoc(video: CollaborativeVideo): Record<string, unknown> {
     beatMap: video.beatMap
       ? {
           beatTimestamps: video.beatMap.beatTimestamps,
+          endTimestamp: video.beatMap.endTimestamp ?? null,
           stepCount: video.beatMap.stepCount,
           source: video.beatMap.source,
           updatedAt: video.beatMap.updatedAt,
@@ -273,6 +279,11 @@ export async function updateStepMap(videoId: string, beatMap: StepMap): Promise<
     await updateDoc(docRef, {
       beatMap: {
         beatTimestamps: beatMap.beatTimestamps,
+        // Firestore rejects undefined, and a map saved before the editor
+        // collected the final arrival legitimately has none.
+        ...(beatMap.endTimestamp === undefined
+          ? {}
+          : { endTimestamp: beatMap.endTimestamp }),
         stepCount: beatMap.stepCount,
         source: beatMap.source,
         updatedAt: serverTimestamp(),

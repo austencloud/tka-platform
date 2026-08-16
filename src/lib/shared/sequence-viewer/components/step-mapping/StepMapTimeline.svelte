@@ -11,8 +11,16 @@
     currentTime: number;
     beatTimestamps: number[];
     activeStepIndex: number;
+    /**
+     * What to call each marker. Defaults to its 1-based position, which is
+     * wrong wherever the first mark is not a move - the editor marks the
+     * opening pose first, so it passes "start" then the move numbers.
+     */
+    markerLabels?: readonly string[];
     onTimestampChange: (index: number, newTime: number) => void;
     onSeek: (time: number) => void;
+    /** Touching a marker makes it the one the host is showing details for. */
+    onSelect?: (index: number) => void;
   }
 
   let {
@@ -20,9 +28,15 @@
     currentTime,
     beatTimestamps,
     activeStepIndex,
+    markerLabels,
     onTimestampChange,
     onSeek,
+    onSelect,
   }: Props = $props();
+
+  function labelFor(index: number): string {
+    return markerLabels?.[index] ?? String(index + 1);
+  }
 
   let timelineEl: HTMLDivElement | undefined = $state();
   let draggingIndex = $state(-1);
@@ -82,6 +96,7 @@
     event.stopPropagation();
     event.preventDefault();
     draggingIndex = index;
+    onSelect?.(index);
 
     const target = event.currentTarget as HTMLElement;
     target.setPointerCapture(event.pointerId);
@@ -123,7 +138,7 @@
   onpointerup={handlePointerUp}
   onpointercancel={handlePointerUp}
   role="slider"
-  aria-label="Beat timeline"
+  aria-label="Step timing"
   aria-valuemin={0}
   aria-valuemax={duration}
   aria-valuenow={currentTime}
@@ -139,7 +154,7 @@
           class:active={i === activeStepIndex}
           style="left: {pct}%"
         >
-          {i + 1}
+          {labelFor(i)}
         </span>
       {/if}
     {/each}
@@ -164,7 +179,7 @@
         style="left: {pct}%"
         onpointerdown={(e) => handleMarkerPointerDown(e, i)}
         role="slider"
-        aria-label="Beat {i + 1} at {formatTime(ts)}"
+        aria-label="Mark {labelFor(i)} at {formatTime(ts)}"
         aria-valuemin={0}
         aria-valuemax={duration}
         aria-valuenow={ts}

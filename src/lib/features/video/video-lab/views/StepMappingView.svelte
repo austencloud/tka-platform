@@ -8,6 +8,8 @@
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import StepMapEditor from "$lib/shared/sequence-viewer/components/step-mapping/StepMapEditor.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
     videoUrl: string;
@@ -32,6 +34,12 @@
   // Default BPM - user can adjust later in the synced preview
   const defaultBpm = 60;
 
+  // A LOOP repeats its word by construction; the smallest form is the one to
+  // show. See .claude/rules/simplified-word-display.md.
+  const displayWord = $derived(
+    sequence.word ? simplifyRepeatedWord(sequence.word) : ""
+  );
+
   async function handleEditorSave(beatMap: StepMap): Promise<void> {
     await onSave(beatMap);
   }
@@ -44,8 +52,15 @@
       Back
     </button>
     <span class="mapping-title">
-      Mapping: <strong>{sequence.word ?? sequence.name ?? "Untitled"}</strong>
-      ({stepCount} beats)
+      Mapping:
+      <strong>
+        {#if displayWord}
+          <TKAWordGlyph word={displayWord} height={16} darkMode />
+        {:else}
+          {sequence.name ?? "Untitled"}
+        {/if}
+      </strong>
+      ({stepCount} steps)
     </span>
   </div>
 
@@ -53,10 +68,8 @@
     <StepMapEditor
       {videoUrl}
       {videoDuration}
-      {stepCount}
-      stepLabels={sequence.steps.map(
-        (step, index) => step.letter || `${index + 1}`
-      )}
+      steps={sequence.steps}
+      startPosition={sequence.startPosition ?? sequence.startingPosition}
       bpm={defaultBpm}
       initialStepMap={existingStepMap ?? undefined}
       onSave={handleEditorSave}
