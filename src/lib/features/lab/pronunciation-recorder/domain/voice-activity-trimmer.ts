@@ -10,6 +10,12 @@ export interface TrimSuggestion extends TrimRange {
   detectedSegments: number;
 }
 
+export interface WordSegmentation {
+  segments: TrimRange[];
+  detectedSegments: number;
+  matchesExpected: boolean;
+}
+
 interface SampleRange {
   start: number;
   end: number;
@@ -48,24 +54,14 @@ function chooseSegment(
 }
 
 /**
- * Find speech islands in a carrier phrase and select the island containing the
- * requested target. Short internal gaps stay joined so names such as
- * "Sigma dash" remain one editable region.
+ * Find speech islands by frame energy. Short internal gaps stay joined so a
+ * two-word name such as "Sigma dash" remains one island.
  */
-export function suggestPronunciationTrim(
+function findSpeechSegments(
   samples: Float32Array,
-  sampleRate: number,
-  targetSegment: TargetSegment
-): TrimSuggestion {
-  const duration = samples.length / sampleRate;
-  if (samples.length === 0 || sampleRate <= 0) {
-    return {
-      startSeconds: 0,
-      endSeconds: Math.max(0, duration),
-      confidence: "review",
-      detectedSegments: 0,
-    };
-  }
+  sampleRate: number
+): SampleRange[] {
+  if (samples.length === 0 || sampleRate <= 0) return [];
 
   const frameSize = Math.max(1, Math.round(sampleRate * FRAME_SECONDS));
   const energies: number[] = [];
@@ -110,9 +106,30 @@ export function suggestPronunciationTrim(
     }
   }
 
-  const speechSegments = merged.filter(
-    (segment) => segment.end - segment.start >= minSpeech
-  );
+  return merged.filter((segment) => segment.end - segment.start >= minSpeech);
+}
+
+/**
+ * Find speech islands in a carrier phrase and select the island containing the
+ * requested target. Short internal gaps stay joined so names such as
+ * "Sigma dash" remain one editable region.
+ */
+export function suggestPronunciationTrim(
+  samples: Float32Array,
+  sampleRate: number,
+  targetSegment: TargetSegment
+): TrimSuggestion {
+  const duration = samples.length / sampleRate;
+  if (samples.length === 0 || sampleRate <= 0) {
+    return {
+      startSeconds: 0,
+      endSeconds: Math.max(0, duration),
+      confidence: "review",
+      detectedSegments: 0,
+    };
+  }
+
+  const speechSegments = findSpeechSegments(samples, sampleRate);
   const selected = chooseSegment(speechSegments, targetSegment);
   if (!selected) {
     return {
@@ -131,5 +148,30 @@ export function suggestPronunciationTrim(
     confidence:
       speechSegments.length === expectedSegments ? "strong" : "review",
     detectedSegments: speechSegments.length,
+  };
+}
+
+/**
+ * Split one spoken word into one range per letter. Edge padding matches the
+ * single-take trimmer, so ranges of adjacent letters may overlap slightly;
+ * that overlap preserves the natural release of the preceding letter.
+ */
+export function segmentWordByEnergy(
+  samples: Float32Array,
+  sampleRate: number,
+  expectedSegments: number
+): WordSegmentation {
+  const found = findSpeechSegments(samples, sampleRate);
+  const padding = Math.round(sampleRate * EDGE_PADDING_SECONDS);
+
+  const segments = found.map((segment) => ({
+    startSeconds: Math.max(0, segment.start - padding) / sampleRate,
+    endSeconds: Math.min(samples.length, segment.end + padding) / sampleRate,
+  }));
+
+  return {
+    segments,
+    detectedSegments: segments.length,
+    matchesExpected: segments.length === expectedSegments,
   };
 }
