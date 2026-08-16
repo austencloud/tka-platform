@@ -26,6 +26,8 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
+  import EmberFountains from "$lib/shared/3d/environments/scenes/ember/EmberFountains.svelte";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import {
     CAUSEWAY_Y,
     GROTTO_WATERLINE_Y,
@@ -33,6 +35,7 @@
     SHELF_Y,
     WATERLINE_Y,
     DOME_APEX_Y,
+    inRectClosed,
   } from "$lib/features/museum/data/drowned-gallery-terrain";
   import { buildDrownedGalleryWalkSetup } from "./drowned-gallery-graybox-colliders";
 
@@ -95,16 +98,94 @@
    */
   const grottoWater = layout.waterPlanes
     .filter((plane) => plane.surfaceY === GROTTO_WATERLINE_Y)
-    .map((plane, index) => ({
-      id: `grotto-water-${index}`,
-      width: plane.maxX - plane.minX,
-      depth: plane.maxZ - plane.minZ,
-      centre: [
-        (plane.minX + plane.maxX) / 2 - origin.x,
-        (plane.minZ + plane.maxZ) / 2 - origin.z,
-      ] as [number, number],
-      surfaceY: plane.surfaceY,
-    }));
+    .map((plane, index) => {
+      const centreX = (plane.minX + plane.maxX) / 2;
+      const centreZ = (plane.minZ + plane.maxZ) / 2;
+      // Exactly two surfaces sit at this datum: the channel and the mirror
+      // pool. Only the channel ramps.
+      const isChannel = inRectClosed(layout.channel, centreX, centreZ);
+      return {
+        id: `grotto-water-${index}`,
+        isChannel,
+        width: plane.maxX - plane.minX,
+        depth: plane.maxZ - plane.minZ,
+        centre: [centreX - origin.x, centreZ - origin.z] as [number, number],
+        surfaceY: plane.surfaceY,
+      };
+    });
+
+  /**
+   * Graybox massing for the wing's furniture. A box of the right size in the
+   * right place answers the only Gate 2 question — does the room read when you
+   * walk it — and answers it without waiting on avatars or card art.
+   */
+  const fixtureMeshes = layout.exhibitFixtures.map((fixture) => ({
+    id: fixture.id,
+    kind: fixture.kind,
+    position: [
+      fixture.centre.x - origin.x,
+      fixture.baseY + fixture.height / 2,
+      fixture.centre.z - origin.z,
+    ] as [number, number, number],
+    scale: [fixture.size.x, fixture.height, fixture.size.z] as [
+      number,
+      number,
+      number,
+    ],
+    rotation: [0, fixture.facing, 0] as [number, number, number],
+    color:
+      fixture.kind === "case-screen"
+        ? "#123742"
+        : fixture.kind === "case-showcase"
+          ? "#6b7f86"
+          : "#2b3a41",
+    emissive: fixture.kind === "case-screen" ? "#1d6d84" : "#000000",
+  }));
+
+  /**
+   * Mist where the water wing meets the fire wing.
+   *
+   * FirstFireSteamVent is NOT the thing to mount here — it is a whole forge
+   * fixture (sunken slot walls, iron grate, glowing slag, coal bank, orange
+   * up-light) and all of that would land in the middle of the channel. What
+   * carries over is the emitter it delegates to, plus the three limits it
+   * authored the hard way:
+   *
+   * 1. Not white. White on additive blending blows to a peach smear under AgX,
+   *    so these are dim greys — cooled from the vent's warm greys because this
+   *    plume is lit by the grotto's blue, not by coals.
+   * 2. Not full height. A column run to the crown is a flat pale wash that
+   *    takes the depth out of the room. Waist height reads as water breathing.
+   * 3. Not dense. The route passes within a metre, so the visitor would
+   *    otherwise stand inside the cloud with every sprite between them and the
+   *    room.
+   */
+  const STEAM_RATE = 0.55;
+  const steamPlume = {
+    enabled: true,
+    count: Math.round(34 * STEAM_RATE),
+    riseSpeed: 0.42,
+    colors: ["#242c30", "#2c353a", "#1c2326", "#333f44"],
+    sizeRange: [0.22, 0.5] as [number, number],
+    spawnRadius: Math.min(2.6, layout.channel.maxZ - layout.channel.minZ) * 0.6,
+    maxHeight: 1.1,
+    // Near-zero: steam keeps going up. Embers arc and fall; this must not.
+    gravity: 0.015,
+    burstInterval: 5.5,
+    burstCount: 3,
+  };
+  /**
+   * EmberFountains draws its points at `userProportionsState.groundY`, because
+   * the ember components are authored against the avatar ground datum rather
+   * than the museum floor. Cancelling it here keeps that detail out of the
+   * placement below, exactly as FirstFireSteamVent does.
+   */
+  const steamFloorLift = $derived(-userProportionsState.groundY);
+  const steamPosition = $derived([
+    layout.alcoves[2]!.x - origin.x,
+    GROTTO_WATERLINE_Y + steamFloorLift,
+    (layout.channel.minZ + layout.channel.maxZ) / 2 - origin.z,
+  ] as [number, number, number]);
 
   const shaftLights = layout.openShafts.map((shaft, index) => ({
     id: `shaft-${index}`,
@@ -449,8 +530,35 @@
     rippleStrength={0.09}
     foamWidth={0.2}
     flowSpeed={0.8}
+    waveAmplitudeStart={entry.isChannel ? 0 : 1}
+    waveAmplitudeEnd={1}
   />
 {/each}
+
+{#each fixtureMeshes as fixture (fixture.id)}
+  <T.Mesh
+    position={fixture.position}
+    rotation={fixture.rotation}
+    scale={fixture.scale}
+    castShadow
+    receiveShadow
+  >
+    <T.BoxGeometry />
+    <T.MeshStandardMaterial
+      color={fixture.color}
+      emissive={fixture.emissive}
+      emissiveIntensity={fixture.kind === "case-screen" ? 0.85 : 0}
+      roughness={0.72}
+      metalness={0.04}
+    />
+  </T.Mesh>
+{/each}
+
+<!-- Mist over the channel's east end, in line with CCCC and three metres from
+     the Fire threshold: the water wing exhaling into the fire wing. -->
+<T.Group position={steamPosition}>
+  <EmberFountains config={steamPlume} />
+</T.Group>
 
 <GltfAsset
   url="/models/museum/cave/drowned-gallery-graybox.glb"
