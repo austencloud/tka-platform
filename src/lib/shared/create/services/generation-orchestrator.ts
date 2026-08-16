@@ -128,6 +128,7 @@ export class GenerationOrchestrator {
       mustContainLetters: options.mustContainLetters?.map(String),
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
+      turnPattern: options.turnPattern,
       blueStartOrientation: options.blueStartOrientation,
       redStartOrientation: options.redStartOrientation,
     });
@@ -199,6 +200,7 @@ export class GenerationOrchestrator {
       mustContainLetters: options.mustContainLetters?.map(String),
       mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
+      turnPattern: options.turnPattern,
       blueStartOrientation: options.blueStartOrientation,
       redStartOrientation: options.redStartOrientation,
       loop: {

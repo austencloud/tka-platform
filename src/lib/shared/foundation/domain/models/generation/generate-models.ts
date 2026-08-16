@@ -13,6 +13,7 @@ import type {
   Period,
 } from "./circular-models";
 import type { LOOPSpec, LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type { TurnLanes } from "@tka/sequence-engine/generation";
 import type { LoopRhythm } from "$lib/shared/create/services/loop-type-utils";
 
 // Re-export LOOPType for convenience
@@ -42,6 +43,13 @@ export interface GenerationOptions {
   difficulty: DifficultyLevel;
   propContinuity?: PropContinuity | undefined;
   turnIntensity?: number | undefined;
+  /**
+   * An exact repeating turn figure, read at every step rather than rolled at
+   * random. When set it replaces `turnIntensity` as the source of turns, and
+   * the search sees it while it is still choosing letters — so it will not pick
+   * a static letter at a step this figure leaves at zero turns.
+   */
+  turnPattern?: TurnLanes | undefined;
   period?: Period | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
   loopSpec?: LOOPSpec | undefined;

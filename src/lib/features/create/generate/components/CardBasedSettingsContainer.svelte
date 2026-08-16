@@ -30,6 +30,7 @@ Delegates ALL logic to services (SRP compliant)
     ROTATED_LOOP_TYPES,
     LOOPType,
     Period,
+    periodToNumber,
   } from "../circular/domain/models/circular-models";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -47,11 +48,13 @@ Delegates ALL logic to services (SRP compliant)
   import type { LevelNumber } from "$lib/shared/domain/curriculum/level-metadata";
   import { DifficultyLevel as SharedDifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { clampLanesToLevel } from "$lib/shared/create/domain/turn-pattern-data";
+  import type { TurnLanes } from "@tka/sequence-engine/generation";
   // Card components
   import LevelCard from "./cards/LevelCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
-  import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
+  import TurnsCard from "./cards/TurnsCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
@@ -126,6 +129,17 @@ Delegates ALL logic to services (SRP compliant)
       ? loopParamProvider.getAllowedTurnsForLevel(currentLevel)
       : []
   );
+
+  // A LOOP repeats one seed block N times, so the block is the whole length
+  // divided by the repetition count. Turns drawn on the strip should repeat in
+  // lockstep with that block rather than drifting across it, so the strip is
+  // sized to the block, not to the finished sequence.
+  const loopSeedLength = $derived.by(() => {
+    if (!config.loopEnabled) return undefined;
+    const repetitions = periodToNumber(config.period as Period);
+    const seed = Math.floor(config.length / repetitions);
+    return seed >= 1 ? seed : undefined;
+  });
 
   // Config and start/end options can also arrive from saved setups or session
   // persistence. Keep the Level vocabulary invariant true on those paths too.
@@ -338,6 +352,7 @@ Delegates ALL logic to services (SRP compliant)
     const updates: Partial<UIGenerationConfig> = { level: newLevelNum };
     const previousLevel = config.level;
     const previousTurnIntensity = config.turnIntensity;
+    const previousTurnPattern = config.turnPattern ?? null;
     const previousPeriod = config.period;
     const previousStartEndOptions = startEndState
       ? cloneStartEndOptions(startEndState.options)
@@ -351,6 +366,16 @@ Delegates ALL logic to services (SRP compliant)
         Math.abs(best - config.turnIntensity)
           ? v
           : best
+      );
+    }
+
+    // The strip is subject to the same level rules as the scalar above: a half
+    // turn drawn at level 3 is not a legal level 2 value.
+    if (config.turnPattern) {
+      updates.turnPattern = clampLanesToLevel(
+        config.turnPattern,
+        newLevelNum,
+        (updates.turnIntensity ?? config.turnIntensity) as number
       );
     }
 
@@ -378,6 +403,7 @@ Delegates ALL logic to services (SRP compliant)
             updateConfig({
               level: previousLevel,
               turnIntensity: previousTurnIntensity,
+              turnPattern: previousTurnPattern,
               period: previousPeriod,
             });
             startEndState?.setOptions(previousStartEndOptions);
@@ -393,6 +419,13 @@ Delegates ALL logic to services (SRP compliant)
 
   function handleTurnIntensityChange(turnIntensity: number) {
     updateConfig({ turnIntensity });
+  }
+
+  // null, not undefined: `updateConfig` drops undefined values so a config
+  // missing a newer field cannot wipe a current one, which would make "clear
+  // the pattern" a silent no-op.
+  function handleTurnPatternChange(turnPattern: TurnLanes | null) {
+    updateConfig({ turnPattern });
   }
 
   function handlePropContinuityChange(propContinuity: PropContinuity) {
@@ -645,10 +678,19 @@ Delegates ALL logic to services (SRP compliant)
               shadowColor={cardColors.gridMode.shadowColor}
             />
           {:else if card.id === "turn-intensity"}
-            <!-- TurnIntensityCard declares shadowColor but no color prop. -->
-            <TurnIntensityCard
-              {...card.props as ComponentProps<typeof TurnIntensityCard>}
+            <!-- TurnsCard declares shadowColor but no color prop. -->
+            <TurnsCard
+              {...card.props as ComponentProps<typeof TurnsCard>}
               shadowColor={cardColors.turnIntensity.shadowColor}
+              level={config.level}
+              turnPattern={config.turnPattern}
+              onTurnPatternChange={handleTurnPatternChange}
+              blueStartOrientation={startEndState?.options
+                .blueStartOrientation ?? "in"}
+              redStartOrientation={startEndState?.options.redStartOrientation ??
+                "in"}
+              sequenceLength={config.length}
+              loopPeriod={loopSeedLength}
             />
           {:else if card.id === "customize"}
             <CustomizeCard

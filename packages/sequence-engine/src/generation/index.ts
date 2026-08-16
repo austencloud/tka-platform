@@ -157,6 +157,7 @@ export { BeamSearch, type BeamSearchResult } from "./builder/BeamSearch.js";
 export {
   allocateTurns,
   getDefaultMaxTurnIntensity,
+  getTurnPool,
   type TurnAllocation,
 } from "./turns/TurnAllocator.js";
 export {

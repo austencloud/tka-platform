@@ -18,6 +18,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import type { ReflectionAxis } from "@tka/sequence-engine/loop";
+import type { TurnLanes } from "@tka/sequence-engine/generation";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -31,6 +32,7 @@ interface SerializedConfig {
   length: number;
   level: number;
   turnIntensity: number;
+  turnPattern?: TurnLanes | null;
   gridMode: GridMode;
   propContinuity: PropContinuity;
   period: Period;
@@ -60,6 +62,7 @@ function saveConfig(config: UIGenerationConfig): void {
       length: config.length,
       level: config.level,
       turnIntensity: config.turnIntensity,
+      turnPattern: config.turnPattern,
       gridMode: config.gridMode as GridMode,
       propContinuity: config.propContinuity as PropContinuity,
       period: config.period as Period,
@@ -118,6 +121,9 @@ function loadConfig(): UIGenerationConfig | null {
 
     if (data.turnIntensity !== undefined) {
       result.turnIntensity = data.turnIntensity;
+    }
+    if (data.turnPattern !== undefined) {
+      result.turnPattern = data.turnPattern;
     }
     if (data.gridMode !== undefined) {
       result.gridMode = data.gridMode as GridMode;
