@@ -79,6 +79,18 @@ function collectMembers(
   return members;
 }
 
+/**
+ * A keyframe animation on a descendant is that descendant's OWN gesture — the
+ * entrance bloom a cell plays as it arrives. Only transitions (and the flip's
+ * own transforms) can stack with a layout move, so only those get cancelled.
+ * Cancelling entrances instead stranded the start tile invisible for a whole
+ * generation: its bloom died on capture, `animationend` never fired, and the
+ * cell stayed at `opacity: 0` until the sequence animation cleaned up.
+ */
+function isKeyframeAnimation(animation: Animation): boolean {
+  return typeof (animation as CSSAnimation).animationName === "string";
+}
+
 function cancelMemberAnimations(
   element: HTMLElement,
   cancelSelectors: string[]
@@ -87,7 +99,10 @@ function cancelMemberAnimations(
   for (const selector of cancelSelectors) {
     const target = element.querySelector<HTMLElement>(selector);
     if (!target) continue;
-    for (const animation of target.getAnimations()) animation.cancel();
+    for (const animation of target.getAnimations()) {
+      if (isKeyframeAnimation(animation)) continue;
+      animation.cancel();
+    }
   }
 }
 

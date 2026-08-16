@@ -162,7 +162,14 @@
     return animationState.animationName;
   });
 
-  function handleAnimationEnd() {
+  // The entrance keyframes live on this element. Pictograph internals bubble
+  // their own animation events through here, and an entrance that is cancelled
+  // (a layout transition sweeping the grid, a mode switch) never reports an end
+  // at all — either one would leave the cell parked at `opacity: 0` forever,
+  // since visibility is released by `hasAnimated`. Only this element's events
+  // count, and a cancel settles the cell the same way a finish does.
+  function handleAnimationEnd(event: AnimationEvent) {
+    if (event.target !== cellElement) return;
     animationManager.onAnimationEnd(shouldAnimateIn);
     animationState = animationManager.getState();
   }
@@ -339,6 +346,7 @@
   onpointercancel={handlePointerCancel}
   oncontextmenu={handleContextMenu}
   onanimationend={handleAnimationEnd}
+  onanimationcancel={handleAnimationEnd}
   role="button"
   tabindex="0"
   aria-label={ariaLabel}
