@@ -158,8 +158,33 @@ rail → a "VISIBILITY" header is three nav levels to reach a toggle.
       names stayed "Animation" / "Choreo card" instead of degrading to "Top" /
       "Bottom". The role labels shortened to match ("Sequence animation" →
       "Animation") since they now name a slot and a chooser option.
-- [ ] **P2 — Direct manipulation.** Selection ring, `Delete`/`Backspace`,
-      empty-slot source chooser, swap. Remove the Layouts and Sources rails.
+- [x] **P2 — Direct manipulation.** Each slot carries a chip naming its source;
+      the chip is a menu of all six sources plus Remove, with 3D disabled in one
+      slot while the other holds it. `Delete`/`Backspace` on a selected slot
+      clears it (handler on the region surface, not the document, so it cannot
+      fire from a text field). A swap control straddles the seam; the collapsed
+      single shows an "Add {slot} slot" chooser on the edge the new slot appears
+      on. Selection is a full-element ring.
+
+      Both rails are gone. `PostStudioPresetPicker.svelte` and
+      `PostStudioSourcePanel.svelte` are deleted — Sources restated what the
+      preview shows and its only verb (`requestSource` on a missing role) was
+      already on the region click path, and Layouts became a shortcut rather
+      than the way a post is built, so it is one menu behind the preset name the
+      top bar already displayed. The workspace is two columns; the mobile
+      "Layout" tab went with the rail.
+
+      Two things the frames caught that the code did not: the canvas column was
+      taking every spare pixel (1123px holding a 395px frame), so surplus past
+      `frame + matting` now goes to the inspector up to a share of the
+      workspace; and the scale tiers were declared on `.studio-body` only, which
+      left the new top-bar control at 12px on a 3840 screen — they now land on
+      every direct child. Chips drop to icon-only on a wide-short stage where a
+      named chip is wider than the whole 112px frame.
+
+      Evidence: 21/21 unit tests, `svelte-check` 0/0, zero console errors, and
+      screenshots at 1920 / 3840 / 1440 / 960×412 / 375×667. Skipped 2560 —
+      it sits between two verified tiers with no seam of its own.
 - [ ] **P3 — Source registry + three new modes.** Registry of six. Mandala via
       pure renderer; Tunnel via seekable `AnimatorCanvas` wrapper; 3D via context
       bootstrap with the one-slot policy.

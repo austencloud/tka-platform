@@ -43,8 +43,6 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PostStudioTopBar from "./PostStudioTopBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
-  import PostStudioPresetPicker from "./PostStudioPresetPicker.svelte";
-  import PostStudioSourcePanel from "./PostStudioSourcePanel.svelte";
   import PostStudioInspector from "./PostStudioInspector.svelte";
   import PostStudioTimeline from "./PostStudioTimeline.svelte";
   import PostStudioDeliveryPanel from "./PostStudioDeliveryPanel.svelte";
@@ -56,9 +54,10 @@
     type PostStudioPerformanceSelection,
   } from "./post-studio-performance-selection";
   import PanelGroup from "$lib/shared/panels/PanelGroup.svelte";
+  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import { withPostStudioPropType } from "./post-studio-prop-render-options";
 
-  type FocusedPanel = "canvas" | "layout" | "edit" | "timing";
+  type FocusedPanel = "canvas" | "edit" | "timing";
 
   interface Props {
     sequence: SequenceData;
@@ -123,7 +122,10 @@
   let workspaceWidth = $state(0);
   let workspaceHeight = $state(0);
   let workspaceWasAdjusted = $state(false);
-  let workspaceSizes = $state([22, 72, 44]);
+  let workspaceSizes = $state([72, 44]);
+  let savingLayout = $state(false);
+  let layoutName = $state("");
+  let layoutSaveError = $state("");
 
   const compactWorkspace = $derived(
     workspaceWidth === 0 || workspaceWidth <= 1120 || workspaceHeight <= 640
@@ -188,26 +190,30 @@
 
   $effect(() => {
     const width = workspaceWidth;
+    const height = workspaceHeight;
     if (workspaceWasAdjusted || width <= 0) return;
 
-    const available = Math.max(0, width - 16);
+    const available = Math.max(0, width - 8);
 
-    // Both rails hold a bounded amount of content, so they get a share with a
-    // ceiling and the canvas takes what is left. Letting the inspector absorb
-    // the remainder instead handed it 2021px at 4K — half the workspace for a
-    // grid of chips. The canvas is the right home for genuine surplus: the
-    // 9:16 frame is height-bound, so extra column width becomes symmetric
-    // matting around the hero rather than a panel stretched past its content.
-    const assets = Math.min(720, Math.max(288, available * 0.185));
+    // The 9:16 frame is height-bound, so the canvas column has an appetite, not
+    // an appetite for everything: past `frame + matting` every further pixel is
+    // black rail. Size it to what the frame can actually use at this height and
+    // hand the surplus to the inspector, which does grow into it (more effect
+    // columns rather than a wider gutter). The reverse split gave the canvas
+    // 1123px to hold a 395px frame.
+    const frame = height > 0 ? (height - 44) * 0.5625 : 480;
+    const canvasFloor = width >= 1680 ? 640 : 480;
+    const inspectorFloor = width >= 1680 ? 720 : 320;
+    // Surplus past that appetite goes to the inspector, but only up to a share
+    // of the workspace — handing it every spare pixel makes the panel the
+    // dominant column in a studio whose product is the frame, and stretches a
+    // grid of one-word tiles to fill it.
     const inspector = Math.min(
-      1280,
-      Math.max(width >= 1680 ? 720 : 320, available * 0.3)
+      Math.max(900, available * 0.32),
+      Math.max(inspectorFloor, available - (frame + 240))
     );
-    const canvas = Math.max(
-      width >= 1680 ? 640 : 480,
-      available - assets - inspector
-    );
-    workspaceSizes = [assets, canvas, inspector];
+    const canvas = Math.max(canvasFloor, available - inspector);
+    workspaceSizes = [canvas, Math.max(inspectorFloor, available - canvas)];
   });
 
   const bindings = $derived.by((): CompositionSourceBinding[] => [
@@ -492,11 +498,43 @@
     timingAdvanced = !timingAdvanced;
   }
 
-  async function saveCurrentPreset(name: string): Promise<void> {
-    const preset = composition.createPreset(name, presetOwnerId);
-    await saveMediaCompositionPreset(preset);
-    composition.addPreset(preset, true);
+  async function saveCurrentPreset(): Promise<void> {
+    const name = layoutName.trim();
+    if (!name || savingLayout) return;
+    savingLayout = true;
+    layoutSaveError = "";
+    try {
+      const preset = composition.createPreset(name, presetOwnerId);
+      await saveMediaCompositionPreset(preset);
+      composition.addPreset(preset, true);
+      layoutName = "";
+    } catch (error) {
+      layoutSaveError =
+        error instanceof Error ? error.message : "Could not save this layout.";
+    } finally {
+      savingLayout = false;
+    }
   }
+
+  // Presets stopped being the way a post is built — the preview's slot chips
+  // are — so the four-card rail collapses to a list behind the name that was
+  // already sitting in the top bar.
+  const layoutMenuItems = $derived([
+    ...composition.presets.map((preset) => ({
+      label: preset.name,
+      icon: "fa-solid fa-table-cells-large",
+      selected: composition.activePresetId === preset.id,
+      action: () => composition.selectPreset(preset.id),
+    })),
+    {
+      label: "Save this layout",
+      icon: "fa-solid fa-bookmark",
+      action: () => {
+        layoutSaveError = "";
+        layoutName = `${composition.activePreset.name} copy`;
+      },
+    },
+  ]);
 </script>
 
 <section
@@ -504,9 +542,28 @@
   data-mobile-panel={focusedPanel}
   aria-labelledby="post-studio-title"
 >
+  {#snippet layoutsMenu()}
+    <div class="layouts-menu">
+      <OverflowMenu
+        items={layoutMenuItems}
+        placement="bottom"
+        align="right"
+        triggerClass="layouts-trigger"
+        ariaLabel="Saved layouts"
+      >
+        {#snippet trigger()}
+          <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
+          <span>{composition.activePreset.name}</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        {/snippet}
+      </OverflowMenu>
+    </div>
+  {/snippet}
+
   <PostStudioTopBar
     {sequenceName}
     presetName={composition.activePreset.name}
+    layouts={layoutsMenu}
     missingCount={composition.missingRequiredRoles.length}
     missingLabel={firstMissingSource?.label}
     {canRender}
@@ -521,26 +578,6 @@
     onRender={renderPost}
     onCancelExport={cancelExport}
   />
-
-  {#snippet assetPanel()}
-    <aside class="asset-rail" aria-label="Layouts and sources">
-      <PostStudioPresetPicker rail onSavePreset={saveCurrentPreset} />
-      {#if presetLoadError}
-        <div class="preset-error" role="alert">
-          <span>{presetLoadError}</span>
-          <button type="button" onclick={() => void loadSavedPresets()}>
-            Try again
-          </button>
-        </div>
-      {/if}
-      <div class="rail-divider"></div>
-      <PostStudioSourcePanel
-        {performanceAlignmentDetail}
-        {performanceLibraryError}
-        onEditSource={() => (focusedPanel = "edit")}
-      />
-    </aside>
-  {/snippet}
 
   {#snippet canvasPanel()}
     <main class="canvas-panel" aria-label="Post canvas">
@@ -595,6 +632,48 @@
        column and got clipped, and the height it claimed came straight out of
        the 9:16 frame, which is the one thing on this page that is the
        product. Full width also gives clip trimming a track worth dragging. -->
+  {#if layoutName || presetLoadError || performanceLibraryError}
+    <div class="studio-notice">
+      {#if layoutName}
+        <form class="save-layout" onsubmit={(e) => {
+          e.preventDefault();
+          void saveCurrentPreset();
+        }}>
+          <label for="post-studio-layout-name">Layout name</label>
+          <input
+            id="post-studio-layout-name"
+            bind:value={layoutName}
+            maxlength="120"
+            autocomplete="off"
+          />
+          <button type="submit" disabled={!layoutName.trim() || savingLayout}>
+            {savingLayout ? "Saving…" : "Save"}
+          </button>
+          <button
+            type="button"
+            class="dismiss"
+            aria-label="Cancel saving layout"
+            onclick={() => (layoutName = "")}
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </form>
+      {/if}
+      {#if layoutSaveError}<p role="alert">{layoutSaveError}</p>{/if}
+      {#if presetLoadError}
+        <p role="alert">
+          {presetLoadError}
+          <button type="button" onclick={() => void loadSavedPresets()}>
+            Try again
+          </button>
+        </p>
+      {/if}
+      {#if performanceLibraryError}
+        <p role="alert">{performanceLibraryError}</p>
+      {/if}
+    </div>
+  {/if}
+
   <div class="studio-body">
     <div
       class="workspace"
@@ -605,22 +684,15 @@
         direction="horizontal"
         panels={[
           {
-            id: "assets",
-            content: assetPanel,
-            defaultSize: workspaceSizes[0],
-            minSize: workspaceWidth >= 1680 ? 288 : 256,
-            maxSize: 720,
-          },
-          {
             id: "canvas",
             content: canvasPanel,
-            defaultSize: workspaceSizes[1],
+            defaultSize: workspaceSizes[0],
             minSize: workspaceWidth >= 1680 ? 640 : 480,
           },
           {
             id: "inspector",
             content: inspectorPanel,
-            defaultSize: workspaceSizes[2],
+            defaultSize: workspaceSizes[1],
             minSize: workspaceWidth >= 1680 ? 720 : 320,
             maxSize: 1280,
           },
@@ -644,15 +716,6 @@
     >
       <i class="fa-solid fa-mobile-screen" aria-hidden="true"></i>
       Canvas
-    </button>
-    <button
-      type="button"
-      class:active={focusedPanel === "layout"}
-      aria-pressed={focusedPanel === "layout"}
-      onclick={() => (focusedPanel = "layout")}
-    >
-      <i class="fa-solid fa-table-cells-large" aria-hidden="true"></i>
-      Layout
     </button>
     <button
       type="button"
@@ -701,8 +764,12 @@
     position: relative;
     container-name: post-studio;
     container-type: inline-size;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    /* Flex, not grid rows: the notice strip is conditional, and a fixed
+       `auto minmax(0,1fr)` template hands the 1fr to whichever child lands in
+       row two, which flips between the body and the notice as errors come and
+       go. Flex lets the body claim the remainder regardless of siblings. */
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -717,10 +784,99 @@
      at the 105rem / 180rem tiers instead of staying frozen at base size. */
   .studio-body {
     display: grid;
+    flex: 1;
     grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .layouts-menu :global(.layouts-trigger) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--studio-control-height);
+    padding: 0 0.85rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-full);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--studio-meta-size);
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .layouts-menu :global(.layouts-trigger:hover) {
+    border-color: var(--theme-stroke-strong);
+  }
+
+  .layouts-menu :global(.layouts-trigger:focus-visible) {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .studio-notice {
+    display: grid;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-bottom: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+  }
+
+  .studio-notice p {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin: 0;
+    color: var(--semantic-warning);
+    font-size: var(--studio-meta-size);
+  }
+
+  .save-layout {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: var(--studio-meta-size);
+  }
+
+  .save-layout input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--studio-control-height);
+    padding: 0 0.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+  }
+
+  .studio-notice button {
+    min-height: var(--studio-control-height);
+    padding: 0 0.9rem;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .studio-notice button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .studio-notice button:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .save-layout .dismiss {
+    min-width: var(--studio-control-height);
+    padding: 0;
   }
 
   .workspace {
@@ -731,75 +887,26 @@
     background: var(--theme-panel-bg);
   }
 
-  .asset-rail,
-  .inspector-rail {
-    min-width: 0;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-  }
-
-  .asset-rail::-webkit-scrollbar,
-  .inspector-rail::-webkit-scrollbar,
-  .timeline-dock::-webkit-scrollbar {
-    display: none;
-  }
-
-  .asset-rail,
   .inspector-rail {
     display: grid;
-    align-content: start;
-    gap: var(--studio-panel-gap);
-    padding: var(--studio-panel-padding);
-    background: var(--theme-panel-bg);
-  }
-
-  .asset-rail {
-    grid-area: assets;
-    border-right: 1px solid var(--theme-stroke);
-  }
-
-  .inspector-rail {
     grid-area: inspector;
     grid-template-rows: minmax(0, 1fr);
     align-content: stretch;
+    gap: var(--studio-panel-gap);
+    min-width: 0;
+    min-height: 0;
+    padding: var(--studio-panel-padding);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-left: 1px solid var(--theme-stroke);
+    background: var(--theme-panel-bg);
+    scrollbar-width: none;
   }
 
-  .rail-divider {
-    height: 1px;
-    background: var(--theme-stroke);
-  }
-
-  .preset-error {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border: 1px solid color-mix(in srgb, var(--semantic-error) 42%, transparent);
-    border-radius: var(--radius-2026-sm);
-    color: var(--semantic-error);
-    font-size: var(--font-size-min);
-  }
-
-  .preset-error button {
-    min-height: 2.75rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid currentColor;
-    border-radius: var(--radius-2026-sm);
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .preset-error button:focus-visible {
-    outline: 3px solid var(--theme-accent);
-    outline-offset: 2px;
+  .inspector-rail::-webkit-scrollbar,
+  .timeline-dock::-webkit-scrollbar {
+    display: none;
   }
 
   /* No header row: it repeated the 9:16 the preview already states, and its
@@ -845,8 +952,15 @@
     display: none;
   }
 
+  /* A container query cannot style its own container, so the scale steps land
+     on every direct child instead of on `.post-studio`. All of them, not just
+     the body: the top bar carries the layouts menu and the render button, and
+     leaving it out froze those at 12px on a 3840 screen while the columns
+     underneath stepped to 20px. */
   @container post-studio (min-width: 105rem) {
-    .studio-body {
+    .studio-body,
+    .studio-notice,
+    .post-studio > :global(.topbar) {
       --studio-control-height: 3.25rem;
       --studio-body-size: 0.9375rem;
       --studio-meta-size: 0.8125rem;
@@ -858,7 +972,9 @@
   }
 
   @container post-studio (min-width: 180rem) {
-    .studio-body {
+    .studio-body,
+    .studio-notice,
+    .post-studio > :global(.topbar) {
       --studio-control-height: 4.25rem;
       --studio-body-size: 1.25rem;
       --studio-meta-size: 1.0625rem;
@@ -878,10 +994,6 @@
   }
 
   @container post-studio (max-width: 70rem) {
-    .post-studio {
-      grid-template-rows: auto minmax(0, 1fr) auto;
-    }
-
     /* One panel at a time, each filling the body. The timing bar is a sibling
        of the columns now, so the columns step aside when timing is showing
        rather than collapsing to an empty row above it. */
@@ -901,7 +1013,6 @@
       display: none;
     }
 
-    .asset-rail,
     .canvas-panel,
     .inspector-rail,
     .timeline-dock {
@@ -915,13 +1026,11 @@
       display: grid;
     }
 
-    .post-studio[data-mobile-panel="layout"] .asset-rail,
     .post-studio[data-mobile-panel="edit"] .inspector-rail,
     .post-studio[data-mobile-panel="timing"] .timeline-dock {
       display: grid;
     }
 
-    .asset-rail,
     .inspector-rail,
     .timeline-dock {
       padding: var(--spacing-md);
@@ -981,7 +1090,6 @@
       display: none;
     }
 
-    .asset-rail,
     .canvas-panel,
     .inspector-rail,
     .timeline-dock {
@@ -995,13 +1103,11 @@
       display: grid;
     }
 
-    .post-studio[data-mobile-panel="layout"] .asset-rail,
     .post-studio[data-mobile-panel="edit"] .inspector-rail,
     .post-studio[data-mobile-panel="timing"] .timeline-dock {
       display: grid;
     }
 
-    .asset-rail,
     .inspector-rail,
     .timeline-dock {
       padding: var(--spacing-sm) var(--spacing-md);

@@ -1,10 +1,17 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { PostStudioExportProgress } from "$lib/shared/media-composition/services/post-studio-exporter";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     sequenceName: string;
     presetName: string;
+    /**
+     * Saved layouts, as one control rather than a column. The arrangement is
+     * now built by choosing sources in the preview, so a preset list is a
+     * shortcut to a known arrangement — top-bar weight, not rail weight.
+     */
+    layouts?: Snippet;
     missingCount: number;
     missingLabel?: string;
     canRender: boolean;
@@ -23,6 +30,7 @@
   let {
     sequenceName,
     presetName,
+    layouts,
     missingCount,
     missingLabel = "source",
     canRender,
@@ -70,7 +78,11 @@
   </div>
 
   <div class="project-state">
-    <span class="preset-name">{presetName}</span>
+    {#if layouts}
+      {@render layouts()}
+    {:else}
+      <span class="preset-name">{presetName}</span>
+    {/if}
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
         <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>

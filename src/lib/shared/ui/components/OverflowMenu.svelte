@@ -5,6 +5,8 @@
   dropdown with action items. Closes on outside click or Escape.
 -->
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   interface MenuItem {
     label: string;
     icon: string;
@@ -12,6 +14,15 @@
     variant?: "danger";
     /** Keep unavailable actions discoverable without making them activatable. */
     disabled?: boolean;
+    /** Why an item is unavailable, so a greyed row is not a dead end. */
+    hint?: string;
+    /**
+     * Present (true OR false) marks this item as one option among a choice, so
+     * it announces as a radio item. Leave it undefined for plain actions — a
+     * menu can hold both, and calling a destructive action an unselected radio
+     * option is worse than saying nothing.
+     */
+    selected?: boolean;
   }
 
   interface Props {
@@ -20,6 +31,13 @@
     ariaLabel?: string;
     placement?: "top" | "bottom";
     align?: "left" | "right";
+    /**
+     * Replaces the three-dot glyph inside the trigger button, which keeps the
+     * expanded/haspopup wiring and the outside-click and Escape handling while
+     * letting a caller show the current value instead of a generic affordance.
+     */
+    trigger?: Snippet;
+    triggerClass?: string;
   }
 
   const {
@@ -28,7 +46,11 @@
     ariaLabel = "More actions",
     placement = "top",
     align = "right",
+    trigger,
+    triggerClass,
   }: Props = $props();
+
+  const isRadioGroup = $derived(items.some((item) => item.selected));
 
   let open = $state(false);
   let menuEl: HTMLElement | null = $state(null);
@@ -79,18 +101,22 @@
 >
   <button
     type="button"
-    class="overflow-trigger"
+    class={triggerClass ?? "overflow-trigger"}
     {disabled}
     onclick={toggle}
     aria-label={ariaLabel}
     aria-expanded={open}
     aria-haspopup="menu"
   >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="12" cy="5" r="2" />
-      <circle cx="12" cy="12" r="2" />
-      <circle cx="12" cy="19" r="2" />
-    </svg>
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
+      </svg>
+    {/if}
   </button>
 
   {#if open}
@@ -100,15 +126,28 @@
           type="button"
           class="overflow-item"
           class:danger={item.variant === "danger"}
-          role="menuitem"
+          class:selected={item.selected}
+          role={item.selected === undefined ? "menuitem" : "menuitemradio"}
+          aria-checked={item.selected === undefined ? undefined : item.selected}
           disabled={item.disabled}
           aria-disabled={item.disabled || undefined}
+          title={item.hint}
           onclick={() => {
             if (!item.disabled) handleItemClick(item);
           }}
         >
           <i class={item.icon} aria-hidden="true"></i>
-          <span>{item.label}</span>
+          <span class="overflow-item-label">
+            {item.label}
+            {#if item.hint && item.disabled}<small>{item.hint}</small>{/if}
+          </span>
+          {#if isRadioGroup}
+            <i
+              class="fa-solid fa-check overflow-check"
+              class:is-on={item.selected}
+              aria-hidden="true"
+            ></i>
+          {/if}
         </button>
       {/each}
     </div>
@@ -197,6 +236,40 @@
   .overflow-item:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  /* The label column takes the slack so the check stays pinned right and the
+     row width never depends on which item is currently chosen. */
+  .overflow-item-label {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .overflow-item-label small {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 400;
+  }
+
+  /* Reserved, not conditionally rendered: toggling the check in and out of flow
+     would resize every row in the menu as the selection moves. */
+  .overflow-check {
+    visibility: hidden;
+    color: var(--theme-accent, #6366f1);
+  }
+
+  .overflow-check.is-on {
+    visibility: visible;
+  }
+
+  .overflow-item.selected {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 16%,
+      transparent
+    );
   }
 
   .overflow-item:focus-visible {
