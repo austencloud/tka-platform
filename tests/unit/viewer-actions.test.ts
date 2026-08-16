@@ -58,15 +58,8 @@ describe("buildHeaderActions", () => {
     expect(a.onPublish).toBeTypeOf("function");
     expect(a.onUnpublish).toBeTypeOf("function");
     expect(a.onDeleteRequest).toBeTypeOf("function");
-    // Video upload is additionally behind a local kill-switch (5d6236df53 turned
-    // it off pending the CSP media-src + canvas-swap bugs). Assert the flag's
-    // contract either way so flipping it back on re-arms this guard rather than
-    // silently leaving the action untested.
-    if (VIDEO_UPLOAD_ENABLED) {
-      expect(a.onVideoUpload).toBeTypeOf("function");
-    } else {
-      expect(a.onVideoUpload).toBeUndefined();
-    }
+    expect(VIDEO_UPLOAD_ENABLED).toBe(true);
+    expect(a.onVideoUpload).toBeTypeOf("function");
   });
 
   it("matching content without the exact owned record has no management actions", () => {

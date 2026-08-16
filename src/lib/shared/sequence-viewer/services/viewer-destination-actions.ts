@@ -9,6 +9,8 @@ interface ViewerDestinationInputs {
   interactive: ViewerInteractiveServicesState;
   getSequence: () => SequenceData | null;
   getIsAuthenticated: () => boolean;
+  canManageSequenceVideos: () => boolean;
+  saveSequence: () => Promise<void>;
   onClose: () => void;
   enterVideoUpload: () => void;
 }
@@ -85,6 +87,15 @@ export function createViewerDestinationActions(
       dependencies.showToast("No sequence to upload video for", "info");
       return;
     }
+
+    if (!inputs.canManageSequenceVideos()) {
+      // A video needs a library record to attach to. The recording action is
+      // already an explicit request to keep this sequence, so save it before
+      // opening the uploader instead of asking someone to repeat that step.
+      await inputs.saveSequence();
+      if (!inputs.canManageSequenceVideos()) return;
+    }
+
     inputs.enterVideoUpload();
   }
 

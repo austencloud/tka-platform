@@ -613,4 +613,26 @@
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text);
   }
+
+  @container (max-width: 45rem) {
+    .modern-filters {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .search-container {
+      flex: 1 0 100%;
+      max-width: none;
+    }
+
+    .action-buttons-row {
+      width: 100%;
+    }
+
+    .action-pill {
+      flex: 1;
+      justify-content: center;
+      padding-inline: 0.75rem;
+    }
+  }
 </style>

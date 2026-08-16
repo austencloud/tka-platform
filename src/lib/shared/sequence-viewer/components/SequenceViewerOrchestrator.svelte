@@ -226,8 +226,12 @@
     viewerState.setSplitPaneContent("left", "animation-3d");
   }
 
-  const editingPane = $derived.by(
-    () => resolveEditingPane(viewerState.viewerMode, viewerState.exportContext)
+  const editingPane = $derived.by(() =>
+    resolveEditingPane(
+      viewerState.viewerMode,
+      viewerState.exportContext,
+      viewerState.videoUploadOpen
+    )
   );
 
   const exportType = $derived(resolveExportType(editingPane));
@@ -553,6 +557,9 @@
       interactive,
       getSequence: () => sequence,
       getIsAuthenticated: () => authState.isAuthenticated,
+      canManageSequenceVideos: () =>
+        isOwned || libraryActions.isOwnedLibraryRecord,
+      saveSequence: libraryActions.handleSave,
       onClose: handleClose,
       enterVideoUpload: () => editMode.enterEditMode("video-upload"),
     },

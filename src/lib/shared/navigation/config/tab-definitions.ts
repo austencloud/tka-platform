@@ -858,6 +858,17 @@ export const PLAYGROUND_TABS: Section[] = [
 // Video module tabs (graduated from Lab Mar 2026)
 export const VIDEO_TABS: Section[] = [
   {
+    id: "curator",
+    labelKey: "tab_video_curator",
+    descKey: "tab_desc_video_curator",
+    label: "Curator",
+    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
+    description:
+      "Review the video catalog and link videos to TKA sequences",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
     id: "video-trails",
     labelKey: "tab_video_video_trails",
     descKey: "tab_desc_video_video_trails",

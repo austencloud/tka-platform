@@ -64,7 +64,9 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
       ) {
         inputs.interactive.playbackController.togglePlayback();
       }
-      inputs.viewerState.setViewerMode("videos");
+      // Video browsing stays available behind this temporary upload panel. A
+      // person who closes it returns to the sequence's video gallery.
+      inputs.viewerState.openVideoUpload();
     }
 
     if (pane === "video-upload") {
@@ -84,7 +86,11 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
 
   function exitEditMode(): void {
     inputs.interactive.hapticService?.trigger("selection");
-    inputs.viewerState.exitExport();
+    if (inputs.viewerState.videoUploadOpen) {
+      inputs.viewerState.closeVideoUpload();
+    } else {
+      inputs.viewerState.exitExport();
+    }
     inputs.exportCoordinator.dismissPreview();
 
     if (
@@ -99,7 +105,9 @@ export function createViewerEditModeState(inputs: ViewerEditModeInputs) {
   }
 
   /** Resolves `false` when the coordinator refused the request — see its doc. */
-  async function handleExport(options?: ExportRequestOptions): Promise<boolean> {
+  async function handleExport(
+    options?: ExportRequestOptions
+  ): Promise<boolean> {
     return await inputs.exportCoordinator.handleExport(
       inputs.getEditingPane(),
       inputs.getEffectiveSequence(),

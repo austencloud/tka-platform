@@ -6,8 +6,7 @@
   tap-to-place mode for quick sequential marking, and save/cancel actions.
 -->
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { fade } from "svelte/transition";
+  import { onDestroy, untrack } from "svelte";
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import { generateEvenBeatTimestamps } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
@@ -17,6 +16,7 @@
     videoUrl: string;
     videoDuration: number;
     stepCount: number;
+    stepLabels?: readonly string[];
     initialStepMap?: StepMap;
     bpm: number;
     onSave: (beatMap: StepMap) => Promise<void>;
@@ -27,6 +27,7 @@
     videoUrl,
     videoDuration,
     stepCount,
+    stepLabels = [],
     initialStepMap,
     bpm,
     onSave,
@@ -47,7 +48,11 @@
   let beatTimestamps = $state<number[]>(
     untrack(() => initialStepMap)
       ? [...untrack(() => initialStepMap)!.beatTimestamps]
-      : generateEvenBeatTimestamps(untrack(() => videoDuration), untrack(() => stepCount), untrack(() => bpm))
+      : generateEvenBeatTimestamps(
+          untrack(() => videoDuration),
+          untrack(() => stepCount),
+          untrack(() => bpm)
+        )
   );
 
   // ---- Tap-to-place mode ----
@@ -61,9 +66,7 @@
   // exits or all beats are placed.
   let tapTimestamps = $state<number[]>([]);
 
-  let nextStepToPlace = $derived(
-    isTapMode ? tapPlacedCount : stepCount
-  );
+  let nextStepToPlace = $derived(isTapMode ? tapPlacedCount : stepCount);
 
   let placedCount = $derived(
     isTapMode ? tapPlacedCount : beatTimestamps.length
@@ -76,6 +79,11 @@
   // ---- Beat placement flash ----
   let flashBeatIndex = $state(-1);
   let flashTimeout: ReturnType<typeof setTimeout> | undefined;
+  let autoExitTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const canSave = $derived(
+    !isSaving && placedCount === stepCount && stepCount > 0
+  );
 
   // The currently active beat based on playback position
   let activeStepIndex = $derived.by(() => {
@@ -106,16 +114,18 @@
 
   // ---- Transport controls ----
 
-  function togglePlayPause() {
+  function togglePlayPause(): void {
     if (!videoEl) return;
     if (isPlaying) {
       videoEl.pause();
     } else {
-      videoEl.play();
+      void videoEl.play().catch(() => {
+        saveError = "Playback could not start. Try the play button again.";
+      });
     }
   }
 
-  function seekTo(time: number) {
+  function seekTo(time: number): void {
     const clamped = Math.max(0, Math.min(time, videoDuration));
     // Update display immediately - don't wait for the video to decode
     currentTime = clamped;
@@ -158,7 +168,7 @@
 
   // ---- Tap-to-place ----
 
-  function enterTapMode() {
+  function enterTapMode(): void {
     isTapMode = true;
     tapPlacedCount = 0;
     tapTimestamps = [];
@@ -166,11 +176,13 @@
     if (videoEl) {
       videoEl.currentTime = 0;
       currentTime = 0;
-      videoEl.play();
+      void videoEl.play().catch(() => {
+        saveError = "Playback could not start. Try the play button again.";
+      });
     }
   }
 
-  function exitTapMode() {
+  function exitTapMode(): void {
     isTapMode = false;
     // Commit whatever was placed
     if (tapTimestamps.length > 0) {
@@ -178,7 +190,7 @@
     }
   }
 
-  function markBeat() {
+  function markBeat(): void {
     if (!isTapMode || tapPlacedCount >= stepCount) return;
 
     tapTimestamps = [...tapTimestamps, currentTime];
@@ -194,27 +206,65 @@
     // Auto-exit when all beats placed
     if (tapPlacedCount >= stepCount) {
       // Small delay so the user sees the last beat placed
-      setTimeout(() => {
+      if (autoExitTimeout) clearTimeout(autoExitTimeout);
+      autoExitTimeout = setTimeout(() => {
         exitTapMode();
         if (videoEl) videoEl.pause();
       }, 400);
     }
   }
 
+  function undoLastMarker(): void {
+    if (!isTapMode || tapPlacedCount === 0) return;
+    tapTimestamps = tapTimestamps.slice(0, -1);
+    tapPlacedCount -= 1;
+    flashBeatIndex = -1;
+  }
+
+  function stepLabel(index: number): string {
+    return stepLabels[index]?.trim() || `Move ${index + 1}`;
+  }
+
+  function handleKeyboard(event: KeyboardEvent): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLButtonElement
+    ) {
+      return;
+    }
+    if (isTapMode && (event.code === "Space" || event.key === "Enter")) {
+      event.preventDefault();
+      markBeat();
+      return;
+    }
+    if (isTapMode && (event.ctrlKey || event.metaKey) && event.key === "z") {
+      event.preventDefault();
+      undoLastMarker();
+    }
+  }
+
   // ---- Reset ----
 
-  function resetToEvenSpacing() {
+  function resetToEvenSpacing(): void {
     beatTimestamps = generateEvenBeatTimestamps(videoDuration, stepCount, bpm);
     if (isTapMode) exitTapMode();
   }
 
   // ---- Save ----
 
-  async function handleSave() {
+  async function handleSave(): Promise<void> {
     isSaving = true;
     saveError = null;
 
     const finalTimestamps = isTapMode ? tapTimestamps : beatTimestamps;
+
+    if (finalTimestamps.length !== stepCount) {
+      saveError = `Mark all ${stepCount} moves before saving.`;
+      isSaving = false;
+      return;
+    }
 
     const beatMap: StepMap = {
       beatTimestamps: [...finalTimestamps],
@@ -232,9 +282,33 @@
     }
   }
 
+  onDestroy(() => {
+    if (flashTimeout) clearTimeout(flashTimeout);
+    if (autoExitTimeout) clearTimeout(autoExitTimeout);
+  });
 </script>
 
-<div class="beat-map-editor" transition:fade={{ duration: 200 }}>
+<svelte:window onkeydown={handleKeyboard} />
+
+<div class="beat-map-editor">
+  <div class="mapping-intro">
+    <div>
+      <span class="eyebrow">Move timing</span>
+      <h3>
+        {isTapMode
+          ? `Mark move ${Math.min(tapPlacedCount + 1, stepCount)} of ${stepCount}`
+          : "Synchronize the performance"}
+      </h3>
+      <p>
+        {isTapMode
+          ? `Press Space or tap Mark when ${stepLabel(tapPlacedCount)} begins.`
+          : "Play the video, mark each move, then fine-tune the markers on the timeline."}
+      </p>
+    </div>
+    <strong class:complete={placedCount === stepCount} class="mapping-progress">
+      {placedCount}/{stepCount}
+    </strong>
+  </div>
   <!-- Video player -->
   <div class="video-section">
     <video
@@ -267,9 +341,7 @@
       type="button"
       aria-label={isPlaying ? "Pause" : "Play"}
     >
-      <i
-        class="fas {isPlaying ? 'fa-pause' : 'fa-play'}"
-        aria-hidden="true"
+      <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"
       ></i>
     </button>
 
@@ -299,6 +371,24 @@
     />
   </div>
 
+  <div class="step-strip" aria-label="Sequence move timing">
+    {#each Array(stepCount) as _, index}
+      <button
+        type="button"
+        class:active={activeStepIndex === index}
+        class:placed={index < placedCount}
+        disabled={(isTapMode ? tapTimestamps : beatTimestamps)[index] ===
+          undefined}
+        aria-label={`Seek to ${stepLabel(index)}`}
+        onclick={() =>
+          seekTo((isTapMode ? tapTimestamps : beatTimestamps)[index] ?? 0)}
+      >
+        <span>{index + 1}</span>
+        <strong>{stepLabel(index)}</strong>
+      </button>
+    {/each}
+  </div>
+
   <!-- Mode controls -->
   <div class="mode-controls">
     {#if isTapMode}
@@ -310,31 +400,37 @@
         type="button"
       >
         <i class="fas fa-drum" aria-hidden="true"></i>
-        Mark Beat {tapPlacedCount + 1}
+        Mark move {Math.min(tapPlacedCount + 1, stepCount)}
       </button>
 
       <button
         class="mode-btn"
-        onclick={exitTapMode}
+        onclick={undoLastMarker}
+        disabled={tapPlacedCount === 0}
         type="button"
       >
+        <i class="fas fa-undo" aria-hidden="true"></i>
+        Undo marker
+      </button>
+
+      <button class="mode-btn" onclick={exitTapMode} type="button">
         <i class="fas fa-times" aria-hidden="true"></i>
-        Exit Tap Mode
+        Stop marking
       </button>
     {:else}
       <button class="mode-btn" onclick={enterTapMode} type="button">
         <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-        Tap to Place
+        Mark moves
       </button>
 
       <button class="mode-btn" onclick={resetToEvenSpacing} type="button">
         <i class="fas fa-redo" aria-hidden="true"></i>
-        Reset
+        Even spacing
       </button>
     {/if}
 
     <span class="beat-counter">
-      {placedCount} / {stepCount} beats
+      {placedCount} / {stepCount} moves
     </span>
   </div>
 
@@ -361,7 +457,7 @@
       data-save-shortcut
       class="save-btn"
       onclick={handleSave}
-      disabled={isSaving || placedCount === 0}
+      disabled={!canSave}
       type="button"
     >
       {#if isSaving}
@@ -369,7 +465,7 @@
         Saving...
       {:else}
         <i class="fas fa-check" aria-hidden="true"></i>
-        Save Beat Map
+        Save timing
       {/if}
     </button>
   </div>
@@ -379,11 +475,66 @@
   .beat-map-editor {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    container-type: inline-size;
+    gap: 0.75rem;
     height: 100%;
-    padding: 16px;
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    padding: 1rem;
+    background: var(--theme-panel-bg);
     overflow-y: auto;
+  }
+
+  .mapping-intro {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .mapping-intro > div {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .eyebrow {
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact);
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .mapping-intro h3,
+  .mapping-intro p {
+    margin: 0;
+  }
+
+  .mapping-intro h3 {
+    color: var(--theme-text);
+    font-size: 1.25rem;
+  }
+
+  .mapping-intro p {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min);
+    line-height: 1.4;
+  }
+
+  .mapping-progress {
+    display: grid;
+    place-items: center;
+    min-width: 4rem;
+    min-height: 2.75rem;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-warning) 45%, transparent);
+    border-radius: var(--radius-2026-full);
+    color: var(--semantic-warning);
+    font-size: var(--font-size-min);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mapping-progress.complete {
+    border-color: color-mix(in srgb, var(--semantic-success) 45%, transparent);
+    color: var(--semantic-success);
   }
 
   /* ============================================================
@@ -427,7 +578,9 @@
     color: var(--theme-text, #ffffff);
     font-size: 14px;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -473,6 +626,76 @@
     padding: 0 4px;
   }
 
+  .step-strip {
+    display: grid;
+    grid-auto-columns: minmax(5.5rem, 1fr);
+    grid-auto-flow: column;
+    gap: 0.4rem;
+    min-height: 3.5rem;
+    padding-bottom: 0.25rem;
+    overflow-x: auto;
+  }
+
+  .step-strip button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 3.25rem;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    font: inherit;
+    font-size: var(--font-size-compact);
+    cursor: pointer;
+  }
+
+  .step-strip button > span {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: var(--radius-2026-full);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step-strip button strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .step-strip button.placed {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success) 38%,
+      var(--theme-stroke)
+    );
+    color: var(--theme-text);
+  }
+
+  .step-strip button.active {
+    border-color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 14%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .step-strip button:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .step-strip button:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
   /* ============================================================
    * MODE CONTROLS
    * ============================================================ */
@@ -497,7 +720,9 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -520,13 +745,17 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    transition:
+      transform 0.1s ease,
+      box-shadow 0.15s ease,
+      filter 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
   .mark-beat-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
+    box-shadow: 0 4px 16px
+      color-mix(in srgb, var(--semantic-success, #22c55e) 40%, transparent);
   }
 
   .mark-beat-btn:active:not(:disabled) {
@@ -545,13 +774,16 @@
 
   @keyframes beat-flash {
     0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
+      box-shadow: 0 0 0 0
+        color-mix(in srgb, var(--semantic-success, #22c55e) 60%, transparent);
     }
     50% {
-      box-shadow: 0 0 0 12px color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
+      box-shadow: 0 0 0 12px
+        color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
     }
     100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
+      box-shadow: 0 0 0 0
+        color-mix(in srgb, var(--semantic-success, #22c55e) 0%, transparent);
     }
   }
 
@@ -564,8 +796,13 @@
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: 10px;
     color: var(--semantic-error, #ef4444);
     font-size: var(--font-size-min, 14px);
@@ -599,7 +836,9 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -629,13 +868,17 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    transition:
+      filter 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.1s ease;
     -webkit-tap-highlight-color: transparent;
   }
 
   .save-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .save-btn:active:not(:disabled) {
@@ -669,6 +912,28 @@
 
     .mark-beat-btn.flash {
       animation: none !important;
+    }
+  }
+
+  @container (min-width: 70rem) {
+    .beat-map-editor {
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+
+    .video-section video {
+      max-height: 34rem;
+    }
+
+    .mapping-intro h3 {
+      font-size: 1.5rem;
+    }
+
+    .mapping-intro p,
+    .mode-btn,
+    .transport-time,
+    .step-strip button {
+      font-size: var(--font-size-min);
     }
   }
 </style>

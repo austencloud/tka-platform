@@ -2,7 +2,12 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { fade } from "svelte/transition";
   import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
-  import { getVideosForSequence, saveVideo, deleteVideo, updateStepMap } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import {
+    getVideosForSequence,
+    saveVideo,
+    deleteVideo,
+    updateStepMap,
+  } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -61,9 +66,7 @@
   let beatMappingVideo = $state<CollaborativeVideo | null>(null);
 
   const uploadService = getVideoUploader();
-  const hapticService = getHapticFeedback() as
-    | HapticFeedback
-    | undefined;
+  const hapticService = getHapticFeedback() as HapticFeedback | undefined;
 
   const currentUser = $derived(getAuthSync().currentUser);
   const canUpload = $derived(!!selectedFile && !isUploading && !!currentUser);
@@ -83,8 +86,12 @@
       const result = await getVideosForSequence(sequence.id);
       videos = result;
       panelState = videos.length > 0 ? "gallery" : "empty";
-    } catch {
+    } catch (error) {
       videos = [];
+      uploadError =
+        error instanceof Error
+          ? error.message
+          : "Performance videos could not be loaded. Try again.";
       panelState = "empty";
     }
   }
@@ -186,19 +193,19 @@
           onProgress: (progress: number) => {
             uploadProgress = Math.round(progress * 0.9);
           },
-        },
+        }
       );
 
       let thumbnailUrl: string | undefined;
       if (thumbnail) {
         try {
           const videoTimestamp = parseInt(
-            uploadResult.key.split("/").pop()?.split(".")[0] || "0",
+            uploadResult.key.split("/").pop()?.split(".")[0] || "0"
           );
           const thumbnailResult = await uploadService.uploadVideoThumbnail(
             sequence.id,
             thumbnail.blob,
-            videoTimestamp,
+            videoTimestamp
           );
           thumbnailUrl = thumbnailResult.url;
           uploadProgress = 100;
@@ -266,7 +273,9 @@
     await updateStepMap(beatMappingVideo.id, beatMap);
 
     videos = videos.map((v) =>
-      v.id === beatMappingVideo!.id ? { ...v, beatMap, updatedAt: new Date() } : v,
+      v.id === beatMappingVideo!.id
+        ? { ...v, beatMap, updatedAt: new Date() }
+        : v
     );
 
     toast.success("Beat map saved");
@@ -336,12 +345,20 @@
   />
 
   <div class="panel-content">
+    <button
+      type="button"
+      class="back-to-videos"
+      onclick={handleBack}
+    >
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      Back to Videos
+    </button>
     {#if panelState === "loading"}
       <div class="center-state">
-        <i class="fas fa-spinner fa-spin loading-spinner" aria-hidden="true"></i>
+        <i class="fas fa-spinner fa-spin loading-spinner" aria-hidden="true"
+        ></i>
         <span class="state-label">Loading videos...</span>
       </div>
-
     {:else if panelState === "save-first"}
       <div class="center-state">
         <div class="state-icon">
@@ -370,13 +387,14 @@
           </button>
         </div>
       </div>
-
     {:else if panelState === "empty"}
       {#if videos.length > 0}
         <button
           type="button"
           class="back-to-gallery"
-          onclick={() => { panelState = "gallery"; }}
+          onclick={() => {
+            panelState = "gallery";
+          }}
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
           Back to gallery
@@ -397,7 +415,6 @@
         </span>
         <span class="drop-hint">MP4, WebM, MOV up to 500MB</span>
       </button>
-
     {:else if panelState === "upload"}
       <div class="preview-section">
         {#if videoPreviewUrl}
@@ -437,7 +454,6 @@
         <i class="fas fa-upload" aria-hidden="true"></i>
         Upload Video
       </button>
-
     {:else if panelState === "uploading"}
       <div class="center-state">
         <div class="progress-section">
@@ -453,14 +469,10 @@
             aria-valuemax={100}
             aria-label="Upload progress"
           >
-            <div
-              class="progress-fill"
-              style="width: {uploadProgress}%"
-            ></div>
+            <div class="progress-fill" style="width: {uploadProgress}%"></div>
           </div>
         </div>
       </div>
-
     {:else if panelState === "gallery"}
       <div class="gallery">
         {#each videos as video (video.id)}
@@ -469,7 +481,9 @@
               type="button"
               class="gallery-thumb"
               onclick={() => handlePlayVideo(video.id)}
-              aria-label={playingVideoId === video.id ? "Pause video" : "Play video"}
+              aria-label={playingVideoId === video.id
+                ? "Pause video"
+                : "Play video"}
             >
               {#if playingVideoId === video.id}
                 <video
@@ -511,7 +525,7 @@
                 {#if video.beatMap}
                   <span
                     class="beat-map-indicator"
-                    title="Beat map available"
+                    title="Performance timing saved"
                   >
                     <i class="fas fa-music" aria-hidden="true"></i>
                   </span>
@@ -522,11 +536,14 @@
                 <button
                   type="button"
                   class="gallery-action-btn map-beats"
-                  onclick={() => { beatMappingVideo = video; panelState = "step-mapping"; }}
-                  title="Map beats"
+                  onclick={() => {
+                    beatMappingVideo = video;
+                    panelState = "step-mapping";
+                  }}
+                  title="Map performance timing"
                 >
                   <i class="fas fa-music" aria-hidden="true"></i>
-                  Map Beats
+                  {video.beatMap ? "Edit Timing" : "Map Timing"}
                 </button>
                 <button
                   type="button"
@@ -541,21 +558,19 @@
           </div>
         {/each}
 
-        <button
-          type="button"
-          class="add-video-btn"
-          onclick={handleAddVideo}
-        >
+        <button type="button" class="add-video-btn" onclick={handleAddVideo}>
           <i class="fas fa-plus" aria-hidden="true"></i>
           Add Video
         </button>
       </div>
-
     {:else if panelState === "step-mapping" && beatMappingVideo}
       <StepMapEditor
         videoUrl={beatMappingVideo.videoUrl}
         videoDuration={beatMappingVideo.duration}
         stepCount={sequence.steps.length}
+        stepLabels={sequence.steps.map(
+          (step, index) => step.letter || `${index + 1}`
+        )}
         initialStepMap={beatMappingVideo.beatMap}
         {bpm}
         onSave={handleStepMapSave}
@@ -587,6 +602,26 @@
     gap: 16px;
     padding: 20px 16px;
     overflow-y: auto;
+  }
+
+  .back-to-videos {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 8px;
+    min-height: var(--min-touch-target);
+    padding: 8px 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .back-to-videos:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
   }
 
   .center-state {
@@ -655,7 +690,8 @@
 
   .primary-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .primary-btn:active:not(:disabled) {

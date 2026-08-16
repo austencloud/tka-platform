@@ -1,8 +1,8 @@
 <!--
   StepMappingView.svelte
 
-  Wraps the existing StepMapEditor with the selected sequence context.
-  Saves the beat map locally (in memory) rather than to Firestore.
+  Wraps the canonical StepMapEditor with the selected sequence context. The
+  parent decides whether the result is local or belongs to a saved TKA video.
 -->
 <script lang="ts">
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
@@ -15,19 +15,25 @@
     stepCount: number;
     sequence: SequenceData;
     existingStepMap: StepMap | null;
-    onSave: (beatMap: StepMap) => void;
+    onSave: (beatMap: StepMap) => void | Promise<void>;
     onBack: () => void;
   }
 
-  const { videoUrl, videoDuration, stepCount, sequence, existingStepMap, onSave, onBack }: Props =
-    $props();
+  const {
+    videoUrl,
+    videoDuration,
+    stepCount,
+    sequence,
+    existingStepMap,
+    onSave,
+    onBack,
+  }: Props = $props();
 
   // Default BPM - user can adjust later in the synced preview
   const defaultBpm = 60;
 
   async function handleEditorSave(beatMap: StepMap): Promise<void> {
-    // Save locally (no Firestore), just pass up to parent
-    onSave(beatMap);
+    await onSave(beatMap);
   }
 </script>
 
@@ -48,6 +54,9 @@
       {videoUrl}
       {videoDuration}
       {stepCount}
+      stepLabels={sequence.steps.map(
+        (step, index) => step.letter || `${index + 1}`
+      )}
       bpm={defaultBpm}
       initialStepMap={existingStepMap ?? undefined}
       onSave={handleEditorSave}

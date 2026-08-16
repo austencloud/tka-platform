@@ -25,7 +25,6 @@
     { id: "notation", label: "Notation", icon: "fa-language" },
     { id: "terms", label: "Terms", icon: "fa-file-contract" },
     { id: "privacy", label: "Privacy", icon: "fa-shield-alt" },
-    { id: "curator", label: "Curator", icon: "fa-video" },
   ];
 
   // Lazy-load the public page content components
@@ -54,7 +53,6 @@
 
   // Dev-only components (not public pages)
   import VideoGalleryPrototypes from "./components/VideoGalleryPrototypes.svelte";
-  import VideoCurator from "./components/VideoCurator.svelte";
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.COSMIC;
@@ -69,7 +67,7 @@
   let currentTab = $state("landing");
 
   // Dev-only tabs that don't load a public page component
-  const devOnlyTabs = ["videos", "curator"];
+  const devOnlyTabs = ["videos"];
 
   // Load page component when tab changes
   $effect(() => {
@@ -194,8 +192,6 @@
   >
     {#if currentTab === "videos"}
       <VideoGalleryPrototypes />
-    {:else if currentTab === "curator"}
-      <VideoCurator />
     {:else if isLoading}
       <div class="loading-state">
         <ProgressRing percent={-1} size={32} strokeWidth={3} />

@@ -70,8 +70,14 @@ export function loadViewerMode(): ViewerMode {
 
 	try {
 		const raw = localStorage.getItem(VIEWER_MODE_KEY);
-		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore into the
-		// upload surface from a stale localStorage value; fall back to split.
+		// Mandala now opens from the workspace card. A remembered viewer mode
+		// should not bring someone back to a surface they can no longer choose.
+		if (raw === 'mandala') {
+			persistViewerMode('split');
+			return 'split';
+		}
+		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore a stale
+		// video-gallery preference when its supporting upload tools are withheld.
 		if (raw === 'videos' && !VIDEO_UPLOAD_ENABLED) return 'split';
 		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'mandala' || raw === 'tunnel' || raw === 'split') {
 			return raw;
@@ -98,12 +104,25 @@ export function loadSplitConfig(): SplitConfig {
 		if (!raw) return { leftPane: 'animation', rightPane: 'card' };
 		const parsed = JSON.parse(raw) as SplitConfig;
 		if (isValidContentType(parsed.leftPane) && isValidContentType(parsed.rightPane)) {
-			return parsed;
+			const migrated = retireMandalaFromSplit(parsed);
+			if (migrated !== parsed) persistSplitConfig(migrated);
+			return migrated;
 		}
 		return { leftPane: 'animation', rightPane: 'card' };
 	} catch {
 		return { leftPane: 'animation', rightPane: 'card' };
 	}
+}
+
+function retireMandalaFromSplit(config: SplitConfig): SplitConfig {
+	if (config.leftPane !== 'mandala' && config.rightPane !== 'mandala') return config;
+
+	// Old side-by-side layouts could place Mandala in either pane. Replace it
+	// with the matching standard view so reopening a sequence stays useful.
+	return {
+		leftPane: config.leftPane === 'mandala' ? 'animation' : config.leftPane,
+		rightPane: config.rightPane === 'mandala' ? 'card' : config.rightPane
+	};
 }
 
 export function persistSplitConfig(config: SplitConfig): void {

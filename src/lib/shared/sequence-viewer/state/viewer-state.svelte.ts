@@ -24,9 +24,11 @@ export function createViewerState() {
 	let viewerMode = $state<ViewerMode>(initialMode);
 	let exportContext = $state<ExportContext>(deriveInitialExportContext(initialMode));
 	let splitConfig = $state<SplitConfig>(loadSplitConfig());
+	let videoUploadOpen = $state(false);
 
 	function setViewerMode(mode: ViewerMode) {
 		viewerMode = mode;
+		videoUploadOpen = false;
 		persistViewerMode(mode);
 	}
 
@@ -49,6 +51,7 @@ export function createViewerState() {
 	}
 
 	function enterExport(type: 'animation-export' | 'image-export', contentType?: 'animation' | 'animation-3d') {
+		videoUploadOpen = false;
 		if (type === 'animation-export') {
 			viewerMode = contentType ?? 'animation';
 		} else {
@@ -60,6 +63,19 @@ export function createViewerState() {
 
 	function exitExport() {
 		exportContext = null;
+	}
+
+	function openVideoUpload() {
+		// The Video rail is a browseable gallery. Opening the upload flow is a
+		// separate, temporary state so it never hides that gallery on small screens.
+		viewerMode = 'videos';
+		exportContext = null;
+		videoUploadOpen = true;
+		persistViewerMode(viewerMode);
+	}
+
+	function closeVideoUpload() {
+		videoUploadOpen = false;
 	}
 
 
@@ -87,6 +103,9 @@ export function createViewerState() {
 		get exportContext() {
 			return exportContext;
 		},
+		get videoUploadOpen() {
+			return videoUploadOpen;
+		},
 		get splitConfig() {
 			return effectiveSplitConfig;
 		},
@@ -98,6 +117,8 @@ export function createViewerState() {
 		setSplitPaneContent,
 		setSplitConfig,
 		enterExport,
-		exitExport
+		exitExport,
+		openVideoUpload,
+		closeVideoUpload
 	};
 }

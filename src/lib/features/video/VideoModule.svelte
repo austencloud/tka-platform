@@ -1,10 +1,11 @@
 <!--
   VideoModule.svelte - Video analysis, trails, effects, and notation extraction
 
-  Graduated from Lab (Mar 2026). Three tabs:
+  Graduated from Lab (Mar 2026). Five tabs:
     - Video Trails: prop endpoint detection, fire/LED effects, training data
     - Video Lab: beat mapping, BPM-synced playback, video-to-notation alignment
     - Skel2TKA: video-to-TKA notation pipeline
+    - Curator: human review, metadata, performer, and sequence linking for the video catalog
 
   Navigation between tabs is handled by the sidebar - no internal tab bar needed.
 -->
@@ -20,6 +21,10 @@
     skel2tka: () => import("$lib/features/skel2tka/Skel2TKALab.svelte"),
     "led-notation": () =>
       import("$lib/features/train/prop-tracking-lab/components/PropTrackingLab.svelte"),
+    // The curator already owns the catalog, filtering, and sequence-linking
+    // workflow. Video is its user-facing home; importing it here keeps that
+    // workflow in one place instead of creating a second catalog.
+    curator: () => import("$lib/features/landing-preview/components/VideoCurator.svelte"),
   };
 
   // Get current tab, default to first tab

@@ -28,10 +28,9 @@ export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 	{ id: 'animation', icon: 'fa-play', label: '2D Animation' },
 	{ id: 'animation-3d', icon: 'fa-cube', label: '3D Animation', requiresWebgl2: true, requiresLargeViewport: true },
 	{ id: 'card', icon: 'fa-grip', label: 'Card' },
-	// Mandala and Tunnel are separate top-level art modes. Each id is its own
-	// pane/persistence key; the mode rail switches between them directly (no
-	// in-panel toggle). See ArtPane.svelte (fixed artType per pane).
-	{ id: 'mandala', icon: 'fa-dharmachakra', label: 'Mandala' },
+	{ id: 'videos', icon: 'fa-video', label: 'Videos' },
+	// Tunnel remains a direct art view. Mandala opens from the workspace card,
+	// where its collection and creation controls already live.
 	{ id: 'tunnel', icon: 'fa-fan', label: 'Tunnel' }
 ];
 

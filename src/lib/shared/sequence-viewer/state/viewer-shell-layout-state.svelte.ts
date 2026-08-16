@@ -206,6 +206,13 @@ export function createViewerShellLayoutState(
       ctx.viewerState.enterExport("animation-export", "animation-3d");
     } else if (mode === "card") {
       ctx.enterEditMode("image");
+    } else if (mode === "videos") {
+      // Video is a gallery view. Close a previous export inspector before
+      // showing it so the gallery, rather than the old inspector, owns the
+      // viewer body.
+      if (ctx.editingPane) ctx.exitEditMode();
+      else ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode(mode);
     } else if (mode === "mandala" || mode === "tunnel") {
       if (ctx.editingPane === "image") ctx.exitEditMode();
       else ctx.viewerState.exitExport();

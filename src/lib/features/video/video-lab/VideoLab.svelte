@@ -10,6 +10,7 @@
 <script lang="ts">
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { updateStepMap } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
 
   import UploadSelectView from "./views/UploadSelectView.svelte";
   import StepMappingView from "./views/StepMappingView.svelte";
@@ -23,6 +24,7 @@
   let videoUrl = $state<string | null>(null);
   let videoDuration = $state(0);
   let videoFileSize = $state(0);
+  let collaborativeVideoId = $state<string | null>(null);
 
   // Selected sequence from library
   let selectedSequence = $state<SequenceData | null>(null);
@@ -32,15 +34,27 @@
 
   // ---- View transitions ----
 
-  function handleStartMapping(url: string, duration: number, fileSize: number, sequence: SequenceData) {
+  function handleStartMapping(
+    url: string,
+    duration: number,
+    fileSize: number,
+    sequence: SequenceData,
+    existingStepMap?: StepMap,
+    videoId?: string
+  ): void {
     videoUrl = url;
     videoDuration = duration;
     videoFileSize = fileSize;
     selectedSequence = sequence;
+    beatMap = existingStepMap ?? null;
+    collaborativeVideoId = videoId ?? null;
     activeView = "mapping";
   }
 
-  function handleStepMapSaved(saved: StepMap) {
+  async function handleStepMapSaved(saved: StepMap): Promise<void> {
+    if (collaborativeVideoId) {
+      await updateStepMap(collaborativeVideoId, saved);
+    }
     beatMap = saved;
     activeView = "preview";
   }
@@ -58,7 +72,7 @@
   <header class="lab-header">
     <i class="fas fa-film" aria-hidden="true"></i>
     <h2>Video Lab</h2>
-    <span class="lab-badge">Experimental</span>
+    <span class="lab-badge">Sequence-linked</span>
   </header>
 
   <div class="view-container">
@@ -68,7 +82,9 @@
       <StepMappingView
         {videoUrl}
         {videoDuration}
-        stepCount={selectedSequence.steps?.length || selectedSequence.word?.length || 8}
+        stepCount={selectedSequence.steps?.length ||
+          selectedSequence.word?.length ||
+          8}
         sequence={selectedSequence}
         existingStepMap={beatMap}
         onSave={handleStepMapSaved}
@@ -103,6 +119,23 @@
     color: var(--theme-text, #ffffff);
   }
 
+  @media (min-width: 162.5rem) {
+    .lab-header {
+      gap: 1rem;
+      padding: 1.25rem 2rem;
+    }
+
+    .lab-header i,
+    .lab-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .lab-badge {
+      padding: 0.35rem 0.75rem;
+      font-size: 1rem;
+    }
+  }
+
   .lab-header {
     display: flex;
     align-items: center;
@@ -129,7 +162,11 @@
     font-weight: 600;
     padding: 2px 8px;
     border-radius: 4px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
     color: var(--theme-accent, #6366f1);
   }
 

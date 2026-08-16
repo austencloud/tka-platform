@@ -534,7 +534,7 @@
           {#if ctx.viewerState.viewerMode === "videos" && !layout.isSidebarExportActive}
             <VideoGallery
               {sequence}
-              isOwned={ctx.isOwned}
+              isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
               isLoggedIn={ctx.isLoggedIn}
               onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
                 ? interactions.handleGalleryVideoUpload
@@ -745,7 +745,7 @@
               {:else if layout.isVideoUploadActive}
                 <VideoPanel
                   {sequence}
-                  isOwned={ctx.isOwned}
+                  isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
                   bpm={ctx.bpmLocal}
                   onSaveFirst={interactions.handleVideoUploadSaveFirst}
                   onClose={interactions.handleVideoUploadClose}

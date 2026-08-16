@@ -20,6 +20,7 @@ function createHarness(initialPlaying: boolean) {
   let playing = initialPlaying;
   let viewerMode: ViewerMode = "animation";
   let exportContext: ExportContext = "animation-export";
+  let videoUploadOpen = false;
   let splitConfig: SplitConfig = {
     leftPane: "animation",
     rightPane: "card",
@@ -35,6 +36,9 @@ function createHarness(initialPlaying: boolean) {
     get exportContext() {
       return exportContext;
     },
+    get videoUploadOpen() {
+      return videoUploadOpen;
+    },
     get splitConfig() {
       return splitConfig;
     },
@@ -45,12 +49,22 @@ function createHarness(initialPlaying: boolean) {
       viewerMode =
         type === "image-export" ? "card" : (contentType ?? "animation");
       exportContext = type;
+      videoUploadOpen = false;
     },
     exitExport() {
       exportContext = null;
     },
     setViewerMode(mode: ViewerMode) {
       viewerMode = mode;
+      videoUploadOpen = false;
+    },
+    openVideoUpload() {
+      viewerMode = "videos";
+      exportContext = null;
+      videoUploadOpen = true;
+    },
+    closeVideoUpload() {
+      videoUploadOpen = false;
     },
     setSplitConfig(config: SplitConfig) {
       splitConfig = config;
@@ -131,6 +145,7 @@ function createHarness(initialPlaying: boolean) {
 
   return {
     layout,
+    editMode,
     dispose,
     togglePlayback,
     get playing() {
@@ -138,6 +153,12 @@ function createHarness(initialPlaying: boolean) {
     },
     get viewerMode() {
       return viewerMode;
+    },
+    get exportContext() {
+      return exportContext;
+    },
+    get videoUploadOpen() {
+      return videoUploadOpen;
     },
   };
 }
@@ -184,5 +205,40 @@ describe("sequence viewer Card playback", () => {
     expect(harness.viewerMode).toBe("animation");
     expect(harness.playing).toBe(true);
     expect(harness.togglePlayback).toHaveBeenCalledTimes(2);
+  });
+
+  it("opens the video workspace even when animation export was already active", () => {
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    expect(harness.exportContext).toBe("animation-export");
+    harness.editMode.enterEditMode("video-upload");
+
+    expect(harness.exportContext).toBeNull();
+    expect(harness.viewerMode).toBe("videos");
+    expect(harness.videoUploadOpen).toBe(true);
+  });
+
+  it("returns from the video upload panel to the video gallery", () => {
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    harness.editMode.enterEditMode("video-upload");
+    harness.editMode.exitEditMode();
+
+    expect(harness.viewerMode).toBe("videos");
+    expect(harness.exportContext).toBeNull();
+    expect(harness.videoUploadOpen).toBe(false);
+  });
+
+  it("opens the video gallery without leaving an export inspector active", () => {
+    const harness = createHarness(false);
+    disposals.push(harness.dispose);
+
+    harness.layout.selectViewerMode("videos");
+
+    expect(harness.viewerMode).toBe("videos");
+    expect(harness.exportContext).toBeNull();
+    expect(harness.videoUploadOpen).toBe(false);
   });
 });

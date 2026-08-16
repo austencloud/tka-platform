@@ -5,14 +5,18 @@
   Persists selected sequence to localStorage across refreshes.
 -->
 <script lang="ts">
-
-import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
+  import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
-import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+  import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+  import type {
+    CollaborativeVideo,
+    StepMap,
+  } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
 
   const STORAGE_KEY = "video-lab-sequence";
 
@@ -22,6 +26,8 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
       duration: number,
       fileSize: number,
       sequence: SequenceData,
+      existingStepMap?: StepMap,
+      collaborativeVideoId?: string
     ) => void;
   }
 
@@ -31,15 +37,46 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   let videoDuration = $state(0);
   let videoFileSize = $state(0);
   let videoFileName = $state("");
+  let selectedVideoId = $state<string | null>(null);
+  let selectedStepMap = $state<StepMap | undefined>(undefined);
   let videoEl: HTMLVideoElement | undefined = $state();
 
   let selectedSequence = $state<SequenceData | null>(null);
   let pickerOpen = $state(false);
+  let savedVideos = $state<CollaborativeVideo[]>([]);
+  let videosLoading = $state(false);
+  let videosError = $state("");
+  let videoRequest = 0;
 
-  const canStart = $derived(!!videoUrl && !!selectedSequence && videoDuration > 0);
+  const canStart = $derived(
+    !!videoUrl && !!selectedSequence && videoDuration > 0
+  );
   const stepCount = $derived(
     selectedSequence?.steps?.length || selectedSequence?.word?.length || 0
   );
+
+  $effect(() => {
+    const sequenceId = selectedSequence?.id;
+    const request = ++videoRequest;
+    savedVideos = [];
+    videosError = "";
+    if (!sequenceId) return;
+    videosLoading = true;
+    void getVideosForSequence(sequenceId)
+      .then((videos) => {
+        if (request === videoRequest) savedVideos = videos;
+      })
+      .catch((error) => {
+        if (request !== videoRequest) return;
+        videosError =
+          error instanceof Error
+            ? error.message
+            : "Saved performance videos could not be loaded.";
+      })
+      .finally(() => {
+        if (request === videoRequest) videosLoading = false;
+      });
+  });
 
   // ---- Persistence: restore sequence on mount ----
   onMount(() => {
@@ -51,29 +88,35 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
       // Load the full sequence from library
       const repo = getLibraryRepository() as LibraryRepository;
-      repo.getSequence(sequenceId).then((seq) => {
-        if (seq) {
-          try {
-            selectedSequence = hydrate(seq);
-          } catch {
-            selectedSequence = seq;
+      repo
+        .getSequence(sequenceId)
+        .then((seq) => {
+          if (seq) {
+            try {
+              selectedSequence = hydrate(seq);
+            } catch {
+              selectedSequence = seq;
+            }
           }
-        }
-      }).catch(() => {
-        localStorage.removeItem(STORAGE_KEY);
-      });
+        })
+        .catch(() => {
+          localStorage.removeItem(STORAGE_KEY);
+        });
     } catch {
       // ignore
     }
   });
 
   function selectSequence(seq: SequenceData) {
+    if (selectedSequence?.id !== seq.id) cleanupVideo();
     selectedSequence = seq;
     pickerOpen = false;
     // Persist sequence ID
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ sequenceId: seq.id }));
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   function handleFileSelect(event: Event) {
@@ -84,6 +127,8 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     videoUrl = URL.createObjectURL(file);
     videoFileName = file.name;
     videoFileSize = file.size;
+    selectedVideoId = null;
+    selectedStepMap = undefined;
   }
 
   function handleVideoLoaded() {
@@ -98,17 +143,38 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     videoDuration = 0;
     videoFileSize = 0;
     videoFileName = "";
+    selectedVideoId = null;
+    selectedStepMap = undefined;
+  }
+
+  function selectSavedVideo(video: CollaborativeVideo): void {
+    cleanupVideo();
+    videoUrl = video.videoUrl;
+    videoDuration = video.duration;
+    videoFileSize = video.fileSize;
+    videoFileName = video.description?.trim() || "Saved performance video";
+    selectedVideoId = video.id;
+    selectedStepMap = video.beatMap;
   }
 
   function clearVideo() {
     cleanupVideo();
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement | null;
+    const input = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement | null;
     if (input) input.value = "";
   }
 
   function handleStart() {
     if (!videoUrl || !selectedSequence || videoDuration <= 0) return;
-    onStartMapping(videoUrl, videoDuration, videoFileSize, selectedSequence);
+    onStartMapping(
+      videoUrl,
+      videoDuration,
+      videoFileSize,
+      selectedSequence,
+      selectedStepMap,
+      selectedVideoId ?? undefined
+    );
   }
 
   function formatFileSize(bytes: number): string {
@@ -122,9 +188,19 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   }
+
+  onDestroy(cleanupVideo);
 </script>
 
 <div class="setup-page">
+  <div class="setup-heading">
+    <span>Performance timing</span>
+    <h3>Choose the sequence and the video that performs it</h3>
+    <p>
+      Saved TKA videos keep their markers. A local file stays on this device
+      until you upload it.
+    </p>
+  </div>
   <div class="setup-content">
     <!-- Left: Video -->
     <div class="panel">
@@ -149,15 +225,23 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
               <span class="card-name">{videoFileName}</span>
               <span class="card-sub">
                 {#if videoFileSize > 0}{formatFileSize(videoFileSize)}{/if}
-                {#if videoDuration > 0} · {formatDuration(videoDuration)}{/if}
+                {#if videoDuration > 0}
+                  · {formatDuration(videoDuration)}{/if}
               </span>
             </div>
-            <button type="button" class="text-btn" onclick={clearVideo}>Change</button>
+            <button type="button" class="text-btn" onclick={clearVideo}
+              >Change</button
+            >
           </div>
         </div>
       {:else}
         <label class="drop-zone">
-          <input type="file" accept="video/*" onchange={handleFileSelect} hidden />
+          <input
+            type="file"
+            accept="video/*"
+            onchange={handleFileSelect}
+            hidden
+          />
           <i class="fas fa-film drop-icon" aria-hidden="true"></i>
           <span class="drop-label">Drop a video here or click to browse</span>
           <span class="drop-hint">MP4, WebM, MOV</span>
@@ -176,32 +260,107 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
         <div class="card">
           {#if selectedSequence.steps && selectedSequence.steps.length > 0}
             <div class="choreo-preview">
-              <PropAwareThumbnail sequence={selectedSequence} variant="gallery" eager />
+              <PropAwareThumbnail
+                sequence={selectedSequence}
+                variant="gallery"
+                eager
+              />
             </div>
           {/if}
           <div class="card-footer">
             <div class="card-info">
-              <span class="card-name">{selectedSequence.word ?? selectedSequence.name}</span>
+              <span class="card-name"
+                >{selectedSequence.word ?? selectedSequence.name}</span
+              >
               <span class="card-sub">{stepCount} steps</span>
             </div>
-            <button type="button" class="text-btn" onclick={() => (pickerOpen = true)}>Change</button>
+            <button
+              type="button"
+              class="text-btn"
+              onclick={() => (pickerOpen = true)}>Change</button
+            >
           </div>
         </div>
       {:else}
-        <button type="button" class="drop-zone" onclick={() => (pickerOpen = true)}>
+        <button
+          type="button"
+          class="drop-zone"
+          onclick={() => (pickerOpen = true)}
+        >
           <i class="fas fa-th-large drop-icon" aria-hidden="true"></i>
           <span class="drop-label">Choose a sequence</span>
           <span class="drop-hint">Pick the sequence this video performs</span>
         </button>
       {/if}
     </div>
+
+    {#if selectedSequence}
+      <section class="library-panel" aria-labelledby="saved-performance-title">
+        <div class="library-heading">
+          <div>
+            <span>From your TKA library</span>
+            <h3 id="saved-performance-title">Saved performances</h3>
+          </div>
+          {#if !videosLoading}<strong>{savedVideos.length}</strong>{/if}
+        </div>
+
+        {#if videosLoading}
+          <div class="library-state" role="status">
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            Loading saved performances
+          </div>
+        {:else if videosError}
+          <div class="library-state error" role="alert">
+            <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+            {videosError}
+          </div>
+        {:else if savedVideos.length === 0}
+          <div class="library-state">
+            <i class="fas fa-video-slash" aria-hidden="true"></i>
+            No saved performances for this sequence yet. Choose a local video above
+            to begin.
+          </div>
+        {:else}
+          <div class="saved-grid">
+            {#each savedVideos as video (video.id)}
+              <button
+                type="button"
+                class:selected={selectedVideoId === video.id}
+                class="saved-video"
+                onclick={() => selectSavedVideo(video)}
+              >
+                <span class="saved-thumb">
+                  {#if video.thumbnailUrl}
+                    <img src={video.thumbnailUrl} alt="" />
+                  {:else}
+                    <i class="fas fa-play" aria-hidden="true"></i>
+                  {/if}
+                  <small>{formatDuration(video.duration)}</small>
+                </span>
+                <span class="saved-copy">
+                  <strong
+                    >{video.description?.trim() || "Performance video"}</strong
+                  >
+                  <small class:mapped={!!video.beatMap}>
+                    {video.beatMap ? "Timing saved" : "Needs timing"}
+                  </small>
+                </span>
+                {#if selectedVideoId === video.id}
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                {/if}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </section>
+    {/if}
   </div>
 
   {#if canStart}
     <div class="start-area">
       <button type="button" class="start-btn" onclick={handleStart}>
         <i class="fas fa-play" aria-hidden="true"></i>
-        Start Mapping
+        {selectedStepMap ? "Review saved timing" : "Map performance"}
       </button>
     </div>
   {/if}
@@ -216,33 +375,212 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
 <style>
   .setup-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 32px;
-    padding: 24px;
+    --setup-preview-height: clamp(13rem, 26vh, 20rem);
+
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-content: start;
+    gap: 1.5rem;
+    width: min(100%, 162rem);
+    margin-inline: auto;
+    padding: clamp(1rem, 1.5vw, 2.5rem);
     height: 100%;
     overflow-y: auto;
   }
 
-  .setup-content {
+  .setup-heading {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    width: 100%;
-    max-width: 1100px;
-    flex: 1;
-    align-items: start;
+    gap: 0.35rem;
   }
 
-  @media (max-width: 768px) {
-    .setup-content { grid-template-columns: 1fr; }
+  .setup-heading > span,
+  .library-heading span {
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact);
+    font-weight: 750;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .setup-heading h3,
+  .setup-heading p,
+  .library-heading h3 {
+    margin: 0;
+  }
+
+  .setup-heading h3 {
+    font-size: clamp(1.35rem, 1rem + 0.55vw, 2.25rem);
+  }
+
+  .setup-heading p {
+    color: var(--theme-text-muted);
+    font-size: var(--font-size-min);
+    line-height: 1.45;
+  }
+
+  .setup-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 1.25vw, 2rem);
+    width: 100%;
+    min-height: 0;
+    align-content: start;
+  }
+
+  @media (max-width: 48rem) {
+    .setup-content {
+      grid-template-columns: 1fr;
+    }
   }
 
   .panel {
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .library-panel {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: 0.9rem;
+    min-width: 0;
+    padding-top: 0.5rem;
+  }
+
+  .library-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .library-heading > div {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .library-heading h3 {
+    font-size: 1.25rem;
+  }
+
+  .library-heading > strong {
+    display: grid;
+    place-items: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-full);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .saved-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .saved-video {
+    display: grid;
+    grid-template-columns: minmax(6rem, 34%) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    min-height: 5.5rem;
+    padding: 0.65rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .saved-video.selected {
+    border-color: var(--theme-accent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 11%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .saved-video:focus-visible,
+  .drop-zone:focus-visible,
+  .text-btn:focus-visible,
+  .start-btn:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  .saved-thumb {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-2026-xs);
+    background: var(--theme-panel-bg);
+    color: var(--theme-accent);
+  }
+
+  .saved-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .saved-thumb small {
+    position: absolute;
+    right: 0.25rem;
+    bottom: 0.25rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: var(--radius-2026-xs);
+    background: var(--theme-panel-bg);
+    color: var(--theme-text);
+    font-size: var(--font-size-compact);
+  }
+
+  .saved-copy {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .saved-copy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .saved-copy small {
+    justify-self: start;
+    color: var(--semantic-warning);
+    font-size: var(--font-size-compact);
+    font-weight: 700;
+  }
+
+  .saved-copy small.mapped {
+    color: var(--semantic-success);
+  }
+
+  .library-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 7rem;
+    padding: 1.5rem;
+    border: 1px dashed var(--theme-stroke);
+    border-radius: var(--radius-2026-md);
+    color: var(--theme-text-muted);
+    font-size: var(--font-size-min);
+    text-align: center;
+  }
+
+  .library-state.error {
+    border-color: color-mix(in srgb, var(--semantic-error) 42%, transparent);
+    color: var(--semantic-error);
   }
 
   .panel-title {
@@ -255,7 +593,9 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     margin: 0;
   }
 
-  .panel-title i { color: var(--theme-accent, #6366f1); }
+  .panel-title i {
+    color: var(--theme-accent, #6366f1);
+  }
 
   /* ---- Drop zones ---- */
 
@@ -265,13 +605,16 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     align-items: center;
     justify-content: center;
     gap: 10px;
-    padding: 48px 24px;
+    height: var(--setup-preview-height);
+    min-height: 0;
+    padding: 2rem 1.5rem;
     border: 2px dashed var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 12px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-    min-height: 200px;
+    transition:
+      border-color 0.15s,
+      background 0.15s;
   }
 
   .drop-zone:hover {
@@ -279,9 +622,18 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     background: rgba(99, 102, 241, 0.04);
   }
 
-  .drop-icon { font-size: 28px; color: var(--theme-text-muted, rgba(255, 255, 255, 0.3)); }
-  .drop-label { font-size: var(--font-size-min, 14px); color: var(--theme-text-muted, rgba(255, 255, 255, 0.5)); }
-  .drop-hint { font-size: var(--font-size-compact, 12px); color: var(--theme-text-muted, rgba(255, 255, 255, 0.3)); }
+  .drop-icon {
+    font-size: 28px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
+  .drop-label {
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
+  }
+  .drop-hint {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
+  }
 
   /* ---- Loaded card ---- */
 
@@ -294,12 +646,19 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   .video-player {
     width: 100%;
+    height: var(--setup-preview-height);
     display: block;
     background: #000;
+    object-fit: contain;
   }
 
   .choreo-preview {
+    container-name: image-container;
+    container-type: size;
+    display: grid;
+    place-items: center;
     width: 100%;
+    height: var(--setup-preview-height);
     overflow: hidden;
     background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
   }
@@ -311,7 +670,12 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     padding: 10px 14px;
   }
 
-  .card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
 
   .card-name {
     font-size: var(--font-size-min, 14px);
@@ -345,7 +709,10 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   /* ---- Start ---- */
 
-  .start-area { display: flex; justify-content: center; }
+  .start-area {
+    display: flex;
+    justify-content: center;
+  }
 
   .start-btn {
     display: inline-flex;
@@ -359,18 +726,87 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.15s;
+    transition:
+      transform 0.1s,
+      box-shadow 0.15s;
   }
 
   .start-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    box-shadow: 0 6px 20px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
   }
 
-  .start-btn:active { transform: translateY(0); }
+  .start-btn:active {
+    transform: translateY(0);
+  }
 
   @media (prefers-reduced-motion: reduce) {
-    .drop-zone, .start-btn, .text-btn { transition: none; }
-    .start-btn:hover { transform: none; }
+    .drop-zone,
+    .start-btn,
+    .text-btn {
+      transition: none;
+    }
+    .start-btn:hover {
+      transform: none;
+    }
+  }
+
+  @media (min-width: 105rem) {
+    .setup-page {
+      --setup-preview-height: clamp(16rem, 27vh, 28rem);
+
+      gap: 2rem;
+      padding: 2rem 3rem;
+    }
+
+    .saved-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 162.5rem) {
+    .setup-page {
+      --setup-preview-height: clamp(24rem, 28vh, 36rem);
+
+      gap: 3rem;
+      padding: 3rem 4rem;
+    }
+
+    .setup-heading p,
+    .panel-title,
+    .drop-label,
+    .card-name,
+    .saved-video,
+    .library-state {
+      font-size: 1.125rem;
+    }
+
+    .drop-hint,
+    .card-sub,
+    .saved-copy small,
+    .saved-thumb small {
+      font-size: 1rem;
+    }
+
+    .saved-grid {
+      gap: 1.25rem;
+    }
+
+    .saved-video {
+      min-height: 8rem;
+      padding: 1rem;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .saved-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .setup-page {
+      height: auto;
+      min-height: 100%;
+    }
   }
 </style>

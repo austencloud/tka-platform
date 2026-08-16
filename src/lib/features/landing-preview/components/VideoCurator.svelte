@@ -320,7 +320,7 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   <header class="curator-header">
     <div class="header-content">
       <h1>Video Curator</h1>
-      <p>Tag, categorize, and select videos for the landing page</p>
+      <p>Review the catalog, tag performers, and link videos to TKA sequences</p>
     </div>
     <div class="stats-bar">
       <div class="stat">
@@ -532,9 +532,10 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
 
 <style>
   .video-curator {
-    padding: 24px;
-    max-width: 1400px;
-    margin: 0 auto;
+    box-sizing: border-box;
+    width: 100%;
+    padding: clamp(1rem, 1.5vw, 2rem);
+    container-type: inline-size;
   }
 
   .curator-header {
@@ -557,8 +558,9 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   }
 
   .stats-bar {
-    display: flex;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .stat {
@@ -599,8 +601,8 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
   /* Video grid */
   .video-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
   .video-card {
@@ -751,22 +753,51 @@ import * as videoCuratorPersister from "$lib/features/landing-preview/services/v
     opacity: 0.5;
   }
 
-  @media (max-width: 600px) {
-    .video-curator {
-      padding: 16px;
-    }
-
+  @container (min-width: 40rem) {
     .video-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 60rem) {
+    .video-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 75rem) {
+    .video-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  @container (min-width: 105rem) {
+    .video-grid {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  @container (min-width: 162.5rem) {
+    .video-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+
+  @container (max-width: 45rem) {
+    .video-curator {
+      padding: 1rem;
     }
 
     .stats-bar {
-      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
     }
 
     .stat {
-      padding: 6px 12px;
+      padding: 0.375rem 0.5rem;
     }
   }
 </style>

@@ -8,11 +8,11 @@
 export interface ThumbnailOptions {
   /** Time in seconds to capture the frame (default: 1) */
   captureTime?: number;
-  /** Max width of thumbnail (default: 320) */
+  /** Max width of thumbnail (default: 1600) */
   maxWidth?: number;
-  /** Max height of thumbnail (default: 180) */
+  /** Max height of thumbnail (default: 1600) */
   maxHeight?: number;
-  /** JPEG quality 0-1 (default: 0.85) */
+  /** JPEG quality 0-1 (default: 0.92) */
   quality?: number;
 }
 
@@ -32,9 +32,9 @@ export async function extractVideoThumbnail(
 ): Promise<ThumbnailResult> {
   const {
     captureTime = 1,
-    maxWidth = 320,
-    maxHeight = 180,
-    quality = 0.85,
+    maxWidth = 1600,
+    maxHeight = 1600,
+    quality = 0.92,
   } = options;
 
   return new Promise((resolve, reject) => {

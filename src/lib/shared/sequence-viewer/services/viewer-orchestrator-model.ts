@@ -17,11 +17,12 @@ export function resolveSceneBpmIntent(raw: string | null): number | null {
 
 export function resolveEditingPane(
   viewerMode: ViewerMode,
-  exportContext: "animation-export" | "image-export" | null
+  exportContext: "animation-export" | "image-export" | null,
+  videoUploadOpen: boolean
 ): ViewerEditingPane {
   if (exportContext === "animation-export") return "animation";
   if (exportContext === "image-export") return "image";
-  if (viewerMode === "videos") return "video-upload";
+  if (viewerMode === "videos" && videoUploadOpen) return "video-upload";
   return null;
 }
 
