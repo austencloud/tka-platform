@@ -177,11 +177,13 @@ export function computeCardFrontLayout(
   // the per-cell ink-inset difference so the INK centers, not the cells.
   const INK_INSET_LEFT_UNITS = 50; // tightest left anchor (step number / letter)
   const INK_INSET_RIGHT_UNITS = 175; // 950 - grid outer point at x=775
-  const opticalShiftX = options.deckCard
-    ? Math.round(
-        (((INK_INSET_RIGHT_UNITS - INK_INSET_LEFT_UNITS) / 950) * stepSize) / 2
-      )
-    : 0;
+  const opticalShiftX =
+    options.deckCard && options.gridCentering !== "geometric"
+      ? Math.round(
+          (((INK_INSET_RIGHT_UNITS - INK_INSET_LEFT_UNITS) / 950) * stepSize) /
+            2
+        )
+      : 0;
   const gridOffsetX = options.deckCard
     ? Math.floor((canvasWidth - gridWidth) / 2) + opticalShiftX
     : 0;

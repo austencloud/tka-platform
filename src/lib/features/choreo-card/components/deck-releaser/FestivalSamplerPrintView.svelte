@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import CardInspectModal from "../CardInspectModal.svelte";
   import FestivalSamplerSheetPreview from "./FestivalSamplerSheetPreview.svelte";
   import {
     FESTIVAL_SAMPLER_MAX_PACKS,
     FESTIVAL_SAMPLER_NAME,
     renderFestivalSamplerBatch,
     type FestivalSamplerPack,
+    type FestivalSamplerPair,
   } from "../../services/festival-sampler-renderer";
   import {
     exportCalibrationPDF,
@@ -17,6 +19,7 @@
   import { exportDeckZIP } from "../../services/print-zip-exporter";
   import { downloadBlobToDisk } from "$lib/shared/foundation/services/file-downloader";
   import { createFestivalSamplerPrintState } from "./state/festival-sampler-print-state.svelte";
+  import { canvasToBlob } from "../../services/DeckCardBlobCache";
 
   interface Props {
     onExit: () => void;
@@ -59,13 +62,29 @@
       ? (String(printSettings.packCount) as PackQuantityMode)
       : "custom"
   );
+  let inspectedPair = $state<FestivalSamplerPair | null>(null);
+  let inspectedFrontImageUrl = $state<string | null>(null);
+  let inspectedBackImageUrl = $state<string | null>(null);
+  let lastInspectTrigger: HTMLButtonElement | null = null;
+  let inspectRequest = 0;
 
   const packCount = $derived(printSettings.packCount);
-  const ready = $derived(packs.length >= packCount);
-  const visiblePacks = $derived(packs.slice(0, packCount));
-  const selectedSheets = $derived(
-    packs.slice(0, packCount).map((pack) => pack.pairs)
+  const visiblePackSlots = $derived.by(() => {
+    const packsByNumber = new Map(
+      packs.map((pack) => [pack.packNumber, pack] as const)
+    );
+    return Array.from(
+      { length: packCount },
+      (_, index) => packsByNumber.get(index + 1) ?? null
+    );
+  });
+  const visiblePacks = $derived(
+    visiblePackSlots.filter(
+      (pack): pack is FestivalSamplerPack => pack !== null
+    )
   );
+  const ready = $derived(visiblePacks.length === packCount);
+  const selectedSheets = $derived(visiblePacks.map((pack) => pack.pairs));
   const archivePairs = $derived.by(() => {
     const seen = new Set<HTMLCanvasElement>();
     return selectedSheets.flat().filter((pair) => {
@@ -91,12 +110,22 @@
 
   onMount(() => {
     let cancelled = false;
-    void renderFestivalSamplerBatch(FESTIVAL_SAMPLER_MAX_PACKS, (next) => {
-      if (cancelled) return;
-      progress = next.current;
-      progressTotal = next.total;
-      status = next.label;
-    })
+    void renderFestivalSamplerBatch(
+      FESTIVAL_SAMPLER_MAX_PACKS,
+      (next) => {
+        if (cancelled) return;
+        progress = next.current;
+        progressTotal = next.total;
+        status = next.label;
+      },
+      (readyPack) => {
+        if (cancelled) return;
+        packs = [
+          ...packs.filter((pack) => pack.packNumber !== readyPack.packNumber),
+          readyPack,
+        ].sort((a, b) => a.packNumber - b.packNumber);
+      }
+    )
       .then((rendered) => {
         if (cancelled) return;
         packs = rendered;
@@ -110,6 +139,44 @@
     return () => {
       cancelled = true;
     };
+  });
+
+  function releaseInspectImages(): void {
+    if (inspectedFrontImageUrl) URL.revokeObjectURL(inspectedFrontImageUrl);
+    if (inspectedBackImageUrl) URL.revokeObjectURL(inspectedBackImageUrl);
+    inspectedFrontImageUrl = null;
+    inspectedBackImageUrl = null;
+  }
+
+  async function inspectCard(
+    pair: FestivalSamplerPair,
+    trigger: HTMLButtonElement
+  ): Promise<void> {
+    const request = ++inspectRequest;
+    lastInspectTrigger = trigger;
+    const [frontBlob, backBlob] = await Promise.all([
+      canvasToBlob(pair.front),
+      canvasToBlob(pair.back),
+    ]);
+    if (request !== inspectRequest) return;
+
+    releaseInspectImages();
+    inspectedFrontImageUrl = URL.createObjectURL(frontBlob);
+    inspectedBackImageUrl = URL.createObjectURL(backBlob);
+    inspectedPair = pair;
+  }
+
+  function closeInspector(): void {
+    inspectRequest++;
+    inspectedPair = null;
+    releaseInspectImages();
+    requestAnimationFrame(() => lastInspectTrigger?.focus());
+  }
+
+  onDestroy(() => {
+    inspectRequest++;
+    releaseInspectImages();
+    lastInspectTrigger = null;
   });
 
   async function buildPdf(mode: PrintPDFMode): Promise<Blob> {
@@ -268,47 +335,46 @@
     {/if}
 
     <section class="pack-list" aria-label="All festival sampler packs">
-      {#if visiblePacks.length === 0}
-        <div class="preview-empty" aria-hidden="true"></div>
-      {:else}
-        {#each visiblePacks as pack (pack.packNumber)}
-          <article class="pack-row">
-            <header class="pack-heading">
-              <h2>Pack {String(pack.packNumber).padStart(2, "0")}</h2>
-            </header>
-            <div class="pack-sheets">
-              <section
-                class="sheet-block"
-                aria-label={`Pack ${pack.packNumber} fronts`}
-              >
-                <div class="sheet-heading">
-                  <strong>Fronts</strong>
-                  <span>9 cards</span>
-                </div>
-                <FestivalSamplerSheetPreview
-                  pairs={pack.pairs}
-                  side="front"
-                  packNumber={pack.packNumber}
-                />
-              </section>
-              <section
-                class="sheet-block"
-                aria-label={`Pack ${pack.packNumber} backs`}
-              >
-                <div class="sheet-heading">
-                  <strong>Backs</strong>
-                  <span>Columns mirrored</span>
-                </div>
-                <FestivalSamplerSheetPreview
-                  pairs={pack.pairs}
-                  side="back"
-                  packNumber={pack.packNumber}
-                />
-              </section>
-            </div>
-          </article>
-        {/each}
-      {/if}
+      {#each visiblePackSlots as pack, index (index)}
+        {@const packNumber = index + 1}
+        <article class="pack-row" aria-busy={!pack}>
+          <header class="pack-heading">
+            <h2>Pack {String(packNumber).padStart(2, "0")}</h2>
+          </header>
+          <div class="pack-sheets">
+            <section
+              class="sheet-block"
+              aria-label={`Pack ${packNumber} fronts`}
+            >
+              <div class="sheet-heading">
+                <strong>Fronts</strong>
+                <span>Select a card</span>
+              </div>
+              <FestivalSamplerSheetPreview
+                pairs={pack?.pairs ?? null}
+                side="front"
+                {packNumber}
+                onCardClick={inspectCard}
+              />
+            </section>
+            <section
+              class="sheet-block"
+              aria-label={`Pack ${packNumber} backs`}
+            >
+              <div class="sheet-heading">
+                <strong>Backs</strong>
+                <span>Select a card</span>
+              </div>
+              <FestivalSamplerSheetPreview
+                pairs={pack?.pairs ?? null}
+                side="back"
+                {packNumber}
+                onCardClick={inspectCard}
+              />
+            </section>
+          </div>
+        </article>
+      {/each}
     </section>
   </main>
 
@@ -460,6 +526,18 @@
     </p>
   </aside>
 </div>
+
+{#if inspectedPair && inspectedFrontImageUrl && inspectedBackImageUrl}
+  <CardInspectModal
+    sequence={inspectedPair.renderMeta?.sequence ?? null}
+    frontImageUrl={inspectedFrontImageUrl}
+    backImageUrl={inspectedBackImageUrl}
+    bluePropType={inspectedPair.renderMeta?.options.bluePropType}
+    redPropType={inspectedPair.renderMeta?.options.redPropType}
+    includeStartPosition={true}
+    onClose={closeInspector}
+  />
+{/if}
 
 <style>
   .festival-print {
@@ -633,10 +711,6 @@
     width: 100%;
     margin: 0 auto;
     padding-bottom: clamp(24px, 4vw, 64px);
-  }
-
-  .preview-empty {
-    min-height: 60svh;
   }
 
   .pack-row {

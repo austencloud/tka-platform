@@ -19,12 +19,13 @@
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
 
   interface Props {
-    sequence: SequenceData;
+    sequence?: SequenceData | null;
     showWord?: boolean;
     includeStartPosition?: boolean;
     onClose: () => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
     frontImageUrl?: string | null;
+    backImageUrl?: string | null;
     extraActions?: Snippet;
     /** Async re-bake of THIS card's front (updates the preview image). */
     onRerender?: () => Promise<void>;
@@ -44,6 +45,7 @@
     onClose,
     onContextMenu,
     frontImageUrl,
+    backImageUrl,
     extraActions,
     onRerender,
     bluePropType,
@@ -143,6 +145,7 @@
   });
 
   function editSequence() {
+    if (!sequence) return;
     localStorage.setItem("tka-pending-edit-sequence", JSON.stringify(sequence));
     onClose();
     toast.info("Opening for editing...", 2000);
@@ -176,7 +179,7 @@
   // viewer uses (ClaudeCodeCopier) — letters, motions, turns, locations,
   // orientations, reversals. Lets two side-by-side cards be pasted for comparison.
   async function copyCardData() {
-    if (copyDataState === "copying") return;
+    if (copyDataState === "copying" || !sequence) return;
     copyDataState = "copying";
     try {
       const result = await getClaudeCodeCopier().copyForClaude(sequence);
@@ -215,6 +218,7 @@
   <div
     class="modal-container"
     class:live-container={presentation === "live"}
+    class:rendered-pair-container={Boolean(backImageUrl)}
     role="dialog"
     aria-modal="true"
     aria-label={presentation === "live"
@@ -230,40 +234,43 @@
     >
       {#if mode === "preview"}
         {#if presentation === "live"}
-          <LiveChoreoCard
-            {sequence}
-            {showWord}
-            {includeStartPosition}
-            showDifficultyLevel={false}
-            showNotes={false}
-            showLoopGlyph={true}
-            showQRCode={false}
-            showMandala={true}
-            {browseViewMode}
-            darkMode={true}
-            bluePropType={effBlueProp}
-            redPropType={effRedProp}
-            forceContain={true}
-            startPositionLayoutOverride={getCatalogLayoutPolicy(
-              sequence.steps?.length ?? 0
-            )}
-          />
+          {#if sequence}
+            <LiveChoreoCard
+              {sequence}
+              {showWord}
+              {includeStartPosition}
+              showDifficultyLevel={false}
+              showNotes={false}
+              showLoopGlyph={true}
+              showQRCode={false}
+              showMandala={true}
+              {browseViewMode}
+              darkMode={true}
+              bluePropType={effBlueProp}
+              redPropType={effRedProp}
+              forceContain={true}
+              startPositionLayoutOverride={getCatalogLayoutPolicy(
+                sequence.steps?.length ?? 0
+              )}
+            />
+          {/if}
         {:else}
           <CardPreviewStack
             {sequence}
             {showWord}
             {includeStartPosition}
             startPositionLayout={getCatalogLayoutPolicy(
-              sequence.steps?.length ?? 0
+              sequence?.steps?.length ?? 0
             )}
             {showQRCode}
             showInfoCard={false}
             printMode={true}
             {frontImageUrl}
+            {backImageUrl}
             onCardContextMenu={onContextMenu}
           />
         {/if}
-      {:else}
+      {:else if sequence}
         <CardArrowFixGrid
           {sequence}
           bluePropType={effBlueProp}
@@ -276,13 +283,15 @@
 
     <div class="bottom-bar">
       <div class="actions">
-        <button
-          class="action-btn"
-          onclick={editSequence}
-          aria-label="Open sequence in construct for full editing"
-        >
-          <i class="fas fa-pen-to-square"></i> Edit in Construct
-        </button>
+        {#if sequence}
+          <button
+            class="action-btn"
+            onclick={editSequence}
+            aria-label="Open sequence in construct for full editing"
+          >
+            <i class="fas fa-pen-to-square"></i> Edit in Construct
+          </button>
+        {/if}
         <button
           class="action-btn"
           onclick={copyCardImage}
@@ -299,43 +308,45 @@
             <i class="fas fa-image"></i> Copy Image
           {/if}
         </button>
-        <button
-          class="action-btn"
-          onclick={copyCardData}
-          disabled={copyDataState === "copying"}
-          aria-label="Copy sequence data in AI-friendly text"
-        >
-          {#if copyDataState === "copying"}
-            <i class="fas fa-spinner fa-spin"></i> Copying...
-          {:else if copyDataState === "success"}
-            <i class="fas fa-check"></i> Copied!
-          {:else if copyDataState === "error"}
-            <i class="fas fa-times"></i> Failed
-          {:else}
-            <i class="fas fa-terminal"></i> Copy Data
-          {/if}
-        </button>
-        {#if mode === "preview"}
+        {#if sequence}
           <button
             class="action-btn"
-            onclick={enterFixMode}
-            aria-label="Fix arrow positions on this card's pictographs"
+            onclick={copyCardData}
+            disabled={copyDataState === "copying"}
+            aria-label="Copy sequence data in AI-friendly text"
           >
-            <i class="fas fa-arrows-up-down-left-right"></i> Fix Arrows
-          </button>
-        {:else}
-          <button
-            class="action-btn done-btn"
-            onclick={exitFixMode}
-            disabled={rebaking}
-            aria-label="Finish fixing arrows and re-render the card"
-          >
-            {#if rebaking}
-              <i class="fas fa-spinner fa-spin"></i> Re-rendering...
+            {#if copyDataState === "copying"}
+              <i class="fas fa-spinner fa-spin"></i> Copying...
+            {:else if copyDataState === "success"}
+              <i class="fas fa-check"></i> Copied!
+            {:else if copyDataState === "error"}
+              <i class="fas fa-times"></i> Failed
             {:else}
-              <i class="fas fa-check"></i> Done
+              <i class="fas fa-terminal"></i> Copy Data
             {/if}
           </button>
+          {#if mode === "preview"}
+            <button
+              class="action-btn"
+              onclick={enterFixMode}
+              aria-label="Fix arrow positions on this card's pictographs"
+            >
+              <i class="fas fa-arrows-up-down-left-right"></i> Fix Arrows
+            </button>
+          {:else}
+            <button
+              class="action-btn done-btn"
+              onclick={exitFixMode}
+              disabled={rebaking}
+              aria-label="Finish fixing arrows and re-render the card"
+            >
+              {#if rebaking}
+                <i class="fas fa-spinner fa-spin"></i> Re-rendering...
+              {:else}
+                <i class="fas fa-check"></i> Done
+              {/if}
+            </button>
+          {/if}
         {/if}
         {#if extraActions}
           {@render extraActions()}
@@ -404,6 +415,10 @@
   .modal-container.live-container {
     width: min(90vw, calc((90vh - 150px) * 2));
     height: auto;
+  }
+
+  .modal-container.rendered-pair-container {
+    max-width: none;
   }
 
   .stack-wrapper {

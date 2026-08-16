@@ -37,6 +37,33 @@ export function festivalSamplerFingerprint(
 }
 
 /**
+ * Return the manifests whose complete card dependency set has rendered since
+ * the previous publication pass. Keeping this check pure makes progressive
+ * preview publication deterministic even when render lanes finish out of
+ * order.
+ */
+export function findReadyFestivalSamplerPackIndexes(
+  manifests: readonly {
+    cards: readonly FestivalSamplerCardManifest[];
+  }[],
+  renderedCardKeys: ReadonlySet<string>,
+  publishedPackIndexes: ReadonlySet<number>
+): number[] {
+  const ready: number[] = [];
+  manifests.forEach((manifest, index) => {
+    if (publishedPackIndexes.has(index)) return;
+    if (
+      manifest.cards.every((card) =>
+        renderedCardKeys.has(festivalSamplerCardKey(card))
+      )
+    ) {
+      ready.push(index);
+    }
+  });
+  return ready;
+}
+
+/**
  * Version the in-browser render cache from the complete frozen manifest. Card
  * fingerprints intentionally describe pack identity, while this revision also
  * changes when render metadata such as period, family, or labels changes.

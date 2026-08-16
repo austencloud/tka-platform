@@ -13,7 +13,9 @@
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import {
+    calculateHeaderWordSideInset,
     LOOP_ICON_SIZE_SCALE,
+    type LOOPComponentId,
     type LoopReflectionAxis,
   } from "@tka/render-composition";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
@@ -65,6 +67,24 @@
     wordTitleFontSize,
     activeDarkMode,
   }: Props = $props();
+
+  const wordSideInset = $derived.by(() => {
+    const activeComponents = loopComponents
+      ? new Set([...loopComponents] as unknown as LOOPComponentId[])
+      : undefined;
+    const overlayComponents = loopOverlayComponents
+      ? new Set([...loopOverlayComponents] as unknown as LOOPComponentId[])
+      : undefined;
+    return calculateHeaderWordSideInset({
+      headerHeight: scaledHeaderHeight,
+      indicatorSizeScale:
+        scaledHeaderHeight > 0 ? badgeSize / scaledHeaderHeight : undefined,
+      showDifficultyBadge: showDifficultyLevel,
+      loopComponents:
+        showLoopGlyph && activeComponents?.size ? activeComponents : undefined,
+      overlayComponents,
+    });
+  });
 </script>
 
 {#if showHeader}
@@ -77,9 +97,12 @@
     {#if isBrowseSoloMode}
       <span
         class="word-title"
-        style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
+        style="font-size: {wordTitleFontSize}px; color: {soloColor === 'blue'
+          ? 'var(--prop-blue, #2196f3)'
+          : 'var(--prop-red, #f44336)'};"
       >
-        {soloColor === "blue" ? "Blue" : "Red"} {browseViewMode?.subject === "hands" ? "Hand Path" : "Prop Path"}
+        {soloColor === "blue" ? "Blue" : "Red"}
+        {browseViewMode?.subject === "hands" ? "Hand Path" : "Prop Path"}
       </span>
     {:else}
       {#if showDifficultyLevel}
@@ -88,13 +111,18 @@
           style="left: {badgePadding}px;"
           transition:scale|local={{ duration: 200, easing: cubicOut }}
         >
-          <DifficultyBadge level={difficultyLevel} size="{badgeSize}px" fontSize="{badgeNumberFontSize}px" />
+          <DifficultyBadge
+            level={difficultyLevel}
+            size="{badgeSize}px"
+            fontSize="{badgeNumberFontSize}px"
+          />
         </div>
       {/if}
 
       {#if wordVisible}
         <div
           class="word-title"
+          style:width={`max(0px, calc(100% - ${Math.ceil(wordSideInset * 2)}px))`}
           transition:fade|local={{ duration: 200 }}
         >
           <TKAWordGlyph
@@ -141,7 +169,9 @@
     width: 100%;
     box-sizing: border-box;
     overflow: hidden;
-    transition: background-color 350ms ease, border-color 350ms ease;
+    transition:
+      background-color 350ms ease,
+      border-color 350ms ease;
   }
 
   .header-section.dark-mode {

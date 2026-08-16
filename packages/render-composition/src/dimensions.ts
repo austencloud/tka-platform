@@ -47,6 +47,13 @@ export const HEADER_WORD_FONT_SCALE = 0.66;
 /** Minimum word font size as fraction of header height (for long words) */
 export const HEADER_WORD_FONT_MIN_SCALE = 0.35;
 
+/**
+ * Clear space between the centered word and whichever header indicator reaches
+ * farther inward. The same inset is reserved on both sides so a wide LOOP
+ * strip can shrink the word without pulling it off center.
+ */
+export const HEADER_WORD_BREATHING_GAP_SCALE = 0.08;
+
 // ── LOOP icon strip ─────────────────────────────────────────────────────
 
 /** LOOP icon size as fraction of badge size */

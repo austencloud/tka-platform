@@ -11,6 +11,7 @@ import {
   BADGE_NUMBER_FONT_SCALE,
   BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
+  HEADER_WORD_BREATHING_GAP_SCALE,
   LOOP_ICON_SIZE_SCALE,
   LOOP_ICON_STRIP_OFFSET_SCALE,
 } from "./dimensions.js";
@@ -79,6 +80,48 @@ const ALPHA_BASELINE_SHIFT = 0.1;
 interface WordHorizontalBounds {
   left: number;
   right: number;
+}
+
+export interface HeaderWordSideInsetOptions {
+  headerHeight: number;
+  indicatorSizeScale?: number;
+  showDifficultyBadge?: boolean;
+  loopComponents?: Set<LOOPComponentId>;
+  overlayComponents?: Set<LOOPComponentId>;
+}
+
+/**
+ * Reserve equal space around the centered word using the wider of the level
+ * badge and LOOP strip. Long names then scale down before either neighbor can
+ * make the header feel pinched.
+ */
+export function calculateHeaderWordSideInset(
+  options: HeaderWordSideInsetOptions
+): number {
+  const {
+    headerHeight,
+    indicatorSizeScale = BADGE_SIZE_SCALE,
+    showDifficultyBadge = true,
+    loopComponents,
+    overlayComponents,
+  } = options;
+  const badgeSize = headerHeight * indicatorSizeScale;
+  const badgePadding = headerHeight * BADGE_PADDING_SCALE;
+  const leftIndicatorZone = showDifficultyBadge ? badgePadding + badgeSize : 0;
+
+  let rightIndicatorZone = 0;
+  if (loopComponents && loopComponents.size > 0) {
+    const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
+    rightIndicatorZone =
+      badgePadding +
+      iconSize * LOOP_ICON_STRIP_OFFSET_SCALE +
+      computeLoopIconStripWidth(loopComponents, iconSize, overlayComponents);
+  }
+
+  return (
+    Math.max(leftIndicatorZone, rightIndicatorZone) +
+    headerHeight * HEADER_WORD_BREATHING_GAP_SCALE
+  );
 }
 
 function fitWordToBounds(
@@ -360,7 +403,6 @@ export function renderHeader(
 
   // LOOP icon strip (right)
   const hasLoop = loopComponents && loopComponents.size > 0;
-  let rightIconZone = 0;
   if (hasLoop) {
     const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
     const stripWidth = computeLoopIconStripWidth(
@@ -371,8 +413,6 @@ export function renderHeader(
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX =
       rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
-    rightIconZone =
-      badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
     renderLoopIconStrip(
       ctx,
       loopComponents,
@@ -388,11 +428,19 @@ export function renderHeader(
     );
   }
 
-  const wordBreathingGap = headerHeight * LETTER_GAP_RATIO;
+  const wordSideInset = Math.min(
+    canvasWidth / 2,
+    calculateHeaderWordSideInset({
+      headerHeight,
+      indicatorSizeScale,
+      showDifficultyBadge,
+      loopComponents,
+      overlayComponents,
+    })
+  );
   const wordHorizontalBounds = {
-    left:
-      (showDifficultyBadge ? badgePadding + badgeSize : 0) + wordBreathingGap,
-    right: canvasWidth - rightIconZone - wordBreathingGap,
+    left: wordSideInset,
+    right: canvasWidth - wordSideInset,
   };
 
   // Word text (center)
@@ -404,6 +452,21 @@ export function renderHeader(
   const dimmedColor = darkMode ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
   ctx.font = `700 ${finalFontSize}px Gelasio, Georgia, serif`;
   ctx.textBaseline = "middle";
+
+  if (!glyphImages?.size && word?.trim()) {
+    const availableWidth = Math.max(
+      0,
+      wordHorizontalBounds.right - wordHorizontalBounds.left
+    );
+    const measuredWidth = ctx.measureText(word).width;
+    if (measuredWidth > availableWidth && measuredWidth > 0) {
+      const fittedFontSize = Math.max(
+        10,
+        Math.floor(finalFontSize * (availableWidth / measuredWidth))
+      );
+      ctx.font = `700 ${fittedFontSize}px Gelasio, Georgia, serif`;
+    }
+  }
 
   // Word: compressed glyphs → flat glyphs → styled text → plain text
   if (word?.trim()) {

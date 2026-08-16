@@ -20,15 +20,24 @@ describe("computeCardFrontLayout", () => {
   });
 
   it("derives non-deckCard canvas from columns x stepSize", () => {
-    const seq = { steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }] } as any;
+    const seq = {
+      steps: [{ letter: "A" }, { letter: "B" }, { letter: "C" }],
+    } as any;
     const layout = computeCardFrontLayout(seq, { stepSize: 100 }, {} as any);
     expect(layout.canvasWidth).toBe(layout.columns * layout.stepSize);
     expect(layout.stepSize).toBe(100);
   });
 
   it("offsets the grid for a column-mode start position", () => {
-    const seq = { steps: [{ letter: "A" }, { letter: "B" }], startPosition: {} } as any;
-    const layout = computeCardFrontLayout(seq, { includeStartPosition: true, startPositionLayout: "column" }, {} as any);
+    const seq = {
+      steps: [{ letter: "A" }, { letter: "B" }],
+      startPosition: {},
+    } as any;
+    const layout = computeCardFrontLayout(
+      seq,
+      { includeStartPosition: true, startPositionLayout: "column" },
+      {} as any
+    );
     expect(layout.startColumn).toBe(1);
     expect(layout.stepsPerRow).toBe(layout.columns - 1);
   });
@@ -73,6 +82,39 @@ describe("computeCardFrontLayout", () => {
     expect(layout.stepsPerRow).toBe(3);
   });
 
+  it("geometrically centers mixed Start and QR grids on physical cards", () => {
+    const sequence = {
+      steps: Array.from({ length: 4 }, () => ({ letter: "A" })),
+      startPosition: {},
+    } as any;
+    const baseOptions = {
+      deckCard: { contentWidth: 678, contentHeight: 978 },
+      includeStartPosition: true,
+      startPositionLayout: "row" as const,
+      columnCount: 2,
+      addWord: true,
+      leftLabel: "earth",
+    };
+
+    const optical = computeCardFrontLayout(sequence, baseOptions, {} as any);
+    const geometric = computeCardFrontLayout(
+      sequence,
+      { ...baseOptions, gridCentering: "geometric" },
+      {} as any
+    );
+    const geometricInset = Math.floor(
+      (geometric.canvasWidth - geometric.columns * geometric.stepSize) / 2
+    );
+    const geometricRightInset =
+      geometric.canvasWidth -
+      (geometric.gridOffsetX + geometric.columns * geometric.stepSize);
+
+    expect(geometric.gridOffsetX).toBe(58);
+    expect(geometric.gridOffsetX).toBe(geometricInset);
+    expect(geometricRightInset).toBe(geometricInset);
+    expect(optical.gridOffsetX).toBe(76);
+  });
+
   it("lays eight steps out four-wide beside their dedicated start column", () => {
     const sequence = {
       steps: Array.from({ length: 8 }, () => ({ letter: "A" })),
@@ -98,7 +140,10 @@ describe("computeCardFrontLayout", () => {
   // header turned off in the preview. The contract: showLoopGlyph:false must
   // collapse the header band to zero height when word + difficulty are also off.
   it("draws the loop header band when showLoopGlyph is omitted (default-on)", () => {
-    const seq = { steps: [{ letter: "A" }, { letter: "B" }], loopType: "rotated" } as any;
+    const seq = {
+      steps: [{ letter: "A" }, { letter: "B" }],
+      loopType: "rotated",
+    } as any;
     const layout = computeCardFrontLayout(
       seq,
       { stepSize: 100, addWord: false, addDifficultyLevel: false },
@@ -108,10 +153,18 @@ describe("computeCardFrontLayout", () => {
   });
 
   it("collapses the header band when the LOOP toggle is off and word/level are off", () => {
-    const seq = { steps: [{ letter: "A" }, { letter: "B" }], loopType: "rotated" } as any;
+    const seq = {
+      steps: [{ letter: "A" }, { letter: "B" }],
+      loopType: "rotated",
+    } as any;
     const layout = computeCardFrontLayout(
       seq,
-      { stepSize: 100, addWord: false, addDifficultyLevel: false, showLoopGlyph: false },
+      {
+        stepSize: 100,
+        addWord: false,
+        addDifficultyLevel: false,
+        showLoopGlyph: false,
+      },
       {} as any
     );
     expect(layout.headerHeight).toBe(0);

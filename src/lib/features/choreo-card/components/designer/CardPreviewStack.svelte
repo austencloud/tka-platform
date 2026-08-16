@@ -20,6 +20,7 @@
     showInfoCard: boolean;
     printMode?: boolean;
     frontImageUrl?: string | null;
+    backImageUrl?: string | null;
     onCardContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
 
@@ -32,6 +33,7 @@
     showInfoCard,
     printMode = false,
     frontImageUrl,
+    backImageUrl,
     onCardContextMenu,
   }: Props = $props();
 
@@ -155,6 +157,13 @@
           eager={true}
           onContextMenu={onCardContextMenu}
         />
+      {:else if frontImageUrl}
+        <img
+          class="rendered-card-image"
+          src={frontImageUrl}
+          alt="Card front"
+          draggable="false"
+        />
       {/if}
     </div>
   </div>
@@ -166,6 +175,13 @@
     >
       {#if showInfoCard}
         <InfoCardCanvasPreview face="back" />
+      {:else if backImageUrl}
+        <img
+          class="rendered-card-image"
+          src={backImageUrl}
+          alt="Card back"
+          draggable="false"
+        />
       {:else if sequence}
         <CardBack {sequence} />
       {/if}
@@ -229,5 +245,12 @@
 
   .card-frame :global(.choreo-card) {
     cursor: default;
+  }
+
+  .rendered-card-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>

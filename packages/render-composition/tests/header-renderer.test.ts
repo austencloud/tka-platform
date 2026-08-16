@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { renderHeader } from "../src/header-renderer.js";
-import type { GlyphImageData } from "../src/types.js";
+import {
+  calculateHeaderWordSideInset,
+  renderHeader,
+} from "../src/header-renderer.js";
+import type { GlyphImageData, LOOPComponentId } from "../src/types.js";
 
 function createMockCtx() {
   return {
@@ -19,12 +22,17 @@ function createMockCtx() {
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
+    bezierCurveTo: vi.fn(),
+    quadraticCurveTo: vi.fn(),
     arc: vi.fn(),
     stroke: vi.fn(),
     fill: vi.fn(),
     closePath: vi.fn(),
     save: vi.fn(),
     restore: vi.fn(),
+    translate: vi.fn(),
+    rotate: vi.fn(),
+    scale: vi.fn(),
     measureText: vi.fn(() => ({ width: 50 })),
     createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
     drawImage: vi.fn(),
@@ -212,6 +220,50 @@ describe("renderHeader", () => {
         glyphImages,
       });
       expect(ctx.drawImage).toHaveBeenCalledTimes(1);
+    });
+
+    it("shrinks long dashed words inside centered indicator-safe bounds", () => {
+      const ctx = createMockCtx();
+      const glyphImages = new Map<string, GlyphImageData>([
+        ["A", makeGlyphImage()],
+        ["W-", makeGlyphImage(80, 100, true)],
+        ["B", makeGlyphImage()],
+        ["Σ-", makeGlyphImage(80, 100, true)],
+        ["C", makeGlyphImage()],
+        ["Φ-", makeGlyphImage(80, 100, true)],
+        ["D", makeGlyphImage()],
+        ["τ-", makeGlyphImage(80, 100, true)],
+      ]);
+      const loopComponents = new Set<LOOPComponentId>(["mirrored", "inverted"]);
+      const canvasWidth = 678;
+      const headerHeight = 90;
+      const indicatorSizeScale = 8 / 15;
+
+      renderHeader(ctx, {
+        canvasWidth,
+        headerHeight,
+        word: "AW-BΣ-CΦ-Dτ-",
+        indicatorSizeScale,
+        loopComponents,
+        glyphImages,
+      });
+
+      const glyphCalls = (ctx.drawImage as ReturnType<typeof vi.fn>).mock.calls;
+      const dashCalls = (ctx.roundRect as ReturnType<typeof vi.fn>).mock.calls;
+      const firstGlyphLeft = glyphCalls[0]![1] as number;
+      const lastDash = dashCalls.at(-1)!;
+      const wordRight = (lastDash[0] as number) + (lastDash[2] as number);
+      const sideInset = calculateHeaderWordSideInset({
+        headerHeight,
+        indicatorSizeScale,
+        loopComponents,
+      });
+
+      expect(glyphCalls).toHaveLength(8);
+      expect(firstGlyphLeft).toBeGreaterThanOrEqual(sideInset - 0.01);
+      expect(wordRight).toBeLessThanOrEqual(canvasWidth - sideInset + 0.01);
+      expect((firstGlyphLeft + wordRight) / 2).toBeCloseTo(canvasWidth / 2, 5);
+      expect(glyphCalls[0]![4]).toBeLessThan(headerHeight * 0.65);
     });
   });
 });

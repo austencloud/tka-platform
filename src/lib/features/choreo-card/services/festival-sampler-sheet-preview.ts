@@ -4,7 +4,11 @@ import type { CardPair } from "./types";
 
 export type FestivalSamplerSheetSide = "front" | "back";
 
-export interface FestivalSamplerPreviewPlacement {
+export interface FestivalSamplerPreviewPlacement<
+  TPair extends CardPair = CardPair,
+> {
+  pair: TPair;
+  sourceIndex: number;
   source: HTMLCanvasElement;
   sourceX: number;
   sourceY: number;
@@ -22,20 +26,24 @@ const letterLayout = getPageLayout("poker", "letter");
 export const FESTIVAL_PREVIEW_PAGE_WIDTH = letterLayout.pageWidthPt;
 export const FESTIVAL_PREVIEW_PAGE_HEIGHT = letterLayout.pageHeightPt;
 
-export function planFestivalSamplerSheetPreview(
-  pairs: readonly CardPair[],
+export function planFestivalSamplerSheetPreview<TPair extends CardPair>(
+  pairs: readonly TPair[],
   side: FestivalSamplerSheetSide
-): FestivalSamplerPreviewPlacement[] {
+): FestivalSamplerPreviewPlacement<TPair>[] {
   if (pairs.length !== letterLayout.cardsPerPage) {
     throw new Error(
       `Festival preview needs ${letterLayout.cardsPerPage} cards; received ${pairs.length}`
     );
   }
 
+  const indexedPairs = pairs.map((pair, sourceIndex) => ({
+    pair,
+    sourceIndex,
+  }));
   const orderedPairs =
-    side === "back" ? mirrorFestivalSheetColumns(pairs) : pairs;
+    side === "back" ? mirrorFestivalSheetColumns(indexedPairs) : indexedPairs;
 
-  return orderedPairs.map((pair, index) => {
+  return orderedPairs.map(({ pair, sourceIndex }, index) => {
     const source = pair[side];
     const sourceScaleX = source.width / poker.canvasWidth;
     const sourceScaleY = source.height / poker.canvasHeight;
@@ -43,6 +51,8 @@ export function planFestivalSamplerSheetPreview(
     const row = Math.floor(index / letterLayout.cols);
 
     return {
+      pair,
+      sourceIndex,
       source,
       sourceX: poker.bleedPx * sourceScaleX,
       sourceY: poker.bleedPx * sourceScaleY,

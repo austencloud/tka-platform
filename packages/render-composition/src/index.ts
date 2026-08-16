@@ -38,6 +38,7 @@ export {
   BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
   HEADER_WORD_FONT_MIN_SCALE,
+  HEADER_WORD_BREATHING_GAP_SCALE,
   LOOP_ICON_SIZE_SCALE,
   LOOP_ICON_GAP_SCALE,
   LOOP_ICON_STRIP_OFFSET_SCALE,
@@ -54,7 +55,12 @@ export {
 } from "./dimensions.js";
 export { renderStepNumber } from "./step-number-renderer.js";
 export { renderSmartBorders } from "./border-renderer.js";
-export { renderHeader, type HeaderOptions } from "./header-renderer.js";
+export {
+  calculateHeaderWordSideInset,
+  renderHeader,
+  type HeaderOptions,
+  type HeaderWordSideInsetOptions,
+} from "./header-renderer.js";
 export {
   renderFooter,
   loadFooterIcon,

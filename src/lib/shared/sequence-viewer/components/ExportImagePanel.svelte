@@ -295,6 +295,24 @@
 
   function setStartPositionLayout(value: "row" | "column"): void {
     const previous = startPosLayout;
+    // Choosing a Start direction is an explicit layout decision. If Auto is
+    // active, keep its measured step-column count and move only the Start lane.
+    if (currentColumnCount === null) {
+      const numericOptions = columnOptionsFor(stepCount);
+      const squareTarget = Math.sqrt(stepCount);
+      const closestCanonical = numericOptions.reduce<number | null>(
+        (closest, option) =>
+          closest === null ||
+          Math.abs(option - squareTarget) < Math.abs(closest - squareTarget)
+            ? option
+            : closest,
+        null
+      );
+      const manualColumns = automaticLayout
+        ? getStepColumnsForLayout(automaticLayout)
+        : closestCanonical;
+      if (manualColumns !== null) setColumns(manualColumns);
+    }
     imageComposition.setStartPositionLayoutForStepCount(stepCount, value);
     reportSetting("start_position_layout", previous, value);
   }
@@ -337,7 +355,6 @@
       activeTab ?? "closed"
     );
   }
-
 </script>
 
 {#if layout === "bottom"}
@@ -532,7 +549,7 @@
                       )
                     )}>Show</button
                 >
-                {#if showStartPos && currentColumnCount !== null}
+                {#if showStartPos}
                   <button
                     type="button"
                     class="rt-chip"
@@ -842,7 +859,7 @@
                 )}
               aria-pressed={showStartPos}>Show</button
             >
-            {#if showStartPos && currentColumnCount !== null}
+            {#if showStartPos}
               <button
                 type="button"
                 class="chip"
@@ -876,8 +893,7 @@
                   : `${option.label} columns`}
                 title={option.value === null
                   ? "Chooses columns and start placement"
-                  : undefined}
-                >{option.label}</button
+                  : undefined}>{option.label}</button
               >
             {/each}
           </div>

@@ -12,6 +12,7 @@ import {
   placeFestivalSignupAtCenter,
 } from "./festival-sampler-sheet";
 import {
+  findReadyFestivalSamplerPackIndexes,
   festivalSamplerCardKey,
   festivalSamplerFingerprint,
   festivalSamplerManifestRevision,
@@ -75,7 +76,9 @@ const THEME = "rainbow";
 interface CachedBatchRender {
   promise: Promise<FestivalSamplerPack[]>;
   progress: FestivalSamplerProgress | null;
-  listeners: Set<(progress: FestivalSamplerProgress) => void>;
+  progressListeners: Set<(progress: FestivalSamplerProgress) => void>;
+  readyPacks: FestivalSamplerPack[];
+  packListeners: Set<(pack: FestivalSamplerPack) => void>;
 }
 
 // Moving between app modules destroys the deck-releaser component. Keep the
@@ -134,7 +137,8 @@ async function renderSequencePair(
  */
 async function renderFestivalSamplerBatchUncached(
   packCount: number,
-  onProgress?: (progress: FestivalSamplerProgress) => void
+  onProgress?: (progress: FestivalSamplerProgress) => void,
+  onPackReady?: (pack: FestivalSamplerPack) => void
 ): Promise<FestivalSamplerPack[]> {
   const count = Math.floor(packCount);
   if (!Number.isFinite(count) || count < 1 || count > packManifests.length) {
@@ -170,16 +174,9 @@ async function renderFestivalSamplerBatchUncached(
 
   const total = uniqueCards.size + 1;
   const renderedByKey = new Map<string, FestivalSamplerPair>();
+  const publishedPackIndexes = new Set<number>();
+  const readyPacks = new Map<number, FestivalSamplerPack>();
   let current = 0;
-  for (const [key, card] of uniqueCards) {
-    onProgress?.({
-      current,
-      total,
-      label: `Rendering ${current + 1} of ${uniqueCards.size}: ${card.name}`,
-    });
-    renderedByKey.set(key, await renderSequencePair(card));
-    current += 1;
-  }
 
   onProgress?.({
     current,
@@ -197,20 +194,65 @@ async function renderFestivalSamplerBatchUncached(
     slot: "signup",
     name: "Start Here",
   };
+  current += 1;
 
-  const packs = manifests.map((manifest, index) => {
-    const samples = manifest.cards.map((card) => {
-      const rendered = renderedByKey.get(festivalSamplerCardKey(card));
-      if (!rendered) {
-        throw new Error(`Festival sampler render missing: ${card.name}`);
-      }
-      return rendered;
-    });
-    return {
-      packNumber: index + 1,
-      fingerprint: fingerprints[index]!,
-      pairs: placeFestivalSignupAtCenter(samples, signupPair),
-    };
+  const publishNewlyReadyPacks = (): void => {
+    const readyIndexes = findReadyFestivalSamplerPackIndexes(
+      manifests,
+      new Set(renderedByKey.keys()),
+      publishedPackIndexes
+    );
+    for (const index of readyIndexes) {
+      const manifest = manifests[index]!;
+      const samples = manifest.cards.map((card) => {
+        const rendered = renderedByKey.get(festivalSamplerCardKey(card));
+        if (!rendered) {
+          throw new Error(`Festival sampler render missing: ${card.name}`);
+        }
+        return rendered;
+      });
+      const pack: FestivalSamplerPack = {
+        packNumber: index + 1,
+        fingerprint: fingerprints[index]!,
+        pairs: placeFestivalSignupAtCenter(samples, signupPair),
+      };
+      publishedPackIndexes.add(index);
+      readyPacks.set(index, pack);
+      onPackReady?.(pack);
+    }
+  };
+
+  const entries = [...uniqueCards.entries()];
+  let nextIndex = 0;
+
+  // Match the normal Deck Releaser's two-lane ceiling. Front and back renders
+  // can overlap their async work, but card backs still rasterize on the main
+  // thread, so additional lanes hurt responsiveness more than throughput.
+  const lane = async (): Promise<void> => {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= entries.length) return;
+      const [key, card] = entries[index]!;
+      renderedByKey.set(key, await renderSequencePair(card));
+      current += 1;
+      publishNewlyReadyPacks();
+      onProgress?.({
+        current,
+        total,
+        label: `Rendered ${current} of ${total}: ${card.name}`,
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(2, entries.length) }, () => lane())
+  );
+
+  const packs = manifests.map((_, index) => {
+    const pack = readyPacks.get(index);
+    if (!pack) throw new Error(`Festival sampler pack ${index + 1} is missing`);
+    return pack;
   });
 
   onProgress?.({
@@ -223,39 +265,60 @@ async function renderFestivalSamplerBatchUncached(
 
 export function renderFestivalSamplerBatch(
   packCount: number,
-  onProgress?: (progress: FestivalSamplerProgress) => void
+  onProgress?: (progress: FestivalSamplerProgress) => void,
+  onPackReady?: (pack: FestivalSamplerPack) => void
 ): Promise<FestivalSamplerPack[]> {
   const count = Math.floor(packCount);
   const cacheKey = `${FESTIVAL_SAMPLER_MANIFEST_REVISION}:${SIGNUP_CARD_ART_REVISION}:${count}`;
   const existing = batchRenderCache.get(cacheKey);
   if (existing) {
     if (onProgress) {
-      existing.listeners.add(onProgress);
+      existing.progressListeners.add(onProgress);
       if (existing.progress) onProgress(existing.progress);
     }
+    if (onPackReady) {
+      existing.packListeners.add(onPackReady);
+      for (const pack of existing.readyPacks) onPackReady(pack);
+    }
     return existing.promise.finally(() => {
-      if (onProgress) existing.listeners.delete(onProgress);
+      if (onProgress) existing.progressListeners.delete(onProgress);
+      if (onPackReady) existing.packListeners.delete(onPackReady);
     });
   }
 
-  const listeners = new Set<(progress: FestivalSamplerProgress) => void>();
-  if (onProgress) listeners.add(onProgress);
+  const progressListeners = new Set<
+    (progress: FestivalSamplerProgress) => void
+  >();
+  const packListeners = new Set<(pack: FestivalSamplerPack) => void>();
+  if (onProgress) progressListeners.add(onProgress);
+  if (onPackReady) packListeners.add(onPackReady);
   const cached: CachedBatchRender = {
     promise: Promise.resolve([]),
     progress: null,
-    listeners,
+    progressListeners,
+    readyPacks: [],
+    packListeners,
   };
-  cached.promise = renderFestivalSamplerBatchUncached(count, (progress) => {
-    cached.progress = progress;
-    for (const listener of cached.listeners) listener(progress);
-  }).catch((cause) => {
+  cached.promise = renderFestivalSamplerBatchUncached(
+    count,
+    (progress) => {
+      cached.progress = progress;
+      for (const listener of cached.progressListeners) listener(progress);
+    },
+    (pack) => {
+      cached.readyPacks.push(pack);
+      cached.readyPacks.sort((a, b) => a.packNumber - b.packNumber);
+      for (const listener of cached.packListeners) listener(pack);
+    }
+  ).catch((cause) => {
     batchRenderCache.delete(cacheKey);
     throw cause;
   });
   batchRenderCache.set(cacheKey, cached);
 
   return cached.promise.finally(() => {
-    if (onProgress) cached.listeners.delete(onProgress);
+    if (onProgress) cached.progressListeners.delete(onProgress);
+    if (onPackReady) cached.packListeners.delete(onPackReady);
   });
 }
 

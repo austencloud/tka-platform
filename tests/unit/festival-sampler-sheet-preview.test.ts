@@ -22,6 +22,8 @@ describe("festival sampler sheet preview", () => {
 
     expect(placements).toHaveLength(9);
     expect(placements[0]).toMatchObject({
+      pair: pairs[0],
+      sourceIndex: 0,
       sourceX: 36,
       sourceY: 36,
       sourceWidth: 750,
@@ -50,6 +52,9 @@ describe("festival sampler sheet preview", () => {
       pairs[8]!.back,
       pairs[7]!.back,
       pairs[6]!.back,
+    ]);
+    expect(placements.map((placement) => placement.sourceIndex)).toEqual([
+      2, 1, 0, 5, 4, 3, 8, 7, 6,
     ]);
     expect(placements[0]).toMatchObject({
       sourceX: 72,
