@@ -11,7 +11,8 @@
     "museumTrackerItems": [
       "DRct0NTnvfNc20F1Z4ee",
       "kZfilqc0ViZpGR3nPOPU",
-      "6zDGcqYJRGUlk1PxGpCx"
+      "6zDGcqYJRGUlk1PxGpCx",
+      "aBjf7lxTY4ZUfUtF5A0p"
     ]
   },
   "sequenceFingerprints": [
@@ -83,13 +84,47 @@
     {
       "id": "C-006",
       "class": "invention",
-      "statement": "The parapet deck, the opener plinth and dais, three wall screens and three rail cards. None exist in the geometry yet; the Gate 1 board is the proposal for all of them.",
+      "statement": "The opener plinth and dais, three wall screens and three rail cards. None exist in the geometry yet; the Gate 1 board is the proposal for all of them.",
       "evidence": [
         "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
+      ]
+    },
+    {
+      "id": "C-007",
+      "class": "invention",
+      "statement": "Three water surfaces along the channel: glass in front of AAAA, a slow ripple in front of BBBB, mist in front of CCCC. Decoration in walk order. It deliberately encodes nothing about the three sequences - A and B are the matched pair and C is the hybrid, which is not a three-step progression - and no elemental word is spoken anywhere in the wing. Proposal only, tracker aBjf7lxTY4ZUfUtF5A0p.",
+      "evidence": [
+        "docs/superpowers/specs/drowned-gallery/water-gate1-board.html"
+      ]
+    },
+    {
+      "id": "C-008",
+      "class": "literal",
+      "statement": "The museum has no press-to-open interaction verb: every room transition runs through PortalProximityChecker.check, which moves the player automatically inside PORTAL_RADIUS. Adding a button for Water would be a new museum-wide verb, not a local addition.",
+      "evidence": [
+        "src/lib/features/museum/services/museum-portals.ts"
+      ]
+    },
+    {
+      "id": "C-009",
+      "class": "literal",
+      "statement": "The Fire threshold is already-built geometry at z 16.75-17.75 on the east walkway (x 22.75-26.25), in the southern half of the grotto, while the three cases sit at z 5.0 in the north. The exit therefore faces away from the exhibit, which is why the last look has to be taken over the shoulder from inside the doorway rather than from a purpose-built stand.",
+      "evidence": [
+        "src/lib/features/museum/data/drowned-gallery-terrain.ts"
       ]
     }
   ],
   "supersededClaims": [
+    {
+      "supersededBy": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
+      "note": "The parapet viewing deck was rejected by Austen on 2026-08-12: nobody walks to a corner spot just to stand in it, and the three-across sightline was already available from the walk along the water. The deck, its standing point, and the pool-splitting work it required are all withdrawn. The payoff view moved to the Fire threshold, which is existing geometry every visitor passes through. Tracker aBjf7lxTY4ZUfUtF5A0p.",
+      "statements": [
+        "A parapet deck 5.0 x 3.0 m in the northeast corner of the grotto, cantilevered over the mirror pool.",
+        "The visitor stands at (20.25, 15.0) on that deck for the wing's final view.",
+        "All three cases sit inside a 57.2 deg spread from the parapet stand, at 16.6 m, 11.8 m and 10.0 m.",
+        "The mirror pool must be split into three blocked rects so the parapet footprint is walkable (former decision W-2)."
+      ]
+    },
     {
       "supersededBy": "docs/superpowers/specs/2026-08-11-museum-exhibit-hallway-architecture-design.md",
       "note": "The three-channels direction was rejected on 2026-08-11. Its air-bell audiences, buoyant water shaft, channel-length letter ordering and firelit channel mouths are retired with it.",
@@ -146,29 +181,29 @@
         {
           "kind": "floor-plan",
           "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
-          "note": "Sheets P-01 (whole walk, 1 grid = 5 m) and P-02 (the grotto at 1 grid = 1 m) with entry, exit, doors, blocked rects, performer shelf, opener and parapet."
+          "note": "Sheets P-01 (whole walk, 1 grid = 5 m) and P-02 (the grotto at 1 grid = 1 m) with entry, exit, doors, blocked rects, performer shelf, opener, and the channel divided in thirds for the three water surfaces."
         },
         {
           "kind": "vertical-section",
           "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
-          "note": "Sheet S-01: floor line, eye line at 1.6 m, water surfaces at -1.5 m and -0.45 m, rock roof at -1.9 m, submerged span measured at 28.4 m of 124.9 m."
+          "note": "Sheet S-01: floor line, eye line at 1.6 m, water surfaces at -1.5 m and -0.45 m, rock roof at -1.9 m, submerged span measured at 28.4 m of 124.6 m."
         },
         {
           "kind": "route-storyboard",
           "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
-          "note": "Thirteen numbered stops with chainage, what the visitor sees and what they understand at each."
+          "note": "Twelve numbered stops with chainage, what the visitor sees and what they understand at each. The route no longer detours to the northeast corner; it runs case C straight onto the east walkway and out."
         },
         {
           "kind": "sightline-study",
           "path": "docs/superpowers/specs/drowned-gallery/water-gate1-board.html",
-          "note": "Sheet P-02 sightlines from the parapet stand at (20.25, 15.0): A 16.6 m at -53 deg, B 11.8 m at -32 deg, C 10.0 m at +4.3 deg, 57.2 deg total spread, with reflection bounce points."
+          "note": "Sheet P-02 sightlines from inside the Fire threshold at (24.5, 17.25), floor -0.3 m: A 21.4 m at -55.0 deg, B 16.1 m at -40.6 deg, C 12.7 m at -15.9 deg, 39.1 deg total spread, with reflection bounce points."
         }
       ],
       "checks": [
         {
           "name": "walkability",
           "status": "passed",
-          "evidence": "Route sampled every 0.2 m against createDrownedGalleryTerrain blockedAt/elevationAt. No sample lands on shore, channel, pool, rock fill or a threshold jamb. Parapet deck is the one exception and is recorded as decision W-2: it sits inside the single blocked pool rect, which must be split into three when the deck is built."
+          "evidence": "Route sampled every 0.2 m against createDrownedGalleryTerrain blockedAt/elevationAt over its full 124.6 m. No sample lands on shore, channel, pool, rock fill or a threshold jamb, and there are no exceptions: with the parapet withdrawn the whole route runs on already-walkable geometry."
         },
         {
           "name": "clearance",
@@ -178,12 +213,12 @@
         {
           "name": "sightlines",
           "status": "passed",
-          "evidence": "All three cases visible from the parapet stand with a receding 57.2 deg spread; all three reflection bounce points computed at z = 9.17, inside the channel span 6.25 to 10.25, so each performer's double lands on water rather than deck."
+          "evidence": "All three cases visible from inside the Fire threshold with a receding 39.1 deg spread; all three reflection bounce points computed at z = 10.10, inside the channel span 6.25 to 10.25, so each performer's double lands on water rather than deck. C's bounce is the tight one at x 22.46, 0.29 m inside the channel's 22.75 east edge - flagged on the board as the first thing to check in the graybox."
         },
         {
           "name": "final-view",
           "status": "passed",
-          "evidence": "Parapet in the northeast corner of the grotto is the last stop before the Fire door. Reached by walking the procession west to east past A, B and C with no backtracking; A reads smallest from there, so the three cases stack in walk order."
+          "evidence": "The last look is taken from inside the carved Fire threshold, which is existing geometry and the room's only exit, so every visitor stands there facing the right way without being asked to. Reached by walking the procession west to east past A, B and C and turning east onto the walkway, with no backtracking; A reads smallest from there, so the three cases stack in walk order. No object is built for this view."
         }
       ],
       "approval": null
