@@ -67,6 +67,11 @@
 
 <div class="harness">
   <header>
+    <p class="banner">
+      Mock. Nothing here records: the numbers are invented and Start does nothing. The working
+      recorder is at <a href="/lab/pronunciation-recorder">/lab/pronunciation-recorder</a>.
+    </p>
+
     <!-- SegmentedControl's root is `width: 100%`, so without a bounded wrapper
          six short labels stretch into a 3840px progress bar. -->
     <div class="switcher">
@@ -100,8 +105,17 @@
   }
 
   header {
-    display: flex;
-    justify-content: center;
+    display: grid;
+    gap: 0.4rem;
+    justify-items: center;
+  }
+
+  .banner {
+    margin: 0;
+    max-width: 90ch;
+    font-size: 0.8rem;
+    text-align: center;
+    opacity: 0.7;
   }
 
   .switcher {
