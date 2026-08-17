@@ -1,4 +1,5 @@
 import type { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+import { DEFAULT_GLARE_WEIGHT } from "$lib/shared/animation-engine/domain/led-photometry";
 
 export interface DetectedEndpoint {
   x: number;
@@ -71,8 +72,10 @@ export interface FireEffectConfig {
 
 export interface LedEffectConfig {
   enabled: boolean;
-  glowRadius: number;
-  bloom: number;
+  /** Glare falloff shape, GLARE_WEIGHT_MIN - GLARE_WEIGHT_MAX. Replaces the
+   *  former glowRadius/bloom pair: emitter size is now derived from LED pitch,
+   *  not authored, and the veil is one camera property of the whole frame. */
+  glare: number;
   patternId: string;
   color: string;
   brightness: number;
@@ -184,7 +187,7 @@ export const DEFAULT_DETECTION_CONFIG: DetectionConfig = {
 
 export const DEFAULT_EFFECT_CONFIG: EffectConfig = {
   fire: { enabled: false, intensity: 1.0, flameHeight: 1.0, colorBlend: 0.5, preset: "white-gas" },
-  led: { enabled: false, glowRadius: 1.5, bloom: 0.05, patternId: "solid", color: "#ffffff", brightness: 1.0 },
+  led: { enabled: false, glare: DEFAULT_GLARE_WEIGHT, patternId: "solid", color: "#ffffff", brightness: 1.0 },
   trails: { enabled: true, mode: "fade" as TrailMode, length: 60, fade: 0.95, width: 3, glow: true, color: { blue: "#4a90d9", red: "#d94a4a" } },
   charcoal: { enabled: false, gravity: 50, burstThreshold: 500 },
 };

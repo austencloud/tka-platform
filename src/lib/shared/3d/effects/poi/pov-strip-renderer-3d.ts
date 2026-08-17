@@ -21,6 +21,10 @@ import {
   type Camera,
   type Quaternion,
 } from "three";
+import {
+  shutterCutoffSeconds,
+  type LedShutter,
+} from "$lib/shared/animation-engine/domain/led-photometry";
 import { createLedMaterial, type LedMaterialOptions } from "../led/led-material-3d";
 import { QualityTier } from "../types";
 import { PovTrailRing, type PovTrailSnapshot } from "./pov-trail-ring";
@@ -46,29 +50,27 @@ const PERSISTENCE_FRAMES: Record<QualityTier, number> = {
 /** Billboard size for each LED - smaller than 2-point LEDs since we have 200 */
 const POV_LED_SIZE = 0.012;
 
-/** The look's trail-fade range, per LedLook.trailFadeRate. */
-const TRAIL_FADE_RATE_MIN = 0.8;
-const TRAIL_FADE_RATE_MAX = 0.98;
-
 /** The ghost-persistence window this renderer accepts, in seconds. */
 const PERSISTENCE_MIN_SECONDS = 0.05;
 const PERSISTENCE_MAX_SECONDS = 0.5;
 
 /**
- * Map the look's per-frame trail fade rate onto the ghost persistence window,
- * so one persistence control drives both the 2D accumulation buffer and the
- * 3D trail ring.
+ * Map the look's shutter onto the ghost persistence window, so one persistence
+ * control drives both the 2D accumulation buffer and the 3D trail ring.
+ *
+ * The shutter cutoff is the age past which a contribution is dropped, which is
+ * exactly what the ring's cutoff means; the ring's own capacity then bounds it.
+ *
+ * The ring weights its ghosts on a linear ramp rather than under the shutter
+ * kernel, so the window matches the 2D path but the falloff inside it does not.
+ * The 3D LED path still owes the same photometric rewrite the 2D path just got.
  */
-export function trailFadeRateToPovPersistence(rate: number): number {
-  if (!Number.isFinite(rate)) return PERSISTENCE_MIN_SECONDS;
-  const clamped = Math.max(
-    TRAIL_FADE_RATE_MIN,
-    Math.min(TRAIL_FADE_RATE_MAX, rate)
-  );
-  const t =
-    (clamped - TRAIL_FADE_RATE_MIN) / (TRAIL_FADE_RATE_MAX - TRAIL_FADE_RATE_MIN);
-  return (
-    PERSISTENCE_MIN_SECONDS + t * (PERSISTENCE_MAX_SECONDS - PERSISTENCE_MIN_SECONDS)
+export function shutterToPovPersistence(shutter: LedShutter): number {
+  const cutoff = shutterCutoffSeconds(shutter);
+  if (!Number.isFinite(cutoff)) return PERSISTENCE_MIN_SECONDS;
+  return Math.max(
+    PERSISTENCE_MIN_SECONDS,
+    Math.min(PERSISTENCE_MAX_SECONDS, cutoff)
   );
 }
 

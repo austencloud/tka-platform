@@ -6,6 +6,8 @@ import {
   emitterSigmaPx,
   effectiveSigmaPx,
   splatAmplitude,
+  stripSurfaceBrightness,
+  EMITTER_DIE_LENGTH_FRACTION,
   streakEffectiveLengthPx,
   streakDensity,
   streakEnergy,
@@ -105,34 +107,70 @@ describe("LED photometry", () => {
       }
     });
 
-    it("keeps a resolved strip's peak amplitude independent of LED count", () => {
-      // While LEDs stay larger than a pixel, adding more of them adds detail at
-      // constant brightness. This is the term the fixed-size sprite omitted,
-      // and its absence made a 200-LED staff ~100x brighter than a capsule.
-      const amplitudeAt = (ledCount: number) => {
+    it("converges on one band brightness as the strip resolves", () => {
+      // The useful form of the density law. Per-emitter peak is NOT invariant -
+      // reading it as if it were is what put the flux budget ~60x low - but the
+      // band the whole strip sweeps is, because neighbouring LEDs sum through
+      // each other's profiles exactly as fast as their individual flux falls.
+      const chordPx = 21;
+
+      // Sum what the renderer actually deposits: every LED on the strip lays a
+      // streak, and the profiles overlap onto the sample point at the middle.
+      const simulate = (ledCount: number) => {
+        const flux = perLedFlux(PROP_REFERENCE_FLUX, ledCount);
         const sigma = effectiveSigmaPx(emitterSigmaPx(STAFF_LENGTH_PX, ledCount));
-        return splatAmplitude(perLedFlux(PROP_REFERENCE_FLUX, ledCount), sigma);
+        const pitch = STAFF_LENGTH_PX / ledCount;
+        const density = streakDensity(flux, 1, chordPx, sigma);
+        let total = 0;
+        for (let i = 0; i < ledCount; i++) {
+          const offset = (i + 0.5) * pitch - STAFF_LENGTH_PX / 2;
+          total +=
+            (density * Math.exp((-0.5 * offset * offset) / (sigma * sigma))) /
+            (Math.sqrt(2 * Math.PI) * sigma);
+        }
+        return total;
       };
 
-      // 8 and 16 LEDs over 200px are both comfortably resolved.
-      expect(amplitudeAt(16) / amplitudeAt(8)).toBeCloseTo(1, 1);
+      const predicted = stripSurfaceBrightness(PROP_REFERENCE_FLUX, chordPx, STAFF_LENGTH_PX);
+
+      // A dense staff fills its band and hits the continuum value.
+      expect(simulate(200) / predicted).toBeCloseTo(1, 1);
+
+      // A sparse one sits under it, and that is the device being honest rather
+      // than the model being wrong: at 32 LEDs the dies sit about four sigma
+      // apart, so the strip reads as a row of discrete dots with gaps between
+      // them. Filling the gaps would mean inventing light the prop does not
+      // emit - the old renderer's fixed 60px sprite did exactly that, which is
+      // why every device collapsed onto the same saturated disc.
+      expect(simulate(32)).toBeLessThan(predicted);
+      expect(simulate(32)).toBeLessThan(simulate(72));
+      expect(simulate(72)).toBeLessThan(simulate(200));
     });
 
-    it("dims each emitter once they pack below one pixel", () => {
-      // Past the display's resolving power the footprint can shrink no further,
-      // so per-emitter amplitude must fall as 1/N or the strip over-emits.
-      const amplitudeAt = (ledCount: number) => {
-        const sigma = effectiveSigmaPx(emitterSigmaPx(STAFF_LENGTH_PX, ledCount));
-        return splatAmplitude(perLedFlux(PROP_REFERENCE_FLUX, ledCount), sigma);
-      };
+    it("concentrates a capsule's flux far above a dense staff's band", () => {
+      // Two bulbs carrying the flux of two hundred read as intense discrete
+      // arcs; the staff reads as a broad softer sheet. That contrast is the
+      // whole difference between the two devices in a long exposure.
+      const chordPx = 21;
+      const capsuleSigma = effectiveSigmaPx(emitterSigmaPx(STAFF_LENGTH_PX, 2));
+      const capsule =
+        streakDensity(perLedFlux(PROP_REFERENCE_FLUX, 2), 1, chordPx, capsuleSigma) /
+        (Math.sqrt(2 * Math.PI) * capsuleSigma);
+      const staff = stripSurfaceBrightness(PROP_REFERENCE_FLUX, chordPx, STAFF_LENGTH_PX);
 
-      expect(amplitudeAt(800)).toBeLessThan(amplitudeAt(400));
-      expect(amplitudeAt(400) / amplitudeAt(800)).toBeCloseTo(2, 0);
+      expect(capsule / staff).toBeGreaterThan(4);
+      expect(capsule / staff).toBeLessThan(64);
     });
 
-    it("gives a capsule fat orbs and a dense staff sub-pixel emitters", () => {
-      expect(emitterSigmaPx(STAFF_LENGTH_PX, 2)).toBeGreaterThan(20);
+    it("sizes emitters by pitch when dense and by the die when sparse", () => {
+      // A capsule's bulbs are discrete emitters near the shaft ends, not orbs
+      // covering a quarter of the staff each - pitch bounds the die, it is not
+      // the die. Without the cap the capsule spread its flux over ~25px orbs
+      // and came out dimmer than the staff it should dwarf.
+      const dieCap = STAFF_LENGTH_PX * EMITTER_DIE_LENGTH_FRACTION;
+      expect(emitterSigmaPx(STAFF_LENGTH_PX, 2)).toBeCloseTo(dieCap / 2, 6);
       expect(emitterSigmaPx(STAFF_LENGTH_PX, 200)).toBeLessThan(PIXEL_SIGMA_PX);
+      expect(emitterSigmaPx(STAFF_LENGTH_PX, 32)).toBeLessThan(dieCap / 2);
     });
   });
 

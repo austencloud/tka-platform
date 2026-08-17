@@ -10,6 +10,13 @@
  */
 
 import type { PatternParams, RGBColor } from "$lib/shared/poi/domain/strip-pattern";
+import {
+  DEFAULT_GLARE_WEIGHT,
+  DEFAULT_LED_SHUTTER,
+  type LedShutter,
+} from "../led-photometry";
+
+export type { LedShutter };
 
 /** Canonical prop colors matching the domain (blue hand = propIndex 0, red hand = propIndex 1) */
 export const PROP_BLUE = "#2196f3";
@@ -67,20 +74,29 @@ export const DEFAULT_CYCLE_DURATION = 3;
 
 // ─── Look ─────────────────────────────────────────────────────────────────────
 
+/**
+ * How the light is captured, not how each LED is drawn.
+ *
+ * Every field here is a camera property applied once to the whole frame. The
+ * previous shape carried per-LED values (`glowRadius` as an absolute sprite
+ * radius, `trailFadeRate` as a per-frame decay) which made LED count act as a
+ * brightness multiplier and made persistence framerate-dependent. Emitter size
+ * is now derived from LED pitch in `domain/led-photometry.ts` and is not
+ * authorable — a real LED's size is a fact about the prop, not a preference.
+ */
 export interface LedLook {
   /**
-   * Glow sprite radius multiplier (0.5 - 3.0, default 1.0).
-   * Higher values produce wider, softer halos around each LED.
+   * Persistence model: `eye` is exponential visual persistence, `camera` is a
+   * long-exposure box shutter. See `LedShutter` in `domain/led-photometry.ts`.
    */
-  glowRadius: number;
+  shutter: LedShutter;
   /**
-   * POV persistence: trail accumulation fade rate per frame (0.80 - 0.98).
-   * Higher values retain more history, producing longer trails.
+   * Glare falloff shape (GLARE_WEIGHT_MIN - GLARE_WEIGHT_MAX). Low values give
+   * a tight beam around each LED, high values the broad inverse-square veil of
+   * a real camera. This is the bloom pyramid's per-mip weight.
    */
-  trailFadeRate: number;
-  /** Bloom post-process intensity (0.0 - 0.15, default 0.04). */
-  bloomIntensity: number;
-  /** Discrete level 1-5, resolved through LED_BRIGHTNESS_LEVELS. */
+  glare: number;
+  /** Discrete level 1-5, resolved through LED_BRIGHTNESS_LEVELS. Scales prop flux. */
   brightness: number;
 }
 
@@ -193,9 +209,8 @@ export function hexToRgb255(hex: string): RGBColor {
 export const PATTERN_MATERIALIZE_BRIGHTNESS = 1;
 
 export const DEFAULT_LED_LOOK: LedLook = {
-  glowRadius: 1.0,
-  trailFadeRate: 0.92,
-  bloomIntensity: 0.04,
+  shutter: { ...DEFAULT_LED_SHUTTER },
+  glare: DEFAULT_GLARE_WEIGHT,
   // Level 3 (0.6) — full-bright reads as blinding against the dark stage.
   brightness: 3,
 };

@@ -96,7 +96,15 @@ const fragmentShader = /* glsl */ `
 `;
 
 export interface LedMaterialOptions {
-  /** Glow sprite radius multiplier (default 1.0) */
+  /**
+   * Halo falloff width in the billboard's own UV space (default 1.0).
+   *
+   * Shader-local geometry, not a photometric quantity: it shapes the sprite the
+   * caller already sized, and nothing divides by it. It is deliberately not fed
+   * from the look — the 3D LED path still owes the same photometric rewrite the
+   * 2D path just got, where an emitter's footprint comes from LED pitch and its
+   * amplitude is renormalized by that footprint.
+   */
   glowRadius?: number;
   /** Global brightness multiplier 0-1 (default 1.0) */
   brightness?: number;

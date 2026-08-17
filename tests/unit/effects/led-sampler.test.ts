@@ -133,14 +133,16 @@ describe("LedSampler device handling", () => {
 });
 
 describe("LedSampler color", () => {
-  it("scales pattern color by the discrete brightness level", () => {
+  it("emits the pattern color unscaled, whatever the brightness level", () => {
+    // Brightness is a flux term the renderer applies once, to prop flux. The
+    // sampler applying it too squared it, so a level-5 strip came out 25x.
     const sampler = warmedSampler();
 
     const full = sampler.update(prop(0), null, SAMPLER_CONFIG, 0, solidWhite(5));
-    expect(full[0]!.r).toBeCloseTo(LED_BRIGHTNESS_LEVELS[4], 5);
+    expect(full[0]!.r).toBeCloseTo(1, 5);
 
     const dim = sampler.update(prop(0), null, SAMPLER_CONFIG, 0, solidWhite(1));
-    expect(dim[0]!.r).toBeCloseTo(LED_BRIGHTNESS_LEVELS[0], 5);
+    expect(dim[0]!.r).toBeCloseTo(1, 5);
   });
 
   it("leaves LedSample.brightness at 1 so the renderer never re-applies the level", () => {

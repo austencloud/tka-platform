@@ -1,54 +1,88 @@
 /**
- * WebGLLedRenderer - Additive Glow Sprite + PBR Bloom LED Overlay
+ * WebGLLedRenderer - photometric LED overlay
  *
- * Creates a transparent WebGL2 canvas overlaid on the Canvas2D animation canvas.
- * Renders addressable LED props using instanced glow sprites with persistence-of-vision
- * trail accumulation and physically-based bloom post-processing.
+ * Creates a transparent WebGL2 canvas overlaid on the Canvas2D animation canvas
+ * and renders addressable LED props as a long-exposure photograph of themselves.
  *
- * Architecture per frame (~12 draw calls):
- *   1. Instanced sprite pass: additive glow quads at each LED position
- *   2. Trail accumulation: max(current, previous * fadeRate) ping-pong
- *   3. Bloom downsample: 5-level mip chain with 13-tap energy-preserving kernel
- *   4. Bloom upsample: 3x3 tent filter with additive accumulation
- *   5. Display composite: trail + bloom to screen with premultiplied alpha
+ * Every quantity here comes from `domain/led-photometry.ts`. Nothing in this
+ * file authors light: a prop carries a fixed flux budget, its LEDs divide that
+ * budget between them, each LED deposits its share along the path it sweeps
+ * during the frame, and the frames integrate under an explicit shutter.
  *
- * References:
- *   - LearnOpenGL PBR Bloom (2022) - 13-tap downsample + tent upsample
- *   - GPU Pro 5 - energy-preserving bloom chain
+ * Architecture per frame:
+ *   1. Streak pass:  one Gaussian capsule per LED per sub-step, additive, HDR
+ *   2. Accumulate:   history * exp(-dt/tau) + deposit / shutterNormalization
+ *   3. Downsample:   5-level 13-tap chain, partial Karis on the first level
+ *   4. Upsample:     3x3 tent mixed upward by the glare weight
+ *   5. Display:      lerp composite, AgX tone map, straight-alpha output
  *
- * @deprecated Superseded by render-graph WebGPULedExecutor (WGSL instanced sprites + bloom).
- * Same instanced-sprite + bloom pipeline ported to WebGPU with compute-based accumulation.
- * Gated behind window.__TKA_UNIFIED_VIEWER.
+ * @deprecated Superseded by render-graph WebGPULedExecutor (WGSL port of the
+ * same pipeline against the same photometry module). Gated behind
+ * window.__TKA_UNIFIED_VIEWER.
  */
 
 import type { LedFrameInput, LedOverlayConfig } from "../../domain/types/led-types";
+import { ledBrightnessToFloat } from "../../domain/types/led-types";
+import {
+	EYE_TIME_CONSTANT_S,
+	GLARE_WEIGHT_MAX,
+	GLARE_WEIGHT_MIN,
+	MAX_SUB_STEPS,
+	PROP_REFERENCE_FLUX,
+	effectiveSigmaPx,
+	emitterSigmaPx,
+	perLedFlux,
+	shutterNormalization,
+	streakDensity,
+	subStepCount,
+	type LedShutter,
+} from "../../domain/led-photometry";
 import { LED_SAMPLER_MAX_LEDS } from "../led-sampler";
 import {
 	FULLSCREEN_VERT,
-	LED_SPRITE_VERT,
-	LED_SPRITE_FRAG,
-	TRAIL_ACCUMULATE_FRAG,
+	LED_STREAK_VERT,
+	LED_STREAK_FRAG,
+	LED_ACCUMULATE_FRAG,
 	BLOOM_DOWNSAMPLE_FRAG,
 	BLOOM_UPSAMPLE_FRAG,
 	LED_DISPLAY_FRAG,
 } from "./led-shader-sources";
-import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 const MAX_DPR = 2;
 const MAX_LEDS = LED_SAMPLER_MAX_LEDS;
 const BLOOM_MIP_COUNT = 5;
 
-/** Number of floats per LED in the instance buffer.
- *  Layout: [x, y, prevX, prevY, r, g, b, brightness, glowRadius] */
-const INSTANCE_STRIDE_FLOATS = 9;
+/** Floats per instance. One instance is one sub-step of one LED.
+ *  Layout: [ax, ay, bx, by, r, g, b, density, sigma, capStart, capEnd] */
+const INSTANCE_STRIDE_FLOATS = 11;
 
-/** If the time gap between frames exceeds this (seconds), or the
- *  distance between prev and curr exceeds MAX_STREAK_VIEWBOX, treat as
- *  a discontinuity and render this frame as a point sprite (prev = curr)
- *  rather than stretching a capsule across it. Prevents wild streaks
- *  after pauses, resets, or teardown/rebuild cycles. */
+/** Instances allocated up front. The buffer grows on demand up to
+ *  MAX_LEDS * MAX_SUB_STEPS; a typical spin asks for 1-4 sub-steps, so
+ *  reserving the ceiling would waste half a megabyte permanently. */
+const INITIAL_SEGMENT_CAPACITY = MAX_LEDS * 2;
+const MAX_SEGMENT_CAPACITY = MAX_LEDS * MAX_SUB_STEPS;
+
+/** If the gap between frames exceeds this (seconds), or an LED jumps further
+ *  than MAX_STREAK_VIEWBOX, the frame is a discontinuity: the capsule collapses
+ *  to a stationary splat rather than stretching across a pause or a reset. */
 const MAX_STREAK_DT = 0.1;
 const MAX_STREAK_VIEWBOX = 400;
+
+/** Substituted for the real elapsed time on the first frame and across a
+ *  discontinuity, where the measured gap says nothing about motion. */
+const FALLBACK_DT = 1 / 60;
+const MIN_DT = 1 / 240;
+
+/** Tent-filter radius as a fraction of frame HEIGHT, held in UV so the halo
+ *  subtends the same angle at any DPR or canvas size. Not derivable from the
+ *  photometry module: it is the glare kernel's spatial scale, where `glare`
+ *  is its falloff. */
+const BLOOM_TENT_RADIUS_FRAME_FRACTION = 0.005;
+
+/** Weight of the glare pyramid in the final lerp. Bloom is a veil over the
+ *  scene, not an addition to it, so this cannot brighten the image. */
+const BLOOM_COMPOSITE_STRENGTH = 0.06;
+const BLOOM_COMPOSITE_STRENGTH_MAX = 0.95;
 
 // ============================================================
 // Framebuffer types (mirrored from WebGLFireRenderer)
@@ -73,6 +107,18 @@ interface ShaderProgram {
 	uniforms: Map<string, WebGLUniformLocation>;
 }
 
+/** One prop's LEDs for one frame. Photometry is per-prop: flux, footprint and
+ *  sub-step count all depend on how many LEDs share this strip and how long it
+ *  is on screen. */
+interface PropGroup {
+	/** Indices into `input.leds`. */
+	members: number[];
+	firstLedIndex: number;
+	lastLedIndex: number;
+	firstMember: number;
+	lastMember: number;
+}
+
 export class WebGLLedRenderer {
 	private canvas: HTMLCanvasElement | null = null;
 	private gl: WebGL2RenderingContext | null = null;
@@ -80,31 +126,41 @@ export class WebGLLedRenderer {
 	private dpr = 1;
 
 	// Shader programs
-	private spriteProgram: ShaderProgram | null = null;
-	private trailProgram: ShaderProgram | null = null;
+	private streakProgram: ShaderProgram | null = null;
+	private accumProgram: ShaderProgram | null = null;
 	private bloomDownProgram: ShaderProgram | null = null;
 	private bloomUpProgram: ShaderProgram | null = null;
 	private displayProgram: ShaderProgram | null = null;
 
 	// Geometry
 	private quadVAO: WebGLVertexArrayObject | null = null;
-	private spriteVAO: WebGLVertexArrayObject | null = null;
+	private streakVAO: WebGLVertexArrayObject | null = null;
 	private quadBuffer: WebGLBuffer | null = null;
 	private instanceBuffer: WebGLBuffer | null = null;
+	private segmentCapacity = INITIAL_SEGMENT_CAPACITY;
 	private instanceData: Float32Array = new Float32Array(
-		MAX_LEDS * INSTANCE_STRIDE_FLOATS,
+		INITIAL_SEGMENT_CAPACITY * INSTANCE_STRIDE_FLOATS,
 	);
 
-	/** Per-tip previous-frame positions, keyed by `propIndex*100 + tipIndex`.
-	 *  Drives the motion-streak capsule by giving the vertex shader both
-	 *  endpoints of where the LED was over the current frame. */
+	/** Per-LED previous-frame positions in viewbox coords, keyed by
+	 *  `propIndex*1000 + ledIndex`. Viewbox rather than pixels so a resize
+	 *  between frames cannot fabricate a streak. */
 	private prevPositions: Map<number, { x: number; y: number }> = new Map();
+	/** Previous-frame position of each LED in this frame's order, viewbox coords. */
+	private prevScratch = new Float32Array(MAX_LEDS * 2);
+	/** Reused across frames; a per-frame Map would allocate inside the RAF loop. */
+	private propGroups: Map<number, PropGroup> = new Map();
+	/** Sub-step rotation and center tables, indexed 0..subSteps. */
+	private stepCos = new Float32Array(MAX_SUB_STEPS + 1);
+	private stepSin = new Float32Array(MAX_SUB_STEPS + 1);
+	private stepCx = new Float32Array(MAX_SUB_STEPS + 1);
+	private stepCy = new Float32Array(MAX_SUB_STEPS + 1);
 	/** Timestamp of the last frame rendered, in seconds (from the input). */
 	private lastFrameTime = -1;
 
 	// Framebuffers
-	private spriteFBO: FBOAttachment | null = null;
-	private trailFBOs: DoubleFBO | null = null;
+	private depositFBO: FBOAttachment | null = null;
+	private accumFBOs: DoubleFBO | null = null;
 	private bloomMips: FBOAttachment[] = [];
 	private bloomMipSizes: Array<{ w: number; h: number }> = [];
 
@@ -241,22 +297,214 @@ export class WebGLLedRenderer {
 		// Reset blend state to known baseline before each frame
 		gl.disable(gl.BLEND);
 
-		// 1. Update instance data from tips. For each LED we also supply
-		//    its previous-frame position so the vertex shader can extrude
-		//    a motion-streak capsule between the two points. On the first
-		//    frame for a given LED - or after a long pause / big jump -
-		//    we collapse the capsule to a point by setting prev = curr.
-		const ledCount = Math.min(input.leds.length, MAX_LEDS);
-		// glowRadius * 60 is authored in reference-size (500px) pixels.
-		// Scale to the current canvas so the halo stays the same proportion
-		// of the frame - without this, a_glowRadius is fixed viewbox-space
-		// and the halo reads as proportionally larger on small canvases.
-		const effectScale = computeEffectScale(input.canvasWidth, input.canvasHeight);
-		const baseGlowRadius = config.look.glowRadius * 60.0 * effectScale;
 		const currentTimeSec = input.currentTime / 1000;
-		const dt =
-			this.lastFrameTime >= 0 ? currentTimeSec - this.lastFrameTime : 0;
-		const isDiscontinuity = dt <= 0 || dt > MAX_STREAK_DT;
+		const rawDt = this.lastFrameTime >= 0 ? currentTimeSec - this.lastFrameTime : 0;
+		const isDiscontinuity = rawDt <= 0 || rawDt > MAX_STREAK_DT;
+		const dt = isDiscontinuity
+			? FALLBACK_DT
+			: Math.min(Math.max(rawDt, MIN_DT), MAX_STREAK_DT);
+		this.lastFrameTime = currentTimeSec;
+
+		const segmentCount = this.buildSegments(input, config, dt, isDiscontinuity);
+		if (segmentCount === 0) return;
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
+		gl.bufferSubData(
+			gl.ARRAY_BUFFER,
+			0,
+			this.instanceData.subarray(0, segmentCount * INSTANCE_STRIDE_FLOATS),
+		);
+
+		// 1. Deposit this frame's streaks into the HDR buffer. Additive, because
+		//    two emitters lighting the same pixel deposit the sum of their energy.
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.depositFBO!.fbo);
+		gl.viewport(0, 0, this.displayWidth, this.displayHeight);
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.ONE, gl.ONE);
+		gl.useProgram(this.streakProgram!.program);
+		gl.uniform2f(
+			this.streakProgram!.uniforms.get("u_resolution")!,
+			this.displayWidth,
+			this.displayHeight,
+		);
+		gl.bindVertexArray(this.streakVAO);
+		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, segmentCount);
+		gl.bindVertexArray(null);
+
+		// 2. Shutter accumulation
+		const shutter = this.resolveShutter(config.look.shutter);
+		if (!blast.noTrail && !blast.spritesOnly) {
+			const tau = Math.max(shutter.timeConstantSeconds, 1e-6);
+			// exp(-dt/tau), not a per-frame constant: the constant made the same
+			// look decay differently at 30 and 60fps.
+			const decay = this.reducedMotion ? 0 : Math.exp(-dt / tau);
+			// With persistence suppressed the accumulation holds exactly one
+			// frame, so it is normalized by that one frame's weight.
+			const normalization = this.reducedMotion ? dt : shutterNormalization(shutter, dt);
+
+			gl.disable(gl.BLEND);
+			gl.useProgram(this.accumProgram!.program);
+			gl.bindFramebuffer(gl.FRAMEBUFFER, this.accumFBOs!.write.fbo);
+			gl.viewport(0, 0, this.displayWidth, this.displayHeight);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this.depositFBO!.texture);
+			gl.uniform1i(this.accumProgram!.uniforms.get("u_deposit")!, 0);
+			gl.activeTexture(gl.TEXTURE1);
+			gl.bindTexture(gl.TEXTURE_2D, this.accumFBOs!.read.texture);
+			gl.uniform1i(this.accumProgram!.uniforms.get("u_history")!, 1);
+			gl.uniform1f(this.accumProgram!.uniforms.get("u_decay")!, decay);
+			gl.uniform1f(
+				this.accumProgram!.uniforms.get("u_depositScale")!,
+				1 / Math.max(normalization, 1e-6),
+			);
+			gl.bindVertexArray(this.quadVAO);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			gl.bindVertexArray(null);
+			this.swapFBO(this.accumFBOs!);
+		}
+
+		const sceneTexture = (blast.noTrail || blast.spritesOnly)
+			? this.depositFBO!.texture
+			: this.accumFBOs!.read.texture;
+
+		// 3-4. Glare pyramid
+		if (!blast.noBloom && !blast.spritesOnly) {
+			// 3. Downsample. No threshold and no knee: the buffer holds nothing
+			//    but emitter light, so there is nothing to separate out.
+			let srcTexture = sceneTexture;
+			let srcWidth = this.displayWidth;
+			let srcHeight = this.displayHeight;
+			gl.disable(gl.BLEND);
+			gl.useProgram(this.bloomDownProgram!.program);
+			gl.bindVertexArray(this.quadVAO);
+
+			for (let i = 0; i < this.bloomMips.length; i++) {
+				const mip = this.bloomMips[i]!;
+				const mipSize = this.bloomMipSizes[i]!;
+				gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fbo);
+				gl.viewport(0, 0, mipSize.w, mipSize.h);
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, srcTexture);
+				gl.uniform1i(this.bloomDownProgram!.uniforms.get("u_source")!, 0);
+				gl.uniform2f(
+					this.bloomDownProgram!.uniforms.get("u_texelSize")!,
+					1.0 / srcWidth,
+					1.0 / srcHeight,
+				);
+				// Karis on the first level only. The LED cores are the fireflies;
+				// suppressing them at every level averages the subject away.
+				gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_karis")!, i === 0 ? 1 : 0);
+				gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+				srcTexture = mip.texture;
+				srcWidth = mipSize.w;
+				srcHeight = mipSize.h;
+			}
+
+			// 4. Upsample. Constant-alpha blending performs mix(up, tent, w) with
+			//    w the per-mip glare weight, whose geometric progression is what
+			//    sets the falloff exponent.
+			if (!blast.noBloomUpsample) {
+				const glare = Math.min(
+					GLARE_WEIGHT_MAX,
+					Math.max(GLARE_WEIGHT_MIN, config.look.glare),
+				);
+				const tentY = BLOOM_TENT_RADIUS_FRAME_FRACTION;
+				const tentX = tentY * (this.displayHeight / Math.max(this.displayWidth, 1));
+
+				gl.enable(gl.BLEND);
+				gl.blendColor(0, 0, 0, glare);
+				gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
+				gl.useProgram(this.bloomUpProgram!.program);
+				gl.uniform2f(this.bloomUpProgram!.uniforms.get("u_tentOffset")!, tentX, tentY);
+				for (let i = this.bloomMips.length - 1; i > 0; i--) {
+					const target = this.bloomMips[i - 1]!;
+					const source = this.bloomMips[i]!;
+					const targetSize = this.bloomMipSizes[i - 1]!;
+					gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+					gl.viewport(0, 0, targetSize.w, targetSize.h);
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, source.texture);
+					gl.uniform1i(this.bloomUpProgram!.uniforms.get("u_source")!, 0);
+					gl.drawArrays(gl.TRIANGLES, 0, 6);
+				}
+				gl.disable(gl.BLEND);
+			}
+			gl.bindVertexArray(null);
+		}
+
+		// 5. Composite and tone map, once, to the visible canvas.
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+		gl.clearColor(0, 0, 0, 0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.enable(gl.BLEND);
+		gl.blendFuncSeparate(
+			gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
+			gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
+		);
+		gl.useProgram(this.displayProgram!.program);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, sceneTexture);
+		gl.uniform1i(this.displayProgram!.uniforms.get("u_scene")!, 0);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.bloomMips[0]!.texture);
+		gl.uniform1i(this.displayProgram!.uniforms.get("u_bloom")!, 1);
+		gl.uniform1f(
+			this.displayProgram!.uniforms.get("u_bloomStrength")!,
+			(blast.noBloom || blast.spritesOnly)
+				? 0.0
+				: Math.min(BLOOM_COMPOSITE_STRENGTH, BLOOM_COMPOSITE_STRENGTH_MAX),
+		);
+		gl.bindVertexArray(this.quadVAO);
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+		gl.bindVertexArray(null);
+	}
+
+	// ============================================================
+	// Photometry -> instance data
+	// ============================================================
+
+	/**
+	 * Camera mode is not implemented. A box shutter holds every contribution at
+	 * full weight until it falls off the end of the exposure, which an
+	 * exponential accumulation buffer cannot represent at any decay rate — it
+	 * needs a ring buffer of `ceil(exposureSeconds / dt)` deposit textures,
+	 * summed each frame with the oldest evicted.
+	 *
+	 * TODO(led-camera-shutter): add that deposit ring buffer, then return the
+	 * camera shutter unchanged. Faking a box shutter with a decay would produce
+	 * a trail that is neither of the two things the control names.
+	 */
+	private resolveShutter(shutter: LedShutter): Extract<LedShutter, { mode: "eye" }> {
+		if (shutter.mode === "camera") {
+			return { mode: "eye", timeConstantSeconds: EYE_TIME_CONSTANT_S };
+		}
+		return shutter;
+	}
+
+	/**
+	 * Fills the instance buffer with one capsule per LED per sub-step and
+	 * returns how many were written.
+	 */
+	private buildSegments(
+		input: LedFrameInput,
+		config: LedOverlayConfig,
+		dt: number,
+		isDiscontinuity: boolean,
+	): number {
+		const ledCount = Math.min(input.leds.length, MAX_LEDS);
+		const scaleX = this.displayWidth / Math.max(input.canvasWidth, 1);
+		const scaleY = this.displayHeight / Math.max(input.canvasHeight, 1);
+
+		// Pass 1: resolve each LED's previous position and group by prop. Flux and
+		// footprint are properties of a strip, so nothing can be computed per LED
+		// until every LED on that strip is known.
+		for (const group of this.propGroups.values()) {
+			group.members.length = 0;
+		}
 
 		const seenKeys = new Set<number>();
 		for (let i = 0; i < ledCount; i++) {
@@ -276,19 +524,8 @@ export class WebGLLedRenderer {
 					prevY = stored.y;
 				}
 			}
-
-			const offset = i * INSTANCE_STRIDE_FLOATS;
-			this.instanceData[offset + 0] = led.x;
-			this.instanceData[offset + 1] = led.y;
-			this.instanceData[offset + 2] = prevX;
-			this.instanceData[offset + 3] = prevY;
-			this.instanceData[offset + 4] = led.r;
-			this.instanceData[offset + 5] = led.g;
-			this.instanceData[offset + 6] = led.b;
-			// The sampler already applied the look's brightness level to the
-			// color, so this carries only the per-LED gain.
-			this.instanceData[offset + 7] = led.brightness;
-			this.instanceData[offset + 8] = baseGlowRadius;
+			this.prevScratch[i * 2] = prevX;
+			this.prevScratch[i * 2 + 1] = prevY;
 
 			if (stored) {
 				stored.x = led.x;
@@ -296,158 +533,197 @@ export class WebGLLedRenderer {
 			} else {
 				this.prevPositions.set(key, { x: led.x, y: led.y });
 			}
+
+			let group = this.propGroups.get(led.propIndex);
+			if (!group) {
+				group = {
+					members: [],
+					firstLedIndex: led.ledIndex,
+					lastLedIndex: led.ledIndex,
+					firstMember: i,
+					lastMember: i,
+				};
+				this.propGroups.set(led.propIndex, group);
+			}
+			if (group.members.length === 0) {
+				group.firstLedIndex = led.ledIndex;
+				group.lastLedIndex = led.ledIndex;
+				group.firstMember = i;
+				group.lastMember = i;
+			} else if (led.ledIndex < group.firstLedIndex) {
+				group.firstLedIndex = led.ledIndex;
+				group.firstMember = i;
+			} else if (led.ledIndex > group.lastLedIndex) {
+				group.lastLedIndex = led.ledIndex;
+				group.lastMember = i;
+			}
+			group.members.push(i);
 		}
 
-		// Drop state for LEDs that disappeared this frame so they start
-		// fresh next time they reappear rather than streaking across gaps.
+		// Drop state for LEDs that disappeared this frame so they start fresh
+		// next time they reappear rather than streaking across the gap.
 		for (const key of this.prevPositions.keys()) {
 			if (!seenKeys.has(key)) this.prevPositions.delete(key);
 		}
-		this.lastFrameTime = currentTimeSec;
 
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
-		gl.bufferSubData(
-			gl.ARRAY_BUFFER,
-			0,
-			this.instanceData.subarray(0, ledCount * INSTANCE_STRIDE_FLOATS),
-		);
+		const propFlux = PROP_REFERENCE_FLUX * ledBrightnessToFloat(config.look.brightness);
+		let written = 0;
 
-		// 2. Render sprites to spriteFBO
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.spriteFBO!.fbo);
-		gl.viewport(0, 0, this.displayWidth, this.displayHeight);
-		gl.clearColor(0, 0, 0, 0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.enable(gl.BLEND);
-		gl.blendFunc(gl.ONE, gl.ONE); // additive
-		gl.useProgram(this.spriteProgram!.program);
-		gl.uniform2f(
-			this.spriteProgram!.uniforms.get("u_resolution")!,
-			this.displayWidth,
-			this.displayHeight,
-		);
-		gl.uniform2f(
-			this.spriteProgram!.uniforms.get("u_viewboxSize")!,
-			input.canvasWidth,
-			input.canvasHeight,
-		);
-		gl.bindVertexArray(this.spriteVAO);
-		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, ledCount);
-		gl.bindVertexArray(null);
+		for (const group of this.propGroups.values()) {
+			const count = group.members.length;
+			if (count === 0) continue;
 
-		// 3. Trail accumulation (skip if blast.noTrail or blast.spritesOnly)
-		if (!blast.noTrail && !blast.spritesOnly) {
-			gl.disable(gl.BLEND);
-			gl.useProgram(this.trailProgram!.program);
-			gl.bindFramebuffer(gl.FRAMEBUFFER, this.trailFBOs!.write.fbo);
-			gl.viewport(0, 0, this.displayWidth, this.displayHeight);
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this.spriteFBO!.texture);
-			gl.uniform1i(this.trailProgram!.uniforms.get("u_currentFrame")!, 0);
-			gl.activeTexture(gl.TEXTURE1);
-			gl.bindTexture(gl.TEXTURE_2D, this.trailFBOs!.read.texture);
-			gl.uniform1i(this.trailProgram!.uniforms.get("u_previousTrail")!, 1);
-			gl.uniform1f(
-				this.trailProgram!.uniforms.get("u_fadeRate")!,
-				this.reducedMotion ? 0.0 : config.look.trailFadeRate,
-			);
-			gl.bindVertexArray(this.quadVAO);
-			gl.drawArrays(gl.TRIANGLES, 0, 6);
-			gl.bindVertexArray(null);
-			this.swapFBO(this.trailFBOs!);
-		}
+			const firstLed = input.leds[group.firstMember]!;
+			const lastLed = input.leds[group.lastMember]!;
+			const currFirstX = firstLed.x * scaleX;
+			const currFirstY = firstLed.y * scaleY;
+			const currLastX = lastLed.x * scaleX;
+			const currLastY = lastLed.y * scaleY;
+			const prevFirstX = this.prevScratch[group.firstMember * 2]! * scaleX;
+			const prevFirstY = this.prevScratch[group.firstMember * 2 + 1]! * scaleY;
+			const prevLastX = this.prevScratch[group.lastMember * 2]! * scaleX;
+			const prevLastY = this.prevScratch[group.lastMember * 2 + 1]! * scaleY;
 
-		// Source for bloom/display: trail FBO normally, sprite FBO if trail skipped
-		const displaySource = (blast.noTrail || blast.spritesOnly) ? this.spriteFBO!.texture : this.trailFBOs!.read.texture;
+			const stripLengthPx = Math.hypot(currLastX - currFirstX, currLastY - currFirstY);
+			const sigmaEff = effectiveSigmaPx(emitterSigmaPx(stripLengthPx, count));
+			const flux = perLedFlux(propFlux, count);
 
-		// 4-5. Bloom (skip if blast.noBloom or blast.spritesOnly)
-		if (!blast.noBloom && !blast.spritesOnly) {
-			// 4. Bloom downsample
-			let srcTexture = displaySource;
-			let srcWidth = this.displayWidth;
-			let srcHeight = this.displayHeight;
-			gl.disable(gl.BLEND);
-			gl.useProgram(this.bloomDownProgram!.program);
-			gl.bindVertexArray(this.quadVAO);
+			// The strip is rigid, so its motion this frame is a rotation about its
+			// own axis plus a translation of its midpoint. Recovering both is what
+			// lets a sub-step follow the arc instead of chording it.
+			const currAngle = Math.atan2(currLastY - currFirstY, currLastX - currFirstX);
+			const prevAngle = Math.atan2(prevLastY - prevFirstY, prevLastX - prevFirstX);
+			let deltaAngle = currAngle - prevAngle;
+			if (!Number.isFinite(deltaAngle)) deltaAngle = 0;
+			deltaAngle -= Math.round(deltaAngle / (Math.PI * 2)) * Math.PI * 2;
 
-			gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.4);
-			gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_knee")!, 0.2);
+			const prevCx = (prevFirstX + prevLastX) * 0.5;
+			const prevCy = (prevFirstY + prevLastY) * 0.5;
+			const currCx = (currFirstX + currLastX) * 0.5;
+			const currCy = (currFirstY + currLastY) * 0.5;
 
-			for (let i = 0; i < this.bloomMips.length; i++) {
-				const mip = this.bloomMips[i]!;
-				const mipSize = this.bloomMipSizes[i]!;
-				gl.bindFramebuffer(gl.FRAMEBUFFER, mip.fbo);
-				gl.viewport(0, 0, mipSize.w, mipSize.h);
-				gl.activeTexture(gl.TEXTURE0);
-				gl.bindTexture(gl.TEXTURE_2D, srcTexture);
-				gl.uniform1i(this.bloomDownProgram!.uniforms.get("u_source")!, 0);
-				gl.uniform2f(
-					this.bloomDownProgram!.uniforms.get("u_texelSize")!,
-					1.0 / srcWidth,
-					1.0 / srcHeight,
+			const angularSpeed = Math.abs(deltaAngle) / dt;
+			const subSteps = subStepCount(angularSpeed, dt, stripLengthPx * 0.5, sigmaEff);
+			const subDt = dt / subSteps;
+
+			for (let k = 0; k <= subSteps; k++) {
+				const t = k / subSteps;
+				const angle = deltaAngle * t;
+				this.stepCos[k] = Math.cos(angle);
+				this.stepSin[k] = Math.sin(angle);
+				this.stepCx[k] = prevCx + (currCx - prevCx) * t;
+				this.stepCy[k] = prevCy + (currCy - prevCy) * t;
+			}
+			const endCos = this.stepCos[subSteps]!;
+			const endSin = this.stepSin[subSteps]!;
+
+			for (const member of group.members) {
+				const led = input.leds[member]!;
+				const currX = led.x * scaleX;
+				const currY = led.y * scaleY;
+				const relX = this.prevScratch[member * 2]! * scaleX - prevCx;
+				const relY = this.prevScratch[member * 2 + 1]! * scaleY - prevCy;
+
+				// The sagitta the sub-step count answers to is this LED's own, and
+				// an LED near the pivot has none: it needs one segment however
+				// fast the tip is moving. Subdividing it anyway splits the splat
+				// that surrounds it into wedges of dt/N and costs real energy,
+				// which breaks the subdivision invariant. Steps merge in groups
+				// rather than being recounted so the prop's rotation table stays
+				// shared, and merged segments still tile the same path.
+				const ledSteps = subStepCount(
+					angularSpeed,
+					dt,
+					Math.hypot(relX, relY),
+					sigmaEff,
 				);
-				gl.drawArrays(gl.TRIANGLES, 0, 6);
+				const stepGroup = Math.max(1, Math.ceil(subSteps / ledSteps));
 
-				if (i === 0) {
-					gl.uniform1f(this.bloomDownProgram!.uniforms.get("u_threshold")!, 0.0);
+				// The rigid model lands close to the sampler's own end position but
+				// not exactly on it. Distributing the residual linearly over the
+				// path keeps the sub-steps continuous with the next frame.
+				const modeledEndX = relX * endCos - relY * endSin + currCx;
+				const modeledEndY = relX * endSin + relY * endCos + currCy;
+				const correctX = currX - modeledEndX;
+				const correctY = currY - modeledEndY;
+
+				let ax = relX * this.stepCos[0]! - relY * this.stepSin[0]! + this.stepCx[0]!;
+				let ay = relX * this.stepSin[0]! + relY * this.stepCos[0]! + this.stepCy[0]!;
+
+				// The path continues across frames, so this frame's own ends are
+				// joins as well. Rounding them deposits a half-Gaussian where one
+				// frame hands off to the next AND another when the next frame starts
+				// there, painting a bright dot at every frame boundary — an arc of
+				// confetti rather than an arc. Round caps belong only to a genuinely
+				// isolated splat: an emitter that barely moved this frame, or one
+				// whose history was just discarded and so has no path to continue.
+				const framePathPx = Math.hypot(currX - ax, currY - ay);
+				const isolated = framePathPx < sigmaEff;
+				const pathStartCap = isolated || isDiscontinuity ? 1 : 0;
+				const pathEndCap = isolated ? 1 : 0;
+
+				for (let k = 0; k < subSteps; k += stepGroup) {
+					const kNext = Math.min(k + stepGroup, subSteps);
+					const t = kNext / subSteps;
+					const bx =
+						relX * this.stepCos[kNext]! - relY * this.stepSin[kNext]! + this.stepCx[kNext]! + correctX * t;
+					const by =
+						relX * this.stepSin[kNext]! + relY * this.stepCos[kNext]! + this.stepCy[kNext]! + correctY * t;
+
+					if (written >= MAX_SEGMENT_CAPACITY) break;
+					this.ensureSegmentCapacity(written + 1);
+
+					const chordPx = Math.hypot(bx - ax, by - ay);
+					// Subdivision-invariant: dt/N over chord/N deposits the same
+					// total energy as the single undivided segment.
+					const density =
+						streakDensity(flux, subDt * (kNext - k), chordPx, sigmaEff) * led.brightness;
+
+					const offset = written * INSTANCE_STRIDE_FLOATS;
+					this.instanceData[offset + 0] = ax;
+					this.instanceData[offset + 1] = ay;
+					this.instanceData[offset + 2] = bx;
+					this.instanceData[offset + 3] = by;
+					this.instanceData[offset + 4] = led.r;
+					this.instanceData[offset + 5] = led.g;
+					this.instanceData[offset + 6] = led.b;
+					this.instanceData[offset + 7] = density;
+					this.instanceData[offset + 8] = sigmaEff;
+					// Round caps only where the path genuinely ends; a round cap at
+					// any join, within a frame or between two, deposits that join's
+					// half-Gaussian twice.
+					this.instanceData[offset + 9] = k === 0 ? pathStartCap : 0;
+					this.instanceData[offset + 10] = kNext === subSteps ? pathEndCap : 0;
+					written++;
+
+					ax = bx;
+					ay = by;
 				}
-
-				srcTexture = mip.texture;
-				srcWidth = mipSize.w;
-				srcHeight = mipSize.h;
 			}
-
-			// 5. Bloom upsample (additive) — skip if blast.noBloomUpsample
-			if (!blast.noBloomUpsample) {
-				gl.enable(gl.BLEND);
-				gl.blendFunc(gl.ONE, gl.ONE);
-				gl.useProgram(this.bloomUpProgram!.program);
-				for (let i = this.bloomMips.length - 1; i > 0; i--) {
-					const target = this.bloomMips[i - 1]!;
-					const source = this.bloomMips[i]!;
-					const targetSize = this.bloomMipSizes[i - 1]!;
-					const sourceSize = this.bloomMipSizes[i]!;
-					gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-					gl.viewport(0, 0, targetSize.w, targetSize.h);
-					gl.activeTexture(gl.TEXTURE0);
-					gl.bindTexture(gl.TEXTURE_2D, source.texture);
-					gl.uniform1i(this.bloomUpProgram!.uniforms.get("u_source")!, 0);
-					gl.uniform2f(
-						this.bloomUpProgram!.uniforms.get("u_texelSize")!,
-						1.0 / sourceSize.w,
-						1.0 / sourceSize.h,
-					);
-					gl.uniform1f(this.bloomUpProgram!.uniforms.get("u_bloomRadius")!, 1.0);
-					gl.drawArrays(gl.TRIANGLES, 0, 6);
-				}
-				gl.disable(gl.BLEND);
-			}
-			gl.bindVertexArray(null);
 		}
 
-		// 6. Display composite to screen
-		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-		gl.clearColor(0, 0, 0, 0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-		gl.enable(gl.BLEND);
-		gl.blendFuncSeparate(
-			gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA,
-			gl.ONE, gl.ONE_MINUS_SRC_ALPHA,
-		);
-		gl.useProgram(this.displayProgram!.program);
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, displaySource);
-		gl.uniform1i(this.displayProgram!.uniforms.get("u_ledTrail")!, 0);
-		gl.activeTexture(gl.TEXTURE1);
-		gl.bindTexture(gl.TEXTURE_2D, this.bloomMips[0]!.texture);
-		gl.uniform1i(this.displayProgram!.uniforms.get("u_bloom")!, 1);
-		gl.uniform1f(
-			this.displayProgram!.uniforms.get("u_bloomIntensity")!,
-			(blast.noBloom || blast.spritesOnly) ? 0.0 : config.look.bloomIntensity,
-		);
-		gl.bindVertexArray(this.quadVAO);
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-		gl.bindVertexArray(null);
+		return written;
+	}
+
+	private ensureSegmentCapacity(needed: number): void {
+		if (needed <= this.segmentCapacity) return;
+
+		let capacity = this.segmentCapacity;
+		while (capacity < needed && capacity < MAX_SEGMENT_CAPACITY) capacity *= 2;
+		capacity = Math.min(capacity, MAX_SEGMENT_CAPACITY);
+
+		const grown = new Float32Array(capacity * INSTANCE_STRIDE_FLOATS);
+		grown.set(this.instanceData);
+		this.instanceData = grown;
+		this.segmentCapacity = capacity;
+
+		const gl = this.gl;
+		if (gl && this.instanceBuffer) {
+			// The VAO holds the buffer object, not its storage, so reallocating
+			// here leaves every attribute pointer valid.
+			gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, this.instanceData.byteLength, gl.DYNAMIC_DRAW);
+		}
 	}
 
 	dispose(): void {
@@ -482,12 +758,12 @@ export class WebGLLedRenderer {
 	}
 
 	readTrailFBOStats(): { maxR: number; maxG: number; maxB: number; maxA: number } | null {
-		if (!this.gl || !this.trailFBOs) return null;
+		if (!this.gl || !this.accumFBOs) return null;
 		const gl = this.gl;
 		const w = this.displayWidth;
 		const h = this.displayHeight;
 		const pixels = new Float32Array(w * h * 4);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, this.trailFBOs.read.fbo);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.accumFBOs.read.fbo);
 		gl.readPixels(0, 0, w, h, gl.RGBA, gl.FLOAT, pixels);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		let maxR = 0, maxG = 0, maxB = 0, maxA = 0;
@@ -539,12 +815,11 @@ export class WebGLLedRenderer {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, quadVertices, gl.STATIC_DRAW);
 
-		// Instance buffer for per-LED data (7 floats per LED)
 		this.instanceBuffer = gl.createBuffer()!;
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, this.instanceData.byteLength, gl.DYNAMIC_DRAW);
 
-		// Fullscreen quad VAO (used by trail, bloom, display passes)
+		// Fullscreen quad VAO (used by accumulate, bloom, display passes)
 		this.quadVAO = gl.createVertexArray()!;
 		gl.bindVertexArray(this.quadVAO);
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
@@ -552,9 +827,9 @@ export class WebGLLedRenderer {
 		gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 		gl.bindVertexArray(null);
 
-		// Sprite VAO with instanced attributes
-		this.spriteVAO = gl.createVertexArray()!;
-		gl.bindVertexArray(this.spriteVAO);
+		// Streak VAO with instanced attributes
+		this.streakVAO = gl.createVertexArray()!;
+		gl.bindVertexArray(this.streakVAO);
 
 		// Attribute 0: quad vertices (per-vertex)
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.quadBuffer);
@@ -562,34 +837,44 @@ export class WebGLLedRenderer {
 		gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
 		// Instance attributes (per-instance, divisor 1).
-		// Layout (9 floats, stride 36 bytes):
-		//   0: a_ledPos      vec2   offset  0
-		//   1: a_ledPrevPos  vec2   offset  8
-		//   2: a_ledColor    vec3   offset 16
-		//   3: a_brightness  float  offset 28
-		//   4: a_glowRadius  float  offset 32
+		// Layout (11 floats, stride 44 bytes):
+		//   1: a_segA     vec2   offset  0
+		//   2: a_segB     vec2   offset  8
+		//   3: a_color    vec3   offset 16
+		//   4: a_density  float  offset 28
+		//   5: a_sigma    float  offset 32
+		//   6: a_capStart float  offset 36
+		//   7: a_capEnd   float  offset 40
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer);
 		const stride = INSTANCE_STRIDE_FLOATS * 4;
 
-		gl.enableVertexAttribArray(1); // a_ledPos (vec2)
+		gl.enableVertexAttribArray(1);
 		gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 0);
 		gl.vertexAttribDivisor(1, 1);
 
-		gl.enableVertexAttribArray(2); // a_ledPrevPos (vec2)
+		gl.enableVertexAttribArray(2);
 		gl.vertexAttribPointer(2, 2, gl.FLOAT, false, stride, 8);
 		gl.vertexAttribDivisor(2, 1);
 
-		gl.enableVertexAttribArray(3); // a_ledColor (vec3)
+		gl.enableVertexAttribArray(3);
 		gl.vertexAttribPointer(3, 3, gl.FLOAT, false, stride, 16);
 		gl.vertexAttribDivisor(3, 1);
 
-		gl.enableVertexAttribArray(4); // a_brightness (float)
+		gl.enableVertexAttribArray(4);
 		gl.vertexAttribPointer(4, 1, gl.FLOAT, false, stride, 28);
 		gl.vertexAttribDivisor(4, 1);
 
-		gl.enableVertexAttribArray(5); // a_glowRadius (float)
+		gl.enableVertexAttribArray(5);
 		gl.vertexAttribPointer(5, 1, gl.FLOAT, false, stride, 32);
 		gl.vertexAttribDivisor(5, 1);
+
+		gl.enableVertexAttribArray(6);
+		gl.vertexAttribPointer(6, 1, gl.FLOAT, false, stride, 36);
+		gl.vertexAttribDivisor(6, 1);
+
+		gl.enableVertexAttribArray(7);
+		gl.vertexAttribPointer(7, 1, gl.FLOAT, false, stride, 40);
+		gl.vertexAttribDivisor(7, 1);
 
 		gl.bindVertexArray(null);
 	}
@@ -602,8 +887,8 @@ export class WebGLLedRenderer {
 		const w = this.displayWidth;
 		const h = this.displayHeight;
 
-		this.spriteFBO = this.createFBO(w, h);
-		this.trailFBOs = {
+		this.depositFBO = this.createFBO(w, h);
+		this.accumFBOs = {
 			read: this.createFBO(w, h),
 			write: this.createFBO(w, h),
 		};
@@ -630,6 +915,8 @@ export class WebGLLedRenderer {
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		// RGBA16F throughout: the chain is linear HDR, and an 8-bit stage
+		// anywhere in it would clip the emitter cores before the tone map.
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
 
 		const fbo = gl.createFramebuffer()!;
@@ -646,9 +933,9 @@ export class WebGLLedRenderer {
 		const gl = this.gl!;
 		gl.clearColor(0, 0, 0, 0);
 		const targets = [
-			this.spriteFBO!,
-			this.trailFBOs!.read,
-			this.trailFBOs!.write,
+			this.depositFBO!,
+			this.accumFBOs!.read,
+			this.accumFBOs!.write,
 			...this.bloomMips,
 		];
 		for (const target of targets) {
@@ -665,17 +952,19 @@ export class WebGLLedRenderer {
 		this.gl.clearColor(0, 0, 0, 0);
 		this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 		this.prevPositions.clear();
+		this.propGroups.clear();
 		this.lastFrameTime = -1;
 		this._diagFrameCount = 0;
 	}
 
 	/**
 	 * Keep-warm clear. Blanks all FBOs + the visible default framebuffer and
-	 * resets per-tip state so a parked LED can't flash its last frame or stale
-	 * trail energy on re-show. preserveDrawingBuffer:true + persistent ping-pong
-	 * trail FBOs would otherwise retain both across a display:none/'' toggle.
-	 * Aliases resetExportState (which already does exactly this); the manager's
-	 * parkLedWarm calls clearSimulation() generically across webgl renderers.
+	 * resets per-LED state so a parked LED can't flash its last frame or stale
+	 * accumulated energy on re-show. preserveDrawingBuffer:true + persistent
+	 * ping-pong accumulation FBOs would otherwise retain both across a
+	 * display:none/'' toggle. Aliases resetExportState (which already does
+	 * exactly this); the manager's parkLedWarm calls clearSimulation()
+	 * generically across webgl renderers.
 	 */
 	clearSimulation(): void {
 		this.resetExportState();
@@ -697,13 +986,13 @@ export class WebGLLedRenderer {
 			gl.deleteFramebuffer(f.fbo);
 		};
 
-		destroySingle(this.spriteFBO);
-		this.spriteFBO = null;
+		destroySingle(this.depositFBO);
+		this.depositFBO = null;
 
-		if (this.trailFBOs) {
-			destroySingle(this.trailFBOs.read);
-			destroySingle(this.trailFBOs.write);
-			this.trailFBOs = null;
+		if (this.accumFBOs) {
+			destroySingle(this.accumFBOs.read);
+			destroySingle(this.accumFBOs.write);
+			this.accumFBOs = null;
 		}
 
 		for (const mip of this.bloomMips) {
@@ -718,30 +1007,30 @@ export class WebGLLedRenderer {
 	// ============================================================
 
 	private compileAllPrograms(): boolean {
-		// Sprite program needs explicit attribute bindings before linking
-		this.spriteProgram = this.buildSpriteProgram();
+		// Streak program needs explicit attribute bindings before linking
+		this.streakProgram = this.buildStreakProgram();
 
 		// Fullscreen programs use FULLSCREEN_VERT with a_position at location 0
-		this.trailProgram = this.buildFullscreenProgram(
-			TRAIL_ACCUMULATE_FRAG,
-			["u_currentFrame", "u_previousTrail", "u_fadeRate"],
+		this.accumProgram = this.buildFullscreenProgram(
+			LED_ACCUMULATE_FRAG,
+			["u_deposit", "u_history", "u_decay", "u_depositScale"],
 		);
 		this.bloomDownProgram = this.buildFullscreenProgram(
 			BLOOM_DOWNSAMPLE_FRAG,
-			["u_source", "u_texelSize", "u_threshold", "u_knee"],
+			["u_source", "u_texelSize", "u_karis"],
 		);
 		this.bloomUpProgram = this.buildFullscreenProgram(
 			BLOOM_UPSAMPLE_FRAG,
-			["u_source", "u_texelSize", "u_bloomRadius"],
+			["u_source", "u_tentOffset"],
 		);
 		this.displayProgram = this.buildFullscreenProgram(
 			LED_DISPLAY_FRAG,
-			["u_ledTrail", "u_bloom", "u_bloomIntensity"],
+			["u_scene", "u_bloom", "u_bloomStrength"],
 		);
 
 		const all = [
-			this.spriteProgram,
-			this.trailProgram,
+			this.streakProgram,
+			this.accumProgram,
 			this.bloomDownProgram,
 			this.bloomUpProgram,
 			this.displayProgram,
@@ -756,14 +1045,14 @@ export class WebGLLedRenderer {
 	}
 
 	/**
-	 * Builds the sprite program with explicit attribute location bindings
+	 * Builds the streak program with explicit attribute location bindings
 	 * BEFORE linking, as required for instanced rendering.
 	 */
-	private buildSpriteProgram(): ShaderProgram | null {
+	private buildStreakProgram(): ShaderProgram | null {
 		const gl = this.gl!;
 
-		const vertShader = this.compileShader(gl.VERTEX_SHADER, LED_SPRITE_VERT);
-		const fragShader = this.compileShader(gl.FRAGMENT_SHADER, LED_SPRITE_FRAG);
+		const vertShader = this.compileShader(gl.VERTEX_SHADER, LED_STREAK_VERT);
+		const fragShader = this.compileShader(gl.FRAGMENT_SHADER, LED_STREAK_FRAG);
 		if (!vertShader || !fragShader) return null;
 
 		const program = gl.createProgram()!;
@@ -772,16 +1061,18 @@ export class WebGLLedRenderer {
 
 		// Bind attribute locations BEFORE linking
 		gl.bindAttribLocation(program, 0, "a_position");
-		gl.bindAttribLocation(program, 1, "a_ledPos");
-		gl.bindAttribLocation(program, 2, "a_ledPrevPos");
-		gl.bindAttribLocation(program, 3, "a_ledColor");
-		gl.bindAttribLocation(program, 4, "a_brightness");
-		gl.bindAttribLocation(program, 5, "a_glowRadius");
+		gl.bindAttribLocation(program, 1, "a_segA");
+		gl.bindAttribLocation(program, 2, "a_segB");
+		gl.bindAttribLocation(program, 3, "a_color");
+		gl.bindAttribLocation(program, 4, "a_density");
+		gl.bindAttribLocation(program, 5, "a_sigma");
+		gl.bindAttribLocation(program, 6, "a_capStart");
+		gl.bindAttribLocation(program, 7, "a_capEnd");
 
 		gl.linkProgram(program);
 
 		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-			console.error("LED sprite shader link error:", gl.getProgramInfoLog(program));
+			console.error("LED streak shader link error:", gl.getProgramInfoLog(program));
 			gl.deleteProgram(program);
 			gl.deleteShader(vertShader);
 			gl.deleteShader(fragShader);
@@ -794,12 +1085,8 @@ export class WebGLLedRenderer {
 		gl.deleteShader(fragShader);
 
 		const uniforms = new Map<string, WebGLUniformLocation>();
-		for (const name of ["u_resolution", "u_viewboxSize"]) {
-			const loc = gl.getUniformLocation(program, name);
-			if (loc !== null) {
-				uniforms.set(name, loc);
-			}
-		}
+		const loc = gl.getUniformLocation(program, "u_resolution");
+		if (loc !== null) uniforms.set("u_resolution", loc);
 
 		return { program, uniforms };
 	}
@@ -881,8 +1168,8 @@ export class WebGLLedRenderer {
 		if (gl) {
 			// Delete shader programs
 			const programs = [
-				this.spriteProgram,
-				this.trailProgram,
+				this.streakProgram,
+				this.accumProgram,
 				this.bloomDownProgram,
 				this.bloomUpProgram,
 				this.displayProgram,
@@ -892,7 +1179,7 @@ export class WebGLLedRenderer {
 			}
 
 			// Delete VAOs
-			if (this.spriteVAO) gl.deleteVertexArray(this.spriteVAO);
+			if (this.streakVAO) gl.deleteVertexArray(this.streakVAO);
 			if (this.quadVAO) gl.deleteVertexArray(this.quadVAO);
 
 			// Delete buffers
@@ -900,14 +1187,14 @@ export class WebGLLedRenderer {
 			if (this.instanceBuffer) gl.deleteBuffer(this.instanceBuffer);
 		}
 
-		this.spriteProgram = null;
-		this.trailProgram = null;
+		this.streakProgram = null;
+		this.accumProgram = null;
 		this.bloomDownProgram = null;
 		this.bloomUpProgram = null;
 		this.displayProgram = null;
 
 		this.quadVAO = null;
-		this.spriteVAO = null;
+		this.streakVAO = null;
 		this.quadBuffer = null;
 		this.instanceBuffer = null;
 

@@ -16,6 +16,7 @@
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
+  import { primaryControls } from "$lib/shared/effects/domain/effect-control-manifest";
   import { createEffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import EffectsPlaybackBar from "./EffectsPlaybackBar.svelte";
@@ -623,19 +624,26 @@
                `tuneOverrides`. CustomizeComponent still loads as the readiness
                signal for this view but is no longer rendered. -->
           {#if activeEffect !== "none"}
-            <EffectTuneStrip
-              effectId={activeEffect}
-              config={effectsConfigState}
-              propType={animationSettings.currentPropType}
-              overrides={tuneOverrides}
-              onSettingChange={(setting, previousValue, value, coalesce) =>
-                reportSetting(
-                  `tuning_${activeEffect}_${setting}`,
-                  previousValue,
-                  value,
-                  coalesce
-                )}
-            />
+            {#if primaryControls(activeEffect).length === 0}
+              <!-- LED and anything else whose controls are structured config
+                   rather than flat fields: the strip has nothing to show, so
+                   the hand-built panel takes the view. -->
+              <CustomizeComponent onBack={handleCustomizeClose} embedded />
+            {:else}
+              <EffectTuneStrip
+                effectId={activeEffect}
+                config={effectsConfigState}
+                propType={animationSettings.currentPropType}
+                overrides={tuneOverrides}
+                onSettingChange={(setting, previousValue, value, coalesce) =>
+                  reportSetting(
+                    `tuning_${activeEffect}_${setting}`,
+                    previousValue,
+                    value,
+                    coalesce
+                  )}
+              />
+            {/if}
           {/if}
         </div>
       {:else if stripView === "detail" && registration && activeEffect !== "none"}

@@ -14,8 +14,9 @@ describe("effect-control-manifest", () => {
   ]);
 
   // LED v2 is a device + strip pattern + nested look, none of which the
-  // manifest's flat-field descriptors can address. Its controls ship with the
-  // Phase 4 LedCustomize surface; until then it declares no controls.
+  // manifest's flat-field descriptors can address. Its controls live in
+  // LedCustomize (device picker, pattern grid, look group), so it declares no
+  // manifest controls by design.
   const withoutManifestControls = new Set(["led"]);
 
   it("every descriptor field exists on the effect's default intent", () => {

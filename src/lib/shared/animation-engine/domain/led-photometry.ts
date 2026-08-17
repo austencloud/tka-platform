@@ -50,6 +50,17 @@ export const PIXEL_SIGMA_PX = 0.5;
  */
 export const EMITTER_DUTY_CYCLE = 0.5;
 
+/**
+ * Physical size of one lit die, as a fraction of the strip it sits on.
+ *
+ * Pitch is only an upper bound on emitter size — LEDs cannot overlap, but they
+ * are free to be much smaller than their spacing, and on a sparse device they
+ * are. A capsule's two bulbs are two discrete emitters near the shaft ends, not
+ * two orbs each covering a quarter of the staff, which is what pitch alone
+ * implies. Roughly a 25mm diffuser cap on a 1m staff.
+ */
+export const EMITTER_DIE_LENGTH_FRACTION = 1 / 40;
+
 // ─── Flux budget ──────────────────────────────────────────────────────────────
 
 /**
@@ -59,11 +70,19 @@ export const EMITTER_DUTY_CYCLE = 0.5;
  * Sized so a resolved LED core lands well above the tone curve's shoulder — the
  * core is meant to clip to white while its halo keeps hue, which is what makes
  * an LED read as blinding rather than as a bright colored dot. Published
- * guidance puts emissive peaks in the 4x–32x range over diffuse white; the
- * per-LED core lands inside that once this budget is divided by LED count and
- * spread over the strip's projected length.
+ * guidance puts emissive peaks in the 4x–32x range over diffuse white.
+ *
+ * Calibrated against a capsule at brightness level 3 spinning at a couple of
+ * revolutions per second, which is the case the eye judges: its arcs land near
+ * the top of that range, so the core clips and the halo carries the hue. A
+ * 200-LED staff at the same budget paints a band around 0.5 — bright, saturated,
+ * and deliberately not clipped, because 200 emitters share the flux two share.
+ *
+ * This is a surface brightness, so it carries both of the renderer's divisions
+ * (path length and profile width). An earlier value of 900 was read off the
+ * linear formula alone and rendered roughly 60x too dim on stage.
  */
-export const PROP_REFERENCE_FLUX = 900;
+export const PROP_REFERENCE_FLUX = 3500;
 
 /**
  * Flux for a single LED.
@@ -87,15 +106,20 @@ export function perLedFlux(propFlux: number, ledCount: number): number {
  *
  * This is the fix for the original defect: the old renderer used a fixed 60px
  * radius per LED regardless of device, so a 200-LED staff painted 200 overlapping
- * 120px orbs along a shaft only ~200px long. Deriving the footprint from pitch
- * means a capsule's two LEDs are naturally fat orbs and a 200-LED staff's pixels
- * are naturally sub-pixel, from the same expression.
+ * 120px orbs along a shaft only ~200px long.
+ *
+ * Two bounds, whichever is tighter. Dense strips are pitch-limited, because
+ * adjacent dies cannot overlap; sparse devices are die-limited, because a bulb
+ * does not grow to fill the dark shaft around it. A 200-LED staff lands
+ * sub-pixel on pitch, a 32-LED staff lands a couple of pixels on pitch, and a
+ * capsule lands on the die bound — three devices, one expression.
  */
 export function emitterSigmaPx(stripLengthPx: number, ledCount: number): number {
   if (ledCount <= 0) return PIXEL_SIGMA_PX;
   const pitchPx = stripLengthPx / ledCount;
+  const diePx = Math.min(pitchPx * EMITTER_DUTY_CYCLE, stripLengthPx * EMITTER_DIE_LENGTH_FRACTION);
   // Half the lit die, so +/-2 sigma spans it.
-  return Math.max((pitchPx * EMITTER_DUTY_CYCLE) / 2, PIXEL_SIGMA_PX * 0.5);
+  return Math.max(diePx / 2, PIXEL_SIGMA_PX * 0.5);
 }
 
 /**
@@ -109,15 +133,41 @@ export function effectiveSigmaPx(emitterSigma: number): number {
 }
 
 /**
- * Peak amplitude of a stationary emitter, renormalized so the splat integrates
- * to exactly its flux.
+ * Accumulated peak of one emitter, renormalized so the splat integrates to
+ * exactly its flux.
  *
- * Dividing by the effective width is the term the old renderer omitted. Without
- * it, shrinking an emitter's footprint dims it and packing more emitters in
- * brightens the strip — both wrong.
+ * Dividing by the footprint is the term the old renderer omitted. Without it,
+ * shrinking an emitter dims it and packing more emitters in brightens the
+ * strip — both wrong.
+ *
+ * The renderer spreads flux twice: along the path it sweeps (`streakDensity`)
+ * and across the perpendicular profile (the shader's normalized Gaussian). This
+ * is the product of both, so it is a surface brightness rather than a linear
+ * one. Reading a single emitter's peak as if only one division happened is what
+ * put `PROP_REFERENCE_FLUX` two orders of magnitude low on the first pass.
  */
 export function splatAmplitude(flux: number, sigmaEff: number): number {
-  return flux / (Math.sqrt(2 * Math.PI) * Math.max(sigmaEff, 1e-6));
+  const sigma = Math.max(sigmaEff, 1e-6);
+  return flux / (2 * sigma * Math.sqrt(2 * Math.PI) * sigma);
+}
+
+/**
+ * Surface brightness of the band a whole strip paints as it sweeps.
+ *
+ * On a spinning prop the strip lies along the direction the streaks spread
+ * across, so neighbouring LEDs sum through each other's profiles. Summing them
+ * cancels both the per-LED flux division and the footprint division exactly,
+ * leaving flux over the area swept — independent of LED count and of emitter
+ * size, which is the density law in its useful form. Per-emitter peak is not
+ * N-invariant and was never meant to be; the band is.
+ */
+export function stripSurfaceBrightness(
+  propFlux: number,
+  pathLengthPx: number,
+  stripLengthPx: number
+): number {
+  const area = Math.max(pathLengthPx, 1e-6) * Math.max(stripLengthPx, 1e-6);
+  return propFlux / area;
 }
 
 // ─── Motion ───────────────────────────────────────────────────────────────────

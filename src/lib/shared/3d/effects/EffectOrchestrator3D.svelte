@@ -39,7 +39,7 @@
   } from "./tip-position-bridge-3d";
   import {
     PovStripRenderer3D,
-    trailFadeRateToPovPersistence,
+    shutterToPovPersistence,
   } from "./poi/pov-strip-renderer-3d";
   import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -948,21 +948,17 @@
         // Pixel staff: the whole shaft lights, rendered as instanced POV
         // ghosts. One renderer per prop, both reading the shared pattern and
         // the shared clock.
-        const povPersistence = trailFadeRateToPovPersistence(
-          resolvedLed.look.trailFadeRate
-        );
+        // The look carries a shutter, not a sprite size: emitter footprint is a
+        // photometric quantity the 3D path does not yet derive, so the material
+        // keeps its own falloff defaults and only persistence comes from the look.
+        const povPersistence = shutterToPovPersistence(resolvedLed.look.shutter);
 
         if (ledStrip && blueLedAssigned && blueRigCenter) {
           if (!bluePovRenderer) {
             bluePovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-            bluePovRenderer.initialize(imperativeParent, {
-              glowRadius: resolvedLed.look.glowRadius,
-            });
+            bluePovRenderer.initialize(imperativeParent);
           }
           bluePovRenderer.setPersistenceDuration(povPersistence);
-          bluePovRenderer.updateMaterialUniforms({
-            glowRadius: resolvedLed.look.glowRadius,
-          });
           updatePixelStaff(
             bluePovRenderer,
             blueEffectTips,
@@ -980,14 +976,9 @@
         if (ledStrip && redLedAssigned && redRigCenter) {
           if (!redPovRenderer) {
             redPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
-            redPovRenderer.initialize(imperativeParent, {
-              glowRadius: resolvedLed.look.glowRadius,
-            });
+            redPovRenderer.initialize(imperativeParent);
           }
           redPovRenderer.setPersistenceDuration(povPersistence);
-          redPovRenderer.updateMaterialUniforms({
-            glowRadius: resolvedLed.look.glowRadius,
-          });
           updatePixelStaff(
             redPovRenderer,
             redEffectTips,

@@ -49,7 +49,9 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         params: params(PROP_BLUE, PROP_RED),
       },
       cycleDuration: 3,
-      look: look({ trailFadeRate: 0.88, glowRadius: 1.0 }),
+      // Short persistence and a tight beam: two clean endpoint dots, the way
+      // a capsule actually reads.
+      look: look({ shutter: { mode: "eye", timeConstantSeconds: 0.08 }, glare: 0.55 }),
     },
   },
   {
@@ -64,7 +66,9 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         params: params("#00ff88"),
       },
       cycleDuration: 1.6,
-      look: look({ glowRadius: 1.4, trailFadeRate: 0.9 }),
+      // Shortest persistence of the six: each pulse reads as a distinct beat
+      // rather than smearing into the next.
+      look: look({ shutter: { mode: "eye", timeConstantSeconds: 0.05 }, glare: 0.52 }),
     },
   },
   {
@@ -79,8 +83,13 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         params: params("#ffffff"),
       },
       cycleDuration: 6,
-      // The hero look: long persistence so the whole arc paints in the air.
-      look: look({ trailFadeRate: 0.97, bloomIntensity: 0.07, brightness: 4 }),
+      // The hero look: a camera shutter held open so the whole arc paints in
+      // the air, plus the broadest glare veil of the six.
+      look: look({
+        shutter: { mode: "camera", exposureSeconds: 2.5 },
+        glare: 0.9,
+        brightness: 4,
+      }),
     },
   },
   {
@@ -95,7 +104,9 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         params: params("#3b82f6"),
       },
       cycleDuration: 1.2,
-      look: look({ trailFadeRate: 0.94, glowRadius: 1.2 }),
+      // Short-to-medium persistence: enough to lengthen the comet's own tail
+      // without smearing it into a full loop.
+      look: look({ shutter: { mode: "eye", timeConstantSeconds: 0.18 }, glare: 0.65 }),
     },
   },
   {
@@ -111,26 +122,27 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         params: params("#00ff88", "#3b82f6"),
       },
       cycleDuration: 4,
-      look: look({ trailFadeRate: 0.94 }),
+      look: look({ shutter: { mode: "eye", timeConstantSeconds: 0.25 }, glare: 0.75 }),
     },
   },
   {
-    id: "led-image-showcase",
-    name: "Image Showcase",
+    id: "led-sunset-sweep",
+    name: "Sunset Sweep",
     previewColor: "#ff6600",
     previewColor2: "#7c3aed",
     patch: {
       device: { ...STAFF_200 },
-      // Phase 4: image source — swap this for the curated built-in pattern
-      // image once it ships. A gradient stands in so the preset is honest
-      // about being a wide two-color sweep rather than pretending to load.
+      // Image-source presets wait on a bundled-pattern seam (the materializer
+      // resolves image sources from the user's library only), so the sixth
+      // prop is an honest warm-to-violet gradient wash rather than a preset
+      // named for a pipeline that doesn't exist yet.
       pattern: {
         source: "generator",
         generatorId: "gradient",
         params: params("#ff6600", "#7c3aed"),
       },
       cycleDuration: 5,
-      look: look({ trailFadeRate: 0.96, bloomIntensity: 0.06 }),
+      look: look({ shutter: { mode: "eye", timeConstantSeconds: 0.3 }, glare: 0.8 }),
     },
   },
 ];

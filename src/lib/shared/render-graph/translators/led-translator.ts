@@ -5,11 +5,18 @@
  * tip's shaft positions, color, and velocity, emits a backend-neutral
  * LedPassPayload. Per-LED color is decided upstream by the LED sampler from
  * the materialized strip pattern; this translator only shapes the payload.
+ *
+ * Brightness resolves to a prop flux budget here rather than to a multiplier,
+ * because everything downstream divides that budget: per-LED flux, streak
+ * density, and shutter normalization all read it.
  */
 
 import type { LedIntent } from "$lib/shared/effects/domain/effects-config";
 import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
+import { PROP_REFERENCE_FLUX } from "$lib/shared/animation-engine/domain/led-photometry";
 import type { LedPassPayload, LedTipState, LedSegment } from "../domain/led-pass";
+
+const STREAK_VELOCITY_THRESHOLD = 0.01;
 
 export interface LedTranslationContext {
   tips: Array<{
@@ -25,22 +32,20 @@ export interface LedTranslationContext {
   patternFn: (index: number, total: number, time: number, speed: number) => number;
 }
 
-const STREAK_DECAY_PER_SECOND = 4.0;
-const STREAK_VELOCITY_THRESHOLD = 0.01;
-
 export function toLedPassPayload(
   intent: LedIntent,
   context: LedTranslationContext,
 ): LedPassPayload {
+  const propFlux = PROP_REFERENCE_FLUX * ledBrightnessToFloat(intent.look.brightness);
+
   const tips: LedTipState[] = context.tips.map((tip) =>
-    buildTip(tip, intent, context),
+    buildTip(tip, intent, context, propFlux),
   );
 
-  const brightness = ledBrightnessToFloat(intent.look.brightness);
   return {
     tips,
-    bloomRadius: brightness * 8,
-    bloomIntensity: brightness * 0.6,
+    shutter: intent.look.shutter,
+    glare: intent.look.glare,
   };
 }
 
@@ -48,6 +53,7 @@ function buildTip(
   tip: LedTranslationContext["tips"][number],
   intent: LedIntent,
   ctx: LedTranslationContext,
+  propFlux: number,
 ): LedTipState {
   const total = tip.shaftPositions.length;
 
@@ -66,8 +72,7 @@ function buildTip(
   return {
     tipId: tip.tipId,
     segments,
-    brightness: ledBrightnessToFloat(intent.look.brightness),
+    propFlux,
     motionStreak: tip.velocity > STREAK_VELOCITY_THRESHOLD,
-    streakDecayPerSecond: STREAK_DECAY_PER_SECOND,
   };
 }

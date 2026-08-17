@@ -25,6 +25,13 @@ import type {
 import type { FireOverlayConfig } from "../domain/types/fire-types";
 import { DEFAULT_FIRE_CONFIG } from "../domain/types/fire-types";
 import type { LedOverlayConfig } from "../domain/types/led-types";
+import type { LedShutter } from "../domain/led-photometry";
+
+/** The one numeric parameter a shutter carries, whichever mode it is in. */
+function shutterParam(shutter: LedShutter): number {
+  return shutter.mode === "camera" ? shutter.exposureSeconds : shutter.timeConstantSeconds;
+}
+
 import {
   DEFAULT_LED_CONFIG,
   DEFAULT_LED_INTENT,
@@ -852,10 +859,10 @@ export class EffectRendererManager {
       ledDiff.cycleDuration = intent.cycleDuration;
     }
     if (
-      intent.look.glowRadius !== current.look.glowRadius ||
-      intent.look.trailFadeRate !== current.look.trailFadeRate ||
-      intent.look.bloomIntensity !== current.look.bloomIntensity ||
-      intent.look.brightness !== current.look.brightness
+      intent.look.glare !== current.look.glare ||
+      intent.look.brightness !== current.look.brightness ||
+      intent.look.shutter.mode !== current.look.shutter.mode ||
+      shutterParam(intent.look.shutter) !== shutterParam(current.look.shutter)
     ) {
       ledDiff.look = { ...intent.look };
     }

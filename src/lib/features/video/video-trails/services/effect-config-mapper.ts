@@ -43,8 +43,7 @@ export function toLedConfig(effect: EffectConfig["led"]): LedOverlayConfig {
     cycleDuration: 3,
     look: {
       ...DEFAULT_LED_LOOK,
-      glowRadius: effect.glowRadius,
-      bloomIntensity: effect.bloom,
+      glare: effect.glare,
       brightness: Math.min(5, Math.max(1, Math.round(effect.brightness))),
     },
   };

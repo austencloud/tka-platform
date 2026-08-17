@@ -95,7 +95,10 @@ export class LedSampler {
     const frameIndex = pattern
       ? patternFrameIndex(currentTime, ledConfig.cycleDuration, pattern.frameCount)
       : 0;
-    const gain = ledBrightnessToFloat(ledConfig.look.brightness) / 255;
+    // Brightness is a flux term, applied once by the renderer's photometry
+    // (PROP_REFERENCE_FLUX x level). Applying it here too would square it.
+    // This gain only normalizes pattern bytes to [0,1].
+    const gain = 1 / 255;
 
     let count = 0;
     if (blueProp) {

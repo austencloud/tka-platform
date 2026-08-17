@@ -2,8 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import { Vector3, type InstancedMesh } from "three";
 import {
   PovStripRenderer3D,
-  trailFadeRateToPovPersistence,
+  shutterToPovPersistence,
 } from "$lib/shared/3d/effects/poi/pov-strip-renderer-3d";
+import { DEFAULT_LED_SHUTTER } from "$lib/shared/animation-engine/domain/led-photometry";
 import { QualityTier } from "$lib/shared/3d/effects/types";
 import { createEmptyPattern } from "$lib/shared/poi/domain/strip-pattern";
 import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
@@ -188,22 +189,48 @@ describe("PovStripRenderer3D disposal", () => {
   });
 });
 
-describe("trailFadeRateToPovPersistence", () => {
-  it("maps the look's fade range onto the renderer's persistence window", () => {
-    expect(trailFadeRateToPovPersistence(0.8)).toBeCloseTo(0.05, 5);
-    expect(trailFadeRateToPovPersistence(0.98)).toBeCloseTo(0.5, 5);
-    expect(trailFadeRateToPovPersistence(0.89)).toBeCloseTo(0.275, 5);
+describe("shutterToPovPersistence", () => {
+  it("takes the eye shutter's cutoff, five time constants", () => {
+    expect(shutterToPovPersistence({ mode: "eye", timeConstantSeconds: 0.02 })).toBeCloseTo(
+      0.1,
+      5,
+    );
+    expect(shutterToPovPersistence({ mode: "eye", timeConstantSeconds: 0.05 })).toBeCloseTo(
+      0.25,
+      5,
+    );
   });
 
-  it("clamps out-of-range and non-finite inputs", () => {
-    expect(trailFadeRateToPovPersistence(0)).toBeCloseTo(0.05, 5);
-    expect(trailFadeRateToPovPersistence(5)).toBeCloseTo(0.5, 5);
-    expect(trailFadeRateToPovPersistence(Number.NaN)).toBeCloseTo(0.05, 5);
+  it("takes the camera shutter's exposure directly", () => {
+    expect(shutterToPovPersistence({ mode: "camera", exposureSeconds: 0.25 })).toBeCloseTo(
+      0.25,
+      5,
+    );
   });
 
-  it("rises monotonically with the fade rate", () => {
-    const rates = [0.8, 0.85, 0.9, 0.92, 0.95, 0.98];
-    const mapped = rates.map(trailFadeRateToPovPersistence);
+  it("clamps to the ring's own capacity", () => {
+    expect(shutterToPovPersistence(DEFAULT_LED_SHUTTER)).toBeCloseTo(0.5, 5);
+    expect(shutterToPovPersistence({ mode: "camera", exposureSeconds: 4 })).toBeCloseTo(0.5, 5);
+    expect(shutterToPovPersistence({ mode: "eye", timeConstantSeconds: 0.001 })).toBeCloseTo(
+      0.05,
+      5,
+    );
+  });
+
+  it("floors non-finite inputs", () => {
+    expect(
+      shutterToPovPersistence({ mode: "eye", timeConstantSeconds: Number.NaN }),
+    ).toBeCloseTo(0.05, 5);
+    expect(
+      shutterToPovPersistence({ mode: "camera", exposureSeconds: Number.POSITIVE_INFINITY }),
+    ).toBeCloseTo(0.05, 5);
+  });
+
+  it("rises monotonically with the time constant", () => {
+    const taus = [0.011, 0.02, 0.04, 0.06, 0.08, 0.099];
+    const mapped = taus.map((timeConstantSeconds) =>
+      shutterToPovPersistence({ mode: "eye", timeConstantSeconds }),
+    );
     for (let i = 1; i < mapped.length; i++) {
       expect(mapped[i]!).toBeGreaterThan(mapped[i - 1]!);
     }

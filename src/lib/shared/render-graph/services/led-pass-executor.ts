@@ -14,6 +14,13 @@
  */
 
 import type { LedPassPayload } from "../domain/led-pass";
+import {
+  EYE_TIME_CONSTANT_S,
+  GLARE_WEIGHT_MAX,
+  GLARE_WEIGHT_MIN,
+  PROP_REFERENCE_FLUX,
+  type LedShutter,
+} from "$lib/shared/animation-engine/domain/led-photometry";
 import type { FBO, FBOPool } from "./fbo-pool";
 import type { ShaderLibrary } from "./shader-library";
 
@@ -21,8 +28,24 @@ const MAX_LEDS = 400;
 const INSTANCE_STRIDE_FLOATS = 9;
 const BLOOM_MIP_COUNT = 5;
 const MAX_STREAK_DISTANCE_SQ = 400 * 400;
+
+/**
+ * Sprite radius as a fraction of the smaller canvas axis.
+ *
+ * A per-LED constant, so a 200-LED staff paints 200 overlapping orbs along a
+ * shaft only as long as one of them. The photometric fix is to derive the
+ * footprint from LED pitch and renormalize the splat by it — this executor and
+ * its `led-sprite` shader still owe the rewrite the 2D renderer and the WebGPU
+ * executor already carry.
+ */
 const DEFAULT_GLOW_FACTOR = 0.06;
-const DEFAULT_FADE_RATE = 0.9;
+
+/**
+ * Weight of the glare pyramid at the display composite. The composite here is
+ * additive rather than a lerp, so this is not the look's `glare` — that is the
+ * pyramid's per-mip weight and is applied at the upsample blend.
+ */
+const BLOOM_COMPOSITE_INTENSITY = 0.5;
 
 export class LedPassExecutor {
   private gl: WebGL2RenderingContext;
@@ -71,12 +94,16 @@ export class LedPassExecutor {
 
     this.renderSprites(ledCount, canvasW, canvasH);
 
-    const fadeRate = this.computeFadeRate(payload, dt);
+    const fadeRate = this.computeFadeRate(payload.shutter, dt);
     this.trailAccumulate(fadeRate, canvasW, canvasH);
 
-    this.bloomPass(canvasW, canvasH);
+    const glare = Math.min(
+      GLARE_WEIGHT_MAX,
+      Math.max(GLARE_WEIGHT_MIN, payload.glare),
+    );
+    this.bloomPass(canvasW, canvasH, glare);
 
-    this.displayComposite(payload.bloomIntensity, canvasW, canvasH);
+    this.displayComposite(BLOOM_COMPOSITE_INTENSITY, canvasW, canvasH);
   }
 
   dispose(): void {
@@ -169,6 +196,11 @@ export class LedPassExecutor {
     let ledIdx = 0;
 
     for (const tip of payload.tips) {
+      // The sprite shader wants a 0..1 multiplier, and the flux budget is that
+      // multiplier times the reference flux. Recovering it is exact; dividing
+      // the budget by LED count is the photometry this executor does not do yet.
+      const propBrightness = tip.propFlux / PROP_REFERENCE_FLUX;
+
       for (let segIdx = 0; segIdx < tip.segments.length; segIdx++) {
         if (ledIdx >= MAX_LEDS) break;
 
@@ -205,7 +237,7 @@ export class LedPassExecutor {
         this.instanceData[offset + 4] = seg.color[0];
         this.instanceData[offset + 5] = seg.color[1];
         this.instanceData[offset + 6] = seg.color[2];
-        this.instanceData[offset + 7] = seg.brightness * tip.brightness;
+        this.instanceData[offset + 7] = seg.brightness * propBrightness;
         this.instanceData[offset + 8] = glowRadius;
 
         ledIdx++;
@@ -276,7 +308,7 @@ export class LedPassExecutor {
 
   // ── Bloom pass ────────────────────────────────────────────────────────
 
-  private bloomPass(canvasW: number, canvasH: number): void {
+  private bloomPass(canvasW: number, canvasH: number, glare: number): void {
     const gl = this.gl;
     const trail = this.fbos.getOrAllocatePair("led-trail", "rgba16f");
 
@@ -315,8 +347,12 @@ export class LedPassExecutor {
       srcH = sizes[i]![1];
     }
 
+    // mix(upper, tent(lower), glare) at every level, so the composite falloff is
+    // the geometric progression the glare weight names. Accumulating additively
+    // weights every mip alike, which flattens the kernel into a formless blob.
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE);
+    gl.blendColor(0, 0, 0, glare);
+    gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA);
     const upProg = this.shaders.get("bloom-upsample");
     gl.useProgram(upProg.program);
     gl.uniform1f(upProg.uniforms["u_bloomRadius"]!, 1.0);
@@ -376,16 +412,25 @@ export class LedPassExecutor {
 
   // ── Helpers ───────────────────────────────────────────────────────────
 
-  private computeFadeRate(payload: LedPassPayload, dt: number): number {
-    let totalDecay = 0;
-    let count = 0;
-    for (const tip of payload.tips) {
-      if (tip.motionStreak) {
-        totalDecay += tip.streakDecayPerSecond;
-        count++;
-      }
-    }
-    if (count === 0) return DEFAULT_FADE_RATE;
-    return Math.exp(-(totalDecay / count) * dt);
+  /**
+   * Per-frame trail multiplier for the shutter, as `exp(-dt/tau)`. The shutter
+   * is a property of the frame, not of a tip, so a mixed set of props can no
+   * longer average its own persistence away.
+   *
+   * Camera mode falls back to the eye time constant: a box shutter holds every
+   * contribution at full weight until it leaves the exposure, which a decaying
+   * `max()` accumulation cannot represent at any rate. See the same
+   * TODO(led-camera-shutter) in the 2D renderer, which owes a deposit ring buffer.
+   *
+   * The accumulation itself is `max(current, trail * fadeRate)`, not a
+   * normalized sum, so trail length still trades against brightness here. That
+   * is the rest of the photometric rewrite this executor owes.
+   */
+  private computeFadeRate(shutter: LedShutter, dt: number): number {
+    const tau =
+      shutter.mode === "camera"
+        ? EYE_TIME_CONSTANT_S
+        : Math.max(shutter.timeConstantSeconds, 1e-6);
+    return Math.exp(-Math.max(dt, 0) / tau);
   }
 }

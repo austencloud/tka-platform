@@ -81,17 +81,20 @@ describe("LED 3D look plumbing", () => {
     expect(source).toMatch(/ledFrame,\s*cam!,\s*now,\s*ledBrightness/);
   });
 
-  it("maps the look's persistence onto the POV ghost fade", () => {
+  it("maps the look's shutter onto the POV ghost fade", () => {
     expect(source).toMatch(
-      /trailFadeRateToPovPersistence\(\s*resolvedLed\.look\.trailFadeRate\s*\)/
+      /shutterToPovPersistence\(\s*resolvedLed\.look\.shutter\s*\)/
     );
     expect(source).not.toContain("povPersistenceDuration");
   });
 
-  it("pushes the look's glow into the strip material without a rebuild", () => {
-    expect(source).toMatch(
-      /updateMaterialUniforms\(\{\s*glowRadius: resolvedLed\.look\.glowRadius,/
-    );
+  it("keeps sprite geometry out of the look", () => {
+    // Emitter footprint is photometric and the 3D path does not derive it yet,
+    // so the material keeps its own falloff rather than taking one from a look
+    // field that no longer exists.
+    expect(source).not.toContain("look.glowRadius");
+    expect(source).not.toContain("look.trailFadeRate");
+    expect(source).not.toContain("look.bloomIntensity");
   });
 });
 

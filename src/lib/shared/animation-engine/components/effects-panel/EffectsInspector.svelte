@@ -4,7 +4,10 @@
     EffectsConfigState,
   } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { EffectControlOverrides } from "$lib/shared/effects/effect-control-fields";
-  import { advancedControls } from "$lib/shared/effects/domain/effect-control-manifest";
+  import {
+    advancedControls,
+    primaryControls,
+  } from "$lib/shared/effects/domain/effect-control-manifest";
   import EffectControlStack from "$lib/shared/effects/components/EffectControlStack.svelte";
   import EffectPresetsSection from "./EffectPresetsSection.svelte";
   import type { EffectRegistration } from "./effect-registry";
@@ -55,6 +58,20 @@
   let fineTuningOpen = $state(false);
   const fineControls = $derived(advancedControls(effect));
   const hasLooks = $derived(registration.presetGroup.presets.length > 0);
+
+  // Some effects have nothing the flat-field manifest can address — LED's
+  // device, strip pattern, and shutter are structured config, not scalars, so
+  // its manifest entry is deliberately empty. Those effects ship a hand-built
+  // panel instead, and without this the section rendered its title over an
+  // empty stack.
+  //
+  // Loaded through a derived promise rather than `$effect`: this component has
+  // a prop named `effect`, and inside it `$effect` parses as a store
+  // subscription, not the rune.
+  const usesRichPanel = $derived(primaryControls(effect).length === 0);
+  const richPanel = $derived(
+    usesRichPanel ? registration.customizeComponent() : null
+  );
 </script>
 
 <div
@@ -114,14 +131,21 @@
            the canvas the instant it moves, so saying so cost a row of height
            and told the user nothing they were not about to see. -->
       <span class="section-title">Tune the look</span>
-      <EffectControlStack
-        {effect}
-        {config}
-        tiers={["primary", "tracking"]}
-        {propType}
-        {overrides}
-        {onSettingChange}
-      />
+      {#if richPanel}
+        {#await richPanel then mod}
+          {@const Panel = mod.default}
+          <Panel {onBack} embedded />
+        {/await}
+      {:else}
+        <EffectControlStack
+          {effect}
+          {config}
+          tiers={["primary", "tracking"]}
+          {propType}
+          {overrides}
+          {onSettingChange}
+        />
+      {/if}
     </section>
 
     {#if fineControls.length > 0}

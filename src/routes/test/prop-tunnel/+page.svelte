@@ -42,7 +42,7 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import FirePanel from "$lib/shared/animation-engine/components/settings-panels/FirePanel.svelte";
   import CharcoalPanel from "$lib/shared/animation-engine/components/settings-panels/CharcoalPanel.svelte";
-  import LedPanel from "$lib/shared/animation-engine/components/settings-panels/LedPanel.svelte";
+  import LedCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/LedCustomize.svelte";
   import TrailsPanel from "$lib/shared/animation-engine/components/settings-panels/TrailsPanel.svelte";
   import ZapCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/ZapCustomize.svelte";
   import SparklesCustomize from "$lib/shared/animation-engine/components/effects-panel/customize/SparklesCustomize.svelte";
@@ -107,7 +107,7 @@
   const EFFECT_PANELS: Record<string, PanelEntry> = {
     fire: { comp: FirePanel, needsBack: false },
     charcoal: { comp: CharcoalPanel, needsBack: false },
-    led: { comp: LedPanel, needsBack: false },
+    led: { comp: LedCustomize, needsBack: true },
     trails: { comp: TrailsPanel, needsBack: false },
     zap: { comp: ZapCustomize, needsBack: true },
     sparkles: { comp: SparklesCustomize, needsBack: true },

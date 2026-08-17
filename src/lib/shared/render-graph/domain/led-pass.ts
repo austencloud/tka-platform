@@ -1,9 +1,15 @@
 /**
  * LED pass payload.
  *
- * Instanced point sprites along the prop shaft, driven by a pattern
- * function. Backend renders as instanced quads with bloom post-process.
+ * Backend-neutral description of one frame of addressable LED props. The
+ * photometry lives in `animation-engine/domain/led-photometry.ts` and is
+ * resolved by the backend, which is the only side that knows the pixel
+ * geometry a footprint and a streak density depend on. The payload carries
+ * only what the translator owns: the prop's flux budget, the shutter the
+ * frames integrate under, and the glare weight.
  */
+
+import type { LedShutter } from "$lib/shared/animation-engine/domain/led-photometry";
 
 export interface LedSegment {
   /** Position in NDC. */
@@ -18,18 +24,24 @@ export interface LedTipState {
   tipId: string;
   /** Ordered LED positions along the prop shaft, base→tip. */
   segments: LedSegment[];
-  /** Overall brightness multiplier 0..1. */
-  brightness: number;
+  /**
+   * Luminous flux this prop emits, in linear HDR render units. Its LEDs divide
+   * it between them, so LED count is a resolution control and never a
+   * brightness control.
+   */
+  propFlux: number;
   /** Enable motion streak accumulation. */
   motionStreak: boolean;
-  /** Streak decay rate (like trail decay). */
-  streakDecayPerSecond: number;
 }
 
 export interface LedPassPayload {
   tips: LedTipState[];
-  /** Bloom radius in pixels. 0 disables. */
-  bloomRadius: number;
-  /** Bloom intensity multiplier. */
-  bloomIntensity: number;
+  /** Persistence model the accumulation buffer integrates under. */
+  shutter: LedShutter;
+  /**
+   * Bloom pyramid per-mip weight. Sets the composite point-spread's falloff
+   * exponent; it is a camera property applied once to the frame, never a
+   * per-LED halo.
+   */
+  glare: number;
 }

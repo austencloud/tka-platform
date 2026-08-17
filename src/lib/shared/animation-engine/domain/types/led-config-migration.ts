@@ -8,7 +8,7 @@
  * resolves to the default config, so no persisted value can brick the effect.
  */
 
-import type { LedSimulatorConfig } from "./led-types";
+import type { LedShutter, LedSimulatorConfig } from "./led-types";
 import {
   CAPSULE_LED_COUNT,
   DEFAULT_LED_INTENT,
@@ -19,6 +19,14 @@ import {
   clampCycleDuration,
   hexToRgb255,
 } from "./led-types";
+import {
+  CAMERA_EXPOSURE_MAX_S,
+  CAMERA_EXPOSURE_MIN_S,
+  DEFAULT_GLARE_WEIGHT,
+  DEFAULT_LED_SHUTTER,
+  GLARE_WEIGHT_MAX,
+  GLARE_WEIGHT_MIN,
+} from "../led-photometry";
 
 /** v1 evaluator ids that painted one flat color from `primaryColor`. */
 const SOLID_FAMILY = new Set(["solid", "split", "quad"]);
@@ -52,12 +60,90 @@ function brightnessLevelOr(value: unknown, fallback: number): number {
   return Math.max(1, Math.min(5, Math.round(value)));
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/** True for a well-formed `LedShutter` of either mode. */
+function isLedShutter(value: unknown): value is LedShutter {
+  if (!value || typeof value !== "object") return false;
+  const s = value as Record<string, unknown>;
+  return (
+    (s.mode === "eye" && typeof s.timeConstantSeconds === "number") ||
+    (s.mode === "camera" && typeof s.exposureSeconds === "number")
+  );
+}
+
+/** Normalize an already-current-shape shutter, clamping its live parameter. */
+function normalizeShutter(value: unknown): LedShutter {
+  if (!isLedShutter(value)) return { ...DEFAULT_LED_SHUTTER };
+  if (value.mode === "camera") {
+    return {
+      mode: "camera",
+      exposureSeconds: clamp(
+        value.exposureSeconds,
+        CAMERA_EXPOSURE_MIN_S,
+        CAMERA_EXPOSURE_MAX_S
+      ),
+    };
+  }
+  return { mode: "eye", timeConstantSeconds: Math.max(value.timeConstantSeconds, 1e-6) };
+}
+
+/**
+ * Old `trailFadeRate` was a per-frame decay constant in [0.80, 0.98]. Map it
+ * monotonically onto an eye time constant in [0.04s, 0.4s] so a user's saved
+ * long trail (high decay, close to 0.98) stays a long trail (a large time
+ * constant), and a saved short trail stays short.
+ */
+function migrateShutterFromTrailFadeRate(v1: Record<string, unknown>): LedShutter {
+  const trailFadeRate = numberOr(v1.trailFadeRate, NaN);
+  if (!Number.isFinite(trailFadeRate)) return { ...DEFAULT_LED_SHUTTER };
+  const t = clamp((trailFadeRate - 0.8) / (0.98 - 0.8), 0, 1);
+  return { mode: "eye", timeConstantSeconds: 0.04 + t * (0.4 - 0.04) };
+}
+
+/**
+ * Old `bloomIntensity` was a 0-0.15 pyramid intensity. Map it monotonically
+ * onto `glare`, the new per-mip weight, within [GLARE_WEIGHT_MIN, GLARE_WEIGHT_MAX].
+ */
+function migrateGlareFromBloomIntensity(v1: Record<string, unknown>): number {
+  const bloomIntensity = numberOr(v1.bloomIntensity, NaN);
+  if (!Number.isFinite(bloomIntensity)) return DEFAULT_GLARE_WEIGHT;
+  const t = clamp(bloomIntensity, 0, 0.15) / 0.15;
+  return GLARE_WEIGHT_MIN + t * (GLARE_WEIGHT_MAX - GLARE_WEIGHT_MIN);
+}
+
+/**
+ * Migrate a persisted look onto the current `LedLook` shape.
+ *
+ * A look object may arrive in one of two shapes: the current
+ * `{ shutter, glare, brightness }`, detected by a well-formed `shutter` or a
+ * numeric `glare`; or the old `{ glowRadius, trailFadeRate, bloomIntensity,
+ * brightness }`, detected by either of its numeric fields. `glowRadius` is
+ * dropped with no replacement — emitter size is now derived from LED pitch in
+ * `domain/led-photometry.ts` and is not authorable, since a real LED's size
+ * is a fact about the prop, not a preference.
+ */
 function migrateLook(v1: Record<string, unknown>): LedSimulatorConfig["look"] {
+  const brightness = brightnessLevelOr(v1.brightness, DEFAULT_LED_LOOK.brightness);
+
+  if (isLedShutter(v1.shutter) || typeof v1.glare === "number") {
+    return {
+      shutter: normalizeShutter(v1.shutter),
+      glare: clamp(numberOr(v1.glare, DEFAULT_GLARE_WEIGHT), GLARE_WEIGHT_MIN, GLARE_WEIGHT_MAX),
+      brightness,
+    };
+  }
+
+  const hasOldLookFields =
+    typeof v1.trailFadeRate === "number" || typeof v1.bloomIntensity === "number";
+  if (!hasOldLookFields) return { ...DEFAULT_LED_LOOK, brightness };
+
   return {
-    glowRadius: numberOr(v1.glowRadius, DEFAULT_LED_LOOK.glowRadius),
-    trailFadeRate: numberOr(v1.trailFadeRate, DEFAULT_LED_LOOK.trailFadeRate),
-    bloomIntensity: numberOr(v1.bloomIntensity, DEFAULT_LED_LOOK.bloomIntensity),
-    brightness: brightnessLevelOr(v1.brightness, DEFAULT_LED_LOOK.brightness),
+    shutter: migrateShutterFromTrailFadeRate(v1),
+    glare: migrateGlareFromBloomIntensity(v1),
+    brightness,
   };
 }
 
@@ -149,6 +235,6 @@ export function migrateLedConfig(v1: unknown): LedSimulatorConfig {
 
   // Every other v1 evaluator (breathe, chase, texture, tka-aware…) has no
   // honest v2 equivalent. Fall back to the default look but keep the user's
-  // glow/persistence/bloom/brightness, which are device-independent.
+  // shutter/glare/brightness, which are device-independent.
   return { ...fallback, look };
 }

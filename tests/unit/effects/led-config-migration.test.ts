@@ -8,6 +8,12 @@ import {
   PROP_RED,
   hexToRgb255,
 } from "$lib/shared/animation-engine/domain/types/led-types";
+import {
+  CAMERA_EXPOSURE_MAX_S,
+  CAMERA_EXPOSURE_MIN_S,
+  GLARE_WEIGHT_MAX,
+  GLARE_WEIGHT_MIN,
+} from "$lib/shared/animation-engine/domain/led-photometry";
 
 describe("migrateLedConfig", () => {
   it("returns the default config for missing / malformed input", () => {
@@ -76,26 +82,37 @@ describe("migrateLedConfig", () => {
     expect(result.pattern).toEqual(DEFAULT_LED_INTENT.pattern);
   });
 
-  it("carries over the v1 look fields when present and numeric", () => {
+  it("maps the old trailFadeRate/bloomIntensity look onto shutter/glare, dropping glowRadius", () => {
     const result = migrateLedConfig({
       patternId: "solid",
       glowRadius: 2.5,
-      trailFadeRate: 0.85,
-      bloomIntensity: 0.11,
+      trailFadeRate: 0.98,
+      bloomIntensity: 0.15,
       brightness: 5,
     });
 
-    expect(result.look).toEqual({
-      glowRadius: 2.5,
-      trailFadeRate: 0.85,
-      bloomIntensity: 0.11,
-      brightness: 5,
-    });
+    // 0.98 is the top of the old trailFadeRate band, so it maps to the
+    // longest eye time constant (0.4s).
+    expect(result.look.shutter).toEqual({ mode: "eye", timeConstantSeconds: 0.4 });
+    // 0.15 is the top of the old bloomIntensity band, so it maps to the
+    // widest glare weight.
+    expect(result.look.glare).toBeCloseTo(GLARE_WEIGHT_MAX, 5);
+    expect(result.look.brightness).toBe(5);
+    expect(result.look).not.toHaveProperty("glowRadius");
+  });
+
+  it("maps a short old trailFadeRate to a short eye time constant", () => {
+    const result = migrateLedConfig({ patternId: "solid", trailFadeRate: 0.8, bloomIntensity: 0 });
+    expect(result.look.shutter).toEqual({ mode: "eye", timeConstantSeconds: 0.04 });
+    expect(result.look.glare).toBeCloseTo(GLARE_WEIGHT_MIN, 5);
   });
 
   it("keeps the look even when the pattern has no v2 equivalent", () => {
-    const result = migrateLedConfig({ patternId: "chase-v1-unknown", glowRadius: 3 });
-    expect(result.look.glowRadius).toBe(3);
+    const result = migrateLedConfig({ patternId: "chase-v1-unknown", trailFadeRate: 0.89 });
+    expect(result.look.shutter.mode).toBe("eye");
+    expect(
+      result.look.shutter.mode === "eye" ? result.look.shutter.timeConstantSeconds : NaN
+    ).toBeCloseTo(0.22, 5);
   });
 
   it("ignores non-numeric or missing look fields", () => {
@@ -129,12 +146,16 @@ describe("migrateLedConfig", () => {
     expect(migrateLedConfig({ patternId: "solid", patternSpeed: 1000 }).cycleDuration).toBe(0.2);
   });
 
-  it("passes an already-v2 config through, normalizing its numbers", () => {
+  it("passes an already-current-shape config through, normalizing its numbers", () => {
     const v2 = {
       device: { kind: "pixel-staff", ledCount: 72 },
       pattern: { source: "generator", generatorId: "comet", params: {} },
       cycleDuration: 999,
-      look: { glowRadius: 1.5, trailFadeRate: 0.9, bloomIntensity: 0.05, brightness: 4 },
+      look: {
+        shutter: { mode: "camera", exposureSeconds: 1.5 },
+        glare: 0.6,
+        brightness: 4,
+      },
     };
 
     const result = migrateLedConfig(v2);
@@ -142,6 +163,50 @@ describe("migrateLedConfig", () => {
     expect(result.pattern).toEqual(v2.pattern);
     expect(result.cycleDuration).toBe(30);
     expect(result.look).toEqual(v2.look);
+  });
+
+  it("clamps an already-current-shape shutter/glare to their supported bounds", () => {
+    const result = migrateLedConfig({
+      device: { kind: "capsule", ledCount: 2 },
+      pattern: { source: "generator", generatorId: "solid", params: {} },
+      cycleDuration: 3,
+      look: {
+        shutter: { mode: "camera", exposureSeconds: 999 },
+        glare: 5,
+        brightness: 3,
+      },
+    });
+
+    expect(result.look.shutter).toEqual({
+      mode: "camera",
+      exposureSeconds: CAMERA_EXPOSURE_MAX_S,
+    });
+    expect(result.look.glare).toBe(GLARE_WEIGHT_MAX);
+
+    const tooShort = migrateLedConfig({
+      device: { kind: "capsule", ledCount: 2 },
+      pattern: { source: "generator", generatorId: "solid", params: {} },
+      cycleDuration: 3,
+      look: { shutter: { mode: "camera", exposureSeconds: 0.01 }, glare: 0.1, brightness: 3 },
+    });
+    expect(tooShort.look.shutter).toEqual({
+      mode: "camera",
+      exposureSeconds: CAMERA_EXPOSURE_MIN_S,
+    });
+    expect(tooShort.look.glare).toBe(GLARE_WEIGHT_MIN);
+  });
+
+  it("still migrates a legacy-shape look nested under an already-v2 device/pattern", () => {
+    const result = migrateLedConfig({
+      device: { kind: "capsule", ledCount: 2 },
+      pattern: { source: "generator", generatorId: "solid", params: {} },
+      cycleDuration: 3,
+      look: { glowRadius: 1, trailFadeRate: 0.98, bloomIntensity: 0, brightness: 2 },
+    });
+
+    expect(result.look.shutter).toEqual({ mode: "eye", timeConstantSeconds: 0.4 });
+    expect(result.look.glare).toBeCloseTo(GLARE_WEIGHT_MIN, 5);
+    expect(result.look.brightness).toBe(2);
   });
 
   it("never throws on adversarial input", () => {
@@ -159,7 +224,7 @@ describe("migrateLedConfig", () => {
 
   it("does not mutate or alias the default config", () => {
     const result = migrateLedConfig(undefined);
-    result.look.glowRadius = 99;
-    expect(DEFAULT_LED_INTENT.look.glowRadius).toBe(DEFAULT_LED_LOOK.glowRadius);
+    result.look.glare = 0.99;
+    expect(DEFAULT_LED_INTENT.look.glare).toBe(DEFAULT_LED_LOOK.glare);
   });
 });

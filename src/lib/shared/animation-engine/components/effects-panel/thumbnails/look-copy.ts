@@ -33,6 +33,14 @@ const LOOK_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "charcoal-hot-coal": "Few fat embers, long hang",
   "charcoal-jade-dust": "Sparse green motes",
   "charcoal-ash": "Faint grey drift",
+
+  // LED
+  "led-capsule-classic": "Blue and red shaft ends",
+  "led-capsule-pulse": "Breathing green tips",
+  "led-rainbow-pov": "Full-spectrum light disc",
+  "led-comet": "Racing head, fading tail",
+  "led-gradient-blade": "Two-color blended blade",
+  "led-sunset-sweep": "Ember-to-violet wash",
 };
 
 /** Null when a look has no copy yet, so the caller can fall back to its trait. */
