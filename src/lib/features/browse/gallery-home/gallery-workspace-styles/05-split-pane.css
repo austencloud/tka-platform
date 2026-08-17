@@ -7,6 +7,18 @@
   justify-content: flex-start;
   padding-top: 0.25rem;
 }
+/* The phone/sheet compositions clip their bounded screens (`overflow-y: hidden`
+     at container ≤640px) because those layouts are sized to fit every option by
+     construction. The pane is NOT that: its column height is whatever the
+     window and the catalog leave over, and `allocatePaneHeight` explicitly
+     returns `editorScrolls: true` when even the row minimums do not fit. Those
+     two facts together made options unreachable — the LOOP editor at 1920x1080
+     hid Rewound entirely with no way to scroll to it (Austen, 2026-08-17: "I
+     can't actually access the rest of the loop ... because there's no scrolling
+     allowed"). In the pane, a screen always scrolls rather than clip. */
+.drill-ctx.split-pane .drill-screen {
+  overflow-y: auto;
+}
 /* `.drill-screen >` matches the per-screen tier rules' weight (they key off
      .screen-loop / .screen-length on this same element), so this override wins
      on order rather than losing on specificity.
@@ -88,22 +100,101 @@
   --pane-row-min: 8rem;
   --pane-row-max: 18rem;
 }
-/* LOOPs is seven options, and seven into two columns strands Rewound alone on
-     the last row — a row of one, which `4k-native-layout.md` rule 2 forbids.
+/* LOOPs is seven options. A one-per-row stack needs seven row minimums plus a
+     header inside a column that has ~547px to give, so the tail of the list
+     fell off the bottom of the pane. Two columns halve the row count to four
+     and spend the width the stack was leaving empty beside every label.
+
      The count is pinned here rather than inherited from the tier soup so the
      orphan rule below is provably correct: in a two-column grid the last child
-     is alone exactly when its index is odd. Same trick as the catalog's
-     eleventh tile. */
-@container drill (min-width: 640px) {
-  .drill-ctx.split-pane .screen-loop > .value-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .drill-ctx.split-pane
-    .screen-loop
-    > .value-list
-    > :last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
+     is alone exactly when its index is odd, and seven into two columns strands
+     Rewound on a row of one, which `4k-native-layout.md` rule 2 forbids. Same
+     trick as the catalog's eleventh tile.
+
+     This is unconditional across the pane's whole 352–736px resize range: the
+     old `min-width: 640px` gate only ever fired at the widest end of that
+     range, so the default 440px pane — the one every user actually sees — kept
+     the stack that could not fit. */
+.drill-ctx.split-pane .screen-loop > .value-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* The 5.25rem floor above was written for a full-width LOOP bar in a
+     one-per-row stack, where it bought presence for seven rows the column was
+     never going to show anyway. Two columns charge that floor four times over
+     and it lands 11px above what the tile actually holds, which is the whole
+     difference between four rows fitting a 900px-tall laptop and Rewound
+     sitting below the fold. Dropping it under the tile's own min-content hands
+     the decision back to `--pane-row-fit: min-content`; `--pane-row-max` is
+     untouched, so a tall window still lets the tiles breathe. */
+  --pane-row-min: 4.25rem;
+}
+/* The phone tier pins this same last child to `grid-column: auto` through a
+     `:has()` selector worth (0,7,0). Matching that weight is what makes the
+     span stick — the plain `> :last-child:nth-child(odd)` form silently lost.
+     The `:has()` here also carries the odd-count condition, so the rule states
+     its own precondition instead of hardcoding "seven". */
+.drill-ctx.split-pane
+  .screen-loop
+  > .value-list:has(> :nth-child(odd):last-child)
+  > :last-child {
+  width: auto;
+  grid-column: 1 / -1;
+  justify-self: stretch;
+}
+/* Below 640px of container the phone tier compresses each LOOP into a squat
+     horizontal bar with an ellipsised 12px label — sized for one full-width
+     column, unreadable in a half-width cell. Two columns get the same centred
+     tile the wide pane already uses: glyph over a label that may take a second
+     line ("Rotated (quartered)" does at the narrow end), density, count. */
+.drill-ctx.split-pane .screen-loop .length-row.monument {
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 1rem;
+  text-align: center;
+}
+.drill-ctx.split-pane .screen-loop .value-main {
+  align-items: center;
+  gap: 0.2rem;
+}
+.drill-ctx.split-pane .screen-loop .value-label {
+  overflow: visible;
+  font-size: var(--font-size-sm, 14px);
+  text-overflow: clip;
+  white-space: normal;
+  text-wrap: balance;
+}
+/* The count rides in the tile's free corner rather than on a fourth stacked
+     line. Four tiles tall, that line was 26px each — 104px, more than the
+     margin between "every LOOP is on screen" and "Rewound is below the fold"
+     on a 900px-tall laptop. Cornered, it also balances the tick opposite it
+     and leaves glyph-over-label as the one centred group the eye reads. */
+.drill-ctx.split-pane .screen-loop .value-count {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.55rem;
+  font-size: var(--font-size-xs, 12px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  opacity: 0.75;
+}
+/* Every pixel of the tile's min-content height is a pixel the pane budget must
+     find four times over, so the bar is a hairline here rather than the 5px
+     track the full-size monument uses. */
+.drill-ctx.split-pane .screen-loop .density-bar {
+  max-width: 8rem;
+  height: 4px;
+  margin-inline: auto;
+}
+/* The tick belongs in the tile's corner, not inline after the count where the
+     phone bar put it — a centred column has no trailing slot to reserve. */
+.drill-ctx.split-pane .screen-loop .loop-check {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 20px;
 }
 
 /* The art scales with the CARD, not with the tier. Every one of these boxes
@@ -220,6 +311,19 @@
     }
   }
 }
+/* Short windows (1440x900 laptops, and any window a desktop user has not
+     maximised). Four LOOP rows plus the drill head need about 455px; a 900px
+     window leaves the editor 445. The glyph is the one part of the tile with
+     slack — label, density and count are already at their floors — so it gives
+     up 4px per tile and every LOOP stays on screen instead of the last row
+     going under the fold. Placed after the wide-column container block so it
+     also reins in the 2.5rem glyph a 736px pane would otherwise use. */
+@media (max-height: 960px) {
+  .drill-ctx.split-pane .screen-loop .loop-icon {
+    font-size: 1.5rem;
+  }
+}
+
 .drill-ctx.sheet .drill-screen {
   justify-content: flex-start;
 }
