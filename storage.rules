@@ -96,6 +96,21 @@ service firebase.storage {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Pronunciation corpus - the hands-free recorder uploads one word at a time
+    // under the signed-in account, as the aligner's own input layout:
+    // pronunciation-corpus/{userId}/{sessionId}/{001.wav,001.lab,words.json,session.json}
+    // Read is the owner's too: scripts/fetch-pronunciation-session.mjs pulls a
+    // session down for the offline aligner.
+    match /pronunciation-corpus/{userId}/{allPaths=**} {
+      // No contentType matcher on purpose. One word is three uploads of three
+      // different types, and a matcher that misses one fails the write with a
+      // 403 the recorder can only report as "upload rejected" - the same dead
+      // end the missing rule caused. The size cap is the abuse guard: a 24-bit
+      // 48kHz WAV of a spoken word is under 1MB.
+      allow read, write: if request.auth != null && request.auth.uid == userId
+        && (request.resource == null || request.resource.size < 5 * 1024 * 1024);
+    }
+
     // User avatars - generated profile pictures
     match /avatars/{userId}/{fileName} {
       // Device photos are normalized to WebP; generated avatars remain PNG.

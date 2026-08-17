@@ -6,9 +6,10 @@
     recorded: number;
     folderName: string | null;
     abortReason: string | null;
+    failure: string | null;
   }
 
-  let { retired, recorded, folderName, abortReason }: Props = $props();
+  let { retired, recorded, folderName, abortReason, failure }: Props = $props();
 
   const spoken = (word: readonly string[]) =>
     word
@@ -24,8 +25,13 @@
     <p class="abort">
       Stopped because {abortReason === "early-failures"
         ? "most of the opening reads failed"
-        : "several reads failed in a row"} — check the input level and the selected
-      microphone before running again. Everything recorded so far is saved.
+        : "several reads failed in a row"}.
+    </p>
+    <!-- The specific reason when there is one. Blaming the microphone for a
+         rejected upload sends him to the one place that is working. -->
+    <p class="abort">
+      {failure ??
+        "Check the input level and the selected microphone before running again. Everything recorded so far is saved."}
     </p>
   {/if}
 

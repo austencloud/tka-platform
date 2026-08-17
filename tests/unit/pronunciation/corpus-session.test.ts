@@ -11,7 +11,13 @@ const WORDS = [
   [Letter.E, Letter.F],
 ];
 
-function harness(words = WORDS) {
+interface StoreFaults {
+  /** Reject `writeWord` while this returns true, as a denied upload does. */
+  failWrite?: () => boolean;
+  failSession?: () => boolean;
+}
+
+function harness(words = WORDS, faults: StoreFaults = {}) {
   let handlers: SpeechBoundaryHandlers | null = null;
   const written: Array<{ id: string; letters: readonly string[]; bytes: number }> = [];
   const sessions: unknown[] = [];
@@ -43,9 +49,13 @@ function harness(words = WORDS) {
         return { name: "corpus", directSave: true };
       },
       async writeWord(id, letters, wav) {
+        if (faults.failWrite?.()) {
+          throw new Error("Firebase Storage: User does not have permission. (storage/unauthorized)");
+        }
         written.push({ id, letters, bytes: wav.size });
       },
       async writeSession(record) {
+        if (faults.failSession?.()) throw new Error("session index rejected");
         sessions.push(record);
       },
       async finish() {},
@@ -137,6 +147,65 @@ describe("createCorpusSession", () => {
 
     expect(session.status).toBe("aborted");
     expect(session.abortReason).not.toBeNull();
+  });
+
+  it("says so when the recording cannot be saved, instead of going quiet", async () => {
+    // The shipped bug: uploads landed on a storage path no rule granted, so
+    // `writeWord` threw. The word never advanced, nothing appeared on screen,
+    // and he read into a session that had already stopped listening to him.
+    const { session, speak } = harness(WORDS, { failWrite: () => true });
+    await session.start();
+
+    await speak(2, 1.0);
+
+    expect(session.failure).toMatch(/could not save the recording/i);
+    expect(session.failure).toMatch(/storage\/unauthorized/);
+    expect(session.status).toBe("running");
+  });
+
+  it("keeps taking words after one that could not be saved", async () => {
+    // The mechanism that made one rejected upload end the whole sitting: every
+    // read is chained onto the last, and a rejected link skips every `.then`
+    // after it without running, forever.
+    let deny = true;
+    const { session, speak, written } = harness([...WORDS, [Letter.G, Letter.H]], {
+      failWrite: () => deny,
+    });
+    await session.start();
+
+    await speak(2, 1.0);
+    expect(written).toEqual([]);
+
+    deny = false;
+    await speak(4, 1.0);
+
+    expect(written).toHaveLength(1);
+    expect(session.failure).toBeNull();
+  });
+
+  it("stops with the real reason when nothing can be saved", async () => {
+    const many = Array.from({ length: 30 }, () => [Letter.A, Letter.B, Letter.C, Letter.D]);
+    const { session, speak } = harness(many, { failWrite: () => true });
+    await session.start();
+
+    for (let index = 0; index < 3; index++) await speak(2 + index * 2, 1.2);
+
+    expect(session.status).toBe("aborted");
+    expect(session.abortReason).toBe("early-failures");
+    // Carried into the report, so it does not blame the one part that worked.
+    expect(session.failure).toMatch(/storage\/unauthorized/);
+  });
+
+  it("keeps the words when only the session index fails to save", async () => {
+    const { session, speak, written } = harness(WORDS, { failSession: () => true });
+    await session.start();
+
+    await speak(2, 1.0);
+
+    expect(written).toHaveLength(1);
+    expect(session.status).toBe("running");
+    expect(session.currentWord).toEqual([Letter.C, Letter.D]);
+    expect(session.failure).toMatch(/could not save the session index/i);
   });
 
   it("persists coverage after every word so a closed tab can resume", async () => {

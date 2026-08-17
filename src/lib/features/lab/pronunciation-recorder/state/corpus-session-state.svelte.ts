@@ -5,7 +5,7 @@ import { createRateTracker } from "../domain/read-plausibility";
 import { createAbortMonitor, type AbortReason } from "../domain/session-abort";
 import { createSessionQueue } from "../domain/session-queue";
 import { encodeWav24 } from "../domain/wav-encoder";
-import type { IAudioRingCapture } from "../services/contracts/IAudioRingCapture";
+import type { CapturedSpan, IAudioRingCapture } from "../services/contracts/IAudioRingCapture";
 import type { ICorpusSessionStore } from "../services/contracts/ICorpusSessionStore";
 import type { ISpeechBoundaryDetector } from "../services/contracts/ISpeechBoundaryDetector";
 import { nextWordId } from "../services/implementations/CorpusSessionStore";
@@ -77,6 +77,33 @@ export function createCorpusSession(options: CorpusSessionOptions) {
 
   const wordOf = (key: string | null) => (key ? (byKey.get(key) ?? null) : null);
 
+  const reasonFor = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+  /**
+   * Writes one word, or reports why it could not be written.
+   *
+   * Left to throw, a rejected upload ended the sitting without a word of
+   * explanation: the queue never advanced, nothing changed on screen, and the
+   * promise every later read was chained to stayed rejected — so none of those
+   * reads ran either. A write that fails is a failed read like any other.
+   */
+  async function storeWord(word: readonly string[], span: CapturedSpan): Promise<boolean> {
+    try {
+      await options.store.writeWord(
+        nextWordId(recorded),
+        word,
+        encodeWav24(span.samples, span.sampleRate)
+      );
+    } catch (error) {
+      failure = `Could not save the recording. ${reasonFor(error)}`;
+      return false;
+    }
+
+    recorded++;
+    failure = null;
+    return true;
+  }
+
   function syncQueue(): void {
     currentKey = queue.current;
     nextKey = queue.next;
@@ -107,20 +134,28 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       // whatever never succeeded.
       monitor.record("fail");
       queue.requeue();
-    } else {
+    } else if (await storeWord(word, span)) {
       rate.observe(syllables, seconds);
       monitor.record("ok");
-
-      const id = nextWordId(recorded);
-      await options.store.writeWord(id, word, encodeWav24(span.samples, span.sampleRate));
-      recorded++;
       for (const cell of cellsCoveredBy(word)) {
         coverage[cell] = (coverage[cell] ?? 0) + 1;
       }
       queue.accept();
+    } else {
+      // Said out loud by `storeWord`, and counted, so a run of rejected uploads
+      // stops the session through the abort monitor rather than going quiet.
+      monitor.record("fail");
+      queue.requeue();
     }
 
-    await persist();
+    try {
+      await persist();
+    } catch (error) {
+      // Coverage is a convenience for the next sitting. Losing it is worth
+      // reporting and not worth stopping for — the words themselves are already
+      // written.
+      failure = `Recorded, but could not save the session index. ${reasonFor(error)}`;
+    }
 
     if (monitor.reason !== null) {
       abortReason = monitor.reason;
@@ -162,9 +197,14 @@ export function createCorpusSession(options: CorpusSessionOptions) {
             // Serialised: two words must never be written concurrently, or
             // their ids interleave and words.json disagrees with the stored
             // session.
-            pending = pending.then(() =>
-              handleSpeechEnd(span.endSeconds - span.startSeconds, audio)
-            );
+            pending = pending
+              .then(() => handleSpeechEnd(span.endSeconds - span.startSeconds, audio))
+              // Nothing may leave this chain rejected. A rejected `pending` is a
+              // dead session: every later `.then` is skipped without running, so
+              // one unexpected throw silences every word he reads after it.
+              .catch((error) => {
+                failure = reasonFor(error);
+              });
           },
         },
       });
@@ -175,7 +215,7 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       // Carried to the screen. Swallowing it left "could not start" as the only
       // account of a microphone that was denied, a sign-in that had expired,
       // and a detector that never opened.
-      failure = error instanceof Error ? error.message : String(error);
+      failure = reasonFor(error);
       status = "failed";
     }
   }

@@ -11,7 +11,11 @@
   import CorpusSessionScreen from "$lib/features/lab/pronunciation-recorder/components/CorpusSessionScreen.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-  type State = "idle" | "running" | "long" | "failed" | "finished" | "aborted";
+  type State = "idle" | "running" | "long" | "unsaved" | "failed" | "finished" | "aborted";
+
+  /** The message a denied storage upload actually produces, at full length. */
+  const SAVE_REJECTED =
+    "Could not save the recording. Firebase Storage: User does not have permission to access 'pronunciation-corpus/abc123/corpus-2026-08-17T10-42-08/004.wav'. (storage/unauthorized)";
 
   let state = $state<State>("idle");
 
@@ -19,6 +23,7 @@
     { value: "idle" as const, label: "Idle" },
     { value: "running" as const, label: "Running" },
     { value: "long" as const, label: "Longest word" },
+    { value: "unsaved" as const, label: "Save failed" },
     { value: "failed" as const, label: "Failed" },
     { value: "finished" as const, label: "Finished" },
     { value: "aborted" as const, label: "Aborted" },
@@ -37,18 +42,15 @@
     Letter.GAMMA,
   ];
 
+  const running = $derived(state === "running" || state === "long" || state === "unsaved");
+
   const session = $derived({
-    status:
-      state === "long"
-        ? "running"
-        : state === "aborted"
-          ? "finished"
-          : state,
+    status: running ? "running" : state === "aborted" ? "finished" : state,
     abortReason: state === "aborted" ? "consecutive-failures" : null,
     folderName: state === "idle" ? null : "tka-corpus-2026-08-16",
     currentWord:
-      state === "long" ? LONGEST : state === "running" ? [Letter.A, Letter.B, Letter.C] : null,
-    nextWord: state === "long" ? [Letter.W_DASH, Letter.Z] : state === "running" ? [Letter.SIGMA] : null,
+      state === "long" ? LONGEST : running ? [Letter.A, Letter.B, Letter.C] : null,
+    nextWord: state === "long" ? [Letter.W_DASH, Letter.Z] : running ? [Letter.SIGMA] : null,
     completed: state === "idle" ? 0 : 137,
     remaining: state === "finished" || state === "aborted" ? 0 : 263,
     retired:
@@ -62,7 +64,12 @@
     // The two label states are different widths, so both need looking at: the
     // reserve on the label is what stops the meter resizing between them.
     hearing: state === "long",
-    failure: state === "failed" ? "The speech detector could not start listening." : null,
+    failure:
+      state === "failed"
+        ? "The speech detector could not start listening."
+        : state === "unsaved"
+          ? SAVE_REJECTED
+          : null,
     start: async () => {},
   });
 </script>
@@ -124,6 +131,9 @@
 
   .switcher {
     width: min(52rem, 100%);
+    /* Seven states do not fit a 375px phone. Scrolling the switcher keeps the
+       harness chrome from overflowing the page it is meant to be judging. */
+    overflow-x: auto;
   }
 
   main {

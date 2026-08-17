@@ -70,10 +70,14 @@ export class CorpusSessionStore implements ICorpusSessionStore {
 
   async writeWord(id: string, letters: readonly string[], wav: Blob): Promise<void> {
     const files = buildWordFiles(id, letters);
-    this.entries.push(files.entry);
 
     await this.write(files.wavName, wav);
     await this.write(files.labName, new Blob([files.labText], { type: "text/plain" }));
+
+    // Only once the word's own two files are down. Recorded first, a failed
+    // write left a phantom row in words.json promising the aligner a wav that is
+    // not there.
+    this.entries.push(files.entry);
     await this.write(
       "words.json",
       new Blob([`${JSON.stringify(this.entries, null, 2)}\n`], { type: "application/json" })

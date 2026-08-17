@@ -77,6 +77,10 @@
         </span>
       </span>
     </div>
+
+    <p class="trouble" class:shown={session.failure !== null} aria-live="polite">
+      {session.failure ?? ""}
+    </p>
   {:else if session.status === "failed"}
     <p class="prompt-failed">
       Could not start. Allow the microphone when the browser asks, and make sure you are signed
@@ -92,6 +96,7 @@
       recorded={session.completed}
       folderName={session.folderName}
       abortReason={session.abortReason}
+      failure={session.failure}
     />
   {/if}
 </div>
@@ -256,6 +261,31 @@
     min-width: 13ch;
     text-align: start;
     white-space: nowrap;
+  }
+
+  .trouble {
+    margin: 0;
+    /* Held in the layout whether or not there is anything to say, so a save that
+       starts failing halfway through does not shove the prompt and the meter
+       upward mid-sitting. Four lines of reserve, which is what a storage
+       permission message — the longest one this screen can produce — runs to at
+       this width. */
+    display: grid;
+    place-content: start center;
+    width: min(52ch, 90vw);
+    height: min(5.6em, 15vh);
+    font-size: clamp(0.85rem, 0.9vw, 1.5rem);
+    line-height: 1.4;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    /* Not `display: none` — the row has to keep its height. Hidden also takes it
+       out of the accessibility tree, so the live region announces on reveal. */
+    visibility: hidden;
+  }
+
+  .trouble.shown {
+    visibility: visible;
+    color: var(--semantic-warning, #f59e0b);
   }
 
   .reason {

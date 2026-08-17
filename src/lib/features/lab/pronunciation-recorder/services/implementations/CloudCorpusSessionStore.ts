@@ -51,10 +51,14 @@ export class CloudCorpusSessionStore implements ICorpusSessionStore {
 
   async writeWord(id: string, letters: readonly string[], wav: Blob): Promise<void> {
     const files = buildWordFiles(id, letters);
-    this.entries.push(files.entry);
 
     await this.upload(files.wavName, wav, "audio/wav");
     await this.upload(files.labName, new Blob([files.labText]), "text/plain");
+
+    // Only once the word's own two files are up. Recorded first, a rejected
+    // upload left a phantom row in words.json promising the aligner a wav that
+    // is not there.
+    this.entries.push(files.entry);
     await this.upload(
       "words.json",
       new Blob([`${JSON.stringify(this.entries, null, 2)}\n`]),
