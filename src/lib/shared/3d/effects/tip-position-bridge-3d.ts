@@ -1,6 +1,10 @@
 import { Vector3, Quaternion, Euler } from "three";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PropTipPositions3D, TipPositionData3D } from "./types";
+import {
+	propTipAnchorSignature3D,
+	resolvePropTipAnchors3D,
+} from "./prop-tip-geometry-3d";
 
 export type TrailSourceId3D = "left-end" | "right-end" | "hand";
 
@@ -16,14 +20,30 @@ export interface TrailSource3D {
  * The logical left/right end ordering matches the canonical 2D trail pipeline:
  * tip 0 is the left end, tip 1 is the right end, and HAND uses one source at
  * the prop center while retaining the right-end effect-assignment slot.
+ *
+ * Single-ended props publish only the right slot. As in `trail-capturer.ts`,
+ * LEFT, RIGHT and BOTH all follow that one physical tip rather than inventing
+ * a second path behind the hand.
  */
 export function resolveTrailSources3D(
 	trackingMode: TrackingMode,
 	tips: readonly TipPositionData3D[],
 	propCenter: { x: number; y: number; z: number }
 ): TrailSource3D[] {
-	const leftTip = tips[0];
-	const rightTip = tips[1];
+	const leftTip = tips.find((tip) => tip.tipIndex === 0);
+	const rightTip = tips.find((tip) => tip.tipIndex === 1);
+
+	if (!leftTip && trackingMode !== TrackingMode.HAND) {
+		return rightTip
+			? [
+					{
+						sourceId: "right-end",
+						effectTipIndex: 1,
+						position: rightTip.position,
+					},
+				]
+			: [];
+	}
 
 	switch (trackingMode) {
 		case TrackingMode.LEFT_END:
@@ -121,8 +141,9 @@ interface TipHistory {
  *
  * The staff axis math replicates Staff3D.svelte: a horizontal quaternion
  * (Euler Z = PI/2) is applied, then the prop's world rotation, to get the
- * axis along the staff. Two tip positions are computed at +/- halfLength
- * from the prop center along that axis.
+ * axis along the prop. Tip positions are then placed along that axis at the
+ * offsets `resolvePropTipAnchors3D` reports for the prop type — two for the
+ * staff family, one for every single-ended prop.
  *
  * Operates in rig-local space: the caller provides a rig-local center
  * position (handAnchorPos + propState.worldPosition). No scene graph refs
@@ -131,6 +152,7 @@ interface TipHistory {
  */
 export class TipPositionBridge3D {
 	private history = new Map<string, TipHistory>();
+	private anchorSignatures = new Map<number, string>();
 	private readonly tempQuat = new Quaternion();
 	private readonly tempAxis = new Vector3();
 
@@ -139,7 +161,8 @@ export class TipPositionBridge3D {
 		propState: PropState3DLike,
 		rigLocalCenter: { x: number; y: number; z: number },
 		staffHalfLength: number,
-		deltaTime: number
+		deltaTime: number,
+		propType?: string
 	): PropTipPositions3D {
 		const center = new Vector3(
 			rigLocalCenter.x,
@@ -161,31 +184,43 @@ export class TipPositionBridge3D {
 		const finalQuat = rotation.multiply(horizontalQuat);
 		this.tempAxis.set(0, 1, 0).applyQuaternion(finalQuat);
 
-		const thumbEndPos = center
-			.clone()
-			.add(this.tempAxis.clone().multiplyScalar(staffHalfLength));
-		const pinkyEndPos = center
-			.clone()
-			.sub(this.tempAxis.clone().multiplyScalar(staffHalfLength));
-
 		// Effect assignments use the canonical logical order: Pinky/LEFT_END is
-		// tip 0, Thumb/RIGHT_END is tip 1. The staff mesh's positive axis points
-		// toward the thumb end, so its geometric endpoint order is the reverse.
-		const tips: TipPositionData3D[] = [
-			this.computeTipData(propIndex, 0, pinkyEndPos, deltaTime),
-			this.computeTipData(propIndex, 1, thumbEndPos, deltaTime),
-		];
+		// tip 0, Thumb/RIGHT_END is tip 1. The prop mesh's positive axis points
+		// toward the thumb end, which is the end a single-ended prop keeps.
+		const anchors = resolvePropTipAnchors3D(propType, staffHalfLength);
+
+		// Swapping the prop mid-playback moves a tip discontinuously. Dropping
+		// this prop's history turns that into one zero-velocity frame instead of
+		// a jerk spike that fires charcoal and fire bursts out of nowhere.
+		const signature = propTipAnchorSignature3D(anchors);
+		if (this.anchorSignatures.get(propIndex) !== signature) {
+			this.anchorSignatures.set(propIndex, signature);
+			this.history.delete(`${propIndex}-0`);
+			this.history.delete(`${propIndex}-1`);
+		}
+
+		const tips: TipPositionData3D[] = anchors.map((anchor) =>
+			this.computeTipData(
+				propIndex,
+				anchor.effectTipIndex,
+				center
+					.clone()
+					.add(this.tempAxis.clone().multiplyScalar(anchor.axialOffset)),
+				deltaTime
+			)
+		);
 
 		return { tips, propIndex };
 	}
 
 	reset(): void {
 		this.history.clear();
+		this.anchorSignatures.clear();
 	}
 
 	private computeTipData(
 		propIndex: number,
-		tipIndex: number,
+		tipIndex: 0 | 1,
 		position: Vector3,
 		deltaTime: number
 	): TipPositionData3D {
@@ -201,6 +236,7 @@ export class TipPositionBridge3D {
 			this.history.set(key, hist);
 
 			return {
+				tipIndex,
 				position: { x: position.x, y: position.y, z: position.z },
 				velocity: { x: 0, y: 0, z: 0 },
 				jerk: { x: 0, y: 0, z: 0 },
@@ -221,6 +257,7 @@ export class TipPositionBridge3D {
 		hist.hasData = true;
 
 		return {
+			tipIndex,
 			position: { x: position.x, y: position.y, z: position.z },
 			velocity: { x: velocity.x, y: velocity.y, z: velocity.z },
 			jerk: { x: jerk.x, y: jerk.y, z: jerk.z },

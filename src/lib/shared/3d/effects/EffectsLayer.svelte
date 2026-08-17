@@ -28,6 +28,7 @@
   } from "$lib/shared/effects/translators/webgl3d-translator";
   import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import { QualityTier, type TipPositionData3D } from "./types";
+  import { resolvePropTipAnchors3D } from "./prop-tip-geometry-3d";
 
   // Effect components
   // Trails are no longer mounted here. The single consolidated 3D trail
@@ -210,12 +211,19 @@
   // =============================================================================
 
   /**
-   * Calculate the two end positions of a staff given its state
-   * Must match the exact rotation logic used in Staff3D.svelte
+   * Calculate the emitting end positions of a prop given its state.
+   * Must match the exact rotation logic used in Staff3D.svelte.
+   *
+   * Only the staff family has a negative end. A club, sword or fan has one
+   * tip, so `negative` is null and every emitter below skips it rather than
+   * throwing a second flame out the back of the grip.
    */
-  function calculatePropEnds(propState: PropState3D): {
+  function calculatePropEnds(
+    propState: PropState3D,
+    propType: PropType
+  ): {
     positive: Vector3;
-    negative: Vector3;
+    negative: Vector3 | null;
   } {
     const center = propState.worldPosition.clone();
 
@@ -231,38 +239,52 @@
     const localAxis = new Vector3(0, 1, 0);
     const worldAxis = localAxis.applyQuaternion(finalQuat);
 
-    // Calculate end positions
-    const positive = center
-      .clone()
-      .add(worldAxis.clone().multiplyScalar(halfLength));
-    const negative = center
-      .clone()
-      .add(worldAxis.clone().multiplyScalar(-halfLength));
+    const anchors = resolvePropTipAnchors3D(propType, halfLength);
+    const endAt = (slot: 0 | 1): Vector3 | null => {
+      const anchor = anchors.find((a) => a.effectTipIndex === slot);
+      return anchor
+        ? center
+            .clone()
+            .add(worldAxis.clone().multiplyScalar(anchor.axialOffset))
+        : null;
+    };
 
-    return { positive, negative };
+    return { positive: endAt(1) ?? center.clone(), negative: endAt(0) };
   }
 
-  // Derived prop end positions
+  function tipAt(
+    tipData: readonly TipPositionData3D[],
+    slot: 0 | 1
+  ): TipPositionData3D | undefined {
+    return tipData.find((tip) => tip.tipIndex === slot);
+  }
+
+  // Derived prop end positions. Read by slot, never by array index: a
+  // single-ended prop publishes exactly one tip and it owns slot 1.
   const blueEnds = $derived.by(() => {
-    if (blueTipData.length >= 2) {
+    const positive = tipAt(blueTipData, 1);
+    if (positive) {
+      const negative = tipAt(blueTipData, 0);
       return {
-        positive: vectorFrom(blueTipData[1]!.position),
-        negative: vectorFrom(blueTipData[0]!.position),
+        positive: vectorFrom(positive.position),
+        negative: negative ? vectorFrom(negative.position) : null,
       };
     }
     if (!bluePropState) return null;
-    return calculatePropEnds(bluePropState);
+    return calculatePropEnds(bluePropState, bluePropType);
   });
 
   const redEnds = $derived.by(() => {
-    if (redTipData.length >= 2) {
+    const positive = tipAt(redTipData, 1);
+    if (positive) {
+      const negative = tipAt(redTipData, 0);
       return {
-        positive: vectorFrom(redTipData[1]!.position),
-        negative: vectorFrom(redTipData[0]!.position),
+        positive: vectorFrom(positive.position),
+        negative: negative ? vectorFrom(negative.position) : null,
       };
     }
     if (!redPropState) return null;
-    return calculatePropEnds(redPropState);
+    return calculatePropEnds(redPropState, redPropType);
   });
 
   function vectorFrom(
@@ -276,13 +298,17 @@
   const redCenter = $derived(redPropState?.worldPosition ?? null);
 
   const bluePositiveVelocityVec = $derived(
-    vectorFrom(blueTipData[1]?.velocity)
+    vectorFrom(tipAt(blueTipData, 1)?.velocity)
   );
   const blueNegativeVelocityVec = $derived(
-    vectorFrom(blueTipData[0]?.velocity)
+    vectorFrom(tipAt(blueTipData, 0)?.velocity)
   );
-  const redPositiveVelocityVec = $derived(vectorFrom(redTipData[1]?.velocity));
-  const redNegativeVelocityVec = $derived(vectorFrom(redTipData[0]?.velocity));
+  const redPositiveVelocityVec = $derived(
+    vectorFrom(tipAt(redTipData, 1)?.velocity)
+  );
+  const redNegativeVelocityVec = $derived(
+    vectorFrom(tipAt(redTipData, 0)?.velocity)
+  );
 </script>
 
 <!-- Trails render via EffectOrchestrator3D (Trail3D ribbon) in the rig's
@@ -311,16 +337,18 @@
       gravity={sparkles3D.worldGravity}
       lifetime={sparkles3D.lifetime}
     />
-    <SparkleEmitter
-      position={blueEnds.negative}
-      enabled={true}
-      intensity={sparkles3D.rate * 0.7}
-      color={pickSparkleColor(1)}
-      spread={sparkles3D.worldSpread * 0.75}
-      radius={sparkles3D.baseRadius}
-      gravity={sparkles3D.worldGravity}
-      lifetime={sparkles3D.lifetime}
-    />
+    {#if blueEnds.negative}
+      <SparkleEmitter
+        position={blueEnds.negative}
+        enabled={true}
+        intensity={sparkles3D.rate * 0.7}
+        color={pickSparkleColor(1)}
+        spread={sparkles3D.worldSpread * 0.75}
+        radius={sparkles3D.baseRadius}
+        gravity={sparkles3D.worldGravity}
+        lifetime={sparkles3D.lifetime}
+      />
+    {/if}
   {/if}
 
   {#if redEnds}
@@ -334,16 +362,18 @@
       gravity={sparkles3D.worldGravity}
       lifetime={sparkles3D.lifetime}
     />
-    <SparkleEmitter
-      position={redEnds.negative}
-      enabled={true}
-      intensity={sparkles3D.rate * 0.7}
-      color={pickSparkleColor(3)}
-      spread={sparkles3D.worldSpread * 0.75}
-      radius={sparkles3D.baseRadius}
-      gravity={sparkles3D.worldGravity}
-      lifetime={sparkles3D.lifetime}
-    />
+    {#if redEnds.negative}
+      <SparkleEmitter
+        position={redEnds.negative}
+        enabled={true}
+        intensity={sparkles3D.rate * 0.7}
+        color={pickSparkleColor(3)}
+        spread={sparkles3D.worldSpread * 0.75}
+        radius={sparkles3D.baseRadius}
+        gravity={sparkles3D.worldGravity}
+        lifetime={sparkles3D.lifetime}
+      />
+    {/if}
   {/if}
 {/if}
 
@@ -366,17 +396,21 @@
       segments={zap3D.segments}
       regenerateEveryFrames={zap3D.regenerateEveryFrames}
     />
-    <ElectricityArc
-      start={blueEnds.negative}
-      end={redEnds.negative}
-      enabled={true}
-      intensity={zap3D.intensity}
-      color={zap3D.rightColor}
-      mode={zap3D.mode}
-      displacement={zap3D.jitterAmount}
-      segments={zap3D.segments}
-      regenerateEveryFrames={zap3D.regenerateEveryFrames}
-    />
+    <!-- The second arc needs a back end on BOTH props. One club in hand and
+         there is nothing to arc between. -->
+    {#if blueEnds.negative && redEnds.negative}
+      <ElectricityArc
+        start={blueEnds.negative}
+        end={redEnds.negative}
+        enabled={true}
+        intensity={zap3D.intensity}
+        color={zap3D.rightColor}
+        mode={zap3D.mode}
+        displacement={zap3D.jitterAmount}
+        segments={zap3D.segments}
+        regenerateEveryFrames={zap3D.regenerateEveryFrames}
+      />
+    {/if}
   {/if}
 {/if}
 
@@ -456,7 +490,7 @@
       enabled={true}
     />
   {/if}
-  {#if blueEnds && gooShowLeftEnd}
+  {#if blueEnds?.negative && gooShowLeftEnd}
     <WaterEmitter3D
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
@@ -472,7 +506,7 @@
       enabled={true}
     />
   {/if}
-  {#if redEnds && gooShowLeftEnd}
+  {#if redEnds?.negative && gooShowLeftEnd}
     <WaterEmitter3D
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}
@@ -497,7 +531,7 @@
       {qualityTier}
     />
   {/if}
-  {#if blueEnds}
+  {#if blueEnds?.negative}
     <BubbleEmitter3D
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
@@ -515,7 +549,7 @@
       {qualityTier}
     />
   {/if}
-  {#if redEnds}
+  {#if redEnds?.negative}
     <BubbleEmitter3D
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}
@@ -540,7 +574,7 @@
       enabled={true}
     />
   {/if}
-  {#if blueEnds && petalsShowLeftEnd}
+  {#if blueEnds?.negative && petalsShowLeftEnd}
     <PetalEmitter3D
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
@@ -556,7 +590,7 @@
       enabled={true}
     />
   {/if}
-  {#if redEnds && petalsShowLeftEnd}
+  {#if redEnds?.negative && petalsShowLeftEnd}
     <PetalEmitter3D
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}
@@ -580,7 +614,7 @@
       enabled={true}
     />
   {/if}
-  {#if blueEnds && smokeShowLeftEnd}
+  {#if blueEnds?.negative && smokeShowLeftEnd}
     <SmokeRenderer3D
       position={blueEnds.negative}
       propVelocity={blueNegativeVelocityVec}
@@ -596,7 +630,7 @@
       enabled={true}
     />
   {/if}
-  {#if redEnds && smokeShowLeftEnd}
+  {#if redEnds?.negative && smokeShowLeftEnd}
     <SmokeRenderer3D
       position={redEnds.negative}
       propVelocity={redNegativeVelocityVec}

@@ -95,7 +95,21 @@ describe("EffectsLayer follows the 3D effect selection, not the 2D one", () => {
 
   it("resolves those from the same maps the imperative renderers use", () => {
     expect(orchestratorSource).toMatch(
-      /resolveEffect\(\s*propIndex!?,\s*tipIndex!?,\s*tipEffectMap,\s*globalTipEffectMap/
+      /resolveEffect\(0,\s*tipIndex,\s*tipEffectMap,\s*globalTipEffectMap/
+    );
+    expect(orchestratorSource).toMatch(
+      /resolveEffect\(1,\s*tipIndex,\s*tipEffectMap,\s*globalTipEffectMap/
+    );
+  });
+
+  it("takes its tip slots from the prop in hand, not a hardcoded four", () => {
+    // A club has one end. Enumerating [[0,0],[0,1],[1,0],[1,1]] lit effects for
+    // ends the prop does not have.
+    expect(orchestratorSource).toMatch(
+      /resolvePropTipAnchors3D\(bluePropType,\s*staffHalfLength\)/
+    );
+    expect(orchestratorSource).toMatch(
+      /resolvePropTipAnchors3D\(redPropType,\s*staffHalfLength\)/
     );
   });
 });

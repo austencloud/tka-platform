@@ -72,6 +72,13 @@ export type PropId = "blue" | "red";
  * (including tests) don't need a Three.js dependency.
  */
 export interface TipPositionData3D {
+  /**
+   * Effect-assignment slot this tip owns: 0 = pinky/left end, 1 = thumb/right
+   * end. Read this instead of the array index — a single-ended prop (club,
+   * sword, fan…) publishes ONE tip and it sits on slot 1, so position in the
+   * array no longer implies the slot.
+   */
+  tipIndex: 0 | 1;
   position: { x: number; y: number; z: number };
   velocity: { x: number; y: number; z: number };
   jerk: { x: number; y: number; z: number };
@@ -79,7 +86,8 @@ export interface TipPositionData3D {
 }
 
 /**
- * Per-tip positions for a single prop (two tips per staff).
+ * Per-tip positions for a single prop: two for the staff family, one for every
+ * single-ended prop.
  */
 export interface PropTipPositions3D {
   tips: TipPositionData3D[];

@@ -37,6 +37,7 @@
     TipPositionBridge3D,
     type TrailSourceId3D,
   } from "./tip-position-bridge-3d";
+  import { resolvePropTipAnchors3D } from "./prop-tip-geometry-3d";
   import {
     PovStripRenderer3D,
     shutterToPovPersistence,
@@ -169,7 +170,23 @@
   const tipBridge = new TipPositionBridge3D();
 
   /**
-   * The effects this rig's four tips actually resolve to, for EffectsLayer.
+   * The effect slots each prop actually presents: two for a staff, one for a
+   * club. Iterating a hardcoded four would light effects for ends that do not
+   * exist on the prop in hand.
+   */
+  const blueTipSlots = $derived(
+    resolvePropTipAnchors3D(bluePropType, staffHalfLength).map(
+      (anchor) => anchor.effectTipIndex
+    )
+  );
+  const redTipSlots = $derived(
+    resolvePropTipAnchors3D(redPropType, staffHalfLength).map(
+      (anchor) => anchor.effectTipIndex
+    )
+  );
+
+  /**
+   * The effects this rig's live tips actually resolve to, for EffectsLayer.
    *
    * Same resolveEffect() and same maps the imperative renderers use below, so
    * the Svelte-mounted effects and the imperative ones can never disagree about
@@ -177,21 +194,14 @@
    * effect, not per tip.
    */
   const layerActiveEffects = $derived([
-    ...new Set(
-      [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1],
-      ].map(([propIndex, tipIndex]) =>
-        resolveEffect(
-          propIndex!,
-          tipIndex!,
-          tipEffectMap,
-          globalTipEffectMap ?? {}
-        )
-      )
-    ),
+    ...new Set([
+      ...blueTipSlots.map((tipIndex) =>
+        resolveEffect(0, tipIndex, tipEffectMap, globalTipEffectMap ?? {})
+      ),
+      ...redTipSlots.map((tipIndex) =>
+        resolveEffect(1, tipIndex, tipEffectMap, globalTipEffectMap ?? {})
+      ),
+    ]),
   ]);
 
   // Brighter HDR core on capable tiers so the scene bloom pass makes trails
@@ -443,9 +453,13 @@
   }
 
   /**
-   * Drive one prop's pixel staff. The strip spans the same two shaft
-   * endpoints the ribbon renderer lights on a capsule, so both devices sit on
-   * the identical prop attachment.
+   * Drive one prop's pixel staff. The strip spans the same shaft the ribbon
+   * renderer lights on a capsule, so both devices sit on the identical prop
+   * attachment.
+   *
+   * A two-ended prop spans tip to tip. A single-ended prop (club, sword, fan)
+   * has no second end, so the strip runs from the hand to its one tip rather
+   * than mirroring itself into empty air behind the grip.
    */
   function updatePixelStaff(
     renderer: PovStripRenderer3D,
@@ -457,25 +471,27 @@
     now: number,
     brightness: number
   ): void {
-    const first = tips[0];
-    const last = tips[tips.length - 1];
-    if (!first || !last || tips.length < 2) {
+    const leftTip = tips.find((tip) => tip.tipIndex === 0);
+    const rightTip = tips.find((tip) => tip.tipIndex === 1);
+    const first = leftTip?.position ?? rigLocalCenter;
+    const last = rightTip?.position ?? leftTip?.position;
+    if (!last) {
       renderer.reset();
       return;
     }
 
-    _staffAxis.set(
-      last.position.x - first.position.x,
-      last.position.y - first.position.y,
-      last.position.z - first.position.z
-    );
+    _staffAxis.set(last.x - first.x, last.y - first.y, last.z - first.z);
     const span = _staffAxis.length();
     if (span < 1e-6) {
       renderer.reset();
       return;
     }
     _staffAxis.multiplyScalar(1 / span);
-    _staffCenter.set(rigLocalCenter.x, rigLocalCenter.y, rigLocalCenter.z);
+    _staffCenter.set(
+      (first.x + last.x) / 2,
+      (first.y + last.y) / 2,
+      (first.z + last.z) / 2
+    );
 
     renderer.update(
       _staffAxis,
@@ -754,10 +770,14 @@
         visualBlueProp,
         blueRigCenter,
         staffHalfLength,
-        dt
+        dt,
+        bluePropType
       );
       blueEffectTips = result.tips;
-      result.tips.forEach((tip, tipIndex) => {
+      result.tips.forEach((tip) => {
+        // The tip owns its effect slot. A single-ended prop publishes one tip
+        // on slot 1, so the array index is not the slot.
+        const tipIndex = tip.tipIndex;
         const resolved = resolveEffect(
           0,
           tipIndex,
@@ -767,7 +787,7 @@
         // "none" renders nothing - no silent fallback to trails. The default
         // effect comes from the resolved tip map, not an invented value here.
         const effect = resolved;
-        publishPooledTip(0, tipIndex as 0 | 1, tip, effect);
+        publishPooledTip(0, tipIndex, tip, effect);
 
         if (effect === "led") {
           // Both props run the same pattern on the same clock, exactly as
@@ -842,10 +862,14 @@
         visualRedProp,
         redRigCenter,
         staffHalfLength,
-        dt
+        dt,
+        redPropType
       );
       redEffectTips = result.tips;
-      result.tips.forEach((tip, tipIndex) => {
+      result.tips.forEach((tip) => {
+        // The tip owns its effect slot. A single-ended prop publishes one tip
+        // on slot 1, so the array index is not the slot.
+        const tipIndex = tip.tipIndex;
         const resolved = resolveEffect(
           1,
           tipIndex,
@@ -855,7 +879,7 @@
         // "none" renders nothing - no silent fallback to trails. The default
         // effect comes from the resolved tip map, not an invented value here.
         const effect = resolved;
-        publishPooledTip(1, tipIndex as 0 | 1, tip, effect);
+        publishPooledTip(1, tipIndex, tip, effect);
 
         if (effect === "led") {
           redLedAssigned = true;

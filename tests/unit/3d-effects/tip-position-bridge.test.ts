@@ -4,8 +4,10 @@ import {
 	resolveTrailSources3D,
 	TipPositionBridge3D,
 } from "$lib/shared/3d/effects/tip-position-bridge-3d";
+import { resolvePropTipAnchors3D } from "$lib/shared/3d/effects/prop-tip-geometry-3d";
 import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { TipPositionData3D } from "$lib/shared/3d/effects/types";
+import { PropType } from "@austencloud/scene-3d";
 
 function makePropState(x: number, y: number, z: number) {
 	return {
@@ -251,12 +253,14 @@ describe("resolveTrailSources3D", () => {
 	const stationary = { x: 0, y: 0, z: 0 };
 	const tips: TipPositionData3D[] = [
 		{
+			tipIndex: 0,
 			position: { x: 1, y: 2, z: 3 },
 			velocity: stationary,
 			jerk: stationary,
 			speed: 0,
 		},
 		{
+			tipIndex: 1,
 			position: { x: -1, y: -2, z: -3 },
 			velocity: stationary,
 			jerk: stationary,
@@ -313,5 +317,108 @@ describe("resolveTrailSources3D", () => {
 		},
 	])("selects the expected sources for $mode", ({ mode, expected }) => {
 		expect(resolveTrailSources3D(mode, tips, propCenter)).toEqual(expected);
+	});
+
+	it("follows the one real tip when a single-ended prop asks for both ends", () => {
+		const singleTip: TipPositionData3D[] = [
+			{
+				tipIndex: 1,
+				position: { x: 0.5, y: 0, z: 0 },
+				velocity: stationary,
+				jerk: stationary,
+				speed: 0,
+			},
+		];
+
+		for (const mode of [
+			TrackingMode.LEFT_END,
+			TrackingMode.RIGHT_END,
+			TrackingMode.BOTH_ENDS,
+		]) {
+			expect(resolveTrailSources3D(mode, singleTip, propCenter)).toEqual([
+				{
+					sourceId: "right-end",
+					effectTipIndex: 1,
+					position: singleTip[0].position,
+				},
+			]);
+		}
+	});
+});
+
+describe("resolvePropTipAnchors3D", () => {
+	const halfLength = 0.4318; // Austen's 34in staff
+
+	it("keeps both ends for the staff family", () => {
+		expect(resolvePropTipAnchors3D(PropType.STAFF, halfLength)).toEqual([
+			{ effectTipIndex: 0, axialOffset: -halfLength },
+			{ effectTipIndex: 1, axialOffset: halfLength },
+		]);
+	});
+
+	it("gives a club one tip, at the club's own cap reach", () => {
+		const anchors = resolvePropTipAnchors3D(PropType.CLUB, halfLength);
+
+		expect(anchors).toHaveLength(1);
+		expect(anchors[0].effectTipIndex).toBe(1);
+		// club-profile.ts CLUB_REACH_M - an absolute 52cm club, not half a staff.
+		expect(anchors[0].axialOffset).toBeCloseTo(0.50343, 5);
+	});
+
+	it.each([
+		PropType.FAN,
+		PropType.SWORD,
+		PropType.MINIHOOP,
+		PropType.TRIAD,
+		PropType.TORCH,
+		PropType.CHICKEN,
+		PropType.GUITAR,
+	])("gives %s exactly one tip, on the thumb slot", (propType) => {
+		const anchors = resolvePropTipAnchors3D(propType, halfLength);
+
+		expect(anchors).toHaveLength(1);
+		expect(anchors[0].effectTipIndex).toBe(1);
+		expect(anchors[0].axialOffset).toBeGreaterThan(0);
+	});
+
+	it("emits from the ball itself for a contact ball, and from the hand for a bare hand", () => {
+		for (const propType of [PropType.CONTACTBALL, PropType.HAND]) {
+			const anchors = resolvePropTipAnchors3D(propType, halfLength);
+			expect(anchors).toEqual([{ effectTipIndex: 1, axialOffset: 0 }]);
+		}
+	});
+
+	it("keeps both ends for the bilateral props the 2D registry does not list", () => {
+		expect(
+			resolvePropTipAnchors3D(PropType.FRACTALGENG, halfLength)
+		).toHaveLength(2);
+		expect(
+			resolvePropTipAnchors3D(PropType.DOUBLECONTACTBALL, halfLength)
+		).toHaveLength(2);
+	});
+
+	it("drops the phantom end the bridge used to publish for every prop", () => {
+		const bridge = new TipPositionBridge3D();
+		const center = { x: 0, y: 1, z: 0 };
+
+		const staff = bridge.update(
+			0,
+			makePropState(0, 1, 0),
+			center,
+			0.5,
+			1 / 60,
+			PropType.STAFF
+		);
+		const club = bridge.update(
+			1,
+			makePropState(0, 1, 0),
+			center,
+			0.5,
+			1 / 60,
+			PropType.CLUB
+		);
+
+		expect(staff.tips.map((tip) => tip.tipIndex)).toEqual([0, 1]);
+		expect(club.tips.map((tip) => tip.tipIndex)).toEqual([1]);
 	});
 });
