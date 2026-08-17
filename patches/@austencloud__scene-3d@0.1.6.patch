@@ -1015,6 +1015,166 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/Eightrings3D.svelte b/dist/lib/components/props/Eightrings3D.svelte
+index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed414820f121 100644
+--- a/dist/lib/components/props/Eightrings3D.svelte
++++ b/dist/lib/components/props/Eightrings3D.svelte
+@@ -1,23 +1,65 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import {
++    buildEightringsShape,
++    EIGHTRINGS_STOCK_WIDTH,
++  } from "./eightrings-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the stock's half-width, past which the rolled edge folds through itself
++   * at the notches where the two rings cross.
++   */
++  const MAX_BEVEL_INSET = EIGHTRINGS_STOCK_WIDTH / 6.8;
++
++  /**
++   * The outline is all circular arc, so it needs more segments than the freehand
++   * silhouettes to stay round at the size this prop is drawn.
++   */
++  const CURVE_SEGMENTS = 24;
++
++  function getEightringsPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildEightringsShape(length),
++      depth,
++      length * MAX_BEVEL_INSET,
++      CURVE_SEGMENTS
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Eightrings3D Component
+    *
+-   * Renders a 3D eightrings (figure-8) prop with:
+-   * - Two torus rings stacked vertically, forming a figure-8 shape
+-   * - Upper ring centered at +25% Y, lower ring at -25% Y
+-   * - Grip torus ring at the center where the two rings overlap
+-   * - Trail indicator sphere for path visualization
++   * Two flat rings of identical section, set side by side along the prop and
++   * joined where they overlap — the exact silhouette of the 2D eight rings,
++   * extruded into a bullnose plate. Both circles and the union that joins them
++   * are built from the drawing's own measurements in `eightrings-profile.ts`,
++   * so the 3D prop and the pictograph prop are the same shape by construction.
++   *
++   * The rings are coplanar and untilted, because that is what the artwork
++   * draws. The hand takes the prop at the waist where they cross.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -38,57 +80,34 @@
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const rotation = $derived(computePropRotation(propState));
+-
+-  // Each ring: radius ~25% of staffLength
+-  const ringRadius = $derived(effectiveLength * 0.25);
+-  const ringTubeRadius = $derived(baseRadius * 0.8);
+-
+-  // Reduced offset so rings overlap more at center for a proper figure-8 crossing
+-  const ringOffset = $derived(effectiveLength * 0.18);
++  /**
++   * Flat spinning props are plate stock, not tube. The ring stock runs about
++   * 5.5cm across at default size, so the plate sits a little under 2cm — thick
++   * enough to hold a rolled edge and to read edge-on, thin enough that a tilted
++   * ring still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  // Tilt angle: upper ring tilts forward, lower tilts back (~15°)
+-  const ringTilt = 15 * (Math.PI / 180);
++  const plate = $derived(getEightringsPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+-  // Grip ring at center overlap point (smaller, white)
+-  const gripOuterRadius = $derived(baseRadius * 1.3);
+-  const gripTubeRadius = $derived(baseRadius * 0.15);
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Upper ring (thumb end, +Y) - tilted forward for figure-8 crossing -->
+-    <T.Mesh position={[0, ringOffset, 0]} rotation={[ringTilt, 0, 0]}>
+-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Lower ring (pinky end, -Y) - tilted backward for figure-8 crossing -->
+-    <T.Mesh position={[0, -ringOffset, 0]} rotation={[-ringTilt, 0, 0]}>
+-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Grip ring at center overlap -->
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/dist/lib/components/props/Fan3D.svelte b/dist/lib/components/props/Fan3D.svelte
 index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf23016164 100644
 --- a/dist/lib/components/props/Fan3D.svelte
@@ -1571,6 +1731,51 @@ index 0000000000000000000000000000000000000000..e0c43a25914383cb01dd5ec57f642899
 +}
 +export {
 +  buildDoublestarShape
++};
+diff --git a/dist/lib/components/props/eightrings-profile.d.ts b/dist/lib/components/props/eightrings-profile.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..35fe3f7ff4ef701e96f1c6383e3914a0d1103a39
+--- /dev/null
++++ b/dist/lib/components/props/eightrings-profile.d.ts
+@@ -0,0 +1,8 @@
++import { Shape } from "three";
++/**
++ * Width of the ring stock, normalized to staff length. The bevel ceiling is
++ * sized from it.
++ */
++export declare const EIGHTRINGS_STOCK_WIDTH: number;
++/** Build the eight rings — two joined flat rings, with the hand at the origin. */
++export declare function buildEightringsShape(staffLength: number): Shape;
+diff --git a/dist/lib/components/props/eightrings-profile.js b/dist/lib/components/props/eightrings-profile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..90d19054620c8c48598828cbb9bcb9e88fea879e
+--- /dev/null
++++ b/dist/lib/components/props/eightrings-profile.js
+@@ -0,0 +1,25 @@
++import { Path, Shape } from "three";
++const OUTER = 68.25 / 252.8;
++const INNER = 52.25 / 252.8;
++const OFFSET = 60.25 / 252.8;
++const CROSSING = Math.sqrt(OUTER * OUTER - OFFSET * OFFSET);
++const PHI = Math.atan2(OFFSET, CROSSING);
++const EIGHTRINGS_STOCK_WIDTH = OUTER - INNER;
++function buildEightringsShape(staffLength) {
++  const outer = OUTER * staffLength;
++  const inner = INNER * staffLength;
++  const offset = OFFSET * staffLength;
++  const shape = new Shape();
++  shape.absarc(0, offset, outer, -PHI, PHI + Math.PI, false);
++  shape.absarc(0, -offset, outer, Math.PI - PHI, PHI + 2 * Math.PI, false);
++  shape.closePath();
++  shape.holes = [
++    new Path().absarc(0, offset, inner, 0, 2 * Math.PI, false),
++    new Path().absarc(0, -offset, inner, 0, 2 * Math.PI, false)
++  ];
++  return shape;
++}
++export {
++  EIGHTRINGS_STOCK_WIDTH,
++  buildEightringsShape
 +};
 diff --git a/dist/lib/components/props/fan-profile.d.ts b/dist/lib/components/props/fan-profile.d.ts
 new file mode 100644
@@ -4688,6 +4893,166 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +    dispose={false}
 +  />
  {/if}
+diff --git a/src/lib/components/props/Eightrings3D.svelte b/src/lib/components/props/Eightrings3D.svelte
+index 12a776e2dc4cc4cf8f484afde470d094690a6dc0..e99e626aef531d417e49111acc3fed414820f121 100644
+--- a/src/lib/components/props/Eightrings3D.svelte
++++ b/src/lib/components/props/Eightrings3D.svelte
+@@ -1,23 +1,65 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import {
++    buildEightringsShape,
++    EIGHTRINGS_STOCK_WIDTH,
++  } from "./eightrings-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the stock's half-width, past which the rolled edge folds through itself
++   * at the notches where the two rings cross.
++   */
++  const MAX_BEVEL_INSET = EIGHTRINGS_STOCK_WIDTH / 6.8;
++
++  /**
++   * The outline is all circular arc, so it needs more segments than the freehand
++   * silhouettes to stay round at the size this prop is drawn.
++   */
++  const CURVE_SEGMENTS = 24;
++
++  function getEightringsPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildEightringsShape(length),
++      depth,
++      length * MAX_BEVEL_INSET,
++      CURVE_SEGMENTS
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Eightrings3D Component
+    *
+-   * Renders a 3D eightrings (figure-8) prop with:
+-   * - Two torus rings stacked vertically, forming a figure-8 shape
+-   * - Upper ring centered at +25% Y, lower ring at -25% Y
+-   * - Grip torus ring at the center where the two rings overlap
+-   * - Trail indicator sphere for path visualization
++   * Two flat rings of identical section, set side by side along the prop and
++   * joined where they overlap — the exact silhouette of the 2D eight rings,
++   * extruded into a bullnose plate. Both circles and the union that joins them
++   * are built from the drawing's own measurements in `eightrings-profile.ts`,
++   * so the 3D prop and the pictograph prop are the same shape by construction.
++   *
++   * The rings are coplanar and untilted, because that is what the artwork
++   * draws. The hand takes the prop at the waist where they cross.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -38,57 +80,34 @@
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const rotation = $derived(computePropRotation(propState));
+-
+-  // Each ring: radius ~25% of staffLength
+-  const ringRadius = $derived(effectiveLength * 0.25);
+-  const ringTubeRadius = $derived(baseRadius * 0.8);
+-
+-  // Reduced offset so rings overlap more at center for a proper figure-8 crossing
+-  const ringOffset = $derived(effectiveLength * 0.18);
++  /**
++   * Flat spinning props are plate stock, not tube. The ring stock runs about
++   * 5.5cm across at default size, so the plate sits a little under 2cm — thick
++   * enough to hold a rolled edge and to read edge-on, thin enough that a tilted
++   * ring still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  // Tilt angle: upper ring tilts forward, lower tilts back (~15°)
+-  const ringTilt = 15 * (Math.PI / 180);
++  const plate = $derived(getEightringsPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+-  // Grip ring at center overlap point (smaller, white)
+-  const gripOuterRadius = $derived(baseRadius * 1.3);
+-  const gripTubeRadius = $derived(baseRadius * 0.15);
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Upper ring (thumb end, +Y) - tilted forward for figure-8 crossing -->
+-    <T.Mesh position={[0, ringOffset, 0]} rotation={[ringTilt, 0, 0]}>
+-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Lower ring (pinky end, -Y) - tilted backward for figure-8 crossing -->
+-    <T.Mesh position={[0, -ringOffset, 0]} rotation={[-ringTilt, 0, 0]}>
+-      <T.TorusGeometry args={[ringRadius, ringTubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Grip ring at center overlap -->
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Fan3D.svelte b/src/lib/components/props/Fan3D.svelte
 index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf23016164 100644
 --- a/src/lib/components/props/Fan3D.svelte
@@ -5251,6 +5616,96 @@ index 0000000000000000000000000000000000000000..6c1a0cff0b24c07b96e584153f27b064
 +  shape.holes = [
 +    trace(new Path(), STAR_HOLE, length, false),
 +    trace(new Path(), STAR_HOLE, length, true),
++  ];
++  return shape;
++}
+diff --git a/src/lib/components/props/eightrings-profile.ts b/src/lib/components/props/eightrings-profile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..c08bdcb8934b579eb722aef21cc56cd33dfd966a
+--- /dev/null
++++ b/src/lib/components/props/eightrings-profile.ts
+@@ -0,0 +1,84 @@
++/**
++ * Eight rings silhouette profile
++ *
++ * The 3D eight rings is not an approximation of the 2D prop — it IS the 2D
++ * artwork, given depth. `static/images/props/eightrings.svg` draws two paths,
++ * each an identical flat annulus, set side by side along one axis and
++ * overlapping where they cross. The prop is that figure eight: flat ring stock,
++ * not tube, and the two rings are coplanar.
++ *
++ * The drawing's own numbers, read off the two paths:
++ *
++ *   outer radius   68.25 SVG units
++ *   inner radius   52.25
++ *   centres        (68.25, 68.85) and (188.75, 68.55), 120.5 apart
++ *
++ * Which is to say: two rings of identical section, 16 units of stock all the
++ * way round, their centres 120.5 apart on a shared axis. Illustrator rounded
++ * the two centre heights 0.3 apart and the viewBox 0.3 wider than the figure;
++ * that wobble is drawing tolerance, and keeping it would leave a spinning prop
++ * a tenth of a percent lopsided for no reason. The rings below sit on one axis,
++ * with the hand at their shared centre — the crossing, which is both where the
++ * viewBox centre is aiming and the only place a hand can take this prop.
++ *
++ * Coordinates are normalized to the STAFF's drawn span (252.8 SVG units, the
++ * shared unit across every prop drawing), and the prop reaches along +Y like
++ * every other one. Both rings are circles, so they are laid down as true arcs
++ * rather than transcribed beziers — an exact circle beats a four-cubic
++ * approximation of one.
++ *
++ * The two annuli overlap, so extruding them as two separate plates would leave
++ * a lens of doubled coplanar faces to z-fight. The outline below is their union
++ * instead: the outer circles cross at two points, and the arc between those
++ * points on each ring's far side traces the whole silhouette. Each inner circle
++ * stays a clean hole — the inner circles are 120.5 apart with radius 52.25, so
++ * they never meet, and each is tangent to the other ring's outer circle at a
++ * single interior point rather than cutting it.
++ */
++
++import { Path, Shape } from "three";
++
++const OUTER = 68.25 / 252.8;
++const INNER = 52.25 / 252.8;
++/** Half the distance between the two ring centres. */
++const OFFSET = 60.25 / 252.8;
++
++/** Where the outer circles cross, measured across the prop from the hand. */
++const CROSSING = Math.sqrt(OUTER * OUTER - OFFSET * OFFSET);
++
++/**
++ * Angle from a ring's centre out to a crossing point, off the axis that runs
++ * across the prop. Each ring contributes everything but the wedge between its
++ * two crossing points, so its arc sweeps `2 * PHI + PI`.
++ */
++const PHI = Math.atan2(OFFSET, CROSSING);
++
++/**
++ * Width of the stock, normalized to staff length. It is the same all the way
++ * round both rings, and the bevel ceiling is sized from it.
++ */
++export const EIGHTRINGS_STOCK_WIDTH = OUTER - INNER;
++
++/**
++ * Build the eight rings — sized against a staff of `staffLength` units and
++ * lying in the XY plane ready to extrude, with the hand at the origin.
++ */
++export function buildEightringsShape(staffLength: number): Shape {
++  const outer = OUTER * staffLength;
++  const inner = INNER * staffLength;
++  const offset = OFFSET * staffLength;
++
++  // The far ring's arc, then the near ring's, each skipping the wedge its
++  // neighbour covers. They meet exactly at the two crossing points, so the
++  // outline closes with no connecting line between them.
++  const shape = new Shape();
++  shape.absarc(0, offset, outer, -PHI, PHI + Math.PI, false);
++  shape.absarc(0, -offset, outer, Math.PI - PHI, PHI + 2 * Math.PI, false);
++  shape.closePath();
++
++  shape.holes = [
++    new Path().absarc(0, offset, inner, 0, 2 * Math.PI, false),
++    new Path().absarc(0, -offset, inner, 0, 2 * Math.PI, false),
 +  ];
 +  return shape;
 +}
