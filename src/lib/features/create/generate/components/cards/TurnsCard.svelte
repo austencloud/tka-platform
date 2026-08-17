@@ -78,18 +78,14 @@ a glance. In pattern mode the ramp reads the busiest value in the figure.
       )
   );
 
-  /** The hardest turn anywhere in the figure — what the ramp should report. */
-  const patternPeak = $derived.by(() => {
-    if (!turnPattern) return currentIntensity;
-    const numbers = [...turnPattern.blue, ...turnPattern.red].filter(
-      (v): v is number => typeof v === "number"
-    );
-    return numbers.length ? Math.max(...numbers) : 0;
-  });
-
-  const rampValue = $derived(turnPattern ? patternPeak : currentIntensity);
-  const cardColor = $derived(turnIntensityColor(rampValue, useDarkColors));
-  const textColor = $derived(turnIntensityTextColor(rampValue, useDarkColors));
+  // The ramp reads the intensity setting and nothing else. Deriving it from a
+  // pattern's busiest value turned the card mint green the moment a pattern was
+  // started, which is a colour this card has never been and which says nothing
+  // about the theme or the setting.
+  const cardColor = $derived(turnIntensityColor(currentIntensity, useDarkColors));
+  const textColor = $derived(
+    turnIntensityTextColor(currentIntensity, useDarkColors)
+  );
 
   /**
    * The figure itself: "1·0 / 0·0". A long period would run off the tile, so

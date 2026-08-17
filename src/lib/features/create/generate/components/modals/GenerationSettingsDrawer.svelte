@@ -41,13 +41,6 @@
     --sheet-bg: transparent;
     --sheet-border: none;
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
-    /* This surface is accent-tinted, so the default white bar read as an
-       unpainted sliver rather than as a neutral grab handle. */
-    --drawer-handle-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 78%,
-      white
-    );
   }
 
   :global(.drawer-overlay.generation-settings-backdrop.side-by-side-layout) {
