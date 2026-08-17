@@ -1,0 +1,111 @@
+import { getLetterPronunciation } from "$lib/shared/pronunciation/pronunciation-plan";
+
+import type {
+  ConnectedSessionFolder,
+  ICorpusSessionStore,
+  SessionRecord,
+  WordEntry,
+} from "../contracts/ICorpusSessionStore";
+
+export interface WordFiles {
+  wavName: string;
+  labName: string;
+  labText: string;
+  entry: WordEntry;
+}
+
+export function nextWordId(recorded: number): string {
+  return String(recorded + 1).padStart(3, "0");
+}
+
+/**
+ * The two representations one recorded word needs.
+ *
+ * `words.json` carries the TKA letters, which is what
+ * `scripts/measure-word-segmentation.ts` already reads and tokenizes. The
+ * `.lab` carries the spoken names, because that is what the aligner's
+ * dictionary can look up — "Σ-" is not an English word and never will be.
+ */
+export function buildWordFiles(id: string, letters: readonly string[]): WordFiles {
+  return {
+    wavName: `${id}.wav`,
+    labName: `${id}.lab`,
+    labText: letters
+      .map((letter) => getLetterPronunciation(letter as never)?.spokenName ?? letter)
+      .join(" "),
+    entry: { file: `${id}.wav`, word: letters.join("") },
+  };
+}
+
+/**
+ * Writes an MFA corpus directly: `<id>.wav` beside `<id>.lab` IS the aligner's
+ * input format, so the offline stage runs on the session output with no
+ * conversion step and no chance of the two drifting apart.
+ *
+ * `words.json` and `session.json` are rewritten after every word rather than at
+ * the end, so a closed tab or a lost microphone leaves a directory both the
+ * aligner and the TS harness can still read.
+ */
+export class CorpusSessionStore implements ICorpusSessionStore {
+  private directory: FileSystemDirectoryHandle | null = null;
+  private zipFiles = new Map<string, Blob>();
+  private entries: WordEntry[] = [];
+
+  supportsDirectSave(): boolean {
+    return typeof window !== "undefined" && "showDirectoryPicker" in window;
+  }
+
+  async connect(): Promise<ConnectedSessionFolder> {
+    if (!this.supportsDirectSave()) {
+      return { name: "session.zip", directSave: false };
+    }
+    this.directory = await window.showDirectoryPicker({ mode: "readwrite" });
+    return { name: this.directory.name, directSave: true };
+  }
+
+  async writeWord(id: string, letters: readonly string[], wav: Blob): Promise<void> {
+    const files = buildWordFiles(id, letters);
+    this.entries.push(files.entry);
+
+    await this.write(files.wavName, wav);
+    await this.write(files.labName, new Blob([files.labText], { type: "text/plain" }));
+    await this.write(
+      "words.json",
+      new Blob([`${JSON.stringify(this.entries, null, 2)}\n`], { type: "application/json" })
+    );
+  }
+
+  async writeSession(record: SessionRecord): Promise<void> {
+    await this.write(
+      "session.json",
+      new Blob([`${JSON.stringify(record, null, 2)}\n`], { type: "application/json" })
+    );
+  }
+
+  async finish(): Promise<void> {
+    if (this.directory) return;
+
+    const { default: JSZip } = await import("jszip");
+    const zip = new JSZip();
+    for (const [name, blob] of this.zipFiles) zip.file(name, blob);
+
+    const archive = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(archive);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "pronunciation-session.zip";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private async write(name: string, blob: Blob): Promise<void> {
+    if (!this.directory) {
+      this.zipFiles.set(name, blob);
+      return;
+    }
+    const handle = await this.directory.getFileHandle(name, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  }
+}
