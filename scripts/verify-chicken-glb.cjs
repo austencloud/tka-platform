@@ -270,6 +270,158 @@ invariant(
   `Hand pivot drifted: ${pivotPosition.toArray()}`
 );
 
+// --- In-world sizes -----------------------------------------------------------
+//
+// The GLB is authored ~0.778m long with the grip through the torso. What the
+// player actually sees is that model after the registry's scale, flip, and grip
+// offset, and those numbers encode two product decisions (2026-08-17): a small
+// chicken is the size of a club or torch and is held by the head, a big chicken
+// is the size of a staff and is held through the middle.
+//
+// Both were previously implicit, which is how the shipped bird ended up 30.6in
+// -- a length inherited from the procedural placeholder it replaced. Gate them.
+//
+// The dist bundle uses extensionless imports that Node's ESM resolver rejects,
+// so the module is evaluated here with a stubbed PropType rather than imported.
+// This still tests the real shipped file instead of a re-parse of the source.
+function loadShippedRegistry() {
+  // The package's "exports" map has no deep subpaths, so require.resolve on the
+  // dist file is refused. Reach it by path, the way sourceConstant does.
+  const registryPath = path.join(
+    __dirname,
+    "..",
+    "node_modules",
+    "@austencloud",
+    "scene-3d",
+    "dist",
+    "lib",
+    "components",
+    "props",
+    "prop-model-registry.js"
+  );
+  const source = fs
+    .readFileSync(registryPath, "utf8")
+    .replace(/^import\s+\{[^}]*\}\s+from\s+["'][^"']*["'];?$/gm, "")
+    .replace(/^export\s+/gm, "");
+  const PropType = new Proxy({}, { get: (_target, key) => key });
+  const factory = new Function(
+    "PropType",
+    `${source}\nreturn { PROP_MODEL_REGISTRY, resolvePropModel, BIG_VARIANT_MAP };`
+  );
+  return factory(PropType);
+}
+
+const { PROP_MODEL_REGISTRY, resolvePropModel, BIG_VARIANT_MAP } =
+  loadShippedRegistry();
+
+/** Read a named numeric constant out of a sibling source file. */
+function sourceConstant(relativePath, name, pattern) {
+  const text = fs.readFileSync(
+    path.join(
+      __dirname,
+      "..",
+      "node_modules",
+      "@austencloud",
+      "scene-3d",
+      "src",
+      relativePath
+    ),
+    "utf8"
+  );
+  const match = pattern.exec(text);
+  invariant(match, `Could not read ${name} from ${relativePath}`);
+  return Number(match[1]);
+}
+
+// The two sizes chicken is defined against. Cross-checked from source rather
+// than imported, so the registry stays free of extra module coupling but a
+// change to either family still trips this gate.
+const clubLength = sourceConstant(
+  "lib/components/props/club-profile.ts",
+  "CLUB_LENGTH_M",
+  /CLUB_LENGTH_M\s*=\s*([\d.]+)/
+);
+const staffInches = sourceConstant(
+  "lib/config/user-proportions.ts",
+  "staffLengthCm",
+  /staffLengthCm:\s*inchesToCm\((\d+)\)/
+);
+const staffLength = (staffInches * 2.54) / 100;
+
+const authoredLength = stats.dimensions.y;
+const authoredHeadTipY = stats.maximum.y;
+/** chicken.svg puts the hand 5.9% of the length in from the head tip. */
+const neckGripFraction = 0.059;
+
+const close = (actual, expected, tolerance, label) =>
+  invariant(
+    Math.abs(actual - expected) <= tolerance,
+    `${label}: expected ${expected.toFixed(4)}, got ${actual.toFixed(4)}`
+  );
+
+const small = resolvePropModel("CHICKEN");
+const big = resolvePropModel("BIGCHICKEN");
+invariant(small, "CHICKEN has no registry entry");
+invariant(big, "BIGCHICKEN has no registry entry");
+
+// Big chicken must not ride the flat 1.4 multiplier: its grip differs from the
+// small bird's, and a scale multiplier cannot express a different grip.
+invariant(
+  BIG_VARIANT_MAP.BIGCHICKEN === undefined,
+  "BIGCHICKEN is back in BIG_VARIANT_MAP; a flat multiplier loses its center grip"
+);
+invariant(
+  PROP_MODEL_REGISTRY.BIGCHICKEN !== undefined,
+  "BIGCHICKEN needs its own registry entry"
+);
+
+close(
+  authoredLength * small.scale,
+  clubLength,
+  0.005,
+  "Small chicken length should match a club"
+);
+close(
+  authoredLength * big.scale,
+  staffLength,
+  0.005,
+  `Big chicken length should match a ${staffInches}" staff`
+);
+
+// Small chicken is flipped and hung from the head, so only a neck's width of it
+// sits below the hand and the body trails outward.
+invariant(
+  small.entry.flipLongAxis === true,
+  "Small chicken must be flipped, or the body extends inward through the arm"
+);
+const smallHeadTipY =
+  -authoredHeadTipY * small.scale + small.entry.gripOffsetY;
+close(
+  smallHeadTipY,
+  -neckGripFraction * clubLength,
+  0.002,
+  "Small chicken head tip should sit a neck's width below the hand"
+);
+const smallFeetTipY = -stats.minimum.y * small.scale + small.entry.gripOffsetY;
+close(
+  smallFeetTipY - smallHeadTipY,
+  clubLength,
+  0.005,
+  "Small chicken total extent"
+);
+
+// Big chicken keeps the authored center grip, so both ends stay live.
+invariant(
+  !big.entry.flipLongAxis,
+  "Big chicken is gripped through the middle and must not be flipped"
+);
+const bigLow = stats.minimum.y * big.scale + big.entry.gripOffsetY;
+const bigHigh = stats.maximum.y * big.scale + big.entry.gripOffsetY;
+invariant(
+  Math.abs(Math.abs(bigLow) - Math.abs(bigHigh)) < 0.05 * staffLength,
+  `Big chicken grip is not near its middle: ${bigLow.toFixed(3)} .. ${bigHigh.toFixed(3)}`
+);
+
 console.log(`Verified ${glbPath}`);
 console.log(`  bytes: ${bytes.length}`);
 console.log(`  meshes: ${document.meshes.length}`);
@@ -285,4 +437,14 @@ console.log(
     .toArray()
     .map((value) => value.toFixed(5))
     .join(", ")}`
+);
+console.log(
+  `  small chicken: ${(authoredLength * small.scale).toFixed(4)} m` +
+    ` (club ${clubLength}), head tip ${smallHeadTipY.toFixed(4)},` +
+    ` reach ${smallFeetTipY.toFixed(4)}, flipped`
+);
+console.log(
+  `  big chicken:   ${(authoredLength * big.scale).toFixed(4)} m` +
+    ` (${staffInches}" staff ${staffLength.toFixed(4)}),` +
+    ` tips ${bigLow.toFixed(4)} .. ${bigHigh.toFixed(4)}`
 );

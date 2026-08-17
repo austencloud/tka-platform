@@ -58,6 +58,9 @@
     PropType.TRIQUETRA,
     PropType.TRIQUETRA2,
     PropType.CHICKEN,
+    // Big Chicken is not just small chicken scaled up: it is gripped through the
+    // middle instead of by the head, so it needs its own tile to review.
+    PropType.BIGCHICKEN,
     PropType.DOUBLESTAR,
     PropType.EIGHTRINGS,
     PropType.TORCH,

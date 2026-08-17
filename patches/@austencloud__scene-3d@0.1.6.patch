@@ -698,10 +698,10 @@ index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..4321d72e9da57e4dd80b0f842de15f57
        name={`PERFORMER_${id}`}
        position={[position.x, position.y ?? 0, position.z]}
 diff --git a/dist/lib/components/Avatar3D.svelte.d.ts b/dist/lib/components/Avatar3D.svelte.d.ts
-index eaae3a65cb08e4a370b4496a2a2c738624d75610..28fef0bc71c386ad2ff1a0e532ce272956c83e37 100644
+index eaae3a65cb08e4a370b4496a2a2c738624d75610..6229aa1db080a306b864724310d8c1170e155fb6 100644
 --- a/dist/lib/components/Avatar3D.svelte.d.ts
 +++ b/dist/lib/components/Avatar3D.svelte.d.ts
-@@ -52,6 +52,17 @@ interface Props {
+@@ -52,6 +52,21 @@ interface Props {
      bluePropAnchorRef?: import("three").Group;
      /** PropAnchor group ref for red hand IK target (from PerformerRig) */
      redPropAnchorRef?: import("three").Group;
@@ -716,6 +716,10 @@ index eaae3a65cb08e4a370b4496a2a2c738624d75610..28fef0bc71c386ad2ff1a0e532ce2729
 +     *  distributed across the spine, feet planted. Planner-shaped - the
 +     *  caller decides the stance, the animator applies it. */
 +    stanceYaw?: number;
++    /** Weld the rendered prop into the ACHIEVED fist (rotated onto the
++     *  post-solve knuckle line, grip point at the palm, unclamped).
++     *  Default false = legacy clamped position-only contact lock. */
++    weldGrip?: boolean;
      /** Disable spine twist (dual-wheel: wide lateral targets twist the torso/feet) */
      disableSpineTwist?: boolean;
      /** Current beat index for collision detection logging */
@@ -1004,10 +1008,10 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..17c38e8570988d9501c3f02e97820f03
        {@render effectsSlot({
          bluePropState,
 diff --git a/dist/lib/components/PerformerRig.svelte.d.ts b/dist/lib/components/PerformerRig.svelte.d.ts
-index 8caa93994d4c204b5d45daeae8b06c191c822e4f..7b6848c7c5e5d6cecb6da0a76cd06a0654bbf20c 100644
+index 8caa93994d4c204b5d45daeae8b06c191c822e4f..47dbce65368cf8348e59e077e879ae7fef16e9e9 100644
 --- a/dist/lib/components/PerformerRig.svelte.d.ts
 +++ b/dist/lib/components/PerformerRig.svelte.d.ts
-@@ -84,6 +84,11 @@ interface Props {
+@@ -84,6 +84,15 @@ interface Props {
              effectsParentRef: Group | undefined;
          }
      ]>;
@@ -1016,6 +1020,10 @@ index 8caa93994d4c204b5d45daeae8b06c191c822e4f..7b6848c7c5e5d6cecb6da0a76cd06a06
 +     *  Planner-shaped - the caller (heuristic today, offline execution
 +     *  planner later) decides the stance; the rig just carries it. */
 +    stanceYaw?: number;
++    /** Weld the rendered prop into the ACHIEVED fist (rotated onto the
++     *  post-solve knuckle line, grip point at the palm, unclamped).
++     *  Default false = legacy clamped position-only contact lock. */
++    weldGrip?: boolean;
      /** Avatar mesh opacity 0-1, forwarded to Avatar3D for swap cross-fades.
       *  1 = fully opaque (default). */
      avatarOpacity?: number;
@@ -2108,6 +2116,42 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/GltfProp3D.svelte b/dist/lib/components/props/GltfProp3D.svelte
+index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503390b6999 100644
+--- a/dist/lib/components/props/GltfProp3D.svelte
++++ b/dist/lib/components/props/GltfProp3D.svelte
+@@ -68,17 +68,29 @@
+   // Rotation only - position is handled by the parent PerformerRig scene graph
+   const rotation = $derived(computePropRotation(props.propState));
+ 
+-  // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
++  // resolvePropModel() already folds the entry's own scale into the number it
++  // returns, which is what Prop3D hands us as extraScale. Multiplying by
++  // entry.scale again squared it -- invisible while every entry was scale 1, and
++  // a 33% shrink the moment one was not. Trust the resolved scale; fall back to
++  // the entry's own only when a caller renders this component directly.
+   const effectiveScale = $derived.by((): [number, number, number] => {
+-    const s = props.modelEntry.scale * (props.extraScale ?? 1);
++    const s = props.extraScale ?? props.modelEntry.scale;
+     return [s, s, s];
+   });
++
++  /**
++   * A half turn about X for models gripped at their +Y end. Three composes a
++   * group as translate ∘ rotate ∘ scale, so gripOffsetY stays in world meters
++   * and is not itself rotated.
++   */
++  const flipRotationX = $derived(props.modelEntry.flipLongAxis ? Math.PI : 0);
+ </script>
+ 
+ {#if (props.visible ?? true) && coloredScene}
+   <T.Group {rotation} layers={propLayer}>
+     <T.Group
+       scale={effectiveScale}
++      rotation.x={flipRotationX}
+       position.y={props.modelEntry.gripOffsetY}
+     >
+       <T is={coloredScene} />
 diff --git a/dist/lib/components/props/Hoop3D.svelte b/dist/lib/components/props/Hoop3D.svelte
 index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907046dcaba 100644
 --- a/dist/lib/components/props/Hoop3D.svelte
@@ -4360,11 +4404,64 @@ index 202c7626491817532b35a1e4572dbf417ca12c51..1e34c29da90ca149158fcba95893a2a3
 +            : recoloredMaterials[0];
      });
  }
+diff --git a/dist/lib/components/props/prop-model-registry.d.ts b/dist/lib/components/props/prop-model-registry.d.ts
+index ec4e1d1b822aeb9661dfb0d838ba06684737fd83..d8c709b915835fdcb8e67d672a013c91ac2e8b8a 100644
+--- a/dist/lib/components/props/prop-model-registry.d.ts
++++ b/dist/lib/components/props/prop-model-registry.d.ts
+@@ -18,6 +18,12 @@ export interface PropModelEntry {
+     scale: number;
+     /** Y offset to align grip point with origin (0 = model's origin IS the grip) */
+     gripOffsetY: number;
++    /**
++     * Rotate the model a half turn about X, so the end authored at +Y ends up
++     * pointing back at the hand. Needed when the grip belongs at the model's
++     * +Y end, since props sweep along +Y.
++     */
++    flipLongAxis?: boolean;
+ }
+ /**
+  * Registry of available GLTF prop models.
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
-index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319e13778e6 100644
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf892b95046d 100644
 --- a/dist/lib/components/props/prop-model-registry.js
 +++ b/dist/lib/components/props/prop-model-registry.js
-@@ -32,8 +32,25 @@ function modelUrl(filename) {
+@@ -25,6 +25,35 @@ function modelUrl(filename) {
+         ? `${R2_CDN}/models/props/${filename}`
+         : `${LOCAL_PATH}/${filename}`;
+ }
++/**
++ * chicken.glb is one authored bird serving two prop types at two sizes with two
++ * different grips, so each type gets its own entry instead of riding
++ * BIG_VARIANT_MAP's flat 1.4 multiplier.
++ *
++ * Sizes are Austen's call (2026-08-17): a small chicken is the size of a club or
++ * a torch, a big chicken is the size of a staff. Grips follow the 2D canon --
++ * chicken.svg puts the hand 5.9% in from the head, and prop-tip-ends.ts calls
++ * small chicken single-ended and big chicken bilateral.
++ *
++ * scripts/verify-chicken-glb.cjs re-measures the three authored numbers and
++ * fails if a re-export moves them.
++ */
++const CHICKEN_GLB_LENGTH_M = 0.7779893;
++/** +Y end of the authored model: comb, beak, wattles. */
++const CHICKEN_GLB_HEAD_TIP_Y = 0.3810001;
++/** Where chicken.svg puts the hand, as a fraction of length in from the head. */
++const CHICKEN_NECK_GRIP_FRACTION = 0.059;
++/** Same as CLUB_LENGTH_M in club-profile.ts, and within 2% of the torch. */
++const CHICKEN_SMALL_LENGTH_M = 0.52;
++/** Same as the 34" default staff in config/user-proportions.ts. */
++const CHICKEN_BIG_LENGTH_M = 0.8636;
++const CHICKEN_SMALL_SCALE = CHICKEN_SMALL_LENGTH_M / CHICKEN_GLB_LENGTH_M;
++/**
++ * Drop the flipped model so the head tip sits a neck's width below the origin,
++ * the way Club3D leaves only its knob hanging below the hand.
++ */
++const CHICKEN_SMALL_GRIP_OFFSET_Y = CHICKEN_GLB_HEAD_TIP_Y * CHICKEN_SMALL_SCALE -
++    CHICKEN_NECK_GRIP_FRACTION * CHICKEN_SMALL_LENGTH_M;
+ /**
+  * Registry of available GLTF prop models.
+  *
+@@ -32,8 +61,33 @@ function modelUrl(filename) {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY = {
@@ -4377,7 +4474,15 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
 +    },
 +    [PropType.CHICKEN]: {
 +        modelUrl: modelUrl("chicken.glb"),
-+        scale: 1,
++        scale: CHICKEN_SMALL_SCALE,
++        gripOffsetY: CHICKEN_SMALL_GRIP_OFFSET_Y,
++        flipLongAxis: true,
++    },
++    [PropType.BIGCHICKEN]: {
++        modelUrl: modelUrl("chicken.glb"),
++        scale: CHICKEN_BIG_LENGTH_M / CHICKEN_GLB_LENGTH_M,
++        // The authored grip already sits within half a percent of the bird's
++        // midpoint, which is exactly the bilateral hold big chicken wants.
 +        gripOffsetY: 0,
 +    },
 +    [PropType.GUITAR]: {
@@ -4392,7 +4497,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
  };
  /**
   * Look up a GLTF model for a prop type. Returns null if no model
-@@ -49,7 +66,7 @@ export function getPropModel(propType) {
+@@ -49,11 +103,13 @@ export function getPropModel(propType) {
  export const BIG_VARIANT_MAP = {
      [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
      [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -4401,7 +4506,14 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
      [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
      [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
-@@ -72,6 +89,15 @@ export function resolvePropModel(propType) {
+-    [PropType.BIGCHICKEN]: { base: PropType.CHICKEN, scale: 1.4 },
++    // BIGCHICKEN is not here: it carries its own registry entry, because it
++    // differs from small chicken in grip as well as size and a flat multiplier
++    // cannot express that.
+     [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
+     [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
+     [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
+@@ -72,6 +128,15 @@ export function resolvePropModel(propType) {
      const direct = getPropModel(propType);
      if (direct)
          return { entry: direct, scale: direct.scale };
@@ -10662,6 +10774,42 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +    dispose={false}
 +  />
  {/if}
+diff --git a/src/lib/components/props/GltfProp3D.svelte b/src/lib/components/props/GltfProp3D.svelte
+index 9ed038d07d35b4d5d340c578e100415154ac1178..2048adf7ec318ffb9501f56a7e507503390b6999 100644
+--- a/src/lib/components/props/GltfProp3D.svelte
++++ b/src/lib/components/props/GltfProp3D.svelte
+@@ -68,17 +68,29 @@
+   // Rotation only - position is handled by the parent PerformerRig scene graph
+   const rotation = $derived(computePropRotation(props.propState));
+ 
+-  // Combined scale: model's authored scale × big variant multiplier × user proportions ratio
++  // resolvePropModel() already folds the entry's own scale into the number it
++  // returns, which is what Prop3D hands us as extraScale. Multiplying by
++  // entry.scale again squared it -- invisible while every entry was scale 1, and
++  // a 33% shrink the moment one was not. Trust the resolved scale; fall back to
++  // the entry's own only when a caller renders this component directly.
+   const effectiveScale = $derived.by((): [number, number, number] => {
+-    const s = props.modelEntry.scale * (props.extraScale ?? 1);
++    const s = props.extraScale ?? props.modelEntry.scale;
+     return [s, s, s];
+   });
++
++  /**
++   * A half turn about X for models gripped at their +Y end. Three composes a
++   * group as translate ∘ rotate ∘ scale, so gripOffsetY stays in world meters
++   * and is not itself rotated.
++   */
++  const flipRotationX = $derived(props.modelEntry.flipLongAxis ? Math.PI : 0);
+ </script>
+ 
+ {#if (props.visible ?? true) && coloredScene}
+   <T.Group {rotation} layers={propLayer}>
+     <T.Group
+       scale={effectiveScale}
++      rotation.x={flipRotationX}
+       position.y={props.modelEntry.gripOffsetY}
+     >
+       <T is={coloredScene} />
 diff --git a/src/lib/components/props/Hoop3D.svelte b/src/lib/components/props/Hoop3D.svelte
 index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907046dcaba 100644
 --- a/src/lib/components/props/Hoop3D.svelte
@@ -13124,10 +13272,72 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17
    });
  }
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
-index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab17e17082 100644
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c989459989 100644
 --- a/src/lib/components/props/prop-model-registry.ts
 +++ b/src/lib/components/props/prop-model-registry.ts
-@@ -46,8 +46,38 @@ function modelUrl(filename: string): string {
+@@ -20,6 +20,16 @@ export interface PropModelEntry {
+   scale: number;
+   /** Y offset to align grip point with origin (0 = model's origin IS the grip) */
+   gripOffsetY: number;
++  /**
++   * Rotate the model a half turn about X, so the end authored at +Y ends up
++   * pointing back at the hand.
++   *
++   * Props sweep along +Y. A model whose grip belongs at its +Y end therefore
++   * has to be turned end over end, or its body would extend inward through the
++   * arm instead of trailing outward. Small chicken is the case that needs it:
++   * the bird is held by the head, which chicken.glb authors at +Y.
++   */
++  flipLongAxis?: boolean;
+ }
+ 
+ /** R2 CDN base URL - same CDN used by forest/camping models */
+@@ -39,6 +49,44 @@ function modelUrl(filename: string): string {
+     : `${LOCAL_PATH}/${filename}`;
+ }
+ 
++/**
++ * chicken.glb is one authored bird serving two prop types at two sizes with two
++ * different grips, so each type gets its own entry instead of riding
++ * BIG_VARIANT_MAP's flat 1.4 multiplier.
++ *
++ * Sizes are Austen's call (2026-08-17): a small chicken is the size of a club or
++ * a torch, a big chicken is the size of a staff. Grips follow the 2D canon --
++ * chicken.svg puts the hand 5.9% in from the head, and prop-tip-ends.ts calls
++ * small chicken single-ended and big chicken bilateral. So the small bird hangs
++ * from its head with the body trailing outward, and the big one is gripped
++ * through the middle with both ends live.
++ *
++ * The three measured numbers below come from walking chicken.glb's node
++ * hierarchy (mesh-space accessor bounds are rotated by node transforms, so the
++ * raw min/max report the wrong axis). scripts/verify-chicken-glb.cjs re-measures
++ * them and fails if a re-export moves them.
++ */
++const CHICKEN_GLB_LENGTH_M = 0.7779893;
++/** +Y end of the authored model: comb, beak, wattles. */
++const CHICKEN_GLB_HEAD_TIP_Y = 0.3810001;
++/** Where chicken.svg puts the hand, as a fraction of length in from the head. */
++const CHICKEN_NECK_GRIP_FRACTION = 0.059;
++
++/** Same as CLUB_LENGTH_M in club-profile.ts, and within 2% of the torch. */
++const CHICKEN_SMALL_LENGTH_M = 0.52;
++/** Same as the 34" default staff in config/user-proportions.ts. */
++const CHICKEN_BIG_LENGTH_M = 0.8636;
++
++const CHICKEN_SMALL_SCALE = CHICKEN_SMALL_LENGTH_M / CHICKEN_GLB_LENGTH_M;
++
++/**
++ * Drop the flipped model so the head tip sits a neck's width below the origin,
++ * the way Club3D leaves only its knob hanging below the hand.
++ */
++const CHICKEN_SMALL_GRIP_OFFSET_Y =
++  CHICKEN_GLB_HEAD_TIP_Y * CHICKEN_SMALL_SCALE -
++  CHICKEN_NECK_GRIP_FRACTION * CHICKEN_SMALL_LENGTH_M;
++
+ /**
+  * Registry of available GLTF prop models.
+  *
+@@ -46,8 +94,46 @@ function modelUrl(filename: string): string {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
@@ -13140,7 +13350,15 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
 +  },
 +  [PropType.CHICKEN]: {
 +    modelUrl: modelUrl("chicken.glb"),
-+    scale: 1,
++    scale: CHICKEN_SMALL_SCALE,
++    gripOffsetY: CHICKEN_SMALL_GRIP_OFFSET_Y,
++    flipLongAxis: true,
++  },
++  [PropType.BIGCHICKEN]: {
++    modelUrl: modelUrl("chicken.glb"),
++    scale: CHICKEN_BIG_LENGTH_M / CHICKEN_GLB_LENGTH_M,
++    // The authored grip already sits within half a percent of the bird's
++    // midpoint, which is exactly the bilateral hold big chicken wants.
 +    gripOffsetY: 0,
 +  },
 +  [PropType.GUITAR]: {
@@ -13168,7 +13386,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
  };
  
  /**
-@@ -67,7 +97,7 @@ export const BIG_VARIANT_MAP: Partial<
+@@ -67,11 +153,13 @@ export const BIG_VARIANT_MAP: Partial<
  > = {
    [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
    [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -13177,7 +13395,14 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    [PropType.BIGTRIAD]: { base: PropType.TRIAD, scale: 1.4 },
    [PropType.BIGHOOP]: { base: PropType.MINIHOOP, scale: 1.4 },
    [PropType.BIGBUUGENG]: { base: PropType.BUUGENG, scale: 1.4 },
-@@ -93,6 +123,16 @@ export function resolvePropModel(
+-  [PropType.BIGCHICKEN]: { base: PropType.CHICKEN, scale: 1.4 },
++  // BIGCHICKEN is not here: it carries its own registry entry, because it
++  // differs from small chicken in grip as well as size and a flat multiplier
++  // cannot express that.
+   [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
+   [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
+   [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
+@@ -93,6 +181,16 @@ export function resolvePropModel(
    const direct = getPropModel(propType);
    if (direct) return { entry: direct, scale: direct.scale };
  

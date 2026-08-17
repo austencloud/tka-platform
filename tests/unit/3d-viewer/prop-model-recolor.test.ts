@@ -9,7 +9,11 @@ import {
 
 import { PropType } from "../../../node_modules/@austencloud/scene-3d/src/lib/domain/enums/PropType";
 import { recolorPropModel } from "../../../node_modules/@austencloud/scene-3d/src/lib/components/props/prop-model-recolor";
-import { resolvePropModel } from "../../../node_modules/@austencloud/scene-3d/src/lib/components/props/prop-model-registry";
+import {
+  BIG_VARIANT_MAP,
+  PROP_MODEL_REGISTRY,
+  resolvePropModel,
+} from "../../../node_modules/@austencloud/scene-3d/src/lib/components/props/prop-model-registry";
 
 describe("prop model materials", () => {
   it("recolors only explicitly marked materials on a multi-material prop", () => {
@@ -91,26 +95,44 @@ describe("prop model materials", () => {
 });
 
 describe("Chicken GLB registry", () => {
-  it("resolves Chicken and Big Chicken to the production model", () => {
+  /** Measured world length of chicken.glb along its +Y long axis. */
+  const AUTHORED_LENGTH_M = 0.7779893;
+  const CLUB_LENGTH_M = 0.52;
+  const STAFF_LENGTH_M = 0.8636;
+
+  it("sizes small chicken like a club and big chicken like a staff", () => {
     const chicken = resolvePropModel(PropType.CHICKEN);
     const bigChicken = resolvePropModel(PropType.BIGCHICKEN);
 
-    expect(chicken).toMatchObject({
-      entry: {
-        modelUrl: "/models/props/chicken.glb",
-        scale: 1,
-        gripOffsetY: 0,
-      },
-      scale: 1,
-    });
-    expect(bigChicken).toMatchObject({
-      entry: {
-        modelUrl: "/models/props/chicken.glb",
-        scale: 1,
-        gripOffsetY: 0,
-      },
-      scale: 1.4,
-    });
+    expect(chicken?.entry.modelUrl).toBe("/models/props/chicken.glb");
+    expect(bigChicken?.entry.modelUrl).toBe("/models/props/chicken.glb");
+
+    expect(AUTHORED_LENGTH_M * chicken!.scale).toBeCloseTo(CLUB_LENGTH_M, 3);
+    expect(AUTHORED_LENGTH_M * bigChicken!.scale).toBeCloseTo(
+      STAFF_LENGTH_M,
+      3
+    );
+  });
+
+  it("holds the small bird by the head and the big one through the middle", () => {
+    const chicken = resolvePropModel(PropType.CHICKEN)!;
+    const bigChicken = resolvePropModel(PropType.BIGCHICKEN)!;
+
+    // chicken.glb authors the head at +Y, and props sweep along +Y, so a
+    // head grip only works if the model is turned end over end first.
+    expect(chicken.entry.flipLongAxis).toBe(true);
+    expect(chicken.entry.gripOffsetY).toBeGreaterThan(0);
+
+    // Big chicken keeps the authored center grip, so both ends stay live.
+    expect(bigChicken.entry.flipLongAxis).toBeFalsy();
+    expect(bigChicken.entry.gripOffsetY).toBe(0);
+  });
+
+  it("gives big chicken its own entry instead of a flat multiplier", () => {
+    // A scale multiplier off the small bird cannot express a different grip,
+    // which is what BIG_VARIANT_MAP would have applied.
+    expect(BIG_VARIANT_MAP[PropType.BIGCHICKEN]).toBeUndefined();
+    expect(PROP_MODEL_REGISTRY[PropType.BIGCHICKEN]).toBeDefined();
   });
 });
 
