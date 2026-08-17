@@ -13,6 +13,7 @@
   import { LibraryError } from "$lib/shared/library/domain/library-error";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
+    fitsFuseRecipeColumn,
     getBestFuseStepColumns,
     resolveBalancedFuseWorkspaceSplit,
   } from "../services/fuse-workspace-split";
@@ -108,16 +109,21 @@
     }
   }
 
-  // Desktop shows the recipe as the workspace's own left column. Everything
-  // narrower keeps the sheet: a third column there would leave the result too
-  // little width to be worth looking at. The gate is arithmetic, not a
-  // breakpoint — the column appears only when all three panels can sit at their
-  // comfortable minimums at once, so opening the recipe never squeezes the paths
-  // down to their hard floor.
-  const RECIPE_COLUMN_FLOOR =
-    RECIPE_MIN_W + LAPTOP_MIN_LEFT + CANVAS_FLOOR + 2 * CARD_GAP;
+  // Desktop shows the recipe as the workspace's own third column; everything
+  // narrower keeps the sheet. The gate is arithmetic, not a breakpoint, and it
+  // lives in the split service with the rest of the width negotiation — see
+  // `fuseRecipeColumnFloor` for why it measures hard floors rather than
+  // comfortable ones.
+  const RECIPE_COLUMN_FIT = {
+    recipeMinWidth: RECIPE_MIN_W,
+    pathHardMinWidth: MIN_LEFT,
+    canvasFloor: CANVAS_FLOOR,
+    columnGap: CARD_GAP,
+  };
   const recipeColumn = $derived(
-    fullCard && settingsOpen && containerWidth >= RECIPE_COLUMN_FLOOR
+    fullCard &&
+      settingsOpen &&
+      fitsFuseRecipeColumn(containerWidth, RECIPE_COLUMN_FIT)
   );
   // Target width is computed whether or not the recipe is open, so the panel can
   // be laid out at its final size and revealed by the growing track. A panel

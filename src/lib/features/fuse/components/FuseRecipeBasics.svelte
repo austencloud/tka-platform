@@ -91,6 +91,7 @@
 
 <div
   class="recipe-basic-editor {presentation}"
+  class:drill-fill={presentation === "drawer"}
   class:level-editor={section === "level"}
   class:turns-visible={turnsVisible}
   class:disabled
@@ -214,6 +215,20 @@
     transform: translateX(0) scale(1);
     pointer-events: auto;
     transition-delay: 60ms, 0ms, 0ms;
+  }
+
+  /* The drill pane runs the full height of the recipe column — over 1000px on a
+     desktop — while one stepper card is 11rem. Left alone the card sits at the
+     very top and the section dead-ends a fifth of the way down. Take the pane's
+     height, grow the card to a size that reads as deliberate, and centre what is
+     left instead of stranding it. Capped, not stretched: a 900px-tall Length
+     card is the opposite mistake. */
+  @media (min-width: 561px) {
+    .recipe-basic-editor.drawer {
+      height: 100%;
+      align-content: center;
+      grid-auto-rows: minmax(min-content, min(24rem, 100%));
+    }
   }
 
   .popover {

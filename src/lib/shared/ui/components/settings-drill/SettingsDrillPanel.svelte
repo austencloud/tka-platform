@@ -188,11 +188,17 @@ named in .claude/rules/crossfade-primitive.md.
     flex-shrink: 0;
   }
 
-  /* The one scroller. */
+  /* The one scroller. Vertical only: `overflow-x` left at its `visible` initial
+     value does NOT stay visible once the other axis is `auto` — CSS computes it
+     to `auto` too, so any child overshooting the pane by a pixel (a translated
+     card slot, a shadow-bearing control) hangs a horizontal scrollbar across the
+     bottom of the panel. Detail bodies are laid out to the pane's width; there
+     is nothing to scroll to sideways. */
   .layer-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
@@ -246,6 +252,11 @@ named in .claude/rules/crossfade-primitive.md.
     color: white;
   }
 
+  /* Back is the exit the user takes on every visit; Close is the one they take
+     once. It reads as a button for the same reason Close does — an unstyled
+     glyph gives no signal it is pressable, and its 44px hit area is invisible
+     until the pointer is already on it. Matches the overlay header's close
+     button, one tone quieter. */
   .back-button {
     flex: 0 0 auto;
     display: flex;
@@ -253,20 +264,25 @@ named in .claude/rules/crossfade-primitive.md.
     justify-content: center;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    /* Negative inline start cancels the extra padding, so a full touch target
-       doesn't push the title off the row's own alignment. */
-    margin-left: -0.625rem;
     padding: 0;
-    background: transparent;
-    border: none;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.07));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
     border-radius: 0.5rem;
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
     cursor: pointer;
-    transition: background var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease;
   }
 
   .back-button:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.14));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+  }
+
+  .back-button:focus-visible {
+    outline: 3px solid var(--theme-text, white);
+    outline-offset: 2px;
   }
 
   .back-button svg {
