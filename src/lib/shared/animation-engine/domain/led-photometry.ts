@@ -1,0 +1,296 @@
+/**
+ * LED photometry — the one place the light math lives.
+ *
+ * Both LED backends (WebGL2 `led/web-gl-led-renderer.ts` and the WebGPU
+ * `render-graph/services/web-gpu-led-executor.ts`) consume these functions so
+ * the two cannot drift on physics; only the shader plumbing differs between
+ * them.
+ *
+ * The model is a photographic one. A prop carries a fixed luminous flux budget
+ * that its LEDs divide between them, each LED deposits that flux along the path
+ * it sweeps during a frame, and the frames are integrated under an explicit
+ * shutter. Every stage divides by something. The previous implementation
+ * divided by nothing at any stage, so a 200-LED staff emitted roughly two
+ * orders of magnitude more light than a 2-LED capsule and every preset
+ * saturated to the same white disc.
+ *
+ * Four invariants hold, and `led-photometry.test.ts` asserts each:
+ *
+ *   1. Subdivision  — splitting a frame into more sub-steps deposits the same
+ *                     total energy.
+ *   2. Density      — changing LED count at fixed prop flux emits the same
+ *                     total light.
+ *   3. Framerate    — halving the frame rate leaves the exposure integral
+ *                     unchanged.
+ *   4. Degeneracy   — a stationary emitter stays finite.
+ *
+ * References:
+ *   Zwicker et al., EWA Splatting (TVCG 2002) — reconstruction kernel must be
+ *     convolved with the pixel prefilter and renormalized.
+ *   Yu et al., Mip-Splatting (CVPR 2024) — the same rule for sub-pixel
+ *     primitives; dilating instead of convolving shifts brightness with
+ *     sampling rate.
+ *   Trailing loss (LSST SMTN-002) — a streaked source's surface brightness
+ *     falls as flux / (trail length x PSF width).
+ */
+
+// ─── Screen-space constants ───────────────────────────────────────────────────
+
+/**
+ * Standard deviation of the pixel reconstruction filter, in pixels. A Gaussian
+ * of this width approximates a one-pixel box, and it is the floor below which
+ * no emitter footprint can shrink — the display cannot resolve finer.
+ */
+export const PIXEL_SIGMA_PX = 0.5;
+
+/**
+ * Fraction of the LED pitch occupied by the emitter itself. Real addressable
+ * strips run roughly half die, half gap; the gap is what makes individual
+ * pixels readable on a sparse device.
+ */
+export const EMITTER_DUTY_CYCLE = 0.5;
+
+// ─── Flux budget ──────────────────────────────────────────────────────────────
+
+/**
+ * Luminous flux one prop emits at brightness 1.0, in linear HDR render units
+ * where diffuse scene white is 1.0.
+ *
+ * Sized so a resolved LED core lands well above the tone curve's shoulder — the
+ * core is meant to clip to white while its halo keeps hue, which is what makes
+ * an LED read as blinding rather than as a bright colored dot. Published
+ * guidance puts emissive peaks in the 4x–32x range over diffuse white; the
+ * per-LED core lands inside that once this budget is divided by LED count and
+ * spread over the strip's projected length.
+ */
+export const PROP_REFERENCE_FLUX = 900;
+
+/**
+ * Flux for a single LED.
+ *
+ * A real prop has a power budget: a 200-LED staff and a 32-LED staff of the
+ * same length draw the same current, so the 200 resolves finer rather than
+ * shining brighter. LED count is a resolution control, never a brightness
+ * control — that separation is the whole reason the device picker can offer
+ * 2 through 200 without the presets needing different brightness values.
+ */
+export function perLedFlux(propFlux: number, ledCount: number): number {
+  if (ledCount <= 0) return 0;
+  return propFlux / ledCount;
+}
+
+// ─── Emitter footprint ────────────────────────────────────────────────────────
+
+/**
+ * The on-screen footprint of one LED, derived from how densely the strip packs
+ * them rather than authored as a constant.
+ *
+ * This is the fix for the original defect: the old renderer used a fixed 60px
+ * radius per LED regardless of device, so a 200-LED staff painted 200 overlapping
+ * 120px orbs along a shaft only ~200px long. Deriving the footprint from pitch
+ * means a capsule's two LEDs are naturally fat orbs and a 200-LED staff's pixels
+ * are naturally sub-pixel, from the same expression.
+ */
+export function emitterSigmaPx(stripLengthPx: number, ledCount: number): number {
+  if (ledCount <= 0) return PIXEL_SIGMA_PX;
+  const pitchPx = stripLengthPx / ledCount;
+  // Half the lit die, so +/-2 sigma spans it.
+  return Math.max((pitchPx * EMITTER_DUTY_CYCLE) / 2, PIXEL_SIGMA_PX * 0.5);
+}
+
+/**
+ * Emitter footprint convolved with the pixel prefilter.
+ *
+ * Convolution, not dilation: variances add, so an emitter far below pixel size
+ * lands at the pixel filter's own width instead of vanishing or aliasing.
+ */
+export function effectiveSigmaPx(emitterSigma: number): number {
+  return Math.hypot(emitterSigma, PIXEL_SIGMA_PX);
+}
+
+/**
+ * Peak amplitude of a stationary emitter, renormalized so the splat integrates
+ * to exactly its flux.
+ *
+ * Dividing by the effective width is the term the old renderer omitted. Without
+ * it, shrinking an emitter's footprint dims it and packing more emitters in
+ * brightens the strip — both wrong.
+ */
+export function splatAmplitude(flux: number, sigmaEff: number): number {
+  return flux / (Math.sqrt(2 * Math.PI) * Math.max(sigmaEff, 1e-6));
+}
+
+// ─── Motion ───────────────────────────────────────────────────────────────────
+
+/**
+ * Path length an emitter's energy spreads over, floored at its own footprint.
+ *
+ * The floor is what keeps a stationary or turning-around emitter finite:
+ * geometric length goes to zero at a turnaround but the emitter still covers
+ * its own width. Adding in quadrature rather than clamping keeps the function
+ * smooth through the transition, so a prop slowing to a stop does not pop.
+ */
+export function streakEffectiveLengthPx(chordPx: number, sigmaEff: number): number {
+  return Math.sqrt(chordPx * chordPx + 4 * sigmaEff * sigmaEff);
+}
+
+/**
+ * Linear energy density along a motion streak: flux-seconds per pixel of path.
+ *
+ * The photographic core of the model. Exposure is the time integral of
+ * irradiance, so an emitter moving fast spreads a fixed amount of energy over a
+ * longer path and must be *dimmer* per unit length. On a spinning prop the
+ * speed of an LED is `angular speed x radius`, so this alone makes inner LEDs
+ * paint bright dense knots and tip LEDs paint long faint arcs — the contrast
+ * that reads as a real long-exposure photograph.
+ */
+export function streakDensity(
+  flux: number,
+  dtSeconds: number,
+  chordPx: number,
+  sigmaEff: number
+): number {
+  const lengthPx = streakEffectiveLengthPx(chordPx, sigmaEff);
+  return (flux * dtSeconds) / lengthPx;
+}
+
+/**
+ * Total energy a streak deposits. Always `flux x dt`, independent of how the
+ * frame is subdivided or how fast the emitter moves — subdividing redistributes
+ * energy, it never creates any.
+ */
+export function streakEnergy(
+  flux: number,
+  dtSeconds: number,
+  chordPx: number,
+  sigmaEff: number
+): number {
+  return streakDensity(flux, dtSeconds, chordPx, sigmaEff) * streakEffectiveLengthPx(chordPx, sigmaEff);
+}
+
+/** Sub-steps are capped so a stalled tab resuming cannot request thousands. */
+export const MAX_SUB_STEPS = 32;
+
+/**
+ * Number of sub-steps needed to keep a curved path from polygonizing.
+ *
+ * Extruding one straight segment per frame chords the arc, and the error is the
+ * sagitta `r x theta^2 / 8`. Requiring that to stay under the emitter's own
+ * footprint gives the step angle, and hence the count. At a fast spin on a
+ * large canvas this lands around 3-4; the correctness test is that raising it
+ * further changes nothing (Haeberli & Akeley's Nyquist condition on the fastest
+ * motion in frame).
+ */
+export function subStepCount(
+  angularSpeedRadPerSec: number,
+  dtSeconds: number,
+  radiusPx: number,
+  sigmaEff: number
+): number {
+  const sweptAngle = Math.abs(angularSpeedRadPerSec) * Math.max(dtSeconds, 0);
+  if (sweptAngle <= 0 || radiusPx <= 0) return 1;
+  const maxStepAngle = Math.sqrt((8 * sigmaEff) / radiusPx);
+  if (!Number.isFinite(maxStepAngle) || maxStepAngle <= 0) return MAX_SUB_STEPS;
+  return Math.min(MAX_SUB_STEPS, Math.max(1, Math.ceil(sweptAngle / maxStepAngle)));
+}
+
+// ─── Shutter ──────────────────────────────────────────────────────────────────
+
+/**
+ * How accumulated frames are weighted by age.
+ *
+ * `eye` is what a spinner perceives — visual persistence, an exponential decay
+ * with no hard edge. `camera` is what the long-exposure photograph captures — a
+ * box shutter that holds every contribution at full weight and then ends.
+ *
+ * These replace the old `trailFadeRate`, a per-frame multiplier that was
+ * framerate-dependent (the same value produced different trails at 30 and 60fps)
+ * and modeled neither behavior.
+ */
+export type LedShutter =
+  | { mode: "eye"; timeConstantSeconds: number }
+  | { mode: "camera"; exposureSeconds: number };
+
+/** Rod response time constant. Visual persistence sits near a tenth of a second. */
+export const EYE_TIME_CONSTANT_S = 0.12;
+
+/** Exposures a light painter actually dials in. */
+export const CAMERA_EXPOSURE_MIN_S = 0.25;
+export const CAMERA_EXPOSURE_MAX_S = 4;
+
+export const DEFAULT_LED_SHUTTER: LedShutter = {
+  mode: "eye",
+  timeConstantSeconds: EYE_TIME_CONSTANT_S,
+};
+
+/** Unnormalized weight for a contribution of the given age. */
+export function shutterWeight(ageSeconds: number, shutter: LedShutter): number {
+  if (ageSeconds < 0) return 0;
+  if (shutter.mode === "camera") {
+    return ageSeconds <= shutter.exposureSeconds ? 1 : 0;
+  }
+  return Math.exp(-ageSeconds / Math.max(shutter.timeConstantSeconds, 1e-6));
+}
+
+/**
+ * Sum of the shutter weights the renderer will actually apply, used to
+ * normalize the accumulation.
+ *
+ * Deliberately the *discrete* sum rather than the kernel's continuous integral.
+ * Sampling a decaying kernel at frame boundaries overestimates it by about
+ * `dt/2`, which is a 14% error at 30fps against a 120ms time constant and 3% at
+ * 144fps — so normalizing by the integral would leave a slower machine visibly
+ * brighter. Dividing by the sum actually applied is exact at every frame rate.
+ *
+ * Dividing at all is what keeps total exposure independent of shutter length:
+ * lengthening the exposure extends the trail rather than blowing out the image.
+ * A photographer gets that by stopping down; here it is automatic, so the
+ * persistence control cannot double as a brightness control.
+ *
+ * Under variable frame times a renderer should accumulate the weights it really
+ * used and divide by that running total; this closed form is the uniform-dt case.
+ */
+export function shutterNormalization(shutter: LedShutter, dtSeconds: number): number {
+  const dt = Math.max(dtSeconds, 1e-6);
+  const frames = Math.floor(shutterCutoffSeconds(shutter) / dt);
+
+  if (shutter.mode === "camera") return dt * (frames + 1);
+
+  const tau = Math.max(shutter.timeConstantSeconds, 1e-6);
+  const ratio = Math.exp(-dt / tau);
+  // -expm1(-dt/tau) is (1 - ratio) without the cancellation at small dt.
+  const denominator = -Math.expm1(-dt / tau);
+  return (dt * (1 - Math.pow(ratio, frames + 1))) / denominator;
+}
+
+/** Age past which a contribution is dropped from the accumulation buffer. */
+export function shutterCutoffSeconds(shutter: LedShutter): number {
+  // Five time constants leaves under 1% of the kernel — below display precision.
+  return shutter.mode === "camera"
+    ? shutter.exposureSeconds
+    : shutter.timeConstantSeconds * 5;
+}
+
+// ─── Glare ────────────────────────────────────────────────────────────────────
+
+/**
+ * Per-mip weight of the bloom pyramid, the single control over glare shape.
+ *
+ * With geometric weight `w` the composite point-spread falls off as
+ * `r^(log2(w) - 2)`, so w=1 gives the physical inverse-square veil and lower
+ * values tighten it toward a sharp beam. The CIE veiling-glare law is a very
+ * sharp core with a heavy tail; a near-flat kernel (every mip weighted alike)
+ * is what produced formless blobs.
+ *
+ * This is a camera property applied once to the whole composited frame. It is
+ * deliberately not a per-LED value: a per-emitter glow sprite reintroduces
+ * dependence on LED count, which is the defect this module exists to remove.
+ */
+export const GLARE_WEIGHT_MIN = 0.5;
+export const GLARE_WEIGHT_MAX = 0.9;
+export const DEFAULT_GLARE_WEIGHT = 0.75;
+
+/** Falloff exponent implied by a per-mip weight, for tests and tooling. */
+export function glareFalloffExponent(weight: number): number {
+  return Math.log2(weight) - 2;
+}
