@@ -17,6 +17,8 @@
 
 import type { LedPassPayload } from "../domain/led-pass";
 import {
+  BLOOM_COMPOSITE_STRENGTH,
+  BLOOM_TENT_RADIUS_FRAME_FRACTION,
   EYE_TIME_CONSTANT_S,
   GLARE_WEIGHT_MAX,
   GLARE_WEIGHT_MIN,
@@ -53,16 +55,6 @@ const MAX_STREAK_PX = 400;
  *  measured gap says nothing about motion. */
 const FALLBACK_DT = 1 / 60;
 const MIN_DT = 1 / 240;
-
-/** Tent-filter radius as a fraction of frame HEIGHT, held in UV so the halo
- *  subtends the same angle at any canvas size. Not derivable from the
- *  photometry module: it is the glare kernel's spatial scale, where `glare`
- *  is its falloff. */
-const BLOOM_TENT_RADIUS_FRAME_FRACTION = 0.005;
-
-/** Weight of the glare pyramid in the final lerp. Bloom is a veil over the
- *  scene, not an addition to it, so this cannot brighten the image. */
-const BLOOM_COMPOSITE_STRENGTH = 0.06;
 
 const HDR_FORMAT: GPUTextureFormat = "rgba16float";
 const PRESENT_FORMAT: GPUTextureFormat = "bgra8unorm";
@@ -938,15 +930,21 @@ export class WebGPULedExecutor {
   // ── Photometry -> instance data ───────────────────────────────────────
 
   /**
-   * Camera mode is not implemented. A box shutter holds every contribution at
-   * full weight until it falls off the end of the exposure, which an
-   * exponential accumulation buffer cannot represent at any decay rate — it
-   * needs a ring buffer of `ceil(exposureSeconds / dt)` deposit textures,
-   * summed each frame with the oldest evicted.
+   * Camera mode falls back to the eye time constant here. A box shutter holds
+   * every contribution at full weight until it falls off the end of the
+   * exposure, which an exponential accumulation buffer cannot represent at any
+   * decay rate.
    *
-   * TODO(led-camera-shutter): add that deposit ring buffer, then return the
-   * camera shutter unchanged. Faking a box shutter with a decay would produce
-   * a trail that is neither of the two things the control names.
+   * The 2D renderer now does it properly, with two plain additive accumulators
+   * staggered half an exposure apart and blended under complementary triangular
+   * weights (`advanceBoxShutter`, `LED_BOX_RESOLVE_FRAG`). Porting that here is
+   * two more storage textures and one resolve pipeline.
+   *
+   * TODO(led-camera-shutter): port the staggered pair. It is deliberately not
+   * done blind — this executor's WGSL has never been compiled by a device and
+   * has no test harness, so an unverified port would be a second unproven path
+   * rather than a fix. Faking a box shutter with a decay stays forbidden: it
+   * produces a trail that is neither of the two things the control names.
    */
   private resolveShutter(shutter: LedShutter): Extract<LedShutter, { mode: "eye" }> {
     if (shutter.mode === "camera") {

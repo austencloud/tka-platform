@@ -154,6 +154,56 @@ void main() {
 }
 `;
 
+// ─── Box Shutter Resolve ──────────────────────────────────────────────────────
+// A box shutter holds every contribution at full weight until it falls off the
+// end of the exposure. An exponential accumulator cannot represent that at any
+// decay rate, and a ring buffer of one texture per frame is unaffordable — 2.5s
+// at 60fps is 150 full-resolution HDR targets.
+//
+// Instead there are two plain additive accumulators, each cleared every
+// `2 * exposure` seconds and staggered one exposure apart, so one is always at
+// least half full. Each holds an exact integral over its own age; this pass
+// blends them under complementary triangular weights.
+//
+//   w(age) = 1 - |age/exposure - 1|
+//
+// Because the two ages differ by exactly one exposure, those triangles sum to 1
+// at every instant, each reaches 0 exactly when its buffer is cleared, and the
+// age-weighted mean `wA*ageA + wB*ageB` comes out to exactly one exposure —
+// which is what makes a steadily swept pattern hold one brightness instead of
+// breathing with the clear cycle. Nothing pops on the reset.
+//
+// The division is by a fixed reference time, not by the window: a camera
+// integrates at a constant gain, which is why a longer exposure paints more of
+// the arc instead of fading each pass toward the floor. Dividing by the window
+// made a 2.5s exposure read about 20x dimmer than the same pass under 0.12s of
+// visual persistence, and the light-painted disc disappeared. See
+// `CAMERA_GAIN_REFERENCE_S`.
+//
+// The remaining cost is that a contribution older than the younger buffer is
+// carried by only one of the two, so the tail is a soft ramp rather than a
+// cliff. That is the honest trade for bounded memory; it still reads as a long
+// exposure, and a decayed fake does not.
+
+export const LED_BOX_RESOLVE_FRAG = `#version 300 es
+precision highp float;
+
+in vec2 v_uv;
+uniform sampler2D u_boxA;
+uniform sampler2D u_boxB;
+uniform float u_weightA;  // triangular window, u_weightA + u_weightB == 1
+uniform float u_weightB;
+uniform float u_invGain;  // 1 / CAMERA_GAIN_REFERENCE_S, fixed sensor gain
+
+out vec4 fragColor;
+
+void main() {
+  vec4 a = texture(u_boxA, v_uv);
+  vec4 b = texture(u_boxB, v_uv);
+  fragColor = (a * u_weightA + b * u_weightB) * u_invGain;
+}
+`;
+
 // ─── Bloom Downsample ─────────────────────────────────────────────────────────
 // 13-tap kernel, Froyok/LearnOpenGL layout. No threshold and no knee: a
 // threshold would make glare depend on how bright an LED happens to be, and the

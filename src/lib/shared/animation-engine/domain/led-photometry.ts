@@ -292,10 +292,16 @@ export function shutterWeight(ageSeconds: number, shutter: LedShutter): number {
  * 144fps — so normalizing by the integral would leave a slower machine visibly
  * brighter. Dividing by the sum actually applied is exact at every frame rate.
  *
- * Dividing at all is what keeps total exposure independent of shutter length:
- * lengthening the exposure extends the trail rather than blowing out the image.
- * A photographer gets that by stopping down; here it is automatic, so the
- * persistence control cannot double as a brightness control.
+ * Dividing at all is what keeps total exposure independent of persistence
+ * length: lengthening the eye's time constant extends the trail rather than
+ * blowing out the image, so the persistence control cannot double as a
+ * brightness control.
+ *
+ * The camera branch is the same normalization applied to a box kernel, and it is
+ * what the eye-path fallback uses when a camera exposure cannot run the real box
+ * shutter. The shipped camera path does NOT normalize this way — a sensor
+ * integrates at a constant gain, which is the whole reason a longer exposure
+ * paints more of the arc. See `CAMERA_GAIN_REFERENCE_S`.
  *
  * Under variable frame times a renderer should accumulate the weights it really
  * used and divide by that running total; this closed form is the uniform-dt case.
@@ -311,6 +317,103 @@ export function shutterNormalization(shutter: LedShutter, dtSeconds: number): nu
   // -expm1(-dt/tau) is (1 - ratio) without the cancellation at small dt.
   const denominator = -Math.expm1(-dt / tau);
   return (dt * (1 - Math.pow(ratio, frames + 1))) / denominator;
+}
+
+/**
+ * Reference integration time the camera shutter is scaled by.
+ *
+ * A camera does not renormalize by how long its shutter stayed open — it
+ * integrates at a fixed gain, which is why a longer exposure paints more of the
+ * arc rather than fading each pass into the floor. Dividing by the window
+ * instead (the rule the eye path uses, where persistence must never double as a
+ * brightness slider) made a 2.5s exposure read roughly 20x dimmer than the same
+ * pass under 0.12s of visual persistence, and the light-painted disc the camera
+ * mode exists for disappeared entirely.
+ *
+ * Fixed at the eye's own time constant, so switching shutter modes changes how
+ * long light persists and nothing else: a single pass reads at the same
+ * brightness either way. The consequence is the honest one — a slow or
+ * stationary prop clips to white on a long exposure, exactly as it does on a
+ * real sensor, which is the look the flux budget is already calibrated for.
+ */
+export const CAMERA_GAIN_REFERENCE_S = EYE_TIME_CONSTANT_S;
+
+/**
+ * State of the paired box-shutter accumulators a camera exposure runs on.
+ *
+ * A box shutter needs every contribution held at full weight and then dropped,
+ * which no single decaying buffer can do. Renderers keep two plain additive
+ * accumulators staggered half a period apart and blend them under the
+ * complementary triangular weights this returns, so one is always at least half
+ * full and neither pops when it is cleared. See `LED_BOX_RESOLVE_FRAG`.
+ */
+export interface BoxShutterPhase {
+  /** Seconds each accumulator has been integrating. */
+  ageA: number;
+  ageB: number;
+  /** Blend weights. Always sum to 1. */
+  weightA: number;
+  weightB: number;
+  /** True when that accumulator must be cleared before this frame's deposit. */
+  resetA: boolean;
+  resetB: boolean;
+}
+
+/**
+ * Advances the two accumulators by `dt` and returns the weights to blend them.
+ *
+ * Each accumulator runs for twice the requested exposure and they are staggered
+ * by one exposure, which is what makes the pair integrate over the exposure the
+ * caller actually asked for. Under the triangular weights the age-weighted mean
+ * `wA*ageA + wB*ageB` is exactly half the period at every instant — algebraically,
+ * not approximately — so a steadily swept pattern holds one brightness instead of
+ * breathing with the clear cycle.
+ *
+ * `ageA`/`ageB` are the previous frame's ages; seed them one exposure apart
+ * (`0` and `exposureSeconds`) so the triangles are complementary from the first
+ * frame. An accumulator that reaches the end of its period is reported as
+ * needing a reset, and comes back with an age of exactly one frame.
+ */
+export function advanceBoxShutter(
+  ageA: number,
+  ageB: number,
+  exposureSeconds: number,
+  dtSeconds: number
+): BoxShutterPhase {
+  const period = Math.max(exposureSeconds, 1e-6) * 2;
+  const dt = Math.max(dtSeconds, 1e-6);
+
+  const step = (age: number): { age: number; reset: boolean } => {
+    const next = age + dt;
+    // A frame longer than the whole period would otherwise leave the
+    // accumulator permanently over-full, so clamp the restart to one frame.
+    return next >= period ? { age: Math.min(dt, period), reset: true } : { age: next, reset: false };
+  };
+
+  const a = step(ageA);
+  const b = step(ageB);
+
+  // Triangle peaking at mid-period, zero at both ends. Two accumulators exactly
+  // half a period apart make these sum to 1 at every instant.
+  const triangle = (age: number): number =>
+    Math.max(0, 1 - Math.abs((2 * age) / period - 1));
+
+  const wA = triangle(a.age);
+  const wB = triangle(b.age);
+  // Immediately after a reset both triangles can be near zero at once (a long
+  // frame desynchronizes them), so fall back to an even split rather than
+  // dividing by ~0 and flashing.
+  const total = wA + wB;
+  const normalizedA = total > 1e-4 ? wA / total : 0.5;
+
+  return {
+    ageA: a.age,
+    ageB: b.age,
+    weightA: normalizedA,
+    weightB: 1 - normalizedA,
+    resetA: a.reset,
+    resetB: b.reset,
+  };
 }
 
 /** Age past which a contribution is dropped from the accumulation buffer. */
@@ -344,3 +447,26 @@ export const DEFAULT_GLARE_WEIGHT = 0.75;
 export function glareFalloffExponent(weight: number): number {
   return Math.log2(weight) - 2;
 }
+
+/**
+ * Tent-filter radius of the upsample pass, as a fraction of frame HEIGHT.
+ *
+ * Held in UV so the halo subtends the same angle at any DPR or canvas size.
+ * Where `glare` sets the kernel's falloff, this sets its spatial scale — the
+ * two together are the whole shape of the veil, so they belong in one place
+ * even though this one is a screen-space quantity rather than a photometric
+ * one. Both backends had their own copy of it.
+ */
+export const BLOOM_TENT_RADIUS_FRAME_FRACTION = 0.005;
+
+/**
+ * Weight of the glare pyramid in the final composite lerp.
+ *
+ * Bloom is a veil over the scene, not an addition to it, so this cannot
+ * brighten the image — which is what keeps the emitter's own flux budget the
+ * only thing that sets exposure.
+ */
+export const BLOOM_COMPOSITE_STRENGTH = 0.06;
+
+/** Ceiling on the composite weight. At 1.0 the veil replaces the scene. */
+export const BLOOM_COMPOSITE_STRENGTH_MAX = 0.95;

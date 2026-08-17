@@ -419,8 +419,10 @@ export class LedPassExecutor {
    *
    * Camera mode falls back to the eye time constant: a box shutter holds every
    * contribution at full weight until it leaves the exposure, which a decaying
-   * `max()` accumulation cannot represent at any rate. See the same
-   * TODO(led-camera-shutter) in the 2D renderer, which owes a deposit ring buffer.
+   * `max()` accumulation cannot represent at any rate. TODO(led-camera-shutter):
+   * this pass needs the normalized additive accumulation below before the
+   * staggered pair the 2D renderer ships (`advanceBoxShutter`) can be ported —
+   * `max()` has no sum to divide by an age.
    *
    * The accumulation itself is `max(current, trail * fadeRate)`, not a
    * normalized sum, so trail length still trades against brightness here. That

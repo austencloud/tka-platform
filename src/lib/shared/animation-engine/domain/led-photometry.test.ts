@@ -19,6 +19,8 @@ import {
   glareFalloffExponent,
   DEFAULT_GLARE_WEIGHT,
   EYE_TIME_CONSTANT_S,
+  advanceBoxShutter,
+  CAMERA_GAIN_REFERENCE_S,
   type LedShutter,
 } from "./led-photometry";
 
@@ -188,11 +190,13 @@ describe("LED photometry", () => {
       }
     });
 
-    it("lengthens the trail without brightening the image", () => {
-      // A longer exposure must extend persistence, not act as a second
-      // brightness slider. The old per-frame decay rate did both at once.
-      const short = integrateShutter({ mode: "camera", exposureSeconds: 0.5 }, 60);
-      const long = integrateShutter({ mode: "camera", exposureSeconds: 3 }, 60);
+    it("lengthens eye persistence without brightening the image", () => {
+      // Persistence must extend the trail, not act as a second brightness
+      // slider. The old per-frame decay rate did both at once. This is the eye
+      // path's rule; the camera path integrates at a fixed gain instead, so
+      // there a longer exposure legitimately does paint a brighter arc.
+      const short = integrateShutter({ mode: "eye", timeConstantSeconds: 0.04 }, 60);
+      const long = integrateShutter({ mode: "eye", timeConstantSeconds: 0.4 }, 60);
 
       expect(long).toBeCloseTo(short, 1);
       expect(shutterCutoffSeconds({ mode: "camera", exposureSeconds: 3 })).toBeGreaterThan(
@@ -277,6 +281,102 @@ describe("LED photometry", () => {
       expect(glareFalloffExponent(0.5)).toBeCloseTo(-3, 6);
       expect(glareFalloffExponent(DEFAULT_GLARE_WEIGHT)).toBeLessThan(-2);
       expect(glareFalloffExponent(DEFAULT_GLARE_WEIGHT)).toBeGreaterThan(-3);
+    });
+  });
+
+  describe("box shutter phase", () => {
+    const EXPOSURE = 2.5;
+    const PERIOD = EXPOSURE * 2;
+    const DT = 1 / 60;
+
+    /** Runs the pair from the seeded stagger for `frames` frames. */
+    function run(frames: number, dt = DT, exposure = EXPOSURE) {
+      let ageA = 0;
+      let ageB = exposure;
+      const history = [];
+      for (let i = 0; i < frames; i++) {
+        const phase = advanceBoxShutter(ageA, ageB, exposure, dt);
+        ageA = phase.ageA;
+        ageB = phase.ageB;
+        history.push(phase);
+      }
+      return history;
+    }
+
+    it("keeps the weights summing to one across several full cycles", () => {
+      // The whole point of the complementary triangles: if they ever fail to sum
+      // to 1, total exposure changes with shutter phase and the trail pulses.
+      for (const phase of run(Math.ceil((PERIOD * 3) / DT))) {
+        expect(phase.weightA + phase.weightB).toBeCloseTo(1, 6);
+      }
+    });
+
+    it("integrates over exactly the requested exposure at every instant", () => {
+      // The pair runs for twice the exposure and is staggered by one, so the
+      // age-weighted mean is algebraically half the period. This is what stops a
+      // steadily swept disc from breathing with the clear cycle — and it is the
+      // reason the resolve pass can scale by a fixed gain rather than by age.
+      for (const phase of run(Math.ceil((PERIOD * 3) / DT))) {
+        const effective = phase.weightA * phase.ageA + phase.weightB * phase.ageB;
+        expect(effective).toBeCloseTo(EXPOSURE, 1);
+      }
+    });
+
+    it("gives a cleared accumulator no weight on the frame it is cleared", () => {
+      // A buffer that still carries weight as it is emptied is exactly the pop
+      // this design exists to avoid.
+      const resets = run(Math.ceil((PERIOD * 2) / DT)).filter((p) => p.resetA || p.resetB);
+      expect(resets.length).toBeGreaterThan(0);
+      for (const phase of resets) {
+        if (phase.resetA) expect(phase.weightA).toBeLessThan(0.02);
+        if (phase.resetB) expect(phase.weightB).toBeLessThan(0.02);
+      }
+    });
+
+    it("never clears both accumulators on the same frame", () => {
+      // One exposure of stagger is what guarantees a buffer always holds history;
+      // losing both at once would blank the trail.
+      for (const phase of run(Math.ceil((PERIOD * 3) / DT))) {
+        expect(phase.resetA && phase.resetB).toBe(false);
+      }
+    });
+
+    it("resets each accumulator once per period", () => {
+      const history = run(Math.ceil((PERIOD * 4) / DT));
+      const resetsA = history.filter((p) => p.resetA).length;
+      // Four periods of frames, one clear apiece, allowing for the partial cycle
+      // the run ends on.
+      expect(resetsA).toBeGreaterThanOrEqual(3);
+      expect(resetsA).toBeLessThanOrEqual(4);
+    });
+
+    it("clamps a frame longer than the period to a single frame of age", () => {
+      // A tab restored after a stall delivers one enormous dt; without the clamp
+      // the accumulators would report ages far past their own window.
+      const phase = advanceBoxShutter(0, EXPOSURE, EXPOSURE, PERIOD * 10);
+      expect(phase.resetA).toBe(true);
+      expect(phase.resetB).toBe(true);
+      expect(phase.ageA).toBeLessThanOrEqual(PERIOD);
+      expect(phase.ageB).toBeLessThanOrEqual(PERIOD);
+      expect(phase.weightA + phase.weightB).toBeCloseTo(1, 6);
+    });
+
+    it("holds ages inside the period at every frame rate", () => {
+      for (const fps of [24, 30, 60, 144]) {
+        for (const phase of run(Math.ceil(PERIOD * 2 * fps), 1 / fps)) {
+          expect(phase.ageA).toBeGreaterThan(0);
+          expect(phase.ageA).toBeLessThanOrEqual(PERIOD);
+          expect(phase.ageB).toBeGreaterThan(0);
+          expect(phase.ageB).toBeLessThanOrEqual(PERIOD);
+        }
+      }
+    });
+
+    it("scales a camera exposure by a fixed gain, not by its own window", () => {
+      // A camera integrates at constant gain. Dividing by the window instead made
+      // a 2.5s exposure read ~20x dimmer than the same pass under 0.12s of visual
+      // persistence, and the light-painted disc the mode exists for vanished.
+      expect(CAMERA_GAIN_REFERENCE_S).toBe(EYE_TIME_CONSTANT_S);
     });
   });
 });

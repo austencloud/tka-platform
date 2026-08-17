@@ -11,7 +11,8 @@
  *
  * Architecture per frame:
  *   1. Streak pass:  one Gaussian capsule per LED per sub-step, additive, HDR
- *   2. Accumulate:   history * exp(-dt/tau) + deposit / shutterNormalization
+ *   2. Accumulate:   eye — history * exp(-dt/tau) + deposit / shutterNormalization
+ *                    camera — two staggered box accumulators at a fixed gain
  *   3. Downsample:   5-level 13-tap chain, partial Karis on the first level
  *   4. Upsample:     3x3 tent mixed upward by the glare weight
  *   5. Display:      lerp composite, AgX tone map, straight-alpha output
@@ -24,6 +25,12 @@
 import type { LedFrameInput, LedOverlayConfig } from "../../domain/types/led-types";
 import { ledBrightnessToFloat } from "../../domain/types/led-types";
 import {
+	BLOOM_COMPOSITE_STRENGTH,
+	BLOOM_COMPOSITE_STRENGTH_MAX,
+	BLOOM_TENT_RADIUS_FRAME_FRACTION,
+	CAMERA_EXPOSURE_MAX_S,
+	CAMERA_EXPOSURE_MIN_S,
+	CAMERA_GAIN_REFERENCE_S,
 	EYE_TIME_CONSTANT_S,
 	GLARE_WEIGHT_MAX,
 	GLARE_WEIGHT_MIN,
@@ -35,6 +42,7 @@ import {
 	shutterNormalization,
 	streakDensity,
 	subStepCount,
+	advanceBoxShutter,
 	type LedShutter,
 } from "../../domain/led-photometry";
 import { LED_SAMPLER_MAX_LEDS } from "../led-sampler";
@@ -43,6 +51,7 @@ import {
 	LED_STREAK_VERT,
 	LED_STREAK_FRAG,
 	LED_ACCUMULATE_FRAG,
+	LED_BOX_RESOLVE_FRAG,
 	BLOOM_DOWNSAMPLE_FRAG,
 	BLOOM_UPSAMPLE_FRAG,
 	LED_DISPLAY_FRAG,
@@ -72,17 +81,6 @@ const MAX_STREAK_VIEWBOX = 400;
  *  discontinuity, where the measured gap says nothing about motion. */
 const FALLBACK_DT = 1 / 60;
 const MIN_DT = 1 / 240;
-
-/** Tent-filter radius as a fraction of frame HEIGHT, held in UV so the halo
- *  subtends the same angle at any DPR or canvas size. Not derivable from the
- *  photometry module: it is the glare kernel's spatial scale, where `glare`
- *  is its falloff. */
-const BLOOM_TENT_RADIUS_FRAME_FRACTION = 0.005;
-
-/** Weight of the glare pyramid in the final lerp. Bloom is a veil over the
- *  scene, not an addition to it, so this cannot brighten the image. */
-const BLOOM_COMPOSITE_STRENGTH = 0.06;
-const BLOOM_COMPOSITE_STRENGTH_MAX = 0.95;
 
 // ============================================================
 // Framebuffer types (mirrored from WebGLFireRenderer)
@@ -128,6 +126,7 @@ export class WebGLLedRenderer {
 	// Shader programs
 	private streakProgram: ShaderProgram | null = null;
 	private accumProgram: ShaderProgram | null = null;
+	private boxResolveProgram: ShaderProgram | null = null;
 	private bloomDownProgram: ShaderProgram | null = null;
 	private bloomUpProgram: ShaderProgram | null = null;
 	private displayProgram: ShaderProgram | null = null;
@@ -161,6 +160,14 @@ export class WebGLLedRenderer {
 	// Framebuffers
 	private depositFBO: FBOAttachment | null = null;
 	private accumFBOs: DoubleFBO | null = null;
+	/** The two staggered box-shutter accumulators. Camera mode only; allocated
+	 *  with the rest so a shutter switch never stalls on a texture upload. */
+	private boxFBOs: { a: FBOAttachment; b: FBOAttachment } | null = null;
+	/** Seconds each box accumulator has been integrating. Seeded one exposure
+	 *  apart on the first camera frame; see advanceBoxShutter. */
+	private boxAgeA = 0;
+	private boxAgeB = 0;
+	private boxSeeded = false;
 	private bloomMips: FBOAttachment[] = [];
 	private bloomMipSizes: Array<{ w: number; h: number }> = [];
 
@@ -334,8 +341,25 @@ export class WebGLLedRenderer {
 		gl.bindVertexArray(null);
 
 		// 2. Shutter accumulation
-		const shutter = this.resolveShutter(config.look.shutter);
-		if (!blast.noTrail && !blast.spritesOnly) {
+		const configured = config.look.shutter;
+		// Reduced motion holds exactly one frame, so the box path's two-buffer
+		// integration has nothing to integrate — take the eye path either way.
+		const useBox =
+			configured.mode === "camera" &&
+			!this.reducedMotion &&
+			!blast.noTrail &&
+			!blast.spritesOnly &&
+			this.boxFBOs !== null &&
+			this.boxResolveProgram !== null;
+		if (useBox) {
+			this.accumulateBoxShutter(configured.exposureSeconds, dt);
+		} else {
+			// Whatever is in the box buffers is now stale by an unknown gap, so
+			// re-entering camera mode starts from a clean, correctly staggered pair.
+			this.boxSeeded = false;
+		}
+		const shutter = this.resolveShutter(configured);
+		if (!useBox && !blast.noTrail && !blast.spritesOnly) {
 			const tau = Math.max(shutter.timeConstantSeconds, 1e-6);
 			// exp(-dt/tau), not a per-frame constant: the constant made the same
 			// look decay differently at 30 and 60fps.
@@ -468,15 +492,103 @@ export class WebGLLedRenderer {
 	// ============================================================
 
 	/**
-	 * Camera mode is not implemented. A box shutter holds every contribution at
-	 * full weight until it falls off the end of the exposure, which an
-	 * exponential accumulation buffer cannot represent at any decay rate — it
-	 * needs a ring buffer of `ceil(exposureSeconds / dt)` deposit textures,
-	 * summed each frame with the oldest evicted.
+	 * Integrates this frame's deposit into the two staggered box accumulators and
+	 * resolves them into the scene texture the rest of the pipeline reads.
 	 *
-	 * TODO(led-camera-shutter): add that deposit ring buffer, then return the
-	 * camera shutter unchanged. Faking a box shutter with a decay would produce
-	 * a trail that is neither of the two things the control names.
+	 * Each accumulator is a plain sum with no decay, cleared every two exposures;
+	 * scaling by the fixed sensor gain turns that sum into radiance, which is what
+	 * a camera integrating at constant gain measures. Staggering the pair one
+	 * exposure apart and blending under complementary triangular weights hides the
+	 * clears and pins the effective window to exactly one exposure. See
+	 * `advanceBoxShutter` and `LED_BOX_RESOLVE_FRAG`.
+	 */
+	private accumulateBoxShutter(exposureSeconds: number, dt: number): void {
+		const gl = this.gl!;
+		const box = this.boxFBOs!;
+		const resolve = this.boxResolveProgram!;
+		const exposure = Math.min(
+			CAMERA_EXPOSURE_MAX_S,
+			Math.max(CAMERA_EXPOSURE_MIN_S, exposureSeconds),
+		);
+
+		if (!this.boxSeeded) {
+			// One exposure of stagger across a two-exposure period: see
+			// advanceBoxShutter for why that is what integrates over `exposure`.
+			this.boxAgeA = 0;
+			this.boxAgeB = exposure;
+			this.boxSeeded = true;
+			gl.disable(gl.BLEND);
+			for (const target of [box.a, box.b]) {
+				gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+				gl.viewport(0, 0, this.displayWidth, this.displayHeight);
+				gl.clearColor(0, 0, 0, 0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+			}
+		}
+
+		const phase = advanceBoxShutter(this.boxAgeA, this.boxAgeB, exposure, dt);
+		this.boxAgeA = phase.ageA;
+		this.boxAgeB = phase.ageB;
+
+		// Add this frame's deposit to both sums. The accumulate program doubles as
+		// the blit — a decay of 0 discards its history sample — and ONE/ONE
+		// blending is what performs the accumulation, so no target is ever also an
+		// input.
+		gl.useProgram(this.accumProgram!.program);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.depositFBO!.texture);
+		gl.uniform1i(this.accumProgram!.uniforms.get("u_deposit")!, 0);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.depositFBO!.texture);
+		gl.uniform1i(this.accumProgram!.uniforms.get("u_history")!, 1);
+		gl.uniform1f(this.accumProgram!.uniforms.get("u_decay")!, 0);
+		gl.uniform1f(this.accumProgram!.uniforms.get("u_depositScale")!, 1);
+		gl.bindVertexArray(this.quadVAO);
+
+		for (const [target, reset] of [
+			[box.a, phase.resetA],
+			[box.b, phase.resetB],
+		] as Array<[FBOAttachment, boolean]>) {
+			gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+			gl.viewport(0, 0, this.displayWidth, this.displayHeight);
+			if (reset) {
+				gl.disable(gl.BLEND);
+				gl.clearColor(0, 0, 0, 0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+			}
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.ONE, gl.ONE);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+		}
+		gl.disable(gl.BLEND);
+
+		// Resolve into the exponential path's own target, so both shutters hand the
+		// same texture downstream and a mode switch inherits a valid history rather
+		// than one black frame.
+		gl.useProgram(resolve.program);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.accumFBOs!.write.fbo);
+		gl.viewport(0, 0, this.displayWidth, this.displayHeight);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, box.a.texture);
+		gl.uniform1i(resolve.uniforms.get("u_boxA")!, 0);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, box.b.texture);
+		gl.uniform1i(resolve.uniforms.get("u_boxB")!, 1);
+		gl.uniform1f(resolve.uniforms.get("u_weightA")!, phase.weightA);
+		gl.uniform1f(resolve.uniforms.get("u_weightB")!, phase.weightB);
+		gl.uniform1f(resolve.uniforms.get("u_invGain")!, 1 / CAMERA_GAIN_REFERENCE_S);
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+		gl.bindVertexArray(null);
+		this.swapFBO(this.accumFBOs!);
+	}
+
+	/**
+	 * The eye shutter the exponential accumulation path runs on.
+	 *
+	 * A camera exposure only reaches here when the box path is unavailable —
+	 * reduced motion, which holds a single frame anyway, or a perf blast that has
+	 * already cut the trail. Both discard history, so the substituted time
+	 * constant never actually integrates anything.
 	 */
 	private resolveShutter(shutter: LedShutter): Extract<LedShutter, { mode: "eye" }> {
 		if (shutter.mode === "camera") {
@@ -892,6 +1004,8 @@ export class WebGLLedRenderer {
 			read: this.createFBO(w, h),
 			write: this.createFBO(w, h),
 		};
+		this.boxFBOs = { a: this.createFBO(w, h), b: this.createFBO(w, h) };
+		this.boxSeeded = false;
 
 		// Bloom mip chain: each level is half the previous
 		this.bloomMips = [];
@@ -936,6 +1050,7 @@ export class WebGLLedRenderer {
 			this.depositFBO!,
 			this.accumFBOs!.read,
 			this.accumFBOs!.write,
+			...(this.boxFBOs ? [this.boxFBOs.a, this.boxFBOs.b] : []),
 			...this.bloomMips,
 		];
 		for (const target of targets) {
@@ -943,6 +1058,7 @@ export class WebGLLedRenderer {
 			gl.clear(gl.COLOR_BUFFER_BIT);
 		}
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		this.boxSeeded = false;
 	}
 
 	resetExportState(): void {
@@ -995,6 +1111,12 @@ export class WebGLLedRenderer {
 			this.accumFBOs = null;
 		}
 
+		if (this.boxFBOs) {
+			destroySingle(this.boxFBOs.a);
+			destroySingle(this.boxFBOs.b);
+			this.boxFBOs = null;
+		}
+
 		for (const mip of this.bloomMips) {
 			destroySingle(mip);
 		}
@@ -1023,6 +1145,10 @@ export class WebGLLedRenderer {
 			BLOOM_UPSAMPLE_FRAG,
 			["u_source", "u_tentOffset"],
 		);
+		this.boxResolveProgram = this.buildFullscreenProgram(
+			LED_BOX_RESOLVE_FRAG,
+			["u_boxA", "u_boxB", "u_weightA", "u_weightB", "u_invGain"],
+		);
 		this.displayProgram = this.buildFullscreenProgram(
 			LED_DISPLAY_FRAG,
 			["u_scene", "u_bloom", "u_bloomStrength"],
@@ -1031,6 +1157,7 @@ export class WebGLLedRenderer {
 		const all = [
 			this.streakProgram,
 			this.accumProgram,
+			this.boxResolveProgram,
 			this.bloomDownProgram,
 			this.bloomUpProgram,
 			this.displayProgram,
