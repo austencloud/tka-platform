@@ -82,8 +82,10 @@ def main() -> None:
 
         audio, rate = soundfile.read(args.session / entry["file"], dtype="float32")
         spans = spans_from_textgrid(grid_path)
-        letters = json.loads(entry["letters"]) if "letters" in entry else None
-        if letters is None:
+        # Already parsed by the json.loads above — words.json stores letters as
+        # an array, not as an embedded JSON string.
+        letters = entry.get("letters")
+        if not letters:
             raise SystemExit(
                 f"{word_id}: words.json has no letters array; re-record or add one"
             )

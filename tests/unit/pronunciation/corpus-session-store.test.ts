@@ -12,14 +12,21 @@ describe("buildWordFiles", () => {
     expect(files.wavName).toBe("01.wav");
     expect(files.labName).toBe("01.lab");
     expect(files.labText).toBe("Sigma dash Alpha");
-    expect(files.entry).toEqual({ file: "01.wav", word: "Σ-α" });
+    // The letters survive alongside the joined word: "Σ-α" cannot be re-split
+    // without the alphabet, and a mis-split pairs every letter with the wrong
+    // aligned span.
+    expect(files.entry).toEqual({
+      file: "01.wav",
+      word: "Σ-α",
+      letters: ["Σ-", "α"],
+    });
   });
 
   it("handles a solo read", () => {
     const files = buildWordFiles("07", ["Ω"]);
 
     expect(files.labText).toBe("Omega");
-    expect(files.entry).toEqual({ file: "07.wav", word: "Ω" });
+    expect(files.entry).toEqual({ file: "07.wav", word: "Ω", letters: ["Ω"] });
   });
 });
 

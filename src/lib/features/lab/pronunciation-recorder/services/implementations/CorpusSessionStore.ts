@@ -33,7 +33,7 @@ export function buildWordFiles(id: string, letters: readonly string[]): WordFile
     labText: letters
       .map((letter) => getLetterPronunciation(letter as never)?.spokenName ?? letter)
       .join(" "),
-    entry: { file: `${id}.wav`, word: letters.join("") },
+    entry: { file: `${id}.wav`, word: letters.join(""), letters: [...letters] },
   };
 }
 
