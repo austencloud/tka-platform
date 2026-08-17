@@ -139,7 +139,7 @@ Each token carries:
 | `assetKey` | which letter |
 | `position` | initial / medial / final / isolated |
 | `previousLetter`, `nextLetter` | real spoken context, `null` at word edges |
-| `sourceWord`, `indexInWord`, `wordLength` | provenance and contour depth |
+| `sourceWord`, `indexInWord`, `groupLength` | provenance and contour depth |
 | `durationMs` | pacing |
 | `rmsDb`, `f0StartHz`, `f0EndHz` | join cost inputs |
 
@@ -160,7 +160,7 @@ to path. Version 2 maps `assetKey` to an array of tokens.
         "nextLetter": "Ω",
         "sourceWord": "αΣ-Ωβ",
         "indexInWord": 1,
-        "wordLength": 4,
+        "groupLength": 4,
         "durationMs": 412,
         "rmsDb": -19.4,
         "f0StartHz": 118.2,
@@ -183,7 +183,7 @@ costs:
 
 - **Target cost**, per candidate: does this token's `position` match, do its real
   `previousLetter` and `nextLetter` match the target's neighbours, is its
-  `wordLength` close to the target's? Position mismatch is disqualifying;
+  `groupLength` close to the target's? Position mismatch is disqualifying;
   neighbour and length mismatches are penalties.
 - **Join cost**, per adjacent pair: `f0EndHz` of the left token against
   `f0StartHz` of the right, and the `rmsDb` difference. This is the control the

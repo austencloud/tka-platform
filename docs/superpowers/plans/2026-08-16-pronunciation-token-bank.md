@@ -605,7 +605,33 @@ git commit -m "feat(pronunciation): carry group position on every cue" -- src/li
 - Create: `src/lib/shared/pronunciation/pronunciation-manifest.ts`
 - Test: `tests/unit/pronunciation/pronunciation-manifest.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+> **Amended after review (2026-08-16, `7779190f42`).** Three corrections to
+> what this task originally specified:
+>
+> 1. **The token field is `groupLength`, not `wordLength`.** Task 6 computes
+>    `Math.abs(token.groupLength - cue.groupLength)`. Under the original naming
+>    that read `token.wordLength - cue.groupLength` — one quantity subtracted
+>    from itself under two names. A recorded word carries no middle dot, so a
+>    token's group *is* its source word; the two fields were always the same
+>    thing. Every code block below and in the design doc uses the new name.
+> 2. **The numeric predicates are tighter than `isFiniteNumber`.**
+>    `indexInWord` is a non-negative integer, `groupLength` a positive integer,
+>    `durationMs` positive (a 0 ms token plays nothing and silently drops a
+>    letter). `rmsDb` stays plain finite — dBFS is negative. `f0StartHz` and
+>    `f0EndHz` are non-negative rather than positive: **0 is the unvoiced
+>    sentinel** Task 5 writes via `estimateF0Hz(...) ?? 0`, and rejecting it
+>    would drop every unvoiced token from the bank.
+> 3. **`position` and neighbour-nullness are checked against each other.** No
+>    per-field predicate can express it, and the selector reads both as if they
+>    agreed. `initial`/`isolated` require a null `previousLetter`;
+>    `final`/`isolated` require a null `nextLetter`.
+>
+> Deliberately **not** added: an `indexInWord < groupLength` bounds check.
+> `indexInWord` is provenance that nothing downstream reads, so validating it
+> further guards nothing. Its own existing type check is already the ceiling of
+> what that field earns.
+
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/pronunciation/pronunciation-manifest.test.ts`:
 
@@ -622,7 +648,7 @@ const token: PronunciationToken = {
   nextLetter: "C",
   sourceWord: "BAC",
   indexInWord: 1,
-  wordLength: 3,
+  groupLength: 3,
   durationMs: 412,
   rmsDb: -19.4,
   f0StartHz: 118.2,
@@ -684,7 +710,7 @@ describe("parsePronunciationManifest", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/pronunciation-manifest.test.ts
@@ -692,7 +718,7 @@ npm run test:ci -- tests/unit/pronunciation/pronunciation-manifest.test.ts
 
 Expected: FAIL. The module does not exist.
 
-- [ ] **Step 3: Add the v2 types**
+- [x] **Step 3: Add the v2 types**
 
 In `pronunciation-plan.ts`, add below the existing `PronunciationManifest`:
 
@@ -707,7 +733,7 @@ export interface PronunciationToken {
   nextLetter: string | null;
   sourceWord: string;
   indexInWord: number;
-  wordLength: number;
+  groupLength: number;
   durationMs: number;
   rmsDb: number;
   f0StartHz: number;
@@ -724,7 +750,7 @@ export type AnyPronunciationManifest =
   | PronunciationTokenBank;
 ```
 
-- [ ] **Step 4: Write the parser**
+- [x] **Step 4: Write the parser**
 
 Create `src/lib/shared/pronunciation/pronunciation-manifest.ts`:
 
@@ -783,7 +809,7 @@ function isToken(value: unknown): value is PronunciationToken {
     isNullableLetter(value.nextLetter) &&
     typeof value.sourceWord === "string" &&
     isFiniteNumber(value.indexInWord) &&
-    isFiniteNumber(value.wordLength) &&
+    isFiniteNumber(value.groupLength) &&
     isFiniteNumber(value.durationMs) &&
     isFiniteNumber(value.rmsDb) &&
     isFiniteNumber(value.f0StartHz) &&
@@ -817,7 +843,7 @@ export function parsePronunciationManifest(
 }
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/pronunciation-manifest.test.ts
@@ -825,7 +851,7 @@ npm run test:ci -- tests/unit/pronunciation/pronunciation-manifest.test.ts
 
 Expected: PASS, 6 tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): version 2 token bank format and parser" -- src/lib/shared/pronunciation/pronunciation-plan.ts src/lib/shared/pronunciation/pronunciation-manifest.ts tests/unit/pronunciation/pronunciation-manifest.test.ts
@@ -1130,7 +1156,7 @@ function token(
     nextLetter: null,
     sourceWord: "AB",
     indexInWord: 0,
-    wordLength: 2,
+    groupLength: 2,
     durationMs: 300,
     rmsDb: -18,
     f0StartHz: 120,
@@ -1271,7 +1297,7 @@ describe("selectTokenPath", () => {
             path: "a/solo.wav",
             position: "isolated",
             sourceWord: "A",
-            wordLength: 1,
+            groupLength: 1,
           }),
         ],
       },
@@ -1350,7 +1376,7 @@ export function targetCost(
   if (token.nextLetter !== neighbours.nextLetter) {
     cost += NEIGHBOUR_MISMATCH_COST;
   }
-  cost += LENGTH_MISMATCH_COST * Math.abs(token.wordLength - cue.groupLength);
+  cost += LENGTH_MISMATCH_COST * Math.abs(token.groupLength - cue.groupLength);
   return cost;
 }
 
@@ -1474,7 +1500,7 @@ describe("PronunciationPlayer manifest versions", () => {
             nextLetter: null,
             sourceWord: "A",
             indexInWord: 0,
-            wordLength: 1,
+            groupLength: 1,
             durationMs: 300,
             rmsDb: -18,
             f0StartHz: 120,

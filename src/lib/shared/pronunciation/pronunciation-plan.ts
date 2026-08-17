@@ -46,14 +46,15 @@ export interface PronunciationToken {
   previousLetter: string | null;
   /** The letter actually spoken after this one, null at a group edge. */
   nextLetter: string | null;
-  /** Word-scoped provenance: which recorded word this token came from. */
+  /** Provenance: which recorded word this token was spoken in. */
   sourceWord: string;
-  /** Word-scoped provenance: this token's position within `sourceWord`. */
+  /** Provenance: this token's index within `sourceWord`. Read by nothing. */
   indexInWord: number;
   /**
-   * Group-scoped contour depth — the number of letters in the middle-dot-
-   * separated group the selector is matching against. Compares directly
-   * against `PronunciationCue.groupLength`; do not confuse with `indexInWord`.
+   * How many letters `sourceWord` holds — the contour depth this token was
+   * spoken at. A recorded word carries no middle dot, so its group is the
+   * whole word. Named to match `PronunciationCue.groupLength` because the
+   * selector subtracts one from the other to penalise contour mismatch.
    */
   groupLength: number;
   durationMs: number;
