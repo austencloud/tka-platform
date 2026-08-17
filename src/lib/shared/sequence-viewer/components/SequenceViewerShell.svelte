@@ -30,6 +30,10 @@
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import { dockTrayState } from "./ControlDock.svelte";
   import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
+  import {
+    createVideoPlayheadBridge,
+    setVideoPlayheadContext,
+  } from "../context/video-playhead-context";
   import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
@@ -195,9 +199,21 @@
       captureScanAction,
     }
   );
+  // One playhead for the performance video and the notation beside it. The
+  // videos pane picks this up through context rather than three layers of
+  // props, and reaches it from the full Videos surface and the split-pane
+  // companion alike.
+  const videoPlayhead = createVideoPlayheadBridge({
+    setPlaybackSource: (source) => ctx.setPlaybackSource(source),
+    setActiveStepMap: (map) => ctx.setActiveStepMap(map),
+    onVideoTimeUpdate: (seconds) => ctx.onVideoTimeUpdate(seconds),
+  });
+  setVideoPlayheadContext(videoPlayhead);
+
   const interactions = createViewerShellInteractionState(
     {
       getContext: () => ctx,
+      getVideoPlayhead: () => videoPlayhead,
       getExportOverrides: () => exportOverrides,
       getOnRemix: () => onRemix,
       getOpenAppHref: () => openAppHref,

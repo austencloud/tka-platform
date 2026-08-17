@@ -8,7 +8,10 @@
 <script lang="ts">
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { getStepIndexFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import {
+    getStepIndexFromVideo,
+    seekTimeForStep,
+  } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
@@ -86,25 +89,10 @@
   }
 
   function handleStepClick(stepIndex: number) {
-    // Seek to that step. A clip that runs the sequence several times holds the
-    // step several times over, so take the pass the playhead is already in
-    // rather than throwing the viewer back to the first one.
-    const ts = beatMap.beatTimestamps;
-    const stride = beatMap.stepCount > 0 ? beatMap.stepCount : ts.length;
-    let nearest: number | undefined;
-    for (let i = stepIndex; i < ts.length; i += stride) {
-      const at = ts[i]!;
-      if (
-        nearest === undefined ||
-        Math.abs(at - currentTime) < Math.abs(nearest - currentTime)
-      ) {
-        nearest = at;
-      }
-    }
-    if (nearest !== undefined && videoEl) {
-      videoEl.currentTime = nearest;
-      currentTime = nearest;
-    }
+    const at = seekTimeForStep(stepIndex, currentTime, beatMap);
+    if (at === null || !videoEl) return;
+    videoEl.currentTime = at;
+    currentTime = at;
   }
 
 </script>

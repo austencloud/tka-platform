@@ -46,6 +46,53 @@ export function getStepIndexFromVideo(
   return mark % stepMap.stepCount;
 }
 
+/**
+ * Which time through the sequence the footage is on right now, 1-based.
+ *
+ * Zero before the first mark. A single-pass map only ever answers 1, which is
+ * why surfaces showing this hide it unless the take holds more than one.
+ */
+export function passNumberFromVideo(
+  currentTime: number,
+  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+): number {
+  const mark = getHighlightedBeatFromVideo(currentTime, stepMap.beatTimestamps);
+  if (mark < 0 || stepMap.stepCount <= 0) return 0;
+  return Math.floor(mark / stepMap.stepCount) + 1;
+}
+
+/**
+ * When to drive the footage to, to see a given step.
+ *
+ * A take holds every step once per pass, so a step index names several
+ * instants rather than one. This returns whichever is nearest the playhead:
+ * clicking move 13 while watching the third time through lands on that pass's
+ * move 13, not back at the top of the clip. Null when the map holds no
+ * instance of that step.
+ */
+export function seekTimeForStep(
+  stepIndex: number,
+  currentTime: number,
+  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+): number | null {
+  const marks = stepMap.beatTimestamps;
+  if (stepIndex < 0 || marks.length === 0) return null;
+
+  // Without a step count the map is one pass by definition, so the step
+  // appears exactly once and the stride is the whole map.
+  const stride = stepMap.stepCount > 0 ? stepMap.stepCount : marks.length;
+  if (stepIndex >= stride) return null;
+
+  let nearest: number | null = null;
+  for (let i = stepIndex; i < marks.length; i += stride) {
+    const at = marks[i]!;
+    if (nearest === null || Math.abs(at - currentTime) < Math.abs(nearest - currentTime)) {
+      nearest = at;
+    }
+  }
+  return nearest;
+}
+
 /** How many times the sequence is marked out across the clip. At least one. */
 export function passCountFromStepMap(
   stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">

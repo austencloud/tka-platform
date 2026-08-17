@@ -22,6 +22,12 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { tryGetVideoPlayheadContext } from "../../context/video-playhead-context";
+  import {
+    getStepIndexFromVideo,
+    passCountFromStepMap,
+    passNumberFromVideo,
+  } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import DeleteConfirmDialog from "../DeleteConfirmDialog.svelte";
   import StepMapEditor from "../step-mapping/StepMapEditor.svelte";
   import VideoUploadFlow from "./VideoUploadFlow.svelte";
@@ -198,6 +204,62 @@
     mappingVideoId = null;
     onUploadOpenChange?.(false);
   }
+
+  // ---- The shared playhead ----
+  //
+  // Present only inside the viewer. Everywhere else this component renders -
+  // Create's videos panel, the test routes - there is no notation beside the
+  // footage to keep in step, and every call below is a no-op.
+
+  const playhead = tryGetVideoPlayheadContext();
+
+  /** The timing on the performance being watched, if it has any. */
+  const activeMap = $derived(view === "browse" ? (selectedVideo?.beatMap ?? null) : null);
+
+  let playerTime = $state(0);
+
+  $effect(() => {
+    // Reads activeMap so switching performance, or leaving browse for the
+    // uploader or the timing editor, hands the playhead back.
+    const map = activeMap;
+    playhead?.attach(map ?? null);
+    playerTime = 0;
+    return () => playhead?.attach(null);
+  });
+
+  /**
+   * Where the footage is, in the sequence's own terms. A take almost always
+   * runs the LOOP several times, so this says which time through as well -
+   * without it the highlight counts 1 to 16 four times over with nothing to
+   * say it went round again.
+   */
+  const playheadLabel = $derived.by(() => {
+    if (!activeMap) return "";
+    const step = getStepIndexFromVideo(playerTime, activeMap);
+    if (step < 0) return "";
+    const move = `Move ${step + 1}`;
+    if (passCountFromStepMap(activeMap) < 2) return move;
+    return `${move} · pass ${passNumberFromVideo(playerTime, activeMap)}`;
+  });
+
+  function handlePlayerTimeUpdate(event: Event): void {
+    const player = event.currentTarget as HTMLVideoElement;
+    playerTime = player.currentTime;
+    playhead?.reportTime(player.currentTime);
+  }
+
+  /** Hand the player over so a click on the notation can drive it. */
+  function adoptPlayer(player: HTMLVideoElement | null): void {
+    if (!playhead) return;
+    playhead.registerSeek(
+      player
+        ? (seconds) => {
+            player.currentTime = seconds;
+            playerTime = seconds;
+          }
+        : null
+    );
+  }
 </script>
 
 <div class="sequence-videos" in:fade={{ duration: 200 }}>
@@ -282,11 +344,17 @@
             {#key selectedVideo.id}
               <!-- svelte-ignore a11y_media_has_caption -->
               <video
+                {@attach (player) => {
+                  adoptPlayer(player);
+                  return () => adoptPlayer(null);
+                }}
                 src={selectedVideo.videoUrl}
                 class="video-player"
                 controls
                 playsinline
                 preload="auto"
+                ontimeupdate={handlePlayerTimeUpdate}
+                onseeked={handlePlayerTimeUpdate}
                 onloadedmetadata={(event) => {
                   const player = event.currentTarget;
                   rememberVideoAspectRatio(
@@ -300,6 +368,12 @@
             <span class="duration-badge"
               >{formatDuration(selectedVideo.duration)}</span
             >
+            {#if playheadLabel}
+              <!-- Where the notation beside this is looking. Sits over the
+                   stage like the duration badge, so appearing at the first
+                   mark moves nothing. -->
+              <span class="playhead-badge">{playheadLabel}</span>
+            {/if}
           </div>
           <div class="performance-details">
             <div>
@@ -563,7 +637,12 @@
     display: grid;
     place-items: center;
     align-self: center;
-    block-size: min(62vh, 75cqw);
+    /* Height, then the ratio derives the width - so the second term has to be
+       the height at which the width exactly fills the container, which depends
+       on the ratio. A fixed 75cqw is only that height for one shape: it
+       overflows landscape (saved by max-inline-size) and starves portrait,
+       which is what a phone shoots performance footage in. */
+    block-size: min(62vh, calc(100cqw / var(--stage-ratio, 1.7778)));
     aspect-ratio: var(--stage-ratio, 16 / 9);
     max-inline-size: 100%;
     background: #050507;
@@ -585,6 +664,32 @@
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+
+  /* Carries the accent because it is live readout rather than metadata: it is
+     the one thing on the stage that changes as the footage runs.
+
+     Top of the stage, not the bottom: the browser paints its own transport
+     across the bottom of the video, and a readout down there lands on the play
+     button and the scrubber. The duration badge gets away with it only because
+     it sits in the far corner. */
+  .playhead-badge {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #22b8cf) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22b8cf) 26%,
+      rgba(0, 0, 0, 0.72)
+    );
     color: #fff;
     font-size: var(--font-size-compact, 12px);
     font-variant-numeric: tabular-nums;
@@ -860,23 +965,30 @@
      chrome eating the height. Stacking there pushes the list entirely below the
      fold, so the pair stays side by side and the stage takes the height that is
      actually available. Placed after the container tiers so it wins when both
-     match. */
-  @media (max-height: 34rem) and (min-width: 45rem) {
-    .video-workspace {
-      grid-template-columns: minmax(0, max-content) minmax(14rem, 20rem);
-      grid-template-rows: auto minmax(0, 1fr);
-    }
+     match.
 
-    .featured-performance {
-      inline-size: fit-content;
-    }
+     The height half is a viewport question and the width half is a pane
+     question, so it takes both at-rules: a short viewport says nothing about
+     how much room this surface got. Read as a media query alone it turned a
+     320px pane two-column and squeezed the stage to 17px. */
+  @container (min-width: 45rem) {
+    @media (max-height: 34rem) {
+      .video-workspace {
+        grid-template-columns: minmax(0, max-content) minmax(14rem, 20rem);
+        grid-template-rows: auto minmax(0, 1fr);
+      }
 
-    .player-stage {
-      block-size: min(58vh, 60cqw);
-    }
+      .featured-performance {
+        inline-size: fit-content;
+      }
 
-    .performance-list-items {
-      grid-template-columns: 1fr;
+      .player-stage {
+        block-size: min(58vh, calc(100cqw / var(--stage-ratio, 1.7778)));
+      }
+
+      .performance-list-items {
+        grid-template-columns: 1fr;
+      }
     }
   }
 

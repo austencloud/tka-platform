@@ -13,11 +13,23 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import StepMapEditor from "$lib/shared/sequence-viewer/components/step-mapping/StepMapEditor.svelte";
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import SequenceVideos from "$lib/shared/sequence-viewer/components/sequence-videos/SequenceVideos.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
   import { hydrateSequence } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
-  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import {
+    getStepIndexFromVideo,
+    passCountFromStepMap,
+  } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import {
+    createVideoPlayheadBridge,
+    setVideoPlayheadContext,
+  } from "$lib/shared/sequence-viewer/context/video-playhead-context";
+  import {
+    getSequenceVideosStore,
+    resetSequenceVideoStores,
+  } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
@@ -26,7 +38,10 @@
   // bare route; the meta line shows auth so a slow load is legible as a load.
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import type {
+    CollaborativeVideo,
+    StepMap,
+  } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
   /** OmLam-XJ: the published LOOP whose word simplifies to ΩΛ-XJ. */
   const SEQUENCE_WORD = "ΩΛ-XJΩΛ-XJΩΛ-XJΩΛ-XJ";
@@ -34,6 +49,22 @@
   const VIDEO_URL = "/word-videos/OmLam-XJ.mp4";
   /** ffprobe: 43.667239s, 720x1280, 29.68fps. */
   const VIDEO_DURATION = 43.667;
+
+  /**
+   * The take Austen marked by hand on 2026-08-16: 64 arrivals plus the final
+   * one, the 16-move LOOP run four times over. Marks live only in the page
+   * while it is open, so without this the paired view costs 65 taps to reach
+   * every time the route reloads. Same numbers as
+   * tests/unit/video-collaboration/step-map-utils.test.ts.
+   */
+  const RECORDED_MARKS = [
+    0.0, 0.86, 1.55, 2.07, 2.69, 3.4, 3.94, 4.59, 5.18, 5.76, 6.45, 7.11, 7.7,
+    8.36, 8.94, 9.49, 10.17, 10.8, 11.36, 12.0, 12.61, 13.23, 14.02, 14.54,
+    15.17, 15.88, 16.46, 17.09, 17.71, 18.33, 18.89, 19.49, 20.26, 20.86, 21.52,
+    22.15, 22.83, 23.42, 24.05, 24.66, 25.32, 26.0, 26.61, 27.19, 27.89, 28.48,
+    29.07, 29.65, 30.37, 31.04, 31.69, 32.37, 32.93, 33.64, 34.25, 34.89, 35.57,
+    36.21, 36.87, 37.54, 38.21, 39.03, 39.67, 40.24, 40.81,
+  ];
 
   let sequence = $state<SequenceData | null>(null);
   let loadError = $state<string | null>(null);
@@ -46,37 +77,88 @@
     sequence?.word ? simplifyRepeatedWord(sequence.word) : ""
   );
 
+  // ---- Playback: the production panes, on the production bridge ----
+  //
+  // The saved map is handed to the real videos pane through the real
+  // sequence-videos store, and the notation beside it is a real ChoreoCard.
+  // The only thing standing in for production here is the orchestrator: the
+  // shell feeds the bridge into its viewer context, and this page feeds it
+  // into the two pieces of state that context would drive.
+
+  let videoTime = $state(0);
+  let activeMap = $state<StepMap | null>(null);
+
+  const playhead = createVideoPlayheadBridge({
+    setPlaybackSource: () => {},
+    setActiveStepMap: (map) => (activeMap = map),
+    onVideoTimeUpdate: (seconds) => (videoTime = seconds),
+  });
+  setVideoPlayheadContext(playhead);
+
+  /** -1 before the first mark; the card wants null for "nothing lit". */
+  const highlightedStepIndex = $derived.by(() => {
+    if (!activeMap) return null;
+    const step = getStepIndexFromVideo(videoTime, activeMap);
+    return step < 0 ? null : step;
+  });
+
+  const passSummary = $derived(
+    saved
+      ? `${saved.beatTimestamps.length} marks · ${passCountFromStepMap(saved)} passes · end ${saved.endTimestamp?.toFixed(2) ?? "-"}`
+      : ""
+  );
+
+  /**
+   * The performance record the videos pane reads. Seeded through the store's
+   * own add(), which marks the list loaded - nothing is written to R2 or
+   * Firestore, and no production record is touched.
+   */
+  function seedPerformance(stepMap: StepMap): void {
+    const now = new Date();
+    const record: CollaborativeVideo = {
+      id: "slice-omlam-xj",
+      videoUrl: VIDEO_URL,
+      storagePath: "slice/OmLam-XJ.mp4",
+      duration: VIDEO_DURATION,
+      fileSize: 0,
+      mimeType: "video/mp4",
+      sequenceId: sequence?.id ?? SEQUENCE_ID,
+      sequenceName: SEQUENCE_ID,
+      creatorId: authState.user?.uid ?? "slice-performer",
+      collaborators: [],
+      pendingInvites: [],
+      visibility: "private",
+      description: "Phone clip, four times through.",
+      beatMap: stepMap,
+      createdAt: now,
+      updatedAt: now,
+    };
+    resetSequenceVideoStores();
+    getSequenceVideosStore(record.sequenceId).add(record);
+  }
+
   async function handleSave(stepMap: StepMap) {
+    seedPerformance(stepMap);
     saved = stepMap;
+  }
+
+  function loadRecordedTake() {
+    handleSave({
+      beatTimestamps: RECORDED_MARKS.slice(0, -1),
+      endTimestamp: RECORDED_MARKS[RECORDED_MARKS.length - 1],
+      stepCount: 16,
+      source: "manual",
+      updatedAt: new Date(),
+    });
   }
 
   function remap() {
     saved = null;
+    activeMap = null;
+    videoTime = 0;
+    resetSequenceVideoStores();
     generation += 1;
   }
-
-  // ---- Sync playback: the production highlight function, live ----
-
-  let syncVideo: HTMLVideoElement | undefined = $state();
-  let syncTime = $state(0);
-
-  const highlighted = $derived(
-    saved ? getHighlightedBeatFromVideo(syncTime, saved.beatTimestamps) : -1
-  );
-  const highlightedFace = $derived(
-    !sequence
-      ? null
-      : highlighted < 0
-        ? (sequence.startPosition ?? sequence.startingPosition ?? null)
-        : (sequence.steps[highlighted] ?? null)
-  );
-  const highlightedLabel = $derived(
-    highlighted < 0 ? "Opening pose" : `Move ${highlighted + 1}`
-  );
-  /** Past the final mark the run is over, which -1 cannot express. */
-  const finished = $derived(
-    !!saved?.endTimestamp && syncTime >= saved.endTimestamp
-  );
 
   onMount(async () => {
     registerLoopDetector(loopDetector);
@@ -114,10 +196,11 @@
     </span>
     {#if saved}
       <button type="button" onclick={remap}>Re-map</button>
-      <span class="saved">
-        {saved.beatTimestamps.length} marks + end
-        {saved.endTimestamp?.toFixed(2) ?? "-"}
-      </span>
+      <span class="saved">{passSummary}</span>
+    {:else if sequence}
+      <button type="button" onclick={loadRecordedTake}>
+        Load the recorded take
+      </button>
     {/if}
   </div>
 
@@ -127,46 +210,18 @@
     {:else if !sequence}
       <p class="load-error">Loading the published sequence...</p>
     {:else if saved}
-      <div class="sync">
-        <video
-          bind:this={syncVideo}
-          class="sync-video"
-          src={VIDEO_URL}
-          controls
-          playsinline
-          ontimeupdate={() => (syncTime = syncVideo?.currentTime ?? 0)}
-        >
-          <track kind="captions" />
-        </video>
-
-        <div class="sync-readout">
-          <p class="sync-title">Playing back through the saved map</p>
-          <div class="sync-face" class:done={finished}>
-            {#if highlightedFace}
-              <PictographContainer
-                pictographData={highlightedFace}
-                disableTransitions={true}
-              />
-            {/if}
-          </div>
-          <p class="sync-label">
-            {finished ? "Run complete" : highlightedLabel}
-          </p>
-          <p class="sync-time">{formatTime(syncTime)}</p>
-          <ol class="sync-marks">
-            {#each saved.beatTimestamps as ts, i}
-              <li class:on={i === highlighted && !finished}>
-                <span>{i + 1}</span>
-                <span>{ts.toFixed(2)}</span>
-              </li>
-            {/each}
-            {#if saved.endTimestamp !== undefined}
-              <li class:on={finished}>
-                <span>end</span>
-                <span>{saved.endTimestamp.toFixed(2)}</span>
-              </li>
-            {/if}
-          </ol>
+      <div class="paired">
+        <div class="paired-footage">
+          <SequenceVideos {sequence} isOwned={true} />
+        </div>
+        <div class="paired-notation">
+          <ChoreoCard
+            {sequence}
+            darkMode
+            showHighlight
+            {highlightedStepIndex}
+            onStepClick={(stepIndex) => playhead.seekToStep(stepIndex)}
+          />
         </div>
       </div>
     {:else}
@@ -240,89 +295,73 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
-  /* ---- Sync playback ---- */
+  /* ---- Footage beside notation ----
 
-  .sync {
+     Two equal halves, which is what the viewer's split pane gives these panes.
+     Each half owns its own overflow so a tall card cannot push the footage
+     off the page. */
+
+  .paired {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 24rem);
+    /* Not 50/50: performance footage is shot on a phone and is portrait, so an
+       equal half strands it in the middle of a wide card. The card is the wide
+       artefact of the two and takes the remainder. */
+    grid-template-columns: clamp(20rem, 26vw, 40rem) minmax(0, 1fr);
     gap: 1rem;
     height: 100%;
     padding: 1rem;
   }
 
-  .sync-video {
-    inline-size: 100%;
-    block-size: 100%;
-    min-block-size: 0;
-    object-fit: contain;
-    background: #000;
-    border-radius: 0.5rem;
-  }
-
-  .sync-readout {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  /* Grid, not flex: the videos pane is far taller than the viewport, and as a
+     row-flex child its automatic minimum size let it shrink to nothing
+     horizontally. A grid cell stretches instead. */
+  .paired-footage,
+  .paired-notation {
+    display: grid;
+    min-inline-size: 0;
     min-block-size: 0;
   }
 
-  .sync-title {
-    margin: 0;
-    font-size: 0.8125rem;
-    color: rgba(255, 255, 255, 0.55);
+  .paired-footage {
+    align-content: start;
+    overflow-y: auto;
   }
 
-  .sync-face {
-    inline-size: 100%;
-    max-inline-size: 15rem;
-    aspect-ratio: 1;
-    border: 2px solid #22b8cf;
-    border-radius: 0.75rem;
+  .paired-notation {
+    place-items: center;
     overflow: hidden;
   }
 
-  .sync-face.done {
-    border-color: rgba(255, 255, 255, 0.2);
-  }
+  /* The narrow end has no room for two halves side by side; the footage leads
+     because that is what a mark is placed against. Both stack at their natural
+     height and the page scrolls - splitting 600px of phone between them clips
+     the clip and shrinks the card past reading. */
+  @media (max-width: 900px) {
+    /* Only the paired view grows past the viewport; the editor still wants a
+       fixed frame it can lay its timeline out inside. */
+    .harness:has(.paired) {
+      height: auto;
+      min-height: 100dvh;
+    }
 
-  .sync-label {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-  }
+    .editor-frame:has(.paired) {
+      overflow: visible;
+    }
 
-  .sync-time {
-    margin: 0;
-    font-family: monospace;
-    font-variant-numeric: tabular-nums;
-    color: rgba(255, 255, 255, 0.5);
-  }
+    .paired {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      height: auto;
+      overflow-y: auto;
+    }
 
-  .sync-marks {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-    gap: 0.25rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-  }
+    .paired-footage,
+    .paired-notation {
+      overflow: visible;
+    }
 
-  .sync-marks li {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.3rem;
-    background: rgba(255, 255, 255, 0.04);
-    color: rgba(255, 255, 255, 0.55);
-  }
-
-  .sync-marks li.on {
-    background: rgba(34, 184, 207, 0.25);
-    color: #fff;
+    .paired-notation {
+      block-size: 70vh;
+    }
   }
 </style>

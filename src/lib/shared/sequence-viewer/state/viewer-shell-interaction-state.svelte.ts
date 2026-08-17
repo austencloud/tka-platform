@@ -16,6 +16,7 @@ import {
   buildVideoExportAnalyticsConfig,
 } from "../services/viewer-shell-model";
 import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
+import type { VideoPlayheadBridge } from "../context/video-playhead-context";
 
 export interface ViewerShellExportOverrides {
   onVideoExport: () => void;
@@ -33,6 +34,11 @@ export interface ViewerShellGuideAction {
 
 interface ViewerShellInteractionInputs {
   getContext: () => OrchestratorContext;
+  /**
+   * The performance video and the notation share one playhead when a mapped
+   * video is on screen. Absent for hosts that render no video pane.
+   */
+  getVideoPlayhead?: () => VideoPlayheadBridge | null;
   getExportOverrides: () => ViewerShellExportOverrides | undefined;
   getOnRemix: () => (() => void) | undefined;
   getOpenAppHref: () => string | undefined;
@@ -392,12 +398,18 @@ export function createViewerShellInteractionState(
   function handleStepClick(stepIndex: number): void {
     const ctx = inputs.getContext();
     const previous = ctx.currentStepLocal;
-    ctx.handleStepClick(stepIndex);
+    // A mapped performance owns the playhead while it is on screen, so the
+    // click drives the footage to that move - in the pass being watched - and
+    // the notation follows the video as it always does. Seeking the animation
+    // as well would fight it for the highlight.
+    const drivenByVideo =
+      inputs.getVideoPlayhead?.()?.seekToStep(stepIndex) ?? false;
+    if (!drivenByVideo) ctx.handleStepClick(stepIndex);
     dependencies.captureScanPlaybackChanged({
       action: "step_select",
       previous_value: previous,
       value: stepIndex,
-      source: "card_step",
+      source: drivenByVideo ? "card_step_video" : "card_step",
       step: stepIndex,
     });
   }
