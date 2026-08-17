@@ -69,6 +69,8 @@ export const SMALL_BILATERAL_PROPS = [
   "staff",
   "simple_staff",
   "staff_v2",
+  // The LED baton is a staff: same span, same small-prop beta offset.
+  "capsule_baton",
   // Energy Staff follows staff exactly: same reach, same small-prop beta offset.
   "energy_staff",
   "buugeng",
@@ -200,6 +202,9 @@ const STAFF_FAMILY_PROPS = [
   "simple_staff",
   "staff_v2",
   "bigstaff",
+  // The LED baton's two ends are mirror images, so the pinky/thumb landmark is
+  // carried by which hand end you gripped — same as every other staff.
+  "capsule_baton",
 ] as const;
 
 /**

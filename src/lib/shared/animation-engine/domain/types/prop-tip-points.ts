@@ -60,6 +60,17 @@ const STAFF_V2_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Bilateral, and deliberately shorter than the 126.4 half-width its artwork
+// spans. The tracked point on an LED baton is the light capsule inside the
+// frosted cap, not the outer rim of the cap, so every emitter that reads this
+// table (LED, fire, trails, charcoal, mandala) fires from the lit spot.
+const CAPSULE_BATON_TIP_POINTS: PropTipConfig = {
+  points: [
+    { dx: -117, dy: 0 },
+    { dx: 117, dy: 0 },
+  ],
+};
+
 const BIGSTAFF_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: -300, dy: 0 },
@@ -356,6 +367,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
   simple_staff: SIMPLE_STAFF_TIP_POINTS,
   bigstaff: BIGSTAFF_TIP_POINTS,
   staff_v2: STAFF_V2_TIP_POINTS,
+  capsule_baton: CAPSULE_BATON_TIP_POINTS,
 
   // Club family
   club: CLUB_TIP_POINTS,

@@ -16,6 +16,11 @@ export enum PropType {
   SIMPLESTAFF = "simple_staff",
   BIGSTAFF = "bigstaff",
   STAFF2 = "staff_v2",
+  // An LED baton: braided shaft, clear tubes, and a frosted cap over the light
+  // capsule at each end. Staff family — same reach, same two tracked ends — but
+  // its tracked tips sit at the cap centers, where the light actually is, so the
+  // LED/fire/trail emitters come out of the caps instead of off the rims.
+  CAPSULE_BATON = "capsule_baton",
 
   // === CLUB FAMILY ===
   CLUB = "club",

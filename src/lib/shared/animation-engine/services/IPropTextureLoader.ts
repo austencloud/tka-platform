@@ -78,6 +78,10 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   energy_saber: { width: 620, height: 96 },
   energy_staff: { width: 300, height: 90 },
 
+  // LED baton — staff's exact span so the mandala radius and beta spacing match,
+  // in a shallow box because the prop really is that thin.
+  capsule_baton: { width: 252.8, height: 40 },
+
   // Chicken family
   chicken: { width: 325, height: 30.3 },
   bigchicken: { width: 252.8, height: 44.4 },

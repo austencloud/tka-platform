@@ -112,6 +112,8 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.SIMPLESTAFF]: "s",
   [PropType.BIGSTAFF]: "1",
   [PropType.STAFF2]: "2",
+  // Same code the current codec uses, so a sequence keeps its prop across formats.
+  [PropType.CAPSULE_BATON]: "5",
   [PropType.CLUB]: "C",
   [PropType.BIGCLUB]: "c",
   [PropType.FAN]: "F",

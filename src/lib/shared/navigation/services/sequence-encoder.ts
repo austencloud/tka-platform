@@ -82,6 +82,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.SIMPLESTAFF]: "s",
   [PropType.BIGSTAFF]: "1",
   [PropType.STAFF2]: "2",
+  // Digit for the same reason the energy pair got one: every letter that reads
+  // as "baton", "capsule" or "LED" is taken.
+  [PropType.CAPSULE_BATON]: "5",
   [PropType.CLUB]: "C",
   [PropType.BIGCLUB]: "c",
   [PropType.FAN]: "F",

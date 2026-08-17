@@ -14,6 +14,11 @@ import { PropType as ScenePropType } from "@austencloud/scene-3d";
 const SCENE_PROP_SUBSTITUTES: Partial<Record<PropType, ScenePropType>> = {
   [PropType.ENERGY_SABER]: ScenePropType.SWORD,
   [PropType.ENERGY_STAFF]: ScenePropType.STAFF,
+  // The LED baton has its own 2D artwork but no entry in the scene package's
+  // enum yet, so the rig borrows the staff model. Delete this line in the same
+  // change that adds a baton member to that enum and a CapsuleBaton3D branch to
+  // Prop3D — leaving it would silently shadow the real model.
+  [PropType.CAPSULE_BATON]: ScenePropType.STAFF,
 };
 
 export function toScenePropType(propType: PropType): ScenePropType {
