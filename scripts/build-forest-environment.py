@@ -1948,6 +1948,13 @@ def verify_tree_composition(placements, counts):
     approved_tree_families = {
         "Poly Haven Natural",
         "Meshy Semantic Summer R2",
+        # Botanical trees off the PlantCatalog bridge. They arrive already
+        # conditioned and already reduced, and unlike the two families above
+        # they carry several foliage materials, so they opt out of
+        # overheadFoliageSupport rather than being handed to it -- that stage
+        # requires exactly one foliage material and has no meaning for a tree
+        # whose canopy is real per-leaf geometry rather than a distance shell.
+        "PlantCatalog Botanical R1",
     }
     unapproved_tree_families = {
         asset["family"]

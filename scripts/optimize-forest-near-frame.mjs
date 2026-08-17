@@ -134,7 +134,17 @@ async function simplifyNearFrameTrees(input, output) {
     for (const primitive of mesh.listPrimitives()) {
       const material = primitive.getMaterial();
       const materialName = material?.getName() ?? "";
-      const isFoliage = /leaves|twig/i.test(materialName);
+      // PlantCatalog trees name their materials on two axes, and the one that
+      // matters here is surface rather than family: a lichen card is wood that
+      // still needs a crisp alpha mask, so `_Cutout_` is the test, not the
+      // word "leaves". The /leaves|twig/ pattern below matches none of these
+      // names, which is how the frame oak lost 78% of its leaf cards to the
+      // woody simplify branch on the first integration bake -- 52,480 foliage
+      // triangles down to 11,607, on the one tree the camera stands next to.
+      const isPlantCatalog = /^ForestPlantCatalog_/.test(materialName);
+      const isFoliage = isPlantCatalog
+        ? /_Cutout_/.test(materialName)
+        : /leaves|twig/i.test(materialName);
       if (material) {
         // Keep the color-and-alpha atlas sharp enough for nearby leaf edges.
         // Surface-response maps can use a smaller tier because they add bark
@@ -166,7 +176,13 @@ async function simplifyNearFrameTrees(input, output) {
           primitive.getAttribute("POSITION")?.getCount() ??
           0) / 3;
       trianglesBefore += before;
-      if (!isFoliage && before >= 1_000) {
+      if (isPlantCatalog) {
+        // Intentionally nothing. These trees arrive already reduced, bounded by
+        // an explicit surface error rather than by a ratio, and the tier that
+        // reaches the near frame is the low-detail one -- there is no second
+        // reduction to take. Handing them to the branch below would spend the
+        // same budget twice on the closest tree in the scene.
+      } else if (!isFoliage && before >= 1_000) {
         simplifyPrimitive(primitive, {
           simplifier: MeshoptSimplifier,
           ratio: 0.22,

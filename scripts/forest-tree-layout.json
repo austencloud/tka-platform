@@ -1,18 +1,18 @@
 {
-  "version": 8,
+  "version": 9,
   "seed": 194611,
   "coordinateFrame": "Blender x/y exports to runtime x/-z; metres",
   "outerBoundaryFraction": 0.8,
   "spacingFactor": 0.56,
   "assets": [
     {
-      "id": "mature-broad-canopy",
-      "label": "Mature Broad Canopy",
-      "family": "Poly Haven Natural",
+      "id": "plantcatalog-oak",
+      "label": "Pedunculate Oak (Quercus robur)",
+      "family": "PlantCatalog Botanical R1",
       "roles": ["mature-canopy", "clearing-rim"],
       "habitatAffinity": ["sunlit-rim", "mixed-woodland"],
-      "sourcePath": "static/models/forest/trees/candidates/natural-tree-family-r1/jacaranda-tree.glb",
-      "stagedPath": "blender/forest-composition-sources/canopy-beech.glb",
+      "sourcePath": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s41-proof.glb",
+      "stagedPath": "blender/forest-composition-sources/plantcatalog-oak.glb",
       "targetHeightMetres": 15.5,
       "scaleRange": [0.86, 1.14],
       "aspectRange": [0.92, 1.08],
@@ -21,13 +21,12 @@
       "footprintRadius": 6.2,
       "pathClearance": 1.8,
       "clearingSetback": 4.2,
-      "overheadFoliageSupport": {
-        "componentFraction": 0.055,
-        "canopyStartFraction": 0.46,
-        "maximumComponentFaces": 6,
-        "xyScale": 6.4,
-        "zScale": 1.8,
-        "tiltStrength": 0.72
+      "provenance": {
+        "bridge": "scripts/forest-plantcatalog-bridge.json",
+        "job": "quercus-robur-forest-ld-s41",
+        "note": "The staged source is the codec-free proof GLB. Blender has no meshopt importer, and the runtime sibling carries the codec.",
+        "commercialProjectEmbeddingAllowed": true,
+        "standaloneAssetRedistributionAllowed": false
       }
     },
     {
@@ -377,7 +376,7 @@
       "radii": [50, 24],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 6,
+        "plantcatalog-oak": 6,
         "gnarled-spreader": 4,
         "slender-broadleaf": 2,
         "riparian-spreader": 1,
@@ -397,7 +396,7 @@
       "radii": [35, 38],
       "rotationDegrees": 25,
       "counts": {
-        "mature-broad-canopy": 3,
+        "plantcatalog-oak": 3,
         "gnarled-spreader": 3,
         "slender-broadleaf": 3,
         "summer-understory": 2,
@@ -433,7 +432,7 @@
       "radii": [32, 34],
       "rotationDegrees": 15,
       "counts": {
-        "mature-broad-canopy": 1,
+        "plantcatalog-oak": 1,
         "gnarled-spreader": 2,
         "slender-broadleaf": 5,
         "summer-understory": 6,
@@ -450,7 +449,7 @@
       "radii": [43, 32],
       "rotationDegrees": -15,
       "counts": {
-        "mature-broad-canopy": 4,
+        "plantcatalog-oak": 4,
         "gnarled-spreader": 5,
         "slender-broadleaf": 3,
         "summer-understory": 4,
@@ -469,7 +468,7 @@
       "radii": [30, 50],
       "rotationDegrees": 8,
       "counts": {
-        "mature-broad-canopy": 2,
+        "plantcatalog-oak": 2,
         "gnarled-spreader": 5,
         "slender-broadleaf": 6,
         "riparian-spreader": 1,
@@ -487,7 +486,7 @@
       "radii": [35, 35],
       "rotationDegrees": -25,
       "counts": {
-        "mature-broad-canopy": 3,
+        "plantcatalog-oak": 3,
         "gnarled-spreader": 3,
         "slender-broadleaf": 3,
         "summer-understory": 2,
@@ -506,7 +505,7 @@
       "radii": [70, 24],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 2,
+        "plantcatalog-oak": 2,
         "slender-broadleaf": 1,
         "summer-understory": 1,
         "semantic-beech": 3,
@@ -524,7 +523,7 @@
       "radii": [24, 65],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 3,
+        "plantcatalog-oak": 3,
         "gnarled-spreader": 2,
         "slender-broadleaf": 1,
         "summer-understory": 1,
@@ -558,7 +557,7 @@
       "radii": [70, 23],
       "rotationDegrees": 0,
       "counts": {
-        "mature-broad-canopy": 2,
+        "plantcatalog-oak": 2,
         "gnarled-spreader": 1,
         "slender-broadleaf": 2,
         "summer-understory": 2,
@@ -576,7 +575,7 @@
       "radii": [43, 26],
       "rotationDegrees": 28,
       "counts": {
-        "mature-broad-canopy": 1,
+        "plantcatalog-oak": 1,
         "gnarled-spreader": 1,
         "slender-broadleaf": 2,
         "summer-understory": 3,
@@ -593,7 +592,7 @@
       "radii": [47, 25],
       "rotationDegrees": 20,
       "counts": {
-        "mature-broad-canopy": 1,
+        "plantcatalog-oak": 1,
         "gnarled-spreader": 2,
         "slender-broadleaf": 3,
         "summer-understory": 3,

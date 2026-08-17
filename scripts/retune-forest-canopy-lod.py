@@ -18,14 +18,12 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LAYOUT_PATH = os.path.join(PROJECT_ROOT, "scripts", "forest-tree-layout.json")
 BLEND_PATH = os.path.join(PROJECT_ROOT, "blender", "forest_environment.blend")
 INITIAL_XY_SCALE = {
-    "mature-broad-canopy": 2.15,
     "gnarled-spreader": 2.35,
     "slender-broadleaf": 2.05,
     "riparian-spreader": 2.3,
     "summer-understory": 2.2,
 }
 INITIAL_Z_SCALE = {
-    "mature-broad-canopy": 1.25,
     "gnarled-spreader": 1.28,
     "slender-broadleaf": 1.25,
     "riparian-spreader": 1.3,

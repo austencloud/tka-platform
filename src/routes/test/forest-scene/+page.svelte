@@ -131,10 +131,33 @@
       ? (requestedView as ViewName)
       : "hero"
   );
+  /**
+   * A free shot, for inspecting something the named presets do not frame --
+   * a single tree, one prop, a seam between two clusters. `?cam=x,y,z` and
+   * `?look=x,y,z` are runtime metres, so a layout position in Blender x/y
+   * reaches this as `x,height,-y`. `?fov` is optional.
+   */
+  function parseVector(raw: string | null) {
+    if (!raw) return null;
+    const parts = raw.split(",").map((part) => Number(part.trim()));
+    return parts.length === 3 && parts.every(Number.isFinite)
+      ? ([parts[0], parts[1], parts[2]] as [number, number, number])
+      : null;
+  }
+
+  const freeShot = $derived.by(() => {
+    const position = parseVector(page.url.searchParams.get("cam"));
+    const target = parseVector(page.url.searchParams.get("look"));
+    if (!position || !target) return null;
+    const fov = Number(page.url.searchParams.get("fov"));
+    return { position, target, fov: Number.isFinite(fov) && fov > 0 ? fov : 46 };
+  });
+
   const cameraPreset = $derived(
-    view === "hero" && viewportWidth <= 500
-      ? PHONE_HERO_PRESET
-      : VIEW_PRESETS[view]
+    freeShot ??
+      (view === "hero" && viewportWidth <= 500
+        ? PHONE_HERO_PRESET
+        : VIEW_PRESETS[view])
   );
 </script>
 
@@ -163,7 +186,7 @@
         })}
     >
       <HarnessToneMapping />
-      {#key view}
+      {#key `${view}:${page.url.search}`}
         <EnvironmentReviewCamera
           destinationId="forest-scene-review"
           preset={cameraPreset}
