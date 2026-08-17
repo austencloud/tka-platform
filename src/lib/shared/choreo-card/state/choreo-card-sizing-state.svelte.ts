@@ -1,3 +1,9 @@
+/** A measured box, in CSS pixels. */
+interface Size {
+  width: number;
+  height: number;
+}
+
 interface ContainModel {
   cols: number;
   gridHeightUnits: number;
@@ -36,11 +42,21 @@ export function createChoreoCardSizingState(
   let containerWasZero = false;
   let flipTimer: ReturnType<typeof setTimeout> | null = null;
 
-  function captureContainerDimensions(): void {
+  /**
+   * `measured` carries the size a ResizeObserver already computed for us.
+   *
+   * Reading clientWidth/clientHeight here is a synchronous layout read, and it
+   * lands first in the callback, so it absorbs the whole forced-reflow cost of
+   * whatever styles changed to trigger the resize. A Chrome trace of the Post
+   * Studio blamed this function for 210ms of forced reflow across six seconds.
+   * The observer entry already has the number, measured at observation time for
+   * free, so the hot path hands it in and never touches the DOM.
+   */
+  function captureContainerDimensions(measured?: Size): void {
     const container = getDeps().containerElement;
     if (!container) return;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    const width = measured?.width ?? container.clientWidth;
+    const height = measured?.height ?? container.clientHeight;
     if (width > 0 && Math.abs(width - containerWidth) > 0.5) {
       containerWidth = width;
     }
@@ -49,21 +65,35 @@ export function createChoreoCardSizingState(
     }
   }
 
-  function updateContainedDimensions(): void {
+  /**
+   * `content` is the observer entry's contentRect, which is the content box —
+   * exactly what the getComputedStyle arithmetic below reconstructs by hand.
+   * Taking it directly skips a style recalc and two more layout reads on the
+   * resize path. The manual path stays for the effect-driven calls, which have
+   * no entry to draw on.
+   */
+  function updateContainedDimensions(content?: Size): void {
     const deps = getDeps();
     const container = deps.containerElement;
     const aspectRatio = deps.previewAspectRatio;
     if (!container || !aspectRatio || !Number.isFinite(aspectRatio)) return;
 
-    const style = getComputedStyle(container);
-    const availableWidth =
-      container.clientWidth -
-      parseFloat(style.paddingLeft) -
-      parseFloat(style.paddingRight);
-    const availableHeight =
-      container.clientHeight -
-      parseFloat(style.paddingTop) -
-      parseFloat(style.paddingBottom);
+    let availableWidth: number;
+    let availableHeight: number;
+    if (content) {
+      availableWidth = content.width;
+      availableHeight = content.height;
+    } else {
+      const style = getComputedStyle(container);
+      availableWidth =
+        container.clientWidth -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight);
+      availableHeight =
+        container.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom);
+    }
 
     if (availableWidth === 0 || availableHeight === 0) {
       containerWasZero = true;
@@ -154,13 +184,13 @@ export function createChoreoCardSizingState(
     }
   }
 
-  function updateCellWidth(): void {
+  function updateCellWidth(measuredWidth?: number): void {
     if (cellWidthSuppressed) return;
     const deps = getDeps();
     const widthUnits = deps.containModel.cols;
     const stack = deps.previewStackElement;
     if (!stack || widthUnits <= 0) return;
-    const stackWidth = stack.clientWidth;
+    const stackWidth = measuredWidth ?? stack.clientWidth;
     if (stackWidth < 1) return;
     const nextCellWidth = Number.isFinite(stackWidth / widthUnits)
       ? stackWidth / widthUnits
@@ -194,9 +224,11 @@ export function createChoreoCardSizingState(
     const container = getDeps().containerElement;
     if (!container) return;
 
-    const observer = new ResizeObserver(() => {
-      captureContainerDimensions();
-      updateContainedDimensions();
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries[entries.length - 1]?.contentRect;
+      const size = rect ? { width: rect.width, height: rect.height } : undefined;
+      captureContainerDimensions(size);
+      updateContainedDimensions(size);
     });
     observer.observe(container);
     captureContainerDimensions();
@@ -217,7 +249,9 @@ export function createChoreoCardSizingState(
     const stack = getDeps().previewStackElement;
     if (!stack) return;
 
-    const observer = new ResizeObserver(updateCellWidth);
+    const observer = new ResizeObserver((entries) => {
+      updateCellWidth(entries[entries.length - 1]?.contentRect.width);
+    });
     observer.observe(stack);
     updateCellWidth();
     return () => observer.disconnect();
