@@ -4,7 +4,7 @@ import {
 } from "$lib/shared/animation-engine/services/step-calculator";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
-import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
+import { getStepIndexFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
 import type { PlaybackControllerState } from "../components/playback-controller.svelte";
 import type { PlaybackSource } from "../domain/viewer-orchestrator-context";
 import { resolveCurrentStepData } from "../services/viewer-orchestrator-model";
@@ -66,10 +66,7 @@ export function createViewerPlaybackPresentationState(
 
   function handleVideoTimeUpdate(currentTime: number): void {
     if (playbackSource !== "video" || !activeStepMap) return;
-    const stepNumber = getHighlightedBeatFromVideo(
-      currentTime,
-      activeStepMap.beatTimestamps
-    );
+    const stepNumber = getStepIndexFromVideo(currentTime, activeStepMap);
     if (stepNumber !== videoPlaybackBeatIndex) {
       videoPlaybackBeatIndex = stepNumber;
     }

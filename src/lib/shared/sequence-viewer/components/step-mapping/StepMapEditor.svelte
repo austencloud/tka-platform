@@ -12,8 +12,14 @@
   Marking every arrival yields one more instant than there are moves: the
   opening pose, then the landing of each move. A move's arrival IS the next
   move's launch, so those marks map straight onto beatTimestamps (which has
-  always meant "when move i+1 starts") plus a final endTimestamp. Nothing
-  downstream changes. See
+  always meant "when move i+1 starts") plus a final endTimestamp.
+
+  A take almost never holds the sequence exactly once. A LOOP closes back onto
+  its own opening pose, which is the whole reason a performer runs it four or
+  five times in a row on camera - so the run does not stop at the last move, it
+  wraps to move one and keeps going for as long as there is footage. The marks
+  stay one flat increasing list: index i is step `i % moveCount`, and its pass
+  is `floor((i - 1) / moveCount) + 1`. See
   docs/superpowers/specs/2026-08-16-step-map-editor-redesign-design.md.
 -->
 <script lang="ts">
@@ -64,8 +70,25 @@
   /** One move's worth of footage, give or take: enough to re-watch a landing. */
   const SKIP_SECONDS = 3;
 
+  /**
+   * More of the clip than this left over after a pass ends, measured against
+   * how long that pass took, and the performer is almost certainly going round
+   * again. Below it, what remains is a bow or a fade rather than a repeat.
+   */
+  const ANOTHER_PASS_THRESHOLD = 0.6;
+
   const moveCount = $derived(steps.length);
-  const totalMarks = $derived(moveCount + 1);
+
+  /**
+   * How many times through the sequence this run is currently sized for. It
+   * grows on its own as the marking reaches the end of a pass with footage
+   * still to go, so nobody has to count the repeats before starting.
+   */
+  let passes = $state(
+    untrack(() => passesFromStepMap(initialStepMap, steps.length))
+  );
+
+  const totalMarks = $derived(moveCount * passes + 1);
 
   // ---- Video ----
   let videoEl: HTMLVideoElement | undefined = $state();
@@ -102,7 +125,15 @@
   let flashTimeout: ReturnType<typeof setTimeout> | undefined;
 
   const complete = $derived(marks.length >= totalMarks);
-  const canSave = $derived(!isSaving && complete && moveCount > 0);
+  /**
+   * Times through the sequence that are fully marked. One is enough to save:
+   * a run stopped part-way through a later pass still maps every step it
+   * covers, and the clip simply stops being mapped where the taps stopped.
+   */
+  const fullPasses = $derived(
+    moveCount > 0 ? Math.floor(Math.max(0, marks.length - 1) / moveCount) : 0
+  );
+  const canSave = $derived(!isSaving && fullPasses >= 1);
 
   /**
    * How far into the run the playhead sits: how many marks it is at or past.
@@ -120,26 +151,51 @@
   const pendingIndex = $derived(Math.min(placed, totalMarks - 1));
 
   /**
-   * Mark 0 is the opening pose. Mark i is the landing of move i, so the face
+   * Which move a mark belongs to, 1-based, wrapping every pass. Mark 0 is the
+   * opening pose and has no move; the arrival of the last move is immediately
+   * the pass boundary, and the mark after it is move one again.
+   */
+  function moveNumberFor(index: number): number {
+    if (index <= 0 || moveCount <= 0) return 0;
+    return ((index - 1) % moveCount) + 1;
+  }
+
+  /** Which time through the sequence a mark belongs to, 1-based. */
+  function passFor(index: number): number {
+    if (index <= 0 || moveCount <= 0) return 1;
+    return Math.floor((index - 1) / moveCount) + 1;
+  }
+
+  /**
+   * Mark 0 is the opening pose. Mark i is the landing of its move, so the face
    * shows the move that is happening right now, and you tap when it finishes.
    */
   function faceFor(index: number): StepData | StartPositionData | null {
     const showMirrored = mirrored && mirroredSteps !== null;
     const source = showMirrored ? mirroredSteps! : steps;
     if (index <= 0) return showMirrored ? mirroredStart : startPosition;
-    return source[index - 1] ?? null;
+    return source[moveNumberFor(index) - 1] ?? null;
   }
 
   function letterFor(index: number): string {
     if (index <= 0) return "";
-    return steps[index - 1]?.letter?.trim() ?? "";
+    return steps[moveNumberFor(index) - 1]?.letter?.trim() ?? "";
   }
 
   /** Mark 0 is the opening pose, not move 0, so it is not a number. */
   const markLabels = $derived(
     Array.from({ length: totalMarks }, (_, index) =>
-      index === 0 ? "start" : String(index)
+      index === 0 ? "start" : String(moveNumberFor(index))
     )
+  );
+
+  /**
+   * The marks that open a repeat. The timeline draws these as a heavier tick,
+   * which is what turns a wall of sixty-five identical ticks into four legible
+   * passes. Pass one opens at the start mark, so it is not one of these.
+   */
+  const passStartIndices = $derived(
+    Array.from({ length: Math.max(0, passes - 1) }, (_, i) => moveCount * (i + 1) + 1)
   );
 
   const pendingFace = $derived(faceFor(pendingIndex));
@@ -153,6 +209,12 @@
     // The final arrival was added later, so a map saved before then ends at the
     // clip rather than at a marked instant.
     return [...map.beatTimestamps, map.endTimestamp ?? duration];
+  }
+
+  /** Re-open an existing map on however many passes it was marked with. */
+  function passesFromStepMap(map: StepMap | undefined, moves: number): number {
+    if (!map || moves <= 0) return 1;
+    return Math.max(1, Math.ceil(map.beatTimestamps.length / moves));
   }
 
   // ---- Playback ----
@@ -240,6 +302,7 @@
   function startMarking(): void {
     mode = "mark";
     marks = [];
+    passes = 1;
     saveError = null;
     applyRate(MARKING_RATE);
     seekTo(0);
@@ -275,11 +338,44 @@
     flashTimeout = setTimeout(() => (flashing = false), 260);
 
     if (marks.length >= totalMarks) {
-      videoEl?.pause();
-      applyRate(1);
-      selectedMark = totalMarks - 1;
-      mode = "review";
+      // The pass just closed. If the take clearly has another one in it, wrap
+      // to move one and carry on rather than stopping and asking - the
+      // performer is already dancing it, and interrupting to answer "how many
+      // times?" is exactly the friction this screen exists to avoid.
+      if (roomForAnotherPass(at)) passes += 1;
+      else finishMarking();
     }
+  }
+
+  /** How long one time through the sequence took, from the marks so far. */
+  function passDuration(): number {
+    const first = marks[0];
+    const last = marks[marks.length - 1];
+    if (first === undefined || last === undefined || passes <= 0) return 0;
+    return (last - first) / passes;
+  }
+
+  function roomForAnotherPass(from: number): boolean {
+    const period = passDuration();
+    if (period <= 0) return false;
+    return videoDuration - from > period * ANOTHER_PASS_THRESHOLD;
+  }
+
+  /** End the run wherever it got to, and hand it over to the timeline. */
+  function finishMarking(): void {
+    videoEl?.pause();
+    applyRate(1);
+    // Drop the passes that were opened for footage nobody ended up marking, so
+    // the counter and the timeline describe the run that actually happened.
+    passes = Math.max(1, Math.ceil(Math.max(0, marks.length - 1) / moveCount));
+    selectedMark = Math.max(0, marks.length - 1);
+    mode = "review";
+  }
+
+  /** The clip ran out, so the run is over whatever the pass count said. */
+  function handleVideoEnded(): void {
+    isPlaying = false;
+    if (mode === "mark" && fullPasses >= 1) finishMarking();
   }
 
   function undoMark(): void {
@@ -297,7 +393,16 @@
   }
 
   function useEvenSpacing(): void {
-    marks = generateEvenBeatTimestamps(videoDuration, totalMarks, bpm);
+    // Fill the whole clip, not one pass stretched across it. The BPM says how
+    // long a pass should take, so it also says roughly how many of them the
+    // footage holds - and a grid that covers the take is a far better thing to
+    // drag into place than sixteen marks spread over four repeats.
+    const passSeconds = bpm > 0 ? (moveCount * 60) / bpm : 0;
+    passes =
+      passSeconds > 0
+        ? Math.max(1, Math.round(videoDuration / passSeconds))
+        : passes;
+    marks = generateEvenBeatTimestamps(videoDuration, moveCount * passes + 1, bpm);
     selectedMark = 0;
     mode = "review";
     applyRate(1);
@@ -395,16 +500,18 @@
     saveError = null;
 
     const ordered = [...marks].sort((a, b) => a - b);
-    if (ordered.length !== totalMarks) {
-      saveError = `Mark all ${totalMarks} moments before saving.`;
+    if (ordered.length < moveCount + 1) {
+      saveError = `Mark the sequence through at least once - ${moveCount + 1} moments - before saving.`;
       isSaving = false;
       return;
     }
 
     try {
+      // Everything but the last mark is a step launching; the last one is the
+      // arrival that closes the run. That holds for one pass or for five.
       await onSave({
-        beatTimestamps: ordered.slice(0, moveCount),
-        endTimestamp: ordered[moveCount],
+        beatTimestamps: ordered.slice(0, -1),
+        endTimestamp: ordered[ordered.length - 1],
         stepCount: moveCount,
         source: "manual",
         updatedAt: new Date(),
@@ -452,7 +559,7 @@
         ontimeupdate={() => videoEl && (currentTime = videoEl.currentTime)}
         onplay={() => (isPlaying = true)}
         onpause={() => (isPlaying = false)}
-        onended={() => (isPlaying = false)}
+        onended={handleVideoEnded}
       ></video>
 
       <div class="stage-bar">
@@ -500,6 +607,7 @@
         beatTimestamps={marks}
         activeStepIndex={mode === "review" ? selectedMark : placed - 1}
         markerLabels={markLabels}
+        {passStartIndices}
         readOnlyMarks={mode === "mark"}
         provisionalFrom={mode === "mark" ? placed : Number.POSITIVE_INFINITY}
         onTimestampChange={moveMark}
@@ -554,7 +662,14 @@
                 : "Tap when this move lands"}
             </strong>
             <span class="tap-progress">
-              {placed} of {totalMarks} marked
+              {#if pendingIndex === 0}
+                mark 1 of {totalMarks}
+              {:else}
+                move {moveNumberFor(pendingIndex)} of {moveCount}
+                {#if passes > 1}
+                  · pass {passFor(pendingIndex)}
+                {/if}
+              {/if}
               {#if letterFor(pendingIndex)}
                 <span class="tap-letter">
                   <TKAWordGlyph
@@ -581,6 +696,15 @@
         </button>
 
         <div class="aux-row">
+          <!-- The run keeps wrapping for as long as there is footage, so this
+               is how it ends: the moment one full pass exists, stopping is a
+               button rather than a thing that happens to you. -->
+          {#if fullPasses >= 1}
+            <button type="button" class="aux-btn done-btn" onclick={finishMarking}>
+              <i class="fas fa-check" aria-hidden="true"></i>
+              Done marking
+            </button>
+          {/if}
           <button
             type="button"
             class="aux-btn"
@@ -615,7 +739,11 @@
           </span>
           <span class="selected-copy">
             <span class="selected-label">
-              {selectedMark === 0 ? "Opening pose" : `Move ${selectedMark}`}
+              {selectedMark === 0
+                ? "Opening pose"
+                : passes > 1
+                  ? `Move ${moveNumberFor(selectedMark)} · pass ${passFor(selectedMark)}`
+                  : `Move ${moveNumberFor(selectedMark)}`}
               {#if letterFor(selectedMark)}
                 <span class="selected-letter">
                   <TKAWordGlyph
@@ -664,6 +792,9 @@
           {@render mirrorToggle()}
           <span class="review-progress" class:complete>
             {marks.length} of {totalMarks} marked
+            {#if passes > 1}
+              · {passes} passes
+            {/if}
           </span>
         </div>
       </div>
@@ -1031,6 +1162,18 @@
   .aux-btn:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  /* The way out of a run that otherwise keeps wrapping, so it carries the
+     accent the rest of the row does not. */
+  .done-btn {
+    border-color: var(--theme-accent, #22b8cf);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22b8cf) 20%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
+    );
+    color: var(--theme-text, #fff);
   }
 
   .review-progress {

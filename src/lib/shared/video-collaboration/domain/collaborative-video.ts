@@ -24,7 +24,14 @@ export interface VideoCollaborator {
  * Maps video playback timestamps to sequence beats.
  */
 export interface StepMap {
-  /** One timestamp per beat. beatTimestamps[0] = when beat 1 starts in seconds. */
+  /**
+   * One timestamp per beat. beatTimestamps[0] = when beat 1 starts in seconds.
+   *
+   * A performer usually runs a LOOP several times on one take, so this may hold
+   * several passes' worth: its length is a multiple of stepCount, and index i
+   * is step `i % stepCount`. Read it through `getStepIndexFromVideo` rather
+   * than indexing the sequence with a raw position.
+   */
   readonly beatTimestamps: number[];
   /**
    * When the last move lands, in seconds. A move's arrival is the next move's

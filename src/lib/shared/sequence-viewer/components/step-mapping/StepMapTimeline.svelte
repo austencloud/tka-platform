@@ -28,6 +28,12 @@
      * next tap would replace. Drawn faint, so rewinding shows what is at stake.
      */
     provisionalFrom?: number;
+    /**
+     * Marks that open a repeat of the sequence. Drawn as a full-height tick and
+     * always labelled: a clip performed four times over carries sixty-five
+     * marks, and without the pass boundaries that is an unreadable comb.
+     */
+    passStartIndices?: readonly number[];
     onTimestampChange: (index: number, newTime: number) => void;
     onSeek: (time: number) => void;
     /** Touching a marker makes it the one the host is showing details for. */
@@ -42,6 +48,7 @@
     markerLabels,
     readOnlyMarks = false,
     provisionalFrom = Number.POSITIVE_INFINITY,
+    passStartIndices,
     onTimestampChange,
     onSeek,
     onSelect,
@@ -51,22 +58,79 @@
     return markerLabels?.[index] ?? String(index + 1);
   }
 
+  const passStarts = $derived(new Set(passStartIndices ?? []));
+
+  /**
+   * Below this much room per mark, a 44px grab area covers its neighbours as
+   * well as itself and every drag is a coin toss.
+   */
+  const MIN_GRAB_SPACING_PX = 24;
+
+  /**
+   * A clip performed four times over carries sixty-five marks. Handing all of
+   * them a handle produces a row of overlapping circles where grabbing the one
+   * you meant is luck, so past the spacing above only the selected mark keeps
+   * its handle - the rest are ticks, and pressing the bar picks the nearest.
+   */
+  const denseMarks = $derived(
+    !readOnlyMarks &&
+      beatTimestamps.length > 1 &&
+      timelineWidth > 0 &&
+      timelineWidth / beatTimestamps.length < MIN_GRAB_SPACING_PX
+  );
+
+  function grabbable(index: number): boolean {
+    if (readOnlyMarks) return false;
+    return !denseMarks || index === activeStepIndex;
+  }
+
+  function nearestMarkTo(time: number): number {
+    let nearest = -1;
+    let best = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < beatTimestamps.length; i++) {
+      const distance = Math.abs(beatTimestamps[i]! - time);
+      if (distance < best) {
+        best = distance;
+        nearest = i;
+      }
+    }
+    return nearest;
+  }
+
+  /** Where the last scrub left the playhead, so releasing can select there. */
+  let lastScrubTime = $state(0);
+
   let timelineEl: HTMLDivElement | undefined = $state();
   let draggingIndex = $state(-1);
   let isScrubbing = $state(false);
   let timelineWidth = $state(0);
 
   /**
-   * How many markers to skip between visible numbers. Twenty labels across a
-   * narrow timeline would overlap into an unreadable run, so the numbers thin
-   * out as the markers crowd together. The active one always shows.
+   * Which markers get a number. Thinned by where the marks actually SIT rather
+   * than by how many there are: a run in progress piles every mark it has into
+   * the part of the clip already watched, so a stride computed from the count
+   * against the full width leaves them printing over each other. Walking the
+   * positions and keeping a minimum gap handles a crowded run and a spread one
+   * with the same rule. Pass starts and the active mark always show.
    */
   const LABEL_MIN_GAP_PX = 26;
-  const labelStride = $derived.by(() => {
-    const count = beatTimestamps.length;
-    if (count < 2 || timelineWidth <= 0) return 1;
-    const spacing = timelineWidth / count;
-    return Math.max(1, Math.ceil(LABEL_MIN_GAP_PX / spacing));
+  const labelIndices = $derived.by(() => {
+    const shown = new Set<number>();
+    if (duration <= 0 || timelineWidth <= 0) return shown;
+    let lastX = Number.NEGATIVE_INFINITY;
+    for (let i = 0; i < beatTimestamps.length; i++) {
+      const x = (beatTimestamps[i]! / duration) * timelineWidth;
+      if (passStarts.has(i) || i === activeStepIndex) {
+        shown.add(i);
+        lastX = x;
+        continue;
+      }
+      if (x - lastX >= LABEL_MIN_GAP_PX) {
+        shown.add(i);
+        lastX = x;
+      }
+    }
+    return shown;
   });
 
   // The fraction of the timeline that's been played (0 to 1)
@@ -102,7 +166,16 @@
     target.setPointerCapture(event.pointerId);
 
     const time = getTimeFromPointer(event.clientX);
+    lastScrubTime = time;
     onSeek(time);
+    if (denseMarks) selectNearest(time);
+  }
+
+  /** Pressing the bar adopts the mark you pressed next to, so a crowded run
+      is still reachable one mark at a time. */
+  function selectNearest(time: number): void {
+    const index = nearestMarkTo(time);
+    if (index >= 0) onSelect?.(index);
   }
 
   function handleMarkerPointerDown(event: PointerEvent, index: number) {
@@ -124,11 +197,14 @@
     } else if (isScrubbing) {
       // Scrubbing the playhead
       const time = getTimeFromPointer(event.clientX);
+      lastScrubTime = time;
       onSeek(time);
     }
   }
 
   function handlePointerUp() {
+    // Adopt the mark the scrub finished next to, not the one it began at.
+    if (isScrubbing && denseMarks) selectNearest(lastScrubTime);
     draggingIndex = -1;
     isScrubbing = false;
   }
@@ -161,10 +237,11 @@
   <div class="beat-labels" aria-hidden="true">
     {#each beatTimestamps as ts, i}
       {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
-      {#if i === activeStepIndex || i % labelStride === 0}
+      {#if labelIndices.has(i)}
         <span
           class="beat-label"
           class:active={i === activeStepIndex}
+          class:pass-start={passStarts.has(i)}
           style="left: {pct}%"
         >
           {labelFor(i)}
@@ -184,12 +261,14 @@
     <!-- Beat markers -->
     {#each beatTimestamps as ts, i}
       {@const pct = duration > 0 ? (ts / duration) * 100 : 0}
-      {#if readOnlyMarks}
+      {#if !grabbable(i)}
         <!-- Decorative: the container slider already reports the position, and
-             these cannot be adjusted while a run is being marked. -->
+             these cannot be adjusted - either a run is being marked, or the
+             marks are too crowded to grab and the bar picks them instead. -->
         <div
           class="beat-marker readonly"
           class:active={i === activeStepIndex}
+          class:pass-start={passStarts.has(i)}
           class:provisional={i >= provisionalFrom}
           style="left: {pct}%"
           aria-hidden="true"
@@ -201,6 +280,7 @@
         <div
           class="beat-marker"
           class:active={i === activeStepIndex}
+          class:pass-start={passStarts.has(i)}
           class:dragging={i === draggingIndex}
           style="left: {pct}%"
           onpointerdown={(e) => handleMarkerPointerDown(e, i)}
@@ -259,6 +339,13 @@
 
   .beat-label.active {
     color: var(--theme-accent, #6366f1);
+    font-weight: 700;
+  }
+
+  /* Where the sequence starts over. Brighter than its neighbours because it is
+     the one label that says something they do not: a new pass begins here. */
+  .beat-label.pass-start {
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
     font-weight: 700;
   }
 
@@ -351,6 +438,16 @@
     background: var(--theme-text-muted, rgba(255, 255, 255, 0.35));
     border-radius: 1px;
     transition: background 0.15s ease;
+  }
+
+  /* A repeat boundary: taller and brighter than the marks inside a pass, so
+     four passes read as four blocks rather than one comb of sixty-five ticks.
+     This is structure in the data, present whatever is selected. */
+  .beat-marker.pass-start .marker-line {
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--theme-text, rgba(255, 255, 255, 0.8));
   }
 
   .beat-marker.active .marker-line {

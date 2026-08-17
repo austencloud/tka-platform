@@ -5,10 +5,17 @@
  * Used to sync video playback position with sequence notation highlights.
  */
 
+import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
+
 /**
  * Given a video's current playback time and a step map,
- * returns the 0-based index of the current step.
+ * returns the 0-based index of the MARK that is current.
  * Returns -1 if before the first step (start position).
+ *
+ * On a clip that runs the sequence more than once this counts past the end of
+ * the sequence - mark 20 of a 16-step run is the fourth step of pass two. Use
+ * `getStepIndexFromVideo` to get a step to render; this one is for surfaces
+ * that address the marks themselves, like the timeline.
  */
 export function getHighlightedBeatFromVideo(
   currentTime: number,
@@ -20,6 +27,31 @@ export function getHighlightedBeatFromVideo(
     if (currentTime >= beatTimestamps[i]!) return i;
   }
   return -1;
+}
+
+/**
+ * The step the video is showing right now, as an index into the sequence.
+ *
+ * A performance clip usually runs a LOOP several times on one take, so a map
+ * can hold several passes' worth of marks. Wrapping is what keeps the notation
+ * following the footage through the second, third and fourth time round
+ * instead of freezing on the last step once pass one ends.
+ */
+export function getStepIndexFromVideo(
+  currentTime: number,
+  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+): number {
+  const mark = getHighlightedBeatFromVideo(currentTime, stepMap.beatTimestamps);
+  if (mark < 0 || stepMap.stepCount <= 0) return mark;
+  return mark % stepMap.stepCount;
+}
+
+/** How many times the sequence is marked out across the clip. At least one. */
+export function passCountFromStepMap(
+  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+): number {
+  if (stepMap.stepCount <= 0) return 1;
+  return Math.max(1, Math.ceil(stepMap.beatTimestamps.length / stepMap.stepCount));
 }
 
 /**

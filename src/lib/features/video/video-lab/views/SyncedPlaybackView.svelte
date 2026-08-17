@@ -8,7 +8,7 @@
 <script lang="ts">
   import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { getHighlightedBeatFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
+  import { getStepIndexFromVideo } from "$lib/shared/video-collaboration/utils/step-map-utils";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
 
@@ -29,10 +29,9 @@
 
   const playbackRates = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
 
-  // The currently highlighted step index based on video time + beat map
-  const highlightedStep = $derived(
-    getHighlightedBeatFromVideo(currentTime, beatMap.beatTimestamps),
-  );
+  // The currently highlighted step index based on video time + beat map. Wraps
+  // on a clip that runs the sequence more than once.
+  const highlightedStep = $derived(getStepIndexFromVideo(currentTime, beatMap));
 
   // Estimate BPM from beat map (average interval between beats)
   const estimatedBpm = $derived.by(() => {
@@ -87,11 +86,24 @@
   }
 
   function handleStepClick(stepIndex: number) {
-    // Seek video to the corresponding beat timestamp
-    const ts = beatMap.beatTimestamps[stepIndex];
-    if (ts !== undefined && videoEl) {
-      videoEl.currentTime = ts;
-      currentTime = ts;
+    // Seek to that step. A clip that runs the sequence several times holds the
+    // step several times over, so take the pass the playhead is already in
+    // rather than throwing the viewer back to the first one.
+    const ts = beatMap.beatTimestamps;
+    const stride = beatMap.stepCount > 0 ? beatMap.stepCount : ts.length;
+    let nearest: number | undefined;
+    for (let i = stepIndex; i < ts.length; i += stride) {
+      const at = ts[i]!;
+      if (
+        nearest === undefined ||
+        Math.abs(at - currentTime) < Math.abs(nearest - currentTime)
+      ) {
+        nearest = at;
+      }
+    }
+    if (nearest !== undefined && videoEl) {
+      videoEl.currentTime = nearest;
+      currentTime = nearest;
     }
   }
 
@@ -199,7 +211,9 @@
 
   <!-- Beat indicator -->
   <div class="beat-indicator">
-    {#each beatMap.beatTimestamps as _ts, i}
+    <!-- One dot per step, not per mark: a clip that runs the sequence four
+         times holds four marks for every one of these. -->
+    {#each { length: beatMap.stepCount || beatMap.beatTimestamps.length } as _dot, i}
       <div
         class="beat-dot"
         class:active={highlightedStep === i}
