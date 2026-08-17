@@ -29,11 +29,17 @@
   }
 
   /* GenerationSettingsOverlay is authored to cover a card, so it is absolutely
-     positioned by default. In a grid track it is the track's only occupant and
-     sizes itself. */
+     positioned by default. In a grid track it is the track's only occupant.
+
+     It is pinned to the track's OPEN width rather than left to fill, so the
+     growing track reveals a finished panel instead of dragging its contents
+     through 280ms of reflow — the editors inside re-wrap at several widths, and
+     watching them re-wrap is what made the open read as a stutter. The track's
+     `overflow: hidden` does the revealing. */
   .fuse-recipe-column :global(.generation-settings-overlay) {
     position: static;
-    flex: 1;
+    flex: 0 0 auto;
+    width: var(--fuse-recipe-open-w, 100%);
     min-width: 0;
     min-height: 0;
   }

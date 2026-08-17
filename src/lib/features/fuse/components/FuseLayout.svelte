@@ -117,13 +117,16 @@
   const recipeColumn = $derived(
     fullCard && settingsOpen && containerWidth >= RECIPE_COLUMN_FLOOR
   );
-  const recipeColumnWidth = $derived(
-    recipeColumn
-      ? Math.round(
-          Math.min(RECIPE_MAX_W, Math.max(RECIPE_MIN_W, containerWidth * 0.26))
-        )
-      : 0
+  // Target width is computed whether or not the recipe is open, so the panel can
+  // be laid out at its final size and revealed by the growing track. A panel
+  // that instead sizes to a 0→620px track spends the whole animation squished,
+  // reflowing its own contents every frame.
+  const recipeTargetWidth = $derived(
+    Math.round(
+      Math.min(RECIPE_MAX_W, Math.max(RECIPE_MIN_W, containerWidth * 0.26))
+    )
   );
+  const recipeColumnWidth = $derived(recipeColumn ? recipeTargetWidth : 0);
 
   function closeRecipe(): void {
     settingsOpen = false;
@@ -491,6 +494,7 @@
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
     style:--fuse-recipe-w={`${recipeColumnWidth}px`}
+    style:--fuse-recipe-open-w={`${recipeTargetWidth}px`}
     aria-busy={fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
@@ -652,6 +656,9 @@
   }
 
   .fuse-workspace {
+    /* One source for the gap so the full-card grid can spend it as explicit
+       tracks instead of `column-gap` — see the five-track list below. */
+    --fuse-col-gap: var(--settings-spacing-md, 12px);
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     /* max-content rows, NOT auto: the workspace is a definite-height scroll
@@ -665,7 +672,7 @@
       "red"
       "preview";
     align-content: start;
-    gap: var(--settings-spacing-md, 12px);
+    gap: var(--fuse-col-gap);
     width: 100%;
     height: 100%;
     min-width: 0;
@@ -676,24 +683,26 @@
   }
 
   .fuse-workspace.compact-workspace {
+    --fuse-col-gap: var(--settings-spacing-sm, 8px);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "header"
       "preview";
-    gap: var(--settings-spacing-sm, 8px);
+    gap: var(--fuse-col-gap);
     padding: var(--settings-spacing-sm, 8px);
     overflow: hidden;
   }
 
   @container fuse (min-width: 600px) {
     .fuse-workspace:not(.compact-workspace) {
+      --fuse-col-gap: clamp(10px, 1.4cqw, 14px);
       grid-template-columns: repeat(2, minmax(0, 1fr));
       grid-template-rows: repeat(3, max-content);
       grid-template-areas:
         "header header"
         "blue red"
         "preview preview";
-      gap: clamp(10px, 1.4cqw, 14px);
+      gap: var(--fuse-col-gap);
     }
   }
 
@@ -737,30 +746,42 @@
   /* Full-card markup and its grid must change as one state transition. Keeping
      the layout behind a second CSS threshold let browser zoom put the markup
      and grid on opposite sides of the seam, creating implicit columns. */
+  /* The recipe opens as a track on the left, and the other two give way rather
+     than being covered — the thing a drawer over the result could never do.
+
+     The track count never changes, because CSS only interpolates two track lists
+     of equal length: going from two tracks to three snapped to the end value on
+     frame one, which is exactly the pop this transition was written to avoid.
+     So the recipe track and its seam are always present and measure 0 when the
+     recipe is closed, and the gaps are spent as explicit tracks rather than as
+     `column-gap` — a uniform gap cannot be collapsed for one seam alone, and a
+     zero-width track with a live gap after it would inset the cards from the
+     header above them. Every track is a length, so the whole list interpolates. */
   .fuse-workspace.full-card-workspace {
-    grid-template-columns: var(--fuse-left, 1.8fr) minmax(0, 1fr);
+    grid-template-columns:
+      var(--fuse-recipe-w, 0px) var(--fuse-recipe-seam, 0px)
+      var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      "header header"
-      "left preview";
+      "header header header header header"
+      "recipe . left . preview";
     align-content: stretch;
+    column-gap: 0;
+    row-gap: var(--fuse-col-gap);
     overflow: hidden;
-  }
-
-  /* The recipe opens as a third track on the left. Animating the track itself is
-     what makes the other two give way rather than being covered — the thing a
-     drawer over the result could never do. */
-  .fuse-workspace.full-card-workspace {
-    transition: grid-template-columns var(--duration-normal, 220ms) ease;
+    transition: grid-template-columns var(--duration-emphasis, 280ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
 
   .fuse-workspace.full-card-workspace.recipe-workspace {
-    grid-template-columns:
-      var(--fuse-recipe-w, 420px) var(--fuse-left, 1.8fr)
-      minmax(0, 1fr);
-    grid-template-areas:
-      "header header header"
-      "recipe left preview";
+    --fuse-recipe-seam: var(--fuse-col-gap);
+  }
+
+  /* A dragged seam must sit under the pointer, not ease toward it: the same
+     transition that carries the recipe open would make every pointermove a
+     280ms catch-up and the handle would swim. */
+  .fuse-workspace.full-card-workspace.dragging {
+    transition: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -826,12 +847,12 @@
       --font-size-compact: 14px;
       --font-size-sm: 17px;
       --min-touch-target: 48px;
-      grid-template-columns: var(--fuse-left, 1400px) minmax(0, 1fr);
+      /* Columns and areas stay with .full-card-workspace, which is always the
+         layout in force at this size — a second track list here would fight the
+         recipe's five-track one. */
+      --fuse-col-gap: 18px;
       grid-template-rows: max-content minmax(0, 1fr);
-      grid-template-areas:
-        "header header"
-        "left preview";
-      gap: 18px;
+      gap: var(--fuse-col-gap);
       padding: 24px;
     }
 
@@ -853,7 +874,8 @@
       --font-size-compact: 16px;
       --font-size-sm: 19px;
       --min-touch-target: 64px;
-      gap: 24px;
+      --fuse-col-gap: 24px;
+      gap: var(--fuse-col-gap);
       padding: 32px;
     }
 

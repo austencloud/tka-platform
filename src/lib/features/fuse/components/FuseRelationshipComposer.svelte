@@ -2,7 +2,11 @@
   import { untrack } from "svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
-  import { fuseRuleLabel, type FuseRule } from "../domain/fuse-rule";
+  import {
+    fuseRuleLabel,
+    fuseRulesEqual,
+    type FuseRule,
+  } from "../domain/fuse-rule";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import {
@@ -38,11 +42,23 @@
       fuseState.isFusing
   );
 
+  // Opening the editor on the relationship that is already applied has nothing
+  // to preview: the canvas is showing it. Deriving it anyway costs a full
+  // rebuild of the follower path, and it lands in the same frames as the panel's
+  // open animation, which is where it was eating the motion.
+  const matchesApplied = (side: FuseSide, next: FuseRule) =>
+    fuseState.mode === "symmetry" &&
+    fuseState.driverSide === side &&
+    fuseRulesEqual(fuseState.rule, next);
+
   $effect(() => {
     const driver = draftDriver;
     const rule = draftRule;
 
-    untrack(() => void fuseState.previewRelationship(driver, rule));
+    untrack(() => {
+      if (matchesApplied(driver, rule)) return;
+      void fuseState.previewRelationship(driver, rule);
+    });
 
     return () => {
       untrack(() => fuseState.cancelRelationshipPreview());

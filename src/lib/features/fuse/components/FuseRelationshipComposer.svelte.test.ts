@@ -21,6 +21,16 @@ function relationshipState(): FuseState {
 }
 
 describe("FuseRelationshipComposer", () => {
+  // Opening on the relationship the canvas is already showing has nothing to
+  // preview, and deriving it anyway lands a full follower rebuild in the same
+  // frames as the panel's open animation.
+  it("does not preview the relationship that is already applied", () => {
+    const state = relationshipState();
+    render(FuseRelationshipComposerTestHarness, { state });
+
+    expect(state.previewRelationship).not.toHaveBeenCalled();
+  });
+
   it("rebuilds the follower as soon as a rule axis changes", async () => {
     const state = relationshipState();
     render(FuseRelationshipComposerTestHarness, { state });
