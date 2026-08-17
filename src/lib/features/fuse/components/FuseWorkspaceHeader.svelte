@@ -334,8 +334,29 @@
       padding: 10px 12px 10px 18px;
     }
 
+    /* Two centered rows instead of one right-heavy line. The old row put the
+       title alone on the left, the recipe door floating by itself in the gap
+       after it, and all six tiles packed against the right edge — the rail's
+       centre sat 165px right of the header's. Title and door now sit together
+       as one centred pair, and the rail gets the full width under them. */
+    .fuse-header {
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 10px;
+    }
+
     .title-block {
-      flex: 0 1 15rem;
+      flex: 0 0 auto;
+    }
+
+    /* Row 1 is one line. The subtitle costs ~40px of workspace height here, and
+       spending it tips the page into overflow — the scrollbar that appears
+       takes the source card under its 940px seam and collapses its seven
+       actions into two ragged rows. The tab is already labelled Fuse in the nav
+       and the tiles below state the recipe, so the sentence is the affordable
+       thing to drop. */
+    .title-block p {
+      display: none;
     }
 
     /* The Pairing tile holds the switch at this size — two of them in one header
@@ -389,9 +410,11 @@
         minmax(7.5rem, 0.75fr) minmax(7.5rem, 0.75fr)
         minmax(11rem, 1.18fr) minmax(13.5rem, 1.38fr);
       gap: 8px;
-      flex: 1 1 auto;
+      /* 100% basis is what puts the rail on its own row under the centred
+         title/door pair. Keep it in this shorthand — a bare `flex-basis`
+         earlier in the block gets reset by this declaration. */
+      flex: 1 1 100%;
       min-width: 0;
-      max-width: 102rem;
     }
   }
 
@@ -411,7 +434,6 @@
 
     .recipe-rail {
       gap: 12px;
-      max-width: 132rem;
     }
   }
 </style>

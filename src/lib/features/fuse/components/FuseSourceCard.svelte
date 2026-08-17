@@ -536,9 +536,13 @@
           <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
           Previous
         </PanelButton>
+        <!-- The one button most people will press, and the only way to get a
+             new path without deciding anything first. It was the smallest thing
+             in the row — same ghost variant as its six neighbours and shorter
+             than all of them. Primary, and no shorter than what it sits with. -->
         <div class="shuffle-slot">
           <PanelButton
-            variant="secondary"
+            variant="primary"
             fullWidth={true}
             disabled={sourceControlsDisabled || !source.sequence}
             onclick={() => void fuseState.shuffle(side)}
@@ -959,9 +963,17 @@
     color: var(--theme-text, #fff);
   }
 
-  /* Shuffle is the primary action, tinted in the path's color; the word "Blue"
-     / "Red" is redundant with the tint, so the label is just "Shuffle". */
+  /* Regenerate is the primary action, tinted in the path's color; the word
+     "Blue" / "Red" is redundant with the tint, so the label is just the verb.
+     The slot is a grid so the button fills the row's height — the neighbours
+     wrap to two lines and grew to 72px while this one sat at 48, which made
+     the most important control the smallest thing in the row. */
+  .shuffle-slot {
+    display: grid;
+  }
+
   .shuffle-slot :global(.panel-btn) {
+    height: 100%;
     border-color: color-mix(in srgb, var(--source-color) 78%, transparent);
     background: color-mix(
       in srgb,
@@ -969,7 +981,10 @@
       var(--theme-card-bg, #161821)
     );
     color: var(--theme-text, #fff);
-    font-weight: 600;
+    font-weight: 700;
+    box-shadow: 0 0 0 1px
+        color-mix(in srgb, var(--source-color) 45%, transparent),
+      0 6px 18px color-mix(in srgb, var(--source-color) 22%, transparent);
   }
 
   .shuffle-slot :global(.panel-btn:focus-visible) {
@@ -1206,9 +1221,19 @@
     }
   }
 
-  @container fuse-source (min-width: 940px) {
+  /* Seven buttons across eight tracks: Regenerate takes two of them. Equal
+     tracks said all seven choices carry equal weight, and they do not — this
+     is the one you press if you press nothing else. */
+  /* 900, not 940: at 1920 this card's content box measures 935px, five pixels
+     under the old seam, so the one-row layout was falling back to two ragged
+     rows at the most common desktop width. */
+  @container fuse-source (min-width: 900px) {
     .source-actions {
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+
+    .shuffle-slot {
+      grid-column: span 2;
     }
   }
 
