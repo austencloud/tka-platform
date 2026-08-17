@@ -19,9 +19,11 @@ export class SileroBoundaryDetector implements ISpeechBoundaryDetector {
   private vad: MicVAD | null = null;
   private startedAt = 0;
 
-  async start(stream: MediaStream, handlers: SpeechBoundaryHandlers): Promise<void> {
-    const clock = () => performance.now() / 1000;
-
+  async start(
+    stream: MediaStream,
+    handlers: SpeechBoundaryHandlers,
+    clock: () => number
+  ): Promise<void> {
     this.vad = await MicVAD.new({
       getStream: async () => stream,
       model: "v5",

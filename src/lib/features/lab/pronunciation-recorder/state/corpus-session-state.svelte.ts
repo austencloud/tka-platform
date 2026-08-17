@@ -44,6 +44,26 @@ export function createCorpusSession(options: CorpusSessionOptions) {
   let nextKey = $state<string | null>(null);
   let pending: Promise<void> = Promise.resolve();
 
+  // The capture writes its peak to a plain field on the audio callback, a few
+  // hundred times a second. Reading that field from the component gives Svelte
+  // nothing to track, so the meter renders once and then sits still however
+  // loud the room gets — which reads as a microphone that was never opened.
+  // Sampling it into state once a frame is both reactive and the rate a meter
+  // is actually watched at.
+  let levelDb = $state(-100);
+  let meterFrame: number | null = null;
+
+  function pumpMeter(): void {
+    levelDb = options.capture.levelDb;
+    meterFrame = requestAnimationFrame(pumpMeter);
+  }
+
+  function stopMeter(): void {
+    if (meterFrame !== null) cancelAnimationFrame(meterFrame);
+    meterFrame = null;
+    levelDb = -100;
+  }
+
   const wordOf = (key: string | null) => (key ? (byKey.get(key) ?? null) : null);
 
   function syncQueue(): void {
@@ -107,32 +127,43 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       const { stream } = await options.microphone.connect(deviceId);
       folderName = (await options.store.connect()).name;
       await options.capture.start(stream);
-      await options.detector.start(stream, {
-        onSpeechStart: () => {},
-        onSpeechEnd: (span) => {
-          // Read the ring HERE, not inside the queued step. Uploads are the slow
-          // link now, and a queue that has backed up behind one would push this
-          // read past the point where the ring has overwritten the samples — the
-          // word would be lost to a network hiccup rather than a bad read.
-          const audio = options.capture.readSeconds(
-            span.startSeconds - LEAD_IN_SECONDS,
-            span.endSeconds + TAIL_SECONDS
-          );
-          // Serialised: two words must never be written concurrently, or their
-          // ids interleave and words.json disagrees with the stored session.
-          pending = pending.then(() =>
-            handleSpeechEnd(span.endSeconds - span.startSeconds, audio)
-          );
+      pumpMeter();
+      await options.detector.start(
+        stream,
+        {
+          onSpeechStart: () => {},
+          onSpeechEnd: (span) => {
+            // Read the ring HERE, not inside the queued step. Uploads are the
+            // slow link now, and a queue that has backed up behind one would
+            // push this read past the point where the ring has overwritten the
+            // samples — the word would be lost to a network hiccup rather than
+            // a bad read.
+            const audio = options.capture.readSeconds(
+              span.startSeconds - LEAD_IN_SECONDS,
+              span.endSeconds + TAIL_SECONDS
+            );
+            // Serialised: two words must never be written concurrently, or
+            // their ids interleave and words.json disagrees with the stored
+            // session.
+            pending = pending.then(() =>
+              handleSpeechEnd(span.endSeconds - span.startSeconds, audio)
+            );
+          },
         },
-      });
+        // The detector's timeline has to be the ring's timeline: what it
+        // reports as a span is read straight back out by sample index.
+        () => options.capture.clock / options.capture.sampleRate
+      );
       status = "running";
       syncQueue();
     } catch {
+      stopMeter();
       status = "failed";
     }
   }
 
   async function stop(): Promise<void> {
+    stopMeter();
     await options.detector.stop();
     await options.capture.stop();
     await options.store.finish();
@@ -164,7 +195,7 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       return queue.retired.map((key) => byKey.get(key)!).filter(Boolean);
     },
     get levelDb() {
-      return options.capture.levelDb;
+      return levelDb;
     },
     start,
     stop,

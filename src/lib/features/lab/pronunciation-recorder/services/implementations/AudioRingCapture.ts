@@ -52,6 +52,13 @@ export class AudioRingCapture implements IAudioRingCapture {
     };
 
     this.source.connect(this.node);
+
+    // Two async awaits stand between the click and here, which is long enough
+    // for Chrome to have handed back a suspended context. A suspended context
+    // never runs the worklet, so the ring stays empty and every read comes back
+    // null — a dead session that looks like a dead microphone.
+    if (context.state === "suspended") await context.resume();
+
     this.context = context;
   }
 
