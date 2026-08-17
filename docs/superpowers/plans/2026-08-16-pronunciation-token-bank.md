@@ -868,7 +868,7 @@ data so they run identically in the browser recorder and in a Node script.
 - Create: `src/lib/shared/pronunciation/domain/audio-features.ts`
 - Test: `tests/unit/pronunciation/audio-features.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/pronunciation/audio-features.test.ts`:
 
@@ -947,7 +947,7 @@ describe("measureTokenFeatures", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/audio-features.test.ts
@@ -955,7 +955,7 @@ npm run test:ci -- tests/unit/pronunciation/audio-features.test.ts
 
 Expected: FAIL. The module does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/lib/shared/pronunciation/domain/audio-features.ts`:
 
@@ -1066,7 +1066,7 @@ export function measureTokenFeatures(
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/audio-features.test.ts
@@ -1080,7 +1080,7 @@ Watch the edge-window arithmetic. `maxLag` at 48 kHz is 685 samples, so
 widen `EDGE_WINDOW_SECONDS` to 0.08 rather than lowering `MIN_F0_HZ`; lowering
 the floor lets octave errors through.
 
-- [ ] **Step 5: Report the measured features from the Phase 0 script**
+- [x] **Step 5: Report the measured features from the Phase 0 script**
 
 Nothing else in this plan consumes these functions, and a join cost built on
 measurements nobody has looked at is a guess. Wire them into the Phase 0 output
@@ -1115,11 +1115,28 @@ and change the existing `writeFileSync` call to reuse that slice:
 
 **What to look for when Austen runs it:** F0 values in the 80 to 180 Hz range and
 changing gradually across a word, and RMS values clustered within a few dB.
-Zeros for F0 on most slices mean the correlation floor is too strict for his
-voice; wildly swinging RMS means the join cost will dominate the target cost and
-the weights in Task 6 need rebalancing before the bank is recorded.
 
-- [ ] **Step 6: Commit**
+Three failure signatures, and what each one means:
+
+- **Zeros for F0 on most slices** — the correlation floor is too strict for his
+  voice. Lower `MIN_CORRELATION`, not the frequency bounds.
+- **Values pegged near 70 or 350 Hz** — the estimator has locked onto a harmonic
+  or a subharmonic rather than the fundamental. Measured on synthetic
+  harmonic-rich signals: a true 50 Hz fundamental reports 350 Hz, a true 400 Hz
+  reports 200 Hz. A bounded-lag search cannot return null for an out-of-range
+  fundamental, so it returns a confident wrong number instead; a cluster at
+  either bound is the tell, never a plausible reading.
+- **Wildly swinging RMS** — the join cost will dominate the target cost, and the
+  weights in Task 6 need rebalancing before the bank is recorded.
+
+For calibration, the estimator was verified on synthetic voice-shaped signals
+before Austen recorded anything: exact within 0.2 Hz for fundamentals of 85,
+100, 120, 145, 180, and 220 Hz, stable under additive noise, sample-rate
+invariant from 16 kHz to 96 kHz, and on a token gliding 140 to 100 Hz it reports
+136 to 103 — the edge windows average over 60 ms, so a contour reads slightly
+pulled in at both ends. That inward pull is expected and is not drift.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): measure token loudness and edge pitch" -- src/lib/shared/pronunciation/domain/audio-features.ts tests/unit/pronunciation/audio-features.test.ts scripts/measure-word-segmentation.ts
