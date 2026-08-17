@@ -15,12 +15,17 @@
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
     showDescriptions = false,
+    layout = "stacked",
   }: {
     playbackMode?: PlaybackMode;
     isPlaying?: boolean;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onPlaybackToggle?: () => void;
     showDescriptions?: boolean;
+    /** "stacked" fills a settings column, one option per row. "inline" is the
+     *  transport-bar form: one row, sized to its labels, never stretched to the
+     *  bar's width. */
+    layout?: "stacked" | "inline";
   } = $props();
 
   let nextTickTimer: ReturnType<typeof setTimeout> | null = null;
@@ -47,7 +52,11 @@
   });
 </script>
 
-<div class="mode-toggle" class:with-desc={showDescriptions}>
+<div
+  class="mode-toggle"
+  class:with-desc={showDescriptions && layout === "stacked"}
+  class:inline={layout === "inline"}
+>
   <button
     class="mode-btn"
     class:active={playbackMode === "continuous"}
@@ -92,6 +101,33 @@
 
   .mode-toggle.with-desc {
     gap: 6px;
+  }
+
+  /* Transport-bar form. `width: auto` is the load-bearing half: the stacked
+     form is `width: 100%`, and inside a flex bar that resolves flex-basis to
+     the full bar and stretches two short labels across it. */
+  .mode-toggle.inline {
+    flex-direction: row;
+    width: auto;
+    flex: 0 0 auto;
+    gap: 2px;
+    padding: 2px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+  }
+
+  .mode-toggle.inline .mode-btn {
+    min-height: 30px;
+    padding: 4px 12px;
+    border: 0;
+    background: transparent;
+    border-radius: 999px;
+    box-shadow: none;
+  }
+
+  .mode-toggle.inline .mode-btn.active {
+    background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+    box-shadow: none;
   }
 
   .mode-btn-content {

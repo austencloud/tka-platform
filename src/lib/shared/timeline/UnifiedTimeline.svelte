@@ -2,6 +2,7 @@
   import type { UnifiedPlaybackContext } from "./unified-playback-context";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import { onDestroy } from "svelte";
+  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
 
   const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
 
@@ -92,17 +93,6 @@
     const current = playback.bpm ?? 60;
     const next = Math.max(5, Math.min(300, current + delta));
     playback.onBpmChange?.(next);
-  }
-
-  function toggleMode() {
-    if (!playback.onPlaybackModeChange || !playback.playbackMode) return;
-    const wasPlaying = playback.isPlaying;
-    if (wasPlaying) playback.togglePlay();
-    const next = playback.playbackMode === "continuous" ? "step" : "continuous";
-    playback.onPlaybackModeChange(next);
-    if (wasPlaying) {
-      setTimeout(() => playback.togglePlay(), 0);
-    }
   }
 
   let popoverEl: HTMLDivElement | undefined = $state();
@@ -223,16 +213,18 @@
       </div>
 
       {#if hasMode}
-        <button
-          class="pill-mode"
-          class:step-active={playback.playbackMode === "step"}
-          onclick={(e) => { e.stopPropagation(); toggleMode(); }}
-          aria-pressed={playback.playbackMode === "step"}
-          aria-label="{playback.playbackMode === 'continuous' ? 'Switch to step mode' : 'Switch to continuous mode'}"
-          title="{playback.playbackMode === 'continuous' ? 'Continuous' : 'Step-by-step'}"
-        >
-          <i class="fas {playback.playbackMode === 'continuous' ? 'fa-infinity' : 'fa-forward-step'}"></i>
-        </button>
+        <!-- The same labelled control the settings panels use, in its inline
+             form. An icon-only infinity/step button read as decoration and gave
+             a first-time viewer nothing to go on; two words do. -->
+        <div class="pill-mode-slot">
+          <PlaybackModeToggle
+            layout="inline"
+            playbackMode={playback.playbackMode}
+            isPlaying={playback.isPlaying}
+            onPlaybackModeChange={(mode) => playback.onPlaybackModeChange?.(mode)}
+            onPlaybackToggle={() => playback.togglePlay()}
+          />
+        </div>
       {/if}
 
       {#if playback.isLooping !== undefined}
@@ -479,41 +471,11 @@
 
   /* ── Step / Continuous toggle ── */
 
-  .pill-mode {
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.6);
-    cursor: pointer;
+  /* The control itself is PlaybackModeToggle (layout="inline"); this slot only
+     keeps it from being stretched by the bar's flex. */
+  .pill-mode-slot {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    flex-shrink: 0;
-    padding: 0;
-    transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
-  }
-
-  .pill-mode:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.35);
-    color: white;
-  }
-
-  .pill-mode.step-active {
-    background: rgba(251, 191, 36, 0.2);
-    border-color: rgba(251, 191, 36, 0.5);
-    color: #fbbf24;
-    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
-  }
-
-  .pill-mode.step-active:hover {
-    background: rgba(251, 191, 36, 0.3);
-    border-color: rgba(251, 191, 36, 0.65);
+    flex: 0 0 auto;
   }
 
   /* ── Loop button ── */
@@ -617,7 +579,6 @@
   .pill-play:focus-visible,
   .tempo-adjust:focus-visible,
   .pill-bpm:focus-visible,
-  .pill-mode:focus-visible,
   .pill-loop:focus-visible,
   .bpm-preset:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
@@ -627,7 +588,6 @@
   @media (prefers-reduced-motion: reduce) {
     .pill-play,
     .pill-loop,
-    .pill-mode,
     .pill-bpm,
     .tempo-adjust,
     .bpm-preset {

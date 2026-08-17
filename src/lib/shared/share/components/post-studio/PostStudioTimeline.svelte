@@ -3,6 +3,7 @@
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import { resolvePresetTimePoint } from "$lib/shared/media-composition/services/frame-evaluator";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
+  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
 
   let {
     advanced = false,
@@ -265,6 +266,17 @@
           />
         </div>
       {/if}
+      <!-- Continuous / step-by-step lives here rather than on the inspector's
+           Motion page, for the same reason tempo does: it governs the clock
+           this bar owns, and it stays reachable from every inspector page. The
+           sequence viewer's transport carries the identical control. -->
+      <PlaybackModeToggle
+        layout="inline"
+        playbackMode={composition.animationPlaybackMode}
+        isPlaying={composition.isPlaying}
+        onPlaybackModeChange={composition.setAnimationPlaybackMode}
+        onPlaybackToggle={composition.togglePlayback}
+      />
     </div>
     <button
       type="button"
