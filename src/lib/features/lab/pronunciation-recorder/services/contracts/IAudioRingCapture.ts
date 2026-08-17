@@ -5,6 +5,14 @@ export interface CapturedSpan {
 
 export interface IAudioRingCapture {
   readonly sampleRate: number;
+  /**
+   * The running context the capture built, so a detector can share it.
+   *
+   * Two contexts on one microphone means two graphs that can be resumed
+   * independently — and the one nobody resumes is silent while the other looks
+   * perfectly healthy.
+   */
+  readonly audioContext: AudioContext | null;
   /** Absolute samples written since capture started — the session clock. */
   readonly clock: number;
   /** Current input level in dBFS, for the meter. */

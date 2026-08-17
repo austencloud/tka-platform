@@ -18,6 +18,7 @@ function harness(words = WORDS) {
 
   const capture = {
     sampleRate: 48_000,
+    audioContext: null,
     clock: 0,
     levelDb: -20,
     async start() {},
@@ -31,8 +32,8 @@ function harness(words = WORDS) {
     words,
     capture,
     detector: {
-      async start(_stream, given) {
-        handlers = given;
+      async start(given) {
+        handlers = given.handlers;
       },
       async stop() {},
     },

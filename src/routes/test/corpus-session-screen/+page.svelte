@@ -59,6 +59,10 @@
           ]
         : [],
     levelDb: state === "long" ? -12 : -34,
+    // The two label states are different widths, so both need looking at: the
+    // reserve on the label is what stops the meter resizing between them.
+    hearing: state === "long",
+    failure: state === "failed" ? "The speech detector could not start listening." : null,
     start: async () => {},
   });
 </script>

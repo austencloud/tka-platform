@@ -15,6 +15,10 @@ export class AudioRingCapture implements IAudioRingCapture {
     return this.context?.sampleRate ?? CAPTURE_SAMPLE_RATE;
   }
 
+  get audioContext(): AudioContext | null {
+    return this.context;
+  }
+
   get clock(): number {
     return this.ring?.writtenSamples ?? 0;
   }

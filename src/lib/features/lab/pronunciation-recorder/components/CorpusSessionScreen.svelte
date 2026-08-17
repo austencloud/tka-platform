@@ -13,6 +13,8 @@
     remaining: number;
     retired: readonly (readonly string[])[];
     levelDb: number;
+    hearing: boolean;
+    failure: string | null;
     start: () => Promise<void>;
   }
 
@@ -65,8 +67,11 @@
 
     <div class="status">
       <p class="progress" aria-live="off">Word {session.completed + 1} of {total}</p>
-      <span class="level">
-        <span class="level-label"><i class="fas fa-microphone" aria-hidden="true"></i> Mic</span>
+      <span class="level" class:hearing={session.hearing}>
+        <span class="level-label" aria-live="polite">
+          <i class="fas fa-microphone" aria-hidden="true"></i>
+          {session.hearing ? "Hearing you" : "Listening"}
+        </span>
         <span class="meter" role="img" aria-label="Microphone input level">
           <span class="fill" style:transform={`scaleX(${meter})`}></span>
         </span>
@@ -77,6 +82,9 @@
       Could not start. Allow the microphone when the browser asks, and make sure you are signed
       in — the recordings save to your account.
     </p>
+    {#if session.failure}
+      <p class="reason">{session.failure}</p>
+    {/if}
     <button class="start" onclick={() => session.start()}>Try again</button>
   {:else}
     <SessionReport
@@ -233,9 +241,28 @@
     opacity: 0.6;
   }
 
+  .level.hearing {
+    /* Full strength against the dimmed resting state. This is the only signal
+       that the half of the pipe which ends words is awake — a meter can move
+       on a detector that never scored a frame. */
+    color: var(--theme-accent, currentColor);
+    opacity: 1;
+  }
+
   .level-label {
     flex: 0 0 auto;
+    /* Reserved for the longer of the two labels, plus the icon, so the meter
+       beside it does not resize every time he starts and stops speaking. */
+    min-width: 13ch;
+    text-align: start;
     white-space: nowrap;
+  }
+
+  .reason {
+    margin: 0;
+    max-width: 60ch;
+    font-size: clamp(0.85rem, 0.9vw, 1.5rem);
+    opacity: 0.6;
   }
 
   .meter {

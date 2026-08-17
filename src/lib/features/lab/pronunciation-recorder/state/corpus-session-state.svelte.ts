@@ -38,6 +38,10 @@ export function createCorpusSession(options: CorpusSessionOptions) {
 
   let status = $state<SessionStatus>("idle");
   let abortReason = $state<AbortReason | null>(null);
+  let failure = $state<string | null>(null);
+  // Whether the detector is hearing speech right now. The meter proves the
+  // microphone is open; only this proves the half that ends words is awake.
+  let hearing = $state(false);
   let folderName = $state<string | null>(null);
   let recorded = $state(0);
   let currentKey = $state<string | null>(null);
@@ -54,14 +58,21 @@ export function createCorpusSession(options: CorpusSessionOptions) {
   let meterFrame: number | null = null;
 
   function pumpMeter(): void {
+    // The meter is cosmetic; the session is not. Somewhere without a frame
+    // callback it simply does not animate, rather than taking the recording
+    // down with it.
+    if (typeof requestAnimationFrame !== "function") return;
     levelDb = options.capture.levelDb;
     meterFrame = requestAnimationFrame(pumpMeter);
   }
 
   function stopMeter(): void {
-    if (meterFrame !== null) cancelAnimationFrame(meterFrame);
+    if (meterFrame !== null && typeof cancelAnimationFrame === "function") {
+      cancelAnimationFrame(meterFrame);
+    }
     meterFrame = null;
     levelDb = -100;
+    hearing = false;
   }
 
   const wordOf = (key: string | null) => (key ? (byKey.get(key) ?? null) : null);
@@ -124,15 +135,21 @@ export function createCorpusSession(options: CorpusSessionOptions) {
 
   async function start(deviceId?: string): Promise<void> {
     try {
+      failure = null;
       const { stream } = await options.microphone.connect(deviceId);
       folderName = (await options.store.connect()).name;
       await options.capture.start(stream);
       pumpMeter();
-      await options.detector.start(
+      await options.detector.start({
         stream,
-        {
-          onSpeechStart: () => {},
+        context: options.capture.audioContext,
+        clockSeconds: () => options.capture.clock / options.capture.sampleRate,
+        handlers: {
+          onSpeechStart: () => {
+            hearing = true;
+          },
           onSpeechEnd: (span) => {
+            hearing = false;
             // Read the ring HERE, not inside the queued step. Uploads are the
             // slow link now, and a queue that has backed up behind one would
             // push this read past the point where the ring has overwritten the
@@ -150,14 +167,15 @@ export function createCorpusSession(options: CorpusSessionOptions) {
             );
           },
         },
-        // The detector's timeline has to be the ring's timeline: what it
-        // reports as a span is read straight back out by sample index.
-        () => options.capture.clock / options.capture.sampleRate
-      );
+      });
       status = "running";
       syncQueue();
-    } catch {
+    } catch (error) {
       stopMeter();
+      // Carried to the screen. Swallowing it left "could not start" as the only
+      // account of a microphone that was denied, a sign-in that had expired,
+      // and a detector that never opened.
+      failure = error instanceof Error ? error.message : String(error);
       status = "failed";
     }
   }
@@ -196,6 +214,12 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     },
     get levelDb() {
       return levelDb;
+    },
+    get hearing() {
+      return hearing;
+    },
+    get failure() {
+      return failure;
     },
     start,
     stop,

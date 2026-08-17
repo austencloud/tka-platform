@@ -2,7 +2,7 @@ import { MicVAD } from "@ricky0123/vad-web";
 
 import type {
   ISpeechBoundaryDetector,
-  SpeechBoundaryHandlers,
+  SpeechBoundaryStart,
 } from "../contracts/ISpeechBoundaryDetector";
 
 /**
@@ -19,21 +19,31 @@ export class SileroBoundaryDetector implements ISpeechBoundaryDetector {
   private vad: MicVAD | null = null;
   private startedAt = 0;
 
-  async start(
-    stream: MediaStream,
-    handlers: SpeechBoundaryHandlers,
-    clock: () => number
-  ): Promise<void> {
-    this.vad = await MicVAD.new({
+  async start({
+    stream,
+    context,
+    handlers,
+    clockSeconds,
+  }: SpeechBoundaryStart): Promise<void> {
+    const vad = await MicVAD.new({
       getStream: async () => stream,
+      // Share the capture's graph. Left to itself the library builds a second
+      // AudioContext, which Chrome can hand back suspended — and a suspended
+      // context never runs the worklet, so no frame is ever scored and no word
+      // ever ends, while the meter on the first context moves normally.
+      ...(context ? { audioContext: context } : {}),
       model: "v5",
       redemptionMs: WORD_END_SILENCE_MS,
       preSpeechPadMs: 300,
       minSpeechMs: 200,
       baseAssetPath: "/vad/",
       onnxWASMBasePath: "/vad/",
+      // `MicVAD.new` starts listening on its own by default, which makes the
+      // explicit start below a no-op that lands mid-initialisation and reports
+      // nothing. Owning the start is what lets a failure be thrown.
+      startOnLoad: false,
       onSpeechStart: () => {
-        this.startedAt = clock();
+        this.startedAt = clockSeconds();
         handlers.onSpeechStart();
       },
       onSpeechEnd: () => {
@@ -42,15 +52,23 @@ export class SileroBoundaryDetector implements ISpeechBoundaryDetector {
           // The callback fires after the redemption window has elapsed, so the
           // speech ended that long ago — charging it to now would put most of a
           // second of silence inside every word.
-          endSeconds: clock() - WORD_END_SILENCE_MS / 1000,
+          endSeconds: clockSeconds() - WORD_END_SILENCE_MS / 1000,
         });
       },
       onVADMisfire: () => {
         // Too short to be a word. Not a failure; he cleared his throat.
       },
     });
+    this.vad = vad;
 
-    this.vad.start();
+    await vad.start();
+
+    // The library records a failed start on the instance and returns normally.
+    // Unread, that is a session that shows a live meter, ignores every word he
+    // reads, and never says why.
+    if (vad.errored) {
+      throw new Error("The speech detector could not start listening.");
+    }
   }
 
   async stop(): Promise<void> {
