@@ -13,6 +13,13 @@
 export const DEFAULT_CANVAS_SIZE = 500;
 
 /**
+ * How long the observed size has to hold still before the canvas is rebuilt at
+ * it. Long enough to swallow every frame of a CSS transition, short enough that
+ * a dragged split or a window resize lands sharp the moment the pointer stops.
+ */
+const RESIZE_SETTLE_MS = 40;
+
+/**
  * Renderer interface for resize operations
  */
 export interface ResizableRenderer {
@@ -43,6 +50,8 @@ export class CanvasResizer {
   private renderer: ResizableRenderer | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private paused = false;
+  private settleTimer: ReturnType<typeof setTimeout> | null = null;
+  private hasSizedFromObservation = false;
 
   // Bound reference to resize handler for event listener cleanup
   private boundResizeHandler = () => this.handleResize();
@@ -70,19 +79,24 @@ export class CanvasResizer {
   teardown(): void {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.cancelSettle();
 
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", this.boundResizeHandler);
     }
   }
 
+  /** Explicit, caller-driven resize. Never coalesced — the caller is asking for
+   *  this size now, not reporting that the container drifted. */
   async resize(currentSize: number): Promise<number> {
+    this.cancelSettle();
     this.state.currentSize = currentSize;
     return this.performResize();
   }
 
   pauseObservation(): void {
     this.paused = true;
+    this.cancelSettle();
   }
 
   resumeObservation(): void {
@@ -94,6 +108,7 @@ export class CanvasResizer {
   dispose(): void {
     this.teardown();
     this.paused = false;
+    this.hasSizedFromObservation = false;
     this.container = null;
     this.renderer = null;
     this.state.currentSize = DEFAULT_CANVAS_SIZE;
@@ -101,19 +116,57 @@ export class CanvasResizer {
     this.state.isResizing = false;
   }
 
+  private cancelSettle(): void {
+    if (this.settleTimer === null) return;
+    clearTimeout(this.settleTimer);
+    this.settleTimer = null;
+  }
+
+  /**
+   * A container that animates its width notifies on every frame it animates,
+   * and `performResize` reallocates the canvas and reloads the grid texture at
+   * whatever intermediate size it caught — 150–350ms of work, per frame. That
+   * is what turned a 280ms panel transition into a slideshow.
+   *
+   * So an observed change only arms a timer, and the canvas is rebuilt once, at
+   * the size the container came to rest on. In between, the canvas keeps its
+   * current backing store and the wrapper's `width: 100%; object-fit: contain`
+   * scales it — briefly soft while things are moving, sharp the moment they
+   * stop, which is the trade every mature canvas app makes here.
+   *
+   * The first observation is not deferred: the canvas would otherwise sit at
+   * DEFAULT_CANVAS_SIZE and pop.
+   */
   private handleResize(): void {
     if (this.paused) return;
-    this.performResize();
+
+    if (!this.hasSizedFromObservation) {
+      this.hasSizedFromObservation = true;
+      this.performResize();
+      return;
+    }
+
+    this.cancelSettle();
+    this.settleTimer = setTimeout(() => {
+      this.settleTimer = null;
+      if (this.paused) return;
+      this.performResize();
+    }, RESIZE_SETTLE_MS);
   }
 
   private async performResize(): Promise<number> {
     if (!this.container || !this.renderer) return this.state.currentSize;
 
     const rect = this.container.getBoundingClientRect();
+    // Rounded, because a sub-pixel container width would otherwise make every
+    // observation a new size — a fresh canvas allocation and a fresh grid
+    // sprite for a difference nobody can see.
     const newSize =
-      Math.min(
-        rect.width || DEFAULT_CANVAS_SIZE,
-        rect.height || DEFAULT_CANVAS_SIZE
+      Math.round(
+        Math.min(
+          rect.width || DEFAULT_CANVAS_SIZE,
+          rect.height || DEFAULT_CANVAS_SIZE
+        )
       ) || DEFAULT_CANVAS_SIZE;
 
     if (newSize !== this.state.currentSize) {

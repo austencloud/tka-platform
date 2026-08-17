@@ -10,6 +10,7 @@
     closeLabel,
     onClose,
     actions,
+    entrance = "scale",
     children,
   }: {
     title: string;
@@ -17,13 +18,24 @@
     closeLabel: string;
     onClose: () => void;
     actions?: Snippet;
+    /** How the panel arrives. `scale` is the card-overlay entrance: the panel
+     *  covers a card that is already there, so it needs its own motion. `none`
+     *  is for hosts whose container is what animates — a grid track opening, a
+     *  sheet sliding in. Scaling inside one of those is two motions of
+     *  different lengths and easings fighting over the same panel, which reads
+     *  as a stutter rather than as two things happening. */
+    entrance?: "scale" | "none";
     children: Snippet;
   } = $props();
 </script>
 
 <div
   class="generation-settings-overlay customize-accent-scope"
-  transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
+  transition:scale={{
+    start: entrance === "none" ? 1 : 0.95,
+    duration: entrance === "none" ? 0 : 250,
+    easing: quintOut,
+  }}
 >
   <div class="overlay-header">
     <h3 class="overlay-title" id={titleId}>{title}</h3>

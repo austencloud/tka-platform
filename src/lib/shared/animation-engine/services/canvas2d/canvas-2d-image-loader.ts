@@ -19,6 +19,29 @@ import {
 
 const VIEWBOX_SIZE = 950;
 
+/**
+ * Grid sprites are shared across every canvas on the page: nine animator
+ * canvases showing the same grid mode at the same size decode it once between
+ * them. Module scope rather than per-instance is the whole point.
+ *
+ * The SVG text depends only on the mode and the point set; the decoded raster
+ * additionally depends on the size. Dragging a split walks through many sizes,
+ * so the sprite cache is capped and evicts oldest-first — Map preserves
+ * insertion order, which is all the recency this needs.
+ */
+const GRID_SVG_CACHE = new Map<string, string>();
+const GRID_SPRITE_CACHE = new Map<string, HTMLImageElement>();
+const MAX_GRID_SPRITES = 24;
+
+function rememberGridSprite(key: string, image: HTMLImageElement): void {
+  GRID_SPRITE_CACHE.set(key, image);
+  while (GRID_SPRITE_CACHE.size > MAX_GRID_SPRITES) {
+    const oldest = GRID_SPRITE_CACHE.keys().next();
+    if (oldest.done) break;
+    GRID_SPRITE_CACHE.delete(oldest.value);
+  }
+}
+
 export interface PropSpriteSnapshot {
   image: HTMLImageElement;
   dimensions: { width: number; height: number };
@@ -265,6 +288,18 @@ export class Canvas2DImageLoader {
     canvasSize: number,
     showNonRadialPoints: boolean = true
   ): Promise<HTMLImageElement> {
+    // The grid is the one image reloaded on every resize, and it is also the
+    // most expensive: a dynamic import, an SVG build, a base64 encode, and a
+    // full image decode. None of that changes with the canvas size — only the
+    // decoded raster does — so both halves are cached, and a container that
+    // returns to a size it has already drawn at pays nothing at all.
+    const spriteKey = `${gridMode}|${showNonRadialPoints}|${canvasSize}`;
+    const cachedSprite = GRID_SPRITE_CACHE.get(spriteKey);
+    if (cachedSprite) {
+      this.gridImage = cachedSprite;
+      return cachedSprite;
+    }
+
     try {
       const { GridMode } =
         await import("$lib/shared/pictograph/grid/domain/enums/grid-enums");
@@ -280,7 +315,12 @@ export class Canvas2DImageLoader {
           GridMode.DIAMOND;
       }
 
-      const gridSvg = await generateGridSvg(gridModeEnum, true, showNonRadialPoints);
+      const svgKey = `${gridMode}|${showNonRadialPoints}`;
+      let gridSvg = GRID_SVG_CACHE.get(svgKey);
+      if (gridSvg === undefined) {
+        gridSvg = await generateGridSvg(gridModeEnum, true, showNonRadialPoints);
+        GRID_SVG_CACHE.set(svgKey, gridSvg);
+      }
 
       // Create new image
       const newImage = await this.createImageFromSVG(
@@ -288,6 +328,8 @@ export class Canvas2DImageLoader {
         canvasSize,
         canvasSize
       );
+
+      rememberGridSprite(spriteKey, newImage);
 
       // Swap reference
       this.gridImage = newImage;

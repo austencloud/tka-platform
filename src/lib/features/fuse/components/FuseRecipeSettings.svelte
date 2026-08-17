@@ -19,6 +19,11 @@
     onClose: () => void;
   } = $props();
 
+  // Both of this panel's hosts animate the panel themselves — the desktop
+  // column opens as a grid track, the compact host slides in as a sheet — so
+  // the panel does not also scale itself in on top of that.
+  const ENTRANCE = "none";
+
   const { state: fuseState } = getFuseContext();
   const summaries = $derived(
     buildFuseRecipeSummaries({
@@ -62,6 +67,7 @@
   title="Fuse recipe"
   titleId="fuse-settings-title"
   closeLabel="Close Fuse recipe settings"
+  entrance={ENTRANCE}
   {onClose}
 >
   {#snippet children()}
