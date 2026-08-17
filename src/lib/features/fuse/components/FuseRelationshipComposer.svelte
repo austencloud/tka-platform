@@ -201,6 +201,8 @@
      rather than capping short of it, so the result chain below reads across the
      same span the step cards above it do. */
   .pairing-editor {
+    container-type: inline-size;
+    container-name: pairing-editor;
     display: flex;
     flex-direction: column;
     gap: var(--settings-spacing-md, 14px);
@@ -419,19 +421,12 @@
     }
   }
 
-  /* Phone: the chain becomes a top-to-bottom list, arrows turned to match, so
-     nothing has to shrink below its own words. A phone is also short, so this
-     tier must not hand back the gap the short-viewport tier above just took —
-     it comes later in the file and would win at equal specificity. */
-  @media (max-width: 480px) {
-    /* The chain stacks here, which makes this block a third of the sheet — too
-       much to pin. A phone scrolls to its commands like every other phone form. */
-    .relationship-commit {
-      position: static;
-      background: none;
-      backdrop-filter: none;
-    }
-
+  /* Narrow host: the chain becomes a top-to-bottom list, arrows turned to match,
+     so nothing has to shrink below its own words. Keyed to the editor's own
+     width rather than the viewport's, because the same editor is 620px wide in a
+     drawer and 400px wide in the desktop recipe column — the viewport says
+     nothing about which. */
+  @container pairing-editor (max-width: 25rem) {
     .result-chain[data-shape="chain"],
     .result-chain[data-shape="pair"] {
       grid-template-columns: minmax(0, 1fr);
@@ -445,6 +440,16 @@
 
     .editor-actions {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* A stacked chain makes this block a third of a phone sheet — too much to pin.
+     A phone scrolls to its commands like every other phone form. */
+  @media (max-width: 480px) {
+    .relationship-commit {
+      position: static;
+      background: none;
+      backdrop-filter: none;
     }
   }
 </style>

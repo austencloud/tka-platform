@@ -17,6 +17,7 @@
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
   import FusePreviewStage from "./FusePreviewStage.svelte";
+  import FuseRecipeColumn from "./FuseRecipeColumn.svelte";
   import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
@@ -63,6 +64,8 @@
   const NATIVE_4K_MAX_LEFT = 2000;
   const NATIVE_4K_CANVAS_FLOOR = 1200;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
+  const RECIPE_MIN_W = 400; // recipe column: narrow enough for a laptop...
+  const RECIPE_MAX_W = 620; // ...wide enough that its editors don't stack at 4K
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
@@ -72,6 +75,7 @@
   let containerWidth = $state(0);
   let containerHeight = $state(0);
   let workspaceGridWidth = $state(0);
+  let workspaceColumnGap = $state(0);
   let contentH = $state(0); // measured content-row height (the left column fills it)
   let overrides = $state<Record<string, number>>(loadOverrides());
   let splitPx = $state<number | null>(null);
@@ -99,6 +103,39 @@
     } catch {
       /* ignore */
     }
+  }
+
+  // Desktop shows the recipe as the workspace's own left column. Everything
+  // narrower keeps the sheet: a third column there would leave the result too
+  // little width to be worth looking at. The gate is arithmetic, not a
+  // breakpoint — the column appears only when all three panels can sit at their
+  // comfortable minimums at once, so opening the recipe never squeezes the paths
+  // down to their hard floor.
+  const RECIPE_COLUMN_FLOOR =
+    RECIPE_MIN_W + LAPTOP_MIN_LEFT + CANVAS_FLOOR + 2 * CARD_GAP;
+  const recipeColumn = $derived(
+    fullCard && settingsOpen && containerWidth >= RECIPE_COLUMN_FLOOR
+  );
+  const recipeColumnWidth = $derived(
+    recipeColumn
+      ? Math.round(
+          Math.min(RECIPE_MAX_W, Math.max(RECIPE_MIN_W, containerWidth * 0.26))
+        )
+      : 0
+  );
+
+  function closeRecipe(): void {
+    settingsOpen = false;
+    settingsDestination = null;
+  }
+
+  // Widening past the column threshold with the sheet open closes the sheet,
+  // and Drawer reports that as a close. Ignore it: the recipe did not close, it
+  // moved into the column. Only a real dismissal while the sheet is the host
+  // puts the recipe away.
+  function dismissDrawer(): void {
+    if (recipeColumn) return;
+    closeRecipe();
   }
 
   // requested length shows before the load settles so the seam is right away.
@@ -129,7 +166,15 @@
     `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
   const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
 
-  const splitAvailableWidth = () => workspaceGridWidth || containerWidth;
+  // The recipe column takes its width off the top before the seam is solved, so
+  // opening it narrows the paths and the result proportionally instead of
+  // pushing the result off the edge.
+  const splitAvailableWidth = () =>
+    Math.max(
+      CANVAS_FLOOR + MIN_LEFT,
+      (workspaceGridWidth || containerWidth) -
+        (recipeColumnWidth > 0 ? recipeColumnWidth + workspaceColumnGap : 0)
+    );
   const desiredMinLeft = () =>
     wideWorkspace
       ? Math.round(
@@ -200,6 +245,7 @@
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = (contentWidth: number) => {
       const columnGap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
+      workspaceColumnGap = columnGap;
       workspaceGridWidth = Math.max(0, Math.round(contentWidth - columnGap));
     };
     const initialStyle = getComputedStyle(el);
@@ -431,8 +477,10 @@
     class:landscape-workspace={landscapeSplit}
     class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
+    class:recipe-workspace={recipeColumn}
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
+    style:--fuse-recipe-w={`${recipeColumnWidth}px`}
     aria-busy={fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
@@ -441,6 +489,12 @@
       onOpenRecipe={() => openSettings(null)}
       onOpenSetting={openSettings}
     />
+    {#if recipeColumn}
+      <FuseRecipeColumn
+        bind:destination={settingsDestination}
+        onClose={closeRecipe}
+      />
+    {/if}
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
@@ -551,8 +605,9 @@
   </div>
 
   <FuseSettingsDrawer
-    bind:isOpen={settingsOpen}
+    isOpen={settingsOpen && !recipeColumn}
     bind:destination={settingsDestination}
+    onDismiss={dismissDrawer}
   />
   <FuseFirstStepPanel
     bind:isOpen={firstStepOpen}
@@ -679,6 +734,28 @@
       "left preview";
     align-content: stretch;
     overflow: hidden;
+  }
+
+  /* The recipe opens as a third track on the left. Animating the track itself is
+     what makes the other two give way rather than being covered — the thing a
+     drawer over the result could never do. */
+  .fuse-workspace.full-card-workspace {
+    transition: grid-template-columns var(--duration-normal, 220ms) ease;
+  }
+
+  .fuse-workspace.full-card-workspace.recipe-workspace {
+    grid-template-columns:
+      var(--fuse-recipe-w, 420px) var(--fuse-left, 1.8fr)
+      minmax(0, 1fr);
+    grid-template-areas:
+      "header header header"
+      "recipe left preview";
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fuse-workspace.full-card-workspace {
+      transition: none;
+    }
   }
 
   /* Desktop path column: blue over red, with the drag seam pinned to its right

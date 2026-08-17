@@ -281,27 +281,32 @@
 
   /* Room to spend means the choices explain themselves rather than the card
      growing empty rows. LOOPChoiceButton hides a dense choice's description by
-     default; this outranks that inside the reflect row only.
+     default; the reflect row turns it back on, but only where BOTH kinds of room
+     exist — a tall enough viewport and a wide enough card.
 
-     The seam is 1000px, not 900: at a 900-tall viewport the three descriptions
-     make the form 22px taller than the drawer body, which pushes the commit row
-     below the fold — the one place the footer must never be. */
+     The two conditions can't share one at-rule, so height sets the value and
+     width decides whether it is read. Height's seam is 1000px, not 900: at a
+     900-tall viewport the descriptions make the form 22px taller than the drawer
+     body, which pushes the commit row below the fold. Width's is 26rem, below
+     which a description wraps to three lines in a 6rem tile. */
+  .rule-field {
+    --reflect-desc: none;
+  }
+
   @media (min-height: 1000px) {
+    .rule-field {
+      --reflect-desc: block;
+    }
+  }
+
+  @container loop-picker (min-width: 26rem) {
     .reflect-grid :global(.dense .loop-desc) {
-      display: block;
+      display: var(--reflect-desc);
       max-width: none;
     }
 
     .reflect-grid :global(.dense .loop-text) {
       gap: 0.125rem;
-    }
-
-    /* A description needs the whole row to read as a sentence, so the tiles
-       stack sooner once they carry one. */
-    @container loop-picker (max-width: 26rem) {
-      .reflect-grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
     }
   }
 
@@ -344,8 +349,9 @@
   }
 
   /* Below the width three glyph-plus-label tiles need, they stack — still one
-     per line, no orphan. */
-  @container loop-picker (max-width: 21rem) {
+     per line, no orphan. 22rem is where "Reflect top and bottom" stops fitting
+     a third of the row: the recipe column lands just under it, the drawer above. */
+  @container loop-picker (max-width: 22rem) {
     .reflect-grid {
       grid-template-columns: minmax(0, 1fr);
     }
