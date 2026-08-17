@@ -18,6 +18,7 @@
     stampSingle,
     resizePeriod,
   } from "$lib/shared/create/domain/rhythm/rhythm-mask";
+  import { describeMask } from "$lib/shared/create/domain/rhythm/pattern-sentence";
 
   interface Props {
     binding: StripBinding;
@@ -47,6 +48,28 @@
   const periods = $derived(divisorsUpTo(sequenceLength));
   const period = $derived(value[0]?.length ?? 1);
   const reps = $derived(sequenceLength / period);
+
+  // Sentence mode is a whole-editor presentation, so it stays out of the way of
+  // the single-axis drill-downs, which already give one axis the whole screen.
+  const sentenceMode = $derived(!!binding.sentence && visibleAxis === "all");
+
+  /** Which slot's popover is open, as "amount-0" / "rhythm-1". */
+  let openSlot = $state<string | null>(null);
+
+  function laneMask(li: number): boolean[] {
+    return (value[li] ?? []).map((v) => v !== binding.base);
+  }
+
+  /** What the amount chip reads. A hand-edited lane has no single amount. */
+  function amountLabel(li: number): string {
+    const a = laneAmount(li);
+    if (a === null) return "mixed";
+    return binding.format(a);
+  }
+
+  function toggleSlot(id: string) {
+    openSlot = openSlot === id ? null : id;
+  }
 
   function setPeriod(p: number) {
     onChange(value.map((lane) => resizePeriod(lane, p, binding.base)));
@@ -131,7 +154,80 @@
   class:fit-available-height={fitAvailableHeight}
   class:single-lane={binding.lanes === 1}
   class:solo-axis={visibleAxis !== "all"}
+  class:sentence-mode={sentenceMode}
 >
+  {#if sentenceMode && binding.sentence}
+    <div class="sentences">
+      {#each binding.laneLabels as label, li}
+        <p class="sentence">
+          <span class="subject {binding.laneColors[li]}">{label}</span>
+          <span class="prose">{binding.sentence.verb}</span>
+          {#if binding.amountList}
+            <FilterChipBase
+              label={amountLabel(li)}
+              mode="dropdown"
+              size="sm"
+              expanded={openSlot === `amount-${li}`}
+              ariaLabel="{label} amount: {amountLabel(li)}"
+              onclick={() => toggleSlot(`amount-${li}`)}
+            >
+              {#snippet children()}
+                {#each binding.amountList ?? [] as a}
+                  <button
+                    class="popover-option"
+                    type="button"
+                    role="option"
+                    aria-selected={String(laneAmount(li)) === String(a)}
+                    class:selected={String(laneAmount(li)) === String(a)}
+                    onclick={() => {
+                      applyAmount(li, a);
+                      openSlot = null;
+                    }}>{binding.format(a)}</button
+                  >
+                {/each}
+              {/snippet}
+            </FilterChipBase>
+          {/if}
+          <span class="prose">on</span>
+          <FilterChipBase
+            label={describeMask(laneMask(li))}
+            mode="dropdown"
+            size="sm"
+            expanded={openSlot === `rhythm-${li}`}
+            ariaLabel="{label} rhythm: {describeMask(laneMask(li))}"
+            onclick={() => toggleSlot(`rhythm-${li}`)}
+          >
+            {#snippet children()}
+              {#each binding.rhythms as r}
+                <button
+                  class="popover-option"
+                  type="button"
+                  role="option"
+                  aria-selected={rhythmActive(r)}
+                  class:selected={rhythmActive(r)}
+                  disabled={rhythmDisabled(r)}
+                  onclick={() => {
+                    applyRhythm(r);
+                    openSlot = null;
+                  }}
+                >
+                  <span class="opt-name">{r.label}</span>
+                  <!-- The canonical name is what people say out loud, so it
+                       leads; the plain reading underneath is what a newcomer
+                       can act on. When the name is already plain the two are
+                       the same string and the second line would be noise. -->
+                  {#if r.plainLabel !== r.label}
+                    <span class="opt-plain">{r.plainLabel}</span>
+                  {/if}
+                </button>
+              {/each}
+            {/snippet}
+          </FilterChipBase>
+        </p>
+      {/each}
+    </div>
+  {/if}
+
   {#if visibleAxis === "all" || visibleAxis === "length"}
     <div class="axis">
       <div class="axis-row">
@@ -150,7 +246,7 @@
     </div>
   {/if}
 
-  {#if visibleAxis === "all" || visibleAxis === "rhythm"}
+  {#if !sentenceMode && (visibleAxis === "all" || visibleAxis === "rhythm")}
     <div class="axis">
       <div class="axis-lbl">Rhythm</div>
       <div class="chips">
@@ -173,7 +269,7 @@
     </div>
   {/if}
 
-  {#if binding.amountList && (visibleAxis === "all" || visibleAxis === "amount")}
+  {#if binding.amountList && !sentenceMode && (visibleAxis === "all" || visibleAxis === "amount")}
     <div class="axis">
       <div class="axis-lbl">Amount</div>
       <div class="amt-grid">
@@ -208,6 +304,7 @@
         base={binding.base}
         format={binding.format}
         onEdit={editCell}
+        fill={sentenceMode}
       />
     </div>
   {/if}
@@ -318,6 +415,108 @@
     font-size: 16px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── Sentence mode ─── */
+
+  /* The pane is full height and the sentence is short, so the strip takes the
+     remainder rather than leaving it empty under a stack of controls. */
+  .pse.sentence-mode {
+    height: 100%;
+    gap: 18px;
+    margin: 0;
+  }
+
+  .pse.sentence-mode .result {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+  }
+
+  .sentences {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Chips sit inline with the words, so the line has to wrap like prose and
+     still keep its baseline when a chip is taller than the text. */
+  .sentence {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  /* The colour says which prop; the word says which hand. Both are load-bearing
+     for someone meeting this for the first time — the tint alone does not teach
+     that blue is the left hand. */
+  .subject {
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+  .subject.blue {
+    color: var(--theme-blue, #6f9bff);
+  }
+  .subject.red {
+    color: var(--theme-red, #ff7a8a);
+  }
+  .subject.accent {
+    color: var(--theme-accent, #2dd4bf);
+  }
+
+  .prose {
+    color: var(--theme-text-dim);
+  }
+
+  /* Matches the browse filter chips' own popover options, which is where this
+     chip presentation comes from. Two lines when the rhythm carries a canonical
+     name plus a plain reading, one when they are the same. */
+  .popover-option {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--theme-text, white);
+    font: inherit;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .opt-name {
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .opt-plain {
+    font-size: 12px;
+    line-height: 1.2;
+    color: var(--theme-text-dim);
+  }
+  .popover-option:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+  }
+  .popover-option.selected {
+    background: var(--theme-accent);
+    color: #fff;
+  }
+  /* The subtitle has to lift off the accent fill or it reads as a smudge. */
+  .popover-option.selected .opt-plain {
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .popover-option:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   /* A narrow portrait drawer cannot spend 26px between every editing axis.

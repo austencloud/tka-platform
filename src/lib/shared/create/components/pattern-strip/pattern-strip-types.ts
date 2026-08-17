@@ -25,4 +25,16 @@ export interface StripBinding {
   cellKind?: "number" | "toggle";
   /** Fixed value stamped on active steps when there is no amount (reversals → true). */
   activeValue?: StripValue;
+  /**
+   * Opts this binding into the sentence presentation: one line of English per
+   * lane ("Left turns 1 on every other step") with the strip as the visible
+   * result underneath, in place of the stacked Length / Rhythm / Amount axes.
+   *
+   * Optional on purpose. A binding without it renders exactly the editor that
+   * shipped before, which is how each surface moves over on its own schedule.
+   */
+  sentence?: {
+    /** The verb after the hand: "turns", "reverses", "holds". */
+    verb: string;
+  };
 }
