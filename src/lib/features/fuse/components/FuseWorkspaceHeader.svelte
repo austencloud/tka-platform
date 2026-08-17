@@ -15,10 +15,14 @@
     onOpenRecipe = () => {},
     onOpenSetting = () => {},
     onModeChange,
+    recipeOpen = false,
   }: {
     onOpenRecipe?: () => void;
     onOpenSetting?: (destination: FuseRecipeDestination) => void;
     onModeChange: (mode: FuseMode) => void;
+    /** Whether the recipe panel is showing. The trigger is a toggle, so it has
+     *  to say which way it points. */
+    recipeOpen?: boolean;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -157,12 +161,19 @@
     />
   </div>
 
-  <div class="recipe-trigger">
+  <!-- The way into the recipe panel, at every width. Where the rail is showing
+       it narrows to its icon and sits beside the title: the tiles each open one
+       setting, this opens all of them in a column, and both doors stay on the
+       header rather than one of them being reachable only by backing out of the
+       other. It is a toggle, so the same control closes what it opened. -->
+  <div class="recipe-trigger" class:is-open={recipeOpen}>
     <PanelButton
       variant="secondary"
       disabled={optionsDisabled}
       onclick={onOpenRecipe}
-      ariaLabel="Open Fuse recipe settings"
+      ariaLabel={recipeOpen
+        ? "Close Fuse recipe settings"
+        : "Open Fuse recipe settings"}
     >
       <i class="fas fa-sliders" aria-hidden="true"></i>
       <span class="recipe-label">
@@ -329,9 +340,46 @@
 
     /* The Pairing tile holds the switch at this size — two of them in one header
        row would be the same control twice. */
-    .mode-switch,
-    .recipe-trigger {
+    .mode-switch {
       display: none;
+    }
+
+    /* The trigger keeps its door but gives up its width to the rail: icon only,
+       square, sitting between the title and the tiles. The summary it was
+       carrying is redundant here — every tile in the rail already states its
+       own value. */
+    .recipe-trigger {
+      order: 1;
+      flex: 0 0 auto;
+    }
+
+    .recipe-rail {
+      order: 2;
+    }
+
+    .recipe-trigger :global(.panel-btn) {
+      width: var(--min-touch-target, 48px);
+      min-width: var(--min-touch-target, 48px);
+      min-height: var(--min-touch-target, 48px);
+      justify-content: center;
+      padding: 0;
+    }
+
+    .recipe-trigger .recipe-label,
+    .recipe-trigger .recipe-chevron {
+      display: none;
+    }
+
+    /* Open is a state of the workspace, not of this button alone, so it reads
+       as held down rather than merely hovered. */
+    .recipe-trigger.is-open :global(.panel-btn) {
+      color: var(--theme-text);
+      background: color-mix(
+        in srgb,
+        var(--theme-accent) 26%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.08))
+      );
+      border-color: color-mix(in srgb, var(--theme-accent) 62%, transparent);
     }
 
     .recipe-rail {

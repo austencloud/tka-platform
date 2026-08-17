@@ -481,6 +481,15 @@
     settingsOpen = true;
   }
 
+  // The header trigger is the one door to the recipe, so it is also the way
+  // back out. Opening always lands on the list rather than resuming whichever
+  // editor was last open — the door is labelled "Fuse recipe", and it should
+  // give you the recipe.
+  function toggleRecipe(): void {
+    if (settingsOpen) closeRecipe();
+    else openSettings(null);
+  }
+
   // Linking the paths is the act of choosing a rule, so the switch opens the
   // rule editor. Separating them retires it: there is no rule to look at, and a
   // recipe standing open on an empty editor is what this replaced.
@@ -516,7 +525,8 @@
       fuseState.isFusing}
   >
     <FuseWorkspaceHeader
-      onOpenRecipe={() => openSettings(null)}
+      recipeOpen={settingsOpen}
+      onOpenRecipe={toggleRecipe}
       onOpenSetting={openSettings}
       onModeChange={changeMode}
     />
