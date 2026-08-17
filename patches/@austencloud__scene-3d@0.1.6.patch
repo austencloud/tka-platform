@@ -5142,10 +5142,10 @@ index cac989e5e626274fb4d13d59e401a9a1b485760b..4b9ed963eede6ad237b242d3d1dca823
      removeLayer(layerId: string): void;
      setLayerWeight(layerId: string, weight: number): void;
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd2999ec16a61 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1d2036708 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -1,562 +1,818 @@
+@@ -1,562 +1,833 @@
 -/**
 - * AvatarAnimator
 - *
@@ -5196,6 +5196,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -        hips: new Quaternion(),
 +import { Vector3, Quaternion, Matrix4 } from "three";
 +const MAX_WRIST_SWING = 55 * Math.PI / 180;
++const MAX_WRIST_TWIST = 100 * Math.PI / 180;
 +const WRIST_SMOOTHING = 0.25;
 +const PALM_CENTER_FRACTION = 0.65;
 +const REACH_EPSILON = 0.015;
@@ -5379,6 +5380,8 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +  _q2 = new Quaternion();
 +  _q3 = new Quaternion();
 +  _q4 = new Quaternion();
++  _q5 = new Quaternion();
++  _v4 = new Vector3();
 +  _m1 = new Matrix4();
 +  _socketTargetLeft = new Vector3();
 +  _socketTargetRight = new Vector3();
@@ -5870,18 +5873,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -        const hipsBone = state.bones.get("Hips");
 -        if (hipsBone) {
 -            hipsBone.getWorldPosition(bodyCenter);
-+        if (spine2Bone) {
-+          spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
-+        }
-+      }
-+      if (stanceActive) {
-+        if (spine1Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.45
-+          );
-+          spine1Bone.quaternion.multiply(this._q1);
-         }
+-        }
 -        // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
 -        // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
 -        // position feeds back and causes oscillation.
@@ -5902,11 +5894,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -                this.rightClavicleRestQuat.copy(rightClav.quaternion);
 -            this.shoulderRestCached = true;
 +        if (spine2Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.55
-+          );
-+          spine2Bone.quaternion.multiply(this._q1);
++          spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
          }
 -        // Cache spine bone rest quaternions once - COMPOSE with these, never replace.
 -        // Works with whatever bones are available (some models lack Spine2/upper_chest).
@@ -5929,24 +5917,13 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -            if (anyFound)
 -                this.spineRestCached = true;
 +      }
-+      if (leanActive) {
-+        this._v1.copy(this.reachLeanDirSmoothed);
-+        this._v1.y = 0;
-+        if (this._v1.lengthSq() > 1e-6) {
-+          this._v1.normalize();
-+          this._v2.crossVectors(WORLD_UP, this._v1).normalize();
-+          const applyLean = (bone, fraction) => {
-+            if (!bone || !bone.parent) return;
-+            this._q1.setFromAxisAngle(
-+              this._v2,
-+              this.reachLeanAngleSmoothed * fraction
-+            );
-+            bone.parent.getWorldQuaternion(this._q2);
-+            this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
-+            bone.quaternion.premultiply(this._q3);
-+          };
-+          applyLean(spine1Bone, 0.45);
-+          applyLean(spine2Bone, 0.55);
++      if (stanceActive) {
++        if (spine1Bone) {
++          this._q1.setFromAxisAngle(
++            this._v1.set(0, 1, 0),
++            this.stanceYawSmoothedRad * 0.45
++          );
++          spine1Bone.quaternion.multiply(this._q1);
          }
 -        // Spine twist: rotate torso toward cross-body hand positions.
 -        // Each bone gets its own weighted fraction of the twist, distributed
@@ -5986,30 +5963,12 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -            const hipsBoneForUpdate = state.bones.get("Hips");
 -            if (hipsBoneForUpdate)
 -                hipsBoneForUpdate.updateMatrixWorld(true);
-+      }
-+      const hipsBoneForUpdate = state.bones.get("Hips");
-+      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
-+    }
-+    const leftHand = pose.leftHand;
-+    const rightHand = pose.rightHand;
-+    if (leftChain && leftHand) {
-+      if (this.leftArmIK.weight > 1e-3) {
-+        const animRootQuat = leftChain.root.quaternion.clone();
-+        const animMiddleQuat = leftChain.middle.quaternion.clone();
-+        const animEffectorQuat = leftChain.effector.quaternion.clone();
-+        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-+          const leftShoulder = state.bones.get("LeftShoulder");
-+          if (leftShoulder) {
-+            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-+              leftHand.targetPosition,
-+              "left",
-+              this.leftShoulderRestY,
-+              leftChain.totalLength
-+            );
-+            this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-+            leftShoulder.quaternion.copy(this.leftClavicleRestQuat).multiply(this.leftClavicleQuat);
-+            leftShoulder.updateMatrixWorld(true);
-+          }
++        if (spine2Bone) {
++          this._q1.setFromAxisAngle(
++            this._v1.set(0, 1, 0),
++            this.stanceYawSmoothedRad * 0.55
++          );
++          spine2Bone.quaternion.multiply(this._q1);
          }
 -        // External spine pitch: optional extra forward lean applied to Spine1.
 -        // Runs whether or not spine twist is enabled so lean-forward stances
@@ -6034,25 +5993,25 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -                if (hipsBoneForUpdate)
 -                    hipsBoneForUpdate.updateMatrixWorld(true);
 -            }
-+        const leftTarget = this.computeSocketTarget(
-+          "left",
-+          leftChain,
-+          leftHand.targetPosition
-+        );
-+        const target = {
-+          position: leftTarget,
-+          weight: leftHand.weight
-+        };
-+        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
-+          const idealPole = this.poleComputer.computePoleVector(
-+            leftTarget,
-+            leftHand.plane,
-+            "left",
-+            bodyCenter
-+          );
-+          this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
-+          this.leftPoleVector.normalize();
-+          target.poleHint = this.leftPoleVector.clone();
++      }
++      if (leanActive) {
++        this._v1.copy(this.reachLeanDirSmoothed);
++        this._v1.y = 0;
++        if (this._v1.lengthSq() > 1e-6) {
++          this._v1.normalize();
++          this._v2.crossVectors(WORLD_UP, this._v1).normalize();
++          const applyLean = (bone, fraction) => {
++            if (!bone || !bone.parent) return;
++            this._q1.setFromAxisAngle(
++              this._v2,
++              this.reachLeanAngleSmoothed * fraction
++            );
++            bone.parent.getWorldQuaternion(this._q2);
++            this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
++            bone.quaternion.premultiply(this._q3);
++          };
++          applyLean(spine1Bone, 0.45);
++          applyLean(spine2Bone, 0.55);
          }
 -        const leftHand = pose.leftHand;
 -        const rightHand = pose.rightHand;
@@ -6099,35 +6058,29 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -                leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 -            }
 -            // else: weight ~0, skip IK entirely - animation drives the arm
-+        this.applyReachEscalation("left", leftChain, target, state);
-+        this.ikSolver.solveAndApply(leftChain, target);
-+        const ikRootQuat = leftChain.root.quaternion.clone();
-+        const ikMiddleQuat = leftChain.middle.quaternion.clone();
-+        const ikEffectorQuat = leftChain.effector.quaternion.clone();
-+        const w = this.leftArmIK.weight;
-+        leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
-+        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
-+        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
-+        this.applyWristOrientation("left", leftChain, leftHand, w);
 +      }
++      const hipsBoneForUpdate = state.bones.get("Hips");
++      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
 +    }
-+    if (rightChain && rightHand) {
-+      if (this.rightArmIK.weight > 1e-3) {
-+        const animRootQuat = rightChain.root.quaternion.clone();
-+        const animMiddleQuat = rightChain.middle.quaternion.clone();
-+        const animEffectorQuat = rightChain.effector.quaternion.clone();
++    const leftHand = pose.leftHand;
++    const rightHand = pose.rightHand;
++    if (leftChain && leftHand) {
++      if (this.leftArmIK.weight > 1e-3) {
++        const animRootQuat = leftChain.root.quaternion.clone();
++        const animMiddleQuat = leftChain.middle.quaternion.clone();
++        const animEffectorQuat = leftChain.effector.quaternion.clone();
 +        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-+          const rightShoulder = state.bones.get("RightShoulder");
-+          if (rightShoulder) {
++          const leftShoulder = state.bones.get("LeftShoulder");
++          if (leftShoulder) {
 +            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-+              rightHand.targetPosition,
-+              "right",
-+              this.rightShoulderRestY,
-+              rightChain.totalLength
++              leftHand.targetPosition,
++              "left",
++              this.leftShoulderRestY,
++              leftChain.totalLength
 +            );
-+            this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-+            rightShoulder.quaternion.copy(this.rightClavicleRestQuat).multiply(this.rightClavicleQuat);
-+            rightShoulder.updateMatrixWorld(true);
++            this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
++            leftShoulder.quaternion.copy(this.leftClavicleRestQuat).multiply(this.leftClavicleQuat);
++            leftShoulder.updateMatrixWorld(true);
 +          }
          }
 -        if (rightChain && rightHand) {
@@ -6173,6 +6126,60 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 -                rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 -            }
 -            // else: weight ~0, skip IK entirely - animation drives the arm
++        const leftTarget = this.computeSocketTarget(
++          "left",
++          leftChain,
++          leftHand.targetPosition
++        );
++        const target = {
++          position: leftTarget,
++          weight: leftHand.weight
++        };
++        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
++          const idealPole = this.poleComputer.computePoleVector(
++            leftTarget,
++            leftHand.plane,
++            "left",
++            bodyCenter
++          );
++          this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
++          this.leftPoleVector.normalize();
++          target.poleHint = this.leftPoleVector.clone();
+         }
+-        this.skeleton.updateMatrices();
++        this.applyReachEscalation("left", leftChain, target, state);
++        this.ikSolver.solveAndApply(leftChain, target);
++        const ikRootQuat = leftChain.root.quaternion.clone();
++        const ikMiddleQuat = leftChain.middle.quaternion.clone();
++        const ikEffectorQuat = leftChain.effector.quaternion.clone();
++        const w = this.leftArmIK.weight;
++        leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
++        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
++        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
++        this.applyWristOrientation("left", leftChain, leftHand, w);
++      }
+     }
+-    addLayer(layer) {
+-        this.layers.set(layer.id, layer);
++    if (rightChain && rightHand) {
++      if (this.rightArmIK.weight > 1e-3) {
++        const animRootQuat = rightChain.root.quaternion.clone();
++        const animMiddleQuat = rightChain.middle.quaternion.clone();
++        const animEffectorQuat = rightChain.effector.quaternion.clone();
++        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
++          const rightShoulder = state.bones.get("RightShoulder");
++          if (rightShoulder) {
++            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
++              rightHand.targetPosition,
++              "right",
++              this.rightShoulderRestY,
++              rightChain.totalLength
++            );
++            this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
++            rightShoulder.quaternion.copy(this.rightClavicleRestQuat).multiply(this.rightClavicleQuat);
++            rightShoulder.updateMatrixWorld(true);
++          }
++        }
 +        const rightTarget = this.computeSocketTarget(
 +          "right",
 +          rightChain,
@@ -6192,8 +6199,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +          this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
 +          this.rightPoleVector.normalize();
 +          target.poleHint = this.rightPoleVector.clone();
-         }
--        this.skeleton.updateMatrices();
++        }
 +        this.applyReachEscalation("right", rightChain, target, state);
 +        this.ikSolver.solveAndApply(rightChain, target);
 +        const ikRootQuat = rightChain.root.quaternion.clone();
@@ -6206,16 +6212,19 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +        this.applyWristOrientation("right", rightChain, rightHand, w);
 +      }
      }
--    addLayer(layer) {
--        this.layers.set(layer.id, layer);
+-    removeLayer(layerId) {
+-        this.layers.delete(layerId);
 +    const leanMag = this._frameLeanVec.length();
 +    const leanTargetAngle = leanMag > 1e-4 ? Math.min(MAX_REACH_LEAN, leanMag * REACH_LEAN_GAIN) : 0;
 +    if (leanMag > 1e-4) {
 +      this._v1.copy(this._frameLeanVec).normalize();
 +      this.reachLeanDirSmoothed.lerp(this._v1, this.smoothingFactor).normalize();
      }
--    removeLayer(layerId) {
--        this.layers.delete(layerId);
+-    setLayerWeight(layerId, weight) {
+-        const layer = this.layers.get(layerId);
+-        if (layer) {
+-            layer.weight = Math.max(0, Math.min(1, weight));
+-        }
 +    this.reachLeanAngleSmoothed += (leanTargetAngle - this.reachLeanAngleSmoothed) * this.smoothingFactor;
 +    this.skeleton.updateMatrices();
 +  }
@@ -6235,11 +6244,24 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +      this.gripCalibrated = true;
 +      return;
      }
--    setLayerWeight(layerId, weight) {
--        const layer = this.layers.get(layerId);
--        if (layer) {
--            layer.weight = Math.max(0, Math.min(1, weight));
--        }
+-    async transitionTo(pose, config) {
+-        return new Promise((resolve) => {
+-            this.transitionStart = AvatarAnimator.cloneBodyPose(this.currentPose);
+-            this.transitionEnd = pose;
+-            this.transitionConfig = config;
+-            this.transitionProgress = 0;
+-            this.transitioning = true;
+-            // Wait for transition to complete
+-            const checkComplete = () => {
+-                if (!this.transitioning) {
+-                    resolve();
+-                }
+-                else {
+-                    requestAnimationFrame(checkComplete);
+-                }
+-            };
+-            requestAnimationFrame(checkComplete);
+-        });
 +    const calibrateSide = (hand, fingers) => {
 +      const index1 = fingers.get("Index1");
 +      const pinky1 = fingers.get("Pinky1");
@@ -6262,30 +6284,14 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +      this.leftGripAxisLocal = left.axis;
 +      this.leftPalmLocal = left.palm;
      }
--    async transitionTo(pose, config) {
--        return new Promise((resolve) => {
--            this.transitionStart = AvatarAnimator.cloneBodyPose(this.currentPose);
--            this.transitionEnd = pose;
--            this.transitionConfig = config;
--            this.transitionProgress = 0;
--            this.transitioning = true;
--            // Wait for transition to complete
--            const checkComplete = () => {
--                if (!this.transitioning) {
--                    resolve();
--                }
--                else {
--                    requestAnimationFrame(checkComplete);
--                }
--            };
--            requestAnimationFrame(checkComplete);
--        });
+-    setSmoothBlending(enabled) {
+-        this.smoothBlending = enabled;
 +    if (right) {
 +      this.rightGripAxisLocal = right.axis;
 +      this.rightPalmLocal = right.palm;
      }
--    setSmoothBlending(enabled) {
--        this.smoothBlending = enabled;
+-    setSmoothingFactor(factor) {
+-        this.smoothingFactor = Math.max(0, Math.min(1, factor));
 +    this.gripCalibrated = true;
 +  }
 +  /**
@@ -6333,16 +6339,23 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +        this._frameLeanVec.addScaledVector(this._v3, deficit);
 +      }
      }
--    setSmoothingFactor(factor) {
--        this.smoothingFactor = Math.max(0, Math.min(1, factor));
+-    setExternalSpinePitch(radians) {
+-        this.externalSpinePitchRad = radians;
 +    extQuat.slerp(hasDesired ? this._q3 : this._q4.identity(), this.smoothingFactor);
 +    const clavRebased = this._clavicleRaiseEnabled && this.clavicleRaiser !== null && this.shoulderRestCached;
 +    if (clav && clavRebased) {
 +      clav.quaternion.premultiply(extQuat);
 +      clav.updateMatrixWorld(true);
      }
--    setExternalSpinePitch(radians) {
--        this.externalSpinePitchRad = radians;
+-    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
+-    togglePoleVectors() {
+-        this._poleVectorsEnabled = !this._poleVectorsEnabled;
+-        if (!this._poleVectorsEnabled) {
+-            // Reset to default backward poles so difference is visible immediately
+-            this.leftPoleVector.set(0, 0, -1);
+-            this.rightPoleVector.set(0, 0, -1);
+-        }
+-        return this._poleVectorsEnabled;
 +  }
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
@@ -6359,10 +6372,30 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +    chain.root.updateMatrixWorld(true);
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
-+    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
-+    if (this._v1.dot(this._v2) < 0) this._v2.negate();
++    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
-+    AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
++    eff.getWorldPosition(this._v3);
++    chain.middle.getWorldPosition(this._v4);
++    this._v3.sub(this._v4);
++    if (this._v3.lengthSq() > 1e-10) {
++      this._v3.normalize();
++      const d = this._q2.x * this._v3.x + this._q2.y * this._v3.y + this._q2.z * this._v3.z;
++      this._q5.set(this._v3.x * d, this._v3.y * d, this._v3.z * d, this._q2.w).normalize();
++      this._q4.copy(this._q5).invert().premultiply(this._q2);
++      AvatarAnimator.clampQuatAngle(this._q5, MAX_WRIST_TWIST);
++      AvatarAnimator.clampQuatAngle(this._q4, MAX_WRIST_SWING);
++      this._q2.copy(this._q4).multiply(this._q5);
++    } else {
++      AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
+     }
+-    /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
+-    toggleClavicleRaise() {
+-        this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
+-        if (!this._clavicleRaiseEnabled) {
+-            this.leftClavicleQuat.identity();
+-            this.rightClavicleQuat.identity();
+-        }
+-        return this._clavicleRaiseEnabled;
 +    this._q3.copy(this._q2).multiply(this._q1);
 +    eff.parent.getWorldQuaternion(this._q4);
 +    this._q3.premultiply(this._q4.invert());
@@ -6373,15 +6406,9 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +      if (side === "left") this.leftWristInit = true;
 +      else this.rightWristInit = true;
      }
--    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
--    togglePoleVectors() {
--        this._poleVectorsEnabled = !this._poleVectorsEnabled;
--        if (!this._poleVectorsEnabled) {
--            // Reset to default backward poles so difference is visible immediately
--            this.leftPoleVector.set(0, 0, -1);
--            this.rightPoleVector.set(0, 0, -1);
--        }
--        return this._poleVectorsEnabled;
+-    /** Skip Hips counter-rotation (exhibit performers with planted feet) */
+-    setSkipHipsTwist(skip) {
+-        this._skipHipsTwist = skip;
 +    wristState.slerp(this._q3, WRIST_SMOOTHING);
 +    eff.quaternion.slerp(wristState, ikWeight);
 +  }
@@ -6396,12 +6423,14 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +    if (layer) {
 +      layer.weight = Math.max(0, Math.min(1, weight));
      }
--    /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
--    toggleClavicleRaise() {
--        this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
--        if (!this._clavicleRaiseEnabled) {
--            this.leftClavicleQuat.identity();
--            this.rightClavicleQuat.identity();
+-    /** Set spine twist enabled/disabled */
+-    setSpineTwistEnabled(enabled) {
+-        this._spineTwistEnabled = enabled;
+-        if (!enabled) {
+-            this.spineTwistQuats.spine1.identity();
+-            this.spineTwistQuats.spine2.identity();
+-            this.spineTwistQuats.neck.identity();
+-            this.spineTwistQuats.head.identity();
 +  }
 +  async transitionTo(pose, config) {
 +    return new Promise((resolve) => {
@@ -6416,11 +6445,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +        } else {
 +          requestAnimationFrame(checkComplete);
          }
--        return this._clavicleRaiseEnabled;
--    }
--    /** Skip Hips counter-rotation (exhibit performers with planted feet) */
--    setSkipHipsTwist(skip) {
--        this._skipHipsTwist = skip;
 +      };
 +      requestAnimationFrame(checkComplete);
 +    });
@@ -6440,16 +6464,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +    if (!this._poleVectorsEnabled) {
 +      this.leftPoleVector.set(0, 0, -1);
 +      this.rightPoleVector.set(0, 0, -1);
-     }
--    /** Set spine twist enabled/disabled */
--    setSpineTwistEnabled(enabled) {
--        this._spineTwistEnabled = enabled;
--        if (!enabled) {
--            this.spineTwistQuats.spine1.identity();
--            this.spineTwistQuats.spine2.identity();
--            this.spineTwistQuats.neck.identity();
--            this.spineTwistQuats.head.identity();
--        }
++    }
 +    return this._poleVectorsEnabled;
 +  }
 +  /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
@@ -12906,7 +12921,7 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
    ): SpineTwistResult;
  }
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d02ee3207 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240ef36a678 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -12919,7 +12934,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
  import type {
    IAvatarAnimator,
    HandPose,
-@@ -13,13 +14,51 @@ import type {
+@@ -13,13 +14,59 @@ import type {
    AnimationLayer,
    TransitionConfig,
    PositionOffset,
@@ -12943,6 +12958,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +/** Max wrist swing toward the staff axis. Beyond this the alignment is
 + *  anatomically implausible - bend partway and let the rest read as strain. */
 +const MAX_WRIST_SWING = (55 * Math.PI) / 180;
++
++/** Max wrist correction ABOUT the forearm axis. Rolling the fist is
++ *  pronation/supination - far cheaper than radial/ulnar deviation - so the
++ *  twist share of the staff-axis correction gets its own, larger clamp.
++ *  Without the split, a vertical staff at a sideways-extended arm (the
++ *  weave's quarter phases) demands ~90 of what is mostly cheap roll, and a
++ *  single 55 clamp leaves the hand visibly off the shaft. */
++const MAX_WRIST_TWIST = (100 * Math.PI) / 180;
 +
 +/** Per-frame smoothing for the wrist alignment (higher = snappier). */
 +const WRIST_SMOOTHING = 0.25;
@@ -12973,7 +12996,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +124,68 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +132,70 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -12987,8 +13010,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +  private leftPalmLocal: Vector3 | null = null;
 +  private rightPalmLocal: Vector3 | null = null;
 +  private gripCalibrated = false;
-+  // Smoothed wrist local quaternions - persistent so a staff-axis sign
-+  // flip reads as a natural regrasp instead of an instant 180 snap.
++  // Smoothed wrist local quaternions - persistent across frames so the
++  // directed staff-axis goal is followed continuously, never snapped to.
 +  private leftWristQuat = new Quaternion();
 +  private rightWristQuat = new Quaternion();
 +  private leftWristInit = false;
@@ -13026,6 +13049,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +  private readonly _q2 = new Quaternion();
 +  private readonly _q3 = new Quaternion();
 +  private readonly _q4 = new Quaternion();
++  private readonly _q5 = new Quaternion();
++  private readonly _v4 = new Vector3();
 +  private readonly _m1 = new Matrix4();
 +  private readonly _socketTargetLeft = new Vector3();
 +  private readonly _socketTargetRight = new Vector3();
@@ -13042,7 +13067,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +287,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +297,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -13052,7 +13077,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +307,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +317,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -13060,7 +13085,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +321,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +331,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -13068,7 +13093,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +331,25 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +341,25 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
  
@@ -13094,7 +13119,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -385,6 +508,15 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -385,6 +518,15 @@ export class AvatarAnimator implements IAvatarAnimator {
      const leftChain = this.skeleton.getLeftArmChain();
      const rightChain = this.skeleton.getRightArmChain();
  
@@ -13110,7 +13135,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +524,30 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +534,30 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -13141,7 +13166,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +601,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +611,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -13151,7 +13176,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +668,90 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +678,90 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -13243,7 +13268,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +762,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +772,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -13252,7 +13277,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +775,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +785,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -13267,7 +13292,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -558,6 +801,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -558,6 +811,10 @@ export class AvatarAnimator implements IAvatarAnimator {
            target.poleHint = this.leftPoleVector.clone();
          }
  
@@ -13278,7 +13303,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
  
-@@ -572,13 +819,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +829,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -13294,7 +13319,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +837,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +847,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -13303,7 +13328,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +850,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +860,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -13318,7 +13343,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -620,6 +876,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -620,6 +886,10 @@ export class AvatarAnimator implements IAvatarAnimator {
            target.poleHint = this.rightPoleVector.clone();
          }
  
@@ -13329,7 +13354,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
  
-@@ -634,13 +894,215 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +904,245 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -13493,10 +13518,14 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
-+   * wrist orientation goal. Swing-only (no roll about the staff), clamped
-+   * to anatomical range, sign-disambiguated (staff ends are
-+   * interchangeable, pick the smaller swing), and smoothed so a sign flip
-+   * reads as a regrasp rather than a snap.
++   * wrist orientation goal. Twist/swing split, clamped to anatomical
++   * range, and THUMB-LOCKED: the staff ends are NOT interchangeable. The
++   * knuckle line (Index1->Pinky1, pinky-ward) tracks the staff's pinky
++   * end (-Y) as a directed constraint, so the hand can never take the
++   * flipped solution - a real grip cannot swap which end the thumb faces
++   * without regrasping. Demand beyond the clamps reads as strain;
++   * absorbing it is the body's job (plane sweep, hand travel, stance
++   * yaw), not the wrist's.
 +   */
 +  private applyWristOrientation(
 +    side: "left" | "right",
@@ -13518,13 +13547,39 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +
-+    // Staff long axis in world space (+Y of the prop cylinder)
-+    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
-+    if (this._v1.dot(this._v2) < 0) this._v2.negate();
++    // Staff PINKY end in world space (-Y; +Y is the thumb end / T-bar).
++    // Directed on purpose: no nearest-end negate, ever.
++    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
 +
-+    // Swing-only correction, clamped to anatomical range
++    // Correction that carries the knuckle line onto the directed staff axis
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
-+    AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
++
++    // Split the correction about the forearm axis: the twist share is
++    // pronation/supination (cheap - big clamp), the swing share is
++    // radial/ulnar deviation (expensive - small clamp). One combined clamp
++    // starved the cheap roll and left the hand off the shaft at the
++    // weave's vertical-staff quarters.
++    eff.getWorldPosition(this._v3);
++    chain.middle.getWorldPosition(this._v4);
++    this._v3.sub(this._v4);
++    if (this._v3.lengthSq() > 1e-10) {
++      this._v3.normalize();
++      // Twist = projection of the correction onto the forearm axis
++      const d =
++        this._q2.x * this._v3.x +
++        this._q2.y * this._v3.y +
++        this._q2.z * this._v3.z;
++      this._q5
++        .set(this._v3.x * d, this._v3.y * d, this._v3.z * d, this._q2.w)
++        .normalize();
++      // Swing = correction with the twist share removed
++      this._q4.copy(this._q5).invert().premultiply(this._q2);
++      AvatarAnimator.clampQuatAngle(this._q5, MAX_WRIST_TWIST);
++      AvatarAnimator.clampQuatAngle(this._q4, MAX_WRIST_SWING);
++      this._q2.copy(this._q4).multiply(this._q5);
++    } else {
++      AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
++    }
 +
 +    // Desired world orientation -> hand-local
 +    this._q3.copy(this._q2).multiply(this._q1);
