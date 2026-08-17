@@ -19,6 +19,7 @@ import type { LedPassPayload } from "../domain/led-pass";
 import {
   BLOOM_COMPOSITE_STRENGTH,
   BLOOM_TENT_RADIUS_FRAME_FRACTION,
+  DISPLAY_EXPOSURE_GAIN,
   EYE_TIME_CONSTANT_S,
   GLARE_WEIGHT_MAX,
   GLARE_WEIGHT_MIN,
@@ -309,6 +310,7 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
 const LED_DISPLAY_FRAG_WGSL = /* wgsl */ `
 struct Uniforms {
   bloomStrength: f32,
+  exposure: f32,
 };
 
 @group(0) @binding(0) var<uniform> u: Uniforms;
@@ -354,6 +356,12 @@ fn agx(cIn: vec3f) -> vec3f {
   c = (log2(c) - AGX_MIN_EV) / (AGX_MAX_EV - AGX_MIN_EV);
   c = clamp(c, vec3f(0.0), vec3f(1.0));
   c = agxCurve(c);
+  // The published AgX look, between the curve and the outset matrix. Base AgX
+  // is a working space, not a finished image; without this, overlapping
+  // coloured passes average to neutral grey.
+  let luma = dot(c, vec3f(0.2126, 0.7152, 0.0722));
+  c = pow(max(c, vec3f(0.0)), vec3f(1.35));
+  c = vec3f(luma) + 1.4 * (c - vec3f(luma));
   c = AGX_OUT * c;
   c = pow(max(vec3f(0.0), c), vec3f(2.2));
   c = REC2020_TO_SRGB * c;
@@ -365,10 +373,11 @@ fn main(@location(0) uv: vec2f) -> @location(0) vec4f {
   let scene = textureSample(t_scene, samp, uv).rgb;
   let bloom = textureSample(t_bloom, samp, uv).rgb;
 
-  var combined = mix(scene, bloom, u.bloomStrength);
+  // Added, not lerped: scattering puts light where the source is not.
+  var combined = scene + bloom * u.bloomStrength;
   combined = select(combined, vec3f(0.0), combined != combined);
 
-  let mapped = agx(max(combined, vec3f(0.0)));
+  let mapped = agx(max(combined, vec3f(0.0)) * u.exposure);
 
   // Straight alpha. Alpha is the peak channel rather than Rec.709 luminance:
   // reconstruction divides RGB by alpha, and luminance sits below the peak for
@@ -796,7 +805,7 @@ export class WebGPULedExecutor {
     queue.writeBuffer(
       this.displayUniform!,
       0,
-      new Float32Array([BLOOM_COMPOSITE_STRENGTH, 0, 0, 0]),
+      new Float32Array([BLOOM_COMPOSITE_STRENGTH, DISPLAY_EXPOSURE_GAIN, 0, 0]),
     );
   }
 

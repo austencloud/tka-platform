@@ -460,13 +460,39 @@ export function glareFalloffExponent(weight: number): number {
 export const BLOOM_TENT_RADIUS_FRAME_FRACTION = 0.005;
 
 /**
- * Weight of the glare pyramid in the final composite lerp.
+ * Gain on the glare pyramid where it is ADDED to the scene.
  *
- * Bloom is a veil over the scene, not an addition to it, so this cannot
- * brighten the image — which is what keeps the emitter's own flux budget the
- * only thing that sets exposure.
+ * This was a lerp weight of 0.06 — `mix(scene, bloom, 0.06)` — on the reasoning
+ * that bloom is a veil over the scene rather than an addition to it, so it must
+ * never brighten the image and the emitter's flux budget stays the only thing
+ * that sets exposure. That is a fair model of lens veiling glare and it is why
+ * the effect had no glow at all: a lerp cannot put light anywhere the scene did
+ * not already have it, and at 0.06 it only dimmed the scene by six percent.
+ *
+ * Scattering in a lens and in the eye is additive — light from a bright source
+ * lands where the source is not — so it is added here, the way the fluid
+ * renderer's composite already does it. Exposure stays owned by the flux budget
+ * because the addition is bounded and happens before the tone map, so a halo
+ * that runs hot rolls off through AgX rather than clipping to a flat disc.
  */
-export const BLOOM_COMPOSITE_STRENGTH = 0.06;
+export const BLOOM_COMPOSITE_STRENGTH = 1.1;
 
-/** Ceiling on the composite weight. At 1.0 the veil replaces the scene. */
-export const BLOOM_COMPOSITE_STRENGTH_MAX = 0.95;
+/** Ceiling on the additive gain, so a preset cannot wash the frame to white. */
+export const BLOOM_COMPOSITE_STRENGTH_MAX = 2.5;
+
+/**
+ * Linear gain applied to the composite before the tone map.
+ *
+ * AgX places display white near 2^4 scene-linear, and the accumulated LED
+ * scene peaks well below that, so every pixel landed in the low-contrast foot
+ * of the curve: a measured frame of the rainbow sweep had zero clipped pixels
+ * and an average lit colour of (59,53,55) — neutral grey. An LED reads as a
+ * light source because its core blows out to white while the halo around it
+ * keeps hue, and nothing blows out at that exposure.
+ *
+ * This is the photographic exposure control, not a brightness slider: it moves
+ * the whole scene up the curve so cores reach white, and AgX's shoulder decides
+ * what that looks like. The per-look `brightness` control still scales flux
+ * upstream of it.
+ */
+export const DISPLAY_EXPOSURE_GAIN = 6;

@@ -31,6 +31,7 @@ import {
 	CAMERA_EXPOSURE_MAX_S,
 	CAMERA_EXPOSURE_MIN_S,
 	CAMERA_GAIN_REFERENCE_S,
+	DISPLAY_EXPOSURE_GAIN,
 	EYE_TIME_CONSTANT_S,
 	GLARE_WEIGHT_MAX,
 	GLARE_WEIGHT_MIN,
@@ -481,6 +482,10 @@ export class WebGLLedRenderer {
 			(blast.noBloom || blast.spritesOnly)
 				? 0.0
 				: Math.min(BLOOM_COMPOSITE_STRENGTH, BLOOM_COMPOSITE_STRENGTH_MAX),
+		);
+		gl.uniform1f(
+			this.displayProgram!.uniforms.get("u_exposure")!,
+			DISPLAY_EXPOSURE_GAIN,
 		);
 		gl.bindVertexArray(this.quadVAO);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -1151,7 +1156,7 @@ export class WebGLLedRenderer {
 		);
 		this.displayProgram = this.buildFullscreenProgram(
 			LED_DISPLAY_FRAG,
-			["u_scene", "u_bloom", "u_bloomStrength"],
+			["u_scene", "u_bloom", "u_bloomStrength", "u_exposure"],
 		);
 
 		const all = [

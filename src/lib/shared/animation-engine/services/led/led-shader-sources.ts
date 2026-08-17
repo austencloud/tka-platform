@@ -319,6 +319,7 @@ in vec2 v_uv;
 uniform sampler2D u_scene;
 uniform sampler2D u_bloom;
 uniform float u_bloomStrength;
+uniform float u_exposure;
 
 out vec4 fragColor;
 
@@ -330,16 +331,31 @@ const float AGX_MIN_EV = -12.47393, AGX_MAX_EV = 4.026069;
 
 vec3 agxCurve(vec3 x){ vec3 x2=x*x, x4=x2*x2; return 15.5*x4*x2 - 40.14*x4*x + 31.96*x4 - 6.868*x2*x + 0.4298*x2 + 0.1191*x - 0.00232; }
 
-vec3 agx(vec3 c){ c = SRGB_TO_2020*c; c = AGX_IN*c; c = max(c, 1e-10); c = (log2(c)-AGX_MIN_EV)/(AGX_MAX_EV-AGX_MIN_EV); c = clamp(c,0.0,1.0); c = agxCurve(c); c = AGX_OUT*c; c = pow(max(vec3(0.0),c), vec3(2.2)); c = REC2020_TO_SRGB*c; return clamp(c,0.0,1.0); }
+// The published AgX "look", applied between the curve and the outset matrix as
+// in the Blender and three.js implementations. Base AgX is deliberately flat —
+// it is a working space, not a finished image — and shipping it without a look
+// is what made overlapping rainbow passes average to neutral grey instead of
+// staying coloured. Punchy: unit slope, a little gamma, saturation above one.
+vec3 agxLook(vec3 c){
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = pow(max(c, vec3(0.0)), vec3(1.35));
+  return luma + 1.4 * (c - luma);
+}
+
+vec3 agx(vec3 c){ c = SRGB_TO_2020*c; c = AGX_IN*c; c = max(c, 1e-10); c = (log2(c)-AGX_MIN_EV)/(AGX_MAX_EV-AGX_MIN_EV); c = clamp(c,0.0,1.0); c = agxCurve(c); c = agxLook(c); c = AGX_OUT*c; c = pow(max(vec3(0.0),c), vec3(2.2)); c = REC2020_TO_SRGB*c; return clamp(c,0.0,1.0); }
 
 void main() {
   vec3 scene = texture(u_scene, v_uv).rgb;
   vec3 bloom = texture(u_bloom, v_uv).rgb;
 
-  vec3 combined = mix(scene, bloom, u_bloomStrength);
+  // Added, not lerped. Scattering puts light where the source is not, so a lerp
+  // could only dilute the scene and the effect had no glow at all.
+  vec3 combined = scene + bloom * u_bloomStrength;
   combined = mix(combined, vec3(0.0), notEqual(combined, combined));
 
-  vec3 mapped = agx(max(combined, vec3(0.0)));
+  // Exposure before the tone map, so cores reach AgX's shoulder and blow out to
+  // white while their halos keep hue. That contrast is what reads as a lamp.
+  vec3 mapped = agx(max(combined, vec3(0.0)) * u_exposure);
 
   // Straight alpha, because the context is premultipliedAlpha:false. Alpha is
   // the peak channel rather than Rec.709 luminance: reconstruction divides RGB
