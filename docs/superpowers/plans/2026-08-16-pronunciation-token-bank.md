@@ -286,10 +286,24 @@ Decides whether energy segmentation is good enough or forced alignment is
 needed. Reads recorded words, slices each, reports the exact-count rate, and
 writes the slices out so they can be listened to.
 
+> **Amended 2026-08-16 after code review. The script below is the initial
+> version; `scripts/measure-word-segmentation.ts` is authoritative.** The
+> decoding arithmetic is unchanged and was verified numerically on 48 kHz
+> 24-bit mono and stereo, including sign extension at both rails; post-fix
+> slices are byte-identical to pre-fix ones. What changed is everything around
+> it: a bad take no longer aborts the batch, the summary counts only attempted
+> words so a typo'd entry cannot look like a segmenter failure, slices from a
+> word whose island count disagrees with its letter count are labelled
+> `unaligned` rather than asserting a letter identity the tool cannot verify,
+> mismatches print segment times, stale slices are cleared before each run,
+> malformed input produces one readable line instead of a stack trace, and the
+> decoder accepts 32-bit float and WAVE_FORMAT_EXTENSIBLE while refusing to
+> silently reinterpret 32-bit integer PCM.
+
 **Files:**
 - Create: `scripts/measure-word-segmentation.ts`
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 Create `scripts/measure-word-segmentation.ts`:
 
@@ -463,7 +477,7 @@ function main(): void {
 main();
 ```
 
-- [ ] **Step 2: Verify the script runs and reports a clean failure without input**
+- [x] **Step 2: Verify the script runs and reports a clean failure without input**
 
 ```bash
 pnpm exec tsx scripts/measure-word-segmentation.ts
@@ -471,7 +485,7 @@ pnpm exec tsx scripts/measure-word-segmentation.ts
 
 Expected: prints the usage line and exits 1.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): phase 0 word-segmentation measurement script" -- scripts/measure-word-segmentation.ts
