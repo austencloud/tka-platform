@@ -1,6 +1,6 @@
 # Pronunciation corpus recording session
 
-Status: approved
+Status: draft — replaces the 2026-08-16 version of this file wholesale
 Date: 2026-08-16
 Supersedes parts of: `2026-08-16-pronunciation-corpus-design.md`
 
@@ -8,235 +8,323 @@ Supersedes parts of: `2026-08-16-pronunciation-corpus-design.md`
 
 The corpus design settles what the bank is and how selection reads it. Its
 capture stage is one paragraph: "displays one word at a time and advances
-without per-word approval." Everything that makes that sentence true is
-unspecified — how the tool knows a word ended, what happens when it guesses
-wrong, where the audio lands, and how a 40-minute read survives being
-interrupted.
+without per-word approval." Everything that makes that sentence true was
+unspecified.
 
 The requirement, in Austen's words: open the page, press one start button, read
 the words aloud, and have it move to the next word by itself and finish on its
-own. Nothing else to touch.
+own.
 
-That is achievable, but it puts the entire quality of the corpus behind one
-mechanism — the decision that a word is finished. This document specifies that
-mechanism and the session around it.
+## Why this document was rewritten
 
-## Relationship to the corpus design
+The first version of this spec invented its own mechanism for both halves of the
+job, and both inventions were wrong.
 
-Five amendments, each with its reason.
+**The live gate could not work as written.** It advanced when a live energy
+analyser had counted as many speech islands as the prompted word had letters,
+claiming the live count and the offline count "agree by construction." They
+cannot. `voice-activity-trimmer.ts:74` sets its threshold as
+`max(0.0015, noiseFloor * 3.2, peak * 0.055)`, where `noiseFloor` is the 20th
+percentile of frame energies across the whole word and `peak` is the maximum
+across the whole word. Both are known only after the word is over. A streaming
+detector has neither, so the two detectors disagree by construction, and the
+count gate was the entire hands-free mechanism.
 
-**1. Per-word WAVs plus `words.json`, not one session WAV plus a prompt log.**
-`scripts/measure-word-segmentation.ts:26` defines the contract the offline tools
-already read: an array of `{file, word}` beside one WAV per word. Emitting that
-directly means the session output runs through the existing harness with no
-conversion step, and it makes a re-read a single replaced file instead of an
-edit to a timeline. The audio is identical either way — capture is still
-continuous, and the per-word files are cut from it.
+**Segmenting was the wrong problem.** Finding letter boundaries by hunting for
+energy islands is segmentation — looking for units blind. We are not blind: the
+prompt tells us exactly which letters were spoken, in order. That is forced
+alignment, a different and much better-conditioned problem, and it has a mature
+offline answer. Using it changes the requirements on the recording itself: the
+200 ms inter-letter gap the energy segmenter needs disappears, so Austen reads
+naturally at his own pace, and the tokens carry the coarticulation the join and
+neighbour costs were priced for. The old design destroyed that coarticulation to
+make its own segmenter work.
 
-**2. Capture rolls to a fresh buffer about once a minute.** The corpus design
-asks for "one unbroken stream for the whole session" so that level, pitch and
-room stay fixed across the bank. That property comes from holding one
-`MediaStream` with one gain configuration, and rolling the output buffer does
-not disturb it. Holding forty-five minutes as `Float32` would be roughly 500 MB.
-The roll happens only at a detected word boundary, inside silence, and the next
-word is not displayed until the new capture is running.
+**Nobody checked for prior art.** Two projects already do the prompting side of
+this — [piper-recording-studio](https://github.com/rhasspy/piper-recording-studio)
+and [mimic-recording-studio](https://github.com/MycroftAI/mimic-recording-studio).
+Their formats and flow are borrowed below rather than reinvented.
 
-**3. Silent re-queue replaces the in-session review screen.** A flagged word
-goes back into the queue further down rather than interrupting. The review
-screen becomes an end-of-session report. This is a direct instruction, and it is
-what makes the "press start and talk" requirement literally true.
+## Architecture in one line
 
-**4. The carrier-phrase fallback for starved letters is removed.** The corpus
-design routes letters the planner cannot cover to "carrier-phrase takes through
-the existing job mode, which stays in the tool for exactly this reason." That
-path does not exist. A v2 token must satisfy `hasCoherentContext`
-(`src/lib/shared/pronunciation/pronunciation-manifest.ts:80`), which requires a
-`medial` token to declare non-null neighbours, and `isNullableLetter` requires
-those to be canonical TKA letters. A carrier take has no TKA neighbours, so it
-cannot be represented. `parsePronunciationManifest` also returns v1 **or** v2 and
-never merges them, so a v1 take cannot be spliced into a v2 bank either. Starved
-cells are instead filled by constructed words from the planner (below).
+The browser captures audio and decides only *when he has finished a word*.
+Everything about *where the letters are inside that word* happens offline, from
+the transcript, with a forced aligner.
 
-**5. Auto-advance is gated on letter count, not on silence alone.** New
-mechanism; the corpus design does not specify one.
+## Part 1 — the browser
 
-## What already exists
+### Advance detection: Silero VAD, not an energy meter
 
-`src/lib/features/lab/pronunciation-recorder/` is a complete feature, registered
-as the `pronunciation-recorder` tab in `LabModule.svelte:26`. Reused unchanged:
+`@ricky0123/vad-web` runs Silero v5 through ONNX Runtime Web in an AudioWorklet.
+It is a small neural VAD with recurrent state, so it is causal by construction —
+frame *n*'s decision uses frames 0..*n* and nothing later. That is the property
+the energy detector could not have.
 
-| Piece | Path | What it gives |
-|---|---|---|
-| `IPronunciationRecorder` | `services/contracts/IPronunciationRecorder.ts` | Device enumeration, connect, capture, `renderDelivery` as the slicer |
-| `PronunciationRecorder` | `services/implementations/PronunciationRecorder.ts` | `mediabunny` writing `pcm-s24` mono at 48 kHz — uncompressed, no codec latency |
-| `IPronunciationTakeStore` | `services/contracts/IPronunciationTakeStore.ts` | File System Access directory handle, `JSZip` fallback |
-| `segmentWordByEnergy` | `domain/voice-activity-trimmer.ts` | Energy islands, `MERGE_GAP_SECONDS = 0.2` |
+```js
+const vad = await MicVAD.new({
+  getStream: async () => stream,  // the same MediaStream the capture holds
+  model: "v5",
+  redemptionMs: WORD_END_SILENCE_MS,
+  preSpeechPadMs: 300,
+  minSpeechMs: 200,
+  baseAssetPath: "/vad/",
+  onnxWASMBasePath: "/vad/",
+  onSpeechStart, onSpeechEnd, onVADMisfire,
+});
+```
 
-`renderDelivery` rejects crops under 50 ms, which is below `MIN_SPEECH_SECONDS`
-(80 ms), so it never rejects a real letter.
+Silero v5 runs 512-sample frames at 16 kHz — 32 ms each. `redemptionMs` is how
+long non-speech must hold before the utterance is declared over, so it *is* the
+end-of-word silence: `WORD_END_SILENCE_MS = 700`, down from the library's 1400 ms
+default, which is tuned for conversational turn-taking rather than for a list of
+short words. That single number is the only silence threshold in the design,
+because there is no longer an inter-letter threshold for it to collide with.
 
-## Architecture
+`positiveSpeechThreshold` and `negativeSpeechThreshold` stay at the library
+defaults (0.3 / 0.25). They are the two knobs Phase 0 is allowed to move if the
+VAD proves trigger-happy on breath noise in Austen's room.
 
-### The word plan
+The VAD's own downsampled audio is used **only** for the advance decision and
+for segment timestamps. It is never the recording. Assets (`vad.worklet.bundle.min.js`,
+`silero_vad_v5.onnx`, the onnxruntime-web WASM) are vendored under
+`static/vad/` rather than loaded from a CDN, so the tool works offline and does
+not depend on a third-party host during a 40-minute session.
 
-`domain/corpus-plan.ts`, pure.
+Selected over TEN VAD, which benchmarks better but carries a licence term
+barring use in products competing with Agora — unacceptable for a commercial
+app — and over FireRedVAD, whose browser story is unverified. Silero is MIT and
+is the one with a maintained, proven browser binding.
 
-The bank needs a token in every one of 54 letters × 4 positions = 216 cells.
-`selectTokenPath` (`src/lib/shared/pronunciation/domain/token-selection.ts:101`)
-filters candidates on exact position equality and returns null if any cue has
-none, so a single empty cell sends every word using it to speech synthesis
-permanently. Coverage is not a quality target; it is a correctness requirement.
+### Capture: an AudioWorklet ring, no chunking
 
-Target depth is K=3 takes per cell. A word of length L yields one `initial`, one
-`final`, and L−2 `medial` tokens, so initials and finals bind at one per word:
-roughly 54K words, about 160 at K=3. Medial coverage arrives overprovisioned,
-which is where selection has the most to choose from and benefits most.
+The previous design held 60-second `mediabunny` takes and called
+`decodeAudioData` at each rollover, which puts an unbounded decode on the path
+between two words and needs a whole rollover state machine to hide it.
 
-`isolated` cannot come from any multi-letter word — `positionFor`
-(`src/lib/shared/pronunciation/pronunciation-plan.ts:114`) emits it only when a
-group holds exactly one letter. It needs its own pass of 54 solo reads. The
-Phase 0 sample in the token-bank plan records 2/3/4/6/8-letter words and
-produces zero of them.
+Instead a capture worklet writes 48 kHz mono `Float32` into a ring of
+`RING_SECONDS = 30`. At each advance the session drains
+`[speechStart − LEAD_IN, speechEnd + TAIL]` (`LEAD_IN = TAIL = 0.25 s`) out of
+the ring and encodes it directly to a 24-bit PCM WAV. There is no decode step
+anywhere, no chunk boundary, no rollover, and the word audio and the VAD
+timestamps share one sample clock. A word is roughly 2 s ≈ 380 KB; nothing
+accumulates.
 
-The planner takes current coverage counts and a candidate pool, and greedily
-picks the word that fills the most under-served cells, mixing lengths so the
-bank is not all one contour. The pool is a checked-in JSON asset built by a
-script from generated TKA sequences, because the adjacencies a real word can
-produce are exactly the adjacencies a real label can contain — the corpus
-design's reasoning, unchanged.
+`PronunciationRecorder`'s device enumeration, permission handling and gain
+configuration are kept. Its `mediabunny` capture path and `renderDelivery` are
+not used by this tool — one `MediaStream` feeds two consumers, the capture
+worklet and the VAD.
 
-When the pool leaves a cell starved, the planner constructs a filler word
-placing that letter in the position it lacks. A constructed word is a less
-honest performance than a real one, which is why it is the fallback and not the
-default, but it is the only remaining answer now that carrier takes are gone.
+### The in-session plausibility check
 
-Input: coverage counts. Output: an ordered word list.
+Forced alignment is offline, so the session still needs a cheap local answer to
+"did he actually read the whole word." It has one that does not require counting
+anything: **expected duration**.
 
-### The session queue
+Every TKA letter name has a known syllable count. The session maintains a
+running median seconds-per-syllable, seeded from the first three words and
+updated thereafter, and compares each word's captured speech duration against
+`syllables × rate`. Under `DURATION_SHORTFALL = 0.6` of expectation, the word is
+re-queued — he stopped part-way, or the VAD ended the utterance on a swallowed
+breath. Over `DURATION_OVERRUN = 1.8`, it is also re-queued, because that is a
+stumble or a restart.
 
-`domain/session-queue.ts`, pure.
+This is a coarse filter and is meant to be. The real check is offline, where the
+aligner either places every letter or does not.
 
-Holds the ordered list, the current index, and a per-word attempt count. On
-failure it reinserts the word `REQUEUE_DISTANCE = 8` places further down rather
-than immediately, so a word that failed because of how it was read gets a
-different run-up the second time. Eight is far enough that the failure is not
-adjacent and near enough that it still lands in the same sitting. If fewer than
-eight words remain, it goes to the end. `MAX_ATTEMPTS = 3` retires the word and
-records it for the end-of-session report.
+### The queue
 
-### The count gate
+Unchanged from the approved decisions: a flagged word goes back
+`REQUEUE_DISTANCE = 8` places rather than interrupting, so it gets a different
+run-up; `MAX_ATTEMPTS = 3` retires it to the end-of-session report; he is never
+asked about any of it.
 
-The crux, and the piece whose failure wastes a whole sitting.
+### Early abort — new
 
-Two silence thresholds are in play and they must not collide. Letters within a
-word are separated by more than `MERGE_GAP_SECONDS` (200 ms) or the segmenter
-merges them. A word ends with a longer pause. If the inter-letter pause drifts
-up toward the inter-word pause, a naive silence timer advances mid-word.
+The old design would keep re-queueing through a broken microphone for forty
+minutes. Random failure and systematic failure need different responses, and
+only the second is worth stopping for:
 
-The gate removes the ambiguity by using information a timer does not have: the
-prompted word's letter count. A live analyser over the `MediaStream` counts
-speech islands using the same frame size and merge gap as
-`segmentWordByEnergy`, so the live count and the offline count agree by
-construction. Advance requires **both** that the island count has reached the
-letter count **and** that silence has held for `WORD_END_SILENCE = 0.7` seconds.
-A long pause in the middle of a word cannot advance, because the count is not
-satisfied yet.
+- `ABORT_EARLY_FAILURES = 3` failures inside the first `ABORT_EARLY_WINDOW = 8`
+  words, or
+- `ABORT_CONSECUTIVE_FAILURES = 4` in a row at any point
 
-0.7 s is three and a half times `MERGE_GAP_SECONDS`, which keeps a deliberate
-inter-letter pause from reading as a word ending even before the count gate is
-consulted. It is a starting value: the session's first three words measure the
-actual gap distribution and, if the observed inter-letter median exceeds
-0.7 s / 2, the threshold rises to twice that median for the rest of the sitting.
+stops the session and shows what was measured — input level, noise floor,
+selected device — because those are the three things that are actually wrong
+when every word fails. Everything recorded so far is already on disk.
 
-If silence reaches `WORD_ABANDON_SILENCE = 3.0` seconds without the count
-arriving, the word failed: he stopped early, ran letters together, or was
-interrupted. The gate reports the failure and the queue re-queues it. He is
-never asked about it.
+If `WORD_ABANDON_SILENCE = 3.0` s pass with no speech at all after a prompt
+appears, the session pauses rather than failing the word. He walked away; that
+is not a bad take.
 
-After capture, each word's slice is re-segmented offline by
-`segmentWordByEnergy` with the expected count. Disagreement between the live
-gate and the offline segmenter flags the word — the live analyser runs on a
-different buffer path, so it is a check, not a duplicate.
+### The screen
 
-### Capture and chunking
+Borrowed from piper-recording-studio: current prompt large and centred, the next
+prompt small and dim beneath it so there is no cold start on the next word, a
+progress figure, an input-level meter, and one button. The button is Start
+before the session and Pause during it. Nothing else is on the screen, and
+nothing else needs to be touched.
 
-One `startTake()` spans `CHUNK_SECONDS = 60` of reading — roughly eight words,
-about 12 MB of `Float32` at 48 kHz mono. Word boundary timestamps accumulate
-against it. At the first boundary past `CHUNK_SECONDS`,
-`finishTake()` yields an `AudioBuffer`; each word's range goes through
-`renderDelivery` to a WAV blob and into the store, and a new take starts before
-the next word is displayed.
+Layout follows the required viewports in `visual-verification-mandatory.md` and
+is verified with screenshots before it is called done. `SegmentedControl` and
+`FilterChipBase` own any selector that appears (device picker); no raw chip
+buttons, no checkboxes.
 
-Boundaries are cut in the middle of the detected silence rather than at the
-speech edge, so no letter is clipped and each word keeps lead-in and tail. The
-offline segmenter re-pads with `EDGE_PADDING_SECONDS` anyway.
+### Output — an MFA corpus, directly
 
-### Output
+Into the folder chosen at session start:
 
-Into the folder chosen at session start: one WAV per word, plus `words.json` as
-`[{file, word}]`. Both are what `measure-word-segmentation.ts` reads.
+```
+01.wav   01.lab      # "Alpha Beta Gamma"
+02.wav   02.lab
+...
+words.json           # [{ file, word }]  — the existing harness contract
+session.json         # coverage counts, retired words, rate estimate
+```
 
-`words.json` is rewritten after each chunk flushes, not only at the end, so a
-crashed or closed tab leaves a directory the harness can still read.
+`<id>.wav` + `<id>.lab` beside each other **is** the Montreal Forced Aligner
+corpus format, so the offline stage runs on the session output with no
+conversion. `words.json` is the contract `scripts/measure-word-segmentation.ts:26`
+already reads. Both are written per word, not at the end, so a closed tab leaves
+a directory both tools can still read.
 
-Session state — coverage counts, retired words, the folder name — persists so a
-sitting can end at any point and resume at the thinnest cells.
+No File System Access support falls back to the existing zip path.
 
-## Failure handling
+## Part 2 — offline
 
-**Word does not segment.** Re-queued silently. Three strikes retires it to the
-report.
+### Forced alignment: MFA 3.0
 
-**Misread word with the right letter count.** Not detectable without recognition
-and out of scope, as in the corpus design. The listening pass remains the real
-gate.
+MFA 3.0 reports mean boundary errors below 15 ms and is state of the art or near
+it across the datasets in arXiv:2606.18466, benchmarked against both classic and
+neural aligners. It is worth being explicit about why the modern-sounding option
+is the wrong one here: end-to-end neural ASR with word timestamps (Whisper and
+its derivatives) is *worse* at this, because it is trained to get the string
+right, not the frame. MFA keeps an HMM-GMM acoustic model precisely for
+boundary precision.
 
-**Microphone lost mid-session.** Capture stops, the current chunk flushes with
-the words completed so far, and the session pauses with the reason shown. Resume
-reconnects and continues.
+`tools/pronunciation/align.py`:
 
-**No File System Access support.** The store already falls back to a zip
-download. `words.json` goes into the zip.
+```
+mfa validate  <corpus> tka_letters english_us_arpa
+mfa align     <corpus> tka_letters english_us_arpa <out> --clean --fine_tune
+```
 
-**Starved cells at the end.** Reported by letter and position, with the
-constructed filler words needed to close them offered as a short follow-up
-session.
+MFA installs through conda (`conda install -c conda-forge montreal-forced-aligner`)
+because it ships Kaldi binaries. It stays entirely out of the app: it is a
+developer tool that runs over a session directory, the way the Blender export
+scripts are.
+
+**The dictionary.** `tka_letters` extends `english_us_arpa`. Most TKA letter
+names are already in it — alpha, beta, gamma, sigma, psi, theta, tau, phi, chi,
+xi, omega, dash, and the Latin letters. `mfa validate` writes the remainder to
+`oovs_found.txt`, and those get hand-written ARPAbet entries in
+`tools/pronunciation/tka-letters.dict`. That file is checked in; it is small,
+stable, and it is the thing that makes the whole offline stage reproducible.
+
+The aligner emits a TextGrid per word with word-level and phone-level intervals.
+Word intervals are the letter boundaries. `tools/pronunciation/cut-tokens.py`
+reads them, cuts each letter's span out of the 48 kHz WAV with a small symmetric
+margin, and writes the token WAVs plus the v2 bank entries — `position`,
+`previousLetter`, `nextLetter`, `sourceWord`, `indexInWord`, `groupLength`. The
+features (`durationMs`, `rmsDb`, `f0StartHz`, `f0EndHz`) continue to come from
+`audio-features.ts`, which is already tested to the level this needs.
+
+### Misread detection — reopened
+
+The old spec declared this out of scope, on the grounds that it needs
+recognition. It does need recognition, and recognition is now available: with
+Python in the project, `tools/pronunciation/verify.py` runs faster-whisper over
+each word WAV and compares the transcript against the known letter names. Where
+they disagree, the word is listed for a re-read.
+
+This is not a boundary tool and is not used as one — it is a second opinion on
+*what was said*, which is exactly the failure the count gate could never see and
+the aligner will happily paper over by forcing the expected letters onto
+whatever audio it was given. It runs after alignment, over material already on
+disk, and costs nothing in the session.
+
+The listening pass remains the final gate.
+
+## What the corpus design must change
+
+The parent spec is amended in three places, and the amendments are larger than
+the previous set because the alignment decision reaches back into capture.
+
+1. **§2 Capture — the inter-letter gap requirement is deleted.** Reading with
+   deliberate 200 ms gaps existed only to feed the energy segmenter. Austen
+   reads naturally.
+2. **§3 Segmentation — replaced by forced alignment.** `segmentWordByEnergy`
+   stays in the tree as the Phase 0 diagnostic and as the fallback when MFA is
+   not installed, but it is no longer the corpus's segmenter.
+3. **The coarticulation premise is repaired.** `NEIGHBOUR_MISMATCH_COST = 1`
+   assumes tokens carry the influence of the letters beside them. Natural
+   reading produces that; gap-separated reading did not. The review's sharpest
+   finding is answered by the recording method rather than by re-pricing the
+   cost.
+
+The carrier-phrase fallback removal stands, for the reason established
+previously: a carrier take cannot satisfy `hasCoherentContext`
+(`pronunciation-manifest.ts:80`), and `parsePronunciationManifest` never merges
+v1 into v2. Starved cells are filled by constructed words from the planner.
+
+## The word plan
+
+Unchanged in substance. 54 letters × 4 positions = 216 cells, target depth K=3.
+`selectTokenPath` (`token-selection.ts:101`) returns null when any cue has no
+candidate at its exact position, so coverage is a correctness requirement, not a
+quality target.
+
+A word of length L yields one `initial`, one `final`, and L−2 `medial` tokens,
+so initials and finals bind at one per word: about 160 words at K=3. `isolated`
+comes only from a single-letter group (`pronunciation-plan.ts:114`) and needs
+its own pass of 54 solo reads.
+
+The planner greedily picks the word filling the most under-served cells, mixing
+lengths, from a checked-in pool built from generated TKA sequences. Where the
+pool starves a cell it constructs a filler word placing that letter in the
+position it lacks.
 
 ## What is deleted
 
-`domain/recording-jobs.ts` and the job-mode UI in `RecordingWorkspace.svelte` /
-`RecordingInventory.svelte`. This is the 216 carrier-phrase take model the
-corpus approach replaces, and amendment 4 establishes that its output cannot
-enter a v2 bank. `domain/recording-manifest.ts` builds a v1 manifest and goes
-with it.
+`domain/recording-jobs.ts`, `domain/recording-manifest.ts`, and the job-mode UI
+in `RecordingWorkspace.svelte` / `RecordingInventory.svelte` — the 216
+carrier-phrase model, whose output cannot enter a v2 bank.
 
-`TakeWaveform.svelte` and the trim UI stay: the end-of-session report needs to
-show a flagged word's waveform.
+`TakeWaveform.svelte` stays; the end-of-session report shows flagged words.
 
 ## Testing
 
-The planner, the queue, and the count gate are pure and get real fixtures.
+Pure units get real fixtures. The standard of proof is mutation: a test that has
+not been observed to fail is not evidence.
 
-- **Planner:** biases toward starved cells, mixes lengths, terminates, emits
-  filler words only when the pool cannot cover a cell, and reaches all 216
-  cells at K=3 from an empty start.
-- **Queue:** re-queues at a distance rather than immediately, retires at three
-  attempts, and reports retired words.
-- **Count gate:** advances only when count and silence are both satisfied; does
-  not advance on a long mid-word pause; reports failure when the count never
-  arrives. Verified by mutation — removing the count condition must fail a
-  test, or the gate is untested.
-- **Session state machine:** driven against a fake recorder and a fake store,
-  asserting chunk rollover writes every word in the chunk and that `words.json`
-  is rewritten per chunk.
-- **Output contract:** a completed fake session produces a directory
-  `measure-word-segmentation.ts` reads without error.
+- **Planner** — biases toward starved cells, mixes lengths, terminates, emits
+  filler words only when the pool cannot cover a cell, reaches all 216 cells at
+  K=3 from empty.
+- **Queue** — re-queues at a distance, retires at three attempts, reports
+  retired words.
+- **Plausibility check** — flags a word cut short, flags a stumble, passes a
+  normal read, and tracks a rate that drifts across a session. Removing the
+  duration comparison must fail a test.
+- **Early abort** — fires on the early window and on the consecutive run, and
+  does not fire on the same number of failures spread across a long session.
+- **Ring drain** — a word straddling the ring's wrap point comes out with its
+  samples in order and its lead-in intact. This is the failure that would
+  corrupt audio silently.
+- **Session machine** — against a fake VAD and a fake store: every advance
+  writes a WAV, a `.lab`, and a `words.json` entry before the next prompt shows.
+- **Output contract** — a completed fake session produces a directory that
+  `measure-word-segmentation.ts` reads without error and that `mfa validate`
+  accepts.
 
-The listening pass over written slices remains the quality gate, unchanged.
+The aligner itself is not unit-tested; it is a pinned external tool. What is
+checked is that `cut-tokens.py` reproduces known boundaries from a hand-written
+TextGrid, and that the bank it writes parses under `isPronunciationTokenBank`.
 
 ## Open
 
-Phase 0 has not run. If energy segmentation misses the decision rule, forced
-alignment replaces `segmentWordByEnergy` offline. The live count gate is
-unaffected — it needs an island count, not a correct one, and the offline
-disagreement check absorbs the difference.
+Phase 0 has not run. It is now a sanity check rather than a go/no-go: record ten
+words, run the aligner, listen to the cut tokens. The decision it used to gate —
+whether energy segmentation is good enough — has been made by choosing not to
+depend on it.
+
+The MFA dictionary's OOV set is unknown until `mfa validate` runs once. That
+list is the first concrete task.
