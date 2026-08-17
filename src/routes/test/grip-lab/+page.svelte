@@ -71,6 +71,10 @@
     playing: boolean;
     planeSweepDeg: number;
     handTravelCm: number;
+    weaveAuto: boolean;
+    weaveDepthDeg: number;
+    weaveTravelAmpCm: number;
+    weavePhaseDeg: number;
   }
 
   function loadPersisted(): PersistedState {
@@ -82,6 +86,10 @@
       playing: true,
       planeSweepDeg: 0,
       handTravelCm: 0,
+      weaveAuto: false,
+      weaveDepthDeg: 180,
+      weaveTravelAmpCm: 15,
+      weavePhaseDeg: 0,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -115,6 +123,22 @@
           typeof parsed.handTravelCm === "number"
             ? Math.max(-40, Math.min(40, parsed.handTravelCm))
             : fallback.handTravelCm,
+        weaveAuto:
+          typeof parsed.weaveAuto === "boolean"
+            ? parsed.weaveAuto
+            : fallback.weaveAuto,
+        weaveDepthDeg:
+          typeof parsed.weaveDepthDeg === "number"
+            ? Math.max(0, Math.min(180, parsed.weaveDepthDeg))
+            : fallback.weaveDepthDeg,
+        weaveTravelAmpCm:
+          typeof parsed.weaveTravelAmpCm === "number"
+            ? Math.max(-40, Math.min(40, parsed.weaveTravelAmpCm))
+            : fallback.weaveTravelAmpCm,
+        weavePhaseDeg:
+          typeof parsed.weavePhaseDeg === "number"
+            ? Math.max(-180, Math.min(180, parsed.weavePhaseDeg))
+            : fallback.weavePhaseDeg,
       };
     } catch {
       return fallback;
@@ -129,6 +153,10 @@
   let playing = $state(initial.playing);
   let planeSweepDeg = $state(initial.planeSweepDeg);
   let handTravelCm = $state(initial.handTravelCm);
+  let weaveAuto = $state(initial.weaveAuto);
+  let weaveDepthDeg = $state(initial.weaveDepthDeg);
+  let weaveTravelAmpCm = $state(initial.weaveTravelAmpCm);
+  let weavePhaseDeg = $state(initial.weavePhaseDeg);
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -139,6 +167,10 @@
       playing,
       planeSweepDeg,
       handTravelCm,
+      weaveAuto,
+      weaveDepthDeg,
+      weaveTravelAmpCm,
+      weavePhaseDeg,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -169,7 +201,28 @@
   //   behind the performer, which is the direction the taught weave travels.
   // - Hand travel slides the grip fore/aft (+ toward the audience), the
   //   forward-back motion the hand needs to chase the swept plane.
-  const sweepYRad = $derived((-planeSweepDeg * Math.PI) / 180);
+  // ── Weave autopilot ──
+  // With the wrist thumb-locked, a full 360° of staff rotation demands 360°
+  // of wrist roll — impossible. The weave answers with a plane sweep: one
+  // smooth out-and-back excursion of the spin plane per staff rotation,
+  // always toward the behind side. At full depth (180°) the plane is fully
+  // reversed exactly when the staff is half a turn in, so the two rotations
+  // cancel at the grip and wrist demand stays inside the anatomical clamp.
+  //   sweep(θ) = (depth/2) · (1 − cos(θ − φ))     0 → depth → 0 per rotation
+  //   travel(θ) = amp · sin(θ − φ)                fore/aft chase, ± per half
+  const weaveDeltaRad = $derived(
+    ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
+  );
+  const effSweepDeg = $derived(
+    weaveAuto
+      ? (weaveDepthDeg / 2) * (1 - Math.cos(weaveDeltaRad))
+      : planeSweepDeg
+  );
+  const effTravelCm = $derived(
+    weaveAuto ? weaveTravelAmpCm * Math.sin(weaveDeltaRad) : handTravelCm
+  );
+
+  const sweepYRad = $derived((-effSweepDeg * Math.PI) / 180);
 
   // The one prop state under study: hand point + swept plane + scrubbed
   // staff angle. Built exactly like sequence playback builds its frames.
@@ -180,7 +233,7 @@
     const worldPosition = new Vector3(
       basePosition.x,
       basePosition.y,
-      basePosition.z + handTravelCm / 100
+      basePosition.z + effTravelCm / 100
     );
     const sweepQuat = new Quaternion().setFromAxisAngle(
       new Vector3(0, 1, 0),
@@ -222,6 +275,9 @@
     stanceYawDeg: 0,
     planeSweepDeg: 0,
     handTravelCm: 0,
+    weaveDepthDeg: 180,
+    weaveTravelAmpCm: 15,
+    weavePhaseDeg: 0,
   } as const;
 
   function resetAll() {
@@ -230,6 +286,9 @@
     stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg;
     planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg;
     handTravelCm = SLIDER_DEFAULTS.handTravelCm;
+    weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg;
+    weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm;
+    weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg;
   }
 
   let poseCopied = $state(false);
@@ -238,8 +297,11 @@
   async function copyPose() {
     const text =
       `point ${point} · angle ${Math.round(staffAngleDeg)}° · ` +
-      `sweep ${planeSweepDeg}° · travel ${handTravelCm}cm · ` +
+      `sweep ${Math.round(effSweepDeg)}° · travel ${Math.round(effTravelCm)}cm · ` +
       `stance ${stanceYawDeg}°` +
+      (weaveAuto
+        ? ` · weave auto (depth ${weaveDepthDeg}° · amp ${weaveTravelAmpCm}cm · phase ${weavePhaseDeg}°)`
+        : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
       await navigator.clipboard.writeText(text);
@@ -532,7 +594,102 @@
         </div>
       </div>
 
-      <div class="control-row weave-row">
+      <div class="control-row weave-row" class:auto={weaveAuto}>
+        <div class="weave-head">
+          <FilterChipBase
+            label="Weave auto"
+            mode="toggle"
+            size="sm"
+            chipColor="#ef5350"
+            active={weaveAuto}
+            ariaLabel="Toggle weave autopilot"
+            onclick={() => (weaveAuto = !weaveAuto)}
+          />
+          {#if weaveAuto}
+            <span class="weave-readout">
+              sweep {Math.round(effSweepDeg)}° · travel {Math.round(effTravelCm)} cm
+            </span>
+          {/if}
+        </div>
+
+        {#if weaveAuto}
+          <div class="slider-control">
+            <label for="grip-lab-depth">Sweep depth</label>
+            <input
+              id="grip-lab-depth"
+              type="range"
+              min="0"
+              max="180"
+              step="5"
+              list="grip-lab-depth-ticks"
+              bind:value={weaveDepthDeg}
+              ondblclick={() => (weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg)}
+            />
+            <output for="grip-lab-depth">{weaveDepthDeg}°</output>
+            <button
+              type="button"
+              class="mini-reset"
+              aria-label="Reset sweep depth"
+              disabled={weaveDepthDeg === SLIDER_DEFAULTS.weaveDepthDeg}
+              onclick={() => (weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg)}
+            >↺</button>
+            <datalist id="grip-lab-depth-ticks">
+              {#each [0, 45, 90, 135, 180] as tick (tick)}<option value={tick}></option>{/each}
+            </datalist>
+          </div>
+
+          <div class="slider-control">
+            <label for="grip-lab-travelamp">Travel amp</label>
+            <input
+              id="grip-lab-travelamp"
+              type="range"
+              min="-40"
+              max="40"
+              step="1"
+              list="grip-lab-travelamp-ticks"
+              bind:value={weaveTravelAmpCm}
+              ondblclick={() =>
+                (weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm)}
+            />
+            <output for="grip-lab-travelamp">{weaveTravelAmpCm} cm</output>
+            <button
+              type="button"
+              class="mini-reset"
+              aria-label="Reset travel amplitude"
+              disabled={weaveTravelAmpCm === SLIDER_DEFAULTS.weaveTravelAmpCm}
+              onclick={() =>
+                (weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm)}
+            >↺</button>
+            <datalist id="grip-lab-travelamp-ticks">
+              {#each [-40, -20, 0, 20, 40] as tick (tick)}<option value={tick}></option>{/each}
+            </datalist>
+          </div>
+
+          <div class="slider-control">
+            <label for="grip-lab-phase">Phase</label>
+            <input
+              id="grip-lab-phase"
+              type="range"
+              min="-180"
+              max="180"
+              step="5"
+              list="grip-lab-phase-ticks"
+              bind:value={weavePhaseDeg}
+              ondblclick={() => (weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg)}
+            />
+            <output for="grip-lab-phase">{weavePhaseDeg}°</output>
+            <button
+              type="button"
+              class="mini-reset"
+              aria-label="Reset weave phase"
+              disabled={weavePhaseDeg === SLIDER_DEFAULTS.weavePhaseDeg}
+              onclick={() => (weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg)}
+            >↺</button>
+            <datalist id="grip-lab-phase-ticks">
+              {#each [-180, -90, 0, 90, 180] as tick (tick)}<option value={tick}></option>{/each}
+            </datalist>
+          </div>
+        {:else}
         <div class="slider-control">
           <label for="grip-lab-sweep">Plane sweep</label>
           <input
@@ -582,6 +739,7 @@
             {#each [-40, -20, 0, 20, 40] as tick (tick)}<option value={tick}></option>{/each}
           </datalist>
         </div>
+        {/if}
       </div>
     </aside>
   </section>
@@ -724,6 +882,27 @@
     grid-template-columns: repeat(2, minmax(10rem, 1fr));
   }
 
+  /* Three autopilot knobs; two manual sliders. Pinned per mode so neither
+     ever strands an orphan in its row. */
+  .weave-row.auto {
+    grid-template-columns: repeat(3, minmax(9rem, 1fr));
+  }
+
+  .weave-head {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  .weave-readout {
+    color: var(--lab-muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    /* Worst case: "sweep 180° · travel −40 cm" — reserve it. */
+    min-width: 16ch;
+  }
+
   /* "-40 cm" is wider than the degree outputs; reserve its worst case so the
      slider track never resizes as the value changes. */
   .weave-row .slider-control output {
@@ -827,7 +1006,8 @@
       grid-column: 2;
     }
 
-    .weave-row {
+    .weave-row,
+    .weave-row.auto {
       grid-template-columns: 1fr;
     }
 
