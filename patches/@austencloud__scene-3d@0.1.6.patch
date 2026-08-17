@@ -5579,7 +5579,7 @@ index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..6948635ecf1d5397dc0d50cd2571c01e
 +{"version":3,"file":"AvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/AvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,EAAE,QAAQ,EAAE,IAAI,EAAyB,MAAM,OAAO,CAAC;AAEnE,OAAO,KAAK,EACV,sBAAsB,EACtB,QAAQ,EACR,SAAS,EACT,aAAa,EACd,MAAM,qCAAqC,CAAC;AAgF7C,qBAAa,qBAAsB,YAAW,sBAAsB;IAClE,OAAO,CAAC,KAAK,CAUX;IAEF,OAAO,CAAC,cAAc,CAAa;IACnC,OAAO,CAAC,QAAQ,CAAyB;IACzC,OAAO,CAAC,aAAa,CAAkB;IAEvC,gFAAgF;IAChF,OAAO,CAAC,UAAU,CAAa;IAE/B,yFAAyF;IACzF,OAAO,CAAC,YAAY,CAAa;IAE3B,SAAS,CAAC,GAAG,EAAE,MAAM,EAAE,YAAY,CAAC,EAAE,QAAQ,GAAG,OAAO,CAAC,IAAI,CAAC;IAWpE,OAAO,CAAC,WAAW;IA+DnB;;OAEG;IACH,OAAO,CAAC,YAAY;IAwBpB,OAAO,CAAC,OAAO;IAyBf,OAAO,CAAC,cAAc;IAoDtB;;;OAGG;IACH,OAAO,CAAC,cAAc;IAgDtB;;;;;;;;OAQG;IACH,OAAO,CAAC,iBAAiB;IAmDzB;;;OAGG;IACH,OAAO,CAAC,oBAAoB;IAoB5B,OAAO,CAAC,aAAa;IAQrB,QAAQ,IAAI,aAAa;IAIzB,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,OAAO,IAAI,QAAQ,GAAG,IAAI;IAI1B,cAAc,IAAI,IAAI;IAStB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IAuB7B;;;;OAIG;IACH,aAAa,IAAI,MAAM;IAIvB;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI;IAQ/B,eAAe,IAAI,MAAM;IAMzB,iBAAiB,IAAI,IAAI;IAOzB;;;OAGG;IACH,OAAO,CAAC,wBAAwB;IAgBhC,OAAO,IAAI,IAAI;CAiBhB"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb75ef276e 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..c851baf2bc603ade8e4c8db632e80e887ea1f116 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 @@ -5,8 +5,8 @@
@@ -5639,7 +5639,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,38 +129,30 @@ export class AvatarSkeletonBuilder {
+@@ -129,45 +129,54 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -5694,7 +5694,51 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb
      }
      /**
       * Map a bone to a bones map (used during hot-swap)
-@@ -452,23 +444,37 @@ export class AvatarSkeletonBuilder {
++     *
++     * A bone whose name IS a canonical name always claims that slot, and alias
++     * matches never overwrite a claimed slot. Without both rules a model with
++     * Spine/Spine1/Spine2 cascades off-by-one: "Spine1" matches canonical
++     * Spine's "spine1" alias (hijacking it), "Spine2" then lands in Spine1,
++     * and canonical Spine2 maps to nothing - so spine twist and stance yaw
++     * silently lose the chest bone's share.
+      */
+     mapBoneToMap(bone, bonesMap) {
+         const boneName = bone.name.toLowerCase();
++        // Exact canonical-name match wins outright.
++        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
++            if (boneName === standardName.toLowerCase()) {
++                bonesMap.set(standardName, bone);
++                return;
++            }
++        }
++        // Alias match fills only slots nothing has claimed yet.
+         for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
++            if (bonesMap.has(standardName))
++                continue;
+             for (const alias of aliases) {
+                 if (boneName === alias.toLowerCase()) {
+                     bonesMap.set(standardName, bone);
+@@ -189,9 +198,18 @@ export class AvatarSkeletonBuilder {
+     }
+     mapBone(bone) {
+         const boneName = bone.name.toLowerCase();
++        // Exact canonical-name match wins outright (see mapBoneToMap).
++        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
++            if (boneName === standardName.toLowerCase()) {
++                this.state.bones.set(standardName, bone);
++                return;
++            }
++        }
++        // Alias match fills only slots nothing has claimed yet.
+         for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
++            if (this.state.bones.has(standardName))
++                continue;
+             for (const alias of aliases) {
+-                // Use exact match first, then contains as fallback
+                 if (boneName === alias.toLowerCase()) {
+                     this.state.bones.set(standardName, bone);
+                     return;
+@@ -452,23 +470,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -11592,7 +11636,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d3ac09cd9 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..8dff81e23e4a384b30181e97ad03d037bd1eb61f 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -11698,7 +11742,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,28 +179,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,37 +179,40 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
@@ -11732,7 +11776,53 @@ index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d
    }
  
    /**
-@@ -535,22 +527,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+    * Map a bone to a bones map (used during hot-swap)
++   *
++   * A bone whose name IS a canonical name always claims that slot, and alias
++   * matches never overwrite a claimed slot. Without both rules a model with
++   * Spine/Spine1/Spine2 cascades off-by-one: "Spine1" matches canonical
++   * Spine's "spine1" alias (hijacking it), "Spine2" then lands in Spine1,
++   * and canonical Spine2 maps to nothing - so spine twist and stance yaw
++   * silently lose the chest bone's share.
+    */
+   private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
+     const boneName = bone.name.toLowerCase();
+ 
++    // Exact canonical-name match wins outright.
++    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
++      if (boneName === standardName.toLowerCase()) {
++        bonesMap.set(standardName, bone);
++        return;
++      }
++    }
++
++    // Alias match fills only slots nothing has claimed yet.
+     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
++      if (bonesMap.has(standardName as BoneName)) continue;
+       for (const alias of aliases) {
+         if (boneName === alias.toLowerCase()) {
+           bonesMap.set(standardName as BoneName, bone);
+@@ -227,9 +236,18 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+   private mapBone(bone: Bone): void {
+     const boneName = bone.name.toLowerCase();
+ 
++    // Exact canonical-name match wins outright (see mapBoneToMap).
++    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
++      if (boneName === standardName.toLowerCase()) {
++        this.state.bones.set(standardName, bone);
++        return;
++      }
++    }
++
++    // Alias match fills only slots nothing has claimed yet.
+     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
++      if (this.state.bones.has(standardName as BoneName)) continue;
+       for (const alias of aliases) {
+-        // Use exact match first, then contains as fallback
+         if (boneName === alias.toLowerCase()) {
+           this.state.bones.set(standardName as BoneName, bone);
+           return;
+@@ -535,22 +553,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
