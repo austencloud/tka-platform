@@ -13,8 +13,9 @@ import type {
   FireColorCurve,
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
+import type { LedSimulatorConfig } from "$lib/shared/animation-engine/domain/types/led-types";
 
-export const EFFECTS_CONFIG_VERSION = 35;
+export const EFFECTS_CONFIG_VERSION = 36;
 
 /** User-facing 2D Fire look. The renderer translates this into its internal profile. */
 export type FireRenderingStyle = "natural" | "liquid";
@@ -92,20 +93,12 @@ export interface FireIntent {
   customColors: { left: string; right: string } | null;
 }
 
-export interface LedIntent {
-  /** 1-5 discrete. */
-  brightness: number;
-  /** Pattern registry id. */
-  patternId: string;
-  /** 0.1-5.0. Pattern animation rate multiplier. */
-  patternSpeed: number;
-  /** Hex string. */
-  primaryColor: string;
-  /** Hex string. */
-  secondaryColor: string;
-  /** How colors map to the two props. */
-  colorMode: "unified" | "per-hand" | "prop-matched";
-}
+/**
+ * The LED simulator settings: which device, which strip pattern, how fast it
+ * loops, and the look. Shape is owned by the animation engine so the sampler,
+ * the renderers, and this intent layer can never drift apart.
+ */
+export type LedIntent = LedSimulatorConfig;
 
 export type CharcoalEmissionStyle =
   | "steel-wool"

@@ -66,13 +66,9 @@ import { DEFAULT_FIRE_CONFIG } from "$lib/shared/animation-engine/domain/types/f
 import type { RenderedPropSprite } from "$lib/shared/animation-engine/domain/types/rendered-prop-sprite";
 import type {
   LedFrameInput,
-  LedTipData,
+  LedSample,
 } from "$lib/shared/animation-engine/domain/types/led-types";
-import {
-  DEFAULT_LED_CONFIG,
-  PROP_BLUE,
-  PROP_RED,
-} from "$lib/shared/animation-engine/domain/types/led-types";
+import { DEFAULT_LED_CONFIG } from "$lib/shared/animation-engine/domain/types/led-types";
 
 const VIEWBOX_SIZE = 950;
 const BLUE_COLOR = "#3575E2";
@@ -781,44 +777,29 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
   if (!ok) return null;
 
   const webglCanvas = (renderer as any).canvas as OffscreenCanvas;
-  const prevTips = new Map<string, PrevTipState>();
 
   return {
     renderFrame(ctx, cs, blue, red, blueVB, redVB, frameIndex, dt) {
-      const tips: LedTipData[] = [];
+      const leds: LedSample[] = [];
       const currentTime = frameIndex * dt * 1000;
 
-      const buildTip = (
+      // The worker only has tip positions, not prop state, so it lights the
+      // capsule case directly in the prop colors. Pixel-staff export runs
+      // through the main-thread sampler.
+      const buildLed = (
         pos: Vec2,
         propIndex: 0 | 1,
-        tipIndex: number,
+        endpointIndex: number,
         color: { r: number; g: number; b: number }
-      ): LedTipData => {
-        const key = `${propIndex}_${tipIndex}`;
-        const previous = prevTips.get(key);
-        const prev = previous ?? { ...pos, velocityX: 0, velocityY: 0 };
-        const safeDt = Math.max(dt, 0.001);
-        const vx = (pos.x - prev.x) / safeDt;
-        const vy = (pos.y - prev.y) / safeDt;
-        const speed = Math.sqrt(vx * vx + vy * vy);
-        prevTips.set(key, {
-          x: pos.x,
-          y: pos.y,
-          velocityX: vx,
-          velocityY: vy,
-        });
-        return {
-          x: pos.x,
-          y: pos.y,
-          velocityX: vx,
-          velocityY: vy,
-          speed,
-          propIndex,
-          tipIndex,
-          brightness: 1.0,
-          ...color,
-        };
-      };
+      ): LedSample => ({
+        x: pos.x,
+        y: pos.y,
+        propIndex,
+        ledIndex: endpointIndex,
+        endpointIndex,
+        brightness: 1.0,
+        ...color,
+      });
 
       const blueRGB = { r: 0.21, g: 0.46, b: 0.89 };
       const redRGB = { r: 0.96, g: 0.27, b: 0.21 };
@@ -826,16 +807,16 @@ function createLedRenderer(canvasSize: number): WorkerEffectRenderer | null {
       const bt = computeTips(cs, blue, blueVB);
       const rt = computeTips(cs, red, redVB);
       if (bt) {
-        tips.push(buildTip(bt.a, 0, 0, blueRGB));
-        tips.push(buildTip(bt.b, 0, 1, blueRGB));
+        leds.push(buildLed(bt.a, 0, 0, blueRGB));
+        leds.push(buildLed(bt.b, 0, 1, blueRGB));
       }
       if (rt) {
-        tips.push(buildTip(rt.a, 1, 0, redRGB));
-        tips.push(buildTip(rt.b, 1, 1, redRGB));
+        leds.push(buildLed(rt.a, 1, 0, redRGB));
+        leds.push(buildLed(rt.b, 1, 1, redRGB));
       }
 
       const input: LedFrameInput = {
-        tips,
+        leds,
         currentTime,
         canvasWidth: cs,
         canvasHeight: cs,

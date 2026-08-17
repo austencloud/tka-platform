@@ -9,6 +9,26 @@ import {
 } from "$lib/shared/poi/domain/strip-pattern";
 import { stripPatternToImageData } from "$lib/shared/poi/domain/strip-pattern-image";
 
+// Polyfill ImageData for Node environment
+if (typeof globalThis.ImageData === "undefined") {
+  (globalThis as any).ImageData = class ImageData {
+    readonly data: Uint8ClampedArray;
+    readonly width: number;
+    readonly height: number;
+    constructor(dataOrWidth: Uint8ClampedArray | number, widthOrHeight: number, height?: number) {
+      if (dataOrWidth instanceof Uint8ClampedArray) {
+        this.data = dataOrWidth;
+        this.width = widthOrHeight;
+        this.height = height!;
+      } else {
+        this.width = dataOrWidth;
+        this.height = widthOrHeight;
+        this.data = new Uint8ClampedArray(this.width * this.height * 4);
+      }
+    }
+  };
+}
+
 function defaultParams(overrides: Partial<PatternParams> = {}): PatternParams {
   return {
     primaryColor: { r: 0, g: 255, b: 136 },

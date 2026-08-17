@@ -1,6 +1,12 @@
 import type { EffectConfig } from "../domain/types";
 import type { FireOverlayConfig } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type { LedOverlayConfig } from "$lib/shared/animation-engine/domain/types/led-types";
+import {
+  CAPSULE_LED_COUNT,
+  DEFAULT_LED_LOOK,
+  PATTERN_MATERIALIZE_BRIGHTNESS,
+  hexToRgb255,
+} from "$lib/shared/animation-engine/domain/types/led-types";
 import type {
   TrailMode} from "$lib/shared/animation-engine/domain/types/trail-types";
 import {
@@ -20,19 +26,27 @@ export function toFireConfig(effect: EffectConfig["fire"]): FireOverlayConfig {
 }
 
 export function toLedConfig(effect: EffectConfig["led"]): LedOverlayConfig {
+  // Video endpoints are two bright points per prop, so the video path is
+  // always the capsule device running a solid strip in the picked color.
   return {
     enabled: effect.enabled,
-    glowRadius: effect.glowRadius,
-    bloomIntensity: effect.bloom,
-    trailFadeRate: 0.92,
-    patternId: effect.patternId,
-    patternSpeed: 1.0,
-    primaryColor: effect.color,
-    secondaryColor: "#ffffff",
-    brightness: effect.brightness,
-    colorMode: "unified",
-    blueHandColor: effect.color,
-    redHandColor: effect.color,
+    device: { kind: "capsule", ledCount: CAPSULE_LED_COUNT },
+    pattern: {
+      source: "generator",
+      generatorId: "solid",
+      params: {
+        primaryColor: hexToRgb255(effect.color),
+        speed: 1,
+        brightness: PATTERN_MATERIALIZE_BRIGHTNESS,
+      },
+    },
+    cycleDuration: 3,
+    look: {
+      ...DEFAULT_LED_LOOK,
+      glowRadius: effect.glowRadius,
+      bloomIntensity: effect.bloom,
+      brightness: Math.min(5, Math.max(1, Math.round(effect.brightness))),
+    },
   };
 }
 

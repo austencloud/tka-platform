@@ -446,10 +446,14 @@ describe("migrateEffectsConfig", () => {
     };
     const out = migrateEffectsConfig(v15);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
-    expect(out.led.brightness).toBe(3);
-    // Only brightness remaps - the rest of the user's led settings survive.
-    expect(out.led.patternId).toBe("rainbow");
-    expect(out.led.patternSpeed).toBe(2.0);
+    // v16 remapped the stale 5 to 3; v36 then carried it into look.brightness.
+    expect(out.led.look.brightness).toBe(3);
+    // The spectrum pattern family became a 200-LED pixel staff.
+    expect(out.led.device).toEqual({ kind: "pixel-staff", ledCount: 200 });
+    expect(out.led.pattern).toMatchObject({
+      source: "generator",
+      generatorId: "rainbow-sweep",
+    });
   });
 
   it("preserves a deliberate pre-v16 led.brightness 1-4", () => {
@@ -465,12 +469,12 @@ describe("migrateEffectsConfig", () => {
       },
     };
     const out = migrateEffectsConfig(v15);
-    expect(out.led.brightness).toBe(2);
+    expect(out.led.look.brightness).toBe(2);
   });
 
   it("preserves a deliberate post-v16 led.brightness 5", () => {
     const current = {
-      version: EFFECTS_CONFIG_VERSION,
+      version: 16,
       led: {
         brightness: 5,
         patternId: "solid",
@@ -481,7 +485,7 @@ describe("migrateEffectsConfig", () => {
       },
     };
     const out = migrateEffectsConfig(current);
-    expect(out.led.brightness).toBe(5);
+    expect(out.led.look.brightness).toBe(5);
   });
 
   it("migrates pre-v17 bloom stale old defaults (intensity 0.95, colorMode solid)", () => {

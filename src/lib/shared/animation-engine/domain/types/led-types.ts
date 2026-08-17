@@ -1,61 +1,133 @@
 /**
- * LED Overlay Types
+ * LED Overlay Types (v2 — physical LED prop simulator)
  *
- * Domain types for the WebGL LED overlay that renders addressable
- * LED prop visuals using additive glow sprites, PBR bloom, and
- * persistence-of-vision trail accumulation.
+ * The LED effect previews what a real LED prop looks like running a given
+ * mode: a device (capsule or pixel staff), a strip pattern that loops on its
+ * own clock, and a look (glow, persistence, bloom, brightness).
+ *
+ * Pattern data itself is owned by `$lib/shared/poi/domain` — the same
+ * `StripPattern` currency the Poi Lab authors and uploads to hardware.
  */
 
+import type { PatternParams, RGBColor } from "$lib/shared/poi/domain/strip-pattern";
+
+/** Canonical prop colors matching the domain (blue hand = propIndex 0, red hand = propIndex 1) */
+export const PROP_BLUE = "#2196f3";
+export const PROP_RED = "#f44336";
+
+// ─── Device ───────────────────────────────────────────────────────────────────
+
+export type LedDeviceKind = "capsule" | "pixel-staff";
+
+/** A capsule prop lights only its two shaft ends. */
+export const CAPSULE_LED_COUNT = 2;
+
 /**
- * A single addressable LED point in prop-local space.
- * Offsets are relative to the prop's primary axis; the renderer
- * transforms them into viewbox coordinates each frame.
+ * Pixel-staff LED counts are fixed options, not a free slider — you pick a
+ * prop. 200 matches the Ignis iPixel 200 HD; 32 and 72 are common shorter
+ * strips and cheaper render tiers.
  */
-export interface LedPoint {
-  /** Prop-local offset along the primary (long) axis */
-  dx: number;
-  /** Prop-local offset perpendicular to the primary axis */
-  dy: number;
-  /** Maximum output brightness for this LED, normalized to [0, 1] */
+export const PIXEL_STAFF_LED_COUNTS = [32, 72, 200] as const;
+export type PixelStaffLedCount = (typeof PIXEL_STAFF_LED_COUNTS)[number];
+
+export interface LedDevice {
+  kind: LedDeviceKind;
+  /** Capsule is always CAPSULE_LED_COUNT; pixel staff is one of PIXEL_STAFF_LED_COUNTS. */
+  ledCount: number;
+}
+
+/** Clamp an arbitrary device description onto a supported device. */
+export function normalizeLedDevice(kind: LedDeviceKind, ledCount: number): LedDevice {
+  if (kind === "capsule") return { kind, ledCount: CAPSULE_LED_COUNT };
+  const nearest = PIXEL_STAFF_LED_COUNTS.reduce((best, option) =>
+    Math.abs(option - ledCount) < Math.abs(best - ledCount) ? option : best
+  );
+  return { kind: "pixel-staff", ledCount: nearest };
+}
+
+// ─── Pattern source ───────────────────────────────────────────────────────────
+
+export type LedPatternSource =
+  | { source: "generator"; generatorId: string; params: PatternParams }
+  | { source: "image"; libraryEntryId: string };
+
+/** Frames per materialized pattern loop. One clock drives both props. */
+export const LED_PATTERN_FRAME_COUNT = 180;
+
+/** Seconds per full pattern loop, matching the Poi Lab staff preview range. */
+export const CYCLE_DURATION_MIN = 0.2;
+export const CYCLE_DURATION_MAX = 30;
+
+export function clampCycleDuration(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_CYCLE_DURATION;
+  return Math.max(CYCLE_DURATION_MIN, Math.min(CYCLE_DURATION_MAX, value));
+}
+
+export const DEFAULT_CYCLE_DURATION = 3;
+
+// ─── Look ─────────────────────────────────────────────────────────────────────
+
+export interface LedLook {
+  /**
+   * Glow sprite radius multiplier (0.5 - 3.0, default 1.0).
+   * Higher values produce wider, softer halos around each LED.
+   */
+  glowRadius: number;
+  /**
+   * POV persistence: trail accumulation fade rate per frame (0.80 - 0.98).
+   * Higher values retain more history, producing longer trails.
+   */
+  trailFadeRate: number;
+  /** Bloom post-process intensity (0.0 - 0.15, default 0.04). */
+  bloomIntensity: number;
+  /** Discrete level 1-5, resolved through LED_BRIGHTNESS_LEVELS. */
   brightness: number;
 }
 
-/**
- * Full LED layout for one prop type.
- * Each entry in `points` maps to one addressable LED.
- */
-export interface PropLedConfig {
-  /** Ordered list of LED positions in prop-local space */
-  points: LedPoint[];
-}
+// ─── Config ───────────────────────────────────────────────────────────────────
 
 /**
- * Per-tip data computed each frame by the LED tip tracker.
- * Positions are in viewbox coordinates (e.g. 950x950).
- * Velocity and color are provided by the pattern engine.
+ * The user-facing LED simulator settings. `LedIntent` in the effects-config
+ * intent layer aliases this shape; `LedOverlayConfig` adds the runtime
+ * enable flag the 2D overlay lifecycle reads.
  */
-export interface LedTipData {
+export interface LedSimulatorConfig {
+  device: LedDevice;
+  pattern: LedPatternSource;
+  /** Seconds per full pattern loop, clamped to [CYCLE_DURATION_MIN, CYCLE_DURATION_MAX]. */
+  cycleDuration: number;
+  look: LedLook;
+}
+
+export interface LedOverlayConfig extends LedSimulatorConfig {
+  /** Whether the LED overlay effect is enabled */
+  enabled: boolean;
+}
+
+// ─── Frame input ──────────────────────────────────────────────────────────────
+
+/**
+ * One addressable LED for one frame, produced by the LED sampler.
+ * Positions are in viewbox coordinates (e.g. 950x950).
+ */
+export interface LedSample {
   /** X position in viewbox coordinates */
   x: number;
   /** Y position in viewbox coordinates */
   y: number;
-  /** Horizontal velocity (viewbox units/second) */
-  velocityX: number;
-  /** Vertical velocity (viewbox units/second) */
-  velocityY: number;
-  /** Speed magnitude (viewbox units/second) */
-  speed: number;
   /** 0 = base blue prop, 1 = base red prop; >= 2 = overlaid tunnel-layer props */
   propIndex: number;
-  /** Index of this LED within the prop's LED point array */
-  tipIndex: number;
-  /** Max output brightness from the LedPoint config, normalized to [0, 1] */
+  /** Index of this LED along the strip, 0 = the first tracked endpoint */
+  ledIndex: number;
+  /** Which shaft end this LED sits nearest — the key tip-effect assignment uses */
+  endpointIndex: number;
+  /** Output brightness for this LED, normalized to [0, 1] */
   brightness: number;
-  /** Red channel from the pattern engine, normalized to [0, 1] */
+  /** Red channel, normalized to [0, 1] */
   r: number;
-  /** Green channel from the pattern engine, normalized to [0, 1] */
+  /** Green channel, normalized to [0, 1] */
   g: number;
-  /** Blue channel from the pattern engine, normalized to [0, 1] */
+  /** Blue channel, normalized to [0, 1] */
   b: number;
 }
 
@@ -63,8 +135,8 @@ export interface LedTipData {
  * Full frame input passed to the LED renderer each RAF tick.
  */
 export interface LedFrameInput {
-  /** Active LED tip positions, velocities, and colors (one entry per LED per prop) */
-  tips: LedTipData[];
+  /** Every lit LED this frame, across every prop */
+  leds: LedSample[];
   /** Current time from performance.now() */
   currentTime: number;
   /** Canvas width in viewbox coordinates (e.g. 950) */
@@ -73,82 +145,7 @@ export interface LedFrameInput {
   canvasHeight: number;
 }
 
-/** How per-hand LED colors are determined */
-export type LedColorMode = "unified" | "per-hand" | "prop-matched";
-
-/**
- * User-configurable LED overlay settings.
- * Controls glow appearance, bloom post-processing, POV trail persistence,
- * and the color pattern applied across the LED array.
- */
-export interface LedOverlayConfig {
-  /** Whether the LED overlay effect is enabled */
-  enabled: boolean;
-  /**
-   * Glow sprite radius multiplier (0.5 - 3.0, default 1.0).
-   * Higher values produce wider, softer halos around each LED.
-   */
-  glowRadius: number;
-  /**
-   * Bloom post-process intensity (0.0 - 0.15, default 0.04).
-   * Controls how much bright areas bleed into surrounding pixels.
-   */
-  bloomIntensity: number;
-  /**
-   * Trail accumulation fade rate per frame (0.80 - 0.98, default 0.92).
-   * Higher values retain more history, producing longer persistence-of-vision trails.
-   */
-  trailFadeRate: number;
-  /** Identifier for the color pattern engine to apply across the LED array */
-  patternId: string;
-  /**
-   * Pattern animation speed multiplier (0.1 - 5.0, default 1.0).
-   * Scales how quickly the pattern cycles or evolves over time.
-   */
-  patternSpeed: number;
-  /** Primary color for the pattern engine, expressed as a CSS hex string (e.g. "#00ff88") */
-  primaryColor: string;
-  /** Secondary color for dual-color patterns, expressed as a CSS hex string (e.g. "#ffffff") */
-  secondaryColor: string;
-  /**
-   * Global brightness multiplier (0.0 - 1.0, default 1.0).
-   * Applied on top of per-LED brightness values.
-   * Maps to 5 discrete user-facing levels via LED_BRIGHTNESS_LEVELS.
-   */
-  brightness: number;
-  /** How per-hand colors are resolved: unified, per-hand, or prop-matched */
-  colorMode: LedColorMode;
-  /** Custom color for the blue hand (propIndex 0) when colorMode is "per-hand" */
-  blueHandColor: string;
-  /** Custom color for the red hand (propIndex 1) when colorMode is "per-hand" */
-  redHandColor: string;
-}
-
-/** Canonical prop colors matching the domain (blue hand = propIndex 0, red hand = propIndex 1) */
-export const PROP_BLUE = "#2196f3";
-export const PROP_RED = "#f44336";
-
-/**
- * Default LED overlay config - disabled, solid pattern, prop-matched colors.
- * colorMode is "prop-matched" so each hand's LEDs take the canonical blue/red
- * prop identity out of the box (no neon-green wash from a "unified" primary).
- * brightness defaults to level 3 (0.6) — full-bright (1.0) reads as blinding
- * against the dark stage.
- */
-export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
-  enabled: false,
-  glowRadius: 1.0,
-  bloomIntensity: 0.04,
-  trailFadeRate: 0.92,
-  patternId: "solid",
-  patternSpeed: 1.0,
-  primaryColor: "#66ccff",
-  secondaryColor: "#ffffff",
-  brightness: 0.6,
-  colorMode: "prop-matched",
-  blueHandColor: PROP_BLUE,
-  redHandColor: PROP_RED,
-};
+// ─── Defaults ─────────────────────────────────────────────────────────────────
 
 /**
  * Discrete brightness levels matching physical LED prop controls.
@@ -175,17 +172,56 @@ export function hexToLedColor(hex: string): { r: number; g: number; b: number } 
   return { r, g, b };
 }
 
-/**
- * Resolve the base color hex string for a given hand based on the color mode.
- * propIndex 0 = blue hand, propIndex 1 = red hand.
- */
-export function resolveHandColor(config: LedOverlayConfig, propIndex: 0 | 1): string {
-  switch (config.colorMode) {
-    case "unified":
-      return config.primaryColor;
-    case "per-hand":
-      return propIndex === 0 ? config.blueHandColor : config.redHandColor;
-    case "prop-matched":
-      return propIndex === 0 ? PROP_BLUE : PROP_RED;
+/** Convert a CSS hex color (#rrggbb) to the 0-255 RGBColor the generators take. */
+export function hexToRgb255(hex: string): RGBColor {
+  const normalized = hex.trim().replace(/^#/, "");
+  if (normalized.length !== 6) return { r: 255, g: 255, b: 255 };
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
+    return { r: 255, g: 255, b: 255 };
   }
+  return { r, g, b };
 }
+
+/**
+ * Pattern params are materialized at full brightness; the look's discrete
+ * 1-5 level is applied per-LED at sample time so changing brightness never
+ * costs a pattern regeneration.
+ */
+export const PATTERN_MATERIALIZE_BRIGHTNESS = 1;
+
+export const DEFAULT_LED_LOOK: LedLook = {
+  glowRadius: 1.0,
+  trailFadeRate: 0.92,
+  bloomIntensity: 0.04,
+  // Level 3 (0.6) — full-bright reads as blinding against the dark stage.
+  brightness: 3,
+};
+
+/**
+ * Default simulator settings: a capsule prop showing canonical prop identity,
+ * looping once every 3 seconds.
+ */
+export const DEFAULT_LED_INTENT: LedSimulatorConfig = {
+  device: { kind: "capsule", ledCount: CAPSULE_LED_COUNT },
+  pattern: {
+    source: "generator",
+    generatorId: "prop-colors",
+    params: {
+      primaryColor: hexToRgb255(PROP_BLUE),
+      secondaryColor: hexToRgb255(PROP_RED),
+      speed: 1,
+      brightness: PATTERN_MATERIALIZE_BRIGHTNESS,
+    },
+  },
+  cycleDuration: DEFAULT_CYCLE_DURATION,
+  look: { ...DEFAULT_LED_LOOK },
+};
+
+/** Default LED overlay config — disabled until an effect assignment turns it on. */
+export const DEFAULT_LED_CONFIG: LedOverlayConfig = {
+  enabled: false,
+  ...structuredClone(DEFAULT_LED_INTENT),
+};

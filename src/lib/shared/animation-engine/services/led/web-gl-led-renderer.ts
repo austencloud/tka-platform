@@ -22,6 +22,7 @@
  */
 
 import type { LedFrameInput, LedOverlayConfig } from "../../domain/types/led-types";
+import { LED_SAMPLER_MAX_LEDS } from "../led-sampler";
 import {
 	FULLSCREEN_VERT,
 	LED_SPRITE_VERT,
@@ -34,7 +35,7 @@ import {
 import { computeEffectScale } from "$lib/shared/effects/renderers/scale";
 
 const MAX_DPR = 2;
-const MAX_LEDS = 32;
+const MAX_LEDS = LED_SAMPLER_MAX_LEDS;
 const BLOOM_MIP_COUNT = 5;
 
 /** Number of floats per LED in the instance buffer.
@@ -229,7 +230,7 @@ export class WebGLLedRenderer {
 
 		const blast = this.getBlastFlags();
 
-		if (input.tips.length === 0) {
+		if (input.leds.length === 0) {
 			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 			gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 			gl.clearColor(0, 0, 0, 0);
@@ -245,30 +246,31 @@ export class WebGLLedRenderer {
 		//    a motion-streak capsule between the two points. On the first
 		//    frame for a given LED - or after a long pause / big jump -
 		//    we collapse the capsule to a point by setting prev = curr.
-		const tipCount = Math.min(input.tips.length, MAX_LEDS);
+		const ledCount = Math.min(input.leds.length, MAX_LEDS);
 		// glowRadius * 60 is authored in reference-size (500px) pixels.
 		// Scale to the current canvas so the halo stays the same proportion
 		// of the frame - without this, a_glowRadius is fixed viewbox-space
 		// and the halo reads as proportionally larger on small canvases.
 		const effectScale = computeEffectScale(input.canvasWidth, input.canvasHeight);
-		const baseGlowRadius = config.glowRadius * 60.0 * effectScale;
+		const baseGlowRadius = config.look.glowRadius * 60.0 * effectScale;
 		const currentTimeSec = input.currentTime / 1000;
 		const dt =
 			this.lastFrameTime >= 0 ? currentTimeSec - this.lastFrameTime : 0;
 		const isDiscontinuity = dt <= 0 || dt > MAX_STREAK_DT;
 
 		const seenKeys = new Set<number>();
-		for (let i = 0; i < tipCount; i++) {
-			const tip = input.tips[i]!;
-			const key = tip.propIndex * 100 + tip.tipIndex;
+		for (let i = 0; i < ledCount; i++) {
+			const led = input.leds[i]!;
+			// Stride 1000 so a 200-LED staff on any prop index keeps a unique key.
+			const key = led.propIndex * 1000 + led.ledIndex;
 			seenKeys.add(key);
 
-			let prevX = tip.x;
-			let prevY = tip.y;
+			let prevX = led.x;
+			let prevY = led.y;
 			const stored = this.prevPositions.get(key);
 			if (stored && !isDiscontinuity) {
-				const ddx = tip.x - stored.x;
-				const ddy = tip.y - stored.y;
+				const ddx = led.x - stored.x;
+				const ddy = led.y - stored.y;
 				if (ddx * ddx + ddy * ddy <= MAX_STREAK_VIEWBOX * MAX_STREAK_VIEWBOX) {
 					prevX = stored.x;
 					prevY = stored.y;
@@ -276,21 +278,23 @@ export class WebGLLedRenderer {
 			}
 
 			const offset = i * INSTANCE_STRIDE_FLOATS;
-			this.instanceData[offset + 0] = tip.x;
-			this.instanceData[offset + 1] = tip.y;
+			this.instanceData[offset + 0] = led.x;
+			this.instanceData[offset + 1] = led.y;
 			this.instanceData[offset + 2] = prevX;
 			this.instanceData[offset + 3] = prevY;
-			this.instanceData[offset + 4] = tip.r;
-			this.instanceData[offset + 5] = tip.g;
-			this.instanceData[offset + 6] = tip.b;
-			this.instanceData[offset + 7] = tip.brightness * config.brightness;
+			this.instanceData[offset + 4] = led.r;
+			this.instanceData[offset + 5] = led.g;
+			this.instanceData[offset + 6] = led.b;
+			// The sampler already applied the look's brightness level to the
+			// color, so this carries only the per-LED gain.
+			this.instanceData[offset + 7] = led.brightness;
 			this.instanceData[offset + 8] = baseGlowRadius;
 
 			if (stored) {
-				stored.x = tip.x;
-				stored.y = tip.y;
+				stored.x = led.x;
+				stored.y = led.y;
 			} else {
-				this.prevPositions.set(key, { x: tip.x, y: tip.y });
+				this.prevPositions.set(key, { x: led.x, y: led.y });
 			}
 		}
 
@@ -305,7 +309,7 @@ export class WebGLLedRenderer {
 		gl.bufferSubData(
 			gl.ARRAY_BUFFER,
 			0,
-			this.instanceData.subarray(0, tipCount * INSTANCE_STRIDE_FLOATS),
+			this.instanceData.subarray(0, ledCount * INSTANCE_STRIDE_FLOATS),
 		);
 
 		// 2. Render sprites to spriteFBO
@@ -327,7 +331,7 @@ export class WebGLLedRenderer {
 			input.canvasHeight,
 		);
 		gl.bindVertexArray(this.spriteVAO);
-		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, tipCount);
+		gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, ledCount);
 		gl.bindVertexArray(null);
 
 		// 3. Trail accumulation (skip if blast.noTrail or blast.spritesOnly)
@@ -344,7 +348,7 @@ export class WebGLLedRenderer {
 			gl.uniform1i(this.trailProgram!.uniforms.get("u_previousTrail")!, 1);
 			gl.uniform1f(
 				this.trailProgram!.uniforms.get("u_fadeRate")!,
-				this.reducedMotion ? 0.0 : config.trailFadeRate,
+				this.reducedMotion ? 0.0 : config.look.trailFadeRate,
 			);
 			gl.bindVertexArray(this.quadVAO);
 			gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -439,7 +443,7 @@ export class WebGLLedRenderer {
 		gl.uniform1i(this.displayProgram!.uniforms.get("u_bloom")!, 1);
 		gl.uniform1f(
 			this.displayProgram!.uniforms.get("u_bloomIntensity")!,
-			(blast.noBloom || blast.spritesOnly) ? 0.0 : config.bloomIntensity,
+			(blast.noBloom || blast.spritesOnly) ? 0.0 : config.look.bloomIntensity,
 		);
 		gl.bindVertexArray(this.quadVAO);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);

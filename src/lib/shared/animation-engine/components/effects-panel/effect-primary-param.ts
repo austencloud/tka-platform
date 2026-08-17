@@ -51,8 +51,11 @@ export const PRIMARY_PARAMS: Record<string, PrimaryParamSpec> = {
     max: 5,
     step: 1,
     format: fmtInt,
-    get: (s) => s.led.brightness,
-    set: (s, v) => s.updateEffect("led", { brightness: Math.round(v) }),
+    get: (s) => s.led.look.brightness,
+    set: (s, v) =>
+      s.updateEffect("led", {
+        look: { ...s.led.look, brightness: Math.round(v) },
+      }),
   },
   charcoal: {
     label: "Intensity",

@@ -93,10 +93,13 @@ describe("resolveLed3D", () => {
     expect(resolveLed3D(intent).povPersistenceDuration).toBeCloseTo(0.12, 5);
   });
 
-  it("preserves primaryColor from intent", () => {
+  it("preserves the device from intent", () => {
     expect(
-      resolveLed3D({ ...intent, primaryColor: "#123456" }).primaryColor
-    ).toBe("#123456");
+      resolveLed3D({
+        ...intent,
+        device: { kind: "pixel-staff", ledCount: 72 },
+      }).device
+    ).toEqual({ kind: "pixel-staff", ledCount: 72 });
   });
 });
 

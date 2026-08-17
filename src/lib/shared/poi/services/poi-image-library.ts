@@ -132,6 +132,22 @@ export function subscribe(
   };
 }
 
+/** Fetch a single library entry by id. Returns null for guests or a miss. */
+export async function getEntry(
+  id: string,
+): Promise<PoiImageLibraryEntry | null> {
+  const userId = getEffectiveUserId();
+  if (!userId) return null;
+  const firestore = await getFirestoreInstance();
+  const { doc, getDoc } = await import("firebase/firestore");
+  const snapshot = await getDoc(
+    doc(firestore, `users/${userId}/poi-images/${id}`),
+  );
+  return snapshot.exists()
+    ? (snapshot.data() as PoiImageLibraryEntry)
+    : null;
+}
+
 export async function rename(id: string, name: string): Promise<void> {
   const userId = getEffectiveUserId();
   if (!userId) return;

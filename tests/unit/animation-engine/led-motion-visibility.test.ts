@@ -7,13 +7,13 @@ import type {
 import type { IAnimationRenderer } from "$lib/shared/animation-engine/services/IAnimationRenderer";
 import type { EffectRendererLike } from "$lib/shared/animation-engine/services/effects/effect-renderer";
 import type {
-  LedTipTracker,
-  LedTipTrackerConfig,
-} from "$lib/shared/animation-engine/services/led-tip-tracker";
+  LedSampler,
+  LedSamplerConfig,
+} from "$lib/shared/animation-engine/services/led-sampler";
 import {
   DEFAULT_LED_CONFIG,
   type LedFrameInput,
-  type LedTipData,
+  type LedSample,
 } from "$lib/shared/animation-engine/domain/types/led-types";
 import { DEFAULT_TRAIL_SETTINGS } from "$lib/shared/animation-engine/domain/types/trail-types";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
@@ -25,15 +25,13 @@ function prop(angle: number): PropState {
   } as PropState;
 }
 
-function ledTip(propIndex: number): LedTipData {
+function ledSample(propIndex: number): LedSample {
   return {
     x: 100 + propIndex,
     y: 200 + propIndex,
-    velocityX: 0,
-    velocityY: 0,
-    speed: 0,
     propIndex,
-    tipIndex: 0,
+    ledIndex: 0,
+    endpointIndex: 0,
     brightness: 1,
     r: 1,
     g: 1,
@@ -92,16 +90,16 @@ function createHarness() {
     (
       blueProp: PropState | null,
       redProp: PropState | null,
-      config: LedTipTrackerConfig
-    ): LedTipData[] => {
-      const tips: LedTipData[] = [];
-      if (blueProp) tips.push(ledTip(0));
-      if (redProp) tips.push(ledTip(1));
+      config: LedSamplerConfig
+    ): LedSample[] => {
+      const leds: LedSample[] = [];
+      if (blueProp) leds.push(ledSample(0));
+      if (redProp) leds.push(ledSample(1));
       config.additionalLayers?.forEach((layer, index) => {
-        if (layer.blueProp) tips.push(ledTip(2 + index * 2));
-        if (layer.redProp) tips.push(ledTip(3 + index * 2));
+        if (layer.blueProp) leds.push(ledSample(2 + index * 2));
+        if (layer.redProp) leds.push(ledSample(3 + index * 2));
       });
-      return tips;
+      return leds;
     }
   );
   const renderLeds = vi.fn<(input: LedFrameInput) => void>();
@@ -119,7 +117,7 @@ function createHarness() {
     TrailCapturer: null,
     pathCache: null,
     canvasSize: 500,
-    ledTipTracker: { update } as unknown as LedTipTracker,
+    ledSampler: { update } as unknown as LedSampler,
     renderers: { led: ledRenderer },
   } satisfies RenderLoopConfig);
 
@@ -146,15 +144,15 @@ describe("AnimationRenderLoop LED motion visibility", () => {
       1 / 60
     );
 
-    const [visibleBlue, visibleRed, trackerConfig] = update.mock.calls[0]!;
+    const [visibleBlue, visibleRed, samplerConfig] = update.mock.calls[0]!;
     expect(visibleBlue).toBeNull();
     expect(visibleRed).toBe(redProp);
-    expect(trackerConfig.additionalLayers).toEqual([
+    expect(samplerConfig.additionalLayers).toEqual([
       { blueProp: null, redProp: redLayerProp },
     ]);
     expect(renderLeds).toHaveBeenCalledOnce();
     expect(
-      renderLeds.mock.calls[0]![0].tips.map((tip) => tip.propIndex)
+      renderLeds.mock.calls[0]![0].leds.map((led) => led.propIndex)
     ).toEqual([1, 3]);
   });
 
@@ -173,6 +171,6 @@ describe("AnimationRenderLoop LED motion visibility", () => {
     );
 
     expect(renderLeds).toHaveBeenCalledOnce();
-    expect(renderLeds.mock.calls[0]![0].tips).toEqual([]);
+    expect(renderLeds.mock.calls[0]![0].leds).toEqual([]);
   });
 });

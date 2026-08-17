@@ -13,7 +13,7 @@ import type { AnimationPathCache } from "$lib/shared/animation-engine/services/a
 import type { FrameBudgetMonitor } from '$lib/shared/animation-engine/services/frame-budget-monitor'
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { FireOverlayConfig, PropFlameColor } from "../domain/types/fire-types";
-import type { LedTipTracker } from "./led-tip-tracker";
+import type { LedSampler } from "./led-sampler";
 import type { LedOverlayConfig } from "../domain/types/led-types";
 import type { Bloom2DParams, Bubbles2DParams, Ghost2DParams, Frost2DParams, Ink2DParams, Petals2DParams, Pulse2DParams, Silk2DParams, Animal2DParams, Smoke2DParams, Sparkles2DParams, GooParams, Zap2DParams } from "$lib/shared/effects/translators/canvas2d-types";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -40,7 +40,7 @@ export interface RenderLoopConfig {
   /** Optional fire/charcoal tip position/velocity tracker (shared by both) */
   fireTipTracker?: FireTipTracker | null;
   /** Optional LED tip position/color tracker */
-  ledTipTracker?: LedTipTracker | null;
+  ledSampler?: LedSampler | null;
   /**
    * Registry-driven renderer map. Every effect renderer (fire, charcoal, led,
    * trails, zap, sparkles, …) lives here, keyed by EffectType id.

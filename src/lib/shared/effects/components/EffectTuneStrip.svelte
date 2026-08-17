@@ -23,7 +23,6 @@
     formatEffectSliderValue,
     type EffectControlOverrides,
   } from "$lib/shared/effects/effect-control-fields";
-  import { getPatternDescriptor } from "$lib/shared/animation-engine/domain/patterns/registry";
   import EffectControlStack from "./EffectControlStack.svelte";
 
   interface Props {
@@ -98,8 +97,6 @@
         return c.options?.find((o) => o.value === v)?.label ?? "";
       case "palette":
         return c.paletteOptions?.find((o) => o.value === v)?.label ?? "";
-      case "ledPattern":
-        return getPatternDescriptor(v as string)?.name ?? "";
       case "toggle":
       case "chip":
         return v === true ? "On" : "Off";

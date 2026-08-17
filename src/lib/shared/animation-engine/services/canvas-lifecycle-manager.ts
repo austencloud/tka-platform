@@ -40,7 +40,7 @@ import { PropTypeChanger as PropTypeChangerImpl } from "./prop-type-changer.svel
 import { AnimationVisibilitySynchronizer as VisibilitySync } from "./animation-visibility-synchronizer";
 import type { AnimationVisibilityState } from "./animation-visibility-synchronizer";
 import { FireTipTracker } from "./fire-tip-tracker";
-import { LedTipTracker } from "./led-tip-tracker";
+import { LedSampler } from "./led-sampler";
 import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MandalaOverlayCanvas } from "$lib/shared/mandala/services/mandala-overlay-canvas";
 
@@ -378,7 +378,7 @@ export class CanvasLifecycleManager {
     } = params;
 
     erm.fireTipTracker = new FireTipTracker();
-    erm.ledTipTracker = new LedTipTracker();
+    erm.ledSampler = new LedSampler();
 
     const renderLoop = new AnimationRenderLoop();
     this._renderLoop = renderLoop;
@@ -389,7 +389,7 @@ export class CanvasLifecycleManager {
       canvasSize,
       frameBudgetMonitor,
       fireTipTracker: erm.fireTipTracker,
-      ledTipTracker: erm.ledTipTracker,
+      ledSampler: erm.ledSampler,
       mandalaOverlay: this._mandalaOverlay,
       onEffectError: callbacks.onEffectError,
     });

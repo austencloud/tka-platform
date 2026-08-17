@@ -26,8 +26,7 @@ export type ControlType =
   | "color"
   | "colorPair"
   | "palette"
-  | "paletteSwatches"
-  | "ledPattern";
+  | "paletteSwatches";
 export type ControlTier = "primary" | "tracking" | "advanced";
 
 export interface ControlDescriptor {
@@ -156,15 +155,10 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     // for these two pseudo-fields (fireLeftHex/fireRightHex).
     { id: "fire-color", label: "Colors", type: "colorPair", field: "fireLeftHex", pairFields: ["fireLeftHex", "fireRightHex"], tier: "primary" },
   ],
-  led: [
-    { id: "led-color", label: "Color", type: "color", field: "primaryColor", tier: "primary" },
-    slider("led", "brightness", "Brightness", { min: 1, max: 5, step: 1, pct: false, tier: "primary" }),
-    { id: "led-pattern", label: "Pattern", type: "ledPattern", field: "patternId", tier: "primary" },
-    slider("led", "patternSpeed", "Speed", { min: 0.1, max: 5, step: 0.1, pct: false, tier: "primary" }),
-    { id: "led-colormode", label: "Mode", type: "segmented", field: "colorMode", tier: "advanced", options: [
-      { value: "unified", label: "Unified" }, { value: "per-hand", label: "Per-hand" }, { value: "prop-matched", label: "Prop" },
-    ] },
-  ],
+  // LED v2 is a device + strip pattern + look, none of which is a flat scalar
+  // field this manifest can address. Its controls live in the dedicated
+  // customize panel instead (Phase 4 rebuild).
+  led: [],
   charcoal: [
     slider("charcoal", "intensity", "Intensity", { step: 0.02, tier: "primary" }),
     slider("charcoal", "spread", "Spread", { step: 0.02, tier: "primary" }),

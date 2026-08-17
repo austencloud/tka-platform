@@ -10,7 +10,7 @@
 
 import type { LedPassPayload } from "../domain/led-pass";
 
-const MAX_LEDS = 64;
+const MAX_LEDS = 400;
 const INSTANCE_STRIDE_FLOATS = 9;
 const _BLOOM_MIP_COUNT = 5;
 const MAX_STREAK_DISTANCE_SQ = 400 * 400;

@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import { EFFECTS_CONFIG_VERSION } from "$lib/shared/effects/domain/effects-config";
+import {
+  CAPSULE_LED_COUNT,
+  CYCLE_DURATION_MAX,
+  CYCLE_DURATION_MIN,
+} from "$lib/shared/animation-engine/domain/types/led-types";
 
 describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has the current schema version", () => {
@@ -40,14 +45,16 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
 
   it("has valid led intent", () => {
     const l = DEFAULT_EFFECTS_CONFIG.led;
-    expect(l.brightness).toBeGreaterThanOrEqual(1);
-    expect(l.brightness).toBeLessThanOrEqual(5);
-    expect(Number.isInteger(l.brightness)).toBe(true);
-    expect(l.patternId).toBeTypeOf("string");
-    expect(l.patternSpeed).toBeGreaterThanOrEqual(0.1);
-    expect(l.patternSpeed).toBeLessThanOrEqual(5.0);
-    expect(l.primaryColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-    expect(l.colorMode).toMatch(/^(unified|per-hand|prop-matched)$/);
+    expect(l.device.kind).toBe("capsule");
+    expect(l.device.ledCount).toBe(CAPSULE_LED_COUNT);
+    expect(l.pattern.source).toBe("generator");
+    expect(l.cycleDuration).toBeGreaterThanOrEqual(CYCLE_DURATION_MIN);
+    expect(l.cycleDuration).toBeLessThanOrEqual(CYCLE_DURATION_MAX);
+    expect(l.look.brightness).toBeGreaterThanOrEqual(1);
+    expect(l.look.brightness).toBeLessThanOrEqual(5);
+    expect(Number.isInteger(l.look.brightness)).toBe(true);
+    expect(l.look.trailFadeRate).toBeGreaterThan(0);
+    expect(l.look.trailFadeRate).toBeLessThan(1);
   });
 
   it("has valid charcoal intent", () => {

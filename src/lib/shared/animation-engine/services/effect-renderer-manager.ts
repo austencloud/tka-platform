@@ -14,7 +14,7 @@
  */
 
 import type { FireTipTracker } from "./fire-tip-tracker";
-import type { LedTipTracker } from "./led-tip-tracker";
+import type { LedSampler } from "./led-sampler";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type { IAnimationRenderLoop } from "./IAnimationRenderLoop";
 import type {
@@ -27,7 +27,7 @@ import { DEFAULT_FIRE_CONFIG } from "../domain/types/fire-types";
 import type { LedOverlayConfig } from "../domain/types/led-types";
 import {
   DEFAULT_LED_CONFIG,
-  ledBrightnessToFloat,
+  DEFAULT_LED_INTENT,
 } from "../domain/types/led-types";
 import { resolveEffectZ } from "./effect-layer";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
@@ -68,11 +68,11 @@ export class EffectRendererManager {
 
   // ── Non-registry fields (trackers, configs, maps) ────────────────────
   fireTipTracker: FireTipTracker | null = null;
-  ledTipTracker: LedTipTracker | null = null;
+  ledSampler: LedSampler | null = null;
 
   // ── Configs ─────────────────────────────────────────────────────────
   fireConfig: FireOverlayConfig = { ...DEFAULT_FIRE_CONFIG };
-  ledConfig: LedOverlayConfig = { ...DEFAULT_LED_CONFIG };
+  ledConfig: LedOverlayConfig = structuredClone(DEFAULT_LED_CONFIG);
   private ledInitPending = false;
   /**
    * LED is CREATED + initialized but parked warm: canvas hidden, deregistered
@@ -545,7 +545,7 @@ export class EffectRendererManager {
     led?.clearSimulation?.();
     this.ledWarmHidden = true;
     this.renderLoopService?.updateConfig({ renderers: { led: null } });
-    this.ledTipTracker?.reset();
+    this.ledSampler?.reset();
   }
 
   /**
@@ -753,7 +753,7 @@ export class EffectRendererManager {
     // Reset fire/LED tip trackers so positions recalculate at the new canvas size.
     // Without this, after HMR the tracker uses stale positions from the old size.
     this.fireTipTracker?.reset();
-    this.ledTipTracker?.reset();
+    this.ledSampler?.reset();
   }
 
   // ── Wire post-init overlays ─────────────────────────────────────────
@@ -802,13 +802,12 @@ export class EffectRendererManager {
    */
   initLedConfigFromEffectsState(ecs: EffectsConfigState | null): void {
     const tipMap = ecs?.tipEffectMap ?? {};
-    this.ledConfig.enabled = Object.values(tipMap).some(
-      (a) => a.effect === "led"
+    const enabled = Object.values(tipMap).some((a) => a.effect === "led");
+    Object.assign(
+      this.ledConfig,
+      structuredClone(ecs?.led ?? DEFAULT_LED_INTENT),
+      { enabled }
     );
-    this.ledConfig.patternId = ecs?.led.patternId ?? "solid";
-    this.ledConfig.primaryColor = ecs?.led.primaryColor ?? "#00ff88";
-    this.ledConfig.secondaryColor = ecs?.led.secondaryColor ?? "#ffffff";
-    this.ledConfig.colorMode = ecs?.led.colorMode ?? "unified";
   }
 
   /**
@@ -818,25 +817,35 @@ export class EffectRendererManager {
   diffLedConfigFromEffectsState(
     ecs: EffectsConfigState | null
   ): Partial<LedOverlayConfig> {
-    const ledEnabled = this.hasEffectInEffectiveMap("led");
-    const ledPatternId = ecs?.led.patternId ?? "solid";
-    const ledColor = ecs?.led.primaryColor ?? "#00ff88";
-    const ledSecondaryColor = ecs?.led.secondaryColor ?? "#ffffff";
-    const ledBrightness = ledBrightnessToFloat(ecs?.led.brightness ?? 5);
-    const ledColorMode = ecs?.led.colorMode ?? "unified";
-
+    const intent = ecs?.led ?? DEFAULT_LED_INTENT;
+    const current = this.ledConfig;
     const ledDiff: Partial<LedOverlayConfig> = {};
-    if (ledEnabled !== this.ledConfig.enabled) ledDiff.enabled = ledEnabled;
-    if (ledPatternId !== this.ledConfig.patternId)
-      ledDiff.patternId = ledPatternId;
-    if (ledColor !== this.ledConfig.primaryColor)
-      ledDiff.primaryColor = ledColor;
-    if (ledSecondaryColor !== this.ledConfig.secondaryColor)
-      ledDiff.secondaryColor = ledSecondaryColor;
-    if (ledBrightness !== this.ledConfig.brightness)
-      ledDiff.brightness = ledBrightness;
-    if (ledColorMode !== this.ledConfig.colorMode)
-      ledDiff.colorMode = ledColorMode;
+
+    const ledEnabled = this.hasEffectInEffectiveMap("led");
+    if (ledEnabled !== current.enabled) ledDiff.enabled = ledEnabled;
+
+    // Device and pattern are compared structurally: a change to either forces
+    // the sampler to re-materialize, so cheap identity checks are not enough.
+    if (
+      intent.device.kind !== current.device.kind ||
+      intent.device.ledCount !== current.device.ledCount
+    ) {
+      ledDiff.device = { ...intent.device };
+    }
+    if (JSON.stringify(intent.pattern) !== JSON.stringify(current.pattern)) {
+      ledDiff.pattern = structuredClone(intent.pattern);
+    }
+    if (intent.cycleDuration !== current.cycleDuration) {
+      ledDiff.cycleDuration = intent.cycleDuration;
+    }
+    if (
+      intent.look.glowRadius !== current.look.glowRadius ||
+      intent.look.trailFadeRate !== current.look.trailFadeRate ||
+      intent.look.bloomIntensity !== current.look.bloomIntensity ||
+      intent.look.brightness !== current.look.brightness
+    ) {
+      ledDiff.look = { ...intent.look };
+    }
 
     return ledDiff;
   }
@@ -864,7 +873,7 @@ export class EffectRendererManager {
     const led = this.renderers.get("led");
     led?.dispose();
     this.renderers.delete("led");
-    this.ledTipTracker = null;
+    this.ledSampler = null;
 
     // Dispose trail overlay
     const trail = this.renderers.get("trails");

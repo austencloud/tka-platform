@@ -13,6 +13,11 @@ describe("effect-control-manifest", () => {
     "fireRightHex",
   ]);
 
+  // LED v2 is a device + strip pattern + nested look, none of which the
+  // manifest's flat-field descriptors can address. Its controls ship with the
+  // Phase 4 LedCustomize surface; until then it declares no controls.
+  const withoutManifestControls = new Set(["led"]);
+
   it("every descriptor field exists on the effect's default intent", () => {
     for (const [effect, controls] of Object.entries(EFFECT_CONTROLS)) {
       const intent = (DEFAULT_EFFECTS_CONFIG as unknown as Record<string, Record<string, unknown>>)[effect];
@@ -36,6 +41,7 @@ describe("effect-control-manifest", () => {
         string,
         Record<string, unknown>
       >)[effect]!;
+      if (withoutManifestControls.has(effect)) continue;
       const n = controls.filter(
         (c) => c.tier === "primary" && (!c.showWhen || c.showWhen(intent))
       ).length;
@@ -46,6 +52,7 @@ describe("effect-control-manifest", () => {
 
   it("every canonical effect exposes a shared primary row", () => {
     for (const effect of EFFECTS) {
+      if (withoutManifestControls.has(effect.id)) continue;
       expect(primaryControls(effect.id as keyof typeof EFFECT_CONTROLS).length, effect.id)
         .toBeGreaterThanOrEqual(3);
     }

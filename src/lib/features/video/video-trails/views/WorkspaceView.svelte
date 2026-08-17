@@ -289,9 +289,9 @@
 
     if (effects.led.enabled && ledRenderer?.isInitialized()) {
       const ledConfig = configMapper.toLedConfig(effects.led);
-      const ledTips = tipAdapter.mapToLedTips(endpoints, currentTime, ledConfig);
+      const leds = tipAdapter.mapToLedSamples(endpoints, currentTime, ledConfig);
       ledRenderer.renderLeds(
-        { tips: ledTips, currentTime, canvasWidth, canvasHeight } as LedFrameInput,
+        { leds, currentTime, canvasWidth, canvasHeight } as LedFrameInput,
         ledConfig,
       );
     }

@@ -52,6 +52,7 @@ export interface EffectConfigMap {
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 import { DEFAULT_EFFECTS_CONFIG } from "../domain/defaults";
 import { migrateEffectsConfig } from "../domain/migrations";
+import { migrateLedConfig } from "$lib/shared/animation-engine/domain/types/led-config-migration";
 import {
   getDefaultEffectLayer,
   type EffectLayerMode,
@@ -188,15 +189,20 @@ function migrateFromVmStorageOnce(config: EffectsConfig): EffectsConfig {
 
     // LED
     if (vm.ledPatternId !== undefined) {
-      migrated.led = {
-        ...migrated.led,
-        brightness: vm.ledBrightness ?? migrated.led.brightness,
-        patternId: vm.ledPatternId ?? migrated.led.patternId,
-        patternSpeed: vm.ledPatternSpeed ?? migrated.led.patternSpeed,
-        primaryColor: vm.ledPrimaryColor ?? migrated.led.primaryColor,
-        secondaryColor: vm.ledSecondaryColor ?? migrated.led.secondaryColor,
-        colorMode: vm.ledColorMode ?? migrated.led.colorMode,
-      };
+      // The VM keys are v1-shaped; run them through the same total v1→v2
+      // migration the versioned chain uses, then keep the current look for
+      // anything the VM overlay did not carry.
+      migrated.led = migrateLedConfig({
+        ...migrated.led.look,
+        ...(vm.ledBrightness !== undefined
+          ? { brightness: vm.ledBrightness }
+          : {}),
+        patternId: vm.ledPatternId,
+        patternSpeed: vm.ledPatternSpeed,
+        primaryColor: vm.ledPrimaryColor,
+        secondaryColor: vm.ledSecondaryColor,
+        colorMode: vm.ledColorMode,
+      });
     }
 
     // Charcoal — VM stores raw CharcoalSparkParams; convert to semantic scalars
@@ -264,8 +270,8 @@ function loadStoredConfig(): EffectsConfig | null {
     // The VM key predates config versioning entirely, so a VM-supplied
     // brightness 5 is the same stale pre-v16 default — apply the v16 remap
     // to the overlaid value too.
-    if (storedVersion < 16 && withVm.led.brightness === 5) {
-      withVm.led = { ...withVm.led, brightness: 3 };
+    if (storedVersion < 16 && withVm.led.look.brightness === 5) {
+      withVm.led = { ...withVm.led, look: { ...withVm.led.look, brightness: 3 } };
     }
     return withVm;
   } catch {

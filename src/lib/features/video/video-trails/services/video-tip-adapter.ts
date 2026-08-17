@@ -1,7 +1,7 @@
 import type { DetectedEndpoint } from "../domain/types";
 import type { PropTipData } from "$lib/shared/animation-engine/domain/types/fire-types";
 import type {
-  LedTipData,
+  LedSample,
   LedOverlayConfig,
 } from "$lib/shared/animation-engine/domain/types/led-types";
 import type { TrailPoint } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -75,22 +75,20 @@ export class VideoTipAdapter {
     });
   }
 
-  mapToLedTips(
+  mapToLedSamples(
     endpoints: DetectedEndpoint[],
     _currentTime: number,
     _ledConfig: LedOverlayConfig
-  ): LedTipData[] {
-    // Velocity is not needed for the LED renderer, which relies on position and
-    // the pattern engine for color. We pass white (1, 1, 1) and let the renderer
-    // apply its own color pattern on top.
+  ): LedSample[] {
+    // A detected endpoint is one capsule LED. Color comes from the renderer's
+    // configured pattern, so these carry white and let detection brightness
+    // through.
     return endpoints.map((ep) => ({
       x: ep.x,
       y: ep.y,
-      velocityX: 0,
-      velocityY: 0,
-      speed: 0,
       propIndex: ep.propIndex,
-      tipIndex: ep.tipIndex,
+      ledIndex: ep.tipIndex,
+      endpointIndex: ep.tipIndex,
       brightness: ep.brightness,
       r: 1,
       g: 1,

@@ -74,8 +74,9 @@
     resolvePulse3D,
     resolveBloom3D,
   } from "$lib/shared/effects/translators/webgl3d-translator";
-  import { evaluatePattern } from "$lib/shared/animation-engine/domain/patterns/evaluator";
-  import { createReusableContext } from "$lib/shared/animation-engine/domain/patterns/context";
+  import { LedPatternMaterializer } from "$lib/shared/animation-engine/services/led/led-pattern-materializer";
+  import { patternFrameIndex } from "$lib/shared/animation-engine/services/led-sampler";
+  import { getPixel } from "$lib/shared/poi/domain/strip-pattern";
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
   import { getSceneEffectsContext } from "./scene-effects/scene-effects-context";
   import type {
@@ -426,11 +427,11 @@
   const _staffAxis = new Vector3();
   const _staffCenter = new Vector3();
 
-  // Reusable LED pattern evaluation context. Rebuilt fields per-tip per-frame
-  // so patterns like rainbow/breathe/sparkle animate in 3D the same way they
-  // do in 2D. Without this, patternId was ignored and every LED got painted
-  // with the static primaryColor hex.
-  const _ledEvalCtx = createReusableContext();
+  // The 3D viewer reads the same materialized strip pattern the 2D sampler
+  // uses, so both backends paint identical colors from one cache. Phase 3
+  // routes a pixel staff to the POV renderer; today both devices light the
+  // two tracked shaft ends from the strip's first LEDs.
+  const _ledPattern = new LedPatternMaterializer();
   // Module-monotonic start time so the LED pattern animates continuously
   // across play/pause and across sequence changes - avoids the reset-to-0
   // "flash" you'd get from using raw performance.now() wall-clock seconds.
@@ -540,30 +541,6 @@
     }
 
     const resolvedLed = resolveLed3D(effectsState.led);
-    // Pattern evaluator needs both colors in normalized LedColor form - it
-    // decides internally whether to interpolate between them or ignore them
-    // entirely (e.g. rainbow ignores both).
-    //
-    // "prop-matched" mode is a contract: the blue prop shows canonical blue,
-    // the red prop shows canonical red, regardless of what primaryColor/
-    // secondaryColor currently are. The 2D side enforces this by hardcoding
-    // in resolveHandColor(); we do the same here so switching *from* a
-    // single-color preset (green glow) *to* prop-matched doesn't leak the
-    // old primary color onto the blue prop. Colors match PROP_COLORS so the
-    // LEDs visually line up with the rendered prop material exactly.
-    let blueBaseColor: { r: number; g: number; b: number };
-    let redBaseColor: { r: number; g: number; b: number };
-    if (resolvedLed.colorMode === "prop-matched") {
-      blueBaseColor = hexToRgb(PROP_COLORS.blue.main);
-      redBaseColor = hexToRgb(PROP_COLORS.red.main);
-    } else if (resolvedLed.colorMode === "per-hand") {
-      blueBaseColor = hexToRgb(resolvedLed.primaryColor);
-      redBaseColor = hexToRgb(resolvedLed.secondaryColor);
-    } else {
-      // unified: both props use the same primary color
-      blueBaseColor = hexToRgb(resolvedLed.primaryColor);
-      redBaseColor = hexToRgb(resolvedLed.primaryColor);
-    }
     // Fire's Color slider tints toward the physical staff color — always the
     // canonical prop colors, independent of the LED effect's color mode (the
     // blue/redBaseColor above are LED-derived and would leak LED hues onto the
@@ -577,13 +554,31 @@
     const firePropBlue = hexToRgb(PROP_COLORS.blue.main);
     const firePropRed = hexToRgb("#ff2410");
 
-    // Each prop has 2 tips; 2 props total = 4 LEDs for pattern indexing.
-    const TOTAL_LEDS = 4;
-    const ledTimeSeconds = (performance.now() - _ledStartMs) / 1000;
+    // Monotonic since mount so the pattern loop does not flash back to
+    // frame 0 on play/pause or a sequence change.
+    const ledElapsedMs = performance.now() - _ledStartMs;
     // Brightness is stored as a discrete 1-5 level and needs to be mapped
     // to the 0.2-1.0 alpha multiplier the shader expects. The 2D side
     // calls the same helper so both backends track the slider identically.
-    const ledBrightness = ledBrightnessToFloat(resolvedLed.brightness);
+    const ledBrightness = ledBrightnessToFloat(resolvedLed.look.brightness);
+    const ledStrip = _ledPattern.resolve(
+      resolvedLed.pattern,
+      Math.max(1, resolvedLed.device.ledCount),
+    );
+    const ledFrame = ledStrip
+      ? patternFrameIndex(
+          ledElapsedMs,
+          resolvedLed.cycleDuration,
+          ledStrip.frameCount,
+        )
+      : 0;
+    /** Strip color for one shaft end, normalized to 0-1. Black while an
+     *  image pattern is still loading. */
+    const ledColorAt = (ledIndex: number) => {
+      if (!ledStrip) return { r: 0, g: 0, b: 0 };
+      const c = getPixel(ledStrip, ledFrame, ledIndex % ledStrip.ledCount);
+      return { r: c.r / 255, g: c.g / 255, b: c.b / 255 };
+    };
     const ledSupersampleCount = LED_SUPERSAMPLE_BY_TIER[qualityTier] ?? 4;
 
     /**
@@ -700,24 +695,9 @@
         publishPooledTip(0, tipIndex as 0 | 1, tip, effect);
 
         if (effect === "led") {
-          // Run the LED pattern evaluator for this specific tip so
-          // patterns like rainbow/breathe/sparkle animate over time
-          // and vary across the 4-LED layout. Without this call, the
-          // 3D viewer ignored patternId entirely.
-          _ledEvalCtx.time = ledTimeSeconds;
-          _ledEvalCtx.ledIndex = tipIndex; // 0,1 for blue's two tips
-          _ledEvalCtx.totalLeds = TOTAL_LEDS;
-          _ledEvalCtx.speed = resolvedLed.patternSpeed;
-          _ledEvalCtx.primaryColor = blueBaseColor;
-          _ledEvalCtx.secondaryColor = redBaseColor;
-          _ledEvalCtx.propIndex = 0;
-          _ledEvalCtx.tipIndex = tipIndex;
-          _ledEvalCtx.x = tip.position.x;
-          _ledEvalCtx.y = tip.position.y;
-          _ledEvalCtx.velocityX = tip.velocity.x;
-          _ledEvalCtx.velocityY = tip.velocity.y;
-          _ledEvalCtx.speedMagnitude = tip.speed;
-          const color = evaluatePattern(resolvedLed.patternId, _ledEvalCtx);
+          // Both props run the same pattern on the same clock, exactly as
+          // the 2D sampler does, so a two-prop rig reads as one instrument.
+          const color = ledColorAt(tipIndex);
           pushSupersampledLed(
             blueLedTips,
             `0-${tipIndex}`,
@@ -800,23 +780,7 @@
         publishPooledTip(1, tipIndex as 0 | 1, tip, effect);
 
         if (effect === "led") {
-          // Same pattern evaluator call for red prop's tips. The red prop
-          // uses ledIndex 2/3 so the pattern's spatial offset (used by
-          // rainbow, chase, wave, etc.) spans the full 4-LED layout.
-          _ledEvalCtx.time = ledTimeSeconds;
-          _ledEvalCtx.ledIndex = 2 + tipIndex;
-          _ledEvalCtx.totalLeds = TOTAL_LEDS;
-          _ledEvalCtx.speed = resolvedLed.patternSpeed;
-          _ledEvalCtx.primaryColor = redBaseColor;
-          _ledEvalCtx.secondaryColor = blueBaseColor;
-          _ledEvalCtx.propIndex = 1;
-          _ledEvalCtx.tipIndex = tipIndex;
-          _ledEvalCtx.x = tip.position.x;
-          _ledEvalCtx.y = tip.position.y;
-          _ledEvalCtx.velocityX = tip.velocity.x;
-          _ledEvalCtx.velocityY = tip.velocity.y;
-          _ledEvalCtx.speedMagnitude = tip.speed;
-          const color = evaluatePattern(resolvedLed.patternId, _ledEvalCtx);
+          const color = ledColorAt(tipIndex);
           pushSupersampledLed(
             redLedTips,
             `1-${tipIndex}`,

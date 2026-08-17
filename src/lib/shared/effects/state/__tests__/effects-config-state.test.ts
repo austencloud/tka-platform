@@ -198,25 +198,25 @@ describe("EffectsConfigState", () => {
   describe("applyPreset", () => {
     it("merges the patch into the target effect's intent", () => {
       const state = createEffectsConfigState();
-      state.applyPreset("led", "led-green-glow", {
-        brightness: 4,
-        patternId: "solid",
+      state.applyPreset("led", "led-capsule-pulse", {
+        cycleDuration: 1.6,
+        device: { kind: "pixel-staff", ledCount: 72 },
       });
-      expect(state.led.brightness).toBe(4);
-      expect(state.led.patternId).toBe("solid");
+      expect(state.led.cycleDuration).toBe(1.6);
+      expect(state.led.device).toEqual({ kind: "pixel-staff", ledCount: 72 });
     });
 
     it("sets activePresets[effectType] to the preset id", () => {
       const state = createEffectsConfigState();
-      state.applyPreset("led", "led-green-glow", { brightness: 4 });
-      expect(state.activePresets.led).toBe("led-green-glow");
+      state.applyPreset("led", "led-capsule-pulse", { cycleDuration: 1.6 });
+      expect(state.activePresets.led).toBe("led-capsule-pulse");
     });
 
     it("preserves untouched fields of the intent", () => {
       const state = createEffectsConfigState();
-      const originalSpeed = state.led.patternSpeed;
-      state.applyPreset("led", "led-green-glow", { brightness: 2 });
-      expect(state.led.patternSpeed).toBe(originalSpeed);
+      const originalPattern = state.led.pattern;
+      state.applyPreset("led", "led-capsule-pulse", { cycleDuration: 2 });
+      expect(state.led.pattern).toEqual(originalPattern);
     });
 
     it("clamps Silk preset patches to the canonical maximum", () => {
@@ -227,9 +227,9 @@ describe("EffectsConfigState", () => {
 
     it("a subsequent updateEffect on the same effect nulls the active preset", () => {
       const state = createEffectsConfigState();
-      state.applyPreset("led", "led-green-glow", { brightness: 2 });
-      expect(state.activePresets.led).toBe("led-green-glow");
-      state.updateEffect("led", { brightness: 3 });
+      state.applyPreset("led", "led-capsule-pulse", { cycleDuration: 2 });
+      expect(state.activePresets.led).toBe("led-capsule-pulse");
+      state.updateEffect("led", { cycleDuration: 3 });
       expect(state.activePresets.led).toBeNull();
     });
 
@@ -238,7 +238,7 @@ describe("EffectsConfigState", () => {
       undoSpies.captureState.mockClear();
       undoSpies.commitState.mockClear();
       undoSpies.commitStateCoalescing.mockClear();
-      state.applyPreset("led", "led-green-glow", { brightness: 4 });
+      state.applyPreset("led", "led-capsule-pulse", { cycleDuration: 1.6 });
       expect(undoSpies.captureState).toHaveBeenCalledTimes(1);
       expect(undoSpies.commitState).toHaveBeenCalledTimes(1);
       // The old two-call hack also ran commitStateCoalescing via updateEffect.

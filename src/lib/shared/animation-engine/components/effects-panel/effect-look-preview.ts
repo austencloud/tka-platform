@@ -139,6 +139,18 @@ function bloomVariant(patch: Record<string, unknown>): string {
   return "halo";
 }
 
+/**
+ * LED presets are identified by their strip pattern, so the legacy preview
+ * model keys off the generator id (or "image" for an uploaded pattern).
+ */
+function ledVariant(patch: Record<string, unknown>): string {
+  const pattern = patch.pattern as
+    | { source?: string; generatorId?: string }
+    | undefined;
+  if (pattern?.source === "image") return "image";
+  return pattern?.generatorId ?? "glow";
+}
+
 function variantFor(
   effectType: string,
   patch: Record<string, unknown>
@@ -147,7 +159,7 @@ function variantFor(
     case "trails":
       return patch.rainbow === true ? "rainbow" : "ribbon";
     case "led":
-      return stringAt(patch, ["colorMode", "patternId"], "glow");
+      return ledVariant(patch);
     case "zap":
       return stringAt(patch, ["style"], "branching");
     case "sparkles":
@@ -184,9 +196,12 @@ function traitFor(
     case "fire":
       return `Live flame · ${percent(numberAt(patch, ["intensity"], 0.75))} intensity`;
     case "led": {
-      const pattern = titleCase(stringAt(patch, ["patternId"], "solid"));
-      const brightness = numberAt(patch, ["brightness"], 3);
-      return `${pattern} · brightness ${brightness}`;
+      const device = patch.device as { kind?: string; ledCount?: number } | undefined;
+      const deviceLabel =
+        device?.kind === "pixel-staff"
+          ? `${device.ledCount ?? 200} LEDs`
+          : "Capsule";
+      return `${deviceLabel} · ${titleCase(variant.replace(/-/g, " "))}`;
     }
     case "charcoal":
       return `Ember field · ${percent(numberAt(patch, ["spread"], 0.5))} spread`;

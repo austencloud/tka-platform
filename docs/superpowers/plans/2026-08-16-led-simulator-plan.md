@@ -26,29 +26,29 @@
 
 ## Phase 2 — Config v2, sampler, 2D pipeline (Opus)
 
-- [ ] `led-types.ts`: `LedOverlayConfig` v2 per spec §3 (`device`, `pattern`,
+- [x] `led-types.ts`: `LedOverlayConfig` v2 per spec §3 (`device`, `pattern`,
       `cycleDuration` 0.2–30, `look`). Delete unused `PropLedConfig`/`LedPoint`.
       Keep `LED_BRIGHTNESS_LEVELS`.
-- [ ] Pure migration function v1→v2 + unit tests (solid+color → capsule solid;
+- [x] Pure migration function v1→v2 + unit tests (solid+color → capsule solid;
       spectrum family → rainbow-sweep pixel-staff 200; unknown → default).
-- [ ] `led-tip-tracker.ts` → LED sampler: device → per-LED world positions
+- [x] `led-tip-tracker.ts` → LED sampler: device → per-LED world positions
       (capsule = the 2 tip points; pixel staff = lerp between tip endpoints,
       N∈{32,72,200}) + per-LED color from a materialized `StripPattern`
       (generated once per config change, cached; frame index
       `floor(((elapsed / cycleDuration) % 1) * frameCount)`).
-- [ ] `LedFrameInput` contract: per-LED positions + colors. Update
+- [x] `LedFrameInput` contract: per-LED positions + colors. Update
       `web-gl-led-renderer.ts` (MAX_LEDS 32→400),
       `web-gpu-led-executor.ts` (MAX_LEDS 64→400), `led-translator.ts`,
       `led-pass.ts`, `led-pass-executor.ts`.
-- [ ] Migrate consumers: `effect-system.ts`, `effect-renderer-manager.ts`,
+- [x] Migrate consumers: `effect-system.ts`, `effect-renderer-manager.ts`,
       `animation-engine.svelte.ts`, `effect-controller.ts`,
       `animation-render-loop.ts`, `IAnimationRenderLoop.ts`,
       `canvas-lifecycle-manager.ts`, video-trails `effect-config-mapper.ts` +
       `video-tip-adapter.ts`, `EffectControlStack.svelte`,
       `EffectTuneStrip.svelte`, `led-patterns.ts` (delete if fully subsumed).
-- [ ] Delete `src/lib/shared/animation-engine/domain/patterns/` (registry,
+- [x] Delete `src/lib/shared/animation-engine/domain/patterns/` (registry,
       evaluators, descriptors, context) once no imports remain. Grep-proof.
-- [ ] Evidence: targeted vitest on effect suites + `npm run check` log.
+- [x] Evidence: targeted vitest on effect suites + `npm run check` log.
 
 ## Phase 3 — 3D routing (Opus)
 

@@ -1,6 +1,7 @@
 import type { EffectsConfig } from "./effects-config";
 import { clampSilkIntensity, EFFECTS_CONFIG_VERSION } from "./effects-config";
 import { DEFAULT_EFFECTS_CONFIG } from "./defaults";
+import { migrateLedConfig } from "$lib/shared/animation-engine/domain/types/led-config-migration";
 
 /**
  * Migrate an arbitrary stored EffectsConfig up to the current version.
@@ -186,8 +187,10 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
   // v15 → v16: default LED brightness dropped 5 → 3. A persisted 5 on a
   // pre-16 config is the old default echoing back, not a user choice -
   // remap it. Users who picked 1-4 keep their setting.
-  if (version < 16 && input.led && input.led.brightness === 5) {
-    input.led = { ...input.led, brightness: 3 };
+  // (Runs before the v36 reshape below, so `led` is still the flat v1 object.)
+  const legacyLed = input.led as LegacyRecord | undefined;
+  if (version < 16 && legacyLed && legacyLed.brightness === 5) {
+    legacyLed.brightness = 3;
   }
 
   // v16 → v17: Bloom became lens bloom and its defaults changed - intensity
@@ -487,12 +490,23 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     input.activePresets = { ...input.activePresets, bloom: null };
   }
 
+  // v35 → v36: the LED effect becomes a physical prop simulator - a device
+  // plus a strip pattern - instead of a flat pattern id with loose colors.
+  // migrateLedConfig is total, so any stored shape resolves to a usable v2.
+  if (version < 36) {
+    input.led = migrateLedConfig(input.led);
+    if (input.activePresets?.led) {
+      // The v1 preset ids name patterns that no longer exist.
+      input.activePresets = { ...input.activePresets, led: null };
+    }
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
     trails: { ...DEFAULT_EFFECTS_CONFIG.trails, ...(input.trails ?? {}) },
     fire: { ...DEFAULT_EFFECTS_CONFIG.fire, ...(input.fire ?? {}) },
-    led: { ...DEFAULT_EFFECTS_CONFIG.led, ...(input.led ?? {}) },
+    led: migrateLedConfig(input.led ?? DEFAULT_EFFECTS_CONFIG.led),
     charcoal: { ...DEFAULT_EFFECTS_CONFIG.charcoal, ...(input.charcoal ?? {}) },
     zap: { ...DEFAULT_EFFECTS_CONFIG.zap, ...(input.zap ?? {}) },
     sparkles: { ...DEFAULT_EFFECTS_CONFIG.sparkles, ...(input.sparkles ?? {}) },

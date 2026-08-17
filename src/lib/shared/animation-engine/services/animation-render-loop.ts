@@ -24,8 +24,8 @@ import type {
 import type { FireTipTrackerConfig } from "./fire-tip-tracker";
 import type { FireTipTracker } from "./fire-tip-tracker";
 import type { WebGLLedRenderer } from "$lib/shared/animation-engine/services/led/web-gl-led-renderer";
-import type { LedTipTrackerConfig } from "./led-tip-tracker";
-import type { LedTipTracker } from "./led-tip-tracker";
+import type { LedSamplerConfig } from "./led-sampler";
+import type { LedSampler } from "./led-sampler";
 import type { ITrailOverlayCanvas } from "./ITrailOverlayCanvas";
 import type {
   RenderLoopConfig,
@@ -172,7 +172,7 @@ export class AnimationRenderLoop {
   private pathCache: AnimationPathCache | null = null;
   private frameBudgetMonitor: FrameBudgetMonitor | null = null;
   private fireTipTracker: FireTipTracker | null = null;
-  private ledTipTracker: LedTipTracker | null = null;
+  private ledSampler: LedSampler | null = null;
   private onEffectError: ((effectName: string, error: Error) => void) | null =
     null;
   private mandalaOverlay: MandalaOverlayCanvas | null = null;
@@ -285,7 +285,7 @@ export class AnimationRenderLoop {
     this.canvasSize = config.canvasSize;
     this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     this.fireTipTracker = config.fireTipTracker ?? null;
-    this.ledTipTracker = config.ledTipTracker ?? null;
+    this.ledSampler = config.ledSampler ?? null;
     this.onEffectError = config.onEffectError ?? null;
     this.mandalaOverlay = config.mandalaOverlay ?? null;
     this.previousBlueTrailPropType = undefined;
@@ -329,8 +329,8 @@ export class AnimationRenderLoop {
       this.frameBudgetMonitor = config.frameBudgetMonitor ?? null;
     if (config.fireTipTracker !== undefined)
       this.fireTipTracker = config.fireTipTracker ?? null;
-    if (config.ledTipTracker !== undefined)
-      this.ledTipTracker = config.ledTipTracker ?? null;
+    if (config.ledSampler !== undefined)
+      this.ledSampler = config.ledSampler ?? null;
     if (config.onEffectError !== undefined)
       this.onEffectError = config.onEffectError ?? null;
     if (config.mandalaOverlay !== undefined) {
@@ -474,7 +474,7 @@ export class AnimationRenderLoop {
     this.frameBudgetMonitor = null;
     this.getFrameParamsCallback = null;
     this.fireTipTracker = null;
-    this.ledTipTracker = null;
+    this.ledSampler = null;
     this.mandalaOverlay = null;
     this.mandalaPathPreparer.clearCache();
     this.previousMandalaPaths = null;
@@ -1644,7 +1644,7 @@ export class AnimationRenderLoop {
       : null;
     if (
       activeLedRenderer &&
-      this.ledTipTracker &&
+      this.ledSampler &&
       params.ledConfig?.enabled &&
       !this.ledDisabledByError &&
       !params.suppress2DOverlays
@@ -1652,13 +1652,13 @@ export class AnimationRenderLoop {
       try {
         // A hidden hand should take its LEDs with it. The base prop state stays
         // available so the Canvas2D renderer can fade the sprite out, but the
-        // LED tracker must not keep emitting points for that hidden prop or any
+        // LED sampler must not keep emitting points for that hidden prop or any
         // of its tunnel copies.
         const visibleBlueProp = effectiveBlueMotionVisible
           ? props.blueProp
           : null;
         const visibleRedProp = effectiveRedMotionVisible ? props.redProp : null;
-        const tipTrackerConfig: LedTipTrackerConfig = {
+        const ledSamplerConfig: LedSamplerConfig = {
           canvasSize: this.canvasSize,
           bluePropDimensions: props.bluePropDimensions,
           redPropDimensions: props.redPropDimensions,
@@ -1675,25 +1675,28 @@ export class AnimationRenderLoop {
           tunnelSpectrum: props.tunnelSpectrum ?? true,
         };
 
-        const allLedTips = this.ledTipTracker.update(
+        const allLeds = this.ledSampler.update(
           visibleBlueProp,
           visibleRedProp,
-          tipTrackerConfig,
+          ledSamplerConfig,
           currentTime,
           params.ledConfig
         );
 
-        // Filter LED tips by resolved effect assignment
+        // Filter LEDs by resolved effect assignment. A pixel staff resolves
+        // against the shaft end each LED sits nearest, so the per-end
+        // assignment cascade keeps working at 200 LEDs.
         const ledTipMap = params.tipEffectMap ?? {};
-        const ledTips = allLedTips.filter(
-          (t) => resolveEffect(t.propIndex, t.tipIndex, ledTipMap, {}) === "led"
+        const leds = allLeds.filter(
+          (l) =>
+            resolveEffect(l.propIndex, l.endpointIndex, ledTipMap, {}) === "led"
         );
 
-        // The renderer clears its retained glow and trail buffers when the tip
+        // The renderer clears its retained glow and trail buffers when the LED
         // list is empty. Skipping that frame leaves the last LED image visible.
         activeLedRenderer.renderLeds(
           {
-            tips: ledTips,
+            leds,
             currentTime,
             canvasWidth: this.canvasSize,
             canvasHeight: this.canvasSize,

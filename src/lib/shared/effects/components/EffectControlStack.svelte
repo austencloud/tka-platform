@@ -11,7 +11,6 @@
    * pattern (no checkboxes).
    */
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import { PATTERN_DESCRIPTORS as LED_PATTERNS } from "$lib/shared/animation-engine/domain/patterns/registry";
   import type {
     EffectsConfigState,
     EffectId,
@@ -259,24 +258,6 @@
           {/each}
         </div>
       </div>
-    {:else if c.type === "ledPattern"}
-      <div class="ctl-row ctl-row-wide">
-        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
-        <div class="ctl-patterns" role="radiogroup" aria-label={c.label}>
-          {#each LED_PATTERNS as p (p.id)}
-            <button
-              type="button"
-              class="ctl-pattern"
-              class:active={get(c.field) === p.id}
-              role="radio"
-              aria-checked={get(c.field) === p.id}
-              onclick={() => set(c.field, p.id)}
-            >
-              {p.name}
-            </button>
-          {/each}
-        </div>
-      </div>
     {/if}
   {/each}
 </div>
@@ -398,46 +379,6 @@
     display: flex;
     gap: 0.4rem;
     flex-wrap: wrap;
-  }
-
-  /* ledPattern: horizontal scroll of pattern chips (no fold — scroll to any). */
-  .ctl-patterns {
-    display: flex;
-    gap: 0.35rem;
-    min-width: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  .ctl-patterns::-webkit-scrollbar {
-    display: none;
-  }
-  .ctl-pattern {
-    flex: 0 0 auto;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 0.75rem;
-    border-radius: 8px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 500;
-    white-space: nowrap;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .ctl-pattern.active {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #4a9eff) 55%,
-      transparent
-    );
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #4a9eff) 18%,
-      transparent
-    );
-    color: var(--theme-text, #fff);
   }
 
   .ctl-slider {

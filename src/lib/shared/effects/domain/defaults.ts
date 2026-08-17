@@ -3,6 +3,7 @@ import {
   EFFECTS_CONFIG_VERSION,
   SILK_INTENSITY_DEFAULT,
 } from "./effects-config";
+import { DEFAULT_LED_INTENT } from "$lib/shared/animation-engine/domain/types/led-types";
 
 export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
   version: EFFECTS_CONFIG_VERSION,
@@ -32,14 +33,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     customColors: null,
   },
 
-  led: {
-    brightness: 3,
-    patternId: "solid",
-    patternSpeed: 1.0,
-    primaryColor: "#00ff88",
-    secondaryColor: "#ffffff",
-    colorMode: "unified",
-  },
+  led: structuredClone(DEFAULT_LED_INTENT),
 
   charcoal: {
     intensity: 0.5,

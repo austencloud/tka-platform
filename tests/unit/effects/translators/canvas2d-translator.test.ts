@@ -107,11 +107,11 @@ describe("resolveLed2D", () => {
   it("preserves intent fields", () => {
     const out = resolveLed2D({
       ...intent,
-      brightness: 3,
-      primaryColor: "#abcdef",
+      cycleDuration: 4.5,
+      look: { ...intent.look, brightness: 3 },
     });
-    expect(out.brightness).toBe(3);
-    expect(out.primaryColor).toBe("#abcdef");
+    expect(out.cycleDuration).toBe(4.5);
+    expect(out.look.brightness).toBe(3);
   });
 
   it("defaults dotRadius to 2", () => {

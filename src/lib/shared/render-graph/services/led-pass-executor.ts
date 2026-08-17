@@ -17,7 +17,7 @@ import type { LedPassPayload } from "../domain/led-pass";
 import type { FBO, FBOPool } from "./fbo-pool";
 import type { ShaderLibrary } from "./shader-library";
 
-const MAX_LEDS = 64;
+const MAX_LEDS = 400;
 const INSTANCE_STRIDE_FLOATS = 9;
 const BLOOM_MIP_COUNT = 5;
 const MAX_STREAK_DISTANCE_SQ = 400 * 400;
