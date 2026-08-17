@@ -61,10 +61,31 @@
   ];
 
   // ── Lab state (survives HMR + reload via localStorage) ──
-  // v2: the weave autopilot's travel term became the plane SHIFT (downstage↔
-  // upstage crossing) and the sweep default dropped to 0 — stale v1 state
-  // would re-apply the old full-reversal sweep on top of the shift.
-  const STORAGE_KEY = "grip-lab-state-v2";
+  // v3: the weave autopilot's single shift amplitude became four keyframed
+  // STATIONS (arm angle per quarter phase) — stale v2 state carried a
+  // sine-law amplitude with the extremes anchored a quarter turn late.
+  const STORAGE_KEY = "grip-lab-state-v3";
+
+  // The four keyframe stations of the weave, anchored to the quarter phases
+  // of the staff rotation. Each station's parameter is the ARM ANGLE the
+  // fore/aft reach should hold at that phase: positive = downstage (toward
+  // the audience), negative = upstage, 0 = the plane intersecting the body.
+  const WEAVE_STATION_THETAS = [0, 90, 180, 270] as const;
+  const WEAVE_STATION_DEFAULTS: readonly [number, number, number, number] = [
+    -45, 0, 45, 0,
+  ];
+  type WeaveStations = [number, number, number, number];
+
+  function parseStations(value: unknown): WeaveStations {
+    if (
+      Array.isArray(value) &&
+      value.length === 4 &&
+      value.every((entry) => typeof entry === "number" && Number.isFinite(entry))
+    ) {
+      return value.map((deg) => Math.max(-60, Math.min(60, deg))) as WeaveStations;
+    }
+    return [...WEAVE_STATION_DEFAULTS] as WeaveStations;
+  }
 
   interface PersistedState {
     point: CardinalPoint;
@@ -76,7 +97,7 @@
     handTravelCm: number;
     weaveAuto: boolean;
     weaveDepthDeg: number;
-    weaveShiftCm: number;
+    weaveStationsDeg: WeaveStations;
     weavePhaseDeg: number;
   }
 
@@ -91,7 +112,7 @@
       handTravelCm: 0,
       weaveAuto: false,
       weaveDepthDeg: 0,
-      weaveShiftCm: 35,
+      weaveStationsDeg: [...WEAVE_STATION_DEFAULTS] as WeaveStations,
       weavePhaseDeg: 0,
     };
     if (typeof localStorage === "undefined") return fallback;
@@ -134,10 +155,7 @@
           typeof parsed.weaveDepthDeg === "number"
             ? Math.max(0, Math.min(180, parsed.weaveDepthDeg))
             : fallback.weaveDepthDeg,
-        weaveShiftCm:
-          typeof parsed.weaveShiftCm === "number"
-            ? Math.max(0, Math.min(60, parsed.weaveShiftCm))
-            : fallback.weaveShiftCm,
+        weaveStationsDeg: parseStations(parsed.weaveStationsDeg),
         weavePhaseDeg:
           typeof parsed.weavePhaseDeg === "number"
             ? Math.max(-180, Math.min(180, parsed.weavePhaseDeg))
@@ -158,7 +176,7 @@
   let handTravelCm = $state(initial.handTravelCm);
   let weaveAuto = $state(initial.weaveAuto);
   let weaveDepthDeg = $state(initial.weaveDepthDeg);
-  let weaveShiftCm = $state(initial.weaveShiftCm);
+  let weaveStationsDeg = $state<WeaveStations>(initial.weaveStationsDeg);
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
 
   $effect(() => {
@@ -172,7 +190,7 @@
       handTravelCm,
       weaveAuto,
       weaveDepthDeg,
-      weaveShiftCm,
+      weaveStationsDeg: [...weaveStationsDeg] as WeaveStations,
       weavePhaseDeg,
     };
     if (typeof localStorage !== "undefined") {
@@ -205,22 +223,64 @@
   //   audience). The drawn plane rides along: the plane travels WITH the
   //   hand, it does not bend to meet it.
   //
-  // ── Weave autopilot (plane-shift model) ──
+  // ── Weave autopilot (keyframed plane-shift stations) ──
   // With the wrist thumb-locked, a full 360° of staff rotation demands 360°
   // of wrist roll — impossible. The weave answers by moving the grip to the
   // OTHER SIDE of the center of rotation: the base wall plane lives at the
-  // body's own depth (z = 0), and the hand carries the staff between two
-  // mirror stations about that center — a downstage plane (+shift, arm
-  // angled ~45° toward the audience) and an upstage plane (−shift, arm
-  // angled ~45° away). The staff keeps its wall-planar relationship the
-  // whole way; the arm's reach around the body is what re-orients the hand,
-  // so the pinky end rises and clears with almost no plane bend.
-  //   shift(θ) = −shift · sin(θ − φ)  downstage with the pinky end down
-  //                                   (θ=270, T-bar up), crossing the body
-  //                                   exactly when the staff is horizontal,
-  //                                   upstage when the pinky end points up
-  //                                   (θ=90, T-bar down)
+  // body's own depth (z = 0), and the hand carries the staff between a
+  // downstage plane and an upstage plane about that center. The staff keeps
+  // its wall-planar relationship the whole way; the arm's reach around the
+  // body is what re-orients the hand.
+  //
+  // The track is four keyframe stations, one per quarter phase, each holding
+  // the ARM ANGLE (fore/aft reach) for that phase — periodic Catmull-Rom
+  // between stations, so the reach dwells only where the track turns around
+  // (the extremes) and moves fastest through the body crossings, like a
+  // pendulum. The anchoring follows which staff END is inboard
+  // (pointing at the torso), because that is what needs the clearance:
+  //   θ=0    T-bar outboard, PINKY end at the body → upstage extreme (−45°):
+  //          the pinky end passes BEHIND the center of rotation.
+  //   θ=90   staff vertical (T-bar down) → crossing, plane intersects the body.
+  //   θ=180  T-bar/THUMB end at the body → downstage extreme (+45°): the
+  //          thumb end passes the forearm/head pocket in FRONT.
+  //   θ=270  staff vertical (T-bar up) → crossing back.
+  // (The previous sine law hung its extremes on the verticals — a quarter
+  // turn late, so the avatar was still reaching downstage when the pinky
+  // end needed its upstage clearance.)
+  //
+  // Stations are ANGLES, not centimeters: ±45° is the target reach, and the
+  // z shift is derived from the frontal-plane shoulder→hand geometry, so
+  // the downstage extreme can never silently out-reach the arm again.
   //   sweep(θ) = (depth/2) · (1 − cos(θ − φ))   residual bend, default 0
+  function trackArmDeg(thetaDeg: number): number {
+    const t = ((thetaDeg % 360) + 360) % 360;
+    const seg = Math.floor(t / 90) % 4;
+    const u = t / 90 - seg;
+    const p0 = weaveStationsDeg[seg];
+    const p1 = weaveStationsDeg[(seg + 1) % 4];
+    const m0 = (p1 - weaveStationsDeg[(seg + 3) % 4]) / 2;
+    const m1 = (weaveStationsDeg[(seg + 2) % 4] - p0) / 2;
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const interpolated =
+      (2 * u3 - 3 * u2 + 1) * p0 +
+      (u3 - 2 * u2 + u) * m0 +
+      (-2 * u3 + 3 * u2) * p1 +
+      (u3 - u2) * m1;
+    // Extreme station combinations can overshoot the keys (standard
+    // Catmull-Rom); cap at the slider range so tan() stays sane.
+    return Math.max(-60, Math.min(60, interpolated));
+  }
+
+  // Frontal-plane geometry for the angle→shift conversion. Grid center
+  // (y = 0) sits at shoulder height, so the moment arm is the frontal-plane
+  // distance from the right shoulder to the hand point. Shoulder numbers
+  // come from the avatar proportions (44cm lanky shoulder width → 22cm
+  // half-width); rest z is the relaxed shoulder's slight forward set. The
+  // per-station angles are the tunable truth — these just convert them.
+  const SHOULDER_X_M = -0.22; // right shoulder; the E hand point is −x
+  const SHOULDER_REST_Z_M = 0.03;
+
   const weaveDeltaRad = $derived(
     ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
   );
@@ -229,8 +289,24 @@
       ? (weaveDepthDeg / 2) * (1 - Math.cos(weaveDeltaRad))
       : planeSweepDeg
   );
+
+  const centerPathAngle = $derived(LOCATION_ANGLES[POINT_TO_GRID[point]] ?? 0);
+  const basePosition = $derived(
+    planeAngleToWorldPosition(Plane.WALL, centerPathAngle)
+  );
+  const armLateralM = $derived(
+    Math.max(0.15, Math.hypot(basePosition.x - SHOULDER_X_M, basePosition.y))
+  );
+
+  const effArmDeg = $derived(
+    weaveAuto ? trackArmDeg(staffAngleDeg - weavePhaseDeg) : 0
+  );
   const effTravelCm = $derived(
-    weaveAuto ? -weaveShiftCm * Math.sin(weaveDeltaRad) : handTravelCm
+    weaveAuto
+      ? (SHOULDER_REST_Z_M +
+          Math.tan((effArmDeg * Math.PI) / 180) * armLateralM) *
+        100
+      : handTravelCm
   );
 
   const sweepYRad = $derived((-effSweepDeg * Math.PI) / 180);
@@ -238,9 +314,7 @@
   // The one prop state under study: hand point + swept plane + scrubbed
   // staff angle. Built exactly like sequence playback builds its frames.
   const redPropState = $derived.by<PropState3D>(() => {
-    const centerPathAngle = LOCATION_ANGLES[POINT_TO_GRID[point]] ?? 0;
     const staffRad = (staffAngleDeg * Math.PI) / 180;
-    const basePosition = planeAngleToWorldPosition(Plane.WALL, centerPathAngle);
     const worldPosition = new Vector3(
       basePosition.x,
       basePosition.y,
@@ -287,7 +361,6 @@
     planeSweepDeg: 0,
     handTravelCm: 0,
     weaveDepthDeg: 0,
-    weaveShiftCm: 35,
     weavePhaseDeg: 0,
   } as const;
 
@@ -298,7 +371,7 @@
     planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg;
     handTravelCm = SLIDER_DEFAULTS.handTravelCm;
     weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg;
-    weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm;
+    weaveStationsDeg = [...WEAVE_STATION_DEFAULTS] as WeaveStations;
     weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg;
   }
 
@@ -306,12 +379,15 @@
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
   async function copyPose() {
+    const stationDump = WEAVE_STATION_THETAS.map(
+      (theta, i) => `${theta}°→${weaveStationsDeg[i]}°`
+    ).join(" ");
     const text =
       `point ${point} · angle ${Math.round(staffAngleDeg)}° · ` +
-      `sweep ${Math.round(effSweepDeg)}° · shift ${Math.round(effTravelCm)}cm · ` +
-      `stance ${stanceYawDeg}°` +
+      `sweep ${Math.round(effSweepDeg)}° · arm ${Math.round(effArmDeg)}° · ` +
+      `shift ${Math.round(effTravelCm)}cm · stance ${stanceYawDeg}°` +
       (weaveAuto
-        ? ` · weave auto (depth ${weaveDepthDeg}° · shift ${weaveShiftCm}cm · phase ${weavePhaseDeg}°)`
+        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}°)`
         : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
@@ -621,7 +697,8 @@
           />
           {#if weaveAuto}
             <span class="weave-readout">
-              sweep {Math.round(effSweepDeg)}° · shift {Math.round(effTravelCm)} cm
+              arm {Math.round(effArmDeg)}° · shift {Math.round(effTravelCm)} cm ·
+              sweep {Math.round(effSweepDeg)}°
             </span>
           {/if}
         </div>
@@ -652,32 +729,43 @@
             </datalist>
           </div>
 
-          <div class="slider-control">
-            <label for="grip-lab-shift">Plane shift</label>
-            <input
-              id="grip-lab-shift"
-              type="range"
-              min="0"
-              max="60"
-              step="1"
-              list="grip-lab-shift-ticks"
-              bind:value={weaveShiftCm}
-              ondblclick={() =>
-                (weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm)}
-            />
-            <output for="grip-lab-shift">{weaveShiftCm} cm</output>
-            <button
-              type="button"
-              class="mini-reset"
-              aria-label="Reset plane shift"
-              disabled={weaveShiftCm === SLIDER_DEFAULTS.weaveShiftCm}
-              onclick={() =>
-                (weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm)}
-            >↺</button>
-            <datalist id="grip-lab-shift-ticks">
-              {#each [0, 15, 30, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
-            </datalist>
-          </div>
+          <!-- One keyframe station per quarter phase: the arm's fore/aft
+               angle when the staff is at that θ. + = downstage, − = upstage. -->
+          {#each WEAVE_STATION_THETAS as stationTheta, stationIndex (stationTheta)}
+            <div class="slider-control">
+              <label for={`grip-lab-arm-${stationTheta}`}>
+                Arm @ {stationTheta}°
+              </label>
+              <input
+                id={`grip-lab-arm-${stationTheta}`}
+                type="range"
+                min="-60"
+                max="60"
+                step="1"
+                list="grip-lab-arm-ticks"
+                bind:value={weaveStationsDeg[stationIndex]}
+                ondblclick={() =>
+                  (weaveStationsDeg[stationIndex] =
+                    WEAVE_STATION_DEFAULTS[stationIndex])}
+              />
+              <output for={`grip-lab-arm-${stationTheta}`}>
+                {weaveStationsDeg[stationIndex]}°
+              </output>
+              <button
+                type="button"
+                class="mini-reset"
+                aria-label={`Reset arm angle at ${stationTheta} degrees`}
+                disabled={weaveStationsDeg[stationIndex] ===
+                  WEAVE_STATION_DEFAULTS[stationIndex]}
+                onclick={() =>
+                  (weaveStationsDeg[stationIndex] =
+                    WEAVE_STATION_DEFAULTS[stationIndex])}
+              >↺</button>
+            </div>
+          {/each}
+          <datalist id="grip-lab-arm-ticks">
+            {#each [-60, -45, 0, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
 
           <div class="slider-control">
             <label for="grip-lab-phase">Phase</label>
@@ -896,8 +984,9 @@
     grid-template-columns: repeat(2, minmax(10rem, 1fr));
   }
 
-  /* Three autopilot knobs; two manual sliders. Pinned per mode so neither
-     ever strands an orphan in its row. */
+  /* Six autopilot knobs (4 stations + depth + phase) = two full rows of
+     three; two manual sliders. Pinned per mode so neither ever strands an
+     orphan in its row. */
   .weave-row.auto {
     grid-template-columns: repeat(3, minmax(9rem, 1fr));
   }
@@ -913,8 +1002,8 @@
     color: var(--lab-muted);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    /* Worst case: "sweep 180° · shift −60 cm" — reserve it. */
-    min-width: 16ch;
+    /* Worst case: "arm −60° · shift −52 cm · sweep 180°" — reserve it. */
+    min-width: 30ch;
   }
 
   /* "-40 cm" is wider than the degree outputs; reserve its worst case so the
