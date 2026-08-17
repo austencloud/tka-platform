@@ -1000,7 +1000,7 @@
     color: var(--lab-muted);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    /* Worst case: "arm −60° · shift −52 cm · sweep 180°" — reserve it. */
+    /* Worst case: "arm −60° · shift −90 cm · sweep 180°" — reserve it. */
     min-width: 30ch;
   }
 
