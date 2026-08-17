@@ -52,10 +52,15 @@
 
 ## Phase 3 — 3D routing (Opus)
 
-- [ ] `EffectOrchestrator3D.svelte`: capsule → `led-renderer-3d.ts` (2 LEDs);
+- [x] `EffectOrchestrator3D.svelte`: capsule → `led-renderer-3d.ts` (2 LEDs);
       pixel staff → `pov-strip-renderer-3d.ts` (instanced ghosts), driven by
       the same materialized pattern + clock. Quality tiers per spec §5.
-- [ ] Evidence: 3D effect tests + check.
+- [x] Evidence: 3D effect tests + check. 408 tests green across
+      `tests/unit/3d-effects` + `tests/unit/effects` (30 new);
+      `npm run check` 0 errors 0 warnings.
+- [~] Tunnel-copy LED decimation deferred: the 3D LED path has no overlay
+      concept (one blue + one red prop state per rig), so there is nothing to
+      decimate. 2D-only concern.
 
 ## Phase 4 — Presets, thumbnail, panel (main session — visual, never fanned out)
 

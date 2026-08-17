@@ -47,6 +47,8 @@ export class PovTrailRing {
    * Record a new snapshot. Copies the provided data into the ring buffer.
    */
   push(snapshot: PovTrailSnapshot): void {
+    // Capacity 0 is the bulbs-only tier: nothing to remember.
+    if (this.capacity <= 0) return;
     const slot = this.buffer[this.head]!;
     slot.positions.set(snapshot.positions);
     slot.colors.set(snapshot.colors);

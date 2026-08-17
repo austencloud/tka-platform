@@ -2,10 +2,11 @@
  * PovStripRenderer3D - Full-strip LED renderer with POV trail accumulation.
  *
  * Distributes N LED billboards along a staff axis. Each LED's color comes
- * from a StripPattern frame, where frame index is derived from the staff's
- * rotation angle. Trail ghosts are accumulated in a PovTrailRing to create
- * the persistence-of-vision effect - images forming in the air as the
- * avatar spins, exactly like watching a pixel poi performer in a dark room.
+ * from a StripPattern frame chosen by the caller's clock, so a pixel staff
+ * runs the same loop the 2D sampler runs. Trail ghosts are accumulated in a
+ * PovTrailRing to create the persistence-of-vision effect - images forming
+ * in the air as the avatar spins, exactly like watching a pixel poi
+ * performer in a dark room.
  *
  * Reuses the existing LedMaterial3D shader (additive blending, core + halo).
  */
@@ -25,45 +26,97 @@ import { QualityTier } from "../types";
 import { PovTrailRing, type PovTrailSnapshot } from "./pov-trail-ring";
 import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
 
-/** LED counts per quality tier */
+/** Rendered-LED ceiling per quality tier. A shorter device keeps its own count. */
 const LEDS_PER_TIER: Record<QualityTier, number> = {
   [QualityTier.HIGH]: 200,
   [QualityTier.MEDIUM]: 100,
   [QualityTier.LOW]: 50,
 };
 
-/** Persistence frame count per quality tier */
+/**
+ * Persistence frame count per quality tier. LOW renders bulbs only, matching
+ * what the capsule ribbon path does at LOW (TRAIL_FADE_DURATION[LOW] === 0).
+ */
 const PERSISTENCE_FRAMES: Record<QualityTier, number> = {
   [QualityTier.HIGH]: 12,
   [QualityTier.MEDIUM]: 8,
-  [QualityTier.LOW]: 4,
+  [QualityTier.LOW]: 0,
 };
 
 /** Billboard size for each LED - smaller than 2-point LEDs since we have 200 */
 const POV_LED_SIZE = 0.012;
 
+/** The look's trail-fade range, per LedLook.trailFadeRate. */
+const TRAIL_FADE_RATE_MIN = 0.8;
+const TRAIL_FADE_RATE_MAX = 0.98;
+
+/** The ghost-persistence window this renderer accepts, in seconds. */
+const PERSISTENCE_MIN_SECONDS = 0.05;
+const PERSISTENCE_MAX_SECONDS = 0.5;
+
+/**
+ * Map the look's per-frame trail fade rate onto the ghost persistence window,
+ * so one persistence control drives both the 2D accumulation buffer and the
+ * 3D trail ring.
+ */
+export function trailFadeRateToPovPersistence(rate: number): number {
+  if (!Number.isFinite(rate)) return PERSISTENCE_MIN_SECONDS;
+  const clamped = Math.max(
+    TRAIL_FADE_RATE_MIN,
+    Math.min(TRAIL_FADE_RATE_MAX, rate)
+  );
+  const t =
+    (clamped - TRAIL_FADE_RATE_MIN) / (TRAIL_FADE_RATE_MAX - TRAIL_FADE_RATE_MIN);
+  return (
+    PERSISTENCE_MIN_SECONDS + t * (PERSISTENCE_MAX_SECONDS - PERSISTENCE_MIN_SECONDS)
+  );
+}
+
 export class PovStripRenderer3D {
   private mesh: InstancedMesh | null = null;
-  private instanceColors: Float32Array;
-  private instanceAlphas: Float32Array;
-  private instanceStretches: Float32Array;
+  private instanceColors!: Float32Array;
+  private instanceAlphas!: Float32Array;
+  private instanceStretches!: Float32Array;
   private dummy = new Object3D();
-  private trail: PovTrailRing;
+  private trail!: PovTrailRing;
   private qualityTier: QualityTier;
-  private activeLedCount: number;
+  private activeLedCount = 0;
   private parent: Object3D | null = null;
-  private maxInstances: number;
+  private maxInstances = 0;
+  /** The device's LED count; Infinity means "whatever the tier allows". */
+  private readonly requestedLedCount: number;
 
   /** Persistence duration in seconds (default 120ms) */
   private persistenceDuration = 0.12;
 
   // Reusable snapshot to avoid allocations each frame
-  private currentSnapshot: PovTrailSnapshot;
+  private currentSnapshot!: PovTrailSnapshot;
 
-  constructor(qualityTier: QualityTier = QualityTier.HIGH) {
+  /**
+   * @param qualityTier - caps rendered LED count and ghost density
+   * @param ledCount - the device's LED count (32 / 72 / 200). Omitted, the
+   *   renderer fills the tier ceiling.
+   */
+  constructor(qualityTier: QualityTier = QualityTier.HIGH, ledCount?: number) {
     this.qualityTier = qualityTier;
-    this.activeLedCount = LEDS_PER_TIER[qualityTier];
-    const persistenceFrames = PERSISTENCE_FRAMES[qualityTier];
+    this.requestedLedCount =
+      ledCount != null && Number.isFinite(ledCount)
+        ? Math.max(1, Math.round(ledCount))
+        : Number.POSITIVE_INFINITY;
+    this.allocate(qualityTier);
+  }
+
+  /** Rendered LED count after the tier ceiling is applied. */
+  get ledCount(): number {
+    return this.activeLedCount;
+  }
+
+  private allocate(tier: QualityTier): void {
+    this.activeLedCount = Math.max(
+      1,
+      Math.min(this.requestedLedCount, LEDS_PER_TIER[tier])
+    );
+    const persistenceFrames = PERSISTENCE_FRAMES[tier];
 
     // Max instances: active LEDs + (LEDs * persistence frames)
     this.maxInstances = this.activeLedCount * (1 + persistenceFrames);
@@ -119,7 +172,7 @@ export class PovStripRenderer3D {
    * @param staffAxis - Normalized direction vector along the staff
    * @param staffCenter - World-space center of the staff
    * @param staffHalfLength - Half the staff length in world units
-   * @param rotationAngle - Current rotation angle in radians (0–2PI)
+   * @param frameIndex - Pattern frame to show, from the caller's loop clock
    * @param pattern - Active strip pattern
    * @param camera - Current camera (for billboard orientation)
    * @param currentTime - Current time in seconds
@@ -129,20 +182,21 @@ export class PovStripRenderer3D {
     staffAxis: Vector3,
     staffCenter: Vector3,
     staffHalfLength: number,
-    rotationAngle: number,
+    frameIndex: number,
     pattern: StripPattern,
     camera: Camera,
     currentTime: number,
     brightness: number
   ): void {
-    if (!this.mesh) return;
+    if (!this.mesh || pattern.frameCount <= 0) return;
 
     const cameraQuat = camera.quaternion;
 
-    // Map rotation angle to frame index
-    const normalizedAngle = ((rotationAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    const frameIndex = Math.floor((normalizedAngle / (Math.PI * 2)) * pattern.frameCount) % pattern.frameCount;
-    const frame = pattern.frames[frameIndex]!;
+    const wrappedFrame =
+      (((Math.floor(frameIndex) % pattern.frameCount) + pattern.frameCount) %
+        pattern.frameCount);
+    const frame = pattern.frames[wrappedFrame];
+    if (!frame) return;
 
     // Sample stride: if pattern has more LEDs than our quality tier renders
     const sampleStride = pattern.ledCount / this.activeLedCount;
@@ -258,7 +312,25 @@ export class PovStripRenderer3D {
   }
 
   setPersistenceDuration(seconds: number): void {
-    this.persistenceDuration = Math.max(0.05, Math.min(0.5, seconds));
+    this.persistenceDuration = Math.max(
+      PERSISTENCE_MIN_SECONDS,
+      Math.min(PERSISTENCE_MAX_SECONDS, seconds)
+    );
+  }
+
+  /** Push look changes into the shared LED shader without a rebuild. */
+  updateMaterialUniforms(options: Partial<LedMaterialOptions>): void {
+    if (!this.mesh || Array.isArray(this.mesh.material)) return;
+    const mat = this.mesh.material as ReturnType<typeof createLedMaterial>;
+    if (options.glowRadius !== undefined) {
+      mat.uniforms.uGlowRadius!.value = options.glowRadius;
+    }
+    if (options.brightness !== undefined) {
+      mat.uniforms.uBrightness!.value = options.brightness;
+    }
+    if (options.emissiveStrength !== undefined) {
+      mat.uniforms.uEmissiveStrength!.value = options.emissiveStrength;
+    }
   }
 
   setQualityTier(tier: QualityTier): void {
@@ -266,18 +338,7 @@ export class PovStripRenderer3D {
     // Quality tier change requires full re-initialization
     this.dispose();
     this.qualityTier = tier;
-    this.activeLedCount = LEDS_PER_TIER[tier];
-    const persistenceFrames = PERSISTENCE_FRAMES[tier];
-    this.maxInstances = this.activeLedCount * (1 + persistenceFrames);
-    this.trail = new PovTrailRing(this.activeLedCount, persistenceFrames);
-    this.instanceColors = new Float32Array(this.maxInstances * 3);
-    this.instanceAlphas = new Float32Array(this.maxInstances);
-    this.instanceStretches = new Float32Array(this.maxInstances * 2);
-    this.currentSnapshot = {
-      positions: new Float32Array(this.activeLedCount * 3),
-      colors: new Uint8Array(this.activeLedCount * 3),
-      timestamp: 0,
-    };
+    this.allocate(tier);
     // Caller must re-initialize after tier change
   }
 

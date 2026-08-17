@@ -21,7 +21,7 @@
   import { useThrelte, useTask } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
-  import { Vector3, Object3D, Quaternion, Euler, Matrix3 } from "three";
+  import { Vector3, Object3D, Matrix3, type Camera } from "three";
   import Trail3D from "./trails/Trail3D.svelte";
   import EffectsLayer from "./EffectsLayer.svelte";
   import { LedRenderer3D, type LedTipInput } from "./led/led-renderer-3d";
@@ -37,7 +37,10 @@
     TipPositionBridge3D,
     type TrailSourceId3D,
   } from "./tip-position-bridge-3d";
-  import { PovStripRenderer3D } from "./poi/pov-strip-renderer-3d";
+  import {
+    PovStripRenderer3D,
+    trailFadeRateToPovPersistence,
+  } from "./poi/pov-strip-renderer-3d";
   import type { StripPattern } from "$lib/shared/poi/domain/strip-pattern";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import {
@@ -137,10 +140,6 @@
       maxPoints?: number;
       rainbow?: boolean;
     };
-    /** Active strip pattern for POV LED rendering. When set, LED effect uses PovStripRenderer3D instead of LedRenderer3D. */
-    activeStripPattern?: StripPattern | null;
-    /** POV persistence duration in seconds */
-    povPersistenceDuration?: number;
   }
 
   let {
@@ -159,8 +158,6 @@
     redHandPos = { x: 0, z: 0 },
     effectsParentRef,
     trailConfig = {},
-    activeStripPattern = null,
-    povPersistenceDuration = 0.12,
   }: Props = $props();
 
   const { scene, camera } = useThrelte();
@@ -388,7 +385,7 @@
   // Fire renderer (single instance - all tips share one particle pool)
   let fireRenderer: FireRenderer3D | null = null;
 
-  // POV strip renderers - used when a StripPattern is active
+  // POV strip renderers - the pixel-staff device's renderer
   let bluePovRenderer: PovStripRenderer3D | null = null;
   let redPovRenderer: PovStripRenderer3D | null = null;
   let rendererQualityTier = qualityTier;
@@ -423,19 +420,88 @@
     rendererQualityTier = nextTier;
   }
 
+  /**
+   * Tear down every LED renderer when the simulated device changes. The
+   * device decides which family is live (capsule -> ribbon, pixel staff ->
+   * POV) and a pixel staff's LED count decides the POV instance buffers, so
+   * both are rebuilt from scratch rather than reconfigured in place.
+   */
+  function syncLedDevice(kind: string, ledCount: number): void {
+    const key = `${kind}:${ledCount}`;
+    if (key === _ledDeviceKey) return;
+    _ledDeviceKey = key;
+
+    blueLedRenderer?.dispose();
+    blueLedRenderer = null;
+    redLedRenderer?.dispose();
+    redLedRenderer = null;
+    bluePovRenderer?.dispose();
+    bluePovRenderer = null;
+    redPovRenderer?.dispose();
+    redPovRenderer = null;
+    _ledPrevPositions.clear();
+  }
+
+  /**
+   * Drive one prop's pixel staff. The strip spans the same two shaft
+   * endpoints the ribbon renderer lights on a capsule, so both devices sit on
+   * the identical prop attachment.
+   */
+  function updatePixelStaff(
+    renderer: PovStripRenderer3D,
+    tips: readonly TipPositionData3D[],
+    rigLocalCenter: { x: number; y: number; z: number },
+    pattern: StripPattern,
+    frameIndex: number,
+    cam: Camera,
+    now: number,
+    brightness: number
+  ): void {
+    const first = tips[0];
+    const last = tips[tips.length - 1];
+    if (!first || !last || tips.length < 2) {
+      renderer.reset();
+      return;
+    }
+
+    _staffAxis.set(
+      last.position.x - first.position.x,
+      last.position.y - first.position.y,
+      last.position.z - first.position.z
+    );
+    const span = _staffAxis.length();
+    if (span < 1e-6) {
+      renderer.reset();
+      return;
+    }
+    _staffAxis.multiplyScalar(1 / span);
+    _staffCenter.set(rigLocalCenter.x, rigLocalCenter.y, rigLocalCenter.z);
+
+    renderer.update(
+      _staffAxis,
+      _staffCenter,
+      span / 2,
+      frameIndex,
+      pattern,
+      cam,
+      now,
+      brightness
+    );
+  }
+
   // Reusable vectors for staff axis computation
   const _staffAxis = new Vector3();
   const _staffCenter = new Vector3();
 
   // The 3D viewer reads the same materialized strip pattern the 2D sampler
-  // uses, so both backends paint identical colors from one cache. Phase 3
-  // routes a pixel staff to the POV renderer; today both devices light the
-  // two tracked shaft ends from the strip's first LEDs.
+  // uses, so both backends paint identical colors from one cache. A capsule
+  // lights the two tracked shaft ends through the ribbon renderer; a pixel
+  // staff spans the shaft through the POV renderer.
   const _ledPattern = new LedPatternMaterializer();
-  // Module-monotonic start time so the LED pattern animates continuously
-  // across play/pause and across sequence changes - avoids the reset-to-0
-  // "flash" you'd get from using raw performance.now() wall-clock seconds.
-  const _ledStartMs = performance.now();
+
+  // Which device the live renderers were built for. A change disposes both
+  // renderer families so only the device's own meshes exist afterwards.
+  let _ledDeviceKey = "";
 
   // Previous-frame tip position cache for LED sub-frame supersampling.
   // At 60fps a fast-moving LED covers ~12cm per frame, which looks like
@@ -554,17 +620,20 @@
     const firePropBlue = hexToRgb(PROP_COLORS.blue.main);
     const firePropRed = hexToRgb("#ff2410");
 
-    // Monotonic since mount so the pattern loop does not flash back to
-    // frame 0 on play/pause or a sequence change.
-    const ledElapsedMs = performance.now() - _ledStartMs;
+    // The 2D sampler is handed the rAF timestamp, so reading the same clock
+    // here (not a mount-relative one) puts both backends on the same frame of
+    // the same loop at the same instant. performance.now() never resets, so
+    // the pattern still runs continuously across play/pause and sequence
+    // changes.
+    const ledElapsedMs = performance.now();
     // Brightness is stored as a discrete 1-5 level and needs to be mapped
     // to the 0.2-1.0 alpha multiplier the shader expects. The 2D side
     // calls the same helper so both backends track the slider identically.
     const ledBrightness = ledBrightnessToFloat(resolvedLed.look.brightness);
-    const ledStrip = _ledPattern.resolve(
-      resolvedLed.pattern,
-      Math.max(1, resolvedLed.device.ledCount),
-    );
+    const ledCount = Math.max(1, Math.round(resolvedLed.device.ledCount));
+    const usePixelStaff = resolvedLed.device.kind === "pixel-staff";
+    syncLedDevice(resolvedLed.device.kind, ledCount);
+    const ledStrip = _ledPattern.resolve(resolvedLed.pattern, ledCount);
     const ledFrame = ledStrip
       ? patternFrameIndex(
           ledElapsedMs,
@@ -657,6 +726,12 @@
     charcoalTips.length = 0;
     fireTips.length = 0;
 
+    // Whether the LED effect is assigned to either end of each prop. A pixel
+    // staff needs the assignment but not the per-tip samples: the POV renderer
+    // computes its own LED positions along the shaft.
+    let blueLedAssigned = false;
+    let redLedAssigned = false;
+
     // PerformerRig renders the blue-colored prop using bluePropState at
     // blueHandPos, and the red-colored prop using redPropState at redHandPos.
     // Effects must follow that same mapping or the blue trail ends up on the
@@ -697,17 +772,20 @@
         if (effect === "led") {
           // Both props run the same pattern on the same clock, exactly as
           // the 2D sampler does, so a two-prop rig reads as one instrument.
-          const color = ledColorAt(tipIndex);
-          pushSupersampledLed(
-            blueLedTips,
-            `0-${tipIndex}`,
-            tip.position,
-            tip.velocity,
-            tip.speed,
-            color.r,
-            color.g,
-            color.b
-          );
+          blueLedAssigned = true;
+          if (!usePixelStaff) {
+            const color = ledColorAt(tipIndex);
+            pushSupersampledLed(
+              blueLedTips,
+              `0-${tipIndex}`,
+              tip.position,
+              tip.velocity,
+              tip.speed,
+              color.r,
+              color.g,
+              color.b
+            );
+          }
         } else if (effect === "charcoal") {
           charcoalTips.push({
             sourceId: tipIndex,
@@ -780,17 +858,20 @@
         publishPooledTip(1, tipIndex as 0 | 1, tip, effect);
 
         if (effect === "led") {
-          const color = ledColorAt(tipIndex);
-          pushSupersampledLed(
-            redLedTips,
-            `1-${tipIndex}`,
-            tip.position,
-            tip.velocity,
-            tip.speed,
-            color.r,
-            color.g,
-            color.b
-          );
+          redLedAssigned = true;
+          if (!usePixelStaff) {
+            const color = ledColorAt(tipIndex);
+            pushSupersampledLed(
+              redLedTips,
+              `1-${tipIndex}`,
+              tip.position,
+              tip.velocity,
+              tip.speed,
+              color.r,
+              color.g,
+              color.b
+            );
+          }
         } else if (effect === "charcoal") {
           charcoalTips.push({
             sourceId: 2 + tipIndex,
@@ -862,81 +943,64 @@
     if (imperativeParent) {
       syncRendererQuality(imperativeParent);
       const now = performance.now() / 1000;
-      const hasPovPattern = activeStripPattern != null;
 
-      if (hasPovPattern) {
-        // POV Strip Mode: full 200-LED strip with persistence-of-vision trails
+      if (usePixelStaff) {
+        // Pixel staff: the whole shaft lights, rendered as instanced POV
+        // ghosts. One renderer per prop, both reading the shared pattern and
+        // the shared clock.
+        const povPersistence = trailFadeRateToPovPersistence(
+          resolvedLed.look.trailFadeRate
+        );
 
-        // Compute staff axis + rotation angle for blue prop
-        if (blueLedTips.length > 0 && bluePropState) {
+        if (ledStrip && blueLedAssigned && blueRigCenter) {
           if (!bluePovRenderer) {
-            bluePovRenderer = new PovStripRenderer3D(qualityTier);
-            bluePovRenderer.initialize(imperativeParent);
+            bluePovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+            bluePovRenderer.initialize(imperativeParent, {
+              glowRadius: resolvedLed.look.glowRadius,
+            });
           }
-          bluePovRenderer.setPersistenceDuration(povPersistenceDuration);
-          const rotation = bluePropState.worldRotation;
-          const horizontalQuat = new Quaternion().setFromEuler(
-            new Euler(0, 0, Math.PI / 2)
-          );
-          const finalQuat = rotation.clone().multiply(horizontalQuat);
-          _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
-
-          _staffCenter.copy(bluePropState.worldPosition);
-
-          // Rotation angle: extract from the quaternion's Z-axis rotation
-          const euler = new Euler().setFromQuaternion(rotation, "ZYX");
-          const rotAngle = euler.z;
-
-          bluePovRenderer.update(
-            _staffAxis,
-            _staffCenter,
-            staffHalfLength,
-            rotAngle,
-            activeStripPattern!,
+          bluePovRenderer.setPersistenceDuration(povPersistence);
+          bluePovRenderer.updateMaterialUniforms({
+            glowRadius: resolvedLed.look.glowRadius,
+          });
+          updatePixelStaff(
+            bluePovRenderer,
+            blueEffectTips,
+            blueRigCenter,
+            ledStrip,
+            ledFrame,
             cam!,
             now,
-            1.0
+            ledBrightness
           );
         } else {
-          bluePovRenderer.reset();
+          bluePovRenderer?.reset();
         }
 
-        // Compute staff axis + rotation angle for red prop
-        if (redLedTips.length > 0 && redPropState) {
+        if (ledStrip && redLedAssigned && redRigCenter) {
           if (!redPovRenderer) {
-            redPovRenderer = new PovStripRenderer3D(qualityTier);
-            redPovRenderer.initialize(imperativeParent);
+            redPovRenderer = new PovStripRenderer3D(qualityTier, ledCount);
+            redPovRenderer.initialize(imperativeParent, {
+              glowRadius: resolvedLed.look.glowRadius,
+            });
           }
-          redPovRenderer.setPersistenceDuration(povPersistenceDuration);
-          const rotation = redPropState.worldRotation;
-          const horizontalQuat = new Quaternion().setFromEuler(
-            new Euler(0, 0, Math.PI / 2)
-          );
-          const finalQuat = rotation.clone().multiply(horizontalQuat);
-          _staffAxis.set(0, 1, 0).applyQuaternion(finalQuat).normalize();
-
-          _staffCenter.copy(redPropState.worldPosition);
-
-          const euler = new Euler().setFromQuaternion(rotation, "ZYX");
-          const rotAngle = euler.z;
-
-          redPovRenderer.update(
-            _staffAxis,
-            _staffCenter,
-            staffHalfLength,
-            rotAngle,
-            activeStripPattern!,
+          redPovRenderer.setPersistenceDuration(povPersistence);
+          redPovRenderer.updateMaterialUniforms({
+            glowRadius: resolvedLed.look.glowRadius,
+          });
+          updatePixelStaff(
+            redPovRenderer,
+            redEffectTips,
+            redRigCenter,
+            ledStrip,
+            ledFrame,
             cam!,
             now,
-            1.0
+            ledBrightness
           );
         } else {
-          redPovRenderer.reset();
+          redPovRenderer?.reset();
         }
-
-        // Suppress legacy LED renderers while POV is active
-        blueLedRenderer?.reset();
-        redLedRenderer?.reset();
       } else {
         if (blueLedTips.length > 0) {
           if (!blueLedRenderer) {
@@ -957,10 +1021,6 @@
         } else {
           redLedRenderer?.reset();
         }
-
-        // Suppress POV renderers while legacy mode is active
-        bluePovRenderer?.reset();
-        redPovRenderer?.reset();
       }
 
       // Charcoal renderer (single pool for all tips)
