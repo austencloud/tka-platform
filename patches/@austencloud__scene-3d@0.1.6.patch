@@ -1450,6 +1450,223 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/dist/lib/components/props/Triad3D.svelte b/dist/lib/components/props/Triad3D.svelte
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14ef451f094 100644
+--- a/dist/lib/components/props/Triad3D.svelte
++++ b/dist/lib/components/props/Triad3D.svelte
+@@ -1,28 +1,56 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { buildTriadShape, TRIAD_ARM_WIDTH } from "./triad-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of an arm's half-width, past which the rolled edge folds through itself at
++   * the notches where two arms meet.
++   */
++  const MAX_BEVEL_INSET = TRIAD_ARM_WIDTH / 6.8;
++
++  function getTriadPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildTriadShape(length),
++      depth,
++      length * MAX_BEVEL_INSET
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Triad3D Component
+    *
+-   * Renders a 3D triad (Y-shaped prop with 3 arms radiating from a center hub):
+-   * - Center hub: sphere slightly larger than arm thickness
+-   * - Three arms at 120° intervals in the XY plane
+-   * - One arm points along +Y, others at ±120° from that
+-   * - Small sphere caps at each arm tip
+-   * - Grip is at the center hub
+-   * - Trail indicator sphere for path visualization
++   * Three straight arms of equal width meeting at a hub, 120 degrees apart,
++   * each ending in a round cap — the exact silhouette of the 2D triad,
++   * extruded into a bullnose plate. The outline comes from the drawing itself
++   * in `triad-profile.ts`, so the 3D prop and the pictograph prop are the same
++   * shape by construction.
+    *
+-   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
+-   * spread in the local XY plane from the center hub.
++   * The hand takes the hub, with one arm running away from it and two behind.
++   * There is no separate handle and no hub boss — the artwork does not draw
++   * either, so neither does this.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -36,117 +64,41 @@
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  // Each arm is ~45% of staff length
+-  const ARM_LENGTH_RATIO = 0.45;
+-
+-  const armLength = $derived(
+-    (length ?? userProportionsState.staffLength) * ARM_LENGTH_RATIO * scale
++  const effectiveLength = $derived(
++    (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const rotation = $derived(computePropRotation(propState));
+-
+-  // Arm thickness is 2x the base staff radius
+-  const armRadius = $derived(baseRadius * 2);
+-
+-  // Hub sphere is slightly larger than arm thickness so the arms blend into it
+-  const hubRadius = $derived(armRadius * 1.4);
+-
+-  // Sphere cap radius at each arm tip
+-  const tipCapRadius = $derived(armRadius * 1.2);
+-
+-  // Three arms at 120° intervals.
+-  // Arm 0: along +Y (up in local space)
+-  // Arm 1: 120° clockwise from +Y
+-  // Arm 2: 240° clockwise from +Y
+-  //
+-  // Each arm's center is offset by half its length along its direction.
+-  // The cylinder is vertical by default (along Y), so we rotate each arm
+-  // around Z to point it in the correct direction within the XY plane.
+-  const arms = $derived.by(() => {
+-    const result: Array<{
+-      centerX: number;
+-      centerY: number;
+-      tipX: number;
+-      tipY: number;
+-      rotationZ: number;
+-    }> = [];
+-
+-    for (let i = 0; i < 3; i++) {
+-      // Angle from +Y axis, measured clockwise in XY plane
+-      // Arm 0 = 0°, Arm 1 = 120°, Arm 2 = 240°
+-      const angle = (i * 2 * Math.PI) / 3;
+-
+-      // Direction vector in XY plane (from +Y, rotating clockwise)
+-      const dirX = Math.sin(angle);
+-      const dirY = Math.cos(angle);
+-
+-      // Cylinder center (halfway along the arm)
+-      const halfArm = armLength / 2;
+-      const centerX = dirX * halfArm;
+-      const centerY = dirY * halfArm;
+-
+-      // Tip position (end of arm)
+-      const tipX = dirX * armLength;
+-      const tipY = dirY * armLength;
+-
+-      // Rotation around Z to orient the cylinder along this direction.
+-      // Default cylinder is along +Y, so we rotate by -angle around Z.
+-      const rotationZ = -angle;
++  /**
++   * Flat spinning props are plate stock, not tube. The triad's arms run about
++   * 8cm across at default size — the widest stock in the flat family — so the
++   * plate sits a little under 2cm: thick enough to hold a rolled edge and to
++   * read edge-on, thin enough that a tilted arm still shows mostly face.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-      result.push({ centerX, centerY, tipX, tipY, rotationZ });
+-    }
++  const plate = $derived(getTriadPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+-    return result;
+-  });
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Center hub sphere -->
+-    <T.Mesh>
+-      <T.SphereGeometry args={[hubRadius, 16, 16]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Three arms at 120° intervals -->
+-    {#each arms as arm}
+-      <!-- Arm cylinder -->
+-      <T.Mesh
+-        position={[arm.centerX, arm.centerY, 0]}
+-        rotation={[0, 0, arm.rotationZ]}
+-      >
+-        <T.CylinderGeometry args={[armRadius, armRadius, armLength, 16, 1]} />
+-        <T.MeshStandardMaterial
+-          color={palette.main}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
+-
+-      <!-- Arm tip cap -->
+-      <T.Mesh position={[arm.tipX, arm.tipY, 0]}>
+-        <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
+-    {/each}
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/dist/lib/components/props/Triquetra3D.svelte b/dist/lib/components/props/Triquetra3D.svelte
 index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879f8c48117 100644
 --- a/dist/lib/components/props/Triquetra3D.svelte
@@ -2302,6 +2519,68 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      // Check big variant map
      const bigVariant = BIG_VARIANT_MAP[propType];
      if (bigVariant) {
+diff --git a/dist/lib/components/props/triad-profile.d.ts b/dist/lib/components/props/triad-profile.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a2bdee081828fecf8577b32ba9d7f42f8e5b449
+--- /dev/null
++++ b/dist/lib/components/props/triad-profile.d.ts
+@@ -0,0 +1,8 @@
++import { Shape } from "three";
++/**
++ * Width of an arm at its narrowest, normalized to staff length. The bevel
++ * ceiling is sized from it.
++ */
++export declare const TRIAD_ARM_WIDTH: number;
++/** Build the triad — a three-armed flat star, with the hand at the hub. */
++export declare function buildTriadShape(staffLength: number): Shape;
+diff --git a/dist/lib/components/props/triad-profile.js b/dist/lib/components/props/triad-profile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..112d0c5be8cf0d6ed7b1fed5eda4c01ad94c5661
+--- /dev/null
++++ b/dist/lib/components/props/triad-profile.js
+@@ -0,0 +1,42 @@
++import { Shape } from "three";
++const OUTLINE = {
++  start: [-0.41054, -0.18299],
++  curves: [
++    [-0.28914, -0.11294, -0.16774, -0.04288, -0.04634, 0.02718],
++    [-0.04634, 0.16714, -0.04634, 0.30711, -0.04634, 0.44707],
++    [-0.04634, 0.47144, -0.02633, 0.49102, -239e-5, 0.49102],
++    [-65e-5, 0.49102, 109e-5, 0.49102, 283e-5, 0.49102],
++    [0.02676, 0.49102, 0.04678, 0.47144, 0.04678, 0.44707],
++    [0.04678, 0.30696, 0.04678, 0.16685, 0.04678, 0.02674],
++    [0.16803, -0.04331, 0.28929, -0.11337, 0.41054, -0.18343],
++    [0.43133, -0.19553, 0.43851, -0.22211, 0.42664, -0.24304],
++    [0.42577, -0.24463, 0.4249, -0.24623, 0.42403, -0.24782],
++    [0.41172, -0.26862, 0.38505, -0.27577, 0.36398, -0.26392],
++    [0.24258, -0.19372, 0.12118, -0.12352, -22e-5, -0.05332],
++    [-0.12147, -0.12352, -0.24273, -0.19372, -0.36398, -0.26392],
++    [-0.38508, -0.27552, -0.41157, -0.26842, -0.42403, -0.24782],
++    [-0.4249, -0.24623, -0.42577, -0.24463, -0.42664, -0.24304],
++    [-0.43849, -0.22197, -0.43134, -0.1953, -0.41054, -0.18299]
++  ]
++};
++const TRIAD_ARM_WIDTH = 0.09296;
++function buildTriadShape(staffLength) {
++  const shape = new Shape();
++  shape.moveTo(OUTLINE.start[0] * staffLength, OUTLINE.start[1] * staffLength);
++  for (const [c1x, c1y, c2x, c2y, x, y] of OUTLINE.curves) {
++    shape.bezierCurveTo(
++      c1x * staffLength,
++      c1y * staffLength,
++      c2x * staffLength,
++      c2y * staffLength,
++      x * staffLength,
++      y * staffLength
++    );
++  }
++  shape.closePath();
++  return shape;
++}
++export {
++  TRIAD_ARM_WIDTH,
++  buildTriadShape
++};
 diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..21c409e8a41417631a431c66173108b13bd49d35
@@ -5328,6 +5607,223 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/src/lib/components/props/Triad3D.svelte b/src/lib/components/props/Triad3D.svelte
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14ef451f094 100644
+--- a/src/lib/components/props/Triad3D.svelte
++++ b/src/lib/components/props/Triad3D.svelte
+@@ -1,28 +1,56 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { buildTriadShape, TRIAD_ARM_WIDTH } from "./triad-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of an arm's half-width, past which the rolled edge folds through itself at
++   * the notches where two arms meet.
++   */
++  const MAX_BEVEL_INSET = TRIAD_ARM_WIDTH / 6.8;
++
++  function getTriadPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildTriadShape(length),
++      depth,
++      length * MAX_BEVEL_INSET
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Triad3D Component
+    *
+-   * Renders a 3D triad (Y-shaped prop with 3 arms radiating from a center hub):
+-   * - Center hub: sphere slightly larger than arm thickness
+-   * - Three arms at 120° intervals in the XY plane
+-   * - One arm points along +Y, others at ±120° from that
+-   * - Small sphere caps at each arm tip
+-   * - Grip is at the center hub
+-   * - Trail indicator sphere for path visualization
++   * Three straight arms of equal width meeting at a hub, 120 degrees apart,
++   * each ending in a round cap — the exact silhouette of the 2D triad,
++   * extruded into a bullnose plate. The outline comes from the drawing itself
++   * in `triad-profile.ts`, so the 3D prop and the pictograph prop are the same
++   * shape by construction.
+    *
+-   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
+-   * spread in the local XY plane from the center hub.
++   * The hand takes the hub, with one arm running away from it and two behind.
++   * There is no separate handle and no hub boss — the artwork does not draw
++   * either, so neither does this.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -36,117 +64,41 @@
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  // Each arm is ~45% of staff length
+-  const ARM_LENGTH_RATIO = 0.45;
+-
+-  const armLength = $derived(
+-    (length ?? userProportionsState.staffLength) * ARM_LENGTH_RATIO * scale
++  const effectiveLength = $derived(
++    (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const rotation = $derived(computePropRotation(propState));
+-
+-  // Arm thickness is 2x the base staff radius
+-  const armRadius = $derived(baseRadius * 2);
+-
+-  // Hub sphere is slightly larger than arm thickness so the arms blend into it
+-  const hubRadius = $derived(armRadius * 1.4);
+-
+-  // Sphere cap radius at each arm tip
+-  const tipCapRadius = $derived(armRadius * 1.2);
+-
+-  // Three arms at 120° intervals.
+-  // Arm 0: along +Y (up in local space)
+-  // Arm 1: 120° clockwise from +Y
+-  // Arm 2: 240° clockwise from +Y
+-  //
+-  // Each arm's center is offset by half its length along its direction.
+-  // The cylinder is vertical by default (along Y), so we rotate each arm
+-  // around Z to point it in the correct direction within the XY plane.
+-  const arms = $derived.by(() => {
+-    const result: Array<{
+-      centerX: number;
+-      centerY: number;
+-      tipX: number;
+-      tipY: number;
+-      rotationZ: number;
+-    }> = [];
+-
+-    for (let i = 0; i < 3; i++) {
+-      // Angle from +Y axis, measured clockwise in XY plane
+-      // Arm 0 = 0°, Arm 1 = 120°, Arm 2 = 240°
+-      const angle = (i * 2 * Math.PI) / 3;
+-
+-      // Direction vector in XY plane (from +Y, rotating clockwise)
+-      const dirX = Math.sin(angle);
+-      const dirY = Math.cos(angle);
+-
+-      // Cylinder center (halfway along the arm)
+-      const halfArm = armLength / 2;
+-      const centerX = dirX * halfArm;
+-      const centerY = dirY * halfArm;
+-
+-      // Tip position (end of arm)
+-      const tipX = dirX * armLength;
+-      const tipY = dirY * armLength;
+-
+-      // Rotation around Z to orient the cylinder along this direction.
+-      // Default cylinder is along +Y, so we rotate by -angle around Z.
+-      const rotationZ = -angle;
++  /**
++   * Flat spinning props are plate stock, not tube. The triad's arms run about
++   * 8cm across at default size — the widest stock in the flat family — so the
++   * plate sits a little under 2cm: thick enough to hold a rolled edge and to
++   * read edge-on, thin enough that a tilted arm still shows mostly face.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-      result.push({ centerX, centerY, tipX, tipY, rotationZ });
+-    }
++  const plate = $derived(getTriadPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+-    return result;
+-  });
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Center hub sphere -->
+-    <T.Mesh>
+-      <T.SphereGeometry args={[hubRadius, 16, 16]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Three arms at 120° intervals -->
+-    {#each arms as arm}
+-      <!-- Arm cylinder -->
+-      <T.Mesh
+-        position={[arm.centerX, arm.centerY, 0]}
+-        rotation={[0, 0, arm.rotationZ]}
+-      >
+-        <T.CylinderGeometry args={[armRadius, armRadius, armLength, 16, 1]} />
+-        <T.MeshStandardMaterial
+-          color={palette.main}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
+-
+-      <!-- Arm tip cap -->
+-      <T.Mesh position={[arm.tipX, arm.tipY, 0]}>
+-        <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.3}
+-          metalness={0.2}
+-        />
+-      </T.Mesh>
+-    {/each}
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Triquetra3D.svelte b/src/lib/components/props/Triquetra3D.svelte
 index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879f8c48117 100644
 --- a/src/lib/components/props/Triquetra3D.svelte
@@ -6373,6 +6869,97 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    // Check big variant map
    const bigVariant = BIG_VARIANT_MAP[propType];
    if (bigVariant) {
+diff --git a/src/lib/components/props/triad-profile.ts b/src/lib/components/props/triad-profile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f860735b199e78639fed01599fc41a16fe57d782
+--- /dev/null
++++ b/src/lib/components/props/triad-profile.ts
+@@ -0,0 +1,85 @@
++/**
++ * Triad silhouette profile
++ *
++ * The 3D triad is not an approximation of the 2D prop — it IS the 2D artwork,
++ * given depth. These contours are a direct transcription of the visible path in
++ * `static/images/props/triad.svg`: three straight arms of equal width meeting
++ * at a hub, 120 degrees apart, each ending in a semicircular cap.
++ *
++ * Coordinates are normalized to the STAFF's drawn span (252.8 SVG units, the
++ * shared unit across every prop drawing) and rotated into prop-local 2D space,
++ * so the prop's reach runs along +Y like every other prop:
++ *
++ *   x = (svgY - 109.545) / 252.8    across the prop
++ *   y = (svgX - 124.38)  / 252.8    along the prop
++ *
++ * `triad.svg` carries a second copy of the star, mirrored about the viewBox
++ * centre, marked `fill="none"`. It draws nothing. It is there to widen the box
++ * so its centre lands on the hub — the drawing's way of placing the hand.
++ * Extruding it would put a second star on the prop that the artwork does not
++ * have.
++ *
++ * One arm reaches forward along +Y and the other two splay back at 120, so the
++ * hand takes the hub with a bar running away from it and two behind. That is
++ * the whole prop; there is no separate handle, no hub boss, and no cap that is
++ * not simply the round end of an arm.
++ */
++
++import { Shape } from "three";
++
++/** [c1x, c1y, c2x, c2y, endX, endY] */
++type Cubic = readonly [number, number, number, number, number, number];
++
++interface Contour {
++  readonly start: readonly [number, number];
++  readonly curves: readonly Cubic[];
++}
++
++const OUTLINE: Contour = {
++  start: [-0.41054, -0.18299],
++  curves: [
++    [-0.28914, -0.11294, -0.16774, -0.04288, -0.04634, 0.02718],
++    [-0.04634, 0.16714, -0.04634, 0.30711, -0.04634, 0.44707],
++    [-0.04634, 0.47144, -0.02633, 0.49102, -0.00239, 0.49102],
++    [-0.00065, 0.49102, 0.00109, 0.49102, 0.00283, 0.49102],
++    [0.02676, 0.49102, 0.04678, 0.47144, 0.04678, 0.44707],
++    [0.04678, 0.30696, 0.04678, 0.16685, 0.04678, 0.02674],
++    [0.16803, -0.04331, 0.28929, -0.11337, 0.41054, -0.18343],
++    [0.43133, -0.19553, 0.43851, -0.22211, 0.42664, -0.24304],
++    [0.42577, -0.24463, 0.4249, -0.24623, 0.42403, -0.24782],
++    [0.41172, -0.26862, 0.38505, -0.27577, 0.36398, -0.26392],
++    [0.24258, -0.19372, 0.12118, -0.12352, -0.00022, -0.05332],
++    [-0.12147, -0.12352, -0.24273, -0.19372, -0.36398, -0.26392],
++    [-0.38508, -0.27552, -0.41157, -0.26842, -0.42403, -0.24782],
++    [-0.4249, -0.24623, -0.42577, -0.24463, -0.42664, -0.24304],
++    [-0.43849, -0.22197, -0.43134, -0.1953, -0.41054, -0.18299],
++  ],
++};
++
++/**
++ * Width of an arm at its narrowest, normalized to staff length — measured by
++ * stepping inward along the boundary's normal. The bevel ceiling is sized from
++ * it. The triad's arms are the widest stock in the flat-prop family.
++ */
++export const TRIAD_ARM_WIDTH = 0.09296;
++
++/**
++ * Build the triad — sized against a staff of `staffLength` units and lying in
++ * the XY plane ready to extrude, with the hand at the origin.
++ */
++export function buildTriadShape(staffLength: number): Shape {
++  const shape = new Shape();
++  shape.moveTo(OUTLINE.start[0] * staffLength, OUTLINE.start[1] * staffLength);
++  for (const [c1x, c1y, c2x, c2y, x, y] of OUTLINE.curves) {
++    shape.bezierCurveTo(
++      c1x * staffLength,
++      c1y * staffLength,
++      c2x * staffLength,
++      c2y * staffLength,
++      x * staffLength,
++      y * staffLength
++    );
++  }
++  shape.closePath();
++  return shape;
++}
 diff --git a/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff55684d48
