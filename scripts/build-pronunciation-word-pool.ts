@@ -74,8 +74,22 @@ async function main(): Promise<void> {
     console.log(`length ${length}: ${produced} words in ${attempts} attempts`);
   }
 
-  writeFileSync(OUTPUT, `${JSON.stringify({ version: 1, words: pool })}\n`);
-  console.log(`wrote ${pool.length} words to ${OUTPUT}`);
+  // The letter list ships alongside the words because it, not the `Letter`
+  // enum, is the corpus's real scope. The enum carries 54 entries; the TKA
+  // alphabet is 47 (MCP `list_available_letters`: 22 + 8 + 8 + 3 + 3 + 3). The
+  // extra 7 are position names the enum groups as letters — ζ η τ ⊕ (obtuse,
+  // acute, one-center, both-center) plus μ ν and τ-. A position name cannot sit
+  // inside a word, so planning corpus cells for it would put Austen in front of
+  // a microphone reading labels that are not TKA words.
+  //
+  // Emitting what the graph reports keeps that scope self-correcting: extend
+  // letter-mappings.json and the corpus grows on the next regeneration, with no
+  // hardcoded 47 to go stale.
+  const payload = { version: 1, letters, words: pool };
+  writeFileSync(OUTPUT, `${JSON.stringify(payload)}\n`);
+  console.log(
+    `wrote ${pool.length} words over ${letters.length} letters to ${OUTPUT}`
+  );
 }
 
 main().catch((error) => {

@@ -901,12 +901,11 @@ The pool must contain adjacencies a real TKA label can contain, because those ad
 - Create: `scripts/build-pronunciation-word-pool.ts`
 - Create (generated, checked in): `static/data/pronunciation-word-pool.json`
 
-- [ ] **Step 1: Confirm the graph's API before writing against it**
+**Verified 2026-08-16 against the repo** — the graph's real surface, so this task does not have to rediscover it:
+`TransitionGraph` is at `packages/sequence-engine/src/core/transition-graph/TransitionGraph.ts` and its constructor **requires** an `ISequenceDataProvider`; there is no zero-argument form. In Node, the provider is a one-method literal reading `static/data/learn/letter-mappings.json` — the pattern
+`packages/sequence-engine/tests/generation/turn-pattern-build.test.ts:92` already uses. `ITransitionGraph` really does expose `initialize(): Promise<void>`, `getValidSuccessors(letter): string[]`, and `getAllLetters(excludeLetters?: Set<string>): string[]`.
 
-Run: `sed -n '1,90p' packages/sequence-engine/src/core/transition-graph/ITransitionGraph.ts`
-Expected: `initialize()`, `canFollow(a, b)`, `getValidSuccessors(letter)`, and a `getAllLetters` method. If `getAllLetters` has a different name, use the real one — do not adapt the graph to this script.
-
-- [ ] **Step 2: Write the script**
+- [ ] **Step 1: Write the script**
 
 ```ts
 // scripts/build-pronunciation-word-pool.ts
@@ -921,9 +920,16 @@ Expected: `initialize()`, `canFollow(a, b)`, `getValidSuccessors(letter)`, and a
  *
  * Run: pnpm exec tsx scripts/build-pronunciation-word-pool.ts
  */
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 import { TransitionGraph } from "../packages/sequence-engine/src/core/transition-graph/TransitionGraph.js";
+
+/**
+ * Letter mappings only. The graph's `initialize` reads position groups from
+ * this file; `loadLetterVariations` is never reached on the code paths this
+ * script uses, so the pictograph CSV stays out of it.
+ */
+const MAPPINGS_PATH = "static/data/learn/letter-mappings.json";
 
 const LENGTHS = [2, 3, 4, 5, 6, 8];
 const WORDS_PER_LENGTH = 400;
@@ -946,7 +952,10 @@ function walk(
 }
 
 async function main(): Promise<void> {
-  const graph = new TransitionGraph();
+  const graph = new TransitionGraph({
+    loadLetterMappings: async () =>
+      JSON.parse(readFileSync(MAPPINGS_PATH, "utf8")),
+  } as never);
   await graph.initialize();
 
   const letters = graph.getAllLetters();
@@ -986,10 +995,18 @@ main().catch((error) => {
 });
 ```
 
-- [ ] **Step 3: Run it**
+- [ ] **Step 2: Run it**
 
 Run: `pnpm exec tsx scripts/build-pronunciation-word-pool.ts`
 Expected: six `length N: ...` lines, then `wrote 2400 words to static/data/pronunciation-word-pool.json`. If a length produces far fewer words than asked, that is a real property of the graph — report the number, do not loosen the walk to hide it.
+
+- [ ] **Step 3: Check the pool actually spans the alphabet**
+
+Run:
+```bash
+node -e "const p=require('./static/data/pronunciation-word-pool.json').words; const s=new Set(p.flat()); console.log('distinct letters:', s.size, '| words:', p.length)"
+```
+Expected: 54 distinct letters. Fewer means the deterministic rotation never reaches some letters, and every cell they own would be left to constructed filler words — report the count and which letters are missing.
 
 - [ ] **Step 4: Commit**
 
@@ -1004,6 +1021,27 @@ git commit -m "feat(pronunciation): word pool built from the transition graph" -
 **Files:**
 - Create: `src/lib/features/lab/pronunciation-recorder/domain/corpus-plan.ts`
 - Test: `tests/unit/pronunciation/corpus-plan.test.ts`
+
+**Amended 2026-08-16, after Task 6 ran — the corpus covers 47 letters, not 54.**
+Task 6's pool came back with 47 distinct letters, and that is not a thin walk:
+MCP `list_available_letters` reports the TKA alphabet as exactly 47 (22 + 8 + 8
++ 3 + 3 + 3), and the graph's `getAllLetters()` matches it letter for letter.
+The `Letter` enum in `src/lib/shared/foundation/domain/models/letter.ts` carries
+54 because it also groups ζ η τ ⊕ (obtuse, acute, one-center, both-center) as
+Type 6 and μ ν as Type 2 and τ- as Type 4 — MCP's Type 6 is α β γ, its Type 2
+has no μ or ν, and its Type 4 has no τ-. Those seven are position names.
+
+A position name cannot sit inside a word, so planning cells for one puts Austen
+in front of a microphone reading labels that are not TKA words: `constructWord`
+would emit `α ζ α` for him to say aloud. `planWords` therefore takes a `letters`
+option — production passes the `letters` array now emitted by Task 6's pool
+JSON, and the default stays the full enum so the tests below still describe 216
+cells. **Real corpus: 47 × 4 = 188 cells.** Deriving the scope from the pool
+rather than hardcoding 47 keeps it self-correcting; extend
+`letter-mappings.json` and the corpus grows on the next regeneration.
+
+Do not "fix" `letter.ts` as part of this task. Whether the enum should model
+positions is a separate question, and other features read it.
 
 - [ ] **Step 1: Write the failing test**
 
