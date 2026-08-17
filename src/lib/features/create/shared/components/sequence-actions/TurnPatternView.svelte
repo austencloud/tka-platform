@@ -166,7 +166,11 @@
     font: inherit;
     font-weight: 700;
     cursor: pointer;
-    background: linear-gradient(135deg, var(--theme-blue, #6f9bff), #4b7bff);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--dm-motion-blue) 78%, #fff),
+      var(--dm-motion-blue)
+    );
     color: #fff;
   }
 

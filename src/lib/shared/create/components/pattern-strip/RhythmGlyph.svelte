@@ -46,7 +46,7 @@
     border-radius: calc(var(--rhythm-dot, 7px) * 0.29);
     background: color-mix(in srgb, var(--theme-text) 16%, transparent);
   }
-  .dot.blue { background: var(--theme-blue, #6f9bff); }
-  .dot.red { background: var(--theme-red, #ff7a8a); }
+  .dot.blue { background: var(--dm-motion-blue-text); }
+  .dot.red { background: var(--dm-motion-red-text); }
   .dot.hold { background: var(--theme-accent, #2dd4bf); }
 </style>

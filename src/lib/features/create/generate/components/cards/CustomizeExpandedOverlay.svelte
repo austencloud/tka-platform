@@ -18,6 +18,10 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   import { onMount, untrack } from "svelte";
   import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import {
+    recallCustomizeScreen,
+    rememberCustomizeScreen,
+  } from "$lib/shared/create/state/customize-overlay-hmr";
+  import {
     GridMode,
     type GridPosition,
   } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -105,7 +109,16 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   // is buried the way it was when one accordion section was open at a time.
   // (The accordion's "remember the last open section" localStorage existed
   // because a collapsed section hid its value; the root list doesn't.)
-  let selected = $state<string | null>(null);
+  //
+  // One exception, development only: a hot reload remounts this overlay, and
+  // coming back to the root list every time an agent saves a file is no better
+  // than being closed outright. recallCustomizeScreen returns null unless the
+  // overlay was open a moment ago, so a genuine open still starts at the list.
+  let selected = $state<string | null>(recallCustomizeScreen());
+
+  $effect(() => {
+    rememberCustomizeScreen(selected);
+  });
 
   function handleSelect(_id: string | null) {
     hapticService?.trigger("selection");

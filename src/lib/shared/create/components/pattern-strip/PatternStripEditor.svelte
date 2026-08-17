@@ -434,10 +434,10 @@
     white-space: nowrap;
   }
   .amt-lane.blue {
-    color: var(--theme-blue, #6f9bff);
+    color: var(--dm-motion-blue-text);
   }
   .amt-lane.red {
-    color: var(--theme-red, #ff7a8a);
+    color: var(--dm-motion-red-text);
   }
   .amt-lane.accent {
     color: var(--theme-accent, #2dd4bf);
@@ -607,10 +607,10 @@
     letter-spacing: 0.01em;
   }
   .subject.blue {
-    color: var(--theme-blue, #6f9bff);
+    color: var(--dm-motion-blue-text);
   }
   .subject.red {
-    color: var(--theme-red, #ff7a8a);
+    color: var(--dm-motion-red-text);
   }
   .subject.accent {
     color: var(--theme-accent, #2dd4bf);

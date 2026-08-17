@@ -9,6 +9,7 @@ to three rows. Click opens the expanded overlay.
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { StartEndOptions, PanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import { onMount, getContext } from "svelte";
+  import { customizeOverlayWasOpen } from "$lib/shared/create/state/customize-overlay-hmr";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import CardHeader from "./shared/CardHeader.svelte";
   import {
@@ -79,6 +80,14 @@ to three rows. Click opens the expanded overlay.
 
   onMount(() => {
     hapticService = getHapticFeedback();
+
+    // Put the overlay back after a hot reload (development only). The card is
+    // the only place that holds the live settings and their change callbacks,
+    // so reopening from here hands the overlay working controls rather than the
+    // stale snapshot the previous state object was holding when Vite replaced it.
+    if (customizeOverlayWasOpen() && !panelState?.isCustomizeOverlayOpen) {
+      openOverlay();
+    }
   });
 
   // One pass answers both questions: is anything non-default, and what is it.
@@ -108,6 +117,10 @@ to three rows. Click opens the expanded overlay.
 
   function handleClick() {
     hapticService?.trigger("selection");
+    openOverlay();
+  }
+
+  function openOverlay() {
     panelState?.openCustomizeOverlay?.({
       constraintPreset,
       handPathMode,

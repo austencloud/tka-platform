@@ -163,20 +163,21 @@
     color: var(--theme-text-dim);
   }
 
-  /* Takes the pane's height, and never shrinks below its own content. The
-     editor spends the extra on its two panels and on the size of the strip's
-     cells (see PatternStripEditor's sentence-mode block); the no-shrink half is
-     what keeps the cells from painting outside the scroller on a short
-     landscape phone.
+  /* Sized by what it holds — no growing. The editor is one card of stacked
+     sections, and any height handed to it past its contents lands in the LAST
+     section rather than under the card: Result ended up several times the
+     height of Repeats and Both hands, with its cells marooned at the top of a
+     tall empty box. `0 0` and not `0 1`: a pane shorter than the card scrolls
+     instead of squashing it.
 
-     The ceiling is the sum of what the editor can actually use — its two
-     capped panels at 18rem and 24rem, the two rows between them, and the gaps.
-     Without it the editor kept claiming height its panels had stopped
-     accepting, and on a 2160-tall drawer that opened a thousand pixels between
-     the pattern and the button that undoes it. */
+     Two auto margins — one here, one under the footer — then split whatever
+     height is left over, so the card and the button under it sit centred in the
+     space below the intro rather than hugging the top with a screen of nothing
+     beneath them. The pair stays together, which is the point of the note on
+     .footer. */
   .turn-pattern-section :global(.pse) {
-    flex: 1 0 auto;
-    max-height: 60rem;
+    flex: 0 0 auto;
+    margin-top: auto;
   }
 
   /* Follows the editor rather than pinning to the bottom of the pane. Pinning
@@ -186,6 +187,7 @@
      height — the editor, a divider, and the way back out of it. */
   .footer {
     flex: 0 0 auto;
+    margin-bottom: auto;
     display: flex;
     flex-wrap: wrap;
     align-items: center;

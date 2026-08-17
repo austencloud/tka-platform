@@ -37,6 +37,11 @@ import type {
   GridPosition,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
+import {
+  forgetCustomizeOverlay,
+  recallCustomizeScreen,
+  rememberCustomizeOverlayOpen,
+} from "$lib/shared/create/state/customize-overlay-hmr";
 import type { CreateModuleState } from "$lib/shared/create/state/create-module-state-types";
 import type { ConstructOptionAudition } from "$lib/shared/create/domain/construct-option-audition";
 
@@ -517,6 +522,11 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     isCustomizeOverlayOpen = false;
     customizeOverlayProps = null;
+    // Every way the overlay can close runs through here or closeCustomizeOverlay,
+    // so this is where the dev-only "put it back after a hot reload" note is torn
+    // up. Without it, opening some other panel would leave the note in place and
+    // the next reload would reopen Customize on top of whatever you switched to.
+    forgetCustomizeOverlay();
 
     isPresetDrawerOpen = false;
 
@@ -887,14 +897,20 @@ export function createPanelCoordinationState(): PanelCoordinationState {
     },
 
     openCustomizeOverlay(props: CustomizeOverlayProps) {
+      // Held across closeAllPanels, which tears the note up — otherwise a hot
+      // reload reopens the overlay on the root list instead of the screen you
+      // were reading when the file was saved.
+      const screen = recallCustomizeScreen();
       closeAllPanels();
       customizeOverlayProps = props;
       isCustomizeOverlayOpen = true;
+      rememberCustomizeOverlayOpen(screen);
     },
 
     closeCustomizeOverlay() {
       isCustomizeOverlayOpen = false;
       customizeOverlayProps = null;
+      forgetCustomizeOverlay();
     },
 
     // Preset Drawer Getters
