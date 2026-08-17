@@ -87,11 +87,12 @@ for (const jobId of activeIds) {
     `${jobId} is missing its PlantCatalog species name`
   );
   // A PlantCatalog entry ending in "_~~" is a browse placeholder, not an installed plant.
-  // The catalog ships every species' placeholder up front; installing a collection drops a
-  // real sibling beside it with no suffix. Placeholders are all under 0.3 MB and carry no
-  // geometry, so LoadPlantCatalogFile answers them with the missing-extra-package dialog —
-  // which stalls an -immediate-python run instead of failing it. Existence, byte count, and
-  // hash all match happily against a stub, so those checks cannot catch this on their own.
+  // The PlantFactory application install ships every species' placeholder up front so the
+  // library is browsable; installing the collection that owns a species drops a real sibling
+  // beside it with no suffix. Placeholders are all under 0.3 MB and carry no geometry, so
+  // LoadPlant rejects one outright — "RuntimeError: An internal error occurred ... VRLLPFS462"
+  // naming the placeholder path (observed 2026-08-14 in PlantFactory's vue.log). Existence,
+  // byte count, and hash all match happily against a stub, so those checks cannot catch this.
   invariant(
     !job.sourceRelativePath.replace(/\.tpf$/i, "").endsWith("_~~"),
     `${jobId} points at the PlantCatalog browse placeholder "${job.sourceRelativePath}". ` +
