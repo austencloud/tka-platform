@@ -88,11 +88,12 @@ for (const jobId of activeIds) {
   );
   // A PlantCatalog entry ending in "_~~" is a browse placeholder, not an installed plant.
   // The PlantFactory application install ships every species' placeholder up front so the
-  // library is browsable; installing the collection that owns a species drops a real sibling
-  // beside it with no suffix. Placeholders are all under 0.3 MB and carry no geometry, so
-  // LoadPlant rejects one outright — "RuntimeError: An internal error occurred ... VRLLPFS462"
-  // naming the placeholder path (observed 2026-08-14 in PlantFactory's vue.log). Existence,
-  // byte count, and hash all match happily against a stub, so those checks cannot catch this.
+  // library stays browsable; installing the collection that owns a species drops a real
+  // sibling beside it with no suffix (Quercus robur came from PlantCatalog 2022.1 — 154.7 MB
+  // against the stub's 0.1 MB). This guard matters because the bridge LOADS by
+  // catalogSpeciesName, not by this path: a placeholder here fails no loudly-visible check,
+  // it just quietly reduces the size and hash invariants below to verifying a stub while the
+  // species itself is not installed at all.
   invariant(
     !job.sourceRelativePath.replace(/\.tpf$/i, "").endsWith("_~~"),
     `${jobId} points at the PlantCatalog browse placeholder "${job.sourceRelativePath}". ` +
