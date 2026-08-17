@@ -1,9 +1,8 @@
 <!--
   FusePairingTile — the Pairing slot on the header's recipe rail.
 
-  Every other slot is a button that opens an editor. Pairing is the one recipe
-  decision with a state in which there is nothing to edit, so the switch itself
-  lives here: choosing Linked is what opens the rule editor, and choosing
+  Pairing is the one recipe decision with a state in which there is nothing to
+  edit, so the switch itself lives here: choosing Linked is what opens the rule editor, and choosing
   Separate is what puts it away. That is why the mode is not also a row inside
   the editor — a Separate path set has no rule, and a panel showing only a
   switch is a panel showing nothing.
@@ -13,6 +12,7 @@
   import { fuseRuleLabel } from "../domain/fuse-rule";
   import type { FuseMode } from "../state/fuse-state.svelte";
   import FuseModeBar from "./FuseModeBar.svelte";
+  import FuseRailTile from "./FuseRailTile.svelte";
 
   let {
     color,
@@ -38,96 +38,32 @@
   );
 </script>
 
-<div
-  class="pairing-tile"
-  role="group"
-  aria-label="Pairing"
-  style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
->
-  <div class="tile-head">
-    <span class="tile-label">Pairing</span>
+<FuseRailTile label="Pairing" {color} {shadowColor} {textColor}>
+  {#snippet trailing()}
+    {#if linked}
+      <button
+        type="button"
+        class="rule-button"
+        {disabled}
+        onclick={onEditRule}
+        aria-label="Edit the rule that rebuilds from {driverLabel}: {ruleLabel}"
+      >
+        <strong>{ruleLabel}</strong>
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    {:else}
+      <!-- The other tiles read LABEL / value; separate paths have no rule, so
+           the value is the absence of one. -->
+      <span class="tile-help">Independent</span>
+    {/if}
+  {/snippet}
 
-    <!-- Reserved either way, so switching modes never resizes the header. -->
-    <span class="tile-trailing">
-      {#if linked}
-        <button
-          type="button"
-          class="rule-button"
-          {disabled}
-          onclick={onEditRule}
-          aria-label="Edit the rule that rebuilds from {driverLabel}: {ruleLabel}"
-        >
-          <strong>{ruleLabel}</strong>
-          <i class="fas fa-chevron-right" aria-hidden="true"></i>
-        </button>
-      {:else}
-        <!-- The other tiles read LABEL / value; separate paths have no rule, so
-             the value is the absence of one. -->
-        <span class="tile-help">Independent</span>
-      {/if}
-    </span>
+  <div class="mode-slot">
+    <FuseModeBar onSelect={onModeChange} />
   </div>
-
-  <FuseModeBar onSelect={onModeChange} />
-</div>
+</FuseRailTile>
 
 <style>
-  .pairing-tile {
-    position: relative;
-    display: grid;
-    gap: 8px;
-    align-content: center;
-    width: 100%;
-    min-width: 0;
-    min-height: 3.75rem;
-    padding: 8px clamp(9px, 0.65cqw, 14px);
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 14px;
-    color: var(--recipe-text);
-    background:
-      linear-gradient(
-        132deg,
-        color-mix(in srgb, white 18%, transparent),
-        transparent 42%
-      ),
-      var(--recipe-color);
-    box-shadow:
-      0 8px 18px hsl(var(--recipe-shadow) / 24%),
-      inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
-  }
-
-  .tile-head {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(7px, 0.55cqw, 11px);
-    min-width: 0;
-  }
-
-  .tile-label {
-    overflow: hidden;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.055em;
-    opacity: 0.76;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  /* A fixed height so the rule button and the Separate copy occupy the same box:
-     switching modes must not move the header, let alone the workspace under it. */
-  .tile-trailing {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    height: 2rem;
-    min-width: 0;
-  }
-
   .rule-button {
     display: flex;
     align-items: center;
@@ -185,24 +121,17 @@
 
   /* The switch is the tile's subject, so it spans the tile rather than sizing to
      its two words the way the header's compact copy does. */
-  .pairing-tile :global(.fuse-mode-bar) {
+  .mode-slot {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+  }
+
+  .mode-slot :global(.fuse-mode-bar) {
     width: 100%;
   }
 
   @media (min-width: 2600px) and (min-height: 1400px) {
-    .pairing-tile {
-      min-height: 5rem;
-      border-radius: 18px;
-    }
-
-    .tile-trailing {
-      height: 2.6rem;
-    }
-
-    .tile-label {
-      font-size: 0.8rem;
-    }
-
     .rule-button strong {
       font-size: 1rem;
     }

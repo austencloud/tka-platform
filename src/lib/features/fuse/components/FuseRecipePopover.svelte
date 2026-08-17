@@ -1,11 +1,10 @@
 <!--
   FuseRecipePopover — one tile on the header's recipe rail.
 
-  Most tiles answer their question in a popover hung under the tile. A tile that
-  passes `onActivate` does the thing itself instead — Grid flips between its two
-  values on the spot, and Pairing opens the recipe drawer at its own section
-  because that editor is a nine-choice, two-step form a popover could only show
-  by clipping itself into an inner scroller.
+  This is the slot that answers its question in a popover hung under the tile —
+  Length, Style, Starting conditions. The slots whose values are few and ordered
+  (Level, Grid, Pairing) hold their control on the tile instead and are their own
+  components; see FuseRailTile.
 
   No leading icon, deliberately. Six tiles each carrying a glyph in its own
   bordered box read as six badges competing with the words; the tile already

@@ -33,6 +33,9 @@
   const points = FUSE_ROTATIONS.map((option, index) => ({
     steps: option.steps,
     label: option.label,
+    // Every point states its own amount. Bare dots gave no reason to believe
+    // they were pressable, or to guess which one meant 225.
+    tick: option.steps === 0 ? "0°" : option.label,
     // CSS angles run clockwise from twelve o'clock, which is exactly how the
     // steps run, so the step index is the angle.
     deg: index * STEP_DEG,
@@ -88,12 +91,12 @@
       {disabled}
       onclick={() => onchange(point.steps)}
     >
-      <span class="point-dot"></span>
+      <span class="point-tick">{point.tick}</span>
     </button>
   {/each}
 
-  <!-- The readout is the only place the number appears, so it carries the whole
-       answer rather than repeating a label the ring already draws. -->
+  <!-- The ring says how much. The middle says the part the ring cannot: that
+       the amount runs clockwise, or that nothing is being rotated at all. -->
   <span class="dial-readout" aria-hidden="true">
     {#if value === 0}
       <strong>None</strong>
@@ -106,8 +109,10 @@
 
 <style>
   .dial {
-    --dial-size: clamp(9rem, 26cqw, 12rem);
-    --dial-inset: 1.1rem;
+    /* The inset is half a label plus a hair, so the ticks sit ON the ring
+       rather than hanging off it. */
+    --dial-size: clamp(10.5rem, 30cqw, 13rem);
+    --dial-inset: 1.35rem;
 
     position: relative;
     display: grid;
@@ -174,28 +179,40 @@
     cursor: not-allowed;
   }
 
-  .point-dot {
-    width: 0.6rem;
-    height: 0.6rem;
+  /* A pressable-looking token, not a decorative dot: its own plate, its own
+     border, and the amount printed on it. */
+  .point-tick {
+    display: grid;
+    place-items: center;
+    min-width: 2.15rem;
+    padding: 3px 5px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-text, #fff) 22%, transparent);
+    border-radius: 999px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    background: color-mix(in srgb, var(--theme-text, #fff) 9%, transparent);
+    font-size: 11px;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
     transition:
       transform var(--duration-fast, 140ms) ease,
-      background var(--duration-fast, 140ms) ease,
-      box-shadow var(--duration-fast, 140ms) ease;
+      color var(--duration-fast, 140ms) ease,
+      border-color var(--duration-fast, 140ms) ease,
+      background var(--duration-fast, 140ms) ease;
   }
 
-  .dial-point:hover:not(:disabled) .point-dot {
-    background: color-mix(in srgb, var(--dial-accent) 55%, transparent);
-    transform: scale(1.25);
+  .dial-point:hover:not(:disabled) .point-tick {
+    border-color: color-mix(in srgb, var(--dial-accent) 70%, transparent);
+    color: var(--theme-text, #fff);
+    background: color-mix(in srgb, var(--dial-accent) 30%, transparent);
+    transform: scale(1.06);
   }
 
-  .dial-point.selected .point-dot {
+  .dial-point.selected .point-tick {
     border-color: var(--dial-accent);
+    color: #06121a;
     background: var(--dial-accent);
-    transform: scale(1.5);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--dial-accent) 24%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--dial-accent) 22%, transparent);
   }
 
   .dial-point:focus-visible {
@@ -242,15 +259,16 @@
       --dial-size: clamp(14rem, 38cqw, 18rem);
     }
 
-    .point-dot {
-      width: 0.75rem;
-      height: 0.75rem;
+    .point-tick {
+      min-width: 2.6rem;
+      padding: 5px 7px;
+      font-size: 13px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .dial-sweep,
-    .point-dot {
+    .point-tick {
       transition: none;
     }
   }
