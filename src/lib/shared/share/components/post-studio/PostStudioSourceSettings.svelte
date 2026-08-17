@@ -84,15 +84,17 @@
 {/if}
 
 <style>
+  /* No border, no card background. The inspector rail already separates itself
+     from the canvas with its own border-left and panel background, so a card
+     inside it was a box drawn inside a box — the same controls the 2D animation
+     view presents flat against the rail. The two are the same AnimationPanel
+     and now read as the same system. */
   .animation-settings {
     container-name: post-studio-animation-settings;
     container-type: inline-size;
     height: 100%;
     min-height: 0;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-md);
-    background: var(--theme-card-bg);
   }
 
   .animation-settings :global(.export-panel.sidebar) {
@@ -121,15 +123,13 @@
     justify-content: flex-start;
   }
 
+  /* Same reasoning as .animation-settings — the rail is the surface. */
   .card-settings {
     height: 100%;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-md);
-    background: var(--theme-card-bg);
   }
 
   .card-settings :global(.export-panel.inline) {
