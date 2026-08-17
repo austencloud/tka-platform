@@ -1,19 +1,25 @@
 /**
  * Canvas Context Menu Builder
  *
- * Reads current state from AnimationVisibilityStateManager and produces
- * ContextMenuEntry[] for the animation canvas right-click menu.
+ * Reads current state from AnimationVisibilityStateManager + EffectsConfigState
+ * and produces ContextMenuEntry[] for the animation canvas right-click menu.
  *
- * Submenu groups for quick access:
- *   - Visibility: Props, Beat #s, TKA Glyph, Word Header, Progress Bar (toggles)
+ * Submenu groups:
+ *   - Visibility: Props, Step Numbers, TKA Glyph, Element, Word Header,
+ *     Mandala, Paths, Progress Bar, Dark Mode (toggles, menu stays open)
  *   - Grid: Off / 8-Point / Auto (radio-style)
  *   - Playback: Continuous / Step (radio-style)
- *   - Effects: None, Fire, Charcoal, LED, Trails (radio-style, one active)
- *   - Trail Tracking: Pinky / Thumb / Both (when trails active)
- *   - Efforts: 8 effort presets from the effort-lab domain (radio-style)
- *   - Path Shape: Arc / Linear / Concave / Motion-Aware (radio-style)
+ *   - Effects: None + every effect in the shared registry (radio-style)
+ *   - Effect Presets: the active effect's presets + Default (radio-style)
+ *   - Trail Tracking: prop-aware end labels + Hand (when trails are active)
+ *   - Efforts: the 8 effort presets from the effort domain (radio-style)
+ *   - Motion Paths: Arc / Linear / Concave / By Motion (radio-style)
  *
- * Plus: Disassemble toggle.
+ * Plus: Disassemble toggle, Report Effect Issue, 3D view toggle.
+ *
+ * The effect list is derived from the registry (`EFFECTS`), never hand-listed —
+ * a hardcoded five-item list went stale the moment the roster grew past it and
+ * left the menu showing nothing checked for two thirds of the effects.
  */
 
 import type {
@@ -22,11 +28,15 @@ import type {
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { AnimationVisibilityStateManager, GridMode } from "../../state/animation-visibility-state.svelte";
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
-import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { animationSettings } from "../../state/animation-settings-state.svelte";
 import { fits3DViewportNow } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
 import { TrackingMode } from "../../domain/types/trail-types";
+import type { EffectType } from "../../domain/types/tip-effect-types";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import {
+  EFFECTS,
+  getRegistration,
+} from "../effects-panel/effect-registry";
 
 
 interface CanvasContextMenuDeps {
@@ -43,17 +53,15 @@ interface CanvasContextMenuDeps {
   onToggle3DView?: () => void;
 }
 
-type ActiveEffect = "fire" | "charcoal" | "led" | "trails" | "none";
-
-function getActiveEffect(ecs?: EffectsConfigState | null): ActiveEffect {
-  return (ecs?.activeEffect ?? "none") as ActiveEffect;
+function getActiveEffect(ecs?: EffectsConfigState | null): EffectType {
+  return (ecs?.activeEffect ?? "none") as EffectType;
 }
 
 function buildEffectChildren(
-  active: ActiveEffect,
+  active: EffectType,
   ecs?: EffectsConfigState | null,
 ): ContextMenuItem[] {
-  const setEffect = (effect: ActiveEffect) => {
+  const setEffect = (effect: EffectType) => {
     ecs?.setActiveEffect(effect);
   };
   return [
@@ -64,44 +72,65 @@ function buildEffectChildren(
       checked: active === "none",
       action: () => setEffect("none"),
     },
+    ...EFFECTS.map((effect) => ({
+      id: `effect-${effect.id}`,
+      label: effect.label,
+      icon: effect.icon,
+      iconColor: effect.color,
+      checked: active === effect.id,
+      action: () => setEffect(effect.id as EffectType),
+    })),
+  ];
+}
+
+/**
+ * Presets for whichever effect is active. Returns [] when no effect is active
+ * or the effect has no registration, so the caller can skip the whole submenu.
+ */
+function buildEffectPresetChildren(
+  active: EffectType,
+  ecs?: EffectsConfigState | null,
+): ContextMenuItem[] {
+  if (!ecs || active === "none") return [];
+  const registration = getRegistration(active);
+  if (!registration) return [];
+
+  const group = registration.presetGroup;
+  const activePresetId =
+    (ecs.activePresets as Record<string, string | null>)[active] ?? null;
+
+  return [
     {
-      id: "effect-fire",
-      label: "Fire",
-      icon: "fa-fire-flame-curved",
-      iconColor: "#f97316",
-      checked: active === "fire",
-      action: () => setEffect("fire"),
+      id: "effect-preset-default",
+      label: "Default",
+      icon: "fa-rotate-left",
+      checked: activePresetId === null,
+      action: () => ecs.resetToFactory(group.effectType),
     },
-    {
-      id: "effect-charcoal",
-      label: "Charcoal",
-      icon: "fa-fire",
-      iconColor: "#a855f7",
-      checked: active === "charcoal",
-      action: () => setEffect("charcoal"),
-    },
-    {
-      id: "effect-led",
-      label: "LED",
-      icon: "fa-lightbulb",
-      iconColor: "#22c55e",
-      checked: active === "led",
-      action: () => setEffect("led"),
-    },
-    {
-      id: "effect-trails",
-      label: "Trails",
-      icon: "fa-route",
-      checked: active === "trails",
-      action: () => setEffect("trails"),
-    },
+    ...group.presets.map((preset) => ({
+      id: `effect-preset-${preset.id}`,
+      label: preset.name,
+      icon: "fa-circle" as const,
+      // "rainbow"/"custom" are sentinel values the chips render as gradients;
+      // a menu row has one flat swatch, so those fall back to no tint.
+      iconColor: preset.previewColor.startsWith("#")
+        ? preset.previewColor
+        : undefined,
+      checked: activePresetId === preset.id,
+      action: () =>
+        ecs.applyPreset(
+          group.effectType,
+          preset.id,
+          preset.resolvePatch ? preset.resolvePatch() : (preset.patch ?? {}),
+        ),
+    })),
   ];
 }
 
 function buildEffortChildren(
-  vm: AnimationVisibilityStateManager,
-  currentEffort: EffortId
+  vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
+  const currentEffort = vm.getEffortPreset();
   return EFFORTS.map((effort) => ({
     id: `effort-${effort.id}`,
     label: effort.label,
@@ -154,53 +183,48 @@ function buildTrailTrackingChildren(): ContextMenuItem[] {
   ];
 }
 
+// Labels and colors match PathShapePanel exactly — the same four choices under
+// two different names ("Hybrid" here, "By Motion" there) read as two features.
 function buildPathShapeChildren(
   vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
   const current = vm.getPathShape();
   const motionAware = vm.getMotionAwarePaths();
+  const fixed = (shape: "arc" | "linear" | "concave") => () => {
+    vm.setPathPolicy({ pathShape: shape, motionAwarePaths: false });
+  };
   return [
     {
       id: "path-arc",
       label: "Arc",
       icon: "fa-bezier-curve",
-      checked: current === "arc" && !motionAware,
-      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("arc"); },
+      iconColor: "#60a5fa",
+      checked: !motionAware && current === "arc",
+      action: fixed("arc"),
     },
     {
       id: "path-linear",
       label: "Linear",
-      icon: "fa-arrows-alt-h",
-      checked: current === "linear" && !motionAware,
-      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("linear"); },
+      icon: "fa-arrows-left-right",
+      iconColor: "#f97316",
+      checked: !motionAware && current === "linear",
+      action: fixed("linear"),
     },
     {
       id: "path-concave",
       label: "Concave",
       icon: "fa-compress",
-      checked: current === "concave" && !motionAware,
-      action: () => { vm.setMotionAwarePaths(false); vm.setPathShape("concave"); },
+      iconColor: "#a78bfa",
+      checked: !motionAware && current === "concave",
+      action: fixed("concave"),
     },
     {
-      id: "path-hybrid",
-      label: "Hybrid",
+      id: "path-by-motion",
+      label: "By Motion",
       icon: "fa-shuffle",
+      iconColor: "#2dd4bf",
       checked: motionAware,
-      action: () => vm.toggleMotionAwarePaths(),
-    },
-    {
-      id: "blue-path-lines",
-      label: "Show Blue Path",
-      icon: "fa-route",
-      checked: vm.getVisibility("bluePathLines"),
-      action: () => vm.toggleVisibility("bluePathLines"),
-    },
-    {
-      id: "red-path-lines",
-      label: "Show Red Path",
-      icon: "fa-route",
-      checked: vm.getVisibility("redPathLines"),
-      action: () => vm.toggleVisibility("redPathLines"),
+      action: () => vm.setMotionAwarePaths(true),
     },
   ];
 }
@@ -260,6 +284,9 @@ function buildVisibilityChildren(
   vm: AnimationVisibilityStateManager
 ): ContextMenuItem[] {
   const settings = vm.getSettings();
+  // One color-agnostic Paths toggle, matching DisplayPanel's chip: the
+  // per-color keys survive underneath, this sets both.
+  const pathLinesOn = settings.bluePathLines || settings.redPathLines;
   return [
     {
       id: "vis-props",
@@ -270,9 +297,9 @@ function buildVisibilityChildren(
       action: () => vm.toggleVisibility("props"),
     },
     {
-      id: "vis-beat-numbers",
-      label: "Beat #s",
-      icon: "fa-hashtag",
+      id: "vis-step-numbers",
+      label: "Step Numbers",
+      icon: "fa-list-ol",
       checked: settings.stepNumbers,
       keepOpen: true,
       action: () => vm.toggleVisibility("stepNumbers"),
@@ -310,12 +337,31 @@ function buildVisibilityChildren(
       action: () => vm.toggleVisibility("mandala"),
     },
     {
+      id: "vis-path-lines",
+      label: "Paths",
+      icon: "fa-route",
+      checked: pathLinesOn,
+      keepOpen: true,
+      action: () => {
+        vm.setVisibility("bluePathLines", !pathLinesOn);
+        vm.setVisibility("redPathLines", !pathLinesOn);
+      },
+    },
+    {
       id: "vis-progress-bar",
       label: "Progress Bar",
       icon: "fa-bars-progress",
       checked: settings.progressBar,
       keepOpen: true,
       action: () => vm.toggleVisibility("progressBar"),
+    },
+    {
+      id: "vis-dark-mode",
+      label: "Dark Mode",
+      icon: "fa-moon",
+      checked: settings.darkMode,
+      keepOpen: true,
+      action: () => vm.toggleDarkMode(),
     },
   ];
 }
@@ -325,7 +371,6 @@ export function buildCanvasContextMenuItems(
 ): ContextMenuEntry[] {
   const vm = deps.visibilityManager;
   const ecs = deps.effectsConfigState;
-  const settings = vm.getSettings();
   const active = getActiveEffect(ecs);
 
   const items: ContextMenuEntry[] = [
@@ -360,6 +405,18 @@ export function buildCanvasContextMenuItems(
     },
   ];
 
+  // Presets for the active effect — the same looks the effects panel offers,
+  // reachable without opening it.
+  const presetChildren = buildEffectPresetChildren(active, ecs);
+  if (presetChildren.length > 0) {
+    items.push({
+      id: "effect-presets-submenu",
+      label: "Effect Presets",
+      icon: "fa-swatchbook",
+      children: presetChildren,
+    });
+  }
+
   // Show trail tracking submenu when trails are active
   if (active === "trails") {
     items.push({
@@ -375,11 +432,11 @@ export function buildCanvasContextMenuItems(
       id: "efforts-submenu",
       label: "Efforts",
       icon: "fa-gauge",
-      children: buildEffortChildren(vm, settings.effortPreset),
+      children: buildEffortChildren(vm),
     },
     {
       id: "path-shape-submenu",
-      label: "Path Shape",
+      label: "Motion Paths",
       icon: "fa-draw-polygon",
       children: buildPathShapeChildren(vm),
     },

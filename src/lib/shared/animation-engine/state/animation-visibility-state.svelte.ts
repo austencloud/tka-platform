@@ -104,6 +104,19 @@ export class AnimationVisibilityStateManager {
   private readonly ephemeral: boolean;
 
   /**
+   * When set, MOTION POLICY (path shape, By Motion, effort) reads and writes
+   * route to that manager instead of these local settings.
+   *
+   * A scoped canvas owns its own display flags — Fuse forces its elemental
+   * glyph on, for instance — but it must not fork the one motion policy. A
+   * scoped copy silently diverges: the canvas draws one shape while the shared
+   * orchestrator that positions the props reads another, so picking Arc on the
+   * Fuse canvas left the props still swinging concave. Routing through the
+   * owner makes that divergence impossible.
+   */
+  private motionPolicySource: AnimationVisibilityStateManager | null = null;
+
+  /**
    * @param options.ephemeral When true, creates an isolated instance that uses
    *   default settings and skips localStorage persistence and DOM dark-class sync.
    *   Use for per-canvas instances that shouldn't affect global app state.
@@ -268,10 +281,17 @@ export class AnimationVisibilityStateManager {
   }
 
   /**
-   * Get all settings
+   * Get all settings. Motion policy is read through the policy owner so a
+   * scoped instance never reports a path shape or effort its props don't use.
    */
   getSettings(): AnimationVisibilitySettings {
-    return { ...this.settings };
+    const source = this.motionPolicySource;
+    if (!source) return { ...this.settings };
+    return {
+      ...this.settings,
+      ...source.getPathPolicy(),
+      effortPreset: source.getEffortPreset(),
+    };
   }
 
   // ============================================================================
@@ -472,6 +492,8 @@ export class AnimationVisibilityStateManager {
    * Get current effort easing preset
    */
   getEffortPreset(): EffortId {
+    const source = this.motionPolicySource;
+    if (source) return source.getEffortPreset();
     return this.settings.effortPreset;
   }
 
@@ -479,6 +501,12 @@ export class AnimationVisibilityStateManager {
    * Set effort easing preset
    */
   setEffortPreset(preset: EffortId): void {
+    const source = this.motionPolicySource;
+    if (source) {
+      source.setEffortPreset(preset);
+      this.notifyObservers();
+      return;
+    }
     this.settings.effortPreset = preset;
     this.saveToStorage();
     this.notifyObservers();
@@ -525,7 +553,20 @@ export class AnimationVisibilityStateManager {
   // PATH SHAPE
   // ============================================================================
 
+  /**
+   * Point this instance's motion policy — path shape, By Motion, effort — at
+   * another manager. Reads and writes both route there, so a scoped canvas and
+   * the shared orchestrator that positions its props can never disagree.
+   * Pass null to own the policy locally again. Self-reference is ignored.
+   */
+  setMotionPolicySource(source: AnimationVisibilityStateManager | null): void {
+    this.motionPolicySource = source === this ? null : source;
+    this.notifyObservers();
+  }
+
   getPathShape(): "arc" | "linear" | "concave" {
+    const source = this.motionPolicySource;
+    if (source) return source.getPathShape();
     return this.settings.pathShape;
   }
 
@@ -534,6 +575,8 @@ export class AnimationVisibilityStateManager {
    * choice that places the live props: one fixed shape or By Motion.
    */
   getPathPolicy(): AnimationPathPolicy {
+    const source = this.motionPolicySource;
+    if (source) return source.getPathPolicy();
     return {
       pathShape: this.settings.pathShape,
       motionAwarePaths: this.settings.motionAwarePaths,
@@ -545,6 +588,12 @@ export class AnimationVisibilityStateManager {
    * canvas from briefly drawing its props and mandala with different modes.
    */
   setPathPolicy(policy: AnimationPathPolicy): void {
+    const source = this.motionPolicySource;
+    if (source) {
+      source.setPathPolicy(policy);
+      this.notifyObservers();
+      return;
+    }
     if (
       this.settings.pathShape === policy.pathShape &&
       this.settings.motionAwarePaths === policy.motionAwarePaths
@@ -555,6 +604,12 @@ export class AnimationVisibilityStateManager {
   }
 
   setPathShape(shape: "arc" | "linear" | "concave"): void {
+    const source = this.motionPolicySource;
+    if (source) {
+      source.setPathShape(shape);
+      this.notifyObservers();
+      return;
+    }
     this.settings.pathShape = shape;
     this.saveToStorage();
     this.notifyObservers();
@@ -567,10 +622,18 @@ export class AnimationVisibilityStateManager {
   }
 
   getMotionAwarePaths(): boolean {
+    const source = this.motionPolicySource;
+    if (source) return source.getMotionAwarePaths();
     return this.settings.motionAwarePaths;
   }
 
   setMotionAwarePaths(enabled: boolean): void {
+    const source = this.motionPolicySource;
+    if (source) {
+      source.setMotionAwarePaths(enabled);
+      this.notifyObservers();
+      return;
+    }
     this.settings.motionAwarePaths = enabled;
     this.saveToStorage();
     this.notifyObservers();

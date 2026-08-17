@@ -7,13 +7,26 @@ import { AnimationStateManager } from "./services/animation-state-manager";
 import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
 import { AnimationLoop } from "./services/animation-loop";
 import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+import type { AnimationVisibilityStateManager } from "./state/animation-visibility-state.svelte";
 
-export function createPlaybackControllerFactory(): AnimationPlaybackController {
+/**
+ * @param visibilityManager The manager whose motion policy (path shape, By
+ * Motion, effort) positions these props. A canvas that runs on a scoped
+ * manager MUST pass it: without it the orchestrator silently interpolates
+ * against the global singleton, so the canvas draws the shape the user picked
+ * while the props keep travelling on the old one.
+ */
+export function createPlaybackControllerFactory(
+  visibilityManager?: AnimationVisibilityStateManager
+): AnimationPlaybackController {
   const stateManager = new AnimationStateManager();
 
   const orchestrator = new SequenceAnimationOrchestrator(
     stateManager
   );
+  if (visibilityManager) {
+    orchestrator.setVisibilityManager(visibilityManager);
+  }
   const loop = new AnimationLoop();
 
   return new AnimationPlaybackController(orchestrator, loop);

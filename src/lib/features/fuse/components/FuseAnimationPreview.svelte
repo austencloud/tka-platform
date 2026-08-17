@@ -54,14 +54,17 @@
   const sharedVisibility = getAnimationVisibilityManager();
 
   // Fuse owns a few display choices (such as its elemental glyph), but it must
-  // not invent a second motion-path setting. Copy the user's path policy before
-  // either the combined or split canvas mounts, then keep both canvases aligned
-  // whenever the main animation controls change it.
-  function syncFusePathPolicy(): void {
-    fuseVisibility.setPathPolicy(sharedVisibility.getPathPolicy());
-  }
+  // not invent a second motion-path setting. Reads and writes of path shape,
+  // By Motion, and effort route to the shared manager, so the canvas menu's
+  // Path Shape entries change the one setting every surface uses instead of a
+  // private copy the props never consult.
+  fuseVisibility.setMotionPolicySource(sharedVisibility);
 
-  syncFusePathPolicy();
+  // The shared manager notifies its own observers on a policy change; this
+  // bridge repaints the Fuse canvases for changes made anywhere else.
+  function repaintOnSharedChange(): void {
+    fuseVisibility.notifyObservers();
+  }
   // A classified pair should identify itself while it moves. The canonical
   // canvas glyph derives the element from each live step, so a four-step VTG
   // relationship stays steady and a genuinely changing relationship changes
@@ -118,15 +121,15 @@
 
   onMount(() => {
     try {
-      controller = createPlaybackControllerFactory();
+      controller = createPlaybackControllerFactory(fuseVisibility);
     } catch (cause) {
       failInitialization("Preview unavailable", cause);
     }
   });
 
   onMount(() => {
-    sharedVisibility.registerObserver(syncFusePathPolicy);
-    return () => sharedVisibility.unregisterObserver(syncFusePathPolicy);
+    sharedVisibility.registerObserver(repaintOnSharedChange);
+    return () => sharedVisibility.unregisterObserver(repaintOnSharedChange);
   });
 
   onDestroy(() => {
