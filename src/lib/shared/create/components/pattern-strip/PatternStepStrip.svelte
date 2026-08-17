@@ -22,8 +22,12 @@
     base: T;
     format: (v: T) => string;
     onEdit: (laneIndex: number, stepIndex: number, value: T) => void;
+    /** Grow the cells into the height the parent gives, instead of a fixed 56px
+     *  row. For a full-height pane, where a fixed row would strand the space
+     *  below it. */
+    fill?: boolean;
   }
-  let { lanes, cellKind, valueList = [], base, format, onEdit }: Props = $props();
+  let { lanes, cellKind, valueList = [], base, format, onEdit, fill = false }: Props = $props();
 
   let popover = $state<{ lane: number; step: number; x: number; y: number } | null>(null);
 
@@ -66,7 +70,7 @@
 
 <svelte:window onclick={(e) => { if (!(e.target as HTMLElement)?.closest?.(".pbs-cell,.pbs-pop")) popover = null; }} />
 
-<div class="pbs">
+<div class="pbs" class:fill>
   {#each lanes as lane, li}
     <div class="pbs-lane">
       <span class="pbs-label {lane.color}">{lane.label}</span>
@@ -116,7 +120,15 @@
 <style>
   .pbs { display: flex; flex-direction: column; gap: 10px; }
   .pbs-lane { display: flex; align-items: center; gap: 12px; }
-  .pbs-label { width: 44px; flex: 0 0 44px; font-size: 14px; font-weight: 800; }
+  /* Sized to the longest label ("Right") rather than to a round number of
+     pixels. At 44px the bold text ran past its own box and collided with the
+     first cell; ch tracks the font, and the clamp is the backstop for a lane
+     name longer than the two this ships with. */
+  .pbs-label {
+    width: 5ch; flex: 0 0 5ch; min-width: 0;
+    font-size: 14px; font-weight: 800;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .pbs-label.blue { color: var(--theme-blue, #6f9bff); }
   .pbs-label.red { color: var(--theme-red, #ff7a8a); }
   .pbs-label.hold { color: var(--theme-accent, #2dd4bf); }
@@ -127,6 +139,16 @@
     color: var(--theme-text); cursor: pointer; overflow: hidden;
     display: flex; align-items: center; justify-content: center; user-select: none;
   }
+  /* Fill mode: the lanes share the height instead of sitting at a fixed 56px.
+     The min-height keeps a cell legible when the pane is short, at which point
+     the parent scrolls rather than crushing it. The lane has to stretch rather
+     than centre its row, or the cells would be measuring against a box that is
+     itself only as tall as its contents. */
+  .pbs.fill { flex: 1; min-height: 0; }
+  .pbs.fill .pbs-lane { flex: 1; min-height: 0; align-items: stretch; }
+  .pbs.fill .pbs-label { align-self: center; }
+  .pbs.fill .pbs-steps { min-height: 0; }
+  .pbs.fill .pbs-cell { height: 100%; min-height: 56px; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }

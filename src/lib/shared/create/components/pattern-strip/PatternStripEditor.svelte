@@ -259,11 +259,17 @@
     align-items: center;
     gap: 12px;
   }
+  /* Same fix as PatternStepStrip's .pbs-label: 44px was narrower than the bold
+     text it held, so the name spilled onto the control beside it. */
   .amt-lane {
-    width: 44px;
-    flex: 0 0 44px;
+    width: 5ch;
+    flex: 0 0 5ch;
+    min-width: 0;
     font-size: 13px;
     font-weight: 800;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .amt-lane.blue {
     color: var(--theme-blue, #6f9bff);
