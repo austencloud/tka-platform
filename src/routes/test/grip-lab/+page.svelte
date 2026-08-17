@@ -215,6 +215,62 @@
     staffAngleDeg = angleDeg;
   }
 
+  // ── Reset + pose sharing ──
+  const SLIDER_DEFAULTS = {
+    staffAngleDeg: 0,
+    speedDegPerSec: 45,
+    stanceYawDeg: 0,
+    planeSweepDeg: 0,
+    handTravelCm: 0,
+  } as const;
+
+  function resetAll() {
+    staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg;
+    speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec;
+    stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg;
+    planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg;
+    handTravelCm = SLIDER_DEFAULTS.handTravelCm;
+  }
+
+  let poseCopied = $state(false);
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  async function copyPose() {
+    const text =
+      `point ${point} · angle ${Math.round(staffAngleDeg)}° · ` +
+      `sweep ${planeSweepDeg}° · travel ${handTravelCm}cm · ` +
+      `stance ${stanceYawDeg}°` +
+      (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
+    try {
+      await navigator.clipboard.writeText(text);
+      poseCopied = true;
+      clearTimeout(copiedTimer);
+      copiedTimer = setTimeout(() => (poseCopied = false), 900);
+    } catch {
+      console.warn("[GripLab] Clipboard write blocked");
+    }
+  }
+
+  // Keys 1-4 freeze the quarter phases; space toggles play. Only when focus
+  // is not already on a control, so native slider/button behavior wins.
+  function onLabKeydown(event: KeyboardEvent) {
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      target.closest("input, button, select, textarea, [contenteditable]")
+    ) {
+      return;
+    }
+    const phaseIndex = ["1", "2", "3", "4"].indexOf(event.key);
+    if (phaseIndex >= 0) {
+      freezeAtPhase(PHASE_ANGLES[phaseIndex]);
+      event.preventDefault();
+    } else if (event.key === " ") {
+      playing = !playing;
+      event.preventDefault();
+    }
+  }
+
   const frozenPhase = $derived(
     !playing && PHASE_ANGLES.includes(staffAngleDeg as 0 | 90 | 180 | 270)
       ? staffAngleDeg
@@ -264,9 +320,12 @@
 
   onDestroy(() => {
     if (typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(raf);
+    clearTimeout(copiedTimer);
     avatarState?.destroy();
   });
 </script>
+
+<svelte:window onkeydown={onLabKeydown} />
 
 <svelte:head>
   <title>Grip Lab</title>
@@ -365,6 +424,25 @@
             />
           {/each}
         </div>
+        <span class="key-hint" aria-hidden="true">keys 1–4 · space plays</span>
+        <div class="deck-actions">
+          <FilterChipBase
+            label="Reset all"
+            mode="action"
+            size="sm"
+            ariaLabel="Reset all sliders to defaults"
+            onclick={resetAll}
+          />
+          <FilterChipBase
+            label="Copy pose"
+            mode="action"
+            size="sm"
+            chipColor="#ef5350"
+            active={poseCopied}
+            ariaLabel="Copy the current pose to the clipboard"
+            onclick={copyPose}
+          />
+        </div>
       </div>
 
       <div class="control-row transport-row">
@@ -386,9 +464,21 @@
             min="0"
             max="360"
             step="1"
+            list="grip-lab-angle-ticks"
             bind:value={staffAngleDeg}
+            ondblclick={() => (staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg)}
           />
           <output for="grip-lab-angle">{Math.round(staffAngleDeg)}°</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset staff angle"
+            disabled={staffAngleDeg === SLIDER_DEFAULTS.staffAngleDeg}
+            onclick={() => (staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg)}
+          >↺</button>
+          <datalist id="grip-lab-angle-ticks">
+            {#each [0, 90, 180, 270, 360] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
         </div>
 
         <div class="slider-control">
@@ -399,9 +489,21 @@
             min="-180"
             max="180"
             step="5"
+            list="grip-lab-speed-ticks"
             bind:value={speedDegPerSec}
+            ondblclick={() => (speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec)}
           />
           <output for="grip-lab-speed">{speedDegPerSec}°/s</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset speed"
+            disabled={speedDegPerSec === SLIDER_DEFAULTS.speedDegPerSec}
+            onclick={() => (speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec)}
+          >↺</button>
+          <datalist id="grip-lab-speed-ticks">
+            {#each [-180, -90, -45, 0, 45, 90, 180] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
         </div>
 
         <div class="slider-control">
@@ -412,9 +514,21 @@
             min="-60"
             max="60"
             step="1"
+            list="grip-lab-stance-ticks"
             bind:value={stanceYawDeg}
+            ondblclick={() => (stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg)}
           />
           <output for="grip-lab-stance">{stanceYawDeg}°</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset stance yaw"
+            disabled={stanceYawDeg === SLIDER_DEFAULTS.stanceYawDeg}
+            onclick={() => (stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg)}
+          >↺</button>
+          <datalist id="grip-lab-stance-ticks">
+            {#each [-60, -45, 0, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
         </div>
       </div>
 
@@ -427,9 +541,21 @@
             min="-90"
             max="90"
             step="1"
+            list="grip-lab-sweep-ticks"
             bind:value={planeSweepDeg}
+            ondblclick={() => (planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg)}
           />
           <output for="grip-lab-sweep">{planeSweepDeg}°</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset plane sweep"
+            disabled={planeSweepDeg === SLIDER_DEFAULTS.planeSweepDeg}
+            onclick={() => (planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg)}
+          >↺</button>
+          <datalist id="grip-lab-sweep-ticks">
+            {#each [-90, -45, 0, 45, 90] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
         </div>
 
         <div class="slider-control">
@@ -440,9 +566,21 @@
             min="-40"
             max="40"
             step="1"
+            list="grip-lab-travel-ticks"
             bind:value={handTravelCm}
+            ondblclick={() => (handTravelCm = SLIDER_DEFAULTS.handTravelCm)}
           />
           <output for="grip-lab-travel">{handTravelCm} cm</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset hand travel"
+            disabled={handTravelCm === SLIDER_DEFAULTS.handTravelCm}
+            onclick={() => (handTravelCm = SLIDER_DEFAULTS.handTravelCm)}
+          >↺</button>
+          <datalist id="grip-lab-travel-ticks">
+            {#each [-40, -20, 0, 20, 40] as tick (tick)}<option value={tick}></option>{/each}
+          </datalist>
         </div>
       </div>
     </aside>
@@ -553,14 +691,27 @@
   }
 
   .phase-row {
-    grid-template-columns: auto auto;
-    justify-content: start;
+    grid-template-columns: auto auto 1fr auto;
   }
 
   .phase-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 0.45rem;
+  }
+
+  .key-hint {
+    color: var(--lab-muted);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    justify-self: end;
+    opacity: 0.75;
+  }
+
+  .deck-actions {
+    display: flex;
+    gap: 0.45rem;
+    justify-self: end;
   }
 
   .transport-row {
@@ -595,9 +746,36 @@
 
   .slider-control {
     display: grid;
-    grid-template-columns: auto minmax(5rem, 1fr) auto;
+    grid-template-columns: auto minmax(5rem, 1fr) auto auto;
     align-items: center;
     gap: 0.6rem;
+  }
+
+  .mini-reset {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--lab-stroke);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--lab-muted);
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  /* Compact glyph, full 44px touch floor. */
+  .mini-reset::after {
+    content: "";
+    position: absolute;
+    inset: -0.55rem;
+  }
+
+  .mini-reset:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .slider-control label {
@@ -625,6 +803,11 @@
     .transport:hover {
       filter: brightness(1.12);
     }
+
+    .mini-reset:not(:disabled):hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: var(--lab-text);
+    }
   }
 
   button:focus-visible,
@@ -638,8 +821,28 @@
       grid-template-columns: auto 1fr;
     }
 
+    /* Keep every slider in the wide column; otherwise auto-placement drops
+       the second row's first slider into the narrow button column. */
+    .transport-row .slider-control {
+      grid-column: 2;
+    }
+
     .weave-row {
       grid-template-columns: 1fr;
+    }
+
+    .phase-row {
+      grid-template-columns: auto auto;
+    }
+
+    /* Keyboard hint is meaningless on touch-first narrow layouts. */
+    .key-hint {
+      display: none;
+    }
+
+    .deck-actions {
+      grid-column: 1 / -1;
+      justify-self: start;
     }
   }
 
@@ -654,7 +857,7 @@
     }
 
     .slider-control {
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       gap: 0.3rem 0.6rem;
     }
 
