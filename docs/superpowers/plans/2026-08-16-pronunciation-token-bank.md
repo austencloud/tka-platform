@@ -521,7 +521,7 @@ The selector needs to know how long a group is and where in it a cue sits.
 - Modify: `src/lib/shared/pronunciation/pronunciation-plan.ts:17-23,113-135`
 - Test: `tests/unit/pronunciation/pronunciation-plan.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/unit/pronunciation/pronunciation-plan.test.ts`, inside the
 existing `describe("createPronunciationPlan", ...)` block:
@@ -539,7 +539,7 @@ existing `describe("createPronunciationPlan", ...)` block:
   });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/pronunciation-plan.test.ts
@@ -547,7 +547,7 @@ npm run test:ci -- tests/unit/pronunciation/pronunciation-plan.test.ts
 
 Expected: FAIL. `indexInGroup` and `groupLength` are undefined on the cues.
 
-- [ ] **Step 3: Add the fields**
+- [x] **Step 3: Add the fields**
 
 In `pronunciation-plan.ts`, extend the cue interface:
 
@@ -581,7 +581,7 @@ other property stays exactly as it is:
       });
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/
@@ -590,7 +590,7 @@ npm run test:ci -- tests/unit/pronunciation/
 Expected: PASS. The pre-existing cue assertions use `toMatchObject`, so added
 properties do not break them.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): carry group position on every cue" -- src/lib/shared/pronunciation/pronunciation-plan.ts tests/unit/pronunciation/pronunciation-plan.test.ts
