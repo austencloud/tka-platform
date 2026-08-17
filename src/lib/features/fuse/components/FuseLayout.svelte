@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { holdBackgroundFor } from "$lib/shared/background/shared/state/background-hold.svelte";
   import {
     BREAKPOINTS,
     LANDSCAPE_THRESHOLDS,
@@ -127,6 +129,20 @@
     )
   );
   const recipeColumnWidth = $derived(recipeColumn ? recipeTargetWidth : 0);
+
+  // The grid track animating open is the one moment on this page where the
+  // frame budget is fully spoken for, and the animated backdrop repaints a
+  // viewport-sized canvas on every one of those frames. It holds its last
+  // frame instead, for slightly longer than the transition so the final frame
+  // — the one the eye actually lands on — is protected too.
+  const RECIPE_TRANSITION_MS = 280;
+  const BACKDROP_HOLD_MS = RECIPE_TRANSITION_MS + 60;
+  $effect(() => {
+    // Reading the width, not the boolean: the track also animates when the
+    // column resizes under an open panel.
+    recipeColumnWidth;
+    untrack(() => holdBackgroundFor("fuse-recipe-track", BACKDROP_HOLD_MS));
+  });
 
   function closeRecipe(): void {
     settingsOpen = false;
