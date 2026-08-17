@@ -20,6 +20,7 @@ import {
 import { basename, extname, join } from "node:path";
 
 import { segmentWordByEnergy } from "../src/lib/features/lab/pronunciation-recorder/domain/voice-activity-trimmer";
+import { measureTokenFeatures } from "../src/lib/shared/pronunciation/domain/audio-features";
 import { createPronunciationPlan } from "../src/lib/shared/pronunciation/pronunciation-plan";
 
 interface WordEntry {
@@ -248,15 +249,20 @@ function main(): void {
           ? plan.cues[index]?.assetKey ?? `extra-${index}`
           : "unaligned";
         const sliceName = `${entryIndex}.${baseName}.${index}.${label}.wav`;
+        const slice = samples.slice(start, end);
         writeFileSync(
           join(sliceDirectory, sliceName),
-          encodeWav(samples.slice(start, end), sampleRate)
+          encodeWav(slice, sampleRate)
         );
         if (!isExact) {
           console.log(
             `    segment ${index}: ${segment.startSeconds.toFixed(2)}s - ${segment.endSeconds.toFixed(2)}s`
           );
         }
+        const features = measureTokenFeatures(slice, sampleRate);
+        console.log(
+          `    ${label}  ${features.durationMs.toFixed(0)} ms  ${features.rmsDb.toFixed(1)} dB  f0 ${features.f0StartHz.toFixed(0)}->${features.f0EndHz.toFixed(0)} Hz`
+        );
       });
     } catch (error) {
       failed += 1;
