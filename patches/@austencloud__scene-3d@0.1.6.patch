@@ -4422,7 +4422,7 @@ index ec4e1d1b822aeb9661dfb0d838ba06684737fd83..d8c709b915835fdcb8e67d672a013c91
  /**
   * Registry of available GLTF prop models.
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
-index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf892b95046d 100644
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049906bcfeb 100644
 --- a/dist/lib/components/props/prop-model-registry.js
 +++ b/dist/lib/components/props/prop-model-registry.js
 @@ -25,6 +25,35 @@ function modelUrl(filename) {
@@ -4461,7 +4461,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf89
  /**
   * Registry of available GLTF prop models.
   *
-@@ -32,8 +61,33 @@ function modelUrl(filename) {
+@@ -32,8 +61,49 @@ function modelUrl(filename) {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY = {
@@ -4490,6 +4490,22 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf89
 +        scale: 1,
 +        gripOffsetY: 0,
 +    },
++    /**
++     * sword.glb is authored at its shipped size -- 0.8636m, the same 34" as the
++     * default staff -- with the origin already on the cross-guard, where the
++     * drawing's viewBox center falls. So it needs neither a scale nor an offset,
++     * and there is deliberately no derived constant here: the numbers live in
++     * scripts/build-sword-model.py, and scripts/verify-sword-glb.cjs fails if a
++     * re-export moves them.
++     *
++     * Like every other GLB prop, it does not follow userProportionsState the way
++     * the procedural Sword3D fallback did. Model props are fixed-size by design.
++     */
++    [PropType.SWORD]: {
++        modelUrl: modelUrl("sword.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
 +};
 +/** Smaller prop families that reuse an authored base model. */
 +export const SHARED_MODEL_VARIANT_MAP = {
@@ -4497,7 +4513,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf89
  };
  /**
   * Look up a GLTF model for a prop type. Returns null if no model
-@@ -49,11 +103,13 @@ export function getPropModel(propType) {
+@@ -49,11 +119,13 @@ export function getPropModel(propType) {
  export const BIG_VARIANT_MAP = {
      [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
      [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -4513,7 +4529,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..d33ca70f8a625219f4b5cb3f8716cf89
      [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
      [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
      [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -72,6 +128,15 @@ export function resolvePropModel(propType) {
+@@ -72,6 +144,15 @@ export function resolvePropModel(propType) {
      const direct = getPropModel(propType);
      if (direct)
          return { entry: direct, scale: direct.scale };
@@ -13272,7 +13288,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17
    });
  }
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
-index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c989459989 100644
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c66286a535bc 100644
 --- a/src/lib/components/props/prop-model-registry.ts
 +++ b/src/lib/components/props/prop-model-registry.ts
 @@ -20,6 +20,16 @@ export interface PropModelEntry {
@@ -13337,7 +13353,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c9
  /**
   * Registry of available GLTF prop models.
   *
-@@ -46,8 +94,46 @@ function modelUrl(filename: string): string {
+@@ -46,8 +94,62 @@ function modelUrl(filename: string): string {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
@@ -13366,6 +13382,22 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c9
 +    scale: 1,
 +    gripOffsetY: 0,
 +  },
++  /**
++   * sword.glb is authored at its shipped size -- 0.8636m, the same 34" as the
++   * default staff -- with the origin already on the cross-guard, where the
++   * drawing's viewBox center falls. So it needs neither a scale nor an offset,
++   * and there is deliberately no derived constant here: the numbers live in
++   * scripts/build-sword-model.py, and scripts/verify-sword-glb.cjs fails if a
++   * re-export moves them.
++   *
++   * Like every other GLB prop, it does not follow userProportionsState the way
++   * the procedural Sword3D fallback did. Model props are fixed-size by design.
++   */
++  [PropType.SWORD]: {
++    modelUrl: modelUrl("sword.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
 +  [PropType.TRIGENG]: {
 +    modelUrl: modelUrl("trigeng.glb"),
 +    scale: 1,
@@ -13386,7 +13418,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c9
  };
  
  /**
-@@ -67,11 +153,13 @@ export const BIG_VARIANT_MAP: Partial<
+@@ -67,11 +169,13 @@ export const BIG_VARIANT_MAP: Partial<
  > = {
    [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
    [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -13402,7 +13434,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..daa790db4e0b193a31fbe5864b71a4c9
    [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
    [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
    [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -93,6 +181,16 @@ export function resolvePropModel(
+@@ -93,6 +197,16 @@ export function resolvePropModel(
    const direct = getPropModel(propType);
    if (direct) return { entry: direct, scale: direct.scale };
  

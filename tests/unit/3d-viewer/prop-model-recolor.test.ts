@@ -136,6 +136,53 @@ describe("Chicken GLB registry", () => {
   });
 });
 
+describe("Sword GLB registry", () => {
+  it("needs no scale or grip correction", () => {
+    // sword.glb is authored at the 34in staff length with its origin already on
+    // the cross-guard, where sword.svg's viewBox center falls.
+    expect(resolvePropModel(PropType.SWORD)).toMatchObject({
+      entry: {
+        modelUrl: "/models/props/sword.glb",
+        scale: 1,
+        gripOffsetY: 0,
+      },
+      scale: 1,
+    });
+    // The blade already points at +Y; flipping would bury it in the arm.
+    expect(
+      resolvePropModel(PropType.SWORD)!.entry.flipLongAxis
+    ).toBeFalsy();
+  });
+
+  it("recolors the hilt hardware and preserves the gold kevlar wick", () => {
+    // This is the defect the rebuild fixed: the procedural sword used fixed
+    // metal colors, so it was the one prop that ignored blue/red identity.
+    // sword.svg's own comment splits it -- hardware recolors, blade preserved.
+    const scene = new Group();
+    const hardware = new MeshStandardMaterial({ color: 0x504b50 });
+    hardware.name = "TKA_Sword_Hardware_Recolor";
+    const wick = new MeshStandardMaterial({ color: 0xd17d0a });
+    wick.name = "TKA_Sword_Wick";
+    const hilt = new Mesh(new BoxGeometry(), hardware);
+    const blade = new Mesh(new BoxGeometry(), wick);
+    scene.add(hilt, blade);
+
+    recolorPropModel(scene, "red");
+
+    expect(hilt.material).not.toBe(hardware);
+    expect((hilt.material as MeshStandardMaterial).color.getHex()).not.toBe(
+      hardware.color.getHex()
+    );
+    // Polished steel would survive the recolor as metal; the shared path
+    // forces a matte finish so the prop color actually reads.
+    expect((hilt.material as MeshStandardMaterial).metalness).toBe(0);
+    expect(blade.material).toBe(wick);
+    expect((blade.material as MeshStandardMaterial).color.getHex()).toBe(
+      0xd17d0a
+    );
+  });
+});
+
 describe("Guitar GLB registry", () => {
   it("resolves Guitar and reuses the model at Ukulele scale", () => {
     const guitar = resolvePropModel(PropType.GUITAR);
