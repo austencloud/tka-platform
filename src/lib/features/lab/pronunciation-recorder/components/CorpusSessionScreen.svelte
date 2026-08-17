@@ -27,13 +27,14 @@
   const written = (word: readonly string[] | null) => word?.join("") ?? "";
 
   /**
-   * How to say it. Subordinate to the written word on purpose — it exists so
-   * there is no doubt that `Σ-` is read "sigma dash", and so the recorded token
-   * matches the name the player will ask for later.
+   * How to say it, in the shorthand — "sig dash ome dash lam". Subordinate to
+   * the written word on purpose: it settles that `Σ-` is read "sig dash" and
+   * not "sigma dash", which is the difference between a token bank that plays
+   * back at conversational speed and one that recites Greek.
    */
   const spoken = (word: readonly string[] | null) =>
     word
-      ?.map((letter) => getLetterPronunciation(letter as never)?.spokenName ?? letter)
+      ?.map((letter) => getLetterPronunciation(letter as never)?.shortName ?? letter)
       .join(" ") ?? "";
 
   // -60 dBFS reads as empty, 0 as full. A linear map of dBFS is the only meter
@@ -51,7 +52,7 @@
       words.
     </p>
     <button class="start" onclick={() => session.start()}>Start recording</button>
-    <p class="hint">Starting asks for your microphone, then for a folder to save into.</p>
+    <p class="hint">Starting asks for your microphone. The recordings save to your account.</p>
   {:else if session.status === "running"}
     <p class="instruction">Read this out loud</p>
 
@@ -73,8 +74,8 @@
     </div>
   {:else if session.status === "failed"}
     <p class="prompt-failed">
-      Could not open the microphone or the folder. Allow both when the browser asks, then try
-      again.
+      Could not start. Allow the microphone when the browser asks, and make sure you are signed
+      in — the recordings save to your account.
     </p>
     <button class="start" onclick={() => session.start()}>Try again</button>
   {:else}

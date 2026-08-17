@@ -23,16 +23,21 @@ export function nextWordId(recorded: number): string {
  *
  * `words.json` carries the TKA letters, which is what
  * `scripts/measure-word-segmentation.ts` already reads and tokenizes. The
- * `.lab` carries the spoken names, because that is what the aligner's
- * dictionary can look up — "Σ-" is not an English word and never will be.
+ * `.lab` carries the SHORT names, because that is what the prompt asked for and
+ * therefore what is on the tape — hand the aligner "Sigma dash" for a recording
+ * of "sig dash" and it places the boundary on audio that is not there.
+ * `tools/pronunciation/tka-letters.dict` defines every one of these tokens.
  */
 export function buildWordFiles(id: string, letters: readonly string[]): WordFiles {
   return {
     wavName: `${id}.wav`,
     labName: `${id}.lab`,
+    // Lowercased: MFA folds case on input, so a dictionary that is lowercase
+    // throughout can never half-match a transcript that is not.
     labText: letters
-      .map((letter) => getLetterPronunciation(letter as never)?.spokenName ?? letter)
-      .join(" "),
+      .map((letter) => getLetterPronunciation(letter as never)?.shortName ?? letter)
+      .join(" ")
+      .toLowerCase(),
     entry: { file: `${id}.wav`, word: letters.join(""), letters: [...letters] },
   };
 }

@@ -16,8 +16,16 @@ describe("syllablesOf", () => {
   it("counts the names that a rule would get wrong", () => {
     expect(syllablesOf(Letter.W)).toBe(3); // "double-you"
     expect(syllablesOf(Letter.PSI)).toBe(1); // "sigh"
-    expect(syllablesOf(Letter.OMEGA)).toBe(3);
     expect(syllablesOf(Letter.A)).toBe(1);
+  });
+
+  it("counts the Greek shorthand, not the full Greek name", () => {
+    // The prompt asks for "ome", so the tape holds one syllable. Pricing Omega
+    // at three would judge every read containing it as rushed and re-queue it.
+    expect(syllablesOf(Letter.OMEGA)).toBe(1);
+    expect(syllablesOf(Letter.SIGMA)).toBe(1);
+    expect(syllablesOf(Letter.LAMBDA)).toBe(1);
+    expect(syllablesOf(Letter.ALPHA)).toBe(1);
   });
 
   it("adds one syllable for the spoken dash", () => {
@@ -26,6 +34,7 @@ describe("syllablesOf", () => {
   });
 
   it("sums a word", () => {
-    expect(syllablesInWord([Letter.ALPHA, Letter.W, Letter.PSI])).toBe(6);
+    // "alp" + "double-you" + "sigh"
+    expect(syllablesInWord([Letter.ALPHA, Letter.W, Letter.PSI])).toBe(5);
   });
 });

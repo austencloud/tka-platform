@@ -3,7 +3,7 @@
   import { planWords } from "./domain/corpus-plan";
   import { getPronunciationRecorder } from "./get-pronunciation-recorder";
   import { AudioRingCapture } from "./services/implementations/AudioRingCapture";
-  import { CorpusSessionStore } from "./services/implementations/CorpusSessionStore";
+  import { CloudCorpusSessionStore } from "./services/implementations/CloudCorpusSessionStore";
   import { SileroBoundaryDetector } from "./services/implementations/SileroBoundaryDetector";
   import { createCorpusSession } from "./state/corpus-session-state.svelte";
 
@@ -32,7 +32,7 @@
       words: plan.words,
       capture: new AudioRingCapture(),
       detector: new SileroBoundaryDetector(),
-      store: new CorpusSessionStore(),
+      store: new CloudCorpusSessionStore(),
       microphone: getPronunciationRecorder(),
     });
   }

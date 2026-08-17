@@ -61,16 +61,14 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     });
   }
 
-  async function handleSpeechEnd(startSeconds: number, endSeconds: number): Promise<void> {
+  async function handleSpeechEnd(
+    seconds: number,
+    span: ReturnType<IAudioRingCapture["readSeconds"]>
+  ): Promise<void> {
     const word = wordOf(currentKey);
     if (!word || status !== "running") return;
 
-    const seconds = endSeconds - startSeconds;
     const syllables = syllablesInWord(word);
-    const span = options.capture.readSeconds(
-      startSeconds - LEAD_IN_SECONDS,
-      endSeconds + TAIL_SECONDS
-    );
     const verdict = span === null ? "too-short" : rate.judge(syllables, seconds);
 
     if (verdict !== "ok" || span === null) {
@@ -112,10 +110,18 @@ export function createCorpusSession(options: CorpusSessionOptions) {
       await options.detector.start(stream, {
         onSpeechStart: () => {},
         onSpeechEnd: (span) => {
+          // Read the ring HERE, not inside the queued step. Uploads are the slow
+          // link now, and a queue that has backed up behind one would push this
+          // read past the point where the ring has overwritten the samples — the
+          // word would be lost to a network hiccup rather than a bad read.
+          const audio = options.capture.readSeconds(
+            span.startSeconds - LEAD_IN_SECONDS,
+            span.endSeconds + TAIL_SECONDS
+          );
           // Serialised: two words must never be written concurrently, or their
-          // ids interleave and words.json disagrees with the directory.
+          // ids interleave and words.json disagrees with the stored session.
           pending = pending.then(() =>
-            handleSpeechEnd(span.startSeconds, span.endSeconds)
+            handleSpeechEnd(span.endSeconds - span.startSeconds, audio)
           );
         },
       });

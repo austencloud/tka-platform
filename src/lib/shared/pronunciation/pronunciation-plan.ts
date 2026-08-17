@@ -1,3 +1,4 @@
+import { GREEK_TO_ASCII } from "$lib/shared/create/domain/spell-constants";
 import {
   Letter,
   normalizeLetter,
@@ -73,28 +74,55 @@ export type AnyPronunciationManifest =
   | PronunciationTokenBank;
 
 export interface LetterPronunciation {
+  /** Full name — "Sigma dash". What speech synthesis is handed. */
   readonly spokenName: string;
+  /**
+   * What a person actually says — "sig dash". The Greek shorthand from the
+   * rename panel (`GREEK_TO_ASCII`), which is the convention already in use for
+   * these letters everywhere else in the product. Latin letters have no
+   * shorthand and reuse `spokenName`.
+   */
+  readonly shortName: string;
   readonly assetKey: string;
+}
+
+const DASH_SUFFIX = " dash";
+
+/**
+ * "Σ-" is the Greek base plus the type suffix, and only the base has a
+ * shorthand. Splitting them keeps one entry per Greek letter instead of a
+ * second table listing every dashed variant.
+ */
+function shortNameFor(letter: string, spokenName: string): string {
+  const dashed = letter.endsWith("-");
+  const short = GREEK_TO_ASCII[dashed ? letter.slice(0, -1) : letter];
+  if (!short) return spokenName;
+  return `${short}${dashed ? DASH_SUFFIX : ""}`;
 }
 
 const LETTER_PRONUNCIATIONS = new Map<TkaLetter, LetterPronunciation>(
   (Object.entries(Letter) as Array<[string, TkaLetter]>).map(
-    ([memberName, letter]) => [
-      letter,
-      {
-        spokenName: memberName
-          .split("_")
-          .map((part, index) =>
-            part.length === 1
-              ? part
-              : index === 0
-                ? `${part[0]}${part.slice(1).toLowerCase()}`
-                : part.toLowerCase()
-          )
-          .join(" "),
-        assetKey: memberName.toLowerCase().replaceAll("_", "-"),
-      },
-    ]
+    ([memberName, letter]) => {
+      const spokenName = memberName
+        .split("_")
+        .map((part, index) =>
+          part.length === 1
+            ? part
+            : index === 0
+              ? `${part[0]}${part.slice(1).toLowerCase()}`
+              : part.toLowerCase()
+        )
+        .join(" ");
+
+      return [
+        letter,
+        {
+          spokenName,
+          shortName: shortNameFor(letter, spokenName),
+          assetKey: memberName.toLowerCase().replaceAll("_", "-"),
+        },
+      ];
+    }
   )
 );
 

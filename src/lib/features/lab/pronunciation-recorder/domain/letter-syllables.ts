@@ -2,10 +2,12 @@
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
 /**
- * Syllables in each letter's spoken name, as `getLetterPronunciation` produces
- * it. Written out rather than derived: no rule turns "W" into three syllables
- * and "Psi" into one, and a wrong count does not fail loudly — it makes the
- * session re-queue a perfectly good read until the word retires.
+ * Syllables in each letter's SHORT name — `getLetterPronunciation().shortName`,
+ * which is what the prompt asks for and therefore what the microphone hears.
+ * Counting the full names here would price "sig dash" at three syllables, judge
+ * every Greek read as rushed, and silently re-queue good takes until the word
+ * retired. Written out rather than derived: no rule turns "W" into three
+ * syllables and "psi" into one.
  */
 const SYLLABLES: Record<string, number> = {
   [Letter.A]: 1, [Letter.B]: 1, [Letter.C]: 1, [Letter.D]: 1, [Letter.E]: 1,
@@ -15,19 +17,22 @@ const SYLLABLES: Record<string, number> = {
   [Letter.U]: 1, [Letter.V]: 1,
 
   [Letter.W]: 3, [Letter.X]: 1, [Letter.Y]: 1, [Letter.Z]: 1,
-  [Letter.SIGMA]: 2, [Letter.DELTA]: 2, [Letter.THETA]: 2, [Letter.OMEGA]: 3,
-  [Letter.MU]: 1, [Letter.NU]: 1,
-
   [Letter.W_DASH]: 4, [Letter.X_DASH]: 2, [Letter.Y_DASH]: 2, [Letter.Z_DASH]: 2,
-  [Letter.SIGMA_DASH]: 3, [Letter.DELTA_DASH]: 3, [Letter.THETA_DASH]: 3,
-  [Letter.OMEGA_DASH]: 4,
 
-  [Letter.PHI]: 1, [Letter.PSI]: 1, [Letter.LAMBDA]: 2, [Letter.TAU_DASH]: 2,
+  // Greek, shortened: sig, del, the, ome, phi, psi, lam, alp, bet, gam — one
+  // syllable each, plus one for "dash".
+  [Letter.SIGMA]: 1, [Letter.DELTA]: 1, [Letter.THETA]: 1, [Letter.OMEGA]: 1,
+  [Letter.PHI]: 1, [Letter.PSI]: 1, [Letter.LAMBDA]: 1,
+  [Letter.ALPHA]: 1, [Letter.BETA]: 1, [Letter.GAMMA]: 1,
 
-  [Letter.PHI_DASH]: 2, [Letter.PSI_DASH]: 2, [Letter.LAMBDA_DASH]: 3,
+  [Letter.SIGMA_DASH]: 2, [Letter.DELTA_DASH]: 2, [Letter.THETA_DASH]: 2,
+  [Letter.OMEGA_DASH]: 2, [Letter.PHI_DASH]: 2, [Letter.PSI_DASH]: 2,
+  [Letter.LAMBDA_DASH]: 2,
 
-  [Letter.ALPHA]: 2, [Letter.BETA]: 2, [Letter.GAMMA]: 2, [Letter.ZETA]: 2,
-  [Letter.ETA]: 2, [Letter.TAU]: 1, [Letter.TERRA]: 2,
+  // No shorthand in GREEK_TO_ASCII, so these keep their full names. All seven
+  // are position names rather than letters a word can hold.
+  [Letter.MU]: 1, [Letter.NU]: 1, [Letter.ZETA]: 2, [Letter.ETA]: 2,
+  [Letter.TAU]: 1, [Letter.TAU_DASH]: 2, [Letter.TERRA]: 2,
 };
 
 export function syllablesOf(letter: string): number {
