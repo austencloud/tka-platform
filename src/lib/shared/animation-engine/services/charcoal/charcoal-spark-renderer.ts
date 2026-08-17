@@ -228,12 +228,20 @@ export class CharcoalSparkRenderer {
 		this.sizeScale = Math.max(0.1, Math.min(1.0, minDim / CharcoalSparkRenderer.REFERENCE_SIZE));
 		this.motionScale = Math.max(0.1, minDim / CharcoalSparkRenderer.REFERENCE_SIZE);
 		this.teleportDistance = minDim * 0.5;
+		this.cullMargin = Math.max(48, minDim * 0.06);
 	}
 
 	// A tip that moves further than this in one frame did not travel - it wrapped
 	// a loop seam or the scene changed. Spawning a batch along that jump would
 	// draw a spark ribbon across a path the prop never took.
 	private teleportDistance = CharcoalSparkRenderer.REFERENCE_SIZE * 0.5;
+	// Frame bounds in viewbox units, refreshed each frame from FireFrameInput.
+	// hasLeftFrame culls against these.
+	private frameWidth = CharcoalSparkRenderer.REFERENCE_SIZE;
+	private frameHeight = CharcoalSparkRenderer.REFERENCE_SIZE;
+	// How far past an edge a spark may sit before it is retired. Comfortably
+	// wider than a sprite plus its glow, so nothing is cut while still visible.
+	private cullMargin = CharcoalSparkRenderer.REFERENCE_SIZE * 0.06;
 	// Spawn origin for the particle currently being created, set by
 	// resolveSpawnOrigin so the spawn helpers stay single-argument-per-concern.
 	private spawnOriginX = 0;
@@ -368,6 +376,8 @@ export class CharcoalSparkRenderer {
 		}
 
 		const params = this.currentParams;
+		this.frameWidth = input.canvasWidth;
+		this.frameHeight = input.canvasHeight;
 
 		// Emission and physics, sub-stepped. A long frame is split into slices of
 		// at most one 60fps tick; each slice emits its own share of the tip's
@@ -552,7 +562,28 @@ export class CharcoalSparkRenderer {
 		if (simDt <= 0 || this.maxParticles <= 0) return;
 
 		const avgLifetime = Math.max(0.05, (params.lifetimeMin + params.lifetimeMax) / 2);
-		const sustainableRate = this.maxParticles / avgLifetime;
+
+		// The authored lifetime is only an UPPER bound on how long a spark lasts:
+		// most of them leave the frame and get culled well before it. Budgeting
+		// against the authored figure therefore reserves the pool for sparks that
+		// no longer exist, and the visible shower pays for it - which is how a
+		// correct throttle still produced a thin scatter.
+		//
+		// Little's law gives the real number from what the pool is holding:
+		// mean survival = live sparks / spawn rate. It is only trusted while the
+		// pool has headroom. A saturated pool shortens survival by recycling, and
+		// feeding THAT back would raise the budget, saturate harder, and run away.
+		let liveCount = 0;
+		for (const p of this.particles) if (p.active) liveCount++;
+		const spawnRate = this.spawnsThisFrame / simDt;
+		const saturated = liveCount >= this.maxParticles * 0.95;
+		const observedLifetime =
+			!saturated && spawnRate > 0 ? liveCount / spawnRate : avgLifetime;
+		const effectiveLifetime = Math.max(
+			0.05,
+			Math.min(avgLifetime, observedLifetime)
+		);
+		const sustainableRate = this.maxParticles / effectiveLifetime;
 		const unthrottledRate =
 			this.spawnsThisFrame / simDt / Math.max(0.01, this.emissionScale);
 
@@ -785,6 +816,32 @@ export class CharcoalSparkRenderer {
 	// Physics
 	// ======================================================================
 
+	/**
+	 * Whether a spark is outside the frame and not coming back.
+	 *
+	 * Asymmetric on purpose. Nothing in this simulation accelerates a spark back
+	 * toward the frame horizontally, and below the bottom edge gravity only
+	 * takes it further - those are one-way trips. Above the TOP edge gravity is
+	 * a restoring force, so a spark thrown over the top genuinely does come
+	 * back and is left alone; only the far-field bound catches it.
+	 */
+	private hasLeftFrame(p: CharcoalSpark): boolean {
+		const m = this.cullMargin;
+		const w = this.frameWidth;
+		const h = this.frameHeight;
+
+		// Far field: too distant to return within any lifetime, whatever it is
+		// doing. Also catches the slow inward drifter the directional tests keep.
+		const far = m + Math.max(w, h);
+		if (p.x < -far || p.x > w + far || p.y < -far || p.y > h + far) return true;
+
+		if (p.x < -m && p.vx <= 0) return true;
+		if (p.x > w + m && p.vx >= 0) return true;
+		if (p.y > h + m && p.vy >= 0) return true;
+
+		return false;
+	}
+
 	private updateParticles(params: CharcoalSparkParams, dt: number): void {
 		const dragPerFrame = Math.pow(params.drag, dt);
 
@@ -804,6 +861,17 @@ export class CharcoalSparkRenderer {
 			// Integrate position
 			p.x += p.vx * dt;
 			p.y += p.vy * dt;
+
+			// Retire sparks that have left the frame for good. Without this they
+			// stayed in the pool for the whole of their lifetime: measured at Hot
+			// Coal's settings, 69% of live sparks were outside the canvas -
+			// stepped every frame, counted against the emission budget, and never
+			// drawn. Reclaiming those slots is what lets the visible shower carry
+			// its density again.
+			if (this.hasLeftFrame(p)) {
+				p.active = false;
+				continue;
+			}
 
 			// Decay lifetime and temperature
 			p.life -= dt;

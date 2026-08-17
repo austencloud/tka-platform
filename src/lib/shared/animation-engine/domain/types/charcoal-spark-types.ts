@@ -133,6 +133,7 @@ export interface CharcoalSliderGroup {
 
 const fmtDec = (v: number) => v.toFixed(2);
 const fmtAngle = (v: number) => `${((v / Math.PI) * 180).toFixed(0)}°`;
+const fmtSettle = (v: number) => `${settleSecondsOf(v).toFixed(2)}s`;
 
 /** Slider groups for the CharcoalControlsPanel UI. */
 export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
@@ -150,8 +151,12 @@ export const CHARCOAL_SLIDER_GROUPS: CharcoalSliderGroup[] = [
 	{
 		label: "Physics",
 		sliders: [
-			{ key: "gravity", label: "Gravity", min: 10, max: 800, step: 5 },
-			{ key: "drag", label: "Drag", min: 0.8, max: 1, step: 0.01, format: fmtDec },
+			{ key: "gravity", label: "Gravity", min: 50, max: 2200, step: 25 },
+			// Shown as its time constant, which is the number that means
+			// something: how long a spark coasts before gravity takes the
+			// trajectory. The raw retention figure is unreadable down here -
+			// 0.03 and 0.30 look adjacent and are 0.28s vs 0.83s apart.
+			{ key: "drag", label: "Settle time", min: 0.01, max: 0.99, step: 0.01, format: fmtSettle },
 			{ key: "velocityInheritance", label: "Vel. inheritance", min: 0, max: 1, step: 0.05, format: fmtDec },
 			{ key: "perturbSpeedMin", label: "Perturb min", min: 0, max: 40, step: 1 },
 			{ key: "perturbSpeedMax", label: "Perturb max", min: 5, max: 100, step: 1 },
@@ -185,14 +190,18 @@ export const DEFAULT_CHARCOAL_PARAMS: CharcoalSparkParams = {
 	ambientRate: 107,
 	ambientSpeedThreshold: 10,
 	idleRate: 10,
-	gravity: 294,
-	drag: 0.91,
+	// Physics matches semanticToCharcoalParams at 40/40/50: a 0.51s settle,
+	// a 372 px/s terminal fall, and a lifetime that leaves room to fall for
+	// most of it. The old 294 / 0.91 / 1.17-3.54s pair was a 10.6-SECOND
+	// settle against a 3.5s life - a spark that never stopped coasting.
+	gravity: 732,
+	drag: 0.1396,
 	velocityInheritance: 0.59,
 	perturbSpeedMin: 28,
 	perturbSpeedMax: 111,
 	spreadAngle: Math.PI * 0.50,
-	lifetimeMin: 1.17,
-	lifetimeMax: 3.54,
+	lifetimeMin: 0.61,
+	lifetimeMax: 1.54,
 	sizeMin: 5,
 	sizeMax: 12,
 	shrinkOverLife: true,
@@ -240,6 +249,17 @@ function lerp(a: number, b: number, t: number): number {
 	return a + (b - a) * t;
 }
 
+/**
+ * Seconds a spark takes to shed its launch velocity, from per-second drag.
+ * tau = -1/ln(drag). Guarded at both ends: drag >= 1 is no drag at all
+ * (unbounded coast) and drag <= 0 stops a spark instantly.
+ */
+function settleSecondsOf(drag: number): number {
+	if (drag >= 1) return Number.POSITIVE_INFINITY;
+	if (drag <= 0) return 0;
+	return -1 / Math.log(drag);
+}
+
 /** Inverse lerp: map value in [a, b] back to [0-1]. */
 function invLerp(a: number, b: number, v: number): number {
 	if (a === b) return 0;
@@ -275,6 +295,27 @@ export function semanticToCharcoalParams(
 	const sparkSize = p?.sparkSizeScale ?? 1;
 	const gravityScale = p?.gravityScale ?? 1;
 
+	// Drag, gravity and lifetime are one system, not three sliders.
+	//
+	// `drag` is per-second velocity retention, so its time constant
+	// tau = -1/ln(drag) is the thing that matters: how long a spark coasts on
+	// its launch velocity before gravity owns the trajectory. Terminal fall
+	// speed is then g * tau.
+	//
+	// The old mapping ran drag 0.88..0.99, which is tau = 8.5..100 SECONDS.
+	// A spark kept ~92% of its launch speed for its entire life and flew a
+	// straight ray off the canvas; gravity of 15..480 needed 4..17s to build a
+	// comparable downward velocity, so the arc never appeared. None of that was
+	// visible while the pool clipped every spark to ~0.3s of life. Once
+	// d13665ee made the authored lifetimes real, it became the whole look:
+	// weightless dust scattered across the frame.
+	//
+	// So spread now sets tau directly - how long a spark coasts IS how far it
+	// scatters - and gravity is derived from the terminal fall speed the look
+	// wants, at the 950px reference the rest of this file is authored against.
+	const settleSeconds = lerp(0.28, 0.85, spread);
+	const terminalFall = lerp(420, 300, spread);
+
 	return {
 		// Intensity controls emission volume
 		ambientRate: Math.round(lerp(5, 260, intensity) * emission),
@@ -289,8 +330,8 @@ export function semanticToCharcoalParams(
 		idleRate: Math.round(lerp(0, 25, intensity) * idle),
 
 		// Spread controls how far sparks travel (floor raised - below old 20% was useless)
-		gravity: Math.round(lerp(480, 15, spread) * gravityScale),
-		drag: lerp(0.88, 0.99, spread),
+		gravity: Math.round((terminalFall / settleSeconds) * gravityScale),
+		drag: Number(Math.exp(-1 / settleSeconds).toFixed(4)),
 		velocityInheritance: lerp(0.78, 0.3, spread),
 		perturbSpeedMin: Math.round(lerp(13, 50, spread) * velocity),
 		perturbSpeedMax: Math.round(lerp(52, 200, spread) * velocity),
@@ -300,8 +341,13 @@ export function semanticToCharcoalParams(
 			Math.PI,
 			lerp(Math.PI * 0.24, Math.PI * 0.9, spread) * cone
 		),
-		lifetimeMin: Number((lerp(0.84, 3.0, spread) * sparkLife).toFixed(2)),
-		lifetimeMax: Number((lerp(2.24, 8.0, spread) * sparkLife).toFixed(2)),
+		// Cut from 0.84..8.0s. That range was authored blind - the pool clipped
+		// every spark to a fraction of a second, so no one ever saw an 8-second
+		// ember. A spark now settles within `settleSeconds` and then falls, and
+		// these leave it roughly 0.3-1.7s of falling to be an ember rather than
+		// a streak that outlives the step that threw it.
+		lifetimeMin: Number((lerp(0.35, 1.0, spread) * sparkLife).toFixed(2)),
+		lifetimeMax: Number((lerp(0.9, 2.5, spread) * sparkLife).toFixed(2)),
 
 		// Glow controls visual brightness
 		sizeMin: Math.round(lerp(3, 8, glow) * sparkSize),
@@ -321,7 +367,18 @@ export function semanticToCharcoalParams(
 export function charcoalParamsToSemantic(params: CharcoalSparkParams): CharcoalSemanticValues {
 	return {
 		intensity: invLerp(5, 260, params.ambientRate),
-		spread: invLerp(480, 15, params.gravity), // Inverted: low gravity = high spread
+		// Spread reads back off drag, not gravity. Gravity is now a derived
+		// quantity (terminal fall / settle time) and no longer monotonic in
+		// spread once a preset's gravityScale is applied; the settle time is
+		// what spread actually sets. See semanticToCharcoalParams.
+		// A drag that high can only be a params object written against the old
+		// 0.88..0.99 mapping - the current one tops out at 0.31 - so read it
+		// back the way it was written. Without this, every legacy config
+		// migrates to spread 1.
+		spread:
+			params.drag >= 0.8
+				? invLerp(0.88, 0.99, params.drag)
+				: invLerp(0.28, 0.85, settleSecondsOf(params.drag)),
 		glow: invLerp(0.4, 3.0, params.emberGlowIntensity),
 	};
 }
