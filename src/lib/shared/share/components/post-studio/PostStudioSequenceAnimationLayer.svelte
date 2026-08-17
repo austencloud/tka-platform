@@ -91,7 +91,6 @@
     previewDarkMode
     hideProgressBar
     hideHeader
-    disableContextMenu
     fillContainer
   />
 </div>

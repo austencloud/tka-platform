@@ -132,10 +132,15 @@
 </div>
 
 <style>
+  /* The layer used to be pointer-transparent so the slot button underneath got
+     every click. That also meant right-click never reached the media, so the
+     canvas and the choreo card lost the context menus they carry everywhere
+     else and the frame answered with the bare browser menu. Clicks bubble to
+     the enclosing slot button on their own, so selecting a slot still works
+     with the media taking events. */
   .media-layer {
     position: absolute;
     inset: 0;
-    pointer-events: none;
     transform-origin: center;
   }
 
