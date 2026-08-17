@@ -67,6 +67,15 @@
     return binding.format(a);
   }
 
+  /** Does this lane act on any step at all? A lane that acts nowhere has no
+   *  amount to state — "turns mixed on no steps" is not a sentence anyone
+   *  means, and "mixed" there is an artifact of asking for the shared value of
+   *  an empty set. The chip is dropped so the line reads "turns on no steps",
+   *  which is true and still one click from a rhythm that fixes it. */
+  function laneActive(li: number): boolean {
+    return laneMask(li).some(Boolean);
+  }
+
   function toggleSlot(id: string) {
     openSlot = openSlot === id ? null : id;
   }
@@ -162,7 +171,7 @@
         <p class="sentence">
           <span class="subject {binding.laneColors[li]}">{label}</span>
           <span class="prose">{binding.sentence.verb}</span>
-          {#if binding.amountList}
+          {#if binding.amountList && laneActive(li)}
             <FilterChipBase
               label={amountLabel(li)}
               mode="dropdown"

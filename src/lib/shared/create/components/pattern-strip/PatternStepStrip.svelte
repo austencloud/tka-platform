@@ -139,16 +139,31 @@
     color: var(--theme-text); cursor: pointer; overflow: hidden;
     display: flex; align-items: center; justify-content: center; user-select: none;
   }
-  /* Fill mode: the lanes share the height instead of sitting at a fixed 56px.
-     The min-height keeps a cell legible when the pane is short, at which point
-     the parent scrolls rather than crushing it. The lane has to stretch rather
-     than centre its row, or the cells would be measuring against a box that is
-     itself only as tall as its contents. */
-  .pbs.fill { flex: 1; min-height: 0; }
-  .pbs.fill .pbs-lane { flex: 1; min-height: 0; align-items: stretch; }
-  .pbs.fill .pbs-label { align-self: center; }
-  .pbs.fill .pbs-steps { min-height: 0; }
-  .pbs.fill .pbs-cell { height: 100%; min-height: 56px; }
+  /* Fill mode: for a strip in a full-height pane. The strip CLAIMS the leftover
+     height so whatever the parent pins below it lands at the bottom of the
+     pane, and its cells step up from the inline 56px to a size that reads at
+     arm's length.
+
+     What it deliberately does NOT do is stretch the lanes into that height.
+     Both stretches were tried and both were wrong: an uncapped cell became a
+     505x342px black slab at a period of 1, and capping the cell while the lane
+     still stretched simply parked the two lanes ~317px apart with nothing
+     between them. A cell holds one short value; past about 5.5rem it stops
+     reading as a token. So the cells take a fixed size, the row sits at the top
+     of the claimed box, and the leftover stays leftover. The width cap is the
+     same argument sideways — two cells should sit as two tokens at the start of
+     the row, not stretch halfway across the pane each.
+
+     `1 0 auto` and not `1` (which is `1 1 0`): on a short landscape phone the
+     pane is shorter than the panel wants, and a shrinkable strip collapsed to
+     nothing while its cells kept painting at full size — the bottom lane ran
+     off the screen with no scroll able to reach it, because a collapsed flex
+     item contributes no height for the scroller to find. Growing but never
+     shrinking below its own content keeps the lanes inside the scrollable
+     region on every screen. */
+  .pbs.fill { flex: 1 0 auto; justify-content: flex-start; }
+  .pbs.fill .pbs-lane { min-height: 0; }
+  .pbs.fill .pbs-cell { height: 5.5rem; min-height: 56px; max-width: 5.5rem; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }

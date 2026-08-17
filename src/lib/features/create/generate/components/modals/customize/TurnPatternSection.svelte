@@ -142,12 +142,17 @@
 </div>
 
 <style>
+  /* Grows into a tall pane, never shrinks below its own content. On a short
+     landscape phone the pane is shorter than the sentence, the length row and
+     two lanes of cells need, and a shrinkable box froze at the pane's height
+     while the cells kept painting past it — which put the "use random turns
+     instead" button on top of the length row. `1 0 auto` keeps the parts in
+     order at any height and lets the panel scroll to whatever runs past. */
   .turn-pattern-section {
     display: flex;
+    flex: 1 0 auto;
     flex-direction: column;
     gap: 14px;
-    height: 100%;
-    min-height: 0;
   }
 
   .intro {
