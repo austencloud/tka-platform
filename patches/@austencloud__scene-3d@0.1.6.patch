@@ -4312,14 +4312,14 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a111ce68651 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
  export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
  export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
  export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export { prepareSharedGltf } from "./services/shared-gltf-cache";
++export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
@@ -4332,7 +4332,7 @@ index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a11
  export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..6acb900a691007049e5bbac55a8fad00e8d25991 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7ad6807bfa 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
 @@ -1,91 +1,190 @@
@@ -4616,7 +4616,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..6acb900a691007049e5bbac55a8fad00
 +  userProportionsState
 +};
 +
-+export { prepareSharedGltf } from "./services/shared-gltf-cache.js";
++export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache.js";
 diff --git a/dist/lib/services/contracts/IAvatarAnimator.d.ts b/dist/lib/services/contracts/IAvatarAnimator.d.ts
 index 786bf68515df88ef035b307a7029e717e056bea9..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/dist/lib/services/contracts/IAvatarAnimator.d.ts
@@ -12761,7 +12761,7 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..273376c456e9452d9cdeb463607ec4c332e08a88 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11dc296c0e 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -12779,7 +12779,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..273376c456e9452d9cdeb463607ec4c3
 +
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
-+export { prepareSharedGltf } from "./services/shared-gltf-cache";
++export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
 index 42a46ac294719f16470ed72c27286e50c55a35f2..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
