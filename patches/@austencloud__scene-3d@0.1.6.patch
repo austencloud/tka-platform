@@ -5043,10 +5043,10 @@ index cac989e5e626274fb4d13d59e401a9a1b485760b..4b9ed963eede6ad237b242d3d1dca823
      removeLayer(layerId: string): void;
      setLayerWeight(layerId: string, weight: number): void;
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd2999ec16a61 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..f094a43c6af5d14d164163077677bacd6e4ffbfb 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -1,562 +1,818 @@
+@@ -1,562 +1,821 @@
 -/**
 - * AvatarAnimator
 - *
@@ -6248,9 +6248,13 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
 +   * wrist orientation goal. Swing-only (no roll about the staff), clamped
-+   * to anatomical range, sign-disambiguated (staff ends are
-+   * interchangeable, pick the smaller swing), and smoothed so a sign flip
-+   * reads as a regrasp rather than a snap.
++   * to anatomical range, and THUMB-LOCKED: the staff ends are NOT
++   * interchangeable. The knuckle line (Index1->Pinky1, pinky-ward) tracks
++   * the staff's pinky end (-Y) as a directed constraint, so the hand can
++   * never take the flipped solution - a real grip cannot swap which end
++   * the thumb faces without regrasping. Demand beyond the anatomical
++   * clamp reads as strain; absorbing it is the body's job (plane sweep,
++   * hand travel, stance yaw), not the wrist's.
 +   */
 +  applyWristOrientation(side, chain, hand, ikWeight) {
 +    const staffQuat = hand.wristRotation;
@@ -6260,8 +6264,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd299
 +    chain.root.updateMatrixWorld(true);
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
-+    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
-+    if (this._v1.dot(this._v2) < 0) this._v2.negate();
++    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
 +    AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
 +    this._q3.copy(this._q2).multiply(this._q1);
@@ -12764,7 +12767,7 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
    ): SpineTwistResult;
  }
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d02ee3207 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..c4c9789e6a5f84ecf162dcaf6a34c6d5a3127def 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -12845,8 +12848,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +  private leftPalmLocal: Vector3 | null = null;
 +  private rightPalmLocal: Vector3 | null = null;
 +  private gripCalibrated = false;
-+  // Smoothed wrist local quaternions - persistent so a staff-axis sign
-+  // flip reads as a natural regrasp instead of an instant 180 snap.
++  // Smoothed wrist local quaternions - persistent across frames so the
++  // directed staff-axis goal is followed continuously, never snapped to.
 +  private leftWristQuat = new Quaternion();
 +  private rightWristQuat = new Quaternion();
 +  private leftWristInit = false;
@@ -13187,7 +13190,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
  
-@@ -634,13 +894,215 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +894,219 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -13352,9 +13355,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
 +   * wrist orientation goal. Swing-only (no roll about the staff), clamped
-+   * to anatomical range, sign-disambiguated (staff ends are
-+   * interchangeable, pick the smaller swing), and smoothed so a sign flip
-+   * reads as a regrasp rather than a snap.
++   * to anatomical range, and THUMB-LOCKED: the staff ends are NOT
++   * interchangeable. The knuckle line (Index1->Pinky1, pinky-ward) tracks
++   * the staff's pinky end (-Y) as a directed constraint, so the hand can
++   * never take the flipped solution - a real grip cannot swap which end
++   * the thumb faces without regrasping. Demand beyond the anatomical
++   * clamp reads as strain; absorbing it is the body's job (plane sweep,
++   * hand travel, stance yaw), not the wrist's.
 +   */
 +  private applyWristOrientation(
 +    side: "left" | "right",
@@ -13376,9 +13383,9 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +
-+    // Staff long axis in world space (+Y of the prop cylinder)
-+    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
-+    if (this._v1.dot(this._v2) < 0) this._v2.negate();
++    // Staff PINKY end in world space (-Y; +Y is the thumb end / T-bar).
++    // Directed on purpose: no nearest-end negate, ever.
++    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
 +
 +    // Swing-only correction, clamped to anatomical range
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
