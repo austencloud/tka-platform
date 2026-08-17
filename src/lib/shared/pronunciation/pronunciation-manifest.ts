@@ -1,3 +1,4 @@
+import { normalizeLetter } from "$lib/shared/foundation/domain/models/letter";
 import {
   PRONUNCIATION_POSITIONS,
   type AnyPronunciationManifest,
@@ -40,8 +41,20 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+/**
+ * A neighbour must be a canonical letter VALUE, not an asset key. The selector
+ * compares these against `PronunciationCue.letter`, whose values are the
+ * alphabet itself — `"Σ-"`, `"τ-"`, `"⊕"` — while the same letter's asset key
+ * is `"sigma-dash"`. Asset keys are what the bank is keyed by and what appears
+ * in every token path, so writing them here is the natural mistake for a bank
+ * generator to make. Accepting any non-empty string let that mistake through
+ * silently: the manifest parses, playback works, and every token of every word
+ * pays a full neighbour mismatch, collapsing selection to length and join cost
+ * with no error anywhere.
+ */
 function isNullableLetter(value: unknown): boolean {
-  return value === null || isNonEmptyString(value);
+  if (value === null) return true;
+  return isNonEmptyString(value) && normalizeLetter(value) !== null;
 }
 
 export function isPronunciationManifestV1(

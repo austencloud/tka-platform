@@ -34,7 +34,10 @@ const EDGE_SEARCH_STEP_SECONDS = 0.03;
  */
 const SUBMULTIPLE_TOLERANCE = 0.02;
 
-/** Sub-multiples checked. 70-350 Hz spans one octave and a half, so 5 covers it. */
+/**
+ * Sub-multiples checked. 70-350 Hz is a factor of five, so a lag five times the
+ * true period is the largest error the bounded search can hold.
+ */
 const MAX_SUBMULTIPLE = 5;
 
 export interface TokenFeatures {
@@ -190,15 +193,73 @@ function shortestPlausiblePeriod(
 }
 
 /**
- * Pitch at one edge of a token, walking inward until the signal is voiced.
- * Returns the unvoiced sentinel 0 only when nothing within the search limit
- * carries pitch at all.
+ * Fraction of a token's peak that counts as the start of speech. The
+ * segmenter's padding is sub-threshold audio by construction, so a
+ * peak-relative floor lands on the speech onset without this module needing to
+ * know the segmenter's constants.
  */
-function edgeF0Hz(
+const ONSET_PEAK_FRACTION = 0.05;
+
+interface EdgeMeasurement {
+  f0Hz: number;
+  rmsDb: number;
+}
+
+function peakOf(samples: Float32Array): number {
+  let peak = 0;
+  for (let index = 0; index < samples.length; index++) {
+    const magnitude = Math.abs(finiteSample(samples[index]));
+    if (magnitude > peak) peak = magnitude;
+  }
+  return peak;
+}
+
+/**
+ * Index of the first sample at one end that rises above the onset floor —
+ * where the speech in this token actually begins, past the padding the
+ * segmenter added.
+ */
+function speechOnsetIndex(samples: Float32Array, fromEnd: boolean): number {
+  const threshold = peakOf(samples) * ONSET_PEAK_FRACTION;
+  if (threshold <= 0) return fromEnd ? samples.length - 1 : 0;
+
+  if (fromEnd) {
+    for (let index = samples.length - 1; index >= 0; index--) {
+      if (Math.abs(finiteSample(samples[index])) >= threshold) return index;
+    }
+    return samples.length - 1;
+  }
+
+  for (let index = 0; index < samples.length; index++) {
+    if (Math.abs(finiteSample(samples[index])) >= threshold) return index;
+  }
+  return 0;
+}
+
+/**
+ * Measure one edge of a token, walking inward until the signal is voiced and
+ * reporting pitch AND level from that same window.
+ *
+ * The window is anchored at the speech onset rather than at the literal first
+ * sample. `EDGE_PADDING_SECONDS` is 35 ms of deliberately sub-threshold audio,
+ * more than half of a 60 ms window, and pitch estimation succeeds on a window
+ * that is mostly padding — so anchoring at sample 0 measured every token as
+ * roughly 4 dB quieter at its edges than it really is, for a reason that has
+ * nothing to do with how loudly it was spoken.
+ *
+ * The two searches are deliberately NOT capped at the token's midpoint. A
+ * midpoint cap sounds prudent and is not: on a token that opens with a long
+ * fricative it stops the walk before it reaches the voicing behind it and
+ * reports the unvoiced sentinel even though the token has a pitch. The
+ * condition it would guard — both searches converging on a single voiced island
+ * in the middle — is one where reporting that island's pitch at both edges is
+ * simply correct, because it is the only pitch the token has.
+ */
+function measureEdge(
   samples: Float32Array,
   sampleRate: number,
   fromEnd: boolean
-): number {
+): EdgeMeasurement {
   const window = Math.min(
     samples.length,
     Math.round(sampleRate * EDGE_WINDOW_SECONDS)
@@ -206,44 +267,47 @@ function edgeF0Hz(
   const step = Math.max(1, Math.round(sampleRate * EDGE_SEARCH_STEP_SECONDS));
   const limit = Math.round(sampleRate * EDGE_SEARCH_LIMIT_SECONDS);
 
+  const onset = speechOnsetIndex(samples, fromEnd);
+  const anchor = fromEnd
+    ? Math.min(samples.length - window, Math.max(0, onset + 1 - window))
+    : Math.min(Math.max(0, onset), Math.max(0, samples.length - window));
+
+  const startFor = (offset: number) =>
+    fromEnd ? anchor - offset : anchor + offset;
+
   for (let offset = 0; offset <= limit; offset += step) {
-    const start = fromEnd
-      ? samples.length - window - offset
-      : offset;
+    const start = startFor(offset);
     if (start < 0 || start + window > samples.length) break;
 
-    const estimate = estimateF0Hz(samples.slice(start, start + window), sampleRate);
-    if (estimate !== null) return estimate;
+    const slice = samples.slice(start, start + window);
+    const estimate = estimateF0Hz(slice, sampleRate);
+    if (estimate !== null) {
+      return { f0Hz: estimate, rmsDb: measureRmsDb(slice) };
+    }
   }
 
-  return 0;
-}
-
-function edgeRmsDb(
-  samples: Float32Array,
-  sampleRate: number,
-  fromEnd: boolean
-): number {
-  const window = Math.min(
-    samples.length,
-    Math.round(sampleRate * EDGE_WINDOW_SECONDS)
-  );
-  const slice = fromEnd
-    ? samples.slice(samples.length - window)
-    : samples.slice(0, window);
-  return measureRmsDb(slice);
+  // Nothing voiced within reach. Report the outermost window's level so the
+  // reading is still about this edge, and the unvoiced sentinel for pitch.
+  const fallbackStart = Math.max(0, startFor(0));
+  return {
+    f0Hz: 0,
+    rmsDb: measureRmsDb(samples.slice(fallbackStart, fallbackStart + window)),
+  };
 }
 
 export function measureTokenFeatures(
   samples: Float32Array,
   sampleRate: number
 ): TokenFeatures {
+  const start = measureEdge(samples, sampleRate, false);
+  const end = measureEdge(samples, sampleRate, true);
+
   return {
     durationMs: (samples.length / sampleRate) * 1000,
     rmsDb: measureRmsDb(samples),
-    f0StartHz: edgeF0Hz(samples, sampleRate, false),
-    f0EndHz: edgeF0Hz(samples, sampleRate, true),
-    rmsStartDb: edgeRmsDb(samples, sampleRate, false),
-    rmsEndDb: edgeRmsDb(samples, sampleRate, true),
+    f0StartHz: start.f0Hz,
+    f0EndHz: end.f0Hz,
+    rmsStartDb: start.rmsDb,
+    rmsEndDb: end.rmsDb,
   };
 }

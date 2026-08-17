@@ -15,6 +15,24 @@ const LENGTH_MISMATCH_COST = 0.15;
 const F0_JOIN_COST_PER_HZ = 0.01;
 const RMS_JOIN_COST_PER_DB = 0.1;
 
+/**
+ * Charged when either side of a join has no measurable pitch, in place of a Hz
+ * difference. `f0StartHz`/`f0EndHz` carry 0 as the unvoiced sentinel, and a
+ * literal subtraction against it produces `0.01 * 130 = 1.3` — larger than a
+ * full neighbour mismatch, which inverts the weighting this module is built on.
+ *
+ * It is not only the unvoiced token that suffers. A pitch difference measured
+ * against a fixed 0 is smallest for whichever neighbour is quietest in pitch,
+ * so a literal subtraction also drags the OTHER side of the join toward the
+ * most creaky, devoiced candidate available. A constant cannot do that: it is
+ * the same for every candidate, so an unvoiced edge simply stops carrying
+ * information rather than carrying false information.
+ */
+const UNKNOWN_F0_JOIN_COST = 0.3;
+
+/** Below this, an F0 reading is the unvoiced sentinel rather than a pitch. */
+const MIN_MEASURABLE_F0_HZ = 1;
+
 interface CueNeighbours {
   previousLetter: string | null;
   nextLetter: string | null;
@@ -59,10 +77,14 @@ export function joinCost(
   left: PronunciationToken,
   right: PronunciationToken
 ): number {
-  return (
-    F0_JOIN_COST_PER_HZ * Math.abs(left.f0EndHz - right.f0StartHz) +
-    RMS_JOIN_COST_PER_DB * Math.abs(left.rmsDb - right.rmsDb)
-  );
+  const bothVoiced =
+    left.f0EndHz >= MIN_MEASURABLE_F0_HZ &&
+    right.f0StartHz >= MIN_MEASURABLE_F0_HZ;
+  const pitchCost = bothVoiced
+    ? F0_JOIN_COST_PER_HZ * Math.abs(left.f0EndHz - right.f0StartHz)
+    : UNKNOWN_F0_JOIN_COST;
+
+  return pitchCost + RMS_JOIN_COST_PER_DB * Math.abs(left.rmsDb - right.rmsDb);
 }
 
 /**
@@ -96,11 +118,16 @@ export function selectTokenPath(
   for (let index = 1; index < cues.length; index++) {
     const neighbours = cueNeighbours(cues, index);
     const previousOptions = candidates[index - 1]!;
+    // Bound before the assignment below. Reading `frontier` inside the `.map`
+    // that reassigns it is correct only because the right-hand side is fully
+    // evaluated first — a silent trap for anyone who later rewrites this as a
+    // `for` loop that assigns as it goes.
+    const previousFrontier = frontier;
 
     frontier = candidates[index]!.map((token, tokenIndex) => {
       let best: PathCost | null = null;
 
-      for (const entry of frontier) {
+      for (const entry of previousFrontier) {
         const leftToken = previousOptions[entry.path.at(-1)!]!;
         const cost = entry.cost + joinCost(leftToken, token);
         if (best === null || cost < best.cost) {

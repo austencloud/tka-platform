@@ -81,7 +81,14 @@ function silentFallback() {
   };
 }
 
-function isolatedToken(path: string, groupLength: number) {
+const measurements = {
+  durationMs: 300,
+  rmsDb: -18,
+  f0StartHz: 120,
+  f0EndHz: 120,
+};
+
+function isolatedToken(path: string) {
   return {
     path,
     position: "isolated",
@@ -89,11 +96,34 @@ function isolatedToken(path: string, groupLength: number) {
     nextLetter: null,
     sourceWord: "A",
     indexInWord: 0,
-    groupLength,
-    durationMs: 300,
-    rmsDb: -18,
-    f0StartHz: 120,
-    f0EndHz: 120,
+    groupLength: 1,
+    ...measurements,
+  };
+}
+
+function initialToken(path: string, nextLetter: string) {
+  return {
+    path,
+    position: "initial",
+    previousLetter: null,
+    nextLetter,
+    sourceWord: `A${nextLetter}`,
+    indexInWord: 0,
+    groupLength: 2,
+    ...measurements,
+  };
+}
+
+function finalToken(path: string, previousLetter: string) {
+  return {
+    path,
+    position: "final",
+    previousLetter,
+    nextLetter: null,
+    sourceWord: `${previousLetter}B`,
+    indexInWord: 1,
+    groupLength: 2,
+    ...measurements,
   };
 }
 
@@ -218,19 +248,28 @@ describe("PronunciationPlayer manifest versions", () => {
     // version 2 at all. The better token is deliberately second: an
     // implementation that took the first token of the letter, or that fell
     // through to the version 1 resolver, would request `a/wrong.wav`.
+    //
+    // The two candidates differ by recorded neighbour, which is a state a real
+    // bank actually produces. An earlier version of this test discriminated on
+    // an isolated token carrying `groupLength: 5` — impossible by construction,
+    // so the proof rested on a fixture that could never exist.
     installFakeAudio();
     const speechFallback = silentFallback();
     const { fetcher, requested } = audioFetcher({
       version: 2,
       tokens: {
-        a: [isolatedToken("a/wrong.wav", 5), isolatedToken("a/right.wav", 1)],
+        a: [
+          initialToken("a/wrong.wav", "C"),
+          initialToken("a/right.wav", "B"),
+        ],
+        b: [finalToken("b/1.wav", "A")],
       },
     });
     const player = new PronunciationPlayer({ speechFallback, fetcher });
 
-    await expect(player.speak("A")).resolves.toEqual({ source: "recorded" });
+    await expect(player.speak("AB")).resolves.toEqual({ source: "recorded" });
 
-    expect(requested).toHaveLength(1);
+    expect(requested).toHaveLength(2);
     expect(requested[0]).toContain("a/right.wav");
     expect(speechFallback.speak).not.toHaveBeenCalled();
   });
@@ -258,7 +297,7 @@ describe("PronunciationPlayer manifest versions", () => {
     const speechFallback = silentFallback();
     const { fetcher, requested } = audioFetcher({
       version: 2,
-      tokens: { a: [isolatedToken("a/right.wav", 1)] },
+      tokens: { a: [isolatedToken("a/right.wav")] },
     });
     const player = new PronunciationPlayer({ speechFallback, fetcher });
 

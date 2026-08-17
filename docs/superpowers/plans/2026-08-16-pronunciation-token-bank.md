@@ -1163,6 +1163,15 @@ Four failure signatures, and what each one means:
   same word rather than judging it alone. If it recurs, raise
   `SUBMULTIPLE_TOLERANCE` (0.02 today) and re-run — it is the tolerance, not the
   bounds, that governs this.
+- **One slice reading almost exactly twice its neighbours** — the same knob,
+  turned the other way. The sub-multiple correction accepts a shorter lag that
+  scores within the tolerance of the best; too generous a tolerance accepts one
+  that is merely a harmonic, and the reading doubles. This is the mirror of the
+  signature above and the two are easy to confuse into turning the knob the
+  wrong way, so read the direction before touching it: **halved means raise the
+  tolerance, doubled means lower it.** Synthetic sweeps found no doubling at
+  0.02, so if his voice produces one, the sweep did not cover his spectrum and
+  the tolerance is the thing to move.
 - **Wildly swinging RMS** — the join cost will dominate the target cost, and the
   weights in Task 6 need rebalancing before the bank is recorded.
 
@@ -1180,6 +1189,49 @@ Four failure signatures, and what each one means:
 > neighbourhood because a 326.5-sample period lands on neither 326 nor 327.
 > Re-verified across 78–345 Hz at three window lengths and three spectral
 > profiles: every case correct, worst error 0.93%, pure noise still rejected.
+
+> **Amended again after a second review round.** Three more defects, all in the
+> edge measurement, all invisible to the tests that existed at the time:
+>
+> - **The edge windows were anchored at sample 0.** `EDGE_PADDING_SECONDS` is
+>   35 ms of deliberately sub-threshold audio and the window is 60 ms, so more
+>   than half of every start window was padding — and because `estimateF0Hz`
+>   succeeds on a window that is mostly padding, the search stopped there and
+>   reported it. Every token measured roughly 4 dB quieter at its edges than it
+>   was spoken. The first attempt at this fix — coupling the level reading to
+>   whichever window the pitch came from — did not help, for exactly that
+>   reason. The window is now anchored at a peak-relative speech onset, so this
+>   module locates the speech itself rather than trusting the segmenter's
+>   constants.
+> - **The inward search was capped at the token's midpoint.** It reads as
+>   prudence and is not: on a token whose frication runs longer than its voice,
+>   the cap stops the walk inside the frication and reports the unvoiced
+>   sentinel for a token that plainly has a pitch. The condition the cap guarded
+>   — both searches converging on a single voiced island in the middle — is one
+>   where reporting that island's pitch at both edges is simply correct, because
+>   it is the only pitch the token has. Cap removed; the time limit stands.
+> - **The join cost subtracted the unvoiced sentinel literally.** `0` is the
+>   sentinel, so an unvoiced edge against a 130 Hz neighbour charged 1.3 —
+>   larger than a full neighbour mismatch, inverting the weighting the module is
+>   built on. Worse, the penalty was smallest for whichever candidate was
+>   *least* pitched, so it also dragged the voiced side of the join toward the
+>   creakiest token available. A flat `UNKNOWN_F0_JOIN_COST` is charged instead:
+>   identical for every candidate, so an unvoiced edge stops carrying
+>   information rather than carrying false information.
+>
+> A fourth fix is in the parser: neighbour fields now validate as canonical
+> letter values rather than as any non-empty string. Writing an asset key
+> (`"sigma-dash"`) where a letter value (`"Σ-"`) belongs is the natural mistake
+> for a bank generator to make, and it used to parse cleanly — the manifest
+> loads, playback works, and every token of every word silently pays a full
+> neighbour mismatch with no error anywhere.
+>
+> Each of the four was verified by mutation, not by passing: reverting any one
+> of them fails a test that names it. The midpoint cap needed two attempts to
+> get there — the first test written for it asserted only that both readings
+> stayed under 200 Hz, which is true whether the searches cross or not, so
+> removing the cap failed nothing. A test that has never been observed to fail
+> is not evidence.
 
 Calibration that still holds: stable under additive noise, sample-rate invariant
 from 16 kHz to 96 kHz, and on a token gliding 140 to 100 Hz it reports 136 to

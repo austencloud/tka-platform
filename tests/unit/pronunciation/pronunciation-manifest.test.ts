@@ -129,6 +129,24 @@ describe("parsePronunciationManifest", () => {
     });
   });
 
+  describe("neighbour letters are canonical values, not asset keys", () => {
+    it("rejects an asset key where a letter value belongs", () => {
+      // The natural mistake for a bank generator: asset keys are what the bank
+      // is keyed by and what every token path contains. Accepting them here
+      // parses and plays fine while every token of every word pays a full
+      // neighbour mismatch, silently collapsing selection to length and join
+      // cost.
+      expect(parseWithToken(makeToken({ previousLetter: "sigma-dash" }))).toBeNull();
+      expect(parseWithToken(makeToken({ nextLetter: "omega" }))).toBeNull();
+    });
+
+    it("accepts canonical Greek and dashed letter values", () => {
+      expect(
+        parseWithToken(makeToken({ previousLetter: "Σ-", nextLetter: "⊕" }))
+      ).not.toBeNull();
+    });
+  });
+
   describe("position/neighbour coherence", () => {
     it("rejects position=initial with a non-null previousLetter", () => {
       expect(

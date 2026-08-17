@@ -190,4 +190,36 @@ describe("measureTokenFeatures", () => {
     expect(features.rmsDb).toBeGreaterThan(features.rmsStartDb);
     expect(features.rmsDb).toBeLessThan(features.rmsEndDb);
   });
+
+  it("measures edge level where the signal is, not inside the padding", () => {
+    // Every slice the segmenter emits opens with EDGE_PADDING_SECONDS (35 ms)
+    // of deliberately sub-threshold audio — more than half of a 60 ms window.
+    // Measuring level from the literal first sample reads mostly that padding,
+    // so every token looks quiet at its edges for a reason unrelated to how
+    // loudly it was spoken, and the Phase 0 readout that decides whether the
+    // join cost should use edge level would be reading an artefact.
+    const body = voiced(150, 0.3, 0.3);
+    const padded = concat(noise(0.035, 0.0005), body, noise(0.035, 0.0005));
+
+    const bare = measureTokenFeatures(body, SAMPLE_RATE);
+    const withPadding = measureTokenFeatures(padded, SAMPLE_RATE);
+
+    expect(withPadding.rmsStartDb).toBeCloseTo(bare.rmsStartDb, 0);
+    expect(withPadding.rmsEndDb).toBeCloseTo(bare.rmsEndDb, 0);
+  });
+
+  it("reaches voicing behind a fricative longer than half the token", () => {
+    // 180 ms of loud frication ahead of 120 ms of voice — a long Sigma or Chi,
+    // where the unvoiced part is most of what was recorded. Capping the inward
+    // search at the token's midpoint puts the last window it may try at
+    // 120-180 ms, entirely inside the frication, so it reports the unvoiced
+    // sentinel for a token that plainly has a pitch — and the selector then
+    // charges a flat penalty on every join that letter appears in.
+    const token = concat(noise(0.18, 0.5), voiced(150, 0.12, 0.3));
+
+    const features = measureTokenFeatures(token, SAMPLE_RATE);
+
+    expect(features.f0StartHz).toBeGreaterThan(140);
+    expect(features.f0StartHz).toBeLessThan(160);
+  });
 });

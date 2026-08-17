@@ -177,6 +177,72 @@ describe("selectTokenPath", () => {
     expect(result?.map((entry) => entry.path)).toEqual(["a/solo.wav"]);
   });
 
+  it("does not let an unvoiced edge outweigh a neighbour match", () => {
+    // 0 Hz is the unvoiced sentinel, not a pitch. Subtracting it literally
+    // costs 0.01 * 130 = 1.3, more than a full neighbour mismatch, so the
+    // token that matches context would lose to one that does not.
+    const bank = bankFrom({
+      a: [
+        token({
+          path: "a/only.wav",
+          position: "initial",
+          nextLetter: "B",
+          f0EndHz: 130,
+        }),
+      ],
+      b: [
+        token({ path: "b/right.wav", position: "final", f0StartHz: 0 }),
+        token({
+          path: "b/wrong-context.wav",
+          position: "final",
+          previousLetter: "C",
+          f0StartHz: 130,
+        }),
+      ],
+    });
+
+    const result = selectTokenPath(cuesFor("AB"), bank);
+
+    expect(result?.map((entry) => entry.path)).toEqual([
+      "a/only.wav",
+      "b/right.wav",
+    ]);
+  });
+
+  it("does not drag the voiced side of a join toward the least pitched token", () => {
+    // The subtler half of the same bug: measured against a fixed 0, the
+    // smallest pitch difference belongs to whichever candidate has the lowest
+    // f0, so a literal subtraction pulls the OTHER side of the join toward the
+    // most creaky, devoiced take available. Here both `a` tokens match context
+    // exactly, so only the join can separate them — and it must not.
+    const bank = bankFrom({
+      a: [
+        token({
+          path: "a/creaky.wav",
+          position: "initial",
+          nextLetter: "B",
+          f0EndHz: 5,
+          rmsDb: -30,
+        }),
+        token({
+          path: "a/normal.wav",
+          position: "initial",
+          nextLetter: "B",
+          f0EndHz: 130,
+          rmsDb: -18,
+        }),
+      ],
+      b: [token({ path: "b/1.wav", position: "final", f0StartHz: 0, rmsDb: -18 })],
+    });
+
+    const result = selectTokenPath(cuesFor("AB"), bank);
+
+    expect(result?.map((entry) => entry.path)).toEqual([
+      "a/normal.wav",
+      "b/1.wav",
+    ]);
+  });
+
   it("accepts a worse token mid-word to buy a cheaper join after it", () => {
     // Every other case here is one or two letters long, where a global search
     // and a greedy one cannot disagree. This is the case that separates them:
