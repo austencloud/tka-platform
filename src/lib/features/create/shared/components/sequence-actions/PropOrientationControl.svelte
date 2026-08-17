@@ -97,7 +97,11 @@
 </div>
 
 <style>
+  /* Two to four short words. Sized to them rather than to whatever pane it
+     lands in, so "In / Out" cannot stretch into a progress bar. The cap keeps
+     the four interradial labels inside a narrow drawer. */
   .orientation-control {
-    width: 100%;
+    width: max-content;
+    max-width: 100%;
   }
 </style>

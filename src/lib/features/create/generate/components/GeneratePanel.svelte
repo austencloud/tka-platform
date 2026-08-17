@@ -27,6 +27,7 @@ Card-based architecture with integrated Generate button:
   import WordInputOverlay from "./cards/WordInputOverlay.svelte";
   import LOOPDrawer from "./modals/LOOPDrawer.svelte";
   import CustomizeDrawer from "./modals/CustomizeDrawer.svelte";
+  import TurnsDrawer from "./modals/TurnsDrawer.svelte";
   import PresetDrawer from "./presets/PresetDrawer.svelte";
   import { createFavoriteState } from "../state/favorite-state.svelte";
   import { captureSetupSnapshot } from "../domain/setup-snapshot";
@@ -351,6 +352,12 @@ Card-based architecture with integrated Generate button:
     isOpen={panelState.isCustomizeOverlayOpen}
     overlayProps={panelState.customizeOverlayProps}
     onClose={() => panelState.closeCustomizeOverlay()}
+  />
+
+  <TurnsDrawer
+    isOpen={panelState.isTurnsOverlayOpen}
+    overlayProps={panelState.turnsOverlayProps}
+    onClose={() => panelState.closeTurnsOverlay()}
   />
 
   <PresetDrawer
