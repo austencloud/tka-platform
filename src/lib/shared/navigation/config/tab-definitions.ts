@@ -408,16 +408,6 @@ export const ADMIN_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
   {
-    id: "loop-labeler",
-    labelKey: "tab_admin_loop_labeler",
-    descKey: "tab_desc_admin_loop_labeler",
-    label: "LOOP Labeler",
-    icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
-    description: "Label sequences with LOOP patterns",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
     id: "seo",
     labelKey: "tab_admin_seo",
     descKey: "tab_desc_admin_seo",

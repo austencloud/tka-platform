@@ -6,10 +6,6 @@ interface RouteScopedParameter {
 const startsWith = (prefix: string) => (pathname: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
-const isLoopLabelerPath = (pathname: string) =>
-  startsWith("/admin/loop-labeler")(pathname) ||
-  startsWith("/test/loop-labeler")(pathname);
-
 const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "scan", isValidForPath: startsWith("/browse/library") },
   { name: "handoff", isValidForPath: startsWith("/compose") },
@@ -18,8 +14,6 @@ const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
   { name: "theme", isValidForPath: startsWith("/settings/theme") },
   { name: "pack", isValidForPath: startsWith("/choreo_card/releaser") },
   { name: "room", isValidForPath: startsWith("/museum") },
-  { name: "seq", isValidForPath: isLoopLabelerPath },
-  { name: "filter", isValidForPath: isLoopLabelerPath },
   { name: "inspectUser", isValidForPath: startsWith("/admin/users") },
   { name: "inspectSession", isValidForPath: startsWith("/admin/users") },
 ];

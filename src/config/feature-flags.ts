@@ -230,11 +230,6 @@ export const FEATURES: FeatureDefinition[] = [
     emptyClientRouteComponents: true,
   },
   {
-    id: "loop-labeler",
-    tier: "dev",
-    modulePaths: ["features/loop-labeler/"],
-  },
-  {
     id: "promo-generator",
     tier: "dev",
     modulePaths: ["features/promo-generator/"],

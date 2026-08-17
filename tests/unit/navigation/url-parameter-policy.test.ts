@@ -19,15 +19,15 @@ describe("route-scoped URL parameters", () => {
     const scanUrl = new URL(
       "https://tkaflowarts.com/browse/library/item?scan=1"
     );
-    const labelerUrl = new URL(
-      "https://tkaflowarts.com/test/loop-labeler?seq=abc&filter=pending"
+    const museumUrl = new URL(
+      "https://tkaflowarts.com/museum?room=lascaux"
     );
 
     pruneParamsForNavigation(scanUrl, scanUrl.pathname);
-    pruneParamsForNavigation(labelerUrl, labelerUrl.pathname);
+    pruneParamsForNavigation(museumUrl, museumUrl.pathname);
 
     expect(scanUrl.search).toBe("?scan=1");
-    expect(labelerUrl.search).toBe("?seq=abc&filter=pending");
+    expect(museumUrl.search).toBe("?room=lascaux");
   });
 
   it("keeps a festival pack only on its deck-releaser route", () => {

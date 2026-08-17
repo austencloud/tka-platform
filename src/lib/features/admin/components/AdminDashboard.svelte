@@ -12,11 +12,6 @@
   import ModerationModule from "$lib/features/moderation/ModerationModule.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
-  // Lazy load LOOP Labeler to avoid blocking admin dashboard if it fails
-  let LOOPLabelerModule: typeof import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte").default | null =
-    $state(null);
-  let loopLabelerError = $state(false);
-
   // Lazy load PostHog Analytics Dashboard
   let PostHogDashboard: typeof import("./analytics/PostHogDashboard.svelte").default | null =
     $state(null);
@@ -30,18 +25,6 @@
   let PulseDashboard: typeof import("./pulse/PulseDashboard.svelte").default | null =
     $state(null);
   let pulseError = $state(false);
-
-  function loadLoopLabeler() {
-    loopLabelerError = false;
-    import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
-      .then((mod) => {
-        LOOPLabelerModule = mod.default;
-      })
-      .catch((err) => {
-        console.error("Failed to load LOOP Labeler:", err);
-        loopLabelerError = true;
-      });
-  }
 
   function loadPostHog() {
     postHogError = false;
@@ -80,10 +63,6 @@
   }
 
   $effect(() => {
-    if (activeSection === "loop-labeler" && !LOOPLabelerModule && !loopLabelerError) {
-      loadLoopLabeler();
-    }
-
     if (activeSection === "analytics" && !PostHogDashboard && !postHogError) {
       loadPostHog();
     }
@@ -168,30 +147,6 @@
           aria-labelledby="moderation-tab"
         >
           <ModerationModule />
-        </div>
-      {:else if activeSection === "loop-labeler"}
-        <div
-          id="loop-labeler-panel"
-          role="tabpanel"
-          aria-labelledby="loop-labeler-tab"
-        >
-          {#if LOOPLabelerModule}
-            <LOOPLabelerModule />
-          {:else if loopLabelerError}
-            <div class="error-state" role="alert">
-              <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-              <p>Failed to load LOOP Labeler.</p>
-              <button class="retry-button" onclick={loadLoopLabeler}>
-                <i class="fas fa-rotate-right" aria-hidden="true"></i>
-                Retry
-              </button>
-            </div>
-          {:else}
-            <div class="loading-state">
-              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-              <p>Loading LOOP Labeler...</p>
-            </div>
-          {/if}
         </div>
       {:else if activeSection === "analytics"}
         <div
@@ -329,20 +284,10 @@
     min-height: min-content;
   }
 
-  /* Loop Labeler needs full width - it has its own sidebar + multi-panel layout */
-  .admin-content:has(#loop-labeler-panel) {
-    max-width: none;
-    overflow: hidden;
-  }
-
   /* The SEO command center owns its responsive grid and uses wide screens. */
   .admin-content:has(#seo-panel) {
     max-width: none;
     overflow: hidden;
-  }
-
-  #loop-labeler-panel {
-    height: 100%;
   }
 
   /* Moderation dashboard is a full-height master/detail layout */
