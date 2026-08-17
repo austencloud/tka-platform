@@ -50,6 +50,7 @@
     PropType.MINIHOOP,
     PropType.TRIGENG,
     PropType.TRIQUETRA,
+    PropType.TRIQUETRA2,
     PropType.CHICKEN,
     PropType.DOUBLESTAR,
     PropType.EIGHTRINGS,
