@@ -254,14 +254,19 @@ function main(): void {
           join(sliceDirectory, sliceName),
           encodeWav(slice, sampleRate)
         );
-        if (!isExact) {
-          console.log(
-            `    segment ${index}: ${segment.startSeconds.toFixed(2)}s - ${segment.endSeconds.toFixed(2)}s`
-          );
-        }
+        // One line per slice, carrying its index. On a mismatch every label
+        // reads "unaligned", so without the index the lines are impossible to
+        // tell apart or to match against the files on disk.
         const features = measureTokenFeatures(slice, sampleRate);
         console.log(
-          `    ${label}  ${features.durationMs.toFixed(0)} ms  ${features.rmsDb.toFixed(1)} dB  f0 ${features.f0StartHz.toFixed(0)}->${features.f0EndHz.toFixed(0)} Hz`
+          [
+            `    [${index}] ${label.padEnd(10)}`,
+            `${segment.startSeconds.toFixed(2)}-${segment.endSeconds.toFixed(2)}s`,
+            `${features.durationMs.toFixed(0).padStart(4)} ms`,
+            `${features.rmsDb.toFixed(1).padStart(6)} dB`,
+            `f0 ${features.f0StartHz.toFixed(0).padStart(3)}->${features.f0EndHz.toFixed(0).padStart(3)} Hz`,
+            `edge ${features.rmsStartDb.toFixed(1)}/${features.rmsEndDb.toFixed(1)} dB`,
+          ].join("  ")
         );
       });
     } catch (error) {

@@ -957,6 +957,37 @@ Expected: FAIL. The module does not exist.
 
 - [x] **Step 3: Write the implementation**
 
+> **The block below is the ORIGINAL draft and is now stale. Do not restore it.**
+> The shipped file corrects four defects found in review and confirmed by
+> measurement; read `src/lib/shared/pronunciation/domain/audio-features.ts`
+> instead. What changed:
+>
+> 1. **Octave errors.** Bare argmax returns exactly half the fundamental for
+>    170/190/210/230/260/330 Hz. `estimateF0Hz` now prefers the shortest
+>    sub-multiple scoring within `SUBMULTIPLE_TOLERANCE`. See the amendment in
+>    Step 5 for the mechanism and the re-verification sweep.
+> 2. **Unvoiced onsets.** A fixed window at sample 0 sits inside the segmenter's
+>    35 ms padding, so any letter opening on a fricative — Sigma, Psi, Theta,
+>    Tau, Phi, Chi, Xi — reported the 0 Hz sentinel at one edge. Against a
+>    ~130 Hz neighbour that is a join cost of 1.3, which **outranks
+>    `NEIGHBOUR_MISMATCH_COST = 1`** and would have made the sentinel dominate
+>    the coarticulation term it is supposed to sit beneath. The edge window now
+>    walks inward until it finds voicing, capped at
+>    `EDGE_SEARCH_LIMIT_SECONDS`, and falls back to 0 only when nothing within
+>    that span is voiced.
+> 3. **DC offset.** `measureRmsDb` did not remove the mean while `estimateF0Hz`
+>    did. A recording chain with 0.3 of DC and no signal measured −10.5 dB while
+>    being silent to the ear.
+> 4. **Non-finite samples.** One NaN in a decoded buffer produced `rmsDb: NaN`,
+>    which fails the manifest parser's finite check — and because the parser
+>    rejects the bank as a whole, one corrupt WAV would have silently dropped
+>    **every** word in the app to synthetic speech. Corrupt samples are now read
+>    as silent, keeping the damage to the token they came from.
+>
+> `TokenFeatures` also gained `rmsStartDb` / `rmsEndDb`. They are measured for
+> the Phase 0 readout only and are deliberately **not** stored in the manifest
+> yet — see the edge-level note at the end of Step 5.
+
 Create `src/lib/shared/pronunciation/domain/audio-features.ts`:
 
 ```ts
@@ -1116,25 +1147,54 @@ and change the existing `writeFileSync` call to reuse that slice:
 **What to look for when Austen runs it:** F0 values in the 80 to 180 Hz range and
 changing gradually across a word, and RMS values clustered within a few dB.
 
-Three failure signatures, and what each one means:
+Four failure signatures, and what each one means:
 
 - **Zeros for F0 on most slices** — the correlation floor is too strict for his
   voice. Lower `MIN_CORRELATION`, not the frequency bounds.
-- **Values pegged near 70 or 350 Hz** — the estimator has locked onto a harmonic
-  or a subharmonic rather than the fundamental. Measured on synthetic
-  harmonic-rich signals: a true 50 Hz fundamental reports 350 Hz, a true 400 Hz
-  reports 200 Hz. A bounded-lag search cannot return null for an out-of-range
-  fundamental, so it returns a confident wrong number instead; a cluster at
-  either bound is the tell, never a plausible reading.
+- **Values pegged near 70 or 350 Hz** — the fundamental is outside the search
+  range. A bounded-lag search cannot return null for an out-of-range
+  fundamental, so it returns a confident wrong number instead: a true 50 Hz
+  reports 350 Hz, a true 400 Hz reports 200 Hz. A cluster at either bound is the
+  tell.
+- **One slice reading almost exactly half or a third of its neighbours** — an
+  octave error that survived the sub-multiple correction. This is the signature
+  to watch hardest, because unlike the one above it looks entirely plausible:
+  105 Hz is an ordinary male pitch. Compare each slice against the others in the
+  same word rather than judging it alone. If it recurs, raise
+  `SUBMULTIPLE_TOLERANCE` (0.02 today) and re-run — it is the tolerance, not the
+  bounds, that governs this.
 - **Wildly swinging RMS** — the join cost will dominate the target cost, and the
   weights in Task 6 need rebalancing before the bank is recorded.
 
-For calibration, the estimator was verified on synthetic voice-shaped signals
-before Austen recorded anything: exact within 0.2 Hz for fundamentals of 85,
-100, 120, 145, 180, and 220 Hz, stable under additive noise, sample-rate
-invariant from 16 kHz to 96 kHz, and on a token gliding 140 to 100 Hz it reports
-136 to 103 — the edge windows average over 60 ms, so a contour reads slightly
-pulled in at both ends. That inward pull is expected and is not drift.
+> **Amended after the Task 5 review.** The original text of this section said
+> the estimator was "exact within 0.2 Hz" across 85–220 Hz and listed only the
+> pegged-at-a-bound signature. Both were wrong, and the calibration claim caused
+> the omission: the six probe frequencies (85, 100, 120, 145, 180, 220) all
+> happen to have near-integer sample periods at 48 kHz, which is precisely the
+> condition under which lag quantisation cannot bite. A denser sweep found that
+> 170, 190, 210, 230, 260 and 330 Hz each reported **exactly half**. The cause is
+> not energy — it is that a doubled lag can land nearer a whole number of periods
+> than the true one, so at 170 Hz lag 565 scores 0.999886 against the true lag
+> 282's 0.999836. `estimateF0Hz` now prefers the shortest sub-multiple scoring
+> within `SUBMULTIPLE_TOLERANCE` of the best, checked across a one-sample
+> neighbourhood because a 326.5-sample period lands on neither 326 nor 327.
+> Re-verified across 78–345 Hz at three window lengths and three spectral
+> profiles: every case correct, worst error 0.93%, pure noise still rejected.
+
+Calibration that still holds: stable under additive noise, sample-rate invariant
+from 16 kHz to 96 kHz, and on a token gliding 140 to 100 Hz it reports 136 to
+103 — the edge windows average over 60 ms, so a contour reads slightly pulled in
+at both ends. That inward pull is expected and is not drift.
+
+**Also read the `edge` column.** Each slice line reports level over the same two
+60 ms windows the F0 readings come from, alongside whole-token `rmsDb`. The
+manifest stores only `rmsDb` today, and the join cost is computed from it. If
+the edge numbers routinely differ from the token average by more than a few dB —
+they will on any letter that opens on a fricative; a synthetic check measured a
+6.8 dB spread that the token average hid entirely — then the join cost should be
+computed from edge level instead, and that change is nearly free right now
+because no bank exists to re-measure. After the corpus is recorded it costs a
+manifest version bump and a full re-measure pass.
 
 - [x] **Step 6: Commit**
 
@@ -1502,11 +1562,31 @@ git commit -m "feat(pronunciation): select tokens by context match and join cost
 
 ### Task 7: Wire the player to both manifest versions
 
+> **Amended after implementation. The tests in Step 1 do not test what they
+> claim.** They pass against the shipped code and also against a player with the
+> v2 dispatch removed entirely, because the test file ran under the node
+> environment where `window` does not exist. `getAudioContext` therefore returned
+> null, `tryRecordedPlayback` bailed at `if (!manifest || !context)` before
+> resolving any path, and `selectTokenPath` was never called. Every assertion
+> only ever observed the speech fallback.
+>
+> The plan's predicted failure mode for Step 2 was also wrong. It expected "the
+> fetcher is retried rather than cached"; in fact `manifestPromise` caches even a
+> settled-null promise, so the caching assertions passed for the wrong reason.
+>
+> The file now carries a `// @vitest-environment jsdom` docblock and a fake
+> `AudioContext`, plus three tests that discriminate: a v2 bank whose better
+> token is deliberately **second** in its array (so "take the first" fails), the
+> v1 equivalent, and a v2 bank that cannot cover a two-letter word. Verified by
+> mutation rather than by passing: breaking the version dispatch fails 2 of them,
+> and replacing the Viterbi search with "first token wins" fails 1. A test that
+> has never been observed to fail is not evidence.
+
 **Files:**
 - Modify: `src/lib/shared/pronunciation/services/pronunciation-player.ts:1-14,33-55,65,149-215`
 - Test: `tests/unit/pronunciation/pronunciation-player.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/unit/pronunciation/pronunciation-player.test.ts`:
 
@@ -1584,7 +1664,7 @@ describe("PronunciationPlayer manifest versions", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/pronunciation-player.test.ts
@@ -1594,7 +1674,7 @@ Expected: FAIL on the version 2 cases. The player's private
 `isPronunciationManifest` rejects `version: 2`, so `loadManifest` resolves null
 and the fetcher is retried rather than cached.
 
-- [ ] **Step 3: Replace the private guard with the shared parser**
+- [x] **Step 3: Replace the private guard with the shared parser**
 
 In `pronunciation-player.ts`, change the imports. Drop `PRONUNCIATION_POSITIONS`
 and `PronunciationManifest`, add the parser, the selector, and the union type:
@@ -1647,7 +1727,7 @@ version dispatch:
     if (!paths) return null;
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/
@@ -1661,7 +1741,7 @@ assert manifest parsing, caching, and graceful degradation. Selection
 correctness is proved by Task 6 against the pure function, and audible join
 quality is proved only by the listening pass in the recording guide.
 
-- [ ] **Step 5: Typecheck the touched surface**
+- [x] **Step 5: Typecheck the touched surface**
 
 ```bash
 npm run type-check
@@ -1670,7 +1750,7 @@ npm run type-check
 Expected: no errors. `svelte-check` only reads `.svelte` files, so plain
 TypeScript modules need `type-check` to be covered.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): resolve playback paths from either manifest version" -- src/lib/shared/pronunciation/services/pronunciation-player.ts tests/unit/pronunciation/pronunciation-player.test.ts
