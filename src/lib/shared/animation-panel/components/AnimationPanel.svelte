@@ -585,22 +585,22 @@
         class="motion-stack"
         class:single-col={!showTempoControls && !onPlaybackModeChange}
       >
-        <!-- Paths goes to whichever column is short. Hosts that wire a
-             playback mode give the left column Tempo + Mode, so Paths belongs
-             under Visibility; hosts that don't (Post Studio, the /composer
-             showcase) leave Tempo alone against Visibility's nine chips, and
-             Paths evens them up instead. -->
+        <!-- Paths goes to whichever column is short. Only a host that wires
+             BOTH tempo and playback mode fills the left column enough to stand
+             against Visibility's nine chips; with just one of them (Post Studio
+             owns tempo in its transport, the /composer showcase has no mode) the
+             left column is a single row and Paths evens the two up. -->
         {#if showTempoControls || onPlaybackModeChange}
           <div class="motion-col">
             {@render tempoModeBody()}
-            {#if !onPlaybackModeChange}
+            {#if !(showTempoControls && onPlaybackModeChange)}
               {@render pathsBody()}
             {/if}
           </div>
         {/if}
         <div class="motion-col">
           {@render displayBody()}
-          {#if onPlaybackModeChange || !showTempoControls}
+          {#if (showTempoControls && onPlaybackModeChange) || !(showTempoControls || onPlaybackModeChange)}
             {@render pathsBody()}
           {/if}
         </div>

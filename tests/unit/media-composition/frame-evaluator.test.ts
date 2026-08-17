@@ -78,6 +78,31 @@ describe("evaluatePresetFrame", () => {
     }
   });
 
+  it("holds the completed pose for the whole beat in step mode", () => {
+    // The studio's clock cannot dwell the way the animation engine's step mode
+    // does — the video and music underneath keep running — so step here means
+    // the position floors to the beat it is inside.
+    const [layer] = evaluatePresetFrame(
+      { ...performancePreset, animationPlaybackMode: "step" },
+      10,
+      4,
+      { timeMap, steps: variableDurationSteps, startPositionDuration: 1 }
+    );
+    const [continuous] = evaluatePresetFrame(performancePreset, 10, 4, {
+      timeMap,
+      steps: variableDurationSteps,
+      startPositionDuration: 1,
+    });
+
+    expect(continuous?.sequencePosition).toBeGreaterThan(1);
+    expect(continuous?.sequencePosition).not.toBe(
+      Math.floor(continuous!.sequencePosition!)
+    );
+    expect(layer?.sequencePosition).toBe(
+      Math.floor(continuous!.sequencePosition!)
+    );
+  });
+
   it("rejects an invalid project duration", () => {
     expect(() => evaluatePresetFrame(performancePreset, 0, 0)).toThrow(
       RangeError

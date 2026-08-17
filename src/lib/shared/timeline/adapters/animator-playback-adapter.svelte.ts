@@ -81,6 +81,16 @@ export interface AnimatorPlaybackParams {
   getIsPlaying: () => boolean;
   onSeek: (targetStep: number) => void;
   onTogglePlay: () => void;
+  /**
+   * Tempo and continuous/step, when the host owns them. UnifiedTimeline shows
+   * each control only when its getter AND its callback are both present, so a
+   * host that passes neither gets the bare scrubber it got before — which is
+   * what the 3D canvas has always done through its own adapter.
+   */
+  getBpm?: () => number | undefined;
+  onBpmChange?: (bpm: number) => void;
+  getPlaybackMode?: () => "continuous" | "step";
+  onPlaybackModeChange?: (mode: "continuous" | "step") => void;
 }
 
 function getDurations(steps: readonly Step[]): number[] {
@@ -122,11 +132,23 @@ export function createAnimatorPlaybackAdapter(
       return computeBeatMarkerPositions(getDurations(params.getSteps()));
     },
     get bpm() {
-      return undefined;
+      return params.getBpm?.();
     },
     get playbackMode() {
-      return undefined;
+      return params.getPlaybackMode?.();
     },
+    // Presence is the signal UnifiedTimeline reads to decide whether to render
+    // the control at all, so a host that wired no callback must leave the key
+    // genuinely absent rather than holding an undefined-returning wrapper.
+    ...(params.onBpmChange
+      ? { onBpmChange: (bpm: number) => params.onBpmChange!(bpm) }
+      : {}),
+    ...(params.onPlaybackModeChange
+      ? {
+          onPlaybackModeChange: (mode: "continuous" | "step") =>
+            params.onPlaybackModeChange!(mode),
+        }
+      : {}),
     seek(progress: number) {
       const target = computeSeekTarget(
         progress,

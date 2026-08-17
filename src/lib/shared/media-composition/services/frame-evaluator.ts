@@ -10,6 +10,7 @@ import {
   clampDisplayedBeatNumber,
   displayedBeatNumber,
   sequencePositionToAnimationTime,
+  wrapSequencePosition,
 } from "$lib/shared/animation-engine/services/step-calculator";
 
 export interface SequenceFrameAlignment {
@@ -50,6 +51,15 @@ function clamp01(value: number): number {
 }
 
 /**
+ * How many motion beats the map covers across every pass. The closing anchor is
+ * the end hold rather than a beat, so it sits one past the count.
+ */
+function totalMappedBeats(timeMap: SequenceTimeMap): number {
+  const last = timeMap.anchors[timeMap.anchors.length - 1];
+  return last ? Math.max(0, last.sequencePosition - 1) : 0;
+}
+
+/**
  * Evaluates every visible visual layer from one project timestamp. Preview and
  * export consume this same result so transition opacity cannot drift later.
  */
@@ -64,9 +74,25 @@ export function evaluatePresetFrame(
   }
 
   const clampedTime = Math.min(durationSeconds, Math.max(0, timeSeconds));
-  const sequencePosition = alignment
-    ? mediaTimeToSequencePosition(alignment.timeMap, clampedTime)
+  // A take that runs the sequence several times through arrives with positions
+  // counting past the sequence's length, so it is folded back into one pass
+  // here - before anything derives from it, so the card, the animation clock,
+  // and the animation layer all cycle together.
+  const continuousPosition = alignment
+    ? wrapSequencePosition(
+        mediaTimeToSequencePosition(alignment.timeMap, clampedTime),
+        alignment.steps.length,
+        totalMappedBeats(alignment.timeMap)
+      )
     : undefined;
+  // Step mode holds the completed pose for the beat instead of interpolating
+  // toward the next one. Flooring the position is what "hold" means to every
+  // downstream consumer at once — the animation layer, the animation clock,
+  // and the card's beat number all read from this one value.
+  const sequencePosition =
+    continuousPosition !== undefined && preset.animationPlaybackMode === "step"
+      ? Math.floor(continuousPosition)
+      : continuousPosition;
   const animationTimeSeconds =
     alignment && sequencePosition !== undefined
       ? sequencePositionToAnimationTime(

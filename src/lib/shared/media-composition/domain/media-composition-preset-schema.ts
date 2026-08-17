@@ -241,6 +241,16 @@ export const MediaCompositionPresetSchema = z
     updatedAt: TimestampSchema,
     output: OutputFormatSchema,
     duration: PresetDurationPolicySchema,
+    /**
+     * How a sequence-animation layer advances against project time.
+     * "continuous" interpolates between poses; "step" holds each completed
+     * pose for its whole beat. The studio's clock cannot dwell the way the
+     * animation engine's step mode does — the video and music underneath it
+     * keep running — so step here means hold, not pause-and-catch-up.
+     * Optional so presets written before it parse unchanged; absent reads as
+     * "continuous".
+     */
+    animationPlaybackMode: z.enum(["continuous", "step"]).optional(),
     sourceRoles: z.array(PresetSourceRoleSchema).min(1),
     regions: z.array(LayoutRegionSchema),
     clips: z.array(PresetClipSchema).min(1),

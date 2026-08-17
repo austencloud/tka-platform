@@ -361,6 +361,19 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     previewSeconds = Math.min(previewSeconds, getDurationSeconds());
   }
 
+  function setAnimationPlaybackMode(mode: "continuous" | "step"): void {
+    const preset = workingPresets[activePresetId];
+    if (!preset) return;
+    workingPresets = {
+      ...workingPresets,
+      [activePresetId]: {
+        ...preset,
+        animationPlaybackMode: mode,
+        updatedAt: Date.now(),
+      },
+    };
+  }
+
   function getSelectedVisualClips(): VisualPresetClip[] {
     const selectedRegion = getSelectedRegion();
     if (!selectedRegion) return [];
@@ -656,6 +669,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
       const duration = getActivePreset().duration;
       return duration.mode === "sequence-tempo" ? duration.bpm : null;
     },
+    get animationPlaybackMode() {
+      return getActivePreset().animationPlaybackMode ?? "continuous";
+    },
     get previewSeconds() {
       return previewSeconds;
     },
@@ -682,6 +698,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     selectRole,
     setSelectedFit,
     setTempoBpm,
+    setAnimationPlaybackMode,
     setSelectedTransform,
     setSelectedOpacity,
     resetSelectedAppearance,

@@ -113,6 +113,10 @@ Last audit: 2025-12-27
     cornerToggle = false,
     extraContextMenuItems = [],
     beatIndicators = true,
+    bpm = undefined,
+    onBpmChange = undefined,
+    playbackMode = undefined,
+    onPlaybackModeChange = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -222,6 +226,13 @@ Last audit: 2025-12-27
      *  the guide showcase turns it off (the on-screen strip already labels
      *  Start/steps, so the canvas overlay is redundant there). */
     beatIndicators?: boolean;
+    /** Tempo and continuous/step for the timeline under the canvas. Wire both
+     *  halves of a pair or neither — the timeline renders each control only
+     *  when its value and its callback are both present. */
+    bpm?: number;
+    onBpmChange?: (bpm: number) => void;
+    playbackMode?: "continuous" | "step";
+    onPlaybackModeChange?: (mode: "continuous" | "step") => void;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -232,6 +243,12 @@ Last audit: 2025-12-27
     getIsPlaying: () => isPlaying,
     onSeek: (targetStep) => onProgressBarSeek?.(targetStep),
     onTogglePlay: () => onPlaybackToggle(),
+    getBpm: () => bpm,
+    onBpmChange: onBpmChange ? (next) => onBpmChange(next) : undefined,
+    getPlaybackMode: () => playbackMode ?? "continuous",
+    onPlaybackModeChange: onPlaybackModeChange
+      ? (mode) => onPlaybackModeChange(mode)
+      : undefined,
   });
 
   // Disassemble mode state machine
@@ -656,6 +673,7 @@ Last audit: 2025-12-27
         <UnifiedTimeline
           playback={playbackAdapter}
           visible={progressBarVisible && !hideProgressBar}
+          hidePlay={tapToToggle}
         />
       {/if}
     </div>

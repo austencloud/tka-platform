@@ -255,6 +255,11 @@
         class="canvas-layer canvas-2d-layer"
         style="opacity:1;pointer-events:auto;"
       >
+        <!-- The 3D pane has always carried the full transport — scrubber, tempo,
+             continuous/step — while 2D showed only a passive progress line, so
+             switching panes changed what the viewer could control. Same transport
+             on both now. The canvas tap still owns play/pause, so the timeline
+             drops its own play button (AnimatorCanvas: hidePlay={tapToToggle}). -->
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
@@ -287,7 +292,13 @@
           hideProgressBar={side === "left" ? suppressProgress : true}
           hideHeader
           tapToToggle={side === "left"}
-          progressLine={side === "left"}
+          progressLine={false}
+          bpm={side === "left" ? bpm : undefined}
+          onBpmChange={side === "left" ? onBpmChange : undefined}
+          playbackMode={side === "left" ? playbackMode : undefined}
+          onPlaybackModeChange={side === "left"
+            ? onPlaybackModeChange
+            : undefined}
           resizePaused={practiceResizePaused}
         />
       </div>

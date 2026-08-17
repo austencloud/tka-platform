@@ -52,6 +52,8 @@
         ? undefined
         : composition.setTempoBpm}
       showTempoControls={false}
+      playbackMode={composition.animationPlaybackMode}
+      onPlaybackModeChange={composition.setAnimationPlaybackMode}
       showEffectsPlayback={false}
       {selectedPropType}
       {onPropChange}
