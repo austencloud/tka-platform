@@ -61,6 +61,19 @@ const OVERLAY_PLUGINS = EFFECT_PLUGINS.filter(
   (p) => p.kind === "canvas2d" || p.kind === "webgl"
 ) as readonly ((typeof EFFECT_PLUGINS)[number] & { id: OverlayEffectId })[];
 
+/**
+ * LED intent data arriving from EffectsConfigState lives inside a Svelte 5
+ * `$state` proxy, which `structuredClone` rejects with a DataCloneError — and
+ * that throw happened inside AnimationEngine.initialize(), killing the whole
+ * canvas (no grid, no props) with the error swallowed upstream. This file is
+ * plain .ts, so `$state.snapshot` is not available; the intent is JSON-safe by
+ * design (it round-trips through persistence), so a JSON clone is the
+ * proxy-safe equivalent.
+ */
+function cloneLedData<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export class EffectRendererManager {
   // ── Registry-backed renderer Map (P2.3) ─────────────────────────────
   // All renderer instances live here. Access via getRenderer(id).
@@ -805,7 +818,7 @@ export class EffectRendererManager {
     const enabled = Object.values(tipMap).some((a) => a.effect === "led");
     Object.assign(
       this.ledConfig,
-      structuredClone(ecs?.led ?? DEFAULT_LED_INTENT),
+      cloneLedData(ecs?.led ?? DEFAULT_LED_INTENT),
       { enabled }
     );
   }
@@ -833,7 +846,7 @@ export class EffectRendererManager {
       ledDiff.device = { ...intent.device };
     }
     if (JSON.stringify(intent.pattern) !== JSON.stringify(current.pattern)) {
-      ledDiff.pattern = structuredClone(intent.pattern);
+      ledDiff.pattern = cloneLedData(intent.pattern);
     }
     if (intent.cycleDuration !== current.cycleDuration) {
       ledDiff.cycleDuration = intent.cycleDuration;

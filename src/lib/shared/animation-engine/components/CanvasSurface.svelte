@@ -322,8 +322,12 @@ captureEffectDiagnostics to the context menu.
             getRenderContextRegistry().register(ctx);
           }
         })
-        .catch(() => {
-          // Init failures surface via onEffectError; nothing to register.
+        .catch((err) => {
+          // Effect-level failures surface via onEffectError, but a throw from
+          // init itself means NO canvas gets created at all — an empty stage.
+          // Swallowing it silently once hid a DataCloneError for a full
+          // evening; always leave a trace.
+          console.error("[CanvasSurface] engine initialize() failed — canvas never created:", err);
         });
     });
 
