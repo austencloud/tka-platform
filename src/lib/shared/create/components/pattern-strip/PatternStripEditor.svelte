@@ -17,6 +17,7 @@
     stampPerHand,
     stampSingle,
     resizePeriod,
+    laneMaskFor,
   } from "$lib/shared/create/domain/rhythm/rhythm-mask";
   import { describeMask } from "$lib/shared/create/domain/rhythm/pattern-sentence";
 
@@ -140,6 +141,41 @@
       onChange([stampSingle(rhythm, effPeriod, stampValue(0), binding.base)]);
     }
   }
+  /**
+   * The rhythms one HAND can be given, at the current period.
+   *
+   * The catalog names what the pair does, so it cannot be listed verbatim
+   * against a single hand: a Left chip reading "every step" sat over a list
+   * highlighting "Blue Book", and picking any entry rewrote the other hand too.
+   * Projecting each rhythm onto this lane keeps every shape the catalog can
+   * make reachable one hand at a time, and duplicates collapse — at a period of
+   * 1, Book and Blue Book are the same instruction to the left hand.
+   */
+  function laneRhythmOptions(li: number): boolean[][] {
+    const seen = new Set<string>();
+    const out: boolean[][] = [];
+    for (const r of binding.rhythms) {
+      // A fixed-period figure only has a shape to offer at its own period.
+      if (r.period != null && r.period !== period) continue;
+      const mask = laneMaskFor(r.sym, li, period);
+      if (!mask.some(Boolean)) continue; // "no steps" is added last, once
+      const key = mask.map((b) => (b ? "1" : "0")).join("");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(mask);
+    }
+    out.push(new Array(period).fill(false));
+    return out;
+  }
+  function laneMaskMatches(li: number, mask: readonly boolean[]): boolean {
+    const cur = laneMask(li);
+    return cur.length === mask.length && cur.every((b, i) => b === mask[i]);
+  }
+  function applyLaneMask(li: number, mask: readonly boolean[]) {
+    const amount = stampValue(li);
+    const lane = mask.map((on) => (on ? amount : binding.base));
+    onChange(value.map((l, idx) => (idx === li ? lane : l)));
+  }
   function editCell(li: number, bi: number, v: StripValue) {
     const lane = [...(value[li] ?? [])];
     lane[bi] = v;
@@ -192,8 +228,11 @@
                     onclick={() => {
                       applyAmount(li, a);
                       openSlot = null;
-                    }}>{binding.format(a)}</button
+                    }}
                   >
+                    <i class="opt-tick fa-solid fa-check" aria-hidden="true"></i>
+                    <span class="opt-name">{binding.format(a)}</span>
+                  </button>
                 {/each}
               {/snippet}
             </FilterChipBase>
@@ -210,27 +249,23 @@
             onclick={() => toggleSlot(`rhythm-${li}`)}
           >
             {#snippet children()}
-              {#each binding.rhythms as r}
+              <!-- Every option is written by the same function that writes the
+                   chip, so the open list always contains the words on the chip
+                   that opened it. -->
+              {#each laneRhythmOptions(li) as mask}
                 <button
                   class="popover-option"
                   type="button"
                   role="option"
-                  aria-selected={rhythmActive(r)}
-                  class:selected={rhythmActive(r)}
-                  disabled={rhythmDisabled(r)}
+                  aria-selected={laneMaskMatches(li, mask)}
+                  class:selected={laneMaskMatches(li, mask)}
                   onclick={() => {
-                    applyRhythm(r);
+                    applyLaneMask(li, mask);
                     openSlot = null;
                   }}
                 >
-                  <span class="opt-name">{r.label}</span>
-                  <!-- The canonical name is what people say out loud, so it
-                       leads; the plain reading underneath is what a newcomer
-                       can act on. When the name is already plain the two are
-                       the same string and the second line would be noise. -->
-                  {#if r.plainLabel !== r.label}
-                    <span class="opt-plain">{r.plainLabel}</span>
-                  {/if}
+                  <i class="opt-tick fa-solid fa-check" aria-hidden="true"></i>
+                  <span class="opt-name">{describeMask(mask)}</span>
                 </button>
               {/each}
             {/snippet}
@@ -263,9 +298,13 @@
     </div>
   {/if}
 
-  {#if !sentenceMode && (visibleAxis === "all" || visibleAxis === "rhythm")}
+  {#if visibleAxis === "all" || visibleAxis === "rhythm"}
     <div class="axis">
-      <div class="axis-lbl">Rhythm</div>
+      <!-- The catalog names figures the PAIR makes, which is why they cannot
+           live on a single hand's chip. Here they are true: one press writes
+           both hands at once, and this is where a newcomer meets the words
+           other people will say to them. -->
+      <div class="axis-lbl">{sentenceMode ? "Both hands" : "Rhythm"}</div>
       <div class="chips">
         {#each binding.rhythms as r}
           <FilterChipBase
@@ -500,12 +539,26 @@
      a caption, then a framed strip. Left bare it was two rows of tokens
      floating on the panel background with no edge to tell them apart from the
      sentence above. */
-  /* The panel is sized by the lanes it holds and nothing else. Handing it the
-     pane's leftover height was tried and is worse: at 1920 it became a 523px
-     bordered box with 68px of cells adrift in the middle of it, which reads as
-     a rendering fault rather than as room to breathe. Spare height belongs
-     BELOW the last panel, where the footer rule turns it into a margin. */
+  /* The two panels take the pane's spare height between them — that is what
+     turns a column of fragments clinging to the top of a tall drawer into a
+     screen. Both are bounded, and the bound is the whole lesson: a panel that
+     grows without limit runs past what it holds, and the difference is a black
+     hole with two rows adrift in it. At 1080 neither ceiling is reached, so the
+     pane fills exactly; at 3840 they stop where a panel still looks like a
+     panel. Inside Result the strip fills whatever the panel settled on, cells
+     and all, so no gap can open there at any height. */
+  .pse.sentence-mode .sentences {
+    flex: 1 1 auto;
+    max-height: 18rem;
+    justify-content: space-evenly;
+    min-height: 0;
+  }
   .pse.sentence-mode .result {
+    display: flex;
+    flex: 1.6 1 auto;
+    max-height: 24rem;
+    flex-direction: column;
+    min-height: 0;
     margin-top: 0;
   }
   .pse.sentence-mode .result :global(.pbs) {
@@ -536,17 +589,22 @@
     color: var(--theme-text-dim);
   }
 
-  /* Matches the browse filter chips' own popover options, which is where this
-     chip presentation comes from. Two lines when the rhythm carries a canonical
-     name plus a plain reading, one when they are the same. */
+  /* One row per choice: a tick that is always in the layout — hidden rather
+     than absent — so the words hold their place as the selection moves, and
+     the chosen row is still identifiable without relying on its colour.
+
+     Hover and selection have to stay separable, and they were not: a plain
+     `:hover` rule outranks `.selected` on specificity, so running the mouse
+     down the list painted the grey wash straight over the accent fill and the
+     chosen row disappeared under the cursor — the one row you most need to see
+     while choosing. Hovering the selection now brightens it instead. */
   .popover-option {
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
+    align-items: center;
+    gap: 8px;
     width: 100%;
     min-height: var(--min-touch-target, 44px);
-    padding: 6px 14px;
+    padding: 6px 12px;
     border: none;
     border-radius: 8px;
     background: transparent;
@@ -555,30 +613,35 @@
     text-align: left;
     white-space: nowrap;
     cursor: pointer;
+    transition: background-color var(--duration-fast, 150ms) ease;
+  }
+  .opt-tick {
+    flex: 0 0 1em;
+    font-size: 11px;
+    visibility: hidden;
+  }
+  .popover-option.selected .opt-tick {
+    visibility: visible;
   }
   .opt-name {
     font-weight: 600;
     line-height: 1.2;
   }
-  .opt-plain {
-    font-size: 12px;
-    line-height: 1.2;
-    color: var(--theme-text-dim);
-  }
-  .popover-option:hover:not(:disabled) {
+  .popover-option:hover,
+  .popover-option:focus-visible {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+  }
+  .popover-option:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: -2px;
   }
   .popover-option.selected {
     background: var(--theme-accent);
     color: #fff;
   }
-  /* The subtitle has to lift off the accent fill or it reads as a smudge. */
-  .popover-option.selected .opt-plain {
-    color: rgba(255, 255, 255, 0.85);
-  }
-  .popover-option:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .popover-option.selected:hover,
+  .popover-option.selected:focus-visible {
+    background: color-mix(in srgb, #fff 16%, var(--theme-accent));
   }
 
   /* A narrow portrait drawer cannot spend 26px between every editing axis.

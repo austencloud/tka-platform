@@ -20,6 +20,21 @@ export function activeAt(sym: string, i: number): boolean {
   return sym[i % sym.length] !== "-";
 }
 
+/**
+ * One hand's share of a per-hand rhythm, tiled to a period.
+ *
+ * A rhythm names what the PAIR does — "Blue Book" is left-only, "Alternating"
+ * is the two hands trading off. A sentence about one hand can only offer that
+ * hand's half of it, so this projects the symbol onto a single lane: left takes
+ * every P and B, right takes every P and R.
+ */
+export function laneMaskFor(sym: string, laneIndex: number, period: number): boolean[] {
+  return Array.from({ length: period }, (_, i) => {
+    const m = maskAt(sym, i);
+    return laneIndex === 0 ? m.blue : m.red;
+  });
+}
+
 /** Divisors of n, ascending, capped at `cap` (valid pattern periods). */
 export function divisorsUpTo(n: number, cap = 8): number[] {
   const out: number[] = [];

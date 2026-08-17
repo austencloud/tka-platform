@@ -163,18 +163,20 @@
     color: var(--theme-text-dim);
   }
 
-  /* Natural height, and never shrinks below it. The editor is a stack of
-     fixed-size panels with nothing worth stretching, so the leftover height
-     goes past it to the footer rule below. On a short screen the no-shrink
-     half is what keeps the cells from painting outside the scroller (see
-     PatternStepStrip's fill note).
+  /* Takes the pane's height, and never shrinks below its own content. The
+     editor spends the extra on its two panels and on the size of the strip's
+     cells (see PatternStripEditor's sentence-mode block); the no-shrink half is
+     what keeps the cells from painting outside the scroller on a short
+     landscape phone.
 
-     Centring the stack in the leftover was tried and is worse: it opens a
-     170px hole between the intro sentence and the panel it introduces, which
-     reads as a broken page rather than as composition. Content at the top and
-     the one action at the bottom is what every other settings panel does. */
+     The ceiling is the sum of what the editor can actually use — its two
+     capped panels at 18rem and 24rem, the two rows between them, and the gaps.
+     Without it the editor kept claiming height its panels had stopped
+     accepting, and on a 2160-tall drawer that opened a thousand pixels between
+     the pattern and the button that undoes it. */
   .turn-pattern-section :global(.pse) {
-    flex: 0 0 auto;
+    flex: 1 0 auto;
+    max-height: 60rem;
   }
 
   /* Follows the editor rather than pinning to the bottom of the pane. Pinning

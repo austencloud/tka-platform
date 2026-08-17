@@ -180,9 +180,25 @@
      nothing while its cells kept painting at full size — the bottom lane ran
      off the screen with no scroll able to reach it, because a collapsed flex
      item contributes no height for the scroller to find. */
-  .pbs.fill { flex: 0 0 auto; }
-  .pbs.fill .pbs-lane { min-height: 0; }
-  .pbs.fill .pbs-cell { height: 4.25rem; min-height: 56px; max-width: 4.25rem; }
+  .pbs.fill { flex: 1 0 auto; }
+  /* The lane is a row of cells beside a name. Stretching it gives the cells a
+     definite height to grow into; the name stays centred against them, and the
+     number ruler keeps its own small height rather than sharing the lanes'. */
+  .pbs.fill .pbs-lane { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+  .pbs.fill .pbs-label { align-self: center; }
+  .pbs.fill .pbs-nums { flex: 0 0 auto; }
+  /* Height comes entirely from the lane, with no ceiling of its own. A ceiling
+     here is what turns a roomy panel into a void: the panel takes the height,
+     the cell refuses it, and the difference is black. The panel is the thing
+     that gets bounded (see PatternStripEditor's sentence-mode block), and
+     whatever it settles on, the cells fill exactly. Width still stops at
+     5.5rem — a cell holds one short value, and past that it stops reading as a
+     token. */
+  .pbs.fill .pbs-cell {
+    height: 100%;
+    min-height: 56px;
+    max-width: 5.5rem;
+  }
 
   /* The column header. Sized and spaced exactly like the cell row beneath it so
      each number sits over its own cell — a ruler, not a caption. */
@@ -192,7 +208,7 @@
     font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
     color: var(--theme-text-dim); letter-spacing: 0.02em;
   }
-  .pbs.fill .pbs-num { max-width: 4.25rem; }
+  .pbs.fill .pbs-num { max-width: 5.5rem; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }

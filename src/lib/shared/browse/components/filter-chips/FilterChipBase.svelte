@@ -115,9 +115,8 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     return null;
   }
 
-  $effect(() => {
-    if (!expanded || !chipEl) return;
-    const rect = chipEl.getBoundingClientRect();
+  function place(chip: HTMLElement) {
+    const rect = chip.getBoundingClientRect();
     const menuHeight = popoverEl?.offsetHeight ?? 0;
     const menuWidth = popoverEl?.offsetWidth ?? 0;
     const below = rect.bottom + 6;
@@ -138,6 +137,29 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     const frame = containingBlock(popoverEl);
     popoverTop = top - (frame?.top ?? 0);
     popoverLeft = left - (frame?.left ?? 0);
+  }
+
+  /**
+   * The menu floats above the page rather than flowing under the chip, so
+   * anything that moves the chip after it opens leaves the menu behind:
+   * scrolling the pane the chip lives in, resizing the window, or a panel
+   * whose own slide-in was still running when the chip was pressed. Placing
+   * it once caught that last case as a menu sitting hundreds of pixels away
+   * from the words that opened it.
+   *
+   * Following the chip every frame covers all three without having to
+   * enumerate them. It costs one measurement per frame, only while a menu is
+   * actually open, and writing the same numbers back changes nothing.
+   */
+  $effect(() => {
+    if (!expanded || !chipEl) return;
+    const chip = chipEl;
+    place(chip);
+    let frame = requestAnimationFrame(function tick() {
+      place(chip);
+      frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
   });
 </script>
 
