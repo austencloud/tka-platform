@@ -166,11 +166,10 @@
     font: inherit;
     font-weight: 700;
     cursor: pointer;
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--dm-motion-blue) 78%, #fff),
-      var(--dm-motion-blue)
-    );
+    /* The hand colour itself. A gradient toward white put a lighter blue at
+       the top edge, which on the same screen as the blue lane reads as two
+       different blues. */
+    background: var(--dm-motion-blue);
     color: #fff;
   }
 

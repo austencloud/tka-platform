@@ -434,10 +434,10 @@
     white-space: nowrap;
   }
   .amt-lane.blue {
-    color: var(--dm-motion-blue-text);
+    color: var(--dm-motion-blue);
   }
   .amt-lane.red {
-    color: var(--dm-motion-red-text);
+    color: var(--dm-motion-red);
   }
   .amt-lane.accent {
     color: var(--theme-accent, #2dd4bf);
@@ -607,10 +607,10 @@
     letter-spacing: 0.01em;
   }
   .subject.blue {
-    color: var(--dm-motion-blue-text);
+    color: var(--dm-motion-blue);
   }
   .subject.red {
-    color: var(--dm-motion-red-text);
+    color: var(--dm-motion-red);
   }
   .subject.accent {
     color: var(--theme-accent, #2dd4bf);

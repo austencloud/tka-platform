@@ -153,10 +153,12 @@
     font-size: 14px; font-weight: 800;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  /* The app's own hand colours, not a pastel invented here. See the
-     `--dm-motion-*-text` note in app.css. */
-  .pbs-label.blue { color: var(--dm-motion-blue-text); }
-  .pbs-label.red { color: var(--dm-motion-red-text); }
+  /* The app's own hand colours — the same two tokens the cells below are
+     filled with, so the word "Left" and the blue cells it labels are one
+     blue. Any tint invented here reads as a third colour on a screen that
+     already has two. */
+  .pbs-label.blue { color: var(--dm-motion-blue); }
+  .pbs-label.red { color: var(--dm-motion-red); }
   .pbs-label.hold { color: var(--theme-accent, #2dd4bf); }
   .pbs-steps { display: flex; gap: 10px; flex: 1; min-width: 0; }
   .pbs-cell {
@@ -211,19 +213,26 @@
   .pbs.fill .pbs-num { flex: 0 1 7rem; width: 7rem; max-width: none; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
-  .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--dm-motion-blue) 34%, var(--theme-card-bg)); }
-  .pbs-cell.num.red:not(.muted) { background: color-mix(in srgb, var(--dm-motion-red) 34%, var(--theme-card-bg)); }
-  .pbs-cell.num.hold:not(.muted) { background: color-mix(in srgb, var(--theme-accent, #2dd4bf) 28%, var(--theme-card-bg)); }
+  /* Filled with the hand colour itself, not a wash of it. A wash toward the
+     card background made a fourth and fifth blue on a screen that also shows
+     the lane names and the rhythm dots — three shades of "blue" that are all
+     supposed to mean the same hand. One token, everywhere. */
+  .pbs-cell.num.blue:not(.muted) { background: var(--dm-motion-blue); border-color: var(--dm-motion-blue); }
+  .pbs-cell.num.red:not(.muted) { background: var(--dm-motion-red); border-color: var(--dm-motion-red); }
+  .pbs-cell.num.hold:not(.muted) { background: var(--theme-accent, #2dd4bf); border-color: var(--theme-accent, #2dd4bf); }
   .pbs-cell.num:not(.muted) .v { color: #fff; }
   .pbs-cell .z {
     position: absolute; top: 0; bottom: 0; width: 50%; display: flex; align-items: center;
     opacity: 0; transition: opacity .12s; z-index: 1; color: var(--theme-text);
   }
+  /* The hover -/+ sits on top of the hand colour once a step is filled, so it
+     takes the fill's own foreground rather than the panel's. */
+  .pbs-cell.num:not(.muted) .z { color: #fff; }
   .pbs-cell .z.minus { left: 0; justify-content: flex-start; padding-left: 9px; }
   .pbs-cell .z.plus { right: 0; justify-content: flex-end; padding-right: 9px; }
   .pbs-cell:hover .z { opacity: .8; }
-  .pbs-cell.toggle.on { background: color-mix(in srgb, var(--dm-motion-blue) 34%, var(--theme-card-bg)); color: #fff; }
-  .pbs-cell.toggle.on.red { background: color-mix(in srgb, var(--dm-motion-red) 34%, var(--theme-card-bg)); }
+  .pbs-cell.toggle.on { background: var(--dm-motion-blue); border-color: var(--dm-motion-blue); color: #fff; }
+  .pbs-cell.toggle.on.red { background: var(--dm-motion-red); border-color: var(--dm-motion-red); }
   .pbs-cell.toggle:not(.on) i { opacity: .32; }
 
   /* Inert: this step doesn't spin, so a reversal here can't act. Dashed + dim,

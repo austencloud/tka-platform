@@ -736,23 +736,6 @@ h6 {
   --dm-motion-blue: #3D44B8;
   --dm-motion-red: #DC2626;
 
-  /* The same two hands, as small TEXT. Raw #ED1C24 at 13px on a near-black
-     card is unreadable, which is why surface after surface quietly invented its
-     own pastel blue and pink (`--theme-blue`/`--theme-red` — never defined
-     anywhere, so every use was really a hardcoded hex) instead of reaching for
-     the tokens. This is that adjustment, made once, mixed toward the theme's
-     own text colour so it lands correctly in light and dark alike. */
-  --dm-motion-blue-text: color-mix(
-    in srgb,
-    var(--dm-motion-blue) 58%,
-    var(--theme-text, #fff)
-  );
-  --dm-motion-red-text: color-mix(
-    in srgb,
-    var(--dm-motion-red) 58%,
-    var(--theme-text, #fff)
-  );
-
   /* Prop-selection washes. Keeping the host surface visible makes Blue, Red,
      and Both read as related states instead of three blocks of solid paint. */
   --dm-motion-both: color-mix(
