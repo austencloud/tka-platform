@@ -76,6 +76,7 @@
 <button
   type="button"
   class="loop-button"
+  class:selectable
   class:selected
   class:dense
   style={tint}
@@ -168,6 +169,31 @@
   .loop-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  /* In a picker that HOLDS a choice, colour has to mean selected — and it can't
+     if every choice is already wearing it. Mirror and Flip are the same violet
+     by brand (the axis in the glyph is what separates them, not the hue), so a
+     row where the unselected two are painted 22% violet and the selected one
+     38% violet asks the eye to read a difference of degree in one colour. It
+     loses. An unselected choice therefore paints the neutral card surface every
+     other inactive control on the panel uses, and the selected one is the only
+     coloured tile in the row.
+     Immediate-action pickers (the Extend shelf) have no selected state to
+     signal, so they keep their primitive colours and skip this entirely. */
+  .loop-button.selectable:not(.selected) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+  }
+
+  /* Dimmed, not colourless: the glyph still says which primitive this is, and
+     hover restores the full hue as a preview of what picking it does. */
+  .loop-button.selectable:not(.selected) .loop-glyph {
+    color: color-mix(in srgb, var(--c1) 55%, var(--theme-text-dim, #9aa0ae));
+  }
+
+  .loop-button.selectable:not(.selected):hover:not(:disabled) .loop-glyph {
+    color: var(--c1);
   }
 
   /* Selection is a property of the whole button, so the whole button carries

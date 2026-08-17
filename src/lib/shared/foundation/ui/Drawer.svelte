@@ -166,10 +166,16 @@
     return placement;
   });
 
-  // Handle visibility defaults to dismissibility: the drag handle is the
-  // affordance for a drag-dismissible sheet, so a non-dismissible drawer shows
-  // none. An explicit `showHandle` prop still overrides.
-  const effectiveShowHandle = $derived(showHandle ?? dismissible);
+  // The grab bar is a BOTTOM-SHEET affordance: a sheet you pull down off the
+  // bottom of the screen, the way every phone sheet works. A side drawer
+  // borrowed it and turned it into a 4px white tick floating inside its inner
+  // edge, which reads as a stray artifact rather than as something to grab —
+  // nothing about a full-height desktop panel says "drag me sideways". So the
+  // default is bottom-only, and a side drawer that genuinely wants one opts in
+  // with `showHandle`.
+  const effectiveShowHandle = $derived(
+    showHandle ?? (dismissible && effectivePlacement === "bottom")
+  );
 
   // Internal drag change handler that updates local state AND calls parent callback
   function handleInternalDragChange(

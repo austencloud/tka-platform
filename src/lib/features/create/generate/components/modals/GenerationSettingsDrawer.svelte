@@ -7,11 +7,22 @@
   let {
     isOpen,
     ariaLabel,
+    surface = "accent",
     onClose,
     children,
   }: {
     isOpen: boolean;
     ariaLabel: string;
+    /**
+     * `accent` paints Generate's Customize surface — a near-black ground under a
+     * violet sweep, which is that panel's own identity.
+     *
+     * `panel` paints the app's own panel background instead, for a host whose
+     * workspace is right behind the drawer. Fuse is that host: its cards, header
+     * and result pane are all `--theme-panel-bg`, so the violet-washed ground
+     * arrived belonging to a different application than the one it covers.
+     */
+    surface?: "accent" | "panel";
     onClose: () => void;
     children: Snippet;
   } = $props();
@@ -30,7 +41,10 @@
     backdropClass="generation-settings-backdrop"
     onclose={onClose}
   >
-    <div class="generation-settings-content customize-accent-scope">
+    <div
+      class="generation-settings-content customize-accent-scope"
+      data-surface={surface}
+    >
       {@render children()}
     </div>
   </Drawer>
@@ -73,6 +87,18 @@
       var(--customize-surface-wash-layer);
     border: none;
     border-radius: 0;
+  }
+
+  /* The host's own surface, opaque, with the app's panel edge on the side it
+     meets the workspace — so it reads as this page's panel sliding in rather
+     than as a differently-designed window landing on top of it. */
+  .generation-settings-content[data-surface="panel"] {
+    background-color: var(--theme-surface, #101018);
+    background-image: linear-gradient(
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98)),
+      var(--theme-panel-bg, rgba(18, 18, 28, 0.98))
+    );
+    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .generation-settings-content > :global(.generation-settings-overlay) {

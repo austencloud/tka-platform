@@ -24,6 +24,7 @@
 <GenerationSettingsDrawer
   {isOpen}
   ariaLabel="Fuse recipe settings"
+  surface="panel"
   onClose={closeDrawer}
 >
   {#snippet children()}

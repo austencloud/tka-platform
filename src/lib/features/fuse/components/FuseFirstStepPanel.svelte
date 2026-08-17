@@ -53,7 +53,6 @@
 <CreatePanelDrawer
   bind:isOpen
   panelName="fuse-first-step"
-  showHandle={true}
   closeOnBackdrop={true}
   ariaLabel="Choose {label} LOOP first step"
   {onClose}

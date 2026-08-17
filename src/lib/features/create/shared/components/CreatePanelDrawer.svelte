@@ -25,7 +25,10 @@
     panelName,
     combinedPanelHeight = 0,
     fullHeightOnMobile = false,
-    showHandle = true,
+    // Undefined, not true: Drawer shows the grab bar on bottom sheets and not on
+    // side panels, which is the distinction that matters. Forcing it on here is
+    // what put a stray 4px tick inside the inner edge of every desktop panel.
+    showHandle = undefined,
     closeOnBackdrop = false,
     focusTrap = false,
     autoFocus = true,
@@ -41,7 +44,7 @@
     panelName: string; // Used for CSS class names (e.g., "animation", "edit")
     combinedPanelHeight?: number;
     fullHeightOnMobile?: boolean; // If true, panel takes ~95vh on mobile instead of 70vh
-    showHandle?: boolean;
+    showHandle?: boolean | undefined;
     closeOnBackdrop?: boolean;
     focusTrap?: boolean;
     autoFocus?: boolean;

@@ -324,6 +324,7 @@
   <GenerationSettingsDrawer
     {isOpen}
     ariaLabel="Build a one-hand Fuse path"
+    surface="panel"
     onClose={closeBuilder}
   >
     {#snippet children()}

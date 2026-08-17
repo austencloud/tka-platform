@@ -14,6 +14,8 @@
   import LOOPChoiceButton from "$lib/shared/components/loop-picker/LOOPChoiceButton.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { LOOP_ICON_COLORS } from "@tka/render-composition";
+  import { loopOptionTint } from "$lib/shared/components/loop-picker/loop-option-color";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { getFuseContext } from "../context/fuse-context";
@@ -82,7 +84,10 @@
   const rotationAccent = fuseComponentColor(LOOPComponent.ROTATED);
 
   // Mirror and Flip are the same purple with different axes, so each carries the
-  // glyph that separates them — the one a sequence card would show.
+  // glyph that separates them — the one a sequence card would show. None applies
+  // no primitive, so it wears the neutral the LOOP palette already reserves for
+  // that rather than borrowing the app accent and reading as a third violet.
+  const noneTint = loopOptionTint([LOOP_ICON_COLORS.freeform]);
   const reflectionOptions = $derived(
     FUSE_REFLECTIONS.map((option) => {
       const glyph = fuseRuleGlyph(createFuseRule({ reflect: option.value }));
@@ -95,7 +100,7 @@
       return {
         ...option,
         glyph,
-        tint: component ? fuseComponentTint(component) : "",
+        tint: component ? fuseComponentTint(component) : noneTint,
       };
     })
   );
