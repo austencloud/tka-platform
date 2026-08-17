@@ -37,13 +37,18 @@
       rule: fuseState.rule,
     })
   );
+  // Pairing is listed only when there is a pairing: separate paths have no rule,
+  // and the header switch is what links them. Listing it anyway is how the
+  // recipe used to open on an editor with nothing in it.
   const drillItems = $derived<SettingsDrillItem[]>([
     { id: "length", label: "Length", value: summaries.length },
     { id: "level", label: "Level", value: summaries.level },
     { id: "grid", label: "Grid", value: summaries.grid },
     { id: "style", label: "Style", value: summaries.style },
     { id: "starting", label: "Starting conditions", value: summaries.starting },
-    { id: "pairing", label: "Pairing", value: summaries.pairing },
+    ...(fuseState.mode === "symmetry"
+      ? [{ id: "pairing", label: "Pairing", value: summaries.pairing }]
+      : []),
   ]);
 
   function selectDestination(id: string | null): void {

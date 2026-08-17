@@ -4,13 +4,11 @@
   import { getFuseContext } from "../context/fuse-context";
   import { fuseRuleLabel, type FuseRule } from "../domain/fuse-rule";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
-  import type { FuseMode } from "../state/fuse-state.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import {
     fuseRuleGlyph,
     fuseRuleTint,
   } from "../domain/fuse-transform-presentation";
-  import FuseModeBar from "./FuseModeBar.svelte";
   import FuseTransformPicker from "./FuseTransformPicker.svelte";
 
   let {
@@ -22,7 +20,6 @@
   } = $props();
 
   const { state: fuseState } = getFuseContext();
-  let draftMode = $state<FuseMode>(fuseState.mode);
   let draftDriver = $state<FuseSide>(fuseState.driverSide);
   let draftRule = $state<FuseRule>(fuseState.rule);
 
@@ -42,25 +39,15 @@
   );
 
   $effect(() => {
-    const linked = draftMode === "symmetry";
     const driver = draftDriver;
     const rule = draftRule;
 
-    untrack(() => {
-      // Separate has nothing to derive — drop any draft preview so the canvas
-      // returns to the two paths that are actually loaded.
-      if (linked) void fuseState.previewRelationship(driver, rule);
-      else fuseState.cancelRelationshipPreview();
-    });
+    untrack(() => void fuseState.previewRelationship(driver, rule));
 
     return () => {
       untrack(() => fuseState.cancelRelationshipPreview());
     };
   });
-
-  function chooseMode(mode: FuseMode): void {
-    draftMode = mode;
-  }
 
   function chooseDriver(side: FuseSide): void {
     draftDriver = side;
@@ -76,8 +63,7 @@
   }
 
   function apply(): void {
-    if (draftMode === "shuffle") fuseState.setMode("shuffle");
-    else fuseState.setRelationship(draftDriver, draftRule);
+    fuseState.setRelationship(draftDriver, draftRule);
     onApply?.();
   }
 </script>
@@ -90,105 +76,68 @@
   class="pairing-editor drill-grow"
   aria-labelledby="pairing-editor-title"
 >
-  <!-- The drawer already titles this section "Pairing", and each mode states
-       what it does below, so the editor opens on the decision itself. -->
+  <!-- Separate vs Linked belongs to the header switch, which is also what opens
+       this editor. Reaching it at all means the paths are linked, so the editor
+       is only the rule that links them. -->
   <h3 id="pairing-editor-title" class="pairing-title">
     Choose how the two paths relate
   </h3>
 
-  <div class="mode-field" role="group" aria-label="Pairing mode">
-    <div class="mode-heading">
-      <span class="mode-label">Pairing mode</span>
-      <span class="mode-help">
-        {draftMode === "shuffle"
-          ? "Blue and Red generate independently"
-          : "One path drives the other"}
-      </span>
-    </div>
-    <FuseModeBar selectedMode={draftMode} onSelect={chooseMode} />
-  </div>
-
-  {#if draftMode === "symmetry"}
-    <FuseTransformPicker
-      driver={draftDriver}
-      rule={draftRule}
-      onDriverChange={chooseDriver}
-      onRuleChange={chooseRule}
-    />
-  {/if}
+  <FuseTransformPicker
+    driver={draftDriver}
+    rule={draftRule}
+    onDriverChange={chooseDriver}
+    onRuleChange={chooseRule}
+  />
 
   <div class="relationship-commit">
     <!-- Named Result, not Preview: it states what applying this does, and the
          canvas behind the editor is already showing the live preview. -->
     <div class="result" aria-live="polite">
       <span class="result-label">Result</span>
-      {#if draftMode === "shuffle"}
-        <div class="result-chain" data-shape="pair">
-          <span class="path-node" data-side="blue">
-            <span class="node-dot" aria-hidden="true"></span>
-            <span class="node-copy">
-              <span class="node-role">Shuffles alone</span>
-              <strong>Blue path</strong>
-            </span>
+      <!-- The chain labels each node with what happens to it, so a sentence
+           above it would say the same thing a second time. -->
+      <div class="result-chain">
+        <span class="path-node" data-side={draftDriver}>
+          <span class="node-dot" aria-hidden="true"></span>
+          <span class="node-copy">
+            <span class="node-role">You edit</span>
+            <strong>{draftDriverLabel}</strong>
           </span>
-          <span class="path-node" data-side="red">
-            <span class="node-dot" aria-hidden="true"></span>
-            <span class="node-copy">
-              <span class="node-role">Shuffles alone</span>
-              <strong>Red path</strong>
-            </span>
+        </span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        <span class="rule-node" style={draftRuleTint}>
+          <LOOPIconStrip
+            activeComponents={draftGlyph.components}
+            reflectionAxis={draftGlyph.reflectionAxis}
+            rotationPeriod={draftGlyph.rotationPeriod}
+            size={16}
+            showFreeformWhenEmpty={false}
+          />
+          <span class="node-copy">
+            <span class="node-role">Rule</span>
+            <strong>{draftRuleLabel}</strong>
           </span>
-        </div>
-      {:else}
-        <!-- The chain labels each node with what happens to it, so a sentence
-             above it would say the same thing a second time. -->
-        <div class="result-chain" data-shape="chain">
-          <span class="path-node" data-side={draftDriver}>
-            <span class="node-dot" aria-hidden="true"></span>
-            <span class="node-copy">
-              <span class="node-role">You edit</span>
-              <strong>{draftDriverLabel}</strong>
-            </span>
+        </span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        <span
+          class="path-node"
+          data-side={draftDriver === "blue" ? "red" : "blue"}
+        >
+          <span class="node-dot" aria-hidden="true"></span>
+          <span class="node-copy">
+            <span class="node-role">Fuse rebuilds</span>
+            <strong>{draftFollowerLabel}</strong>
           </span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-          <span class="rule-node" style={draftRuleTint}>
-            <LOOPIconStrip
-              activeComponents={draftGlyph.components}
-              reflectionAxis={draftGlyph.reflectionAxis}
-              rotationPeriod={draftGlyph.rotationPeriod}
-              size={16}
-              showFreeformWhenEmpty={false}
-            />
-            <span class="node-copy">
-              <span class="node-role">Rule</span>
-              <strong>{draftRuleLabel}</strong>
-            </span>
-          </span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-          <span
-            class="path-node"
-            data-side={draftDriver === "blue" ? "red" : "blue"}
-          >
-            <span class="node-dot" aria-hidden="true"></span>
-            <span class="node-copy">
-              <span class="node-role">Fuse rebuilds</span>
-              <strong>{draftFollowerLabel}</strong>
-            </span>
-          </span>
-        </div>
-      {/if}
+        </span>
+      </div>
     </div>
 
     <div class="editor-actions">
       <PanelButton variant="secondary" onclick={cancel}>Cancel</PanelButton>
       <PanelButton variant="primary" disabled={busy} onclick={apply}>
-        <i
-          class="fas {draftMode === 'shuffle' ? 'fa-link-slash' : 'fa-link'}"
-          aria-hidden="true"
-        ></i>
-        {draftMode === "shuffle"
-          ? "Use separate paths"
-          : "Use this relationship"}
+        <i class="fas fa-link" aria-hidden="true"></i>
+        Use this relationship
       </PanelButton>
     </div>
   </div>
@@ -222,40 +171,6 @@
     font-weight: 750;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  }
-
-  /* Matches the numbered step cards in FuseTransformPicker so the mode switch
-     reads as the first decision, not a stray control above them. */
-  .mode-field {
-    display: grid;
-    gap: 10px;
-    width: 100%;
-    padding: clamp(12px, 0.45cqw, 17px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-md, 14px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
-  }
-
-  .mode-heading {
-    display: grid;
-    gap: 1px;
-    min-width: 0;
-  }
-
-  .mode-label {
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 750;
-  }
-
-  .mode-help {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
-    line-height: 1.3;
-  }
-
-  .mode-field :global(.fuse-mode-bar) {
-    width: 100%;
   }
 
   /* `margin-top: auto` is what puts Cancel / Use this relationship on the floor
@@ -297,19 +212,12 @@
      short rather than as breathing room. */
   .result-chain {
     display: grid;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .result-chain[data-shape="chain"] {
     grid-template-columns:
       minmax(0, 1fr) auto minmax(0, 1.15fr) auto
       minmax(0, 1fr);
-  }
-
-  .result-chain[data-shape="pair"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
   }
 
   .result-chain > i {
@@ -389,22 +297,16 @@
     width: 100%;
   }
 
-  /* Below a 4K panel the same form has to fit a shorter box, so the first
-     things to go are the ones said twice: the drawer's own header already reads
-     "Pairing", and Separate/Linked is restated by the result chain. */
+  /* Below a 4K panel the same form has to fit a shorter box, so the first thing
+     to go is the one said twice: the panel's own header already reads
+     "Pairing". */
   @media (max-height: 1250px) {
     .pairing-editor {
       gap: 10px;
     }
 
-    .pairing-title,
-    .mode-help {
+    .pairing-title {
       display: none;
-    }
-
-    .mode-field {
-      gap: 8px;
-      padding: 8px 10px;
     }
 
     .relationship-commit {
@@ -427,8 +329,7 @@
      drawer and 400px wide in the desktop recipe column — the viewport says
      nothing about which. */
   @container pairing-editor (max-width: 25rem) {
-    .result-chain[data-shape="chain"],
-    .result-chain[data-shape="pair"] {
+    .result-chain {
       grid-template-columns: minmax(0, 1fr);
       gap: 8px;
     }

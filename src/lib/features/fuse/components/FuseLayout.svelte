@@ -16,6 +16,7 @@
   } from "../services/fuse-workspace-split";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
+  import type { FuseMode } from "../state/fuse-state.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
   import FuseRecipeColumn from "./FuseRecipeColumn.svelte";
   import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
@@ -461,6 +462,15 @@
     settingsOpen = true;
   }
 
+  // Linking the paths is the act of choosing a rule, so the switch opens the
+  // rule editor. Separating them retires it: there is no rule to look at, and a
+  // recipe standing open on an empty editor is what this replaced.
+  function changeMode(mode: FuseMode): void {
+    fuseState.setMode(mode);
+    if (mode === "symmetry") openSettings("pairing");
+    else if (settingsDestination === "pairing") closeRecipe();
+  }
+
   // The follower card's footer states the rule that built it, so clicking it
   // opens the editor for that rule — the drawer, already scoped to Pairing.
   function editPairing(): void {
@@ -488,6 +498,7 @@
     <FuseWorkspaceHeader
       onOpenRecipe={() => openSettings(null)}
       onOpenSetting={openSettings}
+      onModeChange={changeMode}
     />
     {#if recipeColumn}
       <FuseRecipeColumn

@@ -6,15 +6,19 @@
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import { buildFuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
+  import type { FuseMode } from "../state/fuse-state.svelte";
   import FuseModeBar from "./FuseModeBar.svelte";
+  import FusePairingTile from "./FusePairingTile.svelte";
   import FuseRecipePopover from "./FuseRecipePopover.svelte";
 
   let {
     onOpenRecipe = () => {},
     onOpenSetting = () => {},
+    onModeChange,
   }: {
     onOpenRecipe?: () => void;
     onOpenSetting?: (destination: FuseRecipeDestination) => void;
+    onModeChange: (mode: FuseMode) => void;
   } = $props();
 
   const { state: fuseState } = getFuseContext();
@@ -88,16 +92,6 @@
       align: "center" as const,
       ...cardColors.startEnd,
     },
-    // Pairing opens the recipe drawer, not a popover — width and align below
-    // are the popover's, and this tile never renders one.
-    {
-      id: "pairing" as const,
-      title: "Pairing",
-      icon: "fas fa-link",
-      width: "34rem",
-      align: "end" as const,
-      ...cardColors.mode,
-    },
   ]);
   const compactSummary = $derived(
     `${summaries.length} · L${fuseState.generationLevel} · ${summaries.grid} · ${summaries.pairing}`
@@ -130,10 +124,11 @@
   </div>
 
   <!-- Separate/Linked is the one recipe decision that changes what the whole tab
-       is, so it stays a visible switch instead of hiding behind the Pairing
-       popover. -->
+       is, so it stays a visible switch instead of hiding behind an editor. Where
+       the rail fits, this moves into the Pairing tile — same control, sitting in
+       the slot it governs. -->
   <div class="mode-switch">
-    <FuseModeBar compact={true} />
+    <FuseModeBar compact={true} onSelect={onModeChange} />
   </div>
 
   <div class="recipe-rail" aria-label="Fuse recipe controls">
@@ -150,11 +145,16 @@
         open={activeSetting === tile.id}
         disabled={optionsDisabled}
         onOpenChange={(open) => setTileOpen(tile.id, open)}
-        onActivate={tile.id === "pairing"
-          ? () => onOpenSetting("pairing")
-          : undefined}
       />
     {/each}
+
+    <FusePairingTile
+      color={cardColors.mode.color}
+      shadowColor={cardColors.mode.shadowColor}
+      disabled={optionsDisabled}
+      {onModeChange}
+      onEditRule={() => onOpenSetting("pairing")}
+    />
   </div>
 
   <div class="recipe-trigger">
@@ -327,6 +327,9 @@
       flex: 0 1 15rem;
     }
 
+    /* The Pairing tile holds the switch at this size — two of them in one header
+       row would be the same control twice. */
+    .mode-switch,
     .recipe-trigger {
       display: none;
     }
