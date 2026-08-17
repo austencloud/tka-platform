@@ -56,6 +56,14 @@ const DIRS_TO_REMOVE = [
   // tkaflowarts.com/sketches/. They are not route-gated, so no feature flag or
   // load guard can reach them; dropping them here is the only seam.
   "sketches",
+  // Silero VAD + ONNX Runtime WASM (~16 MB) for the pronunciation corpus
+  // recorder in the Lab. That tool records Austen at a desk with a microphone
+  // and writes the corpus to a local folder through the File System Access
+  // API — it has no reason to run on tkaflowarts.com, and the ort wasm alone
+  // is 13 MB. Vendored into static/ (rather than loaded from a CDN) so a
+  // forty-minute recording session cannot be interrupted by a third-party
+  // host, which is a localhost concern only.
+  "vad",
 ];
 
 // Individual dev-only files that live in static/ and would otherwise ship.
