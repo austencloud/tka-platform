@@ -39,6 +39,18 @@ const imageKeep = new Set([
 	"position_images",
 	"vtg_glyphs",
 	"scene-thumbs",
+	// Letter glyphs render on every pictograph — stripping these breaks the TKA
+	// glyph on every card (the fetch falls back to index.html, which gets
+	// embedded as a broken data-URI image).
+	"letters_trimmed",
+	// Element art used by the choreo-card deck surfaces (12MB, but stripping it
+	// leaves broken images across those cards).
+	"elements",
+	// Level badges on pictograph corners.
+	"level_images",
+	// The landing is still reachable inside the desktop shell (it boots into
+	// /create, but public pages remain linked); its tile art is 84KB.
+	"landing",
 ]);
 
 const dataKeep = new Set(["pictographs", "arrow_placement", "learn"]);

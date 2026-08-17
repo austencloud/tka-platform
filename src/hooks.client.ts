@@ -276,6 +276,10 @@ export const init: ClientInit = async () => {
     !browser ||
     dev ||
     Capacitor.isNativePlatform() ||
+    // Tauri desktop: updates are owned by the Tauri updater, and a SW caching
+    // the embedded bundle would keep serving it after the binary updates.
+    // DesktopInitializer tears down workers left by older desktop builds.
+    "__TAURI_INTERNALS__" in window ||
     !("serviceWorker" in navigator)
   ) {
     return;

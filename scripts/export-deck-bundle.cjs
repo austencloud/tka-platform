@@ -18,6 +18,12 @@ const path = require("path");
 const dryRun = process.argv.includes("--dry-run");
 const outDir = path.resolve(__dirname, "../data/sequences");
 
+// Exhaustive enumeration catalogs (tens of thousands of machine-generated
+// LOOPs, 100+ MB each) are browsing data, not seed content — they would bloat
+// the desktop installer and the git-tracked bundle by ~300 MB. Curated decks
+// all sit far below this line.
+const MAX_DECK_SEQUENCES = 2000;
+
 // Initialize Firebase Admin
 const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 if (!serviceAccountPath) {
@@ -67,6 +73,13 @@ async function exportAllDecks() {
       }));
       cleaned.id = seqDoc.id;
       sequences.push(cleaned);
+    }
+
+    if (sequences.length > MAX_DECK_SEQUENCES) {
+      console.log(
+        `  → Skipped: ${sequences.length} sequences exceeds the ${MAX_DECK_SEQUENCES} seed cap (enumeration catalog)`
+      );
+      continue;
     }
 
     totalSequences += sequences.length;

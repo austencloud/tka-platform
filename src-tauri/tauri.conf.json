@@ -36,7 +36,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [],
+    "resources": {
+      "../data/sequences/": "data/sequences/"
+    },
     "createUpdaterArtifacts": true,
     "windows": {
       "webviewInstallMode": {

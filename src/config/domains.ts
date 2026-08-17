@@ -83,6 +83,12 @@ export function detectSiteMode(): SiteMode {
     // Native (Capacitor) apps always run in app mode — no landing page
     if (Capacitor.isNativePlatform()) return "app";
 
+    // The Tauri desktop shell is native too. App mode is what runs
+    // DesktopInitializer (boot into /create, reload-link interception, service
+    // worker teardown, data seeding) — in landing mode the shell would sit on
+    // the static landing page forever.
+    if ("__TAURI_INTERNALS__" in window) return "app";
+
     const params = new URLSearchParams(window.location.search);
     const modeOverride = params.get("mode") as SiteMode | null;
     if (modeOverride && ["app", "landing"].includes(modeOverride)) {
