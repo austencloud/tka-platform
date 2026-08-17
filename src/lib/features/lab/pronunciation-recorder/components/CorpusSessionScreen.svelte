@@ -151,12 +151,12 @@
 
   .prompt {
     margin: 0;
-    /* A fixed box, centred, holding a viewport-sized word. Both halves are
-       load-bearing: `42vh` reserves the four-line worst case up front so the
-       meter and the count below never move between a two-letter word and an
-       eight-letter one, and the `9.5vh` term keeps that worst case inside the
-       box it was given (4 lines x 1.05 line-height = 40vh). The 16rem ceiling
-       is what stops the prompt reading as small print on a TV. */
+    /* A fixed box holding a viewport-sized word. The reserve is what keeps the
+       count and the meter below from moving between a two-letter word and an
+       eight-letter one, and `16vh` is what keeps a two-line word inside that
+       reserve (2 lines x 1.05 line-height = 33.6vh, against 30vh of box, with
+       `text-wrap: balance` making the second line the short one). The 20rem
+       ceiling is what stops the prompt reading as small print on a TV. */
     display: grid;
     /* Bottom-anchored inside its reserved box so a two-line word grows upward
        and the pronunciation below it never moves. Centring instead would park
@@ -166,7 +166,7 @@
     /* Two lines of reserve, expressed in the prompt's own type size, so a short
        fold reserves two short lines rather than a third of a tall screen. */
     height: min(30vh, 2.2em);
-    font-size: clamp(2rem, min(9vw, 12vh), 16rem);
+    font-size: clamp(2rem, min(9vw, 16vh), 20rem);
     font-weight: 700;
     line-height: 1.05;
     text-wrap: balance;
@@ -175,9 +175,9 @@
 
   .guide {
     margin: 0;
-    /* The pronunciation, not the prompt. Reserved at four lines because the
-       longest word spells out to roughly eighty characters, which is four lines
-       on a phone and one on a TV — and the meter below must not move either way. */
+    /* The pronunciation, not the prompt. The longest word reads out to about
+       sixty-five characters — one line on a TV, four on a phone — so the box is
+       reserved at four either way and the meter below cannot move. */
     display: grid;
     place-content: start center;
     width: 100%;
