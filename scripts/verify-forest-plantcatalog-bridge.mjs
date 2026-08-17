@@ -86,6 +86,19 @@ for (const jobId of activeIds) {
     typeof job.catalogSpeciesName === "string" && job.catalogSpeciesName.trim().length > 0,
     `${jobId} is missing its PlantCatalog species name`
   );
+  // A PlantCatalog entry ending in "_~~" is a browse placeholder, not an installed plant.
+  // The catalog ships every species' placeholder up front; installing a collection drops a
+  // real sibling beside it with no suffix. Placeholders are all under 0.3 MB and carry no
+  // geometry, so LoadPlantCatalogFile answers them with the missing-extra-package dialog —
+  // which stalls an -immediate-python run instead of failing it. Existence, byte count, and
+  // hash all match happily against a stub, so those checks cannot catch this on their own.
+  invariant(
+    !job.sourceRelativePath.replace(/\.tpf$/i, "").endsWith("_~~"),
+    `${jobId} points at the PlantCatalog browse placeholder "${job.sourceRelativePath}". ` +
+      `That species is not installed. Install the collection that ships it, then repoint ` +
+      `sourceRelativePath at the real entry (same name without the "_~~" suffix) and ` +
+      `refresh sourceBytes/sourceSha256.`
+  );
   const sourcePath = resolve(catalogRoot, job.sourceRelativePath);
   const sourceBytes = await readFile(sourcePath);
   invariant(sourceBytes.length === job.sourceBytes, `${jobId} source byte count changed`);
