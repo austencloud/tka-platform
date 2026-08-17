@@ -147,14 +147,6 @@
   style:--filter-pane-w={`${filterPaneWidth}px`}
 >
   <div class="pane-left-shell" aria-hidden={filterPaneCollapsed}>
-    <div class="pane-collapse-control">
-      <PanelButton
-        ariaLabel="Collapse filters"
-        onclick={() => setPaneCollapsed(true)}
-      >
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      </PanelButton>
-    </div>
     <GalleryPaneLeft
       {catalog}
       {section}
@@ -179,20 +171,30 @@
     />
   </div>
   <div class="pane-right">
-    {#if resultsHeader}
-      <div class="pane-results-header">
-        {#if filterPaneCollapsed}
-          <PanelButton
-            ariaLabel="Open filters"
-            onclick={() => setPaneCollapsed(false)}
-          >
-            <i class="fas fa-chevron-right" aria-hidden="true"></i>
-            Filters
-          </PanelButton>
-        {/if}
-        {@render resultsHeader()}
-      </div>
-    {/if}
+    <div class="pane-results-header">
+      <!-- One control, one place, both directions. It used to be two: a
+           chevron floated over the filter column's top-right corner to
+           collapse, and this button to reopen. That corner is where the
+           catalog's first-row tile carries its "how many are selected" badge,
+           so the collapse chevron sat directly on top of it (Austen,
+           2026-08-17). A pane-level control has no business overlaying a tile
+           in the first place — moving it here puts it in flow, next to the
+           results it reveals, and it no longer teleports between states. -->
+      <PanelButton
+        ariaLabel={filterPaneCollapsed ? "Show filters" : "Hide filters"}
+        ariaExpanded={!filterPaneCollapsed}
+        onclick={() => setPaneCollapsed(!filterPaneCollapsed)}
+      >
+        <i
+          class="fas {filterPaneCollapsed
+            ? 'fa-chevron-right'
+            : 'fa-chevron-left'} pane-toggle-chevron"
+          aria-hidden="true"
+        ></i>
+        Filters
+      </PanelButton>
+      {@render resultsHeader?.()}
+    </div>
     <div class="pane-results-body">{@render resultsPane?.()}</div>
   </div>
 </div>
@@ -235,16 +237,13 @@
     opacity: 0;
     transform: translateX(-0.75rem);
   }
-  .pane-collapse-control {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    z-index: 3;
-  }
-  .pane-collapse-control :global(.panel-btn) {
-    width: 44px;
-    min-width: 44px;
-    padding-inline: 0;
+  /* The chevron flips direction with the pane, so it is the one glyph in this
+     header whose width could change under it. A fixed box keeps the button —
+     and the match count beside it — from stepping sideways on every toggle. */
+  .pane-results-header :global(.pane-toggle-chevron) {
+    display: inline-block;
+    width: 0.75em;
+    text-align: center;
   }
   .pane-resize-track {
     min-width: 0;

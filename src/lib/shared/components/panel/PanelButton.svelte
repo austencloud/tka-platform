@@ -26,6 +26,8 @@
     ref?: HTMLButtonElement | null;
     /** Announces that the button's action is in progress. */
     ariaBusy?: boolean;
+    /** For a disclosure button: whether the region it controls is open. */
+    ariaExpanded?: boolean;
     /** Makes this the active surface's Ctrl/Cmd+S target. */
     saveShortcut?: boolean;
   }
@@ -40,6 +42,7 @@
     ariaLabel,
     ref = $bindable(null),
     ariaBusy = false,
+    ariaExpanded,
     saveShortcut = false,
   }: Props = $props();
 </script>
@@ -54,6 +57,7 @@
   {type}
   aria-label={ariaLabel}
   aria-busy={ariaBusy}
+  aria-expanded={ariaExpanded}
 >
   {@render children()}
 </button>
