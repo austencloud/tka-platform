@@ -117,7 +117,11 @@
       width: "31rem",
       align: "center" as const,
       onActivate: toggleGrid,
-      trailingIcon: "fa-right-left",
+      // The glyph is the shape pressing this gives you — a square when Diamond
+      // is showing — rather than a generic swap arrow, which named neither
+      // value and read as a stray icon beside the word Diamond.
+      trailingIcon:
+        fuseState.gridMode === GridMode.BOX ? "fa-diamond" : "fa-square",
       ariaLabel: `Grid: ${summaries.grid}. Switch to ${
         fuseState.gridMode === GridMode.BOX ? "Diamond" : "Box"
       }.`,
@@ -205,14 +209,11 @@
     />
   </div>
 
-  <!-- The way into the recipe panel where the rail is NOT showing — every width
-       under it, where these six settings have no other door.
-
-       Where the rail IS showing, this is gone. It opened a left-hand column
-       listing Length, Level, Grid, Style, Starting conditions and Pairing: the
-       same six settings the rail already states and edits, in the same order,
-       one click further away. Two doors into one room, and the panel took its
-       width off the paths and the result to do it. -->
+  <!-- The way into the recipe panel, at every width. Where the rail is showing
+       it narrows to its icon and sits beside the title: the tiles each open one
+       setting, this opens all of them in a column, and both doors stay on the
+       header rather than one of them being reachable only by backing out of the
+       other. It is a toggle, so the same control closes what it opened. -->
   <div class="recipe-trigger" class:is-open={recipeOpen}>
     <PanelButton
       variant="secondary"
@@ -382,9 +383,10 @@
     }
 
     /* Two centered rows instead of one right-heavy line. The old row put the
-       title alone on the left and all six tiles packed against the right edge —
-       the rail's centre sat 165px right of the header's. The title is centred on
-       its own line now, and the rail gets the full width under it. */
+       title alone on the left, the recipe door floating by itself in the gap
+       after it, and all six tiles packed against the right edge — the rail's
+       centre sat 165px right of the header's. Title and door now sit together
+       as one centred pair, and the rail gets the full width under them. */
     .fuse-header {
       flex-wrap: wrap;
       justify-content: center;
@@ -411,12 +413,38 @@
       display: none;
     }
 
-    /* The rail is the recipe here, so the door to the panel that repeats it
-       closes. The panel itself stays — Pairing still opens in it, routed from
-       the Pairing tile and from the follower card, because a nine-choice
-       two-step form is not a popover. */
+    /* The trigger keeps its door but gives up its width to the rail: icon only,
+       square, sitting between the title and the tiles. The summary it was
+       carrying is redundant here — every tile in the rail already states its
+       own value. */
     .recipe-trigger {
+      order: 1;
+      flex: 0 0 auto;
+    }
+
+    .recipe-trigger :global(.panel-btn) {
+      width: var(--min-touch-target, 48px);
+      min-width: var(--min-touch-target, 48px);
+      min-height: var(--min-touch-target, 48px);
+      justify-content: center;
+      padding: 0;
+    }
+
+    .recipe-trigger .recipe-label,
+    .recipe-trigger .recipe-chevron {
       display: none;
+    }
+
+    /* Open is a state of the workspace, not of this button alone, so it reads
+       as held down rather than merely hovered. */
+    .recipe-trigger.is-open :global(.panel-btn) {
+      color: var(--theme-text);
+      background: color-mix(
+        in srgb,
+        var(--theme-accent) 26%,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.08))
+      );
+      border-color: color-mix(in srgb, var(--theme-accent) 62%, transparent);
     }
 
     .recipe-rail {

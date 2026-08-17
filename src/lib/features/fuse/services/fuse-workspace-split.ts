@@ -80,6 +80,44 @@ export function getBestFuseStepColumns(
   return best;
 }
 
+export interface FuseRecipeColumnFitInput {
+  /** Recipe column's narrowest usable width. */
+  recipeMinWidth: number;
+  /** Path column's HARD floor, not its comfortable one. */
+  pathHardMinWidth: number;
+  /** Result canvas's floor. */
+  canvasFloor: number;
+  /** Gap between two adjacent workspace columns. */
+  columnGap: number;
+}
+
+/**
+ * The narrowest workspace that can hold the recipe as a third column.
+ *
+ * Each panel's HARD floor, deliberately. The alternative host is a sheet that
+ * overlays the workspace from the right and covers most of the result preview,
+ * so a workspace where the three columns merely get tight still shows the user
+ * more than one where the animation they are tuning is behind the panel. Gating
+ * on the path column's COMFORTABLE width instead put this seam ~220px too high,
+ * which sent a 1462px workspace — 4K at 150% scaling, window not maximized — to
+ * the sheet.
+ */
+export function fuseRecipeColumnFloor(input: FuseRecipeColumnFitInput): number {
+  return (
+    input.recipeMinWidth +
+    input.pathHardMinWidth +
+    input.canvasFloor +
+    2 * input.columnGap
+  );
+}
+
+export function fitsFuseRecipeColumn(
+  containerWidth: number,
+  input: FuseRecipeColumnFitInput
+): boolean {
+  return containerWidth >= fuseRecipeColumnFloor(input);
+}
+
 /**
  * Finds the desktop seam where both visual work areas reach the same share of
  * their height-derived ideal. The source ideal is the width that makes its

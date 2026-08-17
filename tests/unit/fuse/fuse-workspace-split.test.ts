@@ -1,8 +1,56 @@
 import { describe, expect, it } from "vitest";
 import {
+  fitsFuseRecipeColumn,
+  fuseRecipeColumnFloor,
   getBestFuseStepColumns,
   resolveBalancedFuseWorkspaceSplit,
 } from "$lib/features/fuse/services/fuse-workspace-split";
+
+// FuseLayout's constants. Kept here so a change to any of them has to face the
+// sizes below rather than silently moving the seam.
+const FIT = {
+  recipeMinWidth: 400,
+  pathHardMinWidth: 340,
+  canvasFloor: 560,
+  columnGap: 14,
+};
+
+describe("Fuse recipe column fit", () => {
+  it("hosts the recipe as a column on a 4K-at-150% workspace", () => {
+    // 1462px is the Fuse slot on a 3840x2160 monitor at 150% scaling with the
+    // window not maximized. Gating on the path column's comfortable width put
+    // the floor at 1548 and sent this size to the sheet, which overlays and
+    // covers most of the result preview.
+    expect(fitsFuseRecipeColumn(1462, FIT)).toBe(true);
+  });
+
+  it("still hosts the recipe as a column at every larger desktop size", () => {
+    for (const width of [1548, 1680, 1920, 2560, 3840]) {
+      expect(fitsFuseRecipeColumn(width, FIT)).toBe(true);
+    }
+  });
+
+  it("falls back to the sheet only when a column would break a hard floor", () => {
+    const floor = fuseRecipeColumnFloor(FIT);
+
+    expect(floor).toBe(1328);
+    expect(fitsFuseRecipeColumn(floor, FIT)).toBe(true);
+    expect(fitsFuseRecipeColumn(floor - 1, FIT)).toBe(false);
+    expect(fitsFuseRecipeColumn(1280, FIT)).toBe(false);
+  });
+
+  it("leaves the canvas its full floor and the paths above their hard floor at the seam", () => {
+    // What the split solver is handed once the recipe takes its width off the
+    // top: the canvas must still clear CANVAS_FLOOR, the paths MIN_LEFT.
+    for (const containerWidth of [1328, 1462, 1548]) {
+      const available =
+        containerWidth - FIT.recipeMinWidth - 2 * FIT.columnGap;
+      const paths = available - FIT.canvasFloor;
+
+      expect(paths).toBeGreaterThanOrEqual(FIT.pathHardMinWidth);
+    }
+  });
+});
 
 describe("Fuse desktop workspace split", () => {
   it("balances an eight-step source workbench against the 4K preview ideal", () => {

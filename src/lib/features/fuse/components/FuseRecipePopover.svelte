@@ -131,16 +131,20 @@
 {/if}
 
 <style>
+  /* The copy is centred on the tile, not parked against its left edge. The
+     trailing glyph is taken out of flow to do it: as a grid column it would
+     push the copy left of centre by half its own width, and by a different
+     amount on every tile, so a rail of six tiles would have six different
+     centres. */
   .recipe-tile {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    justify-items: center;
     align-items: center;
-    gap: clamp(7px, 0.55cqw, 11px);
     width: 100%;
     min-width: 0;
     min-height: 3.75rem;
-    padding: 8px clamp(9px, 0.65cqw, 14px);
+    padding: 8px calc(clamp(9px, 0.65cqw, 14px) + 18px);
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
     border-radius: 14px;
@@ -204,8 +208,11 @@
     position: relative;
     z-index: 1;
     display: grid;
+    justify-items: center;
     gap: 1px;
+    max-width: 100%;
     min-width: 0;
+    text-align: center;
   }
 
   .tile-label {
@@ -228,15 +235,18 @@
   }
 
   .tile-chevron {
-    position: relative;
+    position: absolute;
+    top: 50%;
+    right: clamp(9px, 0.65cqw, 14px);
     z-index: 1;
+    transform: translateY(-50%);
     font-size: 11px;
     opacity: 0.76;
     transition: transform var(--duration-fast, 120ms) ease;
   }
 
   .open .tile-chevron {
-    transform: rotate(180deg);
+    transform: translateY(-50%) rotate(180deg);
   }
 
   :global(.fuse-recipe-popover) {
@@ -333,6 +343,10 @@
 
     .tile-copy strong {
       font-size: 1rem;
+    }
+
+    .tile-chevron {
+      font-size: 0.875rem;
     }
 
     :global(.fuse-recipe-popover) {
