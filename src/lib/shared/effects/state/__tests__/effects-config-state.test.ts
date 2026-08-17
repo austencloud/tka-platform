@@ -308,6 +308,13 @@ describe("EffectsConfigState", () => {
       expect(state.getEffectLayer("smoke")).toBe("behind");
     });
 
+    // Behind the prop art, an LED strip is invisible except for the few pixels
+    // that overhang the ends — which is exactly how it shipped once.
+    it("puts LED in front by default", () => {
+      const state = createEffectsConfigState();
+      expect(state.getEffectLayer("led")).toBe("front");
+    });
+
     it("stores an explicit behind override for Fire", () => {
       const state = createEffectsConfigState();
       state.setEffectLayer("fire", "behind");
