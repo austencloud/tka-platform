@@ -108,6 +108,12 @@ Input: current coverage counts. Output: an ordered list of words to read.
 
 ### 2. Capture
 
+> **Amended 2026-08-16** (see `2026-08-16-pronunciation-corpus-session-design.md`).
+> The deliberate inter-letter gap is removed. It existed only so an energy
+> segmenter could find letter boundaries; forced alignment has the transcript
+> and does not need it, and natural reading restores the coarticulation
+> `NEIGHBOUR_MISMATCH_COST` is priced for.
+
 The Lab tool gains a corpus mode alongside the existing job mode. It displays
 one word at a time and advances without per-word approval, keeping the read
 continuous. Audio is one unbroken stream for the whole session plus a
@@ -121,6 +127,11 @@ Reuses `IPronunciationRecorder` unchanged for device selection, stream capture,
 and buffer production.
 
 ### 3. Segmentation
+
+> **Amended 2026-08-16** (see `2026-08-16-pronunciation-corpus-session-design.md`).
+> `segmentWordByEnergy` is no longer the corpus's segmenter. MFA 3.0 places the
+> boundaries; the energy segmenter remains as a diagnostic and as the fallback
+> when the aligner is not installed.
 
 For each word in the prompt log, take its slice of the session buffer and split
 it into per-letter ranges by whichever mechanism Phase 0 selects.
