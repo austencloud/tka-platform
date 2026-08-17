@@ -25,12 +25,15 @@ export interface VideoCollaborator {
  */
 export interface StepMap {
   /**
-   * One timestamp per beat. beatTimestamps[0] = when beat 1 starts in seconds.
+   * One timestamp per arrival, in seconds. Index 0 is the opening pose - the
+   * performer standing in the start position, no move behind them yet - and
+   * index k is the landing of move k.
    *
    * A performer usually runs a LOOP several times on one take, so this may hold
-   * several passes' worth: its length is a multiple of stepCount, and index i
-   * is step `i % stepCount`. Read it through `getStepIndexFromVideo` rather
-   * than indexing the sequence with a raw position.
+   * several passes' worth: index k is move `((k - 1) % stepCount) + 1`. Read it
+   * through `getStepIndexFromVideo` rather than indexing the sequence with a
+   * raw position - the off-by-one between "the move that landed" and "the move
+   * being travelled to" is exactly what that function owns.
    */
   readonly beatTimestamps: number[];
   /**

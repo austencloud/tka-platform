@@ -104,8 +104,8 @@ describe("evaluatePresetFrame", () => {
   });
 
   it("folds a multi-pass take back into one cycle of the sequence", () => {
-    // Two passes over the same four steps: positions 1-8 in the map, one
-    // sequence of four on screen.
+    // Two passes over the same four steps: the opening pose at zero, then
+    // eight landings, and one sequence of four on screen.
     const twoPassMap: SequenceTimeMap = {
       ...timeMap,
       anchors: [
@@ -118,7 +118,6 @@ describe("evaluatePresetFrame", () => {
         { mediaTimeSeconds: 6, sequencePosition: 6 },
         { mediaTimeSeconds: 7, sequencePosition: 7 },
         { mediaTimeSeconds: 8, sequencePosition: 8 },
-        { mediaTimeSeconds: 9, sequencePosition: 9 },
       ],
     };
     const positionAt = (seconds: number) =>
@@ -128,14 +127,17 @@ describe("evaluatePresetFrame", () => {
         startPositionDuration: 1,
       })[0]?.sequencePosition;
 
+    // The opening pose is position zero and stays itself - every pass after
+    // the first closes back onto it.
+    expect(positionAt(0)).toBe(0);
     expect(positionAt(1)).toBe(1);
+    // Pass 1 closes on move 4; pass 2's first move is the next landing.
     expect(positionAt(4)).toBe(4);
-    // Pass 2's opening move reads as move 1 again rather than move 5, which is
-    // past the end of a four-step sequence.
     expect(positionAt(5)).toBe(1);
     expect(positionAt(6.5)).toBeCloseTo(2.5, 5);
-    // The closing anchor is the end hold, not the top of a third pass.
-    expect(positionAt(9)).toBe(5);
+    // Pass 2 closes on move 4 again, and holds there past the last anchor.
+    expect(positionAt(8)).toBe(4);
+    expect(positionAt(9.5)).toBe(4);
   });
 
   it("rejects an invalid project duration", () => {

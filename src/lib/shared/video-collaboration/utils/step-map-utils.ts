@@ -7,13 +7,38 @@
 
 import type { StepMap } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
+/** Everything below needs the closing arrival, so accept a whole-ish map. */
+type ReadableStepMap = Pick<
+  StepMap,
+  "beatTimestamps" | "stepCount" | "endTimestamp"
+>;
+
+/**
+ * Every instant the performer marked, in tap order: the opening pose, then the
+ * landing of each move.
+ *
+ * `beatTimestamps` holds all but the last of them, because a move's arrival is
+ * the next move's launch - which is why the same array reads as "when move i+1
+ * starts". `endTimestamp` is the closing arrival, and it is optional because
+ * maps saved before the editor collected one have no value for it.
+ */
+export function arrivalTimestamps(stepMap: ReadableStepMap): number[] {
+  const { beatTimestamps, endTimestamp } = stepMap;
+  const last = beatTimestamps[beatTimestamps.length - 1];
+  const closes =
+    endTimestamp !== undefined &&
+    Number.isFinite(endTimestamp) &&
+    (last === undefined || endTimestamp > last);
+  return closes ? [...beatTimestamps, endTimestamp!] : [...beatTimestamps];
+}
+
 /**
  * Given a video's current playback time and a step map,
  * returns the 0-based index of the MARK that is current.
- * Returns -1 if before the first step (start position).
+ * Returns -1 if before the first mark.
  *
  * On a clip that runs the sequence more than once this counts past the end of
- * the sequence - mark 20 of a 16-step run is the fourth step of pass two. Use
+ * the sequence - mark 20 of a 16-step run is the fourth move of pass two. Use
  * `getStepIndexFromVideo` to get a step to render; this one is for surfaces
  * that address the marks themselves, like the timeline.
  */
@@ -31,6 +56,13 @@ export function getHighlightedBeatFromVideo(
 
 /**
  * The step the video is showing right now, as an index into the sequence.
+ * -1 while the opening pose is what is on screen.
+ *
+ * A mark is an ARRIVAL: the performer taps at the instant the shape lands, so
+ * the shape held from mark k until mark k+1 is move k, and mark 0 is the
+ * opening pose with no move before it. Lighting move k+1 there instead would
+ * run the notation one shape ahead of the footage and leave the start position
+ * dark for the whole take.
  *
  * A performance clip usually runs a LOOP several times on one take, so a map
  * can hold several passes' worth of marks. Wrapping is what keeps the notation
@@ -39,54 +71,68 @@ export function getHighlightedBeatFromVideo(
  */
 export function getStepIndexFromVideo(
   currentTime: number,
-  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+  stepMap: ReadableStepMap
 ): number {
-  const mark = getHighlightedBeatFromVideo(currentTime, stepMap.beatTimestamps);
-  if (mark < 0 || stepMap.stepCount <= 0) return mark;
-  return mark % stepMap.stepCount;
+  const mark = getHighlightedBeatFromVideo(
+    currentTime,
+    arrivalTimestamps(stepMap)
+  );
+  if (mark <= 0) return -1;
+  if (stepMap.stepCount <= 0) return mark - 1;
+  return (mark - 1) % stepMap.stepCount;
 }
 
 /**
  * Which time through the sequence the footage is on right now, 1-based.
  *
- * Zero before the first mark. A single-pass map only ever answers 1, which is
- * why surfaces showing this hide it unless the take holds more than one.
+ * Zero before the first mark; one from the opening pose onward. A single-pass
+ * map only ever answers 1, which is why surfaces showing this hide it unless
+ * the take holds more than one.
  */
 export function passNumberFromVideo(
   currentTime: number,
-  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+  stepMap: ReadableStepMap
 ): number {
-  const mark = getHighlightedBeatFromVideo(currentTime, stepMap.beatTimestamps);
-  if (mark < 0 || stepMap.stepCount <= 0) return 0;
-  return Math.floor(mark / stepMap.stepCount) + 1;
+  const mark = getHighlightedBeatFromVideo(
+    currentTime,
+    arrivalTimestamps(stepMap)
+  );
+  if (mark < 0) return 0;
+  if (mark === 0 || stepMap.stepCount <= 0) return 1;
+  return Math.floor((mark - 1) / stepMap.stepCount) + 1;
 }
 
 /**
  * When to drive the footage to, to see a given step.
  *
- * A take holds every step once per pass, so a step index names several
- * instants rather than one. This returns whichever is nearest the playhead:
- * clicking move 13 while watching the third time through lands on that pass's
- * move 13, not back at the top of the clip. Null when the map holds no
- * instance of that step.
+ * Move `stepIndex + 1` lands on arrival `stepIndex + 1`, so that is where the
+ * footage has to sit for the notation to light that cell. A take holds every
+ * move once per pass, so a step index names several instants rather than one.
+ * This returns whichever is nearest the playhead: clicking move 13 while
+ * watching the third time through lands on that pass's move 13, not back at
+ * the top of the clip. Null when the map holds no instance of that step.
  */
 export function seekTimeForStep(
   stepIndex: number,
   currentTime: number,
-  stepMap: Pick<StepMap, "beatTimestamps" | "stepCount">
+  stepMap: ReadableStepMap
 ): number | null {
-  const marks = stepMap.beatTimestamps;
-  if (stepIndex < 0 || marks.length === 0) return null;
+  const arrivals = arrivalTimestamps(stepMap);
+  if (stepIndex < 0 || arrivals.length === 0) return null;
 
-  // Without a step count the map is one pass by definition, so the step
+  // Without a step count the map is one pass by definition, so the move
   // appears exactly once and the stride is the whole map.
-  const stride = stepMap.stepCount > 0 ? stepMap.stepCount : marks.length;
+  const stride =
+    stepMap.stepCount > 0 ? stepMap.stepCount : Math.max(1, arrivals.length - 1);
   if (stepIndex >= stride) return null;
 
   let nearest: number | null = null;
-  for (let i = stepIndex; i < marks.length; i += stride) {
-    const at = marks[i]!;
-    if (nearest === null || Math.abs(at - currentTime) < Math.abs(nearest - currentTime)) {
+  for (let i = stepIndex + 1; i < arrivals.length; i += stride) {
+    const at = arrivals[i]!;
+    if (
+      nearest === null ||
+      Math.abs(at - currentTime) < Math.abs(nearest - currentTime)
+    ) {
       nearest = at;
     }
   }

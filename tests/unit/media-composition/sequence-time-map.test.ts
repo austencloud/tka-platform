@@ -104,24 +104,25 @@ describe("SequenceTimeMap", () => {
       mediaDurationSeconds: 4,
     });
 
+    // The first mark is the opening pose, so it anchors position zero. Nothing
+    // is invented before it: the map simply clamps back to the pose.
     expect(timeMap.anchors).toEqual([
-      { mediaTimeSeconds: 0, sequencePosition: 0 },
-      { mediaTimeSeconds: 1, sequencePosition: 1 },
-      { mediaTimeSeconds: 1.5, sequencePosition: 2 },
-      { mediaTimeSeconds: 2, sequencePosition: 3 },
-      { mediaTimeSeconds: 2.5, sequencePosition: 4 },
-      { mediaTimeSeconds: 3, sequencePosition: 5 },
+      { mediaTimeSeconds: 1, sequencePosition: 0 },
+      { mediaTimeSeconds: 1.5, sequencePosition: 1 },
+      { mediaTimeSeconds: 2, sequencePosition: 2 },
+      { mediaTimeSeconds: 2.5, sequencePosition: 3 },
+      { mediaTimeSeconds: 3, sequencePosition: 4 },
     ]);
 
     expect(mediaTimeToSequencePosition(timeMap, -10)).toBe(0);
-    expect(mediaTimeToSequencePosition(timeMap, 0.5)).toBe(0.5);
-    expect(mediaTimeToSequencePosition(timeMap, 1.25)).toBe(1.5);
-    expect(mediaTimeToSequencePosition(timeMap, 2.25)).toBe(3.5);
-    expect(mediaTimeToSequencePosition(timeMap, 99)).toBe(5);
+    expect(mediaTimeToSequencePosition(timeMap, 0.5)).toBe(0);
+    expect(mediaTimeToSequencePosition(timeMap, 1.25)).toBe(0.5);
+    expect(mediaTimeToSequencePosition(timeMap, 2.25)).toBe(2.5);
+    expect(mediaTimeToSequencePosition(timeMap, 99)).toBe(4);
 
-    expect(sequencePositionToMediaTime(timeMap, -1)).toBe(0);
-    expect(sequencePositionToMediaTime(timeMap, 1.5)).toBe(1.25);
-    expect(sequencePositionToMediaTime(timeMap, 3.5)).toBe(2.25);
+    expect(sequencePositionToMediaTime(timeMap, -1)).toBe(1);
+    expect(sequencePositionToMediaTime(timeMap, 1.5)).toBe(1.75);
+    expect(sequencePositionToMediaTime(timeMap, 3.5)).toBe(2.75);
     expect(sequencePositionToMediaTime(timeMap, 99)).toBe(3);
   });
 
@@ -137,9 +138,9 @@ describe("SequenceTimeMap", () => {
 
     expect(timeMap.anchors.at(-1)).toEqual({
       mediaTimeSeconds: 2.5,
-      sequencePosition: 5,
+      sequencePosition: 4,
     });
-    expect(mediaTimeToSequencePosition(timeMap, 10)).toBe(5);
+    expect(mediaTimeToSequencePosition(timeMap, 10)).toBe(4);
   });
 
   it("preserves the old detection source without preserving its old name", () => {
@@ -177,7 +178,7 @@ describe("SequenceTimeMap", () => {
 
     expect(timeMap.anchors.at(-1)).toEqual({
       mediaTimeSeconds: 2.9,
-      sequencePosition: 5,
+      sequencePosition: 4,
     });
   });
 
@@ -194,15 +195,23 @@ describe("SequenceTimeMap", () => {
     });
 
     expect(timeMap.anchors).toHaveLength(OM_LAM_XJ_MARKS.length + 1);
+    // Mark zero is the opening pose, so the 64 marks plus the closing arrival
+    // describe 64 landings - four passes of sixteen.
+    expect(timeMap.anchors[0]).toEqual({
+      mediaTimeSeconds: 0,
+      sequencePosition: 0,
+    });
     expect(timeMap.anchors.at(-1)).toEqual({
       mediaTimeSeconds: OM_LAM_XJ_END,
-      sequencePosition: 65,
+      sequencePosition: 64,
     });
-    // Pass 2 opens at 17, not back at 1: positions have to increase for the
-    // schema to accept them and for the interpolator to search them.
-    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[16]!)).toBe(17);
-    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[48]!)).toBe(49);
-    expect(sequencePositionToMediaTime(timeMap, 33)).toBeCloseTo(
+    // Pass 1 closes at 16 and pass 2 opens at 17, not back at 1: positions have
+    // to increase for the schema to accept them and for the interpolator to
+    // search them.
+    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[16]!)).toBe(16);
+    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[17]!)).toBe(17);
+    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[48]!)).toBe(48);
+    expect(sequencePositionToMediaTime(timeMap, 32)).toBeCloseTo(
       OM_LAM_XJ_MARKS[32]!,
       5
     );

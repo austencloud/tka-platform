@@ -51,15 +51,6 @@ function clamp01(value: number): number {
 }
 
 /**
- * How many motion beats the map covers across every pass. The closing anchor is
- * the end hold rather than a beat, so it sits one past the count.
- */
-function totalMappedBeats(timeMap: SequenceTimeMap): number {
-  const last = timeMap.anchors[timeMap.anchors.length - 1];
-  return last ? Math.max(0, last.sequencePosition - 1) : 0;
-}
-
-/**
  * Evaluates every visible visual layer from one project timestamp. Preview and
  * export consume this same result so transition opacity cannot drift later.
  */
@@ -81,8 +72,7 @@ export function evaluatePresetFrame(
   const continuousPosition = alignment
     ? wrapSequencePosition(
         mediaTimeToSequencePosition(alignment.timeMap, clampedTime),
-        alignment.steps.length,
-        totalMappedBeats(alignment.timeMap)
+        alignment.steps.length
       )
     : undefined;
   // Step mode holds the completed pose for the beat instead of interpolating

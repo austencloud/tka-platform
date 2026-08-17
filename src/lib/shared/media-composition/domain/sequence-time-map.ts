@@ -241,9 +241,12 @@ export function createTempoGridTimeMap(
 
 /**
  * Turns the old one-timestamp-per-beat record into a complete fractional map.
- * The old editor calls timestamp zero the start of beat 1, while the animation
- * engine calls the pose before it beat 0. Recording both positions here keeps
- * an old video from highlighting and animating one beat apart.
+ *
+ * Every timestamp is an ARRIVAL the performer tapped. Mark 0 is the opening
+ * pose, which is position zero, and mark k is the landing of move k - so the
+ * shape held between two marks is the earlier one, the shape that was on
+ * screen when the tap happened. Anchoring on the launch instead would run the
+ * card one move ahead of the footage and leave position zero unreachable.
  *
  * A take may run the sequence through more than once, so the marks are any
  * whole number of passes worth. Positions keep counting past the sequence's
@@ -298,23 +301,18 @@ export function migrateLegacyStepMap(
     }
   }
 
-  const firstTimestamp = timestamps[0]!;
   const lastTimestamp = timestamps[timestamps.length - 1]!;
   if (lastTimestamp >= mediaDurationSeconds) {
     throw new RangeError("The final beat must begin before the media ends");
   }
 
-  const anchors: SequenceTimeAnchor[] = [];
-  if (firstTimestamp > 0) {
-    anchors.push({ mediaTimeSeconds: 0, sequencePosition: 0 });
-  }
-
-  timestamps.forEach((mediaTimeSeconds, index) => {
-    anchors.push({
-      mediaTimeSeconds,
-      sequencePosition: index + 1,
-    });
-  });
+  // Mark 0 is the opening pose - position zero, no move behind it - and mark k
+  // is the landing of move k. Anchoring on the landing is what keeps the card
+  // showing the shape the performer tapped instead of the one they are
+  // travelling towards.
+  const anchors: SequenceTimeAnchor[] = timestamps.map(
+    (mediaTimeSeconds, index) => ({ mediaTimeSeconds, sequencePosition: index })
+  );
 
   const intervals = timestamps
     .slice(1)
@@ -336,7 +334,7 @@ export function migrateLegacyStepMap(
 
   anchors.push({
     mediaTimeSeconds: finalBeatEnd,
-    sequencePosition: timestamps.length + 1,
+    sequencePosition: timestamps.length,
   });
 
   return SequenceTimeMapSchema.parse({

@@ -111,20 +111,18 @@ export function clampDisplayedBeatNumber(
  * one value, so one correction here keeps them in step where three separate
  * ones would eventually disagree.
  *
+ * Position zero is the opening pose and survives as itself; every pass after
+ * the first closes back onto it, so folding it would be wrong.
+ *
  * The fraction survives the fold, because it is what carries the motion between
  * two poses. A single-pass take makes this the identity.
  */
 export function wrapSequencePosition(
   position: number,
-  beatsPerPass: number,
-  totalBeats: number
+  beatsPerPass: number
 ): number {
   if (beatsPerPass <= 0 || !Number.isFinite(position)) return position;
   if (position <= 0) return 0;
-  // The closing anchor is the end hold, not the start of another pass. Folding
-  // it would land it on move 1 and flash the top of the sequence for the last
-  // frame of the take.
-  if (position >= totalBeats + 1) return beatsPerPass + 1;
   return ((position - 1) % beatsPerPass) + 1;
 }
 

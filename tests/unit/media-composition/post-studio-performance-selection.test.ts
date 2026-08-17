@@ -57,7 +57,7 @@ describe("Post Studio performance selection", () => {
       selection.sequenceTimeMap?.anchors.map(
         (anchor) => anchor.mediaTimeSeconds
       )
-    ).toEqual([0, 0.5, 1.4, 3.1, 5.8, 7.5]);
+    ).toEqual([0.5, 1.4, 3.1, 5.8, 7.5]);
   });
 
   it("marks videos without a map as unmapped instead of leaking another video's map", () => {
