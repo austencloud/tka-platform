@@ -47,6 +47,12 @@ jobs:
       - name: Unit tests (Vitest)
         run: pnpm run test -- --run
 
+      # Workspace packages have their own vitest configs, so the app's config
+      # never sees them. 465 passing assertions sat outside CI entirely until
+      # 2026-08-16, and sequence-engine had no test script to run at all.
+      - name: Package tests (workspace vitest configs)
+        run: pnpm run test:packages
+
       - name: Build
         run: pnpm run build
 

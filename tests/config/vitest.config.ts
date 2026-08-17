@@ -17,23 +17,17 @@ export default defineConfig({
 
     setupFiles: ["./tests/setup/vitest-setup.ts"],
 
+    // Co-located `src/` tests are matched by GLOB, never by an allowlist. This
+    // was a hand-maintained list of `__tests__/` plus fourteen named files, so
+    // any test written next to its subject and not added by hand simply never
+    // ran: 81 files and 570 assertions had accumulated behind it, all passing
+    // but none of them guarding anything. Add a directory here only to EXCLUDE
+    // it, with a reason.
     include: [
       "tests/unit/**/*.{test,spec}.{js,ts}",
       "tests/integration/**/*.{test,spec}.{js,ts}",
-      "tests/debug/**/*.{test,spec}.{js,ts}",
-      "src/**/__tests__/**/*.{test,spec}.{js,ts}",
-      "src/lib/features/library/services/warm-all-scan-cells.test.ts",
-      "src/lib/shared/offline/services/sw-update-manager.test.ts",
-      "src/lib/shared/effects/renderers/ghost-2d-renderer.test.ts",
-      "src/lib/shared/browse/services/gallery-thumbnail-warmer.test.ts",
-      "src/lib/shared/browse/services/thumbnail-render-orchestrator.test.ts",
-      "src/lib/shared/render/services/cloud-cell-key.test.ts",
-      "src/lib/shared/render/services/pictograph-cloud-cache.test.ts",
-      "src/lib/shared/render/services/warm-sequence-cells.test.ts",
-      "src/lib/shared/sequence-viewer/services/preview-cell-renderer.cloud-tier.test.ts",
-      "src/lib/shared/sequence-viewer/services/viewer-autoplay-readiness.test.ts",
-      "src/lib/features/assemble-lab/**/*.{test,spec}.{js,ts}",
-      "src/lib/features/train/prop-tracking-lab/**/*.{test,spec}.{js,ts}",
+      "tests/migration/**/*.{test,spec}.{js,ts}",
+      "src/**/*.{test,spec}.{js,ts}",
     ],
     exclude: [
       "legacy_app/**/*",

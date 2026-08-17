@@ -1,4 +1,8 @@
 #!/usr/bin/env sh
+# NOT ACTIVE — see the header of .husky/pre-commit. `core.hooksPath` is unset, so
+# git runs `.git/hooks/pre-push` instead. That copy carries the LFS hook and the
+# Codex-mirror check; the unit-test gate below is NOT in it and has never run on
+# a push. Verified 2026-08-16.
 . "$(dirname -- "$0")/_/husky.sh"
 
 # Block non-admin pushes to main

@@ -54,7 +54,8 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rimraf dist",
-    "prepublishOnly": "npm run clean && npm run build"
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "vitest run"
   },
   "dependencies": {
     "@tka/tka-types": "workspace:*"

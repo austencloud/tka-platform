@@ -84,7 +84,11 @@ export function getArrowPath(
  */
 export function getArrowSvgPath(motionData: MotionData | undefined): string {
   if (!motionData) {
-    return "/images/arrows/static/from_radial/static_0.svg";
+    // Turn values are written with `toFixed(1)`, so every asset on disk is
+    // `static_0.0.svg`. This fallback said `static_0.svg` and had resolved to
+    // a 404 for as long as it has existed — it only fires when motionData is
+    // missing, so nothing ever exercised it.
+    return "/images/arrows/static/from_radial/static_0.0.svg";
   }
 
   const motionType = motionData.motionType;

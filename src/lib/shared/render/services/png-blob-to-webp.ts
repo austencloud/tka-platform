@@ -5,12 +5,16 @@
  */
 import { blobToImage } from "./image-format-converter";
 
-export async function pngBlobToWebp(png: Blob, quality = 0.9): Promise<Blob> {
+export async function pngBlobToWebp(
+  png: Blob,
+  quality = 0.9,
+  decodeTimeoutMs?: number
+): Promise<Blob> {
   if (typeof document === "undefined" && typeof OffscreenCanvas === "undefined") {
     return png;
   }
   try {
-    const img = await blobToImage(png);
+    const img = await blobToImage(png, decodeTimeoutMs);
     const w = img.naturalWidth || img.width;
     const h = img.naturalHeight || img.height;
 

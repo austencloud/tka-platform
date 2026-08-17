@@ -48,7 +48,10 @@ export interface RenderTiming {
  *
  * Implementations:
  * - Canvas2DDirectRenderer: Uses CanvasRenderingContext2D
- * - WebGLDirectRenderer: Uses WebGLRenderingContext
+ *
+ * A WebGLDirectRenderer was removed on 2026-08-16: it had no consumers, and
+ * both of the URLs it fetched its arrow atlas from resolved to 404, so it
+ * could never have built a texture atlas even if something had called it.
  */
 export interface IDirectRenderer {
   /**

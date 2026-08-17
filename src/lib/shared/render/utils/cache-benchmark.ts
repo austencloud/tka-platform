@@ -303,28 +303,28 @@ async function loadRealSequences(count: number): Promise<SequenceData[]> {
       loadFullSequenceData: (name: string) => Promise<SequenceData | null>;
     };
 
-    // Ensure sequences are loaded first (populates the cache)
+    // Take the names from the metadata the loader already returns. This used
+    // to discard that result and then fetch `/data/sequence-index.json`, which
+    // does not exist — the benchmark bailed out with zero sequences every time
+    // anyone ran it. The browse loader is the canonical owner of the corpus.
     console.log("[CacheBenchmark] Loading sequence metadata...");
+    let metadata: SequenceData[] = [];
     try {
-      await browseLoader.loadSequenceMetadata();
-      console.log("[CacheBenchmark] ✓ Index loaded");
+      metadata = await browseLoader.loadSequenceMetadata();
+      console.log(`[CacheBenchmark] ✓ Index loaded (${metadata.length} sequences)`);
     } catch (indexErr) {
       const msg = indexErr instanceof Error ? indexErr.message : String(indexErr);
       console.error("[CacheBenchmark] Failed to load index:", msg);
-      // Continue anyway - we'll fetch directly
-    }
-
-    // Get sequence names from the index
-    const response = await fetch("/data/sequence-index.json");
-    const data = await response.json();
-
-    if (!data.sequences || data.sequences.length === 0) {
       return [];
     }
 
-    // Shuffle and pick sequence names
-    const shuffled = data.sequences.sort(() => Math.random() - 0.5);
-    const selectedNames = shuffled.slice(0, count * 2).map((s: { word?: string; name?: string }) => s.word || s.name);
+    if (metadata.length === 0) return [];
+
+    // Shuffle a copy — `loadSequenceMetadata` may hand back cached state.
+    const shuffled = [...metadata].sort(() => Math.random() - 0.5);
+    const selectedNames = shuffled
+      .slice(0, count * 2)
+      .map((s) => s.word || s.name);
 
     // Load full sequence data for each
     const loadedSequences: SequenceData[] = [];

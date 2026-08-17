@@ -1,4 +1,13 @@
 #!/usr/bin/env sh
+# NOT ACTIVE. husky is neither a dependency nor installed, there is no `prepare`
+# script, and `core.hooksPath` is unset — so git runs `.git/hooks/`, which has no
+# pre-commit at all. Nothing below has fired on a commit for as long as that has
+# been true. Verified 2026-08-16.
+#
+# Turning it on means `git config core.hooksPath .husky` plus adding husky back,
+# and it would put a full-project svelte-check (minutes) in front of every
+# commit. That is Austen's call, not a silent repair. Until he makes it, do not
+# "fix a bug" in here expecting it to change anything.
 . "$(dirname -- "$0")/_/husky.sh"
 
 # Auto-detect branch and set environment

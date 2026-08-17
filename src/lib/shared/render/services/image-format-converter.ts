@@ -66,16 +66,39 @@ export async function svgToImage(svgString: string, size: number): Promise<HTMLI
   });
 }
 
-export async function blobToImage(blob: Blob): Promise<HTMLImageElement> {
+/**
+ * Decode a blob into an image element.
+ *
+ * The wait is bounded. An environment that fires neither `load` nor `error`
+ * for an object URL leaves the promise pending forever, and callers sit on
+ * the upload path — `pngBlobToWebp` is one. jsdom is the reliable reproducer,
+ * but a real browser that drops an event would hang the same way, so the
+ * timeout is a product guard, not a test accommodation.
+ */
+export async function blobToImage(
+  blob: Blob,
+  timeoutMs = 15_000
+): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onerror = () => reject(new Error("Failed to load blob as image"));
     const url = URL.createObjectURL(blob);
-    img.src = url;
-    img.onload = () => {
+
+    // Revoke on every exit, not just success — the old error path leaked it.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const settle = (action: () => void) => {
+      clearTimeout(timer);
       URL.revokeObjectURL(url);
-      resolve(img);
+      action();
     };
+
+    timer = setTimeout(
+      () => settle(() => reject(new Error("Timed out loading blob as image"))),
+      timeoutMs
+    );
+    img.onerror = () =>
+      settle(() => reject(new Error("Failed to load blob as image")));
+    img.onload = () => settle(() => resolve(img));
+    img.src = url;
   });
 }
 
