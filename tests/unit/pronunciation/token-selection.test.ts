@@ -176,4 +176,65 @@ describe("selectTokenPath", () => {
 
     expect(result?.map((entry) => entry.path)).toEqual(["a/solo.wav"]);
   });
+
+  it("accepts a worse token mid-word to buy a cheaper join after it", () => {
+    // Every other case here is one or two letters long, where a global search
+    // and a greedy one cannot disagree. This is the case that separates them:
+    // at B the greedy pick is free on target cost but strands C 130 Hz away,
+    // while the sacrifice costs a full neighbour mismatch and lands on C's
+    // pitch exactly. Totals are 1.3 greedy against 1.0 sacrificing, so only a
+    // search that looks past the current letter picks the right one.
+    const bank = bankFrom({
+      a: [
+        token({
+          path: "a.wav",
+          position: "initial",
+          nextLetter: "B",
+          sourceWord: "ABC",
+          groupLength: 3,
+          f0EndHz: 120,
+        }),
+      ],
+      b: [
+        token({
+          path: "b/greedy.wav",
+          position: "medial",
+          previousLetter: "A",
+          nextLetter: "C",
+          sourceWord: "ABC",
+          groupLength: 3,
+          f0StartHz: 120,
+          f0EndHz: 250,
+        }),
+        token({
+          path: "b/sacrifice.wav",
+          position: "medial",
+          previousLetter: "A",
+          nextLetter: "X",
+          sourceWord: "ABX",
+          groupLength: 3,
+          f0StartHz: 120,
+          f0EndHz: 120,
+        }),
+      ],
+      c: [
+        token({
+          path: "c.wav",
+          position: "final",
+          previousLetter: "B",
+          sourceWord: "ABC",
+          groupLength: 3,
+          f0StartHz: 120,
+        }),
+      ],
+    });
+
+    const result = selectTokenPath(cuesFor("ABC"), bank);
+
+    expect(result?.map((entry) => entry.path)).toEqual([
+      "a.wav",
+      "b/sacrifice.wav",
+      "c.wav",
+    ]);
+  });
 });
