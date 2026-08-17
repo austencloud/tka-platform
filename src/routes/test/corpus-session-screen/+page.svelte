@@ -9,9 +9,20 @@
    */
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import CorpusSessionScreen from "$lib/features/lab/pronunciation-recorder/components/CorpusSessionScreen.svelte";
+  import type { ReadState } from "$lib/features/lab/pronunciation-recorder/state/corpus-session-state.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-  type State = "idle" | "running" | "long" | "unsaved" | "failed" | "finished" | "aborted";
+  type State =
+    | "idle"
+    | "running"
+    | "hearing"
+    | "saved"
+    | "retry"
+    | "long"
+    | "unsaved"
+    | "failed"
+    | "finished"
+    | "aborted";
 
   /** The message a denied storage upload actually produces, at full length. */
   const SAVE_REJECTED =
@@ -21,7 +32,10 @@
 
   const OPTIONS = [
     { value: "idle" as const, label: "Idle" },
-    { value: "running" as const, label: "Running" },
+    { value: "running" as const, label: "Waiting" },
+    { value: "hearing" as const, label: "Recording" },
+    { value: "saved" as const, label: "Saved" },
+    { value: "retry" as const, label: "Re-read" },
     { value: "long" as const, label: "Longest word" },
     { value: "unsaved" as const, label: "Save failed" },
     { value: "failed" as const, label: "Failed" },
@@ -42,7 +56,17 @@
     Letter.GAMMA,
   ];
 
-  const running = $derived(state === "running" || state === "long" || state === "unsaved");
+  const RUNNING: readonly State[] = ["running", "hearing", "saved", "retry", "long", "unsaved"];
+  const running = $derived(RUNNING.includes(state));
+
+  const READ_STATES: Partial<Record<State, ReadState>> = {
+    hearing: "hearing",
+    saved: "saved",
+    retry: "retry",
+    // The longest word is shown mid-read, which is when the prompt is at its
+    // most crowded: the accent treatment is on and every reserved row is full.
+    long: "heard",
+  };
 
   const session = $derived({
     status: running ? "running" : state === "aborted" ? "finished" : state,
@@ -60,10 +84,16 @@
             [Letter.PSI_DASH],
           ]
         : [],
-    levelDb: state === "long" ? -12 : -34,
+    levelDb: state === "long" || state === "hearing" ? -12 : -34,
     // The two label states are different widths, so both need looking at: the
     // reserve on the label is what stops the meter resizing between them.
-    hearing: state === "long",
+    hearing: state === "long" || state === "hearing",
+    readState: READ_STATES[state] ?? "waiting",
+    // Named on screen once the prompt has moved on, so the confirmation says
+    // which word it is confirming. The re-queue line carries the eight-letter
+    // word because it is the longest string this screen can produce, and the
+    // reserve above the prompt has to hold it at every width.
+    judgedWord: state === "retry" ? LONGEST : [Letter.THETA_DASH, Letter.OMEGA],
     failure:
       state === "failed"
         ? "The speech detector could not start listening."
@@ -123,7 +153,9 @@
 
   .banner {
     margin: 0;
-    max-width: 90ch;
+    /* 90ch alone runs off the side of a phone, and harness chrome that
+       overflows makes the component under it look like the thing that broke. */
+    max-width: min(90ch, 100%);
     font-size: 0.8rem;
     text-align: center;
     opacity: 0.7;

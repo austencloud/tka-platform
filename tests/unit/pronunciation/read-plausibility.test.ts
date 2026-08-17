@@ -3,14 +3,26 @@ import { describe, expect, it } from "vitest";
 import { createRateTracker } from "$lib/features/lab/pronunciation-recorder/domain/read-plausibility";
 
 describe("createRateTracker", () => {
-  it("passes everything until it has seen enough reads to have a rate", () => {
+  it("passes any plausible pace until it has seen enough reads to have a rate", () => {
     // Seeding on the first reads is the point: Austen's pace is not known in
     // advance, and a guessed rate would reject his real one.
     const tracker = createRateTracker();
 
-    expect(tracker.judge(4, 0.2)).toBe("ok");
-    tracker.observe(4, 0.2);
+    expect(tracker.judge(4, 0.6)).toBe("ok");
+    tracker.observe(4, 0.6);
     expect(tracker.judge(4, 9)).toBe("ok");
+  });
+
+  it("rejects a burst too short to be speech even before it has a rate", () => {
+    // What the seeding window used to let through: the opening three reads were
+    // accepted unconditionally, so a cough at the top of a sitting was written
+    // to the corpus and the prompt moved on as if it had been read.
+    const tracker = createRateTracker();
+
+    expect(tracker.judge(4, 0.2)).toBe("too-short");
+    // Nothing a mouth does is anywhere near the floor, so a real read of the
+    // same word at a fast pace still passes.
+    expect(tracker.judge(4, 0.7)).toBe("ok");
   });
 
   it("flags a read cut short once the rate is established", () => {

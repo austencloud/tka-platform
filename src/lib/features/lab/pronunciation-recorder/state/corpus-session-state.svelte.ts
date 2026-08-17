@@ -16,6 +16,21 @@ const TAIL_SECONDS = 0.25;
 
 export type SessionStatus = "idle" | "running" | "finished" | "aborted" | "failed";
 
+/**
+ * Where the current read is in its life, as the screen reports it.
+ *
+ * The session used to say only whether the microphone was hearing something.
+ * That leaves the two questions he actually asks out loud unanswered: has it
+ * decided I am finished with this word, and did it keep what I said? The word
+ * changing answered neither — it changed on a good read and sat still on a
+ * rejected one, which reads identically to nothing happening at all.
+ *
+ * `saved` and `retry` are deliberately sticky: they hold until he starts the
+ * next read. Nothing has to be timed out or held artificially, and the verdict
+ * on the last word is on screen for exactly as long as he is not busy.
+ */
+export type ReadState = "waiting" | "hearing" | "heard" | "saved" | "retry";
+
 interface MicrophoneSource {
   connect(deviceId?: string): Promise<{ stream: MediaStream }>;
 }
@@ -42,6 +57,10 @@ export function createCorpusSession(options: CorpusSessionOptions) {
   // Whether the detector is hearing speech right now. The meter proves the
   // microphone is open; only this proves the half that ends words is awake.
   let hearing = $state(false);
+  let readState = $state<ReadState>("waiting");
+  // The word the verdict is about. Named on screen because by the time "saved"
+  // is showing, the prompt has already moved on to the next one.
+  let judgedKey = $state<string | null>(null);
   let folderName = $state<string | null>(null);
   let recorded = $state(0);
   let currentKey = $state<string | null>(null);
@@ -73,6 +92,7 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     meterFrame = null;
     levelDb = -100;
     hearing = false;
+    readState = "waiting";
   }
 
   const wordOf = (key: string | null) => (key ? (byKey.get(key) ?? null) : null);
@@ -130,11 +150,14 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     const verdict = span === null ? "too-short" : rate.judge(syllables, seconds);
 
     if (verdict !== "ok" || span === null) {
-      // Silent re-queue. He is told nothing now; the report at the end carries
-      // whatever never succeeded.
+      // Re-queued, and said so. Silent was the old behaviour, and it made a
+      // thrown-away read look exactly like a kept one: same word, same screen,
+      // no way to tell he had just recorded a cough.
+      readState = "retry";
       monitor.record("fail");
       queue.requeue();
     } else if (await storeWord(word, span)) {
+      readState = "saved";
       rate.observe(syllables, seconds);
       monitor.record("ok");
       for (const cell of cellsCoveredBy(word)) {
@@ -144,6 +167,7 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     } else {
       // Said out loud by `storeWord`, and counted, so a run of rejected uploads
       // stops the session through the abort monitor rather than going quiet.
+      readState = "retry";
       monitor.record("fail");
       queue.requeue();
     }
@@ -182,9 +206,18 @@ export function createCorpusSession(options: CorpusSessionOptions) {
         handlers: {
           onSpeechStart: () => {
             hearing = true;
+            // Clears the last word's verdict: he has moved on, and it has been
+            // on screen since that word landed.
+            readState = "hearing";
+            judgedKey = currentKey;
           },
           onSpeechEnd: (span) => {
             hearing = false;
+            // The moment the detector decides the word is over — the thing the
+            // screen never showed. Set here rather than in the queued step so
+            // it lands the instant it is true, not behind whatever upload is
+            // still in flight.
+            readState = "heard";
             // Read the ring HERE, not inside the queued step. Uploads are the
             // slow link now, and a queue that has backed up behind one would
             // push this read past the point where the ring has overwritten the
@@ -257,6 +290,12 @@ export function createCorpusSession(options: CorpusSessionOptions) {
     },
     get hearing() {
       return hearing;
+    },
+    get readState() {
+      return readState;
+    },
+    get judgedWord() {
+      return wordOf(judgedKey);
     },
     get failure() {
       return failure;

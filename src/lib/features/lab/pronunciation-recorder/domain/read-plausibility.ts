@@ -8,6 +8,22 @@ const WINDOW = 8;
 export const DURATION_SHORTFALL = 0.6;
 export const DURATION_OVERRUN = 1.8;
 
+/**
+ * The floor no read clears, seeded or not.
+ *
+ * The tracker judges nothing until it has three reads to compare against, so
+ * for the opening three anything the detector reported was accepted — a cough,
+ * a chair, a cleared throat — and the word moved on as if it had been read.
+ * That is the "it just advances regardless" complaint: the only sign a word had
+ * been taken was the prompt changing, and it changed either way.
+ *
+ * 0.12 s per syllable sits below any real read. Conversational speech runs
+ * 4–6 syllables a second (0.17–0.25 s each) and reading a short list faster
+ * than 8 a second is not a thing a mouth does, so nothing he actually says can
+ * trip this — only something that was never speech.
+ */
+export const MIN_SECONDS_PER_SYLLABLE = 0.12;
+
 export interface RateTracker {
   /** Median seconds per syllable, or null before the tracker is seeded. */
   readonly secondsPerSyllable: number | null;
@@ -45,7 +61,9 @@ export function createRateTracker(): RateTracker {
     },
 
     judge(syllables, seconds) {
-      if (rates.length < SEED_READS || syllables <= 0) return "ok";
+      if (syllables <= 0) return "ok";
+      if (seconds < MIN_SECONDS_PER_SYLLABLE * syllables) return "too-short";
+      if (rates.length < SEED_READS) return "ok";
       const expected = median(rates) * syllables;
       if (seconds < expected * DURATION_SHORTFALL) return "too-short";
       if (seconds > expected * DURATION_OVERRUN) return "too-long";

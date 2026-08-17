@@ -72,7 +72,10 @@ function harness(words = WORDS, faults: StoreFaults = {}) {
     await session.settled();
   };
 
-  return { session, speak, written, sessions };
+  /** Starts a read without finishing it, so the mid-read state can be read. */
+  const beginSpeaking = () => handlers!.onSpeechStart();
+
+  return { session, speak, beginSpeaking, written, sessions };
 }
 
 describe("createCorpusSession", () => {
@@ -206,6 +209,77 @@ describe("createCorpusSession", () => {
     expect(session.status).toBe("running");
     expect(session.currentWord).toEqual([Letter.C, Letter.D]);
     expect(session.failure).toMatch(/could not save the session index/i);
+  });
+
+  it("confirms the word it saved, by name, after the prompt has moved on", async () => {
+    // The complaint this answers: the only sign a read had been taken was the
+    // word changing, and it changed whether or not anything was kept.
+    const { session, speak } = harness();
+    await session.start();
+
+    expect(session.readState).toBe("waiting");
+    await speak(2, 1.0);
+
+    expect(session.readState).toBe("saved");
+    // The word it is confirming, not the one now on the prompt.
+    expect(session.judgedWord).toEqual([Letter.A, Letter.B]);
+    expect(session.currentWord).toEqual([Letter.C, Letter.D]);
+  });
+
+  it("says it is hearing him, and then that the word is over", async () => {
+    const { session, beginSpeaking } = harness();
+    await session.start();
+
+    beginSpeaking();
+    expect(session.readState).toBe("hearing");
+    expect(session.judgedWord).toEqual([Letter.A, Letter.B]);
+  });
+
+  it("holds the confirmation until the next read starts", async () => {
+    // No timer decides how long the verdict is up. It stays until he is busy
+    // again, which is exactly as long as he can read it.
+    const { session, speak, beginSpeaking } = harness();
+    await session.start();
+    await speak(2, 1.0);
+
+    expect(session.readState).toBe("saved");
+
+    beginSpeaking();
+    expect(session.readState).toBe("hearing");
+  });
+
+  it("names the word it threw away instead of re-queueing in silence", async () => {
+    const { session, speak } = harness([...WORDS, [Letter.G, Letter.H]]);
+    await session.start();
+    await speak(2, 1.0);
+    await speak(4, 1.0);
+    await speak(6, 1.0);
+    await speak(8, 0.1);
+
+    expect(session.readState).toBe("retry");
+    // The word the verdict is about, which by now is not the one on the prompt.
+    expect(session.judgedWord).toEqual([Letter.G, Letter.H]);
+  });
+
+  it("reports a refused save the same way as a bad read", async () => {
+    const { session, speak } = harness(WORDS, { failWrite: () => true });
+    await session.start();
+    await speak(2, 1.0);
+
+    expect(session.readState).toBe("retry");
+  });
+
+  it("throws away a burst too short to be speech, before the tracker is seeded", async () => {
+    // The first three reads used to be accepted unconditionally, so a cough
+    // during the opening of a sitting was written to the corpus as a word.
+    const { session, speak, written } = harness();
+    await session.start();
+
+    await speak(2, 0.15);
+
+    expect(written).toEqual([]);
+    expect(session.readState).toBe("retry");
+    expect(session.judgedWord).toEqual([Letter.A, Letter.B]);
   });
 
   it("persists coverage after every word so a closed tab can resume", async () => {
