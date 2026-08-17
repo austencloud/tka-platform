@@ -1,7 +1,8 @@
 import { fromImageData } from "./image-pattern-loader";
 import type { StripPattern, PatternParams, StripFrame } from "$lib/shared/poi/domain/strip-pattern";
-import type { IPatternPreset } from "../domain/pattern-preset";
-import { BUILT_IN_PRESETS } from "../domain/pattern-preset";
+import type { IPatternPreset } from "$lib/shared/poi/domain/pattern-presets";
+import { BUILT_IN_PRESETS } from "$lib/shared/poi/domain/pattern-presets";
+import { stripPatternToImageData } from "$lib/shared/poi/domain/strip-pattern-image";
 
 /**
  * Orchestrates pattern generation from presets and image loading.
@@ -35,22 +36,7 @@ export class StripPatternEngine {
   }
 
   toImageData(pattern: StripPattern): ImageData {
-    const { ledCount, frameCount, frames } = pattern;
-    const data = new Uint8ClampedArray(frameCount * ledCount * 4);
-
-    for (let col = 0; col < frameCount; col++) {
-      const frame = frames[col]!;
-      for (let row = 0; row < ledCount; row++) {
-        const srcIdx = row * 3;
-        const dstIdx = (row * frameCount + col) * 4;
-        data[dstIdx] = frame.colors[srcIdx]!;     // R
-        data[dstIdx + 1] = frame.colors[srcIdx + 1]!; // G
-        data[dstIdx + 2] = frame.colors[srcIdx + 2]!; // B
-        data[dstIdx + 3] = 255;                        // A
-      }
-    }
-
-    return new ImageData(data, frameCount, ledCount);
+    return stripPatternToImageData(pattern);
   }
 
   getPresets(): IPatternPreset[] {

@@ -36,14 +36,16 @@ describe("StripPatternEngine", () => {
   const engine = new StripPatternEngine();
 
   describe("presets", () => {
-    it("lists 5 built-in presets", () => {
-      expect(engine.getPresets()).toHaveLength(5);
+    it("lists 7 built-in presets", () => {
+      expect(engine.getPresets()).toHaveLength(7);
       const ids = engine.getPresets().map((p) => p.id);
       expect(ids).toContain("solid");
       expect(ids).toContain("gradient");
       expect(ids).toContain("rainbow-sweep");
       expect(ids).toContain("pulse");
       expect(ids).toContain("prop-colors");
+      expect(ids).toContain("chase");
+      expect(ids).toContain("comet");
     });
 
     it("throws for unknown preset", () => {

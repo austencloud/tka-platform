@@ -1,11 +1,11 @@
 import type { StripPatternEngine } from "../services/strip-pattern-engine";
 import type { PoiDeviceManager } from "../services/poi-device-manager";
-import * as poiImageLibrary from "../services/poi-image-library";
+import * as poiImageLibrary from "$lib/shared/poi/services/poi-image-library";
 import type { StripPattern, PatternParams, RGBColor } from "$lib/shared/poi/domain/strip-pattern";
 import type { PoiDeviceInfo } from "../domain/device-types";
-import type { IPatternPreset } from "../domain/pattern-preset";
+import type { IPatternPreset } from "$lib/shared/poi/domain/pattern-presets";
 import type { PatternTimeline, PatternClip } from "../domain/pattern-timeline-types";
-import type { PoiImageLibraryEntry } from "../domain/poi-image-library-entry";
+import type { PoiImageLibraryEntry } from "$lib/shared/poi/domain/poi-image-library-entry";
 import {
   createEmptyPatternTimeline,
   insertClip as insertPatternClip,

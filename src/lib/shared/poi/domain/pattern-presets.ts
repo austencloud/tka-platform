@@ -1,8 +1,8 @@
-import type { StripPattern, PatternParams, RGBColor } from "$lib/shared/poi/domain/strip-pattern";
-import { setPixel } from "$lib/shared/poi/domain/strip-pattern";
-import { createEmptyPattern } from "$lib/shared/poi/domain/strip-pattern";
+import type { StripPattern, PatternParams, RGBColor } from "./strip-pattern";
+import { setPixel } from "./strip-pattern";
+import { createEmptyPattern } from "./strip-pattern";
 
-export type PresetCategory = "basic" | "motion-driven";
+export type PresetCategory = "basic";
 
 export interface IPatternPreset {
   id: string;
@@ -185,10 +185,95 @@ const propColorsPreset: IPatternPreset = {
   },
 };
 
+/**
+ * Number of full sweeps the LED-position generators (chase, comet) make
+ * across the strip over one pattern loop. Rounding `params.speed` to the
+ * nearest integer keeps the sweep phase-continuous: at frame `frameCount`
+ * the head position formula lands on exactly the same LED as frame 0, so
+ * the loop has no visible seam.
+ */
+function sweepCycles(speed: number): number {
+  return Math.max(1, Math.round(speed));
+}
+
+/**
+ * Integer head-position index for a sweeping pattern at frame `f` of
+ * `frameCount`, moving `cycles` full laps around the strip. Exactly
+ * periodic in `frameCount` by construction: headIndex(frameCount) always
+ * reduces to headIndex(0).
+ */
+function sweepHeadIndex(
+  f: number,
+  frameCount: number,
+  cycles: number,
+  ledCount: number
+): number {
+  return Math.floor((f * cycles * ledCount) / frameCount) % ledCount;
+}
+
+const chasePreset: IPatternPreset = {
+  id: "chase",
+  name: "Chase",
+  category: "basic",
+  previewColor: "#00ff88",
+  generate(ledCount, frameCount, params) {
+    const pattern = createEmptyPattern(ledCount, frameCount, "Chase");
+    pattern.metadata.presetId = "chase";
+    const blockWidth = Math.max(1, Math.round(ledCount * 0.15));
+    const cycles = sweepCycles(params.speed);
+    const c: RGBColor = {
+      r: clamp255(params.primaryColor.r * params.brightness),
+      g: clamp255(params.primaryColor.g * params.brightness),
+      b: clamp255(params.primaryColor.b * params.brightness),
+    };
+    for (let f = 0; f < frameCount; f++) {
+      const headIndex = sweepHeadIndex(f, frameCount, cycles, ledCount);
+      for (let led = 0; led < ledCount; led++) {
+        const dist = ((led - headIndex) % ledCount + ledCount) % ledCount;
+        setPixel(pattern, f, led, dist < blockWidth ? c : { r: 0, g: 0, b: 0 });
+      }
+    }
+    return pattern;
+  },
+};
+
+const cometPreset: IPatternPreset = {
+  id: "comet",
+  name: "Comet",
+  category: "basic",
+  previewColor: "#3b82f6",
+  generate(ledCount, frameCount, params) {
+    const pattern = createEmptyPattern(ledCount, frameCount, "Comet");
+    pattern.metadata.presetId = "comet";
+    const tailLength = Math.max(1, Math.round(ledCount * 0.3));
+    const cycles = sweepCycles(params.speed);
+    for (let f = 0; f < frameCount; f++) {
+      const headIndex = sweepHeadIndex(f, frameCount, cycles, ledCount);
+      for (let led = 0; led < ledCount; led++) {
+        const dist = ((headIndex - led) % ledCount + ledCount) % ledCount;
+        let intensity = 0;
+        if (dist === 0) {
+          intensity = 1;
+        } else if (dist <= tailLength) {
+          intensity = Math.exp(-3 * (dist / tailLength));
+        }
+        setPixel(pattern, f, led, {
+          r: clamp255(params.primaryColor.r * intensity * params.brightness),
+          g: clamp255(params.primaryColor.g * intensity * params.brightness),
+          b: clamp255(params.primaryColor.b * intensity * params.brightness),
+        });
+      }
+    }
+    return pattern;
+  },
+};
+
 export const BUILT_IN_PRESETS: IPatternPreset[] = [
   solidPreset,
   gradientPreset,
   rainbowSweepPreset,
   pulsePreset,
   propColorsPreset,
+  chasePreset,
+  cometPreset,
 ];
