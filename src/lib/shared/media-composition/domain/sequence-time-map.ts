@@ -244,6 +244,13 @@ export function createTempoGridTimeMap(
  * The old editor calls timestamp zero the start of beat 1, while the animation
  * engine calls the pose before it beat 0. Recording both positions here keeps
  * an old video from highlighting and animating one beat apart.
+ *
+ * A take may run the sequence through more than once, so the marks are any
+ * whole number of passes worth. Positions keep counting past the sequence's
+ * length - pass 2's first move is position `stepCount + 1` - because the schema
+ * requires them to increase and the interpolator binary-searches on them.
+ * Folding a multi-pass take back into one cycle is the frame evaluator's job,
+ * on the far side of the interpolation.
  */
 export function migrateLegacyStepMap(
   input: LegacyStepMapMigrationInput
@@ -264,9 +271,12 @@ export function migrateLegacyStepMap(
     throw new RangeError("Legacy stepCount must be a positive integer");
   }
 
-  if (stepMap.beatTimestamps.length !== stepMap.stepCount) {
+  if (
+    stepMap.beatTimestamps.length === 0 ||
+    stepMap.beatTimestamps.length % stepMap.stepCount !== 0
+  ) {
     throw new RangeError(
-      "A legacy StepMap must contain one timestamp for every sequence beat"
+      "A legacy StepMap must contain a whole number of passes over the sequence"
     );
   }
 
@@ -311,14 +321,22 @@ export function migrateLegacyStepMap(
     .map((timestamp, index) => timestamp - timestamps[index]!);
   const inferredFinalDuration =
     median(intervals) ?? mediaDurationSeconds - lastTimestamp;
+  // The end mark is a real arrival the performer tapped, so it beats an
+  // inference from the median interval. Maps saved before the editor collected
+  // one, and any value that would not advance the anchor, fall back to it.
+  const markedEnd = stepMap.endTimestamp;
   const finalBeatEnd = Math.min(
     mediaDurationSeconds,
-    lastTimestamp + inferredFinalDuration
+    markedEnd !== undefined &&
+      Number.isFinite(markedEnd) &&
+      markedEnd > lastTimestamp
+      ? markedEnd
+      : lastTimestamp + inferredFinalDuration
   );
 
   anchors.push({
     mediaTimeSeconds: finalBeatEnd,
-    sequencePosition: stepMap.stepCount + 1,
+    sequencePosition: timestamps.length + 1,
   });
 
   return SequenceTimeMapSchema.parse({

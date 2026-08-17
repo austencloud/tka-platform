@@ -98,6 +98,37 @@ export function clampDisplayedBeatNumber(
 }
 
 /**
+ * Fold a position taken over a whole performance back into one pass.
+ *
+ * A performer usually runs a LOOP several times on one take, and the timing map
+ * has to keep counting upward across those passes - its positions must increase
+ * for the interpolator to search them. So pass 2's first move arrives as
+ * position `beatsPerPass + 1`, which is past the end of a sequence that only
+ * has `beatsPerPass` steps in it.
+ *
+ * Wrapping the POSITION rather than the beat number is deliberate: the card's
+ * highlight, the animation clock, and the animation layer all derive from this
+ * one value, so one correction here keeps them in step where three separate
+ * ones would eventually disagree.
+ *
+ * The fraction survives the fold, because it is what carries the motion between
+ * two poses. A single-pass take makes this the identity.
+ */
+export function wrapSequencePosition(
+  position: number,
+  beatsPerPass: number,
+  totalBeats: number
+): number {
+  if (beatsPerPass <= 0 || !Number.isFinite(position)) return position;
+  if (position <= 0) return 0;
+  // The closing anchor is the end hold, not the start of another pass. Folding
+  // it would land it on move 1 and flash the top of the sequence for the last
+  // frame of the take.
+  if (position >= totalBeats + 1) return beatsPerPass + 1;
+  return ((position - 1) % beatsPerPass) + 1;
+}
+
+/**
  * Validate step data array
  */
 export function validateSteps(steps: readonly Step[]): boolean {

@@ -103,6 +103,41 @@ describe("evaluatePresetFrame", () => {
     );
   });
 
+  it("folds a multi-pass take back into one cycle of the sequence", () => {
+    // Two passes over the same four steps: positions 1-8 in the map, one
+    // sequence of four on screen.
+    const twoPassMap: SequenceTimeMap = {
+      ...timeMap,
+      anchors: [
+        { mediaTimeSeconds: 0, sequencePosition: 0 },
+        { mediaTimeSeconds: 1, sequencePosition: 1 },
+        { mediaTimeSeconds: 2, sequencePosition: 2 },
+        { mediaTimeSeconds: 3, sequencePosition: 3 },
+        { mediaTimeSeconds: 4, sequencePosition: 4 },
+        { mediaTimeSeconds: 5, sequencePosition: 5 },
+        { mediaTimeSeconds: 6, sequencePosition: 6 },
+        { mediaTimeSeconds: 7, sequencePosition: 7 },
+        { mediaTimeSeconds: 8, sequencePosition: 8 },
+        { mediaTimeSeconds: 9, sequencePosition: 9 },
+      ],
+    };
+    const positionAt = (seconds: number) =>
+      evaluatePresetFrame(performancePreset, 10, seconds, {
+        timeMap: twoPassMap,
+        steps: variableDurationSteps,
+        startPositionDuration: 1,
+      })[0]?.sequencePosition;
+
+    expect(positionAt(1)).toBe(1);
+    expect(positionAt(4)).toBe(4);
+    // Pass 2's opening move reads as move 1 again rather than move 5, which is
+    // past the end of a four-step sequence.
+    expect(positionAt(5)).toBe(1);
+    expect(positionAt(6.5)).toBeCloseTo(2.5, 5);
+    // The closing anchor is the end hold, not the top of a third pass.
+    expect(positionAt(9)).toBe(5);
+  });
+
   it("rejects an invalid project duration", () => {
     expect(() => evaluatePresetFrame(performancePreset, 0, 0)).toThrow(
       RangeError

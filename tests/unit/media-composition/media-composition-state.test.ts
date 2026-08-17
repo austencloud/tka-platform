@@ -231,6 +231,41 @@ describe("createMediaCompositionState", () => {
     expect(state.durationSeconds).toBe(3);
   });
 
+  it("runs for the whole take once footage is dropped into a slot", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "sequence-breakdown",
+      getBindings: readyBindings,
+      getSequenceSteps: () =>
+        [{ duration: 1 }, { duration: 1 }] as unknown as StepData[],
+    });
+
+    // The animation-over-card default runs on a tempo grid, which is the right
+    // clock only while nothing on screen has a length of its own.
+    expect(state.activePreset.duration).toEqual({
+      mode: "sequence-tempo",
+      bpm: 60,
+    });
+
+    state.setSlotSource("top", POST_STUDIO_ROLE.performance);
+    flushSync();
+
+    expect(state.activePreset.duration).toEqual({
+      mode: "follow-source-role",
+      sourceRole: POST_STUDIO_ROLE.performance,
+    });
+
+    // And back again when the footage leaves, rather than following a role that
+    // is no longer there and resolving to nothing.
+    state.setSlotSource("top", POST_STUDIO_ROLE.animation);
+    flushSync();
+
+    expect(state.activePreset.duration).toEqual({
+      mode: "sequence-tempo",
+      bpm: 60,
+    });
+  });
+
   it("saves the chosen sequence tempo with a reusable layout", () => {
     const state = createMediaCompositionState({
       presets: POST_STUDIO_PRESETS,

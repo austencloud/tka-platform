@@ -23,6 +23,20 @@ function legacyStepMap(overrides: Partial<StepMap> = {}): StepMap {
   };
 }
 
+/**
+ * Real marks from the OmLam-XJ phone clip: a 16-step LOOP run four times
+ * through, tapped by hand at every arrival. 64 marks, 16 steps.
+ */
+const OM_LAM_XJ_MARKS = [
+  0.0, 0.86, 1.55, 2.07, 2.69, 3.4, 3.94, 4.59, 5.18, 5.76, 6.45, 7.11, 7.7,
+  8.36, 8.94, 9.49, 10.17, 10.8, 11.36, 12.0, 12.61, 13.23, 14.02, 14.54, 15.17,
+  15.88, 16.46, 17.09, 17.71, 18.33, 18.89, 19.49, 20.26, 20.86, 21.52, 22.15,
+  22.83, 23.42, 24.05, 24.66, 25.32, 26.0, 26.61, 27.19, 27.89, 28.48, 29.07,
+  29.65, 30.37, 31.04, 31.69, 32.37, 32.93, 33.64, 34.25, 34.89, 35.57, 36.21,
+  36.87, 37.54, 38.21, 39.03, 39.67, 40.24,
+];
+const OM_LAM_XJ_END = 40.81;
+
 describe("SequenceTimeMap", () => {
   it("creates a duration-aware editable tempo grid", () => {
     const timeMap = createTempoGridTimeMap({
@@ -139,7 +153,7 @@ describe("SequenceTimeMap", () => {
     expect(timeMap.source).toBe("audio-detected");
   });
 
-  it("refuses to guess across an incomplete legacy map", () => {
+  it("refuses to guess across a part-finished pass", () => {
     expect(() =>
       migrateLegacyStepMap({
         stepMap: legacyStepMap({ beatTimestamps: [0, 0.5] }),
@@ -147,7 +161,51 @@ describe("SequenceTimeMap", () => {
         mediaSourceId: "video-a",
         mediaDurationSeconds: 4,
       })
-    ).toThrow("one timestamp for every sequence beat");
+    ).toThrow("whole number of passes");
+  });
+
+  it("prefers the marked end over an inferred one", () => {
+    const timeMap = migrateLegacyStepMap({
+      stepMap: legacyStepMap({
+        beatTimestamps: [0, 0.5, 1.5, 2],
+        endTimestamp: 2.9,
+      }),
+      sequenceRef,
+      mediaSourceId: "video-a",
+      mediaDurationSeconds: 12,
+    });
+
+    expect(timeMap.anchors.at(-1)).toEqual({
+      mediaTimeSeconds: 2.9,
+      sequencePosition: 5,
+    });
+  });
+
+  it("keeps counting upward across a four-pass take", () => {
+    const timeMap = migrateLegacyStepMap({
+      stepMap: legacyStepMap({
+        beatTimestamps: OM_LAM_XJ_MARKS,
+        endTimestamp: OM_LAM_XJ_END,
+        stepCount: 16,
+      }),
+      sequenceRef,
+      mediaSourceId: "collaborative-video:omlam-xj",
+      mediaDurationSeconds: 43.667,
+    });
+
+    expect(timeMap.anchors).toHaveLength(OM_LAM_XJ_MARKS.length + 1);
+    expect(timeMap.anchors.at(-1)).toEqual({
+      mediaTimeSeconds: OM_LAM_XJ_END,
+      sequencePosition: 65,
+    });
+    // Pass 2 opens at 17, not back at 1: positions have to increase for the
+    // schema to accept them and for the interpolator to search them.
+    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[16]!)).toBe(17);
+    expect(mediaTimeToSequencePosition(timeMap, OM_LAM_XJ_MARKS[48]!)).toBe(49);
+    expect(sequencePositionToMediaTime(timeMap, 33)).toBeCloseTo(
+      OM_LAM_XJ_MARKS[32]!,
+      5
+    );
   });
 
   it("rejects non-finite lookup values", () => {

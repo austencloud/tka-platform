@@ -19,6 +19,7 @@ import {
 } from "$lib/shared/media-composition/domain/media-composition-preset-schema";
 import type { LayoutRegion } from "$lib/shared/media-composition/domain/media-layout-schema";
 import {
+  POST_STUDIO_ROLE,
   POST_STUDIO_SOURCES,
   type PostStudioRoleKey,
 } from "$lib/shared/media-composition/domain/post-studio-presets";
@@ -167,13 +168,29 @@ function rolesForClips(clips: readonly PresetClip[]) {
 }
 
 /**
- * A preset whose duration follows a role that is no longer in the composition
- * would resolve to zero seconds, so it falls back to the tempo grid.
+ * The post is as long as its footage.
+ *
+ * Performance footage is the only source that arrives with a length of its own
+ * — everything else is generated from the sequence and will fill whatever
+ * duration it is given. So a post holding footage runs for the footage, and a
+ * post that no longer holds any falls back to the tempo grid rather than
+ * following a role that is gone and resolving to zero seconds.
+ *
+ * Both directions live here because this is the one place every slot verb
+ * passes through. Reconciling in only one of them is what let a post keep a
+ * 60bpm clock after a 43-second take was dropped into it, cutting the take off
+ * a third of the way through.
  */
 function durationForClips(
   duration: MediaCompositionPreset["duration"],
   clips: readonly PresetClip[]
 ): MediaCompositionPreset["duration"] {
+  const holdsPerformance = clips.some(
+    (clip) => clip.sourceRole === POST_STUDIO_ROLE.performance
+  );
+  if (holdsPerformance) {
+    return { mode: "follow-source-role", sourceRole: POST_STUDIO_ROLE.performance };
+  }
   if (duration.mode !== "follow-source-role") return duration;
   const present = clips.some((clip) => clip.sourceRole === duration.sourceRole);
   return present ? duration : { mode: "sequence-tempo", bpm: 60 };

@@ -32,7 +32,7 @@
     type PostStudioExportProgress,
   } from "$lib/shared/media-composition/services/post-studio-exporter";
   import { getVideoFileMetadata } from "$lib/shared/video-collaboration/helpers/create-video-from-upload";
-  import { getVideosForSequence } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -108,7 +108,6 @@
   let localPerformanceUrl: string | null = null;
   let performancePickerOpen = $state(false);
   let performanceLibraryError = $state("");
-  let performanceLibraryRequest = 0;
   let focusedPanel = $state<FocusedPanel>("canvas");
   let timingAdvanced = $state(false);
   let performanceHasAudio = $state<boolean | null>(null);
@@ -146,37 +145,42 @@
     return "Unmapped · even timing preview";
   });
 
-  $effect(() => {
-    const sequenceId = sequence.id;
-    const linkedUrl = sequence.performanceVideoUrl;
-    const ref = sequenceRef;
-    const request = ++performanceLibraryRequest;
-    performanceLibraryError = "";
-    if (!sequenceId || !linkedUrl || performanceSelectionTouched) return;
+  // The shared per-sequence store, not a private read: an upload or a saved
+  // step map anywhere else reaches an already-open studio, and a sequence that
+  // has videos without a linked URL still finds them.
+  const videoLibrary = $derived(
+    sequence.id ? getSequenceVideosStore(sequence.id) : null
+  );
 
-    void getVideosForSequence(sequenceId)
-      .then((videos) => {
-        if (
-          request !== performanceLibraryRequest ||
-          performanceSelectionTouched
-        )
-          return;
-        const linkedVideo = videos.find(
-          (video) => video.videoUrl === linkedUrl
-        );
-        if (linkedVideo) {
-          chosenPerformance = createCatalogPerformanceSelection(
-            linkedVideo,
-            ref
-          );
-        }
-      })
-      .catch(() => {
-        if (request === performanceLibraryRequest) {
-          performanceLibraryError =
-            "Saved timing could not be checked. This preview is using even timing.";
-        }
-      });
+  $effect(() => {
+    const store = videoLibrary;
+    if (!store) return;
+    void store.load();
+  });
+
+  /**
+   * The performance to open on: whichever video the sequence links to, else the
+   * newest one carrying a timing map. A video with no map would boot the studio
+   * into an even-timing preview, which looks synced for about a second.
+   */
+  const libraryPerformance = $derived.by(() => {
+    const store = videoLibrary;
+    if (!store) return null;
+    const linkedUrl = sequence.performanceVideoUrl;
+    const linked = linkedUrl
+      ? store.videos.find((video) => video.videoUrl === linkedUrl)
+      : undefined;
+    return linked ?? store.videos.find((video) => video.beatMap) ?? null;
+  });
+
+  $effect(() => {
+    const video = libraryPerformance;
+    const ref = sequenceRef;
+    performanceLibraryError = videoLibrary?.error
+      ? "Saved timing could not be checked. This preview is using even timing."
+      : "";
+    if (!video || performanceSelectionTouched) return;
+    chosenPerformance = createCatalogPerformanceSelection(video, ref);
   });
 
   $effect(() => {
@@ -322,6 +326,19 @@
     },
   });
   setMediaCompositionContext(composition);
+
+  // The default arrangement is animation over card, because that is the one
+  // every sequence can draw. A sequence that HAS mapped footage has something
+  // better to open on, and it resolves a moment after mount rather than in time
+  // to seed the preset — so the top slot is swapped once, on arrival, and never
+  // again. Anything the user does to the slots afterwards stands.
+  let bootedToPerformance = false;
+  $effect(() => {
+    if (bootedToPerformance || performanceSelectionTouched) return;
+    if (!libraryPerformance?.beatMap) return;
+    bootedToPerformance = true;
+    composition.setSlotSource("top", POST_STUDIO_ROLE.performance);
+  });
 
   // Tunnel and mandala controllers live here, above both the slot that draws
   // them and the inspector that steers them, so the Look / Spin / Colors
