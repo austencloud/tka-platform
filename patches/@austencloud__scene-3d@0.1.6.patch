@@ -1131,7 +1131,7 @@ diff --git a/dist/lib/components/props/Buugeng3D.svelte.d.ts.map b/dist/lib/comp
 deleted file mode 100644
 index 81b3160b2c4ff60d93b2297775f9145752cd879a..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/Club3D.svelte b/dist/lib/components/props/Club3D.svelte
-index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1719a0675 100644
+index d51a323611e6b9f7b7b2c914182620b41cdfff72..6f03d5b207f34f426ca40d913735fdedf77c2076 100644
 --- a/dist/lib/components/props/Club3D.svelte
 +++ b/dist/lib/components/props/Club3D.svelte
 @@ -1,149 +1,121 @@
@@ -1149,23 +1149,23 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 +
 +  const builds = new Map<number, ClubPart[]>();
 +
-+  function getClubParts(length: number): ClubPart[] {
-+    const cached = builds.get(length);
++  function getClubParts(scale: number): ClubPart[] {
++    const cached = builds.get(scale);
 +    if (cached) return cached;
 +
 +    const parts = CLUB_BANDS.map((band) => ({
 +      id: band.id,
 +      geometry: revolvedProfile(
 +        band.stops.map((stop) => ({
-+          at: stop.at * length,
-+          radius: stop.radius * length,
++          at: stop.at * scale,
++          radius: stop.radius * scale,
 +        })),
-+        // The barrel is the widest thing on any prop in the scene, so it needs
++        // The body is the widest thing on any prop in the scene, so it needs
 +        // more sides than the torch's shaft did before the facets show.
 +        32
 +      ),
 +    }));
-+    builds.set(length, parts);
++    builds.set(scale, parts);
 +    return parts;
 +  }
 +
@@ -1180,6 +1180,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 +        return materials.handle;
 +      case "marker":
 +        return materials.marker;
++      case "cap":
++        // Same EVA as the knob, which is what a Delphin's flat cap is.
++        return materials.knob;
 +      default:
 +        return materials.body;
 +    }
@@ -1193,9 +1196,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -   * Renders a realistic 3D juggling club using LatheGeometry - a single smooth
 -   * mesh created by revolving a spline profile around the Y-axis. The grip
 -   * point sits at origin (0,0,0).
-+   * A juggling club, turned from the profile measured off `club.svg`. Butt to
-+   * tip: a rubber knob, a straight handle, the marker ring at the corner, and
-+   * the barrel.
++   * A real juggling club, turned from the published dimensions of a Henrys
++   * Delphin in the 105mm body. Butt to tip: a semi-round EVA knob, a taped
++   * handle, the dark band at the shoulder, the body, and the flat cap.
     *
 -   * Profile based on real juggling club proportions (Henrys Delphin reference):
 -   * - Knob: rounded bulge at the bottom of the handle
@@ -1203,21 +1206,24 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -   * - Neck: smooth taper widening into the body
 -   * - Body/Barrel: widest point with a gentle teardrop bulge
 -   * - Tip: tapers to a rounded cap
-+   * Every radius comes from the artwork, so this reaches 0.512 of a staff
-+   * rather than the 0.65 the old spline guessed at, and the barrel's widest
-+   * point sits where the drawing puts it instead of where a hand-tuned control
-+   * point did. `club-profile.ts` carries the numbers and how they were read.
++   * 52cm overall, 22cm of handle, 30cm of body, widest two thirds up the body.
++   * `club-profile.ts` carries the numbers and where each came from. This is the
++   * one prop in the set NOT measured off its 2D artwork: `club.svg` is a
++   * stylized glyph that draws an 18in club tapering to a point, and a club built
++   * from it read visibly small next to the 6'3" avatar.
     *
 -   * Overall length is ~65% of staff length since clubs are shorter than staves.
-+   * The hand is the artwork's viewBox centre, which lands on the knob's widest
-+   * point — where you hold one, with the knob under your little finger. The
-+   * knob is therefore the only band that hangs below the origin.
++   * Because a club is a standardized object, its size is absolute — it does not
++   * scale with the user's staff length the way Staff3D does. `scale` still
++   * applies, for callers that render the prop smaller than life.
 +   *
-+   * Colour is on the barrel alone. The old component tinted the whole club,
-+   * which no real club is: they are a black knob, a light handle, a black ring,
-+   * and a coloured body. The invented white grip torus is gone with it — the
-+   * ring is a material band on an edge the artwork already draws, not a
-+   * separate piece of geometry sitting proud of the surface.
++   * The hand sits just above the knob, where the pinky goes, so the knob is the
++   * only band that hangs below the origin.
++   *
++   * Colour is on the body alone. The old component tinted the whole club, which
++   * no real club is. The invented white grip torus is gone with it — the
++   * shoulder band is a material band on the turned surface, not a separate piece
++   * of geometry sitting proud of it.
     */
  
    import { T } from "@threlte/core";
@@ -1225,7 +1231,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
    import { computePropRotation } from "./prop3d-transforms";
-   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
 -  import {
 -    LAYER_WORLD,
 -    LAYER_PLAYER_BODY,
@@ -1236,7 +1242,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
      propState,
      color,
      visible = true,
-     length,
+-    length,
 -    thickness,
      isActivePlayer = false,
      scale = 1,
@@ -1246,19 +1252,18 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
  
 -  const CLUB_LENGTH_RATIO = 0.65;
 -
-   const effectiveLength = $derived(
+-  const effectiveLength = $derived(
 -    (length ?? userProportionsState.staffLength) * CLUB_LENGTH_RATIO * scale
 -  );
 -  const baseRadius = $derived(
 -    (thickness ?? userProportionsState.dimensions.staffRadius) * scale
-+    (length ?? userProportionsState.staffLength) * scale
-   );
- 
--  const palette = $derived(PROP_COLORS[color]);
--  const rotation = $derived(computePropRotation(propState));
-+  const parts = $derived(getClubParts(effectiveLength));
+-  );
++  const parts = $derived(getClubParts(scale));
 +  const materials = $derived(getClubMaterials(color));
  
+-  const palette = $derived(PROP_COLORS[color]);
+   const rotation = $derived(computePropRotation(propState));
+-
 -  // Grip ring dimensions
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
@@ -1329,7 +1334,6 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -    geom.computeVertexNormals();
 -    return geom;
 -  });
-+  const rotation = $derived(computePropRotation(propState));
  </script>
  
  {#if visible}
@@ -2807,88 +2811,114 @@ deleted file mode 100644
 index da4a1eff264d7f5f6c34253d48a278a18c48df43..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/club-profile.d.ts b/dist/lib/components/props/club-profile.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..8d7abd292db067019b5d41ee52e35f4290b06067
+index 0000000000000000000000000000000000000000..6ca2cacf3adbe1566113603af97bf8f2132c863c
 --- /dev/null
 +++ b/dist/lib/components/props/club-profile.d.ts
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,17 @@
 +import type { ProfileStop } from "./prop-lathe";
 +/** One material band of the club, as a revolved profile. */
 +export interface ClubBand {
-+    readonly id: "knob" | "handle" | "marker" | "body";
++    readonly id: "knob" | "handle" | "marker" | "body" | "cap";
 +    readonly stops: readonly ProfileStop[];
 +}
++/** Overall length: the Delphin's 52cm. */
++export declare const CLUB_LENGTH_M: number;
++/** Body at its widest: the 105mm model. */
++export declare const CLUB_BODY_DIAMETER_M: number;
 +/**
-+ * The bands, butt to tip. Adjacent bands share an `at` and a `radius` at their
-+ * seam so no join is visible: the club is one continuous turned body, and only
-+ * its colour changes along the length.
++ * The bands, butt to tip, in world units (metres). A club is standardized, so
++ * unlike Staff3D this does not scale with the user's staff length.
 + */
 +export declare const CLUB_BANDS: readonly ClubBand[];
-+/** Hand to the end of the body, as a fraction of staff length. */
-+export declare const CLUB_REACH: number;
++/** Hand to the flat cap, in metres. */
++export declare const CLUB_REACH_M: number;
 diff --git a/dist/lib/components/props/club-profile.js b/dist/lib/components/props/club-profile.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..1981c692bc6b0175bb4c3be99d8f3f83ff649de0
+index 0000000000000000000000000000000000000000..4137382c1b0d34d02520993792fc15ef1929f101
 --- /dev/null
 +++ b/dist/lib/components/props/club-profile.js
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,82 @@
++const CLUB_LENGTH_M = 0.52;
++const CLUB_BODY_DIAMETER_M = 0.105;
 +const CLUB_BANDS = [
 +  {
 +    id: "knob",
 +    stops: [
-+      { at: -0.01727, radius: 674e-5 },
-+      { at: -0.01697, radius: 0.01512 },
-+      { at: -0.0158, radius: 0.0193 },
-+      { at: -0.01462, radius: 0.02154 },
-+      { at: -0.01227, radius: 0.02453 },
-+      { at: -816e-5, radius: 0.02714 },
-+      { at: -404e-5, radius: 0.02822 },
-+      { at: 418e-5, radius: 0.02852 },
-+      { at: 888e-5, radius: 0.02761 },
-+      { at: 0.013, radius: 0.02504 },
-+      { at: 0.01476, radius: 0.02287 },
-+      { at: 0.01594, radius: 0.01996 },
-+      { at: 0.01636, radius: 0.01782 }
++      { at: -0.01302, radius: 35e-4 },
++      { at: -987e-5, radius: 0.01008 },
++      { at: -777e-5, radius: 0.01375 },
++      { at: -567e-5, radius: 0.01642 },
++      { at: -357e-5, radius: 0.01782 },
++      { at: -252e-5, radius: 0.018 },
++      { at: -199e-5, radius: 0.01779 },
++      { at: 43e-4, radius: 0.012 },
++      { at: 641e-5, radius: 0.01079 },
++      { at: 798e-5, radius: 0.0105 }
 +    ]
 +  },
 +  {
++    // 21mm at the butt thickening to 23mm: the 16mm dowel plus a taped grip.
 +    id: "handle",
 +    stops: [
-+      { at: 0.01636, radius: 0.01782 },
-+      { at: 0.21098, radius: 0.01782 }
++      { at: 798e-5, radius: 0.0105 },
++      { at: 0.19298, radius: 0.0115 }
 +    ]
 +  },
 +  {
++    // The dark band at the shoulder, where the handle meets the body.
 +    id: "marker",
 +    stops: [
-+      { at: 0.21098, radius: 0.01782 },
-+      { at: 0.22572, radius: 0.02332 }
++      { at: 0.19298, radius: 0.0115 },
++      { at: 0.20698, radius: 0.0155 }
 +    ]
 +  },
 +  {
++    // Flares out of the shoulder, swells to 105mm two thirds up the body, then
++    // rounds off into the cap. The balance sits toward the body end, which is
++    // why the widest point is high rather than centred.
 +    id: "body",
 +    stops: [
-+      { at: 0.22572, radius: 0.02332 },
-+      { at: 0.26627, radius: 0.0378 },
-+      { at: 0.30623, radius: 0.05145 },
-+      { at: 0.32327, radius: 0.05693 },
-+      { at: 0.3456, radius: 0.06347 },
-+      { at: 0.35442, radius: 0.06567 },
-+      { at: 0.36323, radius: 0.06718 },
-+      { at: 0.37851, radius: 0.06759 },
-+      { at: 0.39144, radius: 0.06733 },
-+      { at: 0.40378, radius: 0.06604 },
-+      { at: 0.41553, radius: 0.06371 },
-+      { at: 0.50838, radius: 0.02363 },
-+      { at: 0.51014, radius: 0.01671 },
-+      { at: 0.51132, radius: 86e-4 },
-+      { at: 0.51161, radius: 0 }
++      { at: 0.20698, radius: 0.0155 },
++      { at: 0.23059, radius: 0.02452 },
++      { at: 0.2542, radius: 0.03218 },
++      { at: 0.27856, radius: 0.03871 },
++      { at: 0.30293, radius: 0.04389 },
++      { at: 0.32806, radius: 0.04788 },
++      { at: 0.3532, radius: 0.05056 },
++      { at: 0.37909, radius: 0.05208 },
++      { at: 0.40694, radius: 0.05249 },
++      { at: 0.41596, radius: 0.05221 },
++      { at: 0.4246, radius: 0.05158 },
++      { at: 0.43323, radius: 0.05057 },
++      { at: 0.44146, radius: 0.04924 },
++      { at: 0.4497, radius: 0.04754 },
++      { at: 0.45755, radius: 0.04553 },
++      { at: 0.4654, radius: 0.0431 },
++      { at: 0.47246, radius: 0.04049 },
++      { at: 0.47952, radius: 0.03741 },
++      { at: 0.4858, radius: 0.03418 },
++      { at: 0.49129, radius: 0.03083 },
++      { at: 0.49639, radius: 0.02711 },
++      { at: 0.5007, radius: 0.0232 },
++      { at: 0.50384, radius: 0.01953 },
++      { at: 0.5062, radius: 0.0155 },
++      { at: 0.50698, radius: 0.0125 }
++    ]
++  },
++  {
++    id: "cap",
++    stops: [
++      { at: 0.50698, radius: 0.0125 },
++      { at: 0.50698, radius: 0 }
 +    ]
 +  }
 +];
-+const CLUB_REACH = 0.51161;
++const CLUB_REACH_M = 0.50698;
 +export {
 +  CLUB_BANDS,
-+  CLUB_REACH
++  CLUB_BODY_DIAMETER_M,
++  CLUB_LENGTH_M,
++  CLUB_REACH_M
 +};
 diff --git a/dist/lib/components/props/doublestar-profile.d.ts b/dist/lib/components/props/doublestar-profile.d.ts
 new file mode 100644
@@ -4183,14 +4213,14 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a111ce68651 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
  export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
  export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
  export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
@@ -4203,7 +4233,7 @@ index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c
  export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7ad6807bfa 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..6acb900a691007049e5bbac55a8fad00e8d25991 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
 @@ -1,91 +1,190 @@
@@ -4487,7 +4517,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7a
 +  userProportionsState
 +};
 +
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache.js";
++export { prepareSharedGltf } from "./services/shared-gltf-cache.js";
 diff --git a/dist/lib/services/contracts/IAvatarAnimator.d.ts b/dist/lib/services/contracts/IAvatarAnimator.d.ts
 index 786bf68515df88ef035b307a7029e717e056bea9..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/dist/lib/services/contracts/IAvatarAnimator.d.ts
@@ -9093,7 +9123,7 @@ index 8b02d7960387431387d12a655ba4dddbeaf575a1..b43b1deb5a863256cafd1f03e4254148
 +  />
  {/if}
 diff --git a/src/lib/components/props/Club3D.svelte b/src/lib/components/props/Club3D.svelte
-index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1719a0675 100644
+index d51a323611e6b9f7b7b2c914182620b41cdfff72..6f03d5b207f34f426ca40d913735fdedf77c2076 100644
 --- a/src/lib/components/props/Club3D.svelte
 +++ b/src/lib/components/props/Club3D.svelte
 @@ -1,149 +1,121 @@
@@ -9111,23 +9141,23 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 +
 +  const builds = new Map<number, ClubPart[]>();
 +
-+  function getClubParts(length: number): ClubPart[] {
-+    const cached = builds.get(length);
++  function getClubParts(scale: number): ClubPart[] {
++    const cached = builds.get(scale);
 +    if (cached) return cached;
 +
 +    const parts = CLUB_BANDS.map((band) => ({
 +      id: band.id,
 +      geometry: revolvedProfile(
 +        band.stops.map((stop) => ({
-+          at: stop.at * length,
-+          radius: stop.radius * length,
++          at: stop.at * scale,
++          radius: stop.radius * scale,
 +        })),
-+        // The barrel is the widest thing on any prop in the scene, so it needs
++        // The body is the widest thing on any prop in the scene, so it needs
 +        // more sides than the torch's shaft did before the facets show.
 +        32
 +      ),
 +    }));
-+    builds.set(length, parts);
++    builds.set(scale, parts);
 +    return parts;
 +  }
 +
@@ -9142,6 +9172,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 +        return materials.handle;
 +      case "marker":
 +        return materials.marker;
++      case "cap":
++        // Same EVA as the knob, which is what a Delphin's flat cap is.
++        return materials.knob;
 +      default:
 +        return materials.body;
 +    }
@@ -9155,9 +9188,9 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -   * Renders a realistic 3D juggling club using LatheGeometry - a single smooth
 -   * mesh created by revolving a spline profile around the Y-axis. The grip
 -   * point sits at origin (0,0,0).
-+   * A juggling club, turned from the profile measured off `club.svg`. Butt to
-+   * tip: a rubber knob, a straight handle, the marker ring at the corner, and
-+   * the barrel.
++   * A real juggling club, turned from the published dimensions of a Henrys
++   * Delphin in the 105mm body. Butt to tip: a semi-round EVA knob, a taped
++   * handle, the dark band at the shoulder, the body, and the flat cap.
     *
 -   * Profile based on real juggling club proportions (Henrys Delphin reference):
 -   * - Knob: rounded bulge at the bottom of the handle
@@ -9165,21 +9198,24 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -   * - Neck: smooth taper widening into the body
 -   * - Body/Barrel: widest point with a gentle teardrop bulge
 -   * - Tip: tapers to a rounded cap
-+   * Every radius comes from the artwork, so this reaches 0.512 of a staff
-+   * rather than the 0.65 the old spline guessed at, and the barrel's widest
-+   * point sits where the drawing puts it instead of where a hand-tuned control
-+   * point did. `club-profile.ts` carries the numbers and how they were read.
++   * 52cm overall, 22cm of handle, 30cm of body, widest two thirds up the body.
++   * `club-profile.ts` carries the numbers and where each came from. This is the
++   * one prop in the set NOT measured off its 2D artwork: `club.svg` is a
++   * stylized glyph that draws an 18in club tapering to a point, and a club built
++   * from it read visibly small next to the 6'3" avatar.
     *
 -   * Overall length is ~65% of staff length since clubs are shorter than staves.
-+   * The hand is the artwork's viewBox centre, which lands on the knob's widest
-+   * point — where you hold one, with the knob under your little finger. The
-+   * knob is therefore the only band that hangs below the origin.
++   * Because a club is a standardized object, its size is absolute — it does not
++   * scale with the user's staff length the way Staff3D does. `scale` still
++   * applies, for callers that render the prop smaller than life.
 +   *
-+   * Colour is on the barrel alone. The old component tinted the whole club,
-+   * which no real club is: they are a black knob, a light handle, a black ring,
-+   * and a coloured body. The invented white grip torus is gone with it — the
-+   * ring is a material band on an edge the artwork already draws, not a
-+   * separate piece of geometry sitting proud of the surface.
++   * The hand sits just above the knob, where the pinky goes, so the knob is the
++   * only band that hangs below the origin.
++   *
++   * Colour is on the body alone. The old component tinted the whole club, which
++   * no real club is. The invented white grip torus is gone with it — the
++   * shoulder band is a material band on the turned surface, not a separate piece
++   * of geometry sitting proud of it.
     */
  
    import { T } from "@threlte/core";
@@ -9187,7 +9223,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
    import type { Prop3DProps } from "./Prop3DProps";
 -  import { PROP_COLORS } from "./Prop3DProps";
    import { computePropRotation } from "./prop3d-transforms";
-   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
 -  import {
 -    LAYER_WORLD,
 -    LAYER_PLAYER_BODY,
@@ -9198,7 +9234,7 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
      propState,
      color,
      visible = true,
-     length,
+-    length,
 -    thickness,
      isActivePlayer = false,
      scale = 1,
@@ -9208,19 +9244,18 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
  
 -  const CLUB_LENGTH_RATIO = 0.65;
 -
-   const effectiveLength = $derived(
+-  const effectiveLength = $derived(
 -    (length ?? userProportionsState.staffLength) * CLUB_LENGTH_RATIO * scale
 -  );
 -  const baseRadius = $derived(
 -    (thickness ?? userProportionsState.dimensions.staffRadius) * scale
-+    (length ?? userProportionsState.staffLength) * scale
-   );
- 
--  const palette = $derived(PROP_COLORS[color]);
--  const rotation = $derived(computePropRotation(propState));
-+  const parts = $derived(getClubParts(effectiveLength));
+-  );
++  const parts = $derived(getClubParts(scale));
 +  const materials = $derived(getClubMaterials(color));
  
+-  const palette = $derived(PROP_COLORS[color]);
+   const rotation = $derived(computePropRotation(propState));
+-
 -  // Grip ring dimensions
 -  const gripOuterRadius = $derived(baseRadius * 1.3);
 -  const gripTubeRadius = $derived(baseRadius * 0.15);
@@ -9291,7 +9326,6 @@ index d51a323611e6b9f7b7b2c914182620b41cdfff72..91f384f0412ca0b8efd0168a1412cad1
 -    geom.computeVertexNormals();
 -    return geom;
 -  });
-+  const rotation = $derived(computePropRotation(propState));
  </script>
  
  {#if visible}
@@ -10733,111 +10767,145 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879
  {/if}
 diff --git a/src/lib/components/props/club-profile.ts b/src/lib/components/props/club-profile.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..cccc5b34f34d9845ead7c67b2bf7c6e422fc27fb
+index 0000000000000000000000000000000000000000..df1cfb7d4fbb96c4c6e07e124c93f5fe3183f388
 --- /dev/null
 +++ b/src/lib/components/props/club-profile.ts
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,135 @@
 +/**
-+ * Club lathe profile, measured off `club.svg`.
++ * Club lathe profile, built from a real juggling club.
 + *
-+ * A juggling club is a solid of revolution, so the top edge of the artwork's
-+ * outline IS the radius function. `club.svg` is a clean vector outline rather
-+ * than the raster trace `torch.svg` is, so the numbers below are transcribed
-+ * from the path directly instead of read back off a canvas.
++ * Every other prop in this round was measured off its own 2D artwork, because
++ * the artwork is the authority on the prop's shape. `club.svg` is the exception:
++ * it is a stylized pictograph glyph, not a drawing of a club. Measured against
++ * `staff.svg` it draws an 18in club -- shorter than anything sold -- and it
++ * tapers the body to a point, which no club has. Fitting that silhouette to real
++ * anchors still left a club that read wrong.
 + *
-+ * The file carries two paths. The visible one (`fill:#2e3192`) is the club; the
-+ * second is `fill="none"` and draws nothing — it is the mirrored spacer that
-+ * widens the viewBox so its centre lands on the hand, the same convention
-+ * `triquetra.svg`, `trigeng.svg` and `triad.svg` use. Hand is therefore
-+ * x=129.335, and the club reaches x=258.67.
++ * So this is built from the published dimensions of the club in the reference
++ * photos instead, a Henrys Delphin in the 105mm body:
 + *
-+ * Radii are normalized by 252.8 (staff.svg's viewBox width = one staff length),
-+ * so the artwork itself carries the club's size next to a staff. Reach is
-+ * 0.51161 of a staff — the old component guessed 0.65 and ran 27% long.
++ *   Henrys Delphin   52cm overall, 22cm handle, 30cm body, 200g,
++ *                    flat cap and semi-round knob (both EVA), 16mm wood dowel
++ *   Renegade         body models 75/85/95/105mm; 105mm is the size they
++ *                    recommend for people over 6ft, and the avatar is 6'3"
++ *   Play PX3         20.5in overall, 15.5mm dowel, 81.6mm shell -- the slim one,
++ *                    kept here as the lower bound on a believable body
 + *
-+ * Colour: `club.svg` is one flat silhouette with no colour information, so the
-+ * material split comes from the product photos instead of from the drawing.
-+ * Every club sold — Renegade, Play PX3, Henrys Delphin, the LED and practice
-+ * builds — is a black knob, a contrasting handle, a black marker ring at the
-+ * handle/body corner, and a coloured body. That corner is the one the artwork
-+ * itself draws (the `h49.2` run ends there), so the ring is a decal on a real
-+ * edge, not invented geometry. The body takes blue or red.
++ * Two numbers have no published spec and were read off the product photos: the
++ * 36mm knob and the 25mm flat cap. Everything else is quoted.
++ *
++ * Colour comes from the photos too, since the glyph is a flat silhouette. Every
++ * club sold is a dark knob, a light handle, a dark band at the shoulder, and a
++ * coloured body with a dark cap -- never one solid colour.
 + */
 +
 +import type { ProfileStop } from "./prop-lathe";
 +
 +/** One material band of the club, as a revolved profile. */
 +export interface ClubBand {
-+  readonly id: "knob" | "handle" | "marker" | "body";
++  readonly id: "knob" | "handle" | "marker" | "body" | "cap";
 +  readonly stops: readonly ProfileStop[];
 +}
 +
++/** Overall length: the Delphin's 52cm. */
++export const CLUB_LENGTH_M = 0.52;
++
++/** Body at its widest: the 105mm model. */
++export const CLUB_BODY_DIAMETER_M = 0.105;
++
 +/**
-+ * The bands, butt to tip. Adjacent bands share an `at` and a `radius` at their
-+ * seam so no join is visible: the club is one continuous turned body, and only
-+ * its colour changes along the length.
++ * The bands, butt to tip, in world units (metres).
 + *
-+ * The knob's widest point sits at `at ≈ 0` — the artwork puts the hand exactly
-+ * there, which is where you hold one, pinky against the knob. It is the only
-+ * band that reaches below the origin.
++ * A club is a standardized object, so unlike Staff3D this does NOT scale with
++ * the user's staff length. Set a 40in staff and your clubs stay 52cm, which is
++ * how a prop bag works.
++ *
++ * The hand sits at 0, just above the knob's widest point -- the standard club
++ * grip puts the pinky against the knob, and it is also where `club.svg` puts the
++ * 2D hand point, so the pictographs and the 3D scene stay in register. The knob
++ * is the only band that reaches below the origin.
++ *
++ * Adjacent bands share a stop exactly, so no join is visible: the club is one
++ * continuous turned body and only its colour changes along the length. The cap's
++ * two stops sit at the same height, which revolves into the flat disc face a
++ * Delphin actually ends in.
 + */
 +export const CLUB_BANDS: readonly ClubBand[] = [
 +  {
 +    id: "knob",
 +    stops: [
-+      { at: -0.01727, radius: 0.00674 },
-+      { at: -0.01697, radius: 0.01512 },
-+      { at: -0.0158, radius: 0.0193 },
-+      { at: -0.01462, radius: 0.02154 },
-+      { at: -0.01227, radius: 0.02453 },
-+      { at: -0.00816, radius: 0.02714 },
-+      { at: -0.00404, radius: 0.02822 },
-+      { at: 0.00418, radius: 0.02852 },
-+      { at: 0.00888, radius: 0.02761 },
-+      { at: 0.013, radius: 0.02504 },
-+      { at: 0.01476, radius: 0.02287 },
-+      { at: 0.01594, radius: 0.01996 },
-+      { at: 0.01636, radius: 0.01782 },
++      { at: -0.01302, radius: 0.0035 },
++      { at: -0.00987, radius: 0.01008 },
++      { at: -0.00777, radius: 0.01375 },
++      { at: -0.00567, radius: 0.01642 },
++      { at: -0.00357, radius: 0.01782 },
++      { at: -0.00252, radius: 0.018 },
++      { at: -0.00199, radius: 0.01779 },
++      { at: 0.0043, radius: 0.012 },
++      { at: 0.00641, radius: 0.01079 },
++      { at: 0.00798, radius: 0.0105 },
 +    ],
 +  },
 +  {
++    // 21mm at the butt thickening to 23mm: the 16mm dowel plus a taped grip.
 +    id: "handle",
 +    stops: [
-+      { at: 0.01636, radius: 0.01782 },
-+      { at: 0.21098, radius: 0.01782 },
++      { at: 0.00798, radius: 0.0105 },
++      { at: 0.19298, radius: 0.0115 },
 +    ],
 +  },
 +  {
++    // The dark band at the shoulder, where the handle meets the body.
 +    id: "marker",
 +    stops: [
-+      { at: 0.21098, radius: 0.01782 },
-+      { at: 0.22572, radius: 0.02332 },
++      { at: 0.19298, radius: 0.0115 },
++      { at: 0.20698, radius: 0.0155 },
 +    ],
 +  },
 +  {
++    // Flares out of the shoulder, swells to 105mm two thirds up the body, then
++    // rounds off into the cap. The balance sits toward the body end, which is
++    // why the widest point is high rather than centred.
 +    id: "body",
 +    stops: [
-+      { at: 0.22572, radius: 0.02332 },
-+      { at: 0.26627, radius: 0.0378 },
-+      { at: 0.30623, radius: 0.05145 },
-+      { at: 0.32327, radius: 0.05693 },
-+      { at: 0.3456, radius: 0.06347 },
-+      { at: 0.35442, radius: 0.06567 },
-+      { at: 0.36323, radius: 0.06718 },
-+      { at: 0.37851, radius: 0.06759 },
-+      { at: 0.39144, radius: 0.06733 },
-+      { at: 0.40378, radius: 0.06604 },
-+      { at: 0.41553, radius: 0.06371 },
-+      { at: 0.50838, radius: 0.02363 },
-+      { at: 0.51014, radius: 0.01671 },
-+      { at: 0.51132, radius: 0.0086 },
-+      { at: 0.51161, radius: 0 },
++      { at: 0.20698, radius: 0.0155 },
++      { at: 0.23059, radius: 0.02452 },
++      { at: 0.2542, radius: 0.03218 },
++      { at: 0.27856, radius: 0.03871 },
++      { at: 0.30293, radius: 0.04389 },
++      { at: 0.32806, radius: 0.04788 },
++      { at: 0.3532, radius: 0.05056 },
++      { at: 0.37909, radius: 0.05208 },
++      { at: 0.40694, radius: 0.05249 },
++      { at: 0.41596, radius: 0.05221 },
++      { at: 0.4246, radius: 0.05158 },
++      { at: 0.43323, radius: 0.05057 },
++      { at: 0.44146, radius: 0.04924 },
++      { at: 0.4497, radius: 0.04754 },
++      { at: 0.45755, radius: 0.04553 },
++      { at: 0.4654, radius: 0.0431 },
++      { at: 0.47246, radius: 0.04049 },
++      { at: 0.47952, radius: 0.03741 },
++      { at: 0.4858, radius: 0.03418 },
++      { at: 0.49129, radius: 0.03083 },
++      { at: 0.49639, radius: 0.02711 },
++      { at: 0.5007, radius: 0.0232 },
++      { at: 0.50384, radius: 0.01953 },
++      { at: 0.5062, radius: 0.0155 },
++      { at: 0.50698, radius: 0.0125 },
++    ],
++  },
++  {
++    id: "cap",
++    stops: [
++      { at: 0.50698, radius: 0.0125 },
++      { at: 0.50698, radius: 0 },
 +    ],
 +  },
 +];
 +
-+/** Hand to the end of the body, as a fraction of staff length. */
-+export const CLUB_REACH = 0.51161;
++/** Hand to the flat cap, in metres. */
++export const CLUB_REACH_M = 0.50698;
 diff --git a/src/lib/components/props/doublestar-profile.ts b/src/lib/components/props/doublestar-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..6c1a0cff0b24c07b96e584153f27b064107955eb
@@ -12536,7 +12604,7 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11dc296c0e 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..273376c456e9452d9cdeb463607ec4c332e08a88 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -12554,7 +12622,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11
 +
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
 index 42a46ac294719f16470ed72c27286e50c55a35f2..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
