@@ -33,6 +33,44 @@ The pane leads the message: open it, say what it's pointed at and how to drive
 it, THEN the analysis. Screenshots and `SendUserFile` frames are supplements to
 the live page, never the headline.
 
+**Taking your own screenshots does not discharge this.** Those prove the change
+works — they are evidence, addressed to `verification-protocol.md`. The pane is
+the delivery, addressed to him. A thorough report with measurements, test
+counts, and seven verified viewports that ends in a markdown link is the exact
+failure this rule names, and being thorough makes it worse rather than better.
+The order is: point the pane, then write the message. Austen (2026-08-17, on
+the pronunciation-feedback handoff): *"I absolutely cannot announce to the user
+that something is now ready for visual feedback unless I put the visual
+feedback in his fucking face."*
+
+## Point it at the REAL surface, not the harness
+
+The pane must open on the thing the change actually ships in — the app route,
+the production page, the real background — not the diagnostic probe or test
+route you used to develop it. A harness proves the code runs; it is not the
+thing he asked to see. If both matter, the real surface is what the pane shows
+and the harness is a link underneath.
+
+When the shipping route genuinely will not load in the pane — a login wall, an
+`adminOnly` gate, a microphone or folder grant the pane's browser context does
+not have — open the closest surface that renders the REAL component and say in
+one sentence why the shipping route would not load. That is a stated fallback,
+not a silent downgrade to links. The pane never ends up empty and unexplained.
+
+2026-08-17, after the 2D-ocean fish-cascade fix opened the pane on
+`/test/ocean-probe` instead of the ocean itself: *"whenever you're done and
+you're sending me a message that says hey look I did the thing I'd like you to
+inspect the thing, I should immediately see on my right the in app browser
+already opened up to the thing ... I should never have to wonder for even a
+second, I shouldn't even have to click a link."*
+
+Corollary: the pane is not delivered until it is RENDERING. Check it in the
+same turn — `javascript_tool` for the element/canvas that should exist. If it
+is empty because the pane is collapsed (`document.visibilityState === "hidden"`
+gates canvas and WebGL mounts), lead with that in one sentence so he knows the
+single action that makes it appear. Never report a pointed-but-blank pane as
+done without saying so.
+
 ## Self-check (run before sending any completion message)
 
 Grep your own draft for URLs and "take a look" phrasing. If the message
