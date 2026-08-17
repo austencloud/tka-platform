@@ -26,6 +26,31 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "static" / "models" / "props" / "chicken.glb"
 AUTHORED_LENGTH_M = 0.80
 
+# The torso ellipsoid, shared with embossed_side_wing so the wing relief is
+# always evaluated against the wall it is supposed to sit on. Depth (Z) now
+# slightly exceeds width (X): a plucked bird is deeper breast-to-back than it is
+# side-to-side, and the old 0.047 half-depth read as a flat sliver in profile.
+TORSO_CENTER = (0.0, -0.024, -0.006)
+TORSO_RADII = (0.063, 0.151, 0.058)
+
+
+def waist_pressure(y: float, x: float) -> tuple[float, float]:
+    """The (x, z) multipliers the palm-pressure waist applies to the shell.
+
+    Shared with embossed_side_wing. The wing is placed analytically against the
+    torso wall, so it has to be squeezed by the same amount the wall is: before
+    this was shared, the wing stayed at the undeformed radius and stuck out of
+    the silhouette as a hard plate.
+    """
+    if abs(y) >= 0.075 or abs(x) >= 0.068:
+        return (1.0, 1.0)
+    pressure = math.exp(-((y / 0.043) ** 2))
+    wrinkle = 0.016 * math.sin(y * math.tau / 0.030) * math.exp(-((y / 0.065) ** 2))
+    return (
+        1.0 - 0.12 * pressure + wrinkle,
+        1.0 - 0.08 * pressure + wrinkle * 0.72,
+    )
+
 
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -302,26 +327,38 @@ def embossed_side_wing(
     *,
     y_offset: float,
 ) -> bpy.types.Object:
-    """Build the classic shallow wing relief directly against the torso wall."""
+    """Build the classic shallow wing relief directly against the torso wall.
+
+    On the real chicken this is a soft crease across the shoulder, not a panel
+    down the whole flank, so the outline is short and sits high on the body.
+    """
     outline = (
-        (0.060 + y_offset, -0.010),
-        (0.032 + y_offset, 0.020),
-        (-0.020 + y_offset, 0.026),
-        (-0.071 + y_offset, 0.014),
-        (-0.101 + y_offset, -0.004),
-        (-0.061 + y_offset, -0.016),
-        (0.006 + y_offset, -0.017),
+        (0.099 + y_offset, -0.010),
+        (0.077 + y_offset, 0.020),
+        (0.036 + y_offset, 0.026),
+        (-0.003 + y_offset, 0.014),
+        (-0.027 + y_offset, -0.004),
+        (0.004 + y_offset, -0.016),
+        (0.057 + y_offset, -0.017),
     )
     vertices: list[tuple[float, float, float]] = []
     for outer in (False, True):
         for y, z in outline:
+            # Must track TORSO_CENTER / TORSO_RADII below: the relief is placed
+            # by evaluating the torso wall analytically, so a deeper body moves
+            # the wing with it instead of sinking it inside the shell.
             surface_term = max(
                 0.08,
-                1.0 - ((y + 0.024) / 0.151) ** 2 - ((z + 0.006) / 0.047) ** 2,
+                1.0
+                - ((y - TORSO_CENTER[1]) / TORSO_RADII[1]) ** 2
+                - ((z - TORSO_CENTER[2]) / TORSO_RADII[2]) ** 2,
             )
-            surface_x = 0.063 * math.sqrt(surface_term)
-            relief = 0.0023 if outer else -0.0008
-            vertices.append((side_sign * (surface_x + relief), y, z))
+            surface_x = TORSO_RADII[0] * math.sqrt(surface_term)
+            squeeze_x, squeeze_z = waist_pressure(y, surface_x)
+            relief = 0.0014 if outer else -0.0006
+            vertices.append(
+                (side_sign * (surface_x * squeeze_x + relief), y, z * squeeze_z)
+            )
 
     count = len(outline)
     faces: list[tuple[int, ...]] = [
@@ -457,12 +494,23 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         (
             ellipsoid(
                 "TKA_Chicken_Torso",
-                (0.0, -0.024, -0.006),
-                (0.063, 0.151, 0.047),
+                TORSO_CENTER,
+                TORSO_RADII,
                 body,
                 rotation=(0.018, 0.0, 0.0),
                 segments=32,
                 rings=22,
+            ),
+            # A separate breast mass bulging forward under the neck. The torso
+            # alone is front-to-back symmetric, which reads as a tube in profile;
+            # the real bird carries its volume forward of the leg line.
+            ellipsoid(
+                "TKA_Chicken_Breast",
+                (0.0, 0.030, 0.024),
+                (0.055, 0.098, 0.045),
+                body,
+                segments=28,
+                rings=20,
             ),
             tapered_tube(
                 "TKA_Chicken_Neck",
@@ -477,10 +525,12 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
                 body,
                 segments=24,
             ),
+            # Reference heads are barely wider than the neck: 7% of overall
+            # length, where the old 0.044 half-width read as 11% and blobby.
             ellipsoid(
                 "TKA_Chicken_Head",
                 (0.0, 0.298, 0.021),
-                (0.044, 0.052, 0.039),
+                (0.034, 0.052, 0.041),
                 body,
                 segments=32,
                 rings=20,
@@ -490,18 +540,22 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
 
     # Curved, tapered legs grow out of the torso and become narrower toward the
     # ankles. Their slightly different paths read as limp rubber, not straws.
+    # Radii are set from the reference photo, where a leg is about a third of the
+    # torso width at the thigh. The earlier 0.017 thigh read as a straw, and in
+    # profile both legs occupied the same Z and collapsed into a single needle —
+    # hence the deliberate front/back stagger.
     leg_paths = {
         "Left": (
-            ((-0.027, -0.117, -0.004), 0.017),
-            ((-0.030, -0.169, -0.003), 0.0145),
-            ((-0.033, -0.223, 0.001), 0.0115),
-            ((-0.031, -0.282, 0.000), 0.0085),
+            ((-0.027, -0.117, 0.004), 0.0235),
+            ((-0.030, -0.169, 0.008), 0.0215),
+            ((-0.033, -0.223, 0.013), 0.0192),
+            ((-0.031, -0.282, 0.012), 0.0155),
         ),
         "Right": (
-            ((0.027, -0.116, -0.004), 0.017),
-            ((0.030, -0.171, 0.001), 0.014),
-            ((0.028, -0.226, -0.002), 0.011),
-            ((0.033, -0.279, 0.001), 0.0082),
+            ((0.027, -0.116, -0.010), 0.0235),
+            ((0.030, -0.171, -0.014), 0.0210),
+            ((0.028, -0.226, -0.019), 0.0190),
+            ((0.033, -0.279, -0.017), 0.0152),
         ),
     }
     for side, path in leg_paths.items():
@@ -520,20 +574,16 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         molded_parts,
         body,
         voxel_size=0.0040,
-        smooth_iterations=5,
+        smooth_iterations=6,
         decimate_ratio=0.50,
     )
 
     # A subtle palm-pressure waist communicates the real grip without adding a
     # separate sleeve or changing the hand pivot.
     for vertex in molded_body.data.vertices:
-        if abs(vertex.co.y) < 0.075 and abs(vertex.co.x) < 0.068:
-            pressure = math.exp(-((vertex.co.y / 0.043) ** 2))
-            wrinkle = 0.016 * math.sin(vertex.co.y * math.tau / 0.030) * math.exp(
-                -((vertex.co.y / 0.065) ** 2)
-            )
-            vertex.co.x *= 1.0 - 0.12 * pressure + wrinkle
-            vertex.co.z *= 1.0 - 0.08 * pressure + wrinkle * 0.72
+        squeeze_x, squeeze_z = waist_pressure(vertex.co.y, vertex.co.x)
+        vertex.co.x *= squeeze_x
+        vertex.co.z *= squeeze_z
     molded_body.data.update()
     finish_mesh(molded_body, body, latex_texture=0.00105)
 
@@ -576,7 +626,9 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             tip_z=0.143,
             base_y=0.307,
             tip_y=0.302,
-            half_width=0.031,
+            # Stays inside the head silhouette (half-width 0.034); the old 0.031
+            # flared past the narrowed head as two flat paddles.
+            half_width=0.023,
             tip_half_width=0.004,
             half_height=0.0105,
             material=beak,
@@ -590,7 +642,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             tip_z=0.132,
             base_y=0.279,
             tip_y=0.267,
-            half_width=0.028,
+            half_width=0.021,
             tip_half_width=0.004,
             half_height=0.008,
             material=beak,
@@ -601,7 +653,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         ellipsoid(
             "TKA_Chicken_MouthInterior",
             (0.0, 0.291, 0.087),
-            (0.024, 0.007, 0.047),
+            (0.018, 0.007, 0.047),
             mouth,
             segments=20,
             rings=12,
@@ -610,7 +662,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
 
     # The original novelty chicken has tiny red side-set eyes, not white mascot
     # eyeballs. Their lateral placement keeps the head convincingly molded.
-    for side, x in (("Left", -0.041), ("Right", 0.041)):
+    for side, x in (("Left", -0.031), ("Right", 0.031)):
         objects.append(
             ellipsoid(
                 f"TKA_Chicken_RedEye_{side}",
@@ -666,9 +718,12 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
 
     # The 19-inch classic ends in narrow, limp orange toes with almost no web.
     # They read as part of a flexible novelty casting rather than bird anatomy.
+    # "shift" follows the staggered ankles above so each foot stays welded to its
+    # own leg instead of floating at the old shared Z.
     feet = {
         "Left": {
             "center": -0.031,
+            "shift": 0.010,
             "toes": (
                 ((-0.033, -0.290, 0.002), (-0.034, -0.342, 0.003), (-0.032, -0.397, 0.002)),
                 ((-0.038, -0.291, 0.001), (-0.057, -0.334, 0.002), (-0.074, -0.377, 0.001)),
@@ -677,6 +732,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         },
         "Right": {
             "center": 0.033,
+            "shift": -0.014,
             "toes": (
                 ((0.034, -0.288, 0.002), (0.036, -0.339, 0.003), (0.035, -0.394, 0.002)),
                 ((0.040, -0.289, 0.001), (0.058, -0.329, 0.002), (0.078, -0.372, 0.001)),
@@ -685,11 +741,12 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         },
     }
     for side, foot in feet.items():
+        shift = foot["shift"]
         foot_parts = [
             ellipsoid(
                 f"TKA_Chicken_FootHeel_{side}",
-                (foot["center"], -0.294, 0.0),
-                (0.012, 0.019, 0.009),
+                (foot["center"], -0.294, shift),
+                (0.012, 0.019, 0.011),
                 beak,
                 segments=18,
                 rings=10,
@@ -699,7 +756,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             foot_parts.append(
                 tapered_tube(
                     f"TKA_Chicken_Toe_{side}_{toe_index + 1}",
-                    path,
+                    tuple((x, y, z + shift) for x, y, z in path),
                     (0.0066, 0.0042, 0.0018),
                     beak,
                     segments=14,
