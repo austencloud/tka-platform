@@ -63,7 +63,6 @@ export function createViewerShellInteractionState(
   >();
   let deleteConfirmOpen = $state(false);
   let isDeleting = $state(false);
-  let mappingRequestVideoId = $state<string | null>(null);
 
   const headerActions = $derived(
     buildHeaderActions(inputs.getContext(), "full", {
@@ -207,19 +206,20 @@ export function createViewerShellInteractionState(
 
   function handleGalleryVideoUpload(): void {
     dependencies.captureScanAction("video_upload");
-    mappingRequestVideoId = null;
     void inputs.getContext().handleVideoUpload();
   }
 
   /**
-   * The gallery can say a performance has no timing but cannot map it - the
-   * editor lives in the upload pane. This carries the chosen video across so
-   * "Map timing" opens the pane already on that video's editor.
+   * SequenceVideos raises this when it leaves browsing for its uploader or its
+   * timing editor. The viewer answers by pausing playback and announcing the
+   * change; the surface itself no longer moves, so this changes no layout.
    */
-  function handleGalleryMapTiming(videoId: string): void {
-    dependencies.captureScanAction("video_upload");
-    mappingRequestVideoId = videoId;
-    void inputs.getContext().handleVideoUpload();
+  function handleVideoWorkOpenChange(open: boolean): void {
+    if (open) {
+      handleGalleryVideoUpload();
+      return;
+    }
+    handleVideoUploadClose();
   }
 
   function handlePublish(): void {
@@ -668,9 +668,6 @@ export function createViewerShellInteractionState(
     get showInlineProgress() {
       return showInlineProgress;
     },
-    get mappingRequestVideoId() {
-      return mappingRequestVideoId;
-    },
     mount,
     recordOpenApp,
     handleAccountOpenApp,
@@ -684,7 +681,7 @@ export function createViewerShellInteractionState(
     handleSave,
     handleHeaderVideoUpload,
     handleGalleryVideoUpload,
-    handleGalleryMapTiming,
+    handleVideoWorkOpenChange,
     handlePublish,
     handleUnpublish,
     handleDeleteRequest,

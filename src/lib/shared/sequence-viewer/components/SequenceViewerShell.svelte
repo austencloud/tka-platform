@@ -30,7 +30,7 @@
   import ViewerModeBottomBar from "./ViewerModeBottomBar.svelte";
   import { dockTrayState } from "./ControlDock.svelte";
   import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
-  import VideoGallery from "./VideoGallery.svelte";
+  import SequenceVideos from "./sequence-videos/SequenceVideos.svelte";
   import ViewerHeader from "./ViewerHeader.svelte";
   import FullscreenControls from "./FullscreenControls.svelte";
   import ExportVideoDrawer from "$lib/shared/animation-panel/components/AnimationPanel.svelte";
@@ -49,7 +49,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
-  import VideoPanel from "./video-panel/VideoPanel.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
@@ -566,16 +565,15 @@
               onExported={adoptPostStudioRender}
             />
           {:else if layout.showVideoGallery}
-            <VideoGallery
+            <SequenceVideos
               {sequence}
               isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
               isLoggedIn={ctx.isLoggedIn}
-              onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                ? interactions.handleGalleryVideoUpload
-                : undefined}
-              onMapTiming={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
-                ? interactions.handleGalleryMapTiming
-                : undefined}
+              bpm={ctx.bpmLocal}
+              canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
+              uploadRequested={layout.isVideoUploadActive}
+              onSaveFirst={interactions.handleVideoUploadSaveFirst}
+              onUploadOpenChange={interactions.handleVideoWorkOpenChange}
             />
           {:else}
             <ViewerSplitPane
@@ -778,15 +776,6 @@
                   resolvedAutoLayout={ctx.resolvedCardAutoLayout}
                   layout={layout.effectiveMobile ? "bottom" : "sidebar"}
                   onSettingChange={interactions.handleCardSettingChange}
-                />
-              {:else if layout.isVideoUploadActive}
-                <VideoPanel
-                  {sequence}
-                  isOwned={ctx.isOwned || ctx.isOwnedLibraryRecord}
-                  bpm={ctx.bpmLocal}
-                  initialMappingVideoId={interactions.mappingRequestVideoId}
-                  onSaveFirst={interactions.handleVideoUploadSaveFirst}
-                  onClose={interactions.handleVideoUploadClose}
                 />
               {/if}
             </div>

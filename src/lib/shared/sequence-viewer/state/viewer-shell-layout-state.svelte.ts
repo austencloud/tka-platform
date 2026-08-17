@@ -2,8 +2,8 @@ import type { DeviceDetector } from "$lib/shared/device/services/device-detector
 import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ContentType } from "./viewer-state.svelte";
-import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import type { SelectableViewerMode } from "../services/viewer-modes";
+import type { OrchestratorContext } from "../domain/viewer-orchestrator-context";
 import { resolveExportSidebarMinWidth } from "../services/viewer-shell-model";
 
 interface ViewerShellLayoutInputs {
@@ -51,15 +51,15 @@ export function createViewerShellLayoutState(
       inputs.getContext().renderMode === "3d" &&
       !inputs.getContext().previewBlobUrl
   );
+  // Uploading a performance no longer occupies the sidebar - SequenceVideos
+  // owns the uploader inside the viewer body - so it does not take the export
+  // layout with it.
   const isSidebarExportActive = $derived(
-    isAnyExportActive && !isRecordSceneActive
+    isAnyExportActive && !isRecordSceneActive && !isVideoUploadActive
   );
-  // The upload panel is a sidebar occupant, so it keeps the export layout, but
-  // it must not evict the gallery from the viewer body: a person uploading is
-  // still browsing this sequence's videos and returns to them on close.
   const showVideoGallery = $derived(
     inputs.getContext().viewerState.viewerMode === "videos" &&
-      (!isSidebarExportActive || isVideoUploadActive)
+      !isSidebarExportActive
   );
   // Post Studio takes the whole viewer body, the same way the video gallery
   // does. It owns its own export, so an export sidebar alongside it would be
