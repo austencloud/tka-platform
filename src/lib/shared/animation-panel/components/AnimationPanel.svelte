@@ -396,14 +396,16 @@
 
   // ── Pill specs ──
   // Effects leads the rail — it's the section users reach for most.
-  const ANIMATION_PILL_ORDER = [
-    "effects",
-    "props",
-    "effort",
-    "playback",
-    "display",
-    "export",
-  ] as const satisfies readonly PillId[];
+  // The sidebar collapses effort/playback/display into one Motion page; the
+  // mobile dock keeps them as three trays. Membership still comes from
+  // PILL_ORDER via buildPillSpecs, so the two orders cannot drift.
+  const ANIMATION_PILL_ORDER = $derived(
+    layout === "sidebar"
+      ? (["effects", "props", "motion", "export"] as const satisfies
+          readonly PillId[])
+      : (["effects", "props", "effort", "playback", "display", "export"] as const satisfies
+          readonly PillId[])
+  );
 
   const pillSpecs = $derived(
     buildPillSpecs(
@@ -433,6 +435,15 @@
           summary: playbackSummary,
         },
         display: { icon: "fa-eye", label: "Display", summary: displaySummary },
+        // Effort leads the summary because it is the one of the three whose
+        // value a user is most likely to be tracking, and it carries the
+        // accent the rail glows with.
+        motion: {
+          icon: "fa-gauge-high",
+          label: "Motion",
+          summary: `${effortSummary} · ${playbackSummary}`,
+          accentColor: effortAccent,
+        },
         ...(exportEnabled
           ? {
               export: {
@@ -454,7 +465,17 @@
     if (layout !== "sidebar" || !activePill) return;
     const ids = pillSpecs.map((p) => p.id);
     if (!ids.includes(activePill)) {
-      activePill = ids.includes("effects") ? "effects" : (ids[0] ?? null);
+      // A remembered effort/playback/display lands on the page that now
+      // contains it rather than falling all the way back to Effects.
+      const merged = (["effort", "playback", "display"] as PillId[]).includes(
+        activePill
+      );
+      activePill =
+        merged && ids.includes("motion")
+          ? "motion"
+          : ids.includes("effects")
+            ? "effects"
+            : (ids[0] ?? null);
       return;
     }
     saveActivePill(activePill);
@@ -529,18 +550,46 @@
         reportSetting("effects", setting, previous, value, coalesce)}
     />
   {:else if activePill === "effort"}
-    <div class="section-pad">
-      {#if layout === "sidebar"}
-        <p class="section-hint">How each beat speeds up and slows down.</p>
-      {/if}
-      <EffortPanel
-        columns={layout === "sidebar" ? 2 : 4}
-        showSubtitles={layout === "sidebar"}
-        onSettingChange={(previous, value) =>
-          reportSetting("effort", "preset", previous, value)}
-      />
-    </div>
+    {@render effortBody()}
   {:else if activePill === "playback"}
+    {@render playbackBody()}
+  {:else if activePill === "display"}
+    {@render displayBody()}
+  {:else if activePill === "motion"}
+    <!-- Effort, Playback and Display measured at 44% / 36% / 24% of the rail
+         on their own, so the sidebar spent three pages to show three mostly
+         empty columns. Stacked they fill it, and they read as one idea: how
+         the motion behaves and what of it you can see. Effects and Props keep
+         their own pages — those two fill the rail and Props overflows it.
+         Sidebar only; the mobile dock still gets three separate tabs, where
+         one tall merged tray would not fit. -->
+    <div class="motion-scope">
+      <div class="motion-stack">
+        {@render effortBody()}
+        {@render playbackBody()}
+        {@render displayBody()}
+      </div>
+    </div>
+  {:else if activePill === "export" && exportOptions}
+    {@render exportBody()}
+  {/if}
+{/snippet}
+
+{#snippet effortBody()}
+  <div class="section-pad">
+    {#if layout === "sidebar"}
+      <p class="section-hint">How each beat speeds up and slows down.</p>
+    {/if}
+    <EffortPanel
+      columns={layout === "sidebar" ? 2 : 4}
+      showSubtitles={layout === "sidebar"}
+      onSettingChange={(previous, value) =>
+        reportSetting("effort", "preset", previous, value)}
+    />
+  </div>
+{/snippet}
+
+{#snippet playbackBody()}
     <div class="section-pad playback-rows">
       {#if showTempoControls}
         <div class="rt-section">
@@ -576,20 +625,25 @@
           reportSetting("playback", "path_shape", previous, value)}
       />
     </div>
-  {:else if activePill === "display"}
-    <div class="section-pad display-rows">
-      <div
-        class="rt-section"
-        role="region"
-        aria-labelledby="display-visibility-label"
+{/snippet}
+
+{#snippet displayBody()}
+  <div class="section-pad display-rows">
+    <div
+      class="rt-section"
+      role="region"
+      aria-labelledby="display-visibility-label"
+    >
+      <span class="rt-section-label" id="display-visibility-label"
+        >Visibility</span
       >
-        <span class="rt-section-label" id="display-visibility-label"
-          >Visibility</span
-        >
-        <DisplayPanel {showMotionVisibility} {onSettingChange} />
-      </div>
+      <DisplayPanel {showMotionVisibility} {onSettingChange} />
     </div>
-  {:else if activePill === "export" && exportOptions}
+  </div>
+{/snippet}
+
+{#snippet exportBody()}
+  {#if exportOptions}
     <div class="section-pad export-fields">
       <div class="field">
         <span class="field-label">FPS</span>
@@ -960,6 +1014,53 @@
   .sidebar .section-pad {
     gap: 16px;
     padding: 8px 16px 20px;
+  }
+
+  /* A container query cannot style its own container, so the stack gets a
+     scope wrapper to measure and the grid rules land on the stack itself. */
+  .motion-scope {
+    container-name: motion-stack;
+    container-type: inline-size;
+  }
+
+  /* The three merged sections keep their own internal padding, so the stack
+     only supplies the rule between them and cancels the doubled vertical
+     padding where two `.section-pad`s meet. */
+  .motion-stack {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .motion-stack > :global(.section-pad + .section-pad) {
+    margin-top: 4px;
+    padding-top: 20px;
+    border-top: 1px solid var(--theme-stroke);
+  }
+
+  /* Stacked, the three sections run just past the rail and push Visibility
+     below the fold — while the rail is 600-1000px wide with one narrow column
+     of controls in it. Effort keeps the full width (its tiles carry
+     subtitles); Tempo/Paths and Visibility sit side by side underneath, which
+     ends the scroll and stops the chips stretching to 200px to hold the word
+     "Grid". */
+  @container motion-stack (min-width: 36rem) {
+    .motion-stack {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-content: start;
+      column-gap: var(--spacing-md, 12px);
+    }
+
+    .motion-stack > :global(.section-pad:first-child) {
+      grid-column: 1 / -1;
+    }
+
+    /* The rule is per-column now, not between consecutive siblings. */
+    .motion-stack > :global(.section-pad + .section-pad) {
+      margin-top: 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--theme-stroke);
+    }
   }
 
   /* Pending state for the lazy-loaded BentoPropGrid chunk. Fills the

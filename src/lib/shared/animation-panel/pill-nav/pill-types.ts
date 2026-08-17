@@ -11,6 +11,11 @@ export const PILL_ORDER = [
   "layers",
   "props",
   "effects",
+  // Sidebar-only composite of effort + playback + display. Those three each
+  // filled well under half the rail alone; the sidebar shows them as one page
+  // and keeps the individual ids for the mobile dock, which shows one tray at
+  // a time and cannot take the merged height.
+  "motion",
   "effort",
   "playback",
   "display",
