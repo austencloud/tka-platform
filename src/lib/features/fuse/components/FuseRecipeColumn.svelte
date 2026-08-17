@@ -4,9 +4,11 @@
 
   let {
     destination = $bindable(null),
+    singleDestination = false,
     onClose,
   }: {
     destination?: FuseSettingsDestination;
+    singleDestination?: boolean;
     onClose: () => void;
   } = $props();
 </script>
@@ -15,7 +17,7 @@
      the result, and a sheet from the right covered the one panel showing that
      result. It reads left to right as cause, material, effect. -->
 <aside class="fuse-recipe-column" aria-label="Fuse recipe">
-  <FuseRecipeSettings bind:destination {onClose} />
+  <FuseRecipeSettings bind:destination {singleDestination} {onClose} />
 </aside>
 
 <style>

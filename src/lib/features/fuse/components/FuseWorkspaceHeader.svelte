@@ -7,11 +7,8 @@
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import { buildFuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
   import type { FuseMode } from "../state/fuse-state.svelte";
-  import FuseGridTile from "./FuseGridTile.svelte";
-  import FuseLevelTile from "./FuseLevelTile.svelte";
   import FuseModeBar from "./FuseModeBar.svelte";
-  import FusePairingTile from "./FusePairingTile.svelte";
-  import FuseRecipePopover from "./FuseRecipePopover.svelte";
+  import FuseRecipeRail from "./FuseRecipeRail.svelte";
 
   let {
     onOpenRecipe = () => {},
@@ -57,44 +54,6 @@
       rule: fuseState.rule,
     })
   );
-  type RailTile = {
-    id: FuseRecipeDestination;
-    title: string;
-    width: string;
-    align: "start" | "center" | "end";
-    color: string;
-    shadowColor: string;
-    textColor?: string;
-  };
-
-  // The slots that open an editor. Level, Grid, and Pairing are not here — they
-  // are their own tiles, each holding the control it governs.
-  const leadingTiles = $derived<RailTile[]>([
-    {
-      id: "length" as const,
-      title: "Length",
-      width: "29rem",
-      align: "start" as const,
-      ...cardColors.length,
-    },
-  ]);
-
-  const trailingTiles = $derived<RailTile[]>([
-    {
-      id: "style" as const,
-      title: "Style",
-      width: "36rem",
-      align: "center" as const,
-      ...cardColors.customize,
-    },
-    {
-      id: "starting" as const,
-      title: "Starting conditions",
-      width: "64rem",
-      align: "center" as const,
-      ...cardColors.startEnd,
-    },
-  ]);
   const compactSummary = $derived(
     `${summaries.length} · L${fuseState.generationLevel} · ${summaries.grid} · ${summaries.pairing}`
   );
@@ -115,7 +74,8 @@
   }
 </script>
 
-<!-- One recipe, six focused controls. Compact layouts drill into the same state. -->
+<!-- One recipe. Where there is room it lays out flat as a row of setting cards;
+     narrower layouts drill into the same state behind the recipe button. -->
 <header class="fuse-header">
   <div class="title-block">
     <h2 aria-label="Fuse two paths">
@@ -133,58 +93,15 @@
     <FuseModeBar compact={true} onSelect={onModeChange} />
   </div>
 
-  <div class="recipe-rail" aria-label="Fuse recipe controls">
-    <!-- Length opens an editor. Level and Grid own their values outright — three
-         ordered settings and two named ones — so they carry their control on the
-         tile instead of hiding it behind a popover. -->
-    {#each leadingTiles as tile (tile.id)}
-      <FuseRecipePopover
-        destination={tile.id}
-        title={tile.title}
-        summary={summaries[tile.id]}
-        color={tile.color}
-        shadowColor={tile.shadowColor}
-        textColor={tile.textColor}
-        width={tile.width}
-        align={tile.align}
-        open={activeSetting === tile.id}
-        disabled={optionsDisabled}
-        onOpenChange={(open) => setTileOpen(tile.id, open)}
-      />
-    {/each}
-
-    <FuseLevelTile summary={summaries.level} disabled={optionsDisabled} />
-
-    <FuseGridTile
-      color={cardColors.gridMode.color}
-      shadowColor={cardColors.gridMode.shadowColor}
-      disabled={optionsDisabled}
-    />
-
-    {#each trailingTiles as tile (tile.id)}
-      <FuseRecipePopover
-        destination={tile.id}
-        title={tile.title}
-        summary={summaries[tile.id]}
-        color={tile.color}
-        shadowColor={tile.shadowColor}
-        textColor={tile.textColor}
-        width={tile.width}
-        align={tile.align}
-        open={activeSetting === tile.id}
-        disabled={optionsDisabled}
-        onOpenChange={(open) => setTileOpen(tile.id, open)}
-      />
-    {/each}
-
-    <FusePairingTile
-      color={cardColors.mode.color}
-      shadowColor={cardColors.mode.shadowColor}
-      disabled={optionsDisabled}
-      {onModeChange}
-      onEditRule={() => onOpenSetting("pairing")}
-    />
-  </div>
+  <FuseRecipeRail
+    {summaries}
+    {cardColors}
+    disabled={optionsDisabled}
+    {activeSetting}
+    onSettingOpenChange={setTileOpen}
+    {onModeChange}
+    onEditRule={() => onOpenSetting("pairing")}
+  />
 
   <!-- The way into the recipe panel, at every width. Where the rail is showing
        it narrows to its icon and sits beside the title: the tiles each open one
@@ -248,8 +165,7 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .title-compact,
-  .recipe-rail {
+  .title-compact {
     display: none;
   }
 
@@ -390,58 +306,14 @@
       display: none;
     }
 
-    /* The trigger keeps its door but gives up its width to the rail: icon only,
-       square, sitting between the title and the tiles. The summary it was
-       carrying is redundant here — every tile in the rail already states its
-       own value. */
+    /* The recipe button is gone at this size, and so is the column of rows it
+       opened: every one of those rows — Length, Level, Grid, Style, Starting —
+       is a card in the rail below, holding its own control. A door onto a list
+       that restates the row of cards under it is the redundancy this rail was
+       built to remove. The rule editor still opens on the left, but from the
+       Rule card, which is the only setting a card cannot hold outright. */
     .recipe-trigger {
-      order: 1;
-      flex: 0 0 auto;
-    }
-
-    .recipe-trigger :global(.panel-btn) {
-      width: var(--min-touch-target, 48px);
-      min-width: var(--min-touch-target, 48px);
-      min-height: var(--min-touch-target, 48px);
-      justify-content: center;
-      padding: 0;
-    }
-
-    .recipe-trigger .recipe-label,
-    .recipe-trigger .recipe-chevron {
       display: none;
-    }
-
-    /* Open is a state of the workspace, not of this button alone, so it reads
-       as held down rather than merely hovered. */
-    .recipe-trigger.is-open :global(.panel-btn) {
-      color: var(--theme-text);
-      background: color-mix(
-        in srgb,
-        var(--theme-accent) 26%,
-        var(--theme-card-bg, rgba(255, 255, 255, 0.08))
-      );
-      border-color: color-mix(in srgb, var(--theme-accent) 62%, transparent);
-    }
-
-    .recipe-rail {
-      order: 2;
-      display: grid;
-      /* Floors are each ~2.5rem lower than they were: that is the leading icon
-         box and its gap, which every tile has given back. */
-      /* Level and Grid carry controls now, not a word: the stepper needs room for
-         two buttons either side of "Level 2", and the Grid switch for both of its
-         values at once. Their floors are set to those controls. */
-      grid-template-columns:
-        minmax(4.75rem, 0.7fr) minmax(9.5rem, 1.05fr)
-        minmax(9rem, 1fr) minmax(5rem, 0.7fr)
-        minmax(8.5rem, 1.12fr) minmax(11rem, 1.3fr);
-      gap: 8px;
-      /* 100% basis is what puts the rail on its own row under the centred
-         title. Keep it in this shorthand — a bare `flex-basis` earlier in the
-         block gets reset by this declaration. */
-      flex: 1 1 100%;
-      min-width: 0;
     }
   }
 
@@ -457,10 +329,6 @@
 
     h2 {
       font-size: 1.65rem;
-    }
-
-    .recipe-rail {
-      gap: 12px;
     }
   }
 </style>

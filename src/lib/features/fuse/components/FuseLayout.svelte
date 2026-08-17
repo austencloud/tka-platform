@@ -539,6 +539,7 @@
     {#if recipeColumn}
       <FuseRecipeColumn
         bind:destination={settingsDestination}
+        singleDestination={wideWorkspace}
         onClose={closeRecipe}
       />
     {/if}

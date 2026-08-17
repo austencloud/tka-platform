@@ -1,0 +1,357 @@
+<!--
+  FuseRecipeRail — the whole Fuse recipe as one row of the app's setting cards.
+
+  Every slot here is a card from the Generate bento, not a Fuse-local imitation
+  of one: StepperCard for Length, LevelCard for Level (which is what fades blue
+  to silver to gold as the level changes), GridModeCard for Grid, ToggleCard for
+  Pairing, BaseCard for the two slots whose editors open in a popover. Fuse owns
+  the wiring and the arrangement; the cards own how a setting card looks and
+  feels.
+
+  One width for all of them. These are answers to the same question — what is
+  this fuse made of — so the row is an even set rather than eight widths arguing
+  about which setting matters most. Two of the cards come and go: Turns has
+  nothing to cap at level 1, and Rule has nothing to name while the paths are
+  Separate. Those two grow their track from zero on the workspace's own clock,
+  so the Rule card arriving and the rule editor opening on the left read as one
+  move rather than two animations that happen to fire together.
+-->
+<script lang="ts">
+  import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
+  import GridModeCard from "$lib/features/create/generate/components/cards/GridModeCard.svelte";
+  import LevelCard from "$lib/features/create/generate/components/cards/LevelCard.svelte";
+  import ToggleCard from "$lib/features/create/generate/components/cards/ToggleCard.svelte";
+  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
+  import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
+  import type { CardColors } from "$lib/shared/create/domain/card-colors";
+  import {
+    maxTurnIntensitiesForLevel,
+    type TurnLevel,
+  } from "$lib/shared/create/services/level-turn-values";
+  import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getFuseContext } from "../context/fuse-context";
+  import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
+  import { fuseRuleLabel } from "../domain/fuse-rule";
+  import type { FuseRecipeSummaries } from "../domain/fuse-recipe-summaries";
+  import { FUSE_LENGTHS, type FuseMode } from "../state/fuse-state.svelte";
+  import FuseRecipePopover from "./FuseRecipePopover.svelte";
+
+  let {
+    summaries,
+    cardColors,
+    disabled = false,
+    activeSetting = null,
+    onSettingOpenChange,
+    onModeChange,
+    onEditRule,
+  }: {
+    summaries: FuseRecipeSummaries;
+    cardColors: CardColors;
+    disabled?: boolean;
+    activeSetting?: FuseRecipeDestination | null;
+    onSettingOpenChange: (
+      destination: FuseRecipeDestination,
+      open: boolean
+    ) => void;
+    onModeChange: (mode: FuseMode) => void;
+    onEditRule: () => void;
+  } = $props();
+
+  const { state: fuseState } = getFuseContext();
+
+  const levelMap: Record<TurnLevel, DifficultyLevel> = {
+    1: DifficultyLevel.BEGINNER,
+    2: DifficultyLevel.INTERMEDIATE,
+    3: DifficultyLevel.ADVANCED,
+  };
+  const reverseLevelMap: Record<DifficultyLevel, TurnLevel> = {
+    [DifficultyLevel.BEGINNER]: 1,
+    [DifficultyLevel.INTERMEDIATE]: 2,
+    [DifficultyLevel.ADVANCED]: 3,
+    [DifficultyLevel.SKEWED]: 3,
+  };
+
+  const minimumLength = FUSE_LENGTHS[0]!;
+  const maximumLength = FUSE_LENGTHS[FUSE_LENGTHS.length - 1]!;
+  const lengthIndex = $derived(FUSE_LENGTHS.indexOf(fuseState.requestedLength));
+  const linked = $derived(fuseState.mode === "symmetry");
+  // Level 1 has no turns to cap, so the ceiling has nothing to say and the card
+  // is not there. Above it the ceiling is a real second decision.
+  const turnsVisible = $derived(fuseState.generationLevel > 1);
+  const allowedTurnIntensities = $derived(
+    fuseState.generationLevel === 1
+      ? [0]
+      : [...maxTurnIntensitiesForLevel(fuseState.generationLevel)]
+  );
+  const displayedTurnIntensity = $derived(
+    fuseState.generationLevel === 1 ? 0 : fuseState.maxTurnIntensity
+  );
+  const ruleLabel = $derived(fuseRuleLabel(fuseState.rule));
+  const driverLabel = $derived(
+    fuseState.driverSide === "blue" ? "Blue" : "Red"
+  );
+
+  function changeLength(offset: -1 | 1): void {
+    if (disabled) return;
+    const nextIndex = Math.max(
+      0,
+      Math.min(FUSE_LENGTHS.length - 1, lengthIndex + offset)
+    );
+    const nextLength = FUSE_LENGTHS[nextIndex];
+    if (nextLength !== undefined) void fuseState.setLength(nextLength);
+  }
+
+  function selectLevel(level: DifficultyLevel): void {
+    if (disabled) return;
+    fuseState.setGenerationLevel(reverseLevelMap[level]);
+  }
+
+  function selectGridMode(value: GridMode): void {
+    if (disabled) return;
+    fuseState.setGridMode(value);
+  }
+
+  function selectTurnIntensity(value: number): void {
+    if (disabled || fuseState.generationLevel === 1) return;
+    fuseState.setMaxTurnIntensity(value);
+  }
+</script>
+
+<div
+  class="recipe-rail"
+  class:linked
+  class:turns={turnsVisible}
+  class:disabled
+  inert={disabled}
+  aria-busy={disabled}
+  aria-label="Fuse recipe"
+>
+  <div class="card-slot">
+    <StepperCard
+      title="Length"
+      currentValue={fuseState.requestedLength}
+      minValue={minimumLength}
+      maxValue={maximumLength}
+      onIncrement={() => changeLength(1)}
+      onDecrement={() => changeLength(-1)}
+      formatValue={(value: number) => String(value)}
+      subtitle="steps"
+      color={cardColors.length.color}
+      shadowColor={cardColors.length.shadowColor}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+    />
+  </div>
+
+  <div class="card-slot">
+    <LevelCard
+      currentLevel={levelMap[fuseState.generationLevel]}
+      onLevelChange={selectLevel}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+    />
+  </div>
+
+  <div
+    class="card-slot swing-slot"
+    class:visible={turnsVisible}
+    aria-hidden={!turnsVisible}
+    inert={!turnsVisible}
+  >
+    <TurnIntensityCard
+      currentIntensity={displayedTurnIntensity}
+      allowedValues={allowedTurnIntensities}
+      onIntensityChange={selectTurnIntensity}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+    />
+  </div>
+
+  <div class="card-slot">
+    <GridModeCard
+      currentMode={fuseState.gridMode}
+      onModeChange={selectGridMode}
+      color={cardColors.gridMode.color}
+      shadowColor={cardColors.gridMode.shadowColor}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+    />
+  </div>
+
+  <div class="card-slot">
+    <FuseRecipePopover
+      destination="style"
+      title="Style"
+      summary={summaries.style}
+      color={cardColors.customize.color}
+      shadowColor={cardColors.customize.shadowColor}
+      width="36rem"
+      open={activeSetting === "style"}
+      headerFontSize="var(--rail-card-title-size)"
+      onOpenChange={(open) => onSettingOpenChange("style", open)}
+    />
+  </div>
+
+  <div class="card-slot">
+    <FuseRecipePopover
+      destination="starting"
+      title="Starting"
+      summary={summaries.starting}
+      color={cardColors.startEnd.color}
+      shadowColor={cardColors.startEnd.shadowColor}
+      width="64rem"
+      open={activeSetting === "starting"}
+      headerFontSize="var(--rail-card-title-size)"
+      onOpenChange={(open) => onSettingOpenChange("starting", open)}
+    />
+  </div>
+
+  <!-- Pairing is the one recipe decision that changes what the whole tab is, so
+       it shows both of its answers at once rather than naming the current one. -->
+  <div class="card-slot">
+    <ToggleCard
+      title="Pairing"
+      option1={{ value: "shuffle" as FuseMode, label: "Separate" }}
+      option2={{ value: "symmetry" as FuseMode, label: "Linked" }}
+      activeOption={fuseState.mode}
+      onToggle={onModeChange}
+      color={cardColors.mode.color}
+      shadowColor={cardColors.mode.shadowColor}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+    />
+  </div>
+
+  <div
+    class="card-slot swing-slot"
+    class:visible={linked}
+    aria-hidden={!linked}
+    inert={!linked}
+  >
+    <BaseCard
+      title="Rule"
+      currentValue={ruleLabel}
+      color={cardColors.period.color}
+      shadowColor={cardColors.period.shadowColor}
+      gridColumnSpan={1}
+      headerFontSize="var(--rail-card-title-size)"
+      ariaLabel="Rule that rebuilds from {driverLabel}: {ruleLabel}. Opens the rule editor."
+      onClick={onEditRule}
+    />
+  </div>
+</div>
+
+<style>
+  /* Hidden until the header has room to lay the recipe out flat; below that the
+     same settings are reached through the recipe button. */
+  .recipe-rail {
+    display: none;
+  }
+
+  .card-slot {
+    container: generate-card / size;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .card-slot > :global(*) {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* An open popover holds its card lit, so the row says which door is standing
+     open rather than the popover being the only clue. */
+  .card-slot :global(.base-card[data-state="open"]) {
+    filter: brightness(1.1);
+    box-shadow:
+      0 2px 4px hsl(var(--shadow-color) / 0.12),
+      0 8px 16px hsl(var(--shadow-color) / 0.1),
+      0 0 40px hsl(var(--shadow-color) / 0.28);
+  }
+
+  /* Two cards come and go with the recipe: Turns above level 1, Rule when the
+     paths are Linked. Linked also opens the rule editor as a track on the left
+     of the workspace, so that is two tracks widening at once and it has to read
+     as one gesture — same clock, same curve, no stagger. `--duration-emphasis`
+     on `--ease-out` is what the workspace itself uses; keep these in step with
+     the transition on `.fuse-workspace.full-card-workspace` in FuseLayout. */
+  .swing-slot {
+    overflow: clip;
+    opacity: 0;
+    transition: opacity var(--duration-emphasis, 280ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+
+  .swing-slot.visible {
+    opacity: 1;
+  }
+
+  .disabled {
+    opacity: 0.58;
+  }
+
+  @container fuse (min-width: 1680px) and (min-height: 900px) {
+    .recipe-rail {
+      order: 2;
+      display: grid;
+      /* Eight tracks, always eight: CSS only interpolates track lists of equal
+         length, so the two conditional cards are present and zero-wide rather
+         than added and removed. Track 3 is Turns, track 8 is Rule. */
+      grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr) minmax(0, 1fr)
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
+      grid-auto-rows: 6.75rem;
+      gap: 8px;
+      /* 100% basis is what puts the rail on its own row under the centred
+         title. Keep it in this shorthand — a bare `flex-basis` earlier in the
+         block gets reset by this declaration. */
+      flex: 1 1 100%;
+      min-width: 0;
+      /* The card text scales off each card's own box, so one declaration here
+         keeps all seven reading at the same size. */
+      --rail-card-title-size: 9px;
+      --card-text-size: clamp(0.95rem, 21cqh, 1.6rem);
+      --card-text-weight: 750;
+      --card-text-spacing: 0;
+      --card-text-shadow: 0 2px 6px var(--theme-shadow);
+      transition: grid-template-columns var(--duration-emphasis, 280ms)
+        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+    }
+
+    .recipe-rail.turns {
+      grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
+    }
+
+    .recipe-rail.linked {
+      grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr) minmax(0, 1fr)
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .recipe-rail.turns.linked {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+  }
+
+  @container fuse (min-width: 2600px) and (min-height: 1400px) {
+    .recipe-rail {
+      grid-auto-rows: 9rem;
+      gap: 12px;
+      --rail-card-title-size: 0.8rem;
+      --card-text-size: clamp(1.2rem, 20cqh, 2.1rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .recipe-rail,
+    .swing-slot {
+      transition-duration: 0ms;
+      transition-delay: 0ms;
+    }
+  }
+</style>

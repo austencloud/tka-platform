@@ -1,19 +1,17 @@
 <!--
-  FuseRecipePopover — one tile on the header's recipe rail.
+  FuseRecipePopover — a recipe-rail slot whose editor opens in a popover.
 
-  This is the slot that answers its question in a popover hung under the tile —
-  Length, Style, Starting conditions. The slots whose values are few and ordered
-  (Level, Grid, Pairing) hold their control on the tile instead and are their own
-  components; see FuseRailTile.
+  The tile is the app's own BaseCard, the same one the Generate bento uses for
+  Customize, so it carries the ripple, the glossy sheen, the lift on hover and
+  the spring on press for free. bits-ui drives it through BaseCard's
+  `triggerProps` seam rather than a second, flatter card being built here.
 
-  No leading icon, deliberately. Six tiles each carrying a glyph in its own
-  bordered box read as six badges competing with the words; the tile already
-  names itself, and the trailing glyph is the only one that says something the
-  label does not — whether pressing this opens a menu, flips a value, or moves
-  you into a panel.
+  Slots whose values are few and ordered (Length, Level, Grid, Pairing) hold
+  their control on the card instead — see FuseRecipeRail.
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
+  import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
   import FuseRecipeSettingContent from "./FuseRecipeSettingContent.svelte";
 
@@ -23,38 +21,25 @@
     summary,
     color,
     shadowColor,
-    textColor = "white",
     width = "34rem",
     align = "center",
     open = false,
-    disabled = false,
+    cardIndex = 0,
+    headerFontSize = "9px",
     onOpenChange = () => {},
-    onActivate,
-    trailingIcon,
-    ariaLabel,
   }: {
     destination: FuseRecipeDestination;
     title: string;
     summary: string;
     color: string;
     shadowColor: string;
-    textColor?: string;
     width?: string;
     align?: "start" | "center" | "end";
     open?: boolean;
-    disabled?: boolean;
+    cardIndex?: number;
+    headerFontSize?: string;
     onOpenChange?: (open: boolean) => void;
-    /** Act on press instead of opening a popover. */
-    onActivate?: () => void;
-    /** Overrides the trailing glyph. Defaults to what the press will do. */
-    trailingIcon?: string;
-    /** Overrides the spoken label, for tiles whose press is not "edit". */
-    ariaLabel?: string;
   } = $props();
-
-  const glyph = $derived(
-    trailingIcon ?? (onActivate ? "fa-chevron-right" : "fa-chevron-down")
-  );
 
   const titleId = `fuse-recipe-${destination}-title`;
 
@@ -63,191 +48,61 @@
   }
 </script>
 
-{#snippet tile(triggerProps: Record<string, unknown>)}
-  <button
-    {...triggerProps}
-    type="button"
-    class="recipe-tile"
-    class:open
-    {disabled}
-    aria-label={ariaLabel ?? `Edit ${title}: ${summary}`}
-    style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
-  >
-    <span class="tile-copy">
-      <span class="tile-label">{title}</span>
-      <strong>{summary}</strong>
-    </span>
-    <i class="fas {glyph} tile-chevron" aria-hidden="true"></i>
-  </button>
-{/snippet}
+<Popover.Root {open} {onOpenChange}>
+  <Popover.Trigger>
+    {#snippet child({ props })}
+      <BaseCard
+        {title}
+        currentValue={summary}
+        {color}
+        {shadowColor}
+        {cardIndex}
+        {headerFontSize}
+        gridColumnSpan={1}
+        ariaLabel="{title}: {summary}. Opens the {title} settings."
+        triggerProps={props}
+      />
+    {/snippet}
+  </Popover.Trigger>
 
-{#if onActivate}
-  {@render tile({ onclick: onActivate })}
-{:else}
-  <Popover.Root {open} {onOpenChange}>
-    <Popover.Trigger>
-      {#snippet child({ props })}
-        {@render tile(props)}
-      {/snippet}
-    </Popover.Trigger>
-
-    <Popover.Portal>
-      <Popover.Content
-        side="bottom"
-        {align}
-        sideOffset={10}
-        collisionPadding={18}
-        class="fuse-recipe-popover"
-        aria-labelledby={titleId}
-        style="--popover-width: {width}; --recipe-color: {color}; --recipe-shadow: {shadowColor};"
-      >
-        <header class="popover-header">
-          <div>
-            <span>Fuse recipe</span>
-            <h3 id={titleId}>{title}</h3>
-          </div>
-          <button
-            type="button"
-            class="close-popover"
-            onclick={close}
-            aria-label="Close {title} settings"
-          >
-            <i class="fas fa-xmark" aria-hidden="true"></i>
-          </button>
-        </header>
-
-        <div class="popover-body">
-          <FuseRecipeSettingContent
-            {destination}
-            presentation="popover"
-            onCancel={close}
-            onApply={close}
-          />
+  <Popover.Portal>
+    <Popover.Content
+      side="bottom"
+      {align}
+      sideOffset={10}
+      collisionPadding={18}
+      class="fuse-recipe-popover"
+      aria-labelledby={titleId}
+      style="--popover-width: {width}; --recipe-color: {color}; --recipe-shadow: {shadowColor};"
+    >
+      <header class="popover-header">
+        <div>
+          <span>Fuse recipe</span>
+          <h3 id={titleId}>{title}</h3>
         </div>
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>
-{/if}
+        <button
+          type="button"
+          class="close-popover"
+          onclick={close}
+          aria-label="Close {title} settings"
+        >
+          <i class="fas fa-xmark" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="popover-body">
+        <FuseRecipeSettingContent
+          {destination}
+          presentation="popover"
+          onCancel={close}
+          onApply={close}
+        />
+      </div>
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
 
 <style>
-  /* The copy is centred on the tile, not parked against its left edge. The
-     trailing glyph is taken out of flow to do it: as a grid column it would
-     push the copy left of centre by half its own width, and by a different
-     amount on every tile, so a rail of six tiles would have six different
-     centres. */
-  .recipe-tile {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    align-items: center;
-    width: 100%;
-    min-width: 0;
-    min-height: 3.75rem;
-    padding: 8px calc(clamp(9px, 0.65cqw, 14px) + 18px);
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 14px;
-    color: var(--recipe-text);
-    background:
-      linear-gradient(
-        132deg,
-        color-mix(in srgb, white 18%, transparent),
-        transparent 42%
-      ),
-      var(--recipe-color);
-    box-shadow:
-      0 8px 18px hsl(var(--recipe-shadow) / 24%),
-      inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
-    text-align: left;
-    cursor: pointer;
-    transition:
-      transform var(--duration-fast, 120ms) ease,
-      border-color var(--duration-fast, 120ms) ease,
-      box-shadow var(--duration-fast, 120ms) ease;
-  }
-
-  .recipe-tile::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent 55%, rgba(0, 0, 0, 0.1));
-    pointer-events: none;
-  }
-
-  /* Emphasis is mixed from the tile's own text colour, not from white. The Level
-     tile now takes the app's level palette, which is a pale blue at 1 and a gold
-     at 3 with black text — a white hover border and a white focus ring both
-     disappear against those. currentColor is white on the dark tiles and black
-     on the light ones, so the same rule reads on every tile in the rail. */
-  .recipe-tile:hover:not(:disabled),
-  .recipe-tile.open {
-    transform: translateY(-1px);
-    border-color: color-mix(in srgb, currentColor 52%, var(--theme-stroke));
-    box-shadow:
-      0 12px 24px hsl(var(--recipe-shadow) / 36%),
-      inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
-  }
-
-  .recipe-tile:focus-visible {
-    outline: 3px solid currentColor;
-    outline-offset: 2px;
-  }
-
-  .close-popover:focus-visible {
-    outline: 3px solid var(--theme-text);
-    outline-offset: 2px;
-  }
-
-  .recipe-tile:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .tile-copy {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    justify-items: center;
-    gap: 1px;
-    max-width: 100%;
-    min-width: 0;
-    text-align: center;
-  }
-
-  .tile-label {
-    overflow: hidden;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
-    letter-spacing: 0.055em;
-    opacity: 0.76;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .tile-copy strong {
-    overflow: hidden;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 800;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .tile-chevron {
-    position: absolute;
-    top: 50%;
-    right: clamp(9px, 0.65cqw, 14px);
-    z-index: 1;
-    transform: translateY(-50%);
-    font-size: 11px;
-    opacity: 0.76;
-    transition: transform var(--duration-fast, 120ms) ease;
-  }
-
-  .open .tile-chevron {
-    transform: translateY(-50%) rotate(180deg);
-  }
-
   :global(.fuse-recipe-popover) {
     z-index: var(--z-dropdown, 1000);
     display: grid;
@@ -298,17 +153,36 @@
     font-size: 1.05rem;
   }
 
+  /* The popover is portaled to the body, so it reads --theme-card-bg from the
+     root rather than from the workspace — and at the root that token is a light
+     surface. Filling the close button with it made a white block the loudest
+     thing in a dark panel. It takes the panel's own stroke and a wash of its
+     card colour instead, which keeps it quieter than the settings it sits
+     above and matches the dismiss in the recipe column. */
   .close-popover {
     display: grid;
     place-items: center;
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
     flex: 0 0 auto;
-    border: 1px solid var(--theme-stroke);
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
     border-radius: 12px;
     color: var(--theme-text);
-    background: var(--theme-card-bg);
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
     cursor: pointer;
+    transition:
+      background var(--duration-fast, 140ms) var(--ease-out, ease),
+      border-color var(--duration-fast, 140ms) var(--ease-out, ease);
+  }
+
+  .close-popover:hover {
+    background: color-mix(in srgb, var(--theme-text) 16%, transparent);
+    border-color: hsl(var(--recipe-shadow) / 55%);
+  }
+
+  .close-popover:focus-visible {
+    outline: 3px solid var(--theme-text);
+    outline-offset: 2px;
   }
 
   .popover-body {
@@ -331,23 +205,6 @@
   }
 
   @media (min-width: 2600px) and (min-height: 1400px) {
-    .recipe-tile {
-      min-height: 5rem;
-      border-radius: 18px;
-    }
-
-    .tile-label {
-      font-size: 0.8rem;
-    }
-
-    .tile-copy strong {
-      font-size: 1rem;
-    }
-
-    .tile-chevron {
-      font-size: 0.875rem;
-    }
-
     :global(.fuse-recipe-popover) {
       padding: 20px;
       border-radius: 22px;
@@ -355,10 +212,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .recipe-tile,
-    .tile-chevron,
     :global(.fuse-recipe-popover[data-state="open"]) {
-      transition: none;
       animation: none;
     }
   }

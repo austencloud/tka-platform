@@ -20,6 +20,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     headerFontSize = "9px",
     ariaLabel,
     onClick,
+    triggerProps,
     children,
   } = $props<{
     title: string;
@@ -34,6 +35,14 @@ Provides consistent styling and interaction patterns for all generation setting 
     headerFontSize?: string;
     ariaLabel?: string;
     onClick?: () => void;
+    /**
+     * Attributes from a headless trigger (bits-ui Popover/Dropdown `child`
+     * snippet) to apply to the card itself. Spread last, so the library owns
+     * activation and `data-state` while the card keeps its own look. Without
+     * this a card that opens a menu has to be rebuilt as a bare button, which
+     * is how parallel card chrome starts.
+     */
+    triggerProps?: Record<string, unknown>;
     children?: import("svelte").Snippet;
   }>();
 
@@ -78,6 +87,7 @@ Provides consistent styling and interaction patterns for all generation setting 
     onclick={handleClick}
     onkeydown={handleKeydown}
     aria-label={ariaLabel ?? `${title}: ${currentValue}. Click to change.`}
+    {...triggerProps}
     style="--card-color: {color}; --shadow-color: {shadowColor}; --card-index: {cardIndex}; grid-column: span {gridColumnSpan};"
   >
     <CardHeader {title} {headerFontSize} />

@@ -13,11 +13,32 @@
 
   let {
     destination = $bindable(null),
+    singleDestination = false,
     onClose,
   }: {
     destination?: FuseSettingsDestination;
+    /**
+     * The recipe rail is showing, so this panel is here for the one setting it
+     * was opened on. Listing the other five would restate the cards above it —
+     * and a Back button leading to that list is the same redundancy one press
+     * away.
+     */
+    singleDestination?: boolean;
     onClose: () => void;
   } = $props();
+
+  // Titles for the solo panel, which is only ever reached by pressing one of the
+  // rail's cards. They name the card that opened them — `pairing` reads "Rule"
+  // because the Rule card is its only door there, and a panel that renames
+  // itself on the way in makes the press feel like it went somewhere else.
+  const DESTINATION_LABELS: Record<string, string> = {
+    length: "Length",
+    level: "Level",
+    grid: "Grid",
+    style: "Style",
+    starting: "Starting conditions",
+    pairing: "Rule",
+  };
 
   // Both of this panel's hosts animate the panel themselves — the desktop
   // column opens as a grid track, the compact host slides in as a sheet — so
@@ -55,6 +76,9 @@
       ? [{ id: "pairing", label: "Pairing", value: summaries.pairing }]
       : []),
   ]);
+  const solo = $derived(
+    singleDestination && destination !== null && isFuseRecipeDestination(destination)
+  );
 
   function selectDestination(id: string | null): void {
     destination = id !== null && isFuseRecipeDestination(id) ? id : null;
@@ -63,6 +87,24 @@
 
 <!-- The six focused recipe editors, identical whether they arrive as a drawer
      over the workspace or as the workspace's own left column. -->
+{#if solo && destination}
+  <GenerationSettingsOverlay
+    title={DESTINATION_LABELS[destination] ?? "Fuse recipe"}
+    titleId="fuse-settings-title"
+    closeLabel="Close {DESTINATION_LABELS[destination] ?? 'Fuse recipe'} settings"
+    entrance={ENTRANCE}
+    {onClose}
+  >
+    {#snippet children()}
+      <FuseRecipeSettingContent
+        {destination}
+        presentation="drawer"
+        onCancel={onClose}
+        onApply={onClose}
+      />
+    {/snippet}
+  </GenerationSettingsOverlay>
+{:else}
 <GenerationSettingsOverlay
   title="Fuse recipe"
   titleId="fuse-settings-title"
@@ -89,3 +131,4 @@
     </SettingsDrillPanel>
   {/snippet}
 </GenerationSettingsOverlay>
+{/if}
