@@ -1,11 +1,17 @@
 /**
  * Type 6 Constraint
  *
- * Type 6 letters (α, β, γ, ζ, η, τ, ⊕) are static — no hand movement.
+ * Type 6 letters (α, β, γ) are static — no hand movement, only prop rotation.
  * At level 1, they're excluded entirely because L1 only has 0-turn motions,
  * and a 0-turn static letter is just "stand there doing nothing."
  * At level 2+, they're allowed only when at least one hand has turns > 0,
- * so the static hand contrasts with the moving hand.
+ * so the props are actually doing something while the hands hold still.
+ *
+ * This only gets a say when static letters are in the candidate pool at all,
+ * which BuildOptions.allowStaticSteps controls — on by default only when the
+ * caller set a turn pattern or a layer target. LetterClassifier additionally
+ * treats ζ, η, τ and ⊕ as Type 6; those are synthesized position placeholders
+ * rather than alphabet letters, and never reach the pool.
  */
 
 import { ConstraintType, type ConstraintMode } from "../constraint-types.js";

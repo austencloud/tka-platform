@@ -237,6 +237,23 @@ export interface BuildOptions {
   turnPattern?: TurnLanes;
 
   /**
+   * Let static (Type 6) letters — α, β, γ — appear as ordinary steps.
+   *
+   * They are normally kept to starting positions. Both hands stay put, so
+   * without turns the step is standing still, and a randomly chosen one is
+   * almost never wanted. But prop rotation is the entire point of Type 6, so a
+   * static step carrying turns is a real figure, and a turn pattern that calls
+   * for one cannot be built without this.
+   *
+   * Defaults to on when `turnPattern` or `targetLayerPattern` is set — the two
+   * cases where the turns were asked for rather than rolled — and off
+   * otherwise. Set it explicitly to override either way. Even when on, a
+   * static step still has to clear Type6Constraint, which refuses level 1
+   * outright and refuses any step whose hands both sit at zero turns.
+   */
+  allowStaticSteps?: boolean;
+
+  /**
    * Ask for a specific layer signature — which of the four radial/non-radial
    * combinations the props sit in, step by step. Give it either a pattern
    * object or its written form, `"1:.XB."`: a starting layer and one symbol per
@@ -682,7 +699,11 @@ export class SequenceBuilder {
       for (const target of searchTargets) {
         const beamSearch = new BeamSearch(
           this.variationProvider,
-          options.gridMode
+          options.gridMode,
+          {
+            level: options.level,
+            allowStaticSteps: this.resolveAllowStaticSteps(options),
+          }
         );
         const propContinuity = this.resolveEffectivePropContinuity(options);
         const result = beamSearch.search(
@@ -856,24 +877,29 @@ export class SequenceBuilder {
 
     // Pre-filter variations by hard constraints for reachability analysis.
     // This only runs once (not per-retry) since hard constraints don't change.
-    // Uses the same Type6 exclusion as BeamSearch (α, β, γ are start positions only).
+    // Uses the same static-letter gate as BeamSearch, and must: reachability
+    // decides which positions are worth visiting at each step, so excluding
+    // static letters here would prune the paths to them before the beam ever
+    // offered one.
     const allVariationsForReach = this.variationProvider.getAllVariations(
       options.gridMode
     );
-    let nonType6ForReachability = allVariationsForReach.filter(
-      (p) => !this.letterClassifier.isType6(p.letter)
-    );
+    let reachabilityPool = this.resolveAllowStaticSteps(options)
+      ? allVariationsForReach
+      : allVariationsForReach.filter(
+          (p) => !this.letterClassifier.isType6(p.letter)
+        );
     if (
       options.mustNotContainLetters &&
       options.mustNotContainLetters.length > 0
     ) {
       const excluded = new Set(options.mustNotContainLetters);
-      nonType6ForReachability = nonType6ForReachability.filter(
+      reachabilityPool = reachabilityPool.filter(
         (p) => !excluded.has(p.letter)
       );
     }
     const hardConstraintFiltered = this.filterByHardConstraints(
-      nonType6ForReachability,
+      reachabilityPool,
       constraintSet.hard
     );
 
@@ -959,7 +985,11 @@ export class SequenceBuilder {
 
       const beamSearch = new BeamSearch(
         this.variationProvider,
-        options.gridMode
+        options.gridMode,
+        {
+          level: options.level,
+          allowStaticSteps: this.resolveAllowStaticSteps(options),
+        }
       );
       const propContinuity = this.resolveEffectivePropContinuity(options);
       const result = beamSearch.searchByLength(
@@ -1027,7 +1057,7 @@ export class SequenceBuilder {
 
       // Recompute hard-constraint-filtered variations after removing continuity
       const demotedHardFiltered = this.filterByHardConstraints(
-        nonType6ForReachability,
+        reachabilityPool,
         constraintSet.hard
       );
 
@@ -1079,7 +1109,11 @@ export class SequenceBuilder {
 
         const beamSearch = new BeamSearch(
           this.variationProvider,
-          options.gridMode
+          options.gridMode,
+          {
+            level: options.level,
+            allowStaticSteps: this.resolveAllowStaticSteps(options),
+          }
         );
         const propContinuity = this.resolveEffectivePropContinuity(options);
         const result = beamSearch.searchByLength(
@@ -1256,6 +1290,22 @@ export class SequenceBuilder {
    * random rotation direction assignment — producing prop reversals even
    * when the user selected "smooth".
    */
+  /**
+   * Whether static letters may be used as ordinary steps.
+   *
+   * On when the caller asked for particular turns — a turn pattern or a layer
+   * target — because a static step is then a deliberate figure rather than an
+   * accident. Off for undirected generation, where a random allocation puts
+   * turns on most steps at level 2 and up and would scatter α, β and γ through
+   * every sequence. An explicit value wins over both.
+   */
+  private resolveAllowStaticSteps(options: BuildOptions): boolean {
+    return (
+      options.allowStaticSteps ??
+      Boolean(options.turnPattern || options.targetLayerPattern)
+    );
+  }
+
   private resolveEffectivePropContinuity(
     options: BuildOptions
   ): "maximize" | "allow-reversals" | "force-reversals" | undefined {

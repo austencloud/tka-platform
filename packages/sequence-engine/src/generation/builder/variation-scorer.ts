@@ -22,9 +22,16 @@ export function scoreVariation(
   context: Omit<ConstraintContext, "candidate">,
   constraintSet: ConstraintSet
 ): VariationScore {
+  // `letter` has to name the candidate being scored, not whatever the caller
+  // put in the shared context. When the search is following a word every
+  // candidate is a variation of the same letter and the two agree, but free
+  // generation scores a mixed batch in one call and passes the first
+  // candidate's letter for all of them. A constraint that judges by letter
+  // would then be judging the wrong one for every candidate but the first.
   const fullContext: ConstraintContext = {
     ...context,
     candidate,
+    letter: candidate.letter,
   };
 
   const constraintScores = new Map<ConstraintType, ConstraintScore>();

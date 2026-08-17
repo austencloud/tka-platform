@@ -80,6 +80,29 @@ describe("Type6Constraint", () => {
     expect(result.score).toBe(0);
   });
 
+  it("allows Type 6 at level 3 when turns > 0", () => {
+    const result = constraint.evaluate(
+      makeContext({
+        letter: "α",
+        level: 3,
+        turnAllocation: { blue: 1, red: 0 },
+      }),
+    );
+    expect(result.satisfied).toBe(true);
+    expect(result.score).toBe(1);
+  });
+
+  it("rejects Type 6 at level 3 when both turns are 0", () => {
+    const result = constraint.evaluate(
+      makeContext({
+        letter: "β",
+        level: 3,
+        turnAllocation: { blue: 0, red: 0 },
+      }),
+    );
+    expect(result.satisfied).toBe(false);
+  });
+
   it("rejects Type 6 at level 2 when no turn allocation provided", () => {
     const result = constraint.evaluate(
       makeContext({ letter: "τ", level: 2 }),

@@ -13,6 +13,7 @@ import type { IVariationProvider } from "../data/IVariationProvider.js";
 import type {
   PictographData,
   ConstraintSet,
+  ConstraintContext,
   SearchState,
   VariationScore,
   ConstraintReport,
@@ -192,10 +193,68 @@ export interface BeamSearchResult {
 export class BeamSearch {
   private readonly letterClassifier = new LetterClassifier();
 
+  /**
+   * The turn source for the search currently running. Held here rather than
+   * threaded through every call because bridge insertion is three frames deep
+   * and would otherwise carry the parameter purely to hand it back. A fresh
+   * BeamSearch is built for each search (see SequenceBuilder), so this is a
+   * per-search value, not shared state.
+   */
+  private activeTurnSource: TurnSource | undefined;
+
   constructor(
     private readonly variationProvider: IVariationProvider,
-    private readonly gridMode: string
+    private readonly gridMode: string,
+    private readonly options: {
+      /** Which turns and orientations exist. Constraints that vary by level
+       *  read this; without it every step looks like level 1. */
+      level?: number;
+      /** Offer static (Type 6) letters mid-sequence. Off by default: a static
+       *  step the user did not ask for reads as standing still. */
+      allowStaticSteps?: boolean;
+    } = {}
   ) {}
+
+  /**
+   * Builds the context a candidate is scored against.
+   *
+   * Every scoring site goes through here. The four positional facts are the
+   * caller's; the level and the step's turns are the search's, and were
+   * previously left off every one of the eight call sites — which silently
+   * disabled every constraint that reads them.
+   */
+  private scoringContext(
+    base: Pick<
+      Omit<ConstraintContext, "candidate">,
+      "stepIndex" | "totalSteps" | "previousSteps" | "letter"
+    >
+  ): Omit<ConstraintContext, "candidate"> {
+    return {
+      ...base,
+      level: this.options.level,
+      turnAllocation: this.turnsAt(base.stepIndex),
+      gridMode: this.gridMode,
+    };
+  }
+
+  /**
+   * What this step turns, as the constraint system counts it.
+   *
+   * A float is a rotation like any other, so it counts as turning even though
+   * it has no number. Undefined means the source ran out — a bridge step past
+   * the end of a fixed allocation — which reads as no turns, because nothing
+   * asked that step to turn.
+   */
+  private turnsAt(stepIndex: number): { blue: number; red: number } {
+    const asCount = (t: number | "fl" | undefined): number => {
+      if (t === "fl") return 1;
+      return t ?? 0;
+    };
+    return {
+      blue: asCount(this.activeTurnSource?.at(stepIndex, "blue")),
+      red: asCount(this.activeTurnSource?.at(stepIndex, "red")),
+    };
+  }
 
   search(
     letters: string[],
@@ -210,6 +269,7 @@ export class BeamSearch {
       ...DEFAULT_BEAM_CONFIG,
       beamWidth: beamWidth ?? DEFAULT_BEAM_CONFIG.beamWidth,
     };
+    this.activeTurnSource = turnSource;
 
     if (letters.length === 0) {
       return this.failResult("No letters provided", 0, 0);
@@ -237,12 +297,12 @@ export class BeamSearch {
     // Step 2: Score first letter variations
     const firstLetterScores = scoreAndRankVariations(
       firstLetterVariations,
-      {
+      this.scoringContext({
         stepIndex: 0,
         totalSteps: letters.length,
         previousSteps: [],
         letter: firstLetter,
-      },
+      }),
       constraintSet
     );
 
@@ -337,12 +397,12 @@ export class BeamSearch {
           // Direct path — score and extend
           const scores = scoreAndRankVariations(
             validVariations,
-            {
+            this.scoringContext({
               stepIndex: i,
               totalSteps: letters.length,
               previousSteps: state.steps,
               letter,
-            },
+            }),
             constraintSet
           );
 
@@ -439,18 +499,26 @@ export class BeamSearch {
       ...DEFAULT_BEAM_CONFIG,
       beamWidth: beamWidth ?? DEFAULT_BEAM_CONFIG.beamWidth,
     };
+    this.activeTurnSource = turnSource;
 
     if (length <= 0) {
       return this.failResult("Length must be greater than 0", 0, 0);
     }
 
-    // Step 1: Find all non-Type6 variations to seed the first step
+    // Step 1: Build the candidate pool that seeds the first step.
+    //
+    // Static (Type 6) letters are normally held out. Both hands stay put, so
+    // without turns the step reads as standing still, and a randomly chosen
+    // one is almost never what was wanted. When the caller has set an explicit
+    // turn pattern, though, a static step is the carrier of the figure — prop
+    // rotation is the whole point of Type 6 — so the pool keeps them and
+    // Type6Constraint decides step by step, which is what it was written for.
     const allVariations = this.variationProvider.getAllVariations(
       this.gridMode
     );
-    let nonType6 = allVariations.filter(
-      (p) => !this.letterClassifier.isType6(p.letter)
-    );
+    let candidatePool = this.options.allowStaticSteps
+      ? allVariations
+      : allVariations.filter((p) => !this.letterClassifier.isType6(p.letter));
 
     // Apply letter exclusion filter (mustNotContainLetters)
     if (
@@ -458,17 +526,17 @@ export class BeamSearch {
       options.mustNotContainLetters.size > 0
     ) {
       const excluded = options.mustNotContainLetters;
-      nonType6 = nonType6.filter((p) => !excluded.has(p.letter));
+      candidatePool = candidatePool.filter((p) => !excluded.has(p.letter));
     }
 
     // blockedStartPositions only constrains which position the FIRST step
-    // can start from. It must NOT filter the shared nonType6 pool — steps
+    // can start from. It must NOT filter the shared candidate pool — steps
     // 2+ need variations at every position the sequence may travel to.
-    // If we filtered nonType6 globally, step 2 would find zero candidates
+    // If we filtered the pool globally, step 2 would find zero candidates
     // whenever step 1 transitioned to a position that was "blocked."
     let firstStepCandidates: PictographData[];
     if (startPosition) {
-      firstStepCandidates = nonType6.filter(
+      firstStepCandidates = candidatePool.filter(
         (p) => p.startPosition === startPosition
       );
     } else if (
@@ -476,11 +544,11 @@ export class BeamSearch {
       options.blockedStartPositions.size > 0
     ) {
       const blocked = options.blockedStartPositions;
-      firstStepCandidates = nonType6.filter(
+      firstStepCandidates = candidatePool.filter(
         (p) => !blocked.has(p.startPosition)
       );
     } else {
-      firstStepCandidates = nonType6;
+      firstStepCandidates = candidatePool;
     }
 
     const reachableStarts = reachability?.reachableAt[0];
@@ -524,12 +592,12 @@ export class BeamSearch {
     // Step 2: Score first step candidates
     const firstScores = scoreAndRankVariations(
       firstStepCandidates,
-      {
+      this.scoringContext({
         stepIndex: 0,
         totalSteps: length,
         previousSteps: [],
         letter: firstStepCandidates[0]!.letter,
-      },
+      }),
       constraintSet
     );
 
@@ -593,7 +661,7 @@ export class BeamSearch {
 
       for (const state of beam) {
         // Find all non-Type6 variations at the current end position
-        let candidates = nonType6.filter(
+        let candidates = candidatePool.filter(
           (p) => p.startPosition === state.currentEndPosition
         );
 
@@ -636,12 +704,12 @@ export class BeamSearch {
         // Score all candidates at this position
         const scores = scoreAndRankVariations(
           candidates,
-          {
+          this.scoringContext({
             stepIndex: i,
             totalSteps: length,
             previousSteps: state.steps,
             letter: candidates[0]!.letter,
-          },
+          }),
           constraintSet
         );
 
@@ -751,12 +819,12 @@ export class BeamSearch {
 
         const bridgeScores = scoreAndRankVariations(
           bridgeVariations,
-          {
+          this.scoringContext({
             stepIndex,
             totalSteps: totalLetters + 1,
             previousSteps: state.steps,
             letter: bridgeOption.letter,
-          },
+          }),
           constraintSet
         );
 
@@ -782,12 +850,12 @@ export class BeamSearch {
 
         const scores = scoreAndRankVariations(
           targetVariations,
-          {
+          this.scoringContext({
             stepIndex: stepIndex + 1,
             totalSteps: totalLetters + 1,
             previousSteps: stateWithBridge.steps,
             letter: toLetter,
-          },
+          }),
           constraintSet
         );
 
@@ -830,12 +898,12 @@ export class BeamSearch {
 
         const bridgeScores = scoreAndRankVariations(
           bridgeVariations,
-          {
+          this.scoringContext({
             stepIndex,
             totalSteps: totalLetters + multiBridgePath.length,
             previousSteps: currentState.steps,
             letter: bridgeLetter,
-          },
+          }),
           constraintSet
         );
 
@@ -870,12 +938,12 @@ export class BeamSearch {
 
       const scores = scoreAndRankVariations(
         targetVariations,
-        {
+        this.scoringContext({
           stepIndex: stepIndex + multiBridgePath.length,
           totalSteps: totalLetters + multiBridgePath.length,
           previousSteps: currentState.steps,
           letter: toLetter,
-        },
+        }),
         constraintSet
       );
 

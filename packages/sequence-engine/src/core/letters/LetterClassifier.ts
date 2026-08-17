@@ -7,7 +7,14 @@
  *   Type 3: Cross-Shift (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-) — shift with cross
  *   Type 4: Dash (Φ, Ψ, Λ, τ-) — one hand dashes, one is static
  *   Type 5: Dual-Dash (Φ-, Ψ-, Λ-) — both hands dash
- *   Type 6: Static (α, β, γ, ζ, η, τ, ⊕) — no hand movement
+ *   Type 6: Static (α, β, γ) — no hand movement
+ *
+ * The Type 6 map below also carries ζ, η, τ and ⊕, which are NOT alphabet
+ * letters — the canonical set is α, β, γ (packages/domain letter-registry).
+ * Those four are the placeholder statics BeamSearch.staticLetterForPosition
+ * fabricates for zeta, eta, tau and terra positions when the pictograph data
+ * holds no real static there. They are listed so isType6 recognises what the
+ * generator itself can emit.
  */
 export class LetterClassifier {
   private readonly typeMap: Map<string, number>;
