@@ -237,6 +237,27 @@ const chasePreset: IPatternPreset = {
   },
 };
 
+/**
+ * Comet geometry, as fractions of the strip.
+ *
+ * A comet is a bright head with a tail streaming out BEHIND it, along the
+ * direction it travels. On a prop that tail is not the strip's job. The strip
+ * runs down the shaft, and the shaft is spinning, so anything the strip fades
+ * out trails sideways across the path rather than along it — a long strip tail
+ * spun up is a soft glowing disc with a ring in it, which is what the first two
+ * versions of this preset produced and why neither read as a comet. The tail
+ * that reads is the one visual persistence draws, behind the head, down the
+ * path it actually took.
+ *
+ * So the strip's job is only to make a compact, unmistakable head: a plateau
+ * wide enough to survive downscaling, and just enough falloff behind it to keep
+ * the head from looking stamped on. The look's persistence supplies the streak.
+ */
+const COMET_HEAD_FRACTION = 0.03;
+const COMET_TAIL_FRACTION = 0.14;
+/** e-foldings across the tail. exp(-4) leaves under 2% at the tail's end. */
+const COMET_TAIL_DECAY = 4;
+
 const cometPreset: IPatternPreset = {
   id: "comet",
   name: "Comet",
@@ -245,17 +266,26 @@ const cometPreset: IPatternPreset = {
   generate(ledCount, frameCount, params) {
     const pattern = createEmptyPattern(ledCount, frameCount, "Comet");
     pattern.metadata.presetId = "comet";
-    const tailLength = Math.max(1, Math.round(ledCount * 0.3));
+    const headWidth = Math.max(1, Math.round(ledCount * COMET_HEAD_FRACTION));
+    const tailLength = Math.max(
+      headWidth + 1,
+      Math.round(ledCount * COMET_TAIL_FRACTION)
+    );
+    // Counted from the first LED past the head, so the tail starts already
+    // attenuated instead of repeating the head's own value.
+    const tailSpan = tailLength - headWidth + 1;
     const cycles = sweepCycles(params.speed);
     for (let f = 0; f < frameCount; f++) {
       const headIndex = sweepHeadIndex(f, frameCount, cycles, ledCount);
       for (let led = 0; led < ledCount; led++) {
         const dist = ((headIndex - led) % ledCount + ledCount) % ledCount;
         let intensity = 0;
-        if (dist === 0) {
+        if (dist < headWidth) {
           intensity = 1;
         } else if (dist <= tailLength) {
-          intensity = Math.exp(-3 * (dist / tailLength));
+          intensity = Math.exp(
+            (-COMET_TAIL_DECAY * (dist - headWidth + 1)) / tailSpan
+          );
         }
         setPixel(pattern, f, led, {
           r: clamp255(params.primaryColor.r * intensity * params.brightness),

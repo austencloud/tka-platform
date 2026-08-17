@@ -11,8 +11,8 @@
  *
  * Architecture per frame:
  *   1. Streak pass:  one Gaussian capsule per LED per sub-step, additive, HDR
- *   2. Accumulate:   eye — history * exp(-dt/tau) + deposit / shutterNormalization
- *                    camera — two staggered box accumulators at a fixed gain
+ *   2. Accumulate:   eye — history * exp(-dt/tau) + deposit, at a fixed gain
+ *                    camera — two staggered box accumulators, same fixed gain
  *   3. Downsample:   5-level 13-tap chain, partial Karis on the first level
  *   4. Upsample:     3x3 tent mixed upward by the glare weight
  *   5. Display:      lerp composite, AgX tone map, straight-alpha output
@@ -30,13 +30,13 @@ import {
 	BLOOM_TENT_RADIUS_FRAME_FRACTION,
 	CAMERA_EXPOSURE_MAX_S,
 	CAMERA_EXPOSURE_MIN_S,
-	CAMERA_GAIN_REFERENCE_S,
 	DISPLAY_EXPOSURE_GAIN,
 	EYE_TIME_CONSTANT_S,
 	GLARE_WEIGHT_MAX,
 	GLARE_WEIGHT_MIN,
 	MAX_SUB_STEPS,
 	PROP_REFERENCE_FLUX,
+	SHUTTER_GAIN_REFERENCE_S,
 	effectiveSigmaPx,
 	emitterSigmaPx,
 	perLedFlux,
@@ -365,8 +365,11 @@ export class WebGLLedRenderer {
 			// exp(-dt/tau), not a per-frame constant: the constant made the same
 			// look decay differently at 30 and 60fps.
 			const decay = this.reducedMotion ? 0 : Math.exp(-dt / tau);
-			// With persistence suppressed the accumulation holds exactly one
-			// frame, so it is normalized by that one frame's weight.
+			// Scales to a fixed detector gain, not to the persistence window — see
+			// `shutterNormalization`. With persistence suppressed the accumulation
+			// holds exactly one frame instead of integrating, so that branch is
+			// scaled by the frame's own weight to land where a dwelling emitter
+			// lands at the reference constant.
 			const normalization = this.reducedMotion ? dt : shutterNormalization(shutter, dt);
 
 			gl.disable(gl.BLEND);
@@ -581,7 +584,7 @@ export class WebGLLedRenderer {
 		gl.uniform1i(resolve.uniforms.get("u_boxB")!, 1);
 		gl.uniform1f(resolve.uniforms.get("u_weightA")!, phase.weightA);
 		gl.uniform1f(resolve.uniforms.get("u_weightB")!, phase.weightB);
-		gl.uniform1f(resolve.uniforms.get("u_invGain")!, 1 / CAMERA_GAIN_REFERENCE_S);
+		gl.uniform1f(resolve.uniforms.get("u_invGain")!, 1 / SHUTTER_GAIN_REFERENCE_S);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 		gl.bindVertexArray(null);
 		this.swapFBO(this.accumFBOs!);

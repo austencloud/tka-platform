@@ -20,7 +20,7 @@ import {
   DEFAULT_GLARE_WEIGHT,
   EYE_TIME_CONSTANT_S,
   advanceBoxShutter,
-  CAMERA_GAIN_REFERENCE_S,
+  SHUTTER_GAIN_REFERENCE_S,
   type LedShutter,
 } from "./led-photometry";
 
@@ -178,27 +178,51 @@ describe("LED photometry", () => {
 
   describe("invariant 3: framerate independence", () => {
     it("integrates to the same exposure at any frame rate", () => {
-      for (const shutter of [
-        { mode: "eye", timeConstantSeconds: EYE_TIME_CONSTANT_S },
-        { mode: "camera", exposureSeconds: 1.5 },
-      ] as LedShutter[]) {
-        // Exact, not approximate: the renderer divides by the very weights it
-        // applied, so every frame rate integrates to unit exposure.
+      for (const tau of [0.04, EYE_TIME_CONSTANT_S, 0.5]) {
+        const shutter: LedShutter = { mode: "eye", timeConstantSeconds: tau };
+        // A geometric series sampled at frame boundaries sums to `tau + dt/2`,
+        // so a flat gain would leave 24fps ~15% brighter than 240fps; the
+        // normalization carries that half-sample correction exactly. What is
+        // left is the cutoff's own frame quantization, a fraction of a percent.
+        const reference = integrateShutter(shutter, 60);
         for (const fps of [24, 30, 60, 90, 144, 240]) {
-          expect(integrateShutter(shutter, fps)).toBeCloseTo(1, 6);
+          const relative = Math.abs(integrateShutter(shutter, fps) - reference) / reference;
+          expect(relative).toBeLessThan(0.005);
         }
       }
     });
 
-    it("lengthens eye persistence without brightening the image", () => {
-      // Persistence must extend the trail, not act as a second brightness
-      // slider. The old per-frame decay rate did both at once. This is the eye
-      // path's rule; the camera path integrates at a fixed gain instead, so
-      // there a longer exposure legitimately does paint a brighter arc.
+    it("collects more light the longer persistence lasts", () => {
+      // The physical behavior of a leaky integrator, and the fix for the defect
+      // that made every eye-shutter preset read as a dim ghost: the old rule
+      // divided by the persistence window, so trail luminance fell as `1/tau`
+      // and asking for a longer trail cost brightness one-for-one.
       const short = integrateShutter({ mode: "eye", timeConstantSeconds: 0.04 }, 60);
       const long = integrateShutter({ mode: "eye", timeConstantSeconds: 0.4 }, 60);
 
-      expect(long).toBeCloseTo(short, 1);
+      expect(long / short).toBeGreaterThan(5);
+    });
+
+    it("holds a single frame's contribution steady across persistence lengths", () => {
+      // The head of one moving pass is one frame's deposit, so it must not
+      // change when only the trail length changes. Accumulation over repeated
+      // passes is what scales with persistence, per the test above.
+      const head = (tau: number, fps: number) =>
+        1 / fps / shutterNormalization({ mode: "eye", timeConstantSeconds: tau }, 1 / fps);
+
+      const reference = head(EYE_TIME_CONSTANT_S, 60);
+      for (const tau of [0.04, 0.12, 0.4, 1]) {
+        expect(head(tau, 60) / reference).toBeGreaterThan(0.75);
+        expect(head(tau, 60) / reference).toBeLessThan(1.35);
+      }
+    });
+
+    it("scales a camera exposure by a fixed gain, not by its own window", () => {
+      // A camera integrates at constant gain, which is why a longer exposure
+      // paints more of the arc instead of fading each pass toward the floor.
+      expect(shutterNormalization({ mode: "camera", exposureSeconds: 0.5 }, 1 / 60)).toBe(
+        shutterNormalization({ mode: "camera", exposureSeconds: 4 }, 1 / 60)
+      );
       expect(shutterCutoffSeconds({ mode: "camera", exposureSeconds: 3 })).toBeGreaterThan(
         shutterCutoffSeconds({ mode: "camera", exposureSeconds: 0.5 })
       );
@@ -372,11 +396,16 @@ describe("LED photometry", () => {
       }
     });
 
-    it("scales a camera exposure by a fixed gain, not by its own window", () => {
-      // A camera integrates at constant gain. Dividing by the window instead made
-      // a 2.5s exposure read ~20x dimmer than the same pass under 0.12s of visual
-      // persistence, and the light-painted disc the mode exists for vanished.
-      expect(CAMERA_GAIN_REFERENCE_S).toBe(EYE_TIME_CONSTANT_S);
+    it("shares one detector gain between both shutter modes", () => {
+      // Switching shutter mode must change how long light persists and nothing
+      // else, so a single pass reads at the same brightness either way. Dividing
+      // the camera path by its own window instead made a 2.5s exposure read ~20x
+      // dimmer than the same pass under 0.12s of persistence, and the
+      // light-painted disc the mode exists for vanished.
+      expect(SHUTTER_GAIN_REFERENCE_S).toBe(EYE_TIME_CONSTANT_S);
+      expect(shutterNormalization({ mode: "camera", exposureSeconds: 2.5 }, 1 / 60)).toBe(
+        SHUTTER_GAIN_REFERENCE_S
+      );
     });
   });
 });

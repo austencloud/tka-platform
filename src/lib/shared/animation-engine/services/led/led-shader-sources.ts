@@ -143,7 +143,7 @@ in vec2 v_uv;
 uniform sampler2D u_deposit;
 uniform sampler2D u_history;
 uniform float u_decay;        // exp(-dt / timeConstant)
-uniform float u_depositScale; // 1 / shutterNormalization(shutter, dt)
+uniform float u_depositScale; // 1 / SHUTTER_GAIN_REFERENCE_S, fixed detector gain
 
 out vec4 fragColor;
 
@@ -177,8 +177,9 @@ void main() {
 // integrates at a constant gain, which is why a longer exposure paints more of
 // the arc instead of fading each pass toward the floor. Dividing by the window
 // made a 2.5s exposure read about 20x dimmer than the same pass under 0.12s of
-// visual persistence, and the light-painted disc disappeared. See
-// `CAMERA_GAIN_REFERENCE_S`.
+// visual persistence, and the light-painted disc disappeared. The eye path now
+// divides by the same constant for the same reason. See
+// `SHUTTER_GAIN_REFERENCE_S`.
 //
 // The remaining cost is that a contribution older than the younger buffer is
 // carried by only one of the two, so the tail is a soft ramp rather than a
@@ -193,7 +194,7 @@ uniform sampler2D u_boxA;
 uniform sampler2D u_boxB;
 uniform float u_weightA;  // triangular window, u_weightA + u_weightB == 1
 uniform float u_weightB;
-uniform float u_invGain;  // 1 / CAMERA_GAIN_REFERENCE_S, fixed sensor gain
+uniform float u_invGain;  // 1 / SHUTTER_GAIN_REFERENCE_S, fixed sensor gain
 
 out vec4 fragColor;
 

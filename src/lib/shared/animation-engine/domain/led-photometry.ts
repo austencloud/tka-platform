@@ -72,17 +72,24 @@ export const EMITTER_DIE_LENGTH_FRACTION = 1 / 40;
  * an LED read as blinding rather than as a bright colored dot. Published
  * guidance puts emissive peaks in the 4x–32x range over diffuse white.
  *
- * Calibrated against a capsule at brightness level 3 spinning at a couple of
- * revolutions per second, which is the case the eye judges: its arcs land near
- * the top of that range, so the core clips and the halo carries the hue. A
- * 200-LED staff at the same budget paints a band around 0.5 — bright, saturated,
- * and deliberately not clipped, because 200 emitters share the flux two share.
+ * Calibrated so a SINGLE pass of a pixel staff clips its core, not just a
+ * capsule's. An earlier value of 3500 was set against the capsule alone and let
+ * a 200-LED staff paint a band around 0.5 — deliberately not clipped, on the
+ * reasoning that 200 emitters share the flux two share. That reads as a pastel
+ * ghost: measured on `/create/fuse`, the staff presets peaked at 131-245 out of
+ * 255 and put no pixel in the bright band at all. A real strip pixel is the
+ * brightest thing in the frame by a wide margin, and the look depends on the
+ * core blowing out while the halo carries the hue.
+ *
+ * The capsule keeps its own calibration by construction, since it is the same
+ * budget scaled: its two bulbs now clip harder and throw a wider halo, which is
+ * the same direction the staff needed.
  *
  * This is a surface brightness, so it carries both of the renderer's divisions
  * (path length and profile width). An earlier value of 900 was read off the
  * linear formula alone and rendered roughly 60x too dim on stage.
  */
-export const PROP_REFERENCE_FLUX = 3500;
+export const PROP_REFERENCE_FLUX = 9000;
 
 /**
  * Flux for a single LED.
@@ -283,60 +290,60 @@ export function shutterWeight(ageSeconds: number, shutter: LedShutter): number {
 }
 
 /**
- * Sum of the shutter weights the renderer will actually apply, used to
- * normalize the accumulation.
+ * Reference integration time BOTH shutters are scaled by.
  *
- * Deliberately the *discrete* sum rather than the kernel's continuous integral.
- * Sampling a decaying kernel at frame boundaries overestimates it by about
- * `dt/2`, which is a 14% error at 30fps against a 120ms time constant and 3% at
- * 144fps — so normalizing by the integral would leave a slower machine visibly
- * brighter. Dividing by the sum actually applied is exact at every frame rate.
+ * Neither a retina nor a sensor renormalizes by how long it integrated. Both
+ * are leaky integrators at a fixed gain: hold the shutter open longer and you
+ * collect more light, which is why a long exposure paints a solid disc and why
+ * a fast-spun prop looks brighter than a slow one. Gain is a property of the
+ * detector, not of the exposure.
  *
- * Dividing at all is what keeps total exposure independent of persistence
- * length: lengthening the eye's time constant extends the trail rather than
- * blowing out the image, so the persistence control cannot double as a
- * brightness control.
- *
- * The camera branch is the same normalization applied to a box kernel, and it is
- * what the eye-path fallback uses when a camera exposure cannot run the real box
- * shutter. The shipped camera path does NOT normalize this way — a sensor
- * integrates at a constant gain, which is the whole reason a longer exposure
- * paints more of the arc. See `CAMERA_GAIN_REFERENCE_S`.
- *
- * Under variable frame times a renderer should accumulate the weights it really
- * used and divide by that running total; this closed form is the uniform-dt case.
+ * Fixed at the eye's own time constant, so the default 0.12s look is unchanged
+ * and the two shutter modes sit on one footing: a single pass reads at the same
+ * brightness either way. The consequence is the honest one — a slow or
+ * stationary prop clips to white under a long integration, exactly as it does
+ * on a real sensor and in a real afterimage, which is the look the flux budget
+ * is calibrated for.
  */
-export function shutterNormalization(shutter: LedShutter, dtSeconds: number): number {
-  const dt = Math.max(dtSeconds, 1e-6);
-  const frames = Math.floor(shutterCutoffSeconds(shutter) / dt);
-
-  if (shutter.mode === "camera") return dt * (frames + 1);
-
-  const tau = Math.max(shutter.timeConstantSeconds, 1e-6);
-  const ratio = Math.exp(-dt / tau);
-  // -expm1(-dt/tau) is (1 - ratio) without the cancellation at small dt.
-  const denominator = -Math.expm1(-dt / tau);
-  return (dt * (1 - Math.pow(ratio, frames + 1))) / denominator;
-}
+export const SHUTTER_GAIN_REFERENCE_S = EYE_TIME_CONSTANT_S;
 
 /**
- * Reference integration time the camera shutter is scaled by.
+ * Divisor applied to each frame's deposit, so the accumulation lands on the
+ * fixed detector gain above rather than on a self-normalizing average.
  *
- * A camera does not renormalize by how long its shutter stayed open — it
- * integrates at a fixed gain, which is why a longer exposure paints more of the
- * arc rather than fading each pass into the floor. Dividing by the window
- * instead (the rule the eye path uses, where persistence must never double as a
- * brightness slider) made a 2.5s exposure read roughly 20x dimmer than the same
- * pass under 0.12s of visual persistence, and the light-painted disc the camera
- * mode exists for disappeared entirely.
+ * The eye path used to divide by the persistence window instead, on the
+ * reasoning that a persistence control must never double as a brightness
+ * control. Tidy, and wrong: it makes trail luminance scale as `1/tau`, so every
+ * preset that asked for a longer trail paid for it one-for-one in brightness.
+ * Measured on `/create/fuse`, the five eye-shutter presets covered 0.14%-1.4%
+ * of the frame and three never produced a single bright pixel (peaks of 121,
+ * 158 and 174 out of 255), while the one camera preset — the only one already
+ * on a fixed gain — covered 21.5% and clipped. That gap was this division, not
+ * the presets.
  *
- * Fixed at the eye's own time constant, so switching shutter modes changes how
- * long light persists and nothing else: a single pass reads at the same
- * brightness either way. The consequence is the honest one — a slow or
- * stationary prop clips to white on a long exposure, exactly as it does on a
- * real sensor, which is the look the flux budget is already calibrated for.
+ * What survives from the old formula is its frame-rate correction. A geometric
+ * series sampled at frame boundaries sums to `tau + dt/2`, not `tau`, so a flat
+ * `1 / gain` would render a 24fps machine about 15% brighter than a 240fps one.
+ * Scaling by `tau * (1 - exp(-dt/tau))` divided by `dt` removes that half-sample
+ * bias exactly, and collapses to `1 / gain` as `dt` goes to zero.
+ *
+ * The two behaviors this leaves are the physical ones: the head of a single
+ * moving pass reads at one brightness regardless of persistence, while repeated
+ * passes and dwelling emitters accumulate in proportion to it.
+ *
+ * The camera branch is the same fixed gain with no window division at all,
+ * matching `u_invGain` in `LED_BOX_RESOLVE_FRAG`. Renderers reach it only
+ * through the eye-path fallback, which substitutes the reference constant.
  */
-export const CAMERA_GAIN_REFERENCE_S = EYE_TIME_CONSTANT_S;
+export function shutterNormalization(shutter: LedShutter, dtSeconds: number): number {
+  if (shutter.mode === "camera") return SHUTTER_GAIN_REFERENCE_S;
+
+  const dt = Math.max(dtSeconds, 1e-6);
+  const tau = Math.max(shutter.timeConstantSeconds, 1e-6);
+  // -expm1(-dt/tau) is (1 - exp(-dt/tau)) without the cancellation at small dt.
+  const perFrameLoss = -Math.expm1(-dt / tau);
+  return (SHUTTER_GAIN_REFERENCE_S * dt) / (tau * perFrameLoss);
+}
 
 /**
  * State of the paired box-shutter accumulators a camera exposure runs on.

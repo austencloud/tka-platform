@@ -6,6 +6,7 @@
   import FireThumbnail from "./thumbnails/FireThumbnail.svelte";
   import TrailThumbnail from "./thumbnails/TrailThumbnail.svelte";
   import CoalThumbnail from "./thumbnails/CoalThumbnail.svelte";
+  import LedThumbnail from "./thumbnails/LedThumbnail.svelte";
 
   interface Props {
     effectType: string;
@@ -25,20 +26,20 @@
   <TrailThumbnail preset={preset as EffectPreset<"trails">} {active} />
 {:else if effectType === "charcoal"}
   <CoalThumbnail preset={preset as EffectPreset<"charcoal">} {active} />
+{:else if effectType === "led"}
+  <!-- The one effect whose tile runs the shipping renderer rather than a 2D
+       portrait of it. LED's look is a flux budget, a splat kernel, a streak
+       integral, a shutter and a bloom pyramid, all of which live in GLSL - a
+       hand-drawn tile is a second implementation free to drift, and the last
+       one did: it read as convincing LEDs for weeks while the effect on stage
+       was a formless blob. See led-thumbnail-renderer.ts. -->
+  <LedThumbnail preset={preset as EffectPreset<"led">} {active} />
 {:else}
   <!-- Each remaining effect replaces this fallback only after its thumbnail
        direction has passed the same visual review as Bloom: a stylised portrait
        of the look, composed from the preset's own parameters, exposed so it
        reads at ~304x114. Replaying the effect literally was tried for Bloom and
-       lost - at tile size a real render is mostly empty frame.
-
-       LED is deliberately back on this fallback. Its bespoke thumbnail was
-       hand-drawn from constants invented to make the tile look plausible, and
-       it shared no code with the renderer - so it kept reading as convincing
-       LEDs for weeks while the actual effect on stage was a formless blob.
-       A thumbnail that cannot be wrong about its own effect has to render
-       through the real renderer offscreen; until it does, no tile beats an
-       honest generic one. -->
+       lost - at tile size a real render is mostly empty frame. -->
 
   <EffectLookPreview model={legacyModel} {active} />
 {/if}

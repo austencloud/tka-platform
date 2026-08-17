@@ -39,8 +39,6 @@ const LOOK_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "led-capsule-pulse": "Breathing green tips",
   "led-rainbow-pov": "Full-spectrum light disc",
   "led-comet": "Racing head, fading tail",
-  "led-gradient-blade": "Two-color blended blade",
-  "led-sunset-sweep": "Ember-to-violet wash",
 };
 
 /** Null when a look has no copy yet, so the caller can fall back to its trait. */
