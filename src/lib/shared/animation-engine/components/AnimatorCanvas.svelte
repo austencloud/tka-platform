@@ -108,6 +108,7 @@ Last audit: 2025-12-27
     onToggle3DView = undefined,
     contextId = undefined,
     tapToToggle = false,
+    hidePlay = undefined,
     progressLine = false,
     hoverHint = "none",
     cornerToggle = false,
@@ -198,6 +199,13 @@ Last audit: 2025-12-27
      *  a transient play/pause icon. Off by default so views with their own tap
      *  semantics are unaffected. */
     tapToToggle?: boolean;
+    /** Hide the transport's play button. Defaults to `tapToToggle`, which is
+     *  right for embedded/showcase players: minimal chrome, and the canvas
+     *  itself is the play control. A full viewer pane sets it false — the 3D
+     *  pane has no canvas tap (orbit controls own the drag) so its transport
+     *  must carry the button, and two panes of one viewer showing two
+     *  different transports is the thing this prop exists to prevent. */
+    hidePlay?: boolean;
     /** Render the minimal, non-interactive progress LINE (SequenceProgressBar —
      *  the live twin of the baked-in video-export bar) in the progress slot
      *  instead of the full UnifiedTimeline transport. For embedded/showcase
@@ -673,7 +681,7 @@ Last audit: 2025-12-27
         <UnifiedTimeline
           playback={playbackAdapter}
           visible={progressBarVisible && !hideProgressBar}
-          hidePlay={tapToToggle}
+          hidePlay={hidePlay ?? tapToToggle}
         />
       {/if}
     </div>
