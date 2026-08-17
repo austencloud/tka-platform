@@ -5,6 +5,10 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const strip = path.resolve(__dirname, "strip-desktop-assets.cjs");
+const bundleThumbnails = path.resolve(
+	__dirname,
+	"bundle-desktop-thumbnails.cjs"
+);
 const generateEnv = path.resolve(__dirname, "generate-native-env.mjs");
 const verifySurface = path.resolve(
 	__dirname,
@@ -25,6 +29,10 @@ execSync("pnpm build", {
 });
 
 execFileSync(process.execPath, [strip], { cwd: root, stdio: "inherit" });
+execFileSync(process.execPath, [bundleThumbnails], {
+	cwd: root,
+	stdio: "inherit",
+});
 execFileSync(process.execPath, [generateEnv], { cwd: root, stdio: "inherit" });
 execFileSync(process.execPath, [verifySurface], {
 	cwd: root,
