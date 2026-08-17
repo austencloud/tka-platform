@@ -32,10 +32,18 @@
 </span>
 
 <style>
-  .glyph { display: inline-flex; flex-direction: column; gap: 2px; }
-  .row { display: flex; gap: 2px; }
+  /* One knob so a caller on a big screen can grow the glyph in step with the
+     label beside it — at 4K a 7px dot beside 19px text reads as punctuation. */
+  .glyph {
+    display: inline-flex;
+    flex-direction: column;
+    gap: calc(var(--rhythm-dot, 7px) * 0.29);
+  }
+  .row { display: flex; gap: calc(var(--rhythm-dot, 7px) * 0.29); }
   .dot {
-    width: 7px; height: 7px; border-radius: 2px;
+    width: var(--rhythm-dot, 7px);
+    height: var(--rhythm-dot, 7px);
+    border-radius: calc(var(--rhythm-dot, 7px) * 0.29);
     background: color-mix(in srgb, var(--theme-text) 16%, transparent);
   }
   .dot.blue { background: var(--theme-blue, #6f9bff); }

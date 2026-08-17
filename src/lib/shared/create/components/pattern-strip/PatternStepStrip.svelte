@@ -164,40 +164,38 @@
     display: flex; align-items: center; justify-content: center; user-select: none;
   }
   /* Fill mode: the same strip in a roomy pane, where the inline 56px row looks
-     lost. Only the CELLS grow — the strip takes its natural height and hands
-     the leftover back to the parent, which has something better to do with it
-     than stretch two rows of tokens across a third of a screen.
+     lost. The cells step up to a size that reads at arm's length and stop —
+     the strip stays its own height and hands the rest back.
 
-     Every other arrangement was tried and looked worse: an uncapped cell became
-     a 505x342px black slab at a period of 1, capping the cell while the lane
-     still stretched parked the two lanes ~317px apart with nothing between
-     them, and letting the box claim the height left a hole inside the Result
-     panel. A cell holds one short value; past about 5.5rem it stops reading as
-     a token, in either direction.
+     Do NOT tie the cell height to the panel. That was the previous try, and at
+     4K it produced four 65x200px slabs: the panel took the drawer's height, the
+     cells stretched to match, and a token holding the character "1" turned into
+     a column. A cell holds one short value. It is a token in both directions —
+     bounded height, bounded width — and whatever height is left over belongs to
+     the pane, which centres the editor in it.
 
      `0 0 auto` and not `1` (which is `1 1 0`): on a short landscape phone the
-     pane is shorter than the panel wants, and a shrinkable strip collapsed to
-     nothing while its cells kept painting at full size — the bottom lane ran
-     off the screen with no scroll able to reach it, because a collapsed flex
-     item contributes no height for the scroller to find. */
-  .pbs.fill { flex: 1 0 auto; }
-  /* The lane is a row of cells beside a name. Stretching it gives the cells a
-     definite height to grow into; the name stays centred against them, and the
-     number ruler keeps its own small height rather than sharing the lanes'. */
-  .pbs.fill .pbs-lane { flex: 1 1 auto; min-height: 0; align-items: stretch; }
-  .pbs.fill .pbs-label { align-self: center; }
-  .pbs.fill .pbs-nums { flex: 0 0 auto; }
-  /* Height comes entirely from the lane, with no ceiling of its own. A ceiling
-     here is what turns a roomy panel into a void: the panel takes the height,
-     the cell refuses it, and the difference is black. The panel is the thing
-     that gets bounded (see PatternStripEditor's sentence-mode block), and
-     whatever it settles on, the cells fill exactly. Width still stops at
-     5.5rem — a cell holds one short value, and past that it stops reading as a
-     token. */
+     pane is shorter than the strip, and a shrinkable strip collapsed to nothing
+     while its cells kept painting at full size — the bottom lane ran off the
+     screen with no scroll able to reach it, because a collapsed flex item
+     contributes no height for the scroller to find. */
+  .pbs.fill { flex: 0 0 auto; }
+  /* The lane centres as a UNIT — name and cells together. Stretching the cell
+     row across the panel and centring the cells inside it looked right in the
+     numbers and wrong on screen: the row kept the panel's full width, so "Left"
+     stayed pinned to the far edge with 165px of nothing between it and the
+     first cell it labels. */
+  .pbs.fill .pbs-lane { justify-content: center; }
+  .pbs.fill .pbs-steps { flex: 0 1 auto; }
+  /* A definite width that shrinks, rather than a share of the row that grows:
+     four steps read as four tokens instead of four slabs, and sixteen still
+     fit by getting narrower. */
   .pbs.fill .pbs-cell {
-    height: 100%;
+    flex: 0 1 7rem;
+    width: 7rem;
+    height: 76px;
     min-height: 56px;
-    max-width: 5.5rem;
+    max-width: none;
   }
 
   /* The column header. Sized and spaced exactly like the cell row beneath it so
@@ -208,7 +206,7 @@
     font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
     color: var(--theme-text-dim); letter-spacing: 0.02em;
   }
-  .pbs.fill .pbs-num { max-width: 5.5rem; }
+  .pbs.fill .pbs-num { flex: 0 1 7rem; width: 7rem; max-width: none; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }
@@ -242,4 +240,23 @@
     cursor: pointer; font-variant-numeric: tabular-nums;
   }
   .pbs-pop button.sel { background: var(--theme-accent); color: #fff; border-color: transparent; }
+
+  /* The strip steps up with the panel for the same reason the sentence does:
+     every size here is px, so on a 4K panel a 76px cell holding one character
+     reads as punctuation. See PatternStripEditor for the matching tiers. */
+  @container sequence-action-subview (min-width: 1100px) {
+    .pbs.fill { gap: 14px; }
+    .pbs.fill .pbs-cell { flex-basis: 9rem; width: 9rem; height: 100px; border-radius: 14px; }
+    .pbs.fill .pbs-num { flex-basis: 9rem; width: 9rem; font-size: 15px; }
+    .pbs.fill .pbs-label { width: 6ch; flex-basis: 6ch; font-size: 18px; }
+    .pbs.fill .pbs-cell .v { font-size: 22px; }
+  }
+
+  @container sequence-action-subview (min-width: 1600px) {
+    .pbs.fill { gap: 18px; }
+    .pbs.fill .pbs-cell { flex-basis: 11rem; width: 11rem; height: 128px; border-radius: 18px; }
+    .pbs.fill .pbs-num { flex-basis: 11rem; width: 11rem; font-size: 18px; }
+    .pbs.fill .pbs-label { font-size: 22px; }
+    .pbs.fill .pbs-cell .v { font-size: 28px; }
+  }
 </style>

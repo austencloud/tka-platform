@@ -127,19 +127,20 @@
     flex: 1 0 auto;
     margin-inline: auto;
     width: 100%;
-    max-width: 820px;
+    /* Grows with the panel instead of stopping at a laptop's width — a hard
+       820px cap leaves two thirds of a 4K drawer as rail. */
+    max-width: min(1180px, 100%);
     display: flex;
     flex-direction: column;
     justify-content: safe center;
   }
 
-  /* The ceiling is what the editor can actually use: its two capped panels
-     (18rem of sentences + 24rem of result), the repeat-length and named-figure
-     rows, and the gaps between them. Past this the editor would keep claiming
-     height its panels have stopped accepting. */
+  /* The editor is sized by what it holds — no growing. Its panels hug their
+     contents, so any height handed to it past that would open as black space
+     inside the cards rather than under them. `0 0` and not `0 1`: a pane
+     shorter than the editor scrolls instead of squashing it. */
   .pattern-view-inner :global(.pse) {
-    flex: 1 0 auto;
-    max-height: 60rem;
+    flex: 0 0 auto;
   }
 
   .pattern-action-footer {

@@ -484,33 +484,63 @@
 
   /* ─── Sentence mode ─── */
 
+  /* ONE card, not a stack of loose fragments. The sentence, the two controls
+     that write it, and the result it produces are one thought, and they were
+     reading as three unrelated boxes of three different widths adrift on the
+     panel — a 26rem card over a 42rem chip row over a 31rem strip, each
+     floating on black. Now they share an edge, a background, and a width, and
+     hairlines mark the seams. The card is as wide as its widest row, so no
+     region can be wider than what it holds and none of them can be empty. */
   .pse.sentence-mode {
-    gap: 20px;
+    gap: 0;
     margin: 0;
+    align-self: center;
+    width: max-content;
+    max-width: 100%;
+    min-width: min(100%, 30rem);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 18px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    text-align: center;
+  }
+  .pse.sentence-mode > :global(*) {
+    padding: 18px 22px;
+  }
+  /* Hairline seams, never an outer edge — the card owns the outside. */
+  .pse.sentence-mode > :global(* + *) {
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
+  }
+  .pse.sentence-mode > .axis {
+    width: auto;
+    max-width: 100%;
+  }
+  .pse.sentence-mode .chips {
+    justify-content: center;
+  }
+  .pse.sentence-mode .seg-wrap {
+    margin-inline: auto;
   }
 
-  /* The sentence is the control, not a caption above one, so it gets a surface
-     of its own. Without it the whole screen was one flat left-aligned stack of
-     fragments and nothing read as the primary thing to touch. */
+  /* The sentence is the control, not a caption above one, so it heads the card
+     and carries no chrome of its own — the card is the surface. */
   .sentences {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    gap: 12px;
   }
 
   /* Chips sit inline with the words, so the line has to wrap like prose and
      still keep its baseline when a chip is taller than the text. */
+  /* The sentence is the primary control on the screen, so it is set at reading
+     size rather than at the size of the captions under it. At 16px in a 640px
+     card it read as one more fragment. */
   .sentence {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     margin: 0;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1.4;
   }
 
@@ -536,10 +566,10 @@
   }
 
   /* The reps line is a gloss on the caption, not a second heading, so it sits
-     beside it. Pushed to the far edge of a 515px column it read as an unrelated
-     fragment stranded in the gutter. */
+     beside it rather than pushed to the far edge of the card, where it read as
+     an unrelated fragment stranded in the gutter. */
   .pse.sentence-mode .axis-row {
-    justify-content: flex-start;
+    justify-content: center;
     gap: 10px;
   }
 
@@ -547,33 +577,26 @@
      a caption, then a framed strip. Left bare it was two rows of tokens
      floating on the panel background with no edge to tell them apart from the
      sentence above. */
-  /* The two panels take the pane's spare height between them — that is what
-     turns a column of fragments clinging to the top of a tall drawer into a
-     screen. Both are bounded, and the bound is the whole lesson: a panel that
-     grows without limit runs past what it holds, and the difference is a black
-     hole with two rows adrift in it. At 1080 neither ceiling is reached, so the
-     pane fills exactly; at 3840 they stop where a panel still looks like a
-     panel. Inside Result the strip fills whatever the panel settled on, cells
-     and all, so no gap can open there at any height. */
+  /* Both panels are sized by what they hold. The previous try stretched them to
+     spend the drawer's height, which is exactly backwards: a card holding two
+     short lines became a 640x225 cavern with the lines adrift in it, and the
+     Result strip's cells grew into 200px columns to match. A form does not get
+     better by inflating its boxes. They hug, and the pane centres the stack in
+     whatever height is left (see each view's `justify-content: safe center`). */
+  /* The two lines centre as a block and stay left-aligned inside it — that is
+     what keeps the two hands' four columns lined up to scan down. */
   .pse.sentence-mode .sentences {
-    flex: 1 1 auto;
-    max-height: 18rem;
-    justify-content: space-evenly;
-    min-height: 0;
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
+    margin-inline: auto;
+    text-align: left;
   }
   .pse.sentence-mode .result {
     display: flex;
-    flex: 1.6 1 auto;
-    max-height: 24rem;
+    flex: 0 0 auto;
     flex-direction: column;
-    min-height: 0;
     margin-top: 0;
-  }
-  .pse.sentence-mode .result :global(.pbs) {
-    padding: 12px 14px 14px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
   }
 
   /* The colour says which prop; the word says which hand. Both are load-bearing
@@ -595,6 +618,95 @@
 
   .prose {
     color: var(--theme-text-dim);
+  }
+
+  /* A drawer this wide is a 4K screen, or a TV across a room. Nothing is
+     scaling for us there — every size in this file is px — so the editor
+     arrives as a postage stamp in the middle of a 1770px panel unless the type
+     and the controls step up with the panel. Two tiers: the first catches
+     4K at 150% scaling, the second the raw 3840 and the TV. */
+  @container sequence-action-subview (min-width: 1100px) {
+    .pse.sentence-mode {
+      min-width: min(100%, 40rem);
+      border-radius: 22px;
+    }
+    .pse.sentence-mode > :global(*) {
+      padding: 24px 30px;
+    }
+    .pse.sentence-mode .sentences {
+      gap: 16px;
+    }
+    .pse.sentence-mode .sentence {
+      font-size: 22px;
+      gap: 12px;
+    }
+    .pse.sentence-mode .axis-lbl {
+      font-size: 15px;
+    }
+    .pse.sentence-mode .seg-wrap :global(.segment) {
+      min-width: 68px;
+      font-size: 19px;
+    }
+    /* The chips are the only controls with their own fixed sizes, so without
+       this they stay 12px in a card whose every other measure has stepped up,
+       and the row that names the figures reads as the least important thing
+       on the screen. */
+    .pse.sentence-mode :global(.chip-label) {
+      font-size: 15px;
+    }
+    .pse.sentence-mode .chips :global(.filter-chip) {
+      min-height: 52px;
+      padding-inline: 14px;
+      border-radius: 12px;
+      --rhythm-dot: 9px;
+    }
+    .pse.sentence-mode .sentence :global(.filter-chip) {
+      min-height: 46px;
+      padding-inline: 14px;
+    }
+    .pse.sentence-mode .sentence :global(.chip-label) {
+      font-size: 19px;
+    }
+  }
+
+  @container sequence-action-subview (min-width: 1600px) {
+    .pse.sentence-mode {
+      min-width: min(100%, 52rem);
+      border-radius: 26px;
+    }
+    .pse.sentence-mode > :global(*) {
+      padding: 32px 40px;
+    }
+    .pse.sentence-mode .sentences {
+      gap: 20px;
+    }
+    .pse.sentence-mode .sentence {
+      font-size: 27px;
+      gap: 15px;
+    }
+    .pse.sentence-mode .axis-lbl {
+      font-size: 17px;
+    }
+    .pse.sentence-mode .seg-wrap :global(.segment) {
+      min-width: 82px;
+      font-size: 23px;
+    }
+    .pse.sentence-mode :global(.chip-label) {
+      font-size: 18px;
+    }
+    .pse.sentence-mode .chips :global(.filter-chip) {
+      min-height: 62px;
+      padding-inline: 18px;
+      border-radius: 14px;
+      --rhythm-dot: 11px;
+    }
+    .pse.sentence-mode .sentence :global(.filter-chip) {
+      min-height: 56px;
+      padding-inline: 18px;
+    }
+    .pse.sentence-mode .sentence :global(.chip-label) {
+      font-size: 24px;
+    }
   }
 
   /* A narrow portrait drawer cannot spend 26px between every editing axis.

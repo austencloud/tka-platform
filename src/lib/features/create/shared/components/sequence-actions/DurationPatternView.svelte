@@ -145,23 +145,20 @@
     flex: 1 0 auto;
     margin-inline: auto;
     width: 100%;
-    max-width: 820px;
+    /* Grows with the panel instead of stopping at a laptop's width — a hard
+       820px cap leaves two thirds of a 4K drawer as rail. */
+    max-width: min(1180px, 100%);
     display: flex;
     flex-direction: column;
     justify-content: safe center;
   }
 
-  /* Takes the pane's height and never shrinks below its own content, so the
-     sentence and the strip spend the drawer rather than clinging to the middle
-     of it. The ceiling is what the editor can actually use — its two capped
-     panels plus the length row and the gaps between them. Without it the
-     editor kept claiming height its panels had stopped accepting, which on a
-     tall drawer opens dead space under the strip. One lane means no
-     named-figure row, so this ceiling is 10rem shorter than the two-hand
-     strips'. */
+  /* The editor is sized by what it holds — no growing. Its panels hug their
+     contents, so any height handed to it past that would open as black space
+     inside the cards rather than under them. `0 0` and not `0 1`: a pane
+     shorter than the editor scrolls instead of squashing it. */
   .pattern-view-inner :global(.pse) {
-    flex: 1 0 auto;
-    max-height: 50rem;
+    flex: 0 0 auto;
   }
 
   .pattern-action-footer {
