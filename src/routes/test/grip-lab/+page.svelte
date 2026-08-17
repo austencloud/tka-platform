@@ -17,6 +17,7 @@
    */
   import { onDestroy, onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
+  import { Quaternion, Vector3 } from "three";
   import {
     PerformerRig,
     Plane,
@@ -68,6 +69,8 @@
     speedDegPerSec: number;
     stanceYawDeg: number;
     playing: boolean;
+    planeSweepDeg: number;
+    handTravelCm: number;
   }
 
   function loadPersisted(): PersistedState {
@@ -77,6 +80,8 @@
       speedDegPerSec: 45,
       stanceYawDeg: 0,
       playing: true,
+      planeSweepDeg: 0,
+      handTravelCm: 0,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -102,6 +107,14 @@
             : fallback.stanceYawDeg,
         playing:
           typeof parsed.playing === "boolean" ? parsed.playing : fallback.playing,
+        planeSweepDeg:
+          typeof parsed.planeSweepDeg === "number"
+            ? Math.max(-90, Math.min(90, parsed.planeSweepDeg))
+            : fallback.planeSweepDeg,
+        handTravelCm:
+          typeof parsed.handTravelCm === "number"
+            ? Math.max(-40, Math.min(40, parsed.handTravelCm))
+            : fallback.handTravelCm,
       };
     } catch {
       return fallback;
@@ -114,6 +127,8 @@
   let speedDegPerSec = $state(initial.speedDegPerSec);
   let stanceYawDeg = $state(initial.stanceYawDeg);
   let playing = $state(initial.playing);
+  let planeSweepDeg = $state(initial.planeSweepDeg);
+  let handTravelCm = $state(initial.handTravelCm);
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -122,6 +137,8 @@
       speedDegPerSec,
       stanceYawDeg,
       playing,
+      planeSweepDeg,
+      handTravelCm,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -143,18 +160,48 @@
     console.warn("[GripLab] Failed to init avatar state:", err);
   }
 
-  // The one prop state under study: fixed hand point, scrubbed staff angle.
-  // Built exactly like sequence playback builds its frames.
+  // The weave's two extra degrees of freedom, both relative to the frontal
+  // wall plane as the reference frame:
+  //
+  // - Plane sweep pivots the SPIN PLANE about the vertical axis through the
+  //   grip point (not the body center — the hand stays out at its point while
+  //   the plane leaves frontal). Positive sweep sends the staff's outer end
+  //   behind the performer, which is the direction the taught weave travels.
+  // - Hand travel slides the grip fore/aft (+ toward the audience), the
+  //   forward-back motion the hand needs to chase the swept plane.
+  const sweepYRad = $derived((-planeSweepDeg * Math.PI) / 180);
+
+  // The one prop state under study: hand point + swept plane + scrubbed
+  // staff angle. Built exactly like sequence playback builds its frames.
   const redPropState = $derived.by<PropState3D>(() => {
     const centerPathAngle = LOCATION_ANGLES[POINT_TO_GRID[point]] ?? 0;
     const staffRad = (staffAngleDeg * Math.PI) / 180;
+    const basePosition = planeAngleToWorldPosition(Plane.WALL, centerPathAngle);
+    const worldPosition = new Vector3(
+      basePosition.x,
+      basePosition.y,
+      basePosition.z + handTravelCm / 100
+    );
+    const sweepQuat = new Quaternion().setFromAxisAngle(
+      new Vector3(0, 1, 0),
+      sweepYRad
+    );
     return {
       plane: Plane.WALL,
       centerPathAngle,
       staffRotationAngle: staffRad,
-      worldPosition: planeAngleToWorldPosition(Plane.WALL, centerPathAngle),
-      worldRotation: calculatePropQuaternion(Plane.WALL, staffRad),
+      worldPosition,
+      worldRotation: sweepQuat.multiply(
+        calculatePropQuaternion(Plane.WALL, staffRad)
+      ),
     };
+  });
+
+  // Vertical pivot axis for the visible grid: the grip's x/z, so the drawn
+  // plane visibly leaves frontal around the same axis the prop's plane does.
+  const gridPivot = $derived({
+    x: redPropState.worldPosition.x,
+    z: redPropState.worldPosition.z,
   });
 
   // ── Quarter-phase freeze ──
@@ -260,13 +307,22 @@
           stanceYaw={stanceYawRad}
         >
           {#snippet gridSlot()}
-            <T.Group position.z={STAGE.AVATAR_GRID_OFFSET}>
-              <Grid3D
-                visiblePlanes={new Set([Plane.WALL])}
-                gridMode="diamond"
-                planeMode={PlaneMode.WALL}
-                showLabels={true}
-              />
+            <!-- Pivot the drawn grid about the grip's vertical axis so the
+                 reference plane visibly sweeps with the spin plane. -->
+            <T.Group
+              position={[gridPivot.x, 0, gridPivot.z]}
+              rotation.y={sweepYRad}
+            >
+              <T.Group position={[-gridPivot.x, 0, -gridPivot.z]}>
+                <T.Group position.z={STAGE.AVATAR_GRID_OFFSET}>
+                  <Grid3D
+                    visiblePlanes={new Set([Plane.WALL])}
+                    gridMode="diamond"
+                    planeMode={PlaneMode.WALL}
+                    showLabels={true}
+                  />
+                </T.Group>
+              </T.Group>
             </T.Group>
           {/snippet}
         </PerformerRig>
@@ -359,6 +415,34 @@
             bind:value={stanceYawDeg}
           />
           <output for="grip-lab-stance">{stanceYawDeg}°</output>
+        </div>
+      </div>
+
+      <div class="control-row weave-row">
+        <div class="slider-control">
+          <label for="grip-lab-sweep">Plane sweep</label>
+          <input
+            id="grip-lab-sweep"
+            type="range"
+            min="-90"
+            max="90"
+            step="1"
+            bind:value={planeSweepDeg}
+          />
+          <output for="grip-lab-sweep">{planeSweepDeg}°</output>
+        </div>
+
+        <div class="slider-control">
+          <label for="grip-lab-travel">Hand travel</label>
+          <input
+            id="grip-lab-travel"
+            type="range"
+            min="-40"
+            max="40"
+            step="1"
+            bind:value={handTravelCm}
+          />
+          <output for="grip-lab-travel">{handTravelCm} cm</output>
         </div>
       </div>
     </aside>
@@ -485,6 +569,16 @@
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .weave-row {
+    grid-template-columns: repeat(2, minmax(10rem, 1fr));
+  }
+
+  /* "-40 cm" is wider than the degree outputs; reserve its worst case so the
+     slider track never resizes as the value changes. */
+  .weave-row .slider-control output {
+    min-width: 4.5rem;
+  }
+
   .transport {
     width: 3.25rem;
     min-width: 3.25rem;
@@ -542,6 +636,10 @@
   @container (max-width: 56rem) {
     .transport-row {
       grid-template-columns: auto 1fr;
+    }
+
+    .weave-row {
+      grid-template-columns: 1fr;
     }
   }
 
