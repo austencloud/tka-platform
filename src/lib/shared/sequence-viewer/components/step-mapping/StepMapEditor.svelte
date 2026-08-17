@@ -358,9 +358,12 @@
     // one: rewinding to re-watch a landing is part of marking now, so transport
     // gets reached for throughout the run rather than once at the start, and a
     // Space pressed meaning "pause" would have dropped a mark instead.
-    // A focused button keeps Space for itself - activating the control you
-    // tabbed to is what the browser does and what the user meant.
-    if (event.code === "Space" && !(target instanceof HTMLButtonElement)) {
+    // Space plays from anywhere on this screen, including straight after a
+    // speed chip or any other button was clicked. Letting a focused button keep
+    // Space meant picking 0.5x left the key dead, which is exactly when it gets
+    // reached for. Every button here has a click and a shortcut; none of them
+    // needs Space as well.
+    if (event.code === "Space") {
       event.preventDefault();
       togglePlayPause();
       return;
@@ -524,19 +527,6 @@
             />
           </span>
           {@render mirrorToggle()}
-          <!-- Sized to the longer of the two sentences at whatever width the
-               row happens to be, so toggling Mirror cannot add a line here and
-               push the tap button down. -->
-          <span class="rate-hint">
-            <span class="hint-sizer" aria-hidden="true"
-              >Pictographs face the camera, like the audience sees it</span
-            >
-            <span class="hint-live">
-              {mirrored
-                ? "Pictographs face the camera, like the audience sees it"
-                : "Slow it down to catch the landing"}
-            </span>
-          </span>
         </div>
 
         <button
@@ -548,12 +538,14 @@
           disabled={placed >= totalMarks}
         >
           <span class="tap-face">
-            {#if pendingFace}
-              <PictographContainer
-                pictographData={pendingFace}
-                disableTransitions={true}
-              />
-            {/if}
+            <span class="face-square">
+              {#if pendingFace}
+                <PictographContainer
+                  pictographData={pendingFace}
+                  disableTransitions={true}
+                />
+              {/if}
+            </span>
           </span>
           <span class="tap-copy">
             <strong>
@@ -612,12 +604,14 @@
       <div class="control-bar review-bar">
         <div class="selected-row">
           <span class="selected-face">
-            {#if selectedFace}
-              <PictographContainer
-                pictographData={selectedFace}
-                disableTransitions={true}
-              />
-            {/if}
+            <span class="face-square">
+              {#if selectedFace}
+                <PictographContainer
+                  pictographData={selectedFace}
+                  disableTransitions={true}
+                />
+              {/if}
+            </span>
           </span>
           <span class="selected-copy">
             <span class="selected-label">
@@ -840,20 +834,6 @@
     inline-size: max-content;
   }
 
-  .rate-hint {
-    display: inline-grid;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
-    font-size: 0.8125rem;
-  }
-
-  .rate-hint > * {
-    grid-area: 1 / 1;
-  }
-
-  .hint-sizer {
-    visibility: hidden;
-  }
-
   /* The whole point of the screen, sized like it. */
   .tap-target {
     display: flex;
@@ -904,6 +884,18 @@
     /* Reserved before the pictograph prepares, so arrival never reflows the
        button or the row of controls under it. */
     inline-size: clamp(5rem, 14cqw, 9rem);
+    aspect-ratio: 1;
+  }
+
+  /* The visible box, and the thing that is actually square. Splitting it from
+     the sizing area above is what lets the wide layout hand the area a height
+     from flex and a width from the column, and still draw a square inside:
+     aspect-ratio alone derives one axis from the other, so it cannot take the
+     smaller of two. See the size-container rule in the two-column tier. */
+  .face-square {
+    display: grid;
+    place-items: center;
+    inline-size: 100%;
     aspect-ratio: 1;
     border-radius: 0.75rem;
     background: rgba(255, 255, 255, 0.04);
@@ -972,9 +964,10 @@
     flex: 0 0 auto;
     inline-size: 3rem;
     aspect-ratio: 1;
+  }
+
+  .selected-face .face-square {
     border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.04);
-    overflow: hidden;
   }
 
   .selected-copy {
@@ -1017,6 +1010,10 @@
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
+    /* Wrap to the next line rather than compress: a shrunk button squeezes its
+       label out through its own border. */
+    flex: 0 0 auto;
+    white-space: nowrap;
     min-block-size: 44px;
     padding: 0 0.85rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
@@ -1102,11 +1099,14 @@
        existence, and the video is the thing you are watching. Floor it, and let
        the surface scroll rather than hide the tap button.
        The floor is set for a PORTRAIT clip, which is what a performance video
-       almost always is: at 7rem such a clip renders about 60px wide, too small
-       to see which point a prop arrived at, which is the only question this
-       screen asks. The height comes back out of the tap card below. */
+       almost always is: at 7rem such a clip renders about 60px wide and 11rem
+       still only about 100px, too small to see which point a prop arrived at,
+       which is the only question this screen asks. 15rem buys back a readable
+       clip and pushes only the undo/reset row below the fold - the video and
+       the tap button, the two things marking actually uses, both stay in
+       view. */
     .editor {
-      grid-template-rows: minmax(11rem, 1fr) auto auto auto;
+      grid-template-rows: minmax(15rem, 1fr) auto auto auto;
       gap: 0.5rem;
       padding: 0.5rem;
       overflow-y: auto;
@@ -1133,8 +1133,7 @@
     /* No hardware keyboard to tell them about. The slot itself stays - it also
        carries the re-take notice, which matters most on the tier where the
        timeline is smallest and overshooting is easiest. */
-    .kbd-hint,
-    .rate-hint {
+    .kbd-hint {
       display: none;
     }
 
@@ -1159,11 +1158,15 @@
          9:16 clip given a 1fr column renders as a narrow strip stranded in
          800px of black. Sizing the column by ratio x height puts the video and
          the controls next to each other in the middle of the frame instead.
-         The controls column grows with the canvas so a 4K panel does not leave
-         them marooned either. */
+         A portrait clip only ever claims a narrow column, so the controls take
+         the width it leaves rather than sitting at a fixed 24rem with the rest
+         of the canvas empty either side of the pair. The ceiling is roughly
+         what the pictograph can spend: past 70dvh the square is height-bound
+         and every further pixel of column turns into card padding, which at
+         2560 left a 662px square floating in a 1107px card. */
       grid-template-columns:
         minmax(0, min(52cqw, calc(var(--video-ratio, 1.7778) * 78dvh)))
-        minmax(18rem, clamp(24rem, 24cqw, 36rem));
+        minmax(18rem, clamp(28rem, 44cqw, 70dvh));
       grid-template-rows: minmax(0, 1fr) auto auto;
       justify-content: center;
     }
@@ -1176,7 +1179,9 @@
     .control-bar {
       grid-column: 2;
       grid-row: 1;
-      align-self: center;
+      /* Stretch, not centre: centring left a band of empty column above and
+         below the controls while the video beside them ran the full height. */
+      align-self: stretch;
       /* Auto inline margins beat justify-self:stretch, so the column has to be
          claimed explicitly or the controls shrink-to-fit and float in it. */
       inline-size: 100%;
@@ -1185,16 +1190,34 @@
 
     /* In a column rather than a strip, the pictograph goes above the copy and
        gets to be the size of the decision it is asking for. */
-    .tap-target {
+    .tap-target,
+    .selected-row {
+      /* The card takes whatever height the speed and action rows leave, and the
+         pictograph fills it. Next to a full-height video, a card sized to its
+         text was what made the column look half empty. */
+      flex: 1;
+      min-block-size: 0;
       flex-direction: column;
-      align-items: stretch;
+      align-items: center;
+      justify-content: center;
       text-align: center;
     }
 
+    /* Height is the leftover after the copy, width follows it through the
+       ratio, so the face is square and can never overflow the card. It only
+       holds while the width cap never bites - aspect-ratio derives width FROM
+       height, so clamping the width cannot pull the height back down, and a
+       36rem ceiling here once turned a 4K face into a 576x1432 box. The column
+       ceiling above is what guarantees the room. (A size container asking for
+       100cqmin is the direct way to say min(width, height), but Chrome resolves
+       cqb against the pre-flex pass here and hands back the inline axis.) */
     .tap-face,
     .selected-face {
-      inline-size: 100%;
-      max-inline-size: clamp(11rem, 18cqw, 26rem);
+      flex: 1 1 auto;
+      min-block-size: 0;
+      inline-size: auto;
+      max-inline-size: 100%;
+      aspect-ratio: 1;
       margin-inline: auto;
     }
 
@@ -1205,11 +1228,8 @@
     /* Review shows the same big face in the same place as marking did, so
        checking a mark is the same gesture as placing one. */
     .selected-row {
-      flex-direction: column;
-      align-items: stretch;
       gap: 1rem;
       padding: clamp(0.75rem, 1.2cqw, 1.25rem);
-      text-align: center;
     }
 
     .selected-copy {
@@ -1266,10 +1286,9 @@
       --font-size-compact: 1.05rem;
     }
 
-    .tap-face,
-    .selected-face {
-      max-inline-size: clamp(26rem, 24cqw, 36rem);
-    }
+    /* No cap of its own up here. The two-column rule already sizes the face
+       from the card's width and the viewport's height, and a 36rem ceiling on
+       top of that just left a 4K card mostly empty around a small square. */
 
     .tap-copy strong {
       font-size: clamp(1.5rem, 1.6cqw, 2.5rem);
@@ -1281,7 +1300,6 @@
     }
 
     .tap-key,
-    .rate-hint,
     .selected-time {
       font-size: 1.1rem;
     }
@@ -1298,8 +1316,7 @@
   /* Wide and short - a folded phone held sideways. Everything optional goes so
      the stage and the tap button both stay above the fold. */
   @media (max-height: 34rem) {
-    .kbd-hint,
-    .rate-hint {
+    .kbd-hint {
       display: none;
     }
 
@@ -1328,13 +1345,21 @@
     .selected-row {
       flex-direction: row;
       align-items: center;
+      /* Centring is the column tier's rule. In a row it strands the pictograph
+         and the copy in the middle with half the card empty beside them. */
+      justify-content: flex-start;
       gap: 0.75rem;
       padding: 0.6rem;
       text-align: start;
     }
 
+    /* Back to a fixed strip. The two-column tier hands the face flex: 1 1 auto
+       so it can take the leftover height of a column; in this row it would take
+       the leftover WIDTH instead and the ratio would make it 428px tall inside
+       a 76px card. */
     .tap-face,
     .selected-face {
+      flex: 0 0 auto;
       inline-size: clamp(3rem, 6cqw, 4.5rem);
       margin-inline: 0;
     }
