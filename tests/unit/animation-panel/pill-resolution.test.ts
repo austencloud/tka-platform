@@ -8,11 +8,11 @@ import {
 } from "$lib/shared/animation-panel/pill-nav/pill-types";
 
 /**
- * The sidebar merges Effort, Playback and Display into one Motion page, but
- * only where the rail is wide enough to lay them out in two columns. That makes
- * the rail's membership a runtime value — it changes with layout and with
- * width, while the panel stays mounted — so a pill that was valid a moment ago
- * can stop existing. These pin the mapping in both directions.
+ * The sidebar merges Effort, Playback and Display into one Motion page; the
+ * mobile dock keeps them separate. That makes the rail's membership a runtime
+ * value — a shell that flips sidebar/bottom on resize changes it while the
+ * panel stays mounted — so a pill that was valid a moment ago can stop
+ * existing. These pin the mapping in both directions.
  */
 describe("animationPillOrder", () => {
   it("collapses the three motion sections into one page when merged", () => {

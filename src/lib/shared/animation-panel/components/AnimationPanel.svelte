@@ -404,18 +404,15 @@
   // The sidebar collapses effort/playback/display into one Motion page; the
   // mobile dock keeps them as three trays. Membership still comes from
   // PILL_ORDER via buildPillSpecs, so the two orders cannot drift.
-  // Merging only pays where the merged page can run two columns. On a rail
-  // narrower than that the three sections each filled it on their own, and
-  // stacking them just pushes Visibility off the bottom — measured on the
-  // public /composer showcase, whose rail is 364px: 33px of Visibility clipped.
-  // MOTION_MERGE_MIN_PX is the same seam as the @container query below, and
-  // both sit under `.panel-center-inner`'s 560px cap so the grid can be reached
-  // without waiting for the 1680 media step.
-  const MOTION_MERGE_MIN_PX = 528;
-  let bodyWidth = $state(0);
-  const motionMerged = $derived(
-    layout === "sidebar" && bodyWidth >= MOTION_MERGE_MIN_PX
-  );
+  // Merging is a property of the layout, not of the width. A width gate here
+  // meant Post Studio's 419px inspector showed three pills while the sequence
+  // viewer's 663px rail showed one Motion page in the same window — the two
+  // surfaces disagreeing about what the panel even contains, which is the
+  // drift this panel exists to prevent. Every sidebar merges; the @container
+  // query below decides one column or two, which is a layout adaptation rather
+  // than a different set of pages. A narrow rail scrolls the merged page
+  // (`.panel-transition` is `overflow-y: auto`).
+  const motionMerged = $derived(layout === "sidebar");
 
   const ANIMATION_PILL_ORDER = $derived(animationPillOrder(motionMerged));
 
@@ -583,8 +580,13 @@
     <div class="motion-scope">
       <div class="motion-stack">
         {@render effortBody(true)}
-        {@render playbackBody()}
-        {@render displayBody()}
+        <div class="motion-col">
+          {@render tempoModeBody()}
+        </div>
+        <div class="motion-col">
+          {@render displayBody()}
+          {@render pathsBody()}
+        </div>
       </div>
     </div>
   {:else if resolvedPill === "export" && exportOptions}
@@ -615,6 +617,16 @@
 {/snippet}
 
 {#snippet playbackBody()}
+  {@render tempoModeBody()}
+  {@render pathsBody()}
+{/snippet}
+
+<!-- Split out of playbackBody so the merged Motion page can put Paths in the
+     right-hand column under Visibility. Stacked all three in the left column,
+     Tempo + Mode + Paths ran ~440px against Visibility's ~230px and left a
+     column-height hole under it. On its own Playback page the two render back
+     to back and read as one section, as before. -->
+{#snippet tempoModeBody()}
     <div class="section-pad playback-rows">
       {#if showTempoControls}
         <div class="rt-section">
@@ -641,15 +653,20 @@
           />
         </div>
       {/if}
-      <!-- Motion paths live with Playback, not Display: the shape changes how
-           the props TRAVEL (prop-interpolator physics), a playback behavior —
-           only the "Paths" chip in Display is visibility. PathShapePanel brings
-           its own header row (label + live caption). -->
-      <PathShapePanel
-        onSettingChange={(previous, value) =>
-          reportSetting("playback", "path_shape", previous, value)}
-      />
     </div>
+{/snippet}
+
+<!-- Motion paths live with Playback, not Display: the shape changes how the
+     props TRAVEL (prop-interpolator physics), a playback behavior — only the
+     "Paths" chip in Display is visibility. PathShapePanel brings its own
+     header row (label + live caption). -->
+{#snippet pathsBody()}
+  <div class="section-pad">
+    <PathShapePanel
+      onSettingChange={(previous, value) =>
+        reportSetting("playback", "path_shape", previous, value)}
+    />
+  </div>
 {/snippet}
 
 {#snippet displayBody()}
@@ -908,7 +925,7 @@
 
       <div class="sidebar-main">
         <div class="panel-scroll" bind:this={panelScrollEl}>
-          <div class="panel-content-center" bind:clientWidth={bodyWidth}>
+          <div class="panel-content-center">
             {#if resolvedPill}
               {#key resolvedPill}
                 <div
@@ -1048,51 +1065,55 @@
     container-type: inline-size;
   }
 
-  /* The three merged sections keep their own internal padding; the stack only
-     supplies the rule between them, and opens the gap a little past the
-     sections' own 20px so the rule reads as a divider rather than a boundary
-     the content is crowding. */
+  /* The merged sections keep their own internal padding; the stack only
+     supplies the rules between them, and opens the gap a little past the
+     sections' own 20px so a rule reads as a divider rather than a boundary the
+     content is crowding.
+
+     One column below 528px, two above. Effort spans the stack either way and
+     closes with one continuous rule under it; the two `.motion-col` wrappers
+     are its columns, and in single-column mode they simply stack. Wrappers
+     rather than four grid items, because grid rows are shared: with Tempo,
+     Mode, Visibility and Paths placed individually, the row holding Visibility
+     stretched to Tempo + Mode's height and left the hole under it. */
   .motion-stack {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    column-gap: var(--spacing-md, 12px);
   }
 
-  .motion-stack > :global(.section-pad + .section-pad) {
+  .motion-col {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .motion-stack > :global(.section-pad) {
+    grid-column: 1 / -1;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .motion-col > :global(.section-pad + .section-pad) {
     margin-top: 4px;
     padding-top: 20px;
     border-top: 1px solid var(--theme-stroke);
   }
 
-  /* Stacked, the three sections run just past the rail and push Visibility
-     below the fold — while the rail is 600-1000px wide with one narrow column
-     of controls in it. Effort keeps the full width (its tiles carry
-     subtitles); Tempo/Paths and Visibility sit side by side underneath, which
-     ends the scroll and stops the chips stretching to 200px to hold the word
-     "Grid". */
+  /* Stacked into one column, the second column follows the first rather than
+     sitting beside it, so it needs the same rule its own siblings get. */
+  @container motion-stack (max-width: 527.98px) {
+    .motion-col + .motion-col > :global(.section-pad:first-child) {
+      margin-top: 4px;
+      padding-top: 20px;
+      border-top: 1px solid var(--theme-stroke);
+    }
+  }
+
   @container motion-stack (min-width: 528px) {
     .motion-stack {
-      display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-content: start;
-      column-gap: var(--spacing-md, 12px);
-    }
-
-    /* Effort spans both columns; Tempo/Paths and Visibility share the row
-       under it. The divider moves onto Effort's bottom edge so it draws as one
-       continuous line across the stack. Carrying the sibling rule over would
-       split it into two segments with the column gap punched out of the
-       middle, and would draw a second rule between the two cells that sit
-       beside each other rather than after one another. */
-    .motion-stack > :global(.section-pad:first-child) {
-      grid-column: 1 / -1;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--theme-stroke);
-    }
-
-    .motion-stack > :global(.section-pad + .section-pad) {
-      margin-top: 0;
-      padding-top: 20px;
-      border-top: 0;
     }
   }
 

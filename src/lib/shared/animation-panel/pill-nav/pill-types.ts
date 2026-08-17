@@ -47,10 +47,10 @@ export interface PillSpec {
 export const MOTION_PARTS = ["effort", "playback", "display"] as const;
 
 /**
- * The rail's membership, which changes at runtime: the sidebar merges the three
- * motion sections into one page, but only where it is wide enough to lay them
- * out in two columns (see MOTION_MERGE_MIN_PX in AnimationPanel). Everywhere
- * else — the mobile dock, and any narrow rail — they stay three pages.
+ * The rail's membership, which changes at runtime: every sidebar merges the
+ * three motion sections into one page, so two surfaces side by side always
+ * agree on what the panel contains. The mobile dock keeps them as three trays,
+ * where one tall merged tray would not fit.
  */
 export function animationPillOrder(motionMerged: boolean): readonly PillId[] {
   return motionMerged
