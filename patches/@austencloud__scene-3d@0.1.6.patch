@@ -1720,10 +1720,10 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      if (bigVariant) {
 diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..9d821cdb602cbcc0dca1b43120f4d20000609a61
+index 0000000000000000000000000000000000000000..21c409e8a41417631a431c66173108b13bd49d35
 --- /dev/null
 +++ b/dist/lib/components/props/triquetra-profile.d.ts
-@@ -0,0 +1,19 @@
+@@ -0,0 +1,21 @@
 +import { Shape } from "three";
 +/**
 + * Width of the ribbon at its narrowest, normalized to staff length. The bevel
@@ -1736,19 +1736,21 @@ index 0000000000000000000000000000000000000000..9d821cdb602cbcc0dca1b43120f4d200
 +    readonly along: number;
 +    /** Across the prop. */
 +    readonly across: number;
++    /** Turn the knot half a turn about the hand so it still reaches along +Y. */
++    readonly reverse?: boolean;
 +}
-+/** Where `triquetra.svg`'s viewBox centre falls on the knot — at its base. */
++/** The armpit grip: held where two lobes cross, the third reaching away. */
 +export declare const TRIQUETRA_HAND: Hand;
-+/** Where `triquetra2.svg`'s viewBox centre falls — through the weave. */
++/** The tip grip: held by the point of a lobe, the other two flaring ahead. */
 +export declare const TRIQUETRA2_HAND: Hand;
 +/** Build the triquetra — one knot, with `hand` brought to the origin. */
 +export declare function buildTriquetraShape(staffLength: number, hand: Hand): Shape;
 diff --git a/dist/lib/components/props/triquetra-profile.js b/dist/lib/components/props/triquetra-profile.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..b83f35982db6a5533bfc7e99220a5340005439a4
+index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed69131e42e758
 --- /dev/null
 +++ b/dist/lib/components/props/triquetra-profile.js
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,95 @@
 +import { Path, Shape } from "three";
 +const OUTLINE = {
 +  start: [-633e-5, 0.54826],
@@ -1812,10 +1814,15 @@ index 0000000000000000000000000000000000000000..b83f35982db6a5533bfc7e99220a5340
 +};
 +const TRIQUETRA_RIBBON_WIDTH = 0.0542;
 +const TRIQUETRA_HAND = { along: -0.02117, across: 0 };
-+const TRIQUETRA2_HAND = { along: 0.21559, across: 79e-5 };
++const TRIQUETRA2_HAND = {
++  along: 0.55261,
++  across: 0,
++  reverse: true
++};
 +function trace(target, contour, scale, hand) {
-+  const px = (x) => (x - hand.across) * scale;
-+  const py = (y) => (y - hand.along) * scale;
++  const turn = hand.reverse ? -scale : scale;
++  const px = (x) => (x - hand.across) * turn;
++  const py = (y) => (y - hand.along) * turn;
 +  target.moveTo(px(contour.start[0]), py(contour.start[1]));
 +  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
 +    target.bezierCurveTo(px(c1x), py(c1y), px(c2x), py(c2y), px(x), py(y));
@@ -5110,10 +5117,10 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    if (bigVariant) {
 diff --git a/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..ccda76eda3bdff0a13942b999faaa05973b6bfcb
+index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff55684d48
 --- /dev/null
 +++ b/src/lib/components/props/triquetra-profile.ts
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,186 @@
 +/**
 + * Triquetra silhouette profile
 + *
@@ -5131,15 +5138,18 @@ index 0000000000000000000000000000000000000000..ccda76eda3bdff0a13942b999faaa059
 + *   x = (svgY - 84.8)  / 252.8    across the prop
 + *   y = (svgX - 150.5) / 252.8    along the prop
 + *
-+ * The two props are ONE knot each. They differ only in where the hand meets it,
-+ * and the hand is always the viewBox centre — that is where `prop-svg-loader`
-+ * puts it in 2D, so it is where it goes in 3D.
++ * The two props are ONE knot each. They differ only in where the hand meets it.
 + *
-+ * `triquetra.svg` carries a second copy of the knot, mirrored about that
-+ * centre, marked `fill:none`. It draws nothing. It is there to widen the
-+ * viewBox so the centre lands near the knot's base rather than through its
-+ * middle — the drawing's way of moving the hand. Extruding it would put a
-+ * second knot on the prop that the artwork does not have.
++ * The knot is exactly three-fold symmetric about (0, 0.16537), radius 0.38722:
++ * three TIPS at the ends of the lobes and three ARMPITS where adjacent lobes
++ * cross. Those are the two grips the prop offers, and one prop covers each.
++ * The centre of the weave is a third valid grip; we do not ship it.
++ *
++ * `triquetra.svg` carries a second copy of the knot, mirrored about the
++ * viewBox centre, marked `fill:none`. It draws nothing. It is there to widen
++ * the box so its centre lands on the near armpit — the drawing's way of
++ * placing the hand. Extruding it would put a second knot on the prop that the
++ * artwork does not have.
 + */
 +
 +import { Path, Shape } from "three";
@@ -5234,23 +5244,33 @@ index 0000000000000000000000000000000000000000..ccda76eda3bdff0a13942b999faaa059
 +  readonly along: number;
 +  /** Across the prop. */
 +  readonly across: number;
++  /**
++   * Turn the knot half a turn about the hand. Every prop reaches along +Y, and
++   * the knot's tips and armpits face opposite ways, so the grip that sits at
++   * the far end of the table needs the half turn to reach forward like the
++   * other one.
++   */
++  readonly reverse?: boolean;
 +}
 +
 +/**
-+ * `triquetra.svg` is a 290.3x169.6 box, so its centre is (145.15, 84.8) — 5.35
-+ * units short of where this table puts its origin, which is 1.8cm out along the
-+ * prop. The hand lands just off the knot's near cusp: you hold it at the base
-+ * and the whole weave reaches away from you.
++ * The armpit grip: the hand takes the knot where two lobes cross, at 270° round
++ * the symmetry circle, and the third lobe reaches away down the prop. This is
++ * `triquetra.svg`'s viewBox centre exactly — a 290.3x169.6 box centred at
++ * (145.15, 84.8), 5.35 units back from this table's origin.
 + */
 +export const TRIQUETRA_HAND: Hand = { along: -0.02117, across: 0 };
 +
 +/**
-+ * `triquetra2.svg` is the same knot in a square 170x170 box, translated 120
-+ * units left, so its centre is (205, 85) in this table's frame. That lands
-+ * inside the core hole — the hand goes THROUGH the middle of the weave rather
-+ * than holding the base. Same drawing, different grip.
++ * The tip grip: the hand takes the point at the end of a lobe, and the other
++ * two lobes flare out ahead of it. Same knot, held by the pointy end instead of
++ * the crossing — half a turn round so it still reaches along +Y.
 + */
-+export const TRIQUETRA2_HAND: Hand = { along: 0.21559, across: 0.00079 };
++export const TRIQUETRA2_HAND: Hand = {
++  along: 0.55261,
++  across: 0,
++  reverse: true,
++};
 +
 +function trace<T extends Shape | Path>(
 +  target: T,
@@ -5258,8 +5278,11 @@ index 0000000000000000000000000000000000000000..ccda76eda3bdff0a13942b999faaa059
 +  scale: number,
 +  hand: Hand
 +): T {
-+  const px = (x: number) => (x - hand.across) * scale;
-+  const py = (y: number) => (y - hand.along) * scale;
++  // A half turn is a rotation, not a mirror, so winding survives it and the
++  // holes stay holes.
++  const turn = hand.reverse ? -scale : scale;
++  const px = (x: number) => (x - hand.across) * turn;
++  const py = (y: number) => (y - hand.along) * turn;
 +
 +  target.moveTo(px(contour.start[0]), py(contour.start[1]));
 +  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
