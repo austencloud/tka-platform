@@ -142,7 +142,10 @@
         >
           <span class="node-dot" aria-hidden="true"></span>
           <span class="node-copy">
-            <span class="node-role">Fuse rebuilds</span>
+            <!-- "Rebuilds", not "Fuse rebuilds": the panel is the fuse editor,
+                 and the two words cost the rule node the width its sentence
+                 needs. -->
+            <span class="node-role">Rebuilds</span>
             <strong>{draftFollowerLabel}</strong>
           </span>
         </span>
@@ -228,9 +231,12 @@
      short rather than as breathing room. */
   .result-chain {
     display: grid;
+    /* The path nodes name one path each, so they take exactly the width of
+       their words and never wrap or clip. Everything left over goes to the rule
+       node, which is the one carrying a sentence. */
     grid-template-columns:
-      minmax(0, 1fr) auto minmax(0, 1.15fr) auto
-      minmax(0, 1fr);
+      max-content auto minmax(0, 1fr) auto
+      max-content;
     align-items: center;
     gap: 10px;
     min-width: 0;
@@ -256,6 +262,32 @@
     color: var(--theme-text, #fff);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
+  }
+
+  /* A rule can now name four operations at once, and "Rotate 90° + Mirror +
+     Invert + Rewind" left to itself is six stacked lines — tall enough to push
+     the controls that built it out of the panel. Three is the cap, and the
+     glyph strip beside it carries the rule whether or not the words fit. */
+  .rule-node .node-copy strong {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .rule-node .node-copy {
+    justify-items: center;
+    text-align: center;
+  }
+
+  /* "Blue path" is one thing, so it stays on one line rather than breaking
+     across two the way the rule's sentence legitimately does. */
+  .path-node .node-copy strong {
+    white-space: nowrap;
   }
 
   /* A path is identified by its prop colour, so a dot says it — no capsule, no
@@ -289,9 +321,12 @@
   .rule-node {
     --c1: var(--loop-c1, var(--theme-accent, #8b5cf6));
     --c2: var(--loop-c2, var(--c1));
-    display: flex;
-    align-items: center;
-    gap: 9px;
+    /* The strip sits ABOVE the words rather than beside them. A four-operation
+       rule draws four glyphs, and beside them the sentence was left ~100px to
+       say "Rotate 225° + Mirror + Invert + Rewind" — it truncated mid-word. */
+    display: grid;
+    justify-items: center;
+    gap: 5px;
     min-width: 0;
     padding: 7px 12px;
     border: 1.5px solid color-mix(in srgb, var(--c1) 62%, transparent);
@@ -339,6 +374,28 @@
     }
   }
 
+  /* A folded phone in landscape is 412px tall, and this block is sticky — every
+     row it keeps is a row of controls it covers. Which path you edit is stated
+     in step 1 directly above, so the chain drops to the one node that changes
+     as you work — and under 480px even that goes, because the dial and the chips
+     directly above already say the rule and step 1 says which path. */
+  @media (max-height: 620px) {
+    .result-chain {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .result-chain > i,
+    .path-node {
+      display: none;
+    }
+  }
+
+  @media (max-height: 480px) {
+    .result {
+      display: none;
+    }
+  }
+
   /* Narrow host: the chain becomes a top-to-bottom list, arrows turned to match,
      so nothing has to shrink below its own words. Keyed to the editor's own
      width rather than the viewport's, because the same editor is 620px wide in a
@@ -350,9 +407,13 @@
       gap: 8px;
     }
 
-    .result-chain > i {
-      justify-self: start;
-      transform: rotate(90deg);
+    /* Stacked, the chain plus the two stacked buttons pinned together ran to a
+       third of the panel and buried the chips behind them. In a column this
+       narrow the chain says nothing the panel is not already saying: step 1
+       names the path you edit, the dial and the chips name the rule, and the
+       note under the preview states the applied relationship in full. */
+    .result {
+      display: none;
     }
 
     .editor-actions {

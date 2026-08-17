@@ -2,35 +2,30 @@
   FuseTransformPicker — the symmetry rule editor.
 
   Two decisions, in order: which path you edit, and the rule the other one is
-  rebuilt through. The rule used to be one of nine flat tiles, which put an
-  AMOUNT (rotation) and three independent operations on the same list — so five
-  of the eight rotations were unreachable and a stretched tile in the last row
-  read as the most important choice. It is now the three axes the rule actually
-  has, each with its own control and its own primitive's colour.
+  rebuilt through.
+
+  The rule has an AMOUNT and a set of OPERATIONS, so it gets two controls, not
+  three. The amount is a position on a circle and is picked on one — see
+  FuseRotationDial. The operations are four chips of one kind: Mirror and Flip
+  are the same choice twice (picking one drops the other, pressing the chosen
+  one again clears it), Invert and Rewind are independent, and all four toggle
+  the same way and look the same. They used to be a row of three bordered tiles
+  labelled REFLECT above a row of two pills labelled ALSO — two styles and two
+  headings for one question, which made Invert and Rewind read as a different
+  KIND of thing than Mirror. They are not; they are all operations applied to
+  the follower path.
 
   Both values are owned + persisted by fuse-state; the composer passes drafts.
 -->
 <script lang="ts">
-  import LOOPChoiceButton from "$lib/shared/components/loop-picker/LOOPChoiceButton.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
-  import { LOOP_ICON_COLORS } from "@tka/render-composition";
-  import { loopOptionTint } from "$lib/shared/components/loop-picker/loop-option-color";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import FuseRotationDial from "./FuseRotationDial.svelte";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { getFuseContext } from "../context/fuse-context";
-  import {
-    fuseComponentColor,
-    fuseComponentTint,
-    fuseRuleGlyph,
-  } from "../domain/fuse-transform-presentation";
-  import {
-    FUSE_REFLECTIONS,
-    FUSE_ROTATIONS,
-    createFuseRule,
-    type FuseReflection,
-    type FuseRule,
-  } from "../domain/fuse-rule";
+  import { fuseComponentColor } from "../domain/fuse-transform-presentation";
+  import type { FuseReflection, FuseRule } from "../domain/fuse-rule";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
   let {
@@ -70,45 +65,69 @@
     ).map((option) => ({ ...option, disabled }))
   );
 
-  // The amount is a single-select over the eight steps the transform layer
-  // accepts, so it is a SegmentedControl — the accent it slides in is the
-  // ROTATED primitive's own colour, not the app accent.
-  const rotationOptions = $derived(
-    FUSE_ROTATIONS.map((option) => ({
-      value: String(option.steps),
-      label: option.steps === 0 ? "No rotation" : `${option.label} clockwise`,
-      shortLabel: option.steps === 0 ? "None" : option.label,
-      disabled,
-    }))
-  );
   const rotationAccent = fuseComponentColor(LOOPComponent.ROTATED);
 
-  // Mirror and Flip are the same purple with different axes, so each carries the
-  // glyph that separates them — the one a sequence card would show. None applies
-  // no primitive, so it wears the neutral the LOOP palette already reserves for
-  // that rather than borrowing the app accent and reading as a third violet.
-  const noneTint = loopOptionTint([LOOP_ICON_COLORS.freeform]);
-  const reflectionOptions = $derived(
-    FUSE_REFLECTIONS.map((option) => {
-      const glyph = fuseRuleGlyph(createFuseRule({ reflect: option.value }));
-      const component =
-        option.value === "mirror"
-          ? LOOPComponent.MIRRORED
-          : option.value === "flip"
-            ? LOOPComponent.FLIPPED
-            : null;
-      return {
-        ...option,
-        glyph,
-        tint: component ? fuseComponentTint(component) : noneTint,
-      };
-    })
-  );
+  // One row, one control type, one visual weight. Mirror and Flip carry the
+  // reflection axis in their glyph because they are the same violet by brand;
+  // the other two carry their own primitive's colour.
+  type Operation = {
+    id: string;
+    label: string;
+    ariaLabel: string;
+    color: string;
+    glyph: Set<LOOPComponent>;
+    active: boolean;
+    toggle: () => void;
+    axis?: "vertical" | "horizontal";
+  };
 
-  const invertColor = fuseComponentColor(LOOPComponent.INVERTED);
-  const rewoundColor = fuseComponentColor(LOOPComponent.REWOUND);
-  const invertGlyph = new Set([LOOPComponent.INVERTED]);
-  const rewindGlyph = new Set([LOOPComponent.REWOUND]);
+  function setReflect(value: FuseReflection): void {
+    commit({
+      ...selectedRule,
+      reflect: selectedRule.reflect === value ? "none" : value,
+    });
+  }
+
+  const operations = $derived<Operation[]>([
+    {
+      id: "mirror",
+      label: "Mirror",
+      ariaLabel: "Mirror — reflect left and right",
+      color: fuseComponentColor(LOOPComponent.MIRRORED),
+      glyph: new Set([LOOPComponent.MIRRORED]),
+      axis: "vertical",
+      active: selectedRule.reflect === "mirror",
+      toggle: () => setReflect("mirror"),
+    },
+    {
+      id: "flip",
+      label: "Flip",
+      ariaLabel: "Flip — reflect top and bottom",
+      color: fuseComponentColor(LOOPComponent.FLIPPED),
+      glyph: new Set([LOOPComponent.FLIPPED]),
+      axis: "horizontal",
+      active: selectedRule.reflect === "flip",
+      toggle: () => setReflect("flip"),
+    },
+    {
+      id: "invert",
+      label: "Invert",
+      ariaLabel: "Invert — reverse every turn",
+      color: fuseComponentColor(LOOPComponent.INVERTED),
+      glyph: new Set([LOOPComponent.INVERTED]),
+      active: selectedRule.invert,
+      toggle: () => commit({ ...selectedRule, invert: !selectedRule.invert }),
+    },
+    {
+      id: "rewind",
+      label: "Rewind",
+      ariaLabel: "Rewind — reverse the step order",
+      color: fuseComponentColor(LOOPComponent.REWOUND),
+      glyph: new Set([LOOPComponent.REWOUND]),
+      active: selectedRule.rewind,
+      toggle: () => commit({ ...selectedRule, rewind: !selectedRule.rewind }),
+    },
+  ]);
 
   const followerLabel = $derived(selectedDriver === "blue" ? "Red" : "Blue");
   const driverLabel = $derived(selectedDriver === "blue" ? "Blue" : "Red");
@@ -123,20 +142,8 @@
     else fuseState.setRule(next);
   }
 
-  function chooseRotation(value: string): void {
-    commit({ ...selectedRule, rotationSteps: Number(value) });
-  }
-
-  function chooseReflection(value: FuseReflection): void {
-    commit({ ...selectedRule, reflect: value });
-  }
-
-  function toggleInvert(): void {
-    commit({ ...selectedRule, invert: !selectedRule.invert });
-  }
-
-  function toggleRewind(): void {
-    commit({ ...selectedRule, rewind: !selectedRule.rewind });
+  function chooseRotation(steps: number): void {
+    commit({ ...selectedRule, rotationSteps: steps });
   }
 </script>
 
@@ -173,79 +180,43 @@
 
     <div class="axis">
       <span class="axis-label" id="fuse-rotation-label">Rotate</span>
-      <div class="rotation-control" style="--rotation-accent: {rotationAccent}">
-        <SegmentedControl
-          options={rotationOptions}
-          value={String(selectedRule.rotationSteps)}
-          onchange={chooseRotation}
-          color="accent"
-          size="sm"
-          density="compact"
-          semantics="radiogroup"
-          ariaLabelledby="fuse-rotation-label"
-        />
-      </div>
+      <FuseRotationDial
+        value={selectedRule.rotationSteps}
+        accent={rotationAccent}
+        labelledBy="fuse-rotation-label"
+        {disabled}
+        onchange={chooseRotation}
+      />
     </div>
 
     <div class="axis">
-      <span class="axis-label" id="fuse-reflect-label">Reflect</span>
-      <div class="reflect-grid" role="radiogroup" aria-labelledby="fuse-reflect-label">
-        {#each reflectionOptions as option (option.value)}
-          <LOOPChoiceButton
-            components={option.glyph.components}
-            reflectionAxis={option.glyph.reflectionAxis}
-            tint={option.tint}
-            name={option.label}
-            description={option.description}
-            title={option.description}
-            fallbackIcon="fa-ban"
-            selected={selectedRule.reflect === option.value}
-            dense={true}
-            glyphSize={22}
+      <span class="axis-label" id="fuse-operations-label">Then</span>
+      <div
+        class="operation-row"
+        role="group"
+        aria-labelledby="fuse-operations-label"
+      >
+        {#each operations as operation (operation.id)}
+          <FilterChipBase
+            mode="toggle"
+            label={operation.label}
+            ariaLabel={operation.ariaLabel}
+            title={operation.ariaLabel}
+            active={operation.active}
+            chipColor={operation.color}
             {disabled}
-            onclick={() => chooseReflection(option.value)}
-          />
+            onclick={operation.toggle}
+          >
+            {#snippet iconSnippet()}
+              <LOOPIconStrip
+                activeComponents={operation.glyph}
+                reflectionAxis={operation.axis}
+                size={14}
+                showFreeformWhenEmpty={false}
+              />
+            {/snippet}
+          </FilterChipBase>
         {/each}
-      </div>
-    </div>
-
-    <div class="axis">
-      <span class="axis-label">Also</span>
-      <div class="toggle-row" role="group" aria-label="Additional operations">
-        <FilterChipBase
-          mode="toggle"
-          label="Invert"
-          ariaLabel="Invert — reverse every turn"
-          active={selectedRule.invert}
-          chipColor={invertColor}
-          {disabled}
-          onclick={toggleInvert}
-        >
-          {#snippet iconSnippet()}
-            <LOOPIconStrip
-              activeComponents={invertGlyph}
-              size={14}
-              showFreeformWhenEmpty={false}
-            />
-          {/snippet}
-        </FilterChipBase>
-        <FilterChipBase
-          mode="toggle"
-          label="Rewind"
-          ariaLabel="Rewind — reverse the step order"
-          active={selectedRule.rewind}
-          chipColor={rewoundColor}
-          {disabled}
-          onclick={toggleRewind}
-        >
-          {#snippet iconSnippet()}
-            <LOOPIconStrip
-              activeComponents={rewindGlyph}
-              size={14}
-              showFreeformWhenEmpty={false}
-            />
-          {/snippet}
-        </FilterChipBase>
       </div>
     </div>
   </div>
@@ -272,47 +243,12 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.045));
   }
 
-  /* Naming the container `loop-picker` is what hands LOOPChoiceButton its own
-     responsive tiers — the same ones the Extend drawer's shelf gives it.
-
-     The card stays content-sized. Stretching it to reach the pinned footer put
-     ~100px between each axis, which read as three unrelated rows; the same
-     pixels left as panel background below the card read as a form that has
+  /* The card stays content-sized. Stretching it to reach the pinned footer put
+     ~100px between the dial and the chips, which read as two unrelated rows; the
+     same pixels left as panel background below the card read as a form that has
      simply finished. */
   .rule-field {
     container-type: inline-size;
-    container-name: loop-picker;
-  }
-
-  /* Room to spend means the choices explain themselves rather than the card
-     growing empty rows. LOOPChoiceButton hides a dense choice's description by
-     default; the reflect row turns it back on, but only where BOTH kinds of room
-     exist — a tall enough viewport and a wide enough card.
-
-     The two conditions can't share one at-rule, so height sets the value and
-     width decides whether it is read. Height's seam is 1000px, not 900: at a
-     900-tall viewport the descriptions make the form 22px taller than the drawer
-     body, which pushes the commit row below the fold. Width's is 26rem, below
-     which a description wraps to three lines in a 6rem tile. */
-  .rule-field {
-    --reflect-desc: none;
-  }
-
-  @media (min-height: 1000px) {
-    .rule-field {
-      --reflect-desc: block;
-    }
-  }
-
-  @container loop-picker (min-width: 26rem) {
-    .reflect-grid :global(.dense .loop-desc) {
-      display: var(--reflect-desc);
-      max-width: none;
-    }
-
-    .reflect-grid :global(.dense .loop-text) {
-      gap: 0.125rem;
-    }
   }
 
   .axis {
@@ -329,57 +265,24 @@
     text-transform: uppercase;
   }
 
-  /* Each axis slides in its own primitive's hue, so the control and the rule it
-     builds carry the same colour the glyph does on a sequence card. */
-  .rotation-control {
-    --theme-accent: var(--rotation-accent);
-    min-width: 0;
-  }
-
-  /* Eight amounts, each a short numeral, so the row is only as wide as its
-     labels — the segments trim their padding rather than the row growing a
-     second line. */
-  .rotation-control :global(.segment) {
-    padding-inline: 0.25rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Three named choices, three columns. A pinned count, never auto-fill, so the
-     row can't strand one of them on its own line. */
-  .reflect-grid {
+  /* Four chips, one row, equal shares — never auto-fill, so the row cannot
+     strand one of them on a line by itself. Below the width four labels need
+     they go two-by-two, which is still even. */
+  .operation-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     min-width: 0;
   }
 
-  /* Below the width three glyph-plus-label tiles need, they stack — still one
-     per line, no orphan. 22rem is where "Reflect top and bottom" stops fitting
-     a third of the row: the recipe column lands just under it, the drawer above. */
-  @container loop-picker (max-width: 22rem) {
-    .reflect-grid {
-      grid-template-columns: minmax(0, 1fr);
+  @container (max-width: 25rem) {
+    .operation-row {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  .reflect-grid :global(.loop-button.dense) {
-    gap: 0.5rem;
-    padding: 0.5rem 0.625rem;
-  }
-
-  .reflect-grid :global(.dense .loop-glyph) {
-    flex: 0 0 1.5rem;
-  }
-
-  .toggle-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .toggle-row :global(.filter-chip) {
-    flex: 1 1 auto;
+  .operation-row :global(.filter-chip) {
+    width: 100%;
     justify-content: center;
   }
 
