@@ -54,7 +54,7 @@ Delegates ALL logic to services (SRP compliant)
   import LevelCard from "./cards/LevelCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
   import LengthCard from "./cards/LengthCard.svelte";
-  import TurnsCard from "./cards/TurnsCard.svelte";
+  import TurnIntensityCard from "./cards/TurnIntensityCard.svelte";
   import GenerateButtonCard from "./cards/GenerateButtonCard.svelte";
   import ConsolidatedLOOPCard from "./cards/ConsolidatedLOOPCard.svelte";
   import CustomizeCard from "./cards/CustomizeCard.svelte";
@@ -678,25 +678,21 @@ Delegates ALL logic to services (SRP compliant)
               shadowColor={cardColors.gridMode.shadowColor}
             />
           {:else if card.id === "turn-intensity"}
-            <!-- TurnsCard declares shadowColor but no color prop. -->
-            <TurnsCard
-              {...card.props as ComponentProps<typeof TurnsCard>}
+            <!-- TurnIntensityCard declares shadowColor but no color prop. -->
+            <TurnIntensityCard
+              {...card.props as ComponentProps<typeof TurnIntensityCard>}
               shadowColor={cardColors.turnIntensity.shadowColor}
-              level={config.level}
-              turnPattern={config.turnPattern}
-              onTurnPatternChange={handleTurnPatternChange}
-              blueStartOrientation={startEndState?.options
-                .blueStartOrientation ?? "in"}
-              redStartOrientation={startEndState?.options.redStartOrientation ??
-                "in"}
-              sequenceLength={config.length}
-              loopPeriod={loopSeedLength}
             />
           {:else if card.id === "customize"}
             <CustomizeCard
               {...card.props as ComponentProps<typeof CustomizeCard>}
               color={cardColors.customize.color}
               shadowColor={cardColors.customize.shadowColor}
+              turnPattern={config.turnPattern}
+              turnIntensity={config.turnIntensity}
+              sequenceLength={config.length}
+              loopPeriod={loopSeedLength}
+              onTurnPatternChange={handleTurnPatternChange}
             />
           {:else if card.id === "loop"}
             <ConsolidatedLOOPCard
