@@ -28,6 +28,7 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
+  import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { isEffectPreviewLoop } from "$lib/shared/effects/domain/effect-preview-loop-policy";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
@@ -106,10 +107,33 @@
     },
   ];
 
+  function isReviewProp(value: string | null): value is PropType {
+    return REVIEW_PROPS.some((prop) => prop === value);
+  }
+
+  /**
+   * Read the deep link BEFORE the viewer is constructed. Viewer3DCamera reads
+   * `DEFAULT_CAMERA` when it mounts, so seeding it from the URL is what keeps
+   * `?angle=top` from mounting three-quarter and then popping to the top view.
+   */
+  function readParam(key: string): string | null {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get(key);
+  }
+
+  const requestedProp = readParam("prop");
+  const requestedAngle = readParam("angle");
+  const initialProp = isReviewProp(requestedProp)
+    ? requestedProp
+    : PropType.CHICKEN;
+  const initialCamera =
+    REVIEW_CAMERAS.find((camera) => camera.id === requestedAngle) ??
+    REVIEW_CAMERAS[1];
+
   const DEFAULT_CAMERA: CameraStateSnapshot = {
-    position: REVIEW_CAMERAS[1].position,
+    position: initialCamera.position,
     rotation: { x: 0, y: 0, z: 0 },
-    target: REVIEW_CAMERAS[1].target,
+    target: initialCamera.target,
     fov: 48,
     timestamp: 0,
   };
@@ -121,7 +145,7 @@
     performers: [],
     selectedPerformerIndex: 0,
     activeFormation: "line",
-    defaultProp: PropType.CHICKEN,
+    defaultProp: initialProp,
     visiblePlanes: [],
     effectToggles: {},
     sceneFeatures: {
@@ -140,8 +164,15 @@
   setEffectsConfigContext(effectsConfig);
   setScene3DRenderContext(createScene3DRenderState());
 
-  let selectedProp = $state<PropType>(PropType.CHICKEN);
-  let activeAngle = $state<ReviewAngle>("three-quarter");
+  let selectedProp = $state<PropType>(initialProp);
+  let activeAngle = $state<ReviewAngle>(initialCamera.id);
+  /**
+   * Set the moment the user grabs the scene. While it is set, nothing on this
+   * page is allowed to move the camera — a generated LOOP runs out every ~12s
+   * and the swap used to re-apply the active preset, which threw away the orbit
+   * the user was in the middle of reading a prop from.
+   */
+  let cameraIsFree = $state(false);
   let sequence = $state.raw<SequenceData | null>(null);
   let preloadedSequence = $state.raw<SequenceData | null>(null);
   let currentStep = $state(0);
@@ -165,14 +196,6 @@
       : "Generating rotated LOOP"
   );
 
-  function isReviewProp(value: string | null): value is PropType {
-    return REVIEW_PROPS.some((prop) => prop === value);
-  }
-
-  function isReviewAngle(value: string | null): value is ReviewAngle {
-    return REVIEW_CAMERAS.some((camera) => camera.id === value);
-  }
-
   function syncUrl(): void {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
@@ -182,7 +205,7 @@
   }
 
   function applyCamera(): void {
-    if (!sceneReady) return;
+    if (!sceneReady || cameraIsFree) return;
     const camera = REVIEW_CAMERAS.find(
       (candidate) => candidate.id === activeAngle
     );
@@ -204,8 +227,34 @@
 
   function chooseAngle(angle: ReviewAngle): void {
     activeAngle = angle;
+    cameraIsFree = false;
     syncUrl();
     applyCamera();
+  }
+
+  /**
+   * A DRAG or a wheel over the scene means the camera is the user's now — not a
+   * bare click, which moves nothing and shouldn't drop the active preset.
+   */
+  let dragOrigin: { x: number; y: number } | null = null;
+
+  function sceneDragStart(event: PointerEvent): void {
+    dragOrigin = { x: event.clientX, y: event.clientY };
+  }
+
+  function sceneDragMove(event: PointerEvent): void {
+    if (!dragOrigin) return;
+    const moved = Math.hypot(
+      event.clientX - dragOrigin.x,
+      event.clientY - dragOrigin.y
+    );
+    if (moved <= 4) return;
+    dragOrigin = null;
+    cameraIsFree = true;
+  }
+
+  function sceneDragEnd(): void {
+    dragOrigin = null;
   }
 
   function chooseProp(prop: PropType): void {
@@ -266,7 +315,8 @@
     loopNumber += 1;
     viewer.enter3D(next);
     viewer.hideAllPlanes();
-    applyCamera();
+    // Deliberately does NOT touch the camera. `enter3D` leaves it alone, so the
+    // view survives the swap — which is the whole point of the fix.
   }
 
   async function advanceLoop(): Promise<void> {
@@ -301,12 +351,6 @@
   });
 
   onMount(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requestedProp = params.get("prop");
-    const requestedAngle = params.get("angle");
-    if (isReviewProp(requestedProp)) selectedProp = requestedProp;
-    if (isReviewAngle(requestedAngle)) activeAngle = requestedAngle;
-
     const token = ++generationToken;
     void generateRotatedLoop()
       .then((initial) => {
@@ -376,18 +420,31 @@
 >
   <section class="stage" aria-label="Live 3D prop review">
     {#if sequence}
-      <Viewer3DCanvas
-        sequenceData={sequence}
-        {currentStep}
-        isPlaying={playing}
-        {bpm}
-        bluePropType={selectedProp}
-        redPropType={selectedProp}
-        hideOverlays
-        hideSceneMarkers
-        hidePerformerBadges
-        onSceneReadyChange={handleSceneReady}
-      />
+      <!--
+        The wrapper exists so a drag or wheel on the SCENE marks the camera as
+        the user's, while clicks on the deck overlay below do not.
+      -->
+      <div
+        class="canvas-holder"
+        onpointerdown={sceneDragStart}
+        onpointermove={sceneDragMove}
+        onpointerup={sceneDragEnd}
+        onpointercancel={sceneDragEnd}
+        onwheel={() => (cameraIsFree = true)}
+      >
+        <Viewer3DCanvas
+          sequenceData={sequence}
+          {currentStep}
+          isPlaying={playing}
+          {bpm}
+          bluePropType={selectedProp}
+          redPropType={selectedProp}
+          hideOverlays
+          hideSceneMarkers
+          hidePerformerBadges
+          onSceneReadyChange={handleSceneReady}
+        />
+      </div>
     {/if}
 
     <div class="stage-shade" aria-hidden="true"></div>
@@ -414,85 +471,106 @@
     {/if}
 
     <aside class="review-deck" aria-label="Prop review controls">
-      <div class="control-group">
-        <span class="control-label">Camera</span>
-        <div class="button-row">
-          {#each REVIEW_CAMERAS as camera}
+      <div class="deck-top">
+        <div class="control-group">
+          <span class="control-label">
+            Camera
+            <!-- Always in the DOM so switching to free orbit shifts nothing. -->
+            <em class:shown={cameraIsFree}>Free orbit</em>
+          </span>
+          <div class="button-row">
+            {#each REVIEW_CAMERAS as camera}
+              {@const on = !cameraIsFree && activeAngle === camera.id}
+              <button
+                type="button"
+                class:active={on}
+                aria-pressed={on}
+                onclick={() => chooseAngle(camera.id)}
+              >
+                {camera.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!--
+          Local buttons rather than SegmentedControl: the Camera and Build rows
+          are the same single-select interaction and are already built this way,
+          so one shared control among two hand-built rows would read as a mistake
+          on this harness.
+        -->
+        <div class="control-group">
+          <span class="control-label">Build</span>
+          <div class="button-row">
+            {#each FINISHES as finish}
+              <button
+                type="button"
+                class:active={propFinishState.finish === finish.id}
+                aria-pressed={propFinishState.finish === finish.id}
+                onclick={() => chooseFinish(finish.id)}
+              >
+                {finish.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Playback</span>
+          <div class="transport-row">
             <button
               type="button"
-              class:active={activeAngle === camera.id}
-              aria-pressed={activeAngle === camera.id}
-              onclick={() => chooseAngle(camera.id)}
+              class="transport"
+              aria-pressed={!playing}
+              onclick={() => (playing = !playing)}
             >
-              {camera.label}
+              {playing ? "Pause" : "Play"}
             </button>
-          {/each}
+            <label>
+              <span>Tempo</span>
+              <input type="range" min="35" max="110" step="1" bind:value={bpm} />
+              <strong>{bpm} BPM</strong>
+            </label>
+            <button type="button" onclick={() => void advanceLoop()}>
+              New rotated LOOP
+            </button>
+            <span class="preload-state" aria-live="polite">
+              {preloading
+                ? "Preparing next LOOP"
+                : preloadedSequence
+                  ? "Next LOOP ready"
+                  : "Waiting for first LOOP"}
+            </span>
+          </div>
         </div>
       </div>
 
       <!--
-        Local buttons rather than SegmentedControl: the Camera and Audit prop
-        rows beside this one are the same single-select interaction and are
-        already built this way, so one shared control among three hand-built
-        rows would read as a mistake on this harness.
+        A grid, not a row. Seventeen props in one flex line collapsed every
+        button to the 44px touch floor and clipped thirteen of the labels, which
+        is the opposite of what an audit surface is for. Column counts are pinned
+        per tier and never leave a row of one (17 % cols != 1).
       -->
-      <div class="control-group">
-        <span class="control-label">Build</span>
-        <div class="button-row">
-          {#each FINISHES as finish}
-            <button
-              type="button"
-              class:active={propFinishState.finish === finish.id}
-              aria-pressed={propFinishState.finish === finish.id}
-              onclick={() => chooseFinish(finish.id)}
-            >
-              {finish.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-
       <div class="control-group prop-group">
         <span class="control-label">Audit prop</span>
-        <div class="button-row prop-row themed-scrollbar">
+        <div class="prop-grid" role="group" aria-label="Prop to audit">
           {#each REVIEW_PROPS as prop}
             <button
               type="button"
+              class="prop-tile"
               class:active={selectedProp === prop}
               aria-pressed={selectedProp === prop}
               onclick={() => chooseProp(prop)}
             >
-              {getPropTypeDisplayInfo(prop).label}
+              <span class="tile-art">
+                <PropCompositionPreview propType={prop} size={34} darkBackground />
+              </span>
+              <span class="tile-label">{getPropTypeDisplayInfo(prop).label}</span>
             </button>
           {/each}
         </div>
       </div>
 
-      <div class="transport-row">
-        <button
-          type="button"
-          class="transport"
-          aria-pressed={!playing}
-          onclick={() => (playing = !playing)}
-        >
-          {playing ? "Pause" : "Play"}
-        </button>
-        <label>
-          <span>Tempo</span>
-          <input type="range" min="35" max="110" step="1" bind:value={bpm} />
-          <strong>{bpm} BPM</strong>
-        </label>
-        <button type="button" class="next" onclick={() => void advanceLoop()}>
-          New rotated LOOP
-        </button>
-        <span class="preload-state" aria-live="polite">
-          {preloading
-            ? "Preparing next LOOP"
-            : preloadedSequence
-              ? "Next LOOP ready"
-              : "Waiting for first LOOP"}
-        </span>
-      </div>
     </aside>
   </section>
 </main>
@@ -516,6 +594,11 @@
     position: absolute;
     inset: 0;
     overflow: hidden;
+  }
+
+  .canvas-holder {
+    position: absolute;
+    inset: 0;
   }
 
   .stage-shade {
@@ -577,8 +660,8 @@
     bottom: clamp(12px, 2.4cqh, 28px);
     left: clamp(12px, 2.2cqw, 30px);
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.5fr);
-    gap: 12px 16px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
     padding: 14px;
     border: 1px solid var(--studio-stroke);
     border-radius: var(--settings-border-radius-lg, 16px);
@@ -586,12 +669,22 @@
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
   }
 
+  /* Camera and Build sit side by side and size to their own content, so neither
+     ends up marooned in a 1300px-wide grid cell at 4K. */
+  .deck-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 30px;
+  }
+
   .control-group {
     min-width: 0;
   }
 
   .control-label {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
     margin-bottom: 7px;
     color: rgba(255, 255, 255, 0.55);
     font-size: var(--font-size-compact, 12px);
@@ -600,15 +693,101 @@
     text-transform: uppercase;
   }
 
+  .control-label em {
+    color: var(--studio-accent);
+    font-style: normal;
+    visibility: hidden;
+  }
+
+  .control-label em.shown {
+    visibility: visible;
+  }
+
   .button-row {
     display: flex;
+    flex-wrap: wrap;
     gap: 7px;
   }
 
-  .prop-row {
-    max-width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
+  /*
+    Without this the row's 44px min-height meets flex-shrink and every label gets
+    guillotined. Buttons keep their own width and wrap instead.
+  */
+  .button-row > button {
+    flex: 0 0 auto;
+  }
+
+  .prop-grid {
+    display: grid;
+    gap: 7px;
+  }
+
+  /*
+    Pinned column counts, never `auto-fill`: seventeen is a known count, and
+    auto-fill would emit more and thinner tiles as the screen grew. Every count
+    here satisfies 17 % cols != 1, so no tier ever strands a row of one.
+    Width-only tiers — the compact block below owns what a SHORT screen drops.
+  */
+  .prop-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @container (min-width: 700px) {
+    .prop-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  /*
+    Nine from 1200 up, not from 1680: on a 1440x900 laptop six columns cost a
+    third row and pushed the deck to 42% of the viewport. Nine keeps it at two
+    rows — the two longest names wrap to a second line inside their own tile,
+    which costs nothing because the 44px touch floor already reserves the height.
+  */
+  @container (min-width: 1200px) {
+    .prop-grid {
+      grid-template-columns: repeat(9, minmax(0, 1fr));
+    }
+  }
+
+
+  .prop-tile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 6px 10px;
+    text-align: left;
+  }
+
+  /*
+    The icon is a luxury, the name is the requirement. Below the nine-column tier
+    a tile is ~120px wide and the 34px icon leaves 56px of label — narrower than
+    the word "Triquetra", which cannot wrap. So the icon only appears where the
+    tile can pay for it, and short screens spend the room on rows instead.
+  */
+  .tile-art {
+    display: none;
+    flex: 0 0 auto;
+    width: var(--tile-art, 34px);
+    height: var(--tile-art, 34px);
+  }
+
+  @container (min-width: 1200px) and (min-height: 640px) {
+    .tile-art {
+      display: block;
+    }
+  }
+
+  /* The preview ships explicit width/height attributes; let the tier drive it. */
+  .tile-art :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .tile-label {
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.15;
   }
 
   button {
@@ -649,12 +828,14 @@
   }
 
   .transport-row {
-    grid-column: 1 / -1;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-    padding-top: 12px;
-    border-top: 1px solid var(--studio-stroke);
+  }
+
+  .transport-row > button {
+    flex: 0 0 auto;
   }
 
   .transport {
@@ -663,7 +844,9 @@
 
   label {
     display: grid;
-    grid-template-columns: auto minmax(120px, 260px) auto;
+    /* Capped so Camera + Build + Playback still share one line at 1440x900 —
+       a second line there cost 72px of stage. */
+    grid-template-columns: auto minmax(90px, 170px) auto;
     align-items: center;
     gap: 10px;
     color: rgba(255, 255, 255, 0.65);
@@ -672,11 +855,6 @@
 
   input[type="range"] {
     accent-color: var(--studio-accent);
-  }
-
-  .next {
-    margin-left: auto;
-    border-color: color-mix(in srgb, var(--studio-accent) 60%, transparent);
   }
 
   .preload-state {
@@ -725,6 +903,42 @@
     }
   }
 
+  /*
+    At 4K@100% nothing is scaling for you, so the deck steps its own scale AND
+    recomposes: the three control groups stack into their own column so the prop
+    grid stays a sane width. Seventeen is prime, so some row is always partial —
+    nine columns leave one empty cell, twelve leave seven, which reads as a
+    stranded row. Nine it is.
+    Placed after the base `button` rule on purpose — a container query carries no
+    extra specificity, so an earlier block would simply lose to it.
+  */
+  @container (min-width: 2600px) {
+    .review-deck {
+      --tile-art: 46px;
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+      align-items: start;
+      padding: 22px;
+      gap: 18px 34px;
+    }
+
+    .deck-top {
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    button {
+      min-height: 56px;
+      padding: 11px 16px;
+      font-size: 18px;
+    }
+
+    .control-label,
+    .preload-state,
+    label {
+      font-size: 15px;
+    }
+  }
+
   @container (max-width: 760px), (max-height: 620px) {
     .title-block {
       max-width: calc(100% - 36px);
@@ -735,25 +949,31 @@
     }
 
     .review-deck {
-      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
       max-height: 47cqh;
       overflow-y: auto;
     }
 
-    .button-row {
-      overflow-x: auto;
+    .prop-tile {
+      padding: 6px 8px;
     }
 
-    .transport-row {
-      flex-wrap: wrap;
+    .deck-top {
+      gap: 12px 18px;
     }
 
     label {
-      flex: 1 1 260px;
+      flex: 1 1 240px;
     }
 
-    .next {
-      margin-left: 0;
+    /*
+      The deck has to scroll on a 960x412 fold. Put the thing being audited at
+      the top of it, so all seventeen props are visible without scrolling and the
+      half-shown Camera group below is its own scroll affordance. Before this the
+      visible deck was controls only and the prop grid was entirely past the fold.
+    */
+    .prop-group {
+      order: -1;
     }
   }
 
