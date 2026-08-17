@@ -1,6 +1,10 @@
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
-  import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+  import {
+    propFinishState,
+    type CameraStateSnapshot,
+    type PropFinish,
+  } from "@austencloud/scene-3d";
   import { replaceState } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
 
@@ -209,6 +213,19 @@
     syncUrl();
   }
 
+  /**
+   * Props that exist in a fire build and a practice build — a triad is steel
+   * and kevlar, or a printed hub with glow heads. Same reach, same notation.
+   */
+  const FINISHES: readonly { id: PropFinish; label: string }[] = [
+    { id: "fire", label: "Fire" },
+    { id: "day", label: "Day" },
+  ];
+
+  function chooseFinish(finish: PropFinish): void {
+    propFinishState.set(finish);
+  }
+
   async function generateRotatedLoop(): Promise<SequenceData> {
     const generated = await getGenerationOrchestrator().generateSequence({
       mode: GenerationMode.CIRCULAR,
@@ -408,6 +425,28 @@
               onclick={() => chooseAngle(camera.id)}
             >
               {camera.label}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <!--
+        Local buttons rather than SegmentedControl: the Camera and Audit prop
+        rows beside this one are the same single-select interaction and are
+        already built this way, so one shared control among three hand-built
+        rows would read as a mistake on this harness.
+      -->
+      <div class="control-group">
+        <span class="control-label">Build</span>
+        <div class="button-row">
+          {#each FINISHES as finish}
+            <button
+              type="button"
+              class:active={propFinishState.finish === finish.id}
+              aria-pressed={propFinishState.finish === finish.id}
+              onclick={() => chooseFinish(finish.id)}
+            >
+              {finish.label}
             </button>
           {/each}
         </div>

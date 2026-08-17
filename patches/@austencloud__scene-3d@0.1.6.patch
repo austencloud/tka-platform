@@ -1764,10 +1764,38 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +  />
  {/if}
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
 --- a/dist/lib/components/props/Prop3D.svelte
 +++ b/dist/lib/components/props/Prop3D.svelte
-@@ -102,10 +102,19 @@
+@@ -13,6 +13,7 @@
+   import { PropType } from "../../domain/enums/PropType";
+   import type { PropState3D } from "../../domain/models/PropState3D";
+   import { resolvePropModel } from "./prop-model-registry";
++  import { propFinishState } from "../../state/prop-finish-state.svelte";
+   import GltfProp3D from "./GltfProp3D.svelte";
+ 
+   // Procedural fallback geometry components
+@@ -87,9 +88,17 @@
+     <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.TRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} variant={propFinishState.finish} />
+   {:else if propType === PropType.BIGTRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
++    <Triad3D
++      {propState}
++      {color}
++      {visible}
++      {isActivePlayer}
++      {length}
++      scale={BIG_SCALE}
++      variant={propFinishState.finish}
++    />
+ 
+   {:else if propType === PropType.MINIHOOP}
+     <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
+@@ -102,10 +111,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIGENG}
@@ -1790,38 +1818,86 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/dist/lib/components/props/Triad3D.svelte b/dist/lib/components/props/Triad3D.svelte
-index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14ef451f094 100644
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
 --- a/dist/lib/components/props/Triad3D.svelte
 +++ b/dist/lib/components/props/Triad3D.svelte
-@@ -1,28 +1,56 @@
+@@ -1,152 +1,174 @@
 +<script module lang="ts">
-+  import type { BufferGeometry } from "three";
-+  import { buildTriadShape, TRIAD_ARM_WIDTH } from "./triad-profile";
-+  import { bullnosePlate } from "./plate-extrude";
-+  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++  import { BufferGeometry, TorusGeometry } from "three";
++  import {
++    TRIAD_ARM_LENGTH,
++    TRIAD_DAY,
++    TRIAD_FIRE,
++    type TriadFrame,
++    type TriadSection,
++  } from "./triad-frame";
++  import { roundedCylinder } from "./prop-lathe";
++  import { getFrameMaterials, type FrameVariant } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
-+  const plates = new Map<string, BufferGeometry>();
++  const FRAMES: Record<FrameVariant, TriadFrame> = {
++    fire: TRIAD_FIRE,
++    day: TRIAD_DAY,
++  };
 +
-+  /**
-+   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
-+   * of an arm's half-width, past which the rolled edge folds through itself at
-+   * the notches where two arms meet.
-+   */
-+  const MAX_BEVEL_INSET = TRIAD_ARM_WIDTH / 6.8;
++  /** One turned part, placed on the arm axis. */
++  interface Part {
++    readonly geometry: BufferGeometry;
++    /** Centre of the part, measured out along the arm in scene units. */
++    readonly at: number;
++  }
 +
-+  function getTriadPlate(length: number, depth: number): BufferGeometry {
-+    const key = `${length}:${depth}`;
-+    const cached = plates.get(key);
++  interface TriadParts {
++    readonly hubArm: Part;
++    readonly innerCollar: Part;
++    readonly spine: Part;
++    readonly outerCollar?: Part;
++    readonly tip: Part;
++    readonly ring: BufferGeometry;
++  }
++
++  const builds = new Map<string, TriadParts>();
++
++  function turn(section: TriadSection, arm: number, fillet: number): Part {
++    return {
++      geometry: roundedCylinder({
++        length: (section.to - section.from) * arm,
++        radius: section.radius * arm,
++        radiusEnd: section.radiusEnd ? section.radiusEnd * arm : undefined,
++        fillet: fillet * arm,
++      }),
++      at: ((section.from + section.to) / 2) * arm,
++    };
++  }
++
++  function getTriadParts(length: number, variant: FrameVariant): TriadParts {
++    const key = `${length}:${variant}`;
++    const cached = builds.get(key);
 +    if (cached) return cached;
 +
-+    const plate = bullnosePlate(
-+      buildTriadShape(length),
-+      depth,
-+      length * MAX_BEVEL_INSET
-+    );
-+    plates.set(key, plate);
-+    return plate;
++    const frame = FRAMES[variant];
++    const arm = TRIAD_ARM_LENGTH * length;
++    const parts: TriadParts = {
++      hubArm: turn(frame.hubArm, arm, frame.fillet),
++      innerCollar: turn(frame.innerCollar, arm, frame.fillet * 0.5),
++      spine: turn(frame.spine, arm, frame.fillet * 0.3),
++      outerCollar: frame.outerCollar
++        ? turn(frame.outerCollar, arm, frame.fillet * 0.5)
++        : undefined,
++      tip: turn(frame.tip, arm, frame.fillet),
++      ring: new TorusGeometry(
++        frame.ringRadius * arm,
++        frame.ringTube * arm,
++        12,
++        28
++      ),
++    };
++    builds.set(key, parts);
++    return parts;
 +  }
++
++  /** One arm pointing +Y, the other two swung back 120 degrees each. */
++  const ARM_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
 +</script>
 +
  <script lang="ts">
@@ -1835,20 +1911,19 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -   * - Small sphere caps at each arm tip
 -   * - Grip is at the center hub
 -   * - Trail indicator sphere for path visualization
-+   * Three straight arms of equal width meeting at a hub, 120 degrees apart,
-+   * each ending in a round cap — the exact silhouette of the 2D triad,
-+   * extruded into a bullnose plate. The outline comes from the drawing itself
-+   * in `triad-profile.ts`, so the 3D prop and the pictograph prop are the same
-+   * shape by construction.
++   * A hub with a finger ring, three spines out of it at 120 degrees, and a wick
++   * on the end of each — the object people actually hold, not the pictograph's
++   * silhouette given depth. `triad-frame.ts` carries the dimensions and the
++   * reason there are two builds of it.
     *
 -   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
 -   * spread in the local XY plane from the center hub.
-+   * The hand takes the hub, with one arm running away from it and two behind.
-+   * There is no separate handle and no hub boss — the artwork does not draw
-+   * either, so neither does this.
++   * `variant="fire"` is the steel-and-kevlar prop. `variant="day"` is the
++   * printed-hub practice build with glow heads. Both keep the artwork's reach
++   * to the last decimal, so the mandala a triad draws is the same either way.
 +   *
-+   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
-+   * is the rim, which is how the plate gets a darker turned edge.
++   * The hand goes through the ring at the hub, which is the origin — the same
++   * point the pictograph puts the hand on.
     */
  
    import { T } from "@threlte/core";
@@ -1864,7 +1939,15 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
  
    let {
      propState,
-@@ -36,117 +64,41 @@
+     color,
+     visible = true,
+     length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+-  }: Prop3DProps = $props();
++    variant = "fire",
++  }: Prop3DProps & { variant?: FrameVariant } = $props();
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -1873,16 +1956,18 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -
 -  const armLength = $derived(
 -    (length ?? userProportionsState.staffLength) * ARM_LENGTH_RATIO * scale
+-  );
+-  const baseRadius = $derived(
+-    (thickness ?? userProportionsState.dimensions.staffRadius) * scale
 +  const effectiveLength = $derived(
 +    (length ?? userProportionsState.staffLength) * scale
    );
-   const baseRadius = $derived(
-     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
-   );
  
 -  const palette = $derived(PROP_COLORS[color]);
--
--  const rotation = $derived(computePropRotation(propState));
++  const parts = $derived(getTriadParts(effectiveLength, variant));
++  const materials = $derived(getFrameMaterials(color, variant));
+ 
+   const rotation = $derived(computePropRotation(propState));
 -
 -  // Arm thickness is 2x the base staff radius
 -  const armRadius = $derived(baseRadius * 2);
@@ -1931,22 +2016,12 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -      // Rotation around Z to orient the cylinder along this direction.
 -      // Default cylinder is along +Y, so we rotate by -angle around Z.
 -      const rotationZ = -angle;
-+  /**
-+   * Flat spinning props are plate stock, not tube. The triad's arms run about
-+   * 8cm across at default size — the widest stock in the flat family — so the
-+   * plate sits a little under 2cm: thick enough to hold a rolled edge and to
-+   * read edge-on, thin enough that a tilted arm still shows mostly face.
-+   */
-+  const plateDepth = $derived(baseRadius * 1.4);
- 
+-
 -      result.push({ centerX, centerY, tipX, tipY, rotationZ });
 -    }
-+  const plate = $derived(getTriadPlate(effectiveLength, plateDepth));
-+  const materials = $derived(getPlateMaterials(color));
- 
+-
 -    return result;
 -  });
-+  const rotation = $derived(computePropRotation(propState));
  </script>
  
  {#if visible}
@@ -1973,7 +2048,20 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -          color={palette.main}
 -          roughness={0.3}
 -          metalness={0.2}
--        />
++    {#each ARM_ANGLES as angle}
++      <T.Group rotation={[0, 0, angle]}>
++        <T.Mesh
++          geometry={parts.hubArm.geometry}
++          material={materials.hub}
++          position={[0, parts.hubArm.at, 0]}
++          dispose={false}
++        />
++        <T.Mesh
++          geometry={parts.innerCollar.geometry}
++          material={materials.collar}
++          position={[0, parts.innerCollar.at, 0]}
++          dispose={false}
+         />
 -      </T.Mesh>
 -
 -      <!-- Arm tip cap -->
@@ -1983,14 +2071,32 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -          color={palette.dark}
 -          roughness={0.3}
 -          metalness={0.2}
--        />
++        <T.Mesh
++          geometry={parts.spine.geometry}
++          material={materials.spine}
++          position={[0, parts.spine.at, 0]}
++          dispose={false}
+         />
 -      </T.Mesh>
--    {/each}
-+    <T.Mesh
-+      geometry={plate}
-+      material={[materials.face, materials.edge]}
-+      dispose={false}
-+    />
++        {#if parts.outerCollar}
++          <T.Mesh
++            geometry={parts.outerCollar.geometry}
++            material={materials.collar}
++            position={[0, parts.outerCollar.at, 0]}
++            dispose={false}
++          />
++        {/if}
++        <T.Mesh
++          geometry={parts.tip.geometry}
++          material={materials.tip}
++          position={[0, parts.tip.at, 0]}
++          dispose={false}
++        />
++      </T.Group>
+     {/each}
++
++    <!-- Finger ring, lying in the prop's plane so the finger goes through it -->
++    <T.Mesh geometry={parts.ring} material={materials.ring} dispose={false} />
    </T.Group>
  
 -  <!-- Trail indicator sphere -->
@@ -2006,6 +2112,24 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/Triad3D.svelte.d.ts b/dist/lib/components/props/Triad3D.svelte.d.ts
+index 7ec89746ee76fa5d9efb81fa3b3101c2256ea95a..79654317c962e02c7345af3d7dca3a327b7ee696 100644
+--- a/dist/lib/components/props/Triad3D.svelte.d.ts
++++ b/dist/lib/components/props/Triad3D.svelte.d.ts
+@@ -1,5 +1,7 @@
+ import type { Prop3DProps } from "./Prop3DProps";
+-declare const Triad3D: import("svelte").Component<Prop3DProps, {}, "">;
++import { type FrameVariant } from "./frame-materials";
++declare const Triad3D: import("svelte").Component<Prop3DProps & {
++    variant?: FrameVariant;
++}, {}, "">;
+ type Triad3D = ReturnType<typeof Triad3D>;
+ export default Triad3D;
+-//# sourceMappingURL=Triad3D.svelte.d.ts.map
+\ No newline at end of file
+diff --git a/dist/lib/components/props/Triad3D.svelte.d.ts.map b/dist/lib/components/props/Triad3D.svelte.d.ts.map
+deleted file mode 100644
+index d4eff8de3676b87e729420fc04beba7a9c390745..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/Triquetra3D.svelte b/dist/lib/components/props/Triquetra3D.svelte
 index 43ff1c3d090621bff1e77af4d1b9834ac29821be..c05aecf863070202be34f6db930c6879f8c48117 100644
 --- a/dist/lib/components/props/Triquetra3D.svelte
@@ -2463,6 +2587,103 @@ index 0000000000000000000000000000000000000000..70dfe35112382f5187fd32ee3d6c7187
 +  FAN_FRAME_WIDTH,
 +  buildFanShape
 +};
+diff --git a/dist/lib/components/props/frame-materials.d.ts b/dist/lib/components/props/frame-materials.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6dfddcce4094fff272b309d9f4ec822e33d3eb2
+--- /dev/null
++++ b/dist/lib/components/props/frame-materials.d.ts
+@@ -0,0 +1,17 @@
++import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
++export type FrameVariant = "fire" | "day";
++export interface FrameMaterialSet {
++    /** The long rod between hub and tip. Carries the prop's colour. */
++    readonly spine: MeshPhysicalMaterial;
++    /** The centre piece the spines run out of. */
++    readonly hub: MeshStandardMaterial;
++    /** The finger ring. */
++    readonly ring: MeshStandardMaterial;
++    /** Short sleeves where a spine enters the hub or the tip. */
++    readonly collar: MeshStandardMaterial;
++    /** The business end: kevlar wick, or translucent glow head. */
++    readonly tip: MeshStandardMaterial;
++    /** Path-visualization marker at the prop's position. */
++    readonly trail: MeshBasicMaterial;
++}
++export declare function getFrameMaterials(color: "blue" | "red", variant: FrameVariant): FrameMaterialSet;
+diff --git a/dist/lib/components/props/frame-materials.js b/dist/lib/components/props/frame-materials.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..254e844c2a4c9e01304ebca2343b330b5197c188
+--- /dev/null
++++ b/dist/lib/components/props/frame-materials.js
+@@ -0,0 +1,68 @@
++import {
++  Color,
++  MeshBasicMaterial,
++  MeshPhysicalMaterial,
++  MeshStandardMaterial
++} from "three";
++const PALETTES = {
++  blue: { main: "#3b82f6", dark: "#1d4ed8" },
++  red: { main: "#ef4444", dark: "#b91c1c" }
++};
++const KEVLAR = "#efe0b4";
++const STEEL = "#c8ced8";
++const SLEEVE = "#26262a";
++const materialSets = /* @__PURE__ */ new Map();
++function getFrameMaterials(color, variant) {
++  const key = `${color}:${variant}`;
++  const cached = materialSets.get(key);
++  if (cached) return cached;
++  const palette = PALETTES[color];
++  const fire = variant === "fire";
++  const materials = {
++    spine: new MeshPhysicalMaterial({
++      color: palette.main,
++      // A bare fire spine is hard and bright; a day grip is wrapped in
++      // textured tube, which kills the highlight almost completely.
++      roughness: fire ? 0.24 : 0.62,
++      metalness: fire ? 0.18 : 0.04,
++      clearcoat: fire ? 0.8 : 0,
++      clearcoatRoughness: 0.14
++    }),
++    hub: new MeshStandardMaterial({
++      color: fire ? STEEL : palette.dark,
++      roughness: fire ? 0.28 : 0.58,
++      metalness: fire ? 0.62 : 0.05
++    }),
++    ring: new MeshStandardMaterial({
++      color: fire ? STEEL : palette.dark,
++      roughness: fire ? 0.2 : 0.58,
++      metalness: fire ? 0.7 : 0.05
++    }),
++    collar: new MeshStandardMaterial({
++      color: SLEEVE,
++      roughness: 0.78,
++      metalness: 0.05
++    }),
++    tip: fire ? new MeshStandardMaterial({
++      color: KEVLAR,
++      roughness: 0.95,
++      metalness: 0
++    }) : new MeshStandardMaterial({
++      color: "#f7f7fa",
++      roughness: 0.46,
++      metalness: 0,
++      emissive: new Color(palette.main),
++      emissiveIntensity: 0.55
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true
++    })
++  };
++  materialSets.set(key, materials);
++  return materials;
++}
++export {
++  getFrameMaterials
++};
 diff --git a/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..bd8e50f102b16a8208644d084e70245a0ff3c982
@@ -2719,6 +2940,72 @@ index 0000000000000000000000000000000000000000..d7a718c68ba7fe89bf60eaacb970c4da
 +  PLATE_TRAIL_GEOMETRY,
 +  getPlateMaterials
 +};
+diff --git a/dist/lib/components/props/prop-lathe.d.ts b/dist/lib/components/props/prop-lathe.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..6a063335eb5357841ae50f3adf8e5dc44a0dbe7e
+--- /dev/null
++++ b/dist/lib/components/props/prop-lathe.d.ts
+@@ -0,0 +1,20 @@
++import { BufferGeometry } from "three";
++export interface RoundedCylinderOptions {
++    /** Overall length along the local +Y axis; the part is centred on origin. */
++    readonly length: number;
++    /** Radius at the near (-Y) end. */
++    readonly radius: number;
++    /** Radius at the far (+Y) end. Defaults to `radius` — a straight body. */
++    readonly radiusEnd?: number;
++    /** Corner break at both ends. Clamped so it can never eat the whole part. */
++    readonly fillet: number;
++    /** Segments around the axis. */
++    readonly radialSegments?: number;
++    /** Segments in each corner arc. */
++    readonly filletSegments?: number;
++}
++/**
++ * A cylinder — optionally tapered — with both corners rounded off, revolved
++ * around its own +Y axis and centred on the origin.
++ */
++export declare function roundedCylinder({ length, radius, radiusEnd, fillet, radialSegments, filletSegments, }: RoundedCylinderOptions): BufferGeometry;
+diff --git a/dist/lib/components/props/prop-lathe.js b/dist/lib/components/props/prop-lathe.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..48dec577d925df340067b30ee21a9710949ed288
+--- /dev/null
++++ b/dist/lib/components/props/prop-lathe.js
+@@ -0,0 +1,34 @@
++import { LatheGeometry, Vector2 } from "three";
++function roundedCylinder({
++  length,
++  radius,
++  radiusEnd,
++  fillet,
++  radialSegments = 20,
++  filletSegments = 4
++}) {
++  const rNear = radius;
++  const rFar = radiusEnd ?? radius;
++  const half = length / 2;
++  const f = Math.min(fillet, rNear, rFar, half);
++  const profile = [new Vector2(0, -half)];
++  for (let i = 0; i <= filletSegments; i++) {
++    const a = -Math.PI / 2 + Math.PI / 2 * (i / filletSegments);
++    profile.push(
++      new Vector2(rNear - f + f * Math.cos(a), -half + f + f * Math.sin(a))
++    );
++  }
++  for (let i = 0; i <= filletSegments; i++) {
++    const a = Math.PI / 2 * (i / filletSegments);
++    profile.push(
++      new Vector2(rFar - f + f * Math.cos(a), half - f + f * Math.sin(a))
++    );
++  }
++  profile.push(new Vector2(0, half));
++  const geometry = new LatheGeometry(profile, radialSegments);
++  geometry.computeVertexNormals();
++  return geometry;
++}
++export {
++  roundedCylinder
++};
 diff --git a/dist/lib/components/props/prop-model-recolor.js b/dist/lib/components/props/prop-model-recolor.js
 index 202c7626491817532b35a1e4572dbf417ca12c51..1e34c29da90ca149158fcba95893a2a3d544015f 100644
 --- a/dist/lib/components/props/prop-model-recolor.js
@@ -2858,67 +3145,91 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      // Check big variant map
      const bigVariant = BIG_VARIANT_MAP[propType];
      if (bigVariant) {
-diff --git a/dist/lib/components/props/triad-profile.d.ts b/dist/lib/components/props/triad-profile.d.ts
+diff --git a/dist/lib/components/props/triad-frame.d.ts b/dist/lib/components/props/triad-frame.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..7a2bdee081828fecf8577b32ba9d7f42f8e5b449
+index 0000000000000000000000000000000000000000..4b3b5655b957fa549298d426338ed3e49258ea77
 --- /dev/null
-+++ b/dist/lib/components/props/triad-profile.d.ts
-@@ -0,0 +1,8 @@
-+import { Shape } from "three";
-+/**
-+ * Width of an arm at its narrowest, normalized to staff length. The bevel
-+ * ceiling is sized from it.
-+ */
-+export declare const TRIAD_ARM_WIDTH: number;
-+/** Build the triad — a three-armed flat star, with the hand at the hub. */
-+export declare function buildTriadShape(staffLength: number): Shape;
-diff --git a/dist/lib/components/props/triad-profile.js b/dist/lib/components/props/triad-profile.js
-new file mode 100644
-index 0000000000000000000000000000000000000000..112d0c5be8cf0d6ed7b1fed5eda4c01ad94c5661
---- /dev/null
-+++ b/dist/lib/components/props/triad-profile.js
-@@ -0,0 +1,42 @@
-+import { Shape } from "three";
-+const OUTLINE = {
-+  start: [-0.41054, -0.18299],
-+  curves: [
-+    [-0.28914, -0.11294, -0.16774, -0.04288, -0.04634, 0.02718],
-+    [-0.04634, 0.16714, -0.04634, 0.30711, -0.04634, 0.44707],
-+    [-0.04634, 0.47144, -0.02633, 0.49102, -239e-5, 0.49102],
-+    [-65e-5, 0.49102, 109e-5, 0.49102, 283e-5, 0.49102],
-+    [0.02676, 0.49102, 0.04678, 0.47144, 0.04678, 0.44707],
-+    [0.04678, 0.30696, 0.04678, 0.16685, 0.04678, 0.02674],
-+    [0.16803, -0.04331, 0.28929, -0.11337, 0.41054, -0.18343],
-+    [0.43133, -0.19553, 0.43851, -0.22211, 0.42664, -0.24304],
-+    [0.42577, -0.24463, 0.4249, -0.24623, 0.42403, -0.24782],
-+    [0.41172, -0.26862, 0.38505, -0.27577, 0.36398, -0.26392],
-+    [0.24258, -0.19372, 0.12118, -0.12352, -22e-5, -0.05332],
-+    [-0.12147, -0.12352, -0.24273, -0.19372, -0.36398, -0.26392],
-+    [-0.38508, -0.27552, -0.41157, -0.26842, -0.42403, -0.24782],
-+    [-0.4249, -0.24623, -0.42577, -0.24463, -0.42664, -0.24304],
-+    [-0.43849, -0.22197, -0.43134, -0.1953, -0.41054, -0.18299]
-+  ]
-+};
-+const TRIAD_ARM_WIDTH = 0.09296;
-+function buildTriadShape(staffLength) {
-+  const shape = new Shape();
-+  shape.moveTo(OUTLINE.start[0] * staffLength, OUTLINE.start[1] * staffLength);
-+  for (const [c1x, c1y, c2x, c2y, x, y] of OUTLINE.curves) {
-+    shape.bezierCurveTo(
-+      c1x * staffLength,
-+      c1y * staffLength,
-+      c2x * staffLength,
-+      c2y * staffLength,
-+      x * staffLength,
-+      y * staffLength
-+    );
-+  }
-+  shape.closePath();
-+  return shape;
++++ b/dist/lib/components/props/triad-frame.d.ts
+@@ -0,0 +1,48 @@
++/** Hub centre to the centre of a tip, as a fraction of staff length. */
++export declare const TRIAD_ARM_LENGTH: number;
++export interface TriadSection {
++    /** Distance from the hub to the near end, in arm lengths. */
++    readonly from: number;
++    /** Distance from the hub to the far end, in arm lengths. */
++    readonly to: number;
++    /** Radius at the near end, in arm lengths. */
++    readonly radius: number;
++    /** Radius at the far end. Defaults to `radius`. */
++    readonly radiusEnd?: number;
 +}
++export interface TriadFrame {
++    /**
++     * The hub's own arm, thick and short, that a spine plugs into. It starts at
++     * the ring's OUTER edge, not at the centre: the spines are welded to the
++     * outside of the finger ring, so nothing crosses the hole your finger goes
++     * through.
++     */
++    readonly hubArm: TriadSection;
++    /** Sleeve where the spine leaves the hub. */
++    readonly innerCollar: TriadSection;
++    /** The long rod. */
++    readonly spine: TriadSection;
++    /** Sleeve where the spine enters the tip. Absent on the fire build, which
++     *  clamps the wick directly. */
++    readonly outerCollar?: TriadSection;
++    /** Kevlar wick or glow head. */
++    readonly tip: TriadSection;
++    /** Finger-ring radius to the centre of the tube, in arm lengths. */
++    readonly ringRadius: number;
++    /** Ring tube radius, in arm lengths. */
++    readonly ringTube: number;
++    /** Corner break on the turned parts, in arm lengths. */
++    readonly fillet: number;
++}
++/**
++ * Fire build. The spine is bare rod, so it is thin; the wick is a wrapped
++ * cylinder about three times the spine across, and the ring is the one-inch
++ * single finger ring these ship with.
++ */
++export declare const TRIAD_FIRE: TriadFrame;
++/**
++ * Day build. Everything is fatter: a printed hub, a grip tube you can actually
++ * hold, black ferrules at both ends of it, and a head that flares out to
++ * spread the light.
++ */
++export declare const TRIAD_DAY: TriadFrame;
+diff --git a/dist/lib/components/props/triad-frame.js b/dist/lib/components/props/triad-frame.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..eb807d377db5723709de59f052ea5a7cc565b46e
+--- /dev/null
++++ b/dist/lib/components/props/triad-frame.js
+@@ -0,0 +1,26 @@
++const TRIAD_ARM_LENGTH = 0.44707;
++const REACH = 1.104;
++const TRIAD_FIRE = {
++  hubArm: { from: 0.095, to: 0.26, radius: 0.03, radiusEnd: 0.022 },
++  innerCollar: { from: 0.24, to: 0.36, radius: 0.02 },
++  spine: { from: 0.24, to: 0.92, radius: 0.013 },
++  tip: { from: 0.9, to: REACH, radius: 0.048 },
++  ringRadius: 0.085,
++  ringTube: 0.016,
++  fillet: 0.014
++};
++const TRIAD_DAY = {
++  hubArm: { from: 0.128, to: 0.34, radius: 0.052, radiusEnd: 0.04 },
++  innerCollar: { from: 0.32, to: 0.39, radius: 0.032 },
++  spine: { from: 0.33, to: 0.85, radius: 0.026 },
++  outerCollar: { from: 0.79, to: 0.86, radius: 0.032 },
++  tip: { from: 0.85, to: REACH, radius: 0.05, radiusEnd: 0.068 },
++  ringRadius: 0.108,
++  ringTube: 0.03,
++  fillet: 0.016
++};
 +export {
-+  TRIAD_ARM_WIDTH,
-+  buildTriadShape
++  TRIAD_ARM_LENGTH,
++  TRIAD_DAY,
++  TRIAD_FIRE
 +};
 diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
@@ -3049,7 +3360,7 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..ec6392485320401f1694e6638969614990311b2d 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a111ce68651 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
@@ -3060,18 +3371,298 @@ index b6c16afd1233f1d026941e108cf2912a86e92d03..ec6392485320401f1694e66389696149
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
+@@ -48,6 +49,7 @@ export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO }
+ export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
+ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
+ export { userProportionsState } from "./state/user-proportions-state.svelte";
++export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
+ export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
+ export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
+ export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..949a8ad21d64343d9483bdcabbf7f760262d9c67 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..0e7362e2b794d0bddcfbde8256939861f9f493cb 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
-@@ -39,6 +39,7 @@ export { calculateFacingAngle } from "./domain/formation";
- export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
- // Config
- export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export { prepareSharedGltf } from "./services/shared-gltf-cache";
- export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
- export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
- export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
+@@ -1,91 +1,188 @@
+-// Components
+-export { default as Avatar3D } from "./components/Avatar3D.svelte";
+-export { default as PerformerRig } from "./components/PerformerRig.svelte";
+-export { default as IKFigure3D } from "./components/IKFigure3D.svelte";
+-export { default as LimbSegment } from "./components/LimbSegment.svelte";
+-export { default as Staff3D } from "./components/Staff3D.svelte";
+-export { default as AvatarLoadingIndicator } from "./components/AvatarLoadingIndicator.svelte";
+-// Prop components
+-export { default as Prop3D } from "./components/props/Prop3D.svelte";
+-export { default as Ball3D } from "./components/props/Ball3D.svelte";
+-export { default as Buugeng3D } from "./components/props/Buugeng3D.svelte";
+-export { default as Chicken3D } from "./components/props/Chicken3D.svelte";
+-export { default as Club3D } from "./components/props/Club3D.svelte";
+-export { default as Doublestar3D } from "./components/props/Doublestar3D.svelte";
+-export { default as Eightrings3D } from "./components/props/Eightrings3D.svelte";
+-export { default as Fan3D } from "./components/props/Fan3D.svelte";
+-export { default as GltfProp3D } from "./components/props/GltfProp3D.svelte";
+-export { default as Guitar3D } from "./components/props/Guitar3D.svelte";
+-export { default as Hoop3D } from "./components/props/Hoop3D.svelte";
+-export { default as Poi3D } from "./components/props/Poi3D.svelte";
+-export { default as Sword3D } from "./components/props/Sword3D.svelte";
+-export { default as Torch3D } from "./components/props/Torch3D.svelte";
+-export { default as Triad3D } from "./components/props/Triad3D.svelte";
+-export { default as Triquetra3D } from "./components/props/Triquetra3D.svelte";
+-// Domain enums
+-export { PropType } from "./domain/enums/PropType";
+-export { Plane, PLANE_LABELS, PLANE_COLORS, PRIMARY_PLANES } from "./domain/enums/Plane";
+-export { PlaneMode } from "./domain/enums/PlaneMode";
+-export { RotationDirection } from "./domain/enums/RotationDirection";
+-export { GripType, FINGER_BONES } from "./domain/models/GripPose";
+-// Domain constants
+-export { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "./domain/constants/plane-mode-configs";
+-// Performer positions
+-export { getDefaultPositions, getPerformerPosition, WALL_OFFSET, MAX_PERFORMERS, PERFORMER_GRID_SPACING } from "./domain/constants/performer-positions";
+-// Domain utilities
+-export { derivePlaneModeFromHands } from "./domain/utils/plane-mode-utils";
+-// Formation
+-export { calculateFacingAngle } from "./domain/formation";
+-export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
+-// Config
+-export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
+-export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
+-export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
+-export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
+-// Scale & layers
+-export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
+-export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
+-// State
+-export { userProportionsState } from "./state/user-proportions-state.svelte";
+-// Context
+-export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
+-export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
+-export { LocomotionState } from "./services/contracts/IAnimationStateMachine";
+-// Services - implementations
+-export { createAvatarServices } from "./services/implementations/AvatarServicesFactory";
+-export { AngleMathCalculator } from "./services/implementations/AngleMathCalculator";
+-export { AvatarAnimator } from "./services/implementations/AvatarAnimator";
+-export { AvatarSkeletonBuilder } from "./services/implementations/AvatarSkeletonBuilder";
+-export { IKSolver } from "./services/implementations/IKSolver";
+-export { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
+-export { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
+-export { FootPlanter } from "./services/implementations/FootPlanter";
+-export { RootMotionExtractor } from "./services/implementations/RootMotionExtractor";
+-export { FingerAnimator } from "./services/implementations/FingerAnimator";
+-export { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
+-export { SpineTwister } from "./services/implementations/SpineTwister";
+-export { ElbowPoleComputer } from "./services/implementations/ElbowPoleComputer";
+-export { CollisionDetector } from "./services/implementations/CollisionDetector";
+-export { HingeConstrainedLegIKSolver } from "./services/implementations/HingeConstrainedLegIKSolver";
+-export { ContactCurveCache } from "./services/implementations/ContactCurveCache";
+-export { ClipBasedTurnAnimator } from "./services/implementations/ClipBasedTurnAnimator";
+-export { createCameraChoreographer } from "./services/implementations/CameraChoreographer";
+-export { createFormationManager } from "./services/implementations/FormationManager";
+-export { AvatarCustomizer } from "./services/implementations/AvatarCustomizer";
+-export { KneeHingeAxisCalibrator } from "./services/implementations/KneeHingeAxisCalibrator";
+-export { LegAnimator } from "./services/implementations/LegAnimator";
+-export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolver";
+-export { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
+-export { Viewer3DUndoManager } from "./services/implementations/Viewer3DUndoManager";
+-export { SeatedAudienceLoader, seatedAudienceLoader } from "./services/implementations/SeatedAudienceLoader";
+-// Utilities
+-export { getAngleMath3D } from "./getAngleMath3D";
+-export { getAngleMathCalculator } from "./getAngleMathCalculator";
+-// Debug
+-export { installAvatarDebugHooks } from "./debug/avatar-debug-hooks";
+-export { installMocapDebugHooks } from "./debug/mocap-debug";
+-// Prop utilities
+-export { PROP_MODEL_REGISTRY } from "./components/props/prop-model-registry";
+-export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+-// Data
+-export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
++import { default as default2 } from "./components/Avatar3D.svelte";
++import { default as default3 } from "./components/PerformerRig.svelte";
++import { default as default4 } from "./components/IKFigure3D.svelte";
++import { default as default5 } from "./components/LimbSegment.svelte";
++import { default as default6 } from "./components/Staff3D.svelte";
++import { default as default7 } from "./components/AvatarLoadingIndicator.svelte";
++import { default as default8 } from "./components/props/Prop3D.svelte";
++import { default as default9 } from "./components/props/Ball3D.svelte";
++import { default as default10 } from "./components/props/Buugeng3D.svelte";
++import { default as default11 } from "./components/props/Chicken3D.svelte";
++import { default as default12 } from "./components/props/Club3D.svelte";
++import { default as default13 } from "./components/props/Doublestar3D.svelte";
++import { default as default14 } from "./components/props/Eightrings3D.svelte";
++import { default as default15 } from "./components/props/Fan3D.svelte";
++import { default as default16 } from "./components/props/GltfProp3D.svelte";
++import { default as default17 } from "./components/props/Guitar3D.svelte";
++import { default as default18 } from "./components/props/Hoop3D.svelte";
++import { default as default19 } from "./components/props/Poi3D.svelte";
++import { default as default20 } from "./components/props/Sword3D.svelte";
++import { default as default21 } from "./components/props/Torch3D.svelte";
++import { default as default22 } from "./components/props/Triad3D.svelte";
++import { default as default23 } from "./components/props/Triquetra3D.svelte";
++import { PropType } from "./domain/enums/PropType";
++import { Plane, PLANE_LABELS, PLANE_COLORS, PRIMARY_PLANES } from "./domain/enums/Plane";
++import { PlaneMode } from "./domain/enums/PlaneMode";
++import { RotationDirection } from "./domain/enums/RotationDirection";
++import { GripType, FINGER_BONES } from "./domain/models/GripPose";
++import { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "./domain/constants/plane-mode-configs";
++import { getDefaultPositions, getPerformerPosition, WALL_OFFSET, MAX_PERFORMERS, PERFORMER_GRID_SPACING } from "./domain/constants/performer-positions";
++import { derivePlaneModeFromHands } from "./domain/utils/plane-mode-utils";
++import { calculateFacingAngle } from "./domain/formation";
++import { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
++import { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
++import { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
++import { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
++import { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
++import { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
++import { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
++import { userProportionsState } from "./state/user-proportions-state.svelte";
++import { propFinishState } from "./state/prop-finish-state.svelte";
++import { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
++import { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
++import { LocomotionState } from "./services/contracts/IAnimationStateMachine";
++import { createAvatarServices } from "./services/implementations/AvatarServicesFactory";
++import { AngleMathCalculator } from "./services/implementations/AngleMathCalculator";
++import { AvatarAnimator } from "./services/implementations/AvatarAnimator";
++import { AvatarSkeletonBuilder } from "./services/implementations/AvatarSkeletonBuilder";
++import { IKSolver } from "./services/implementations/IKSolver";
++import { LocomotionAnimator } from "./services/implementations/LocomotionAnimator";
++import { AnimationStateMachine } from "./services/implementations/AnimationStateMachine";
++import { FootPlanter } from "./services/implementations/FootPlanter";
++import { RootMotionExtractor } from "./services/implementations/RootMotionExtractor";
++import { FingerAnimator } from "./services/implementations/FingerAnimator";
++import { ClavicleRaiser } from "./services/implementations/ClavicleRaiser";
++import { SpineTwister } from "./services/implementations/SpineTwister";
++import { ElbowPoleComputer } from "./services/implementations/ElbowPoleComputer";
++import { CollisionDetector } from "./services/implementations/CollisionDetector";
++import { HingeConstrainedLegIKSolver } from "./services/implementations/HingeConstrainedLegIKSolver";
++import { ContactCurveCache } from "./services/implementations/ContactCurveCache";
++import { ClipBasedTurnAnimator } from "./services/implementations/ClipBasedTurnAnimator";
++import { createCameraChoreographer } from "./services/implementations/CameraChoreographer";
++import { createFormationManager } from "./services/implementations/FormationManager";
++import { AvatarCustomizer } from "./services/implementations/AvatarCustomizer";
++import { KneeHingeAxisCalibrator } from "./services/implementations/KneeHingeAxisCalibrator";
++import { LegAnimator } from "./services/implementations/LegAnimator";
++import { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolver";
++import { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
++import { Viewer3DUndoManager } from "./services/implementations/Viewer3DUndoManager";
++import { SeatedAudienceLoader, seatedAudienceLoader } from "./services/implementations/SeatedAudienceLoader";
++import { getAngleMath3D } from "./getAngleMath3D";
++import { getAngleMathCalculator } from "./getAngleMathCalculator";
++import { installAvatarDebugHooks } from "./debug/avatar-debug-hooks";
++import { installMocapDebugHooks } from "./debug/mocap-debug";
++import { PROP_MODEL_REGISTRY } from "./components/props/prop-model-registry";
++import { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
++import { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
++export {
++  AUSTEN_STAFF,
++  AVATAR_DEFINITIONS,
++  AngleMathCalculator,
++  AnimationStateMachine,
++  default2 as Avatar3D,
++  AvatarAnimator,
++  AvatarCustomizer,
++  default7 as AvatarLoadingIndicator,
++  AvatarSkeletonBuilder,
++  default9 as Ball3D,
++  default10 as Buugeng3D,
++  COMMON_HEIGHTS,
++  COMMON_STAFF_LENGTHS,
++  default11 as Chicken3D,
++  ClavicleRaiser,
++  ClipBasedTurnAnimator,
++  default12 as Club3D,
++  CollisionDetector,
++  ContactCurveCache,
++  DEFAULT_AVATAR_ID,
++  DEFAULT_SCENE_DIMENSIONS,
++  default13 as Doublestar3D,
++  default14 as Eightrings3D,
++  ElbowPoleComputer,
++  FINGER_BONES,
++  FORMATION_PRESET_INFO,
++  default15 as Fan3D,
++  FingerAnimator,
++  FootPlanter,
++  GRID_OFFSETS,
++  default16 as GltfProp3D,
++  GripType,
++  default17 as Guitar3D,
++  HingeConstrainedLegIKSolver,
++  default18 as Hoop3D,
++  default4 as IKFigure3D,
++  IKSolver,
++  KneeHingeAxisCalibrator,
++  LAYER_PLAYER_BODY,
++  LAYER_VIEWMODEL,
++  LAYER_WORLD,
++  LegAnimator,
++  default5 as LimbSegment,
++  LocomotionAnimator,
++  LocomotionState,
++  MAX_PERFORMERS,
++  METAL_COLORS,
++  PERFORMER_GRID_SPACING,
++  PLANE_COLORS,
++  PLANE_LABELS,
++  PLANE_MODE_CONFIGS,
++  PRESET_VALID_COUNTS,
++  PRIMARY_PLANES,
++  PROP_COLORS,
++  PROP_MODEL_REGISTRY,
++  default3 as PerformerRig,
++  Plane,
++  PlaneMode,
++  default19 as Poi3D,
++  default8 as Prop3D,
++  PropType,
++  RootMotionExtractor,
++  RotationDirection,
++  SCALE,
++  STAFF_GRIP_POSES,
++  STAGE,
++  SeatedAudienceLoader,
++  SpineTwister,
++  default6 as Staff3D,
++  default20 as Sword3D,
++  default21 as Torch3D,
++  default22 as Triad3D,
++  default23 as Triquetra3D,
++  Viewer3DUndoManager,
++  WALL_OFFSET,
++  WORLDS,
++  calculateFacingAngle,
++  cmToUnits,
++  createAvatarServices,
++  createCameraChoreographer,
++  createCameraChoreography,
++  createDefaultCameraState,
++  createFormationFromPreset,
++  createFormationManager,
++  createPerformerSynchronizer,
++  derivePlaneModeFromHands,
++  deriveSceneProportions,
++  easingFunctions,
++  getAngleMath3D,
++  getAngleMathCalculator,
++  getAvatarModelPath,
++  getCameraLayers,
++  getDefaultPositions,
++  getPerformerPosition,
++  getViewer3DContext,
++  getViewerVisibilityContext,
++  inchesToCm,
++  installAvatarDebugHooks,
++  installMocapDebugHooks,
++  lerpCameraPosition,
++  lerpCameraState,
++  propFinishState,
++  seatedAudienceLoader,
++  setViewer3DContext,
++  setViewerVisibilityContext,
++  shouldUsePlayerBodyLayer,
++  solveCylinderGrasp,
++  tryGetViewer3DContext,
++  tryGetViewerVisibilityContext,
++  userProportionsState
++};
 diff --git a/dist/lib/services/contracts/IAvatarAnimator.d.ts b/dist/lib/services/contracts/IAvatarAnimator.d.ts
 index 786bf68515df88ef035b307a7029e717e056bea9..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/dist/lib/services/contracts/IAvatarAnimator.d.ts
@@ -6331,6 +6922,49 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 +        context.preparedRoots.clear();
 +    }
 +}
+diff --git a/dist/lib/state/prop-finish-state.svelte.d.ts b/dist/lib/state/prop-finish-state.svelte.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..5a4e62e9120ac50ca63e817251aa9fc4031f6906
+--- /dev/null
++++ b/dist/lib/state/prop-finish-state.svelte.d.ts
+@@ -0,0 +1,15 @@
++/**
++ * Prop Finish State
++ *
++ * Some props exist in two real builds: the fire one you burn and the day one
++ * you practise with.
++ */
++export type PropFinish = "fire" | "day";
++declare class PropFinishState {
++    private _finish;
++    get finish(): PropFinish;
++    set(finish: PropFinish): void;
++    toggle(): void;
++}
++export declare const propFinishState: PropFinishState;
++export {};
+diff --git a/dist/lib/state/prop-finish-state.svelte.js b/dist/lib/state/prop-finish-state.svelte.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c84cb200c2a3c064299293d5418b8ed0e8d6f44b
+--- /dev/null
++++ b/dist/lib/state/prop-finish-state.svelte.js
+@@ -0,0 +1,16 @@
++class PropFinishState {
++  _finish = $state("fire");
++  get finish() {
++    return this._finish;
++  }
++  set(finish) {
++    this._finish = finish;
++  }
++  toggle() {
++    this._finish = this._finish === "fire" ? "day" : "fire";
++  }
++}
++const propFinishState = new PropFinishState();
++export {
++  propFinishState
++};
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
 index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..9f550be31df34f5503fa0130cfb8ea910149a120 100644
 --- a/src/lib/components/Avatar3D.svelte
@@ -8267,10 +8901,38 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +  />
  {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
 --- a/src/lib/components/props/Prop3D.svelte
 +++ b/src/lib/components/props/Prop3D.svelte
-@@ -102,10 +102,19 @@
+@@ -13,6 +13,7 @@
+   import { PropType } from "../../domain/enums/PropType";
+   import type { PropState3D } from "../../domain/models/PropState3D";
+   import { resolvePropModel } from "./prop-model-registry";
++  import { propFinishState } from "../../state/prop-finish-state.svelte";
+   import GltfProp3D from "./GltfProp3D.svelte";
+ 
+   // Procedural fallback geometry components
+@@ -87,9 +88,17 @@
+     <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.TRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} variant={propFinishState.finish} />
+   {:else if propType === PropType.BIGTRIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
++    <Triad3D
++      {propState}
++      {color}
++      {visible}
++      {isActivePlayer}
++      {length}
++      scale={BIG_SCALE}
++      variant={propFinishState.finish}
++    />
+ 
+   {:else if propType === PropType.MINIHOOP}
+     <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
+@@ -102,10 +111,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIGENG}
@@ -8293,38 +8955,86 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/src/lib/components/props/Triad3D.svelte b/src/lib/components/props/Triad3D.svelte
-index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14ef451f094 100644
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
 --- a/src/lib/components/props/Triad3D.svelte
 +++ b/src/lib/components/props/Triad3D.svelte
-@@ -1,28 +1,56 @@
+@@ -1,152 +1,174 @@
 +<script module lang="ts">
-+  import type { BufferGeometry } from "three";
-+  import { buildTriadShape, TRIAD_ARM_WIDTH } from "./triad-profile";
-+  import { bullnosePlate } from "./plate-extrude";
-+  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++  import { BufferGeometry, TorusGeometry } from "three";
++  import {
++    TRIAD_ARM_LENGTH,
++    TRIAD_DAY,
++    TRIAD_FIRE,
++    type TriadFrame,
++    type TriadSection,
++  } from "./triad-frame";
++  import { roundedCylinder } from "./prop-lathe";
++  import { getFrameMaterials, type FrameVariant } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
-+  const plates = new Map<string, BufferGeometry>();
++  const FRAMES: Record<FrameVariant, TriadFrame> = {
++    fire: TRIAD_FIRE,
++    day: TRIAD_DAY,
++  };
 +
-+  /**
-+   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
-+   * of an arm's half-width, past which the rolled edge folds through itself at
-+   * the notches where two arms meet.
-+   */
-+  const MAX_BEVEL_INSET = TRIAD_ARM_WIDTH / 6.8;
++  /** One turned part, placed on the arm axis. */
++  interface Part {
++    readonly geometry: BufferGeometry;
++    /** Centre of the part, measured out along the arm in scene units. */
++    readonly at: number;
++  }
 +
-+  function getTriadPlate(length: number, depth: number): BufferGeometry {
-+    const key = `${length}:${depth}`;
-+    const cached = plates.get(key);
++  interface TriadParts {
++    readonly hubArm: Part;
++    readonly innerCollar: Part;
++    readonly spine: Part;
++    readonly outerCollar?: Part;
++    readonly tip: Part;
++    readonly ring: BufferGeometry;
++  }
++
++  const builds = new Map<string, TriadParts>();
++
++  function turn(section: TriadSection, arm: number, fillet: number): Part {
++    return {
++      geometry: roundedCylinder({
++        length: (section.to - section.from) * arm,
++        radius: section.radius * arm,
++        radiusEnd: section.radiusEnd ? section.radiusEnd * arm : undefined,
++        fillet: fillet * arm,
++      }),
++      at: ((section.from + section.to) / 2) * arm,
++    };
++  }
++
++  function getTriadParts(length: number, variant: FrameVariant): TriadParts {
++    const key = `${length}:${variant}`;
++    const cached = builds.get(key);
 +    if (cached) return cached;
 +
-+    const plate = bullnosePlate(
-+      buildTriadShape(length),
-+      depth,
-+      length * MAX_BEVEL_INSET
-+    );
-+    plates.set(key, plate);
-+    return plate;
++    const frame = FRAMES[variant];
++    const arm = TRIAD_ARM_LENGTH * length;
++    const parts: TriadParts = {
++      hubArm: turn(frame.hubArm, arm, frame.fillet),
++      innerCollar: turn(frame.innerCollar, arm, frame.fillet * 0.5),
++      spine: turn(frame.spine, arm, frame.fillet * 0.3),
++      outerCollar: frame.outerCollar
++        ? turn(frame.outerCollar, arm, frame.fillet * 0.5)
++        : undefined,
++      tip: turn(frame.tip, arm, frame.fillet),
++      ring: new TorusGeometry(
++        frame.ringRadius * arm,
++        frame.ringTube * arm,
++        12,
++        28
++      ),
++    };
++    builds.set(key, parts);
++    return parts;
 +  }
++
++  /** One arm pointing +Y, the other two swung back 120 degrees each. */
++  const ARM_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
 +</script>
 +
  <script lang="ts">
@@ -8338,20 +9048,19 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -   * - Small sphere caps at each arm tip
 -   * - Grip is at the center hub
 -   * - Trail indicator sphere for path visualization
-+   * Three straight arms of equal width meeting at a hub, 120 degrees apart,
-+   * each ending in a round cap — the exact silhouette of the 2D triad,
-+   * extruded into a bullnose plate. The outline comes from the drawing itself
-+   * in `triad-profile.ts`, so the 3D prop and the pictograph prop are the same
-+   * shape by construction.
++   * A hub with a finger ring, three spines out of it at 120 degrees, and a wick
++   * on the end of each — the object people actually hold, not the pictograph's
++   * silhouette given depth. `triad-frame.ts` carries the dimensions and the
++   * reason there are two builds of it.
     *
 -   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
 -   * spread in the local XY plane from the center hub.
-+   * The hand takes the hub, with one arm running away from it and two behind.
-+   * There is no separate handle and no hub boss — the artwork does not draw
-+   * either, so neither does this.
++   * `variant="fire"` is the steel-and-kevlar prop. `variant="day"` is the
++   * printed-hub practice build with glow heads. Both keep the artwork's reach
++   * to the last decimal, so the mandala a triad draws is the same either way.
 +   *
-+   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
-+   * is the rim, which is how the plate gets a darker turned edge.
++   * The hand goes through the ring at the hub, which is the origin — the same
++   * point the pictograph puts the hand on.
     */
  
    import { T } from "@threlte/core";
@@ -8367,7 +9076,15 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
  
    let {
      propState,
-@@ -36,117 +64,41 @@
+     color,
+     visible = true,
+     length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+-  }: Prop3DProps = $props();
++    variant = "fire",
++  }: Prop3DProps & { variant?: FrameVariant } = $props();
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -8376,16 +9093,18 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -
 -  const armLength = $derived(
 -    (length ?? userProportionsState.staffLength) * ARM_LENGTH_RATIO * scale
+-  );
+-  const baseRadius = $derived(
+-    (thickness ?? userProportionsState.dimensions.staffRadius) * scale
 +  const effectiveLength = $derived(
 +    (length ?? userProportionsState.staffLength) * scale
    );
-   const baseRadius = $derived(
-     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
-   );
  
 -  const palette = $derived(PROP_COLORS[color]);
--
--  const rotation = $derived(computePropRotation(propState));
++  const parts = $derived(getTriadParts(effectiveLength, variant));
++  const materials = $derived(getFrameMaterials(color, variant));
+ 
+   const rotation = $derived(computePropRotation(propState));
 -
 -  // Arm thickness is 2x the base staff radius
 -  const armRadius = $derived(baseRadius * 2);
@@ -8434,22 +9153,12 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -      // Rotation around Z to orient the cylinder along this direction.
 -      // Default cylinder is along +Y, so we rotate by -angle around Z.
 -      const rotationZ = -angle;
-+  /**
-+   * Flat spinning props are plate stock, not tube. The triad's arms run about
-+   * 8cm across at default size — the widest stock in the flat family — so the
-+   * plate sits a little under 2cm: thick enough to hold a rolled edge and to
-+   * read edge-on, thin enough that a tilted arm still shows mostly face.
-+   */
-+  const plateDepth = $derived(baseRadius * 1.4);
- 
+-
 -      result.push({ centerX, centerY, tipX, tipY, rotationZ });
 -    }
-+  const plate = $derived(getTriadPlate(effectiveLength, plateDepth));
-+  const materials = $derived(getPlateMaterials(color));
- 
+-
 -    return result;
 -  });
-+  const rotation = $derived(computePropRotation(propState));
  </script>
  
  {#if visible}
@@ -8476,7 +9185,20 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -          color={palette.main}
 -          roughness={0.3}
 -          metalness={0.2}
--        />
++    {#each ARM_ANGLES as angle}
++      <T.Group rotation={[0, 0, angle]}>
++        <T.Mesh
++          geometry={parts.hubArm.geometry}
++          material={materials.hub}
++          position={[0, parts.hubArm.at, 0]}
++          dispose={false}
++        />
++        <T.Mesh
++          geometry={parts.innerCollar.geometry}
++          material={materials.collar}
++          position={[0, parts.innerCollar.at, 0]}
++          dispose={false}
+         />
 -      </T.Mesh>
 -
 -      <!-- Arm tip cap -->
@@ -8486,14 +9208,32 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..adde55d6d7e77ea90e62567737e2f14e
 -          color={palette.dark}
 -          roughness={0.3}
 -          metalness={0.2}
--        />
++        <T.Mesh
++          geometry={parts.spine.geometry}
++          material={materials.spine}
++          position={[0, parts.spine.at, 0]}
++          dispose={false}
+         />
 -      </T.Mesh>
--    {/each}
-+    <T.Mesh
-+      geometry={plate}
-+      material={[materials.face, materials.edge]}
-+      dispose={false}
-+    />
++        {#if parts.outerCollar}
++          <T.Mesh
++            geometry={parts.outerCollar.geometry}
++            material={materials.collar}
++            position={[0, parts.outerCollar.at, 0]}
++            dispose={false}
++          />
++        {/if}
++        <T.Mesh
++          geometry={parts.tip.geometry}
++          material={materials.tip}
++          position={[0, parts.tip.at, 0]}
++          dispose={false}
++        />
++      </T.Group>
+     {/each}
++
++    <!-- Finger ring, lying in the prop's plane so the finger goes through it -->
++    <T.Mesh geometry={parts.ring} material={materials.ring} dispose={false} />
    </T.Group>
  
 -  <!-- Trail indicator sphere -->
@@ -9065,6 +9805,132 @@ index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f64838
 +  ];
 +  return shape;
 +}
+diff --git a/src/lib/components/props/frame-materials.ts b/src/lib/components/props/frame-materials.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..f8ca224b54ee1644d543d215c660bf468679aa9d
+--- /dev/null
++++ b/src/lib/components/props/frame-materials.ts
+@@ -0,0 +1,120 @@
++/**
++ * Assembled-prop finish
++ *
++ * Props that are built rather than cut — a hub with spines and wicks, a torch —
++ * are made of several real materials at once, and the finish has to say which
++ * is which: kevlar reads dry and matte, a steel spine reads hard and bright, a
++ * printed hub reads soft and matte, a glow head reads lit from inside.
++ *
++ * Two builds of the same prop, matching what people actually own:
++ *
++ *   fire  — steel frame, bare spines, unburnt kevlar wicks, a chrome finger
++ *           ring. Colour lives on the spines, which is the only part long
++ *           enough to tell blue from red across a dark stage.
++ *   day   — a printed hub with a fat finger ring, textured grip tube, and
++ *           translucent heads. The heads glow in the prop's colour, because an
++ *           LED practice prop does exactly that and it doubles as identity.
++ *
++ * Metalness stays low on the big coloured parts for the same reason as
++ * `plate-materials.ts`: a metal's diffuse response is black, so in these dark
++ * scenes a metallic body goes muddy while the staffs beside it stay saturated.
++ * Real metal is reserved for the small steel bits, where it belongs.
++ */
++
++import {
++  Color,
++  MeshBasicMaterial,
++  MeshPhysicalMaterial,
++  MeshStandardMaterial,
++} from "three";
++
++export type FrameVariant = "fire" | "day";
++
++export interface FrameMaterialSet {
++  /** The long rod between hub and tip. Carries the prop's colour. */
++  readonly spine: MeshPhysicalMaterial;
++  /** The centre piece the spines run out of. */
++  readonly hub: MeshStandardMaterial;
++  /** The finger ring. */
++  readonly ring: MeshStandardMaterial;
++  /** Short sleeves where a spine enters the hub or the tip. */
++  readonly collar: MeshStandardMaterial;
++  /** The business end: kevlar wick, or translucent glow head. */
++  readonly tip: MeshStandardMaterial;
++  /** Path-visualization marker at the prop's position. */
++  readonly trail: MeshBasicMaterial;
++}
++
++const PALETTES = {
++  blue: { main: "#3b82f6", dark: "#1d4ed8" },
++  red: { main: "#ef4444", dark: "#b91c1c" },
++} as const;
++
++/** Unburnt kevlar, which is a pale sand — not the black of a used wick. */
++const KEVLAR = "#efe0b4";
++/** Polished spine steel. */
++const STEEL = "#c8ced8";
++/** The near-black of a moulded sleeve. */
++const SLEEVE = "#26262a";
++
++const materialSets = new Map<string, FrameMaterialSet>();
++
++export function getFrameMaterials(
++  color: "blue" | "red",
++  variant: FrameVariant
++): FrameMaterialSet {
++  const key = `${color}:${variant}`;
++  const cached = materialSets.get(key);
++  if (cached) return cached;
++
++  const palette = PALETTES[color];
++  const fire = variant === "fire";
++
++  const materials: FrameMaterialSet = {
++    spine: new MeshPhysicalMaterial({
++      color: palette.main,
++      // A bare fire spine is hard and bright; a day grip is wrapped in
++      // textured tube, which kills the highlight almost completely.
++      roughness: fire ? 0.24 : 0.62,
++      metalness: fire ? 0.18 : 0.04,
++      clearcoat: fire ? 0.8 : 0,
++      clearcoatRoughness: 0.14,
++    }),
++    hub: new MeshStandardMaterial({
++      color: fire ? STEEL : palette.dark,
++      roughness: fire ? 0.28 : 0.58,
++      metalness: fire ? 0.62 : 0.05,
++    }),
++    ring: new MeshStandardMaterial({
++      color: fire ? STEEL : palette.dark,
++      roughness: fire ? 0.2 : 0.58,
++      metalness: fire ? 0.7 : 0.05,
++    }),
++    collar: new MeshStandardMaterial({
++      color: SLEEVE,
++      roughness: 0.78,
++      metalness: 0.05,
++    }),
++    tip: fire
++      ? new MeshStandardMaterial({
++          color: KEVLAR,
++          roughness: 0.95,
++          metalness: 0,
++        })
++      : new MeshStandardMaterial({
++          color: "#f7f7fa",
++          roughness: 0.46,
++          metalness: 0,
++          emissive: new Color(palette.main),
++          emissiveIntensity: 0.55,
++        }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true,
++    }),
++  };
++
++  materialSets.set(key, materials);
++  return materials;
++}
 diff --git a/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e6a8fa5c7212231654c232b99f1946477a62166f
@@ -9388,6 +10254,88 @@ index 0000000000000000000000000000000000000000..f3f717d6d8a7efdc77f9883984bb7f89
 +
 +/** Shared marker geometry for the trail indicator. */
 +export const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
+diff --git a/src/lib/components/props/prop-lathe.ts b/src/lib/components/props/prop-lathe.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..d0075f70fb7c29be0c4e66c760fc37db032a2688
+--- /dev/null
++++ b/src/lib/components/props/prop-lathe.ts
+@@ -0,0 +1,76 @@
++/**
++ * Revolved prop parts
++ *
++ * Several props are not plate stock at all — they are turned or wrapped bodies
++ * with a round section: a kevlar wick, a knurled grip, a glow head, a torch
++ * shaft. Every one of those is a solid of revolution, so it is described by a
++ * half-section and spun, which is exactly what `LatheGeometry` is for.
++ *
++ * `roundedCylinder` is the shape that keeps coming up: a body of one radius (or
++ * a straight taper between two) with its corners broken, which is what a
++ * wrapped wick, a moulded head and a machined collar all read as. Squaring the
++ * corners instead makes a prop look like a stack of tin cans; rounding them all
++ * the way to a capsule makes it look like a pill.
++ */
++
++import { BufferGeometry, LatheGeometry, Vector2 } from "three";
++
++export interface RoundedCylinderOptions {
++  /** Overall length along the local +Y axis; the part is centred on origin. */
++  readonly length: number;
++  /** Radius at the near (-Y) end. */
++  readonly radius: number;
++  /** Radius at the far (+Y) end. Defaults to `radius` — a straight body. */
++  readonly radiusEnd?: number;
++  /** Corner break at both ends. Clamped so it can never eat the whole part. */
++  readonly fillet: number;
++  /** Segments around the axis. */
++  readonly radialSegments?: number;
++  /** Segments in each corner arc. */
++  readonly filletSegments?: number;
++}
++
++/**
++ * A cylinder — optionally tapered — with both corners rounded off, revolved
++ * around its own +Y axis and centred on the origin.
++ */
++export function roundedCylinder({
++  length,
++  radius,
++  radiusEnd,
++  fillet,
++  radialSegments = 20,
++  filletSegments = 4,
++}: RoundedCylinderOptions): BufferGeometry {
++  const rNear = radius;
++  const rFar = radiusEnd ?? radius;
++  const half = length / 2;
++  const f = Math.min(fillet, rNear, rFar, half);
++
++  const profile: Vector2[] = [new Vector2(0, -half)];
++
++  // Near corner: quarter arc from the flat end out to the side wall.
++  for (let i = 0; i <= filletSegments; i++) {
++    const a = -Math.PI / 2 + (Math.PI / 2) * (i / filletSegments);
++    profile.push(
++      new Vector2(rNear - f + f * Math.cos(a), -half + f + f * Math.sin(a))
++    );
++  }
++
++  // The side wall is the straight run between the two corner arcs, so a taper
++  // needs no points of its own — the lathe interpolates it.
++
++  // Far corner.
++  for (let i = 0; i <= filletSegments; i++) {
++    const a = (Math.PI / 2) * (i / filletSegments);
++    profile.push(
++      new Vector2(rFar - f + f * Math.cos(a), half - f + f * Math.sin(a))
++    );
++  }
++
++  profile.push(new Vector2(0, half));
++
++  const geometry = new LatheGeometry(profile, radialSegments);
++  geometry.computeVertexNormals();
++  return geometry;
++}
 diff --git a/src/lib/components/props/prop-model-recolor.ts b/src/lib/components/props/prop-model-recolor.ts
 index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17dfdf1bf6 100644
 --- a/src/lib/components/props/prop-model-recolor.ts
@@ -9554,97 +10502,110 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    // Check big variant map
    const bigVariant = BIG_VARIANT_MAP[propType];
    if (bigVariant) {
-diff --git a/src/lib/components/props/triad-profile.ts b/src/lib/components/props/triad-profile.ts
+diff --git a/src/lib/components/props/triad-frame.ts b/src/lib/components/props/triad-frame.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..f860735b199e78639fed01599fc41a16fe57d782
+index 0000000000000000000000000000000000000000..9fafb5a90c8d9134dd36259781d40ad574fc0dc3
 --- /dev/null
-+++ b/src/lib/components/props/triad-profile.ts
-@@ -0,0 +1,85 @@
++++ b/src/lib/components/props/triad-frame.ts
+@@ -0,0 +1,98 @@
 +/**
-+ * Triad silhouette profile
++ * Triad frame
 + *
-+ * The 3D triad is not an approximation of the 2D prop — it IS the 2D artwork,
-+ * given depth. These contours are a direct transcription of the visible path in
-+ * `static/images/props/triad.svg`: three straight arms of equal width meeting
-+ * at a hub, 120 degrees apart, each ending in a semicircular cap.
++ * A triad is not a flat plate. `triad.svg` draws a solid three-armed star
++ * because a pictograph needs one readable silhouette, but the object in your
++ * hand is a frame: a small hub with a finger ring, three straight spines out of
++ * it at 120 degrees, and a wick on the end of each spine. Extruding the
++ * pictograph gives a shape with the right outline and the wrong prop.
 + *
-+ * Coordinates are normalized to the STAFF's drawn span (252.8 SVG units, the
-+ * shared unit across every prop drawing) and rotated into prop-local 2D space,
-+ * so the prop's reach runs along +Y like every other prop:
++ * Austen, 2026-08-16, on the extruded version: *"Real triads aren't flat —
++ * they're actual wicks around wire rims."*
 + *
-+ *   x = (svgY - 109.545) / 252.8    across the prop
-+ *   y = (svgX - 124.38)  / 252.8    along the prop
++ * Two builds, both real, both shipped:
 + *
-+ * `triad.svg` carries a second copy of the star, mirrored about the viewBox
-+ * centre, marked `fill="none"`. It draws nothing. It is there to widen the box
-+ * so its centre lands on the hub — the drawing's way of placing the hand.
-+ * Extruding it would put a second star on the prop that the artwork does not
-+ * have.
++ *   fire — steel spines out of a machined hub, a one-inch chrome finger ring,
++ *          kevlar wicks. What Forged Creations sells.
++ *   day  — a printed hub with a fatter ring, textured grip tube between black
++ *          ferrules, and translucent glow heads. The practice/LED build.
 + *
-+ * One arm reaches forward along +Y and the other two splay back at 120, so the
-+ * hand takes the hub with a bar running away from it and two behind. That is
-+ * the whole prop; there is no separate handle, no hub boss, and no cap that is
-+ * not simply the round end of an arm.
++ * The frame keeps the artwork's REACH exactly, because reach is what the
++ * notation and the mandala radius are measured against: arm centre-line
++ * 0.44707 of a staff from the hub, tips reaching 0.4936. Only the construction
++ * changes. Everything below is a fraction of the arm length so both sizes and
++ * both builds stay in proportion.
 + */
 +
-+import { Shape } from "three";
++/** Hub centre to the centre of a tip, as a fraction of staff length. */
++export const TRIAD_ARM_LENGTH = 0.44707;
 +
-+/** [c1x, c1y, c2x, c2y, endX, endY] */
-+type Cubic = readonly [number, number, number, number, number, number];
++/** How far past the arm's centre-line end the tip reaches, in arm lengths. */
++const REACH = 1.104;
 +
-+interface Contour {
-+  readonly start: readonly [number, number];
-+  readonly curves: readonly Cubic[];
++export interface TriadSection {
++  /** Distance from the hub to the near end, in arm lengths. */
++  readonly from: number;
++  /** Distance from the hub to the far end, in arm lengths. */
++  readonly to: number;
++  /** Radius at the near end, in arm lengths. */
++  readonly radius: number;
++  /** Radius at the far end. Defaults to `radius`. */
++  readonly radiusEnd?: number;
 +}
 +
-+const OUTLINE: Contour = {
-+  start: [-0.41054, -0.18299],
-+  curves: [
-+    [-0.28914, -0.11294, -0.16774, -0.04288, -0.04634, 0.02718],
-+    [-0.04634, 0.16714, -0.04634, 0.30711, -0.04634, 0.44707],
-+    [-0.04634, 0.47144, -0.02633, 0.49102, -0.00239, 0.49102],
-+    [-0.00065, 0.49102, 0.00109, 0.49102, 0.00283, 0.49102],
-+    [0.02676, 0.49102, 0.04678, 0.47144, 0.04678, 0.44707],
-+    [0.04678, 0.30696, 0.04678, 0.16685, 0.04678, 0.02674],
-+    [0.16803, -0.04331, 0.28929, -0.11337, 0.41054, -0.18343],
-+    [0.43133, -0.19553, 0.43851, -0.22211, 0.42664, -0.24304],
-+    [0.42577, -0.24463, 0.4249, -0.24623, 0.42403, -0.24782],
-+    [0.41172, -0.26862, 0.38505, -0.27577, 0.36398, -0.26392],
-+    [0.24258, -0.19372, 0.12118, -0.12352, -0.00022, -0.05332],
-+    [-0.12147, -0.12352, -0.24273, -0.19372, -0.36398, -0.26392],
-+    [-0.38508, -0.27552, -0.41157, -0.26842, -0.42403, -0.24782],
-+    [-0.4249, -0.24623, -0.42577, -0.24463, -0.42664, -0.24304],
-+    [-0.43849, -0.22197, -0.43134, -0.1953, -0.41054, -0.18299],
-+  ],
++export interface TriadFrame {
++  /**
++   * The hub's own arm, thick and short, that a spine plugs into. It starts at
++   * the ring's OUTER edge, not at the centre: the spines are welded to the
++   * outside of the finger ring, so nothing crosses the hole your finger goes
++   * through.
++   */
++  readonly hubArm: TriadSection;
++  /** Sleeve where the spine leaves the hub. */
++  readonly innerCollar: TriadSection;
++  /** The long rod. */
++  readonly spine: TriadSection;
++  /** Sleeve where the spine enters the tip. Absent on the fire build, which
++   *  clamps the wick directly. */
++  readonly outerCollar?: TriadSection;
++  /** Kevlar wick or glow head. */
++  readonly tip: TriadSection;
++  /** Finger-ring radius to the centre of the tube, in arm lengths. */
++  readonly ringRadius: number;
++  /** Ring tube radius, in arm lengths. */
++  readonly ringTube: number;
++  /** Corner break on the turned parts, in arm lengths. */
++  readonly fillet: number;
++}
++
++/**
++ * Fire build. The spine is bare rod, so it is thin; the wick is a wrapped
++ * cylinder about three times the spine across, and the ring is the one-inch
++ * single finger ring these ship with.
++ */
++export const TRIAD_FIRE: TriadFrame = {
++  hubArm: { from: 0.095, to: 0.26, radius: 0.03, radiusEnd: 0.022 },
++  innerCollar: { from: 0.24, to: 0.36, radius: 0.02 },
++  spine: { from: 0.24, to: 0.92, radius: 0.013 },
++  tip: { from: 0.9, to: REACH, radius: 0.048 },
++  ringRadius: 0.085,
++  ringTube: 0.016,
++  fillet: 0.014,
 +};
 +
 +/**
-+ * Width of an arm at its narrowest, normalized to staff length — measured by
-+ * stepping inward along the boundary's normal. The bevel ceiling is sized from
-+ * it. The triad's arms are the widest stock in the flat-prop family.
++ * Day build. Everything is fatter: a printed hub, a grip tube you can actually
++ * hold, black ferrules at both ends of it, and a head that flares out to
++ * spread the light.
 + */
-+export const TRIAD_ARM_WIDTH = 0.09296;
-+
-+/**
-+ * Build the triad — sized against a staff of `staffLength` units and lying in
-+ * the XY plane ready to extrude, with the hand at the origin.
-+ */
-+export function buildTriadShape(staffLength: number): Shape {
-+  const shape = new Shape();
-+  shape.moveTo(OUTLINE.start[0] * staffLength, OUTLINE.start[1] * staffLength);
-+  for (const [c1x, c1y, c2x, c2y, x, y] of OUTLINE.curves) {
-+    shape.bezierCurveTo(
-+      c1x * staffLength,
-+      c1y * staffLength,
-+      c2x * staffLength,
-+      c2y * staffLength,
-+      x * staffLength,
-+      y * staffLength
-+    );
-+  }
-+  shape.closePath();
-+  return shape;
-+}
++export const TRIAD_DAY: TriadFrame = {
++  hubArm: { from: 0.128, to: 0.34, radius: 0.052, radiusEnd: 0.04 },
++  innerCollar: { from: 0.32, to: 0.39, radius: 0.032 },
++  spine: { from: 0.33, to: 0.85, radius: 0.026 },
++  outerCollar: { from: 0.79, to: 0.86, radius: 0.032 },
++  tip: { from: 0.85, to: REACH, radius: 0.05, radiusEnd: 0.068 },
++  ringRadius: 0.108,
++  ringTube: 0.03,
++  fillet: 0.016,
++};
 diff --git a/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff55684d48
@@ -9838,217 +10799,17 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..0a6f458e041c91656d382d4fa115a83697e6e171 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c27a2147cbc5dac1b37466796ec13c3e73601519 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
-@@ -26,25 +26,50 @@ export { default as Triquetra3D } from "./components/props/Triquetra3D.svelte";
- 
- // Domain enums
- export { PropType } from "./domain/enums/PropType";
--export { Plane, PLANE_LABELS, PLANE_COLORS, PRIMARY_PLANES } from "./domain/enums/Plane";
-+export {
-+  Plane,
-+  PLANE_LABELS,
-+  PLANE_COLORS,
-+  PRIMARY_PLANES,
-+} from "./domain/enums/Plane";
- export { PlaneMode } from "./domain/enums/PlaneMode";
- export { RotationDirection } from "./domain/enums/RotationDirection";
- 
- // Domain models & types
--export type { PropState3D, PropState2D, PropStates3D, InterpolationResult3D } from "./domain/models/PropState3D";
-+export type {
-+  PropState3D,
-+  PropState2D,
-+  PropStates3D,
-+  InterpolationResult3D,
-+} from "./domain/models/PropState3D";
- export type { GripPose, FingerBoneName } from "./domain/models/GripPose";
- export { GripType, FINGER_BONES } from "./domain/models/GripPose";
--export type { AvatarInstanceState, BeatPlaneOverride } from "./domain/types/AvatarInstanceState";
--export type { TipEffectMap, TipEffectAssignment } from "./domain/types/TipEffectTypes";
-+export type {
-+  AvatarInstanceState,
-+  BeatPlaneOverride,
-+} from "./domain/types/AvatarInstanceState";
-+export type {
-+  TipEffectMap,
-+  TipEffectAssignment,
-+} from "./domain/types/TipEffectTypes";
- export type { CameraStateSnapshot } from "./domain/types/CameraStateSnapshot";
- export type { GridMode } from "./domain/constants/grid-layout";
- 
- // Domain constants
--export { PLANE_MODE_CONFIGS, GRID_OFFSETS } from "./domain/constants/plane-mode-configs";
-+export {
-+  PLANE_MODE_CONFIGS,
-+  GRID_OFFSETS,
-+} from "./domain/constants/plane-mode-configs";
- export type { PlaneModeConfig } from "./domain/constants/plane-mode-configs";
- 
- // Performer positions
--export { getDefaultPositions, getPerformerPosition, WALL_OFFSET, MAX_PERFORMERS, PERFORMER_GRID_SPACING } from "./domain/constants/performer-positions";
-+export {
-+  getDefaultPositions,
-+  getPerformerPosition,
-+  WALL_OFFSET,
-+  MAX_PERFORMERS,
-+  PERFORMER_GRID_SPACING,
-+} from "./domain/constants/performer-positions";
- export type { PerformerPosition } from "./domain/constants/performer-positions";
- 
- // Domain utilities
-@@ -55,31 +80,81 @@ export { calculateFacingAngle } from "./domain/formation";
- export type { FormationPreset } from "./domain/formation";
- 
- // Camera choreography
--export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
--export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
-+export type {
-+  CameraChoreography,
-+  CameraKeyframe,
-+  CameraState,
-+  CameraPosition,
-+  CameraInterpolation,
-+} from "./domain/camera-choreography";
-+export {
-+  createCameraChoreography,
-+  createDefaultCameraState,
-+  easingFunctions,
-+  lerpCameraPosition,
-+  lerpCameraState,
-+} from "./domain/camera-choreography";
- 
- // Config
--export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export {
-+  AVATAR_DEFINITIONS,
-+  DEFAULT_AVATAR_ID,
-+  getAvatarModelPath,
-+} from "./config/avatar-definitions";
- export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
--export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
--export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
--export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO } from "./config/formation-presets";
-+export {
-+  prepareAvatarForDisplay,
-+  prepareSharedGltf,
-+} from "./services/shared-gltf-cache";
-+export {
-+  cmToUnits,
-+  deriveSceneProportions,
-+  AUSTEN_STAFF,
-+} from "./config/avatar-proportions";
-+export {
-+  DEFAULT_SCENE_DIMENSIONS,
-+  inchesToCm,
-+  COMMON_HEIGHTS,
-+  COMMON_STAFF_LENGTHS,
-+} from "./config/user-proportions";
-+export {
-+  PRESET_VALID_COUNTS,
-+  createFormationFromPreset,
-+  FORMATION_PRESET_INFO,
-+} from "./config/formation-presets";
- 
- // Scale & layers
- export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
--export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
-+export {
-+  LAYER_WORLD,
-+  LAYER_PLAYER_BODY,
-+  LAYER_VIEWMODEL,
-+  getCameraLayers,
-+  shouldUsePlayerBodyLayer,
-+} from "./layers/layer-constants";
+@@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
  
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
++export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
  
  // Context
--export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
--export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
-+export {
-+  setViewer3DContext,
-+  getViewer3DContext,
-+  tryGetViewer3DContext,
-+} from "./context/viewer-3d-context";
-+export {
-+  setViewerVisibilityContext,
-+  getViewerVisibilityContext,
-+  tryGetViewerVisibilityContext,
-+} from "./context/viewer-visibility-context";
- export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
- 
- // Services - contracts
- export type { IAvatarAnimator } from "./services/contracts/IAvatarAnimator";
--export type { IAvatarSkeletonBuilder, BoneName } from "./services/contracts/IAvatarSkeletonBuilder";
-+export type {
-+  IAvatarSkeletonBuilder,
-+  BoneName,
-+} from "./services/contracts/IAvatarSkeletonBuilder";
- export type { IIKSolver } from "./services/contracts/IIKSolver";
- export type { ILocomotionAnimator } from "./services/contracts/ILocomotionAnimator";
- export type { IAnimationStateMachine } from "./services/contracts/IAnimationStateMachine";
-@@ -91,18 +166,40 @@ export type { IClavicleRaiser } from "./services/contracts/IClavicleRaiser";
- export type { ISpineTwister } from "./services/contracts/ISpineTwister";
- export type { IElbowPoleComputer } from "./services/contracts/IElbowPoleComputer";
- export type { IAngleMathCalculator } from "./services/contracts/IAngleMathCalculator";
--export type { ICollisionDetector, CollisionEvent, BodySnapshot, PropSegment } from "./services/contracts/ICollisionDetector";
--export type { ICameraChoreographer, PerformerPositionProvider } from "./services/contracts/ICameraChoreographer";
-+export type {
-+  ICollisionDetector,
-+  CollisionEvent,
-+  BodySnapshot,
-+  PropSegment,
-+} from "./services/contracts/ICollisionDetector";
-+export type {
-+  ICameraChoreographer,
-+  PerformerPositionProvider,
-+} from "./services/contracts/ICameraChoreographer";
- export type { IFormationManager } from "./services/contracts/IFormationManager";
- export type { IContactCurveCache } from "./services/contracts/IContactCurveCache";
- export type { ILegAnimator } from "./services/contracts/ILegAnimator";
--export type { ILegIKSolver, LegIKInput } from "./services/contracts/ILegIKSolver";
--export type { ITurnAnimator, TurnRequest } from "./services/contracts/ITurnAnimator";
--export type { IAvatarCustomizer, BodyType } from "./services/contracts/IAvatarCustomizer";
-+export type {
-+  ILegIKSolver,
-+  LegIKInput,
-+} from "./services/contracts/ILegIKSolver";
-+export type {
-+  ITurnAnimator,
-+  TurnRequest,
-+} from "./services/contracts/ITurnAnimator";
-+export type {
-+  IAvatarCustomizer,
-+  BodyType,
-+} from "./services/contracts/IAvatarCustomizer";
- export type { IPerformerSynchronizer } from "./services/contracts/IPerformerSynchronizer";
- export type { ISceneOrchestrator } from "./services/contracts/ISceneOrchestrator";
- export type { IViewer3DEffectPlugin } from "./services/contracts/IViewer3DEffectPlugin";
--export type { IViewer3DUndoManager, PerformerSnapshot, ViewerSnapshot, ViewerOperationType } from "./services/contracts/IViewer3DUndoManager";
-+export type {
-+  IViewer3DUndoManager,
-+  PerformerSnapshot,
-+  ViewerSnapshot,
-+  ViewerOperationType,
-+} from "./services/contracts/IViewer3DUndoManager";
- 
- // Services - implementations
- export { createAvatarServices } from "./services/implementations/AvatarServicesFactory";
-@@ -131,7 +228,10 @@ export { solveCylinderGrasp } from "./services/implementations/CylinderGraspSolv
- export type { GraspResult } from "./services/implementations/CylinderGraspSolver";
- export { createPerformerSynchronizer } from "./services/implementations/PerformerSynchronizer";
- export { Viewer3DUndoManager } from "./services/implementations/Viewer3DUndoManager";
--export { SeatedAudienceLoader, seatedAudienceLoader } from "./services/implementations/SeatedAudienceLoader";
-+export {
-+  SeatedAudienceLoader,
-+  seatedAudienceLoader,
-+} from "./services/implementations/SeatedAudienceLoader";
- export type { PreparedFigure } from "./services/implementations/SeatedAudienceLoader";
- 
- // Utilities
+ export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
 index 42a46ac294719f16470ed72c27286e50c55a35f2..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
@@ -12150,3 +12911,40 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +    context.preparedRoots.clear();
 +  }
 +}
+diff --git a/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..5ba92a5fbedbbd73e1d926c150335c900f4bac51
+--- /dev/null
++++ b/src/lib/state/prop-finish-state.svelte.ts
+@@ -0,0 +1,31 @@
++/**
++ * Prop Finish State
++ *
++ * Some props exist in two real builds: the fire one you burn and the day one
++ * you practise with. A triad is steel spines and kevlar wicks, or a printed hub
++ * and glow heads. Same prop, same reach, same notation — different object.
++ *
++ * That is a display preference, not a notation change, so it lives here as one
++ * reactive setting rather than as a second `PropType`. Prop components read it
++ * and pick their build; nothing about the sequence changes.
++ */
++
++export type PropFinish = "fire" | "day";
++
++class PropFinishState {
++  private _finish = $state<PropFinish>("fire");
++
++  get finish(): PropFinish {
++    return this._finish;
++  }
++
++  set(finish: PropFinish): void {
++    this._finish = finish;
++  }
++
++  toggle(): void {
++    this._finish = this._finish === "fire" ? "day" : "fire";
++  }
++}
++
++export const propFinishState = new PropFinishState();
