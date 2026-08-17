@@ -426,6 +426,7 @@
           enableLocomotion={true}
           enableFootPlanting={true}
           stanceYaw={stanceYawRad}
+          weldGrip={true}
         >
           {#snippet gridSlot()}
             <!-- Pivot the drawn grid about the grip's vertical axis so the
