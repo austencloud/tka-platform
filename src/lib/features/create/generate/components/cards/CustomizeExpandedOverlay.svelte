@@ -44,6 +44,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
   import { GENERATE_DEFAULT_CONFIG } from "../../state/generate-config.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import GenerationSettingsOverlay from "./GenerationSettingsOverlay.svelte";
+  import TurnPatternSection from "../modals/customize/TurnPatternSection.svelte";
   import {
     clampStartOrientationToLevel,
     startOrientationsForLevel,
@@ -57,6 +58,11 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     level = 3,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
+    turnPattern = null,
+    turnIntensity = 1,
+    sequenceLength = 8,
+    loopPeriod = undefined,
+    onTurnPatternChange = () => {},
     styleBaseline = PRODUCTION_STYLE_BASELINE,
     onConstraintPresetChange,
     onHandPathModeChange,
@@ -72,6 +78,13 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
+    turnPattern?: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+    turnIntensity?: number;
+    sequenceLength?: number;
+    loopPeriod?: number;
+    onTurnPatternChange?: (
+      lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+    ) => void;
     styleBaseline?: CustomizeStyleBaseline;
     onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
     onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
@@ -173,6 +186,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     return `${n} positions`;
   });
 
+  // What the engine will actually do. A pattern REPLACES the intensity ceiling
+  // rather than combining with it, so the row reports whichever one is in force.
+  const turnPatternDisplay = $derived.by(() => {
+    if (!turnPattern) return `Random, ≤${turnIntensity}`;
+    const lane = (values: readonly (number | "fl")[]) =>
+      values.length ? values.map(String).join("·") : "0";
+    return `Left ${lane(turnPattern.blue)} · Right ${lane(turnPattern.red)}`;
+  });
+
   // The shared picker speaks blocklist; end positions are an allowlist. Invert
   // at this seam so the primitive is reused unchanged (never-hand-roll) and
   // both position screens look and behave identically: all cells bright = no
@@ -229,6 +251,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
       disabled: !isFreeformMode,
       disabledReason: "Set by LOOP",
     },
+    { id: "turnPattern", label: "Turn Pattern", value: turnPatternDisplay },
   ]);
 
   function handleClose() {
@@ -374,7 +397,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
                  visible at the same time. -->
             <div class="ori-block">
               <div class="ori-row">
-                <span class="ori-color-label ori-blue">Blue</span>
+                <span class="ori-color-label ori-blue">Left</span>
                 <PropOrientationControl
                   color="blue"
                   orientation={localBlueOri}
@@ -383,7 +406,7 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
                 />
               </div>
               <div class="ori-row">
-                <span class="ori-color-label ori-red">Red</span>
+                <span class="ori-color-label ori-red">Right</span>
                 <PropOrientationControl
                   color="red"
                   orientation={localRedOri}
@@ -401,6 +424,19 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
               blueStartOrientation={localBlueOri}
               redStartOrientation={localRedOri}
               {gridMode}
+            />
+          </div>
+        {:else if id === "turnPattern"}
+          <div class="drill-fill pattern-fill">
+            <TurnPatternSection
+              {turnPattern}
+              {level}
+              {turnIntensity}
+              blueStartOrientation={localBlueOri}
+              redStartOrientation={localRedOri}
+              {sequenceLength}
+              {loopPeriod}
+              {onTurnPatternChange}
             />
           </div>
         {/if}
@@ -473,6 +509,15 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     gap: 14px;
   }
 
+  /* The section owns its own vertical rhythm and grows its strip into whatever
+     height is left, so the wrapper only has to hand it the full column.
+     (`.drill-fill` already claims the remaining height from the drill panel.) */
+  .pattern-fill {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
   .spread :global(.style-panel) {
     flex: 0 0 auto;
     justify-content: flex-start;
@@ -543,15 +588,23 @@ Spec: docs/superpowers/specs/2026-08-02-customize-panel-drilldown-design.md
     max-width: 26rem;
   }
 
+  /* Sized in ch to the longer word rather than to the 44px that fit "Blue" —
+     at 700 weight "Right" ran past its own box and closed the gap to the
+     control it names. */
   .ori-color-label {
     flex-shrink: 0;
-    width: 44px;
+    width: 6ch;
     font-size: var(--font-size-sm, 14px);
     font-weight: 700;
     letter-spacing: 0.3px;
   }
 
-  /* Lightened off the raw prop colors: #3b82f6 as text on the panel's dark
+  /* Left and Right, not Blue and Red: the tint already says which prop, so the
+     word would be restating the colour. Naming the hand instead is the part a
+     first-time reader cannot get from looking. Blue is the left hand, red the
+     right — the same convention the Actions panel's APPLY TO row uses.
+
+     Lightened off the raw prop colors: #3b82f6 as text on the panel's dark
      blue gradient was barely readable. Keeps the prop identity, wins the
      contrast. */
   .ori-blue {

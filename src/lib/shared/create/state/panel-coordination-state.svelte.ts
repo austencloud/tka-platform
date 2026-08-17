@@ -173,39 +173,22 @@ export interface CustomizeOverlayProps {
     handPathMode: "smooth" | "mixed" | "choppy";
     motionTypeFilter: "no-dash" | "prefer-dash" | null;
   };
+  /** Absent means the generator rolls its own turns under the intensity ceiling. */
+  turnPattern: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+  /** The ceiling from the bento's Turn Intensity card, which caps the strip's values. */
+  turnIntensity: number;
+  sequenceLength: number;
+  /** A LOOP's seed block, when one is active. Restricts the periods offered. */
+  loopPeriod?: number;
   onConstraintPresetChange: (v: "smooth" | "mixed" | "choppy") => void;
   onHandPathModeChange: (v: "smooth" | "mixed" | "choppy") => void;
   onMotionTypeFilterChange: (v: "no-dash" | "mixed" | "prefer-dash") => void;
   onStartEndChange: ((options: StartEndOptions) => void) | null;
-  /** "Reset all" — every persisted generation setting back to first-run. */
-  onResetAll: (() => void) | null;
-}
-
-/**
- * Props for the Turns expanded overlay (the turn-pattern strip).
- *
- * The pattern editor is three stacked controls and a two-lane strip — around
- * 550px of height. The Turns card's cell in the settings grid is under 200px,
- * so the strip gets a drawer of its own, the way Customize and LOOP already do.
- * Intensity stays on the card, where a single stepper fits.
- */
-export interface TurnsOverlayProps {
-  /** Absent means the pattern was cleared while the drawer was open. */
-  turnPattern: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
-  /** Generate vocabulary level, which decides the values the strip may offer. */
-  level: number;
-  maxTurnIntensity: number;
-  /** Intensity ceilings this level permits, in the order the stepper walks. */
-  allowedValues: number[];
-  onIntensityChange: (intensity: number) => void;
-  blueStartOrientation: string;
-  redStartOrientation: string;
-  sequenceLength: number;
-  /** A LOOP's seed block, when one is active. Restricts the periods offered. */
-  loopPeriod?: number;
   onTurnPatternChange: (
     lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
   ) => void;
+  /** "Reset all" — every persisted generation setting back to first-run. */
+  onResetAll: (() => void) | null;
 }
 
 export interface PanelCoordinationState {
@@ -356,13 +339,6 @@ export interface PanelCoordinationState {
   openCustomizeOverlay(props: CustomizeOverlayProps): void;
   closeCustomizeOverlay(): void;
 
-  // Turns Overlay State (the turn-pattern strip)
-  get isTurnsOverlayOpen(): boolean;
-  get turnsOverlayProps(): TurnsOverlayProps | null;
-
-  openTurnsOverlay(props: TurnsOverlayProps): void;
-  closeTurnsOverlay(): void;
-
   // Duration Preview Mode State (for live preview in duration pattern drawer)
   get isDurationPreviewMode(): boolean;
   get previewSequence(): SequenceData | null;
@@ -499,10 +475,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
   let isCustomizeOverlayOpen = $state(false);
   let customizeOverlayProps = $state<CustomizeOverlayProps | null>(null);
 
-  // Turns overlay state (the turn-pattern strip)
-  let isTurnsOverlayOpen = $state(false);
-  let turnsOverlayProps = $state<TurnsOverlayProps | null>(null);
-
   // Sequence Viewer state (triggers SequenceViewerDrawerHost on mobile, /sequence/[id] on desktop)
   let isSequenceViewerOpen = $state(false);
 
@@ -545,9 +517,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
 
     isCustomizeOverlayOpen = false;
     customizeOverlayProps = null;
-
-    isTurnsOverlayOpen = false;
-    turnsOverlayProps = null;
 
     isPresetDrawerOpen = false;
 
@@ -928,25 +897,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
       customizeOverlayProps = null;
     },
 
-    // Turns Overlay Getters
-    get isTurnsOverlayOpen() {
-      return isTurnsOverlayOpen;
-    },
-    get turnsOverlayProps() {
-      return turnsOverlayProps;
-    },
-
-    openTurnsOverlay(props: TurnsOverlayProps) {
-      closeAllPanels();
-      turnsOverlayProps = props;
-      isTurnsOverlayOpen = true;
-    },
-
-    closeTurnsOverlay() {
-      isTurnsOverlayOpen = false;
-      turnsOverlayProps = null;
-    },
-
     // Preset Drawer Getters
     get isPresetDrawerOpen() {
       return isPresetDrawerOpen;
@@ -1005,7 +955,6 @@ export function createPanelCoordinationState(): PanelCoordinationState {
         isSequenceActionsPanelOpen ||
         isLOOPPanelOpen ||
         isCustomizeOverlayOpen ||
-        isTurnsOverlayOpen ||
         isPresetDrawerOpen ||
         isSequenceViewerOpen
       );

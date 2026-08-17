@@ -27,6 +27,11 @@ to three rows. Click opens the expanded overlay.
     level = 3,
     gridMode = GridMode.DIAMOND,
     isFreeformMode = true,
+    turnPattern = null,
+    turnIntensity = 1,
+    sequenceLength = 8,
+    loopPeriod = undefined,
+    onTurnPatternChange = () => {},
     styleBaseline = PRODUCTION_STYLE_BASELINE,
     onConstraintPresetChange,
     onHandPathModeChange,
@@ -45,6 +50,13 @@ to three rows. Click opens the expanded overlay.
     level?: number;
     gridMode?: GridMode;
     isFreeformMode?: boolean;
+    turnPattern?: { blue: (number | "fl")[]; red: (number | "fl")[] } | null;
+    turnIntensity?: number;
+    sequenceLength?: number;
+    loopPeriod?: number;
+    onTurnPatternChange?: (
+      lanes: { blue: (number | "fl")[]; red: (number | "fl")[] } | null
+    ) => void;
     /**
      * What "untouched" means on THIS surface. The public Composer demo opens
      * on its own recipe, so without this it would report two changes the
@@ -104,11 +116,16 @@ to three rows. Click opens the expanded overlay.
       level,
       gridMode,
       isFreeformMode,
+      turnPattern,
+      turnIntensity,
+      sequenceLength,
+      loopPeriod,
       styleBaseline,
       onConstraintPresetChange,
       onHandPathModeChange,
       onMotionTypeFilterChange,
       onStartEndChange: onStartEndChange ?? null,
+      onTurnPatternChange,
       onResetAll: onResetAll ?? null,
     });
   }

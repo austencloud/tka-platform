@@ -35,11 +35,16 @@
         level={overlayProps.level}
         gridMode={overlayProps.gridMode}
         isFreeformMode={overlayProps.isFreeformMode}
+        turnPattern={overlayProps.turnPattern}
+        turnIntensity={overlayProps.turnIntensity}
+        sequenceLength={overlayProps.sequenceLength}
+        loopPeriod={overlayProps.loopPeriod}
         styleBaseline={overlayProps.styleBaseline}
         onConstraintPresetChange={overlayProps.onConstraintPresetChange}
         onHandPathModeChange={overlayProps.onHandPathModeChange}
         onMotionTypeFilterChange={overlayProps.onMotionTypeFilterChange}
         onStartEndChange={overlayProps.onStartEndChange}
+        onTurnPatternChange={overlayProps.onTurnPatternChange}
         onResetAll={overlayProps.onResetAll}
         {onClose}
       />
