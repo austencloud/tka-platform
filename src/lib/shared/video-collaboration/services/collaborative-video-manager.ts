@@ -1,4 +1,8 @@
-import { getFirestoreInstance, getAuthSync } from "$lib/shared/auth/firebase";
+import {
+  getFirestoreInstance,
+  getAuthInstance,
+  getAuthSync,
+} from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import {
   collection,
@@ -29,6 +33,21 @@ import {
 import type { UserVideoLibrary } from "./types";
 
 const VIDEOS_COLLECTION = "videos";
+
+/**
+ * Firestore, but not before the persisted session has been restored.
+ *
+ * Every document in `videos` is readable only to a signed-in account, and on a
+ * cold page load Firebase has not yet replayed its stored session - so a read
+ * fired at mount goes out unauthenticated and comes back denied, on the same
+ * page that serves the list perfectly a second later. `authStateReady` is that
+ * boundary. Write paths get it for free by calling `getUserId`.
+ */
+async function readFirestore() {
+  const auth = await getAuthInstance();
+  await auth.authStateReady();
+  return getFirestoreInstance();
+}
 
 function getUserId(): string {
   const user = getAuthSync().currentUser;
@@ -230,7 +249,7 @@ export async function saveVideo(video: CollaborativeVideo): Promise<void> {
 
 export async function getVideo(videoId: string): Promise<CollaborativeVideo | null> {
   try {
-    const firestore = await getFirestoreInstance();
+    const firestore = await readFirestore();
     const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
     const docSnap = await getDoc(docRef);
 
@@ -240,8 +259,11 @@ export async function getVideo(videoId: string): Promise<CollaborativeVideo | nu
 
     return docToVideo(docSnap.data(), videoId);
   } catch (error) {
+    // null means "no such video"; a read that failed is not that. Callers turn
+    // null into "Video not found", so swallowing here would report a denied or
+    // offline read as a missing document.
     console.error("❌ [CollaborativeVideoManager] Failed to get video:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -555,7 +577,7 @@ export async function getVideosForSequence(
   sequenceId: string
 ): Promise<CollaborativeVideo[]> {
   try {
-    const firestore = await getFirestoreInstance();
+    const firestore = await readFirestore();
     const collectionRef = collection(firestore, VIDEOS_COLLECTION);
     const q = query(
       collectionRef,
@@ -566,14 +588,19 @@ export async function getVideosForSequence(
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => docToVideo(doc.data(), doc.id));
   } catch (error) {
+    // Never an empty array: every caller already tells a failed load apart from
+    // a genuine zero, and returning [] here overrode all of them - a denied
+    // read rendered as "No videos yet" beside an upload button.
     console.error("❌ [CollaborativeVideoManager] Failed to get videos for sequence:", error);
-    return [];
+    throw error;
   }
 }
 
 export async function getUserVideoLibrary(): Promise<UserVideoLibrary> {
   try {
-    const firestore = await getFirestoreInstance();
+    // Firestore first: `readFirestore` waits for the persisted session, and
+    // `getUserId` reads it. The other order throws on a cold load.
+    const firestore = await readFirestore();
     const userId = getUserId();
     const collectionRef = collection(firestore, VIDEOS_COLLECTION);
 
@@ -628,7 +655,9 @@ export async function getUserVideoLibrary(): Promise<UserVideoLibrary> {
 
 export async function getPendingInvites(): Promise<CollaborativeVideo[]> {
   try {
-    const firestore = await getFirestoreInstance();
+    // Firestore first: `readFirestore` waits for the persisted session, and
+    // `getUserId` reads it. The other order throws on a cold load.
+    const firestore = await readFirestore();
     const userId = getUserId();
     const collectionRef = collection(firestore, VIDEOS_COLLECTION);
 
@@ -647,7 +676,7 @@ export async function getPendingInvites(): Promise<CollaborativeVideo[]> {
 
 export async function getPublicVideos(limit = 50): Promise<CollaborativeVideo[]> {
   try {
-    const firestore = await getFirestoreInstance();
+    const firestore = await readFirestore();
     const collectionRef = collection(firestore, VIDEOS_COLLECTION);
 
     const q = query(
