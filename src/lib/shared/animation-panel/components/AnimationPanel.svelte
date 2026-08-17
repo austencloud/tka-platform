@@ -579,14 +579,24 @@
          one tall merged tray would not fit. -->
     <div class="motion-scope">
       <div class="motion-stack">
-        {@render effortBody(true)}
+        <!-- Paths goes to whichever column is short. Hosts that wire a
+             playback mode give the left column Tempo + Mode, so Paths belongs
+             under Visibility; hosts that don't (Post Studio, the /composer
+             showcase) leave Tempo alone against Visibility's nine chips, and
+             Paths evens them up instead. -->
         <div class="motion-col">
           {@render tempoModeBody()}
+          {#if !onPlaybackModeChange}
+            {@render pathsBody()}
+          {/if}
         </div>
         <div class="motion-col">
           {@render displayBody()}
-          {@render pathsBody()}
+          {#if onPlaybackModeChange}
+            {@render pathsBody()}
+          {/if}
         </div>
+        {@render effortBody(true)}
       </div>
     </div>
   {:else if resolvedPill === "export" && exportOptions}
@@ -1070,12 +1080,18 @@
      sections' own 20px so a rule reads as a divider rather than a boundary the
      content is crowding.
 
-     One column below 528px, two above. Effort spans the stack either way and
-     closes with one continuous rule under it; the two `.motion-col` wrappers
-     are its columns, and in single-column mode they simply stack. Wrappers
-     rather than four grid items, because grid rows are shared: with Tempo,
-     Mode, Visibility and Paths placed individually, the row holding Visibility
-     stretched to Tempo + Mode's height and left the hole under it. */
+     One column below 528px, two above. The two `.motion-col` wrappers are the
+     columns and in single-column mode they simply stack; Effort spans the
+     stack under them either way. Wrappers rather than four grid items, because
+     grid rows are shared: with Tempo, Mode, Visibility and Paths placed
+     individually, the row holding Visibility stretched to Tempo + Mode's
+     height and left a hole under it.
+
+     Effort is last because it is the least self-explanatory thing here. Tempo
+     and Visibility are controls anyone recognises on sight; Effort and Motion
+     Paths are TKA concepts. Effort held the top slot at full width and was the
+     tallest block on the page, so a rail that had to scroll spent its visible
+     half on the one section a first-time viewer cannot read. */
   .motion-stack {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1091,8 +1107,9 @@
 
   .motion-stack > :global(.section-pad) {
     grid-column: 1 / -1;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--theme-stroke);
+    margin-top: 4px;
+    padding-top: 20px;
+    border-top: 1px solid var(--theme-stroke);
   }
 
   .motion-col > :global(.section-pad + .section-pad) {
@@ -1108,6 +1125,24 @@
       margin-top: 4px;
       padding-top: 20px;
       border-top: 1px solid var(--theme-stroke);
+    }
+
+    /* One column has no room to spend 8 subtitled tiles on the section a
+       first-time viewer understands last. Four across in two rows instead of
+       two across in four, without the descriptions: 386px down to ~150px,
+       which is what keeps a 315px rail from scrolling. Both come back with the
+       second column, where the room exists. */
+    .motion-stack :global(.effort-sub) {
+      display: none;
+    }
+
+    .motion-stack :global(.effort-btn.with-sub) {
+      padding: 8px 4px;
+      min-height: 40px;
+    }
+
+    .motion-stack :global(.effort-grid) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
