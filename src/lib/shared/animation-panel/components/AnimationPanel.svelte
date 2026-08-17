@@ -578,21 +578,29 @@
          Sidebar only; the mobile dock still gets three separate tabs, where
          one tall merged tray would not fit. -->
     <div class="motion-scope">
-      <div class="motion-stack">
+      <!-- A host with its own transport bar owns tempo there and passes
+           showTempoControls={false}; with no playback mode either, the left
+           column has nothing to hold and the page runs as one column. -->
+      <div
+        class="motion-stack"
+        class:single-col={!showTempoControls && !onPlaybackModeChange}
+      >
         <!-- Paths goes to whichever column is short. Hosts that wire a
              playback mode give the left column Tempo + Mode, so Paths belongs
              under Visibility; hosts that don't (Post Studio, the /composer
              showcase) leave Tempo alone against Visibility's nine chips, and
              Paths evens them up instead. -->
-        <div class="motion-col">
-          {@render tempoModeBody()}
-          {#if !onPlaybackModeChange}
-            {@render pathsBody()}
-          {/if}
-        </div>
+        {#if showTempoControls || onPlaybackModeChange}
+          <div class="motion-col">
+            {@render tempoModeBody()}
+            {#if !onPlaybackModeChange}
+              {@render pathsBody()}
+            {/if}
+          </div>
+        {/if}
         <div class="motion-col">
           {@render displayBody()}
-          {#if onPlaybackModeChange}
+          {#if onPlaybackModeChange || !showTempoControls}
             {@render pathsBody()}
           {/if}
         </div>
@@ -637,6 +645,7 @@
      column-height hole under it. On its own Playback page the two render back
      to back and read as one section, as before. -->
 {#snippet tempoModeBody()}
+  {#if showTempoControls || onPlaybackModeChange}
     <div class="section-pad playback-rows">
       {#if showTempoControls}
         <div class="rt-section">
@@ -664,6 +673,7 @@
         </div>
       {/if}
     </div>
+  {/if}
 {/snippet}
 
 <!-- Motion paths live with Playback, not Display: the shape changes how the
@@ -1147,7 +1157,7 @@
   }
 
   @container motion-stack (min-width: 528px) {
-    .motion-stack {
+    .motion-stack:not(.single-col) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }

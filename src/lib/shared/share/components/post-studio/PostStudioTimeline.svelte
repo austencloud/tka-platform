@@ -247,7 +247,14 @@
       </div>
       {#if composition.tempoBpm !== null}
         <!-- No "Tempo" label: the control already reads "… BPM". The group
-             role carries the name for assistive tech instead. -->
+             role carries the name for assistive tech instead.
+
+             This is now the only tempo control in the studio; the inspector's
+             Motion page used to carry a second one. Nothing was lost by
+             dropping it: `showPresets` governs only the inline Slow/Med/Fast
+             row, and in popover mode the BPM button already opens numeric
+             presets (15/30/60/90/120/150 — a superset of Slow 15, Med 60,
+             Fast 120), a scrubbable custom value, and tap tempo. -->
         <div class="tempo-editor" role="group" aria-label="Tempo">
           <TempoControl
             bpm={composition.tempoBpm}

@@ -37,6 +37,10 @@
 </script>
 
 {#if selectedBinding?.renderMode === "sequence-animation"}
+  <!-- Tempo lives in the timeline transport, next to the clock it belongs to
+       and visible from every inspector page. Showing it here as well put the
+       same BPM in two places, and the two were not even the same control —
+       the transport had no presets. It has them now, so this one goes. -->
   <div class="animation-settings">
     <AnimationPanel
       layout="sidebar"
@@ -47,7 +51,7 @@
       onBpmChange={composition.tempoBpm === null
         ? undefined
         : composition.setTempoBpm}
-      showTempoControls={composition.tempoBpm !== null}
+      showTempoControls={false}
       showEffectsPlayback={false}
       {selectedPropType}
       {onPropChange}
