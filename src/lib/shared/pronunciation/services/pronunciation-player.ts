@@ -1,10 +1,11 @@
 import { getTTSProvider } from "$lib/shared/voice-control/get-tts-provider";
+import { selectTokenPath } from "../domain/token-selection";
+import { parsePronunciationManifest } from "../pronunciation-manifest";
 import {
-  PRONUNCIATION_POSITIONS,
   createPronunciationPlan,
   resolveRecordedCuePaths,
+  type AnyPronunciationManifest,
   type PronunciationCue,
-  type PronunciationManifest,
 } from "../pronunciation-plan";
 import type {
   IPronunciationPlayer,
@@ -30,30 +31,6 @@ type WebKitAudioWindow = Window &
     webkitAudioContext?: typeof AudioContext;
   };
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isPronunciationManifest(
-  value: unknown
-): value is PronunciationManifest {
-  if (!isObject(value) || value.version !== 1 || !isObject(value.recordings)) {
-    return false;
-  }
-
-  return Object.values(value.recordings).every((recordingSet) => {
-    if (!isObject(recordingSet)) return false;
-    return Object.entries(recordingSet).every(
-      ([position, path]) =>
-        PRONUNCIATION_POSITIONS.includes(
-          position as (typeof PRONUNCIATION_POSITIONS)[number]
-        ) &&
-        typeof path === "string" &&
-        path.length > 0
-    );
-  });
-}
-
 /**
  * Plays contextual human recordings when a whole word is covered, then falls
  * back to one Web Speech utterance when the recording set is incomplete.
@@ -62,7 +39,8 @@ export class PronunciationPlayer implements IPronunciationPlayer {
   private readonly manifestUrl: string;
   private readonly speechFallback: SpeechFallback;
   private readonly fetcher: typeof fetch;
-  private manifestPromise: Promise<PronunciationManifest | null> | null = null;
+  private manifestPromise: Promise<AnyPronunciationManifest | null> | null =
+    null;
   private audioContext: AudioContext | null = null;
   private readonly bufferPromises = new Map<string, Promise<AudioBuffer>>();
   private readonly activeSources = new Set<AudioBufferSourceNode>();
@@ -155,7 +133,10 @@ export class PronunciationPlayer implements IPronunciationPlayer {
     const manifest = await this.loadManifest();
     if (!manifest || !context) return null;
 
-    const paths = resolveRecordedCuePaths(cues, manifest);
+    const paths =
+      manifest.version === 2
+        ? (selectTokenPath(cues, manifest)?.map((token) => token.path) ?? null)
+        : resolveRecordedCuePaths(cues, manifest);
     if (!paths) return null;
 
     try {
@@ -189,7 +170,7 @@ export class PronunciationPlayer implements IPronunciationPlayer {
     }
   }
 
-  private loadManifest(): Promise<PronunciationManifest | null> {
+  private loadManifest(): Promise<AnyPronunciationManifest | null> {
     if (this.manifestPromise) return this.manifestPromise;
 
     this.manifestPromise = this.fetcher(this.manifestUrl)
@@ -198,10 +179,11 @@ export class PronunciationPlayer implements IPronunciationPlayer {
           throw new Error(`Manifest request failed with ${response.status}`);
         }
         const value: unknown = await response.json();
-        if (!isPronunciationManifest(value)) {
+        const manifest = parsePronunciationManifest(value);
+        if (!manifest) {
           throw new Error("Pronunciation manifest has an invalid shape");
         }
-        return value;
+        return manifest;
       })
       .catch((error) => {
         console.warn(
