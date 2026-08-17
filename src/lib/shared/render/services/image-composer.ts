@@ -779,12 +779,20 @@ export class ImageComposer {
       const { calculate: calculateMandalaGeometry } = await import(
         "../../mandala/services/mandala-geometry-calculator"
       );
+      const { getMandalaPathOptions } = await import(
+        "../../mandala/services/mandala-path-options"
+      );
       const tipEnds = pairTipEnds(bluePropType, redPropType);
+      // The card traces the same hand paths the animation draws, so it uses the
+      // shape the caller was showing. Unset means the arc default.
       const paths = calculateMandalaGeometry(
         sequence.steps ?? [],
         bluePropType,
         redPropType,
-        tipEnds === 1 ? { tipEnds: 1 } : undefined,
+        getMandalaPathOptions(
+          options.mandalaPathShape ?? "arc",
+          tipEnds === 1 ? 1 : 2,
+        ),
       );
       if (paths.blue.length === 0 && paths.red.length === 0) return;
 

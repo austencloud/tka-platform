@@ -23,6 +23,8 @@ import { getImageCompositionManager } from "$lib/shared/share/state/image-compos
 import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
 import { resolveInfoCellDisplay } from "$lib/shared/sequence-viewer/services/info-cell-display";
 import { getAuthSync } from "$lib/shared/auth/firebase";
+import { toMandalaPathShape } from "$lib/shared/mandala/services/mandala-path-policy";
+import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
 export interface CardRenderOptionsInput {
   /**
@@ -134,6 +136,11 @@ export function buildCardRenderOptions(
     addUserInfo: ic.showNotes,
     showNotes: ic.showNotes,
     addReversalSymbols: !isHandPath,
+    // Whatever the animation is currently drawing, the exported card draws
+    // too — see toMandalaPathShape.
+    mandalaPathShape: toMandalaPathShape(
+      getAnimationVisibilityManager().getPathPolicy()
+    ),
     visibilityOverrides: {
       darkMode: input.darkMode,
       showQRCode: effectiveInfoCell.showQRCode,

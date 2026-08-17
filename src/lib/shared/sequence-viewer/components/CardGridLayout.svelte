@@ -40,6 +40,8 @@
   import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { getQRCellScale } from "$lib/shared/qr/qr-cell-scale";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { toMandalaPathShape } from "$lib/shared/mandala/services/mandala-path-policy";
 
   interface CellData {
     index: number;
@@ -151,6 +153,21 @@
     shortOrientation,
   }: Props = $props();
 
+  // The card's mandalas trace the same hand paths the animation draws, so they
+  // follow the same motion-path policy. Picking Concave on the animation canvas
+  // and leaving the card on arcs showed one sequence two different ways in one
+  // frame. The manager publishes through observers rather than runes, hence the
+  // subscription instead of a plain $derived.
+  const visibilityManager = getAnimationVisibilityManager();
+  let mandalaPathShape = $state(toMandalaPathShape(visibilityManager.getPathPolicy()));
+  $effect(() => {
+    const sync = () => {
+      mandalaPathShape = toMandalaPathShape(visibilityManager.getPathPolicy());
+    };
+    sync();
+    visibilityManager.registerObserver(sync);
+    return () => visibilityManager.unregisterObserver(sync);
+  });
   const scaleDuration = $derived(flipDuration > 0 ? 200 : 0);
   const isLightBackground = $derived(settingsService.settings.backgroundType === BackgroundType.CELESTIAL);
   const qrScalePct = $derived(`${getQRCellScale(sequence?.steps?.length ?? 0) * 100}%`);
@@ -544,6 +561,7 @@
               darkMode={activeDarkMode}
               {bluePropType}
               {redPropType}
+              pathShape={mandalaPathShape}
             />
           </div>
         </div>
@@ -656,6 +674,7 @@
             darkMode={activeDarkMode}
             {bluePropType}
             {redPropType}
+            pathShape={mandalaPathShape}
           />
         </div>
       </div>

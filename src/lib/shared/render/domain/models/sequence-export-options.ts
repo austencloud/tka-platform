@@ -1,5 +1,6 @@
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { PropType } from "../../../pictograph/prop/domain/enums/prop-type";
+import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 
 export interface SequenceExportOptions {
   includeStartPosition: boolean;
@@ -85,6 +86,15 @@ export interface SequenceExportOptions {
     /** Render sequence mandalas in empty cells */
     showMandala?: boolean;
   };
+
+  /**
+   * Path shape for the mandalas drawn in empty cells. Matches the motion-path
+   * policy the animation canvas draws with, so an exported card traces the same
+   * paths the preview showed. Left unset by pipelines that want a fixed look
+   * regardless of the viewer's current choice (printed decks), which keeps the
+   * geometry calculator's "arc" default.
+   */
+  mandalaPathShape?: MandalaPathShape;
 
   notes: string;
 
