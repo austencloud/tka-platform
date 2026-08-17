@@ -170,8 +170,9 @@
       {#each binding.laneLabels as label, li}
         <p class="sentence">
           <span class="subject {binding.laneColors[li]}">{label}</span>
-          <span class="prose">{binding.sentence.verb}</span>
+          <span class="prose verb">{binding.sentence.verb}</span>
           {#if binding.amountList && laneActive(li)}
+            <span class="slot amount">
             <FilterChipBase
               label={amountLabel(li)}
               mode="dropdown"
@@ -196,8 +197,10 @@
                 {/each}
               {/snippet}
             </FilterChipBase>
+            </span>
           {/if}
-          <span class="prose">on</span>
+          <span class="prose on">on</span>
+          <span class="slot rhythm">
           <FilterChipBase
             label={describeMask(laneMask(li))}
             mode="dropdown"
@@ -232,6 +235,7 @@
               {/each}
             {/snippet}
           </FilterChipBase>
+          </span>
         </p>
       {/each}
     </div>
@@ -240,7 +244,11 @@
   {#if visibleAxis === "all" || visibleAxis === "length"}
     <div class="axis">
       <div class="axis-row">
-        <span class="axis-lbl">Length</span>
+        <!-- "Length" is what this axis is called everywhere else in the editor,
+             but beside a 40-step sequence a control reading 1 / 2 / 5 is not a
+             length — it is how often the figure comes back around. In sentence
+             mode the words have to survive being read aloud. -->
+        <span class="axis-lbl">{sentenceMode ? "Repeats every" : "Length"}</span>
         <span class="reps">×{reps} over {sequenceLength} steps</span>
       </div>
       <div class="seg-wrap">
@@ -314,6 +322,7 @@
         format={binding.format}
         onEdit={editCell}
         fill={sentenceMode}
+        showStepNumbers={sentenceMode}
       />
     </div>
   {/if}
@@ -428,26 +437,22 @@
 
   /* ─── Sentence mode ─── */
 
-  /* The pane is full height and the sentence is short, so the strip takes the
-     remainder rather than leaving it empty under a stack of controls. */
   .pse.sentence-mode {
-    height: 100%;
-    gap: 18px;
+    gap: 20px;
     margin: 0;
   }
 
-  .pse.sentence-mode .result {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    margin-top: 0;
-  }
-
+  /* The sentence is the control, not a caption above one, so it gets a surface
+     of its own. Without it the whole screen was one flat left-aligned stack of
+     fragments and nothing read as the primary thing to touch. */
   .sentences {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 14px 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
   }
 
   /* Chips sit inline with the words, so the line has to wrap like prose and
@@ -458,8 +463,56 @@
     align-items: center;
     gap: 8px;
     margin: 0;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.4;
+  }
+
+  /* Both lines say the same four things in the same order, so their columns
+     line up: reserving the width of the widest subject and verb turns two
+     ragged sentences into a small table you can scan down. `max-content` on the
+     slots keeps a chip from stretching, and an empty amount slot collapses so
+     an inactive lane reads "turns on no steps" without a hole in the middle. */
+  .subject {
+    min-width: 3.4rem;
+  }
+  .verb,
+  .on {
+    text-align: center;
+  }
+  .slot {
+    display: inline-flex;
+    align-items: center;
+  }
+  .slot.amount {
+    min-width: 3.25rem;
+    justify-content: center;
+  }
+
+  /* The reps line is a gloss on the caption, not a second heading, so it sits
+     beside it. Pushed to the far edge of a 515px column it read as an unrelated
+     fragment stranded in the gutter. */
+  .pse.sentence-mode .axis-row {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  /* Result is the consequence of the sentence, so it reads as its own block:
+     a caption, then a framed strip. Left bare it was two rows of tokens
+     floating on the panel background with no edge to tell them apart from the
+     sentence above. */
+  /* The panel is sized by the lanes it holds and nothing else. Handing it the
+     pane's leftover height was tried and is worse: at 1920 it became a 523px
+     bordered box with 68px of cells adrift in the middle of it, which reads as
+     a rendering fault rather than as room to breathe. Spare height belongs
+     BELOW the last panel, where the footer rule turns it into a margin. */
+  .pse.sentence-mode .result {
+    margin-top: 0;
+  }
+  .pse.sentence-mode .result :global(.pbs) {
+    padding: 12px 14px 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
   }
 
   /* The colour says which prop; the word says which hand. Both are load-bearing

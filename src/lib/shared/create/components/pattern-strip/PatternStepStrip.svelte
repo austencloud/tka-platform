@@ -22,12 +22,23 @@
     base: T;
     format: (v: T) => string;
     onEdit: (laneIndex: number, stepIndex: number, value: T) => void;
-    /** Grow the cells into the height the parent gives, instead of a fixed 56px
-     *  row. For a full-height pane, where a fixed row would strand the space
-     *  below it. */
+    /** Step the cells up from the inline 56px row to a size that reads at arm's
+     *  length. For a roomy pane, where the small row looks lost. */
     fill?: boolean;
+    /** Number the columns above the lanes. Turns "on steps 2 and 4" from a claim
+     *  into something you can check by looking. */
+    showStepNumbers?: boolean;
   }
-  let { lanes, cellKind, valueList = [], base, format, onEdit, fill = false }: Props = $props();
+  let {
+    lanes,
+    cellKind,
+    valueList = [],
+    base,
+    format,
+    onEdit,
+    fill = false,
+    showStepNumbers = false,
+  }: Props = $props();
 
   let popover = $state<{ lane: number; step: number; x: number; y: number } | null>(null);
 
@@ -71,6 +82,19 @@
 <svelte:window onclick={(e) => { if (!(e.target as HTMLElement)?.closest?.(".pbs-cell,.pbs-pop")) popover = null; }} />
 
 <div class="pbs" class:fill>
+  {#if showStepNumbers}
+    <!-- Decorative: every cell already carries its own step in its aria-label,
+         so a screen reader reading this row too would just say the numbers
+         twice. -->
+    <div class="pbs-lane pbs-nums" aria-hidden="true">
+      <span class="pbs-label"></span>
+      <div class="pbs-steps">
+        {#each lanes[0]?.values ?? [] as _, i}
+          <span class="pbs-num">{i + 1}</span>
+        {/each}
+      </div>
+    </div>
+  {/if}
   {#each lanes as lane, li}
     <div class="pbs-lane">
       <span class="pbs-label {lane.color}">{lane.label}</span>
@@ -139,31 +163,36 @@
     color: var(--theme-text); cursor: pointer; overflow: hidden;
     display: flex; align-items: center; justify-content: center; user-select: none;
   }
-  /* Fill mode: for a strip in a full-height pane. The strip CLAIMS the leftover
-     height so whatever the parent pins below it lands at the bottom of the
-     pane, and its cells step up from the inline 56px to a size that reads at
-     arm's length.
+  /* Fill mode: the same strip in a roomy pane, where the inline 56px row looks
+     lost. Only the CELLS grow — the strip takes its natural height and hands
+     the leftover back to the parent, which has something better to do with it
+     than stretch two rows of tokens across a third of a screen.
 
-     What it deliberately does NOT do is stretch the lanes into that height.
-     Both stretches were tried and both were wrong: an uncapped cell became a
-     505x342px black slab at a period of 1, and capping the cell while the lane
-     still stretched simply parked the two lanes ~317px apart with nothing
-     between them. A cell holds one short value; past about 5.5rem it stops
-     reading as a token. So the cells take a fixed size, the row sits at the top
-     of the claimed box, and the leftover stays leftover. The width cap is the
-     same argument sideways — two cells should sit as two tokens at the start of
-     the row, not stretch halfway across the pane each.
+     Every other arrangement was tried and looked worse: an uncapped cell became
+     a 505x342px black slab at a period of 1, capping the cell while the lane
+     still stretched parked the two lanes ~317px apart with nothing between
+     them, and letting the box claim the height left a hole inside the Result
+     panel. A cell holds one short value; past about 5.5rem it stops reading as
+     a token, in either direction.
 
-     `1 0 auto` and not `1` (which is `1 1 0`): on a short landscape phone the
+     `0 0 auto` and not `1` (which is `1 1 0`): on a short landscape phone the
      pane is shorter than the panel wants, and a shrinkable strip collapsed to
      nothing while its cells kept painting at full size — the bottom lane ran
      off the screen with no scroll able to reach it, because a collapsed flex
-     item contributes no height for the scroller to find. Growing but never
-     shrinking below its own content keeps the lanes inside the scrollable
-     region on every screen. */
-  .pbs.fill { flex: 1 0 auto; justify-content: flex-start; }
+     item contributes no height for the scroller to find. */
+  .pbs.fill { flex: 0 0 auto; }
   .pbs.fill .pbs-lane { min-height: 0; }
-  .pbs.fill .pbs-cell { height: 5.5rem; min-height: 56px; max-width: 5.5rem; }
+  .pbs.fill .pbs-cell { height: 4.25rem; min-height: 56px; max-width: 4.25rem; }
+
+  /* The column header. Sized and spaced exactly like the cell row beneath it so
+     each number sits over its own cell — a ruler, not a caption. */
+  .pbs-nums { margin-bottom: -2px; }
+  .pbs-num {
+    flex: 1; min-width: 0; text-align: center;
+    font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim); letter-spacing: 0.02em;
+  }
+  .pbs.fill .pbs-num { max-width: 4.25rem; }
   .pbs-cell .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; z-index: 2; pointer-events: none; }
   .pbs-cell.muted .v { color: var(--theme-text-dim); }
   .pbs-cell.num.blue:not(.muted) { background: color-mix(in srgb, var(--theme-blue, #6f9bff) 30%, var(--theme-card-bg)); }

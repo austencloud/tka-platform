@@ -163,12 +163,25 @@
     color: var(--theme-text-dim);
   }
 
-  /* The editor owns the middle and grows; this row is pinned under it. */
+  /* Natural height, and never shrinks below it. The editor is a stack of
+     fixed-size panels with nothing worth stretching, so the leftover height
+     goes past it to the footer rule below. On a short screen the no-shrink
+     half is what keeps the cells from painting outside the scroller (see
+     PatternStepStrip's fill note).
+
+     Centring the stack in the leftover was tried and is worse: it opens a
+     170px hole between the intro sentence and the panel it introduces, which
+     reads as a broken page rather than as composition. Content at the top and
+     the one action at the bottom is what every other settings panel does. */
   .turn-pattern-section :global(.pse) {
-    flex: 1;
-    min-height: 0;
+    flex: 0 0 auto;
   }
 
+  /* Follows the editor rather than pinning to the bottom of the pane. Pinning
+     was tried: at 1080 it looks deliberate, but the drawer is as tall as the
+     window, so at 4K it parked this button 1400px below the pattern it undoes,
+     with nothing in between. Directly under the rule it reads the same at every
+     height — the editor, a divider, and the way back out of it. */
   .footer {
     flex: 0 0 auto;
     display: flex;
@@ -176,6 +189,9 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    margin-top: 6px;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   /* A real button, not a text link — it is a standalone action, and the one way
