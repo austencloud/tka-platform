@@ -10799,14 +10799,15 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c27a2147cbc5dac1b37466796ec13c3e73601519 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..506279534dfe0e7e73262af974785e8db3c4e10c 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
-@@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
+@@ -71,6 +71,8 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
  
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
 +export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
  
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
