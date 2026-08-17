@@ -28,6 +28,7 @@
   import OrbitControls from "$lib/shared/3d/components/OrbitControls.svelte";
   import Grid3D from "$lib/shared/3d/components/Grid3D.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import {
     createAvatarInstanceState,
     makeStandaloneDeps,
@@ -156,6 +157,23 @@
     };
   });
 
+  // ── Quarter-phase freeze ──
+  // The weave decomposes into four quarter-phases. Freezing at each one lets
+  // us inspect the actual grip pose as a still: does the hand's thumb side
+  // stay on the staff's thumb end (the T-bar), or has the solver regripped?
+  const PHASE_ANGLES = [0, 90, 180, 270] as const;
+
+  function freezeAtPhase(angleDeg: number) {
+    playing = false;
+    staffAngleDeg = angleDeg;
+  }
+
+  const frozenPhase = $derived(
+    !playing && PHASE_ANGLES.includes(staffAngleDeg as 0 | 90 | 180 | 270)
+      ? staffAngleDeg
+      : null
+  );
+
   const stanceYawRad = $derived((stanceYawDeg * Math.PI) / 180);
   const groundOffset = $derived(-userProportionsState.groundY);
 
@@ -274,6 +292,23 @@
           color="red"
           ariaLabelledby="grip-lab-point-label"
         />
+      </div>
+
+      <div class="control-row phase-row">
+        <span class="row-label">Freeze phase</span>
+        <div class="phase-chips" role="group" aria-label="Freeze staff at quarter phase">
+          {#each PHASE_ANGLES as phaseAngle (phaseAngle)}
+            <FilterChipBase
+              label={`${phaseAngle}°`}
+              mode="action"
+              size="sm"
+              chipColor="#ef5350"
+              active={frozenPhase === phaseAngle}
+              ariaLabel={`Freeze staff at ${phaseAngle} degrees`}
+              onclick={() => freezeAtPhase(phaseAngle)}
+            />
+          {/each}
+        </div>
       </div>
 
       <div class="control-row transport-row">
@@ -431,6 +466,17 @@
     font-size: 0.875rem;
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .phase-row {
+    grid-template-columns: auto auto;
+    justify-content: start;
+  }
+
+  .phase-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
   }
 
   .transport-row {
