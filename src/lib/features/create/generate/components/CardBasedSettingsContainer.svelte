@@ -7,6 +7,8 @@ Delegates ALL logic to services (SRP compliant)
   import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/get-loop-parameter-provider";
   import { onMount, getContext, type ComponentProps } from "svelte";
   import { flip } from "svelte/animate";
+  import { motionDuration, popIn } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type {
     PanelCoordinationState,
     StartEndOptions,
@@ -649,12 +651,38 @@ Delegates ALL logic to services (SRP compliant)
         />
       </div>
 
+      <!-- Three things move whenever the level changes, and each one owns a
+           piece of the animation:
+
+           flip  — the cards that stay. Level 1 lays them out in three tall
+                   rows; levels 2 and 3 in four shorter ones, and the Grid and
+                   Customize cards change how many columns they span. flip
+                   measures both layouts and eases every survivor between them.
+           out   — the card that leaves (Turn Intensity, on the way down to
+                   level 1). Svelte pins it in place while it shrinks away, so
+                   the grid can already be reflowing underneath it. Quick: it
+                   is the thing holding up the reflow.
+           in    — the card that arrives. Held back until the reflow is past
+                   halfway, so it fades up into a space that has already opened
+                   and lands just after the cards around it stop moving.
+
+           Without in/out, flip has nothing to animate for a card that did not
+           exist a frame ago, and Turn Intensity simply blinks in and out. -->
       {#each cards as card (card.id)}
         <div
           class="card-wrapper"
           data-card-id={card.id}
           style:grid-column="span {card.gridColumnSpan}"
-          animate:flip={{ duration: 300, easing: quintOut }}
+          animate:flip={{
+            duration: motionDuration(DURATION.emphasis),
+            easing: quintOut,
+          }}
+          in:popIn={{
+            duration: DURATION.normal,
+            delay: motionDuration(DURATION.fast),
+            start: 0.92,
+          }}
+          out:popIn={{ duration: DURATION.fast, start: 0.92 }}
         >
           {#if card.id === "length"}
             <LengthCard
@@ -764,6 +792,9 @@ Delegates ALL logic to services (SRP compliant)
     justify-content: center;
     flex: 0 0 auto;
     width: 100%;
+    /* Pinned to the shared contract on .tool-panel-container so the Generate
+       empty state knows exactly how much of the panel top is spoken for. */
+    min-height: var(--generate-level-toolbar-height, 4.75rem);
     padding: 12px 16px 14px;
     background: linear-gradient(
       180deg,
@@ -921,8 +952,10 @@ Delegates ALL logic to services (SRP compliant)
     min-height: var(--min-touch-target); /* WCAG AAA minimum touch target */
     min-width: 0;
     overflow: visible; /* Allow cards to pop over neighbors */
-    transition: grid-column var(--duration-dramatic) ease;
     position: relative;
+    /* No transition on grid-column — it is a discrete property and never
+       interpolates. A card that changes its span is carried by animate:flip
+       instead, which eases the whole box between the two measured layouts. */
   }
 
   /* Level 2 and 3 add a fourth row. When the panel is shallow, the Grid /
