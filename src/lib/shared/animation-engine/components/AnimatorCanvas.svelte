@@ -109,6 +109,7 @@ Last audit: 2025-12-27
     contextId = undefined,
     tapToToggle = false,
     hidePlay = undefined,
+    overlayTransport = false,
     progressLine = false,
     hoverHint = "none",
     cornerToggle = false,
@@ -206,6 +207,12 @@ Last audit: 2025-12-27
      *  must carry the button, and two panes of one viewer showing two
      *  different transports is the thing this prop exists to prevent. */
     hidePlay?: boolean;
+    /** Float the transport over the bottom of the canvas instead of reserving a
+     *  row beneath it. Matches Viewer3DCanvas's .timeline-anchor exactly, so the
+     *  2D and 3D panes of one viewer put the bar in the same place and the
+     *  canvas gets the height either way. Off by default: an embedded preview
+     *  sized to its artwork has no spare room to float over. */
+    overlayTransport?: boolean;
     /** Render the minimal, non-interactive progress LINE (SequenceProgressBar —
      *  the live twin of the baked-in video-export bar) in the progress slot
      *  instead of the full UnifiedTimeline transport. For embedded/showcase
@@ -563,6 +570,7 @@ Last audit: 2025-12-27
   data-hide-header={hideHeader || undefined}
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
   data-tap-toggle={tapToToggle || undefined}
+  data-overlay-transport={overlayTransport || undefined}
   data-corner-toggle={cornerToggle || undefined}
   data-playing={isPlaying || undefined}
   data-view={viewState}
@@ -1136,6 +1144,20 @@ Last audit: 2025-12-27
   }
 
   /* Progress slot: in portrait, takes natural height at bottom */
+  /* Floating transport — the 2D twin of Viewer3DCanvas's .timeline-anchor.
+     Anchored to .animation-container (position: relative) rather than to the
+     content wrapper, so the bar spans the pane the way the 3D one does. */
+  .animation-container[data-overlay-transport] .progress-slot {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: none;
+    overflow: visible;
+    pointer-events: auto;
+  }
+
   .progress-slot {
     flex-shrink: 0;
     overflow: hidden;

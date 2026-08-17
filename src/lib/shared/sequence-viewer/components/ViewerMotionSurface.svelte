@@ -262,7 +262,8 @@
              (orbit controls own the drag), so hiding the button in 2D alone made
              the two panes look and work like different players. Tapping the 2D
              canvas still toggles play — that is a shortcut on top of the button,
-             not a replacement for it. -->
+             not a replacement for it. The bar floats over the bottom of the
+             canvas here too, which is where the 3D pane has always put it. -->
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
@@ -296,6 +297,7 @@
           hideHeader
           tapToToggle={side === "left"}
           hidePlay={false}
+          overlayTransport={side === "left"}
           progressLine={false}
           bpm={side === "left" ? bpm : undefined}
           onBpmChange={side === "left" ? onBpmChange : undefined}
