@@ -19,24 +19,15 @@ export interface ConnectedMicrophone {
   settings: MicrophoneSettings;
 }
 
-export interface RawPronunciationTake {
-  blob: Blob;
-  audioBuffer: AudioBuffer;
-  durationSeconds: number;
-}
-
-export interface DeliveryRange {
-  startSeconds: number;
-  endSeconds: number;
-}
-
+/**
+ * Device access only. Capture moved to `IAudioRingCapture`: one `MediaStream`
+ * now feeds two consumers — the capture ring and the VAD — and the take-based
+ * encode/decode path in between was what put a `decodeAudioData` on the gap
+ * between two words.
+ */
 export interface IPronunciationRecorder {
   isSupported(): boolean;
   listMicrophones(): Promise<MicrophoneOption[]>;
   connect(deviceId?: string): Promise<ConnectedMicrophone>;
-  startTake(): Promise<void>;
-  finishTake(): Promise<RawPronunciationTake>;
-  discardTake(): Promise<void>;
-  renderDelivery(audioBuffer: AudioBuffer, range: DeliveryRange): Promise<Blob>;
   dispose(): Promise<void>;
 }

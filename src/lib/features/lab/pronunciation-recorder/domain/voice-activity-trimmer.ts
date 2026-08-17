@@ -1,13 +1,6 @@
-import type { TargetSegment } from "./recording-jobs";
-
 export interface TrimRange {
   startSeconds: number;
   endSeconds: number;
-}
-
-export interface TrimSuggestion extends TrimRange {
-  confidence: "strong" | "review";
-  detectedSegments: number;
 }
 
 interface SampleRange {
@@ -28,23 +21,6 @@ function percentile(values: readonly number[], fraction: number): number {
     Math.max(0, Math.floor((sorted.length - 1) * fraction))
   );
   return sorted[index] ?? 0;
-}
-
-function chooseSegment(
-  segments: readonly SampleRange[],
-  targetSegment: TargetSegment
-): SampleRange | null {
-  if (segments.length === 0) return null;
-  if (targetSegment === "first") return segments[0] ?? null;
-  if (targetSegment === "last") return segments.at(-1) ?? null;
-  if (targetSegment === "middle") {
-    return segments[Math.floor(segments.length / 2)] ?? null;
-  }
-  return segments.reduce((longest, segment) =>
-    segment.end - segment.start > longest.end - longest.start
-      ? segment
-      : longest
-  );
 }
 
 /**
@@ -117,46 +93,6 @@ function toPaddedRange(
   return {
     startSeconds: Math.max(0, segment.start - padding) / sampleRate,
     endSeconds: Math.min(totalSamples, segment.end + padding) / sampleRate,
-  };
-}
-
-/**
- * Select the speech island the carrier phrase's target occupies, padded for
- * playback. Falls back to the whole take when nothing is found, so the
- * operator always has something to drag.
- */
-export function suggestPronunciationTrim(
-  samples: Float32Array,
-  sampleRate: number,
-  targetSegment: TargetSegment
-): TrimSuggestion {
-  const duration = samples.length / sampleRate;
-  if (samples.length === 0 || sampleRate <= 0) {
-    return {
-      startSeconds: 0,
-      endSeconds: Math.max(0, duration),
-      confidence: "review",
-      detectedSegments: 0,
-    };
-  }
-
-  const speechSegments = findSpeechSegments(samples, sampleRate);
-  const selected = chooseSegment(speechSegments, targetSegment);
-  if (!selected) {
-    return {
-      startSeconds: 0,
-      endSeconds: duration,
-      confidence: "review",
-      detectedSegments: 0,
-    };
-  }
-
-  const expectedSegments = targetSegment === "only" ? 1 : 3;
-  return {
-    ...toPaddedRange(selected, sampleRate, samples.length),
-    confidence:
-      speechSegments.length === expectedSegments ? "strong" : "review",
-    detectedSegments: speechSegments.length,
   };
 }
 
