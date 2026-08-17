@@ -247,6 +247,7 @@
     padding-inline: 1.125rem;
   }
 
+  .mandala-cat :global(.tray-previews),
   .mandala-cat :global(.tray-slider),
   .mandala-cat :global(.tray-colors),
   .mandala-cat :global(.preset-row),

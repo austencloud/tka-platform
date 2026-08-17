@@ -274,6 +274,22 @@ export class MandalaViewerController {
     });
   }
 
+  /**
+   * The sequence and props the mandala is drawn from. The controls render live
+   * option previews — a real mandala per path shape, per line weight — and a
+   * preview drawn from a different sequence than the one on screen would be a
+   * decoration, not a choice.
+   */
+  get sequence(): SequenceData {
+    return this.#sources.getSequence();
+  }
+  get bluePropType(): string | undefined {
+    return this.#sources.getBluePropType();
+  }
+  get redPropType(): string | undefined {
+    return this.#sources.getRedPropType();
+  }
+
   #getPresetPair(): [string, string] {
     if (this.preset === "custom") return [this.customBlue, this.customRed];
     return PRESET_COLORS[this.preset].pair;

@@ -19,8 +19,13 @@
     MandalaPresetId,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
-  import { PRESET_COLORS } from "$lib/shared/mandala/domain/mandala-palette";
+  import {
+    PRESET_COLORS,
+    mixColors,
+    withAlpha,
+  } from "$lib/shared/mandala/domain/mandala-palette";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import MandalaPreviewOption from "./MandalaPreviewOption.svelte";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
   export type MandalaCategory =
@@ -93,6 +98,35 @@
     return () => mq.removeEventListener("change", onChange);
   });
   const dur = (ms: number) => (reduceMotion ? 0 : ms);
+
+  /**
+   * Stroke width for the option thumbnails. The renderer takes stroke width in
+   * the same user units as its viewBox, so the production 2.5 on a 500px
+   * mandala is 0.5% of the width — at a 56px tile that is a third of a pixel.
+   * 0.8 reads as a line at tile size while keeping the four shapes comparable
+   * to each other, which is the only comparison the tiles are asked to make.
+   */
+  const PREVIEW_STROKE = 1;
+
+  /**
+   * The tiles wear the chosen palette so they read as previews of THIS mandala,
+   * but they take the preset's two fixed colors rather than `ctrl.palette` —
+   * that one is sampled from the colour phase and changes every frame in flow
+   * mode, which would re-render four SVGs at 60fps to animate a thumbnail
+   * nobody is watching.
+   */
+  const previewPalette = $derived.by(() => {
+    const [a, b] = ctrl.accentPair;
+    const mix = mixColors(a, b);
+    return {
+      blueStroke: a,
+      blueFill: withAlpha(a, 0.15),
+      redStroke: b,
+      redFill: withAlpha(b, 0.15),
+      purpleStroke: mix,
+      purpleFill: withAlpha(mix, 0.2),
+    };
+  });
 
   const PATH_SHAPES: { id: MandalaPathShape; label: string }[] = [
     { id: "arc", label: "Arc" },
@@ -211,23 +245,35 @@
     {/if}
   </div>
 {:else if category === "shape"}
+  <!-- Four words nobody can rank without trying them, replaced by four
+       mandalas of the sequence on screen. The stroke is drawn heavier than the
+       real render because a 0.5%-of-width hairline is sub-pixel at this size;
+       everything that carries the difference — the path geometry — is the
+       renderer's own. -->
   <div
-    class="tray-chips"
+    class="tray-previews"
     transition:slide|local={{ duration: dur(220), easing: cubicOut }}
   >
     {#each PATH_SHAPES as sh}
-      <button
-        class="chip"
-        class:active={ctrl.pathShape === sh.id}
-        onclick={() =>
+      <MandalaPreviewOption
+        sequence={ctrl.sequence}
+        label={sh.label}
+        active={ctrl.pathShape === sh.id}
+        pathShape={sh.id}
+        strokeWidth={PREVIEW_STROKE}
+        size={72}
+        show={ctrl.show}
+        palette={previewPalette}
+        bluePropType={ctrl.bluePropType}
+        redPropType={ctrl.redPropType}
+        onselect={() =>
           changeSetting(
             "path_shape",
             ctrl.pathShape,
             sh.id,
             () => (ctrl.pathShape = sh.id)
           )}
-        aria-pressed={ctrl.pathShape === sh.id}>{sh.label}</button
-      >
+      />
     {/each}
   </div>
 {:else if category === "spin"}
@@ -436,14 +482,19 @@
     {/if}
   </div>
 {:else if category === "weight"}
+  <!-- A stroke sample, not a mandala. At thumbnail size the real line is half
+       a pixel wide, so three mandalas would look identical; three arcs at the
+       ratio between the widths show the actual difference. -->
   <div
-    class="tray-chips"
+    class="tray-previews"
     transition:slide|local={{ duration: dur(220), easing: cubicOut }}
   >
     {#each STROKE_WIDTHS as sw}
       <button
-        class="chip"
+        type="button"
+        class="preview-option"
         class:active={ctrl.lineWeight === sw.value}
+        aria-pressed={ctrl.lineWeight === sw.value}
         onclick={() =>
           changeSetting(
             "line_weight",
@@ -451,8 +502,29 @@
             sw.value,
             () => (ctrl.lineWeight = sw.value)
           )}
-        aria-pressed={ctrl.lineWeight === sw.value}>{sw.label}</button
       >
+        <span class="thumb">
+          <svg viewBox="0 0 72 72" aria-hidden="true">
+            <circle
+              cx="36"
+              cy="36"
+              r="22"
+              fill="none"
+              stroke={ctrl.accentPair[0]}
+              stroke-width={sw.value * 1.6}
+            />
+            <circle
+              cx="36"
+              cy="36"
+              r="11"
+              fill="none"
+              stroke={ctrl.accentPair[1]}
+              stroke-width={sw.value * 1.6}
+            />
+          </svg>
+        </span>
+        <span class="caption">{sw.label}</span>
+      </button>
     {/each}
   </div>
 {:else if category === "depth"}
@@ -564,6 +636,82 @@
   .tray-chips {
     display: flex;
     gap: 6px;
+  }
+
+  /* One row, always — four shapes that wrap to 3 + 1 stop being a comparison.
+     Equal auto columns shrink the tiles on a phone instead of orphaning one. */
+  .tray-previews {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 8px;
+    justify-items: center;
+  }
+
+  /* The weight samples are drawn here rather than by MandalaPreviewOption, so
+     they carry that component's tile styling locally. */
+  .preview-option {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
+  }
+  .preview-option .thumb {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    max-width: 72px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background: #05060a;
+    box-shadow: inset 0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.09));
+  }
+  .preview-option .thumb svg {
+    width: 100%;
+    height: 100%;
+  }
+  .preview-option:hover {
+    color: var(--theme-text, #fff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4cc9f0) 10%,
+      transparent
+    );
+  }
+  .preview-option.active {
+    border-color: var(--theme-accent, #4cc9f0);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4cc9f0) 16%,
+      transparent
+    );
+    color: var(--theme-text, #fff);
+  }
+  .preview-option.active .thumb {
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--theme-accent, #4cc9f0) 60%, transparent);
+  }
+  .preview-option:focus-visible {
+    outline: 2px solid var(--theme-accent, #4cc9f0);
+    outline-offset: 2px;
+  }
+  .preview-option .caption {
+    line-height: 1.1;
+    white-space: nowrap;
   }
   .tray-stack,
   .control-field {
