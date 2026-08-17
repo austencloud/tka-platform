@@ -184,12 +184,29 @@
   .mandala-stack {
     padding-bottom: 8px;
   }
-  .mandala-cat {
-    gap: 10px;
+
+  /* A property panel, not a stack of full-width bars. The name sits in its own
+     column and the control sits beside it, so SPEED no longer shouts one line
+     above MOTION saying nearly the same thing, and the panel loses roughly a
+     third of its height. */
+  /* Compound with .section-pad, which is on the same element and would
+     otherwise win on source order and put this back to a flex column. */
+  .mandala-cat.section-pad {
+    /* Everything in the control column shares one width, so the rows line up
+       down a single edge instead of each ending wherever its content does. */
+    --control-w: min(24rem, 100%);
+    display: grid;
+    grid-template-columns: minmax(4.5rem, 7rem) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 1.25rem;
+    row-gap: 0.375rem;
+    /* Tight rows on purpose: the inspector gives this panel ~495px and the six
+       categories have to live inside it. At 14px of block padding they needed
+       562 and the panel became a porthole showing three of them. */
+    padding: 0.5rem 1rem;
   }
   .mandala-cat + .mandala-cat {
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    margin-top: 4px;
   }
   .section-pad {
     display: flex;
@@ -203,6 +220,53 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+
+  /* Aligns the name with the first control's text rather than its box top. */
+  .mandala-cat > .rt-section-label {
+    padding-top: 0.75rem;
+  }
+
+  /* --- The control column ------------------------------------------------
+     Everything below stops a control from spanning the whole inspector. The
+     panel is ~860px wide here and grows past 1200 at 4K; three short words
+     stretched across that read as a progress bar, not a choice. */
+
+  /* Segments size to how many there are, so two options don't get the same
+     384px a four-option row needs. `--count` is set inline by the control. */
+  .mandala-cat :global(.segmented-control) {
+    width: min(calc(var(--count) * 6.5rem), var(--control-w));
+  }
+
+  /* Chips size to their labels instead of splitting the row between them. */
+  .mandala-cat :global(.tray-chips) {
+    flex-wrap: wrap;
+  }
+  .mandala-cat :global(.tray-chips) > :global(.chip) {
+    flex: 0 0 auto;
+    padding-inline: 1.125rem;
+  }
+
+  .mandala-cat :global(.tray-slider),
+  .mandala-cat :global(.tray-colors),
+  .mandala-cat :global(.preset-row),
+  .mandala-cat :global(.custom-flow) {
+    width: var(--control-w);
+  }
+
+  /* The palette button was pushed to the far right by space-between, stranding
+     it a column away from the Solid/Flow pair it belongs with. */
+  .mandala-cat :global(.colors-head) {
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* One level of shouting per row. The section name is the uppercase one; a
+     sub-label inside the column is a label, not a second heading. */
+  .mandala-cat :global(.control-label) {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
   }
 
 </style>
