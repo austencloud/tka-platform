@@ -43,6 +43,50 @@ export interface PillSpec {
  * different rail order — e.g. surfacing Effects first — passes its own order
  * built from PILL_ORDER's ids, so the two still cannot drift on membership.
  */
+/** The three sections the sidebar's Motion page merges. */
+export const MOTION_PARTS = ["effort", "playback", "display"] as const;
+
+/**
+ * The rail's membership, which changes at runtime: the sidebar merges the three
+ * motion sections into one page, but only where it is wide enough to lay them
+ * out in two columns (see MOTION_MERGE_MIN_PX in AnimationPanel). Everywhere
+ * else — the mobile dock, and any narrow rail — they stay three pages.
+ */
+export function animationPillOrder(motionMerged: boolean): readonly PillId[] {
+  return motionMerged
+    ? (["effects", "props", "motion", "export"] as const)
+    : (["effects", "props", ...MOTION_PARTS, "export"] as const);
+}
+
+/**
+ * Map a remembered or currently-active pill onto one the rail actually offers.
+ *
+ * Both directions matter, because membership changes while the panel is
+ * mounted — a shell that flips sidebar/bottom on resize, a rail that crosses
+ * the merge width, or a pill persisted before the Motion page existed. Callers
+ * resolve at render time rather than correcting afterwards, so a section the
+ * rail no longer offers is never rendered even for one frame.
+ */
+export function resolveActivePill(
+  active: PillId | null,
+  availableIds: readonly PillId[]
+): PillId | null {
+  if (!active) return null;
+  if (availableIds.includes(active)) return active;
+  const parts = MOTION_PARTS as readonly PillId[];
+  // Merging sends the three parts to Motion; unmerging sends Motion back to the
+  // first part the rail offers.
+  if (parts.includes(active)) {
+    return availableIds.includes("motion") ? "motion" : (availableIds[0] ?? null);
+  }
+  if (active === "motion") {
+    return (
+      availableIds.find((id) => parts.includes(id)) ?? availableIds[0] ?? null
+    );
+  }
+  return availableIds.includes("effects") ? "effects" : (availableIds[0] ?? null);
+}
+
 export function buildPillSpecs(
   specs: Partial<Record<PillId, Omit<PillSpec, "id">>>,
   order: readonly PillId[] = PILL_ORDER,

@@ -41,7 +41,12 @@
     type ControlDockAction,
     type ControlDockLink,
   } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
-  import { buildPillSpecs, type PillId } from "../pill-nav/pill-types";
+  import {
+    animationPillOrder,
+    buildPillSpecs,
+    resolveActivePill,
+    type PillId,
+  } from "../pill-nav/pill-types";
   import {
     loadActivePill,
     saveActivePill,
@@ -412,13 +417,7 @@
     layout === "sidebar" && bodyWidth >= MOTION_MERGE_MIN_PX
   );
 
-  const ANIMATION_PILL_ORDER = $derived(
-    motionMerged
-      ? (["effects", "props", "motion", "export"] as const satisfies
-          readonly PillId[])
-      : (["effects", "props", "effort", "playback", "display", "export"] as const satisfies
-          readonly PillId[])
-  );
+  const ANIMATION_PILL_ORDER = $derived(animationPillOrder(motionMerged));
 
   const pillSpecs = $derived(
     buildPillSpecs(
@@ -476,8 +475,6 @@
   // Persist the active section and keep it pointed at a section this host
   // actually exposes (e.g. a remembered "props" falls back to Effects where
   // there's no Props pill). Sidebar-only — see active-pill-persistence.
-  const MOTION_PARTS = ["effort", "playback", "display"] as const;
-
   // Resolving in a derived rather than an effect matters: the rail's membership
   // changes with layout and width at runtime (a shell that flips sidebar↔bottom
   // on resize, a remembered pill from before the Motion page existed), and an
@@ -485,33 +482,20 @@
   // section. That frame put two copies of Visibility's label id in the document
   // during the crossfade, and left the mobile dock holding a tray with no tab.
   const availableIds = $derived(pillSpecs.map((p) => p.id));
-  const resolvedPill = $derived.by<PillId | null>(() => {
-    if (!activePill) return null;
-    if (availableIds.includes(activePill)) return activePill;
-    // Both directions: merging sends the three parts to Motion, unmerging sends
-    // Motion back to the first part the rail actually offers.
-    if ((MOTION_PARTS as readonly PillId[]).includes(activePill)) {
-      return availableIds.includes("motion") ? "motion" : (availableIds[0] ?? null);
-    }
-    if (activePill === "motion") {
-      return (
-        availableIds.find((id) =>
-          (MOTION_PARTS as readonly PillId[]).includes(id)
-        ) ??
-        availableIds[0] ??
-        null
-      );
-    }
-    return availableIds.includes("effects")
-      ? "effects"
-      : (availableIds[0] ?? null);
-  });
+  const resolvedPill = $derived(resolveActivePill(activePill, availableIds));
 
+  // The effect reads pillSpecs (through resolvedPill), which recomputes on
+  // every BPM tick and effect change, so an unguarded save wrote the same
+  // string to localStorage on every control tweak.
+  let savedPill: PillId | null = null;
   $effect(() => {
     if (!resolvedPill) return;
     // Write back so the rail, the dock and persistence agree on one id.
     if (activePill !== resolvedPill) activePill = resolvedPill;
-    if (layout === "sidebar") saveActivePill(resolvedPill);
+    if (layout === "sidebar" && savedPill !== resolvedPill) {
+      savedPill = resolvedPill;
+      saveActivePill(resolvedPill);
+    }
   });
 
   const activePillLabel = $derived(
@@ -598,7 +582,7 @@
          one tall merged tray would not fit. -->
     <div class="motion-scope">
       <div class="motion-stack">
-        {@render effortBody()}
+        {@render effortBody(true)}
         {@render playbackBody()}
         {@render displayBody()}
       </div>
@@ -608,8 +592,16 @@
   {/if}
 {/snippet}
 
-{#snippet effortBody()}
+<!-- `labelled` is set only by the merged Motion page. On its own page the h2
+     names the section and a label under it would say the same word twice; on
+     the merged page Tempo, Mode and Visibility all carry one, and the effort
+     tiles were the single unlabelled block under a heading named for something
+     else. -->
+{#snippet effortBody(labelled = false)}
   <div class="section-pad">
+    {#if labelled}
+      <span class="rt-section-label">Effort</span>
+    {/if}
     {#if layout === "sidebar"}
       <p class="section-hint">How each beat speeds up and slows down.</p>
     {/if}
@@ -1056,9 +1048,10 @@
     container-type: inline-size;
   }
 
-  /* The three merged sections keep their own internal padding, so the stack
-     only supplies the rule between them and cancels the doubled vertical
-     padding where two `.section-pad`s meet. */
+  /* The three merged sections keep their own internal padding; the stack only
+     supplies the rule between them, and opens the gap a little past the
+     sections' own 20px so the rule reads as a divider rather than a boundary
+     the content is crowding. */
   .motion-stack {
     display: flex;
     flex-direction: column;
@@ -1084,15 +1077,22 @@
       column-gap: var(--spacing-md, 12px);
     }
 
+    /* Effort spans both columns; Tempo/Paths and Visibility share the row
+       under it. The divider moves onto Effort's bottom edge so it draws as one
+       continuous line across the stack. Carrying the sibling rule over would
+       split it into two segments with the column gap punched out of the
+       middle, and would draw a second rule between the two cells that sit
+       beside each other rather than after one another. */
     .motion-stack > :global(.section-pad:first-child) {
       grid-column: 1 / -1;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--theme-stroke);
     }
 
-    /* The rule is per-column now, not between consecutive siblings. */
     .motion-stack > :global(.section-pad + .section-pad) {
       margin-top: 0;
       padding-top: 20px;
-      border-top: 1px solid var(--theme-stroke);
+      border-top: 0;
     }
   }
 
