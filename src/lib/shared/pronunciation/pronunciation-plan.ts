@@ -38,6 +38,32 @@ export interface PronunciationManifest {
   recordings: Record<string, PronunciationRecordingSet>;
 }
 
+export interface PronunciationToken {
+  /** Path to the delivery WAV, relative to the manifest. */
+  path: string;
+  position: PronunciationPosition;
+  /** The letter actually spoken before this one, null at a group edge. */
+  previousLetter: string | null;
+  /** The letter actually spoken after this one, null at a group edge. */
+  nextLetter: string | null;
+  sourceWord: string;
+  indexInWord: number;
+  wordLength: number;
+  durationMs: number;
+  rmsDb: number;
+  f0StartHz: number;
+  f0EndHz: number;
+}
+
+export interface PronunciationTokenBank {
+  version: 2;
+  tokens: Record<string, PronunciationToken[]>;
+}
+
+export type AnyPronunciationManifest =
+  | PronunciationManifest
+  | PronunciationTokenBank;
+
 export interface LetterPronunciation {
   readonly spokenName: string;
   readonly assetKey: string;
