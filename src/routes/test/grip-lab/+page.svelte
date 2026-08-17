@@ -61,7 +61,10 @@
   ];
 
   // ── Lab state (survives HMR + reload via localStorage) ──
-  const STORAGE_KEY = "grip-lab-state-v1";
+  // v2: the weave autopilot's travel term became the plane SHIFT (downstage↔
+  // upstage crossing) and the sweep default dropped to 0 — stale v1 state
+  // would re-apply the old full-reversal sweep on top of the shift.
+  const STORAGE_KEY = "grip-lab-state-v2";
 
   interface PersistedState {
     point: CardinalPoint;
@@ -73,7 +76,7 @@
     handTravelCm: number;
     weaveAuto: boolean;
     weaveDepthDeg: number;
-    weaveTravelAmpCm: number;
+    weaveShiftCm: number;
     weavePhaseDeg: number;
   }
 
@@ -87,8 +90,8 @@
       planeSweepDeg: 0,
       handTravelCm: 0,
       weaveAuto: false,
-      weaveDepthDeg: 180,
-      weaveTravelAmpCm: 15,
+      weaveDepthDeg: 0,
+      weaveShiftCm: 35,
       weavePhaseDeg: 0,
     };
     if (typeof localStorage === "undefined") return fallback;
@@ -131,10 +134,10 @@
           typeof parsed.weaveDepthDeg === "number"
             ? Math.max(0, Math.min(180, parsed.weaveDepthDeg))
             : fallback.weaveDepthDeg,
-        weaveTravelAmpCm:
-          typeof parsed.weaveTravelAmpCm === "number"
-            ? Math.max(-40, Math.min(40, parsed.weaveTravelAmpCm))
-            : fallback.weaveTravelAmpCm,
+        weaveShiftCm:
+          typeof parsed.weaveShiftCm === "number"
+            ? Math.max(0, Math.min(60, parsed.weaveShiftCm))
+            : fallback.weaveShiftCm,
         weavePhaseDeg:
           typeof parsed.weavePhaseDeg === "number"
             ? Math.max(-180, Math.min(180, parsed.weavePhaseDeg))
@@ -155,7 +158,7 @@
   let handTravelCm = $state(initial.handTravelCm);
   let weaveAuto = $state(initial.weaveAuto);
   let weaveDepthDeg = $state(initial.weaveDepthDeg);
-  let weaveTravelAmpCm = $state(initial.weaveTravelAmpCm);
+  let weaveShiftCm = $state(initial.weaveShiftCm);
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
 
   $effect(() => {
@@ -169,7 +172,7 @@
       handTravelCm,
       weaveAuto,
       weaveDepthDeg,
-      weaveTravelAmpCm,
+      weaveShiftCm,
       weavePhaseDeg,
     };
     if (typeof localStorage !== "undefined") {
@@ -196,20 +199,28 @@
   // wall plane as the reference frame:
   //
   // - Plane sweep pivots the SPIN PLANE about the vertical axis through the
-  //   grip point (not the body center — the hand stays out at its point while
-  //   the plane leaves frontal). Positive sweep sends the staff's outer end
-  //   behind the performer, which is the direction the taught weave travels.
-  // - Hand travel slides the grip fore/aft (+ toward the audience), the
-  //   forward-back motion the hand needs to chase the swept plane.
-  // ── Weave autopilot ──
+  //   grip point — bending the plane away from frontal. Kept as a manual
+  //   probe and a residual knob, but the taught weave barely uses it.
+  // - Hand travel / plane shift slides the grip fore/aft (+ toward the
+  //   audience). The drawn plane rides along: the plane travels WITH the
+  //   hand, it does not bend to meet it.
+  //
+  // ── Weave autopilot (plane-shift model) ──
   // With the wrist thumb-locked, a full 360° of staff rotation demands 360°
-  // of wrist roll — impossible. The weave answers with a plane sweep: one
-  // smooth out-and-back excursion of the spin plane per staff rotation,
-  // always toward the behind side. At full depth (180°) the plane is fully
-  // reversed exactly when the staff is half a turn in, so the two rotations
-  // cancel at the grip and wrist demand stays inside the anatomical clamp.
-  //   sweep(θ) = (depth/2) · (1 − cos(θ − φ))     0 → depth → 0 per rotation
-  //   travel(θ) = amp · sin(θ − φ)                fore/aft chase, ± per half
+  // of wrist roll — impossible. The weave answers by moving the grip to the
+  // OTHER SIDE of the center of rotation: the base wall plane lives at the
+  // body's own depth (z = 0), and the hand carries the staff between two
+  // mirror stations about that center — a downstage plane (+shift, arm
+  // angled ~45° toward the audience) and an upstage plane (−shift, arm
+  // angled ~45° away). The staff keeps its wall-planar relationship the
+  // whole way; the arm's reach around the body is what re-orients the hand,
+  // so the pinky end rises and clears with almost no plane bend.
+  //   shift(θ) = −shift · sin(θ − φ)  downstage with the pinky end down
+  //                                   (θ=270, T-bar up), crossing the body
+  //                                   exactly when the staff is horizontal,
+  //                                   upstage when the pinky end points up
+  //                                   (θ=90, T-bar down)
+  //   sweep(θ) = (depth/2) · (1 − cos(θ − φ))   residual bend, default 0
   const weaveDeltaRad = $derived(
     ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
   );
@@ -219,7 +230,7 @@
       : planeSweepDeg
   );
   const effTravelCm = $derived(
-    weaveAuto ? weaveTravelAmpCm * Math.sin(weaveDeltaRad) : handTravelCm
+    weaveAuto ? -weaveShiftCm * Math.sin(weaveDeltaRad) : handTravelCm
   );
 
   const sweepYRad = $derived((-effSweepDeg * Math.PI) / 180);
@@ -275,8 +286,8 @@
     stanceYawDeg: 0,
     planeSweepDeg: 0,
     handTravelCm: 0,
-    weaveDepthDeg: 180,
-    weaveTravelAmpCm: 15,
+    weaveDepthDeg: 0,
+    weaveShiftCm: 35,
     weavePhaseDeg: 0,
   } as const;
 
@@ -287,7 +298,7 @@
     planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg;
     handTravelCm = SLIDER_DEFAULTS.handTravelCm;
     weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg;
-    weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm;
+    weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm;
     weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg;
   }
 
@@ -297,10 +308,10 @@
   async function copyPose() {
     const text =
       `point ${point} · angle ${Math.round(staffAngleDeg)}° · ` +
-      `sweep ${Math.round(effSweepDeg)}° · travel ${Math.round(effTravelCm)}cm · ` +
+      `sweep ${Math.round(effSweepDeg)}° · shift ${Math.round(effTravelCm)}cm · ` +
       `stance ${stanceYawDeg}°` +
       (weaveAuto
-        ? ` · weave auto (depth ${weaveDepthDeg}° · amp ${weaveTravelAmpCm}cm · phase ${weavePhaseDeg}°)`
+        ? ` · weave auto (depth ${weaveDepthDeg}° · shift ${weaveShiftCm}cm · phase ${weavePhaseDeg}°)`
         : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
@@ -429,14 +440,16 @@
           weldGrip={true}
         >
           {#snippet gridSlot()}
-            <!-- Pivot the drawn grid about the grip's vertical axis so the
-                 reference plane visibly sweeps with the spin plane. -->
+            <!-- The drawn grid IS the plane, so it rides the fore/aft shift
+                 with the hand (the plane travels, it doesn't bend to meet
+                 the grip) and pivots about the grip's vertical axis for any
+                 residual sweep. -->
             <T.Group
               position={[gridPivot.x, 0, gridPivot.z]}
               rotation.y={sweepYRad}
             >
               <T.Group position={[-gridPivot.x, 0, -gridPivot.z]}>
-                <T.Group position.z={STAGE.AVATAR_GRID_OFFSET}>
+                <T.Group position.z={STAGE.AVATAR_GRID_OFFSET + effTravelCm / 100}>
                   <Grid3D
                     visiblePlanes={new Set([Plane.WALL])}
                     gridMode="diamond"
@@ -608,7 +621,7 @@
           />
           {#if weaveAuto}
             <span class="weave-readout">
-              sweep {Math.round(effSweepDeg)}° · travel {Math.round(effTravelCm)} cm
+              sweep {Math.round(effSweepDeg)}° · shift {Math.round(effTravelCm)} cm
             </span>
           {/if}
         </div>
@@ -640,29 +653,29 @@
           </div>
 
           <div class="slider-control">
-            <label for="grip-lab-travelamp">Travel amp</label>
+            <label for="grip-lab-shift">Plane shift</label>
             <input
-              id="grip-lab-travelamp"
+              id="grip-lab-shift"
               type="range"
-              min="-40"
-              max="40"
+              min="0"
+              max="60"
               step="1"
-              list="grip-lab-travelamp-ticks"
-              bind:value={weaveTravelAmpCm}
+              list="grip-lab-shift-ticks"
+              bind:value={weaveShiftCm}
               ondblclick={() =>
-                (weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm)}
+                (weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm)}
             />
-            <output for="grip-lab-travelamp">{weaveTravelAmpCm} cm</output>
+            <output for="grip-lab-shift">{weaveShiftCm} cm</output>
             <button
               type="button"
               class="mini-reset"
-              aria-label="Reset travel amplitude"
-              disabled={weaveTravelAmpCm === SLIDER_DEFAULTS.weaveTravelAmpCm}
+              aria-label="Reset plane shift"
+              disabled={weaveShiftCm === SLIDER_DEFAULTS.weaveShiftCm}
               onclick={() =>
-                (weaveTravelAmpCm = SLIDER_DEFAULTS.weaveTravelAmpCm)}
+                (weaveShiftCm = SLIDER_DEFAULTS.weaveShiftCm)}
             >↺</button>
-            <datalist id="grip-lab-travelamp-ticks">
-              {#each [-40, -20, 0, 20, 40] as tick (tick)}<option value={tick}></option>{/each}
+            <datalist id="grip-lab-shift-ticks">
+              {#each [0, 15, 30, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
             </datalist>
           </div>
 
@@ -900,7 +913,7 @@
     color: var(--lab-muted);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    /* Worst case: "sweep 180° · travel −40 cm" — reserve it. */
+    /* Worst case: "sweep 180° · shift −60 cm" — reserve it. */
     min-width: 16ch;
   }
 
