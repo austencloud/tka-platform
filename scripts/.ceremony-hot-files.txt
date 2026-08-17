@@ -1,8 +1,0 @@
-src/lib/features/choreo-card/services/card-back/card-back-job-builder.ts
-src/lib/features/coven-hub/state/coven-hub-state.svelte.ts
-src/lib/shared/browse/services/ThumbnailRenderQueue.ts
-src/lib/shared/render/services/canvas-2d-direct-renderer.ts
-src/lib/shared/render/services/canvas-2d-glyph-renderer.ts
-src/lib/shared/render/services/pictograph-key-hasher.ts
-src/lib/shared/sequence-viewer/components/ExportImagePanel.svelte
-src/routes/coven/+page.svelte
