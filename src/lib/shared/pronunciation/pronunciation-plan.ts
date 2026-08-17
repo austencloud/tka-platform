@@ -20,6 +20,8 @@ export interface PronunciationCue {
   assetKey: string;
   position: PronunciationPosition;
   pauseAfterMs: number;
+  indexInGroup: number;
+  groupLength: number;
 }
 
 export interface PronunciationPlan {
@@ -124,6 +126,8 @@ export function createPronunciationPlan(
         letter,
         ...pronunciation,
         position: positionFor(letterIndex, group.length),
+        indexInGroup: letterIndex,
+        groupLength: group.length,
         pauseAfterMs: isLastInGroup
           ? isLastGroup
             ? 0

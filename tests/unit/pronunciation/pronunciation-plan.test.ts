@@ -85,6 +85,17 @@ describe("createPronunciationPlan", () => {
     );
     expect(new Set(assetKeys).size).toBe(Object.values(Letter).length);
   });
+
+  it("carries each cue's place inside its group", () => {
+    const plan = createPronunciationPlan("AB·C");
+
+    expect(plan).not.toBeNull();
+    expect(plan!.cues).toMatchObject([
+      { assetKey: "a", position: "initial", indexInGroup: 0, groupLength: 2 },
+      { assetKey: "b", position: "final", indexInGroup: 1, groupLength: 2 },
+      { assetKey: "c", position: "isolated", indexInGroup: 0, groupLength: 1 },
+    ]);
+  });
 });
 
 describe("resolveRecordedCuePaths", () => {
