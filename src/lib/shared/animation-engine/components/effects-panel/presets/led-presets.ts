@@ -123,29 +123,30 @@ export const LED_PRESETS: EffectPreset<"led">[] = [
         generatorId: "comet",
         params: params("#3b82f6"),
       },
-      // Slow, because the head has to be followable. At 1.2s it lapped the
-      // strip twice inside one blink of persistence and the streak crossed
-      // itself into a tangle; at 3s it crawls from one end of the shaft to the
-      // other while the prop turns, so the head spirals and the trail behind it
-      // stays a single readable line.
-      cycleDuration: 3,
+      // Slow enough that the head barely moves down the shaft while the
+      // shutter is open — a fifth of the strip over one exposure. That is what
+      // keeps the loops a similar size instead of spiralling in to a point.
+      cycleDuration: 6,
       // The one look built on WHERE the light is rather than what color it is,
       // so it needs the finest strip: the head is 3% of the LEDs, and on a
       // 72-LED staff that is two pixels, which resolves as a dot rather than a
       // head. At 200 it is a solid bar with an edge.
       //
-      // Persistence carries the tail — it is the streak, not a side effect of
-      // one — so it sits at the top of the authorable range.
+      // A camera, and that is the whole preset. Persistence was tried twice and
+      // is the wrong instrument for a single moving point: an eye shutter only
+      // ever shows the last fraction of a second, so a lone head draws a short
+      // squiggle and nothing else, however bright it is turned up. A camera
+      // holds every position at full weight for the whole exposure, which is
+      // exactly how a moving point becomes a drawn line — the same reason a
+      // light painter uses one. The tile stops being a dim hook and becomes the
+      // looping ribbon the head actually traced.
       //
-      // Top of the brightness scale, which no other preset needs, because this
-      // is the only look that lights a fraction of its strip: head plus tail is
-      // 17% of the LEDs, against a full length for the other three. The same
-      // budget over a sixth of the emitters has to be spent, or the tile reads
-      // as a dark frame beside three lit ones.
+      // Short exposure, unlike Rainbow POV's. This one is drawing a line, and
+      // a line needs to stay a line; a longer one laps the figure over itself.
       look: look({
-        shutter: { mode: "eye", timeConstantSeconds: 0.4 },
-        glare: 0.8,
-        brightness: 5,
+        shutter: { mode: "camera", exposureSeconds: 1.2 },
+        glare: 0.7,
+        brightness: 4,
       }),
     },
   },
