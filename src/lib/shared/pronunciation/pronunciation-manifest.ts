@@ -14,6 +14,22 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isNonNegativeInteger(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+function isPositiveInteger(value: unknown): boolean {
+  return Number.isSafeInteger(value) && (value as number) > 0;
+}
+
+function isNonNegativeNumber(value: unknown): boolean {
+  return isFiniteNumber(value) && value >= 0;
+}
+
+function isPositiveNumber(value: unknown): boolean {
+  return isFiniteNumber(value) && value > 0;
+}
+
 function isPosition(value: unknown): boolean {
   return PRONUNCIATION_POSITIONS.includes(
     value as (typeof PRONUNCIATION_POSITIONS)[number]
@@ -43,21 +59,35 @@ export function isPronunciationManifestV1(
   });
 }
 
+/**
+ * `position` and neighbour-nullness encode the same fact. A token that claims
+ * to be initial while carrying a previous letter is internally inconsistent,
+ * and the selector reads both fields as if they agreed.
+ */
+function hasCoherentContext(token: Record<string, unknown>): boolean {
+  const atStart = token.position === "initial" || token.position === "isolated";
+  const atEnd = token.position === "final" || token.position === "isolated";
+  return (
+    (token.previousLetter === null) === atStart &&
+    (token.nextLetter === null) === atEnd
+  );
+}
+
 function isToken(value: unknown): value is PronunciationToken {
   if (!isObject(value)) return false;
-  return (
+  const fieldsValid =
     isNonEmptyString(value.path) &&
     isPosition(value.position) &&
     isNullableLetter(value.previousLetter) &&
     isNullableLetter(value.nextLetter) &&
     typeof value.sourceWord === "string" &&
-    isFiniteNumber(value.indexInWord) &&
-    isFiniteNumber(value.wordLength) &&
-    isFiniteNumber(value.durationMs) &&
-    isFiniteNumber(value.rmsDb) &&
-    isFiniteNumber(value.f0StartHz) &&
-    isFiniteNumber(value.f0EndHz)
-  );
+    isNonNegativeInteger(value.indexInWord) &&
+    isPositiveInteger(value.groupLength) && // a group always holds at least one letter
+    isPositiveNumber(value.durationMs) && // a 0 ms token plays nothing, silently dropping a letter
+    isFiniteNumber(value.rmsDb) && // dBFS is legitimately negative
+    isNonNegativeNumber(value.f0StartHz) && // 0 is the established unvoiced sentinel
+    isNonNegativeNumber(value.f0EndHz);
+  return fieldsValid && hasCoherentContext(value);
 }
 
 export function isPronunciationTokenBank(
