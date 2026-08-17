@@ -581,15 +581,14 @@
       <!-- A host with its own transport bar owns tempo there and passes
            showTempoControls={false}; with no playback mode either, the left
            column has nothing to hold and the page runs as one column. -->
-      <div
-        class="motion-stack"
-        class:single-col={!showTempoControls && !onPlaybackModeChange}
-      >
+      <div class="motion-stack">
         <!-- Paths goes to whichever column is short. Only a host that wires
              BOTH tempo and playback mode fills the left column enough to stand
-             against Visibility's nine chips; with just one of them (Post Studio
-             owns tempo in its transport, the /composer showcase has no mode) the
-             left column is a single row and Paths evens the two up. -->
+             against Visibility's nine chips; with just one of them the left
+             column is a single row and Paths evens the two up. A host whose
+             transport owns tempo AND mode (the sequence viewer, Post Studio)
+             leaves this page with two blocks, so they take one column each
+             rather than stacking into a tall single column. -->
         {#if showTempoControls || onPlaybackModeChange}
           <div class="motion-col">
             {@render tempoModeBody()}
@@ -597,13 +596,20 @@
               {@render pathsBody()}
             {/if}
           </div>
-        {/if}
-        <div class="motion-col">
-          {@render displayBody()}
-          {#if (showTempoControls && onPlaybackModeChange) || !(showTempoControls || onPlaybackModeChange)}
+          <div class="motion-col">
+            {@render displayBody()}
+            {#if showTempoControls && onPlaybackModeChange}
+              {@render pathsBody()}
+            {/if}
+          </div>
+        {:else}
+          <div class="motion-col">
+            {@render displayBody()}
+          </div>
+          <div class="motion-col">
             {@render pathsBody()}
-          {/if}
-        </div>
+          </div>
+        {/if}
         {@render effortBody(true)}
       </div>
     </div>
@@ -1157,7 +1163,7 @@
   }
 
   @container motion-stack (min-width: 528px) {
-    .motion-stack:not(.single-col) {
+    .motion-stack {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }

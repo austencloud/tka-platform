@@ -749,6 +749,12 @@
                       void interactions.handleRedownloadExportedVideo()}
                   />
                 {:else}
+                  <!-- No tempo and no playback mode on the Motion page: the
+                       transport under the canvas carries both and is visible
+                       from every page of this panel. Showing them here too put
+                       one setting on screen twice in two different controls.
+                       `bpm` and `playbackMode` still come in — the export page
+                       reads them for its duration estimate. -->
                   <ExportVideoDrawer
                     exportOptions={ctx.exportOptions}
                     isExporting={interactions.videoBusy}
@@ -762,15 +768,11 @@
                     playbackMode={ctx.playbackMode}
                     selectedPropType={ctx.bluePropType}
                     showInlineExportProgress={false}
+                    showTempoControls={false}
                     onPropChange={(prop) =>
                       interactions.handlePropChange(prop, "video_export")}
                     onPlaybackToggle={() =>
                       interactions.handlePlaybackToggle("video_export")}
-                    onPlaybackModeChange={(mode) =>
-                      interactions.handlePlaybackModeChange(
-                        mode,
-                        "video_export"
-                      )}
                     onBpmChange={(bpm) =>
                       interactions.handleBpmChange(bpm, "video_export")}
                     onExport={() => interactions.handleVideoExport()}
