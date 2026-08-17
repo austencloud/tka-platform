@@ -1,7 +1,9 @@
 <script lang="ts">
   import { BackgroundType } from "@austencloud/backgrounds";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseRecipeDestination } from "../domain/fuse-recipe-destination";
@@ -55,11 +57,47 @@
       rule: fuseState.rule,
     })
   );
-  const tiles = $derived([
+  // The level palette belongs to the app, not to this rail: pale blue at 1,
+  // silver at 2, gold at 3 — the same three the difficulty badges and the
+  // printed cards use. The tile was painted a fixed slate instead, so moving
+  // from level 1 to level 3 changed the words and nothing else, and the one
+  // setting with a colour everybody already recognises was the one setting that
+  // refused to show it. Black text comes with that palette; all three are light.
+  const LEVEL_SHADOWS: Record<number, string> = {
+    1: "202deg 80% 58%",
+    2: "0deg 0% 45%",
+    3: "45deg 92% 45%",
+  };
+  const levelStyle = $derived(
+    DIFFICULTY_LEVELS[fuseState.generationLevel] ?? DIFFICULTY_LEVELS[1]!
+  );
+
+  // Grid has exactly two values, so a popover to choose between them is a menu
+  // that exists to hold one button. Pressing the tile is the switch.
+  function toggleGrid(): void {
+    if (optionsDisabled) return;
+    fuseState.setGridMode(
+      fuseState.gridMode === GridMode.BOX ? GridMode.DIAMOND : GridMode.BOX
+    );
+  }
+
+  type RailTile = {
+    id: FuseRecipeDestination;
+    title: string;
+    width: string;
+    align: "start" | "center" | "end";
+    color: string;
+    shadowColor: string;
+    textColor?: string;
+    onActivate?: () => void;
+    trailingIcon?: string;
+    ariaLabel?: string;
+  };
+
+  const tiles = $derived<RailTile[]>([
     {
       id: "length" as const,
       title: "Length",
-      icon: "fas fa-list-ol",
       width: "29rem",
       align: "start" as const,
       ...cardColors.length,
@@ -67,23 +105,27 @@
     {
       id: "level" as const,
       title: "Level",
-      icon: "fas fa-layer-group",
       width: "48rem",
       align: "center" as const,
-      ...cardColors.level,
+      color: levelStyle.cssBg,
+      shadowColor: LEVEL_SHADOWS[fuseState.generationLevel] ?? "0deg 0% 45%",
+      textColor: levelStyle.text,
     },
     {
       id: "grid" as const,
       title: "Grid",
-      icon: "fas fa-border-all",
       width: "31rem",
       align: "center" as const,
+      onActivate: toggleGrid,
+      trailingIcon: "fa-right-left",
+      ariaLabel: `Grid: ${summaries.grid}. Switch to ${
+        fuseState.gridMode === GridMode.BOX ? "Diamond" : "Box"
+      }.`,
       ...cardColors.gridMode,
     },
     {
       id: "style" as const,
       title: "Style",
-      icon: "fas fa-wand-magic-sparkles",
       width: "36rem",
       align: "center" as const,
       ...cardColors.customize,
@@ -91,7 +133,6 @@
     {
       id: "starting" as const,
       title: "Starting conditions",
-      icon: "fas fa-location-crosshairs",
       width: "64rem",
       align: "center" as const,
       ...cardColors.startEnd,
@@ -141,11 +182,14 @@
         destination={tile.id}
         title={tile.title}
         summary={summaries[tile.id]}
-        icon={tile.icon}
         color={tile.color}
         shadowColor={tile.shadowColor}
+        textColor={tile.textColor}
         width={tile.width}
         align={tile.align}
+        onActivate={tile.onActivate}
+        trailingIcon={tile.trailingIcon}
+        ariaLabel={tile.ariaLabel}
         open={activeSetting === tile.id}
         disabled={optionsDisabled}
         onOpenChange={(open) => setTileOpen(tile.id, open)}
@@ -161,11 +205,14 @@
     />
   </div>
 
-  <!-- The way into the recipe panel, at every width. Where the rail is showing
-       it narrows to its icon and sits beside the title: the tiles each open one
-       setting, this opens all of them in a column, and both doors stay on the
-       header rather than one of them being reachable only by backing out of the
-       other. It is a toggle, so the same control closes what it opened. -->
+  <!-- The way into the recipe panel where the rail is NOT showing — every width
+       under it, where these six settings have no other door.
+
+       Where the rail IS showing, this is gone. It opened a left-hand column
+       listing Length, Level, Grid, Style, Starting conditions and Pairing: the
+       same six settings the rail already states and edits, in the same order,
+       one click further away. Two doors into one room, and the panel took its
+       width off the paths and the result to do it. -->
   <div class="recipe-trigger" class:is-open={recipeOpen}>
     <PanelButton
       variant="secondary"
@@ -335,10 +382,9 @@
     }
 
     /* Two centered rows instead of one right-heavy line. The old row put the
-       title alone on the left, the recipe door floating by itself in the gap
-       after it, and all six tiles packed against the right edge — the rail's
-       centre sat 165px right of the header's. Title and door now sit together
-       as one centred pair, and the rail gets the full width under them. */
+       title alone on the left and all six tiles packed against the right edge —
+       the rail's centre sat 165px right of the header's. The title is centred on
+       its own line now, and the rail gets the full width under it. */
     .fuse-header {
       flex-wrap: wrap;
       justify-content: center;
@@ -365,54 +411,27 @@
       display: none;
     }
 
-    /* The trigger keeps its door but gives up its width to the rail: icon only,
-       square, sitting between the title and the tiles. The summary it was
-       carrying is redundant here — every tile in the rail already states its
-       own value. */
+    /* The rail is the recipe here, so the door to the panel that repeats it
+       closes. The panel itself stays — Pairing still opens in it, routed from
+       the Pairing tile and from the follower card, because a nine-choice
+       two-step form is not a popover. */
     .recipe-trigger {
-      order: 1;
-      flex: 0 0 auto;
+      display: none;
     }
 
     .recipe-rail {
       order: 2;
-    }
-
-    .recipe-trigger :global(.panel-btn) {
-      width: var(--min-touch-target, 48px);
-      min-width: var(--min-touch-target, 48px);
-      min-height: var(--min-touch-target, 48px);
-      justify-content: center;
-      padding: 0;
-    }
-
-    .recipe-trigger .recipe-label,
-    .recipe-trigger .recipe-chevron {
-      display: none;
-    }
-
-    /* Open is a state of the workspace, not of this button alone, so it reads
-       as held down rather than merely hovered. */
-    .recipe-trigger.is-open :global(.panel-btn) {
-      color: var(--theme-text);
-      background: color-mix(
-        in srgb,
-        var(--theme-accent) 26%,
-        var(--theme-card-bg, rgba(255, 255, 255, 0.08))
-      );
-      border-color: color-mix(in srgb, var(--theme-accent) 62%, transparent);
-    }
-
-    .recipe-rail {
       display: grid;
+      /* Floors are each ~2.5rem lower than they were: that is the leading icon
+         box and its gap, which every tile has given back. */
       grid-template-columns:
-        minmax(7.25rem, 0.72fr) minmax(9.25rem, 0.95fr)
-        minmax(7.5rem, 0.75fr) minmax(7.5rem, 0.75fr)
-        minmax(11rem, 1.18fr) minmax(13.5rem, 1.38fr);
+        minmax(4.75rem, 0.72fr) minmax(6.75rem, 0.95fr)
+        minmax(5rem, 0.75fr) minmax(5rem, 0.75fr)
+        minmax(8.5rem, 1.18fr) minmax(11rem, 1.38fr);
       gap: 8px;
       /* 100% basis is what puts the rail on its own row under the centred
-         title/door pair. Keep it in this shorthand — a bare `flex-basis`
-         earlier in the block gets reset by this declaration. */
+         title. Keep it in this shorthand — a bare `flex-basis` earlier in the
+         block gets reset by this declaration. */
       flex: 1 1 100%;
       min-width: 0;
     }

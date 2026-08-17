@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { holdBackgroundFor } from "$lib/shared/background/shared/state/background-hold.svelte";
   import {
     BREAKPOINTS,
     LANDSCAPE_THRESHOLDS,
@@ -13,7 +11,6 @@
   import { LibraryError } from "$lib/shared/library/domain/library-error";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    fitsFuseRecipeColumn,
     getBestFuseStepColumns,
     resolveBalancedFuseWorkspaceSplit,
   } from "../services/fuse-workspace-split";
@@ -21,7 +18,6 @@
   import type { FuseSettingsDestination } from "../domain/fuse-recipe-destination";
   import type { FuseMode } from "../state/fuse-state.svelte";
   import FusePreviewStage from "./FusePreviewStage.svelte";
-  import FuseRecipeColumn from "./FuseRecipeColumn.svelte";
   import FuseSettingsDrawer from "./FuseSettingsDrawer.svelte";
   import FuseSourceCard from "./FuseSourceCard.svelte";
   import FuseFirstStepPanel from "./FuseFirstStepPanel.svelte";
@@ -68,8 +64,6 @@
   const NATIVE_4K_MAX_LEFT = 2000;
   const NATIVE_4K_CANVAS_FLOOR = 1200;
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const RECIPE_MIN_W = 400; // recipe column: narrow enough for a laptop...
-  const RECIPE_MAX_W = 620; // ...wide enough that its editors don't stack at 4K
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
@@ -109,58 +103,16 @@
     }
   }
 
-  // Desktop shows the recipe as the workspace's own third column; everything
-  // narrower keeps the sheet. The gate is arithmetic, not a breakpoint, and it
-  // lives in the split service with the rest of the width negotiation — see
-  // `fuseRecipeColumnFloor` for why it measures hard floors rather than
-  // comfortable ones.
-  const RECIPE_COLUMN_FIT = {
-    recipeMinWidth: RECIPE_MIN_W,
-    pathHardMinWidth: MIN_LEFT,
-    canvasFloor: CANVAS_FLOOR,
-    columnGap: CARD_GAP,
-  };
-  const recipeColumn = $derived(
-    fullCard &&
-      settingsOpen &&
-      fitsFuseRecipeColumn(containerWidth, RECIPE_COLUMN_FIT)
-  );
-  // Target width is computed whether or not the recipe is open, so the panel can
-  // be laid out at its final size and revealed by the growing track. A panel
-  // that instead sizes to a 0→620px track spends the whole animation squished,
-  // reflowing its own contents every frame.
-  const recipeTargetWidth = $derived(
-    Math.round(
-      Math.min(RECIPE_MAX_W, Math.max(RECIPE_MIN_W, containerWidth * 0.26))
-    )
-  );
-  const recipeColumnWidth = $derived(recipeColumn ? recipeTargetWidth : 0);
-
-  // The grid track animating open is the one moment on this page where the
-  // frame budget is fully spoken for, and the animated backdrop repaints a
-  // viewport-sized canvas on every one of those frames. It holds its last
-  // frame instead, for slightly longer than the transition so the final frame
-  // — the one the eye actually lands on — is protected too.
-  const RECIPE_TRANSITION_MS = 280;
-  const BACKDROP_HOLD_MS = RECIPE_TRANSITION_MS + 60;
-  $effect(() => {
-    // Reading the width, not the boolean: the track also animates when the
-    // column resizes under an open panel.
-    recipeColumnWidth;
-    untrack(() => holdBackgroundFor("fuse-recipe-track", BACKDROP_HOLD_MS));
-  });
-
+  // The recipe is the header rail. It used to also open as a third column on
+  // the left listing the same six settings the rail states and edits, one click
+  // further away, and taking its width off the paths and the result to do it.
+  // The sheet remains for the one editor a popover cannot hold — Pairing.
   function closeRecipe(): void {
     settingsOpen = false;
     settingsDestination = null;
   }
 
-  // Widening past the column threshold with the sheet open closes the sheet,
-  // and Drawer reports that as a close. Ignore it: the recipe did not close, it
-  // moved into the column. Only a real dismissal while the sheet is the host
-  // puts the recipe away.
   function dismissDrawer(): void {
-    if (recipeColumn) return;
     closeRecipe();
   }
 
@@ -192,15 +144,8 @@
     `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
   const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
 
-  // The recipe column takes its width off the top before the seam is solved, so
-  // opening it narrows the paths and the result proportionally instead of
-  // pushing the result off the edge.
   const splitAvailableWidth = () =>
-    Math.max(
-      CANVAS_FLOOR + MIN_LEFT,
-      (workspaceGridWidth || containerWidth) -
-        (recipeColumnWidth > 0 ? recipeColumnWidth + workspaceColumnGap : 0)
-    );
+    Math.max(CANVAS_FLOOR + MIN_LEFT, workspaceGridWidth || containerWidth);
   const desiredMinLeft = () =>
     wideWorkspace
       ? Math.round(
@@ -521,11 +466,8 @@
     class:landscape-workspace={landscapeSplit}
     class:full-card-workspace={fullCard}
     class:wide-workspace={wideWorkspace}
-    class:recipe-workspace={recipeColumn}
     class:dragging
     style:--fuse-left={fullCard && splitPx !== null ? `${splitPx}px` : null}
-    style:--fuse-recipe-w={`${recipeColumnWidth}px`}
-    style:--fuse-recipe-open-w={`${recipeTargetWidth}px`}
     aria-busy={fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
@@ -536,12 +478,6 @@
       onOpenSetting={openSettings}
       onModeChange={changeMode}
     />
-    {#if recipeColumn}
-      <FuseRecipeColumn
-        bind:destination={settingsDestination}
-        onClose={closeRecipe}
-      />
-    {/if}
     {#if fullCard}
       <div class="fuse-left-col" bind:this={leftColEl}>
         <FuseSourceCard
@@ -652,7 +588,7 @@
   </div>
 
   <FuseSettingsDrawer
-    isOpen={settingsOpen && !recipeColumn}
+    isOpen={settingsOpen}
     bind:destination={settingsDestination}
     onDismiss={dismissDrawer}
   />
@@ -778,25 +714,15 @@
   /* Full-card markup and its grid must change as one state transition. Keeping
      the layout behind a second CSS threshold let browser zoom put the markup
      and grid on opposite sides of the seam, creating implicit columns. */
-  /* The recipe opens as a track on the left, and the other two give way rather
-     than being covered — the thing a drawer over the result could never do.
-
-     The track count never changes, because CSS only interpolates two track lists
-     of equal length: going from two tracks to three snapped to the end value on
-     frame one, which is exactly the pop this transition was written to avoid.
-     So the recipe track and its seam are always present and measure 0 when the
-     recipe is closed, and the gaps are spent as explicit tracks rather than as
-     `column-gap` — a uniform gap cannot be collapsed for one seam alone, and a
-     zero-width track with a live gap after it would inset the cards from the
-     header above them. Every track is a length, so the whole list interpolates. */
+  /* The gap is spent as an explicit track rather than as `column-gap` so the
+     dragged seam and the two columns are one interpolable track list. */
   .fuse-workspace.full-card-workspace {
     grid-template-columns:
-      var(--fuse-recipe-w, 0px) var(--fuse-recipe-seam, 0px)
       var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      "header header header header header"
-      "recipe . left . preview";
+      "header header header"
+      "left . preview";
     align-content: stretch;
     column-gap: 0;
     row-gap: var(--fuse-col-gap);
@@ -805,13 +731,7 @@
       var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
 
-  .fuse-workspace.full-card-workspace.recipe-workspace {
-    --fuse-recipe-seam: var(--fuse-col-gap);
-  }
-
-  /* A dragged seam must sit under the pointer, not ease toward it: the same
-     transition that carries the recipe open would make every pointermove a
-     280ms catch-up and the handle would swim. */
+  /* A dragged seam must sit under the pointer, not ease toward it. */
   .fuse-workspace.full-card-workspace.dragging {
     transition: none;
   }
@@ -880,8 +800,8 @@
       --font-size-sm: 17px;
       --min-touch-target: 48px;
       /* Columns and areas stay with .full-card-workspace, which is always the
-         layout in force at this size — a second track list here would fight the
-         recipe's five-track one. */
+         layout in force at this size — a second track list here would fight
+         its own. */
       --fuse-col-gap: 18px;
       grid-template-rows: max-content minmax(0, 1fr);
       gap: var(--fuse-col-gap);

@@ -2,10 +2,16 @@
   FuseRecipePopover — one tile on the header's recipe rail.
 
   Most tiles answer their question in a popover hung under the tile. A tile that
-  passes `onActivate` instead opens the recipe drawer at its own section: the
-  pairing editor is a nine-choice, two-step form, and a popover could only show
-  it by clipping itself into an inner scroller. One editor, one presentation —
-  the same panel the follower card's "Rebuilt from" button opens.
+  passes `onActivate` does the thing itself instead — Grid flips between its two
+  values on the spot, and Pairing opens the recipe drawer at its own section
+  because that editor is a nine-choice, two-step form a popover could only show
+  by clipping itself into an inner scroller.
+
+  No leading icon, deliberately. Six tiles each carrying a glyph in its own
+  bordered box read as six badges competing with the words; the tile already
+  names itself, and the trailing glyph is the only one that says something the
+  label does not — whether pressing this opens a menu, flips a value, or moves
+  you into a panel.
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
@@ -16,7 +22,6 @@
     destination,
     title,
     summary,
-    icon,
     color,
     shadowColor,
     textColor = "white",
@@ -26,11 +31,12 @@
     disabled = false,
     onOpenChange = () => {},
     onActivate,
+    trailingIcon,
+    ariaLabel,
   }: {
     destination: FuseRecipeDestination;
     title: string;
     summary: string;
-    icon: string;
     color: string;
     shadowColor: string;
     textColor?: string;
@@ -39,9 +45,17 @@
     open?: boolean;
     disabled?: boolean;
     onOpenChange?: (open: boolean) => void;
-    /** Route this tile to the recipe drawer instead of a popover. */
+    /** Act on press instead of opening a popover. */
     onActivate?: () => void;
+    /** Overrides the trailing glyph. Defaults to what the press will do. */
+    trailingIcon?: string;
+    /** Overrides the spoken label, for tiles whose press is not "edit". */
+    ariaLabel?: string;
   } = $props();
+
+  const glyph = $derived(
+    trailingIcon ?? (onActivate ? "fa-chevron-right" : "fa-chevron-down")
+  );
 
   const titleId = `fuse-recipe-${destination}-title`;
 
@@ -57,20 +71,14 @@
     class="recipe-tile"
     class:open
     {disabled}
-    aria-label="Edit {title}: {summary}"
+    aria-label={ariaLabel ?? `Edit ${title}: ${summary}`}
     style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
   >
-    <span class="tile-icon" aria-hidden="true">
-      <i class={icon}></i>
-    </span>
     <span class="tile-copy">
       <span class="tile-label">{title}</span>
       <strong>{summary}</strong>
     </span>
-    <i
-      class="fas {onActivate ? 'fa-chevron-right' : 'fa-chevron-down'} tile-chevron"
-      aria-hidden="true"
-    ></i>
+    <i class="fas {glyph} tile-chevron" aria-hidden="true"></i>
   </button>
 {/snippet}
 
@@ -126,7 +134,7 @@
   .recipe-tile {
     position: relative;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: clamp(7px, 0.55cqw, 11px);
     width: 100%;
@@ -163,16 +171,25 @@
     pointer-events: none;
   }
 
+  /* Emphasis is mixed from the tile's own text colour, not from white. The Level
+     tile now takes the app's level palette, which is a pale blue at 1 and a gold
+     at 3 with black text — a white hover border and a white focus ring both
+     disappear against those. currentColor is white on the dark tiles and black
+     on the light ones, so the same rule reads on every tile in the rail. */
   .recipe-tile:hover:not(:disabled),
   .recipe-tile.open {
     transform: translateY(-1px);
-    border-color: color-mix(in srgb, white 58%, var(--theme-stroke));
+    border-color: color-mix(in srgb, currentColor 52%, var(--theme-stroke));
     box-shadow:
       0 12px 24px hsl(var(--recipe-shadow) / 36%),
       inset 0 1px 0 color-mix(in srgb, white 28%, transparent);
   }
 
-  .recipe-tile:focus-visible,
+  .recipe-tile:focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
+  }
+
   .close-popover:focus-visible {
     outline: 3px solid var(--theme-text);
     outline-offset: 2px;
@@ -181,19 +198,6 @@
   .recipe-tile:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  .tile-icon {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 10px;
-    background: color-mix(in srgb, black 14%, transparent);
-    font-size: var(--font-size-min, 14px);
   }
 
   .tile-copy {
@@ -321,12 +325,6 @@
     .recipe-tile {
       min-height: 5rem;
       border-radius: 18px;
-    }
-
-    .tile-icon {
-      width: 2.6rem;
-      height: 2.6rem;
-      font-size: 1rem;
     }
 
     .tile-label {

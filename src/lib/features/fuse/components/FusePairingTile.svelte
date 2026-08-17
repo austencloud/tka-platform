@@ -45,9 +45,6 @@
   style="--recipe-color: {color}; --recipe-shadow: {shadowColor}; --recipe-text: {textColor};"
 >
   <div class="tile-head">
-    <span class="tile-icon" aria-hidden="true">
-      <i class="fas fa-link"></i>
-    </span>
     <span class="tile-label">Pairing</span>
 
     <!-- Reserved either way, so switching modes never resizes the header. -->
@@ -104,21 +101,10 @@
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     gap: clamp(7px, 0.55cqw, 11px);
     min-width: 0;
-  }
-
-  .tile-icon {
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-    border-radius: 10px;
-    background: color-mix(in srgb, black 14%, transparent);
-    font-size: var(--font-size-min, 14px);
   }
 
   .tile-label {
@@ -132,9 +118,8 @@
     white-space: nowrap;
   }
 
-  /* Pinned to the icon's height so the rule button and the Separate copy occupy
-     the same box: switching modes must not move the header, let alone the
-     workspace under it. */
+  /* A fixed height so the rule button and the Separate copy occupy the same box:
+     switching modes must not move the header, let alone the workspace under it. */
   .tile-trailing {
     display: flex;
     align-items: center;
@@ -208,12 +193,6 @@
     .pairing-tile {
       min-height: 5rem;
       border-radius: 18px;
-    }
-
-    .tile-icon {
-      width: 2.6rem;
-      height: 2.6rem;
-      font-size: 1rem;
     }
 
     .tile-trailing {
