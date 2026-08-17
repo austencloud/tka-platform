@@ -1015,6 +1015,255 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/Fan3D.svelte b/dist/lib/components/props/Fan3D.svelte
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf23016164 100644
+--- a/dist/lib/components/props/Fan3D.svelte
++++ b/dist/lib/components/props/Fan3D.svelte
+@@ -1,29 +1,55 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { buildFanShape, FAN_FRAME_WIDTH } from "./fan-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the frame's half-width, past which the rolled edge folds through itself
++   * on the web between the grip ring and the flank wedges.
++   */
++  const MAX_BEVEL_INSET = FAN_FRAME_WIDTH / 6.8;
++
++  function getFanPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildFanShape(length),
++      depth,
++      length * MAX_BEVEL_INSET
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Fan3D Component
+    *
+-   * Renders a realistic 3D folding fan with:
+-   * - Wide arc blade (~150 degrees) using CircleGeometry, double-sided and translucent
+-   * - 5 spine ribs radiating from the pivot across the blade arc
+-   * - Thin torus arc rim along the curved outer edge
+-   * - Short tapered handle extending downward from the pivot with end cap
++   * A flow fan: a grip ring at the hand, four spokes running out from it, and a
++   * rim closing the outside — the exact silhouette of the 2D fan, extruded into
++   * a bullnose plate. The outline and all five holes are transcribed from the
++   * prop's SVG in `fan-profile.ts`, so the 3D prop and the pictograph prop are
++   * the same shape by construction.
+    *
+-   * The fan pivot (grip point) is at origin (0,0,0).
+-   * The blade extends upward (+Y), the handle extends downward (-Y).
++   * Not a folding fan. There is no fabric, no pleats, and no handle below the
++   * pivot; the artwork draws none of those, and the hand goes through the ring.
+    *
+-   * Uses computePropRotation (unified for all prop types).
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+-  import { DoubleSide } from "three";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -37,152 +63,41 @@
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  // Fan blade radius is ~50% of staff length
+-  const FAN_BLADE_RATIO = 0.5;
+-
+-  // Blade arc: ~150 degrees = 2.618 radians
+-  const BLADE_THETA_LENGTH = 2.618;
+-  // Center the arc so it fans symmetrically upward from origin
+-  const BLADE_THETA_START = -BLADE_THETA_LENGTH / 2 + Math.PI / 2;
+-  const BLADE_SEGMENTS = 48;
+-
+-  // 5 spine ribs evenly distributed across the blade arc
+-  const SPINE_COUNT = 5;
+-
+-  const staffLength = $derived(
++  const effectiveLength = $derived(
+     (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const bladeRadius = $derived(staffLength * FAN_BLADE_RATIO);
++  /**
++   * Flat spinning props are plate stock, not tube. The fan's frame runs about
++   * 3.2cm across at default size, so the plate sits a little under 2cm — thick
++   * enough to hold a rolled edge and to read edge-on, thin enough that a tilted
++   * spoke still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  const palette = $derived(PROP_COLORS[color]);
++  const plate = $derived(getFanPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+-
+-  // Handle: ~12% of staff length, tapered (wider at top, narrower at bottom)
+-  const handleLength = $derived(staffLength * 0.12);
+-  const handleTopRadius = $derived(baseRadius * 1.3);
+-  const handleBottomRadius = $derived(baseRadius * 0.9);
+-
+-  // Spine ribs: very thin cylinders radiating from pivot
+-  const spineRadius = $derived(baseRadius * 0.3);
+-
+-  // Outer rim: thin torus arc along the curved edge
+-  const rimTubeRadius = $derived(baseRadius * 0.25);
+-
+-  // Compute spine angles and positions. Each spine radiates from origin
+-  // at evenly spaced angles across the blade arc.
+-  const spineData = $derived.by(() => {
+-    const spines: Array<{
+-      posX: number;
+-      posY: number;
+-      rotZ: number;
+-      len: number;
+-    }> = [];
+-    for (let i = 0; i < SPINE_COUNT; i++) {
+-      // Distribute spines evenly across the arc, including both edges
+-      const fraction = i / (SPINE_COUNT - 1);
+-      const angle = BLADE_THETA_START + fraction * BLADE_THETA_LENGTH;
+-      // Spine center is halfway along its length from origin
+-      const halfLen = bladeRadius / 2;
+-      const posX = Math.cos(angle) * halfLen;
+-      const posY = Math.sin(angle) * halfLen;
+-      // Rotation to align the cylinder along the radial direction.
+-      // CylinderGeometry is vertical by default, so rotate to point along the angle.
+-      const rotZ = angle - Math.PI / 2;
+-      spines.push({ posX, posY, rotZ, len: bladeRadius });
+-    }
+-    return spines;
+-  });
+-
+-  // Rim torus rotation: the TorusGeometry arc starts at angle 0 on the XY plane.
+-  // We need to rotate it so the arc aligns with our blade arc.
+-  // The torus arc center angle = BLADE_THETA_START
+-  const rimRotationZ = $derived(BLADE_THETA_START);
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Fan blade: wide arc disc, double-sided with translucency for fabric feel.
+-         CircleGeometry lies in XY plane by default, extending upward from origin. -->
+-    <T.Mesh>
+-      <T.CircleGeometry
+-        args={[bladeRadius, BLADE_SEGMENTS, BLADE_THETA_START, BLADE_THETA_LENGTH]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.6}
+-        metalness={0.05}
+-        side={DoubleSide}
+-        transparent
+-        opacity={0.9}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Spine ribs: 5 thin cylinders radiating from the pivot across the blade arc -->
+-    {#each spineData as spine}
+-      <T.Mesh
+-        position={[spine.posX, spine.posY, 0]}
+-        rotation={[0, 0, spine.rotZ]}
+-      >
+-        <T.CylinderGeometry
+-          args={[spineRadius, spineRadius, spine.len, 6, 1]}
+-        />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.4}
+-          metalness={0.15}
+-        />
+-      </T.Mesh>
+-    {/each}
+-
+-    <!-- Outer rim: thin torus arc along the curved edge of the blade -->
+-    <T.Mesh rotation={[0, 0, rimRotationZ]}>
+-      <T.TorusGeometry
+-        args={[
+-          bladeRadius,
+-          rimTubeRadius,
+-          8,
+-          BLADE_SEGMENTS,
+-          BLADE_THETA_LENGTH,
+-        ]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.4}
+-        metalness={0.15}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Handle: short tapered cylinder extending downward (-Y) from the pivot -->
+-    <T.Mesh position={[0, -handleLength / 2, 0]}>
+-      <T.CylinderGeometry
+-        args={[handleTopRadius, handleBottomRadius, handleLength, 12, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Handle end cap: sphere at the bottom of the handle -->
+-    <T.Mesh position={[0, -handleLength, 0]}>
+-      <T.SphereGeometry args={[handleBottomRadius, 10, 10]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
 --- a/dist/lib/components/props/Prop3D.svelte
@@ -1322,6 +1571,136 @@ index 0000000000000000000000000000000000000000..e0c43a25914383cb01dd5ec57f642899
 +}
 +export {
 +  buildDoublestarShape
++};
+diff --git a/dist/lib/components/props/fan-profile.d.ts b/dist/lib/components/props/fan-profile.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a99abf7b4b785fb898c3efe4fd44ccfab0ae678d
+--- /dev/null
++++ b/dist/lib/components/props/fan-profile.d.ts
+@@ -0,0 +1,8 @@
++import { Shape } from "three";
++/**
++ * Width of the frame at its narrowest, normalized to staff length. The bevel
++ * ceiling is sized from it.
++ */
++export declare const FAN_FRAME_WIDTH = 0.03758;
++/** Build the fan — grip ring, four spokes and rim, with the hand at the origin. */
++export declare function buildFanShape(staffLength: number): Shape;
+diff --git a/dist/lib/components/props/fan-profile.js b/dist/lib/components/props/fan-profile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..70dfe35112382f5187fd32ee3d6c71872c28260d
+--- /dev/null
++++ b/dist/lib/components/props/fan-profile.js
+@@ -0,0 +1,110 @@
++import { Path, Shape } from "three";
++const OUTLINE = {
++  start: [0.40229, 0.28441],
++  curves: [
++    [0.39676, 0.29351, 0.2591, 0.50672, -119e-5, 0.50831],
++    [-0.26147, 0.50672, -0.39873, 0.29312, -0.40467, 0.28441],
++    [-0.40941, 0.2769, -0.4106, 0.27017, -0.40823, 0.26424],
++    [-0.40388, 0.25356, -0.38964, 0.2496, -0.3754, 0.24565],
++    [-0.37302, 0.24486, -0.37025, 0.24446, -0.36788, 0.24367],
++    [-0.34771, 0.23774, -0.26108, 0.19976, -0.23062, 0.18473],
++    [-0.21084, 0.17524, -0.15783, 0.14676, -0.08386, 0.08782],
++    [-0.08386, 0.08505, -0.08386, 0.08228, -0.08347, 0.0803],
++    [-0.08347, 0.07859, -0.08347, 0.07687, -0.08347, 0.07516],
++    [-0.07911, 0.02888, -0.04549, -356e-5, -79e-5, -356e-5],
++    [0.04391, -356e-5, 0.07753, 0.02888, 0.08188, 0.07516],
++    [0.08188, 0.07687, 0.08188, 0.07859, 0.08188, 0.0803],
++    [0.08228, 0.08228, 0.08228, 0.08544, 0.08228, 0.08782],
++    [0.15625, 0.14676, 0.20926, 0.17524, 0.22903, 0.18473],
++    [0.25989, 0.19976, 0.34652, 0.23774, 0.3663, 0.24367],
++    [0.36867, 0.24446, 0.37144, 0.24486, 0.37381, 0.24565],
++    [0.38766, 0.2496, 0.40229, 0.25356, 0.40665, 0.26424],
++    [0.40823, 0.27017, 0.40665, 0.2769, 0.40229, 0.28441]
++  ]
++};
++const HOLE_FLANK_LEFT = {
++  start: [-0.14794, 0.19462],
++  curves: [
++    [-0.17326, 0.21044, -0.1966, 0.22389, -0.20649, 0.22903],
++    [-0.23101, 0.2409, -0.30736, 0.2765, -0.34059, 0.28956],
++    [-0.32041, 0.31487, -0.28323, 0.35522, -0.22983, 0.38964],
++    [-0.17867, 0.30841, -0.12751, 0.22719, -0.07634, 0.14597],
++    [-0.09533, 0.16021, -0.12263, 0.1788, -0.14794, 0.19462]
++  ]
++};
++const HOLE_FORWARD_LEFT = {
++  start: [-0.1879, 0.41377],
++  curves: [
++    [-0.13743, 0.43964, -0.08227, 0.45511, -0.02571, 0.45926],
++    [-0.02571, 0.35852, -0.02571, 0.25778, -0.02571, 0.15704],
++    [-0.02611, 0.15665, -0.02611, 0.15665, -0.0265, 0.15665]
++  ]
++};
++const HOLE_PIVOT = {
++  start: [0.03125, 0.04747],
++  curves: [
++    [0.02769, 0.04391, 0.02334, 0.04074, 0.01741, 0.03797],
++    [0.01266, 0.036, 672e-5, 0.03481, 119e-5, 0.03481],
++    [-4e-4, 0.03481, -198e-5, 0.03481, -356e-5, 0.03481],
++    [-91e-4, 0.03481, -0.01503, 0.036, -0.01978, 0.03797],
++    [-0.02532, 0.04074, -0.02967, 0.04351, -0.03362, 0.04747],
++    [-0.04153, 0.05498, -0.04589, 0.06566, -0.04589, 0.07753],
++    [-0.04589, 0.089, -0.04153, 0.09968, -0.03323, 0.10759],
++    [-0.02967, 0.11155, -0.02532, 0.11511, -0.01938, 0.11709],
++    [-0.01503, 0.11907, -91e-4, 0.12025, -356e-5, 0.12025],
++    [-198e-5, 0.12025, -4e-4, 0.12025, 119e-5, 0.12025],
++    [672e-5, 0.12025, 0.01266, 0.11907, 0.01701, 0.11709],
++    [0.02255, 0.11511, 0.0269, 0.11195, 0.03085, 0.10759],
++    [0.03916, 0.09968, 0.04351, 0.0894, 0.04351, 0.07753],
++    [0.04351, 0.06566, 0.03916, 0.05498, 0.03125, 0.04747]
++  ]
++};
++const HOLE_FORWARD_RIGHT = {
++  start: [0.02373, 0.15665],
++  curves: [
++    [0.02334, 0.15665, 0.02334, 0.15665, 0.02294, 0.15704],
++    [0.02294, 0.25778, 0.02294, 0.35852, 0.02294, 0.45926],
++    [0.07872, 0.4557, 0.13291, 0.44027, 0.18513, 0.41377]
++  ]
++};
++const HOLE_FLANK_RIGHT = {
++  start: [0.20411, 0.22903],
++  curves: [
++    [0.19422, 0.22389, 0.17089, 0.21084, 0.14557, 0.19462],
++    [0.12025, 0.1788, 0.09296, 0.16021, 0.07437, 0.14557],
++    [0.12553, 0.22679, 0.17669, 0.30802, 0.22785, 0.38924],
++    [0.28125, 0.35483, 0.31804, 0.31448, 0.33861, 0.28916],
++    [0.30498, 0.27611, 0.22864, 0.2409, 0.20411, 0.22903]
++  ]
++};
++const FAN_FRAME_WIDTH = 0.03758;
++function trace(target, contour, scale) {
++  target.moveTo(contour.start[0] * scale, contour.start[1] * scale);
++  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
++    target.bezierCurveTo(
++      c1x * scale,
++      c1y * scale,
++      c2x * scale,
++      c2y * scale,
++      x * scale,
++      y * scale
++    );
++  }
++  target.closePath();
++  return target;
++}
++function buildFanShape(staffLength) {
++  const shape = trace(new Shape(), OUTLINE, staffLength);
++  shape.holes = [
++    trace(new Path(), HOLE_FLANK_LEFT, staffLength),
++    trace(new Path(), HOLE_FORWARD_LEFT, staffLength),
++    trace(new Path(), HOLE_PIVOT, staffLength),
++    trace(new Path(), HOLE_FORWARD_RIGHT, staffLength),
++    trace(new Path(), HOLE_FLANK_RIGHT, staffLength)
++  ];
++  return shape;
++}
++export {
++  FAN_FRAME_WIDTH,
++  buildFanShape
 +};
 diff --git a/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
 new file mode 100644
@@ -4309,6 +4688,255 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..87ebb8fb8243dbea8fc32479bb320409
 +    dispose={false}
 +  />
  {/if}
+diff --git a/src/lib/components/props/Fan3D.svelte b/src/lib/components/props/Fan3D.svelte
+index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf23016164 100644
+--- a/src/lib/components/props/Fan3D.svelte
++++ b/src/lib/components/props/Fan3D.svelte
+@@ -1,29 +1,55 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { buildFanShape, FAN_FRAME_WIDTH } from "./fan-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  const plates = new Map<string, BufferGeometry>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the frame's half-width, past which the rolled edge folds through itself
++   * on the web between the grip ring and the flank wedges.
++   */
++  const MAX_BEVEL_INSET = FAN_FRAME_WIDTH / 6.8;
++
++  function getFanPlate(length: number, depth: number): BufferGeometry {
++    const key = `${length}:${depth}`;
++    const cached = plates.get(key);
++    if (cached) return cached;
++
++    const plate = bullnosePlate(
++      buildFanShape(length),
++      depth,
++      length * MAX_BEVEL_INSET
++    );
++    plates.set(key, plate);
++    return plate;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Fan3D Component
+    *
+-   * Renders a realistic 3D folding fan with:
+-   * - Wide arc blade (~150 degrees) using CircleGeometry, double-sided and translucent
+-   * - 5 spine ribs radiating from the pivot across the blade arc
+-   * - Thin torus arc rim along the curved outer edge
+-   * - Short tapered handle extending downward from the pivot with end cap
++   * A flow fan: a grip ring at the hand, four spokes running out from it, and a
++   * rim closing the outside — the exact silhouette of the 2D fan, extruded into
++   * a bullnose plate. The outline and all five holes are transcribed from the
++   * prop's SVG in `fan-profile.ts`, so the 3D prop and the pictograph prop are
++   * the same shape by construction.
+    *
+-   * The fan pivot (grip point) is at origin (0,0,0).
+-   * The blade extends upward (+Y), the handle extends downward (-Y).
++   * Not a folding fan. There is no fabric, no pleats, and no handle below the
++   * pivot; the artwork draws none of those, and the hand goes through the ring.
+    *
+-   * Uses computePropRotation (unified for all prop types).
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the plate gets a darker turned edge.
+    */
+ 
+   import { T } from "@threlte/core";
+-  import { DoubleSide } from "three";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -37,152 +63,41 @@
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  // Fan blade radius is ~50% of staff length
+-  const FAN_BLADE_RATIO = 0.5;
+-
+-  // Blade arc: ~150 degrees = 2.618 radians
+-  const BLADE_THETA_LENGTH = 2.618;
+-  // Center the arc so it fans symmetrically upward from origin
+-  const BLADE_THETA_START = -BLADE_THETA_LENGTH / 2 + Math.PI / 2;
+-  const BLADE_SEGMENTS = 48;
+-
+-  // 5 spine ribs evenly distributed across the blade arc
+-  const SPINE_COUNT = 5;
+-
+-  const staffLength = $derived(
++  const effectiveLength = $derived(
+     (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const bladeRadius = $derived(staffLength * FAN_BLADE_RATIO);
++  /**
++   * Flat spinning props are plate stock, not tube. The fan's frame runs about
++   * 3.2cm across at default size, so the plate sits a little under 2cm — thick
++   * enough to hold a rolled edge and to read edge-on, thin enough that a tilted
++   * spoke still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  const palette = $derived(PROP_COLORS[color]);
++  const plate = $derived(getFanPlate(effectiveLength, plateDepth));
++  const materials = $derived(getPlateMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+-
+-  // Handle: ~12% of staff length, tapered (wider at top, narrower at bottom)
+-  const handleLength = $derived(staffLength * 0.12);
+-  const handleTopRadius = $derived(baseRadius * 1.3);
+-  const handleBottomRadius = $derived(baseRadius * 0.9);
+-
+-  // Spine ribs: very thin cylinders radiating from pivot
+-  const spineRadius = $derived(baseRadius * 0.3);
+-
+-  // Outer rim: thin torus arc along the curved edge
+-  const rimTubeRadius = $derived(baseRadius * 0.25);
+-
+-  // Compute spine angles and positions. Each spine radiates from origin
+-  // at evenly spaced angles across the blade arc.
+-  const spineData = $derived.by(() => {
+-    const spines: Array<{
+-      posX: number;
+-      posY: number;
+-      rotZ: number;
+-      len: number;
+-    }> = [];
+-    for (let i = 0; i < SPINE_COUNT; i++) {
+-      // Distribute spines evenly across the arc, including both edges
+-      const fraction = i / (SPINE_COUNT - 1);
+-      const angle = BLADE_THETA_START + fraction * BLADE_THETA_LENGTH;
+-      // Spine center is halfway along its length from origin
+-      const halfLen = bladeRadius / 2;
+-      const posX = Math.cos(angle) * halfLen;
+-      const posY = Math.sin(angle) * halfLen;
+-      // Rotation to align the cylinder along the radial direction.
+-      // CylinderGeometry is vertical by default, so rotate to point along the angle.
+-      const rotZ = angle - Math.PI / 2;
+-      spines.push({ posX, posY, rotZ, len: bladeRadius });
+-    }
+-    return spines;
+-  });
+-
+-  // Rim torus rotation: the TorusGeometry arc starts at angle 0 on the XY plane.
+-  // We need to rotate it so the arc aligns with our blade arc.
+-  // The torus arc center angle = BLADE_THETA_START
+-  const rimRotationZ = $derived(BLADE_THETA_START);
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Fan blade: wide arc disc, double-sided with translucency for fabric feel.
+-         CircleGeometry lies in XY plane by default, extending upward from origin. -->
+-    <T.Mesh>
+-      <T.CircleGeometry
+-        args={[bladeRadius, BLADE_SEGMENTS, BLADE_THETA_START, BLADE_THETA_LENGTH]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.6}
+-        metalness={0.05}
+-        side={DoubleSide}
+-        transparent
+-        opacity={0.9}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Spine ribs: 5 thin cylinders radiating from the pivot across the blade arc -->
+-    {#each spineData as spine}
+-      <T.Mesh
+-        position={[spine.posX, spine.posY, 0]}
+-        rotation={[0, 0, spine.rotZ]}
+-      >
+-        <T.CylinderGeometry
+-          args={[spineRadius, spineRadius, spine.len, 6, 1]}
+-        />
+-        <T.MeshStandardMaterial
+-          color={palette.dark}
+-          roughness={0.4}
+-          metalness={0.15}
+-        />
+-      </T.Mesh>
+-    {/each}
+-
+-    <!-- Outer rim: thin torus arc along the curved edge of the blade -->
+-    <T.Mesh rotation={[0, 0, rimRotationZ]}>
+-      <T.TorusGeometry
+-        args={[
+-          bladeRadius,
+-          rimTubeRadius,
+-          8,
+-          BLADE_SEGMENTS,
+-          BLADE_THETA_LENGTH,
+-        ]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.4}
+-        metalness={0.15}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Handle: short tapered cylinder extending downward (-Y) from the pivot -->
+-    <T.Mesh position={[0, -handleLength / 2, 0]}>
+-      <T.CylinderGeometry
+-        args={[handleTopRadius, handleBottomRadius, handleLength, 12, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Handle end cap: sphere at the bottom of the handle -->
+-    <T.Mesh position={[0, -handleLength, 0]}>
+-      <T.SphereGeometry args={[handleBottomRadius, 10, 10]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
 --- a/src/lib/components/props/Prop3D.svelte
@@ -4623,6 +5251,181 @@ index 0000000000000000000000000000000000000000..6c1a0cff0b24c07b96e584153f27b064
 +  shape.holes = [
 +    trace(new Path(), STAR_HOLE, length, false),
 +    trace(new Path(), STAR_HOLE, length, true),
++  ];
++  return shape;
++}
+diff --git a/src/lib/components/props/fan-profile.ts b/src/lib/components/props/fan-profile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f648381ff7a220
+--- /dev/null
++++ b/src/lib/components/props/fan-profile.ts
+@@ -0,0 +1,169 @@
++/**
++ * Fan silhouette profile
++ *
++ * The 3D fan is not an approximation of the 2D prop — it IS the 2D artwork,
++ * given depth. These contours are a direct transcription of the single path
++ * `static/images/props/fan.svg` draws: every cubic below comes from that file,
++ * with its elliptical arcs converted to beziers.
++ *
++ * The prop is a flow fan, not a folding fan: a rigid frame with a grip ring at
++ * the pivot, four spokes running out from it, and a rim closing the outside.
++ * The gaps between the spokes are holes in the plate, not fabric.
++ *
++ * Coordinates are normalized to the STAFF's drawn span (252.8 SVG units, the
++ * shared unit across every prop drawing) and rotated into prop-local 2D space,
++ * so the prop's reach runs along +Y like every other prop:
++ *
++ *   x = (svgY - 103.5) / 252.8    across the prop
++ *   y = (svgX - 130)   / 252.8    along the prop
++ *
++ * `fan.svg`'s 260x207 box holds a fan that only occupies x >= 129.1 — the left
++ * half is empty. That is the drawing placing the hand: the viewBox centre is
++ * the point the 2D renderer spins the prop about, and here it lands on the
++ * outer web of the grip ring, with the whole fan reaching away from it. The
++ * table below is already centred there, so the hand is the origin.
++ */
++
++import { Path, Shape } from "three";
++
++/** [c1x, c1y, c2x, c2y, endX, endY] */
++type Cubic = readonly [number, number, number, number, number, number];
++
++interface Contour {
++  readonly start: readonly [number, number];
++  readonly curves: readonly Cubic[];
++}
++
++/** Rim, spokes and grip ring in one closed curve. */
++const OUTLINE: Contour = {
++  start: [0.40229, 0.28441],
++  curves: [
++    [0.39676, 0.29351, 0.2591, 0.50672, -0.00119, 0.50831],
++    [-0.26147, 0.50672, -0.39873, 0.29312, -0.40467, 0.28441],
++    [-0.40941, 0.2769, -0.4106, 0.27017, -0.40823, 0.26424],
++    [-0.40388, 0.25356, -0.38964, 0.2496, -0.3754, 0.24565],
++    [-0.37302, 0.24486, -0.37025, 0.24446, -0.36788, 0.24367],
++    [-0.34771, 0.23774, -0.26108, 0.19976, -0.23062, 0.18473],
++    [-0.21084, 0.17524, -0.15783, 0.14676, -0.08386, 0.08782],
++    [-0.08386, 0.08505, -0.08386, 0.08228, -0.08347, 0.0803],
++    [-0.08347, 0.07859, -0.08347, 0.07687, -0.08347, 0.07516],
++    [-0.07911, 0.02888, -0.04549, -0.00356, -0.00079, -0.00356],
++    [0.04391, -0.00356, 0.07753, 0.02888, 0.08188, 0.07516],
++    [0.08188, 0.07687, 0.08188, 0.07859, 0.08188, 0.0803],
++    [0.08228, 0.08228, 0.08228, 0.08544, 0.08228, 0.08782],
++    [0.15625, 0.14676, 0.20926, 0.17524, 0.22903, 0.18473],
++    [0.25989, 0.19976, 0.34652, 0.23774, 0.3663, 0.24367],
++    [0.36867, 0.24446, 0.37144, 0.24486, 0.37381, 0.24565],
++    [0.38766, 0.2496, 0.40229, 0.25356, 0.40665, 0.26424],
++    [0.40823, 0.27017, 0.40665, 0.2769, 0.40229, 0.28441],
++  ],
++};
++
++/** The wedge between the -X flank spoke and the rim's near corner. */
++const HOLE_FLANK_LEFT: Contour = {
++  start: [-0.14794, 0.19462],
++  curves: [
++    [-0.17326, 0.21044, -0.1966, 0.22389, -0.20649, 0.22903],
++    [-0.23101, 0.2409, -0.30736, 0.2765, -0.34059, 0.28956],
++    [-0.32041, 0.31487, -0.28323, 0.35522, -0.22983, 0.38964],
++    [-0.17867, 0.30841, -0.12751, 0.22719, -0.07634, 0.14597],
++    [-0.09533, 0.16021, -0.12263, 0.1788, -0.14794, 0.19462],
++  ],
++};
++
++/** The wedge between the -X flank spoke and the spoke on the reach axis. */
++const HOLE_FORWARD_LEFT: Contour = {
++  start: [-0.1879, 0.41377],
++  curves: [
++    [-0.13743, 0.43964, -0.08227, 0.45511, -0.02571, 0.45926],
++    [-0.02571, 0.35852, -0.02571, 0.25778, -0.02571, 0.15704],
++    [-0.02611, 0.15665, -0.02611, 0.15665, -0.0265, 0.15665],
++  ],
++};
++
++/** The grip ring — the opening the hand passes through. */
++const HOLE_PIVOT: Contour = {
++  start: [0.03125, 0.04747],
++  curves: [
++    [0.02769, 0.04391, 0.02334, 0.04074, 0.01741, 0.03797],
++    [0.01266, 0.036, 0.00672, 0.03481, 0.00119, 0.03481],
++    [-0.0004, 0.03481, -0.00198, 0.03481, -0.00356, 0.03481],
++    [-0.0091, 0.03481, -0.01503, 0.036, -0.01978, 0.03797],
++    [-0.02532, 0.04074, -0.02967, 0.04351, -0.03362, 0.04747],
++    [-0.04153, 0.05498, -0.04589, 0.06566, -0.04589, 0.07753],
++    [-0.04589, 0.089, -0.04153, 0.09968, -0.03323, 0.10759],
++    [-0.02967, 0.11155, -0.02532, 0.11511, -0.01938, 0.11709],
++    [-0.01503, 0.11907, -0.0091, 0.12025, -0.00356, 0.12025],
++    [-0.00198, 0.12025, -0.0004, 0.12025, 0.00119, 0.12025],
++    [0.00672, 0.12025, 0.01266, 0.11907, 0.01701, 0.11709],
++    [0.02255, 0.11511, 0.0269, 0.11195, 0.03085, 0.10759],
++    [0.03916, 0.09968, 0.04351, 0.0894, 0.04351, 0.07753],
++    [0.04351, 0.06566, 0.03916, 0.05498, 0.03125, 0.04747],
++  ],
++};
++
++/** The wedge between the spoke on the reach axis and the +X flank spoke. */
++const HOLE_FORWARD_RIGHT: Contour = {
++  start: [0.02373, 0.15665],
++  curves: [
++    [0.02334, 0.15665, 0.02334, 0.15665, 0.02294, 0.15704],
++    [0.02294, 0.25778, 0.02294, 0.35852, 0.02294, 0.45926],
++    [0.07872, 0.4557, 0.13291, 0.44027, 0.18513, 0.41377],
++  ],
++};
++
++/** The wedge between the +X flank spoke and the rim's near corner. */
++const HOLE_FLANK_RIGHT: Contour = {
++  start: [0.20411, 0.22903],
++  curves: [
++    [0.19422, 0.22389, 0.17089, 0.21084, 0.14557, 0.19462],
++    [0.12025, 0.1788, 0.09296, 0.16021, 0.07437, 0.14557],
++    [0.12553, 0.22679, 0.17669, 0.30802, 0.22785, 0.38924],
++    [0.28125, 0.35483, 0.31804, 0.31448, 0.33861, 0.28916],
++    [0.30498, 0.27611, 0.22864, 0.2409, 0.20411, 0.22903],
++  ],
++};
++
++/**
++ * Width of the frame at its narrowest, normalized to staff length — measured by
++ * stepping inward along the boundary's normal. It is the web between the grip
++ * ring and the near edge of a flank wedge, 9.5 SVG units, and the bevel ceiling
++ * is sized from it.
++ */
++export const FAN_FRAME_WIDTH = 0.03758;
++
++function trace<T extends Shape | Path>(
++  target: T,
++  contour: Contour,
++  scale: number
++): T {
++  target.moveTo(contour.start[0] * scale, contour.start[1] * scale);
++  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
++    target.bezierCurveTo(
++      c1x * scale,
++      c1y * scale,
++      c2x * scale,
++      c2y * scale,
++      x * scale,
++      y * scale
++    );
++  }
++  target.closePath();
++  return target;
++}
++
++/**
++ * Build the fan — sized against a staff of `staffLength` units and lying in the
++ * XY plane ready to extrude, with the hand at the origin.
++ */
++export function buildFanShape(staffLength: number): Shape {
++  const shape = trace(new Shape(), OUTLINE, staffLength);
++  shape.holes = [
++    trace(new Path(), HOLE_FLANK_LEFT, staffLength),
++    trace(new Path(), HOLE_FORWARD_LEFT, staffLength),
++    trace(new Path(), HOLE_PIVOT, staffLength),
++    trace(new Path(), HOLE_FORWARD_RIGHT, staffLength),
++    trace(new Path(), HOLE_FLANK_RIGHT, staffLength),
 +  ];
 +  return shape;
 +}
