@@ -220,3 +220,37 @@ together is the real win.
    story.
 6. **knip/ac-deadcode cadence**: burn down the 1,103-file list scope-by-scope
    with the existing claim tooling.
+
+---
+
+## Resolutions (2026-08-16 evening pass)
+
+- **B1 shells**: Tauri is ALIVE (desktop app: live `desktop-build.yml` release CI,
+  updater keys, OAuth bridge, imports in `src/lib/shared/desktop/`, last commit
+  Aug 6) — keep. `android-twa/` removed (48 files incl. committed apk/aab and the
+  old tka-scribe keystore; superseded `com.tkacomposer.app` identity;
+  `assetlinks.json` untouched). Capacitor remains the active mobile shell.
+- **B2 MCP triplet**: `mcp-server-pkg/` = local stdio server in `.mcp.json`, live.
+  `mcp-server/` = deploy source for the NSSM `FlowArtsKnowledgeMCP` service on
+  :3333 behind mcp.tkaflowarts.com (claude.ai connector) — KEEP, production.
+  `tka-feedback-mcp/` = orphaned (zero local registrations; capability duplicated
+  by `/submitfb` → `scripts/submit-feedback.js`) BUT it was deployed as a
+  Cloudflare Worker 2026-03-22 and is presumably still live — awaiting ruling on
+  deleting the dir + tearing down the Worker.
+- **B3 museum evidence**: 941 MB is 99.9% PNGs; the decision record is 18 .md
+  files (72 KB) whose verdicts stand alone. 804 MB sits in candidate-only/pilot/
+  rejected revisions. Proposal (awaiting ruling): keep all .md + final-revision
+  evidence (~137 MB), delete non-final images. Note: working-tree deletion does
+  not shrink `.git` (~7.3 GB) without a history rewrite.
+- **B4 knip**: NOT bulk-actionable — 12/24 stratified sample were false
+  positives. Two causes: dynamic-import blind spot (LabModule/MainApplication
+  lazy tabs poison lab/voice-control/voice-sessions buckets, 9 of 12 live Lab
+  tabs flagged) and knip missing plain static imports in very large .svelte
+  files (museum, shared/3d). Also: the saved knip list truncates 620/1103 paths
+  with `…`. Treat as lead list only; per-file verification required.
+- **B6 backlogs + A3 specs/handoffs/plans**: ruling = keep everything,
+  archive-only policy; nothing deleted.
+- **B8 avatar raws**: keep — gitignored (0 tracked), deploy-trimmed, and the
+  lossy `_optimized/` pass can't be regenerated upward without them.
+- **B7 / B10 / B11** (test-route clusters, research prototypes, audits): queued
+  for focused passes before any ruling.
