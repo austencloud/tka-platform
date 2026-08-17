@@ -146,11 +146,11 @@
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
-    const previous = activePill;
+    const previous = resolvedPill;
     if (layout === "bottom") {
-      activePill = activePill === id ? null : id;
+      activePill = previous === id ? null : id;
     } else {
-      const prevIdx = pillSpecs.findIndex((p) => p.id === activePill);
+      const prevIdx = pillSpecs.findIndex((p) => p.id === previous);
       const nextIdx = pillSpecs.findIndex((p) => p.id === id);
       if (prevIdx !== -1 && nextIdx !== -1) {
         panelDirection = nextIdx > prevIdx ? 1 : -1;
@@ -399,8 +399,21 @@
   // The sidebar collapses effort/playback/display into one Motion page; the
   // mobile dock keeps them as three trays. Membership still comes from
   // PILL_ORDER via buildPillSpecs, so the two orders cannot drift.
+  // Merging only pays where the merged page can run two columns. On a rail
+  // narrower than that the three sections each filled it on their own, and
+  // stacking them just pushes Visibility off the bottom — measured on the
+  // public /composer showcase, whose rail is 364px: 33px of Visibility clipped.
+  // MOTION_MERGE_MIN_PX is the same seam as the @container query below, and
+  // both sit under `.panel-center-inner`'s 560px cap so the grid can be reached
+  // without waiting for the 1680 media step.
+  const MOTION_MERGE_MIN_PX = 528;
+  let bodyWidth = $state(0);
+  const motionMerged = $derived(
+    layout === "sidebar" && bodyWidth >= MOTION_MERGE_MIN_PX
+  );
+
   const ANIMATION_PILL_ORDER = $derived(
-    layout === "sidebar"
+    motionMerged
       ? (["effects", "props", "motion", "export"] as const satisfies
           readonly PillId[])
       : (["effects", "props", "effort", "playback", "display", "export"] as const satisfies
@@ -435,13 +448,15 @@
           summary: playbackSummary,
         },
         display: { icon: "fa-eye", label: "Display", summary: displaySummary },
-        // Effort leads the summary because it is the one of the three whose
-        // value a user is most likely to be tracking, and it carries the
-        // accent the rail glows with.
+        // Effort alone, not effort + playback: the summary contract is ≤24
+        // chars (pill-types.ts) and concatenating two live values blew past it
+        // and changed width on every BPM tick, which is a shifting rail.
+        // Effort is the one of the three whose value a user tracks, and it
+        // carries the accent the rail glows with.
         motion: {
           icon: "fa-gauge-high",
           label: "Motion",
-          summary: `${effortSummary} · ${playbackSummary}`,
+          summary: effortSummary,
           accentColor: effortAccent,
         },
         ...(exportEnabled
@@ -461,28 +476,46 @@
   // Persist the active section and keep it pointed at a section this host
   // actually exposes (e.g. a remembered "props" falls back to Effects where
   // there's no Props pill). Sidebar-only — see active-pill-persistence.
-  $effect(() => {
-    if (layout !== "sidebar" || !activePill) return;
-    const ids = pillSpecs.map((p) => p.id);
-    if (!ids.includes(activePill)) {
-      // A remembered effort/playback/display lands on the page that now
-      // contains it rather than falling all the way back to Effects.
-      const merged = (["effort", "playback", "display"] as PillId[]).includes(
-        activePill
-      );
-      activePill =
-        merged && ids.includes("motion")
-          ? "motion"
-          : ids.includes("effects")
-            ? "effects"
-            : (ids[0] ?? null);
-      return;
+  const MOTION_PARTS = ["effort", "playback", "display"] as const;
+
+  // Resolving in a derived rather than an effect matters: the rail's membership
+  // changes with layout and width at runtime (a shell that flips sidebar↔bottom
+  // on resize, a remembered pill from before the Motion page existed), and an
+  // effect corrects only after a frame has already rendered the missing
+  // section. That frame put two copies of Visibility's label id in the document
+  // during the crossfade, and left the mobile dock holding a tray with no tab.
+  const availableIds = $derived(pillSpecs.map((p) => p.id));
+  const resolvedPill = $derived.by<PillId | null>(() => {
+    if (!activePill) return null;
+    if (availableIds.includes(activePill)) return activePill;
+    // Both directions: merging sends the three parts to Motion, unmerging sends
+    // Motion back to the first part the rail actually offers.
+    if ((MOTION_PARTS as readonly PillId[]).includes(activePill)) {
+      return availableIds.includes("motion") ? "motion" : (availableIds[0] ?? null);
     }
-    saveActivePill(activePill);
+    if (activePill === "motion") {
+      return (
+        availableIds.find((id) =>
+          (MOTION_PARTS as readonly PillId[]).includes(id)
+        ) ??
+        availableIds[0] ??
+        null
+      );
+    }
+    return availableIds.includes("effects")
+      ? "effects"
+      : (availableIds[0] ?? null);
+  });
+
+  $effect(() => {
+    if (!resolvedPill) return;
+    // Write back so the rail, the dock and persistence agree on one id.
+    if (activePill !== resolvedPill) activePill = resolvedPill;
+    if (layout === "sidebar") saveActivePill(resolvedPill);
   });
 
   const activePillLabel = $derived(
-    pillSpecs.find((p) => p.id === activePill)?.label ?? ""
+    pillSpecs.find((p) => p.id === resolvedPill)?.label ?? ""
   );
 
   // ── Mobile ControlDock wiring ──
@@ -518,7 +551,7 @@
 </script>
 
 {#snippet pillBody()}
-  {#if activePill === "props" && onPropChange && selectedPropType !== undefined}
+  {#if resolvedPill === "props" && onPropChange && selectedPropType !== undefined}
     {#await import("$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte")}
       <!-- Reserve space while the chunk loads so the body doesn't render
            as a blank slot and then jump when the grid arrives. -->
@@ -533,7 +566,7 @@
         flat={layout === "bottom"}
       />
     {/await}
-  {:else if activePill === "effects"}
+  {:else if resolvedPill === "effects"}
     <EffectsPanel
       layout={layout === "bottom" ? "strip" : "sidebar"}
       {bpm}
@@ -549,13 +582,13 @@
       onSettingChange={(setting, previous, value, coalesce) =>
         reportSetting("effects", setting, previous, value, coalesce)}
     />
-  {:else if activePill === "effort"}
+  {:else if resolvedPill === "effort"}
     {@render effortBody()}
-  {:else if activePill === "playback"}
+  {:else if resolvedPill === "playback"}
     {@render playbackBody()}
-  {:else if activePill === "display"}
+  {:else if resolvedPill === "display"}
     {@render displayBody()}
-  {:else if activePill === "motion"}
+  {:else if resolvedPill === "motion"}
     <!-- Effort, Playback and Display measured at 44% / 36% / 24% of the rail
          on their own, so the sidebar spent three pages to show three mostly
          empty columns. Stacked they fill it, and they read as one idea: how
@@ -570,7 +603,7 @@
         {@render displayBody()}
       </div>
     </div>
-  {:else if activePill === "export" && exportOptions}
+  {:else if resolvedPill === "export" && exportOptions}
     {@render exportBody()}
   {/if}
 {/snippet}
@@ -844,11 +877,11 @@
     {:else}
       <ControlDock
         tabs={dockTabs}
-        activeTab={activePill}
+        activeTab={resolvedPill}
         onTabSelect={(id) => handlePillSelect(id as PillId)}
         trailingAction={dockTrailing}
         {secondaryActions}
-        trayMaxHeight={activePill === "effects"
+        trayMaxHeight={resolvedPill === "effects"
           ? "min(54vh, 360px)"
           : "min(35vh, 250px)"}
       >
@@ -874,7 +907,7 @@
     <div class="sidebar-rail-layout">
       <IconRailNav
         pills={pillSpecs}
-        activeId={activePill}
+        activeId={resolvedPill}
         onSelect={handlePillSelect}
         onNavMount={(el) => {
           pillNavEl = el;
@@ -883,9 +916,9 @@
 
       <div class="sidebar-main">
         <div class="panel-scroll" bind:this={panelScrollEl}>
-          <div class="panel-content-center">
-            {#if activePill}
-              {#key activePill}
+          <div class="panel-content-center" bind:clientWidth={bodyWidth}>
+            {#if resolvedPill}
+              {#key resolvedPill}
                 <div
                   class="panel-transition"
                   in:fly={{
@@ -1043,7 +1076,7 @@
      subtitles); Tempo/Paths and Visibility sit side by side underneath, which
      ends the scroll and stops the chips stretching to 200px to hold the word
      "Grid". */
-  @container motion-stack (min-width: 36rem) {
+  @container motion-stack (min-width: 528px) {
     .motion-stack {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
