@@ -15,9 +15,10 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
   import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
-  import type {
-    CollaborativeVideo,
-    StepMap,
+  import {
+    getCreatorDisplayName,
+    type CollaborativeVideo,
+    type StepMap,
   } from "$lib/shared/video-collaboration/domain/collaborative-video";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -106,10 +107,8 @@
     selectedVideo ? (videoAspectRatios[selectedVideo.id] ?? 16 / 9) : 16 / 9
   );
 
-  /** Get creator display name from the collaborators list */
   function getCreatorName(video: CollaborativeVideo): string {
-    const creator = video.collaborators.find((c) => c.role === "creator");
-    return creator?.displayName || "Anonymous";
+    return getCreatorDisplayName(video) ?? "Anonymous";
   }
 
   function formatDuration(seconds: number): string {

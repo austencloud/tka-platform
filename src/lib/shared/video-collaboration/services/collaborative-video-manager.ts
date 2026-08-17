@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import {
   canEditVideo,
+  getCreatorDisplayName,
   type CollaborativeVideo,
   type VideoCollaborator,
   type CollaborationInvite,
@@ -74,7 +75,9 @@ function missingCreatorRepair(
   return {
     collaborators: arrayUnion({
       userId,
-      displayName: displayName ?? null,
+      // The document's own name wins: it is who the uploader was at upload,
+      // which is what the rest of the app has been showing all along.
+      displayName: video.creatorDisplayName ?? displayName ?? null,
       avatarUrl: avatarUrl ?? null,
       joinedAt: video.createdAt,
       role: "creator",
@@ -147,6 +150,7 @@ function docToVideo(
     sequenceName: docData.sequenceName as string | undefined,
     sequenceOwnerId: docData.sequenceOwnerId as string | undefined,
     creatorId: docData.creatorId as string,
+    creatorDisplayName: (docData.creatorDisplayName as string) || undefined,
     collaborators,
     pendingInvites,
     beatMap,
@@ -169,6 +173,7 @@ function videoToDoc(video: CollaborativeVideo): Record<string, unknown> {
     sequenceName: video.sequenceName ?? null,
     sequenceOwnerId: video.sequenceOwnerId ?? null,
     creatorId: video.creatorId,
+    creatorDisplayName: getCreatorDisplayName(video) ?? null,
     collaborators: video.collaborators.map((c) => ({
       userId: c.userId,
       displayName: c.displayName ?? null,

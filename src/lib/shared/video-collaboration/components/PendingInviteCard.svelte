@@ -8,7 +8,10 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { acceptInvite, declineInvite } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { CollaborativeVideo } from "../domain/collaborative-video";
+  import {
+    getCreatorDisplayName,
+    type CollaborativeVideo,
+  } from "../domain/collaborative-video";
 
   const {
     video,
@@ -91,7 +94,7 @@
     </div>
 
     <p class="invite-message">
-      <strong>{creator?.displayName || "Someone"}</strong> invited you to
+      <strong>{getCreatorDisplayName(video) ?? "Someone"}</strong> invited you to
       collaborate on a video
       {#if video.sequenceName}
         for <strong>"{video.sequenceName}"</strong>

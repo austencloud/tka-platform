@@ -67,6 +67,13 @@ export interface CollaborativeVideo {
 
   // ---- Collaboration structure ----
   readonly creatorId: string;
+  /**
+   * The uploader's name as it stood at upload, denormalized onto the document.
+   * Redundant with the creator's roster entry when that entry exists, and the
+   * only name a document written before the roster was seeded carries at all.
+   * Read it through `getCreatorDisplayName`, never directly.
+   */
+  readonly creatorDisplayName?: string;
   readonly collaborators: readonly VideoCollaborator[];
   readonly pendingInvites: readonly CollaborationInvite[];
 
@@ -281,6 +288,21 @@ export function canEditVideo(
   userId: string
 ): boolean {
   return video.creatorId === userId || isCollaborator(video, userId);
+}
+
+/**
+ * The name to show beside a video, or undefined when the document genuinely
+ * carries none.
+ *
+ * Prefers the creator's roster entry, then the name denormalized at upload. A
+ * document with an empty roster still knows who made it, and reading only the
+ * roster is what made a performer's own footage sign itself "Anonymous".
+ */
+export function getCreatorDisplayName(
+  video: CollaborativeVideo
+): string | undefined {
+  const creator = video.collaborators.find((c) => c.role === "creator");
+  return creator?.displayName || video.creatorDisplayName || undefined;
 }
 
 export function hasPendingInvite(

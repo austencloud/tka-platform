@@ -5,7 +5,10 @@
   Shows thumbnail, sequence info, and collaborator avatars.
 -->
 <script lang="ts">
-  import type { CollaborativeVideo } from "../domain/collaborative-video";
+  import {
+    getCreatorDisplayName,
+    type CollaborativeVideo,
+  } from "../domain/collaborative-video";
   import CollaboratorAvatars from "./CollaboratorAvatars.svelte";
 
   const {
@@ -91,7 +94,7 @@
         maxVisible={3}
       />
       <span class="creator-name">
-        {creator?.displayName || "Unknown"}
+        {getCreatorDisplayName(video) ?? "Unknown"}
         {#if isCollab}
           <span class="collab-count">+{video.collaborators.length - 1}</span>
         {/if}

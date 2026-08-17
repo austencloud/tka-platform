@@ -3,6 +3,7 @@ import {
   canEditVideo,
   canViewVideo,
   createCollaborativeVideo,
+  getCreatorDisplayName,
   type CollaborativeVideo,
 } from "$lib/shared/video-collaboration/domain/collaborative-video";
 
@@ -55,6 +56,32 @@ describe("canEditVideo", () => {
 
   it("refuses anyone else", () => {
     expect(canEditVideo(makeVideo(), STRANGER)).toBe(false);
+  });
+});
+
+describe("getCreatorDisplayName", () => {
+  it("reads the creator's roster entry when there is one", () => {
+    const video = makeVideo({
+      collaborators: [
+        { userId: CREATOR, displayName: "Austen Cloud", joinedAt: new Date(), role: "creator" },
+      ],
+    });
+    expect(getCreatorDisplayName(video)).toBe("Austen Cloud");
+  });
+
+  it("falls back to the name denormalized at upload", () => {
+    // `videos/X-BΦ-θ-_1768875548469` again: an empty roster beside
+    // `creatorDisplayName: "Austen Cloud"`. Reading only the roster is what
+    // signed the performer's own footage "Anonymous".
+    const legacy = makeVideo({
+      collaborators: [],
+      creatorDisplayName: "Austen Cloud",
+    });
+    expect(getCreatorDisplayName(legacy)).toBe("Austen Cloud");
+  });
+
+  it("admits when the document carries no name at all", () => {
+    expect(getCreatorDisplayName(makeVideo({ collaborators: [] }))).toBeUndefined();
   });
 });
 
