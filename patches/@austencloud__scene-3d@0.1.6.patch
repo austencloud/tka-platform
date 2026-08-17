@@ -1817,6 +1817,239 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/dist/lib/components/props/Torch3D.svelte b/dist/lib/components/props/Torch3D.svelte
+index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a008bdee91 100644
+--- a/dist/lib/components/props/Torch3D.svelte
++++ b/dist/lib/components/props/Torch3D.svelte
+@@ -1,142 +1,119 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { revolvedProfile } from "./prop-lathe";
++  import { TORCH_BANDS, type TorchBand } from "./torch-profile";
++  import { getTorchMaterials, type TorchMaterialSet } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  interface TorchPart {
++    readonly id: TorchBand["id"];
++    readonly geometry: BufferGeometry;
++  }
++
++  const builds = new Map<number, TorchPart[]>();
++
++  function getTorchParts(length: number): TorchPart[] {
++    const cached = builds.get(length);
++    if (cached) return cached;
++
++    const parts = TORCH_BANDS.map((band) => ({
++      id: band.id,
++      geometry: revolvedProfile(
++        band.stops.map((stop) => ({
++          at: stop.at * length,
++          radius: stop.radius * length,
++        }))
++      ),
++    }));
++    builds.set(length, parts);
++    return parts;
++  }
++
++  /** Which material each band is made of. */
++  function materialFor(
++    id: TorchBand["id"],
++    materials: TorchMaterialSet
++  ): TorchMaterialSet[keyof TorchMaterialSet] {
++    switch (id) {
++      case "grip":
++        return materials.grip;
++      case "flare":
++        return materials.flare;
++      case "shaft":
++        return materials.shaft;
++      case "wick":
++        return materials.wick;
++      // The pommel and both ferrules are the same white chrome hardware.
++      default:
++        return materials.hardware;
++    }
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Torch3D Component
+    *
+-   * Renders a 3D fire torch with correct grip-point origin:
+-   * - Origin (0,0,0) is where the hand grips the handle
+-   * - Handle cap extends slightly below the grip (-Y)
+-   * - Main shaft extends upward from grip (+Y)
+-   * - Kevlar wick wraps the top ~25% of the shaft
+-   * - White grip ring sits at origin
+-   * - Trail indicator sphere for path visualization
++   * A fire torch, turned from the profile measured off `torch.svg`. Butt to
++   * tip: a chrome knob, a wrapped grip, a white ferrule, the coloured flare
++   * cone, a second ferrule, a thin chrome shaft, and a kevlar wick.
++   *
++   * Every radius comes from the artwork, so this reaches 0.593 of a staff, not
++   * the 0.9 the old procedural one guessed at, and the parts sit where the
++   * drawing puts them. `torch-profile.ts` carries the numbers and how they were
++   * measured.
++   *
++   * The hand is the artwork's viewBox centre, which lands inside the pommel —
++   * where you actually hold one, with the knob under your fist. The pommel is
++   * therefore the only part that hangs below the origin.
++   *
++   * There is no live flame here. That is the `fire` effect's job, and putting a
++   * second one on the mesh would fight it.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+     color,
+     visible = true,
+     length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+   }: Prop3DProps = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+-  const palette = $derived(PROP_COLORS[color]);
+ 
+-  const staffRadius = $derived(
+-    thickness
+-      ? thickness / 2
+-      : userProportionsState.dimensions.staffRadius
++  const effectiveLength = $derived(
++    (length ?? userProportionsState.staffLength) * scale
+   );
+-  const staffLength = $derived(length ?? userProportionsState.staffLength);
+-
+-  // Total torch length is 90% of staff length
+-  const totalLength = $derived(staffLength * 0.9);
+-
+-  // Handle cap sits 8% of total length below origin
+-  const handleCapOffset = $derived(totalLength * 0.08);
+-
+-  // Shaft extends from origin upward, covering ~75% of total length
+-  const shaftLength = $derived(totalLength * 0.75);
+-  const shaftRadius = $derived(staffRadius * 2);
+-  // Shaft center is halfway up the shaft from origin
+-  const shaftCenterY = $derived(shaftLength / 2);
+-
+-  // Wick section: top 25% of the torch, wider than shaft
+-  const wickLength = $derived(totalLength * 0.25);
+-  const wickRadiusWide = $derived(staffRadius * 4);
+-  const wickRadiusNarrow = $derived(staffRadius * 3);
+-  // Wick starts where shaft ends, so its center is offset above shaft top
+-  const wickCenterY = $derived(shaftLength + wickLength / 2);
+-
+-  // Handle section: thin cylinder from origin down to cap
+-  const handleLength = $derived(handleCapOffset);
+-  const handleRadius = $derived(staffRadius * 1.5);
+-  const handleCenterY = $derived(-handleLength / 2);
+-
+-  // Grip ring at origin
+-  const gripRingMajorRadius = $derived(shaftRadius * 1.3);
+-  const gripRingTubeRadius = $derived(staffRadius * 0.3);
+ 
+-  // Handle cap sphere radius
+-  const capRadius = $derived(staffRadius * 2.2);
++  const parts = $derived(getTorchParts(effectiveLength));
++  const materials = $derived(getTorchMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+-  <T.Group {rotation} layers={propLayer} scale={scale}>
+-    <!-- Handle cap: small sphere pommel below the grip -->
+-    <T.Mesh position={[0, -handleCapOffset, 0]}>
+-      <T.SphereGeometry args={[capRadius, 16, 16]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
++  <T.Group {rotation} layers={propLayer}>
++    {#each parts as part (part.id)}
++      <T.Mesh
++        geometry={part.geometry}
++        material={materialFor(part.id, materials)}
++        dispose={false}
+       />
+-    </T.Mesh>
+-
+-    <!-- Handle section: thin cylinder from origin down to cap -->
+-    <T.Mesh position={[0, handleCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[handleRadius, handleRadius, handleLength, 12, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.4}
+-        metalness={0.15}
+-      />
+-    </T.Mesh>
+-
+-    <!-- White grip ring at origin (hand position) -->
+-    <T.Mesh>
+-      <T.TorusGeometry
+-        args={[gripRingMajorRadius, gripRingTubeRadius, 12, 24]}
+-      />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
+-
+-    <!-- Main shaft: extends upward from origin -->
+-    <T.Mesh position={[0, shaftCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[shaftRadius, shaftRadius, shaftLength, 16, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Kevlar wick: wider, tapered dark wrap at the top -->
+-    <T.Mesh position={[0, wickCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[wickRadiusNarrow, wickRadiusWide, wickLength, 16, 1]}
+-      />
+-      <T.MeshStandardMaterial color="#222222" roughness={0.9} metalness={0} />
+-    </T.Mesh>
+-
+-    <!-- Rounded cap at the very top of the wick -->
+-    <T.Mesh position={[0, shaftLength + wickLength, 0]}>
+-      <T.SphereGeometry args={[wickRadiusNarrow, 12, 12]} />
+-      <T.MeshStandardMaterial color="#222222" roughness={0.9} metalness={0} />
+-    </T.Mesh>
++    {/each}
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/dist/lib/components/props/Triad3D.svelte b/dist/lib/components/props/Triad3D.svelte
 index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
 --- a/dist/lib/components/props/Triad3D.svelte
@@ -2589,10 +2822,10 @@ index 0000000000000000000000000000000000000000..70dfe35112382f5187fd32ee3d6c7187
 +};
 diff --git a/dist/lib/components/props/frame-materials.d.ts b/dist/lib/components/props/frame-materials.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..b6dfddcce4094fff272b309d9f4ec822e33d3eb2
+index 0000000000000000000000000000000000000000..546ebd5aeafbc806e3016795f6791535a263f3ac
 --- /dev/null
 +++ b/dist/lib/components/props/frame-materials.d.ts
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,39 @@
 +import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
 +export type FrameVariant = "fire" | "day";
 +export interface FrameMaterialSet {
@@ -2610,12 +2843,34 @@ index 0000000000000000000000000000000000000000..b6dfddcce4094fff272b309d9f4ec822
 +    readonly trail: MeshBasicMaterial;
 +}
 +export declare function getFrameMaterials(color: "blue" | "red", variant: FrameVariant): FrameMaterialSet;
++export interface TorchMaterialSet {
++    /** The knob at the butt, and the two white ferrules. Chrome hardware. */
++    readonly hardware: MeshStandardMaterial;
++    /** The wrapped handle. */
++    readonly grip: MeshStandardMaterial;
++    /**
++     * The flare cone. Carries the prop's colour, because that cone is the part
++     * every manufacturer sells in a colour — red, blue, gold, green, silver.
++     */
++    readonly flare: MeshPhysicalMaterial;
++    /** The thin rod between the flare and the wick. Real chrome, and small. */
++    readonly shaft: MeshStandardMaterial;
++    /** Kevlar. */
++    readonly wick: MeshStandardMaterial;
++    /** Path-visualization marker at the prop's position. */
++    readonly trail: MeshBasicMaterial;
++}
++/**
++ * A torch is one build, not two: the fire and practice versions of this prop
++ * are the same object with a different wick, so there is no `variant` here.
++ */
++export declare function getTorchMaterials(color: "blue" | "red"): TorchMaterialSet;
 diff --git a/dist/lib/components/props/frame-materials.js b/dist/lib/components/props/frame-materials.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..254e844c2a4c9e01304ebca2343b330b5197c188
+index 0000000000000000000000000000000000000000..c7f86504205c3f26a9d6f52a05b7d8f0b07c70fb
 --- /dev/null
 +++ b/dist/lib/components/props/frame-materials.js
-@@ -0,0 +1,68 @@
+@@ -0,0 +1,114 @@
 +import {
 +  Color,
 +  MeshBasicMaterial,
@@ -2626,7 +2881,7 @@ index 0000000000000000000000000000000000000000..254e844c2a4c9e01304ebca2343b330b
 +  blue: { main: "#3b82f6", dark: "#1d4ed8" },
 +  red: { main: "#ef4444", dark: "#b91c1c" }
 +};
-+const KEVLAR = "#efe0b4";
++const KEVLAR = "#f6e5b6";
 +const STEEL = "#c8ced8";
 +const SLEEVE = "#26262a";
 +const materialSets = /* @__PURE__ */ new Map();
@@ -2681,8 +2936,54 @@ index 0000000000000000000000000000000000000000..254e844c2a4c9e01304ebca2343b330b
 +  materialSets.set(key, materials);
 +  return materials;
 +}
++const torchSets = /* @__PURE__ */ new Map();
++function getTorchMaterials(color) {
++  const cached = torchSets.get(color);
++  if (cached) return cached;
++  const palette = PALETTES[color];
++  const materials = {
++    hardware: new MeshStandardMaterial({
++      color: "#e6e8ec",
++      roughness: 0.3,
++      metalness: 0.45
++    }),
++    grip: new MeshStandardMaterial({
++      color: "#231f20",
++      // Grip tape and knurling: no highlight at all, or it reads as plastic.
++      roughness: 0.86,
++      metalness: 0.03
++    }),
++    flare: new MeshPhysicalMaterial({
++      color: palette.main,
++      // The real cone is anodized or moulded acrylic under a gloss coat, and
++      // the clearcoat is what separates it from the matte grip below it.
++      roughness: 0.26,
++      metalness: 0.08,
++      clearcoat: 0.85,
++      clearcoatRoughness: 0.12
++    }),
++    shaft: new MeshStandardMaterial({
++      color: "#b9bec6",
++      roughness: 0.22,
++      metalness: 0.72
++    }),
++    wick: new MeshStandardMaterial({
++      color: KEVLAR,
++      roughness: 0.95,
++      metalness: 0
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true
++    })
++  };
++  torchSets.set(color, materials);
++  return materials;
++}
 +export {
-+  getFrameMaterials
++  getFrameMaterials,
++  getTorchMaterials
 +};
 diff --git a/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
 new file mode 100644
@@ -2942,10 +3243,10 @@ index 0000000000000000000000000000000000000000..d7a718c68ba7fe89bf60eaacb970c4da
 +};
 diff --git a/dist/lib/components/props/prop-lathe.d.ts b/dist/lib/components/props/prop-lathe.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..6a063335eb5357841ae50f3adf8e5dc44a0dbe7e
+index 0000000000000000000000000000000000000000..d3f525420e4a5a02e00f6c0581f2f217e2901f90
 --- /dev/null
 +++ b/dist/lib/components/props/prop-lathe.d.ts
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,33 @@
 +import { BufferGeometry } from "three";
 +export interface RoundedCylinderOptions {
 +    /** Overall length along the local +Y axis; the part is centred on origin. */
@@ -2966,13 +3267,26 @@ index 0000000000000000000000000000000000000000..6a063335eb5357841ae50f3adf8e5dc4
 + * around its own +Y axis and centred on the origin.
 + */
 +export declare function roundedCylinder({ length, radius, radiusEnd, fillet, radialSegments, filletSegments, }: RoundedCylinderOptions): BufferGeometry;
++export interface ProfileStop {
++    /** Height along the local +Y axis, in the prop's own units. */
++    readonly at: number;
++    /** Radius at that height. */
++    readonly radius: number;
++}
++/**
++ * Revolve a measured half-section: a list of (height, radius) stops, spun about
++ * +Y. Unlike `roundedCylinder` this idealizes nothing — every bulge, swell and
++ * shoulder in the list survives into the mesh, which is the point when the
++ * numbers came off the prop's own artwork.
++ */
++export declare function revolvedProfile(stops: readonly ProfileStop[], radialSegments?: number): BufferGeometry;
 diff --git a/dist/lib/components/props/prop-lathe.js b/dist/lib/components/props/prop-lathe.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..48dec577d925df340067b30ee21a9710949ed288
+index 0000000000000000000000000000000000000000..53c179148781450b448c11f5645bcb10d4204e01
 --- /dev/null
 +++ b/dist/lib/components/props/prop-lathe.js
-@@ -0,0 +1,34 @@
-+import { LatheGeometry, Vector2 } from "three";
+@@ -0,0 +1,44 @@
++import { BufferGeometry, LatheGeometry, Vector2 } from "three";
 +function roundedCylinder({
 +  length,
 +  radius,
@@ -3003,7 +3317,17 @@ index 0000000000000000000000000000000000000000..48dec577d925df340067b30ee21a9710
 +  geometry.computeVertexNormals();
 +  return geometry;
 +}
++function revolvedProfile(stops, radialSegments = 24) {
++  const profile = [];
++  const first = stops[0];
++  const last = stops[stops.length - 1];
++  if (first.radius > 0) profile.push(new Vector2(0, first.at));
++  for (const stop of stops) profile.push(new Vector2(stop.radius, stop.at));
++  if (last.radius > 0) profile.push(new Vector2(0, last.at));
++  return new LatheGeometry(profile, radialSegments);
++}
 +export {
++  revolvedProfile,
 +  roundedCylinder
 +};
 diff --git a/dist/lib/components/props/prop-model-recolor.js b/dist/lib/components/props/prop-model-recolor.js
@@ -3145,6 +3469,118 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      // Check big variant map
      const bigVariant = BIG_VARIANT_MAP[propType];
      if (bigVariant) {
+diff --git a/dist/lib/components/props/torch-profile.d.ts b/dist/lib/components/props/torch-profile.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c94163c12570a88c3acdbceb1f2a74aa0e3f0d4
+--- /dev/null
++++ b/dist/lib/components/props/torch-profile.d.ts
+@@ -0,0 +1,15 @@
++import type { ProfileStop } from "./prop-lathe";
++/** One material band of the torch, as a revolved profile. */
++export interface TorchBand {
++    readonly id: "pommel" | "grip" | "band" | "flare" | "ferrule" | "shaft" | "wick";
++    readonly stops: readonly ProfileStop[];
++}
++/**
++ * The bands, butt to tip. Adjacent bands share a radius at their seam so the
++ * joins are invisible, and the two places the real prop steps — the flare's
++ * ferrule down onto the shaft, and the shaft up into the wick — keep their
++ * step, because that shoulder is the prop.
++ */
++export declare const TORCH_BANDS: readonly TorchBand[];
++/** Hand to the end of the wick, as a fraction of staff length. */
++export declare const TORCH_REACH: number;
+diff --git a/dist/lib/components/props/torch-profile.js b/dist/lib/components/props/torch-profile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..cae50b5de022a45b1dc71dda68d0bbb37573f2b0
+--- /dev/null
++++ b/dist/lib/components/props/torch-profile.js
+@@ -0,0 +1,85 @@
++const TORCH_BANDS = [
++  {
++    id: "pommel",
++    stops: [
++      { at: -0.01464, radius: 0 },
++      { at: -0.01384, radius: 781e-5 },
++      { at: -0.01187, radius: 0.01483 },
++      { at: -89e-4, radius: 0.02027 },
++      { at: -593e-5, radius: 0.02334 },
++      { at: -198e-5, radius: 0.02522 },
++      { at: 198e-5, radius: 0.02522 },
++      { at: 593e-5, radius: 0.02364 },
++      { at: 989e-5, radius: 0.02027 },
++      { at: 0.01187, radius: 0.0175 },
++      { at: 0.01384, radius: 0.01355 }
++    ]
++  },
++  {
++    id: "grip",
++    stops: [
++      { at: 0.01384, radius: 0.01355 },
++      { at: 0.03659, radius: 0.01335 },
++      { at: 0.10285, radius: 0.01375 },
++      { at: 0.19976, radius: 0.01493 },
++      { at: 0.24031, radius: 0.0177 },
++      { at: 0.24426, radius: 0.01859 }
++    ]
++  },
++  {
++    id: "band",
++    stops: [
++      { at: 0.24426, radius: 0.01859 },
++      { at: 0.26503, radius: 0.01998 }
++    ]
++  },
++  {
++    id: "flare",
++    stops: [
++      { at: 0.26503, radius: 0.01998 },
++      { at: 0.26899, radius: 0.01968 },
++      { at: 0.28184, radius: 0.02067 },
++      { at: 0.33228, radius: 0.02779 },
++      { at: 0.35107, radius: 0.02927 },
++      { at: 0.35403, radius: 0.02878 }
++    ]
++  },
++  {
++    id: "ferrule",
++    stops: [
++      { at: 0.35403, radius: 0.02878 },
++      { at: 0.357, radius: 0.02462 },
++      { at: 0.35799, radius: 0.02275 },
++      { at: 0.35898, radius: 0.01978 },
++      // The shoulder: the assembly ends and a thin rod carries on. Two stops
++      // at one height make the flat annulus that step really is.
++      { at: 0.35997, radius: 0.0101 }
++    ]
++  },
++  {
++    id: "shaft",
++    stops: [
++      { at: 0.35997, radius: 0.0101 },
++      { at: 0.36096, radius: 92e-4 },
++      { at: 0.52907, radius: 939e-5 },
++      { at: 0.53006, radius: 0.01958 }
++    ]
++  },
++  {
++    id: "wick",
++    stops: [
++      { at: 0.53006, radius: 0.01958 },
++      { at: 0.53303, radius: 0.02265 },
++      { at: 0.53501, radius: 0.02344 },
++      { at: 0.53797, radius: 0.02383 },
++      { at: 0.58643, radius: 0.02383 },
++      { at: 0.59237, radius: 0.02116 },
++      { at: 0.59335, radius: 0.017 }
++    ]
++  }
++];
++const TORCH_REACH = 0.59335;
++export {
++  TORCH_BANDS,
++  TORCH_REACH
++};
 diff --git a/dist/lib/components/props/triad-frame.d.ts b/dist/lib/components/props/triad-frame.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..4b3b5655b957fa549298d426338ed3e49258ea77
@@ -3360,14 +3796,14 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a111ce68651 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
  export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
  export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
  export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
@@ -5579,7 +6015,7 @@ index c12c9d64f6cc6e7e5dca20f2c415f3d3f215eee0..6948635ecf1d5397dc0d50cd2571c01e
 +{"version":3,"file":"AvatarSkeletonBuilder.d.ts","sourceRoot":"","sources":["../../../../src/lib/services/implementations/AvatarSkeletonBuilder.ts"],"names":[],"mappings":"AAAA;;;;;GAKG;AAEH,OAAO,KAAK,EAAE,QAAQ,EAAE,IAAI,EAAyB,MAAM,OAAO,CAAC;AAEnE,OAAO,KAAK,EACV,sBAAsB,EACtB,QAAQ,EACR,SAAS,EACT,aAAa,EACd,MAAM,qCAAqC,CAAC;AAgF7C,qBAAa,qBAAsB,YAAW,sBAAsB;IAClE,OAAO,CAAC,KAAK,CAUX;IAEF,OAAO,CAAC,cAAc,CAAa;IACnC,OAAO,CAAC,QAAQ,CAAyB;IACzC,OAAO,CAAC,aAAa,CAAkB;IAEvC,gFAAgF;IAChF,OAAO,CAAC,UAAU,CAAa;IAE/B,yFAAyF;IACzF,OAAO,CAAC,YAAY,CAAa;IAE3B,SAAS,CAAC,GAAG,EAAE,MAAM,EAAE,YAAY,CAAC,EAAE,QAAQ,GAAG,OAAO,CAAC,IAAI,CAAC;IAWpE,OAAO,CAAC,WAAW;IA+DnB;;OAEG;IACH,OAAO,CAAC,YAAY;IAwBpB,OAAO,CAAC,OAAO;IAyBf,OAAO,CAAC,cAAc;IAoDtB;;;OAGG;IACH,OAAO,CAAC,cAAc;IAgDtB;;;;;;;;OAQG;IACH,OAAO,CAAC,iBAAiB;IAmDzB;;;OAGG;IACH,OAAO,CAAC,oBAAoB;IAoB5B,OAAO,CAAC,aAAa;IAQrB,QAAQ,IAAI,aAAa;IAIzB,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,IAAI,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,eAAe,IAAI,SAAS,GAAG,IAAI;IAInC,gBAAgB,IAAI,SAAS,GAAG,IAAI;IAIpC,OAAO,IAAI,QAAQ,GAAG,IAAI;IAI1B,cAAc,IAAI,IAAI;IAStB;;;OAGG;IACH,QAAQ,CAAC,KAAK,EAAE,MAAM,GAAG,IAAI;IAuB7B;;;;OAIG;IACH,aAAa,IAAI,MAAM;IAIvB;;OAEG;IACH,SAAS,CAAC,MAAM,EAAE,MAAM,GAAG,IAAI;IAQ/B,eAAe,IAAI,MAAM;IAMzB,iBAAiB,IAAI,IAAI;IAOzB;;;OAGG;IACH,OAAO,CAAC,wBAAwB;IAgBhC,OAAO,IAAI,IAAI;CAiBhB"}
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarSkeletonBuilder.js b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
-index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..c851baf2bc603ade8e4c8db632e80e887ea1f116 100644
+index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..ae3238f20c60786fa0d381fb2e293ddb75ef276e 100644
 --- a/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 +++ b/dist/lib/services/implementations/AvatarSkeletonBuilder.js
 @@ -5,8 +5,8 @@
@@ -5639,7 +6075,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..c851baf2bc603ade8e4c8db632e80e88
              if (child.isSkinnedMesh) {
                  const skinnedMesh = child;
                  newMeshes.push(skinnedMesh);
-@@ -129,45 +129,54 @@ export class AvatarSkeletonBuilder {
+@@ -129,38 +129,30 @@ export class AvatarSkeletonBuilder {
          });
          // Compute original bounding box of new model (before any transforms)
          // This is done ONCE at load time, before the model is added to the scene
@@ -5694,51 +6130,7 @@ index 7c5875a96eec7fc59a6bc9206d933b7273a3dffd..c851baf2bc603ade8e4c8db632e80e88
      }
      /**
       * Map a bone to a bones map (used during hot-swap)
-+     *
-+     * A bone whose name IS a canonical name always claims that slot, and alias
-+     * matches never overwrite a claimed slot. Without both rules a model with
-+     * Spine/Spine1/Spine2 cascades off-by-one: "Spine1" matches canonical
-+     * Spine's "spine1" alias (hijacking it), "Spine2" then lands in Spine1,
-+     * and canonical Spine2 maps to nothing - so spine twist and stance yaw
-+     * silently lose the chest bone's share.
-      */
-     mapBoneToMap(bone, bonesMap) {
-         const boneName = bone.name.toLowerCase();
-+        // Exact canonical-name match wins outright.
-+        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
-+            if (boneName === standardName.toLowerCase()) {
-+                bonesMap.set(standardName, bone);
-+                return;
-+            }
-+        }
-+        // Alias match fills only slots nothing has claimed yet.
-         for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
-+            if (bonesMap.has(standardName))
-+                continue;
-             for (const alias of aliases) {
-                 if (boneName === alias.toLowerCase()) {
-                     bonesMap.set(standardName, bone);
-@@ -189,9 +198,18 @@ export class AvatarSkeletonBuilder {
-     }
-     mapBone(bone) {
-         const boneName = bone.name.toLowerCase();
-+        // Exact canonical-name match wins outright (see mapBoneToMap).
-+        for (const standardName of Object.keys(BONE_NAME_ALIASES)) {
-+            if (boneName === standardName.toLowerCase()) {
-+                this.state.bones.set(standardName, bone);
-+                return;
-+            }
-+        }
-+        // Alias match fills only slots nothing has claimed yet.
-         for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
-+            if (this.state.bones.has(standardName))
-+                continue;
-             for (const alias of aliases) {
--                // Use exact match first, then contains as fallback
-                 if (boneName === alias.toLowerCase()) {
-                     this.state.bones.set(standardName, bone);
-                     return;
-@@ -452,23 +470,37 @@ export class AvatarSkeletonBuilder {
+@@ -452,23 +444,37 @@ export class AvatarSkeletonBuilder {
          // The model is already positioned with feet at Y=0
          return 0;
      }
@@ -8998,6 +9390,239 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+diff --git a/src/lib/components/props/Torch3D.svelte b/src/lib/components/props/Torch3D.svelte
+index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a008bdee91 100644
+--- a/src/lib/components/props/Torch3D.svelte
++++ b/src/lib/components/props/Torch3D.svelte
+@@ -1,142 +1,119 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import { revolvedProfile } from "./prop-lathe";
++  import { TORCH_BANDS, type TorchBand } from "./torch-profile";
++  import { getTorchMaterials, type TorchMaterialSet } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  interface TorchPart {
++    readonly id: TorchBand["id"];
++    readonly geometry: BufferGeometry;
++  }
++
++  const builds = new Map<number, TorchPart[]>();
++
++  function getTorchParts(length: number): TorchPart[] {
++    const cached = builds.get(length);
++    if (cached) return cached;
++
++    const parts = TORCH_BANDS.map((band) => ({
++      id: band.id,
++      geometry: revolvedProfile(
++        band.stops.map((stop) => ({
++          at: stop.at * length,
++          radius: stop.radius * length,
++        }))
++      ),
++    }));
++    builds.set(length, parts);
++    return parts;
++  }
++
++  /** Which material each band is made of. */
++  function materialFor(
++    id: TorchBand["id"],
++    materials: TorchMaterialSet
++  ): TorchMaterialSet[keyof TorchMaterialSet] {
++    switch (id) {
++      case "grip":
++        return materials.grip;
++      case "flare":
++        return materials.flare;
++      case "shaft":
++        return materials.shaft;
++      case "wick":
++        return materials.wick;
++      // The pommel and both ferrules are the same white chrome hardware.
++      default:
++        return materials.hardware;
++    }
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Torch3D Component
+    *
+-   * Renders a 3D fire torch with correct grip-point origin:
+-   * - Origin (0,0,0) is where the hand grips the handle
+-   * - Handle cap extends slightly below the grip (-Y)
+-   * - Main shaft extends upward from grip (+Y)
+-   * - Kevlar wick wraps the top ~25% of the shaft
+-   * - White grip ring sits at origin
+-   * - Trail indicator sphere for path visualization
++   * A fire torch, turned from the profile measured off `torch.svg`. Butt to
++   * tip: a chrome knob, a wrapped grip, a white ferrule, the coloured flare
++   * cone, a second ferrule, a thin chrome shaft, and a kevlar wick.
++   *
++   * Every radius comes from the artwork, so this reaches 0.593 of a staff, not
++   * the 0.9 the old procedural one guessed at, and the parts sit where the
++   * drawing puts them. `torch-profile.ts` carries the numbers and how they were
++   * measured.
++   *
++   * The hand is the artwork's viewBox centre, which lands inside the pommel —
++   * where you actually hold one, with the knob under your fist. The pommel is
++   * therefore the only part that hangs below the origin.
++   *
++   * There is no live flame here. That is the `fire` effect's job, and putting a
++   * second one on the mesh would fight it.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+     color,
+     visible = true,
+     length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+   }: Prop3DProps = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+-  const palette = $derived(PROP_COLORS[color]);
+ 
+-  const staffRadius = $derived(
+-    thickness
+-      ? thickness / 2
+-      : userProportionsState.dimensions.staffRadius
++  const effectiveLength = $derived(
++    (length ?? userProportionsState.staffLength) * scale
+   );
+-  const staffLength = $derived(length ?? userProportionsState.staffLength);
+-
+-  // Total torch length is 90% of staff length
+-  const totalLength = $derived(staffLength * 0.9);
+-
+-  // Handle cap sits 8% of total length below origin
+-  const handleCapOffset = $derived(totalLength * 0.08);
+-
+-  // Shaft extends from origin upward, covering ~75% of total length
+-  const shaftLength = $derived(totalLength * 0.75);
+-  const shaftRadius = $derived(staffRadius * 2);
+-  // Shaft center is halfway up the shaft from origin
+-  const shaftCenterY = $derived(shaftLength / 2);
+-
+-  // Wick section: top 25% of the torch, wider than shaft
+-  const wickLength = $derived(totalLength * 0.25);
+-  const wickRadiusWide = $derived(staffRadius * 4);
+-  const wickRadiusNarrow = $derived(staffRadius * 3);
+-  // Wick starts where shaft ends, so its center is offset above shaft top
+-  const wickCenterY = $derived(shaftLength + wickLength / 2);
+-
+-  // Handle section: thin cylinder from origin down to cap
+-  const handleLength = $derived(handleCapOffset);
+-  const handleRadius = $derived(staffRadius * 1.5);
+-  const handleCenterY = $derived(-handleLength / 2);
+-
+-  // Grip ring at origin
+-  const gripRingMajorRadius = $derived(shaftRadius * 1.3);
+-  const gripRingTubeRadius = $derived(staffRadius * 0.3);
+ 
+-  // Handle cap sphere radius
+-  const capRadius = $derived(staffRadius * 2.2);
++  const parts = $derived(getTorchParts(effectiveLength));
++  const materials = $derived(getTorchMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+-  <T.Group {rotation} layers={propLayer} scale={scale}>
+-    <!-- Handle cap: small sphere pommel below the grip -->
+-    <T.Mesh position={[0, -handleCapOffset, 0]}>
+-      <T.SphereGeometry args={[capRadius, 16, 16]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
++  <T.Group {rotation} layers={propLayer}>
++    {#each parts as part (part.id)}
++      <T.Mesh
++        geometry={part.geometry}
++        material={materialFor(part.id, materials)}
++        dispose={false}
+       />
+-    </T.Mesh>
+-
+-    <!-- Handle section: thin cylinder from origin down to cap -->
+-    <T.Mesh position={[0, handleCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[handleRadius, handleRadius, handleLength, 12, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.4}
+-        metalness={0.15}
+-      />
+-    </T.Mesh>
+-
+-    <!-- White grip ring at origin (hand position) -->
+-    <T.Mesh>
+-      <T.TorusGeometry
+-        args={[gripRingMajorRadius, gripRingTubeRadius, 12, 24]}
+-      />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
+-
+-    <!-- Main shaft: extends upward from origin -->
+-    <T.Mesh position={[0, shaftCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[shaftRadius, shaftRadius, shaftLength, 16, 1]}
+-      />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Kevlar wick: wider, tapered dark wrap at the top -->
+-    <T.Mesh position={[0, wickCenterY, 0]}>
+-      <T.CylinderGeometry
+-        args={[wickRadiusNarrow, wickRadiusWide, wickLength, 16, 1]}
+-      />
+-      <T.MeshStandardMaterial color="#222222" roughness={0.9} metalness={0} />
+-    </T.Mesh>
+-
+-    <!-- Rounded cap at the very top of the wick -->
+-    <T.Mesh position={[0, shaftLength + wickLength, 0]}>
+-      <T.SphereGeometry args={[wickRadiusNarrow, 12, 12]} />
+-      <T.MeshStandardMaterial color="#222222" roughness={0.9} metalness={0} />
+-    </T.Mesh>
++    {/each}
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Triad3D.svelte b/src/lib/components/props/Triad3D.svelte
 index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
 --- a/src/lib/components/props/Triad3D.svelte
@@ -9851,10 +10476,10 @@ index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f64838
 +}
 diff --git a/src/lib/components/props/frame-materials.ts b/src/lib/components/props/frame-materials.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..f8ca224b54ee1644d543d215c660bf468679aa9d
+index 0000000000000000000000000000000000000000..0cb20f5c5648a61fbb64953e5ab31b4b0626d591
 --- /dev/null
 +++ b/src/lib/components/props/frame-materials.ts
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,196 @@
 +/**
 + * Assembled-prop finish
 + *
@@ -9907,8 +10532,12 @@ index 0000000000000000000000000000000000000000..f8ca224b54ee1644d543d215c660bf46
 +  red: { main: "#ef4444", dark: "#b91c1c" },
 +} as const;
 +
-+/** Unburnt kevlar, which is a pale sand — not the black of a used wick. */
-+const KEVLAR = "#efe0b4";
++/**
++ * Unburnt kevlar, a pale sand — not the black of a used wick. Measured off the
++ * wick in `torch.svg`, which is the one piece of prop artwork that draws the
++ * material in colour rather than as a pictograph silhouette.
++ */
++const KEVLAR = "#f6e5b6";
 +/** Polished spine steel. */
 +const STEEL = "#c8ced8";
 +/** The near-black of a moulded sleeve. */
@@ -9973,6 +10602,78 @@ index 0000000000000000000000000000000000000000..f8ca224b54ee1644d543d215c660bf46
 +  };
 +
 +  materialSets.set(key, materials);
++  return materials;
++}
++
++export interface TorchMaterialSet {
++  /** The knob at the butt, and the two white ferrules. Chrome hardware. */
++  readonly hardware: MeshStandardMaterial;
++  /** The wrapped handle. */
++  readonly grip: MeshStandardMaterial;
++  /**
++   * The flare cone. Carries the prop's colour, because that cone is the part
++   * every manufacturer sells in a colour — red, blue, gold, green, silver.
++   */
++  readonly flare: MeshPhysicalMaterial;
++  /** The thin rod between the flare and the wick. Real chrome, and small. */
++  readonly shaft: MeshStandardMaterial;
++  /** Kevlar. */
++  readonly wick: MeshStandardMaterial;
++  /** Path-visualization marker at the prop's position. */
++  readonly trail: MeshBasicMaterial;
++}
++
++const torchSets = new Map<string, TorchMaterialSet>();
++
++/**
++ * A torch is one build, not two: the fire and practice versions of this prop
++ * are the same object with a different wick, so there is no `variant` here.
++ */
++export function getTorchMaterials(color: "blue" | "red"): TorchMaterialSet {
++  const cached = torchSets.get(color);
++  if (cached) return cached;
++
++  const palette = PALETTES[color];
++
++  const materials: TorchMaterialSet = {
++    hardware: new MeshStandardMaterial({
++      color: "#e6e8ec",
++      roughness: 0.3,
++      metalness: 0.45,
++    }),
++    grip: new MeshStandardMaterial({
++      color: "#231f20",
++      // Grip tape and knurling: no highlight at all, or it reads as plastic.
++      roughness: 0.86,
++      metalness: 0.03,
++    }),
++    flare: new MeshPhysicalMaterial({
++      color: palette.main,
++      // The real cone is anodized or moulded acrylic under a gloss coat, and
++      // the clearcoat is what separates it from the matte grip below it.
++      roughness: 0.26,
++      metalness: 0.08,
++      clearcoat: 0.85,
++      clearcoatRoughness: 0.12,
++    }),
++    shaft: new MeshStandardMaterial({
++      color: "#b9bec6",
++      roughness: 0.22,
++      metalness: 0.72,
++    }),
++    wick: new MeshStandardMaterial({
++      color: KEVLAR,
++      roughness: 0.95,
++      metalness: 0,
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true,
++    }),
++  };
++
++  torchSets.set(color, materials);
 +  return materials;
 +}
 diff --git a/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
@@ -10300,10 +11001,10 @@ index 0000000000000000000000000000000000000000..f3f717d6d8a7efdc77f9883984bb7f89
 +export const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
 diff --git a/src/lib/components/props/prop-lathe.ts b/src/lib/components/props/prop-lathe.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..d0075f70fb7c29be0c4e66c760fc37db032a2688
+index 0000000000000000000000000000000000000000..2653ce5702094760a785e7352b9a245835d43cb0
 --- /dev/null
 +++ b/src/lib/components/props/prop-lathe.ts
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,116 @@
 +/**
 + * Revolved prop parts
 + *
@@ -10317,6 +11018,10 @@ index 0000000000000000000000000000000000000000..d0075f70fb7c29be0c4e66c760fc37db
 + * wrapped wick, a moulded head and a machined collar all read as. Squaring the
 + * corners instead makes a prop look like a stack of tin cans; rounding them all
 + * the way to a capsule makes it look like a pill.
++ *
++ * `revolvedProfile` is the other half: when the prop's own artwork draws it side
++ * on, the silhouette IS the half-section, so there is nothing to idealize. Feed
++ * the measured radii straight in.
 + */
 +
 +import { BufferGeometry, LatheGeometry, Vector2 } from "three";
@@ -10379,6 +11084,42 @@ index 0000000000000000000000000000000000000000..d0075f70fb7c29be0c4e66c760fc37db
 +  const geometry = new LatheGeometry(profile, radialSegments);
 +  geometry.computeVertexNormals();
 +  return geometry;
++}
++
++export interface ProfileStop {
++  /** Height along the local +Y axis, in the prop's own units. */
++  readonly at: number;
++  /** Radius at that height. */
++  readonly radius: number;
++}
++
++/**
++ * Revolve a measured half-section: a list of (height, radius) stops, spun about
++ * +Y. Unlike `roundedCylinder` this idealizes nothing — every bulge, swell and
++ * shoulder in the list survives into the mesh, which is the point when the
++ * numbers came off the prop's own artwork.
++ *
++ * Ends are closed by dropping to the axis, so a band that starts or ends fat
++ * gets a flat cap. Two stops at the same height with different radii make a
++ * flat annulus, which is how a real shoulder reads.
++ *
++ * `LatheGeometry` generates its own normals, and its handling of a zero-height
++ * step is better than a blanket `computeVertexNormals()` — that would smooth
++ * the shoulders away into a bevel.
++ */
++export function revolvedProfile(
++  stops: readonly ProfileStop[],
++  radialSegments = 24
++): BufferGeometry {
++  const profile: Vector2[] = [];
++  const first = stops[0];
++  const last = stops[stops.length - 1];
++
++  if (first.radius > 0) profile.push(new Vector2(0, first.at));
++  for (const stop of stops) profile.push(new Vector2(stop.radius, stop.at));
++  if (last.radius > 0) profile.push(new Vector2(0, last.at));
++
++  return new LatheGeometry(profile, radialSegments);
 +}
 diff --git a/src/lib/components/props/prop-model-recolor.ts b/src/lib/components/props/prop-model-recolor.ts
 index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17dfdf1bf6 100644
@@ -10546,6 +11287,154 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    // Check big variant map
    const bigVariant = BIG_VARIANT_MAP[propType];
    if (bigVariant) {
+diff --git a/src/lib/components/props/torch-profile.ts b/src/lib/components/props/torch-profile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..764b15386348c9e9bdd2ae3701d14199856e40fa
+--- /dev/null
++++ b/src/lib/components/props/torch-profile.ts
+@@ -0,0 +1,142 @@
++/**
++ * Torch profile
++ *
++ * `torch.svg` is not a shape anyone can extrude. It is an Illustrator raster
++ * trace — 296 paths with colour classes `.st0`-`.st295` and no single
++ * silhouette contour — so the plate pipeline has nothing to cut. But a torch is
++ * a solid of revolution, and a side-on drawing of one carries its lathe profile
++ * exactly: the half-height at every column IS the radius at that height.
++ *
++ * So this table was MEASURED, not transcribed. The svg was rasterized at 20x
++ * and read column by column for (a) first and last opaque row, giving the
++ * radius, and (b) the colour on the axis, giving the material. Sampling colour
++ * on the axis matters: a dominant-colour vote reads the traced outline instead
++ * of the fill on anything thin, and reported the chrome shaft as black.
++ *
++ * The measured bands, and what each one is on the real prop (Austen sent three
++ * reference photos, 2026-08-16 — a Juggle Dream Supernova, a black-wrap torch,
++ * and three practice torches):
++ *
++ *   pommel   #ffffff  the knob at the butt — wider than it is long
++ *   grip     #231f20  the wrapped handle, tapering wider as it rises
++ *   band     #ffffff  the ring partway up the wrap
++ *   flare    #231f20  the cone. THE COLOURED PART on every torch sold — red,
++ *                     blue, gold, green or silver — so it carries blue/red here
++ *   ferrule  #ffffff  the collar closing the flare's wide end
++ *   shaft    #c1c0c0 -> #908e8e -> #5e5b5c   chrome. The artwork shades this
++ *                     one as real metal, top-lit; the photos agree
++ *   wick     #f6e5b6  cream unburnt kevlar, a fat wound cylinder
++ *
++ * Every number below is a fraction of staff length (svg units / 252.8, the
++ * viewBox width of `staff.svg`), measured from the hand at the viewBox centre.
++ * The artwork puts that centre at the butt of the torch, inside the pommel —
++ * which is where you hold one, with the knob under your hand.
++ *
++ * Reach is 0.59335 of a staff. The old procedural torch reached 0.9, so it was
++ * more than half again too long.
++ */
++
++import type { ProfileStop } from "./prop-lathe";
++
++/** One material band of the torch, as a revolved profile. */
++export interface TorchBand {
++  readonly id:
++    | "pommel"
++    | "grip"
++    | "band"
++    | "flare"
++    | "ferrule"
++    | "shaft"
++    | "wick";
++  readonly stops: readonly ProfileStop[];
++}
++
++/**
++ * The bands, butt to tip. Adjacent bands share a radius at their seam so the
++ * joins are invisible, and the two places the real prop steps — the flare's
++ * ferrule down onto the shaft, and the shaft up into the wick — keep their
++ * step, because that shoulder is the prop.
++ */
++export const TORCH_BANDS: readonly TorchBand[] = [
++  {
++    id: "pommel",
++    stops: [
++      { at: -0.01464, radius: 0 },
++      { at: -0.01384, radius: 0.00781 },
++      { at: -0.01187, radius: 0.01483 },
++      { at: -0.0089, radius: 0.02027 },
++      { at: -0.00593, radius: 0.02334 },
++      { at: -0.00198, radius: 0.02522 },
++      { at: 0.00198, radius: 0.02522 },
++      { at: 0.00593, radius: 0.02364 },
++      { at: 0.00989, radius: 0.02027 },
++      { at: 0.01187, radius: 0.0175 },
++      { at: 0.01384, radius: 0.01355 },
++    ],
++  },
++  {
++    id: "grip",
++    stops: [
++      { at: 0.01384, radius: 0.01355 },
++      { at: 0.03659, radius: 0.01335 },
++      { at: 0.10285, radius: 0.01375 },
++      { at: 0.19976, radius: 0.01493 },
++      { at: 0.24031, radius: 0.0177 },
++      { at: 0.24426, radius: 0.01859 },
++    ],
++  },
++  {
++    id: "band",
++    stops: [
++      { at: 0.24426, radius: 0.01859 },
++      { at: 0.26503, radius: 0.01998 },
++    ],
++  },
++  {
++    id: "flare",
++    stops: [
++      { at: 0.26503, radius: 0.01998 },
++      { at: 0.26899, radius: 0.01968 },
++      { at: 0.28184, radius: 0.02067 },
++      { at: 0.33228, radius: 0.02779 },
++      { at: 0.35107, radius: 0.02927 },
++      { at: 0.35403, radius: 0.02878 },
++    ],
++  },
++  {
++    id: "ferrule",
++    stops: [
++      { at: 0.35403, radius: 0.02878 },
++      { at: 0.357, radius: 0.02462 },
++      { at: 0.35799, radius: 0.02275 },
++      { at: 0.35898, radius: 0.01978 },
++      // The shoulder: the assembly ends and a thin rod carries on. Two stops
++      // at one height make the flat annulus that step really is.
++      { at: 0.35997, radius: 0.0101 },
++    ],
++  },
++  {
++    id: "shaft",
++    stops: [
++      { at: 0.35997, radius: 0.0101 },
++      { at: 0.36096, radius: 0.0092 },
++      { at: 0.52907, radius: 0.00939 },
++      { at: 0.53006, radius: 0.01958 },
++    ],
++  },
++  {
++    id: "wick",
++    stops: [
++      { at: 0.53006, radius: 0.01958 },
++      { at: 0.53303, radius: 0.02265 },
++      { at: 0.53501, radius: 0.02344 },
++      { at: 0.53797, radius: 0.02383 },
++      { at: 0.58643, radius: 0.02383 },
++      { at: 0.59237, radius: 0.02116 },
++      { at: 0.59335, radius: 0.017 },
++    ],
++  },
++];
++
++/** Hand to the end of the wick, as a fraction of staff length. */
++export const TORCH_REACH = 0.59335;
 diff --git a/src/lib/components/props/triad-frame.ts b/src/lib/components/props/triad-frame.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..9fafb5a90c8d9134dd36259781d40ad574fc0dc3
@@ -10843,15 +11732,14 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..fc58f9ef93d152a8176933ea579c0c790c72409e 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..c27a2147cbc5dac1b37466796ec13c3e73601519 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
-@@ -71,6 +71,8 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
+@@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
  
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
 +export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
  
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
@@ -11636,7 +12524,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d
    addLayer(layer: AnimationLayer): void {
      this.layers.set(layer.id, layer);
 diff --git a/src/lib/services/implementations/AvatarSkeletonBuilder.ts b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
-index d2f43b6b63eacb247573543f3d15c29118926882..8dff81e23e4a384b30181e97ad03d037bd1eb61f 100644
+index d2f43b6b63eacb247573543f3d15c29118926882..9a1a4df967d1fb3857ba91fe94a2537d3ac09cd9 100644
 --- a/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 +++ b/src/lib/services/implementations/AvatarSkeletonBuilder.ts
 @@ -5,9 +5,8 @@
@@ -11742,7 +12630,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..8dff81e23e4a384b30181e97ad03d037
      this.state.meshes = newMeshes;
      this.state.bones = newBones;
      this.skeleton = newSkeleton;
-@@ -173,37 +179,40 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -173,28 +179,14 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      // Build IK chains (uses the new bones map)
      this.buildArmChains();
      this.buildLegChains();
@@ -11776,53 +12664,7 @@ index d2f43b6b63eacb247573543f3d15c29118926882..8dff81e23e4a384b30181e97ad03d037
    }
  
    /**
-    * Map a bone to a bones map (used during hot-swap)
-+   *
-+   * A bone whose name IS a canonical name always claims that slot, and alias
-+   * matches never overwrite a claimed slot. Without both rules a model with
-+   * Spine/Spine1/Spine2 cascades off-by-one: "Spine1" matches canonical
-+   * Spine's "spine1" alias (hijacking it), "Spine2" then lands in Spine1,
-+   * and canonical Spine2 maps to nothing - so spine twist and stance yaw
-+   * silently lose the chest bone's share.
-    */
-   private mapBoneToMap(bone: Bone, bonesMap: Map<BoneName, Bone>): void {
-     const boneName = bone.name.toLowerCase();
- 
-+    // Exact canonical-name match wins outright.
-+    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
-+      if (boneName === standardName.toLowerCase()) {
-+        bonesMap.set(standardName, bone);
-+        return;
-+      }
-+    }
-+
-+    // Alias match fills only slots nothing has claimed yet.
-     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
-+      if (bonesMap.has(standardName as BoneName)) continue;
-       for (const alias of aliases) {
-         if (boneName === alias.toLowerCase()) {
-           bonesMap.set(standardName as BoneName, bone);
-@@ -227,9 +236,18 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
-   private mapBone(bone: Bone): void {
-     const boneName = bone.name.toLowerCase();
- 
-+    // Exact canonical-name match wins outright (see mapBoneToMap).
-+    for (const standardName of Object.keys(BONE_NAME_ALIASES) as BoneName[]) {
-+      if (boneName === standardName.toLowerCase()) {
-+        this.state.bones.set(standardName, bone);
-+        return;
-+      }
-+    }
-+
-+    // Alias match fills only slots nothing has claimed yet.
-     for (const [standardName, aliases] of Object.entries(BONE_NAME_ALIASES)) {
-+      if (this.state.bones.has(standardName as BoneName)) continue;
-       for (const alias of aliases) {
--        // Use exact match first, then contains as fallback
-         if (boneName === alias.toLowerCase()) {
-           this.state.bones.set(standardName as BoneName, bone);
-           return;
-@@ -535,22 +553,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
+@@ -535,22 +527,36 @@ export class AvatarSkeletonBuilder implements IAvatarSkeletonBuilder {
      return 0;
    }
  
