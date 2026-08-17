@@ -1,0 +1,16 @@
+# tools/pronunciation/environment.yml
+# MFA ships Kaldi binaries, so conda is the supported install path — pip alone
+# does not get you a working aligner.
+#   conda env create -f tools/pronunciation/environment.yml
+#   conda activate tka-pronunciation
+name: tka-pronunciation
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - montreal-forced-aligner=3.*
+  - pip
+  - pip:
+      - faster-whisper
+      - praatio
+      - soundfile
