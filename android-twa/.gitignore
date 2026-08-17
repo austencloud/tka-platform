@@ -1,7 +1,0 @@
-# Build cache (regenerated on each build)
-.gradle/
-build/
-app/build/
-
-# Unsigned intermediates (signed versions are the real artifacts)
-*-unsigned*.apk
