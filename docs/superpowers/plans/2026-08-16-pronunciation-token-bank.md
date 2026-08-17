@@ -1150,7 +1150,26 @@ git commit -m "feat(pronunciation): measure token loudness and edge pitch" -- sr
 - Create: `src/lib/shared/pronunciation/domain/token-selection.ts`
 - Test: `tests/unit/pronunciation/token-selection.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+> **Amended 2026-08-16 (`c138b9c696`, `198157c85b`). The test block below is
+> superseded on two points; the implementation shipped verbatim.**
+>
+> 1. **The fixture factory is position-aware and self-checking.** As originally
+>    written it defaulted to `position: "initial"` with both neighbours null —
+>    a shape Task 4's parser rejects as incoherent, so two of the six fixtures
+>    described tokens that could never come from a bank that loaded. The shipped
+>    factory derives coherent neighbour defaults from the position and then runs
+>    each built token through `parsePronunciationManifest`, throwing if it would
+>    not survive. Overrides still win; the guard only catches ones that break
+>    coherence.
+> 2. **A seventh test pins the lookahead.** All six original cases are one or
+>    two letters long, and at that length a global search and a greedy one
+>    cannot disagree — a greedy rewrite would have passed the whole suite. The
+>    added three-letter case makes them disagree: the locally free token at B
+>    ends 130 Hz from the only C token (total 1.3), while the token that eats a
+>    full neighbour mismatch lands on C's pitch exactly (total 1.0). Verified
+>    against the shipped cost functions, not asserted from the weights.
+
+- [x] **Step 1: Write the failing test**
 
 Create `tests/unit/pronunciation/token-selection.test.ts`:
 
@@ -1327,7 +1346,7 @@ describe("selectTokenPath", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/token-selection.test.ts
@@ -1335,7 +1354,7 @@ npm run test:ci -- tests/unit/pronunciation/token-selection.test.ts
 
 Expected: FAIL. The module does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Create `src/lib/shared/pronunciation/domain/token-selection.ts`:
 
@@ -1465,7 +1484,7 @@ export function selectTokenPath(
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 npm run test:ci -- tests/unit/pronunciation/token-selection.test.ts
@@ -1473,7 +1492,7 @@ npm run test:ci -- tests/unit/pronunciation/token-selection.test.ts
 
 Expected: PASS, 6 tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(pronunciation): select tokens by context match and join cost" -- src/lib/shared/pronunciation/domain/token-selection.ts tests/unit/pronunciation/token-selection.test.ts
