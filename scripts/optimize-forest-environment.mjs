@@ -167,12 +167,22 @@ async function resizeDistanceTierTextures(input, output) {
       const isSemanticCanopyLod =
         /ForestSemanticCanopy_.*_canopy_lod/i.test(materialName);
       const isHybridPhotographicFoliage = /_hybrid/i.test(materialName);
+      // PlantCatalog trees arrive already reduced, and reduced by a rule this
+      // ladder cannot express: their conditioning stage decimates solid trunk and
+      // branch volume while leaving every alpha card untouched, because a card's
+      // shape lives in its alpha mask rather than in its edges. Handing them to
+      // the branches below would undo that -- the generic foliage branch would
+      // simplify leaf cards at 0.53, which is the exact collapse the canopy_lod
+      // branch above already refuses to perform on authored cards.
+      const isPlantCatalog = /^ForestPlantCatalog_/.test(materialName);
       const before =
         (primitive.getIndices()?.getCount() ??
           primitive.getAttribute("POSITION")?.getCount() ??
           0) / 3;
       treeTrianglesBefore += before;
-      if (isSemanticCanopyLod && before >= 1_000) {
+      if (isPlantCatalog) {
+        // Intentionally nothing.
+      } else if (isSemanticCanopyLod && before >= 1_000) {
         simplifyPrimitive(primitive, {
           simplifier: MeshoptSimplifier,
           ratio: 0.025,

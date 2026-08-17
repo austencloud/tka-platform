@@ -1,0 +1,398 @@
+[
+  {
+    "id": "quercus-robur-forest-hd-s41",
+    "species": "Quercus robur",
+    "sourceFbx": "E:\\tka-platform\\blender\\plantcatalog-bridge-r1\\raw\\quercus-robur-forest-hd-s41\\quercus-robur-forest-hd-s41.fbx",
+    "sourceFbxSha256": "9a13f416402ba3d75f76dbb89ec99f699879f5285cc61732b22c49baecda151a",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/quercus-robur-forest-hd-s41-review.glb",
+    "reviewGlbSha256": "2b3f2ed345289e4168ec3449d39189b8c9107090fb0bd7a82c72d89846a0ac4a",
+    "reviewGlbBytes": 155903864,
+    "meshObjects": 1,
+    "vertices": 698075,
+    "triangles": 759287,
+    "materials": [
+      {
+        "originalName": "Quercus rob bark",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob br cut",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus robur dead branch",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob twig 1",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_04",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_04_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus robur bark damaged",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_05",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_05_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob leaf 01c",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_06",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_06_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_06_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 01c back_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_07",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_07_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_07_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob twig 2cd",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_08",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Opaque_08_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob leaf 01a",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_09",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_09_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_09_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 01a_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_10",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_10_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Foliage_Cutout_10_BaseColor"
+      },
+      {
+        "originalName": "Evernia 01b",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_11",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_11_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_11_BaseColor"
+      },
+      {
+        "originalName": "Evernia 01c",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_12",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_12_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_12_BaseColor"
+      },
+      {
+        "originalName": "Parmelia 01",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_13",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_13_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_13_BaseColor"
+      },
+      {
+        "originalName": "Parmelia 03",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_14",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_14_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_14_BaseColor"
+      },
+      {
+        "originalName": "Parmelia 02",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_15",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_15_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_15_BaseColor"
+      },
+      {
+        "originalName": "Parmelia 04",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_16",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_16_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_16_BaseColor"
+      },
+      {
+        "originalName": "Evernia01a",
+        "name": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_17",
+        "family": "wood",
+        "familyClassification": "epiphyte-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_17_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_hd_s41_Wood_Cutout_17_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -3.6178407669067383,
+      -3.5166501998901367,
+      2.068694016088557e-08
+    ],
+    "maximumMetres": [
+      3.6178407669067383,
+      3.5166499614715576,
+      16.0
+    ],
+    "dimensionsMetres": [
+      7.235681533813477,
+      7.033300399780273,
+      16.0
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 211128,
+      "totalVertices": 698075
+    },
+    "reduction": {
+      "trianglesBefore": 759287,
+      "trianglesAfter": 759287,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 105564
+    }
+  },
+  {
+    "id": "quercus-robur-forest-ld-s41",
+    "species": "Quercus robur",
+    "sourceFbx": "E:\\tka-platform\\blender\\plantcatalog-bridge-r1\\raw\\quercus-robur-forest-ld-s41\\quercus-robur-forest-ld-s41.fbx",
+    "sourceFbxSha256": "d80502cdb2b38f20caa86d31bbbbfd3f814f0d1b7e5d77a8732d9dcca4e64503",
+    "reviewGlb": "blender/plantcatalog-bridge-r1/conditioned/quercus-robur-forest-ld-s41-review.glb",
+    "reviewGlbSha256": "58f47ec45f4fdbaf272d81de3d5eda3d1143a39d6f2cf6b789e2309fbdc7f1eb",
+    "reviewGlbBytes": 128701044,
+    "meshObjects": 1,
+    "vertices": 354223,
+    "triangles": 356038,
+    "materials": [
+      {
+        "originalName": "Quercus rob bark",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob br cut",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus robur dead branch",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_03",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_03_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob twig 1",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_04",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_04_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus robur bark damaged",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_05",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_05_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob twig 2cd",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_06",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Wood_Opaque_06_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Quercus rob leaf 01a front LD",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_14",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_14_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_14_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 01a back LD_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_15",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_15_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_15_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 01c front LD",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_16",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_16_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_16_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 01c back LD_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_17",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_17_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_17_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 02b front LD",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_18",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_18_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_18_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 02b back LD_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_19",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_19_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_19_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 02c front LD",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_20",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_20_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_20_BaseColor"
+      },
+      {
+        "originalName": "Quercus rob leaf 02c back LD_back",
+        "name": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_21",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_21_BaseColor",
+        "alphaTexture": "ForestPlantCatalog_quercus_robur_forest_ld_s41_Foliage_Cutout_21_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -3.6894595623016357,
+      -3.6039671897888184,
+      1.7694674170343205e-08
+    ],
+    "maximumMetres": [
+      3.6894595623016357,
+      3.6039671897888184,
+      16.0
+    ],
+    "dimensionsMetres": [
+      7.3789191246032715,
+      7.207934379577637,
+      16.0
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 157440,
+      "totalVertices": 354223
+    },
+    "reduction": {
+      "trianglesBefore": 514230,
+      "trianglesAfter": 356038,
+      "epiphyteTrianglesDropped": 158192,
+      "foliageTrianglesConditioned": 52480
+    }
+  }
+]

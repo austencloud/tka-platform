@@ -7,16 +7,23 @@
   "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
   "activeExportSet": "proof",
   "activeJobs": [
-    "quercus-robur-forest-hd-s41"
+    "quercus-robur-forest-hd-s41",
+    "quercus-robur-forest-ld-s41"
   ],
   "sourceResults": [
     {
       "id": "quercus-robur-forest-hd-s41",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest HD_~~.tpf",
-      "bytes": 100188,
-      "sha256": "d3aa44a882358cddff3bbe4a99eb5259f42b685b2c20baa75b77ad6d1dee98cf"
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest HD.tpf",
+      "bytes": 162210025,
+      "sha256": "0e7b831f590af4063b4ffdad286a1f11aeb6660a5521e1882b85850e114c06e6"
+    },
+    {
+      "id": "quercus-robur-forest-ld-s41",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
+      "bytes": 155922326,
+      "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
     }
   ],
   "apiSignaturesVerified": true,
-  "plantFactoryProofComplete": false
+  "plantFactoryProofComplete": true
 }

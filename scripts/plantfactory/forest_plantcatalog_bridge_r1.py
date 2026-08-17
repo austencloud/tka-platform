@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -73,7 +74,12 @@ def save_state(state: dict) -> None:
 
 
 def selected_jobs() -> list[dict]:
-    active_set = MANIFEST["activeExportSet"]
+    # PlantFactory hosts this script and owns its argv, so the export set is
+    # overridden by environment variable rather than a command-line flag. Without
+    # it, exporting a set other than the manifest default means editing the
+    # manifest, running, and editing it back -- a window in which the committed
+    # contract does not describe what the bridge is doing.
+    active_set = os.environ.get("TKA_PLANTCATALOG_EXPORT_SET") or MANIFEST["activeExportSet"]
     selected_ids = MANIFEST["exportSets"].get(active_set)
     if not selected_ids:
         raise RuntimeError("Active export set is empty: {}".format(active_set))

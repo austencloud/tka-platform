@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PlantCatalog Bridge R1 — Quercus robur LOD pair</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: clamp(1.5rem, 2.5vw, 3rem);
+    background: #0d1211;
+    color: #e8efe9;
+    font: 16px/1.55 system-ui, sans-serif;
+  }
+  .wrap { max-width: 96rem; margin: 0 auto; }
+  h1 { margin: 0 0 .35rem; font-size: clamp(1.5rem, 2.2vw, 2.25rem); letter-spacing: -0.01em; }
+  .sub { margin: 0 0 1.75rem; color: #9db0a3; font-size: 1.0625rem; max-width: 70ch; }
+  h2 {
+    margin: 2.75rem 0 .35rem; font-size: clamp(1.125rem, 1.5vw, 1.5rem);
+    display: flex; flex-wrap: wrap; gap: .75rem; align-items: baseline;
+  }
+  h2 .tier { color: #7fb894; font-weight: 600; font-size: .8125rem; letter-spacing: .06em; text-transform: uppercase; }
+  .note { margin: 0 0 1rem; color: #9db0a3; font-size: .9375rem; max-width: 75ch; }
+  table { border-collapse: collapse; width: 100%; margin: 0 0 2rem; font-size: .9375rem; }
+  th, td { text-align: left; padding: .5rem .85rem; border-bottom: 1px solid #223029; }
+  th { color: #8ba295; font-weight: 600; font-size: .8125rem; letter-spacing: .04em; text-transform: uppercase; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; }
+  tr.now td { color: #cdf0d8; font-weight: 600; }
+  .facts { display: flex; flex-wrap: wrap; gap: .5rem .75rem; margin: 0 0 1.25rem; padding: 0; list-style: none; }
+  .facts li { padding: .35rem .8rem; border-radius: 999px; background: #16201d; border: 1px solid #24322d; font-size: .875rem; }
+  .facts b { color: #fff; font-weight: 600; }
+  .pass { border-color: #2f5c3f; }
+  .grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(21rem, 1fr)); }
+  figure { margin: 0; background: #121A18; border: 1px solid #223029; border-radius: .75rem; overflow: hidden; }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { padding: .7rem .9rem; font-size: .9rem; color: #cdddd2; border-top: 1px solid #223029; }
+  figcaption span { display: block; color: #8ba295; font-size: .8rem; margin-top: .15rem; }
+  .reject { border-color: #7a3b32; }
+  .reject figcaption { border-top-color: #7a3b32; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PlantCatalog Bridge R1 &middot; <i>Quercus robur</i> seed 41</h1>
+  <p class="sub">A near-frame hero and an instanced population tree, from one deterministic PlantFactory
+  export of one seed. Both pass the full bridge gate. Nothing is integrated into the Forest yet.</p>
+
+  <table>
+    <thead>
+      <tr><th>Tree</th><th class="num">Bytes</th><th class="num">Triangles</th><th class="num">Foliage tris</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>lush-canopy-oak.glb</code></td><td class="num">1.49 MiB</td><td class="num">34,151</td><td class="num">&mdash;</td><td>the tree in the scene today</td></tr>
+      <tr><td>PlantCatalog oak, first candidate</td><td class="num">29.07 MiB</td><td class="num">759,287</td><td class="num">105,564</td><td>no reduction, no codec</td></tr>
+      <tr class="now"><td>Population LOD (catalog LD source)</td><td class="num">4.37 MiB</td><td class="num">98,612</td><td class="num">52,480</td><td>lichen dropped, error-bounded simplify</td></tr>
+      <tr class="now"><td>Near-frame hero (catalog HD source)</td><td class="num">10.02 MiB</td><td class="num">394,311</td><td class="num">105,564</td><td>lichen kept</td></tr>
+    </tbody>
+  </table>
+
+  <ul class="facts">
+    <li class="pass">height <b>16.00 m</b> both tiers</li>
+    <li class="pass">wind mask <b>COLOR_0</b> rooted</li>
+    <li class="pass">every material textured &amp; classified</li>
+    <li class="pass">cutout alpha two-sided masked</li>
+    <li class="pass">canopy verified <b>unchanged</b> in the shipped GLB</li>
+    <li class="pass"><b>meshopt</b> + WebP + quantization</li>
+  </ul>
+
+  <h2>Population LOD <span class="tier">instanced &middot; 4.37 MiB &middot; 98,612 tris</span></h2>
+  <p class="note">From <code>Quercus robur forest LD</code> &mdash; half the leaf cards of the HD tree, each
+  still a whole leaf, thinned by the people who authored the plant rather than by collapsing edges. Lichen
+  dropped: it is invisible past a few metres and cost 158,192 triangles.</p>
+  <div class="grid">
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-front.webp" alt="Population LOD, front">
+      <figcaption>Front<span>Full height, sun at 54&deg;.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-three-quarter.webp" alt="Population LOD, three-quarter">
+      <figcaption>Three-quarter<span>Trunk and branch structure intact. No shards.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-canopy.webp" alt="Population LOD, canopy">
+      <figcaption>Canopy<span>Lobed oak leaf and acorns still legible.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-silhouette.webp" alt="Population LOD, silhouette">
+      <figcaption>Silhouette<span>Per-leaf cutout preserved, so this is the true outline.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-human-height.webp" alt="Population LOD, human height">
+      <figcaption>Human height<span>Camera at 1.7 m, 7 m out.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-ld-s41-bark-close.webp" alt="Population LOD, bark">
+      <figcaption>Bark / root<span>Lichen gone at this tier, by design.</span></figcaption></figure>
+  </div>
+
+  <h2>Near-frame hero <span class="tier">walk-up &middot; 10.02 MiB &middot; 394,311 tris</span></h2>
+  <p class="note">From <code>Quercus robur forest HD</code>, keeping all 105,564 foliage triangles and all
+  seven epiphyte species. This is the tree you stand next to.</p>
+  <div class="grid">
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-front.webp" alt="Hero, front">
+      <figcaption>Front<span>Full height, sun at 54&deg;.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-three-quarter.webp" alt="Hero, three-quarter">
+      <figcaption>Three-quarter<span>Branch layering and depth.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-canopy.webp" alt="Hero, canopy">
+      <figcaption>Canopy<span>Full card density.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-silhouette.webp" alt="Hero, silhouette">
+      <figcaption>Silhouette<span>True outline, cutout intact.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-human-height.webp" alt="Hero, human height">
+      <figcaption>Human height<span>How it reads from the clearing.</span></figcaption></figure>
+    <figure><img src="/plantcatalog-r1/quercus-robur-forest-hd-s41-bark-close.webp" alt="Hero, bark">
+      <figcaption>Bark / root<span>Fissured oak bark. Pale patches are lichen cutout cards.</span></figcaption></figure>
+  </div>
+
+  <h2>Rejected on the way <span class="tier">kept as evidence</span></h2>
+  <p class="note">Every triangle count was green when this was produced. Only the frame caught it. Blender's
+  COLLAPSE decimate takes a ratio and nothing else, so it reaches that ratio whatever it costs the shape:
+  the twig tubes' cross-section rings collapsed into flat ribbons, and a ribbon spanning two distant points
+  is a large triangle that catches the sun. A per-material triangle budget then deleted the LD trunk
+  outright. Reduction moved to an error-bounded simplifier, which is what the Forest environment bake
+  already uses on its trees.</p>
+  <div class="grid">
+    <figure class="reject"><img src="/plantcatalog-r1/single-ratio-decimate-shards.webp" alt="Shards from single-ratio decimation">
+      <figcaption>One global decimate ratio, 0.06<span>Grey shards where the fine twigs were.</span></figcaption></figure>
+  </div>
+</div>
+</body>
+</html>

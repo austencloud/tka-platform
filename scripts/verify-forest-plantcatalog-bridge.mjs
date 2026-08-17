@@ -83,8 +83,18 @@ invariant(
 );
 
 const jobsById = new Map(manifest.jobs.map((job) => [job.id, job]));
-const activeIds = manifest.exportSets[manifest.activeExportSet];
-invariant(Array.isArray(activeIds) && activeIds.length > 0, "Active export set is empty");
+// Exporting and conditioning are no longer the same list. One PlantFactory run
+// can feed several conditioned outputs -- a near-frame hero and an instanced
+// population LOD come from one export of one seed, differing only in reduction --
+// so the set being verified is the conditioning set, which defaults to the export
+// set when a bridge has no such split.
+const activeConditioningSet =
+  manifest.activeConditioningSet ?? manifest.activeExportSet;
+const activeIds = manifest.exportSets[activeConditioningSet];
+invariant(
+  Array.isArray(activeIds) && activeIds.length > 0,
+  `Active conditioning set is empty: ${activeConditioningSet}`
+);
 const sourceResults = [];
 for (const jobId of activeIds) {
   const job = jobsById.get(jobId);
@@ -172,7 +182,21 @@ invariant(await exists(completionPath), `PlantFactory completion marker missing:
 const state = JSON.parse(await readFile(statePath, "utf8"));
 const completion = JSON.parse(await readFile(completionPath, "utf8"));
 invariant(completion.bridgeId === manifest.bridgeId, "Completion marker belongs to another bridge");
-invariant(completion.activeExportSet === manifest.activeExportSet, "Completion marker export set is stale");
+// The marker records which set PlantFactory last ran, which is not necessarily
+// the set being conditioned. What has to hold is that every job in the
+// conditioning set has a completed export behind it -- its own, or the one it
+// declares with reuseExportFrom.
+invariant(
+  Object.hasOwn(manifest.exportSets, completion.activeExportSet),
+  `Completion marker names an unknown export set: ${completion.activeExportSet}`
+);
+for (const jobId of activeIds) {
+  const exportId = jobsById.get(jobId)?.reuseExportFrom ?? jobId;
+  invariant(
+    state.jobs?.[exportId]?.status === "complete",
+    `${jobId} has no completed PlantFactory export (${exportId})`
+  );
+}
 
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
@@ -193,8 +217,12 @@ const conditioningById = new Map(conditioning.map((entry) => [entry.id, entry]))
 const candidates = [];
 for (const jobId of activeIds) {
   const job = jobsById.get(jobId);
-  const jobState = state.jobs[jobId];
-  invariant(jobState?.status === "complete", `${jobId} PlantFactory export is incomplete`);
+  // Resolved through reuseExportFrom: a reduction-only sibling has no export
+  // state of its own, and asserting against its own id would demand a second
+  // PlantFactory run of botany that is already on disk.
+  const exportId = job.reuseExportFrom ?? jobId;
+  const jobState = state.jobs[exportId];
+  invariant(jobState?.status === "complete", `${jobId} PlantFactory export is incomplete (${exportId})`);
   invariant(jobState.sourceSha256 === job.sourceSha256, `${jobId} exported from a stale source`);
   invariant(jobState.outputFbxBytes > 0, `${jobId} FBX is empty`);
   invariant(jobState.mapFiles.length > 0, `${jobId} exported no texture maps`);
@@ -209,7 +237,19 @@ for (const jobId of activeIds) {
   const candidatePath = resolve(manifest.paths.candidateRoot, job.candidateFilename);
   const bytes = await readFile(candidatePath);
   invariant(bytes.subarray(0, 4).toString("ascii") === "glTF", `${jobId} candidate is not a GLB`);
-  invariant(bytes.length <= manifest.conditioning.maximumRuntimeBytes, `${jobId} exceeds its byte cap`);
+  // Caps are per job, because the two ends of a species' LOD ladder answer to
+  // different arithmetic. A near-frame hero is placed a handful of times and can
+  // afford close-up density; a population tree is placed hundreds of times and
+  // has to sit alongside the trees already in the environment bake. A job without
+  // its own caps falls back to the manifest defaults.
+  const maximumBytes =
+    job.maximumRuntimeBytes ?? manifest.conditioning.maximumRuntimeBytes;
+  const maximumTriangles =
+    job.maximumRuntimeTriangles ?? manifest.conditioning.maximumRuntimeTriangles;
+  invariant(
+    bytes.length <= maximumBytes,
+    `${jobId} exceeds its byte cap: ${(bytes.length / 1048576).toFixed(2)} MiB > ${(maximumBytes / 1048576).toFixed(2)} MiB`
+  );
   const document = await io.read(candidatePath);
   const root = document.getRoot();
   const scene = root.getDefaultScene() ?? root.listScenes()[0];
@@ -229,7 +269,10 @@ for (const jobId of activeIds) {
     }
   }
   invariant(root.listMeshes().length === 1, `${jobId} must remain one instancing mesh`);
-  invariant(triangles <= manifest.conditioning.maximumRuntimeTriangles, `${jobId} exceeds its triangle cap`);
+  invariant(
+    triangles <= maximumTriangles,
+    `${jobId} exceeds its triangle cap: ${triangles.toLocaleString()} > ${maximumTriangles.toLocaleString()}`
+  );
   invariant(Math.abs(dimensions[1] - job.targetHeightMetres) <= 0.05, `${jobId} height is ${dimensions[1]} m`);
   const primitiveCount = root.listMeshes()[0].listPrimitives().length;
   invariant(colorAttributePrimitives === primitiveCount, `${jobId} lost its rooted-wind COLOR_0 mask`);
@@ -261,6 +304,28 @@ for (const jobId of activeIds) {
     `${jobId} has a material with no surface classification`
   );
   invariant(materials.every((material) => material.baseColorTexture), `${jobId} has an untextured material`);
+  // The canopy is what passed visual review, so the promise that reduction never
+  // touched it is checked against the shipped GLB rather than trusted from the
+  // Blender stage that made it. Conditioning already fails if a leaf triangle
+  // moves; this catches anything downstream -- an optimizer simplify pass, a
+  // stray weld -- that reaches the cards after conditioning has signed off.
+  const foliageNames = new Set(foliage.map((material) => material.name));
+  let foliageTriangles = 0;
+  for (const mesh of root.listMeshes()) {
+    for (const primitive of mesh.listPrimitives()) {
+      if (!foliageNames.has(primitive.getMaterial()?.getName() ?? "")) continue;
+      const position = primitive.getAttribute("POSITION");
+      foliageTriangles +=
+        (primitive.getIndices()?.getCount() ?? position?.getCount() ?? 0) / 3;
+    }
+  }
+  const promisedFoliage = conditioned.reduction?.foliageTrianglesConditioned;
+  if (promisedFoliage !== undefined) {
+    invariant(
+      foliageTriangles === promisedFoliage,
+      `${jobId} canopy changed after conditioning: ${foliageTriangles.toLocaleString()} vs ${promisedFoliage.toLocaleString()} foliage triangles`
+    );
+  }
   invariant(
     cutout.every((material) => material.alphaMode === "MASK" && material.doubleSided),
     `${jobId} cutout material is not two-sided alpha-masked`

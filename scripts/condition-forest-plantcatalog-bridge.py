@@ -336,6 +336,139 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
     }
 
 
+def separate_by_material_predicate(tree: bpy.types.Object, slots: set[int]):
+    """Split the faces using the given material slots off into their own object.
+
+    Returns None when the selection is empty or total, because Blender's separate
+    operator produces no new object in either case and the caller has nothing to
+    act on.
+    """
+    if not slots:
+        return None
+    faces = [p for p in tree.data.polygons if p.material_index in slots]
+    if not faces or len(faces) == len(tree.data.polygons):
+        return None
+    bpy.ops.object.select_all(action="DESELECT")
+    tree.select_set(True)
+    bpy.context.view_layer.objects.active = tree
+    # Face select mode, set before entering edit mode. Without it the edit-mode
+    # selection is read in vertex mode, the per-face flags set below never flush
+    # into it, and separate reports "Nothing selected" on a fully-selected mesh.
+    bpy.context.tool_settings.mesh_select_mode = (False, False, True)
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="DESELECT")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for polygon in tree.data.polygons:
+        polygon.select = polygon.material_index in slots
+    bpy.ops.object.mode_set(mode="EDIT")
+    before = set(bpy.data.objects)
+    bpy.ops.mesh.separate(type="SELECTED")
+    bpy.ops.object.mode_set(mode="OBJECT")
+    created = [obj for obj in bpy.data.objects if obj not in before]
+    return created[0] if created else None
+
+
+def reduce_geometry(
+    tree: bpy.types.Object, material_metrics: list[dict], reduction: dict
+) -> dict:
+    """Cut the triangle count without touching anything that reads as a leaf.
+
+    The reduction rule falls straight out of the surface axis, and it is the whole
+    reason that axis exists as a render fact rather than a naming guess:
+
+      opaque geometry is SOLID -- trunk, branches, twig tubes. It is a mesh
+        approximating a volume, so collapsing edges makes it a coarser
+        approximation of the same volume. At any distance where you are not
+        touching the bark this is invisible, and it is where the weight is: 64%
+        of this oak's triangles are opaque wood.
+
+      cutout geometry is a CARD -- a flat quad whose shape comes from an alpha
+        mask, not from its edges. There is nothing to approximate. Collapsing one
+        corner does not simplify a leaf, it deletes it. So cards are never
+        decimated. They are kept whole or dropped whole, and dropping is a
+        per-layer decision the manifest makes.
+
+    Epiphytes are the layer worth dropping. This oak spends 22% of its triangles
+    on lichen cards pinned to the bark -- detail that is legible when you walk up
+    to the trunk and completely invisible on a tree in the middle distance, which
+    is what the population placements are.
+    """
+    by_name = {metric["name"]: metric for metric in material_metrics}
+
+    def slots_where(obj, predicate) -> set[int]:
+        # Resolved against the object's CURRENT slots every time. Separating and
+        # rejoining rewrites slot indices, so a map captured once goes stale the
+        # first time this function is used.
+        return {
+            index
+            for index, material in enumerate(obj.data.materials)
+            if material is not None
+            and material.name in by_name
+            and predicate(by_name[material.name])
+        }
+
+    def triangles_of(obj, predicate=None) -> int:
+        if predicate is None:
+            return sum(max(0, len(p.vertices) - 2) for p in obj.data.polygons)
+        slots = slots_where(obj, predicate)
+        return sum(
+            max(0, len(p.vertices) - 2)
+            for p in obj.data.polygons
+            if p.material_index in slots
+        )
+
+    is_foliage = lambda metric: metric["family"] == "foliage"
+    before_total = triangles_of(tree)
+    foliage_before = triangles_of(tree, is_foliage)
+    dropped = 0
+
+    if reduction.get("dropEpiphyteCards"):
+        slots = slots_where(
+            tree, lambda metric: metric["familyClassification"] == "epiphyte-token"
+        )
+        epiphytes = separate_by_material_predicate(tree, slots)
+        if epiphytes is not None:
+            dropped = triangles_of(epiphytes)
+            bpy.data.objects.remove(epiphytes, do_unlink=True)
+
+    # Geometry reduction deliberately does NOT happen here. Blender's COLLAPSE
+    # decimate takes a ratio and nothing else: it will hit that ratio whatever the
+    # cost to the shape, because it has no notion of how far the surface is
+    # allowed to move. On tube geometry that is destructive in a way no ratio
+    # tuning fixes. At 0.06 it turned twig tubes into flat ribbons that render as
+    # grey shards; a per-material triangle budget spread the damage more evenly and
+    # then deleted the low-detail oak's trunk outright, leaving the canopy floating
+    # over its own shadow. Both failures are the same failure: a ratio is a budget,
+    # and a budget is not a quality bound.
+    #
+    # The reduction lives in the optimizer instead, on MeshoptSimplifier with an
+    # explicit error bound, which stops when the surface would deviate too far
+    # rather than when a count is reached. That is already how the Forest
+    # environment bake reduces its trees, so this bridge is not inventing a
+    # reduction strategy -- it is using the one the scene already trusts.
+    #
+    # What stays here is the epiphyte decision above, because that is semantic
+    # rather than geometric: it removes a named layer of the plant wholesale, and
+    # the two-axis classification is the only place that knows which materials
+    # are that layer.
+    foliage_after = triangles_of(tree, is_foliage)
+    # The canopy is the approved look. If a single leaf triangle moved, the
+    # reduction reached somewhere it was never allowed to reach, and shipping it
+    # would quietly degrade the exact thing that passed visual review.
+    if foliage_after != foliage_before:
+        raise RuntimeError(
+            "Reduction altered foliage geometry: {} -> {} triangles".format(
+                foliage_before, foliage_after
+            )
+        )
+    return {
+        "trianglesBefore": before_total,
+        "trianglesAfter": triangles_of(tree),
+        "epiphyteTrianglesDropped": dropped,
+        "foliageTrianglesConditioned": foliage_after,
+    }
+
+
 def normalize_tree(tree: bpy.types.Object, target_height: float) -> tuple[Vector, Vector]:
     minimum, maximum = world_bounds([tree])
     height = maximum.z - minimum.z
@@ -414,9 +547,13 @@ def export_glb(tree: bpy.types.Object, destination: Path) -> None:
 
 
 def condition_job(job: dict, export_state: dict) -> dict:
-    job_state = export_state["jobs"].get(job["id"])
+    # A job may condition another job's FBX rather than exporting its own. That is
+    # how one PlantFactory run yields both a near-frame hero and a population LOD:
+    # same botany, same seed, same 10-minute export, different reduction.
+    export_id = job.get("reuseExportFrom", job["id"])
+    job_state = export_state["jobs"].get(export_id)
     if not job_state or job_state.get("status") != "complete":
-        raise RuntimeError("PlantFactory job is not complete: {}".format(job["id"]))
+        raise RuntimeError("PlantFactory job is not complete: {}".format(export_id))
     source_fbx = Path(job_state["outputFbx"])
     if not source_fbx.exists():
         raise FileNotFoundError("PlantFactory FBX missing: {}".format(source_fbx))
@@ -460,6 +597,11 @@ def condition_job(job: dict, export_state: dict) -> dict:
     for polygon in tree.data.polygons:
         polygon.use_smooth = True
 
+    # Before normalize and before the wind mask: reduction changes the vertex set,
+    # and the mask is authored per vertex.
+    reduction = reduce_geometry(tree, material_metrics, job.get("reduction", {}))
+    tree = bpy.context.object
+
     minimum, maximum = normalize_tree(tree, float(job["targetHeightMetres"]))
     dimensions = maximum - minimum
     wind_mask = author_rooted_wind_mask(tree, dimensions.z)
@@ -467,6 +609,23 @@ def condition_job(job: dict, export_state: dict) -> dict:
     export_glb(tree, output)
 
     triangles = sum(max(0, len(polygon.vertices) - 2) for polygon in tree.data.polygons)
+    # Dropping the epiphyte layer removes its materials from the mesh, and the
+    # exporter writes only what the mesh still uses. Reporting the pre-reduction
+    # list would hand the verifier materials that are not in the GLB it reads.
+    # Read the slots the faces actually reference, not the slot list. Separating
+    # the epiphyte faces off and deleting that object leaves its material slots
+    # behind on the mesh, empty. The glTF exporter writes only materials a
+    # primitive uses, so trusting the slot list reports seven materials the
+    # verifier will not find in the file it reads.
+    used_slots = {polygon.material_index for polygon in tree.data.polygons}
+    surviving = {
+        material.name
+        for index, material in enumerate(tree.data.materials)
+        if material is not None and index in used_slots
+    }
+    material_metrics = [
+        metric for metric in material_metrics if metric["name"] in surviving
+    ]
     return {
         "id": job["id"],
         "species": job["species"],
@@ -483,6 +642,7 @@ def condition_job(job: dict, export_state: dict) -> dict:
         "maximumMetres": list(maximum),
         "dimensionsMetres": list(dimensions),
         "windMask": wind_mask,
+        "reduction": reduction,
     }
 
 

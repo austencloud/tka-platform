@@ -87,6 +87,81 @@ season, health, age, and export contract still match.
 If PlantFactory reports an error, the exact exception and traceback are stored
 in `blender/plantcatalog-bridge-r1/state/plantfactory-export-state.json`.
 
+## Two axes, and why reduction is bounded by error
+
+A PlantCatalog material carries two independent facts, and collapsing them into
+one "role" is what rejected the first proof run.
+
+**Family** — foliage or wood — is semantic, decided by authored material and
+texture names. It drives roughness and the wind mask's flutter channel, so it
+answers *does this move like a leaf or like structure*. Twigs are wood: they are
+opaque bark strips wrapped around solid tube geometry, and they hold the leaves
+up. Epiphytes (`lichen`, `moss`, `evernia`, `parmelia`) are wood too, because a
+lichen card is glued to the trunk and has to move with it.
+
+**Surface** — cutout or opaque — is a render fact, decided by sampling alpha on
+the base-colour texture. It drives alpha wiring, backface culling, and alpha
+mode, so it answers *does this need a cutout to look right*. Both axes go in the
+material name because both are read downstream by name, and the verifier asserts
+them separately. A lichen card is wood AND cutout; no single axis holds that.
+
+### The reduction rule follows from the surface axis
+
+Opaque geometry is **solid** — a mesh approximating a volume. Reducing it yields
+a coarser approximation of the same volume. It is also where the weight is: 64%
+of `Quercus robur forest HD` is opaque wood, against 14% for the leaves.
+
+Cutout geometry is a **card** — a flat quad whose shape lives in its alpha mask,
+not in its edges. There is no surface error to bound and nothing to approximate.
+Collapsing a corner does not simplify a leaf, it deletes one. Cards are
+therefore never simplified. They are kept whole, or dropped whole as a named
+layer, which is the epiphyte decision.
+
+### Ratio-based decimation is the wrong instrument (measured, 2026-08-17)
+
+Blender's COLLAPSE decimate takes a ratio and nothing else. It will reach that
+ratio whatever the cost to the shape, because it has no notion of how far the
+surface may move. Two failures, both visible only in rendered frames while every
+triangle count stayed green:
+
+- **One ratio for all opaque geometry.** At 0.06 the trunk was fine and the fine
+  twigs were destroyed — their cross-section rings collapsed into flat ribbons,
+  and a ribbon spanning two distant points is a large triangle that catches the
+  sun. See `single-ratio-decimate-shards.png`. The trunk and the twigs share a
+  material family but not a scale.
+- **A per-material triangle budget.** Spreading an equal share of a budget
+  across opaque materials distributed the damage more evenly and then deleted
+  the low-detail oak's trunk outright, leaving the canopy floating above its own
+  shadow.
+
+Both are the same failure: a ratio is a budget, and a budget is not a quality
+bound.
+
+Reduction therefore happens in `optimize-forest-plantcatalog-bridge.mjs` on
+`MeshoptSimplifier` with an explicit `error` bound, which abandons the ratio
+once the surface would deviate too far. This is the same simplifier and the same
+guard the Forest environment bake already applies to its trees, so the bridge
+does not introduce a second reduction strategy. Blender keeps only the epiphyte
+drop, which is semantic rather than geometric.
+
+### Consequences for the runtime
+
+- `EXT_meshopt_compression` matches every shipped Forest tree
+  (`lush-canopy-oak.glb` is meshopt + WebP + quantization at 1.49 MiB), so no
+  new decoder is needed at runtime. Blender has no meshopt importer, so the
+  optimizer also writes a codec-free `-proof.glb` that the qualification renders
+  read; it is the same geometry and the same materials.
+- `TEXCOORD_0` is never quantized on these trees. The leaf atlas tiles outside
+  `[0,1]`, and `quantize()` correctly skips it rather than wrapping the UVs.
+- `forest-environment.glb`'s optimizer would otherwise simplify these leaf cards
+  at ratio 0.53, because their names match its `/leaves|twig|foliage/i` test.
+  `ForestPlantCatalog_` materials are exempt there — they arrive pre-reduced by a
+  rule that ladder cannot express, and its own `canopy_lod` branch already
+  refuses the same collapse on authored cards.
+- Export and conditioning are separate sets. `reuseExportFrom` lets one
+  PlantFactory run feed both LOD tiers, which differ only in reduction, and
+  `activeConditioningSet` selects what is verified.
+
 ## Automated post-export gate
 
 After the PlantFactory marker exists, Codex runs

@@ -3,6 +3,7 @@
   "bridgeId": "forest-plantcatalog-r1",
   "museumTrackerItem": "YmJWyFZKDT6sCFn6Htrt",
   "activeExportSet": "proof",
+  "activeConditioningSet": "lod",
   "source": {
     "plantFactoryExecutable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
     "plantFactoryProductVersion": "4.8.0.0",
@@ -63,6 +64,13 @@
     "proof": [
       "quercus-robur-forest-hd-s41"
     ],
+    "lod": [
+      "quercus-robur-forest-hd-s41",
+      "quercus-robur-forest-ld-s41"
+    ],
+    "ldSource": [
+      "quercus-robur-forest-ld-s41"
+    ],
     "productionWaveR1": []
   },
   "jobs": [
@@ -85,7 +93,44 @@
       "targetHeightMetres": 16.0,
       "habitatRole": "near-to-middle broad-canopy structure",
       "rawSubdirectory": "quercus-robur-forest-hd-s41",
-      "candidateFilename": "quercus-robur-forest-hd-s41.glb"
+      "candidateFilename": "quercus-robur-forest-hd-s41.glb",
+      "lodTier": "near-frame hero",
+      "maximumRuntimeBytes": 12582912,
+      "maximumRuntimeTriangles": 400000,
+      "reduction": {
+        "dropEpiphyteCards": false,
+        "opaqueSimplifyRatio": 0.25,
+        "opaqueSimplifyError": 0.004
+      }
+    },
+    {
+      "id": "quercus-robur-forest-ld-s41",
+      "label": "English oak, forest form, seed 41, catalog low-detail source",
+      "species": "Quercus robur",
+      "morphology": "mature forest oak",
+      "catalogSpeciesName": "Quercus robur forest LD",
+      "sourceRelativePath": "Broadleaf Trees/Quercus robur forest LD.tpf",
+      "sourceLod": "LD",
+      "sourceBytes": 155922326,
+      "sourceSha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55",
+      "sourceCollection": "PlantCatalog 2022.1",
+      "seed": 41,
+      "ageYears": 55,
+      "maximumAgeYears": 100,
+      "health": 1.0,
+      "seasonDay": 172,
+      "targetHeightMetres": 16.0,
+      "habitatRole": "middle-to-far instanced woodland population",
+      "rawSubdirectory": "quercus-robur-forest-ld-s41",
+      "candidateFilename": "quercus-robur-forest-ld-s41.glb",
+      "lodTier": "instanced population",
+      "maximumRuntimeBytes": 6291456,
+      "maximumRuntimeTriangles": 150000,
+      "reduction": {
+        "dropEpiphyteCards": true,
+        "opaqueSimplifyRatio": 0.12,
+        "opaqueSimplifyError": 0.01
+      }
     }
   ]
 }

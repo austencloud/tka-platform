@@ -233,7 +233,16 @@ def render(scene, camera, root, output: Path, rotation: float, location: tuple, 
 
 def render_job(job: dict) -> dict:
     clear_scene()
-    candidate_path = ROOT / MANIFEST["paths"]["candidateRoot"] / job["candidateFilename"]
+    # The proof GLB, not the runtime one. Blender has no meshopt importer, and
+    # the two files hold identical geometry and materials -- the proof simply
+    # stops short of the codec. Rendering the runtime file is not possible, and
+    # rendering the pre-optimizer conditioned mesh would show a tree that is not
+    # the one being shipped.
+    candidate_path = (
+        ROOT
+        / MANIFEST["paths"]["candidateRoot"]
+        / job["candidateFilename"].replace(".glb", "-proof.glb")
+    )
     if not candidate_path.exists():
         raise FileNotFoundError("Optimized PlantCatalog candidate missing: {}".format(candidate_path))
     before = set(bpy.data.objects)
