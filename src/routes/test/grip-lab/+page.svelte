@@ -272,14 +272,14 @@
     return Math.max(-60, Math.min(60, interpolated));
   }
 
-  // Frontal-plane geometry for the angle→shift conversion. Grid center
-  // (y = 0) sits at shoulder height, so the moment arm is the frontal-plane
-  // distance from the right shoulder to the hand point. Shoulder numbers
-  // come from the avatar proportions (44cm lanky shoulder width → 22cm
-  // half-width); rest z is the relaxed shoulder's slight forward set. The
-  // per-station angles are the tunable truth — these just convert them.
-  const SHOULDER_X_M = -0.22; // right shoulder; the E hand point is −x
-  const SHOULDER_REST_Z_M = 0.03;
+  // Angle→shift conversion, referenced to THE BODY ITSELF: the vertical
+  // axis through the body center, which is the center of rotation the
+  // weave crosses. ±45° means the line from that axis to the grip sits at
+  // ±45° fore/aft — so the moment arm is the full frontal-plane distance
+  // from the body axis to the hand point (the grid radius, 0.52m at a
+  // cardinal point), NOT the shoulder→hand arm. A shoulder-referenced 45°
+  // barely cleared the torso's own depth; body-referenced, ±45° puts the
+  // plane a full ±52cm from center and the arm/torso reorient to serve it.
 
   const weaveDeltaRad = $derived(
     ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
@@ -295,7 +295,7 @@
     planeAngleToWorldPosition(Plane.WALL, centerPathAngle)
   );
   const armLateralM = $derived(
-    Math.max(0.15, Math.hypot(basePosition.x - SHOULDER_X_M, basePosition.y))
+    Math.max(0.15, Math.hypot(basePosition.x, basePosition.y))
   );
 
   const effArmDeg = $derived(
@@ -303,9 +303,7 @@
   );
   const effTravelCm = $derived(
     weaveAuto
-      ? (SHOULDER_REST_Z_M +
-          Math.tan((effArmDeg * Math.PI) / 180) * armLateralM) *
-        100
+      ? Math.tan((effArmDeg * Math.PI) / 180) * armLateralM * 100
       : handTravelCm
   );
 
