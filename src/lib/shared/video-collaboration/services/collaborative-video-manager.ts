@@ -17,12 +17,13 @@ import {
   arrayRemove,
   type Timestamp,
 } from "firebase/firestore";
-import type {
-  CollaborativeVideo,
-  VideoCollaborator,
-  CollaborationInvite,
-  VideoVisibility,
-  StepMap,
+import {
+  canEditVideo,
+  type CollaborativeVideo,
+  type VideoCollaborator,
+  type CollaborationInvite,
+  type VideoVisibility,
+  type StepMap,
 } from "../domain/collaborative-video";
 import type { UserVideoLibrary } from "./types";
 
@@ -49,6 +50,36 @@ function getUserInfo(): {
     uid: user.uid,
     displayName: user.displayName ?? undefined,
     avatarUrl: user.photoURL ?? undefined,
+  };
+}
+
+/**
+ * Fields that put the creator back on a video whose roster lost them.
+ *
+ * Videos uploaded by an earlier path were stored with `collaborators: []` even
+ * though `creatorId` named their owner, which left the owner unable to save a
+ * step map. `canEditVideo` lets them through on `creatorId`; this folds them
+ * into the roster on the way past so the next read needs no rescue. Returns
+ * nothing at all when the roster is already correct, so an ordinary save writes
+ * exactly what it used to.
+ */
+function missingCreatorRepair(
+  video: CollaborativeVideo,
+  userId: string
+): Record<string, unknown> {
+  if (video.creatorId !== userId) return {};
+  if (video.collaborators.some((c) => c.userId === userId)) return {};
+
+  const { displayName, avatarUrl } = getUserInfo();
+  return {
+    collaborators: arrayUnion({
+      userId,
+      displayName: displayName ?? null,
+      avatarUrl: avatarUrl ?? null,
+      joinedAt: video.createdAt,
+      role: "creator",
+    }),
+    collaboratorIds: arrayUnion(userId),
   };
 }
 
@@ -271,12 +302,16 @@ export async function updateStepMap(videoId: string, beatMap: StepMap): Promise<
       throw new Error("Video not found");
     }
 
-    if (!video.collaborators.some((c) => c.userId === userId)) {
+    if (!canEditVideo(video, userId)) {
       throw new Error("Only collaborators can update the beat map");
     }
 
     const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
     await updateDoc(docRef, {
+      // A video written before the creator was seeded into the roster gets
+      // repaired on the first save, so it stops being a document that only the
+      // creatorId check can rescue.
+      ...missingCreatorRepair(video, userId),
       beatMap: {
         beatTimestamps: beatMap.beatTimestamps,
         // Firestore rejects undefined, and a map saved before the editor
@@ -312,7 +347,7 @@ export async function inviteCollaborator(
       throw new Error("Video not found");
     }
 
-    if (!video.collaborators.some((c) => c.userId === currentUserId)) {
+    if (!canEditVideo(video, currentUserId)) {
       throw new Error("Only collaborators can invite others");
     }
 
@@ -543,18 +578,31 @@ export async function getUserVideoLibrary(): Promise<UserVideoLibrary> {
       orderBy("createdAt", "desc")
     );
 
+    // Asked separately from the roster query because the two can disagree: a
+    // video written before the creator was seeded into `collaborators` carries
+    // an empty `collaboratorIds`, so the owner's own upload never came back.
+    // Deliberately unordered - sorting here would need a second composite
+    // index for a list that gets sorted below anyway.
+    const createdQuery = query(collectionRef, where("creatorId", "==", userId));
+
     const pendingQuery = query(
       collectionRef,
       where("pendingInviteUserIds", "array-contains", userId)
     );
 
-    const [collaboratorSnapshot, pendingSnapshot] = await Promise.all([
-      getDocs(collaboratorQuery),
-      getDocs(pendingQuery),
-    ]);
+    const [collaboratorSnapshot, createdSnapshot, pendingSnapshot] =
+      await Promise.all([
+        getDocs(collaboratorQuery),
+        getDocs(createdQuery),
+        getDocs(pendingQuery),
+      ]);
 
-    const allCollaborations = collaboratorSnapshot.docs.map((doc) =>
-      docToVideo(doc.data(), doc.id)
+    const byId = new Map<string, CollaborativeVideo>();
+    for (const doc of [...collaboratorSnapshot.docs, ...createdSnapshot.docs]) {
+      byId.set(doc.id, docToVideo(doc.data(), doc.id));
+    }
+    const allCollaborations = [...byId.values()].sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
     );
 
     const created = allCollaborations.filter((v) => v.creatorId === userId);

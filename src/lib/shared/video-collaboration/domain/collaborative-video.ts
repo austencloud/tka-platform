@@ -265,6 +265,24 @@ export function isCollaborator(
   return video.collaborators.some((c) => c.userId === userId);
 }
 
+/**
+ * Who may change a video: the person who uploaded it, plus anyone they have
+ * taken on as a collaborator.
+ *
+ * The creator is checked against `creatorId` rather than looked up in
+ * `collaborators`, because the two can disagree. `createCollaborativeVideo`
+ * seeds the creator into the roster, but documents written by earlier upload
+ * paths carry an empty roster beside a perfectly good `creatorId` - and reading
+ * the roster alone locked those owners out of their own footage. `creatorId`
+ * is the field the Firestore rule grants on, so this matches the server.
+ */
+export function canEditVideo(
+  video: CollaborativeVideo,
+  userId: string
+): boolean {
+  return video.creatorId === userId || isCollaborator(video, userId);
+}
+
 export function hasPendingInvite(
   video: CollaborativeVideo,
   userId: string
@@ -281,7 +299,7 @@ export function canViewVideo(
   if (video.visibility === "public") return true;
   if (!userId) return false;
   if (video.visibility === "private") return video.creatorId === userId;
-  return isCollaborator(video, userId);
+  return canEditVideo(video, userId);
 }
 
 export function getLibraryUserIds(video: CollaborativeVideo): string[] {
