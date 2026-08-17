@@ -229,6 +229,18 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
     return upgradeAnonymousWithGoogleCredential(anon, credential);
   }
 
+  // Desktop (Tauri): same popup wall in WebView2 — get the credential from
+  // the system-browser OAuth bridge and link it directly.
+  const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
+  if (isDesktop()) {
+    const { desktopGoogleCredential } =
+      await import("$lib/shared/desktop/tauri-auth-bridge");
+    return upgradeAnonymousWithGoogleCredential(
+      anon,
+      await desktopGoogleCredential()
+    );
+  }
+
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");

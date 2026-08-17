@@ -1,8 +1,19 @@
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import {
+	GoogleAuthProvider,
+	signInWithCredential,
+	type OAuthCredential,
+} from "firebase/auth";
 import { auth } from "$lib/shared/auth/firebase";
 import { GOOGLE_CLIENT_ID } from "$lib/shared/auth/config/google-oauth";
 
-export async function signInWithDesktopOAuth(): Promise<void> {
+/**
+ * Obtain a Google credential via the desktop OAuth bridge: a loopback server
+ * (oauth_server.rs) catches the redirect from the system browser, so the
+ * WebView never has to host Google's sign-in (which it blocks). Mirrors
+ * nativeGoogleCredential() on Capacitor — callers link, sign in, or
+ * reauthenticate with the credential themselves.
+ */
+export async function desktopGoogleCredential(): Promise<OAuthCredential> {
 	const { invoke } = await import("@tauri-apps/api/core");
 	const { open } = await import("@tauri-apps/plugin-shell");
 	const { listen } = await import("@tauri-apps/api/event");
@@ -43,12 +54,18 @@ export async function signInWithDesktopOAuth(): Promise<void> {
 
 	try {
 		const idToken = await tokenPromise;
-		const credential = GoogleAuthProvider.credential(idToken);
+		return GoogleAuthProvider.credential(idToken);
+	} finally {
+		unlisten();
+	}
+}
+
+export async function signInWithDesktopOAuth(): Promise<void> {
+	try {
+		const credential = await desktopGoogleCredential();
 		await signInWithCredential(auth, credential);
 	} catch (err) {
 		console.error("[DesktopOAuth] Sign-in failed:", err);
 		throw err;
-	} finally {
-		unlisten();
 	}
 }

@@ -247,6 +247,15 @@ export async function linkGoogleAccount(): Promise<void> {
     return;
   }
 
+  // Desktop (Tauri): same popup wall — link with a bridge credential.
+  const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
+  if (isDesktop()) {
+    const { desktopGoogleCredential } =
+      await import("$lib/shared/desktop/tauri-auth-bridge");
+    await linkWithCredential(currentUser, await desktopGoogleCredential());
+    return;
+  }
+
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
@@ -299,6 +308,18 @@ export async function reauthenticateWithGoogle(): Promise<void> {
     await reauthenticateWithCredential(
       currentUser,
       await nativeGoogleCredential()
+    );
+    return;
+  }
+
+  // Desktop (Tauri): same popup wall — reauth with a bridge credential.
+  const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
+  if (isDesktop()) {
+    const { desktopGoogleCredential } =
+      await import("$lib/shared/desktop/tauri-auth-bridge");
+    await reauthenticateWithCredential(
+      currentUser,
+      await desktopGoogleCredential()
     );
     return;
   }
