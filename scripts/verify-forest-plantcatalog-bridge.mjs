@@ -54,9 +54,19 @@ for (const signature of [
   "def SetExportPreset(self, val):",
   "def RunPythonFile(self, strPythonScriptPath):",
   "def GeneralParameterSetAge(age):",
+  "def GeneralParameterSetAgeMax(age):",
   "def GeneralParameterSetHealth(health):",
   "def GeneralParameterSetSeed(seed):",
   "def GeneralParameterSetSeason(day):",
+  // The bridge reads every parameter and export option back after writing it, because these
+  // setters return nothing and a preset can override an option silently. That makes the
+  // getters load-bearing, so pin their signatures too.
+  "def GeneralParameterGetAge():",
+  "def GeneralParameterGetAgeMax():",
+  "def GeneralParameterGetHealth():",
+  "def GeneralParameterGetSeason():",
+  "def GetExportOption(self, optionName):",
+  "def GetExportPreset(self):",
 ]) {
   invariant(apiText.includes(signature), `PlantFactory API signature missing: ${signature}`);
 }
@@ -79,9 +89,31 @@ const sourceResults = [];
 for (const jobId of activeIds) {
   const job = jobsById.get(jobId);
   invariant(job, `Active export set references unknown job: ${jobId}`);
+  // Ranges measured against PlantFactory 4.8.0.0 rather than assumed: health is a fraction
+  // (its setter raises "health max must be <= 1"), season is a day the setter caps at 364,
+  // and age, max age, and season are all typed 'int' in the SWIG bindings — a float raises
+  // TypeError at export time, well after preflight has already passed. Reject non-integers
+  // here so that failure surfaces in the cheap check instead of mid-run.
   invariant(job.health >= 0 && job.health <= 1, `${jobId} has invalid health`);
-  invariant(job.seasonDay >= 0 && job.seasonDay <= 365, `${jobId} has invalid season day`);
+  invariant(
+    Number.isInteger(job.seasonDay) && job.seasonDay >= 0 && job.seasonDay <= 364,
+    `${jobId} needs an integer seasonDay in [0, 364]`
+  );
+  invariant(
+    Number.isInteger(job.ageYears) && Number.isInteger(job.maximumAgeYears),
+    `${jobId} needs integer ageYears and maximumAgeYears`
+  );
+  invariant(
+    job.ageYears > 0 && job.ageYears <= job.maximumAgeYears,
+    `${jobId} needs 0 < ageYears <= maximumAgeYears`
+  );
   invariant(job.targetHeightMetres > 0, `${jobId} has invalid target height`);
+  // Provenance only — this records which catalog species the asset came from. Do NOT route it
+  // back into loading: LoadPlantCatalogFile takes a name like this one, but when it cannot
+  // resolve it there is no error, only PlantFactory's interactive "Browser" picker, which
+  // disables the main window and blocks an -immediate-python run indefinitely with nothing
+  // written to vue.log. Both "Quercus robur forest" and "Quercus robur forest HD" hung that
+  // way. The bridge loads sourceRelativePath through LoadPlant, which raises instead.
   invariant(
     typeof job.catalogSpeciesName === "string" && job.catalogSpeciesName.trim().length > 0,
     `${jobId} is missing its PlantCatalog species name`
@@ -90,10 +122,10 @@ for (const jobId of activeIds) {
   // The PlantFactory application install ships every species' placeholder up front so the
   // library stays browsable; installing the collection that owns a species drops a real
   // sibling beside it with no suffix (Quercus robur came from PlantCatalog 2022.1 — 154.7 MB
-  // against the stub's 0.1 MB). This guard matters because the bridge LOADS by
-  // catalogSpeciesName, not by this path: a placeholder here fails no loudly-visible check,
-  // it just quietly reduces the size and hash invariants below to verifying a stub while the
-  // species itself is not installed at all.
+  // against the stub's 0.1 MB). The bridge loads this exact path through LoadPlant, so a
+  // placeholder here does not merely weaken the size and hash invariants below to verifying a
+  // stub — it hands PlantFactory 0.1 MB of browse metadata in place of a plant, which is what
+  // produced the VRLLPFS462 internal error on 2026-08-14.
   invariant(
     !job.sourceRelativePath.replace(/\.tpf$/i, "").endsWith("_~~"),
     `${jobId} points at the PlantCatalog browse placeholder "${job.sourceRelativePath}". ` +
@@ -213,18 +245,29 @@ for (const jobId of activeIds) {
     emissiveTexture: material.getEmissiveTexture()?.getName() ?? null,
     emissiveFactor: material.getEmissiveFactor(),
   }));
+  // Family and surface are separate axes and are asserted separately. Family
+  // proves the tree has both a canopy and a structure; surface proves each
+  // material's transparency matches the alpha its texture actually carries. A
+  // lichen card is wood AND cutout, so a single combined check cannot hold both.
   const foliage = materials.filter((material) => material.name.includes("_Foliage_"));
   const wood = materials.filter((material) => material.name.includes("_Wood_"));
+  const cutout = materials.filter((material) => material.name.includes("_Cutout_"));
+  const opaque = materials.filter((material) => material.name.includes("_Opaque_"));
   invariant(foliage.length > 0, `${jobId} has no foliage material`);
   invariant(wood.length > 0, `${jobId} has no wood material`);
+  invariant(cutout.length > 0, `${jobId} has no cutout material`);
+  invariant(
+    cutout.length + opaque.length === materials.length,
+    `${jobId} has a material with no surface classification`
+  );
   invariant(materials.every((material) => material.baseColorTexture), `${jobId} has an untextured material`);
   invariant(
-    foliage.every((material) => material.alphaMode === "MASK" && material.doubleSided),
-    `${jobId} foliage is not two-sided alpha-masked`
+    cutout.every((material) => material.alphaMode === "MASK" && material.doubleSided),
+    `${jobId} cutout material is not two-sided alpha-masked`
   );
   invariant(
-    wood.every((material) => material.alphaMode === "OPAQUE" && !material.doubleSided),
-    `${jobId} wood is not opaque and single-sided`
+    opaque.every((material) => material.alphaMode === "OPAQUE" && !material.doubleSided),
+    `${jobId} opaque material is not opaque and single-sided`
   );
   invariant(
     materials.every(

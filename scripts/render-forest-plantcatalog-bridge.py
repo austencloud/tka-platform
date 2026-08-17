@@ -68,20 +68,61 @@ def bounds(objects) -> tuple[Vector, Vector]:
     return minimum, maximum
 
 
-def replace_materials(objects, replacement):
-    originals = []
+def enter_silhouette(objects):
+    """Darken every material in place, KEEPING its alpha mask wired.
+
+    Swapping the whole material out for an opaque black one is the obvious way to
+    do this and it produces a false picture: the foliage is alpha-masked cards, so
+    an opaque replacement renders each card as a solid rectangle and the canopy
+    reads as blobs. The silhouette is the one view whose entire job is the tree's
+    true outline, so it has to keep the cutout and change only the shading.
+    """
+    state = []
+    seen = set()
     for obj in mesh_objects(objects):
-        originals.append((obj, list(obj.data.materials)))
-        obj.data.materials.clear()
-        obj.data.materials.append(replacement)
-    return originals
+        for source in obj.data.materials:
+            if source is None or source.name in seen or source.node_tree is None:
+                continue
+            seen.add(source.name)
+            bsdf = source.node_tree.nodes.get("Principled BSDF")
+            if bsdf is None:
+                continue
+            base_color = bsdf.inputs.get("Base Color")
+            link = base_color.links[0] if base_color.is_linked else None
+            specular = bsdf.inputs.get("Specular IOR Level")
+            record = {
+                "tree": source.node_tree,
+                "socket": base_color,
+                "fromSocket": link.from_socket if link is not None else None,
+                "baseColor": tuple(base_color.default_value),
+                "roughness": bsdf.inputs["Roughness"].default_value,
+                "specularInput": specular,
+                "specular": specular.default_value if specular is not None else None,
+            }
+            if link is not None:
+                source.node_tree.links.remove(link)
+            base_color.default_value = (0.004, 0.005, 0.004, 1.0)
+            bsdf.inputs["Roughness"].default_value = 1.0
+            if specular is not None:
+                specular.default_value = 0.0
+            state.append(record)
+    return state
 
 
-def restore_materials(originals) -> None:
-    for obj, source_materials in originals:
-        obj.data.materials.clear()
-        for source in source_materials:
-            obj.data.materials.append(source)
+def exit_silhouette(state) -> None:
+    for record in state:
+        record["socket"].default_value = record["baseColor"]
+        if record["fromSocket"] is not None:
+            record["tree"].links.new(record["fromSocket"], record["socket"])
+        bsdf = record["tree"].nodes.get("Principled BSDF")
+        if bsdf is not None:
+            bsdf.inputs["Roughness"].default_value = record["roughness"]
+        if record["specularInput"] is not None:
+            record["specularInput"].default_value = record["specular"]
+
+
+SUN_ELEVATION_DEGREES = 54.0
+SUN_AZIMUTH_DEGREES = -35.0
 
 
 def setup_scene(width: float, height: float):
@@ -93,26 +134,90 @@ def setup_scene(width: float, height: float):
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.film_transparent = False
-    scene.view_settings.look = "AgX - Medium High Contrast"
     scene.render.image_settings.color_depth = "8"
+
+    # Foliage is alpha-masked and EEVEE resolves that dithered, across temporal
+    # samples. At the default sample count the cutout never converges and a dense
+    # canopy renders as blotchy mush -- which is exactly what the first canopy view
+    # looked like. Samples are the fix, not a material change.
+    if hasattr(scene, "eevee"):
+        scene.eevee.taa_render_samples = 128
+        if hasattr(scene.eevee, "use_raytracing"):
+            scene.eevee.use_raytracing = True
+
+    # These trees have to hold up in summer daylight, so they are qualified in
+    # summer daylight: a physical sky for skylight and bounce colour, plus a single
+    # sun. The previous three-point rig at world strength 0.24 was studio lighting
+    # for a night scene, and it underexposed every view badly enough that leaf
+    # colour could not be judged at all.
+    looks = {item.identifier for item in scene.view_settings.bl_rna.properties["look"].enum_items}
+    for candidate_look in ("AgX - Medium High Contrast", "AgX - Base Contrast", "None"):
+        if candidate_look in looks:
+            scene.view_settings.look = candidate_look
+            break
+    scene.view_settings.exposure = 0.0
     world = bpy.data.worlds.new("PlantCatalog Qualification World")
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.055, 0.075, 0.07, 1.0)
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.24
+    nodes = world.node_tree.nodes
+    links = world.node_tree.links
+    nodes.clear()
+    sky = nodes.new("ShaderNodeTexSky")
+    # Blender 5.0 split the old NISHITA model into explicit scattering modes;
+    # MULTIPLE_SCATTERING is its higher-quality successor. Fall back rather than
+    # crash if this runs on a build with a different set.
+    sky_types = {item.identifier for item in sky.bl_rna.properties["sky_type"].enum_items}
+    for candidate_type in ("MULTIPLE_SCATTERING", "NISHITA", "HOSEK_WILKIE"):
+        if candidate_type in sky_types:
+            sky.sky_type = candidate_type
+            break
+    sky.sun_elevation = math.radians(SUN_ELEVATION_DEGREES)
+    sky.sun_rotation = math.radians(SUN_AZIMUTH_DEGREES)
+    if hasattr(sky, "dust_density"):
+        sky.dust_density = 0.5
+    # The sun disc belongs to the sun lamp below; drawing it here too double-lights
+    # the canopy and blows out whichever view happens to face it.
+    if hasattr(sky, "sun_disc"):
+        sky.sun_disc = False
+    background = nodes.new("ShaderNodeBackground")
+    # Skylight is FILL. At full strength the sky dome out-lights the sun, which
+    # flattens every shadow and turns the whole frame into pale haze -- the tree
+    # loses its modelling and the foliage desaturates to grey-green.
+    background.inputs["Strength"].default_value = 0.42
+    world_output = nodes.new("ShaderNodeOutputWorld")
+    links.new(sky.outputs["Color"], background.inputs["Color"])
+    links.new(background.outputs["Background"], world_output.inputs["Surface"])
     scene.world = world
 
-    ground = material("PlantCatalog Neutral Ground", (0.13, 0.17, 0.12, 1.0), 0.98)
-    bpy.ops.mesh.primitive_plane_add(size=max(width, height) * 4.0, location=(0, 0, -0.015))
+    # Large enough that its edge never enters frame. The old plane was 4x the tree
+    # and its far edge cut a hard seam across the backdrop of every wide view.
+    ground = material("PlantCatalog Neutral Ground", (0.115, 0.135, 0.085, 1.0), 1.0)
+    bpy.ops.mesh.primitive_plane_add(size=max(width, height) * 60.0, location=(0, 0, -0.015))
     bpy.context.object.data.materials.append(ground)
 
     camera_data = bpy.data.cameras.new("PlantCatalog Qualification Camera")
     camera = bpy.data.objects.new("PlantCatalog Qualification Camera", camera_data)
     scene.collection.objects.link(camera)
     scene.camera = camera
+
     target = Vector((0.0, 0.0, height * 0.46))
-    add_area_light("Key", (-width * 0.9, -height * 0.55, height * 1.05), 1650, height * 0.58, (1.0, 0.87, 0.69), target)
-    add_area_light("Fill", (width * 0.85, -height * 0.25, height * 0.52), 620, height * 0.7, (0.55, 0.72, 1.0), target)
-    add_area_light("Rim", (0.0, height * 0.65, height * 0.78), 980, height * 0.48, (0.75, 0.9, 1.0), target)
+    elevation = math.radians(SUN_ELEVATION_DEGREES)
+    azimuth = math.radians(SUN_AZIMUTH_DEGREES)
+    reach = max(width, height) * 3.0
+    sun_data = bpy.data.lights.new("Sun", type="SUN")
+    sun_data.energy = 9.0
+    sun_data.color = (1.0, 0.96, 0.9)
+    sun_data.angle = math.radians(1.6)
+    sun = bpy.data.objects.new("Sun", sun_data)
+    scene.collection.objects.link(sun)
+    sun.location = (
+        reach * math.cos(elevation) * math.sin(azimuth),
+        -reach * math.cos(elevation) * math.cos(azimuth),
+        reach * math.sin(elevation),
+    )
+    aim_at(sun, target)
+    # One soft fill from camera-left keeps the shaded side of the trunk readable
+    # without pretending to be a second sun.
+    add_area_light("Fill", (width * 1.1, -height * 0.35, height * 0.45), 260, height * 0.8, (0.68, 0.78, 1.0), target)
     return scene, camera
 
 
@@ -151,10 +256,9 @@ def render_job(job: dict) -> dict:
     target = (0.0, 0.0, height * 0.48)
     render(scene, camera, root, prefix.with_name(prefix.name + "-front.png"), 0, (0, -distance, height * 0.48), target, 56)
     render(scene, camera, root, prefix.with_name(prefix.name + "-three-quarter.png"), 35, (0, -distance, height * 0.52), target, 56)
-    silhouette = material("PlantCatalog Silhouette", (0.003, 0.005, 0.003, 1.0), 0.99)
-    originals = replace_materials(meshes, silhouette)
+    silhouette_state = enter_silhouette(meshes)
     render(scene, camera, root, prefix.with_name(prefix.name + "-silhouette.png"), 73, (0, -distance, height * 0.5), target, 58)
-    restore_materials(originals)
+    exit_silhouette(silhouette_state)
     render(scene, camera, root, prefix.with_name(prefix.name + "-human-height.png"), 24, (width * 0.45, -width * 0.85, 1.7), (0, 0, min(4.6, height * 0.3)), 48)
     render(scene, camera, root, prefix.with_name(prefix.name + "-bark-close.png"), 12, (width * 0.22, -width * 0.44, 2.2), (0, 0, min(2.8, height * 0.2)), 62)
     render(scene, camera, root, prefix.with_name(prefix.name + "-canopy.png"), 48, (width * 0.45, -width * 0.55, height * 1.32), (0, 0, height * 0.58), 52)

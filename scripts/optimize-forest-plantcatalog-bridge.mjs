@@ -26,13 +26,17 @@ const activeIds = new Set(
 const requireFromCli = createRequire(
   realpathSync(resolve("node_modules/@gltf-transform/cli/package.json"))
 );
-const [{ NodeIO }, { ALL_EXTENSIONS }, { dedup, prune, textureCompress }, { default: sharp }] =
-  await Promise.all([
-    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
-    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
-    import(pathToFileURL(requireFromCli.resolve("@gltf-transform/functions"))),
-    import(pathToFileURL(requireFromCli.resolve("sharp"))),
-  ]);
+const [
+  { NodeIO },
+  { ALL_EXTENSIONS },
+  { dedup, prune, quantize, textureCompress, weld },
+  { default: sharp },
+] = await Promise.all([
+  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
+  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/extensions"))),
+  import(pathToFileURL(requireFromCli.resolve("@gltf-transform/functions"))),
+  import(pathToFileURL(requireFromCli.resolve("sharp"))),
+]);
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.id))) {
@@ -43,10 +47,19 @@ for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.i
   await mkdir(dirname(output), { recursive: true });
   const document = await io.read(input);
   for (const material of document.getRoot().listMaterials()) {
-    const foliage = material.getName().includes("_Foliage_");
-    const wood = material.getName().includes("_Wood_");
-    if (!foliage && !wood) {
-      throw new Error(`${entry.id} has an unclassified material: ${material.getName()}`);
+    // Conditioning names each material with both of its axes, and they answer
+    // different questions here. Family (foliage/wood) sets roughness. Surface
+    // (cutout/opaque) sets alpha mode and sidedness -- lichen cards are wood that
+    // still needs a cutout, so keying transparency off family alone would render
+    // them as opaque rectangles stuck to the bark.
+    const name = material.getName();
+    const foliage = name.includes("_Foliage_");
+    const cutout = name.includes("_Cutout_");
+    if (!foliage && !name.includes("_Wood_")) {
+      throw new Error(`${entry.id} has an unclassified material family: ${name}`);
+    }
+    if (!cutout && !name.includes("_Opaque_")) {
+      throw new Error(`${entry.id} has an unclassified material surface: ${name}`);
     }
     material.setMetallicFactor(0);
     material.setRoughnessFactor(
@@ -54,22 +67,44 @@ for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.i
         ? manifest.conditioning.foliageRoughness
         : manifest.conditioning.woodRoughness
     );
-    material.setAlphaMode(foliage ? "MASK" : "OPAQUE");
+    material.setAlphaMode(cutout ? "MASK" : "OPAQUE");
     material.setAlphaCutoff(
-      foliage ? manifest.conditioning.foliageAlphaCutoff : 0.5
+      cutout ? manifest.conditioning.foliageAlphaCutoff : 0.5
     );
-    material.setDoubleSided(foliage);
+    material.setDoubleSided(cutout);
     material.setEmissiveFactor([0, 0, 0]);
     material.setEmissiveTexture(null);
     material.setExtension("KHR_materials_specular", null);
     material.setExtension("KHR_materials_transmission", null);
   }
-  await document.transform(dedup(), prune());
+  // Geometry, not texture, is what this asset weighs: the first candidate was
+  // 36.4 MiB of which textures were 1.4 MiB. Everything else was float32 vertex
+  // data with no compression applied at all. weld() weights the win by merging
+  // vertices the FBX round-trip split, and quantize() stores positions, normals,
+  // UVs, and the wind mask at integer precision via KHR_mesh_quantization --
+  // plain glTF, so it needs no decoder wired into the verifier, Blender, or the
+  // runtime loader, unlike Draco or meshopt.
+  await document.transform(
+    dedup(),
+    weld(),
+    quantize({
+      quantizePosition: 14,
+      quantizeNormal: 10,
+      quantizeTexcoord: 12,
+      // The wind mask lives in COLOR_0 and is read per-vertex by the shader, so it
+      // keeps more precision than colour would otherwise need.
+      quantizeColor: 12,
+    }),
+    prune()
+  );
   await document.transform(
     textureCompress({
       encoder: sharp,
       targetFormat: "webp",
-      pattern: /^(?!.*_Foliage_.*_BaseColor$).+/,
+      // Every base-colour texture EXCEPT a cutout's, which keeps its source
+      // resolution and lossless alpha: the mask edge is the silhouette of every
+      // leaf and lichen in the tree, and a resized webp round-trip frays it.
+      pattern: /^(?!.*_Cutout_.*_BaseColor$).+/,
       resize: [
         manifest.conditioning.optimizedTextureSize,
         manifest.conditioning.optimizedTextureSize,

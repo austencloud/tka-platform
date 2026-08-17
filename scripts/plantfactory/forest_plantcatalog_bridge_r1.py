@@ -95,9 +95,9 @@ def contract_fingerprint(job: dict, source_hash: str) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def effective_export_options(child: eon.EONChild) -> dict:
+def read_export_options(child: eon.EONChild, names) -> dict:
     effective = {}
-    for name in MANIFEST["export"]["options"]:
+    for name in names:
         effective[name] = child.GetExportOption(name)
     return effective
 
@@ -106,17 +106,44 @@ def configure_export(child: eon.EONChild) -> dict:
     preset_name = MANIFEST["export"]["presetConstant"]
     preset = getattr(eon, preset_name)
     child.SetExportPreset(preset)
-    for name, value in MANIFEST["export"]["options"].items():
-        child.SetExportOption(name, value)
-    effective = effective_export_options(child)
-    requested_double_sided = int(MANIFEST["export"]["options"]["DoubleSided"])
-    if int(effective["DoubleSided"]) != requested_double_sided:
+    applied_preset = int(child.GetExportPreset())
+    if applied_preset != int(preset):
         raise RuntimeError(
-            "PlantFactory ignored DoubleSided export override: requested {}, got {}".format(
-                requested_double_sided, effective["DoubleSided"]
+            "PlantFactory did not apply export preset {}: requested {}, got {}".format(
+                preset_name, int(preset), applied_preset
             )
         )
-    return effective
+
+    requested = MANIFEST["export"]["options"]
+    for name, value in requested.items():
+        child.SetExportOption(name, value)
+
+    # SetExportPreset's docstring warns that "once a preset has been set, it overrides most
+    # export options set with SetExportOption", so a successful set is not evidence the value
+    # survived. Read every option back and fail on any that did not stick. Booleans come back
+    # as ints (True reads 1), so compare through bool for those.
+    effective = read_export_options(child, requested.keys())
+    for name, value in requested.items():
+        if isinstance(value, bool):
+            matched = bool(effective[name]) == value
+        else:
+            matched = effective[name] == value
+        if not matched:
+            raise RuntimeError(
+                "PlantFactory ignored export option {}: requested {!r}, got {!r}".format(
+                    name, value, effective[name]
+                )
+            )
+
+    # Options this bridge deliberately does not set but must record, because they shape the
+    # output and are not settable through this API: every string-typed option (texture map
+    # formats, filename prefix, format extensions) raises "Invalid option", and the float
+    # "scale" raises a SWIG overload error, so only int and bool options can be pinned.
+    # The object/scene format follows the output filename's extension per ExportObject's
+    # docstring, and the Blender stage renormalizes height against targetHeightMetres, so
+    # capturing these as provenance is enough.
+    recorded = read_export_options(child, MANIFEST["export"]["recordedOptions"])
+    return {"requested": effective, "recorded": recorded, "preset": applied_preset}
 
 
 def export_job(child: eon.EONChild, state: dict, job: dict) -> dict:
@@ -157,12 +184,45 @@ def export_job(child: eon.EONChild, state: dict, job: dict) -> dict:
     save_state(state)
 
     child.NewScene()
-    child.LoadPlantCatalogFile(job["catalogSpeciesName"], int(job["seed"]))
-    eon.GeneralParameterSetAgeMax(float(job["maximumAgeYears"]))
-    eon.GeneralParameterSetAge(float(job["ageYears"]))
+    # Load by verified path, not by catalog display name. LoadPlantCatalogFile's docstring --
+    # unlike LoadPlant's -- carries no "Can throws exceptions on error", and that is literal:
+    # when it cannot resolve the species string it silently opens PlantFactory's interactive
+    # "Browser" picker, which disables the main frame and blocks the script forever with
+    # nothing written to vue.log. Both "Quercus robur forest" and the LOD-qualified
+    # "Quercus robur forest HD" hung that way. LoadPlant raises instead, and it takes the
+    # exact file whose existence, size, and SHA-256 were just verified above, so the load is
+    # pinned to the same bytes as the contract fingerprint rather than to a display name.
+    child.LoadPlant(str(source_path), int(job["seed"]))
+    # Age, max age, and season are typed 'int' in the SWIG bindings and raise TypeError on a
+    # float, so these casts are load-bearing, not cosmetic. Health is the one genuine float.
+    eon.GeneralParameterSetAgeMax(int(job["maximumAgeYears"]))
+    eon.GeneralParameterSetAge(int(job["ageYears"]))
     eon.GeneralParameterSetHealth(float(job["health"]))
-    eon.GeneralParameterSetSeason(float(job["seasonDay"]))
+    eon.GeneralParameterSetSeason(int(job["seasonDay"]))
     eon.GeneralParameterSetSeed(int(job["seed"]))
+
+    # Verify each parameter actually took, because two of these getters do not answer in the
+    # units their setter accepts and a silent mismatch would ship a wrong-looking tree:
+    #   * season  -- set as a day in [0, 364]; read back as percent of the year
+    #                (day 172 reads 47.25 == 172 / 364 * 100)
+    #   * health  -- set as a fraction in [0, 1]; read back as a percentage (1.0 reads 100.0)
+    #   * age, ageMax -- years in both directions
+    # Out-of-range values do raise ("season must be <= 364", "health max must be <= 1"), so
+    # this guard is aimed at a value that is silently ignored rather than rejected.
+    for label, expected, getter in (
+        ("maximumAgeYears", float(job["maximumAgeYears"]), eon.GeneralParameterGetAgeMax),
+        ("ageYears", float(job["ageYears"]), eon.GeneralParameterGetAge),
+        ("health", float(job["health"]) * 100.0, eon.GeneralParameterGetHealth),
+        ("seasonDay", int(job["seasonDay"]) / 364.0 * 100.0, eon.GeneralParameterGetSeason),
+    ):
+        applied = float(getter())
+        if abs(applied - expected) > 1e-2:
+            raise RuntimeError(
+                "PlantFactory did not apply {} for {}: expected {} on read-back, got {}".format(
+                    label, job["id"], expected, applied
+                )
+            )
+
     child.ApplyChanges()
     child.UpdateVariation()
     child.WaitForGeometry()

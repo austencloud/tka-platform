@@ -26,12 +26,25 @@ STATE_PATH = ROOT / MANIFEST["paths"]["statePath"]
 EVIDENCE_ROOT = ROOT / MANIFEST["paths"]["evidenceRoot"]
 CONDITIONED_ROOT = ROOT / MANIFEST["paths"]["conditionedRoot"]
 
+# Two independent axes, deliberately not collapsed into one "role":
+#
+#   family  (foliage | wood) -- decided by name tokens. Drives roughness and the
+#           wind mask's flutter channel, so it answers "does this move like a leaf
+#           or like structure".
+#   surface (cutout | opaque) -- decided by MEASURED alpha on the base-colour
+#           texture. Drives alpha wiring, backface culling, and alpha mode, so it
+#           answers "does this need a cutout to look right".
+#
+# Conflating them is what rejected this oak: "twig" sat in the foliage list, but
+# both of Quercus robur's twig materials are opaque 128x2048 bark strips wrapped
+# around solid tube geometry (measured min alpha 1.0), so the foliage branch
+# demanded an alpha channel that does not exist. Twigs are structure -- they hold
+# the leaves up -- so they belong with wood on the family axis.
 FOLIAGE_TOKENS = (
     "leaf",
     "leaves",
     "foliage",
     "needle",
-    "twig",
     "frond",
     "blade",
 )
@@ -43,6 +56,20 @@ WOOD_TOKENS = (
     "stem",
     "root",
     "cap",
+    "twig",
+)
+# Epiphytes -- lichens and mosses growing on the bark. PlantCatalog ships them as
+# alpha cutout cards pinned flat to the trunk, and this oak carries seven of them
+# (Evernia x3, Parmelia x4). They match no token above, so under a single-axis
+# classifier their measured cutout alpha typed them as foliage and the wind mask
+# gave them full leaf flutter -- lichen visibly waving off the bark it is glued to.
+# They are cutout on the surface axis and wood on the family axis: they must move
+# with the trunk.
+EPIPHYTE_TOKENS = (
+    "lichen",
+    "moss",
+    "evernia",
+    "parmelia",
 )
 NON_COLOR_TOKENS = (
     "alpha",
@@ -152,23 +179,41 @@ def sampled_alpha_range(image: bpy.types.Image) -> tuple[float, float] | None:
 
 
 def material_search_text(material: bpy.types.Material) -> str:
+    # Texture file NAME only, never the full filepath: the raw export lives under a
+    # working directory whose own path segments would otherwise be scanned for
+    # tokens, so a checkout in a folder named "branch-work" would type every
+    # material in the tree as wood.
     parts = [material.name]
     for node in image_nodes(material):
-        parts.extend((node.name, node.label, node.image.name, node.image.filepath))
+        parts.extend((node.name, node.label, node.image.name, Path(node.image.filepath).name))
     return " ".join(parts).lower()
 
 
-def classify_material(material: bpy.types.Material) -> tuple[str, str]:
+def classify_family(material: bpy.types.Material) -> tuple[str, str]:
+    """Foliage or wood, for roughness and wind flutter. Names are the authority."""
     search_text = material_search_text(material)
+    if any(token in search_text for token in EPIPHYTE_TOKENS):
+        return "wood", "epiphyte-token"
     if any(token in search_text for token in FOLIAGE_TOKENS):
         return "foliage", "name-or-texture-token"
     if any(token in search_text for token in WOOD_TOKENS):
         return "wood", "name-or-texture-token"
-    for node in image_nodes(material):
-        alpha_range = sampled_alpha_range(node.image)
-        if alpha_range is not None and alpha_range[0] < 0.95 and alpha_range[1] > 0.05:
-            return "foliage", "sampled-cutout-alpha"
-    return "wood", "opaque-fallback"
+    # Wood is the safe fallback in both directions. Over-fluttering a card that is
+    # actually pinned to the trunk tears it off the bark; under-fluttering a leaf is
+    # merely static. And if a species names its leaves something unrecognised, every
+    # material lands on wood and the family gate below fails loudly rather than
+    # shipping a tree whose canopy does not move.
+    return "wood", "unmatched-fallback"
+
+
+def classify_surface(base_color_node: bpy.types.ShaderNodeTexImage) -> tuple[str, str]:
+    """Cutout or opaque, for alpha wiring. Sampled pixels are the authority."""
+    alpha_range = sampled_alpha_range(base_color_node.image)
+    if alpha_range is None:
+        return "opaque", "no-alpha-channel"
+    if alpha_range[0] < 0.95 and alpha_range[1] > 0.05:
+        return "cutout", "sampled-cutout-alpha"
+    return "opaque", "opaque-alpha-channel"
 
 
 def principled_input(bsdf: bpy.types.ShaderNodeBsdfPrincipled, *names: str):
@@ -211,17 +256,29 @@ def choose_alpha_node(material: bpy.types.Material, base_color_node):
 
 
 def configure_material(material: bpy.types.Material, job_id: str, index: int) -> dict:
-    role, classification = classify_material(material)
     original_name = material.name
-    material.name = "ForestPlantCatalog_{}_{}_{}".format(
-        re.sub(r"[^a-zA-Z0-9]+", "_", job_id).strip("_"),
-        "Foliage" if role == "foliage" else "Wood",
-        str(index + 1).zfill(2),
-    )
     material.use_nodes = True
     bsdf = material.node_tree.nodes.get("Principled BSDF")
     if bsdf is None:
         raise RuntimeError("Material has no Principled BSDF: {}".format(original_name))
+
+    # Classify before renaming -- the family axis reads the authored material and
+    # texture names, which the rename is about to overwrite. The surface axis needs
+    # the base-colour texture, so that choice moves ahead of both.
+    base_color_node = choose_base_color_node(material, bsdf)
+    if base_color_node is None:
+        raise RuntimeError("Material has no base-color texture: {}".format(original_name))
+    family, family_classification = classify_family(material)
+    surface, surface_classification = classify_surface(base_color_node)
+
+    # Both axes go in the name because both are read downstream by name: the wind
+    # mask keys on _Foliage_, and the optimizer and verifier key on _Cutout_.
+    material.name = "ForestPlantCatalog_{}_{}_{}_{}".format(
+        re.sub(r"[^a-zA-Z0-9]+", "_", job_id).strip("_"),
+        "Foliage" if family == "foliage" else "Wood",
+        "Cutout" if surface == "cutout" else "Opaque",
+        str(index + 1).zfill(2),
+    )
 
     metallic = principled_input(bsdf, "Metallic")
     roughness = principled_input(bsdf, "Roughness")
@@ -231,7 +288,7 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
     if roughness is not None:
         roughness.default_value = float(
             MANIFEST["conditioning"]["foliageRoughness"]
-            if role == "foliage"
+            if family == "foliage"
             else MANIFEST["conditioning"]["woodRoughness"]
         )
     for emission_name in ("Emission Color", "Emission"):
@@ -242,9 +299,6 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
     if emission_strength is not None:
         emission_strength.default_value = 0.0
 
-    base_color_node = choose_base_color_node(material, bsdf)
-    if base_color_node is None:
-        raise RuntimeError("Material has no base-color texture: {}".format(original_name))
     base_color_node.image.name = material.name + "_BaseColor"
     if not principled_input(bsdf, "Base Color").is_linked:
         material.node_tree.links.new(
@@ -252,10 +306,10 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
         )
 
     alpha_source = None
-    if role == "foliage":
+    if surface == "cutout":
         alpha_node, alpha_socket = choose_alpha_node(material, base_color_node)
         if alpha_node is None or alpha is None:
-            raise RuntimeError("Foliage material has no usable alpha: {}".format(original_name))
+            raise RuntimeError("Cutout material has no usable alpha: {}".format(original_name))
         material.node_tree.links.new(alpha_node.outputs[alpha_socket], alpha)
         alpha_source = alpha_node.image.name
         if hasattr(material, "surface_render_method"):
@@ -273,8 +327,10 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
     return {
         "originalName": original_name,
         "name": material.name,
-        "role": role,
-        "classification": classification,
+        "family": family,
+        "familyClassification": family_classification,
+        "surface": surface,
+        "surfaceClassification": surface_classification,
         "baseColorTexture": base_color_node.image.name,
         "alphaTexture": alpha_source,
     }
@@ -387,12 +443,19 @@ def condition_job(job: dict, export_state: dict) -> dict:
     for index, material in enumerate(tree.data.materials):
         if material is not None:
             material_metrics.append(configure_material(material, job["id"], index))
-    roles = {material["role"] for material in material_metrics}
-    if "wood" not in roles or "foliage" not in roles:
+    families = {material["family"] for material in material_metrics}
+    if "wood" not in families or "foliage" not in families:
         raise RuntimeError(
             "PlantCatalog semantic classification requires wood and foliage; got {}".format(
-                sorted(roles)
+                sorted(families)
             )
+        )
+    # A botanical tree always has cutout cards somewhere. None at all means the
+    # alpha channel was lost in export, which reads as a solid green blob rather
+    # than a canopy, so fail here instead of at visual review.
+    if not any(material["surface"] == "cutout" for material in material_metrics):
+        raise RuntimeError(
+            "PlantCatalog tree has no cutout material; foliage alpha did not survive export"
         )
     for polygon in tree.data.polygons:
         polygon.use_smooth = True

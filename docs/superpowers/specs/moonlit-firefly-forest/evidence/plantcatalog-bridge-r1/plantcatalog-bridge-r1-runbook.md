@@ -25,9 +25,60 @@ existing Forest candidate boundary. It does not replace a production tree.
 4. The run is complete when the Python console prints
    `PLANTCATALOG BRIDGE COMPLETE`.
 
-PlantCatalog assets must be opened with PlantFactory's catalog-aware
-`LoadPlantCatalogFile(speciesName, seed)` API. Passing the protected catalog
-`.tpf` path to the ordinary `LoadPlant` API fails with `VRLLPFS462`.
+### API facts measured against PlantFactory 4.8.0.0 (2026-08-17)
+
+Four things in this pipeline are not guessable from the docstrings, and each one
+cost a failed run before it was measured.
+
+**Load with `LoadPlant`, not `LoadPlantCatalogFile`.** An earlier version of this
+runbook said the opposite. The `VRLLPFS462` failure it cited came from pointing
+`LoadPlant` at `Quercus robur forest HD_~~.tpf` — the 0.1 MB *browse placeholder*
+the application installer ships for every species — rather than from the API
+choice. Against the real 154.7 MB file from PlantCatalog 2022.1, `LoadPlant`
+works. `LoadPlantCatalogFile` is actively dangerous here: its docstring carries
+no "Can throws exceptions on error", and that is literal — when it cannot resolve
+a species name it opens PlantFactory's interactive **Browser** picker, which
+disables the main window and blocks an `-immediate-python` run indefinitely with
+nothing written to `vue.log`. Both `"Quercus robur forest"` and the LOD-qualified
+`"Quercus robur forest HD"` hung that way. `catalogSpeciesName` survives in the
+manifest as provenance only.
+
+**Age, max age, and season are typed `int`; health is a `float`.** A float raises
+`TypeError` from the SWIG binding. Worse, the setters and getters disagree on
+units, so a wrong value is silently plausible rather than loud:
+
+| Parameter | Set as | Reads back as |
+|---|---|---|
+| `seasonDay` | day of year, int in `[0, 364]` | percent of year (day 172 → 47.25) |
+| `health` | fraction in `[0, 1]` | percentage (1.0 → 100.0) |
+| `ageYears`, `maximumAgeYears` | years, int | years |
+
+The bridge writes each value, reads it back, converts units, and fails on any
+mismatch.
+
+**Only int and bool export options exist in practice.** Every string-typed option
+in `SetExportOption`'s own error listing (`map_output.format.*`,
+`map_output.filename_prefix`, `format.*.extension`) raises `Invalid option` when
+actually used, and the float `scale` raises a SWIG overload error. So texture map
+format cannot be forced through this API; the output format follows the export
+filename's extension, and the Blender stage renormalizes height. Those
+unsettable-but-relevant values are captured under `export.recordedOptions` for
+provenance. Note also that `SetExportPreset` changed *no* option value when
+measured — it is recorded and applied at export time — so every option is read
+back after setting, per its docstring warning that a preset "overrides most
+export options set with SetExportOption".
+
+**Modal warnings will stall a headless run.** Mid-export, PlantFactory raises
+`MSGSTC_FBXTilingModeMirror` — "FBX format does not support 'Mirror' Tiling Mode.
+The export will be switched to 'Repeat'." It is only a warning, but it is modal,
+so the script blocks with output half-written and no error anywhere. It was
+dismissed once with "Don't show again" ticked, which persists to
+`%APPDATA%\e-on software\PlantFactory\Config\eonMBCheckStates.prv`. If this
+bridge is ever run under a different Windows profile, that suppression will not
+be there and the run will hang at ~43 files. These dialogs are custom-painted:
+they expose no child windows to `EnumChildWindows` and no UI Automation
+descendants, so the only way to read one is to capture the window with
+`PrintWindow`.
 
 The script checkpoints each job before geometry work and after a valid FBX is
 written. Running it again skips a completed job when the source hash, seed,
