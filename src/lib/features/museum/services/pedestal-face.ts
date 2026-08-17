@@ -22,6 +22,7 @@ import type {
 } from "$lib/shared/mandala/domain/mandala-types";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "$lib/features/museum/data/museum-exhibit-sequences";
 import { faceTraceCount } from "$lib/features/museum/domain/pedestal-standard";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 /** Rendered face resolution. Square, and a power of two for GPU sampling. */
 const FACE_PX = 1024;
@@ -48,6 +49,17 @@ export interface PedestalFaceOptions {
    * the three cases then apply a prop to.
    */
   handPathOnly?: boolean;
+  /**
+   * Steps to draw INSTEAD of the bound sequence's own.
+   *
+   * The console path. A visitor who reverses a performer's path or swaps which
+   * hand plays which role is looking at a transform of the case's own record,
+   * so the face has to be regenerated from those steps rather than from the
+   * ones on file. `sequenceId` stays required even here: a face is never built
+   * without naming the record it belongs to, and the id is still what proves
+   * the record exists.
+   */
+  steps?: readonly StepData[];
 }
 
 export interface PedestalFace {
@@ -126,6 +138,7 @@ export function buildPedestalFace(options: PedestalFaceOptions): PedestalFace {
         `Known ids: ${Object.keys(MUSEUM_EXHIBIT_SEQUENCES).join(", ")}`
     );
   }
+  const steps = options.steps ?? sequence.steps;
 
   // Both hands always draw — that is not what bilaterality decides. What a
   // bilateral prop adds is a second END: held at its centre, a staff sweeps a
@@ -138,7 +151,7 @@ export function buildPedestalFace(options: PedestalFaceOptions): PedestalFace {
   // The opener draws at the hand itself (offset zero) — the path with nothing
   // in the hands, which the three cases then apply a prop to.
   const farEnd = calculateMandalaGeometry(
-    sequence.steps,
+    steps,
     propType,
     propType,
     undefined,
@@ -149,7 +162,7 @@ export function buildPedestalFace(options: PedestalFaceOptions): PedestalFace {
     traceCount === 2
       ? mergePaths(
           farEnd,
-          calculateMandalaGeometry(sequence.steps, propType, propType, undefined, {
+          calculateMandalaGeometry(steps, propType, propType, undefined, {
             dx: -MANDALA_STANDARD_TIP_DX,
             dy: 0,
           })

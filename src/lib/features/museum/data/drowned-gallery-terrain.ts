@@ -24,6 +24,10 @@ import {
   PEDESTAL_DIAMETER,
   sizePedestal,
 } from "../domain/pedestal-standard";
+import {
+  CONSOLE_FOOTPRINT,
+  CONSOLE_HEIGHT,
+} from "../domain/exhibit-console";
 import type {
   MuseumGrid,
   MuseumTerrainProgram,
@@ -246,12 +250,14 @@ export interface ExhibitFixture {
     | "pedestal"
     | "case-showcase"
     | "case-screen"
-    | "case-card";
+    | "case-card"
+    | "case-console";
   /** Expanded word for case furniture; absent on the opener. */
   caseWord?: string;
   /**
-   * Only pedestals carry one: the bound museum sequence whose figure is
-   * generated onto the top face. See services/pedestal-face.ts.
+   * The bound museum sequence. Pedestals generate their top face from it
+   * (services/pedestal-face.ts); consoles read it to decide whether their
+   * fourth, contextual button exists (domain/exhibit-console.ts).
    */
   sequenceId?: string;
   centre: Point2;
@@ -857,6 +863,15 @@ export function buildDrownedGalleryLayout(
   const PERFORMER_H = 1.75;
   const SCREEN_FOOTPRINT = { x: 2.2, z: 0.2 };
   const CARD_FOOTPRINT = { x: 0.9, z: 0.45 };
+  /**
+   * The console stands beside its card sign, on the same line at the channel's
+   * edge, offset east so the two read as one station belonging to one case. It
+   * takes the card's own depth and z rule so it inherits the same proven
+   * clearance behind: the procession is a walking line first and a place to
+   * stop second, and the console must not narrow it further than the sign
+   * already does.
+   */
+  const CONSOLE_OFFSET_X = 0.95;
   const OPENER_DAIS_FOOTPRINT = { x: 2.4, z: 2.4 };
   const OPENER_DAIS_H = 0.25;
   const OPENER_PLINTH_FOOTPRINT = { x: 0.9, z: 0.45 };
@@ -921,6 +936,22 @@ export function buildDrownedGalleryLayout(
         baseY: CAUSEWAY_Y,
         height: 1.05,
         // Tilted to a visitor standing south of it, who then looks past it.
+        facing: FACE_NORTH,
+      },
+      {
+        id: `case-console-${word}`,
+        kind: "case-console" as const,
+        caseWord: word,
+        sequenceId: CASE_SEQUENCE_IDS[index],
+        centre: {
+          x: anchor.x + CONSOLE_OFFSET_X,
+          z: procession.minZ + CONSOLE_FOOTPRINT.z / 2 + 0.35,
+        },
+        size: CONSOLE_FOOTPRINT,
+        baseY: CAUSEWAY_Y,
+        height: CONSOLE_HEIGHT,
+        // Its face tilts up toward a visitor standing south of it, who is
+        // looking north past it at the performer it owns.
         facing: FACE_NORTH,
       },
     ];

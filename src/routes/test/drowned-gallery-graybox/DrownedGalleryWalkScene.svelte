@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
-  import { Color, Mesh, PointLight, type Object3D } from "three";
+  import { Color, Mesh, PointLight, Vector3, type Object3D } from "three";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { CameraMode, UnifiedCameraController } from "@austencloud/camera-3d";
   import type { AvatarState, PhysicsProvider } from "@austencloud/camera-3d";
   import {
@@ -26,7 +27,25 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import PedestalMesh from "$lib/features/museum/components/graybox/PedestalMesh.svelte";
+  import ConsoleMesh from "$lib/features/museum/components/graybox/ConsoleMesh.svelte";
   import { pedestalFaceDataUri } from "$lib/features/museum/services/pedestal-face";
+  import {
+    CONSOLE_BUTTON_D,
+    CONSOLE_FACE_TILT,
+    CONSOLE_FULL_M,
+    CONSOLE_WAKE_M,
+    applyVerb,
+    defaultSettings,
+    isHybrid,
+    isModified,
+    verbsFor,
+    type ConsoleVerb,
+    type PerformerSettings,
+  } from "$lib/features/museum/domain/exhibit-console";
+  import {
+    boundSteps,
+    effectiveSteps,
+  } from "$lib/features/museum/services/exhibit-console-sequence";
   import ReflectivePool from "$lib/shared/3d/environments/primitives/ReflectivePool.svelte";
   import EmberFountains from "$lib/shared/3d/environments/scenes/ember/EmberFountains.svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -143,44 +162,130 @@
    * bare hand path with no prop on it, which is why its pedestal is empty and
    * why it is the one that animates — nothing stands on it to compete.
    */
-  const pedestals = layout.exhibitFixtures
+  const pedestalSpecs = layout.exhibitFixtures
     .filter((fixture) => isPedestal(fixture.kind))
-    .map((fixture) => {
-      const opener = fixture.kind === "opener-pedestal";
-      let faceUri: string | null = null;
-      let faceError: string | null = null;
-      if (fixture.sequenceId) {
-        try {
-          faceUri = pedestalFaceDataUri({
-            sequenceId: fixture.sequenceId,
-            propType: PEDESTAL_PROP,
-            tint: WATER_TINT,
-            handPathOnly: opener,
-          });
-        } catch (error) {
-          // Loud, not silent. A pedestal showing the wrong figure is worse
-          // than one showing none, so a bad binding must be visible in the
-          // console rather than degrading into a blank plate.
-          faceError = error instanceof Error ? error.message : String(error);
-          console.error("[pedestal]", faceError);
-        }
-      }
+    .map((fixture) => ({
+      id: fixture.id,
+      caseWord: fixture.caseWord ?? null,
+      sequenceId: fixture.sequenceId ?? null,
+      opener: fixture.kind === "opener-pedestal",
+      position: [
+        fixture.centre.x - origin.x,
+        fixture.baseY,
+        fixture.centre.z - origin.z,
+      ] as [number, number, number],
+      height: fixture.height,
+      diameter: fixture.size.x,
+    }));
+
+  /**
+   * What each performer is currently doing.
+   *
+   * MODIFICATIONS PERSIST. Walking away from a console does not reset the
+   * performer it owns — the visitor's change is a change to the exhibit for as
+   * long as they are in the wing, and the pedestal under the performer is what
+   * reports it. There is no status lamp anywhere, because a base showing one
+   * trace instead of two already says the prop changed, in the museum's own
+   * grammar and with no new vocabulary.
+   */
+  const performerSettings = $state<Record<string, PerformerSettings>>(
+    Object.fromEntries(
+      pedestalSpecs
+        .filter((spec) => spec.caseWord)
+        .map((spec) => [spec.caseWord!, defaultSettings(PEDESTAL_PROP)])
+    )
+  );
+
+  function faceUriFor(
+    sequenceId: string,
+    propType: string,
+    opener: boolean,
+    steps?: readonly StepData[]
+  ): string | null {
+    try {
+      return pedestalFaceDataUri({
+        sequenceId,
+        propType,
+        tint: WATER_TINT,
+        handPathOnly: opener,
+        ...(steps ? { steps } : {}),
+      });
+    } catch (error) {
+      // Loud, not silent. A pedestal showing the wrong figure is worse than one
+      // showing none, so a bad binding must reach the browser console rather
+      // than degrade into a blank plate.
+      console.error("[pedestal]", error);
+      return null;
+    }
+  }
+
+  /**
+   * Faces, regenerated whenever a console changes what its performer is doing.
+   *
+   * Async because a full reversal is: it rewinds each step through the
+   * pictograph dataset rather than merely playing the list backwards. Seeded
+   * synchronously with the bound figure so no pedestal is ever briefly blank.
+   */
+  const pedestalFaces = $state<Record<string, string | null>>(
+    Object.fromEntries(
+      pedestalSpecs.map((spec) => [
+        spec.id,
+        spec.sequenceId
+          ? faceUriFor(spec.sequenceId, PEDESTAL_PROP, spec.opener)
+          : null,
+      ])
+    )
+  );
+
+  $effect(() => {
+    let cancelled = false;
+    for (const spec of pedestalSpecs) {
+      if (!spec.sequenceId || !spec.caseWord) continue;
+      const settings = performerSettings[spec.caseWord];
+      if (!settings) continue;
+      const { propType, reversed, handsSwapped } = settings;
+      const sequenceId = spec.sequenceId;
+      void effectiveSteps(sequenceId, settings)
+        .then((steps) => {
+          if (cancelled) return;
+          pedestalFaces[spec.id] = faceUriFor(
+            sequenceId,
+            propType,
+            spec.opener,
+            steps
+          );
+        })
+        .catch((error) => console.error("[pedestal]", error));
+      // Referenced so the effect re-runs on every field the face depends on.
+      void reversed;
+      void handsSwapped;
+    }
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const pedestals = $derived(
+    pedestalSpecs.map((spec) => {
+      const settings = spec.caseWord
+        ? performerSettings[spec.caseWord]
+        : undefined;
       return {
-        id: fixture.id,
-        position: [
-          fixture.centre.x - origin.x,
-          fixture.baseY,
-          fixture.centre.z - origin.z,
-        ] as [number, number, number],
-        height: fixture.height,
-        diameter: fixture.size.x,
-        faceUri,
-        animated: opener,
+        id: spec.id,
+        position: spec.position,
+        height: spec.height,
+        diameter: spec.diameter,
+        faceUri:
+          settings && !settings.traceVisible ? null : pedestalFaces[spec.id],
+        animated: spec.opener,
       };
-    });
+    })
+  );
 
   const fixtureMeshes = layout.exhibitFixtures
-    .filter((fixture) => !isPedestal(fixture.kind))
+    .filter(
+      (fixture) => !isPedestal(fixture.kind) && fixture.kind !== "case-console"
+    )
     .map((fixture) => ({
     id: fixture.id,
     kind: fixture.kind,
@@ -203,6 +308,178 @@
           : "#2b3a41",
     emissive: fixture.kind === "case-screen" ? "#1d6d84" : "#000000",
   }));
+
+  /**
+   * One console per performer.
+   *
+   * The reason is structural rather than a preference: the hand-swap button
+   * only exists on the hybrid, so a single wing console would spend two thirds
+   * of its life greying a button out. The wing-console instinct survives as a
+   * framing rule instead — nothing here isolates the performer being changed,
+   * and from any console all three cases stay in view.
+   */
+  const consoleSpecs = layout.exhibitFixtures
+    .filter((fixture) => fixture.kind === "case-console")
+    .map((fixture) => {
+      const sequenceId = fixture.sequenceId!;
+      const hybrid = isHybrid(boundSteps(sequenceId));
+      return {
+        id: fixture.id,
+        caseWord: fixture.caseWord!,
+        position: [
+          fixture.centre.x - origin.x,
+          fixture.baseY,
+          fixture.centre.z - origin.z,
+        ] as [number, number, number],
+        height: fixture.height,
+        footprint: fixture.size,
+        verbs: verbsFor(hybrid),
+      };
+    });
+
+  /** Live camera position, mirrored each frame for the approach test. */
+  let viewPoint = $state({ x: 0, y: 0, z: 0 });
+  const aimOrigin = new Vector3();
+  const aimDirection = new Vector3();
+
+  const consoles = $derived(
+    consoleSpecs.map((spec) => {
+      const settings = performerSettings[spec.caseWord];
+      const distance = Math.hypot(
+        spec.position[0] - viewPoint.x,
+        spec.position[2] - viewPoint.z
+      );
+      // Dark from across the room, live at arm's length. Nothing else in the
+      // room changes as the visitor arrives, and nothing dims.
+      const awake = Math.min(
+        1,
+        Math.max(0, (CONSOLE_WAKE_M - distance) / (CONSOLE_WAKE_M - CONSOLE_FULL_M))
+      );
+      const engaged: Record<string, boolean> = settings
+        ? {
+            trace: !settings.traceVisible,
+            prop: settings.propType.toLowerCase() !== PEDESTAL_PROP,
+            reverse: settings.reversed,
+            "swap-hands": settings.handsSwapped,
+          }
+        : {};
+      return {
+        ...spec,
+        awake,
+        engaged,
+        modified: settings ? isModified(settings, PEDESTAL_PROP) : false,
+      };
+    })
+  );
+
+  /**
+   * Where a control physically is, in world space.
+   *
+   * Derived from the same numbers the mesh is built from rather than measured
+   * off the rendered object, so aiming and drawing cannot drift apart. The
+   * console's face is a plane tilted about X; a control at face-local
+   * (lx, ly, lz) lands here.
+   */
+  function controlWorldPoint(
+    spec: (typeof consoleSpecs)[number],
+    lx: number,
+    ly: number,
+    lz: number
+  ): { x: number; y: number; z: number } {
+    const angle = CONSOLE_FACE_TILT - Math.PI / 2;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const faceY =
+      spec.height - (spec.footprint.z / 2) * Math.tan(CONSOLE_FACE_TILT);
+    return {
+      x: spec.position[0] + lx,
+      y: spec.position[1] + faceY + (ly * cos - lz * sin),
+      z: spec.position[2] + (ly * sin + lz * cos),
+    };
+  }
+
+  interface ConsoleTarget {
+    caseWord: string;
+    verb: ConsoleVerb | "restore";
+    point: { x: number; y: number; z: number };
+  }
+
+  /** Every pressable control in the wing, with its world position. */
+  const consoleTargets = $derived(
+    consoleSpecs.flatMap((spec): ConsoleTarget[] => {
+      const faceW = spec.footprint.x - 0.06;
+      const faceH = spec.footprint.z / Math.cos(CONSOLE_FACE_TILT) - 0.04;
+      const buttonY = faceH / 2 - 0.34 * faceH;
+      const restoreY = faceH / 2 - 0.86 * faceH + faceH * 0.1;
+      const buttons = spec.verbs.map((verb, index) => ({
+        caseWord: spec.caseWord,
+        verb,
+        point: controlWorldPoint(
+          spec,
+          ((index + 0.5) / spec.verbs.length - 0.5) * faceW,
+          buttonY,
+          0.045
+        ),
+      }));
+      return [
+        ...buttons,
+        {
+          caseWord: spec.caseWord,
+          verb: "restore" as const,
+          point: controlWorldPoint(spec, 0, restoreY, 0.035),
+        },
+      ];
+    })
+  );
+
+  /**
+   * The control the visitor is looking at, if any.
+   *
+   * A button is pressed by aiming at it and reaching for it, the way a button
+   * on a real lectern is. There is no cursor, no hover list and no menu — the
+   * camera is never taken, so the only thing that can mean "this one" is where
+   * the visitor is looking from where they are standing.
+   */
+  const AIM_RADIUS = CONSOLE_BUTTON_D * 1.1;
+  const REACH_M = 1.9;
+
+  function aimedControl(): ConsoleTarget | null {
+    const camera = threlte.camera.current;
+    if (!camera) return null;
+    camera.getWorldPosition(aimOrigin);
+    camera.getWorldDirection(aimDirection);
+    let best: ConsoleTarget | null = null;
+    let bestOffset = Infinity;
+    for (const target of consoleTargets) {
+      const dx = target.point.x - aimOrigin.x;
+      const dy = target.point.y - aimOrigin.y;
+      const dz = target.point.z - aimOrigin.z;
+      const along =
+        dx * aimDirection.x + dy * aimDirection.y + dz * aimDirection.z;
+      if (along <= 0.15 || along > REACH_M) continue;
+      const offset = Math.hypot(
+        dx - aimDirection.x * along,
+        dy - aimDirection.y * along,
+        dz - aimDirection.z * along
+      );
+      if (offset > AIM_RADIUS || offset >= bestOffset) continue;
+      bestOffset = offset;
+      best = target;
+    }
+    return best;
+  }
+
+  function pressAimedControl(): boolean {
+    const target = aimedControl();
+    if (!target) return false;
+    const current = performerSettings[target.caseWord];
+    if (!current) return false;
+    performerSettings[target.caseWord] =
+      target.verb === "restore"
+        ? defaultSettings(PEDESTAL_PROP)
+        : applyVerb(current, target.verb);
+    return true;
+  }
 
   /**
    * Mist where the water wing meets the fire wing.
