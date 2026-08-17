@@ -48,6 +48,7 @@
     PropType.FAN,
     PropType.TRIAD,
     PropType.MINIHOOP,
+    PropType.BUUGENG,
     PropType.TRIGENG,
     PropType.TRIQUETRA,
     PropType.TRIQUETRA2,

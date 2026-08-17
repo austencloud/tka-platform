@@ -577,50 +577,273 @@ index 99a40cd26b35183a5e71c93105e0704084dbf9e9..c21db11eb6f1b59c8ccf93e6a6f5bce9
      <T.Group bind:ref={effectsGroupRef}>
        {@render effectsSlot({
          bluePropState,
+diff --git a/dist/lib/components/props/Buugeng3D.svelte b/dist/lib/components/props/Buugeng3D.svelte
+index 8b02d7960387431387d12a655ba4dddbeaf575a1..413406f467561b3ce5635bdb44dfd170a8b12085 100644
+--- a/dist/lib/components/props/Buugeng3D.svelte
++++ b/dist/lib/components/props/Buugeng3D.svelte
+@@ -1,14 +1,85 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import {
++    buildBuugengShape,
++    buildTrigengShape,
++    BUUGENG_GRIP,
++    GENG_BLADE_WIDTH,
++    TRIGENG_GRIP,
++  } from "./geng-profile";
++  import {
++    bullnosePlate,
++    gripBandMaxBevel,
++    gripBandShape,
++  } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  type GengVariant = "buugeng" | "trigeng";
++
++  interface GengGeometrySet {
++    plate: BufferGeometry;
++    gripBand: BufferGeometry;
++  }
++
++  const geometrySets = new Map<string, GengGeometrySet>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette. The blade runs
++   * about 4.6cm across at default size, and an inset past roughly a third of
++   * its half-width folds the rolled edge through itself where the arms meet.
++   */
++  const MAX_BEVEL_INSET = GENG_BLADE_WIDTH / 6.8;
++
++  function getGengGeometrySet(
++    length: number,
++    depth: number,
++    variant: GengVariant
++  ): GengGeometrySet {
++    const key = `${length}:${depth}:${variant}`;
++    const cached = geometrySets.get(key);
++    if (cached) return cached;
++
++    const tri = variant === "trigeng";
++    const grip = tri ? TRIGENG_GRIP : BUUGENG_GRIP;
++    const geometry = {
++      plate: bullnosePlate(
++        tri ? buildTrigengShape(length) : buildBuugengShape(length),
++        depth,
++        length * MAX_BEVEL_INSET
++      ),
++      // The band stands proud of the plate on both faces, so it reads as
++      // something wrapped around the blade rather than printed on it.
++      gripBand: bullnosePlate(
++        gripBandShape(length, grip),
++        depth * 1.3,
++        length * gripBandMaxBevel(grip)
++      ),
++    };
++    geometrySets.set(key, geometry);
++    return geometry;
++  }
++</script>
++
+ <script lang="ts">
++  /**
++   * Buugeng3D Component
++   *
++   * The geng family: a flat blade bent into circular arcs. `variant="buugeng"`
++   * is the S — two arcs meeting at the hand, reaching in opposite directions.
++   * `variant="trigeng"` is the same blade run three ways out of one hub, held
++   * at the hub. Both outlines are transcribed from the props' SVGs in
++   * `geng-profile.ts`, so the 3D prop and the pictograph prop are the same
++   * shape by construction.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the blade gets a darker turned edge.
++   */
++
+   import { T } from "@threlte/core";
+-  import { CatmullRomCurve3, Vector3 } from "three";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -18,89 +89,64 @@
+     thickness,
+     isActivePlayer = false,
+     scale = 1,
+-  }: Prop3DProps = $props();
++    variant = "buugeng",
++  }: Prop3DProps & { variant?: GengVariant } = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  const BUUGENG_LENGTH_RATIO = 0.9;
+-
++  /**
++   * No length ratio here: the profile is normalized to the staff's own span, so
++   * the artwork already carries how big a geng is next to a staff — the buugeng
++   * reaches a little past one staff length tip to tip.
++   */
+   const effectiveLength = $derived(
+-    (length ?? userProportionsState.staffLength) * BUUGENG_LENGTH_RATIO * scale
++    (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-  const rotation = $derived(computePropRotation(propState));
++  /**
++   * Flat spinning props are plate stock, not tube. The blade runs about 4.6cm
++   * across at default size, so it sits a little under 2cm thick — enough to
++   * hold a rolled edge and to read edge-on, thin enough that a tilted blade
++   * still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  const tubeRadius = $derived(baseRadius * 1.8);
+-
+-  // Smooth S-curve: one full sine period sampled at 24 points.
+-  // Bottom arc bows left (-X), upper arc bows right (+X).
+-  // Amplitude ~25% of length gives proportions matching real buugeng.
+-  const curve = $derived.by(() => {
+-    const halfLen = effectiveLength / 2;
+-    const amplitude = effectiveLength * 0.25;
+-    const N = 24;
+-    const points: Vector3[] = [];
+-
+-    for (let i = 0; i <= N; i++) {
+-      const t = i / N;
+-      const y = effectiveLength * (t - 0.5);
+-      const x = -amplitude * Math.sin(t * Math.PI * 2);
+-      points.push(new Vector3(x, y, 0));
+-    }
+-
+-    return new CatmullRomCurve3(points, false, "centripetal", 0.5);
+-  });
+-
+-  const lowerTip = $derived(curve.getPoint(0));
+-  const upperTip = $derived(curve.getPoint(1));
+-
+-  const tipCapRadius = $derived(tubeRadius * 1.15);
++  const geometry = $derived(
++    getGengGeometrySet(effectiveLength, plateDepth, variant)
++  );
++  const materials = $derived(getPlateMaterials(color));
+ 
+-  const gripOuterRadius = $derived(baseRadius * 1.3);
+-  const gripTubeRadius = $derived(baseRadius * 0.15);
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <T.Mesh>
+-      <T.TubeGeometry args={[curve, 64, tubeRadius, 16, false]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh position={[lowerTip.x, lowerTip.y, lowerTip.z]}>
+-      <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh position={[upperTip.x, upperTip.y, upperTip.z]}>
+-      <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={geometry.plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
++
++    <!--
++      Every prop marks the hand with white. A ring would hoop out of a blade
++      this flat, so the geng wears a band instead, sized to the material it
++      lands on so it never overhangs where the blade curves away.
++    -->
++    <T.Mesh
++      geometry={geometry.gripBand}
++      material={[materials.grip, materials.gripEdge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
+diff --git a/dist/lib/components/props/Buugeng3D.svelte.d.ts b/dist/lib/components/props/Buugeng3D.svelte.d.ts
+index 54ac81cf0a5602c1039495b82de06ba5ca59645b..7f9fd40f7d3b70e097fa0309374db80a0912cc7c 100644
+--- a/dist/lib/components/props/Buugeng3D.svelte.d.ts
++++ b/dist/lib/components/props/Buugeng3D.svelte.d.ts
+@@ -1,5 +1,7 @@
+ import type { Prop3DProps } from "./Prop3DProps";
+-declare const Buugeng3D: import("svelte").Component<Prop3DProps, {}, "">;
++type GengVariant = "buugeng" | "trigeng";
++declare const Buugeng3D: import("svelte").Component<Prop3DProps & {
++    variant?: GengVariant;
++}, {}, "">;
+ type Buugeng3D = ReturnType<typeof Buugeng3D>;
+ export default Buugeng3D;
+-//# sourceMappingURL=Buugeng3D.svelte.d.ts.map
+\ No newline at end of file
+diff --git a/dist/lib/components/props/Buugeng3D.svelte.d.ts.map b/dist/lib/components/props/Buugeng3D.svelte.d.ts.map
+deleted file mode 100644
+index 81b3160b2c4ff60d93b2297775f9145752cd879a..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/Doublestar3D.svelte b/dist/lib/components/props/Doublestar3D.svelte
-index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ffc4e71a66 100644
+index 68efc24af1180e24a9900e1943857a75c6b63e62..daf2270364c7740b18382118ff70d3f7974cf2b5 100644
 --- a/dist/lib/components/props/Doublestar3D.svelte
 +++ b/dist/lib/components/props/Doublestar3D.svelte
-@@ -1,25 +1,181 @@
+@@ -1,25 +1,77 @@
 +<script module lang="ts">
-+  import {
-+    BoxGeometry,
-+    type BufferGeometry,
-+    Color,
-+    ExtrudeGeometry,
-+    MeshBasicMaterial,
-+    MeshPhysicalMaterial,
-+    MeshStandardMaterial,
-+    SphereGeometry,
-+  } from "three";
-+  import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
++  import { BoxGeometry, type BufferGeometry } from "three";
 +  import {
 +    buildDoublestarShape,
 +    DOUBLESTAR_WAIST_HALF_WIDTH,
 +  } from "./doublestar-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
 +  interface DoublestarGeometrySet {
 +    plate: BufferGeometry;
 +    gripBand: BoxGeometry;
 +  }
 +
-+  interface DoublestarMaterialSet {
-+    face: MeshPhysicalMaterial;
-+    edge: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
 +  const geometrySets = new Map<string, DoublestarGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", DoublestarMaterialSet>();
-+
-+  /**
-+   * The extruded plate carries a bullnose edge: a shallow straight section with
-+   * a generous rounded bevel on each face, so the rim reads as a turned edge
-+   * catching light rather than a laser-cut card.
-+   */
-+  const STRAIGHT_FRACTION = 0.16;
-+  const BEVEL_FRACTION = 0.42;
 +
 +  /**
 +   * Ceiling on how far the bevel may eat into the silhouette, normalized to
@@ -640,38 +863,12 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +    const cached = geometrySets.get(key);
 +    if (cached) return cached;
 +
-+    // Bevel thickness runs along z, where there is nothing to collide with.
-+    // Bevel SIZE eats inward across the silhouette, and this outline has narrow
-+    // features — the waist bar and the holes' concave notches — where an inset
-+    // larger than the local half-width folds the wall through itself and
-+    // scribbles stray edges across the face. Clamp it to what the waist can
-+    // take; the bullnose ends up slightly flatter in plane than in depth, which
-+    // reads as a rolled edge rather than a defect.
-+    const bevel = depth * BEVEL_FRACTION;
-+    const extruded = new ExtrudeGeometry(buildDoublestarShape(length), {
-+      depth: depth * STRAIGHT_FRACTION,
-+      bevelEnabled: true,
-+      bevelThickness: bevel,
-+      bevelSize: Math.min(bevel, length * MAX_BEVEL_INSET),
-+      bevelOffset: 0,
-+      bevelSegments: 5,
-+      curveSegments: 12,
-+    });
-+    // Extrusion runs from z = -bevel to z = depth + bevel, so its middle sits
-+    // at depth/2. Recentre it: the plate has to spin around its own plane.
-+    extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
-+
-+    // ExtrudeGeometry is unindexed, so its normals come out per-triangle and
-+    // the bullnose rim shades as a stack of facets. Weld the seams and derive
-+    // normals across them — the whole profile is tangent-continuous, so a
-+    // single smooth shell is the honest surface. Groups survive the weld
-+    // (triangle order is untouched), which is what keeps face and rim on
-+    // separate materials.
-+    extruded.deleteAttribute("normal");
-+    extruded.deleteAttribute("uv");
-+    const plate = mergeVertices(extruded);
-+    plate.computeVertexNormals();
-+    extruded.dispose();
++    const plate = bullnosePlate(
++      buildDoublestarShape(length),
++      depth,
++      length * MAX_BEVEL_INSET,
++      12
++    );
 +
 +    const bandWidth = length * DOUBLESTAR_WAIST_HALF_WIDTH * 2.24;
 +    const geometry = {
@@ -686,60 +883,6 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +    return geometry;
 +  }
 +
-+  function getDoublestarMaterialSet(
-+    color: "blue" | "red"
-+  ): DoublestarMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      // Faces read as polished anodized plate: a clearcoat lobe on top of the
-+      // base specular keeps a crisp highlight travelling across the star as it
-+      // turns, which is what sells the shape in motion.
-+      //
-+      // Metalness stays low on purpose. A metal's diffuse response is black —
-+      // it can only show what the environment reflects — and these scenes run
-+      // dark with few lights, so a metallic plate goes muddy while the staffs
-+      // beside it stay saturated. Keep the base dielectric like Staff3D and let
-+      // the clearcoat carry the shine.
-+      face: new MeshPhysicalMaterial({
-+        color: palette.main,
-+        roughness: 0.26,
-+        metalness: 0.12,
-+        clearcoat: 0.7,
-+        clearcoatRoughness: 0.16,
-+      }),
-+      // The rim tells the eye this is solid plate rather than a sticker, so it
-+      // sits clearly below the face — but only part way to the palette's dark
-+      // endpoint. On arms this narrow the rim covers a lot of the silhouette
-+      // whenever the plate tilts, and the full dark red turns the whole prop
-+      // murky while the same treatment in blue barely shows. Meeting the face
-+      // 60% of the way down keeps both colours reading as themselves.
-+      edge: new MeshStandardMaterial({
-+        color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
-+        roughness: 0.42,
-+        metalness: 0.1,
-+      }),
-+      grip: new MeshStandardMaterial({
-+        color: "white",
-+        roughness: 0.4,
-+        metalness: 0.1,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
 +</script>
 +
  <script lang="ts">
@@ -775,7 +918,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
  
    let {
      propState,
-@@ -33,121 +189,63 @@
+@@ -33,121 +85,63 @@
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -824,7 +967,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +  const geometry = $derived(
 +    getDoublestarGeometrySet(effectiveLength, plateDepth)
 +  );
-+  const materials = $derived(getDoublestarMaterialSet(color));
++  const materials = $derived(getPlateMaterials(color));
  
 -  // Star point cones: 4 per ring, pointing outward at 0°, 90°, 180°, 270°
 -  const pointHeight = $derived(ringRadius * 0.15);
@@ -936,19 +1079,22 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 -  </T.Mesh>
 +  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 +  <T.Mesh
-+    geometry={trailGeometry}
++    geometry={PLATE_TRAIL_GEOMETRY}
 +    material={materials.trail}
 +    layers={propLayer}
 +    dispose={false}
 +  />
  {/if}
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..33f27387780a681c487b2c68207b2f12b7e51ce4 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
 --- a/dist/lib/components/props/Prop3D.svelte
 +++ b/dist/lib/components/props/Prop3D.svelte
-@@ -104,8 +104,17 @@
+@@ -102,10 +102,19 @@
+     <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
    {:else if propType === PropType.TRIGENG}
-     <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
+-    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} variant="trigeng" />
  
 -  {:else if propType === PropType.TRIQUETRA || propType === PropType.TRIQUETRA2}
 +  {:else if propType === PropType.TRIQUETRA}
@@ -966,32 +1112,26 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..33f27387780a681c487b2c68207b2f12
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/dist/lib/components/props/Triquetra3D.svelte b/dist/lib/components/props/Triquetra3D.svelte
-index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce88cb172c 100644
+index 43ff1c3d090621bff1e77af4d1b9834ac29821be..b632365295d153088862537e63ab99f8d0bd1abd 100644
 --- a/dist/lib/components/props/Triquetra3D.svelte
 +++ b/dist/lib/components/props/Triquetra3D.svelte
-@@ -1,23 +1,214 @@
+@@ -1,23 +1,93 @@
 +<script module lang="ts">
++  import type { BufferGeometry } from "three";
 +  import {
-+    type BufferGeometry,
-+    Color,
-+    ExtrudeGeometry,
-+    MeshBasicMaterial,
-+    MeshPhysicalMaterial,
-+    MeshStandardMaterial,
-+    type Shape,
-+    SphereGeometry,
-+  } from "three";
-+  import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-+  import {
-+    buildTriquetraGripShape,
 +    buildTriquetraShape,
 +    buildTriquetraShapes,
-+    triquetraGripMaxBevel,
 +    TRIQUETRA2_GRIP,
 +    TRIQUETRA2_GRIP_OFFSET,
 +    TRIQUETRA_GRIP,
 +    TRIQUETRA_RIBBON_WIDTH,
 +  } from "./triquetra-profile";
++  import {
++    bullnosePlate,
++    gripBandMaxBevel,
++    gripBandShape,
++  } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
 +  type TriquetraVariant = "triquetra" | "triquetra2";
 +
@@ -1000,69 +1140,14 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +    gripBand: BufferGeometry;
 +  }
 +
-+  interface TriquetraMaterialSet {
-+    face: MeshPhysicalMaterial;
-+    edge: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    gripEdge: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
 +  const geometrySets = new Map<string, TriquetraGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", TriquetraMaterialSet>();
 +
 +  /**
-+   * The extruded plate carries a bullnose edge: a shallow straight section with
-+   * a generous rounded bevel on each face, so the rim reads as a turned edge
-+   * catching light rather than a laser-cut card.
-+   */
-+  const STRAIGHT_FRACTION = 0.16;
-+  const BEVEL_FRACTION = 0.42;
-+
-+  /**
-+   * Ceiling on how far the bevel may eat into the silhouette. Bevel thickness
-+   * runs along z, where there is nothing to collide with; bevel SIZE insets
-+   * across the plane, and an inset past roughly a third of the ribbon's
-+   * half-width folds the wall through itself where the lobes cross and
-+   * scribbles stray edges over the faces.
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the ribbon's half-width, past which the rolled edge folds through itself
++   * where the lobes cross.
 +   */
 +  const MAX_BEVEL_INSET = TRIQUETRA_RIBBON_WIDTH / 6.8;
-+
-+  /**
-+   * Extrude a shape into a bullnose plate: a shallow straight section with a
-+   * generous rounded bevel on each face, welded into one smooth shell.
-+   *
-+   * ExtrudeGeometry is unindexed, so its normals come out per-triangle and the
-+   * bullnose rim shades as a stack of facets. Welding the seams and deriving
-+   * normals across them gives the honest surface, since the whole profile is
-+   * tangent-continuous. Groups survive the weld (triangle order is untouched),
-+   * which is what keeps face and rim on separate materials.
-+   */
-+  function bullnose(
-+    shape: Shape | Shape[],
-+    depth: number,
-+    maxInset: number
-+  ): BufferGeometry {
-+    const bevel = depth * BEVEL_FRACTION;
-+    const extruded = new ExtrudeGeometry(shape, {
-+      depth: depth * STRAIGHT_FRACTION,
-+      bevelEnabled: true,
-+      bevelThickness: bevel,
-+      bevelSize: Math.min(bevel, maxInset),
-+      bevelOffset: 0,
-+      bevelSegments: 5,
-+      curveSegments: 14,
-+    });
-+    // Extrusion runs from z = -bevel to z = depth + bevel, so its middle sits
-+    // at depth/2. Recentre it: the plate has to spin around its own plane.
-+    extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
-+    extruded.deleteAttribute("normal");
-+    extruded.deleteAttribute("uv");
-+    const welded = mergeVertices(extruded);
-+    welded.computeVertexNormals();
-+    extruded.dispose();
-+    return welded;
-+  }
 +
 +  function getTriquetraGeometrySet(
 +    length: number,
@@ -1076,7 +1161,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +    const single = variant === "triquetra2";
 +    const grip = single ? TRIQUETRA2_GRIP : TRIQUETRA_GRIP;
 +    const geometry = {
-+      plate: bullnose(
++      plate: bullnosePlate(
 +        single
 +          ? buildTriquetraShape(length, TRIQUETRA2_GRIP_OFFSET)
 +          : buildTriquetraShapes(length),
@@ -1085,76 +1170,16 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +      ),
 +      // The band stands proud of the plate on both faces, so it reads as
 +      // something added to the prop rather than printed on it.
-+      gripBand: bullnose(
-+        buildTriquetraGripShape(length, grip),
++      gripBand: bullnosePlate(
++        gripBandShape(length, grip),
 +        depth * 1.3,
-+        length * triquetraGripMaxBevel(grip)
++        length * gripBandMaxBevel(grip)
 +      ),
 +    };
 +    geometrySets.set(key, geometry);
 +    return geometry;
 +  }
 +
-+  function getTriquetraMaterialSet(color: "blue" | "red"): TriquetraMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      // Faces read as polished anodized plate: a clearcoat lobe on top of the
-+      // base specular keeps a crisp highlight travelling around the knot as it
-+      // turns, which is what sells the shape in motion.
-+      //
-+      // Metalness stays low on purpose. A metal's diffuse response is black —
-+      // it can only show what the environment reflects — and these scenes run
-+      // dark with few lights, so a metallic plate goes muddy while the staffs
-+      // beside it stay saturated. Keep the base dielectric like Staff3D and let
-+      // the clearcoat carry the shine.
-+      face: new MeshPhysicalMaterial({
-+        color: palette.main,
-+        roughness: 0.26,
-+        metalness: 0.12,
-+        clearcoat: 0.7,
-+        clearcoatRoughness: 0.16,
-+      }),
-+      // The rim tells the eye this is solid plate rather than a sticker, so it
-+      // sits clearly below the face — but only part way to the palette's dark
-+      // endpoint. On a ribbon this narrow the rim covers a lot of the
-+      // silhouette whenever the plate tilts, and the full dark red turns the
-+      // whole prop murky while the same treatment in blue barely shows. Meeting
-+      // the face 60% of the way down keeps both colours reading as themselves.
-+      edge: new MeshStandardMaterial({
-+        color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
-+        roughness: 0.42,
-+        metalness: 0.1,
-+      }),
-+      // Grip tape, not chrome: matte enough that it never competes with the
-+      // plate's highlight, with the rolled edge a shade down so the wrap has a
-+      // readable thickness of its own against the white face.
-+      grip: new MeshStandardMaterial({
-+        color: "#f2f4f8",
-+        roughness: 0.55,
-+        metalness: 0.04,
-+      }),
-+      gripEdge: new MeshStandardMaterial({
-+        color: "#c3c9d6",
-+        roughness: 0.6,
-+        metalness: 0.04,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
 +</script>
 +
  <script lang="ts">
@@ -1194,7 +1219,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
  
    let {
      propState,
-@@ -27,7 +218,8 @@
+@@ -27,7 +97,8 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -1204,7 +1229,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
-@@ -38,68 +230,49 @@
+@@ -38,68 +109,49 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
  
@@ -1234,7 +1259,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +  const geometry = $derived(
 +    getTriquetraGeometrySet(effectiveLength, plateDepth, variant)
 +  );
-+  const materials = $derived(getTriquetraMaterialSet(color));
++  const materials = $derived(getPlateMaterials(color));
  
 -  // Three lobes at 120° intervals - positions and rotations computed for XY-plane trefoil
 -  const LOBE_CONFIGS = [
@@ -1304,12 +1329,30 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 -  </T.Mesh>
 +  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 +  <T.Mesh
-+    geometry={trailGeometry}
++    geometry={PLATE_TRAIL_GEOMETRY}
 +    material={materials.trail}
 +    layers={propLayer}
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/Triquetra3D.svelte.d.ts b/dist/lib/components/props/Triquetra3D.svelte.d.ts
+index 8cd64ec5f6be4a8bbf69c3bf1f14c5db6f5fddc1..55307146287af792db3a94eec667511da98344e6 100644
+--- a/dist/lib/components/props/Triquetra3D.svelte.d.ts
++++ b/dist/lib/components/props/Triquetra3D.svelte.d.ts
+@@ -1,5 +1,7 @@
+ import type { Prop3DProps } from "./Prop3DProps";
+-declare const Triquetra3D: import("svelte").Component<Prop3DProps, {}, "">;
++type TriquetraVariant = "triquetra" | "triquetra2";
++declare const Triquetra3D: import("svelte").Component<Prop3DProps & {
++    variant?: TriquetraVariant;
++}, {}, "">;
+ type Triquetra3D = ReturnType<typeof Triquetra3D>;
+ export default Triquetra3D;
+-//# sourceMappingURL=Triquetra3D.svelte.d.ts.map
+\ No newline at end of file
+diff --git a/dist/lib/components/props/Triquetra3D.svelte.d.ts.map b/dist/lib/components/props/Triquetra3D.svelte.d.ts.map
+deleted file mode 100644
+index da4a1eff264d7f5f6c34253d48a278a18c48df43..0000000000000000000000000000000000000000
 diff --git a/dist/lib/components/props/doublestar-profile.d.ts b/dist/lib/components/props/doublestar-profile.d.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e46e079157f166c8f88f98797d619b595d4e379a
@@ -1395,6 +1438,325 @@ index 0000000000000000000000000000000000000000..03d909fd6a93676333f275b05e6a78c7
 +export {
 +  DOUBLESTAR_WAIST_HALF_WIDTH,
 +  buildDoublestarShape
++};
+diff --git a/dist/lib/components/props/geng-profile.d.ts b/dist/lib/components/props/geng-profile.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..5c56ef60041e12eee649f7595d4cc8287ab109c4
+--- /dev/null
++++ b/dist/lib/components/props/geng-profile.d.ts
+@@ -0,0 +1,12 @@
++import { Shape } from "three";
++import type { GripBand } from "./plate-extrude";
++/** The blade at its narrowest, normalized to staff length. */
++export declare const GENG_BLADE_WIDTH = 0.0534;
++/** Where the hand meets the buugeng — the waist where its two arcs cross. */
++export declare const BUUGENG_GRIP: GripBand;
++/** Where the hand meets the trigeng — the hub the three arms leave from. */
++export declare const TRIGENG_GRIP: GripBand;
++/** Build the buugeng — two arcs meeting at the hand — ready to extrude. */
++export declare function buildBuugengShape(staffLength: number): Shape;
++/** Build the trigeng — three arms off one hub, gripped at the hub. */
++export declare function buildTrigengShape(staffLength: number): Shape;
+diff --git a/dist/lib/components/props/geng-profile.js b/dist/lib/components/props/geng-profile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..85b03c1b4b90f3fd46d49ad72adbd22f1d37df5a
+--- /dev/null
++++ b/dist/lib/components/props/geng-profile.js
+@@ -0,0 +1,113 @@
++import { Shape } from "three";
++const GENG_BLADE_WIDTH = 0.0534;
++const BUUGENG_GRIP = { halfAcross: 0.0277, halfAlong: 0.0297 };
++const TRIGENG_GRIP = { halfAcross: 0.0316, halfAlong: 0.0316 };
++const BUUGENG_OUTLINE = {
++  start: [0.26325, 0.24446],
++  curves: [
++    [0.26325, 0.21242, 0.25771, 0.18078, 0.24703, 0.14953],
++    [0.21895, 0.06962, 0.15961, 831e-5, 0.08445, -0.01701],
++    [0.08089, -0.0178, 0.06824, -0.02097, 0.03936, -0.02809],
++    [0.02617, -0.03112, 0.01299, -0.03415, -2e-4, -0.03718],
++    [-969e-5, -0.03956, -0.01681, -0.04114, -0.01879, -0.04193],
++    [-0.11729, -0.07041, -0.18414, -0.17801, -0.16357, -0.2765],
++    [-0.15249, -0.36432, -0.08841, -0.4375, -376e-5, -0.45886],
++    [-204e-5, -0.45912, -33e-5, -0.45939, 138e-5, -0.45965],
++    [732e-5, -0.46242, 0.01602, -0.46598, 0.02077, -0.47547],
++    [0.02314, -0.4822, 0.02393, -0.48892, 0.02156, -0.49565],
++    [0.01483, -0.51384, -494e-5, -0.51384, -0.01206, -0.51384],
++    [-0.02393, -0.51384, -0.03975, -0.51187, -0.06112, -0.50791],
++    [-0.13232, -0.48695, -0.19086, -0.44146, -0.22369, -0.38252],
++    [-0.26642, -0.31606, -0.27512, -0.23101, -0.24703, -0.14992],
++    [-0.21934, -0.07002, -0.16001, -949e-5, -0.08445, 0.01661],
++    [-0.07773, 0.01899, -0.05597, 0.02373, -0.02354, 0.03125],
++    [-0.01483, 0.03323, -653e-5, 0.03481, 59e-5, 0.03679],
++    [692e-5, 0.03837, 0.01206, 0.03956, 0.01523, 0.03995],
++    [0.01628, 0.04022, 0.01734, 0.04048, 0.01839, 0.04074],
++    [0.11729, 0.07002, 0.18374, 0.17801, 0.16357, 0.2769],
++    [0.1521, 0.36439, 0.08874, 0.43619, 336e-5, 0.45847],
++    [165e-5, 0.45912, -7e-5, 0.45978, -178e-5, 0.46044],
++    [-494e-5, 0.46123, -0.01602, 0.46479, -0.02077, 0.47627],
++    [-0.02354, 0.48259, -0.02393, 0.48932, -0.02116, 0.49644],
++    [-0.01167, 0.51978, 0.01839, 0.51582, 0.06032, 0.50831],
++    [0.06125, 0.50818, 0.06217, 0.50804, 0.06309, 0.50791],
++    [0.13232, 0.48774, 0.19086, 0.44185, 0.22369, 0.38291],
++    [0.2494, 0.3413, 0.2631, 0.29338, 0.26325, 0.24446]
++  ]
++};
++const TRIGENG_OUTLINE = {
++  start: [-178e-5, -0.29153],
++  curves: [
++    [-0.05518, -0.22983, -0.07733, -0.15071, -0.0627, -0.07516],
++    [-0.06151, -0.06843, -0.05479, -0.04786, -0.04569, -0.01701],
++    [-0.04411, -0.01147, -0.04213, -593e-5, -0.04094, -79e-5],
++    [-0.04727, 514e-5, -0.04885, 672e-5, -0.05004, 752e-5],
++    [-0.12164, 0.07634, -0.24387, 0.0803, -0.31626, 0.01543],
++    [-0.3835, -0.0356, -0.41357, -0.12381, -0.39181, -0.20411],
++    [-0.39181, -0.20491, -0.39142, -0.2057, -0.39102, -0.20649],
++    [-0.39036, -0.20807, -0.3897, -0.20965, -0.38904, -0.21123],
++    [-0.38865, -0.21756, -0.38746, -0.22666, -0.393, -0.23497],
++    [-0.39735, -0.24011, -0.40289, -0.24407, -0.40961, -0.24525],
++    [-0.4282, -0.24842, -0.4377, -0.2318, -0.44126, -0.22587],
++    [-0.4468, -0.21598, -0.45312, -0.20174, -0.45985, -0.18196],
++    [-0.47686, -0.11234, -0.46697, -0.04114, -0.43335, 0.01464],
++    [-0.39854, 0.08267, -0.33129, 0.13093, -0.2498, 0.14676],
++    [-0.1695, 0.16218, -0.09039, 0.14161, -0.03184, 0.09098],
++    [-0.0267, 0.08663, -0.01206, 0.07041, 969e-5, 0.04707],
++    [0.01365, 0.04272, 0.0176, 0.03877, 0.02116, 0.03481],
++    [0.02947, 0.03718, 0.03145, 0.03797, 0.03303, 0.03837],
++    [0.12836, 0.06606, 0.19284, 0.17009, 0.17306, 0.26503],
++    [0.16238, 0.34929, 0.10146, 0.4193, 0.02077, 0.44066],
++    [0.01998, 0.44106, 0.01919, 0.44106, 0.01839, 0.44146],
++    [0.01668, 0.44172, 0.01497, 0.44198, 0.01325, 0.44225],
++    [771e-5, 0.44502, -99e-5, 0.44818, -534e-5, 0.45767],
++    [-771e-5, 0.464, -85e-4, 0.47073, -613e-5, 0.47706],
++    [2e-4, 0.49446, 0.01958, 0.49446, 0.02631, 0.49446],
++    [0.03778, 0.49446, 0.0532, 0.49248, 0.07377, 0.48892],
++    [0.1426, 0.46875, 0.19917, 0.42484, 0.23081, 0.36788],
++    [0.27195, 0.3038, 0.28066, 0.22152, 0.25336, 0.1432],
++    [0.22646, 0.06606, 0.16911, 752e-5, 0.09632, -0.0178],
++    [0.08999, -0.02017, 0.06863, -0.02453, 0.03738, -0.03204],
++    [0.03145, -0.03323, 0.02631, -0.03441, 0.02116, -0.0356],
++    [0.01919, -0.04391, 0.01879, -0.04628, 0.01839, -0.04786],
++    [-534e-5, -0.14399, 0.05241, -0.25198, 0.14458, -0.28244],
++    [0.22251, -0.31527, 0.31388, -0.29747, 0.37282, -0.23853],
++    [0.37322, -0.23813, 0.37401, -0.23734, 0.37441, -0.23695],
++    [0.37546, -0.23563, 0.37652, -0.23431, 0.37757, -0.23299],
++    [0.38271, -0.22943, 0.38983, -0.22389, 0.40012, -0.22429],
++    [0.40684, -0.22547, 0.41278, -0.22824, 0.41752, -0.23339],
++    [0.42939, -0.24763, 0.4199, -0.26424, 0.41634, -0.27017],
++    [0.4108, -0.28006, 0.40131, -0.29233, 0.38786, -0.30854],
++    [0.33604, -0.35799, 0.26958, -0.38489, 0.20431, -0.3841],
++    [0.12797, -0.38805, 0.05241, -0.35403, -178e-5, -0.29153]
++  ]
++};
++function trace(contour, scale) {
++  const shape = new Shape();
++  shape.moveTo(contour.start[0] * scale, contour.start[1] * scale);
++  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
++    shape.bezierCurveTo(
++      c1x * scale,
++      c1y * scale,
++      c2x * scale,
++      c2y * scale,
++      x * scale,
++      y * scale
++    );
++  }
++  shape.closePath();
++  return shape;
++}
++function buildBuugengShape(staffLength) {
++  return trace(BUUGENG_OUTLINE, staffLength);
++}
++function buildTrigengShape(staffLength) {
++  return trace(TRIGENG_OUTLINE, staffLength);
++}
++export {
++  BUUGENG_GRIP,
++  GENG_BLADE_WIDTH,
++  TRIGENG_GRIP,
++  buildBuugengShape,
++  buildTrigengShape
++};
+diff --git a/dist/lib/components/props/plate-extrude.d.ts b/dist/lib/components/props/plate-extrude.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..9f84363d666dec56c348d01600c6126148a65429
+--- /dev/null
++++ b/dist/lib/components/props/plate-extrude.d.ts
+@@ -0,0 +1,19 @@
++import { type BufferGeometry, type Shape as ShapeType, Shape } from "three";
++/**
++ * Extrude an outline into a bullnose plate, welded into one smooth shell.
++ * `maxInset` caps how far the bevel may eat into the silhouette.
++ */
++export declare function bullnosePlate(shape: ShapeType | ShapeType[], depth: number, maxInset: number, curveSegments?: number): BufferGeometry;
++/** A grip band's footprint on the plate, in the outline's own coordinates. */
++export interface GripBand {
++    /** Half-extent across the prop. */
++    readonly halfAcross: number;
++    /** Half-extent along the prop. */
++    readonly halfAlong: number;
++    /** Centre along the prop. Defaults to the hand. */
++    readonly centerAlong?: number;
++}
++/** Ceiling on the band's own rolled edge. */
++export declare function gripBandMaxBevel(band: GripBand): number;
++/** Build a grip band as a rounded rectangle in the plate's plane. */
++export declare function gripBandShape(scale: number, band: GripBand): Shape;
+diff --git a/dist/lib/components/props/plate-extrude.js b/dist/lib/components/props/plate-extrude.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e6b971af0e165fd220783b807fb658d9061d437
+--- /dev/null
++++ b/dist/lib/components/props/plate-extrude.js
+@@ -0,0 +1,52 @@
++import {
++  ExtrudeGeometry,
++  Shape
++} from "three";
++import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
++const STRAIGHT_FRACTION = 0.16;
++const BEVEL_FRACTION = 0.42;
++function bullnosePlate(shape, depth, maxInset, curveSegments = 14) {
++  const bevel = depth * BEVEL_FRACTION;
++  const extruded = new ExtrudeGeometry(shape, {
++    depth: depth * STRAIGHT_FRACTION,
++    bevelEnabled: true,
++    bevelThickness: bevel,
++    bevelSize: Math.min(bevel, maxInset),
++    bevelOffset: 0,
++    bevelSegments: 5,
++    curveSegments
++  });
++  extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
++  extruded.deleteAttribute("normal");
++  extruded.deleteAttribute("uv");
++  const welded = mergeVertices(extruded);
++  welded.computeVertexNormals();
++  extruded.dispose();
++  return welded;
++}
++function gripBandMaxBevel(band) {
++  return band.halfAlong * 0.4;
++}
++function gripBandShape(scale, band) {
++  const w = band.halfAcross * scale;
++  const h = band.halfAlong * scale;
++  const r = Math.min(h, w) * 0.45;
++  const cy = (band.centerAlong ?? 0) * scale;
++  const shape = new Shape();
++  shape.moveTo(-w + r, cy - h);
++  shape.lineTo(w - r, cy - h);
++  shape.quadraticCurveTo(w, cy - h, w, cy - h + r);
++  shape.lineTo(w, cy + h - r);
++  shape.quadraticCurveTo(w, cy + h, w - r, cy + h);
++  shape.lineTo(-w + r, cy + h);
++  shape.quadraticCurveTo(-w, cy + h, -w, cy + h - r);
++  shape.lineTo(-w, cy - h + r);
++  shape.quadraticCurveTo(-w, cy - h, -w + r, cy - h);
++  shape.closePath();
++  return shape;
++}
++export {
++  bullnosePlate,
++  gripBandMaxBevel,
++  gripBandShape
++};
+diff --git a/dist/lib/components/props/plate-materials.d.ts b/dist/lib/components/props/plate-materials.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..a78055dcc7c065a2a4ddd5dd6f9eca3526d9c533
+--- /dev/null
++++ b/dist/lib/components/props/plate-materials.d.ts
+@@ -0,0 +1,16 @@
++import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, SphereGeometry } from "three";
++export interface PlateMaterialSet {
++    /** The two flat faces (extrusion group 0). */
++    readonly face: MeshPhysicalMaterial;
++    /** The rolled rim (extrusion group 1). */
++    readonly edge: MeshStandardMaterial;
++    /** The band marking the hand. */
++    readonly grip: MeshStandardMaterial;
++    /** The band's own rolled rim. */
++    readonly gripEdge: MeshStandardMaterial;
++    /** Path-visualization marker at the prop's position. */
++    readonly trail: MeshBasicMaterial;
++}
++export declare function getPlateMaterials(color: "blue" | "red"): PlateMaterialSet;
++/** Shared marker geometry for the trail indicator. */
++export declare const PLATE_TRAIL_GEOMETRY: SphereGeometry;
+diff --git a/dist/lib/components/props/plate-materials.js b/dist/lib/components/props/plate-materials.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c5de5f492184fc0dda663abfe284b9cb21fcc0d4
+--- /dev/null
++++ b/dist/lib/components/props/plate-materials.js
+@@ -0,0 +1,71 @@
++import {
++  Color,
++  MeshBasicMaterial,
++  MeshPhysicalMaterial,
++  MeshStandardMaterial,
++  SphereGeometry
++} from "three";
++const PALETTES = {
++  blue: { main: "#3b82f6", dark: "#1d4ed8" },
++  red: { main: "#ef4444", dark: "#b91c1c" }
++};
++const materialSets = /* @__PURE__ */ new Map();
++function getPlateMaterials(color) {
++  const cached = materialSets.get(color);
++  if (cached) return cached;
++  const palette = PALETTES[color];
++  const materials = {
++    // Faces read as polished anodized plate: a clearcoat lobe on top of the
++    // base specular keeps a crisp highlight travelling across the prop as it
++    // turns, which is what sells the shape in motion.
++    //
++    // Metalness stays low on purpose. A metal's diffuse response is black — it
++    // can only show what the environment reflects — and these scenes run dark
++    // with few lights, so a metallic plate goes muddy while the staffs beside
++    // it stay saturated. Keep the base dielectric like Staff3D and let the
++    // clearcoat carry the shine.
++    face: new MeshPhysicalMaterial({
++      color: palette.main,
++      roughness: 0.26,
++      metalness: 0.12,
++      clearcoat: 0.7,
++      clearcoatRoughness: 0.16
++    }),
++    // The rim tells the eye this is solid plate rather than a sticker, so it
++    // sits clearly below the face — but only part way to the palette's dark
++    // endpoint. On a ribbon this narrow the rim covers a lot of the silhouette
++    // whenever the plate tilts, and the full dark red turns the whole prop
++    // murky while the same treatment in blue barely shows. Meeting the face 60%
++    // of the way down keeps both colours reading as themselves.
++    edge: new MeshStandardMaterial({
++      color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
++      roughness: 0.42,
++      metalness: 0.1
++    }),
++    // Grip tape, not chrome: matte enough that it never competes with the
++    // plate's highlight, with the rolled edge a shade down so the wrap has a
++    // readable thickness of its own against the white face.
++    grip: new MeshStandardMaterial({
++      color: "#f2f4f8",
++      roughness: 0.55,
++      metalness: 0.04
++    }),
++    gripEdge: new MeshStandardMaterial({
++      color: "#c3c9d6",
++      roughness: 0.6,
++      metalness: 0.04
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true
++    })
++  };
++  materialSets.set(color, materials);
++  return materials;
++}
++const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
++export {
++  PLATE_TRAIL_GEOMETRY,
++  getPlateMaterials
 +};
 diff --git a/dist/lib/components/props/prop-model-recolor.js b/dist/lib/components/props/prop-model-recolor.js
 index 202c7626491817532b35a1e4572dbf417ca12c51..1e34c29da90ca149158fcba95893a2a3d544015f 100644
@@ -1537,66 +1899,41 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..f0c5459a8f3dec2489ea10f345ab8319
      if (bigVariant) {
 diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..6cf9408fc5ab9f7c4f33afa634d3f97ceba8049c
+index 0000000000000000000000000000000000000000..ae3ff4b31072cea9e5f1a2c8d9f8df847aeb5877
 --- /dev/null
 +++ b/dist/lib/components/props/triquetra-profile.d.ts
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,25 @@
 +import { Shape } from "three";
++import type { GripBand } from "./plate-extrude";
 +/**
-+ * Width of the ribbon at its narrowest, normalized to staff length — measured
-+ * as the closest approach between the outline and any hole. The grip band and
-+ * the bevel ceiling are both sized from it.
++ * Width of the ribbon at its narrowest, normalized to staff length. The grip
++ * band and the bevel ceiling are both sized from it.
 + */
 +export declare const TRIQUETRA_RIBBON_WIDTH = 0.0542;
 +/**
 + * How far the knot's near cusp stands off the hand in the artwork, normalized
-+ * to staff length. On the double prop it opens the channel the grip band
-+ * fills.
++ * to staff length.
 + */
 +export declare const TRIQUETRA_CUSP_GAP = 0.02117;
-+interface GripBand {
-+    /** Half-extent along the prop, normalized to staff length. */
-+    readonly halfHeight: number;
-+    /** Centre along the prop, normalized to staff length. */
-+    readonly centerY: number;
-+}
 +/** Structural band bridging the two knots of the double prop. */
 +export declare const TRIQUETRA_GRIP: GripBand;
 +/** Wrap seated on the ribbon the single knot hangs from. */
 +export declare const TRIQUETRA2_GRIP: GripBand;
 +/**
-+ * Ceiling on the band's own rolled edge — the band's half-height, not a narrow
-+ * feature of the silhouette, is what binds here.
-+ */
-+export declare function triquetraGripMaxBevel(grip: GripBand): number;
-+/**
 + * How far along the prop the single-knot variant grips, normalized to staff
 + * length.
 + */
 +export declare const TRIQUETRA2_GRIP_OFFSET = 0.22468;
-+/**
-+ * Build the double triquetra — two knots mirrored about the hand — sized
-+ * against a staff of `staffLength` units and lying in the XY plane ready to
-+ * extrude, with the hand at the origin and the prop reaching along both ±Y.
-+ */
++/** Build the double triquetra — two knots mirrored about the hand. */
 +export declare function buildTriquetraShapes(staffLength: number): Shape[];
-+/**
-+ * Build a single triquetra knot gripped `gripOffset` along its length — the
-+ * triquetra2 variant.
-+ */
++/** Build a single triquetra knot gripped `gripOffset` along its length. */
 +export declare function buildTriquetraShape(staffLength: number, gripOffset: number): Shape;
-+/**
-+ * Build the grip band as a rounded rectangle in the same space as the plate,
-+ * centred `grip.centerY` along the prop.
-+ */
-+export declare function buildTriquetraGripShape(staffLength: number, grip: GripBand): Shape;
-+export {};
 diff --git a/dist/lib/components/props/triquetra-profile.js b/dist/lib/components/props/triquetra-profile.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..513538f2042d0886103f96d2b789d0a7e72eb14e
+index 0000000000000000000000000000000000000000..2b32a010043544d2788220b7655aa4532783c153
 --- /dev/null
 +++ b/dist/lib/components/props/triquetra-profile.js
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,115 @@
 +import { Path, Shape } from "three";
 +const OUTLINE = {
 +  start: [-633e-5, 0.54826],
@@ -1660,12 +1997,16 @@ index 0000000000000000000000000000000000000000..513538f2042d0886103f96d2b789d0a7
 +};
 +const TRIQUETRA_RIBBON_WIDTH = 0.0542;
 +const TRIQUETRA_CUSP_GAP = 0.02117;
-+const GRIP_HALF_WIDTH = 0.056;
-+const TRIQUETRA_GRIP = { halfHeight: 0.028, centerY: 0 };
-+const TRIQUETRA2_GRIP = { halfHeight: 0.013, centerY: 0.013 };
-+function triquetraGripMaxBevel(grip) {
-+  return grip.halfHeight * 0.4;
-+}
++const GRIP_HALF_ACROSS = 0.056;
++const TRIQUETRA_GRIP = {
++  halfAcross: GRIP_HALF_ACROSS,
++  halfAlong: 0.028
++};
++const TRIQUETRA2_GRIP = {
++  halfAcross: GRIP_HALF_ACROSS,
++  halfAlong: 0.013,
++  centerAlong: 0.013
++};
 +const TRIQUETRA2_GRIP_OFFSET = 0.22468;
 +function trace(target, contour, scale, place) {
 +  const sy = place.mirror ? -scale : scale;
@@ -1699,34 +2040,14 @@ index 0000000000000000000000000000000000000000..513538f2042d0886103f96d2b789d0a7
 +function buildTriquetraShape(staffLength, gripOffset) {
 +  return buildKnot(staffLength, { offset: gripOffset });
 +}
-+function buildTriquetraGripShape(staffLength, grip) {
-+  const w = GRIP_HALF_WIDTH * staffLength;
-+  const h = grip.halfHeight * staffLength;
-+  const r = h * 0.45;
-+  const cy = grip.centerY * staffLength;
-+  const shape = new Shape();
-+  shape.moveTo(-w + r, cy - h);
-+  shape.lineTo(w - r, cy - h);
-+  shape.quadraticCurveTo(w, cy - h, w, cy - h + r);
-+  shape.lineTo(w, cy + h - r);
-+  shape.quadraticCurveTo(w, cy + h, w - r, cy + h);
-+  shape.lineTo(-w + r, cy + h);
-+  shape.quadraticCurveTo(-w, cy + h, -w, cy + h - r);
-+  shape.lineTo(-w, cy - h + r);
-+  shape.quadraticCurveTo(-w, cy - h, -w + r, cy - h);
-+  shape.closePath();
-+  return shape;
-+}
 +export {
 +  TRIQUETRA2_GRIP,
 +  TRIQUETRA2_GRIP_OFFSET,
 +  TRIQUETRA_CUSP_GAP,
 +  TRIQUETRA_GRIP,
 +  TRIQUETRA_RIBBON_WIDTH,
-+  buildTriquetraGripShape,
 +  buildTriquetraShape,
-+  buildTriquetraShapes,
-+  triquetraGripMaxBevel
++  buildTriquetraShapes
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
 index b6c16afd1233f1d026941e108cf2912a86e92d03..ec6392485320401f1694e6638969614990311b2d 100644
@@ -3771,50 +4092,255 @@ index c483f07b26cd339a40a34fafe5c34d9f003d5d05..46e3afcb2276b2d9f15a8a5e2f9e1dc5
 +    dispose={false}
 +  />
  {/if}
+diff --git a/src/lib/components/props/Buugeng3D.svelte b/src/lib/components/props/Buugeng3D.svelte
+index 8b02d7960387431387d12a655ba4dddbeaf575a1..413406f467561b3ce5635bdb44dfd170a8b12085 100644
+--- a/src/lib/components/props/Buugeng3D.svelte
++++ b/src/lib/components/props/Buugeng3D.svelte
+@@ -1,14 +1,85 @@
++<script module lang="ts">
++  import type { BufferGeometry } from "three";
++  import {
++    buildBuugengShape,
++    buildTrigengShape,
++    BUUGENG_GRIP,
++    GENG_BLADE_WIDTH,
++    TRIGENG_GRIP,
++  } from "./geng-profile";
++  import {
++    bullnosePlate,
++    gripBandMaxBevel,
++    gripBandShape,
++  } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
++
++  type GengVariant = "buugeng" | "trigeng";
++
++  interface GengGeometrySet {
++    plate: BufferGeometry;
++    gripBand: BufferGeometry;
++  }
++
++  const geometrySets = new Map<string, GengGeometrySet>();
++
++  /**
++   * Ceiling on how far the bevel may eat into the silhouette. The blade runs
++   * about 4.6cm across at default size, and an inset past roughly a third of
++   * its half-width folds the rolled edge through itself where the arms meet.
++   */
++  const MAX_BEVEL_INSET = GENG_BLADE_WIDTH / 6.8;
++
++  function getGengGeometrySet(
++    length: number,
++    depth: number,
++    variant: GengVariant
++  ): GengGeometrySet {
++    const key = `${length}:${depth}:${variant}`;
++    const cached = geometrySets.get(key);
++    if (cached) return cached;
++
++    const tri = variant === "trigeng";
++    const grip = tri ? TRIGENG_GRIP : BUUGENG_GRIP;
++    const geometry = {
++      plate: bullnosePlate(
++        tri ? buildTrigengShape(length) : buildBuugengShape(length),
++        depth,
++        length * MAX_BEVEL_INSET
++      ),
++      // The band stands proud of the plate on both faces, so it reads as
++      // something wrapped around the blade rather than printed on it.
++      gripBand: bullnosePlate(
++        gripBandShape(length, grip),
++        depth * 1.3,
++        length * gripBandMaxBevel(grip)
++      ),
++    };
++    geometrySets.set(key, geometry);
++    return geometry;
++  }
++</script>
++
+ <script lang="ts">
++  /**
++   * Buugeng3D Component
++   *
++   * The geng family: a flat blade bent into circular arcs. `variant="buugeng"`
++   * is the S — two arcs meeting at the hand, reaching in opposite directions.
++   * `variant="trigeng"` is the same blade run three ways out of one hub, held
++   * at the hub. Both outlines are transcribed from the props' SVGs in
++   * `geng-profile.ts`, so the 3D prop and the pictograph prop are the same
++   * shape by construction.
++   *
++   * Extrusion emits two material groups: group 0 is the pair of faces, group 1
++   * is the rim, which is how the blade gets a darker turned edge.
++   */
++
+   import { T } from "@threlte/core";
+-  import { CatmullRomCurve3, Vector3 } from "three";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+   import { userProportionsState } from "../../state/user-proportions-state.svelte";
+-  import {
+-    LAYER_WORLD,
+-    LAYER_PLAYER_BODY,
+-  } from "../../layers/layer-constants";
++  import { LAYER_WORLD, LAYER_PLAYER_BODY } from "../../layers/layer-constants";
+ 
+   let {
+     propState,
+@@ -18,89 +89,64 @@
+     thickness,
+     isActivePlayer = false,
+     scale = 1,
+-  }: Prop3DProps = $props();
++    variant = "buugeng",
++  }: Prop3DProps & { variant?: GengVariant } = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+ 
+-  const BUUGENG_LENGTH_RATIO = 0.9;
+-
++  /**
++   * No length ratio here: the profile is normalized to the staff's own span, so
++   * the artwork already carries how big a geng is next to a staff — the buugeng
++   * reaches a little past one staff length tip to tip.
++   */
+   const effectiveLength = $derived(
+-    (length ?? userProportionsState.staffLength) * BUUGENG_LENGTH_RATIO * scale
++    (length ?? userProportionsState.staffLength) * scale
+   );
+   const baseRadius = $derived(
+     (thickness ?? userProportionsState.dimensions.staffRadius) * scale
+   );
+ 
+-  const palette = $derived(PROP_COLORS[color]);
+-  const rotation = $derived(computePropRotation(propState));
++  /**
++   * Flat spinning props are plate stock, not tube. The blade runs about 4.6cm
++   * across at default size, so it sits a little under 2cm thick — enough to
++   * hold a rolled edge and to read edge-on, thin enough that a tilted blade
++   * still shows mostly face rather than rim.
++   */
++  const plateDepth = $derived(baseRadius * 1.4);
+ 
+-  const tubeRadius = $derived(baseRadius * 1.8);
+-
+-  // Smooth S-curve: one full sine period sampled at 24 points.
+-  // Bottom arc bows left (-X), upper arc bows right (+X).
+-  // Amplitude ~25% of length gives proportions matching real buugeng.
+-  const curve = $derived.by(() => {
+-    const halfLen = effectiveLength / 2;
+-    const amplitude = effectiveLength * 0.25;
+-    const N = 24;
+-    const points: Vector3[] = [];
+-
+-    for (let i = 0; i <= N; i++) {
+-      const t = i / N;
+-      const y = effectiveLength * (t - 0.5);
+-      const x = -amplitude * Math.sin(t * Math.PI * 2);
+-      points.push(new Vector3(x, y, 0));
+-    }
+-
+-    return new CatmullRomCurve3(points, false, "centripetal", 0.5);
+-  });
+-
+-  const lowerTip = $derived(curve.getPoint(0));
+-  const upperTip = $derived(curve.getPoint(1));
+-
+-  const tipCapRadius = $derived(tubeRadius * 1.15);
++  const geometry = $derived(
++    getGengGeometrySet(effectiveLength, plateDepth, variant)
++  );
++  const materials = $derived(getPlateMaterials(color));
+ 
+-  const gripOuterRadius = $derived(baseRadius * 1.3);
+-  const gripTubeRadius = $derived(baseRadius * 0.15);
++  const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <T.Mesh>
+-      <T.TubeGeometry args={[curve, 64, tubeRadius, 16, false]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh position={[lowerTip.x, lowerTip.y, lowerTip.z]}>
+-      <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh position={[upperTip.x, upperTip.y, upperTip.z]}>
+-      <T.SphereGeometry args={[tipCapRadius, 12, 12]} />
+-      <T.MeshStandardMaterial
+-        color={palette.dark}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <T.Mesh
++      geometry={geometry.plate}
++      material={[materials.face, materials.edge]}
++      dispose={false}
++    />
++
++    <!--
++      Every prop marks the hand with white. A ring would hoop out of a blade
++      this flat, so the geng wears a band instead, sized to the material it
++      lands on so it never overhangs where the blade curves away.
++    -->
++    <T.Mesh
++      geometry={geometry.gripBand}
++      material={[materials.grip, materials.gripEdge]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Doublestar3D.svelte b/src/lib/components/props/Doublestar3D.svelte
-index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ffc4e71a66 100644
+index 68efc24af1180e24a9900e1943857a75c6b63e62..daf2270364c7740b18382118ff70d3f7974cf2b5 100644
 --- a/src/lib/components/props/Doublestar3D.svelte
 +++ b/src/lib/components/props/Doublestar3D.svelte
-@@ -1,25 +1,181 @@
+@@ -1,25 +1,77 @@
 +<script module lang="ts">
-+  import {
-+    BoxGeometry,
-+    type BufferGeometry,
-+    Color,
-+    ExtrudeGeometry,
-+    MeshBasicMaterial,
-+    MeshPhysicalMaterial,
-+    MeshStandardMaterial,
-+    SphereGeometry,
-+  } from "three";
-+  import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
++  import { BoxGeometry, type BufferGeometry } from "three";
 +  import {
 +    buildDoublestarShape,
 +    DOUBLESTAR_WAIST_HALF_WIDTH,
 +  } from "./doublestar-profile";
++  import { bullnosePlate } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
 +  interface DoublestarGeometrySet {
 +    plate: BufferGeometry;
 +    gripBand: BoxGeometry;
 +  }
 +
-+  interface DoublestarMaterialSet {
-+    face: MeshPhysicalMaterial;
-+    edge: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
 +  const geometrySets = new Map<string, DoublestarGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", DoublestarMaterialSet>();
-+
-+  /**
-+   * The extruded plate carries a bullnose edge: a shallow straight section with
-+   * a generous rounded bevel on each face, so the rim reads as a turned edge
-+   * catching light rather than a laser-cut card.
-+   */
-+  const STRAIGHT_FRACTION = 0.16;
-+  const BEVEL_FRACTION = 0.42;
 +
 +  /**
 +   * Ceiling on how far the bevel may eat into the silhouette, normalized to
@@ -3834,38 +4360,12 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +    const cached = geometrySets.get(key);
 +    if (cached) return cached;
 +
-+    // Bevel thickness runs along z, where there is nothing to collide with.
-+    // Bevel SIZE eats inward across the silhouette, and this outline has narrow
-+    // features — the waist bar and the holes' concave notches — where an inset
-+    // larger than the local half-width folds the wall through itself and
-+    // scribbles stray edges across the face. Clamp it to what the waist can
-+    // take; the bullnose ends up slightly flatter in plane than in depth, which
-+    // reads as a rolled edge rather than a defect.
-+    const bevel = depth * BEVEL_FRACTION;
-+    const extruded = new ExtrudeGeometry(buildDoublestarShape(length), {
-+      depth: depth * STRAIGHT_FRACTION,
-+      bevelEnabled: true,
-+      bevelThickness: bevel,
-+      bevelSize: Math.min(bevel, length * MAX_BEVEL_INSET),
-+      bevelOffset: 0,
-+      bevelSegments: 5,
-+      curveSegments: 12,
-+    });
-+    // Extrusion runs from z = -bevel to z = depth + bevel, so its middle sits
-+    // at depth/2. Recentre it: the plate has to spin around its own plane.
-+    extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
-+
-+    // ExtrudeGeometry is unindexed, so its normals come out per-triangle and
-+    // the bullnose rim shades as a stack of facets. Weld the seams and derive
-+    // normals across them — the whole profile is tangent-continuous, so a
-+    // single smooth shell is the honest surface. Groups survive the weld
-+    // (triangle order is untouched), which is what keeps face and rim on
-+    // separate materials.
-+    extruded.deleteAttribute("normal");
-+    extruded.deleteAttribute("uv");
-+    const plate = mergeVertices(extruded);
-+    plate.computeVertexNormals();
-+    extruded.dispose();
++    const plate = bullnosePlate(
++      buildDoublestarShape(length),
++      depth,
++      length * MAX_BEVEL_INSET,
++      12
++    );
 +
 +    const bandWidth = length * DOUBLESTAR_WAIST_HALF_WIDTH * 2.24;
 +    const geometry = {
@@ -3880,60 +4380,6 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +    return geometry;
 +  }
 +
-+  function getDoublestarMaterialSet(
-+    color: "blue" | "red"
-+  ): DoublestarMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      // Faces read as polished anodized plate: a clearcoat lobe on top of the
-+      // base specular keeps a crisp highlight travelling across the star as it
-+      // turns, which is what sells the shape in motion.
-+      //
-+      // Metalness stays low on purpose. A metal's diffuse response is black —
-+      // it can only show what the environment reflects — and these scenes run
-+      // dark with few lights, so a metallic plate goes muddy while the staffs
-+      // beside it stay saturated. Keep the base dielectric like Staff3D and let
-+      // the clearcoat carry the shine.
-+      face: new MeshPhysicalMaterial({
-+        color: palette.main,
-+        roughness: 0.26,
-+        metalness: 0.12,
-+        clearcoat: 0.7,
-+        clearcoatRoughness: 0.16,
-+      }),
-+      // The rim tells the eye this is solid plate rather than a sticker, so it
-+      // sits clearly below the face — but only part way to the palette's dark
-+      // endpoint. On arms this narrow the rim covers a lot of the silhouette
-+      // whenever the plate tilts, and the full dark red turns the whole prop
-+      // murky while the same treatment in blue barely shows. Meeting the face
-+      // 60% of the way down keeps both colours reading as themselves.
-+      edge: new MeshStandardMaterial({
-+        color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
-+        roughness: 0.42,
-+        metalness: 0.1,
-+      }),
-+      grip: new MeshStandardMaterial({
-+        color: "white",
-+        roughness: 0.4,
-+        metalness: 0.1,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
 +</script>
 +
  <script lang="ts">
@@ -3969,7 +4415,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
  
    let {
      propState,
-@@ -33,121 +189,63 @@
+@@ -33,121 +85,63 @@
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -4018,7 +4464,7 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 +  const geometry = $derived(
 +    getDoublestarGeometrySet(effectiveLength, plateDepth)
 +  );
-+  const materials = $derived(getDoublestarMaterialSet(color));
++  const materials = $derived(getPlateMaterials(color));
  
 -  // Star point cones: 4 per ring, pointing outward at 0°, 90°, 180°, 270°
 -  const pointHeight = $derived(ringRadius * 0.15);
@@ -4130,19 +4576,22 @@ index 68efc24af1180e24a9900e1943857a75c6b63e62..99ef1a258119d54eebd261dcc46fb4ff
 -  </T.Mesh>
 +  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 +  <T.Mesh
-+    geometry={trailGeometry}
++    geometry={PLATE_TRAIL_GEOMETRY}
 +    material={materials.trail}
 +    layers={propLayer}
 +    dispose={false}
 +  />
  {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..33f27387780a681c487b2c68207b2f12b7e51ce4 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a6f895e2495596967a5f93b2ac360f7e5b074853 100644
 --- a/src/lib/components/props/Prop3D.svelte
 +++ b/src/lib/components/props/Prop3D.svelte
-@@ -104,8 +104,17 @@
+@@ -102,10 +102,19 @@
+     <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
    {:else if propType === PropType.TRIGENG}
-     <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
+-    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} variant="trigeng" />
  
 -  {:else if propType === PropType.TRIQUETRA || propType === PropType.TRIQUETRA2}
 +  {:else if propType === PropType.TRIQUETRA}
@@ -4160,32 +4609,26 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..33f27387780a681c487b2c68207b2f12
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/src/lib/components/props/Triquetra3D.svelte b/src/lib/components/props/Triquetra3D.svelte
-index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce88cb172c 100644
+index 43ff1c3d090621bff1e77af4d1b9834ac29821be..b632365295d153088862537e63ab99f8d0bd1abd 100644
 --- a/src/lib/components/props/Triquetra3D.svelte
 +++ b/src/lib/components/props/Triquetra3D.svelte
-@@ -1,23 +1,214 @@
+@@ -1,23 +1,93 @@
 +<script module lang="ts">
++  import type { BufferGeometry } from "three";
 +  import {
-+    type BufferGeometry,
-+    Color,
-+    ExtrudeGeometry,
-+    MeshBasicMaterial,
-+    MeshPhysicalMaterial,
-+    MeshStandardMaterial,
-+    type Shape,
-+    SphereGeometry,
-+  } from "three";
-+  import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-+  import {
-+    buildTriquetraGripShape,
 +    buildTriquetraShape,
 +    buildTriquetraShapes,
-+    triquetraGripMaxBevel,
 +    TRIQUETRA2_GRIP,
 +    TRIQUETRA2_GRIP_OFFSET,
 +    TRIQUETRA_GRIP,
 +    TRIQUETRA_RIBBON_WIDTH,
 +  } from "./triquetra-profile";
++  import {
++    bullnosePlate,
++    gripBandMaxBevel,
++    gripBandShape,
++  } from "./plate-extrude";
++  import { getPlateMaterials, PLATE_TRAIL_GEOMETRY } from "./plate-materials";
 +
 +  type TriquetraVariant = "triquetra" | "triquetra2";
 +
@@ -4194,69 +4637,14 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +    gripBand: BufferGeometry;
 +  }
 +
-+  interface TriquetraMaterialSet {
-+    face: MeshPhysicalMaterial;
-+    edge: MeshStandardMaterial;
-+    grip: MeshStandardMaterial;
-+    gripEdge: MeshStandardMaterial;
-+    trail: MeshBasicMaterial;
-+  }
-+
 +  const geometrySets = new Map<string, TriquetraGeometrySet>();
-+  const materialSets = new Map<"blue" | "red", TriquetraMaterialSet>();
 +
 +  /**
-+   * The extruded plate carries a bullnose edge: a shallow straight section with
-+   * a generous rounded bevel on each face, so the rim reads as a turned edge
-+   * catching light rather than a laser-cut card.
-+   */
-+  const STRAIGHT_FRACTION = 0.16;
-+  const BEVEL_FRACTION = 0.42;
-+
-+  /**
-+   * Ceiling on how far the bevel may eat into the silhouette. Bevel thickness
-+   * runs along z, where there is nothing to collide with; bevel SIZE insets
-+   * across the plane, and an inset past roughly a third of the ribbon's
-+   * half-width folds the wall through itself where the lobes cross and
-+   * scribbles stray edges over the faces.
++   * Ceiling on how far the bevel may eat into the silhouette — roughly a third
++   * of the ribbon's half-width, past which the rolled edge folds through itself
++   * where the lobes cross.
 +   */
 +  const MAX_BEVEL_INSET = TRIQUETRA_RIBBON_WIDTH / 6.8;
-+
-+  /**
-+   * Extrude a shape into a bullnose plate: a shallow straight section with a
-+   * generous rounded bevel on each face, welded into one smooth shell.
-+   *
-+   * ExtrudeGeometry is unindexed, so its normals come out per-triangle and the
-+   * bullnose rim shades as a stack of facets. Welding the seams and deriving
-+   * normals across them gives the honest surface, since the whole profile is
-+   * tangent-continuous. Groups survive the weld (triangle order is untouched),
-+   * which is what keeps face and rim on separate materials.
-+   */
-+  function bullnose(
-+    shape: Shape | Shape[],
-+    depth: number,
-+    maxInset: number
-+  ): BufferGeometry {
-+    const bevel = depth * BEVEL_FRACTION;
-+    const extruded = new ExtrudeGeometry(shape, {
-+      depth: depth * STRAIGHT_FRACTION,
-+      bevelEnabled: true,
-+      bevelThickness: bevel,
-+      bevelSize: Math.min(bevel, maxInset),
-+      bevelOffset: 0,
-+      bevelSegments: 5,
-+      curveSegments: 14,
-+    });
-+    // Extrusion runs from z = -bevel to z = depth + bevel, so its middle sits
-+    // at depth/2. Recentre it: the plate has to spin around its own plane.
-+    extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
-+    extruded.deleteAttribute("normal");
-+    extruded.deleteAttribute("uv");
-+    const welded = mergeVertices(extruded);
-+    welded.computeVertexNormals();
-+    extruded.dispose();
-+    return welded;
-+  }
 +
 +  function getTriquetraGeometrySet(
 +    length: number,
@@ -4270,7 +4658,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +    const single = variant === "triquetra2";
 +    const grip = single ? TRIQUETRA2_GRIP : TRIQUETRA_GRIP;
 +    const geometry = {
-+      plate: bullnose(
++      plate: bullnosePlate(
 +        single
 +          ? buildTriquetraShape(length, TRIQUETRA2_GRIP_OFFSET)
 +          : buildTriquetraShapes(length),
@@ -4279,76 +4667,16 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +      ),
 +      // The band stands proud of the plate on both faces, so it reads as
 +      // something added to the prop rather than printed on it.
-+      gripBand: bullnose(
-+        buildTriquetraGripShape(length, grip),
++      gripBand: bullnosePlate(
++        gripBandShape(length, grip),
 +        depth * 1.3,
-+        length * triquetraGripMaxBevel(grip)
++        length * gripBandMaxBevel(grip)
 +      ),
 +    };
 +    geometrySets.set(key, geometry);
 +    return geometry;
 +  }
 +
-+  function getTriquetraMaterialSet(color: "blue" | "red"): TriquetraMaterialSet {
-+    const cached = materialSets.get(color);
-+    if (cached) return cached;
-+
-+    const palette =
-+      color === "blue"
-+        ? { main: "#3b82f6", dark: "#1d4ed8" }
-+        : { main: "#ef4444", dark: "#b91c1c" };
-+    const materials = {
-+      // Faces read as polished anodized plate: a clearcoat lobe on top of the
-+      // base specular keeps a crisp highlight travelling around the knot as it
-+      // turns, which is what sells the shape in motion.
-+      //
-+      // Metalness stays low on purpose. A metal's diffuse response is black —
-+      // it can only show what the environment reflects — and these scenes run
-+      // dark with few lights, so a metallic plate goes muddy while the staffs
-+      // beside it stay saturated. Keep the base dielectric like Staff3D and let
-+      // the clearcoat carry the shine.
-+      face: new MeshPhysicalMaterial({
-+        color: palette.main,
-+        roughness: 0.26,
-+        metalness: 0.12,
-+        clearcoat: 0.7,
-+        clearcoatRoughness: 0.16,
-+      }),
-+      // The rim tells the eye this is solid plate rather than a sticker, so it
-+      // sits clearly below the face — but only part way to the palette's dark
-+      // endpoint. On a ribbon this narrow the rim covers a lot of the
-+      // silhouette whenever the plate tilts, and the full dark red turns the
-+      // whole prop murky while the same treatment in blue barely shows. Meeting
-+      // the face 60% of the way down keeps both colours reading as themselves.
-+      edge: new MeshStandardMaterial({
-+        color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
-+        roughness: 0.42,
-+        metalness: 0.1,
-+      }),
-+      // Grip tape, not chrome: matte enough that it never competes with the
-+      // plate's highlight, with the rolled edge a shade down so the wrap has a
-+      // readable thickness of its own against the white face.
-+      grip: new MeshStandardMaterial({
-+        color: "#f2f4f8",
-+        roughness: 0.55,
-+        metalness: 0.04,
-+      }),
-+      gripEdge: new MeshStandardMaterial({
-+        color: "#c3c9d6",
-+        roughness: 0.6,
-+        metalness: 0.04,
-+      }),
-+      trail: new MeshBasicMaterial({
-+        color: palette.main,
-+        opacity: 0.3,
-+        transparent: true,
-+      }),
-+    };
-+    materialSets.set(color, materials);
-+    return materials;
-+  }
-+
-+  const trailGeometry = new SphereGeometry(0.015, 8, 8);
 +</script>
 +
  <script lang="ts">
@@ -4388,7 +4716,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
  
    let {
      propState,
-@@ -27,7 +218,8 @@
+@@ -27,7 +97,8 @@
      thickness,
      isActivePlayer = false,
      scale = 1,
@@ -4398,7 +4726,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
-@@ -38,68 +230,49 @@
+@@ -38,68 +109,49 @@
      (thickness ?? userProportionsState.dimensions.staffRadius) * scale
    );
  
@@ -4428,7 +4756,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 +  const geometry = $derived(
 +    getTriquetraGeometrySet(effectiveLength, plateDepth, variant)
 +  );
-+  const materials = $derived(getTriquetraMaterialSet(color));
++  const materials = $derived(getPlateMaterials(color));
  
 -  // Three lobes at 120° intervals - positions and rotations computed for XY-plane trefoil
 -  const LOBE_CONFIGS = [
@@ -4498,7 +4826,7 @@ index 43ff1c3d090621bff1e77af4d1b9834ac29821be..a9c080ed4eb70174fdd565e5bf4f75ce
 -  </T.Mesh>
 +  <!-- Trail indicator (small sphere at prop position for path visualization) -->
 +  <T.Mesh
-+    geometry={trailGeometry}
++    geometry={PLATE_TRAIL_GEOMETRY}
 +    material={materials.trail}
 +    layers={propLayer}
 +    dispose={false}
@@ -4616,6 +4944,398 @@ index 0000000000000000000000000000000000000000..ad530b0ce2ab7a91d91faa9ed6103fb2
 +  ];
 +  return shape;
 +}
+diff --git a/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a737cc0d6349fb0a01ab5498ea29f0d48f17c0f
+--- /dev/null
++++ b/src/lib/components/props/geng-profile.ts
+@@ -0,0 +1,167 @@
++/**
++ * Geng silhouette profiles
++ *
++ * The geng family is a blade bent into circular arcs: the buugeng is an S of
++ * two arcs meeting at the hand, the trigeng is the same blade run three ways
++ * out of one centre. Neither is a swept tube and neither is a sine wave — the
++ * curvature is constant along each arm and the stock is flat.
++ *
++ * These contours are a direct transcription of `static/images/props/buugeng.svg`
++ * (viewBox 262.6x135.9) and `static/images/props/trigeng.svg` (viewBox
++ * 250x236.7): every cubic below comes from those paths, with their elliptical
++ * arcs converted to beziers and Illustrator's zero-length segments dropped.
++ *
++ * Coordinates are normalized to the STAFF's span, so a geng and a staff stand
++ * in the same relation in 3D as they do on the pictograph grid, and rotated
++ * into prop-local 2D space so the long axis runs along +Y like every other
++ * prop:
++ *
++ *   x = (svgY - handY) / 252.8     across the prop
++ *   y = (svgX - handX) / 252.8     along the prop
++ *
++ * `252.8` is `staff.svg`'s own viewBox width — one staff length. The hand is
++ * the artwork's viewBox centre, which is where `prop-svg-loader.ts` puts it in
++ * 2D, so the tables are already written with the hand on the origin. Both
++ * outlines are a single closed curve with no holes.
++ */
++
++import { Shape } from "three";
++import type { GripBand } from "./plate-extrude";
++
++/** [c1x, c1y, c2x, c2y, endX, endY] */
++type Cubic = readonly [number, number, number, number, number, number];
++
++interface Contour {
++  readonly start: readonly [number, number];
++  readonly curves: readonly Cubic[];
++}
++
++/**
++ * The blade at its narrowest, normalized to staff length — measured by stepping
++ * inward from the outline until the material ends. Both artworks cut the same
++ * 4.6cm blade; the narrower of the two sets the bevel ceiling for the family.
++ */
++export const GENG_BLADE_WIDTH = 0.0534;
++
++/**
++ * Where the hand meets each blade. The buugeng grips the waist where its two
++ * arcs cross; the trigeng grips the hub the three arms leave from, which has a
++ * little more room. Both bands are sized to sit wholly on material — the blade
++ * curves away under them, so a band that spans the full blade width overhangs
++ * into open air on the outside of the curve.
++ */
++export const BUUGENG_GRIP: GripBand = { halfAcross: 0.0277, halfAlong: 0.0297 };
++export const TRIGENG_GRIP: GripBand = { halfAcross: 0.0316, halfAlong: 0.0316 };
++
++const BUUGENG_OUTLINE: Contour = {
++  start: [0.26325, 0.24446],
++  curves: [
++    [0.26325, 0.21242, 0.25771, 0.18078, 0.24703, 0.14953],
++    [0.21895, 0.06962, 0.15961, 0.00831, 0.08445, -0.01701],
++    [0.08089, -0.0178, 0.06824, -0.02097, 0.03936, -0.02809],
++    [0.02617, -0.03112, 0.01299, -0.03415, -0.0002, -0.03718],
++    [-0.00969, -0.03956, -0.01681, -0.04114, -0.01879, -0.04193],
++    [-0.11729, -0.07041, -0.18414, -0.17801, -0.16357, -0.2765],
++    [-0.15249, -0.36432, -0.08841, -0.4375, -0.00376, -0.45886],
++    [-0.00204, -0.45912, -0.00033, -0.45939, 0.00138, -0.45965],
++    [0.00732, -0.46242, 0.01602, -0.46598, 0.02077, -0.47547],
++    [0.02314, -0.4822, 0.02393, -0.48892, 0.02156, -0.49565],
++    [0.01483, -0.51384, -0.00494, -0.51384, -0.01206, -0.51384],
++    [-0.02393, -0.51384, -0.03975, -0.51187, -0.06112, -0.50791],
++    [-0.13232, -0.48695, -0.19086, -0.44146, -0.22369, -0.38252],
++    [-0.26642, -0.31606, -0.27512, -0.23101, -0.24703, -0.14992],
++    [-0.21934, -0.07002, -0.16001, -0.00949, -0.08445, 0.01661],
++    [-0.07773, 0.01899, -0.05597, 0.02373, -0.02354, 0.03125],
++    [-0.01483, 0.03323, -0.00653, 0.03481, 0.00059, 0.03679],
++    [0.00692, 0.03837, 0.01206, 0.03956, 0.01523, 0.03995],
++    [0.01628, 0.04022, 0.01734, 0.04048, 0.01839, 0.04074],
++    [0.11729, 0.07002, 0.18374, 0.17801, 0.16357, 0.2769],
++    [0.1521, 0.36439, 0.08874, 0.43619, 0.00336, 0.45847],
++    [0.00165, 0.45912, -0.00007, 0.45978, -0.00178, 0.46044],
++    [-0.00494, 0.46123, -0.01602, 0.46479, -0.02077, 0.47627],
++    [-0.02354, 0.48259, -0.02393, 0.48932, -0.02116, 0.49644],
++    [-0.01167, 0.51978, 0.01839, 0.51582, 0.06032, 0.50831],
++    [0.06125, 0.50818, 0.06217, 0.50804, 0.06309, 0.50791],
++    [0.13232, 0.48774, 0.19086, 0.44185, 0.22369, 0.38291],
++    [0.2494, 0.3413, 0.2631, 0.29338, 0.26325, 0.24446],
++  ],
++};
++
++const TRIGENG_OUTLINE: Contour = {
++  start: [-0.00178, -0.29153],
++  curves: [
++    [-0.05518, -0.22983, -0.07733, -0.15071, -0.0627, -0.07516],
++    [-0.06151, -0.06843, -0.05479, -0.04786, -0.04569, -0.01701],
++    [-0.04411, -0.01147, -0.04213, -0.00593, -0.04094, -0.00079],
++    [-0.04727, 0.00514, -0.04885, 0.00672, -0.05004, 0.00752],
++    [-0.12164, 0.07634, -0.24387, 0.0803, -0.31626, 0.01543],
++    [-0.3835, -0.0356, -0.41357, -0.12381, -0.39181, -0.20411],
++    [-0.39181, -0.20491, -0.39142, -0.2057, -0.39102, -0.20649],
++    [-0.39036, -0.20807, -0.3897, -0.20965, -0.38904, -0.21123],
++    [-0.38865, -0.21756, -0.38746, -0.22666, -0.393, -0.23497],
++    [-0.39735, -0.24011, -0.40289, -0.24407, -0.40961, -0.24525],
++    [-0.4282, -0.24842, -0.4377, -0.2318, -0.44126, -0.22587],
++    [-0.4468, -0.21598, -0.45312, -0.20174, -0.45985, -0.18196],
++    [-0.47686, -0.11234, -0.46697, -0.04114, -0.43335, 0.01464],
++    [-0.39854, 0.08267, -0.33129, 0.13093, -0.2498, 0.14676],
++    [-0.1695, 0.16218, -0.09039, 0.14161, -0.03184, 0.09098],
++    [-0.0267, 0.08663, -0.01206, 0.07041, 0.00969, 0.04707],
++    [0.01365, 0.04272, 0.0176, 0.03877, 0.02116, 0.03481],
++    [0.02947, 0.03718, 0.03145, 0.03797, 0.03303, 0.03837],
++    [0.12836, 0.06606, 0.19284, 0.17009, 0.17306, 0.26503],
++    [0.16238, 0.34929, 0.10146, 0.4193, 0.02077, 0.44066],
++    [0.01998, 0.44106, 0.01919, 0.44106, 0.01839, 0.44146],
++    [0.01668, 0.44172, 0.01497, 0.44198, 0.01325, 0.44225],
++    [0.00771, 0.44502, -0.00099, 0.44818, -0.00534, 0.45767],
++    [-0.00771, 0.464, -0.0085, 0.47073, -0.00613, 0.47706],
++    [0.0002, 0.49446, 0.01958, 0.49446, 0.02631, 0.49446],
++    [0.03778, 0.49446, 0.0532, 0.49248, 0.07377, 0.48892],
++    [0.1426, 0.46875, 0.19917, 0.42484, 0.23081, 0.36788],
++    [0.27195, 0.3038, 0.28066, 0.22152, 0.25336, 0.1432],
++    [0.22646, 0.06606, 0.16911, 0.00752, 0.09632, -0.0178],
++    [0.08999, -0.02017, 0.06863, -0.02453, 0.03738, -0.03204],
++    [0.03145, -0.03323, 0.02631, -0.03441, 0.02116, -0.0356],
++    [0.01919, -0.04391, 0.01879, -0.04628, 0.01839, -0.04786],
++    [-0.00534, -0.14399, 0.05241, -0.25198, 0.14458, -0.28244],
++    [0.22251, -0.31527, 0.31388, -0.29747, 0.37282, -0.23853],
++    [0.37322, -0.23813, 0.37401, -0.23734, 0.37441, -0.23695],
++    [0.37546, -0.23563, 0.37652, -0.23431, 0.37757, -0.23299],
++    [0.38271, -0.22943, 0.38983, -0.22389, 0.40012, -0.22429],
++    [0.40684, -0.22547, 0.41278, -0.22824, 0.41752, -0.23339],
++    [0.42939, -0.24763, 0.4199, -0.26424, 0.41634, -0.27017],
++    [0.4108, -0.28006, 0.40131, -0.29233, 0.38786, -0.30854],
++    [0.33604, -0.35799, 0.26958, -0.38489, 0.20431, -0.3841],
++    [0.12797, -0.38805, 0.05241, -0.35403, -0.00178, -0.29153],
++  ],
++};
++
++function trace(contour: Contour, scale: number): Shape {
++  const shape = new Shape();
++  shape.moveTo(contour.start[0] * scale, contour.start[1] * scale);
++  for (const [c1x, c1y, c2x, c2y, x, y] of contour.curves) {
++    shape.bezierCurveTo(
++      c1x * scale,
++      c1y * scale,
++      c2x * scale,
++      c2y * scale,
++      x * scale,
++      y * scale
++    );
++  }
++  shape.closePath();
++  return shape;
++}
++
++/**
++ * Build the buugeng — two arcs meeting at the hand — sized against a staff of
++ * `staffLength` units and lying in the XY plane ready to extrude, with the hand
++ * at the origin and the blade reaching along both ±Y.
++ */
++export function buildBuugengShape(staffLength: number): Shape {
++  return trace(BUUGENG_OUTLINE, staffLength);
++}
++
++/** Build the trigeng — three arms off one hub, gripped at the hub. */
++export function buildTrigengShape(staffLength: number): Shape {
++  return trace(TRIGENG_OUTLINE, staffLength);
++}
+diff --git a/src/lib/components/props/plate-extrude.ts b/src/lib/components/props/plate-extrude.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..b240f619a8bee61f434696d4b980712a0d1445f8
+--- /dev/null
++++ b/src/lib/components/props/plate-extrude.ts
+@@ -0,0 +1,113 @@
++/**
++ * Flat-prop plate stock
++ *
++ * The doublestar, the triquetra and the geng family are all the same object in
++ * different silhouettes: a 2D outline transcribed from the pictograph artwork,
++ * given depth, with a rolled edge and a white band marking the hand. This
++ * module owns how that stock is cut, so a new flat prop supplies an outline and
++ * nothing else.
++ */
++
++import {
++  type BufferGeometry,
++  ExtrudeGeometry,
++  type Shape as ShapeType,
++  Shape,
++} from "three";
++import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
++
++/**
++ * The extruded plate carries a bullnose edge: a shallow straight section with a
++ * generous rounded bevel on each face, so the rim reads as a turned edge
++ * catching light rather than a laser-cut card.
++ */
++const STRAIGHT_FRACTION = 0.16;
++const BEVEL_FRACTION = 0.42;
++
++/**
++ * Extrude an outline into a bullnose plate, welded into one smooth shell.
++ *
++ * `maxInset` is the ceiling on how far the bevel may eat into the silhouette.
++ * Bevel THICKNESS runs along z, where there is nothing to collide with; bevel
++ * SIZE insets across the plane, and an inset larger than the local half-width
++ * folds the wall through itself at the outline's narrowest features and
++ * scribbles stray edges across the faces. Clamp it to what the narrowest ribbon
++ * can take: the bullnose ends up slightly flatter in plane than in depth, which
++ * still reads as a rolled edge rather than a defect.
++ *
++ * ExtrudeGeometry is unindexed, so its normals come out per-triangle and the
++ * rim shades as a stack of facets. Welding the seams and deriving normals
++ * across them gives the honest surface, since the whole profile is
++ * tangent-continuous. Groups survive the weld (triangle order is untouched),
++ * which is what keeps face and rim on separate materials: group 0 is the pair
++ * of faces, group 1 is the rim.
++ */
++export function bullnosePlate(
++  shape: ShapeType | ShapeType[],
++  depth: number,
++  maxInset: number,
++  curveSegments = 14
++): BufferGeometry {
++  const bevel = depth * BEVEL_FRACTION;
++  const extruded = new ExtrudeGeometry(shape, {
++    depth: depth * STRAIGHT_FRACTION,
++    bevelEnabled: true,
++    bevelThickness: bevel,
++    bevelSize: Math.min(bevel, maxInset),
++    bevelOffset: 0,
++    bevelSegments: 5,
++    curveSegments,
++  });
++  // Extrusion runs from z = -bevel to z = depth + bevel, so its middle sits at
++  // depth/2. Recentre it: the plate has to spin around its own plane.
++  extruded.translate(0, 0, -(depth * STRAIGHT_FRACTION) / 2);
++  extruded.deleteAttribute("normal");
++  extruded.deleteAttribute("uv");
++  const welded = mergeVertices(extruded);
++  welded.computeVertexNormals();
++  extruded.dispose();
++  return welded;
++}
++
++/** A grip band's footprint on the plate, in the outline's own coordinates. */
++export interface GripBand {
++  /** Half-extent across the prop. */
++  readonly halfAcross: number;
++  /** Half-extent along the prop. */
++  readonly halfAlong: number;
++  /** Centre along the prop. Defaults to the hand. */
++  readonly centerAlong?: number;
++}
++
++/**
++ * Ceiling on the band's own rolled edge. The band's half-extent along the prop,
++ * not a narrow feature of the silhouette, is what binds here.
++ */
++export function gripBandMaxBevel(band: GripBand): number {
++  return band.halfAlong * 0.4;
++}
++
++/**
++ * Build a grip band as a rounded rectangle in the plate's plane, ready to
++ * extrude. Corner radius is tied to the band's own thickness so a squat band
++ * does not come out as a lozenge.
++ */
++export function gripBandShape(scale: number, band: GripBand): Shape {
++  const w = band.halfAcross * scale;
++  const h = band.halfAlong * scale;
++  const r = Math.min(h, w) * 0.45;
++  const cy = (band.centerAlong ?? 0) * scale;
++
++  const shape = new Shape();
++  shape.moveTo(-w + r, cy - h);
++  shape.lineTo(w - r, cy - h);
++  shape.quadraticCurveTo(w, cy - h, w, cy - h + r);
++  shape.lineTo(w, cy + h - r);
++  shape.quadraticCurveTo(w, cy + h, w - r, cy + h);
++  shape.lineTo(-w + r, cy + h);
++  shape.quadraticCurveTo(-w, cy + h, -w, cy + h - r);
++  shape.lineTo(-w, cy - h + r);
++  shape.quadraticCurveTo(-w, cy - h, -w + r, cy - h);
++  shape.closePath();
++  return shape;
++}
+diff --git a/src/lib/components/props/plate-materials.ts b/src/lib/components/props/plate-materials.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..e774cc270c7f367e8ec165eebac607fee7396677
+--- /dev/null
++++ b/src/lib/components/props/plate-materials.ts
+@@ -0,0 +1,94 @@
++/**
++ * Flat-prop finish
++ *
++ * Every plate prop wears the same finish, so they read as one family of objects
++ * cut from the same stock. Shared and cached per colour: the meshes differ, the
++ * material does not.
++ */
++
++import {
++  Color,
++  MeshBasicMaterial,
++  MeshPhysicalMaterial,
++  MeshStandardMaterial,
++  SphereGeometry,
++} from "three";
++
++export interface PlateMaterialSet {
++  /** The two flat faces (extrusion group 0). */
++  readonly face: MeshPhysicalMaterial;
++  /** The rolled rim (extrusion group 1). */
++  readonly edge: MeshStandardMaterial;
++  /** The band marking the hand. */
++  readonly grip: MeshStandardMaterial;
++  /** The band's own rolled rim. */
++  readonly gripEdge: MeshStandardMaterial;
++  /** Path-visualization marker at the prop's position. */
++  readonly trail: MeshBasicMaterial;
++}
++
++const PALETTES = {
++  blue: { main: "#3b82f6", dark: "#1d4ed8" },
++  red: { main: "#ef4444", dark: "#b91c1c" },
++} as const;
++
++const materialSets = new Map<"blue" | "red", PlateMaterialSet>();
++
++export function getPlateMaterials(color: "blue" | "red"): PlateMaterialSet {
++  const cached = materialSets.get(color);
++  if (cached) return cached;
++
++  const palette = PALETTES[color];
++  const materials: PlateMaterialSet = {
++    // Faces read as polished anodized plate: a clearcoat lobe on top of the
++    // base specular keeps a crisp highlight travelling across the prop as it
++    // turns, which is what sells the shape in motion.
++    //
++    // Metalness stays low on purpose. A metal's diffuse response is black — it
++    // can only show what the environment reflects — and these scenes run dark
++    // with few lights, so a metallic plate goes muddy while the staffs beside
++    // it stay saturated. Keep the base dielectric like Staff3D and let the
++    // clearcoat carry the shine.
++    face: new MeshPhysicalMaterial({
++      color: palette.main,
++      roughness: 0.26,
++      metalness: 0.12,
++      clearcoat: 0.7,
++      clearcoatRoughness: 0.16,
++    }),
++    // The rim tells the eye this is solid plate rather than a sticker, so it
++    // sits clearly below the face — but only part way to the palette's dark
++    // endpoint. On a ribbon this narrow the rim covers a lot of the silhouette
++    // whenever the plate tilts, and the full dark red turns the whole prop
++    // murky while the same treatment in blue barely shows. Meeting the face 60%
++    // of the way down keeps both colours reading as themselves.
++    edge: new MeshStandardMaterial({
++      color: new Color(palette.main).lerp(new Color(palette.dark), 0.6),
++      roughness: 0.42,
++      metalness: 0.1,
++    }),
++    // Grip tape, not chrome: matte enough that it never competes with the
++    // plate's highlight, with the rolled edge a shade down so the wrap has a
++    // readable thickness of its own against the white face.
++    grip: new MeshStandardMaterial({
++      color: "#f2f4f8",
++      roughness: 0.55,
++      metalness: 0.04,
++    }),
++    gripEdge: new MeshStandardMaterial({
++      color: "#c3c9d6",
++      roughness: 0.6,
++      metalness: 0.04,
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true,
++    }),
++  };
++  materialSets.set(color, materials);
++  return materials;
++}
++
++/** Shared marker geometry for the trail indicator. */
++export const PLATE_TRAIL_GEOMETRY = new SphereGeometry(0.015, 8, 8);
 diff --git a/src/lib/components/props/prop-model-recolor.ts b/src/lib/components/props/prop-model-recolor.ts
 index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17dfdf1bf6 100644
 --- a/src/lib/components/props/prop-model-recolor.ts
@@ -4784,10 +5504,10 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..412dd4a2cbdd2d1821e0aa179d8f70ab
    if (bigVariant) {
 diff --git a/src/lib/components/props/triquetra-profile.ts b/src/lib/components/props/triquetra-profile.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..56c3fa91c05c8f163efbfc1c08cff603238164f6
+index 0000000000000000000000000000000000000000..b92c04923115bbf888a63635107e3e6508ffd5c9
 --- /dev/null
 +++ b/src/lib/components/props/triquetra-profile.ts
-@@ -0,0 +1,289 @@
+@@ -0,0 +1,247 @@
 +/**
 + * Triquetra silhouette profile
 + *
@@ -4817,6 +5537,7 @@ index 0000000000000000000000000000000000000000..56c3fa91c05c8f163efbfc1c08cff603
 + */
 +
 +import { Path, Shape } from "three";
++import type { GripBand } from "./plate-extrude";
 +
 +/** [c1x, c1y, c2x, c2y, endX, endY] */
 +type Cubic = readonly [number, number, number, number, number, number];
@@ -4933,30 +5654,20 @@ index 0000000000000000000000000000000000000000..56c3fa91c05c8f163efbfc1c08cff603
 + * the hand. Tape proportions are what fit — 2.2cm tall leaves room for 24.7cm,
 + * so the 9.7cm band sits well inside the material across its whole length.
 + */
-+const GRIP_HALF_WIDTH = 0.056;
++/** Both bands span the same width across the prop. */
++const GRIP_HALF_ACROSS = 0.056;
 +
-+interface GripBand {
-+  /** Half-extent along the prop, normalized to staff length. */
-+  readonly halfHeight: number;
-+  /** Centre along the prop, normalized to staff length. */
-+  readonly centerY: number;
-+}
-+
-+/** Structural band bridging the two knots of the double prop. */
-+export const TRIQUETRA_GRIP: GripBand = { halfHeight: 0.028, centerY: 0 };
++export const TRIQUETRA_GRIP: GripBand = {
++  halfAcross: GRIP_HALF_ACROSS,
++  halfAlong: 0.028,
++};
 +
 +/** Wrap seated on the ribbon the single knot hangs from. */
-+export const TRIQUETRA2_GRIP: GripBand = { halfHeight: 0.013, centerY: 0.013 };
-+
-+/**
-+ * Ceiling on the band's own rolled edge. Unlike the plate, the binding
-+ * constraint here is the band's half-height, not a narrow feature of the
-+ * silhouette: a bevel that insets further than the band is thin folds the roll
-+ * through itself along the whole length of the wrap.
-+ */
-+export function triquetraGripMaxBevel(grip: GripBand): number {
-+  return grip.halfHeight * 0.4;
-+}
++export const TRIQUETRA2_GRIP: GripBand = {
++  halfAcross: GRIP_HALF_ACROSS,
++  halfAlong: 0.013,
++  centerAlong: 0.013,
++};
 +
 +/**
 + * How far along the prop the single-knot variant grips, normalized to staff
@@ -5043,39 +5754,6 @@ index 0000000000000000000000000000000000000000..56c3fa91c05c8f163efbfc1c08cff603
 +  gripOffset: number
 +): Shape {
 +  return buildKnot(staffLength, { offset: gripOffset });
-+}
-+
-+/**
-+ * Build the grip band as a rounded rectangle in the same space as the plate,
-+ * centred `centerY` along the prop. Extruding it rather than boxing it is what
-+ * makes it read as a wrap around plate stock: the rolled edge catches the same
-+ * highlight the plate's rim does, where a hard box face sits on the artwork
-+ * like a sticker.
-+ */
-+export function buildTriquetraGripShape(
-+  staffLength: number,
-+  grip: GripBand
-+): Shape {
-+  const w = GRIP_HALF_WIDTH * staffLength;
-+  const h = grip.halfHeight * staffLength;
-+  // A corner tied to the band's own thickness keeps the roll reading the same
-+  // on both bands, where one radius shared between them would swallow the
-+  // thinner one.
-+  const r = h * 0.45;
-+  const cy = grip.centerY * staffLength;
-+
-+  const shape = new Shape();
-+  shape.moveTo(-w + r, cy - h);
-+  shape.lineTo(w - r, cy - h);
-+  shape.quadraticCurveTo(w, cy - h, w, cy - h + r);
-+  shape.lineTo(w, cy + h - r);
-+  shape.quadraticCurveTo(w, cy + h, w - r, cy + h);
-+  shape.lineTo(-w + r, cy + h);
-+  shape.quadraticCurveTo(-w, cy + h, -w, cy + h - r);
-+  shape.lineTo(-w, cy - h + r);
-+  shape.quadraticCurveTo(-w, cy - h, -w + r, cy - h);
-+  shape.closePath();
-+  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
 index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..0a6f458e041c91656d382d4fa115a83697e6e171 100644
