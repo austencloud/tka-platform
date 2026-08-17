@@ -5,6 +5,7 @@ Shows available turn-intensity ceilings with contextual counts.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import FilterChipBase from "./FilterChipBase.svelte";
+  import ChipPopoverOption from "./ChipPopoverOption.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
@@ -82,43 +83,21 @@ Shows available turn-intensity ceilings with contextual counts.
       ghostKind="browse-filter"
     >
       {#snippet children()}
-        <button
-          class="popover-option"
-          data-ghost="safe"
-          data-ghost-kind="filter-option"
-          class:selected={activeIntensity === null}
-          type="button"
-          role="option"
-          aria-selected={activeIntensity === null}
+        <ChipPopoverOption
+          label={t('browse_all_turn_intensities')}
+          selected={activeIntensity === null}
+          ghostKind="filter-option"
           onclick={() => handleSelect(null)}
-        >
-          <span>{t('browse_all_turn_intensities')}</span>
-          {#if activeIntensity === null}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {/if}
-        </button>
+        />
         {#each availableIntensities as intensity}
           {#if !intensityCounts || (intensityCounts[intensity] ?? 0) > 0}
-            <button
-              class="popover-option"
-              data-ghost="safe"
-              data-ghost-kind="filter-option"
-              class:selected={activeIntensity === intensity}
-              type="button"
-              role="option"
-              aria-selected={activeIntensity === intensity}
+            <ChipPopoverOption
+              label={fmt(intensity)}
+              selected={activeIntensity === intensity}
+              count={intensityCounts ? (intensityCounts[intensity] ?? 0) : null}
+              ghostKind="filter-option"
               onclick={() => handleSelect(intensity)}
-            >
-              <span>
-                {fmt(intensity)}
-                {#if intensityCounts}
-                  <span class="option-count">({intensityCounts[intensity]})</span>
-                {/if}
-              </span>
-              {#if activeIntensity === intensity}
-                <i class="fas fa-check" aria-hidden="true"></i>
-              {/if}
-            </button>
+            />
           {/if}
         {/each}
       {/snippet}
@@ -133,49 +112,7 @@ Shows available turn-intensity ceilings with contextual counts.
        Distinct from Level (--semantic-info, blue) and Length (#f59e0b, amber —
        the same hex as --semantic-warning, so that token would collide). */
     --max-turn-intensity-chip-color: var(--semantic-success);
+    --chip-option-color: var(--max-turn-intensity-chip-color);
     position: relative;
-  }
-
-  .popover-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-  }
-
-  .popover-option:hover {
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-  }
-
-  .popover-option.selected {
-    color: var(--max-turn-intensity-chip-color);
-    font-weight: 600;
-  }
-
-  .popover-option i {
-    font-size: 10px;
-  }
-
-  .option-count {
-    opacity: 0.6;
-    font-weight: 400;
-    margin-left: 4px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .popover-option {
-      transition: none;
-    }
   }
 </style>

@@ -33,15 +33,16 @@ describe("sequence actions panel state", () => {
   it("backs through Direction one level at a time before returning to the root", () => {
     const state = createSequenceActionsPanelState({
       initialSubView: "rotation",
-      initialDirectionRoute: "reversal-result",
+      initialDirectionRoute: "reversals",
     });
 
+    // Back out of Reversals lands on the Direction hub, still inside the
+    // drill-down rather than dropping straight out to the actions grid.
     expect(state.exitSubView()).toBe("none");
-    expect(state.directionRoute).not.toBe("reversal-result");
+    expect(state.directionRoute).toBe("hub");
     expect(state.subView).toBe("rotation");
     expect(state.navDirection).toBe(-1);
 
-    while (state.directionRoute !== "hub") state.exitSubView();
     expect(state.exitSubView()).toBe("none");
     expect(state.subView).toBeNull();
   });

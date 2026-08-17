@@ -4,24 +4,17 @@ import {
   getDirectionDrillParent,
   getDirectionDrillSubtitle,
   getDirectionDrillTitle,
-  getReversalEditorStage,
   type DirectionDrillRoute,
 } from "$lib/features/create/shared/components/sequence-actions/direction-drill-route";
 
 const ALL_ROUTES: readonly DirectionDrillRoute[] = [
   "hub",
   "reversals",
-  "reversal-length",
-  "reversal-rhythm",
-  "reversal-result",
   "absolute",
 ];
 
 describe("Direction drill-down route", () => {
   it.each([
-    ["reversal-length", "reversals"],
-    ["reversal-rhythm", "reversals"],
-    ["reversal-result", "reversals"],
     ["reversals", "hub"],
     ["absolute", "hub"],
     ["hub", null],
@@ -32,21 +25,9 @@ describe("Direction drill-down route", () => {
   it.each([
     ["hub", "Direction"],
     ["reversals", "Reversals"],
-    ["reversal-length", "Reversal Length"],
-    ["reversal-rhythm", "Reversal Rhythm"],
-    ["reversal-result", "Reversal Result"],
     ["absolute", "Rotation Direction"],
   ] as const)("labels %s as %s", (route, title) => {
     expect(getDirectionDrillTitle(route)).toBe(title);
-  });
-
-  it.each([
-    ["reversals", "overview"],
-    ["reversal-length", "length"],
-    ["reversal-rhythm", "rhythm"],
-    ["reversal-result", "result"],
-  ] as const)("maps %s to the %s editor", (route, stage) => {
-    expect(getReversalEditorStage(route)).toBe(stage);
   });
 
   // The subtitle is the only place a single-knob screen explains itself, so a
@@ -64,9 +45,6 @@ describe("Direction drill-down route", () => {
     ["hub", 0],
     ["reversals", 1],
     ["absolute", 1],
-    ["reversal-length", 2],
-    ["reversal-rhythm", 2],
-    ["reversal-result", 2],
   ] as const)("puts %s at depth %i", (route, depth) => {
     expect(getDirectionDrillDepth(route)).toBe(depth);
   });

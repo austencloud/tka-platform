@@ -28,10 +28,7 @@
       hint: "Review every nested Direction mode without losing the workspace.",
       variants: [
         { value: "hub", label: "Hub" },
-        { value: "reversals", label: "Reversal overview" },
-        { value: "length", label: "Length" },
-        { value: "rhythm", label: "Rhythm" },
-        { value: "result", label: "Result" },
+        { value: "reversals", label: "Reversals" },
         { value: "apply", label: "Rotation apply" },
         { value: "save", label: "Rotation save" },
       ],

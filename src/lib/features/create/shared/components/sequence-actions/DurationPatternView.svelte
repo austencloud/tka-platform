@@ -42,6 +42,11 @@
     format: fmtDur,
     laneColors: ["accent"],
     laneLabels: ["Hold"],
+    // "Hold" is the right word above a row of cells and the wrong one at the
+    // head of a sentence — "Hold holds 2× on every other step" names nothing.
+    // The steps are what does the holding, so the sentence says so and the
+    // strip keeps its short label.
+    sentence: { verb: "hold", subject: ["Steps"] },
   };
 
   const seqLen = $derived(sequence?.steps.length ?? 8);
@@ -132,13 +137,31 @@
     flex-direction: column;
   }
 
-  /* Centered content column — see TurnPatternView for rationale. */
+  /* Centered content column — see TurnPatternView for rationale. It grows into
+     the scroller rather than floating in the middle of it, and never shrinks
+     below its own content, so a pane shorter than the editor scrolls instead
+     of clipping. */
   .pattern-view-inner {
-    margin: auto;
+    flex: 1 0 auto;
+    margin-inline: auto;
     width: 100%;
     max-width: 820px;
     display: flex;
     flex-direction: column;
+    justify-content: safe center;
+  }
+
+  /* Takes the pane's height and never shrinks below its own content, so the
+     sentence and the strip spend the drawer rather than clinging to the middle
+     of it. The ceiling is what the editor can actually use — its two capped
+     panels plus the length row and the gaps between them. Without it the
+     editor kept claiming height its panels had stopped accepting, which on a
+     tall drawer opens dead space under the strip. One lane means no
+     named-figure row, so this ceiling is 10rem shorter than the two-hand
+     strips'. */
+  .pattern-view-inner :global(.pse) {
+    flex: 1 0 auto;
+    max-height: 50rem;
   }
 
   .pattern-action-footer {
@@ -193,10 +216,10 @@
       padding: 6px 10px;
     }
 
+    /* min-height, not height: the column still fills the short foldable drawer,
+       but grows past it rather than hiding the overflow from the scroller. */
     .pattern-view-inner {
-      height: 100%;
-      margin: 0 auto;
-      justify-content: safe center;
+      min-height: 100%;
     }
 
     .apply-btn {

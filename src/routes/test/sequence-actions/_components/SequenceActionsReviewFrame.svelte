@@ -144,15 +144,9 @@
   const initialDirectionRoute = $derived<DirectionDrillRoute>(
     variant === "hub"
       ? "hub"
-      : variant === "length"
-        ? "reversal-length"
-        : variant === "rhythm"
-          ? "reversal-rhythm"
-          : variant === "result"
-            ? "reversal-result"
-            : variant === "apply" || variant === "save"
-              ? "absolute"
-              : "reversals"
+      : variant === "apply" || variant === "save"
+        ? "absolute"
+        : "reversals"
   );
   const initialRotationMode = $derived(variant === "save" ? "save" : "apply");
   const initialHelpAction = $derived<ActionHelpId | null>(

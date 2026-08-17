@@ -44,6 +44,10 @@
     // Labels match the APPLY TO / HandSelector convention (blue=Left, red=Right);
     // colour coding stays via laneColors.
     laneLabels: ["Left", "Right"],
+    // Same sentence as the Customize modal's turn-pattern section, so the two
+    // places you can write a turn pattern read the same way:
+    // "Left turns 1 on every other step".
+    sentence: { verb: "turns" },
   };
 
   const seqLen = $derived(sequence?.steps.length ?? 8);
@@ -85,7 +89,6 @@
         sequenceLength={seqLen}
         value={strip}
         onChange={(v) => (strip = v)}
-        fitAvailableHeight
       />
     </div>
   </div>
@@ -114,15 +117,29 @@
     flex-direction: column;
   }
 
-  /* One shared content column, centered both axes. margin:auto centers it in the
-     panel when there's room and collapses to top-aligned + scrollable when the
-     content is taller than the panel (no clipping on short screens). */
+  /* One shared content column, centered horizontally, taking the pane's height
+     and never shrinking below its own content — so a pane shorter than the
+     editor scrolls instead of clipping. `safe center` parks the editor in the
+     middle of the leftover height once its panels stop accepting more (see the
+     `.pse` ceiling below); without it a tall drawer strands the whole thing at
+     the top with a screen of dead space under the strip. */
   .pattern-view-inner {
-    margin: auto;
+    flex: 1 0 auto;
+    margin-inline: auto;
     width: 100%;
     max-width: 820px;
     display: flex;
     flex-direction: column;
+    justify-content: safe center;
+  }
+
+  /* The ceiling is what the editor can actually use: its two capped panels
+     (18rem of sentences + 24rem of result), the repeat-length and named-figure
+     rows, and the gaps between them. Past this the editor would keep claiming
+     height its panels have stopped accepting. */
+  .pattern-view-inner :global(.pse) {
+    flex: 1 0 auto;
+    max-height: 60rem;
   }
 
   .pattern-action-footer {
@@ -172,10 +189,10 @@
       padding: 6px 10px;
     }
 
+    /* min-height, not height: the column still fills the short foldable drawer,
+       but grows past it rather than hiding the overflow from the scroller. */
     .pattern-view-inner {
-      height: 100%;
-      margin: 0 auto;
-      justify-content: safe center;
+      min-height: 100%;
     }
 
     .apply-btn {

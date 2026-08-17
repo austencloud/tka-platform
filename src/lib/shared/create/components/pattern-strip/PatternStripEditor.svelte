@@ -6,6 +6,7 @@
 <script lang="ts">
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import ChipPopoverOption from "$lib/shared/browse/components/filter-chips/ChipPopoverOption.svelte";
   import RhythmGlyph from "./RhythmGlyph.svelte";
   import PatternStepStrip from "./PatternStepStrip.svelte";
   import type { StripBinding, StripValue } from "./pattern-strip-types";
@@ -31,7 +32,13 @@
      *  (reversals: beat isn't spinning). Lane order matches laneColors. */
     inertMask?: boolean[][];
     /** Reflows the controls into horizontal rows when a wide, short drawer
-     *  provides less height than the standard stacked editor needs. */
+     *  provides less height than the standard stacked editor needs.
+     *
+     *  Ignored in sentence mode, which already sizes itself to the pane: its
+     *  two panels share the spare height and the strip fills whatever they
+     *  settle on. Letting both run at once put the compact rules on top of the
+     *  sentence layout — the same `.result` styled as a flex panel by one and a
+     *  two-column grid by the other. */
     fitAvailableHeight?: boolean;
     /** Lets a parent drill-down give one editing axis the whole surface. */
     visibleAxis?: "all" | "length" | "rhythm" | "amount" | "result";
@@ -53,6 +60,18 @@
   // Sentence mode is a whole-editor presentation, so it stays out of the way of
   // the single-axis drill-downs, which already give one axis the whole screen.
   const sentenceMode = $derived(!!binding.sentence && visibleAxis === "all");
+
+  /** What the sentence calls lane `li`. Falls back to the strip's own label,
+   *  which is already a subject on the two-hand strips. */
+  function subjectOf(li: number): string {
+    return binding.sentence?.subject?.[li] ?? binding.laneLabels[li] ?? "";
+  }
+
+  /** The named-figure row exists to write BOTH hands in one press — the thing a
+   *  per-hand chip cannot do. On a one-lane strip in sentence mode it offers
+   *  exactly the shapes that lane's own rhythm chip already offers, so it is a
+   *  second copy of the same control and it goes. */
+  const showRhythmAxis = $derived(!(sentenceMode && binding.lanes === 1));
 
   /** Which slot's popover is open, as "amount-0" / "rhythm-1". */
   let openSlot = $state<string | null>(null);
@@ -196,16 +215,17 @@
 
 <div
   class="pse"
-  class:fit-available-height={fitAvailableHeight}
+  class:fit-available-height={fitAvailableHeight && !sentenceMode}
   class:single-lane={binding.lanes === 1}
   class:solo-axis={visibleAxis !== "all"}
   class:sentence-mode={sentenceMode}
 >
   {#if sentenceMode && binding.sentence}
     <div class="sentences">
-      {#each binding.laneLabels as label, li}
+      {#each binding.laneLabels as _laneLabel, li}
+        {@const subject = subjectOf(li)}
         <p class="sentence">
-          <span class="subject {binding.laneColors[li]}">{label}</span>
+          <span class="subject {binding.laneColors[li]}">{subject}</span>
           <span class="prose verb">{binding.sentence.verb}</span>
           {#if binding.amountList && laneActive(li)}
             <span class="slot amount">
@@ -214,25 +234,19 @@
               mode="dropdown"
               size="sm"
               expanded={openSlot === `amount-${li}`}
-              ariaLabel="{label} amount: {amountLabel(li)}"
+              ariaLabel="{subject} amount: {amountLabel(li)}"
               onclick={() => toggleSlot(`amount-${li}`)}
             >
               {#snippet children()}
                 {#each binding.amountList ?? [] as a}
-                  <button
-                    class="popover-option"
-                    type="button"
-                    role="option"
-                    aria-selected={String(laneAmount(li)) === String(a)}
-                    class:selected={String(laneAmount(li)) === String(a)}
+                  <ChipPopoverOption
+                    label={binding.format(a)}
+                    selected={String(laneAmount(li)) === String(a)}
                     onclick={() => {
                       applyAmount(li, a);
                       openSlot = null;
                     }}
-                  >
-                    <i class="opt-tick fa-solid fa-check" aria-hidden="true"></i>
-                    <span class="opt-name">{binding.format(a)}</span>
-                  </button>
+                  />
                 {/each}
               {/snippet}
             </FilterChipBase>
@@ -245,7 +259,7 @@
             mode="dropdown"
             size="sm"
             expanded={openSlot === `rhythm-${li}`}
-            ariaLabel="{label} rhythm: {describeMask(laneMask(li))}"
+            ariaLabel="{subject} rhythm: {describeMask(laneMask(li))}"
             onclick={() => toggleSlot(`rhythm-${li}`)}
           >
             {#snippet children()}
@@ -253,20 +267,14 @@
                    chip, so the open list always contains the words on the chip
                    that opened it. -->
               {#each laneRhythmOptions(li) as mask}
-                <button
-                  class="popover-option"
-                  type="button"
-                  role="option"
-                  aria-selected={laneMaskMatches(li, mask)}
-                  class:selected={laneMaskMatches(li, mask)}
+                <ChipPopoverOption
+                  label={describeMask(mask)}
+                  selected={laneMaskMatches(li, mask)}
                   onclick={() => {
                     applyLaneMask(li, mask);
                     openSlot = null;
                   }}
-                >
-                  <i class="opt-tick fa-solid fa-check" aria-hidden="true"></i>
-                  <span class="opt-name">{describeMask(mask)}</span>
-                </button>
+                />
               {/each}
             {/snippet}
           </FilterChipBase>
@@ -298,7 +306,7 @@
     </div>
   {/if}
 
-  {#if visibleAxis === "all" || visibleAxis === "rhythm"}
+  {#if showRhythmAxis && (visibleAxis === "all" || visibleAxis === "rhythm")}
     <div class="axis">
       <!-- The catalog names figures the PAIR makes, which is why they cannot
            live on a single hand's chip. Here they are true: one press writes
@@ -587,61 +595,6 @@
 
   .prose {
     color: var(--theme-text-dim);
-  }
-
-  /* One row per choice: a tick that is always in the layout — hidden rather
-     than absent — so the words hold their place as the selection moves, and
-     the chosen row is still identifiable without relying on its colour.
-
-     Hover and selection have to stay separable, and they were not: a plain
-     `:hover` rule outranks `.selected` on specificity, so running the mouse
-     down the list painted the grey wash straight over the accent fill and the
-     chosen row disappeared under the cursor — the one row you most need to see
-     while choosing. Hovering the selection now brightens it instead. */
-  .popover-option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target, 44px);
-    padding: 6px 12px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--theme-text, white);
-    font: inherit;
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color var(--duration-fast, 150ms) ease;
-  }
-  .opt-tick {
-    flex: 0 0 1em;
-    font-size: 11px;
-    visibility: hidden;
-  }
-  .popover-option.selected .opt-tick {
-    visibility: visible;
-  }
-  .opt-name {
-    font-weight: 600;
-    line-height: 1.2;
-  }
-  .popover-option:hover,
-  .popover-option:focus-visible {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-  }
-  .popover-option:focus-visible {
-    outline: 2px solid var(--theme-accent);
-    outline-offset: -2px;
-  }
-  .popover-option.selected {
-    background: var(--theme-accent);
-    color: #fff;
-  }
-  .popover-option.selected:hover,
-  .popover-option.selected:focus-visible {
-    background: color-mix(in srgb, #fff 16%, var(--theme-accent));
   }
 
   /* A narrow portrait drawer cannot spend 26px between every editing axis.

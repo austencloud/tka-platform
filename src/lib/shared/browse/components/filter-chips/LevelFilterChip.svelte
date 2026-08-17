@@ -5,6 +5,7 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import FilterChipBase from "./FilterChipBase.svelte";
+  import ChipPopoverOption from "./ChipPopoverOption.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
@@ -83,76 +84,26 @@ Options: All, Level 1, Level 2, Level 3. Each shows contextual count.
   >
     {#snippet children()}
       {#each levels as level}
-        <button
-          class="popover-option"
-          data-ghost="safe"
-          data-ghost-kind="filter-option"
-          class:selected={activeLevel === level.value}
-          type="button"
-          role="option"
-          aria-selected={activeLevel === level.value}
+        <ChipPopoverOption
+          label={level.label}
+          selected={activeLevel === level.value}
+          count={level.value !== null && levelCounts
+            ? levelCounts[level.value as 1 | 2 | 3]
+            : null}
+          ghostKind="filter-option"
           onclick={() => handleSelect(level.value)}
-        >
-          <span>
-            {level.label}
-            {#if level.value !== null && levelCounts}
-              <span class="option-count">({levelCounts[level.value as 1 | 2 | 3]})</span>
-            {/if}
-          </span>
-          {#if activeLevel === level.value}
-            <i class="fas fa-check" aria-hidden="true"></i>
-          {/if}
-        </button>
+        />
       {/each}
     {/snippet}
   </FilterChipBase>
 </div>
 
 <style>
+  /* The chip's accent, inherited by every option row in its popover — the
+     popover is a DOM child of this wrapper even though it paints on top of the
+     page. */
   .level-chip-wrapper {
+    --chip-option-color: var(--semantic-info);
     position: relative;
-  }
-
-  .popover-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-  }
-
-  .popover-option:hover {
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-  }
-
-  .popover-option.selected {
-    color: var(--semantic-info);
-    font-weight: 600;
-  }
-
-  .popover-option i {
-    font-size: 10px;
-  }
-
-  .option-count {
-    opacity: 0.6;
-    font-weight: 400;
-    margin-left: 4px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .popover-option {
-      transition: none;
-    }
   }
 </style>

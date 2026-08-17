@@ -34,7 +34,16 @@ export interface StripBinding {
    * shipped before, which is how each surface moves over on its own schedule.
    */
   sentence?: {
-    /** The verb after the hand: "turns", "reverses", "holds". */
+    /** The verb after the hand: "turns", "reverses", "last". */
     verb: string;
+    /**
+     * What the sentence calls each lane, when the strip's own label is a noun
+     * for the quantity rather than the thing doing it. The duration strip
+     * labels its one lane "Hold" — right above a row of cells, wrong as the
+     * subject of a sentence ("Hold holds 2× on…"). Given ["Steps"] the line
+     * reads "Steps last 2× on every other step" and the strip keeps its short
+     * label. Omit it when the lane labels are already subjects (Left / Right).
+     */
+    subject?: string[];
   };
 }

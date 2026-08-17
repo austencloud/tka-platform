@@ -5,6 +5,7 @@ Shows available lengths with contextual counts.
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import FilterChipBase from "./FilterChipBase.svelte";
+  import ChipPopoverOption from "./ChipPopoverOption.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
@@ -78,43 +79,21 @@ Shows available lengths with contextual counts.
     ghostKind="browse-filter"
   >
     {#snippet children()}
-      <button
-        class="popover-option"
-        data-ghost="safe"
-        data-ghost-kind="filter-option"
-        class:selected={activeLength === null}
-        type="button"
-        role="option"
-        aria-selected={activeLength === null}
+      <ChipPopoverOption
+        label={t('browse_all_lengths')}
+        selected={activeLength === null}
+        ghostKind="filter-option"
         onclick={() => handleSelect(null)}
-      >
-        <span>{t('browse_all_lengths')}</span>
-        {#if activeLength === null}
-          <i class="fas fa-check" aria-hidden="true"></i>
-        {/if}
-      </button>
+      />
       {#each availableLengths as length}
         {#if !lengthCounts || (lengthCounts[length] ?? 0) > 0}
-          <button
-            class="popover-option"
-            data-ghost="safe"
-            data-ghost-kind="filter-option"
-            class:selected={activeLength === length}
-            type="button"
-            role="option"
-            aria-selected={activeLength === length}
+          <ChipPopoverOption
+            label={t('browse_n_steps', { count: String(length) })}
+            selected={activeLength === length}
+            count={lengthCounts ? (lengthCounts[length] ?? 0) : null}
+            ghostKind="filter-option"
             onclick={() => handleSelect(length)}
-          >
-            <span>
-              {t('browse_n_steps', { count: String(length) })}
-              {#if lengthCounts}
-                <span class="option-count">({lengthCounts[length]})</span>
-              {/if}
-            </span>
-            {#if activeLength === length}
-              <i class="fas fa-check" aria-hidden="true"></i>
-            {/if}
-          </button>
+          />
         {/if}
       {/each}
     {/snippet}
@@ -124,51 +103,10 @@ Shows available lengths with contextual counts.
 <style>
   .length-chip-wrapper {
     /* Single source for this chip's accent — consumed both by FilterChipBase
-       (via the chipColor prop) and by the selected-option color below. */
+       (via the chipColor prop) and by every option row in the popover, which is
+       a DOM child of this wrapper even though it paints on top of the page. */
     --length-chip-color: #f59e0b;
+    --chip-option-color: var(--length-chip-color);
     position: relative;
-  }
-
-  .popover-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    min-height: var(--min-touch-target);
-    padding: 10px 12px;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
-    cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
-  }
-
-  .popover-option:hover {
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-  }
-
-  .popover-option.selected {
-    color: var(--length-chip-color);
-    font-weight: 600;
-  }
-
-  .popover-option i {
-    font-size: 10px;
-  }
-
-  .option-count {
-    opacity: 0.6;
-    font-weight: 400;
-    margin-left: 4px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .popover-option {
-      transition: none;
-    }
   }
 </style>

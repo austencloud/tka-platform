@@ -14,11 +14,7 @@
   import RotationDirectionView from "./RotationDirectionView.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TargetHand } from "../../state/panel-coordination-state.svelte";
-  import {
-    getReversalEditorStage,
-    type DirectionDrillRoute,
-    type ReversalEditorStage,
-  } from "./direction-drill-route";
+  import type { DirectionDrillRoute } from "./direction-drill-route";
 
   interface Props {
     sequence: SequenceData | null;
@@ -45,16 +41,6 @@
     onReversalApply,
     onRotationApply,
   }: Props = $props();
-
-  function selectReversalStage(stage: ReversalEditorStage) {
-    const nextRoute: Record<ReversalEditorStage, DirectionDrillRoute> = {
-      overview: "reversals",
-      length: "reversal-length",
-      rhythm: "reversal-rhythm",
-      result: "reversal-result",
-    };
-    onRouteChange(nextRoute[stage]);
-  }
 </script>
 
 <div class="direction-view">
@@ -81,12 +67,7 @@
       onApply={onRotationApply}
     />
   {:else}
-    <ReversalPatternView
-      {sequence}
-      stage={getReversalEditorStage(route)}
-      onStageChange={selectReversalStage}
-      onApply={onReversalApply}
-    />
+    <ReversalPatternView {sequence} onApply={onReversalApply} />
   {/if}
 </div>
 
