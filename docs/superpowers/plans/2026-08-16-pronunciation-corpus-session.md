@@ -12,6 +12,27 @@
 
 ---
 
+## Status — 2026-08-16
+
+Tasks 1 through 17 are landed. The pronunciation suite is green (126 tests,
+15 files) and `svelte-check` reports 0 errors repo-wide. The corpus is 47
+letters x 4 positions = 188 cells, not the 216 this plan was written against:
+MCP `list_available_letters` returns 47, and the seven extra `Letter` enum
+entries (zeta, eta, tau, terra, mu, nu, tau-) are position names that can
+never sit inside a word. `planWords` now takes the letter list, and
+`static/data/pronunciation-word-pool.json` carries it.
+
+**Task 18 is the only one open, and it is blocked on two things Austen owns:**
+
+1. **Miniconda is not installed.** MFA 3.0 ships compiled Kaldi binaries with
+   no pip wheel, so Tasks 14-17 are written and typechecked but have never
+   been run against a real alignment.
+2. **No recording exists yet.** Step 2 is a real ten-word session in Austen's
+   voice; nothing automated substitutes for listening to the token edges.
+
+Step 1 (suite + typecheck) and Steps 3-4 (the amendment to the parent corpus
+design) are done.
+
 ## File Structure
 
 **New — pure domain (browser, all unit-tested):**
