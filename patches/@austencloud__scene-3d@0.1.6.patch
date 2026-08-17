@@ -2005,6 +2005,154 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +    dispose={false}
 +  />
  {/if}
+diff --git a/dist/lib/components/props/Hoop3D.svelte b/dist/lib/components/props/Hoop3D.svelte
+index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907046dcaba 100644
+--- a/dist/lib/components/props/Hoop3D.svelte
++++ b/dist/lib/components/props/Hoop3D.svelte
+@@ -1,20 +1,60 @@
++<script module lang="ts">
++  import { TorusGeometry } from "three";
++  import {
++    HOOP_CENTERLINE_RADIUS_M,
++    HOOP_TUBE_RADIUS_M,
++    HOOP_RING_SEGMENTS,
++    HOOP_TUBE_SEGMENTS,
++  } from "./hoop-geometry";
++
++  const builds = new Map<number, TorusGeometry>();
++
++  function getHoopGeometry(scale: number): TorusGeometry {
++    const cached = builds.get(scale);
++    if (cached) return cached;
++
++    const geometry = new TorusGeometry(
++      HOOP_CENTERLINE_RADIUS_M * scale,
++      HOOP_TUBE_RADIUS_M * scale,
++      HOOP_TUBE_SEGMENTS,
++      HOOP_RING_SEGMENTS
++    );
++    builds.set(scale, geometry);
++    return geometry;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Hoop3D Component
+    *
+-   * Renders a 3D hoop (ring) prop. The hand grabs the BOTTOM of the ring,
+-   * so the grip point is at the group origin (0,0,0) and the ring center
+-   * is offset upward by the ring's radius. This means the bottom of the
+-   * torus touches the origin where the hand holds it.
++   * A mini hoop: one 5/8in HDPE tube bent into an 18.5in ring.
++   * `hoop-geometry.ts` carries the numbers and where each came from — the
++   * diameter off `minihoop.svg` (whose 18.36in lands inside the range minis are
++   * sold at, unlike the club's length), the tube off the tubing spec, where 5/8in
++   * is forced: 3/4in tube will not hold a round hoop at this diameter, which is
++   * why no vendor sells that combination.
+    *
+-   * Uses computePropRotation (unified for all prop types).
++   * The hand grips the tube's CENTRELINE at the near side of the ring, which is
++   * where `minihoop.svg` puts its 2D hand point — measured 0.7% off the
++   * centreline, so the 2D and 3D grips are in register. `TorusGeometry`'s
++   * `radius` is a centreline radius too, so offsetting the mesh up by exactly
++   * that radius puts the grip at the group origin.
++   *
++   * Because a hoop is sold in discrete inch sizes, its size is absolute — it does
++   * not scale with the user's staff length the way Staff3D does. `scale` still
++   * applies, which is what the BIGHOOP prop type uses.
++   *
++   * The invented white grip torus is gone. Nothing on a real hoop marks the grip
++   * — the ring is one uniform tube from end to end, which is also what the glyph
++   * draws. The same fake grip ring came off the club for the same reason.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
++  import { getHoopMaterials } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
+   import {
+     LAYER_WORLD,
+     LAYER_PLAYER_BODY,
+@@ -24,58 +64,35 @@
+     propState,
+     color,
+     visible = true,
+-    length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+   }: Prop3DProps = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+-  const staffRadius = $derived(
+-    thickness
+-      ? thickness / 2
+-      : userProportionsState.dimensions.staffRadius
+-  );
+ 
+-  // Ring radius: ~35% of staff length
+-  const ringRadius = $derived(effectiveLength * 0.35 * scale);
+-
+-  // Tube radius: same thickness as a staff shaft
+-  const tubeRadius = $derived(staffRadius * 1.0 * scale);
+-
+-  // Grip indicator ring dimensions (small white torus at origin)
+-  const gripOuterRadius = $derived(staffRadius * 1.4 * scale);
+-  const gripTubeRadius = $derived(staffRadius * 0.15 * scale);
++  const geometry = $derived(getHoopGeometry(scale));
++  const materials = $derived(getHoopMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Main hoop ring: center offset upward by ringRadius so the
+-         bottom of the torus sits at the origin (the grip point) -->
+-    <T.Mesh position={[0, ringRadius, 0]}>
+-      <T.TorusGeometry args={[ringRadius, tubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Grip indicator: small white ring at origin where the hand holds -->
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <!-- Lifted by the centreline radius so the tube's centreline passes through
++         the origin at the bottom of the ring, which is where the hand is. -->
++    <T.Mesh
++      {geometry}
++      material={materials.tube}
++      position={[0, HOOP_CENTERLINE_RADIUS_M * scale, 0]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere at prop position -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
 --- a/dist/lib/components/props/Prop3D.svelte
@@ -3275,10 +3423,10 @@ index 0000000000000000000000000000000000000000..70dfe35112382f5187fd32ee3d6c7187
 +};
 diff --git a/dist/lib/components/props/frame-materials.d.ts b/dist/lib/components/props/frame-materials.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..651e5f4905570c38b7efe5d24e03e3cc2956d2bf
+index 0000000000000000000000000000000000000000..ddf414c70d95ecfb8c1353c23242c5a0b7c22b3c
 --- /dev/null
 +++ b/dist/lib/components/props/frame-materials.d.ts
-@@ -0,0 +1,59 @@
+@@ -0,0 +1,67 @@
 +import { MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial } from "three";
 +export type FrameVariant = "fire" | "day";
 +export interface FrameMaterialSet {
@@ -3338,18 +3486,27 @@ index 0000000000000000000000000000000000000000..651e5f4905570c38b7efe5d24e03e3cc
 + * the frame props there is no variant here.
 + */
 +export declare function getClubMaterials(color: "blue" | "red"): ClubMaterialSet;
++
++export interface HoopMaterialSet {
++    /** The tube. One material for the whole ring, because a hoop is one tube. */
++    readonly tube: MeshPhysicalMaterial;
++    /** Path-visualization marker at the prop's position. */
++    readonly trail: MeshBasicMaterial;
++}
++export declare function getHoopMaterials(color: "blue" | "red"): HoopMaterialSet;
 diff --git a/dist/lib/components/props/frame-materials.js b/dist/lib/components/props/frame-materials.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..5d4e30e4c684dcb5adeed9c52d0396b4e4271260
+index 0000000000000000000000000000000000000000..890c4177b42ccadb3161da49996e5b78e112a328
 --- /dev/null
 +++ b/dist/lib/components/props/frame-materials.js
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,184 @@
 +import {
 +  Color,
 +  MeshBasicMaterial,
 +  MeshPhysicalMaterial,
 +  MeshStandardMaterial
 +} from "three";
++import { HOOP_TUBE_DIAMETER_M } from "./hoop-geometry";
 +const PALETTES = {
 +  blue: { main: "#3b82f6", dark: "#1d4ed8" },
 +  red: { main: "#ef4444", dark: "#b91c1c" }
@@ -3496,8 +3653,34 @@ index 0000000000000000000000000000000000000000..5d4e30e4c684dcb5adeed9c52d0396b4
 +  clubSets.set(color, materials);
 +  return materials;
 +}
++const hoopSets = /* @__PURE__ */ new Map();
++function getHoopMaterials(color) {
++  const cached = hoopSets.get(color);
++  if (cached) return cached;
++  const palette = PALETTES[color];
++  const materials = {
++    tube: new MeshPhysicalMaterial({
++      color: palette.main,
++      roughness: 0.22,
++      metalness: 0.02,
++      clearcoat: 0.85,
++      clearcoatRoughness: 0.1,
++      transmission: 0.12,
++      thickness: HOOP_TUBE_DIAMETER_M,
++      ior: 1.5
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true
++    })
++  };
++  hoopSets.set(color, materials);
++  return materials;
++}
 +export {
 +  getClubMaterials,
++  getHoopMaterials,
 +  getFrameMaterials,
 +  getTorchMaterials
 +};
@@ -3628,6 +3811,152 @@ index 0000000000000000000000000000000000000000..28353792b31c5fdf0dc3f0daaacc3ffe
 +  GENG_BLADE_WIDTH,
 +  buildBuugengShape,
 +  buildTrigengShape
++};
+diff --git a/dist/lib/components/props/hoop-geometry.d.ts b/dist/lib/components/props/hoop-geometry.d.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..69d3576f3e084f0ebb489c3b98ee9d68161ef335
+--- /dev/null
++++ b/dist/lib/components/props/hoop-geometry.d.ts
+@@ -0,0 +1,8 @@
++/** Mini-hoop dimensions. See the source for provenance. */
++export declare const HOOP_OUTER_DIAMETER_M: number;
++export declare const HOOP_TUBE_DIAMETER_M: number;
++export declare const HOOP_TUBE_RADIUS_M: number;
++export declare const HOOP_CENTERLINE_RADIUS_M: number;
++export declare const HOOP_RING_SEGMENTS: number;
++export declare const HOOP_TUBE_SEGMENTS: number;
++export declare const HOOP_REACH_M: number;
+diff --git a/dist/lib/components/props/hoop-geometry.js b/dist/lib/components/props/hoop-geometry.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..04d13933fcfc3f7f3edb8439bfad9473fcfb6c21
+--- /dev/null
++++ b/dist/lib/components/props/hoop-geometry.js
+@@ -0,0 +1,126 @@
++/**
++ * Mini-hoop dimensions: the size from hoops people buy, the grip from the glyph.
++ *
++ * A torus has exactly two free parameters, so unlike `club-profile.ts` there is
++ * no silhouette to lift off the 2D artwork -- the only shape statement a ring
++ * glyph can make is the ratio of its tube to its diameter. `minihoop.svg` makes
++ * that statement and gets it wrong on purpose:
++ *
++ *                       minihoop.svg   what we ship
++ *   outer diameter        18.36 in       18.5 in        <- inside the range
++ *   tube diameter          2.15 in       0.625 in       <- 3.4x too fat
++ *   tube / outer dia       0.117          0.034
++ *
++ * That split is the interesting part, and it is the opposite of the club's. A
++ * ring's diameter and its tube thickness are independent, so the glyph could
++ * fatten the tube for legibility at pictograph size WITHOUT stealing any
++ * diameter -- which is exactly what it did. The club had to pay for its fat body
++ * in length and came out at 18in when nothing is sold under 19in; the hoop's
++ * diameter lands squarely inside the range hoops are actually sold at, and is
++ * therefore trustworthy.
++ *
++ * So:
++ *   - Diameter comes from the glyph, rounded to a size vendors actually stock.
++ *   - Tube diameter comes from the tubing spec. The glyph is not a witness here.
++ *   - The grip point comes from the glyph, and it is a real geometric fact:
++ *     the hand sits on the tube's CENTRELINE (measured 0.7% off), not on the
++ *     ring's inner or outer surface.
++ *
++ * The published numbers:
++ *
++ *   MoodHoops        minis 18-23in OD in HDPE; 3/4in minis ONLY at 20.5in and
++ *                    22.5in; 5/8in minis down to 18.5in; polypro minis only
++ *                    22-23in. A 3/4in mini weighs about 7.7oz (218g).
++ *   Ruby Hooping     mini pairs 19-24in, 3/4in or 5/8in OD HDPE
++ *   Hoopologie       minis roughly 16-24in; doubles/multiples 25-38in
++ *
++ * Hoop tubing is named by its OUTER diameter (unlike polyethylene irrigation
++ * tube, which is named by ID), so 5/8in tubing really is 15.875mm across.
++ *
++ * The tube size is NOT a free choice against the diameter, which is the trap
++ * here. MoodHoops: "To preserve the roundness of the hoops in smaller sizes,
++ * minis in 3/4in tubing are only available in 20.5in OD and 22.5in OD." That is
++ * a physical constraint, not a stocking preference -- 3/4in HDPE is too stiff to
++ * hold a circle at the small end, which is also why polypro minis stop at 22in.
++ * So a hoop at the glyph's diameter has to be 5/8in tubing; an 18in ring in 3/4in
++ * tube is a thing that does not hold its shape.
++ *
++ * 5/8in is independently the right default here: TKA minihoops are dual-wielded
++ * by construction, and dual-wielders prefer 5/8in because two thinner rings sit
++ * easier in the hands over a long session. The two constraints agree.
++ *
++ * 18.5in is MoodHoops' smallest 5/8in mini and lands 0.8% off the glyph's
++ * 18.36in, so the 2D and 3D props are the same object at the same size.
++ *
++ * Deliberately NOT modelled: the connector join. Every hoop has one, and on the
++ * product photos it is a hairline mark a couple of millimetres long. At scene
++ * scale it would either vanish or read as a defect in the geometry, and it costs
++ * a discontinuity in an otherwise perfect ring to find out which.
++ *
++ * A hoop is sold in discrete inch sizes, so like the club its size is absolute
++ * and does not scale with the user's staff length. Vendors do advise sizing a
++ * mini to the gap between your armpit and your hand, which is a body-relative
++ * rule -- but `userProportionsState` carries no armpit-to-hand measure, and
++ * inventing one to drive a prop that ships in 1-inch steps would be worse than
++ * picking the size off the drawing.
++ */
++
++/**
++ * Outer diameter: 18.5in, MoodHoops' smallest 5/8in mini, which is the stocked
++ * size nearest the glyph's 18.36in.
++ */
++const HOOP_OUTER_DIAMETER_M = 0.4699;
++
++/**
++ * Tube outer diameter: 5/8in HDPE. Forced by the diameter -- 3/4in tube will not
++ * hold a round hoop this small -- and preferred anyway for a dual-wielded prop.
++ */
++const HOOP_TUBE_DIAMETER_M = 0.015875;
++
++/** Radius of the tube itself. */
++const HOOP_TUBE_RADIUS_M = HOOP_TUBE_DIAMETER_M / 2;
++
++/**
++ * Centre of the ring to centre of the tube -- which is what Three's
++ * `TorusGeometry` means by `radius`, so the outer surface lands at
++ * `HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M` and the published outer
++ * diameter comes out exact.
++ */
++const HOOP_CENTERLINE_RADIUS_M =
++  HOOP_OUTER_DIAMETER_M / 2 - HOOP_TUBE_RADIUS_M;
++
++/**
++ * Segments around the ring (Three calls this `tubularSegments`).
++ *
++ * The old hoop used 32, which is below Three's own default of 48 and leaves a
++ * 1.1mm sagitta on a 227mm ring -- 14% of the tube's radius, so the ring read as
++ * a polygon. 128 brings that to 0.07mm, which is a tenth of the deviation
++ * anti-aliasing already hides.
++ */
++const HOOP_RING_SEGMENTS = 128;
++
++/**
++ * Segments around the tube's cross-section (Three's `radialSegments`). The tube
++ * is only 7.9mm in radius, so 20 leaves a 0.10mm sagitta and the silhouette
++ * reads round.
++ */
++const HOOP_TUBE_SEGMENTS = 20;
++
++/**
++ * Hand to the far outer edge of the ring, in metres.
++ *
++ * The hand grips the tube's centreline at the near side of the ring, so the ring
++ * hangs entirely above the grip except for the near half of the tube. Hand to
++ * the far edge is therefore a full diameter minus one tube radius.
++ */
++const HOOP_REACH_M =
++  2 * HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M;
++export {
++  HOOP_CENTERLINE_RADIUS_M,
++  HOOP_OUTER_DIAMETER_M,
++  HOOP_REACH_M,
++  HOOP_RING_SEGMENTS,
++  HOOP_TUBE_DIAMETER_M,
++  HOOP_TUBE_RADIUS_M,
++  HOOP_TUBE_SEGMENTS
 +};
 diff --git a/dist/lib/components/props/plate-extrude.d.ts b/dist/lib/components/props/plate-extrude.d.ts
 new file mode 100644
@@ -4312,14 +4641,14 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..26de1642f581b740f9dd5e0a64cb9a111ce68651 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
  export type { CameraChoreography, CameraKeyframe, CameraState, CameraPosition, CameraInterpolation } from "./domain/camera-choreography";
  export { createCameraChoreography, createDefaultCameraState, easingFunctions, lerpCameraPosition, lerpCameraState } from "./domain/camera-choreography";
  export { AVATAR_DEFINITIONS, DEFAULT_AVATAR_ID, getAvatarModelPath } from "./config/avatar-definitions";
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
@@ -4332,7 +4661,7 @@ index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c
  export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7ad6807bfa 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..6acb900a691007049e5bbac55a8fad00e8d25991 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
 @@ -1,91 +1,190 @@
@@ -4616,7 +4945,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7a
 +  userProportionsState
 +};
 +
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache.js";
++export { prepareSharedGltf } from "./services/shared-gltf-cache.js";
 diff --git a/dist/lib/services/contracts/IAvatarAnimator.d.ts b/dist/lib/services/contracts/IAvatarAnimator.d.ts
 index 786bf68515df88ef035b307a7029e717e056bea9..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/dist/lib/services/contracts/IAvatarAnimator.d.ts
@@ -5142,10 +5471,10 @@ index cac989e5e626274fb4d13d59e401a9a1b485760b..4b9ed963eede6ad237b242d3d1dca823
      removeLayer(layerId: string): void;
      setLayerWeight(layerId: string, weight: number): void;
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1d2036708 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..1ff1392bef6e967e22eb6eface2cd2999ec16a61 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
-@@ -1,562 +1,833 @@
+@@ -1,562 +1,818 @@
 -/**
 - * AvatarAnimator
 - *
@@ -5196,7 +5525,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -        hips: new Quaternion(),
 +import { Vector3, Quaternion, Matrix4 } from "three";
 +const MAX_WRIST_SWING = 55 * Math.PI / 180;
-+const MAX_WRIST_TWIST = 100 * Math.PI / 180;
 +const WRIST_SMOOTHING = 0.25;
 +const PALM_CENTER_FRACTION = 0.65;
 +const REACH_EPSILON = 0.015;
@@ -5380,8 +5708,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +  _q2 = new Quaternion();
 +  _q3 = new Quaternion();
 +  _q4 = new Quaternion();
-+  _q5 = new Quaternion();
-+  _v4 = new Vector3();
 +  _m1 = new Matrix4();
 +  _socketTargetLeft = new Vector3();
 +  _socketTargetRight = new Vector3();
@@ -5873,7 +6199,18 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -        const hipsBone = state.bones.get("Hips");
 -        if (hipsBone) {
 -            hipsBone.getWorldPosition(bodyCenter);
--        }
++        if (spine2Bone) {
++          spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
++        }
++      }
++      if (stanceActive) {
++        if (spine1Bone) {
++          this._q1.setFromAxisAngle(
++            this._v1.set(0, 1, 0),
++            this.stanceYawSmoothedRad * 0.45
++          );
++          spine1Bone.quaternion.multiply(this._q1);
+         }
 -        // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
 -        // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
 -        // position feeds back and causes oscillation.
@@ -5894,7 +6231,11 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -                this.rightClavicleRestQuat.copy(rightClav.quaternion);
 -            this.shoulderRestCached = true;
 +        if (spine2Bone) {
-+          spine2Bone.quaternion.copy(this.spineTwistRestQuats.spine2);
++          this._q1.setFromAxisAngle(
++            this._v1.set(0, 1, 0),
++            this.stanceYawSmoothedRad * 0.55
++          );
++          spine2Bone.quaternion.multiply(this._q1);
          }
 -        // Cache spine bone rest quaternions once - COMPOSE with these, never replace.
 -        // Works with whatever bones are available (some models lack Spine2/upper_chest).
@@ -5917,13 +6258,24 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -            if (anyFound)
 -                this.spineRestCached = true;
 +      }
-+      if (stanceActive) {
-+        if (spine1Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.45
-+          );
-+          spine1Bone.quaternion.multiply(this._q1);
++      if (leanActive) {
++        this._v1.copy(this.reachLeanDirSmoothed);
++        this._v1.y = 0;
++        if (this._v1.lengthSq() > 1e-6) {
++          this._v1.normalize();
++          this._v2.crossVectors(WORLD_UP, this._v1).normalize();
++          const applyLean = (bone, fraction) => {
++            if (!bone || !bone.parent) return;
++            this._q1.setFromAxisAngle(
++              this._v2,
++              this.reachLeanAngleSmoothed * fraction
++            );
++            bone.parent.getWorldQuaternion(this._q2);
++            this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
++            bone.quaternion.premultiply(this._q3);
++          };
++          applyLean(spine1Bone, 0.45);
++          applyLean(spine2Bone, 0.55);
          }
 -        // Spine twist: rotate torso toward cross-body hand positions.
 -        // Each bone gets its own weighted fraction of the twist, distributed
@@ -5963,12 +6315,30 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -            const hipsBoneForUpdate = state.bones.get("Hips");
 -            if (hipsBoneForUpdate)
 -                hipsBoneForUpdate.updateMatrixWorld(true);
-+        if (spine2Bone) {
-+          this._q1.setFromAxisAngle(
-+            this._v1.set(0, 1, 0),
-+            this.stanceYawSmoothedRad * 0.55
-+          );
-+          spine2Bone.quaternion.multiply(this._q1);
++      }
++      const hipsBoneForUpdate = state.bones.get("Hips");
++      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
++    }
++    const leftHand = pose.leftHand;
++    const rightHand = pose.rightHand;
++    if (leftChain && leftHand) {
++      if (this.leftArmIK.weight > 1e-3) {
++        const animRootQuat = leftChain.root.quaternion.clone();
++        const animMiddleQuat = leftChain.middle.quaternion.clone();
++        const animEffectorQuat = leftChain.effector.quaternion.clone();
++        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
++          const leftShoulder = state.bones.get("LeftShoulder");
++          if (leftShoulder) {
++            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
++              leftHand.targetPosition,
++              "left",
++              this.leftShoulderRestY,
++              leftChain.totalLength
++            );
++            this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
++            leftShoulder.quaternion.copy(this.leftClavicleRestQuat).multiply(this.leftClavicleQuat);
++            leftShoulder.updateMatrixWorld(true);
++          }
          }
 -        // External spine pitch: optional extra forward lean applied to Spine1.
 -        // Runs whether or not spine twist is enabled so lean-forward stances
@@ -5993,25 +6363,25 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -                if (hipsBoneForUpdate)
 -                    hipsBoneForUpdate.updateMatrixWorld(true);
 -            }
-+      }
-+      if (leanActive) {
-+        this._v1.copy(this.reachLeanDirSmoothed);
-+        this._v1.y = 0;
-+        if (this._v1.lengthSq() > 1e-6) {
-+          this._v1.normalize();
-+          this._v2.crossVectors(WORLD_UP, this._v1).normalize();
-+          const applyLean = (bone, fraction) => {
-+            if (!bone || !bone.parent) return;
-+            this._q1.setFromAxisAngle(
-+              this._v2,
-+              this.reachLeanAngleSmoothed * fraction
-+            );
-+            bone.parent.getWorldQuaternion(this._q2);
-+            this._q3.copy(this._q2).invert().multiply(this._q1).multiply(this._q2);
-+            bone.quaternion.premultiply(this._q3);
-+          };
-+          applyLean(spine1Bone, 0.45);
-+          applyLean(spine2Bone, 0.55);
++        const leftTarget = this.computeSocketTarget(
++          "left",
++          leftChain,
++          leftHand.targetPosition
++        );
++        const target = {
++          position: leftTarget,
++          weight: leftHand.weight
++        };
++        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
++          const idealPole = this.poleComputer.computePoleVector(
++            leftTarget,
++            leftHand.plane,
++            "left",
++            bodyCenter
++          );
++          this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
++          this.leftPoleVector.normalize();
++          target.poleHint = this.leftPoleVector.clone();
          }
 -        const leftHand = pose.leftHand;
 -        const rightHand = pose.rightHand;
@@ -6058,29 +6428,35 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -                leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 -            }
 -            // else: weight ~0, skip IK entirely - animation drives the arm
++        this.applyReachEscalation("left", leftChain, target, state);
++        this.ikSolver.solveAndApply(leftChain, target);
++        const ikRootQuat = leftChain.root.quaternion.clone();
++        const ikMiddleQuat = leftChain.middle.quaternion.clone();
++        const ikEffectorQuat = leftChain.effector.quaternion.clone();
++        const w = this.leftArmIK.weight;
++        leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
++        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
++        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
++        this.applyWristOrientation("left", leftChain, leftHand, w);
 +      }
-+      const hipsBoneForUpdate = state.bones.get("Hips");
-+      if (hipsBoneForUpdate) hipsBoneForUpdate.updateMatrixWorld(true);
 +    }
-+    const leftHand = pose.leftHand;
-+    const rightHand = pose.rightHand;
-+    if (leftChain && leftHand) {
-+      if (this.leftArmIK.weight > 1e-3) {
-+        const animRootQuat = leftChain.root.quaternion.clone();
-+        const animMiddleQuat = leftChain.middle.quaternion.clone();
-+        const animEffectorQuat = leftChain.effector.quaternion.clone();
++    if (rightChain && rightHand) {
++      if (this.rightArmIK.weight > 1e-3) {
++        const animRootQuat = rightChain.root.quaternion.clone();
++        const animMiddleQuat = rightChain.middle.quaternion.clone();
++        const animEffectorQuat = rightChain.effector.quaternion.clone();
 +        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-+          const leftShoulder = state.bones.get("LeftShoulder");
-+          if (leftShoulder) {
++          const rightShoulder = state.bones.get("RightShoulder");
++          if (rightShoulder) {
 +            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-+              leftHand.targetPosition,
-+              "left",
-+              this.leftShoulderRestY,
-+              leftChain.totalLength
++              rightHand.targetPosition,
++              "right",
++              this.rightShoulderRestY,
++              rightChain.totalLength
 +            );
-+            this.leftClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-+            leftShoulder.quaternion.copy(this.leftClavicleRestQuat).multiply(this.leftClavicleQuat);
-+            leftShoulder.updateMatrixWorld(true);
++            this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
++            rightShoulder.quaternion.copy(this.rightClavicleRestQuat).multiply(this.rightClavicleQuat);
++            rightShoulder.updateMatrixWorld(true);
 +          }
          }
 -        if (rightChain && rightHand) {
@@ -6126,60 +6502,6 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 -                rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
 -            }
 -            // else: weight ~0, skip IK entirely - animation drives the arm
-+        const leftTarget = this.computeSocketTarget(
-+          "left",
-+          leftChain,
-+          leftHand.targetPosition
-+        );
-+        const target = {
-+          position: leftTarget,
-+          weight: leftHand.weight
-+        };
-+        if (this._poleVectorsEnabled && this.poleComputer && leftHand.plane) {
-+          const idealPole = this.poleComputer.computePoleVector(
-+            leftTarget,
-+            leftHand.plane,
-+            "left",
-+            bodyCenter
-+          );
-+          this.leftPoleVector.lerp(idealPole, this.smoothingFactor);
-+          this.leftPoleVector.normalize();
-+          target.poleHint = this.leftPoleVector.clone();
-         }
--        this.skeleton.updateMatrices();
-+        this.applyReachEscalation("left", leftChain, target, state);
-+        this.ikSolver.solveAndApply(leftChain, target);
-+        const ikRootQuat = leftChain.root.quaternion.clone();
-+        const ikMiddleQuat = leftChain.middle.quaternion.clone();
-+        const ikEffectorQuat = leftChain.effector.quaternion.clone();
-+        const w = this.leftArmIK.weight;
-+        leftChain.root.quaternion.copy(animRootQuat).slerp(ikRootQuat, w);
-+        leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
-+        leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
-+        this.applyWristOrientation("left", leftChain, leftHand, w);
-+      }
-     }
--    addLayer(layer) {
--        this.layers.set(layer.id, layer);
-+    if (rightChain && rightHand) {
-+      if (this.rightArmIK.weight > 1e-3) {
-+        const animRootQuat = rightChain.root.quaternion.clone();
-+        const animMiddleQuat = rightChain.middle.quaternion.clone();
-+        const animEffectorQuat = rightChain.effector.quaternion.clone();
-+        if (this._clavicleRaiseEnabled && this.clavicleRaiser && this.shoulderRestCached) {
-+          const rightShoulder = state.bones.get("RightShoulder");
-+          if (rightShoulder) {
-+            const targetQuat = this.clavicleRaiser.computeClavicleRotation(
-+              rightHand.targetPosition,
-+              "right",
-+              this.rightShoulderRestY,
-+              rightChain.totalLength
-+            );
-+            this.rightClavicleQuat.slerp(targetQuat, this.smoothingFactor);
-+            rightShoulder.quaternion.copy(this.rightClavicleRestQuat).multiply(this.rightClavicleQuat);
-+            rightShoulder.updateMatrixWorld(true);
-+          }
-+        }
 +        const rightTarget = this.computeSocketTarget(
 +          "right",
 +          rightChain,
@@ -6199,7 +6521,8 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +          this.rightPoleVector.lerp(idealPole, this.smoothingFactor);
 +          this.rightPoleVector.normalize();
 +          target.poleHint = this.rightPoleVector.clone();
-+        }
+         }
+-        this.skeleton.updateMatrices();
 +        this.applyReachEscalation("right", rightChain, target, state);
 +        this.ikSolver.solveAndApply(rightChain, target);
 +        const ikRootQuat = rightChain.root.quaternion.clone();
@@ -6212,19 +6535,16 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +        this.applyWristOrientation("right", rightChain, rightHand, w);
 +      }
      }
--    removeLayer(layerId) {
--        this.layers.delete(layerId);
+-    addLayer(layer) {
+-        this.layers.set(layer.id, layer);
 +    const leanMag = this._frameLeanVec.length();
 +    const leanTargetAngle = leanMag > 1e-4 ? Math.min(MAX_REACH_LEAN, leanMag * REACH_LEAN_GAIN) : 0;
 +    if (leanMag > 1e-4) {
 +      this._v1.copy(this._frameLeanVec).normalize();
 +      this.reachLeanDirSmoothed.lerp(this._v1, this.smoothingFactor).normalize();
      }
--    setLayerWeight(layerId, weight) {
--        const layer = this.layers.get(layerId);
--        if (layer) {
--            layer.weight = Math.max(0, Math.min(1, weight));
--        }
+-    removeLayer(layerId) {
+-        this.layers.delete(layerId);
 +    this.reachLeanAngleSmoothed += (leanTargetAngle - this.reachLeanAngleSmoothed) * this.smoothingFactor;
 +    this.skeleton.updateMatrices();
 +  }
@@ -6244,24 +6564,11 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +      this.gripCalibrated = true;
 +      return;
      }
--    async transitionTo(pose, config) {
--        return new Promise((resolve) => {
--            this.transitionStart = AvatarAnimator.cloneBodyPose(this.currentPose);
--            this.transitionEnd = pose;
--            this.transitionConfig = config;
--            this.transitionProgress = 0;
--            this.transitioning = true;
--            // Wait for transition to complete
--            const checkComplete = () => {
--                if (!this.transitioning) {
--                    resolve();
--                }
--                else {
--                    requestAnimationFrame(checkComplete);
--                }
--            };
--            requestAnimationFrame(checkComplete);
--        });
+-    setLayerWeight(layerId, weight) {
+-        const layer = this.layers.get(layerId);
+-        if (layer) {
+-            layer.weight = Math.max(0, Math.min(1, weight));
+-        }
 +    const calibrateSide = (hand, fingers) => {
 +      const index1 = fingers.get("Index1");
 +      const pinky1 = fingers.get("Pinky1");
@@ -6284,14 +6591,30 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +      this.leftGripAxisLocal = left.axis;
 +      this.leftPalmLocal = left.palm;
      }
--    setSmoothBlending(enabled) {
--        this.smoothBlending = enabled;
+-    async transitionTo(pose, config) {
+-        return new Promise((resolve) => {
+-            this.transitionStart = AvatarAnimator.cloneBodyPose(this.currentPose);
+-            this.transitionEnd = pose;
+-            this.transitionConfig = config;
+-            this.transitionProgress = 0;
+-            this.transitioning = true;
+-            // Wait for transition to complete
+-            const checkComplete = () => {
+-                if (!this.transitioning) {
+-                    resolve();
+-                }
+-                else {
+-                    requestAnimationFrame(checkComplete);
+-                }
+-            };
+-            requestAnimationFrame(checkComplete);
+-        });
 +    if (right) {
 +      this.rightGripAxisLocal = right.axis;
 +      this.rightPalmLocal = right.palm;
      }
--    setSmoothingFactor(factor) {
--        this.smoothingFactor = Math.max(0, Math.min(1, factor));
+-    setSmoothBlending(enabled) {
+-        this.smoothBlending = enabled;
 +    this.gripCalibrated = true;
 +  }
 +  /**
@@ -6339,23 +6662,16 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +        this._frameLeanVec.addScaledVector(this._v3, deficit);
 +      }
      }
--    setExternalSpinePitch(radians) {
--        this.externalSpinePitchRad = radians;
+-    setSmoothingFactor(factor) {
+-        this.smoothingFactor = Math.max(0, Math.min(1, factor));
 +    extQuat.slerp(hasDesired ? this._q3 : this._q4.identity(), this.smoothingFactor);
 +    const clavRebased = this._clavicleRaiseEnabled && this.clavicleRaiser !== null && this.shoulderRestCached;
 +    if (clav && clavRebased) {
 +      clav.quaternion.premultiply(extQuat);
 +      clav.updateMatrixWorld(true);
      }
--    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
--    togglePoleVectors() {
--        this._poleVectorsEnabled = !this._poleVectorsEnabled;
--        if (!this._poleVectorsEnabled) {
--            // Reset to default backward poles so difference is visible immediately
--            this.leftPoleVector.set(0, 0, -1);
--            this.rightPoleVector.set(0, 0, -1);
--        }
--        return this._poleVectorsEnabled;
+-    setExternalSpinePitch(radians) {
+-        this.externalSpinePitchRad = radians;
 +  }
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
@@ -6372,30 +6688,10 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +    chain.root.updateMatrixWorld(true);
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
-+    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
++    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
++    if (this._v1.dot(this._v2) < 0) this._v2.negate();
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
-+    eff.getWorldPosition(this._v3);
-+    chain.middle.getWorldPosition(this._v4);
-+    this._v3.sub(this._v4);
-+    if (this._v3.lengthSq() > 1e-10) {
-+      this._v3.normalize();
-+      const d = this._q2.x * this._v3.x + this._q2.y * this._v3.y + this._q2.z * this._v3.z;
-+      this._q5.set(this._v3.x * d, this._v3.y * d, this._v3.z * d, this._q2.w).normalize();
-+      this._q4.copy(this._q5).invert().premultiply(this._q2);
-+      AvatarAnimator.clampQuatAngle(this._q5, MAX_WRIST_TWIST);
-+      AvatarAnimator.clampQuatAngle(this._q4, MAX_WRIST_SWING);
-+      this._q2.copy(this._q4).multiply(this._q5);
-+    } else {
-+      AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
-     }
--    /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
--    toggleClavicleRaise() {
--        this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
--        if (!this._clavicleRaiseEnabled) {
--            this.leftClavicleQuat.identity();
--            this.rightClavicleQuat.identity();
--        }
--        return this._clavicleRaiseEnabled;
++    AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
 +    this._q3.copy(this._q2).multiply(this._q1);
 +    eff.parent.getWorldQuaternion(this._q4);
 +    this._q3.premultiply(this._q4.invert());
@@ -6406,9 +6702,15 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +      if (side === "left") this.leftWristInit = true;
 +      else this.rightWristInit = true;
      }
--    /** Skip Hips counter-rotation (exhibit performers with planted feet) */
--    setSkipHipsTwist(skip) {
--        this._skipHipsTwist = skip;
+-    /** Debug toggle: disable pole vectors to compare old vs new elbow behavior */
+-    togglePoleVectors() {
+-        this._poleVectorsEnabled = !this._poleVectorsEnabled;
+-        if (!this._poleVectorsEnabled) {
+-            // Reset to default backward poles so difference is visible immediately
+-            this.leftPoleVector.set(0, 0, -1);
+-            this.rightPoleVector.set(0, 0, -1);
+-        }
+-        return this._poleVectorsEnabled;
 +    wristState.slerp(this._q3, WRIST_SMOOTHING);
 +    eff.quaternion.slerp(wristState, ikWeight);
 +  }
@@ -6423,14 +6725,12 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +    if (layer) {
 +      layer.weight = Math.max(0, Math.min(1, weight));
      }
--    /** Set spine twist enabled/disabled */
--    setSpineTwistEnabled(enabled) {
--        this._spineTwistEnabled = enabled;
--        if (!enabled) {
--            this.spineTwistQuats.spine1.identity();
--            this.spineTwistQuats.spine2.identity();
--            this.spineTwistQuats.neck.identity();
--            this.spineTwistQuats.head.identity();
+-    /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
+-    toggleClavicleRaise() {
+-        this._clavicleRaiseEnabled = !this._clavicleRaiseEnabled;
+-        if (!this._clavicleRaiseEnabled) {
+-            this.leftClavicleQuat.identity();
+-            this.rightClavicleQuat.identity();
 +  }
 +  async transitionTo(pose, config) {
 +    return new Promise((resolve) => {
@@ -6445,6 +6745,11 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +        } else {
 +          requestAnimationFrame(checkComplete);
          }
+-        return this._clavicleRaiseEnabled;
+-    }
+-    /** Skip Hips counter-rotation (exhibit performers with planted feet) */
+-    setSkipHipsTwist(skip) {
+-        this._skipHipsTwist = skip;
 +      };
 +      requestAnimationFrame(checkComplete);
 +    });
@@ -6464,7 +6769,16 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..f28e8ec106758659c56ed1c6ba42d2b1
 +    if (!this._poleVectorsEnabled) {
 +      this.leftPoleVector.set(0, 0, -1);
 +      this.rightPoleVector.set(0, 0, -1);
-+    }
+     }
+-    /** Set spine twist enabled/disabled */
+-    setSpineTwistEnabled(enabled) {
+-        this._spineTwistEnabled = enabled;
+-        if (!enabled) {
+-            this.spineTwistQuats.spine1.identity();
+-            this.spineTwistQuats.spine2.identity();
+-            this.spineTwistQuats.neck.identity();
+-            this.spineTwistQuats.head.identity();
+-        }
 +    return this._poleVectorsEnabled;
 +  }
 +  /** Debug toggle: disable clavicle raise to compare old vs new shoulder behavior */
@@ -10111,6 +10425,154 @@ index dc635e752d11561cb585cbaaffa05b1e525d31e8..682e2b38d2460dc12551633bee5d8dcf
 +    dispose={false}
 +  />
  {/if}
+diff --git a/src/lib/components/props/Hoop3D.svelte b/src/lib/components/props/Hoop3D.svelte
+index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907046dcaba 100644
+--- a/src/lib/components/props/Hoop3D.svelte
++++ b/src/lib/components/props/Hoop3D.svelte
+@@ -1,20 +1,60 @@
++<script module lang="ts">
++  import { TorusGeometry } from "three";
++  import {
++    HOOP_CENTERLINE_RADIUS_M,
++    HOOP_TUBE_RADIUS_M,
++    HOOP_RING_SEGMENTS,
++    HOOP_TUBE_SEGMENTS,
++  } from "./hoop-geometry";
++
++  const builds = new Map<number, TorusGeometry>();
++
++  function getHoopGeometry(scale: number): TorusGeometry {
++    const cached = builds.get(scale);
++    if (cached) return cached;
++
++    const geometry = new TorusGeometry(
++      HOOP_CENTERLINE_RADIUS_M * scale,
++      HOOP_TUBE_RADIUS_M * scale,
++      HOOP_TUBE_SEGMENTS,
++      HOOP_RING_SEGMENTS
++    );
++    builds.set(scale, geometry);
++    return geometry;
++  }
++</script>
++
+ <script lang="ts">
+   /**
+    * Hoop3D Component
+    *
+-   * Renders a 3D hoop (ring) prop. The hand grabs the BOTTOM of the ring,
+-   * so the grip point is at the group origin (0,0,0) and the ring center
+-   * is offset upward by the ring's radius. This means the bottom of the
+-   * torus touches the origin where the hand holds it.
++   * A mini hoop: one 5/8in HDPE tube bent into an 18.5in ring.
++   * `hoop-geometry.ts` carries the numbers and where each came from — the
++   * diameter off `minihoop.svg` (whose 18.36in lands inside the range minis are
++   * sold at, unlike the club's length), the tube off the tubing spec, where 5/8in
++   * is forced: 3/4in tube will not hold a round hoop at this diameter, which is
++   * why no vendor sells that combination.
+    *
+-   * Uses computePropRotation (unified for all prop types).
++   * The hand grips the tube's CENTRELINE at the near side of the ring, which is
++   * where `minihoop.svg` puts its 2D hand point — measured 0.7% off the
++   * centreline, so the 2D and 3D grips are in register. `TorusGeometry`'s
++   * `radius` is a centreline radius too, so offsetting the mesh up by exactly
++   * that radius puts the grip at the group origin.
++   *
++   * Because a hoop is sold in discrete inch sizes, its size is absolute — it does
++   * not scale with the user's staff length the way Staff3D does. `scale` still
++   * applies, which is what the BIGHOOP prop type uses.
++   *
++   * The invented white grip torus is gone. Nothing on a real hoop marks the grip
++   * — the ring is one uniform tube from end to end, which is also what the glyph
++   * draws. The same fake grip ring came off the club for the same reason.
+    */
+ 
+   import { T } from "@threlte/core";
+   import type { Prop3DProps } from "./Prop3DProps";
+-  import { PROP_COLORS } from "./Prop3DProps";
+   import { computePropRotation } from "./prop3d-transforms";
+-  import { userProportionsState } from "../../state/user-proportions-state.svelte";
++  import { getHoopMaterials } from "./frame-materials";
++  import { PLATE_TRAIL_GEOMETRY } from "./plate-materials";
+   import {
+     LAYER_WORLD,
+     LAYER_PLAYER_BODY,
+@@ -24,58 +64,35 @@
+     propState,
+     color,
+     visible = true,
+-    length,
+-    thickness,
+     isActivePlayer = false,
+     scale = 1,
+   }: Prop3DProps = $props();
+ 
+   const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
+-  const palette = $derived(PROP_COLORS[color]);
+-
+-  const effectiveLength = $derived(length ?? userProportionsState.staffLength);
+-  const staffRadius = $derived(
+-    thickness
+-      ? thickness / 2
+-      : userProportionsState.dimensions.staffRadius
+-  );
+ 
+-  // Ring radius: ~35% of staff length
+-  const ringRadius = $derived(effectiveLength * 0.35 * scale);
+-
+-  // Tube radius: same thickness as a staff shaft
+-  const tubeRadius = $derived(staffRadius * 1.0 * scale);
+-
+-  // Grip indicator ring dimensions (small white torus at origin)
+-  const gripOuterRadius = $derived(staffRadius * 1.4 * scale);
+-  const gripTubeRadius = $derived(staffRadius * 0.15 * scale);
++  const geometry = $derived(getHoopGeometry(scale));
++  const materials = $derived(getHoopMaterials(color));
+ 
+   const rotation = $derived(computePropRotation(propState));
+ </script>
+ 
+ {#if visible}
+   <T.Group {rotation} layers={propLayer}>
+-    <!-- Main hoop ring: center offset upward by ringRadius so the
+-         bottom of the torus sits at the origin (the grip point) -->
+-    <T.Mesh position={[0, ringRadius, 0]}>
+-      <T.TorusGeometry args={[ringRadius, tubeRadius, 16, 32]} />
+-      <T.MeshStandardMaterial
+-        color={palette.main}
+-        roughness={0.3}
+-        metalness={0.2}
+-      />
+-    </T.Mesh>
+-
+-    <!-- Grip indicator: small white ring at origin where the hand holds -->
+-    <T.Mesh>
+-      <T.TorusGeometry args={[gripOuterRadius, gripTubeRadius, 12, 24]} />
+-      <T.MeshStandardMaterial color="white" roughness={0.4} metalness={0.1} />
+-    </T.Mesh>
++    <!-- Lifted by the centreline radius so the tube's centreline passes through
++         the origin at the bottom of the ring, which is where the hand is. -->
++    <T.Mesh
++      {geometry}
++      material={materials.tube}
++      position={[0, HOOP_CENTERLINE_RADIUS_M * scale, 0]}
++      dispose={false}
++    />
+   </T.Group>
+ 
+-  <!-- Trail indicator sphere at prop position -->
+-  <T.Mesh layers={propLayer}>
+-    <T.SphereGeometry args={[0.015, 8, 8]} />
+-    <T.MeshBasicMaterial color={palette.main} opacity={0.3} transparent />
+-  </T.Mesh>
++  <!-- Trail indicator (small sphere at prop position for path visualization) -->
++  <T.Mesh
++    geometry={PLATE_TRAIL_GEOMETRY}
++    material={materials.trail}
++    layers={propLayer}
++    dispose={false}
++  />
+ {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
 index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
 --- a/src/lib/components/props/Prop3D.svelte
@@ -11436,10 +11898,10 @@ index 0000000000000000000000000000000000000000..0da37239a8053b7b14d4224987f64838
 +}
 diff --git a/src/lib/components/props/frame-materials.ts b/src/lib/components/props/frame-materials.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..a1ed3c4b20809aa931886d476590d9900044cc7b
+index 0000000000000000000000000000000000000000..7b254520dfe4f142d276bd7ed4d6643449ed1788
 --- /dev/null
 +++ b/src/lib/components/props/frame-materials.ts
-@@ -0,0 +1,265 @@
+@@ -0,0 +1,321 @@
 +/**
 + * Assembled-prop finish
 + *
@@ -11469,6 +11931,7 @@ index 0000000000000000000000000000000000000000..a1ed3c4b20809aa931886d476590d990
 +  MeshPhysicalMaterial,
 +  MeshStandardMaterial,
 +} from "three";
++import { HOOP_TUBE_DIAMETER_M } from "./hoop-geometry";
 +
 +export type FrameVariant = "fire" | "day";
 +
@@ -11705,6 +12168,61 @@ index 0000000000000000000000000000000000000000..a1ed3c4b20809aa931886d476590d990
 +  clubSets.set(color, materials);
 +  return materials;
 +}
++
++export interface HoopMaterialSet {
++  /** The tube. One material for the whole ring, because a hoop is one tube. */
++  readonly tube: MeshPhysicalMaterial;
++  /** Path-visualization marker at the prop's position. */
++  readonly trail: MeshBasicMaterial;
++}
++
++const hoopSets = new Map<string, HoopMaterialSet>();
++
++/**
++ * A mini hoop is a single extrusion of coloured HDPE bent into a circle, so it
++ * gets ONE material — there is no band structure to describe the way a club's
++ * knob, handle and body need one. Vendors do sell grips (sanded inside, an inner
++ * line, spiral tape), but those are options on an otherwise uniform ring and the
++ * stock product photos show the ring bare.
++ *
++ * The finish comes off those photos: a bright, tight specular line runs the whole
++ * inner curve of the tube with the body colour reading through underneath, which
++ * is a glossy translucent plastic and not a painted one. Hence a low roughness
++ * with clearcoat on top, and `transmission` low but non-zero so the tube picks up
++ * a little light through itself instead of going flat where it turns away.
++ *
++ * Metalness stays near zero for the same reason as the rest of this module: a
++ * metal's diffuse response is black, and these are dark scenes.
++ */
++export function getHoopMaterials(color: "blue" | "red"): HoopMaterialSet {
++  const cached = hoopSets.get(color);
++  if (cached) return cached;
++
++  const palette = PALETTES[color];
++
++  const materials: HoopMaterialSet = {
++    tube: new MeshPhysicalMaterial({
++      color: palette.main,
++      roughness: 0.22,
++      metalness: 0.02,
++      clearcoat: 0.85,
++      clearcoatRoughness: 0.1,
++      // Extruded HDPE is not clear, but it is not opaque either — the photos
++      // show the colour lifting where the tube thins toward its silhouette.
++      transmission: 0.12,
++      thickness: HOOP_TUBE_DIAMETER_M,
++      ior: 1.5,
++    }),
++    trail: new MeshBasicMaterial({
++      color: palette.main,
++      opacity: 0.3,
++      transparent: true,
++    }),
++  };
++
++  hoopSets.set(color, materials);
++  return materials;
++}
 diff --git a/src/lib/components/props/geng-profile.ts b/src/lib/components/props/geng-profile.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..e6a8fa5c7212231654c232b99f1946477a62166f
@@ -11867,6 +12385,129 @@ index 0000000000000000000000000000000000000000..e6a8fa5c7212231654c232b99f194647
 +export function buildTrigengShape(staffLength: number): Shape {
 +  return trace(TRIGENG_OUTLINE, staffLength);
 +}
+diff --git a/src/lib/components/props/hoop-geometry.ts b/src/lib/components/props/hoop-geometry.ts
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe4ab4237836fde97e194a8c88e009633ce0ca20
+--- /dev/null
++++ b/src/lib/components/props/hoop-geometry.ts
+@@ -0,0 +1,117 @@
++/**
++ * Mini-hoop dimensions: the size from hoops people buy, the grip from the glyph.
++ *
++ * A torus has exactly two free parameters, so unlike `club-profile.ts` there is
++ * no silhouette to lift off the 2D artwork -- the only shape statement a ring
++ * glyph can make is the ratio of its tube to its diameter. `minihoop.svg` makes
++ * that statement and gets it wrong on purpose:
++ *
++ *                       minihoop.svg   what we ship
++ *   outer diameter        18.36 in       18.5 in        <- inside the range
++ *   tube diameter          2.15 in       0.625 in       <- 3.4x too fat
++ *   tube / outer dia       0.117          0.034
++ *
++ * That split is the interesting part, and it is the opposite of the club's. A
++ * ring's diameter and its tube thickness are independent, so the glyph could
++ * fatten the tube for legibility at pictograph size WITHOUT stealing any
++ * diameter -- which is exactly what it did. The club had to pay for its fat body
++ * in length and came out at 18in when nothing is sold under 19in; the hoop's
++ * diameter lands squarely inside the range hoops are actually sold at, and is
++ * therefore trustworthy.
++ *
++ * So:
++ *   - Diameter comes from the glyph, rounded to a size vendors actually stock.
++ *   - Tube diameter comes from the tubing spec. The glyph is not a witness here.
++ *   - The grip point comes from the glyph, and it is a real geometric fact:
++ *     the hand sits on the tube's CENTRELINE (measured 0.7% off), not on the
++ *     ring's inner or outer surface.
++ *
++ * The published numbers:
++ *
++ *   MoodHoops        minis 18-23in OD in HDPE; 3/4in minis ONLY at 20.5in and
++ *                    22.5in; 5/8in minis down to 18.5in; polypro minis only
++ *                    22-23in. A 3/4in mini weighs about 7.7oz (218g).
++ *   Ruby Hooping     mini pairs 19-24in, 3/4in or 5/8in OD HDPE
++ *   Hoopologie       minis roughly 16-24in; doubles/multiples 25-38in
++ *
++ * Hoop tubing is named by its OUTER diameter (unlike polyethylene irrigation
++ * tube, which is named by ID), so 5/8in tubing really is 15.875mm across.
++ *
++ * The tube size is NOT a free choice against the diameter, which is the trap
++ * here. MoodHoops: "To preserve the roundness of the hoops in smaller sizes,
++ * minis in 3/4in tubing are only available in 20.5in OD and 22.5in OD." That is
++ * a physical constraint, not a stocking preference -- 3/4in HDPE is too stiff to
++ * hold a circle at the small end, which is also why polypro minis stop at 22in.
++ * So a hoop at the glyph's diameter has to be 5/8in tubing; an 18in ring in 3/4in
++ * tube is a thing that does not hold its shape.
++ *
++ * 5/8in is independently the right default here: TKA minihoops are dual-wielded
++ * by construction, and dual-wielders prefer 5/8in because two thinner rings sit
++ * easier in the hands over a long session. The two constraints agree.
++ *
++ * 18.5in is MoodHoops' smallest 5/8in mini and lands 0.8% off the glyph's
++ * 18.36in, so the 2D and 3D props are the same object at the same size.
++ *
++ * Deliberately NOT modelled: the connector join. Every hoop has one, and on the
++ * product photos it is a hairline mark a couple of millimetres long. At scene
++ * scale it would either vanish or read as a defect in the geometry, and it costs
++ * a discontinuity in an otherwise perfect ring to find out which.
++ *
++ * A hoop is sold in discrete inch sizes, so like the club its size is absolute
++ * and does not scale with the user's staff length. Vendors do advise sizing a
++ * mini to the gap between your armpit and your hand, which is a body-relative
++ * rule -- but `userProportionsState` carries no armpit-to-hand measure, and
++ * inventing one to drive a prop that ships in 1-inch steps would be worse than
++ * picking the size off the drawing.
++ */
++
++/**
++ * Outer diameter: 18.5in, MoodHoops' smallest 5/8in mini, which is the stocked
++ * size nearest the glyph's 18.36in.
++ */
++export const HOOP_OUTER_DIAMETER_M = 0.4699;
++
++/**
++ * Tube outer diameter: 5/8in HDPE. Forced by the diameter -- 3/4in tube will not
++ * hold a round hoop this small -- and preferred anyway for a dual-wielded prop.
++ */
++export const HOOP_TUBE_DIAMETER_M = 0.015875;
++
++/** Radius of the tube itself. */
++export const HOOP_TUBE_RADIUS_M = HOOP_TUBE_DIAMETER_M / 2;
++
++/**
++ * Centre of the ring to centre of the tube -- which is what Three's
++ * `TorusGeometry` means by `radius`, so the outer surface lands at
++ * `HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M` and the published outer
++ * diameter comes out exact.
++ */
++export const HOOP_CENTERLINE_RADIUS_M =
++  HOOP_OUTER_DIAMETER_M / 2 - HOOP_TUBE_RADIUS_M;
++
++/**
++ * Segments around the ring (Three calls this `tubularSegments`).
++ *
++ * The old hoop used 32, which is below Three's own default of 48 and leaves a
++ * 1.1mm sagitta on a 227mm ring -- 14% of the tube's radius, so the ring read as
++ * a polygon. 128 brings that to 0.07mm, which is a tenth of the deviation
++ * anti-aliasing already hides.
++ */
++export const HOOP_RING_SEGMENTS = 128;
++
++/**
++ * Segments around the tube's cross-section (Three's `radialSegments`). The tube
++ * is only 7.9mm in radius, so 20 leaves a 0.10mm sagitta and the silhouette
++ * reads round.
++ */
++export const HOOP_TUBE_SEGMENTS = 20;
++
++/**
++ * Hand to the far outer edge of the ring, in metres.
++ *
++ * The hand grips the tube's centreline at the near side of the ring, so the ring
++ * hangs entirely above the grip except for the near half of the tube. Hand to
++ * the far edge is therefore a full diameter minus one tube radius.
++ */
++export const HOOP_REACH_M =
++  2 * HOOP_CENTERLINE_RADIUS_M + HOOP_TUBE_RADIUS_M;
 diff --git a/src/lib/components/props/plate-extrude.ts b/src/lib/components/props/plate-extrude.ts
 new file mode 100644
 index 0000000000000000000000000000000000000000..3b093299f8fd46afc2d5e303492b3c156594e571
@@ -12761,7 +13402,7 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11dc296c0e 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..273376c456e9452d9cdeb463607ec4c332e08a88 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
 @@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
@@ -12779,7 +13420,7 @@ index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11
 +
 +// The .d.ts already declares this; the runtime half was missing, which broke
 +// every consumer of the barrel (AvatarSwapTransition.svelte) in the browser.
-+export { prepareSharedGltf, prepareAvatarForDisplay } from "./services/shared-gltf-cache";
++export { prepareSharedGltf } from "./services/shared-gltf-cache";
 diff --git a/src/lib/services/contracts/IAvatarAnimator.ts b/src/lib/services/contracts/IAvatarAnimator.ts
 index 42a46ac294719f16470ed72c27286e50c55a35f2..bf59d5a9e591661edd4593cb39796dbceaf626a1 100644
 --- a/src/lib/services/contracts/IAvatarAnimator.ts
@@ -12921,7 +13562,7 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
    ): SpineTwistResult;
  }
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240ef36a678 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..12bd2f8636606eaf4575682e79c8346d02ee3207 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -12934,7 +13575,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
  import type {
    IAvatarAnimator,
    HandPose,
-@@ -13,13 +14,59 @@ import type {
+@@ -13,13 +14,51 @@ import type {
    AnimationLayer,
    TransitionConfig,
    PositionOffset,
@@ -12958,14 +13599,6 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
 +/** Max wrist swing toward the staff axis. Beyond this the alignment is
 + *  anatomically implausible - bend partway and let the rest read as strain. */
 +const MAX_WRIST_SWING = (55 * Math.PI) / 180;
-+
-+/** Max wrist correction ABOUT the forearm axis. Rolling the fist is
-+ *  pronation/supination - far cheaper than radial/ulnar deviation - so the
-+ *  twist share of the staff-axis correction gets its own, larger clamp.
-+ *  Without the split, a vertical staff at a sideways-extended arm (the
-+ *  weave's quarter phases) demands ~90 of what is mostly cheap roll, and a
-+ *  single 55 clamp leaves the hand visibly off the shaft. */
-+const MAX_WRIST_TWIST = (100 * Math.PI) / 180;
 +
 +/** Per-frame smoothing for the wrist alignment (higher = snappier). */
 +const WRIST_SMOOTHING = 0.25;
@@ -12996,7 +13629,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
  
  export class AvatarAnimator implements IAvatarAnimator {
    private currentPose: BodyPose;
-@@ -85,6 +132,70 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -85,6 +124,68 @@ export class AvatarAnimator implements IAvatarAnimator {
     */
    private externalSpinePitchRad = 0;
  
@@ -13010,8 +13643,8 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
 +  private leftPalmLocal: Vector3 | null = null;
 +  private rightPalmLocal: Vector3 | null = null;
 +  private gripCalibrated = false;
-+  // Smoothed wrist local quaternions - persistent across frames so the
-+  // directed staff-axis goal is followed continuously, never snapped to.
++  // Smoothed wrist local quaternions - persistent so a staff-axis sign
++  // flip reads as a natural regrasp instead of an instant 180 snap.
 +  private leftWristQuat = new Quaternion();
 +  private rightWristQuat = new Quaternion();
 +  private leftWristInit = false;
@@ -13049,8 +13682,6 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
 +  private readonly _q2 = new Quaternion();
 +  private readonly _q3 = new Quaternion();
 +  private readonly _q4 = new Quaternion();
-+  private readonly _q5 = new Quaternion();
-+  private readonly _v4 = new Vector3();
 +  private readonly _m1 = new Matrix4();
 +  private readonly _socketTargetLeft = new Vector3();
 +  private readonly _socketTargetRight = new Vector3();
@@ -13067,7 +13698,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
    constructor(
      private ikSolver: IIKSolver,
      private skeleton: IAvatarSkeletonBuilder,
-@@ -186,7 +297,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -186,7 +287,8 @@ export class AvatarAnimator implements IAvatarAnimator {
    setPropsAndBlend(
      blueProp: PropState3D | null,
      redProp: PropState3D | null,
@@ -13077,7 +13708,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
    ): void {
      this.leftArmIK.targetWeight = blueProp ? 1 : 0;
      this.rightArmIK.targetWeight = redProp ? 1 : 0;
-@@ -205,6 +317,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -205,6 +307,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              blueProp.worldPosition.y - oy,
              blueProp.worldPosition.z - oz
            ),
@@ -13085,7 +13716,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
            staffAngle: blueProp.staffRotationAngle,
            plane: blueProp.plane,
            weight: 1,
-@@ -218,6 +331,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -218,6 +321,7 @@ export class AvatarAnimator implements IAvatarAnimator {
              redProp.worldPosition.y - oy,
              redProp.worldPosition.z - oz
            ),
@@ -13093,7 +13724,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
            staffAngle: redProp.staffRotationAngle,
            plane: redProp.plane,
            weight: 1,
-@@ -227,6 +341,25 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -227,6 +331,25 @@ export class AvatarAnimator implements IAvatarAnimator {
      this.targetPose.timestamp = Date.now();
    }
  
@@ -13119,7 +13750,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
    setLeftHandTarget(target: HandPose): void {
      this.targetPose.leftHand = { ...target };
      this.targetPose.timestamp = Date.now();
-@@ -385,6 +518,15 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -385,6 +508,15 @@ export class AvatarAnimator implements IAvatarAnimator {
      const leftChain = this.skeleton.getLeftArmChain();
      const rightChain = this.skeleton.getRightArmChain();
  
@@ -13135,7 +13766,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
      // Compute body center from Hips bone (or default to origin)
      const bodyCenter = new Vector3(0, 0, 0);
      const hipsBone = state.bones.get("Hips");
-@@ -392,6 +534,30 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -392,6 +524,30 @@ export class AvatarAnimator implements IAvatarAnimator {
        hipsBone.getWorldPosition(bodyCenter);
      }
  
@@ -13166,7 +13797,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
      // Cache shoulder rest Y positions once (before any clavicle rotation has been applied).
      // CRITICAL: Do NOT read these per-frame after clavicle is rotated - the elevated
      // position feeds back and causes oscillation.
-@@ -445,7 +611,8 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -445,7 +601,8 @@ export class AvatarAnimator implements IAvatarAnimator {
          pose.leftHand?.targetPosition ?? null,
          pose.rightHand?.targetPosition ?? null,
          bodyCenter,
@@ -13176,7 +13807,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
        );
  
        // Apply twist to each bone individually for a natural spinal curve.
-@@ -511,12 +678,90 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -511,12 +668,90 @@ export class AvatarAnimator implements IAvatarAnimator {
        }
      }
  
@@ -13268,7 +13899,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = leftChain.root.quaternion.clone();
          const animMiddleQuat = leftChain.middle.quaternion.clone();
-@@ -527,7 +772,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -527,7 +762,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const leftShoulder = state.bones.get("LeftShoulder");
            if (leftShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -13277,7 +13908,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
                "left",
                this.leftShoulderRestY,
                leftChain.totalLength
-@@ -540,6 +785,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -540,6 +775,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -13292,7 +13923,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: leftTarget,
-@@ -558,6 +811,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -558,6 +801,10 @@ export class AvatarAnimator implements IAvatarAnimator {
            target.poleHint = this.leftPoleVector.clone();
          }
  
@@ -13303,7 +13934,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(leftChain, target);
  
-@@ -572,13 +829,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -572,13 +819,14 @@ export class AvatarAnimator implements IAvatarAnimator {
          leftChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          leftChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -13319,7 +13950,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Save what the locomotion animation wrote to bone quaternions
          const animRootQuat = rightChain.root.quaternion.clone();
          const animMiddleQuat = rightChain.middle.quaternion.clone();
-@@ -589,7 +847,7 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -589,7 +837,7 @@ export class AvatarAnimator implements IAvatarAnimator {
            const rightShoulder = state.bones.get("RightShoulder");
            if (rightShoulder) {
              const targetQuat = this.clavicleRaiser.computeClavicleRotation(
@@ -13328,7 +13959,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
                "right",
                this.rightShoulderRestY,
                rightChain.totalLength
-@@ -602,6 +860,14 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -602,6 +850,14 @@ export class AvatarAnimator implements IAvatarAnimator {
            }
          }
  
@@ -13343,7 +13974,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Build IK target with optional pole vector
          const target: IKTarget = {
            position: rightTarget,
-@@ -620,6 +886,10 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -620,6 +876,10 @@ export class AvatarAnimator implements IAvatarAnimator {
            target.poleHint = this.rightPoleVector.clone();
          }
  
@@ -13354,7 +13985,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
          // Solve IK (overwrites bone quaternions)
          this.ikSolver.solveAndApply(rightChain, target);
  
-@@ -634,13 +904,245 @@ export class AvatarAnimator implements IAvatarAnimator {
+@@ -634,13 +894,215 @@ export class AvatarAnimator implements IAvatarAnimator {
          rightChain.middle.quaternion.copy(animMiddleQuat).slerp(ikMiddleQuat, w);
          rightChain.effector.quaternion.copy(animEffectorQuat).slerp(ikEffectorQuat, w);
  
@@ -13518,14 +14149,10 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
 +
 +  /**
 +   * Rotate the hand so its knuckle line lies along the staff axis - the
-+   * wrist orientation goal. Twist/swing split, clamped to anatomical
-+   * range, and THUMB-LOCKED: the staff ends are NOT interchangeable. The
-+   * knuckle line (Index1->Pinky1, pinky-ward) tracks the staff's pinky
-+   * end (-Y) as a directed constraint, so the hand can never take the
-+   * flipped solution - a real grip cannot swap which end the thumb faces
-+   * without regrasping. Demand beyond the clamps reads as strain;
-+   * absorbing it is the body's job (plane sweep, hand travel, stance
-+   * yaw), not the wrist's.
++   * wrist orientation goal. Swing-only (no roll about the staff), clamped
++   * to anatomical range, sign-disambiguated (staff ends are
++   * interchangeable, pick the smaller swing), and smoothed so a sign flip
++   * reads as a regrasp rather than a snap.
 +   */
 +  private applyWristOrientation(
 +    side: "left" | "right",
@@ -13547,39 +14174,13 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..40831e4dd2f2b09462f6febdf8797240
 +    eff.getWorldQuaternion(this._q1);
 +    this._v1.copy(gripAxis).applyQuaternion(this._q1);
 +
-+    // Staff PINKY end in world space (-Y; +Y is the thumb end / T-bar).
-+    // Directed on purpose: no nearest-end negate, ever.
-+    this._v2.set(0, -1, 0).applyQuaternion(staffQuat);
++    // Staff long axis in world space (+Y of the prop cylinder)
++    this._v2.set(0, 1, 0).applyQuaternion(staffQuat);
++    if (this._v1.dot(this._v2) < 0) this._v2.negate();
 +
-+    // Correction that carries the knuckle line onto the directed staff axis
++    // Swing-only correction, clamped to anatomical range
 +    this._q2.setFromUnitVectors(this._v1, this._v2);
-+
-+    // Split the correction about the forearm axis: the twist share is
-+    // pronation/supination (cheap - big clamp), the swing share is
-+    // radial/ulnar deviation (expensive - small clamp). One combined clamp
-+    // starved the cheap roll and left the hand off the shaft at the
-+    // weave's vertical-staff quarters.
-+    eff.getWorldPosition(this._v3);
-+    chain.middle.getWorldPosition(this._v4);
-+    this._v3.sub(this._v4);
-+    if (this._v3.lengthSq() > 1e-10) {
-+      this._v3.normalize();
-+      // Twist = projection of the correction onto the forearm axis
-+      const d =
-+        this._q2.x * this._v3.x +
-+        this._q2.y * this._v3.y +
-+        this._q2.z * this._v3.z;
-+      this._q5
-+        .set(this._v3.x * d, this._v3.y * d, this._v3.z * d, this._q2.w)
-+        .normalize();
-+      // Swing = correction with the twist share removed
-+      this._q4.copy(this._q5).invert().premultiply(this._q2);
-+      AvatarAnimator.clampQuatAngle(this._q5, MAX_WRIST_TWIST);
-+      AvatarAnimator.clampQuatAngle(this._q4, MAX_WRIST_SWING);
-+      this._q2.copy(this._q4).multiply(this._q5);
-+    } else {
-+      AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
-+    }
++    AvatarAnimator.clampQuatAngle(this._q2, MAX_WRIST_SWING);
 +
 +    // Desired world orientation -> hand-local
 +    this._q3.copy(this._q2).multiply(this._q1);
