@@ -8,6 +8,7 @@ import {
 import { MODULE_DEFINITIONS } from "../../navigation/config/module-definitions";
 import { PREMIUM_CAPABILITY_CONFIGS } from "$lib/shared/subscription/domain/capability-flag-configs";
 import { ONBOARDING_CAPABILITY_CONFIGS } from "./onboarding-feature-flags";
+import { EARLY_ACCESS_CAPABILITY_CONFIGS } from "./early-access-feature-flags";
 
 function generateFeatureFlagsFromModules(): FeatureFlagConfig[] {
   const flags: FeatureFlagConfig[] = [];
@@ -50,6 +51,7 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlagConfig[] = [
   ...generateFeatureFlagsFromModules(),
   ...PREMIUM_CAPABILITY_CONFIGS,
   ...ONBOARDING_CAPABILITY_CONFIGS,
+  ...EARLY_ACCESS_CAPABILITY_CONFIGS,
 ];
 
 export function getDefaultFeatureConfig(

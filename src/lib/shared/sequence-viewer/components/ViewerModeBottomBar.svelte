@@ -5,6 +5,7 @@
 		PRACTICE_OPTION,
 		type SelectableViewerMode
 	} from '../services/viewer-modes';
+	import { canAccessPostStudio } from '../services/post-studio-access';
 	import { viewportFits3D } from '$lib/shared/3d/capabilities/viewport-3d-gate.svelte';
 	import NavButton from '$lib/shared/navigation/components/buttons/NavButton.svelte';
 
@@ -34,7 +35,9 @@
 	}: Props = $props();
 
 	const modes = $derived(
-		viewerModeOptions(webgl2Available, viewportFits3D()).filter((m) => allowSplit || m.id !== 'split')
+		viewerModeOptions(webgl2Available, viewportFits3D(), canAccessPostStudio()).filter(
+			(m) => allowSplit || m.id !== 'split'
+		)
 	);
 
 	function selectMode(id: ViewerMode) {

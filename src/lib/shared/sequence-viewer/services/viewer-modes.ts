@@ -16,6 +16,11 @@ export interface ViewerModeOption {
 	 * phone-friendly yet, so it is withheld on small screens.
 	 */
 	requiresLargeViewport?: boolean;
+	/**
+	 * When true, the option is withheld unless the current user has Post Studio
+	 * early access (`canAccessPostStudio()` in services/post-studio-access.ts).
+	 */
+	requiresPostStudioAccess?: boolean;
 }
 
 /**
@@ -37,7 +42,13 @@ export const VIEWER_MODE_OPTIONS: ViewerModeOption[] = [
 	// something (card export, video export, tunnel, mandala, practice), and
 	// Share owns distribution. Listing it here is what gives it a real entry
 	// point in both switchers instead of a button buried two clicks into a modal.
-	{ id: 'post-studio', icon: 'fa-wand-magic-sparkles', label: 'Post Studio' }
+	// Early access while unfinished: admins and per-user grants only.
+	{
+		id: 'post-studio',
+		icon: 'fa-wand-magic-sparkles',
+		label: 'Post Studio',
+		requiresPostStudioAccess: true
+	}
 ];
 
 /**
@@ -53,17 +64,22 @@ export type SelectableViewerMode = Exclude<ViewerMode, 'split'>;
 export const PRACTICE_OPTION = { icon: 'fa-signal', label: 'Practice' } as const;
 
 /**
- * Filter helper: drops WebGL2-only options when WebGL2 is unavailable, and
- * large-viewport-only options (3D) when the viewport is too small to host them.
+ * Filter helper: drops WebGL2-only options when WebGL2 is unavailable,
+ * large-viewport-only options (3D) when the viewport is too small to host
+ * them, and early-access options (Post Studio) when access isn't granted.
+ * `postStudioAccess` defaults to false — hidden unless the caller proves
+ * access — so a call site that forgets the check fails closed.
  */
 export function viewerModeOptions(
 	webgl2Available: boolean,
-	viewportFits3D = true
+	viewportFits3D = true,
+	postStudioAccess = false
 ): ViewerModeOption[] {
 	return VIEWER_MODE_OPTIONS.filter(
 		(m) =>
 			(!m.requiresWebgl2 || webgl2Available) &&
-			(!m.requiresLargeViewport || viewportFits3D)
+			(!m.requiresLargeViewport || viewportFits3D) &&
+			(!m.requiresPostStudioAccess || postStudioAccess)
 	);
 }
 

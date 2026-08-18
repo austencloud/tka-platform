@@ -5,6 +5,7 @@
     PRACTICE_OPTION,
     type SelectableViewerMode,
   } from "../services/viewer-modes";
+  import { canAccessPostStudio } from "../services/post-studio-access";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
 
   const RAIL_WIDTH_KEY = "tka-viewer-rail-width";
@@ -42,7 +43,7 @@
   }: Props = $props();
 
   const railItems = $derived([
-    ...viewerModeOptions(webgl2Available, viewportFits3D()).map((m) => ({
+    ...viewerModeOptions(webgl2Available, viewportFits3D(), canAccessPostStudio()).map((m) => ({
       id: m.id,
       icon: m.icon,
       label: m.label,

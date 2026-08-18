@@ -27,12 +27,15 @@ describe('viewerModeOptions', () => {
 		expect(ids).toContain('split');
 	});
 
-	// Post Studio's entire reason for being a viewer mode is that it has a real
-	// entry point in both switchers instead of a button buried inside the share
-	// modal. It composes 2D media, so no capability gate applies to it.
-	it('offers Post Studio on every device', () => {
-		expect(viewerModeOptions(false, false).some((m) => m.id === 'post-studio')).toBe(true);
-		expect(viewerModeOptions(true, true).some((m) => m.id === 'post-studio')).toBe(true);
+	// Post Studio is in early access (capability:viewer:post-studio). Hidden by
+	// default so a call site that forgets the access check fails closed; when
+	// access IS granted it appears on every device — it composes 2D media, so
+	// neither the WebGL2 nor the viewport gate applies to it.
+	it('withholds Post Studio unless early access is granted', () => {
+		expect(viewerModeOptions(false, false).some((m) => m.id === 'post-studio')).toBe(false);
+		expect(viewerModeOptions(true, true).some((m) => m.id === 'post-studio')).toBe(false);
+		expect(viewerModeOptions(false, false, true).some((m) => m.id === 'post-studio')).toBe(true);
+		expect(viewerModeOptions(true, true, true).some((m) => m.id === 'post-studio')).toBe(true);
 	});
 });
 

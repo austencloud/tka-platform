@@ -22,6 +22,24 @@ describe("onboarding first-session-activation flag", () => {
   });
 });
 
+describe("post-studio early-access flag", () => {
+  it("is registered, defaulted off, with a user-level role so per-user grants work", () => {
+    const config = getDefaultFeatureConfig("capability:viewer:post-studio");
+    expect(config).not.toBeNull();
+    expect(config?.enabled).toBe(false);
+    // The per-user enabledFeatures override bypasses `enabled` but never the
+    // role check — minimumRole "user" is what makes the grant reachable.
+    expect(config?.minimumRole).toBe("user");
+  });
+
+  it("appears exactly once in DEFAULT_FEATURE_FLAGS", () => {
+    const matches = DEFAULT_FEATURE_FLAGS.filter(
+      (f) => f.id === "capability:viewer:post-studio"
+    );
+    expect(matches.length).toBe(1);
+  });
+});
+
 describe("Create tab access", () => {
   it("releases Fuse to user accounts while Assemble stays admin-only", () => {
     const fuse = getDefaultFeatureConfig("tab:create:fuse");

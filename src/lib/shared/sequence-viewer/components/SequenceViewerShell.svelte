@@ -54,6 +54,7 @@
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import PostShareSheet from "$lib/shared/share/components/PostShareSheet.svelte";
   import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
+  import { canAccessPostStudio } from "../services/post-studio-access";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import {
     openSendSequenceSheet,
@@ -927,7 +928,9 @@
     initialArtifact={share.artShare || share.sceneShare ? "video" : "card"}
     resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
     onSendInTka={() => share.sendToInbox()}
-    onOpenPostStudio={() => layout.selectViewerMode("post-studio")}
+    onOpenPostStudio={canAccessPostStudio()
+      ? () => layout.selectViewerMode("post-studio")
+      : undefined}
     onClose={() => share.setPostSheetOpen(false)}
   />
 </div>
