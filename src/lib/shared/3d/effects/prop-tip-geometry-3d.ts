@@ -114,16 +114,16 @@ const SINGLE_ENDED_REACH_3D: Partial<
 
 /**
  * Hand to a lit cap's glow centre, in metres. `capsule-baton.glb` authors an
- * 0.8636m prop whose caps close at +/-0.4318, but the glow reads from the
- * middle of each cap, at +/-0.39969 — `tracked_tip_y` in the model's root
- * extras -- printed by `scripts/build-capsule-baton-model.py` and gated by
- * `scripts/verify-capsule-baton-glb.cjs`. Emitting from the mesh end instead
- * would float each effect about 32mm past its cap.
+ * 0.8636m prop whose caps close at +/-0.4318, but the capsule that lights them
+ * sits inside the tube, 22mm inboard at +/-0.4099367 -- `tracked_tip_y` in the
+ * model's root extras, printed by `scripts/build-capsule-baton-model.py` and
+ * gated by `scripts/verify-capsule-baton-glb.cjs`. The two-ended default lands
+ * on the closed end of the cap, off the tip, where nothing is emitting.
  *
  * Absolute, not a ratio: like the club, a GLB prop is a fixed-size object and
  * does not follow the user's staff length.
  */
-const CAPSULE_BATON_REACH_M = 0.3996883;
+const CAPSULE_BATON_REACH_M = 0.4099367;
 
 /**
  * Two-ended props whose ends sit somewhere other than half a staff from the

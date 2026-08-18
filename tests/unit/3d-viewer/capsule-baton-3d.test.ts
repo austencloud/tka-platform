@@ -16,7 +16,7 @@ const STAFF_HALF_M = STAFF_LENGTH_M / 2;
  * `scripts/verify-capsule-baton-glb.cjs`.
  */
 const CAP_TIP_M = 0.4318;
-const GLOW_CENTRE_M = 0.3996883;
+const GLOW_CENTRE_M = 0.4099367;
 
 describe("capsule baton 3D", () => {
   it("loads its own model instead of borrowing the staff's", () => {
@@ -52,9 +52,9 @@ describe("capsule baton 3D", () => {
     expect(anchors).toHaveLength(2);
     expect(anchors.map((anchor) => anchor.effectTipIndex)).toEqual([0, 1]);
 
-    // Both emitters land on a cap's glow centre. The old two-ended default put
-    // them at +/- staffHalfLength, which for this prop is 32mm past each cap --
-    // outside the mesh, in mid-air.
+    // Both emitters land on the capsule inside the cap, 22mm inboard of the
+    // closed end. The two-ended default is +/- staffHalfLength, which on this
+    // prop lands exactly on the cap tip, where the real light is not.
     expect(anchors[1].axialOffset).toBeCloseTo(GLOW_CENTRE_M, 6);
     expect(anchors[0].axialOffset).toBeCloseTo(-GLOW_CENTRE_M, 6);
     expect(anchors[1].axialOffset).toBeLessThan(CAP_TIP_M);

@@ -39,15 +39,25 @@ const SVG_SPAN_UNITS = 252.8;
 const AUTHORED_LENGTH_M = 0.8636;
 const SVG_TO_M = AUTHORED_LENGTH_M / SVG_SPAN_UNITS;
 
+// --- The physical prop, the size authority -------------------------------
+// flowtoys composite iso baton / lumina twirl baton. Published numbers.
+const TUBE_OD_M = 0.0254; // 1" polycarbonate end tube
+const TUBE_LENGTH_M = 0.135; // 13.5cm of clear tube per end
+const SHAFT_OD_M = 0.014; // 12mm carbon + 1mm elastomer grip tape each side
+const CAP_OD_M = 0.0381; // 1.5" silicone flowcap pushed over that tube
+
 /**
  * The drawing exaggerates every cross-section about 2x so a hairline shaft
- * still reads on a small pictograph cell. 3D has no such problem, so the
- * builder de-exaggerates by one factor anchored to the 3D staff's own radius
- * (STAFF_DIAMETER_CM 2.5 x CM_TO_UNITS 0.01, halved). Silhouette preserved,
- * proportions real.
+ * still reads on a small pictograph cell. 3D has no such problem, so the builder
+ * de-exaggerates by one factor anchored to the END TUBE at its published 1" OD.
+ *
+ * An earlier build anchored on the 3D staff's radius instead, on the assumption
+ * that a baton shaft and a staff share a cross-section. They do not -- a staff
+ * tube is 25mm, a baton shaft is 12mm -- so that build shipped a 25mm shaft and
+ * 50mm tubes, almost exactly twice the real object at every station. That is
+ * what the real-prop assertions further down exist to catch.
  */
-const STAFF_RADIUS_M = 0.0125;
-const CROSS_SCALE = STAFF_RADIUS_M / (5.0 * SVG_TO_M);
+const CROSS_SCALE = TUBE_OD_M / 2 / (10.0 * SVG_TO_M);
 
 /** Signed distance from the pivot, in metres, for an offset in svg units. */
 const axial = (units) => units * SVG_TO_M;
@@ -79,7 +89,6 @@ const requiredNodes = [
   "TKA_Baton_Fittings",
   "TKA_Baton_Grip",
   "TKA_Baton_Lit",
-  "TKA_Baton_Vents",
 ];
 for (const nodeName of requiredNodes) {
   invariant(
@@ -109,25 +118,22 @@ invariant(
 
 // --- The material split capsule_baton.svg asks for ----------------------
 //
-// The 2D artwork puts prop identity in the LIT ENDS and keeps the hardware
-// silver. prop-model-recolor.ts implements the same split by looking for
-// "Recolor" in a material name, and -- load-bearing -- once ANY material
-// carries the marker it leaves every unmarked material alone. Drop the marker
-// and the whole baton goes flat blue or red, silver hardware included.
+// Prop identity lives in the SHAFT and the ends stay clear, which is both how
+// flowtoys sells the object and the only split that survives the light being on.
+// prop-model-recolor.ts implements it by looking for "Recolor" in a material
+// name, and -- load-bearing -- once ANY material carries the marker it leaves
+// every unmarked material alone. Drop the marker and the whole baton, clear ends
+// included, goes flat blue or red.
 const recolorable = materials.filter((item) => item.name.includes("Recolor"));
 invariant(
   recolorable.length === 1,
   `Exactly one material may carry the recolor marker, found ${recolorable.length}`
 );
 invariant(
-  recolorable[0].name === "TKA_Baton_LED_Recolor",
+  recolorable[0].name === "TKA_Baton_Shaft_Recolor",
   `Unexpected recolorable material: ${recolorable[0].name}`
 );
-for (const name of [
-  "TKA_Baton_Hardware",
-  "TKA_Baton_Grip",
-  "TKA_Baton_Vent",
-]) {
+for (const name of ["TKA_Baton_Grip", "TKA_Baton_Tube", "TKA_Baton_Cap"]) {
   invariant(materialNames.has(name), `Material is missing: ${name}`);
 }
 invariant(
@@ -141,24 +147,35 @@ const baseColor = (name) =>
 const luminance = (color) =>
   0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
 
-// The lit section is the only NEUTRAL material: recolorPropModel replaces the
-// color outright, so a tint here would fight the prop color instead of taking
-// it. A drifting authored color is the quiet way this breaks.
-const litColor = baseColor("TKA_Baton_LED_Recolor");
+// The shaft is the one NEUTRAL material: recolorPropModel replaces its color
+// outright, so a tint here would fight the prop color instead of taking it. A
+// drifting authored color is the quiet way this breaks.
+const shaftColor = baseColor("TKA_Baton_Shaft_Recolor");
 invariant(
-  Math.abs(litColor[0] - litColor[1]) < 0.001 &&
-    Math.abs(litColor[1] - litColor[2]) < 0.001,
-  `The lit material must be neutral so it reads as the prop color: ${litColor}`
+  Math.abs(shaftColor[0] - shaftColor[1]) < 0.001 &&
+    Math.abs(shaftColor[1] - shaftColor[2]) < 0.001,
+  `The shaft material must be neutral so it reads as the prop color: ${shaftColor}`
 );
 
-// The grip is the one thing that has to stay legible against the hardware, or
-// the middle of the prop reads as one undifferentiated silver tube.
+// Both ends have to stay clear. They are preserved materials, so whatever is
+// authored here is what ships, and anything but near-white stops reading as
+// polycarbonate and silicone.
+for (const name of ["TKA_Baton_Tube", "TKA_Baton_Cap"]) {
+  const color = baseColor(name);
+  invariant(
+    luminance(color) > 0.7,
+    `${name} must stay clear, not tinted: ${luminance(color).toFixed(4)}`
+  );
+}
+
+// The grip is the one thing that has to stay legible against the shaft, or the
+// middle of the prop reads as one undifferentiated tube.
 const gripLuminance = luminance(baseColor("TKA_Baton_Grip"));
-const hardwareLuminance = luminance(baseColor("TKA_Baton_Hardware"));
+const shaftLuminance = luminance(shaftColor);
 invariant(
-  gripLuminance < hardwareLuminance * 0.6,
-  `Grip must read darker than the hardware: ${gripLuminance.toFixed(4)} ` +
-    `against ${hardwareLuminance.toFixed(4)}`
+  gripLuminance < shaftLuminance * 0.6,
+  `Grip must read darker than the shaft: ${gripLuminance.toFixed(4)} ` +
+    `against ${shaftLuminance.toFixed(4)}`
 );
 
 // --- Size and grip ------------------------------------------------------
@@ -173,14 +190,12 @@ near(
   -axial(126.4),
   "The baton is bilateral: both caps close at the same distance"
 );
-// The widest point is the cap RIM, not the cap: the rim follows the cap's taper
-// at a fixed 0.9mm margin, because a constant-radius band around a cone puts its
-// flat ends nearly tangent to the cone and the intersection renders as a ragged
-// line rather than a circle.
+// The widest point is the cap's shoulder. There is no proud rim band any more:
+// it only ever existed to hide a z-fight against the old cap cone.
 near(
   stats.dimensions.x,
-  (radial(11.7) + 0.0009) * 2,
-  "Widest section is the cap rim, proud of the drawing's cap radius"
+  radial(15.0) * 2,
+  "Widest section is the cap's shoulder"
 );
 near(
   stats.dimensions.z,
@@ -202,16 +217,16 @@ invariant(
   "Root axis metadata is missing"
 );
 invariant(
-  rootNode.extras?.recolor_material === "TKA_Baton_LED_Recolor",
+  rootNode.extras?.recolor_material === "TKA_Baton_Shaft_Recolor",
   "Root recolor metadata does not name the marked material"
 );
 
 // prop-tip-geometry-3d.ts copies this number as CAPSULE_BATON_REACH_M. The
-// glow reads from the middle of each cap, not from the closed end, so tracking
-// the mesh end would float the effect about 32mm past the prop.
+// glow reads from inside the cap, not from its closed end, so tracking the mesh
+// end would fire the effect off the tip instead of out of the capsule.
 near(
   rootNode.extras?.tracked_tip_y ?? 0,
-  axial(117.0),
+  axial(120.0),
   "Tracked tip must sit at the cap's glow centre"
 );
 invariant(
@@ -240,7 +255,6 @@ const bounds = (name) => {
 const fittings = bounds("TKA_Baton_Fittings");
 const grip = bounds("TKA_Baton_Grip");
 const lit = bounds("TKA_Baton_Lit");
-const vents = bounds("TKA_Baton_Vents");
 
 near(grip.maximum.y, axial(30.0), "Grip ends where the drawing's rect ends");
 near(grip.minimum.y, -axial(30.0), "Grip is centred on the hand");
@@ -264,14 +278,58 @@ invariant(
   lit.maximum.y > fittings.maximum.y,
   "The cap must stand past the collar and rim hardware"
 );
+// --- Against the physical prop -------------------------------------------
+//
+// These are the assertions the first build would have failed. Everything above
+// checks the model against the DRAWING, which the first build satisfied
+// perfectly while being twice as thick as the object it depicts, because the
+// drawing's cross-section is deliberately exaggerated and the factor that undoes
+// that exaggeration was anchored to the wrong prop.
+//
+// Two millimetres, not a tenth of one: the drawing's proportions and the real
+// prop's agree closely but not exactly, and it is the 11mm and 25mm errors that
+// matter here.
+const REAL_TOLERANCE_M = 0.002;
+function nearReal(actual, expected, message) {
+  invariant(
+    Math.abs(actual - expected) <= REAL_TOLERANCE_M,
+    `${message}: expected ${(expected * 1000).toFixed(1)}mm, got ` +
+      `${(actual * 1000).toFixed(1)}mm`
+  );
+}
+
+nearReal(radial(5.0) * 2, SHAFT_OD_M, "Shaft is a 12mm carbon shaft under tape");
+nearReal(radial(10.0) * 2, TUBE_OD_M, 'End tube is 1" polycarbonate');
+nearReal(radial(15.0) * 2, CAP_OD_M, "Flowcap fits over that tube");
+
+// The step from tube to cap is the whole silhouette of a lit end, and it is the
+// thing a second build lost by over-correcting a too-long cap into a too-thin
+// one. A cap that only just clears its tube reads as a sleeve, not as a cap.
 invariant(
-  vents.maximum.y < lit.maximum.y && vents.minimum.y > lit.minimum.y,
-  "Vents must sit inside the tube, not past a cap"
+  CAP_OD_M / TUBE_OD_M > 1.35,
+  `Cap must step visibly out from its tube: ${(CAP_OD_M / TUBE_OD_M).toFixed(2)}x`
 );
-near(
-  vents.maximum.x,
-  radial(10.0) + 0.0003,
-  "Vents sit a third of a millimetre proud of the tube wall"
+
+// The tube is the long part of each end and the cap is a short lid over its tip.
+// Getting this backwards is what made the first build read as a bulb on a stick.
+const tubeOuterY = axial(120.0);
+const capInnerY = axial(113.0);
+nearReal(
+  tubeOuterY - TUBE_LENGTH_M >= 0 ? TUBE_LENGTH_M : 0,
+  TUBE_LENGTH_M,
+  "Clear tube runs the real prop's 13.5cm"
+);
+invariant(
+  capInnerY < tubeOuterY,
+  "Cap must overlap the tube's tip, or the two lathes leave a seam"
+);
+invariant(
+  stats.maximum.y - capInnerY < TUBE_LENGTH_M / 2,
+  "Cap must be a short lid, not a cone eating the tube's length"
+);
+invariant(
+  tubeOuterY - TUBE_LENGTH_M < axial(86.0),
+  "Tube must reach in past the shaft's end, or the parts do not connect"
 );
 
 // --- The shipped registry -----------------------------------------------
@@ -302,12 +360,13 @@ console.log(
 );
 console.log(
   `  length ${inches(stats.dimensions.y)}` +
-    `, shaft dia ${inches(radial(5.0) * 2)}` +
-    `, cap dia ${inches(radial(11.7) * 2)}`
+    `, shaft dia ${(radial(5.0) * 2000).toFixed(1)}mm` +
+    `, tube dia ${(radial(10.0) * 2000).toFixed(1)}mm` +
+    `, cap dia ${(radial(15.0) * 2000).toFixed(1)}mm`
 );
 console.log(
   `  hand at the middle: ${inches(stats.maximum.y)} to each cap tip, ` +
     `tracked glow at ${inches(rootNode.extras.tracked_tip_y)}`
 );
-console.log("  materials: recolorable lit ends + preserved silver hardware");
+console.log("  materials: recolorable shaft + preserved clear ends");
 console.log("OK");
