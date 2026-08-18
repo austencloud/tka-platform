@@ -29,6 +29,13 @@
     exportPercent: number;
     exportedUrl: string | null;
     exportFilename: string;
+    exportError?: string;
+    notationMirrored?: boolean;
+    notationMirrorPending?: boolean;
+    onToggleNotationMirror?: () => void;
+    audioMode: "original" | "instagram";
+    canKeepOriginalAudio: boolean;
+    onAudioModeChange: (mode: "original" | "instagram") => void;
     onFixMissing: () => void;
     onRender: () => void;
     onCancelExport: () => void;
@@ -43,6 +50,13 @@
     exportPercent,
     exportedUrl,
     exportFilename,
+    exportError = "",
+    notationMirrored = false,
+    notationMirrorPending = false,
+    onToggleNotationMirror,
+    audioMode,
+    canKeepOriginalAudio,
+    onAudioModeChange,
     onFixMissing,
     onRender,
     onCancelExport,
@@ -80,6 +94,56 @@
         selected: composition.selectedRegion?.id === slot.id,
       };
     })
+  );
+
+  /**
+   * Sound is a property of the render, not of a layer, so it belongs on the
+   * bar that renders — beside the button, in the same menu shape as the two
+   * source pickers. It used to be a whole card under the inspector, which cost
+   * the rail ~370px of its height and pushed the selected layer's own controls
+   * into a porthole with a scrollbar.
+   */
+  const SOUND_OPTIONS: Array<{
+    value: "original" | "instagram";
+    label: string;
+    short: string;
+    icon: string;
+    hint: string;
+  }> = [
+    {
+      value: "original",
+      label: "Original sound",
+      short: "Original",
+      icon: "fa-solid fa-volume-high",
+      hint: "Keeps the audio from the performance video.",
+    },
+    {
+      value: "instagram",
+      label: "Add music later",
+      short: "Silent",
+      icon: "fa-brands fa-instagram",
+      hint: "Exports silently for Instagram's music picker.",
+    },
+  ];
+
+  const sound = $derived(
+    SOUND_OPTIONS.find((option) => option.value === audioMode) ??
+      SOUND_OPTIONS[1]
+  );
+
+  const soundItems = $derived(
+    SOUND_OPTIONS.map((option) => ({
+      label: option.label,
+      icon: option.icon,
+      hint:
+        option.value === "original" && !canKeepOriginalAudio
+          ? "No performance video in this post."
+          : option.hint,
+      selected: audioMode === option.value,
+      disabled:
+        exporting || (option.value === "original" && !canKeepOriginalAudio),
+      action: () => onAudioModeChange(option.value),
+    }))
   );
 
   const exportLabel = $derived(
@@ -136,6 +200,28 @@
     <i class="fa-solid fa-border-all" aria-hidden="true"></i>
   </button>
 
+  <!-- Mirroring the notation reflects the sequence DATA, so every notation
+       layer in the post moves at once — an animation that disagreed with the
+       card beside it would be worse than either disagreeing with the video. A
+       post-wide switch parked inside one layer's panel read as that layer's
+       property; here it sits with the other control that changes the whole
+       post. (Flipping the FOOTAGE stays in the video's own panel: that one is
+       a property of the clip.) -->
+  {#if onToggleNotationMirror}
+    <button
+      type="button"
+      class="guide-toggle mirror-toggle"
+      class:active={notationMirrored}
+      aria-pressed={notationMirrored}
+      disabled={notationMirrorPending}
+      aria-label="Mirror the notation"
+      title="Mirror the notation — reflects every notation layer, letters intact"
+      onclick={onToggleNotationMirror}
+    >
+      <i class="fa-solid fa-right-left" aria-hidden="true"></i>
+    </button>
+  {/if}
+
   <div class="state">
     {#if missingCount > 0}
       <button type="button" class="missing-state" onclick={onFixMissing}>
@@ -145,6 +231,29 @@
           : `${missingCount} sources needed`}
       </button>
     {/if}
+    {#if exportError}
+      <p class="export-error" role="alert">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        {exportError}
+      </p>
+    {/if}
+  </div>
+
+  <div class="sound-picker">
+    <OverflowMenu
+      items={soundItems}
+      placement="bottom"
+      align="right"
+      triggerClass="slot-trigger"
+      ariaLabel={`Post sound: ${sound.label}. Change.`}
+    >
+      {#snippet trigger()}
+        <i class={`sound-icon ${sound.icon}`} aria-hidden="true"></i>
+        <span class="slot-position">Sound</span>
+        <span class="slot-label sound-label">{sound.short}</span>
+        <i class="fa-solid fa-chevron-down caret" aria-hidden="true"></i>
+      {/snippet}
+    </OverflowMenu>
   </div>
 
   <div class="export-actions">
@@ -203,7 +312,8 @@
     min-width: 0;
   }
 
-  .slot-picker :global(.slot-trigger) {
+  .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -282,6 +392,21 @@
     color: var(--theme-text);
   }
 
+  /* The safe-area overlay is scaffolding, so it warns in amber; mirroring is a
+     real choice about the post, so it reads as selected in the accent. */
+  /* Compound with .guide-toggle, which is on the same element and would
+     otherwise win on source order and paint this amber. */
+  .guide-toggle.mirror-toggle.active {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 20%, var(--theme-card-bg));
+    color: var(--theme-text);
+  }
+
+  .mirror-toggle:disabled {
+    cursor: progress;
+    opacity: 0.5;
+  }
+
   .guide-toggle.active {
     border-color: color-mix(
       in srgb,
@@ -306,6 +431,43 @@
   .state {
     flex: 1;
     justify-content: flex-end;
+  }
+
+  /* Sound sits with the render action, not with the sources: it is the last
+     decision before the file exists. Same trigger shape as the slot pickers so
+     the bar reads as one row of choices rather than two kinds of control. */
+  .sound-picker {
+    flex: 0 0 auto;
+  }
+
+  .sound-icon {
+    color: var(--theme-text-dim);
+  }
+
+  /* The render's failure belongs with the render button, which is the thing
+     that failed. It used to live at the bottom of the inspector rail, a full
+     panel away from the action it reported on. */
+  .export-error {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-height: 2.75rem;
+    max-width: 32ch;
+    margin: 0;
+    padding: 0 0.75rem;
+    overflow: hidden;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ff6b6b) 48%, transparent);
+    border-radius: var(--radius-2026-sm);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ff6b6b) 10%,
+      transparent
+    );
+    color: var(--semantic-error, #ff6b6b);
+    font-size: var(--font-size-compact);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .missing-state {
@@ -421,7 +583,8 @@
     .render-button,
     .download-button,
     .guide-toggle,
-    .slot-picker :global(.slot-trigger) {
+    .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
       min-height: 3.25rem;
     }
 
@@ -437,7 +600,8 @@
     .secondary-button,
     .render-button,
     .download-button,
-    .slot-picker :global(.slot-trigger) {
+    .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
       font-size: 0.9375rem;
     }
   }
@@ -463,7 +627,8 @@
     .render-button,
     .download-button,
     .guide-toggle,
-    .slot-picker :global(.slot-trigger) {
+    .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
       min-height: 3.75rem;
     }
 
@@ -479,7 +644,8 @@
     .secondary-button,
     .render-button,
     .download-button,
-    .slot-picker :global(.slot-trigger) {
+    .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
       padding-inline: 1.25rem;
       font-size: 1.125rem;
     }
@@ -524,7 +690,8 @@
       min-width: 0;
     }
 
-    .slot-picker :global(.slot-trigger) {
+    .slot-picker :global(.slot-trigger),
+    .sound-picker :global(.slot-trigger) {
       width: 100%;
       justify-content: flex-start;
       gap: 0.35rem;
@@ -568,6 +735,34 @@
       order: 2;
       flex: 0 1 auto;
       justify-content: flex-start;
+    }
+
+    /* Same order as .state, so DOM order decides: warning, then sound, then
+       the render action. An unset order is 0 and would jump it ahead of the
+       slot pickers. */
+    .sound-picker {
+      order: 2;
+    }
+
+    /* Icon only. "Original" and "Silent" are the same choice the menu spells
+       out, and at 375 the two source names are what the row cannot afford to
+       lose. */
+    .sound-picker :global(.slot-trigger) {
+      padding-inline: 0.5rem;
+    }
+
+    .sound-label {
+      display: none;
+    }
+
+    .export-error {
+      max-width: 12ch;
+      padding-inline: 0.5rem;
+      font-size: 0;
+    }
+
+    .export-error i {
+      font-size: var(--font-size-min);
     }
 
     .export-actions {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { UnifiedPlaybackContext } from "./unified-playback-context";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
-  import { onDestroy } from "svelte";
+  import { onDestroy, type Snippet } from "svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
 
   const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
@@ -10,11 +10,19 @@
     playback,
     visible = true,
     hidePlay = false,
+    trailing,
   }: {
     playback: UnifiedPlaybackContext;
     visible?: boolean;
     /** Hide the play/pause button (e.g. when tap-to-toggle on the canvas covers it). */
     hidePlay?: boolean;
+    /**
+     * Host-owned controls that belong to this bar rather than beside it —
+     * Post Studio's alignment chip and its Advanced-timing toggle. They ride
+     * inside the pill so a host does not need a second bar of its own, which
+     * is how the studio ended up with a parallel transport in the first place.
+     */
+    trailing?: Snippet;
   } = $props();
 
   const currentTimeLabel = $derived(formatTime(playback.elapsed));
@@ -237,6 +245,10 @@
           <i class="fas fa-sync"></i>
         </button>
       {/if}
+
+      {#if trailing}
+        <div class="pill-trailing">{@render trailing()}</div>
+      {/if}
     </div>
 
     {#if showBpmPopover && hasTempo}
@@ -280,6 +292,13 @@
   .transport-pill {
     display: flex;
     align-items: center;
+    /* Wraps rather than overflows. Every control but the track is
+       flex-shrink: 0, so in a column narrower than their combined intrinsic
+       width the bar used to spill past its host and get clipped by whatever
+       ancestor had overflow set — the mode toggle disappearing was the visible
+       symptom. The track hits its 80px floor first, so a second row only
+       appears when there is genuinely no room. */
+    flex-wrap: wrap;
     gap: 8px 12px;
     padding: 10px 14px;
     width: 100%;
@@ -476,6 +495,19 @@
   .pill-mode-slot {
     display: flex;
     flex: 0 0 auto;
+  }
+
+  /* ── Host-owned trailing controls ── */
+
+  .pill-trailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    /* No `margin-left: auto` here. The track is `flex: 1 1 0`, so it already
+       eats the free space and pushes this group flush right on a single row;
+       an auto margin would only take effect once the bar wraps, where it
+       right-aligns the last chip alone on its line and reads as an orphan. */
   }
 
   /* ── Loop button ── */

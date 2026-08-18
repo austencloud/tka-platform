@@ -39,6 +39,13 @@ export interface ArtSettingsPanelProps {
    * owns the render — a mandala MP4 is not the post it sits in.
    */
   showExport?: boolean;
+  /**
+   * False where the host already names the panel directly above it. In the
+   * viewer's sidebar the card's own label distinguishes it from its siblings;
+   * in Post Studio the inspector heading says "Mandala" 40px higher, and the
+   * card repeating it costs a band of the rail to say nothing.
+   */
+  showTitle?: boolean;
   onSaveTunnel?: () => void;
   bpm?: number;
   playbackMode?: PlaybackMode;

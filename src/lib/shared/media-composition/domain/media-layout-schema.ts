@@ -55,6 +55,17 @@ export const ClipTransformSchema = z
     rotationDegrees: z.number().finite(),
     translateX: z.number().finite(),
     translateY: z.number().finite(),
+    /**
+     * Reflects the layer across its own vertical centre line. Footage shot
+     * front-on reads reversed against the notation, and flipping the pixels is
+     * the fix when the take carries no text. Notation is mirrored through the
+     * sequence transforms instead, so the letters stay readable — see
+     * `mirrorSequence`.
+     *
+     * Defaults so presets written before it, including ones already in
+     * Firestore, parse unchanged.
+     */
+    flipHorizontal: z.boolean().default(false),
   })
   .strict();
 

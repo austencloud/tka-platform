@@ -3,6 +3,7 @@ import type { LayoutRegion } from "$lib/shared/media-composition/domain/media-la
 import type { EvaluatedFrameLayer } from "$lib/shared/media-composition/services/frame-evaluator";
 import {
   calculateMediaFit,
+  resolvePanOffset,
   type PixelRect,
 } from "$lib/shared/media-composition/services/media-fit";
 
@@ -13,6 +14,7 @@ export interface FrameLayerGeometry {
   scale: number;
   translateX: number;
   translateY: number;
+  flipHorizontal: boolean;
 }
 
 export interface RenderPostStudioFrameInput {
@@ -56,6 +58,16 @@ export function resolveFrameLayerGeometry(input: {
     fit: input.region.fit,
   });
 
+  const pan = resolvePanOffset({
+    drawWidth: fit.drawRect.width,
+    drawHeight: fit.drawRect.height,
+    regionWidth: region.width,
+    regionHeight: region.height,
+    scale: input.transform.scale,
+    translateX: input.transform.translateX,
+    translateY: input.transform.translateY,
+  });
+
   return {
     region,
     drawRect: {
@@ -66,8 +78,9 @@ export function resolveFrameLayerGeometry(input: {
     },
     rotationDegrees: input.transform.rotationDegrees,
     scale: input.transform.scale,
-    translateX: input.transform.translateX * region.width,
-    translateY: input.transform.translateY * region.height,
+    translateX: pan.x,
+    translateY: pan.y,
+    flipHorizontal: input.transform.flipHorizontal,
   };
 }
 
@@ -126,6 +139,9 @@ function applyLayerTransform(
   );
   context.rotate((geometry.rotationDegrees * Math.PI) / 180);
   context.scale(geometry.scale, geometry.scale);
+  // Applied last, so the reflection is about the slot's own centre line rather
+  // than the frame's - a layer in the bottom half stays in the bottom half.
+  if (geometry.flipHorizontal) context.scale(-1, 1);
   context.translate(-centerX, -centerY);
 }
 

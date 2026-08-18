@@ -14,6 +14,7 @@
     layout = "sidebar",
     onExport,
     showExport = true,
+    showTitle = true,
     onSaveTunnel,
     bpm = $bindable(60),
     playbackMode = "continuous",
@@ -44,6 +45,7 @@
     {layout}
     {onExport}
     {showExport}
+    {showTitle}
     {onSaveTunnel}
     {bpm}
     {playbackMode}
@@ -63,6 +65,7 @@
     {layout}
     {onExport}
     {showExport}
+    {showTitle}
     {onArtSettingChange}
     {exporting}
     {reduceMotion}

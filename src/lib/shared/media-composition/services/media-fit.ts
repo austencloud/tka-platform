@@ -29,6 +29,37 @@ function assertPositive(label: string, value: number): void {
 }
 
 /**
+ * Where a layer's pan lands, in region pixels.
+ *
+ * A pan is stored as -0.5..0.5 — hard one way to hard the other — and resolved
+ * against the source that the slot is currently hiding, never against the slot
+ * itself. That is the difference between a crop and a shove: a `cover` fit on
+ * footage that already matches the slot's aspect hides nothing, so the pan
+ * resolves to zero and the frame cannot open a gap beside the picture. Scale
+ * the layer up and the same -0.5..0.5 reaches the new edges.
+ */
+export function resolvePanOffset(input: {
+  drawWidth: number;
+  drawHeight: number;
+  regionWidth: number;
+  regionHeight: number;
+  scale: number;
+  translateX: number;
+  translateY: number;
+}): { x: number; y: number } {
+  const overscanX = Math.max(0, input.drawWidth * input.scale - input.regionWidth);
+  const overscanY = Math.max(
+    0,
+    input.drawHeight * input.scale - input.regionHeight
+  );
+  const clamp = (value: number) => Math.min(0.5, Math.max(-0.5, value));
+  return {
+    x: clamp(input.translateX) * overscanX,
+    y: clamp(input.translateY) * overscanY,
+  };
+}
+
+/**
  * One geometry owner for browser preview and the future frame evaluator.
  * Coordinates are source/destination pixels, with centered positioning.
  */

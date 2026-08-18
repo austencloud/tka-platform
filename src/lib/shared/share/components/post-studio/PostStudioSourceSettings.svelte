@@ -76,6 +76,7 @@
       layout="sidebar"
       onExport={() => {}}
       showExport={false}
+      showTitle={false}
       bpm={composition.tempoBpm ?? 60}
       isPlaying={composition.isPlaying}
       onBpmChange={composition.tempoBpm === null

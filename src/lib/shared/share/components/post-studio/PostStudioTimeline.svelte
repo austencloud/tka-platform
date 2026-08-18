@@ -1,25 +1,16 @@
+<!--
+  The clip-lane editor: source trim, per-region clips, crossfades, and a
+  scrubber against the same ruler. Opt-in, because it needs real width to be
+  draggable — the transport that used to sit above it now lives under the
+  preview frame as the shared `UnifiedTimeline` (see PostStudioTransport).
+-->
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { getMediaCompositionContext } from "$lib/shared/media-composition/state/media-composition-context";
   import { resolvePresetTimePoint } from "$lib/shared/media-composition/services/frame-evaluator";
-  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
-  import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
-
-  let {
-    advanced = false,
-    performanceAlignmentDetail = null,
-    onMapPerformance,
-    onToggleAdvanced,
-  }: {
-    advanced?: boolean;
-    performanceAlignmentDetail?: string | null;
-    onMapPerformance?: () => void;
-    onToggleAdvanced: () => void;
-  } = $props();
+  import PostStudioSourceTrim from "./PostStudioSourceTrim.svelte";
 
   const composition = getMediaCompositionContext();
-  let frameRequest: number | null = null;
-  let previousTime: number | null = null;
   let trimDrag: {
     clipId: string;
     boundary: "start" | "end";
@@ -35,32 +26,7 @@
     }))
   );
 
-  function tick(now: number): void {
-    if (previousTime !== null) composition.advance((now - previousTime) / 1000);
-    previousTime = now;
-    if (composition.isPlaying) frameRequest = requestAnimationFrame(tick);
-  }
-
-  $effect(() => {
-    if (!composition.isPlaying) {
-      if (frameRequest !== null) cancelAnimationFrame(frameRequest);
-      frameRequest = null;
-      previousTime = null;
-      return;
-    }
-
-    frameRequest = requestAnimationFrame(tick);
-    return () => {
-      if (frameRequest !== null) cancelAnimationFrame(frameRequest);
-      frameRequest = null;
-      previousTime = null;
-    };
-  });
-
-  onDestroy(() => {
-    if (frameRequest !== null) cancelAnimationFrame(frameRequest);
-    stopTrim();
-  });
+  onDestroy(stopTrim);
 
   function percent(
     point: Parameters<typeof resolvePresetTimePoint>[0]
@@ -101,35 +67,6 @@
     const remainder = seconds - minutes * 60;
     return `${minutes}:${remainder.toFixed(1).padStart(4, "0")}`;
   }
-
-  const alignmentLabel = $derived.by(() => {
-    if (performanceAlignmentDetail) {
-      if (performanceAlignmentDetail.startsWith("Unmapped")) {
-        return "Even timing estimate";
-      }
-      if (performanceAlignmentDetail.includes("needs repair")) {
-        return "Timing map needs repair";
-      }
-      return performanceAlignmentDetail;
-    }
-    const source = composition.sequenceTimeMap?.source;
-    if (!source) return null;
-    // "Even timing" said nothing. A tempo grid is what you get when there is no
-    // performance to align to, which is the default for an animation-and-card
-    // post — so the label was permanently on and permanently uninformative.
-    // The alignment chip now appears only when alignment is a real fact.
-    if (source === "tempo-grid") return null;
-    if (source === "audio-detected") return "Audio aligned";
-    if (source === "motion-detected") return "Motion aligned";
-    if (source === "hybrid") return "Audio + motion aligned";
-    return "Beat aligned";
-  });
-  const alignmentNeedsMapping = $derived(
-    Boolean(
-      performanceAlignmentDetail?.startsWith("Unmapped") ||
-      performanceAlignmentDetail?.includes("needs repair")
-    )
-  );
 
   function onScrub(event: Event): void {
     const input = event.currentTarget as HTMLInputElement;
@@ -204,94 +141,13 @@
   }
 </script>
 
-<section class="timeline" class:advanced aria-labelledby="post-studio-timing">
-  <div class="timeline-heading">
-    <div class="heading-title">
-      <div class="title-row">
-        <h3 id="post-studio-timing">Timing</h3>
-        {#if alignmentLabel}
-          <span
-            class="alignment"
-            title={alignmentNeedsMapping
-              ? "A starting grid. Drag the timing handles to match the performance."
-              : "The performance, animation, and card use the same beat map."}
-          >
-            <i class="fa-solid fa-wave-square" aria-hidden="true"></i>
-            {alignmentLabel}
-          </span>
-        {/if}
-        {#if alignmentNeedsMapping && onMapPerformance}
-          <button type="button" class="map-timing" onclick={onMapPerformance}>
-            Map performance
-          </button>
-        {/if}
-      </div>
-    </div>
-    <div class="primary-controls">
-      <div class="transport">
-        <button
-          type="button"
-          class="play-button"
-          onclick={composition.togglePlayback}
-          aria-label={composition.isPlaying ? "Pause preview" : "Play preview"}
-        >
-          <i
-            class={composition.isPlaying
-              ? "fa-solid fa-pause"
-              : "fa-solid fa-play"}
-            aria-hidden="true"
-          ></i>
-        </button>
-        <span>{formatTime(composition.previewSeconds)}</span>
-        <span class="duration">/ {formatTime(composition.durationSeconds)}</span
-        >
-      </div>
-      {#if composition.tempoBpm !== null}
-        <!-- No "Tempo" label: the control already reads "… BPM". The group
-             role carries the name for assistive tech instead.
-
-             This is now the only tempo control in the studio; the inspector's
-             Motion page used to carry a second one. Nothing was lost by
-             dropping it: `showPresets` governs only the inline Slow/Med/Fast
-             row, and in popover mode the BPM button already opens numeric
-             presets (15/30/60/90/120/150 — a superset of Slow 15, Med 60,
-             Fast 120), a scrubbable custom value, and tap tempo. -->
-        <div class="tempo-editor" role="group" aria-label="Tempo">
-          <TempoControl
-            bpm={composition.tempoBpm}
-            onBpmChange={composition.setTempoBpm}
-            showPresets={false}
-            showPractice={false}
-            presetsMode="popover"
-          />
-        </div>
-      {/if}
-      <!-- Continuous / step-by-step lives here rather than on the inspector's
-           Motion page, for the same reason tempo does: it governs the clock
-           this bar owns, and it stays reachable from every inspector page. The
-           sequence viewer's transport carries the identical control. -->
-      <PlaybackModeToggle
-        layout="inline"
-        playbackMode={composition.animationPlaybackMode}
-        isPlaying={composition.isPlaying}
-        onPlaybackModeChange={composition.setAnimationPlaybackMode}
-        onPlaybackToggle={composition.togglePlayback}
-      />
-    </div>
-    <button
-      type="button"
-      class:active={advanced}
-      class="advanced-toggle"
-      aria-expanded={advanced}
-      onclick={onToggleAdvanced}
-    >
-      <i class="fa-solid fa-sliders" aria-hidden="true"></i>
-      {advanced ? "Hide timeline" : "Advanced timing"}
-    </button>
-  </div>
-
-  {#if advanced}
+<section class="timeline" aria-label="Clip timeline">
     <div class="advanced-panel">
+      <!-- Trim comes first because it sets the length everything below is
+           measured against: cutting the head off the take reshapes the ruler,
+           the lanes, and the scrubber under it. -->
+      <PostStudioSourceTrim />
+
       <p class="timeline-help">
         Drag clip edges to change when each source appears. Arrow keys move 0.1
         seconds; hold Shift for 1 second.
@@ -387,38 +243,15 @@
         ></span>
       </div>
     </div>
-  {/if}
 </section>
 
 <style>
+  /* Wide by design: these are drag targets measured against a ruler, which is
+     why the editor spans the workspace and the transport does not. */
   .timeline {
     display: grid;
     gap: clamp(0.75rem, 0.65rem + 0.12cqi, 1rem);
-    min-width: 0;
-  }
-
-  .timeline.advanced {
     min-width: 42rem;
-  }
-
-  /* Three zones, not two ends. Spanning the full workspace, `space-between`
-     would have thrown the title and the transport ~3000px apart at 4K. The
-     centre track keeps the transport near the frame it drives while the
-     title and the mode toggle hold the edges, and the outer 1fr columns stay
-     equal so the centre stays centred as the title text changes. */
-  .timeline-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .heading-title {
-    min-width: 0;
-  }
-
-  .advanced-toggle {
-    justify-self: end;
   }
 
   .timeline-help {
@@ -433,134 +266,6 @@
     gap: clamp(0.65rem, 0.55rem + 0.1cqi, 0.9rem);
   }
 
-  h3 {
-    margin: 0;
-    color: var(--theme-text, #fff);
-    font-size: var(--studio-section-title-size, 1.15rem);
-    line-height: 1.1;
-  }
-
-  .title-row,
-  .alignment {
-    display: flex;
-    align-items: center;
-  }
-
-  /* Both sit in the heading's flexible first column. Without this they wrap to
-     three lines at tablet widths rather than letting the column shrink. */
-  .alignment,
-  .map-timing {
-    white-space: nowrap;
-  }
-
-  .map-timing {
-    min-height: 2.25rem;
-    padding: 0.35rem 0.65rem;
-    border: 1px solid var(--theme-accent);
-    border-radius: var(--radius-2026-full);
-    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
-    color: var(--theme-text);
-    font: inherit;
-    font-size: var(--studio-meta-size, var(--font-size-compact));
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .title-row {
-    gap: 0.55rem;
-  }
-
-  .alignment {
-    gap: 0.3rem;
-    padding: 0.25rem 0.45rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    background: var(--theme-card-bg);
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.66));
-    font-size: var(--studio-meta-size, var(--font-size-compact, 0.75rem));
-    line-height: 1;
-  }
-
-  .transport {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 8.75rem;
-    color: var(--theme-text, #fff);
-    font-variant-numeric: tabular-nums;
-    font-size: var(--studio-body-size, var(--font-size-min, 0.875rem));
-  }
-
-  .primary-controls,
-  .tempo-editor {
-    display: flex;
-    align-items: center;
-  }
-
-  .primary-controls {
-    justify-content: center;
-    gap: var(--spacing-lg);
-    min-width: 0;
-  }
-
-  .tempo-editor {
-    color: var(--theme-text-dim);
-    font-size: var(--studio-meta-size, var(--font-size-compact));
-  }
-
-  .tempo-editor :global(.tempo-wrapper) {
-    width: 13rem;
-  }
-
-  .advanced-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    min-width: 10rem;
-    min-height: var(--studio-control-height, 2.75rem);
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: var(--radius-2026-sm);
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    font-size: var(--studio-meta-size, var(--font-size-compact));
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  .advanced-toggle.active {
-    border-color: var(--theme-accent);
-    color: var(--theme-accent);
-  }
-
-  .duration {
-    color: var(--theme-text-secondary, rgba(255, 255, 255, 0.55));
-  }
-
-  .play-button {
-    display: grid;
-    place-items: center;
-    width: var(--studio-control-height, 2.75rem);
-    height: var(--studio-control-height, 2.75rem);
-    margin-right: 0.25rem;
-    padding: 0;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b7cff) 58%, transparent);
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b7cff) 18%,
-      transparent
-    );
-    color: color-mix(in srgb, var(--theme-accent, #8b7cff) 62%, white);
-    cursor: pointer;
-  }
-
-  .play-button:focus-visible,
-  .map-timing:focus-visible,
-  .advanced-toggle:focus-visible,
   input:focus-visible {
     outline: 3px solid var(--theme-accent, #8b7cff);
     outline-offset: 2px;
@@ -763,40 +468,8 @@
   }
 
   @container post-studio (max-width: 34rem) {
-    .timeline.advanced {
+    .timeline {
       min-width: 0;
-    }
-
-    .timeline-heading {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: start;
-    }
-
-    .primary-controls {
-      align-items: stretch;
-      width: 100%;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      gap: var(--spacing-sm);
-    }
-
-    .transport {
-      min-width: 0;
-    }
-
-    .tempo-editor {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      flex: 1 1 100%;
-    }
-
-    .tempo-editor :global(.tempo-wrapper) {
-      width: auto;
-      min-width: 0;
-    }
-
-    .advanced-toggle {
-      display: none;
     }
 
     .lane {
@@ -816,10 +489,6 @@
       padding-inline: 0.3rem;
     }
   }
-
-  /* The 70–90rem tier used to force the controls onto their own line: at that
-     width the row could not fit inside the canvas column. Spanning the
-     workspace it fits on one line from 70rem up, so the tier is gone. */
 
   @container post-studio (min-width: 105rem) {
     .lane {

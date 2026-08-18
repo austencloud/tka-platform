@@ -27,6 +27,7 @@ const DEFAULT_TRANSFORM = {
   rotationDegrees: 0,
   translateX: 0,
   translateY: 0,
+  flipHorizontal: false,
 } as const;
 
 export const POST_STUDIO_ROLE = {

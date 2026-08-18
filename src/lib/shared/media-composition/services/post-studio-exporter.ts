@@ -18,6 +18,14 @@ export interface ExportPostStudioVideoInput {
   getLayers: () => readonly EvaluatedFrameLayer[];
   seek: (seconds: number) => void;
   originalAudioUrl?: string | null;
+  /**
+   * Where the kept span starts inside the audio's own file. The picture already
+   * accounts for a source trim — the evaluator offsets each layer's source time
+   * — but audio is muxed straight from the URL, so without this the sound would
+   * start from the head of the untrimmed take and drift against the picture by
+   * exactly the amount trimmed.
+   */
+  originalAudioStartSeconds?: number;
   onProgress?: (progress: PostStudioExportProgress) => void;
   shouldCancel?: () => boolean;
 }
@@ -75,8 +83,9 @@ export async function exportPostStudioVideo(
       originalAudio: input.originalAudioUrl
         ? {
             url: input.originalAudioUrl,
-            startSeconds: 0,
-            endSeconds: input.durationSeconds,
+            startSeconds: input.originalAudioStartSeconds ?? 0,
+            endSeconds:
+              (input.originalAudioStartSeconds ?? 0) + input.durationSeconds,
           }
         : undefined,
     });

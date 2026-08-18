@@ -18,7 +18,22 @@ export interface SequenceFrameAlignment {
   steps: readonly StepData[];
   startPositionDuration: number;
   dwellOnCompletedBeat?: boolean;
+  /**
+   * Where project time zero sits in the mapped media. A step map is recorded
+   * against the footage as shot, so trimming the head off a take moves the post
+   * clock away from the map's clock by exactly the amount trimmed. Adding it
+   * back here keeps the card on the step the performer is actually landing.
+   */
+  mediaTimeOffsetSeconds?: number;
 }
+
+/**
+ * Seconds to add to a role's resolved source time. A trim is deliberately not
+ * written into the clip's `sourceIn`/`sourceOut`: those are the montage's own
+ * in and out inside the post, which the timeline's clip handles own. The trim
+ * is a property of the source, so it rides alongside and composes with them.
+ */
+export type SourceTimeOffsets = Readonly<Record<string, number>>;
 
 export interface EvaluatedFrameLayer {
   clipId: string;
@@ -58,20 +73,22 @@ export function evaluatePresetFrame(
   preset: MediaCompositionPreset,
   durationSeconds: number,
   timeSeconds: number,
-  alignment?: SequenceFrameAlignment | null
+  alignment?: SequenceFrameAlignment | null,
+  sourceTimeOffsets: SourceTimeOffsets = {}
 ): EvaluatedFrameLayer[] {
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
     throw new RangeError("durationSeconds must be a positive finite number");
   }
 
   const clampedTime = Math.min(durationSeconds, Math.max(0, timeSeconds));
+  const mappedTime = clampedTime + (alignment?.mediaTimeOffsetSeconds ?? 0);
   // A take that runs the sequence several times through arrives with positions
   // counting past the sequence's length, so it is folded back into one pass
   // here - before anything derives from it, so the card, the animation clock,
   // and the animation layer all cycle together.
   const continuousPosition = alignment
     ? wrapSequencePosition(
-        mediaTimeToSequencePosition(alignment.timeMap, clampedTime),
+        mediaTimeToSequencePosition(alignment.timeMap, mappedTime),
         alignment.steps.length
       )
     : undefined;
@@ -112,7 +129,9 @@ export function evaluatePresetFrame(
     const sourceIn = resolvePresetTimePoint(clip.sourceIn, durationSeconds);
     const sourceOut = resolvePresetTimePoint(clip.sourceOut, durationSeconds);
     const sourceTimeSeconds =
-      sourceIn + (sourceOut - sourceIn) * projectProgress * clip.playbackRate;
+      (sourceTimeOffsets[clip.sourceRole] ?? 0) +
+      sourceIn +
+      (sourceOut - sourceIn) * projectProgress * clip.playbackRate;
 
     return [
       {

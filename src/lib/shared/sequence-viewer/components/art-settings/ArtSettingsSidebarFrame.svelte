@@ -4,16 +4,23 @@
   interface Props {
     label: string;
     exporting: boolean;
+    /**
+     * False where the host already names this panel immediately above it.
+     * Repeating the name costs a header band and says nothing new.
+     */
+    showLabel?: boolean;
     children: Snippet;
   }
 
-  let { label, exporting, children }: Props = $props();
+  let { label, exporting, showLabel = true, children }: Props = $props();
 </script>
 
 <div class="art-settings-panel" class:exporting inert={exporting || undefined}>
-  <div class="panel-header">
-    <span class="section-label">{label}</span>
-  </div>
+  {#if showLabel}
+    <div class="panel-header">
+      <span class="section-label">{label}</span>
+    </div>
+  {/if}
   {@render children()}
 </div>
 

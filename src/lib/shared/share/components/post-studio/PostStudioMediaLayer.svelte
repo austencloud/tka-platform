@@ -9,6 +9,10 @@
   import PostStudioChoreoLayer from "./PostStudioChoreoLayer.svelte";
   import PostStudioTunnelLayer from "./PostStudioTunnelLayer.svelte";
   import PostStudioMandalaLayer from "./PostStudioMandalaLayer.svelte";
+  import {
+    calculateMediaFit,
+    resolvePanOffset,
+  } from "$lib/shared/media-composition/services/media-fit";
 
   interface Props {
     binding: CompositionSourceBinding;
@@ -40,6 +44,44 @@
   const composition = getMediaCompositionContext();
   let video = $state<HTMLVideoElement | null>(null);
 
+  /**
+   * Pan is resolved here rather than expressed as a percentage of the layer,
+   * so the preview pans exactly as far as the export does. `resolvePanOffset`
+   * measures the move against the source the slot is hiding, which needs the
+   * footage's own dimensions and the size the slot is actually drawn at.
+   */
+  let boxWidth = $state(0);
+  let boxHeight = $state(0);
+  let sourceWidth = $state(0);
+  let sourceHeight = $state(0);
+
+  const pan = $derived.by(() => {
+    if (
+      sourceWidth <= 0 ||
+      sourceHeight <= 0 ||
+      boxWidth <= 0 ||
+      boxHeight <= 0
+    ) {
+      return { x: 0, y: 0 };
+    }
+    const drawRect = calculateMediaFit({
+      sourceWidth,
+      sourceHeight,
+      regionWidth: boxWidth,
+      regionHeight: boxHeight,
+      fit,
+    }).drawRect;
+    return resolvePanOffset({
+      drawWidth: drawRect.width,
+      drawHeight: drawRect.height,
+      regionWidth: boxWidth,
+      regionHeight: boxHeight,
+      scale: transform.scale,
+      translateX: transform.translateX,
+      translateY: transform.translateY,
+    });
+  });
+
   function syncVideoTime(): void {
     if (!video || video.readyState < 1 || !Number.isFinite(sourceTimeSeconds))
       return;
@@ -50,8 +92,16 @@
 
   function onMetadata(): void {
     if (!video || !Number.isFinite(video.duration)) return;
+    sourceWidth = video.videoWidth;
+    sourceHeight = video.videoHeight;
     composition.setSourceDuration(binding.roleKey, video.duration);
     syncVideoTime();
+  }
+
+  function onImageLoad(event: Event): void {
+    const image = event.currentTarget as HTMLImageElement;
+    sourceWidth = image.naturalWidth;
+    sourceHeight = image.naturalHeight;
   }
 
   $effect(() => {
@@ -69,8 +119,10 @@
 
 <div
   class="media-layer"
+  bind:clientWidth={boxWidth}
+  bind:clientHeight={boxHeight}
   style:opacity
-  style:transform={`translate(${transform.translateX * 100}%, ${transform.translateY * 100}%) rotate(${transform.rotationDegrees}deg) scale(${transform.scale})`}
+  style:transform={`translate(${pan.x}px, ${pan.y}px) rotate(${transform.rotationDegrees}deg) scale(${transform.scale}) scaleX(${transform.flipHorizontal ? -1 : 1})`}
   data-clip-id={clipId}
   data-source-role={binding.roleKey}
   data-render-mode={binding.renderMode ?? "external-media"}
@@ -127,6 +179,7 @@
       crossorigin="anonymous"
       alt=""
       style:object-fit={fit}
+      onload={onImageLoad}
     />
   {/if}
 </div>

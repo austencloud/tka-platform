@@ -35,12 +35,13 @@
   import { getSequenceVideosStore } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
   import { hasDecodableAudioTrack } from "$lib/shared/media-composition/services/media-audio-inspector";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { mirrorSequence } from "$lib/shared/create/services/sequence-transformer";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import PostStudioActionBar from "./PostStudioActionBar.svelte";
   import PostStudioPreview from "./PostStudioPreview.svelte";
   import PostStudioInspector from "./PostStudioInspector.svelte";
+  import PostStudioTransport from "./PostStudioTransport.svelte";
   import PostStudioTimeline from "./PostStudioTimeline.svelte";
-  import PostStudioDeliveryPanel from "./PostStudioDeliveryPanel.svelte";
   import PostStudioPerformancePicker from "./PostStudioPerformancePicker.svelte";
   import {
     createCatalogPerformanceSelection,
@@ -114,11 +115,24 @@
   let audioInspectionVersion = 0;
   let workspaceWidth = $state(0);
   let workspaceHeight = $state(0);
+  let viewportHeight = $state(0);
   let workspaceWasAdjusted = $state(false);
   let workspaceSizes = $state([72, 44]);
 
+  /**
+   * True when the one-panel-at-a-time layout is showing. It has to mirror the
+   * two CSS conditions that produce it exactly — `@container post-studio
+   * (max-width: 70rem)` and `@media (max-height: 40rem)` — because it decides
+   * which column carries the transport, and a disagreement renders two or none.
+   *
+   * The height term reads the VIEWPORT, not the workspace element: opening the
+   * clip lanes shortens the workspace without changing the viewport, so the
+   * element's height said "compact" while the CSS still had both columns up.
+   */
   const compactWorkspace = $derived(
-    workspaceWidth === 0 || workspaceWidth <= 1120 || workspaceHeight <= 640
+    workspaceWidth === 0 ||
+      workspaceWidth <= 1120 ||
+      (viewportHeight > 0 && viewportHeight <= 640)
   );
 
   const sequenceRef = $derived(createPostStudioSequenceRef(sequence));
@@ -340,12 +354,59 @@
     composition.setSlotSource("top", POST_STUDIO_ROLE.performance);
   });
 
+  /**
+   * A performer works in their own frame and the camera sees it reflected, so a
+   * take and the notation beside it disagree about left and right more often
+   * than not. Either side can be the one that moves: footage flips its pixels
+   * (the clip transform's `flipHorizontal`), notation mirrors its DATA here.
+   *
+   * Data, not pixels, because notation carries letters and glyphs — flipping
+   * the render would reverse the text along with the geometry. `mirrorSequence`
+   * is the owner of that transform, the same one the composer's Actions use.
+   *
+   * It is async, and the result is cached against the sequence it came from, so
+   * toggling back and forth costs one computation and a changed sequence can
+   * never show a mirror of the previous one.
+   */
+  let notationMirrored = $state(false);
+  let notationMirrorPending = $state(false);
+  let mirrorCache = $state<{
+    source: SequenceData;
+    mirrored: SequenceData;
+  } | null>(null);
+  const displaySequence = $derived(
+    notationMirrored && mirrorCache?.source === sequence
+      ? mirrorCache.mirrored
+      : sequence
+  );
+
+  async function toggleNotationMirror(): Promise<void> {
+    if (notationMirrored) {
+      notationMirrored = false;
+      return;
+    }
+    if (mirrorCache?.source === sequence) {
+      notationMirrored = true;
+      return;
+    }
+    const source = sequence;
+    notationMirrorPending = true;
+    try {
+      mirrorCache = { source, mirrored: await mirrorSequence(source) };
+      notationMirrored = true;
+    } catch (error) {
+      console.error("[PostStudio] Could not mirror the notation:", error);
+    } finally {
+      notationMirrorPending = false;
+    }
+  }
+
   // Tunnel and mandala controllers live here, above both the slot that draws
   // them and the inspector that steers them, so the Look / Spin / Colors
   // controls change the instance the canvas is reading. Same ownership as
   // ArtPane in the sequence viewer.
   const artControllers = new PostStudioArtControllers({
-    getSequence: () => sequence,
+    getSequence: () => displaySequence,
     getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
     getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
   });
@@ -516,6 +577,9 @@
           audioMode === "original" && canKeepOriginalAudio
             ? performanceBinding?.previewUrl
             : null,
+        originalAudioStartSeconds:
+          composition.sourceTrimFor(POST_STUDIO_ROLE.performance)?.inSeconds ??
+          0,
         onProgress: (progress) => (exportProgress = progress),
         shouldCancel: () => exportCancelled,
       });
@@ -545,7 +609,47 @@
     timingAdvanced = !timingAdvanced;
   }
 
+  /**
+   * The preview clock. It lives here rather than in the transport because the
+   * clip-lane editor is opt-in and the transport is now inside the canvas
+   * column: whichever of them a layout happens to be showing, the composition
+   * still has to advance. It used to ride in PostStudioTimeline, which meant
+   * the frame's motion depended on that component staying mounted.
+   */
+  let frameRequest: number | null = null;
+  let previousFrameTime: number | null = null;
+
+  function tick(now: number): void {
+    if (previousFrameTime !== null) {
+      composition.advance((now - previousFrameTime) / 1000);
+    }
+    previousFrameTime = now;
+    if (composition.isPlaying) frameRequest = requestAnimationFrame(tick);
+  }
+
+  $effect(() => {
+    if (!composition.isPlaying) {
+      if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+      frameRequest = null;
+      previousFrameTime = null;
+      return;
+    }
+
+    frameRequest = requestAnimationFrame(tick);
+    return () => {
+      if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+      frameRequest = null;
+      previousFrameTime = null;
+    };
+  });
+
+  onDestroy(() => {
+    if (frameRequest !== null) cancelAnimationFrame(frameRequest);
+  });
+
 </script>
+
+<svelte:window bind:innerHeight={viewportHeight} />
 
 <section
   class="post-studio"
@@ -561,54 +665,71 @@
     {exportPercent}
     {exportedUrl}
     {exportFilename}
+    {exportError}
+    {notationMirrored}
+    {notationMirrorPending}
+    onToggleNotationMirror={toggleNotationMirror}
+    {audioMode}
+    {canKeepOriginalAudio}
+    onAudioModeChange={setAudioMode}
     onFixMissing={fixFirstMissingSource}
     onRender={renderPost}
     onCancelExport={cancelExport}
   />
 
+  {#snippet transport(showAdvancedToggle: boolean)}
+    <PostStudioTransport
+      advanced={timingAdvanced}
+      {performanceAlignmentDetail}
+      {showAdvancedToggle}
+      onMapPerformance={() => (performancePickerOpen = true)}
+      onToggleAdvanced={toggleTimingAdvanced}
+    />
+  {/snippet}
+
   {#snippet canvasPanel()}
     <main class="canvas-panel" aria-label="Post canvas">
       <div class="canvas-stage">
         <PostStudioPreview
-          {sequence}
+          sequence={displaySequence}
           cardRenderOptions={synchronizedCardRenderOptions}
           durationLabel={`${composition.durationSeconds.toFixed(1)}s`}
           onRootReady={setPreviewRoot}
           onEditRegion={() => (focusedPanel = "edit")}
         />
       </div>
+      <!-- Docked under the frame it drives, exactly as the 2D animation canvas
+           and the 3D viewer dock the same bar under theirs. It is the same
+           component; the studio no longer keeps a transport of its own. -->
+      {@render transport(!compactWorkspace)}
     </main>
   {/snippet}
 
   {#snippet inspectorPanel()}
-    <aside class="inspector-rail" aria-label="Inspector and export settings">
+    <!-- The rail is the selected layer's, entirely. Sound and the render's own
+         error moved onto the action bar: they are properties of the file being
+         made, not of the layer, and as a card down here they took ~370px of the
+         rail's height — enough that a source with real controls (the mandala
+         has six categories) had to scroll inside a porthole. -->
+    <aside class="inspector-rail" aria-label="Selected layer settings">
       <PostStudioInspector
-        {sequence}
+        sequence={displaySequence}
         {exportOptions}
         {selectedPropType}
         onPropChange={setPropType}
         resolvedAutoLayout={resolvedCardAutoLayout}
       />
-      {#if canKeepOriginalAudio}
-        <PostStudioDeliveryPanel
-          {audioMode}
-          {canKeepOriginalAudio}
-          {exporting}
-          {exportError}
-          onAudioModeChange={setAudioMode}
-        />
-      {/if}
     </aside>
   {/snippet}
 
   {#snippet timelinePanel()}
     <div class="timeline-dock">
-      <PostStudioTimeline
-        advanced={timingAdvanced}
-        {performanceAlignmentDetail}
-        onMapPerformance={() => (performancePickerOpen = true)}
-        onToggleAdvanced={toggleTimingAdvanced}
-      />
+      <!-- On the compact layout the canvas column (and with it the transport)
+           is hidden while this panel is showing, so it carries its own. -->
+      {#if compactWorkspace}
+        {@render transport(false)}
+      {/if}
+      <PostStudioTimeline />
     </div>
   {/snippet}
 
@@ -651,14 +772,13 @@
       />
     </div>
 
-    <!-- Timing spans the workspace rather than riding inside the canvas column.
-         It is a composition-wide control — one playhead, one tempo, every
-         region's clips — so scoping it to the canvas was backwards twice over:
-         the transport row's intrinsic width (~1000px) exceeded the narrowest
-         column and got clipped, and the height it claimed came straight out of
-         the 9:16 frame, which is the one thing on this page that is the
-         product. Full width also gives clip trimming a track worth dragging. -->
-    {@render timelinePanel()}
+    <!-- Only the clip lanes span the workspace, and only when asked for: they
+         are drag targets measured against a ruler, so they want every pixel.
+         The transport is not that — it belongs under the frame, which is where
+         every other playback surface in the app puts it. -->
+    {#if timingAdvanced}
+      {@render timelinePanel()}
+    {/if}
   </div>
 
   <nav class="focused-nav" aria-label="Post Studio tools">
@@ -773,7 +893,13 @@
   .inspector-rail {
     display: grid;
     grid-area: inspector;
-    grid-template-rows: minmax(0, 1fr);
+    /* `minmax(0, 1fr)` alone capped the inspector at whatever the delivery
+       panel left over and let its contents spill out on top of that panel — the
+       inspector is a grid with visible overflow, so nothing clipped or scrolled
+       it. The min-content floor lets it size to its controls and hands the
+       scrolling to this rail, which already asks for it below. One scroller,
+       no overlap. */
+    grid-template-rows: minmax(min-content, 1fr);
     align-content: stretch;
     gap: var(--studio-panel-gap);
     min-width: 0;
@@ -795,13 +921,16 @@
   /* No header row: it repeated the 9:16 the preview already states, and its
      reserved control-height band cost the vertical space the 9:16 frame is
      sized from. Format and length now ride the preview's own meta line. */
+  /* Stage above, transport docked flush below. The padding moved onto the stage
+     so the transport can reach the column's edges the way it does under the 2D
+     animation canvas — its own top border is the seam, and a gutter around it
+     would read as a floating widget instead of a dock. */
   .canvas-panel {
     grid-area: canvas;
     display: grid;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
     min-width: 0;
     min-height: 0;
-    padding: var(--studio-canvas-padding);
     background: color-mix(
       in srgb,
       var(--theme-card-bg) 48%,
@@ -816,6 +945,7 @@
     place-items: center;
     min-width: 0;
     min-height: 0;
+    padding: var(--studio-canvas-padding);
     overflow: hidden;
   }
 

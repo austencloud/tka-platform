@@ -36,6 +36,7 @@
     layout: "sidebar" | "bottom";
     onExport: () => void;
     showExport: boolean;
+    showTitle?: boolean;
     onSaveTunnel?: () => void;
     bpm: number;
     playbackMode: PlaybackMode;
@@ -55,6 +56,7 @@
     layout,
     onExport,
     showExport,
+    showTitle = true,
     onSaveTunnel,
     bpm,
     playbackMode,
@@ -240,7 +242,7 @@
     {/snippet}
   </ControlDock>
 {:else}
-  <ArtSettingsSidebarFrame label="Tunnel" {exporting}>
+  <ArtSettingsSidebarFrame label="Tunnel" {exporting} showLabel={showTitle}>
     <div class="sidebar-rail-layout">
       <IconRailNav
         pills={tunnelRail}

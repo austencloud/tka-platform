@@ -170,7 +170,12 @@
 
   .harness {
     display: grid;
-    align-items: start;
+    /* Stretch, not start: the studio is a full-height surface everywhere it
+       actually ships (a modal over the viewer). Starting it meant that above
+       ~2600px the studio collapsed to its intrinsic height and the canvas
+       column narrowed with it, so the harness stopped representing the app at
+       exactly the widths worth checking. */
+    align-items: stretch;
     width: 100%;
     height: 100dvh;
     padding: clamp(0.5rem, 1.5vw, 2rem);
@@ -188,6 +193,9 @@
     display: flex;
     align-items: center;
     justify-self: center;
+    /* The grid stretches its child so the studio fills the viewport; this one
+       hugs its text instead. */
+    align-self: start;
     gap: 0.625rem;
     margin-top: 25dvh;
     padding: 1rem 1.25rem;

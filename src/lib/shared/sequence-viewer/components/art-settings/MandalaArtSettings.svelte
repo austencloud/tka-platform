@@ -20,6 +20,7 @@
     layout: "sidebar" | "bottom";
     onExport: () => void;
     showExport: boolean;
+    showTitle?: boolean;
     onArtSettingChange?: ArtSettingChangeHandler;
     exporting: boolean;
     reduceMotion: boolean;
@@ -30,6 +31,7 @@
     layout,
     onExport,
     showExport,
+    showTitle = true,
     onArtSettingChange,
     exporting,
     reduceMotion,
@@ -125,7 +127,7 @@
     {/snippet}
   </ControlDock>
 {:else}
-  <ArtSettingsSidebarFrame label="Mandala" {exporting}>
+  <ArtSettingsSidebarFrame label="Mandala" {exporting} showLabel={showTitle}>
     <!-- Mandala: every control stacked (no rail). Each control is one compact
          row, so a per-section rail would leave the tall panel mostly empty. -->
     <div class="sidebar-main">
@@ -200,10 +202,7 @@
     align-items: start;
     column-gap: 1.25rem;
     row-gap: 0.375rem;
-    /* Tight rows on purpose: the inspector gives this panel ~495px and the six
-       categories have to live inside it. At 14px of block padding they needed
-       562 and the panel became a porthole showing three of them. */
-    padding: 0.5rem 1rem;
+    padding: 0.875rem 1rem;
   }
   .mandala-cat + .mandala-cat {
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));

@@ -35,6 +35,15 @@ type VisualPresetClip = Extract<
 
 export type CompositionSourceStatus = "ready" | "preparing" | "missing";
 
+/** The span of a source the post uses, in that source's own seconds. */
+export interface SourceTrim {
+  readonly inSeconds: number;
+  readonly outSeconds: number;
+}
+
+/** A clip shorter than this is a frame, not an edit. */
+const MINIMUM_TRIM_SECONDS = 0.5;
+
 export interface CompositionSourceBinding {
   roleKey: string;
   kind: MediaSourceKind;
@@ -106,6 +115,15 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
   let previewSeconds = $state(0);
   let isPlaying = $state(false);
   let durationOverrides = $state<Record<string, number>>({});
+  /**
+   * Which span of a source the post uses, in that source's own seconds. Held
+   * beside the preset rather than inside the clip because a clip's
+   * `sourceIn`/`sourceOut` are its montage in and out INSIDE the post, and the
+   * timeline's clip handles already own those. A trim is a fact about the
+   * footage: it shortens the post, offsets the media clock, and offsets the
+   * step map, none of which a clip boundary does.
+   */
+  let sourceTrims = $state<Record<string, SourceTrim>>({});
 
   function getActivePreset(): MediaCompositionPreset {
     return workingPresets[activePresetId] ?? workingPresets[firstPreset.id]!;
@@ -168,10 +186,86 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
       );
     }
     const roleKey = activePreset.duration.sourceRole;
+    const trim = getSourceTrim(roleKey);
+    if (trim) return trim.outSeconds - trim.inSeconds;
+    return getSourceLength(roleKey);
+  }
+
+  /** How long a source runs before any trim, in its own seconds. */
+  function getSourceLength(roleKey: string): number {
     const binding = getBindings().find(
       (candidate) => candidate.roleKey === roleKey
     );
     return durationOverrides[roleKey] ?? binding?.durationSeconds ?? 8;
+  }
+
+  /**
+   * A trim is clamped against the source it trims, so a map or a video that
+   * resolves its true length after the trim was set cannot leave the post
+   * pointing past the end of the footage.
+   */
+  function getSourceTrim(roleKey: string): SourceTrim | null {
+    const stored = sourceTrims[roleKey];
+    if (!stored) return null;
+    const length = getSourceLength(roleKey);
+    const inSeconds = Math.max(
+      0,
+      Math.min(stored.inSeconds, length - MINIMUM_TRIM_SECONDS)
+    );
+    const outSeconds = Math.min(
+      length,
+      Math.max(stored.outSeconds, inSeconds + MINIMUM_TRIM_SECONDS)
+    );
+    if (outSeconds - inSeconds >= length) return null;
+    return { inSeconds, outSeconds };
+  }
+
+  /** Where project time zero sits in each trimmed source. */
+  function getSourceTimeOffsets(): Record<string, number> {
+    const offsets: Record<string, number> = {};
+    for (const roleKey of Object.keys(sourceTrims)) {
+      const trim = getSourceTrim(roleKey);
+      if (trim) offsets[roleKey] = trim.inSeconds;
+    }
+    return offsets;
+  }
+
+  function setSourceTrim(roleKey: string, trim: SourceTrim | null): void {
+    if (!trim) {
+      if (!(roleKey in sourceTrims)) return;
+      const { [roleKey]: _removed, ...rest } = sourceTrims;
+      sourceTrims = rest;
+      previewSeconds = Math.min(previewSeconds, getDurationSeconds());
+      return;
+    }
+    if (!Number.isFinite(trim.inSeconds) || !Number.isFinite(trim.outSeconds)) {
+      return;
+    }
+    const length = getSourceLength(roleKey);
+    const inSeconds = Math.max(
+      0,
+      Math.min(trim.inSeconds, length - MINIMUM_TRIM_SECONDS)
+    );
+    const outSeconds = Math.min(
+      length,
+      Math.max(trim.outSeconds, inSeconds + MINIMUM_TRIM_SECONDS)
+    );
+    sourceTrims = { ...sourceTrims, [roleKey]: { inSeconds, outSeconds } };
+    previewSeconds = Math.min(previewSeconds, getDurationSeconds());
+  }
+
+  /**
+   * The step map is recorded against the mapped source as shot, so the offset
+   * that rebases it is that source's trim — not whichever role happens to drive
+   * the duration.
+   */
+  function getMappedTimeOffset(): number {
+    const activePreset = getActivePreset();
+    const mappedRole =
+      activePreset.duration.mode === "follow-source-role"
+        ? activePreset.duration.sourceRole
+        : null;
+    return mappedRole ? (getSourceTrim(mappedRole)?.inSeconds ?? 0) : 0;
   }
 
   function getFrameLayers() {
@@ -187,8 +281,10 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
             timeMap,
             steps,
             startPositionDuration: deps.startPositionDuration ?? 1,
+            mediaTimeOffsetSeconds: getMappedTimeOffset(),
           }
-        : null
+        : null,
+      getSourceTimeOffsets()
     );
   }
 
@@ -428,6 +524,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     if (patch.translateY !== undefined && Number.isFinite(patch.translateY)) {
       validPatch.translateY = Math.min(1, Math.max(-1, patch.translateY));
     }
+    if (patch.flipHorizontal !== undefined) {
+      validPatch.flipHorizontal = patch.flipHorizontal === true;
+    }
     if (Object.keys(validPatch).length === 0) return;
 
     updateSelectedVisualClips((clip) => ({
@@ -442,6 +541,16 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     updateSelectedVisualClips((clip) => ({ ...clip, opacity: clampedOpacity }));
   }
 
+  /**
+   * Reflects the selected layer's pixels. Only external media should reach
+   * this: notation carries letters and glyphs that read backwards when the
+   * pixels flip, so it mirrors through the sequence transforms instead.
+   */
+  function toggleSelectedFlip(): void {
+    const current = getSelectedVisualClips()[0]?.transform.flipHorizontal;
+    setSelectedTransform({ flipHorizontal: !current });
+  }
+
   function resetSelectedAppearance(): void {
     updateSelectedVisualClips((clip) => ({
       ...clip,
@@ -451,6 +560,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
         rotationDegrees: 0,
         translateX: 0,
         translateY: 0,
+        flipHorizontal: false,
       },
     }));
   }
@@ -650,6 +760,9 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     get selectedSupportsFit() {
       return selectedRegionSupportsFit();
     },
+    get selectedFlipHorizontal() {
+      return getSelectedVisualClips()[0]?.transform.flipHorizontal ?? false;
+    },
     get bindings() {
       return getBindings();
     },
@@ -665,6 +778,14 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     get durationSeconds() {
       return getDurationSeconds();
     },
+    /** The role whose footage sets the post's length, when one does. */
+    get durationSourceRole() {
+      const duration = getActivePreset().duration;
+      return duration.mode === "follow-source-role" ? duration.sourceRole : null;
+    },
+    sourceLengthFor: getSourceLength,
+    sourceTrimFor: getSourceTrim,
+    setSourceTrim,
     get tempoBpm() {
       const duration = getActivePreset().duration;
       return duration.mode === "sequence-tempo" ? duration.bpm : null;
@@ -701,6 +822,7 @@ export function createMediaCompositionState(deps: MediaCompositionStateDeps) {
     setAnimationPlaybackMode,
     setSelectedTransform,
     setSelectedOpacity,
+    toggleSelectedFlip,
     resetSelectedAppearance,
     setClipBoundary,
     toggleSafeZones,

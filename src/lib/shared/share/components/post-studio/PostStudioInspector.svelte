@@ -28,27 +28,7 @@
 
   const composition = getMediaCompositionContext();
 
-  /**
-   * "Fit", not "Placement". A slot's content is centred in its half of the
-   * frame and stays there — the horizontal, vertical and rotation controls
-   * (and the canvas drag that shadowed them) are gone, because off-centre is
-   * not a thing this post format wants. What is left is how the source fills
-   * the slot it has: crop or letterbox, how far in, how solid.
-   */
-  type InspectorView = "source" | "fit";
-  const VIEW_OPTIONS: Array<{ value: InspectorView; label: string }> = [
-    { value: "source", label: "Look" },
-    { value: "fit", label: "Fit" },
-  ];
-
-  let view = $state<InspectorView>("source");
-  const canReset = $derived(view === "fit");
-  let previousRole = $state<string | null>(null);
   const selectedBinding = $derived(composition.selectedBinding);
-  // Everything the studio draws itself has a Look to edit; only dropped-in
-  // media (a video file, an image) has nothing to steer. Naming the modes that
-  // DO have settings meant every new source type shipped without its controls
-  // until someone remembered to extend this list.
   // Everything the studio draws itself has a Look to edit; the exceptions are
   // dropped-in media (a video file has nothing to steer) and the 3D view, which
   // isn't wired up yet. Listing the modes that DO have settings was the older
@@ -60,12 +40,22 @@
       !WITHOUT_SOURCE_SETTINGS.includes(selectedBinding?.renderMode ?? "")
   );
 
-  $effect(() => {
-    const role = composition.selectedRole;
-    if (role === previousRole) return;
-    previousRole = role;
-    view = hasSourceSettings ? "source" : "fit";
-  });
+  /**
+   * Placement is a footage-only question, and the panel no longer offers it to
+   * anything else.
+   *
+   * Everything the studio draws itself — mandala, tunnel, animation, card — is
+   * already composed to fill its slot without touching the edges. Scaling one
+   * of those to 80% or fading it to 60% produces a worse post, every time, so
+   * they were two sliders that existed to be left alone. A dropped-in video is
+   * the one source whose framing the studio cannot know: it arrives at whatever
+   * crop the phone took, and moving it inside the slot is the real work.
+   *
+   * `selectedSupportsFit` is already exactly "this layer is external media",
+   * so it is the whole gate — Look and Fit are now two different layers'
+   * panels, never two tabs of one, and the switcher is gone with them.
+   */
+  const isFootage = $derived(composition.selectedSupportsFit);
 
   const FIT_OPTIONS: Array<{ value: LayoutRegion["fit"]; label: string }> = [
     { value: "cover", label: "Crop" },
@@ -76,7 +66,32 @@
   const transform = $derived(composition.selectedTransform);
   const opacity = $derived(composition.selectedOpacity ?? 1);
   const changed = $derived(
-    Boolean(transform && (transform.scale !== 1 || opacity !== 1))
+    Boolean(
+      transform &&
+        (transform.scale !== 1 ||
+          transform.translateX !== 0 ||
+          transform.translateY !== 0 ||
+          transform.flipHorizontal ||
+          opacity !== 1)
+    )
+  );
+
+  /**
+   * Flipping the FOOTAGE is a property of this one clip, so it stays here with
+   * the rest of its framing. Flipping the NOTATION is not: it reflects the
+   * sequence data, so every notation layer in the post moves together, and a
+   * post-wide switch parked inside one layer's panel reads as belonging to that
+   * layer. It lives on the action bar now, beside the safe-area overlay — the
+   * other control that changes the whole post rather than a piece of it.
+   */
+  const mirrored = $derived(composition.selectedFlipHorizontal);
+
+  // Crop position is only meaningful when there is hidden source to pan into
+  // view, which is exactly what Crop fit produces. On Fit and Stretch the whole
+  // frame is already on screen and the sliders would only push it off.
+  const canPosition = $derived(
+    composition.selectedSupportsFit &&
+      composition.selectedRegion?.fit === "cover"
   );
 
   function numberFrom(event: Event): number {
@@ -90,19 +105,20 @@
 
 <section
   class="inspector"
-  class:source-open={view === "source" && hasSourceSettings}
+  class:source-open={hasSourceSettings}
   aria-labelledby="post-studio-inspector"
 >
+  <!-- One row, not three. "SELECTED LAYER" above the name said the same thing
+       twice, and the Look/Fit switcher below it took a third band — ~105px
+       before a single control appeared, in a rail whose whole job is the
+       controls. The switcher is gone entirely: a layer has a Look or a Fit,
+       never both, so there was never anything to switch between. -->
   <div class="inspector-heading">
-    <div>
-      <span class="eyebrow">Selected layer</span>
-      <h3 id="post-studio-inspector">
-        {selectedBinding?.label ??
-          composition.selectedRegion?.label ??
-          "Canvas"}
-      </h3>
-    </div>
-    {#if canReset}
+    <h3 id="post-studio-inspector">
+      {selectedBinding?.label ?? composition.selectedRegion?.label ?? "Canvas"}
+    </h3>
+
+    {#if isFootage && composition.selectedRegion && transform}
       <button
         type="button"
         class="reset-button"
@@ -118,20 +134,6 @@
 
   {#if composition.selectedRegion && transform}
     {#if hasSourceSettings}
-      <div class="switch-row">
-        <SegmentedControl
-          options={VIEW_OPTIONS}
-          value={view}
-          onchange={(value) => (view = value)}
-          ariaLabel="Choose layer settings or how it fills its slot"
-          semantics="tabs"
-          size="sm"
-          color="accent"
-        />
-      </div>
-    {/if}
-
-    {#if view === "source" && hasSourceSettings}
       <PostStudioSourceSettings
         {sequence}
         {exportOptions}
@@ -139,23 +141,39 @@
         {onPropChange}
         {resolvedAutoLayout}
       />
-    {:else}
-      {#if composition.selectedSupportsFit}
-        <div class="control-group">
-          <span class="group-label">Frame fit</span>
-          <div class="switch-row wide">
-            <SegmentedControl
-              options={FIT_OPTIONS}
-              value={composition.selectedRegion.fit}
-              onchange={composition.setSelectedFit}
-              ariaLabel="How the source fits the selected area"
-              semantics="radiogroup"
-              size="sm"
-              color="accent"
-            />
-          </div>
+    {:else if isFootage}
+      <div class="control-group">
+        <span class="group-label">Frame fit</span>
+        <div class="switch-row wide">
+          <SegmentedControl
+            options={FIT_OPTIONS}
+            value={composition.selectedRegion.fit}
+            onchange={composition.setSelectedFit}
+            ariaLabel="How the source fits the selected area"
+            semantics="radiogroup"
+            size="sm"
+            color="accent"
+          />
         </div>
-      {/if}
+      </div>
+
+      <div class="control-group">
+        <span class="group-label">Mirror</span>
+        <button
+          type="button"
+          class="mirror-button"
+          class:on={mirrored}
+          aria-pressed={mirrored}
+          onclick={composition.toggleSelectedFlip}
+        >
+          <i class="fa-solid fa-right-left" aria-hidden="true"></i>
+          <span class="mirror-label">Mirror video</span>
+          <span class="mirror-state">{mirrored ? "On" : "Off"}</span>
+        </button>
+        <p class="group-hint">
+          Reflects the footage. Any text burned into the take reverses with it.
+        </p>
+      </div>
 
       <div class="control-group fill-controls">
         <div class="group-heading">
@@ -186,6 +204,60 @@
           />
         </div>
 
+        {#if canPosition}
+          <!-- Only under Crop: that is the fit that hides part of the source, so
+               it is the only one where sliding the frame reveals anything. -->
+          <div class="slider-row">
+            <span>Across</span>
+            <input
+              type="range"
+              min="-50"
+              max="50"
+              step="1"
+              value={Math.round(transform.translateX * 100)}
+              aria-label="Crop position across"
+              aria-valuetext={`${Math.round(transform.translateX * 100)} percent`}
+              oninput={(event) =>
+                setTransform("translateX", numberFrom(event) / 100)}
+            />
+            <ScrubbableNumber
+              label="Across"
+              value={transform.translateX * 100}
+              min={-50}
+              max={50}
+              step={1}
+              unit="%"
+              showLabel={false}
+              onchange={(value) => setTransform("translateX", value / 100)}
+            />
+          </div>
+
+          <div class="slider-row">
+            <span>Down</span>
+            <input
+              type="range"
+              min="-50"
+              max="50"
+              step="1"
+              value={Math.round(transform.translateY * 100)}
+              aria-label="Crop position down"
+              aria-valuetext={`${Math.round(transform.translateY * 100)} percent`}
+              oninput={(event) =>
+                setTransform("translateY", numberFrom(event) / 100)}
+            />
+            <ScrubbableNumber
+              label="Down"
+              value={transform.translateY * 100}
+              min={-50}
+              max={50}
+              step={1}
+              unit="%"
+              showLabel={false}
+              onchange={(value) => setTransform("translateY", value / 100)}
+            />
+          </div>
+        {/if}
+
         <div class="slider-row">
           <span>Opacity</span>
           <input
@@ -211,6 +283,14 @@
           />
         </div>
       </div>
+    {:else}
+      <!-- Neither a Look nor a Fit: today that is only the 3D view, whose own
+           controls are not wired up yet. It still composes itself to its slot,
+           so there is nothing to place. -->
+      <div class="inspector-empty">
+        <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+        <p>This layer fills its slot on its own. Nothing to adjust yet.</p>
+      </div>
     {/if}
   {:else}
     <div class="inspector-empty">
@@ -229,7 +309,7 @@
   }
 
   .inspector.source-open {
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     height: 100%;
     align-content: stretch;
   }
@@ -237,13 +317,18 @@
   /* SegmentedControl is width:100% by design, so a full-width parent stretches
      two short words across the whole rail — 359px per tab at 1920, 507px at
      4K. The switch is a control, not a progress bar: size it from the control
-     height so it steps with the studio's own 105rem / 180rem tiers. */
-  .switch-row {
-    width: min(100%, calc(var(--studio-control-height, 2.75rem) * 8));
-  }
-
+     height so it steps with the studio's own 105rem / 180rem tiers. In the
+     heading row `flex` must be pinned too, because `flex-basis: auto` reads
+     that same `width: 100%` off the child. */
+  /* SegmentedControl is width:100% by design, so a consumer has to state both
+     flex-basis and width. Same two-term cap as .control-group. */
+  .switch-row,
   .switch-row.wide {
-    width: min(100%, calc(var(--studio-control-height, 2.75rem) * 11));
+    flex: 0 0 auto;
+    width: min(
+      100%,
+      max(calc(var(--studio-control-height, 2.75rem) * 8), 56%)
+    );
   }
 
   .inspector-heading,
@@ -254,18 +339,22 @@
     gap: var(--spacing-md);
   }
 
-  .eyebrow,
+  /* The name takes the slack so the switcher and Reset sit hard right, and a
+     long source name never pushes them off the row. */
+  .inspector-heading h3 {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .group-label {
     color: var(--theme-text-dim);
     font-size: var(--studio-meta-size, var(--font-size-compact));
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-
-  .eyebrow {
-    display: block;
-    margin-bottom: var(--spacing-xs);
   }
 
   h3 {
@@ -301,14 +390,86 @@
     outline-offset: 2px;
   }
 
+  /* The footage panel now owns the whole rail, which at 1920 is ~620px and at
+     4K is wider still. A slider drawn edge to edge across that is harder to
+     land on, not easier — the controls keep a measure and the rail keeps the
+     slack. */
+  /* A control column, not a progress bar. The absolute term keeps three short
+     words from stretching across a 620px rail; the 70% term keeps the same
+     proportion at 4K, where the rail more than doubles but the control-height
+     token only grows by half — an absolute cap alone left 48% of the rail
+     empty there. */
   .control-group {
     display: grid;
     gap: 0.75rem;
+    max-width: min(
+      100%,
+      max(calc(var(--studio-control-height, 2.75rem) * 10), 70%)
+    );
   }
 
   .fill-controls {
     padding-top: var(--spacing-md);
     border-top: 1px solid var(--theme-stroke);
+  }
+
+  .mirror-button {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: min(100%, calc(var(--studio-control-height, 2.75rem) * 11));
+    min-height: var(--studio-control-height, 2.75rem);
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg);
+    color: var(--theme-text);
+    font: inherit;
+    font-size: var(--studio-body-size, var(--font-size-min));
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .mirror-button.on {
+    border-color: var(--theme-accent);
+    background: color-mix(in srgb, var(--theme-accent) 22%, var(--theme-card-bg));
+  }
+
+  .mirror-button:disabled {
+    opacity: 0.42;
+    cursor: progress;
+  }
+
+  .mirror-button:focus-visible {
+    outline: 3px solid var(--theme-accent);
+    outline-offset: 2px;
+  }
+
+  /* On and Off are different widths, so the slot is sized to the wider one and
+     the word never drags the button's contents sideways as it toggles. */
+  .mirror-state {
+    min-width: 3ch;
+    color: var(--theme-text-dim);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-align: right;
+    text-transform: uppercase;
+  }
+
+  .mirror-button.on .mirror-state {
+    color: var(--theme-accent);
+  }
+
+  /* No reserved height: the hint changes only when the selected layer changes,
+     and that swaps the whole panel — there is no in-place text swap to hold
+     space for, so a floor would only be dead rail. */
+  .group-hint {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--studio-meta-size, var(--font-size-compact));
+    line-height: 1.45;
   }
 
   .slider-row {
@@ -349,6 +510,13 @@
   }
 
   @container post-studio (max-width: 30rem) {
+    /* Still one row at phone width — that is where the rail can least afford a
+       band per idea. Two short tab labels need far less than the 22rem the
+       desktop switch is sized to. */
+    .switch-row {
+      width: min(100%, 12rem);
+    }
+
     .slider-row {
       grid-template-columns: 4.5rem minmax(4rem, 1fr) 5rem;
       gap: var(--spacing-sm);

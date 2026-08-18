@@ -134,6 +134,7 @@ describe("createMediaCompositionState", () => {
       translateX: 0.18,
       translateY: -0.12,
       rotationDegrees: 8,
+      flipHorizontal: false,
     });
     expect(performanceClip?.kind === "visual" && performanceClip.opacity).toBe(
       0.72
@@ -152,6 +153,7 @@ describe("createMediaCompositionState", () => {
       rotationDegrees: 0,
       translateX: 0,
       translateY: 0,
+      flipHorizontal: false,
     });
     expect(state.selectedOpacity).toBe(1);
   });
@@ -397,5 +399,111 @@ describe("createMediaCompositionState", () => {
     expect(saved.regions[0]?.fit).toBe("contain");
     expect(state.activePresetId).toBe(saved.id);
     expect(state.presets).toHaveLength(POST_STUDIO_PRESETS.length + 1);
+  });
+
+  it("shortens the post and offsets the source clock when footage is trimmed", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "performance-breakdown",
+      getBindings: readyBindings,
+    });
+
+    expect(state.durationSeconds).toBe(12);
+
+    state.setSourceTrim(POST_STUDIO_ROLE.performance, {
+      inSeconds: 3,
+      outSeconds: 9,
+    });
+    flushSync();
+
+    expect(state.durationSeconds).toBe(6);
+    expect(
+      state.frameLayers.find((layer) => layer.clipId === "performance")
+        ?.sourceTimeSeconds
+    ).toBeCloseTo(3);
+
+    // The clip's own sourceIn/sourceOut are untouched: the trim rides alongside
+    // them so the timeline's clip handles keep meaning what they meant.
+    const clip = state.activePreset.clips.find(
+      (candidate) => candidate.id === "performance"
+    )!;
+    expect(clip.kind === "visual" && clip.sourceIn).toEqual({
+      unit: "duration-fraction",
+      value: 0,
+    });
+  });
+
+  it("rebases the step map by the amount trimmed off the head", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "performance-breakdown",
+      getBindings: readyBindings,
+      getSequenceTimeMap: () => timeMap,
+      getSequenceSteps: () =>
+        [
+          { duration: 1 },
+          { duration: 1 },
+          { duration: 1 },
+          { duration: 1 },
+        ] as unknown as StepData[],
+    });
+
+    state.setSourceTrim(POST_STUDIO_ROLE.performance, {
+      inSeconds: 3,
+      outSeconds: 12,
+    });
+    // Media time 6 is where the map puts position 3; after cutting three
+    // seconds off the head that moment is project time 3.
+    state.seek(3);
+    flushSync();
+
+    expect(
+      new Set(state.frameLayers.map((layer) => layer.sequencePosition))
+    ).toEqual(new Set([3]));
+  });
+
+  it("clamps a trim against the footage it trims", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "performance-breakdown",
+      getBindings: readyBindings,
+    });
+
+    state.setSourceTrim(POST_STUDIO_ROLE.performance, {
+      inSeconds: 20,
+      outSeconds: 30,
+    });
+    flushSync();
+
+    const trim = state.sourceTrimFor(POST_STUDIO_ROLE.performance)!;
+    expect(trim.inSeconds).toBeCloseTo(11.5);
+    expect(trim.outSeconds).toBe(12);
+
+    state.setSourceTrim(POST_STUDIO_ROLE.performance, null);
+    flushSync();
+    expect(state.sourceTrimFor(POST_STUDIO_ROLE.performance)).toBeNull();
+    expect(state.durationSeconds).toBe(12);
+  });
+
+  it("flips the selected layer and clears it on reset", () => {
+    const state = createMediaCompositionState({
+      presets: POST_STUDIO_PRESETS,
+      initialPresetId: "performance-breakdown",
+      getBindings: readyBindings,
+    });
+
+    expect(state.selectedFlipHorizontal).toBe(false);
+
+    state.toggleSelectedFlip();
+    flushSync();
+    expect(state.selectedFlipHorizontal).toBe(true);
+    expect(
+      state.frameLayers.find((layer) => layer.clipId === "performance")
+        ?.transform.flipHorizontal
+    ).toBe(true);
+
+    state.resetSelectedAppearance();
+    flushSync();
+    expect(state.selectedFlipHorizontal).toBe(false);
   });
 });
