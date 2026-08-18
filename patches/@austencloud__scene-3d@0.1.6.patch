@@ -2301,7 +2301,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +  />
  {/if}
 diff --git a/dist/lib/components/props/Prop3D.svelte b/dist/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a37dddb635ab2dee962cf7479da85142831ea1a9 100644
 --- a/dist/lib/components/props/Prop3D.svelte
 +++ b/dist/lib/components/props/Prop3D.svelte
 @@ -13,6 +13,7 @@
@@ -2312,7 +2312,15 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
    import GltfProp3D from "./GltfProp3D.svelte";
  
    // Procedural fallback geometry components
-@@ -87,9 +88,17 @@
+@@ -25,6 +26,7 @@
+   import Sword3D from "./Sword3D.svelte";
+   import Buugeng3D from "./Buugeng3D.svelte";
+   import Triad3D from "./Triad3D.svelte";
++  import { QUIAD_PROP } from "./triad-frame";
+   import Doublestar3D from "./Doublestar3D.svelte";
+   import Chicken3D from "./Chicken3D.svelte";
+   import Guitar3D from "./Guitar3D.svelte";
+@@ -87,9 +89,17 @@
      <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIAD}
@@ -2332,7 +2340,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.MINIHOOP}
      <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
-@@ -102,10 +111,19 @@
+@@ -102,10 +112,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIGENG}
@@ -2354,6 +2362,23 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+@@ -140,7 +159,15 @@
+     <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.QUIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Triad3D
++      {propState}
++      {color}
++      {visible}
++      {isActivePlayer}
++      {length}
++      frame={QUIAD_PROP}
++      variant={propFinishState.finish}
++    />
+ 
+   {:else if propType === PropType.TORCH}
+     <Torch3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/dist/lib/components/props/Torch3D.svelte b/dist/lib/components/props/Torch3D.svelte
 index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a008bdee91 100644
 --- a/dist/lib/components/props/Torch3D.svelte
@@ -2588,18 +2613,19 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 +  />
  {/if}
 diff --git a/dist/lib/components/props/Triad3D.svelte b/dist/lib/components/props/Triad3D.svelte
-index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e17468711 100644
 --- a/dist/lib/components/props/Triad3D.svelte
 +++ b/dist/lib/components/props/Triad3D.svelte
-@@ -1,152 +1,174 @@
+@@ -1,152 +1,196 @@
 +<script module lang="ts">
 +  import { BufferGeometry, TorusGeometry } from "three";
 +  import {
-+    TRIAD_ARM_LENGTH,
 +    TRIAD_DAY,
 +    TRIAD_FIRE,
++    TRIAD_PROP,
 +    type TriadFrame,
 +    type TriadSection,
++    type WickFrameProp,
 +  } from "./triad-frame";
 +  import { roundedCylinder } from "./prop-lathe";
 +  import { getFrameMaterials, type FrameVariant } from "./frame-materials";
@@ -2640,13 +2666,13 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 +    };
 +  }
 +
-+  function getTriadParts(length: number, variant: FrameVariant): TriadParts {
-+    const key = `${length}:${variant}`;
++  /** `arm` is the absolute hub-to-wick-centre distance, already scaled. */
++  function getTriadParts(arm: number, variant: FrameVariant): TriadParts {
++    const key = `${arm}:${variant}`;
 +    const cached = builds.get(key);
 +    if (cached) return cached;
 +
 +    const frame = FRAMES[variant];
-+    const arm = TRIAD_ARM_LENGTH * length;
 +    const parts: TriadParts = {
 +      hubArm: turn(frame.hubArm, arm, frame.fillet),
 +      innerCollar: turn(frame.innerCollar, arm, frame.fillet * 0.5),
@@ -2666,8 +2692,19 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 +    return parts;
 +  }
 +
-+  /** One arm pointing +Y, the other two swung back 120 degrees each. */
-+  const ARM_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
++  /** One arm pointing +Y, the rest swung back in equal steps around the hub. */
++  const angles = new Map<number, readonly number[]>();
++
++  function armAngles(arms: number): readonly number[] {
++    const cached = angles.get(arms);
++    if (cached) return cached;
++    const spread = Array.from(
++      { length: arms },
++      (_unused, index) => (index * 2 * Math.PI) / arms
++    );
++    angles.set(arms, spread);
++    return spread;
++  }
 +</script>
 +
  <script lang="ts">
@@ -2681,10 +2718,14 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -   * - Small sphere caps at each arm tip
 -   * - Grip is at the center hub
 -   * - Trail indicator sphere for path visualization
-+   * A hub with a finger ring, three spines out of it at 120 degrees, and a wick
-+   * on the end of each — the object people actually hold, not the pictograph's
++   * A hub with a finger ring, N spines out of it at even angles, and a wick on
++   * the end of each — the object people actually hold, not the pictograph's
 +   * silhouette given depth. `triad-frame.ts` carries the dimensions and the
 +   * reason there are two builds of it.
++   *
++   * Two props run through here. `frame` picks which: `TRIAD_PROP` is three arms
++   * at 120 degrees, `QUIAD_PROP` is four at 90 with a slightly shorter reach.
++   * Everything else about them is the same object.
     *
 -   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
 -   * spread in the local XY plane from the center hub.
@@ -2717,7 +2758,11 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
      scale = 1,
 -  }: Prop3DProps = $props();
 +    variant = "fire",
-+  }: Prop3DProps & { variant?: FrameVariant } = $props();
++    frame = TRIAD_PROP,
++  }: Prop3DProps & {
++    variant?: FrameVariant;
++    frame?: WickFrameProp;
++  } = $props();
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -2734,7 +2779,9 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
    );
  
 -  const palette = $derived(PROP_COLORS[color]);
-+  const parts = $derived(getTriadParts(effectiveLength, variant));
++  const parts = $derived(
++    getTriadParts(frame.armLength * effectiveLength, variant)
++  );
 +  const materials = $derived(getFrameMaterials(color, variant));
  
    const rotation = $derived(computePropRotation(propState));
@@ -2818,18 +2865,12 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -          color={palette.main}
 -          roughness={0.3}
 -          metalness={0.2}
-+    {#each ARM_ANGLES as angle}
++    {#each armAngles(frame.arms) as angle}
 +      <T.Group rotation={[0, 0, angle]}>
 +        <T.Mesh
 +          geometry={parts.hubArm.geometry}
 +          material={materials.hub}
 +          position={[0, parts.hubArm.at, 0]}
-+          dispose={false}
-+        />
-+        <T.Mesh
-+          geometry={parts.innerCollar.geometry}
-+          material={materials.collar}
-+          position={[0, parts.innerCollar.at, 0]}
 +          dispose={false}
          />
 -      </T.Mesh>
@@ -2842,12 +2883,18 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -          roughness={0.3}
 -          metalness={0.2}
 +        <T.Mesh
++          geometry={parts.innerCollar.geometry}
++          material={materials.collar}
++          position={[0, parts.innerCollar.at, 0]}
++          dispose={false}
+         />
+-      </T.Mesh>
++        <T.Mesh
 +          geometry={parts.spine.geometry}
 +          material={materials.spine}
 +          position={[0, parts.spine.at, 0]}
 +          dispose={false}
-         />
--      </T.Mesh>
++        />
 +        {#if parts.outerCollar}
 +          <T.Mesh
 +            geometry={parts.outerCollar.geometry}
@@ -2883,15 +2930,17 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 +  />
  {/if}
 diff --git a/dist/lib/components/props/Triad3D.svelte.d.ts b/dist/lib/components/props/Triad3D.svelte.d.ts
-index 7ec89746ee76fa5d9efb81fa3b3101c2256ea95a..79654317c962e02c7345af3d7dca3a327b7ee696 100644
+index 7ec89746ee76fa5d9efb81fa3b3101c2256ea95a..160a1cd140617e6277a3dc6949a20bb1cb2e29dd 100644
 --- a/dist/lib/components/props/Triad3D.svelte.d.ts
 +++ b/dist/lib/components/props/Triad3D.svelte.d.ts
-@@ -1,5 +1,7 @@
+@@ -1,5 +1,9 @@
  import type { Prop3DProps } from "./Prop3DProps";
 -declare const Triad3D: import("svelte").Component<Prop3DProps, {}, "">;
 +import { type FrameVariant } from "./frame-materials";
++import { type WickFrameProp } from "./triad-frame";
 +declare const Triad3D: import("svelte").Component<Prop3DProps & {
 +    variant?: FrameVariant;
++    frame?: WickFrameProp;
 +}, {}, "">;
  type Triad3D = ReturnType<typeof Triad3D>;
  export default Triad3D;
@@ -4422,7 +4471,7 @@ index ec4e1d1b822aeb9661dfb0d838ba06684737fd83..d8c709b915835fdcb8e67d672a013c91
  /**
   * Registry of available GLTF prop models.
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
-index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049906bcfeb 100644
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a70b59176 100644
 --- a/dist/lib/components/props/prop-model-registry.js
 +++ b/dist/lib/components/props/prop-model-registry.js
 @@ -25,6 +25,35 @@ function modelUrl(filename) {
@@ -4461,7 +4510,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049
  /**
   * Registry of available GLTF prop models.
   *
-@@ -32,8 +61,49 @@ function modelUrl(filename) {
+@@ -32,8 +61,54 @@ function modelUrl(filename) {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY = {
@@ -4506,6 +4555,11 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049
 +        scale: 1,
 +        gripOffsetY: 0,
 +    },
++    [PropType.CAPSULE_BATON]: {
++        modelUrl: modelUrl("capsule-baton.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
 +};
 +/** Smaller prop families that reuse an authored base model. */
 +export const SHARED_MODEL_VARIANT_MAP = {
@@ -4513,7 +4567,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049
  };
  /**
   * Look up a GLTF model for a prop type. Returns null if no model
-@@ -49,11 +119,13 @@ export function getPropModel(propType) {
+@@ -49,11 +124,13 @@ export function getPropModel(propType) {
  export const BIG_VARIANT_MAP = {
      [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
      [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -4529,7 +4583,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..48f2d721d7dfdd3e2a3af4302b2e5049
      [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
      [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
      [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -72,6 +144,15 @@ export function resolvePropModel(propType) {
+@@ -72,6 +149,15 @@ export function resolvePropModel(propType) {
      const direct = getPropModel(propType);
      if (direct)
          return { entry: direct, scale: direct.scale };
@@ -4659,12 +4713,30 @@ index 0000000000000000000000000000000000000000..cae50b5de022a45b1dc71dda68d0bbb3
 +};
 diff --git a/dist/lib/components/props/triad-frame.d.ts b/dist/lib/components/props/triad-frame.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..4b3b5655b957fa549298d426338ed3e49258ea77
+index 0000000000000000000000000000000000000000..11a21ba0fb8b03da162572f5bc8a6faafa881b5f
 --- /dev/null
 +++ b/dist/lib/components/props/triad-frame.d.ts
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,66 @@
 +/** Hub centre to the centre of a tip, as a fraction of staff length. */
 +export declare const TRIAD_ARM_LENGTH: number;
++/**
++ * The quiad's arm is a little SHORTER than the triad's: it is not a triad with
++ * a fourth spine welded on. 0.44707 x 104.17 / 107.8, the ratio of the two
++ * props' shipped 2D tip points.
++ */
++export declare const QUIAD_ARM_LENGTH: number;
++/**
++ * What actually separates one wick-frame prop from another: how many arms leave
++ * the hub, and how far each one reaches.
++ */
++export interface WickFrameProp {
++    /** Arms out of the hub, evenly spaced around it. */
++    readonly arms: number;
++    /** Hub centre to a wick centre, as a fraction of staff length. */
++    readonly armLength: number;
++}
++export declare const TRIAD_PROP: WickFrameProp;
++export declare const QUIAD_PROP: WickFrameProp;
 +export interface TriadSection {
 +    /** Distance from the hub to the near end, in arm lengths. */
 +    readonly from: number;
@@ -4713,11 +4785,12 @@ index 0000000000000000000000000000000000000000..4b3b5655b957fa549298d426338ed3e4
 +export declare const TRIAD_DAY: TriadFrame;
 diff --git a/dist/lib/components/props/triad-frame.js b/dist/lib/components/props/triad-frame.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..eb807d377db5723709de59f052ea5a7cc565b46e
+index 0000000000000000000000000000000000000000..f9ef62f75aad09ff54285a4e7ba9b5e7adce5b56
 --- /dev/null
 +++ b/dist/lib/components/props/triad-frame.js
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,38 @@
 +const TRIAD_ARM_LENGTH = 0.44707;
++const QUIAD_ARM_LENGTH = 0.43202;
 +const REACH = 1.104;
 +const TRIAD_FIRE = {
 +  hubArm: { from: 0.095, to: 0.26, radius: 0.03, radiusEnd: 0.022 },
@@ -4738,10 +4811,21 @@ index 0000000000000000000000000000000000000000..eb807d377db5723709de59f052ea5a7c
 +  ringTube: 0.03,
 +  fillet: 0.016
 +};
++const TRIAD_PROP = {
++  arms: 3,
++  armLength: TRIAD_ARM_LENGTH
++};
++const QUIAD_PROP = {
++  arms: 4,
++  armLength: QUIAD_ARM_LENGTH
++};
 +export {
++  QUIAD_ARM_LENGTH,
++  QUIAD_PROP,
 +  TRIAD_ARM_LENGTH,
 +  TRIAD_DAY,
-+  TRIAD_FIRE
++  TRIAD_FIRE,
++  TRIAD_PROP
 +};
 diff --git a/dist/lib/components/props/triquetra-profile.d.ts b/dist/lib/components/props/triquetra-profile.d.ts
 new file mode 100644
@@ -4871,6 +4955,30 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  TRIQUETRA_RIBBON_WIDTH,
 +  buildTriquetraShape
 +};
+diff --git a/dist/lib/domain/enums/PropType.d.ts b/dist/lib/domain/enums/PropType.d.ts
+index 99cbd14ea7c5d0a22c1af6a8937375c15c9214a5..d5aef31b86d89bcc04a5c8b7d4b7214b2eca4f96 100644
+--- a/dist/lib/domain/enums/PropType.d.ts
++++ b/dist/lib/domain/enums/PropType.d.ts
+@@ -32,6 +32,7 @@ export declare enum PropType {
+     DOUBLECONTACTBALL = "doublecontactball",
+     BIGDOUBLECONTACTBALL = "bigdoublecontactball",
+     QUIAD = "quiad",
++    CAPSULE_BATON = "capsule_baton",
+     TORCH = "torch",
+     BIGTORCH = "bigtorch",
+     POI = "poi"
+diff --git a/dist/lib/domain/enums/PropType.js b/dist/lib/domain/enums/PropType.js
+index 15844ec32763c63fe4955b8c893dbcdd5156ff4b..5be6007795a731071d4b21813fc965cbc417c9b7 100644
+--- a/dist/lib/domain/enums/PropType.js
++++ b/dist/lib/domain/enums/PropType.js
+@@ -33,6 +33,7 @@ export var PropType;
+     PropType["DOUBLECONTACTBALL"] = "doublecontactball";
+     PropType["BIGDOUBLECONTACTBALL"] = "bigdoublecontactball";
+     PropType["QUIAD"] = "quiad";
++    PropType["CAPSULE_BATON"] = "capsule_baton";
+     PropType["TORCH"] = "torch";
+     PropType["BIGTORCH"] = "bigtorch";
+     PropType["POI"] = "poi";
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
 index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
 --- a/dist/lib/index.d.ts
@@ -10975,7 +11083,7 @@ index 9ffc2413236b11d28d99f53884e6a696741e3333..753bdde1f61dddf9c478523845318907
 +  />
  {/if}
 diff --git a/src/lib/components/props/Prop3D.svelte b/src/lib/components/props/Prop3D.svelte
-index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a086411a94 100644
+index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..a37dddb635ab2dee962cf7479da85142831ea1a9 100644
 --- a/src/lib/components/props/Prop3D.svelte
 +++ b/src/lib/components/props/Prop3D.svelte
 @@ -13,6 +13,7 @@
@@ -10986,7 +11094,15 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
    import GltfProp3D from "./GltfProp3D.svelte";
  
    // Procedural fallback geometry components
-@@ -87,9 +88,17 @@
+@@ -25,6 +26,7 @@
+   import Sword3D from "./Sword3D.svelte";
+   import Buugeng3D from "./Buugeng3D.svelte";
+   import Triad3D from "./Triad3D.svelte";
++  import { QUIAD_PROP } from "./triad-frame";
+   import Doublestar3D from "./Doublestar3D.svelte";
+   import Chicken3D from "./Chicken3D.svelte";
+   import Guitar3D from "./Guitar3D.svelte";
+@@ -87,9 +89,17 @@
      <Fan3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIAD}
@@ -11006,7 +11122,7 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.MINIHOOP}
      <Hoop3D {propState} {color} {visible} {isActivePlayer} {length} />
-@@ -102,10 +111,19 @@
+@@ -102,10 +112,19 @@
      <Buugeng3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
  
    {:else if propType === PropType.TRIGENG}
@@ -11028,6 +11144,23 @@ index 8f023f7b8a3dc4f441fc086719b929b5b56e9c74..098e41ea8c811495d84909022cf992a0
  
    {:else if propType === PropType.SWORD}
      <Sword3D {propState} {color} {visible} {isActivePlayer} {length} />
+@@ -140,7 +159,15 @@
+     <Ball3D {propState} {color} {visible} {isActivePlayer} {length} scale={BIG_SCALE} />
+ 
+   {:else if propType === PropType.QUIAD}
+-    <Triad3D {propState} {color} {visible} {isActivePlayer} {length} />
++    <Triad3D
++      {propState}
++      {color}
++      {visible}
++      {isActivePlayer}
++      {length}
++      frame={QUIAD_PROP}
++      variant={propFinishState.finish}
++    />
+ 
+   {:else if propType === PropType.TORCH}
+     <Torch3D {propState} {color} {visible} {isActivePlayer} {length} />
 diff --git a/src/lib/components/props/Torch3D.svelte b/src/lib/components/props/Torch3D.svelte
 index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a008bdee91 100644
 --- a/src/lib/components/props/Torch3D.svelte
@@ -11262,18 +11395,19 @@ index dd84811c1cc9986fb72430bd3e94e3233da61684..9c5934551096a8124821406d3ea0e3a0
 +  />
  {/if}
 diff --git a/src/lib/components/props/Triad3D.svelte b/src/lib/components/props/Triad3D.svelte
-index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671e45b4ce0 100644
+index f2e76efafe1854c93461f47e9b16c32400ca3dca..b3f79749eee31ad401d6191162af556e17468711 100644
 --- a/src/lib/components/props/Triad3D.svelte
 +++ b/src/lib/components/props/Triad3D.svelte
-@@ -1,152 +1,174 @@
+@@ -1,152 +1,196 @@
 +<script module lang="ts">
 +  import { BufferGeometry, TorusGeometry } from "three";
 +  import {
-+    TRIAD_ARM_LENGTH,
 +    TRIAD_DAY,
 +    TRIAD_FIRE,
++    TRIAD_PROP,
 +    type TriadFrame,
 +    type TriadSection,
++    type WickFrameProp,
 +  } from "./triad-frame";
 +  import { roundedCylinder } from "./prop-lathe";
 +  import { getFrameMaterials, type FrameVariant } from "./frame-materials";
@@ -11314,13 +11448,13 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 +    };
 +  }
 +
-+  function getTriadParts(length: number, variant: FrameVariant): TriadParts {
-+    const key = `${length}:${variant}`;
++  /** `arm` is the absolute hub-to-wick-centre distance, already scaled. */
++  function getTriadParts(arm: number, variant: FrameVariant): TriadParts {
++    const key = `${arm}:${variant}`;
 +    const cached = builds.get(key);
 +    if (cached) return cached;
 +
 +    const frame = FRAMES[variant];
-+    const arm = TRIAD_ARM_LENGTH * length;
 +    const parts: TriadParts = {
 +      hubArm: turn(frame.hubArm, arm, frame.fillet),
 +      innerCollar: turn(frame.innerCollar, arm, frame.fillet * 0.5),
@@ -11340,8 +11474,19 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 +    return parts;
 +  }
 +
-+  /** One arm pointing +Y, the other two swung back 120 degrees each. */
-+  const ARM_ANGLES = [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3];
++  /** One arm pointing +Y, the rest swung back in equal steps around the hub. */
++  const angles = new Map<number, readonly number[]>();
++
++  function armAngles(arms: number): readonly number[] {
++    const cached = angles.get(arms);
++    if (cached) return cached;
++    const spread = Array.from(
++      { length: arms },
++      (_unused, index) => (index * 2 * Math.PI) / arms
++    );
++    angles.set(arms, spread);
++    return spread;
++  }
 +</script>
 +
  <script lang="ts">
@@ -11355,10 +11500,14 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -   * - Small sphere caps at each arm tip
 -   * - Grip is at the center hub
 -   * - Trail indicator sphere for path visualization
-+   * A hub with a finger ring, three spines out of it at 120 degrees, and a wick
-+   * on the end of each — the object people actually hold, not the pictograph's
++   * A hub with a finger ring, N spines out of it at even angles, and a wick on
++   * the end of each — the object people actually hold, not the pictograph's
 +   * silhouette given depth. `triad-frame.ts` carries the dimensions and the
 +   * reason there are two builds of it.
++   *
++   * Two props run through here. `frame` picks which: `TRIAD_PROP` is three arms
++   * at 120 degrees, `QUIAD_PROP` is four at 90 with a slightly shorter reach.
++   * Everything else about them is the same object.
     *
 -   * Each arm is ~45% of staffLength. The Y-shape lies flat so the arms
 -   * spread in the local XY plane from the center hub.
@@ -11391,7 +11540,11 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
      scale = 1,
 -  }: Prop3DProps = $props();
 +    variant = "fire",
-+  }: Prop3DProps & { variant?: FrameVariant } = $props();
++    frame = TRIAD_PROP,
++  }: Prop3DProps & {
++    variant?: FrameVariant;
++    frame?: WickFrameProp;
++  } = $props();
  
    const propLayer = $derived(isActivePlayer ? LAYER_PLAYER_BODY : LAYER_WORLD);
  
@@ -11408,7 +11561,9 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
    );
  
 -  const palette = $derived(PROP_COLORS[color]);
-+  const parts = $derived(getTriadParts(effectiveLength, variant));
++  const parts = $derived(
++    getTriadParts(frame.armLength * effectiveLength, variant)
++  );
 +  const materials = $derived(getFrameMaterials(color, variant));
  
    const rotation = $derived(computePropRotation(propState));
@@ -11492,18 +11647,12 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -          color={palette.main}
 -          roughness={0.3}
 -          metalness={0.2}
-+    {#each ARM_ANGLES as angle}
++    {#each armAngles(frame.arms) as angle}
 +      <T.Group rotation={[0, 0, angle]}>
 +        <T.Mesh
 +          geometry={parts.hubArm.geometry}
 +          material={materials.hub}
 +          position={[0, parts.hubArm.at, 0]}
-+          dispose={false}
-+        />
-+        <T.Mesh
-+          geometry={parts.innerCollar.geometry}
-+          material={materials.collar}
-+          position={[0, parts.innerCollar.at, 0]}
 +          dispose={false}
          />
 -      </T.Mesh>
@@ -11516,12 +11665,18 @@ index f2e76efafe1854c93461f47e9b16c32400ca3dca..4dbdb0e28a33c35a20cfa72be1778671
 -          roughness={0.3}
 -          metalness={0.2}
 +        <T.Mesh
++          geometry={parts.innerCollar.geometry}
++          material={materials.collar}
++          position={[0, parts.innerCollar.at, 0]}
++          dispose={false}
+         />
+-      </T.Mesh>
++        <T.Mesh
 +          geometry={parts.spine.geometry}
 +          material={materials.spine}
 +          position={[0, parts.spine.at, 0]}
 +          dispose={false}
-         />
--      </T.Mesh>
++        />
 +        {#if parts.outerCollar}
 +          <T.Mesh
 +            geometry={parts.outerCollar.geometry}
@@ -13288,7 +13443,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17
    });
  }
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
-index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c66286a535bc 100644
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf5eb28427 100644
 --- a/src/lib/components/props/prop-model-registry.ts
 +++ b/src/lib/components/props/prop-model-registry.ts
 @@ -20,6 +20,16 @@ export interface PropModelEntry {
@@ -13353,7 +13508,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c662
  /**
   * Registry of available GLTF prop models.
   *
-@@ -46,8 +94,62 @@ function modelUrl(filename: string): string {
+@@ -46,8 +94,76 @@ function modelUrl(filename: string): string {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
@@ -13408,6 +13563,20 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c662
 +    scale: 1,
 +    gripOffsetY: 0,
 +  },
++  /**
++   * LED capsule baton, built from static/images/props/pictograph/capsule_baton.svg
++   * by scripts/build-capsule-baton-model.py. Bilateral, so the drawing's viewBox
++   * center is already the grip and neither offset nor flip applies.
++   *
++   * TKA_Baton_LED_Recolor is the only material carrying the recolor marker, so
++   * blue/red identity lives in the two lit ends and the silver hardware between
++   * them survives untouched -- the same split the 2D artwork uses.
++   */
++  [PropType.CAPSULE_BATON]: {
++    modelUrl: modelUrl("capsule-baton.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
 +};
 +
 +/** Smaller prop families that reuse an authored base model. */
@@ -13418,7 +13587,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c662
  };
  
  /**
-@@ -67,11 +169,13 @@ export const BIG_VARIANT_MAP: Partial<
+@@ -67,11 +183,13 @@ export const BIG_VARIANT_MAP: Partial<
  > = {
    [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
    [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -13434,7 +13603,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..70d5ba7b2fd59c22dd305dfb7155c662
    [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
    [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
    [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -93,6 +197,16 @@ export function resolvePropModel(
+@@ -93,6 +211,16 @@ export function resolvePropModel(
    const direct = getPropModel(propType);
    if (direct) return { entry: direct, scale: direct.scale };
  
@@ -13601,14 +13770,15 @@ index 0000000000000000000000000000000000000000..764b15386348c9e9bdd2ae3701d14199
 +export const TORCH_REACH = 0.59335;
 diff --git a/src/lib/components/props/triad-frame.ts b/src/lib/components/props/triad-frame.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..9fafb5a90c8d9134dd36259781d40ad574fc0dc3
+index 0000000000000000000000000000000000000000..c3e88a14abd46aa706641905aad0885d801a6c71
 --- /dev/null
 +++ b/src/lib/components/props/triad-frame.ts
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,134 @@
 +/**
 + * Triad frame
 + *
-+ * A triad is not a flat plate. `triad.svg` draws a solid three-armed star
++ * The frame two props share: the triad, and the quiad that is the same build
++ * with a fourth arm. A triad is not a flat plate. `triad.svg` draws a solid three-armed star
 + * because a pictograph needs one readable silhouette, but the object in your
 + * hand is a frame: a small hub with a finger ring, three straight spines out of
 + * it at 120 degrees, and a wick on the end of each spine. Extruding the
@@ -13633,6 +13803,41 @@ index 0000000000000000000000000000000000000000..9fafb5a90c8d9134dd36259781d40ad5
 +
 +/** Hub centre to the centre of a tip, as a fraction of staff length. */
 +export const TRIAD_ARM_LENGTH = 0.44707;
++
++/**
++ * The quiad's arm is a little SHORTER than the triad's, which is easy to miss:
++ * it is not a triad with a fourth spine welded on.
++ *
++ * Both reaches come from the shipped 2D tip points, because those are what the
++ * mandala radius and the trail geometry already measure against. A triad's wick
++ * centre sits 107.8 pictograph units from the hand; a quiad's sits 104.17
++ * (`prop-tip-points.ts`, and quiad.svg marks the hand with a cut-out circle at
++ * the viewBox centre). Scaling the triad's staff fraction by that ratio --
++ * 0.44707 x 104.17 / 107.8 -- is what keeps 2D and 3D drawing one reach.
++ */
++export const QUIAD_ARM_LENGTH = 0.43202;
++
++/**
++ * What actually separates one wick-frame prop from another: how many arms leave
++ * the hub, and how far each one reaches. Everything else -- hub, ring, collars,
++ * spine, wick, and both builds of them -- is shared.
++ */
++export interface WickFrameProp {
++  /** Arms out of the hub, evenly spaced around it. */
++  readonly arms: number;
++  /** Hub centre to a wick centre, as a fraction of staff length. */
++  readonly armLength: number;
++}
++
++export const TRIAD_PROP: WickFrameProp = {
++  arms: 3,
++  armLength: TRIAD_ARM_LENGTH,
++};
++
++export const QUIAD_PROP: WickFrameProp = {
++  arms: 4,
++  armLength: QUIAD_ARM_LENGTH,
++};
 +
 +/** How far past the arm's centre-line end the tip reaches, in arm lengths. */
 +const REACH = 1.104;
@@ -13895,6 +14100,18 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  ];
 +  return shape;
 +}
+diff --git a/src/lib/domain/enums/PropType.ts b/src/lib/domain/enums/PropType.ts
+index a6a29aa9b928eb98fc102f572da1ed2035c658ba..92637e5dbce2174ecdfbbbc409d29430b751842e 100644
+--- a/src/lib/domain/enums/PropType.ts
++++ b/src/lib/domain/enums/PropType.ts
+@@ -32,6 +32,7 @@ export enum PropType {
+ 	DOUBLECONTACTBALL = "doublecontactball",
+ 	BIGDOUBLECONTACTBALL = "bigdoublecontactball",
+ 	QUIAD = "quiad",
++	CAPSULE_BATON = "capsule_baton",
+ 	TORCH = "torch",
+ 	BIGTORCH = "bigtorch",
+ 	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
 index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11dc296c0e 100644
 --- a/src/lib/index.ts

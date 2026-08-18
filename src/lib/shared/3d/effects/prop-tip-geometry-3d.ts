@@ -46,11 +46,13 @@ const CLUB_REACH_M = 0.50343;
 const TORCH_REACH_RATIO = 0.59335;
 
 /**
- * Hand to the blade apex, as a fraction of staff length. `Sword3D.svelte`
- * stacks blade sections on a blade of 0.8 x staffLength: lower 60%, upper 35%,
- * tip cone 8%, so the apex lands at 0.8 x 1.03.
+ * Hand to the blade apex, as a fraction of staff length. `sword.glb` authors a
+ * 34.00in prop with its origin on the cross-guard, where `sword.svg` puts the
+ * hand: 20.98in of blade forward, 13.02in of hilt back, both gated by
+ * `scripts/verify-sword-glb.cjs`. The old 0.824 described the procedural stack
+ * the GLB replaced, and left the tracked tip about 7in past the point.
  */
-const SWORD_REACH_RATIO = 0.824;
+const SWORD_REACH_RATIO = 0.61706;
 
 /**
  * Hand to the far rim, as a fraction of staff length — the outer contour of
@@ -68,6 +70,13 @@ const HOOP_REACH_RATIO = 0.7;
 
 /** Hand to an arm end, as a fraction of staff length — `triad-frame.ts` `TRIAD_ARM_LENGTH`. */
 const TRIAD_REACH_RATIO = 0.44707;
+
+/**
+ * The quiad's own arm — `triad-frame.ts` `QUIAD_ARM_LENGTH`. Shorter than the
+ * triad's, because quiad.svg draws a shorter one; it shared the triad's number
+ * only while it was rendering as a three-armed prop.
+ */
+const QUIAD_REACH_RATIO = 0.43202;
 
 /**
  * Single-ended props whose 3D mesh reaches somewhere other than half a staff.
@@ -100,8 +109,34 @@ const SINGLE_ENDED_REACH_3D: Partial<
   [PropType.TRIAD]: (staffLength) => staffLength * TRIAD_REACH_RATIO,
   [PropType.BIGTRIAD]: (staffLength) =>
     staffLength * TRIAD_REACH_RATIO * BIG_SCALE,
-  // Quiad renders through Triad3D, so it inherits the triad's arm.
-  [PropType.QUIAD]: (staffLength) => staffLength * TRIAD_REACH_RATIO,
+  [PropType.QUIAD]: (staffLength) => staffLength * QUIAD_REACH_RATIO,
+};
+
+/**
+ * Hand to a lit cap's glow centre, in metres. `capsule-baton.glb` authors an
+ * 0.8636m prop whose caps close at +/-0.4318, but the glow reads from the
+ * middle of each cap, at +/-0.39969 — `tracked_tip_y` in the model's root
+ * extras -- printed by `scripts/build-capsule-baton-model.py` and gated by
+ * `scripts/verify-capsule-baton-glb.cjs`. Emitting from the mesh end instead
+ * would float each effect about 32mm past its cap.
+ *
+ * Absolute, not a ratio: like the club, a GLB prop is a fixed-size object and
+ * does not follow the user's staff length.
+ */
+const CAPSULE_BATON_REACH_M = 0.3996883;
+
+/**
+ * Two-ended props whose ends sit somewhere other than half a staff from the
+ * hand. Keyed by prop type, valued in metres given the staff length in metres.
+ *
+ * A prop absent from this table falls back to `staffHalfLength`, which is exact
+ * for the staff family and its bilateral relatives (doublestar, buugeng,
+ * eightrings, triquetra) whose 3D geometry is built from that half-length.
+ */
+const TWO_ENDED_REACH_3D: Partial<
+  Record<PropType, (staffLength: number) => number>
+> = {
+  [PropType.CAPSULE_BATON]: () => CAPSULE_BATON_REACH_M,
 };
 
 /**
@@ -135,20 +170,33 @@ function singleEndedReach3D(
   return reach ? reach(staffHalfLength * 2) : staffHalfLength;
 }
 
+/** Reach of one end of a two-ended prop, in metres. */
+function twoEndedReach3D(
+  propType: string | undefined,
+  staffHalfLength: number
+): number {
+  const reach = propType
+    ? TWO_ENDED_REACH_3D[propType as PropType]
+    : undefined;
+  return reach ? reach(staffHalfLength * 2) : staffHalfLength;
+}
+
 /**
  * The tracked effect emitters for a prop, in effect-slot order.
  *
- * Two-ended props keep the staff-family pair at +/- staffHalfLength. Everything
- * else returns exactly one anchor, on slot 1.
+ * Two-ended props get a symmetric pair, half a staff out unless
+ * `TWO_ENDED_REACH_3D` says otherwise. Everything else returns exactly one
+ * anchor, on slot 1.
  */
 export function resolvePropTipAnchors3D(
   propType: string | undefined,
   staffHalfLength: number
 ): PropTipAnchor3D[] {
   if (isTwoEnded3D(propType)) {
+    const reach = twoEndedReach3D(propType, staffHalfLength);
     return [
-      { effectTipIndex: 0, axialOffset: -staffHalfLength },
-      { effectTipIndex: 1, axialOffset: staffHalfLength },
+      { effectTipIndex: 0, axialOffset: -reach },
+      { effectTipIndex: 1, axialOffset: reach },
     ];
   }
 
