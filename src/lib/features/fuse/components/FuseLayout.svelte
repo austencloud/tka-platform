@@ -16,6 +16,7 @@
   import {
     fitsFuseRecipeColumn,
     getBestFuseStepColumns,
+    negotiateFuseColumnWidths,
     resolveBalancedFuseWorkspaceSplit,
   } from "../services/fuse-workspace-split";
   import { getFuseContext } from "../context/fuse-context";
@@ -63,8 +64,8 @@
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const LAPTOP_MIN_LEFT = 560;
-  const WIDE_MIN_LEFT = 720;
-  const WIDE_MIN_LEFT_CAP = 1050;
+  const WIDE_COMFORT = 720; // wide screens: what the paths AND the result each want
+  const WIDE_COMFORT_CAP = 1050;
   const WIDE_MAX_LEFT = 1400;
   const NATIVE_4K_MAX_LEFT = 2000;
   const NATIVE_4K_CANVAS_FLOOR = 1200;
@@ -121,20 +122,69 @@
     canvasFloor: CANVAS_FLOOR,
     columnGap: CARD_GAP,
   };
+  // Measured against the grid's own content box, not the outer container: the
+  // workspace has padding, and gating on the wider number let three columns
+  // open into a grid ~40px too narrow to seat them. Every column landed on its
+  // hard floor and the row still overflowed.
   const recipeColumn = $derived(
     fullCard &&
       settingsOpen &&
-      fitsFuseRecipeColumn(containerWidth, RECIPE_COLUMN_FIT)
+      fitsFuseRecipeColumn(
+        workspaceGridWidth || containerWidth,
+        RECIPE_COLUMN_FIT
+      )
   );
-  // Target width is computed whether or not the recipe is open, so the panel can
-  // be laid out at its final size and revealed by the growing track. A panel
-  // that instead sizes to a 0→620px track spends the whole animation squished,
-  // reflowing its own contents every frame.
-  const recipeTargetWidth = $derived(
-    Math.round(
-      Math.min(RECIPE_MAX_W, Math.max(RECIPE_MIN_W, containerWidth * 0.26))
-    )
+  // What the three columns are worth to each other. Each states the width it
+  // wants and the width it can survive on, and any shortfall is shared between
+  // all three rather than dropped on whichever one has no floor of its own —
+  // see `negotiateFuseColumnWidths`.
+  const columnBudget = (recipeOpen: boolean) =>
+    Math.max(
+      0,
+      (workspaceGridWidth || containerWidth) -
+        (recipeOpen ? 2 : 1) * (workspaceColumnGap || CARD_GAP)
+    );
+
+  // The two work areas want the same width as each other, and on wide screens
+  // that want grows with the window: a fixed 720 left a 4K workspace looking
+  // like a laptop layout with dead rail on both sides.
+  const workComfort = (budget: number) =>
+    wideWorkspace
+      ? Math.round(
+          Math.min(WIDE_COMFORT_CAP, Math.max(WIDE_COMFORT, budget * 0.3))
+        )
+      : containerWidth >= 1180
+        ? LAPTOP_MIN_LEFT
+        : MIN_LEFT;
+  const settleColumnWidths = (recipeOpen: boolean) => {
+    const budget = columnBudget(recipeOpen);
+    const work = workComfort(budget);
+    return negotiateFuseColumnWidths(budget, {
+      path: { comfort: work, floor: MIN_LEFT },
+      canvas: { comfort: Math.max(CANVAS_FLOOR, work), floor: CANVAS_FLOOR },
+      // A recipe that always took its flat quarter of the window was not a
+      // party to the negotiation at all — it simply billed the other two. It
+      // now concedes with them, down to the width its editors stop fitting in.
+      recipe: recipeOpen
+        ? {
+            comfort: Math.min(
+              RECIPE_MAX_W,
+              Math.max(RECIPE_MIN_W, containerWidth * 0.26)
+            ),
+            floor: RECIPE_MIN_W,
+          }
+        : { comfort: 0, floor: 0 },
+    });
+  };
+  // Two settlements: the recipe panel has to be laid out at its open width even
+  // while it is shut, so the panel can be revealed by the growing track instead
+  // of sizing to it. A panel that sized to a 0→620px track would spend the
+  // whole animation squished, reflowing its own contents every frame.
+  const openColumnWidths = $derived(settleColumnWidths(true));
+  const columnWidths = $derived(
+    recipeColumn ? openColumnWidths : settleColumnWidths(false)
   );
+  const recipeTargetWidth = $derived(openColumnWidths.recipe);
   const recipeColumnWidth = $derived(recipeColumn ? recipeTargetWidth : 0);
 
   // The grid track animating open is the one moment on this page where the
@@ -216,33 +266,36 @@
   // 160px granularity AND step count: a saved seam restores on the same screen,
   // but a different window OR a different length (differently shaped card) each
   // gets its own default and its own remembered override.
-  const bucketOf = (w: number, h: number, steps: number) =>
-    `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
-  const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
+  //
+  // Whether the recipe is showing is part of the identity too. A seam dragged
+  // with two columns on screen is a preference about two columns; replaying it
+  // over three handed the paths the width they had to themselves and left the
+  // result whatever was after it, which at 2560 was its bare floor. Each layout
+  // now remembers its own seam.
+  const bucketOf = (
+    w: number,
+    h: number,
+    steps: number,
+    withRecipe: boolean
+  ) =>
+    `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}${
+      withRecipe ? "r" : ""
+    }`;
+  const deviceBucket = $derived(
+    bucketOf(containerWidth, contentH, stepCount, recipeColumn)
+  );
 
-  // The recipe column takes its width off the top before the seam is solved, so
-  // opening it narrows the paths and the result proportionally instead of
-  // pushing the result off the edge.
+  // The recipe column takes its settled width off the top before the seam is
+  // solved, so opening it narrows the paths and the result instead of pushing
+  // the result off the edge.
   const splitAvailableWidth = () =>
     Math.max(
       CANVAS_FLOOR + MIN_LEFT,
-      (workspaceGridWidth || containerWidth) -
-        (recipeColumnWidth > 0 ? recipeColumnWidth + workspaceColumnGap : 0)
+      columnBudget(recipeColumnWidth > 0) - recipeColumnWidth
     );
-  const desiredMinLeft = () =>
-    wideWorkspace
-      ? Math.round(
-          Math.min(
-            WIDE_MIN_LEFT_CAP,
-            Math.max(WIDE_MIN_LEFT, splitAvailableWidth() * 0.3)
-          )
-        )
-      : containerWidth >= 1180
-        ? LAPTOP_MIN_LEFT
-        : MIN_LEFT;
   const minLeft = () =>
     Math.min(
-      desiredMinLeft(),
+      columnWidths.path,
       Math.max(MIN_LEFT, splitAvailableWidth() - CANVAS_FLOOR)
     );
   const maxLeft = () => {
@@ -266,6 +319,18 @@
   // height-capped square. Both sides receive the same proportion of their ideal
   // width before the usability floors apply, so resizing never privileges one
   // pane merely because it was scored first.
+  //
+  // The result's settled width bounds the seam from the other side. Without it
+  // the paths column had a floor beneath it and the result had none, so opening
+  // the recipe pushed the seam right until the animation was the only thing
+  // that had given anything up. A drag can still pass this — reaching for the
+  // handle is the user saying which pane they want the space in — but nothing
+  // the layout decides on its own crosses it.
+  const defaultMaxLeft = () =>
+    Math.max(
+      minLeft(),
+      Math.min(maxLeft(), splitAvailableWidth() - columnWidths.canvas)
+    );
   function optimalSplit(): number {
     const previewIdealWidth = Math.max(
       CANVAS_FLOOR,
@@ -277,7 +342,7 @@
       stepCount,
       previewIdealWidth,
       minLeft: minLeft(),
-      maxLeft: maxLeft(),
+      maxLeft: defaultMaxLeft(),
       cardHorizontalChrome: CARD_HPAD,
     }).splitPx;
   }
@@ -292,15 +357,23 @@
   });
 
   // Read the grid's content box instead of guessing from the outer container.
-  // ResizeObserver excludes padding; subtracting the live column gap leaves the
-  // exact width the two tracks negotiate over at every responsive tier.
+  // ResizeObserver excludes padding, so this is the whole width the tracks
+  // divide up — gap tracks included, which the column negotiation then spends.
+  //
+  // The gap is read off `row-gap` rather than `column-gap`: the seams between
+  // these columns are real tracks, not a uniform gap, precisely so the recipe's
+  // seam can collapse to nothing on its own, and that left `column-gap` at 0.
+  // Both are the same spacing token, so the row gap still reports it.
   $effect(() => {
     const el = workspaceEl;
     if (!el || typeof ResizeObserver === "undefined") return;
     const measure = (contentWidth: number) => {
-      const columnGap = Number.parseFloat(getComputedStyle(el).columnGap) || 0;
-      workspaceColumnGap = columnGap;
-      workspaceGridWidth = Math.max(0, Math.round(contentWidth - columnGap));
+      const style = getComputedStyle(el);
+      workspaceColumnGap =
+        Number.parseFloat(style.columnGap) ||
+        Number.parseFloat(style.rowGap) ||
+        CARD_GAP;
+      workspaceGridWidth = Math.max(0, Math.round(contentWidth));
     };
     const initialStyle = getComputedStyle(el);
     measure(

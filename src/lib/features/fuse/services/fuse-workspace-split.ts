@@ -200,3 +200,84 @@ export function resolveBalancedFuseWorkspaceSplit(
 
   return { splitPx: bestSplit, stepColumns: bestColumns };
 }
+
+/** What one workspace column asks for, and what it will settle for. */
+export interface FuseColumnDemand {
+  /** Width the column wants when nothing else is competing for the space. */
+  comfort: number;
+  /** Width below which the column stops being usable. */
+  floor: number;
+}
+
+export interface FuseColumnDemands {
+  path: FuseColumnDemand;
+  canvas: FuseColumnDemand;
+  recipe: FuseColumnDemand;
+}
+
+export interface FuseColumnWidths {
+  path: number;
+  canvas: number;
+  recipe: number;
+}
+
+/**
+ * Settles what the three workspace columns get when they cannot all have the
+ * width they want.
+ *
+ * Opening the recipe costs the workspace a whole column, and that cost has to
+ * land somewhere. Left to the seam solver alone it landed almost entirely on
+ * the result: the path column had a comfortable width it refused to go below
+ * and the recipe took a flat share of the window, so the animation — the one
+ * panel showing what every control in the recipe is doing — was the only thing
+ * that shrank, by more than twice what the paths gave up.
+ *
+ * So each column states two widths: what it wants, and what it can survive on.
+ * When the three wants exceed the space, every column gives up the same
+ * fraction of the room it has between those two numbers. A column already near
+ * its floor barely moves; one with room to spare carries more of the cost. No
+ * column is the shock absorber for the other two.
+ *
+ * Pass a recipe demand of zero when the recipe is closed — it then neither
+ * takes space nor counts as a party to the negotiation.
+ */
+export function negotiateFuseColumnWidths(
+  availableWidth: number,
+  demands: FuseColumnDemands
+): FuseColumnWidths {
+  const keys = ["path", "canvas", "recipe"] as const;
+  const totalComfort = keys.reduce((sum, key) => sum + demands[key].comfort, 0);
+  const shortfall = totalComfort - availableWidth;
+
+  if (shortfall <= 0) {
+    return {
+      path: Math.round(demands.path.comfort),
+      canvas: Math.round(demands.canvas.comfort),
+      recipe: Math.round(demands.recipe.comfort),
+    };
+  }
+
+  const give = (key: (typeof keys)[number]) =>
+    Math.max(0, demands[key].comfort - demands[key].floor);
+  const totalGive = keys.reduce((sum, key) => sum + give(key), 0);
+  // Below every floor at once there is nothing left to negotiate: the fit gate
+  // should already have sent the recipe to the sheet, so hand back the floors
+  // and let the grid clip rather than inventing negative widths.
+  if (totalGive <= 0) {
+    return {
+      path: Math.round(demands.path.floor),
+      canvas: Math.round(demands.canvas.floor),
+      recipe: Math.round(demands.recipe.floor),
+    };
+  }
+
+  const conceded = Math.min(shortfall, totalGive) / totalGive;
+  const settle = (key: (typeof keys)[number]) =>
+    Math.round(demands[key].comfort - give(key) * conceded);
+
+  return {
+    path: settle("path"),
+    canvas: settle("canvas"),
+    recipe: settle("recipe"),
+  };
+}
