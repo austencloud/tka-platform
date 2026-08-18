@@ -416,12 +416,18 @@
     container-name: tool-panel;
     --settings-generate-panel-max-height: min(65cqh, 750px);
     --settings-generate-panel-half-max-height: min(32.5cqh, 375px);
+    /* The Level selector is pinned to the top of the settings panel and owns
+       that band outright. Both the toolbar (as its min-height) and the Generate
+       empty state (as its top floor) read this one number, so the empty state
+       cannot drift up over the selector when its content grows. */
+    --generate-level-toolbar-height: 4.75rem;
   }
 
   @media (min-width: 1680px) {
     .tool-panel-container {
       --settings-generate-panel-max-height: min(70cqh, 56rem);
       --settings-generate-panel-half-max-height: min(35cqh, 28rem);
+      --generate-level-toolbar-height: 5.25rem;
     }
   }
 
@@ -429,6 +435,7 @@
     .tool-panel-container {
       --settings-generate-panel-max-height: min(72cqh, 70rem);
       --settings-generate-panel-half-max-height: min(36cqh, 35rem);
+      --generate-level-toolbar-height: 6.25rem;
     }
   }
 
