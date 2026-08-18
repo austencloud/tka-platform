@@ -225,13 +225,23 @@ describe("annotation integrity", () => {
     const kinds = new Set(Object.keys(EMPTY_WORLD.available));
     for (const path of svelteFiles) {
       const source = readFileSync(path, "utf8");
-      // The attribute value: a quoted literal, or a {…} expression which may be
-      // a ternary over literals or a bare identifier (a prop / $derived).
-      // Both quote styles: this repo has single-quoted components too, and a
+      // Two declaration sites, because a kind can be declared one component
+      // away from the element that carries it. `data-ghost-kind` is the raw
+      // attribute; `ghostKind` is the prop that shared primitives
+      // (FilterChipBase, ChipPopoverOption) forward onto it. Scanning only the
+      // attribute reported `filter-option` as uncarried the day four hand-rolled
+      // popover rows were consolidated onto one primitive — the annotation was
+      // intact in the DOM, but its literal now lived in the caller.
+      //
+      // The value: a quoted literal, or a {…} expression which may be a ternary
+      // over literals or a bare identifier (a prop / $derived). Both quote
+      // styles: this repo has single-quoted components too, and a
       // double-quote-only scan silently under-reports (it missed the viewer
       // rail's 'practice' until this test flagged the kind as uncarried).
       const spans = [
-        ...source.matchAll(/data-ghost-kind=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g),
+        ...source.matchAll(
+          /(?:data-ghost-kind|ghostKind)=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g,
+        ),
       ];
       if (!spans.length) continue;
       let indirect = false;
