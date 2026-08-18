@@ -6,6 +6,10 @@ import {
   CYCLE_DURATION_MAX,
   CYCLE_DURATION_MIN,
 } from "$lib/shared/animation-engine/domain/types/led-types";
+import {
+  GLARE_WEIGHT_MAX,
+  GLARE_WEIGHT_MIN,
+} from "$lib/shared/animation-engine/domain/led-photometry";
 
 describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has the current schema version", () => {
@@ -53,8 +57,14 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
     expect(l.look.brightness).toBeGreaterThanOrEqual(1);
     expect(l.look.brightness).toBeLessThanOrEqual(5);
     expect(Number.isInteger(l.look.brightness)).toBe(true);
-    expect(l.look.trailFadeRate).toBeGreaterThan(0);
-    expect(l.look.trailFadeRate).toBeLessThan(1);
+    // The look used to carry `trailFadeRate`, a per-frame persistence decay.
+    // The camera-exposure rewrite replaced that instrument outright: what the
+    // eye or the sensor integrates is now a shutter, and the bloom around a
+    // bright emitter is a glare weight. Asserting the old field passed
+    // `undefined` into a numeric matcher and failed on type, not on value.
+    expect(l.look.shutter.mode).toBe("eye");
+    expect(l.look.glare).toBeGreaterThanOrEqual(GLARE_WEIGHT_MIN);
+    expect(l.look.glare).toBeLessThanOrEqual(GLARE_WEIGHT_MAX);
   });
 
   it("has valid charcoal intent", () => {
