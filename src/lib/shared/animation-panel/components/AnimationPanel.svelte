@@ -90,6 +90,9 @@
      *  provides persistent playback controls beside the canvas. */
     showEffectsPlayback?: boolean;
     selectedPropType?: PropType;
+    /** The loaded sequence. Only the Display page reads it, so the word, glyph,
+     *  and mandala tiles can preview THIS sequence instead of a stand-in. */
+    sequence?: { word?: string | null; steps?: ReadonlyArray<{ letter?: string | null }> | null } | null;
     onPropChange?: (propType: PropType) => void;
     onExport?: () => void;
     onCancel?: () => void;
@@ -125,6 +128,7 @@
     showTempoControls = true,
     showEffectsPlayback = true,
     selectedPropType,
+    sequence = null,
     onPropChange,
     onExport,
     onCancel,
@@ -330,18 +334,16 @@
   const displaySummary = $derived.by(() => {
     void vmVersion;
     const s = vm.getSettings();
-    return computeDisplaySummary(
-      {
-        tkaGlyph: s.tkaGlyph,
-        elementalGlyph: s.elementalGlyph,
-        stepNumbers: s.stepNumbers,
-        props: s.props,
-        wordHeader: s.wordHeader,
-        progressBar: s.progressBar,
-        grid: vm.isGridVisible(),
-      },
-      vm.getPathShape()
-    );
+    return computeDisplaySummary({
+      tkaGlyph: s.tkaGlyph,
+      elementalGlyph: s.elementalGlyph,
+      stepNumbers: s.stepNumbers,
+      props: s.props,
+      wordHeader: s.wordHeader,
+      mandala: s.mandala,
+      pathLines: s.bluePathLines || s.redPathLines,
+      grid: vm.isGridVisible(),
+    });
   });
 
   const propsSummary = $derived(
@@ -401,9 +403,12 @@
 
   // ── Pill specs ──
   // Effects leads the rail — it's the section users reach for most.
-  // The sidebar collapses effort/playback/display into one Motion page; the
-  // mobile dock keeps them as three trays. Membership still comes from
-  // PILL_ORDER via buildPillSpecs, so the two orders cannot drift.
+  // The sidebar collapses effort/playback into one Motion page; the mobile
+  // dock keeps them as two trays. Display is its own pill in both — what the
+  // canvas draws is not motion behavior, and folding it into Motion put the
+  // visibility toggles under a heading that misdescribed them. Membership
+  // still comes from PILL_ORDER via buildPillSpecs, so the two orders cannot
+  // drift.
   // Merging is a property of the layout, not of the width. A width gate here
   // meant Post Studio's 419px inspector showed three pills while the sequence
   // viewer's 663px rail showed one Motion page in the same window — the two
@@ -570,45 +575,29 @@
   {:else if resolvedPill === "display"}
     {@render displayBody()}
   {:else if resolvedPill === "motion"}
-    <!-- Effort, Playback and Display measured at 44% / 36% / 24% of the rail
-         on their own, so the sidebar spent three pages to show three mostly
-         empty columns. Stacked they fill it, and they read as one idea: how
-         the motion behaves and what of it you can see. Effects and Props keep
-         their own pages — those two fill the rail and Props overflows it.
-         Sidebar only; the mobile dock still gets three separate tabs, where
-         one tall merged tray would not fit. -->
+    <!-- Effort and Playback measured at 44% / 36% of the rail on their own, so
+         the sidebar spent two pages to show two mostly empty columns. Stacked
+         they fill it and they read as one idea: how the motion behaves —
+         tempo, playback mode, the shape the hands travel, and how each step
+         speeds up and slows down. Display used to be folded in here too, which
+         put visibility toggles under a heading that claimed they were motion;
+         it has its own pill again. Sidebar only; the mobile dock still gets
+         separate tabs, where one tall merged tray would not fit. -->
     <div class="motion-scope">
       <!-- A host with its own transport bar owns tempo there and passes
-           showTempoControls={false}; with no playback mode either, the left
-           column has nothing to hold and the page runs as one column. -->
+           showTempoControls={false}; with no playback mode either, Tempo and
+           Mode have nothing to hold and Paths runs the full width above
+           Effort instead of stranding an empty second column. -->
       <div class="motion-stack">
-        <!-- Paths goes to whichever column is short. Only a host that wires
-             BOTH tempo and playback mode fills the left column enough to stand
-             against Visibility's nine chips; with just one of them the left
-             column is a single row and Paths evens the two up. A host whose
-             transport owns tempo AND mode (the sequence viewer, Post Studio)
-             leaves this page with two blocks, so they take one column each
-             rather than stacking into a tall single column. -->
         {#if showTempoControls || onPlaybackModeChange}
           <div class="motion-col">
             {@render tempoModeBody()}
-            {#if !(showTempoControls && onPlaybackModeChange)}
-              {@render pathsBody()}
-            {/if}
-          </div>
-          <div class="motion-col">
-            {@render displayBody()}
-            {#if showTempoControls && onPlaybackModeChange}
-              {@render pathsBody()}
-            {/if}
-          </div>
-        {:else}
-          <div class="motion-col">
-            {@render displayBody()}
           </div>
           <div class="motion-col">
             {@render pathsBody()}
           </div>
+        {:else}
+          {@render pathsBody()}
         {/if}
         {@render effortBody(true)}
       </div>
@@ -696,16 +685,19 @@
 {/snippet}
 
 {#snippet displayBody()}
+  <!-- No inner "Visibility" label: Display is its own page in the sidebar and
+       its own tab in the dock, and both already name it. The label was earned
+       back when this block sat inside the merged Motion page, where a heading
+       named for something else needed correcting. -->
   <div class="section-pad display-rows">
-    <div
-      class="rt-section"
-      role="region"
-      aria-labelledby="display-visibility-label"
-    >
-      <span class="rt-section-label" id="display-visibility-label"
-        >Visibility</span
-      >
-      <DisplayPanel {showMotionVisibility} {onSettingChange} />
+    <div class="rt-section" role="region" aria-label="Visibility">
+      <DisplayPanel
+        {showMotionVisibility}
+        {sequence}
+        propType={selectedPropType}
+        fill={layout === "sidebar"}
+        {onSettingChange}
+      />
     </div>
   </div>
 {/snippet}
@@ -1098,16 +1090,16 @@
 
      One column below 528px, two above. The two `.motion-col` wrappers are the
      columns and in single-column mode they simply stack; Effort spans the
-     stack under them either way. Wrappers rather than four grid items, because
-     grid rows are shared: with Tempo, Mode, Visibility and Paths placed
-     individually, the row holding Visibility stretched to Tempo + Mode's
-     height and left a hole under it.
+     stack under them either way. Wrappers rather than bare grid items, because
+     grid rows are shared: with Tempo, Mode and Paths placed individually, the
+     row holding Paths stretched to Tempo + Mode's height and left a hole
+     under it.
 
      Effort is last because it is the least self-explanatory thing here. Tempo
-     and Visibility are controls anyone recognises on sight; Effort and Motion
-     Paths are TKA concepts. Effort held the top slot at full width and was the
-     tallest block on the page, so a rail that had to scroll spent its visible
-     half on the one section a first-time viewer cannot read. */
+     is a control anyone recognises on sight; Effort and Motion Paths are TKA
+     concepts. Effort held the top slot at full width and was the tallest block
+     on the page, so a rail that had to scroll spent its visible half on the
+     one section a first-time viewer cannot read. */
   .motion-stack {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1121,14 +1113,15 @@
     min-width: 0;
   }
 
+  /* Full-width blocks: Effort always, and Paths too on a host whose transport
+     bar owns tempo and mode. `:not(:first-child)` because a divider belongs
+     between blocks, not above the page's first one — Paths leads the stack on
+     those hosts. */
   .motion-stack > :global(.section-pad) {
     grid-column: 1 / -1;
-    margin-top: 4px;
-    padding-top: 20px;
-    border-top: 1px solid var(--theme-stroke);
   }
 
-  .motion-col > :global(.section-pad + .section-pad) {
+  .motion-stack > :global(.section-pad:not(:first-child)) {
     margin-top: 4px;
     padding-top: 20px;
     border-top: 1px solid var(--theme-stroke);
@@ -1226,18 +1219,66 @@
     gap: 8px;
     padding: 4px 12px 10px;
   }
-  /* Visibility: icons add no meaning at chip size and force 96px columns
-     (3 ragged rows). Label-only chips pack the 8 toggles into a clean 4×2.
-     Dock only — the sidebar keeps the roomier iconed grid. */
+  /* Visibility in the dock: four columns, so the four square-layer tiles hold
+     the first row and the four edge-mark tiles hold the second — the same
+     grouping the sidebar shows, in the shortest tray that can carry it. The
+     previews come along; they are the point of the tile, and shrinking one is
+     better than replacing it with a word. */
   .dock-dense :global(.vis-grid) {
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
   }
-  .dock-dense :global(.vis-grid .rt-chip i) {
-    display: none;
+  .dock-dense :global(.vis-grid > *:nth-child(n + 5)) {
+    margin-top: 6px;
   }
+  /* The cap is set above the column width on purpose, so the COLUMN binds and
+     the picture takes the whole tile minus its padding. A 2.25rem cap fit the
+     tray with room to spare and rendered a 36px picture — small enough that
+     the grid read as eight smudges, which is the state this redesign replaced.
+     4rem is the largest picture whose two rows still land inside the capped
+     tray without scrolling. */
   .dock-dense :global(.vis-grid .rt-chip) {
-    padding: 0 4px;
+    gap: 4px;
+    padding: 6px 3px;
+    --tile-art: 4rem;
+  }
+  .dock-dense :global(.vis-grid .chip-label) {
+    font-size: 0.68rem;
+  }
+  /* A tablet's dock is 776px wide with a 250px tray — 4rem is a phone's cap
+     and leaves a 64px picture inside a 190px tile. 5rem is the largest picture
+     whose two rows still clear that tray. */
+  @container (min-width: 30rem) {
+    .dock-dense :global(.vis-grid .rt-chip) {
+      --tile-art: 5rem;
+    }
+  }
+  /* A folded Fold in landscape puts the dock under a 932px-wide, 139px-tall
+     tray. Four columns there is 230px tiles carrying a small picture AND a
+     scroll, because two rows are taller than the tray. Eight columns is one
+     row: the tile narrows to ~114px, the picture GROWS to 6rem because height
+     stops being the binding constraint, and the whole page lands inside the
+     tray. The group boundary moves from a row break to a gap beside the fifth
+     tile, so the four square-field layers still read apart from the four edge
+     marks. A tablet's tall dock takes the same treatment for the same reason
+     read the other way: one row is a SHORTER tray, so the picture ends up
+     bigger AND less of the canvas is covered. The seam is 42rem rather than a
+     rounder 44 because a 820x1180 tablet's dock measures 696px — six pixels
+     under 44rem, which put it back on four columns of 171px tiles carrying an
+     80px picture. */
+  @container (min-width: 42rem) {
+    .dock-dense :global(.vis-grid) {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
+    .dock-dense :global(.vis-grid > *:nth-child(n + 5)) {
+      margin-top: 0;
+    }
+    .dock-dense :global(.vis-grid > *:nth-child(5)) {
+      margin-left: 8px;
+    }
+    .dock-dense :global(.vis-grid .rt-chip) {
+      --tile-art: 6rem;
+    }
   }
   /* Squeeze the last ~15px so Visibility + Motion paths land inside the capped
      tray with NO scroll (the whole tab on one screen). */
@@ -1414,6 +1455,32 @@
     width: 100%;
     max-width: 560px;
     align-self: center;
+  }
+
+  /* Display is eight pictures, not a paragraph: it takes the panel's whole
+     height instead of sitting centred with a third of a 1050px column empty
+     underneath it. That is also what gives the grid a box with a real shape to
+     measure, so a tall narrow rail can choose two columns of big pictures over
+     four columns of small ones. Every other page stays centred — they are
+     prose-height and read better that way. */
+  /* `1 1 0` rather than `1 0 auto`: the box has to be the panel's height and
+     nothing else. A content-based basis makes the height a function of the
+     tiles that are sized from it, and the two chase each other upward until
+     the picture hits its ceiling. */
+  .panel-center-inner:has(.display-rows) {
+    margin: 0;
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-center-inner:has(.display-rows) .display-rows,
+  .panel-center-inner:has(.display-rows) .display-rows .rt-section {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Tracks the viewer's settings column, which widens at the same seams. A cap

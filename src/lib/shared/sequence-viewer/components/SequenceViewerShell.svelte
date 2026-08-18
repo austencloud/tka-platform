@@ -767,6 +767,7 @@
                     renderMode={ctx.renderMode}
                     playbackMode={ctx.playbackMode}
                     selectedPropType={ctx.bluePropType}
+                    sequence={ctx.effectiveSequence}
                     showInlineExportProgress={false}
                     showTempoControls={false}
                     onPropChange={(prop) =>

@@ -2,26 +2,35 @@ export function computePropsSummary(propLabel: string): string {
   return propLabel || "Staff";
 }
 
+/**
+ * The eight toggles the Display page actually renders. `progressBar` is
+ * deliberately absent: on screen it gated the whole transport rather than a
+ * progress bar, so the transport became unconditional and the export-side
+ * progress bar became an Export concern. Counting a switch this page no longer
+ * offers made the denominator lie.
+ */
 export interface DisplayFlags {
   tkaGlyph: boolean;
   elementalGlyph: boolean;
   stepNumbers: boolean;
   props: boolean;
   wordHeader: boolean;
-  progressBar: boolean;
+  mandala: boolean;
+  pathLines: boolean;
   grid: boolean;
 }
 
-export type PathShape = "arc" | "linear" | "concave";
-
-export function computeDisplaySummary(
-  flags: DisplayFlags,
-  pathShape: PathShape,
-): string {
+/**
+ * The Display pill counts what the canvas draws, and nothing else. It used to
+ * append the path shape, from the era when path shape and visibility shared a
+ * section; the shape is motion behavior and now lives under the Motion pill,
+ * so reporting it here described a control the section no longer holds.
+ * Denominator is arity-derived — adding a toggle updates it on its own.
+ */
+export function computeDisplaySummary(flags: DisplayFlags): string {
   const values = Object.values(flags);
   const on = values.filter(Boolean).length;
-  const total = values.length;
-  return `${on} / ${total} visible · ${pathShape}`;
+  return `${on} / ${values.length} visible`;
 }
 
 export function computeEffectsSummary(

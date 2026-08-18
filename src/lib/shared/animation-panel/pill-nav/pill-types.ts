@@ -11,10 +11,13 @@ export const PILL_ORDER = [
   "layers",
   "props",
   "effects",
-  // Sidebar-only composite of effort + playback + display. Those three each
-  // filled well under half the rail alone; the sidebar shows them as one page
-  // and keeps the individual ids for the mobile dock, which shows one tray at
-  // a time and cannot take the merged height.
+  // Sidebar-only composite of effort + playback. Both are motion behavior —
+  // how fast each step runs and what shape the hands travel — so one page can
+  // carry them under one honest name. The individual ids survive for the
+  // mobile dock, which shows one tray at a time and cannot take the merged
+  // height. Display is deliberately NOT part of this: what the canvas draws is
+  // a separate concept, and folding it in put visibility toggles under a
+  // heading that claimed they were motion.
   "motion",
   "effort",
   "playback",
@@ -43,19 +46,20 @@ export interface PillSpec {
  * different rail order — e.g. surfacing Effects first — passes its own order
  * built from PILL_ORDER's ids, so the two still cannot drift on membership.
  */
-/** The three sections the sidebar's Motion page merges. */
-export const MOTION_PARTS = ["effort", "playback", "display"] as const;
+/** The two sections the sidebar's Motion page merges. */
+export const MOTION_PARTS = ["effort", "playback"] as const;
 
 /**
  * The rail's membership, which changes at runtime: every sidebar merges the
- * three motion sections into one page, so two surfaces side by side always
- * agree on what the panel contains. The mobile dock keeps them as three trays,
- * where one tall merged tray would not fit.
+ * two motion sections into one page, so two surfaces side by side always agree
+ * on what the panel contains. The mobile dock keeps them as separate trays,
+ * where one tall merged tray would not fit. Display rides along unmerged in
+ * both modes — it is its own concept and gets its own pill everywhere.
  */
 export function animationPillOrder(motionMerged: boolean): readonly PillId[] {
   return motionMerged
-    ? (["effects", "props", "motion", "export"] as const)
-    : (["effects", "props", ...MOTION_PARTS, "export"] as const);
+    ? (["effects", "props", "motion", "display", "export"] as const)
+    : (["effects", "props", ...MOTION_PARTS, "display", "export"] as const);
 }
 
 /**
@@ -74,8 +78,9 @@ export function resolveActivePill(
   if (!active) return null;
   if (availableIds.includes(active)) return active;
   const parts = MOTION_PARTS as readonly PillId[];
-  // Merging sends the three parts to Motion; unmerging sends Motion back to the
-  // first part the rail offers.
+  // Merging sends the parts to Motion; unmerging sends Motion back to the
+  // first part the rail offers. A remembered "display" needs neither hop — it
+  // is a member of the rail in both modes.
   if (parts.includes(active)) {
     return availableIds.includes("motion") ? "motion" : (availableIds[0] ?? null);
   }

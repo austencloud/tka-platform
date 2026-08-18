@@ -686,9 +686,16 @@ Last audit: 2025-12-27
           onScrubEnd={onProgressBarScrubEnd}
         />
       {:else}
+        <!-- The transport is the canonical playback surface: play, tempo,
+             scrubber, and continuous-vs-step all live here and nowhere else.
+             It used to be gated on the `progressBar` visibility flag, which
+             meant a toggle labelled "Progress" removed every playback control
+             on the page. Hosts can still opt out wholesale with
+             `hideProgressBar` (embedded previews, showcase players); the user
+             cannot switch away their own scrubber. -->
         <UnifiedTimeline
           playback={playbackAdapter}
-          visible={progressBarVisible && !hideProgressBar}
+          visible={!hideProgressBar}
           hidePlay={hidePlay ?? tapToToggle}
         />
       {/if}

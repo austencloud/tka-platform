@@ -13,7 +13,8 @@ const allOff: DisplayFlags = {
   stepNumbers: false,
   props: false,
   wordHeader: false,
-  progressBar: false,
+  mandala: false,
+  pathLines: false,
   grid: false,
 };
 
@@ -23,38 +24,51 @@ const allOn: DisplayFlags = {
   stepNumbers: true,
   props: true,
   wordHeader: true,
-  progressBar: true,
+  mandala: true,
+  pathLines: true,
   grid: true,
 };
 
 describe("computeDisplaySummary", () => {
-  it("reports 0 / 7 visible · arc when everything is off and path is arc", () => {
-    expect(computeDisplaySummary(allOff, "arc")).toBe("0 / 7 visible · arc");
+  it("reports 0 / 8 visible when everything is off", () => {
+    expect(computeDisplaySummary(allOff)).toBe("0 / 8 visible");
   });
 
-  it("reports 7 / 7 visible · arc when every flag including grid is on", () => {
-    expect(computeDisplaySummary(allOn, "arc")).toBe("7 / 7 visible · arc");
+  it("reports 8 / 8 visible when every flag including grid is on", () => {
+    expect(computeDisplaySummary(allOn)).toBe("8 / 8 visible");
   });
 
   it("counts grid as a regular flag", () => {
-    expect(computeDisplaySummary({ ...allOff, grid: true }, "arc")).toBe("1 / 7 visible · arc");
+    expect(computeDisplaySummary({ ...allOff, grid: true })).toBe(
+      "1 / 8 visible"
+    );
   });
 
-  it("reports linear path explicitly without affecting the count", () => {
-    expect(computeDisplaySummary(allOff, "linear")).toBe("0 / 7 visible · linear");
-    expect(computeDisplaySummary(allOn, "linear")).toBe("7 / 7 visible · linear");
+  it("does not count a progress-bar flag", () => {
+    // The transport is unconditional now, so the Display page offers no
+    // progress switch and must not claim one in its denominator.
+    expect(Object.keys(allOff)).not.toContain("progressBar");
+  });
+
+  it("says nothing about path shape", () => {
+    // Path shape is motion behavior and lives under the Motion pill. The
+    // Display summary describing it was a leftover from the era when the two
+    // shared a section.
+    expect(computeDisplaySummary(allOn)).not.toMatch(
+      /arc|linear|concave|motion/i
+    );
   });
 
   it("counts each visibility flag independently", () => {
     expect(
-      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true }, "arc")
-    ).toBe("2 / 7 visible · arc");
+      computeDisplaySummary({ ...allOff, tkaGlyph: true, props: true })
+    ).toBe("2 / 8 visible");
   });
 
   it("denominator follows DisplayFlags arity (regression guard)", () => {
     // If someone adds a field to DisplayFlags without updating allOff, this
-    // test will fail because Object.values(...).length will jump to 8.
-    expect(Object.keys(allOff).length).toBe(7);
+    // test will fail because Object.values(...).length will jump to 9.
+    expect(Object.keys(allOff).length).toBe(8);
   });
 });
 

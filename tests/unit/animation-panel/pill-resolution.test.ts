@@ -8,23 +8,24 @@ import {
 } from "$lib/shared/animation-panel/pill-nav/pill-types";
 
 /**
- * The sidebar merges Effort, Playback and Display into one Motion page; the
- * mobile dock keeps them separate. That makes the rail's membership a runtime
- * value — a shell that flips sidebar/bottom on resize changes it while the
- * panel stays mounted — so a pill that was valid a moment ago can stop
- * existing. These pin the mapping in both directions.
+ * The sidebar merges Effort and Playback into one Motion page; the mobile dock
+ * keeps them separate. That makes the rail's membership a runtime value — a
+ * shell that flips sidebar/bottom on resize changes it while the panel stays
+ * mounted — so a pill that was valid a moment ago can stop existing. These pin
+ * the mapping in both directions.
  */
 describe("animationPillOrder", () => {
-  it("collapses the three motion sections into one page when merged", () => {
+  it("collapses the two motion sections into one page when merged", () => {
     expect(animationPillOrder(true)).toEqual([
       "effects",
       "props",
       "motion",
+      "display",
       "export",
     ]);
   });
 
-  it("keeps them as three pages when not merged", () => {
+  it("keeps them as two pages when not merged", () => {
     expect(animationPillOrder(false)).toEqual([
       "effects",
       "props",
@@ -33,6 +34,14 @@ describe("animationPillOrder", () => {
       "display",
       "export",
     ]);
+  });
+
+  it("keeps Display out of the merge in both modes", () => {
+    // What the canvas draws is not motion behavior. Folding it into the Motion
+    // page put visibility toggles under a heading that misdescribed them.
+    for (const merged of [true, false]) {
+      expect(animationPillOrder(merged)).toContain("display");
+    }
   });
 
   it("only names ids that exist in the PILL_ORDER contract", () => {
@@ -48,7 +57,7 @@ describe("animationPillOrder", () => {
       const ids = animationPillOrder(merged);
       const hasMotion = ids.includes("motion");
       const hasParts = ids.some((id) =>
-        (["effort", "playback", "display"] as PillId[]).includes(id)
+        (["effort", "playback"] as PillId[]).includes(id)
       );
       expect(hasMotion && hasParts).toBe(false);
     }
@@ -68,12 +77,18 @@ describe("resolveActivePill", () => {
     expect(resolveActivePill(null, merged)).toBeNull();
   });
 
-  it.each(["effort", "playback", "display"] as PillId[])(
+  it.each(["effort", "playback"] as PillId[])(
     "sends a remembered %s to the Motion page that now contains it",
     (part) => {
       expect(resolveActivePill(part, merged)).toBe("motion");
     }
   );
+
+  it("leaves a remembered Display alone when the rail merges", () => {
+    // Display is a member in both modes, so merging must not hop it to Motion
+    // the way the genuine motion parts do.
+    expect(resolveActivePill("display", merged)).toBe("display");
+  });
 
   it("sends Motion back to a part when the rail unmerges", () => {
     // A rail that crosses below the merge width mid-session, or a shell that
