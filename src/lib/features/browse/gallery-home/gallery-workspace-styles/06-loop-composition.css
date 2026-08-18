@@ -1,0 +1,79 @@
+/* ── LOOP composition (LAST: one shape for the seven LOOP types) ────
+     Seven options, and every tier above had its own answer for them: two
+     columns here, three there, an eight-column track somewhere else, and a
+     `:has()` rule in each one nudging whichever child happened to land alone.
+     They agreed on nothing except the outcome — a row of one, and the orphan
+     was always Rewound, because Rewound is last in the catalog. It is also
+     ONE sequence out of the whole gallery, so the rarest choice on the screen
+     was wearing the widest button on the screen (Austen, 2026-08-18: "instead
+     of making Rewound the one that's extra wide given that it's the least
+     popular of all the loops why do we make it so rotated ... gets the extra
+     wide and acts like a button with two halves to it").
+
+     He is right, and the domain backs it. Halved and quartered are not two
+     LOOP types: the glossary defines them as slice sizes "used with the
+     rotated LOOP type". They are one type cut two ways, which is a
+     relationship no other pair on this screen has. So they get the wide slot,
+     joined at a seam into a single control divided down the middle, and the
+     width is earned by what the pair means rather than by where it fell.
+
+     A six-column track lets each row pin its own count — 2, 2, then 3 — so
+     seven items land in exactly three rows with nothing stranded, at any
+     container width. Tier files keep owning row HEIGHT and tile shape; this
+     file owns columns and spans, and it is imported last so it wins on order
+     rather than on an escalating specificity war.
+
+     Guarded on `:nth-child(7):last-child`: the drill also renders this screen
+     with a reduced option set, and that case keeps its tier's layout. */
+
+/* Below 420px of container there is no extra-wide slot to award: three tiles
+   across a 343px phone list is 105px each, which drops the label and leaves
+   three unlabelled glyphs. That band keeps its one-per-row stack, where seven
+   equal rows already strand nobody. */
+@container drill (min-width: 420px) {
+  .drill-ctx .screen-loop > .value-list:has(> :nth-child(7):last-child) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    /* Zero, so the Rotated pair can touch. Every other vertical edge buys its
+       half of the gutter back as margin below. Row gap is untouched — this is
+       a longhand, so the tier's `gap` shorthand keeps its rows. */
+    column-gap: 0;
+  }
+
+  /* `!important` only because two device tiers pin `grid-column: auto !important`
+     on these same children to undo the old orphan hacks. */
+  .drill-ctx .screen-loop > .value-list:has(> :nth-child(7):last-child) > * {
+    grid-column: span 3 !important;
+    grid-row: auto !important;
+    width: auto !important;
+    justify-self: stretch !important;
+    margin-inline: 0.3rem;
+  }
+  .drill-ctx
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(n + 5) {
+    grid-column: span 2 !important;
+  }
+
+  /* The seam. Square the two inner corners and drop the margin between them
+     and the pair stops being two buttons that happen to share a tint. */
+  .drill-ctx
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(1) {
+    margin-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .drill-ctx
+    .screen-loop
+    > .value-list:has(> :nth-child(7):last-child)
+    > :nth-child(2) {
+    margin-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    /* One hairline instead of two abutting borders, so the seam reads as a
+       division inside one control rather than a gap between two. */
+    border-left-color: color-mix(in srgb, var(--row-color) 35%, transparent);
+  }
+}

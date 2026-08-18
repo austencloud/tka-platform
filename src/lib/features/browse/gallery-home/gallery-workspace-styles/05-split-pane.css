@@ -102,43 +102,20 @@
 }
 /* LOOPs is seven options. A one-per-row stack needs seven row minimums plus a
      header inside a column that has ~547px to give, so the tail of the list
-     fell off the bottom of the pane. Two columns halve the row count to four
-     and spend the width the stack was leaving empty beside every label.
-
-     The count is pinned here rather than inherited from the tier soup so the
-     orphan rule below is provably correct: in a two-column grid the last child
-     is alone exactly when its index is odd, and seven into two columns strands
-     Rewound on a row of one, which `4k-native-layout.md` rule 2 forbids. Same
-     trick as the catalog's eleventh tile.
-
-     This is unconditional across the pane's whole 352–736px resize range: the
-     old `min-width: 640px` gate only ever fired at the widest end of that
-     range, so the default 440px pane — the one every user actually sees — kept
-     the stack that could not fit. */
+     fell off the bottom of the pane -- Rewound was hidden entirely with no way
+     to scroll to it (Austen, 2026-08-17). The seven-option shape now lives in
+     `06-loop-composition.css`, which pins three rows in every context; this
+     rule keeps only what is specific to the pane. */
 .drill-ctx.split-pane .screen-loop > .value-list {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   /* The 5.25rem floor above was written for a full-width LOOP bar in a
      one-per-row stack, where it bought presence for seven rows the column was
-     never going to show anyway. Two columns charge that floor four times over
-     and it lands 11px above what the tile actually holds, which is the whole
-     difference between four rows fitting a 900px-tall laptop and Rewound
+     never going to show anyway. Multiple columns charge that floor three times
+     over and it lands 11px above what the tile actually holds, which is the
+     whole difference between the rows fitting a 900px-tall laptop and Rewound
      sitting below the fold. Dropping it under the tile's own min-content hands
      the decision back to `--pane-row-fit: min-content`; `--pane-row-max` is
      untouched, so a tall window still lets the tiles breathe. */
   --pane-row-min: 4.25rem;
-}
-/* The phone tier pins this same last child to `grid-column: auto` through a
-     `:has()` selector worth (0,7,0). Matching that weight is what makes the
-     span stick — the plain `> :last-child:nth-child(odd)` form silently lost.
-     The `:has()` here also carries the odd-count condition, so the rule states
-     its own precondition instead of hardcoding "seven". */
-.drill-ctx.split-pane
-  .screen-loop
-  > .value-list:has(> :nth-child(odd):last-child)
-  > :last-child {
-  width: auto;
-  grid-column: 1 / -1;
-  justify-self: stretch;
 }
 /* Below 640px of container the phone tier compresses each LOOP into a squat
      horizontal bar with an ellipsised 12px label — sized for one full-width

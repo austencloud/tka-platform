@@ -207,12 +207,6 @@
   .drill-ctx.adaptive-value-layout .screen-loop > .value-list > * {
     grid-column: span 2;
   }
-  .drill-ctx.adaptive-value-layout
-    .screen-loop
-    > .value-list:has(> :nth-child(7):last-child)
-    > :nth-child(5) {
-    grid-column: 2 / span 2;
-  }
   .drill-ctx.adaptive-value-layout .screen-creator > .creator-list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

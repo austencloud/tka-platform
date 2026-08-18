@@ -316,10 +316,6 @@
     > .value-list:has(> :nth-child(5):last-child)
     > :last-child,
   .drill-ctx.adaptive-value-layout
-    .screen-loop
-    > .value-list:has(> :nth-child(7):last-child)
-    > :last-child,
-  .drill-ctx.adaptive-value-layout
     .screen-creator
     > .value-list:has(> :nth-child(7):last-child)
     > :last-child {
@@ -529,7 +525,10 @@
   }
 
   /* LOOP names need horizontal room more than poster-sized icons. Seven
-       compact rows keep the labels intact and every composable choice visible. */
+       compact rows keep the labels intact and every composable choice visible,
+       and seven equal rows strand nobody. Above 420px of container
+       `06-loop-composition.css` takes over and lays the seven out as 2 / 2 / 3
+       with the two Rotated slices joined into one wide control. */
   .drill-ctx.adaptive-value-layout .screen-loop > .value-list {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(44px, 2.9rem);
@@ -569,14 +568,6 @@
   .drill-ctx.adaptive-value-layout .screen-loop .loop-check {
     position: static;
     width: 1rem;
-  }
-  .drill-ctx.adaptive-value-layout
-    .screen-loop
-    > .value-list:has(> :nth-child(7):last-child)
-    > :last-child {
-    width: 100%;
-    grid-column: auto;
-    justify-self: stretch;
   }
 
   /* Creator names are the decision. A full-width row gives long names one
