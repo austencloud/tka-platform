@@ -42,8 +42,9 @@ export const SELECTIVE_COLOR_PROP_TYPES = [
   "sword",
   "energy_saber",
   "energy_staff",
-  // LED baton: the frosted caps are neutral gray and take blue or red, while the
-  // braided shaft, collars and clear tubes stay hardware-colored on both hands.
+  // LED baton: the braided cable and the light inside each cap are neutral gray
+  // and take blue or red, while the couplers, tubes and cap shells stay clear --
+  // which is how the real prop is sold, colored shaft under clear ends.
   "capsule_baton",
   "sword-knight",
   "sword-saber",

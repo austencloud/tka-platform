@@ -2,136 +2,186 @@
 <!--
   Capsule Baton — LED baton, Staff family.
 
-  Modeled on the physical object, center outward: a braided/twisted silver shaft,
-  a tapered collar where the shaft enters each clear polycarbonate tube, paired
-  vent holes near each tube's open rim, and a frosted fluted silicone cap over
-  each end with the light capsule sitting inside it.
+  Drawn from photographs of the physical object, center outward: a braided steel
+  cable, a clear coupler that swells where the cable enters each tube and carries
+  the stamped rosette, a long clear polycarbonate tube with the light capsule
+  visible inside it, and a frosted silicone flowcap pushed over each tube's tip.
 
   Geometry (matches PROP_DIMENSIONS.capsule_baton and PROP_TIP_POINTS.capsule_baton):
     viewBox 252.8 x 40, so the hand pivot sits at (126.4, 20) and the prop spans
     exactly as far as staff does — the mandala radius and beta spacing stay on the
     staff family's numbers. The tracked tips are NOT the outer edge: they sit at
-    +/- 117 from the pivot, the center of each cap, because that is where the
-    light capsule actually is. The LED, fire, trail and charcoal emitters all read
-    those points, so the glow comes out of the cap rather than off the rim.
+    +/- 117 from the pivot, inside each cap, because that is where the light
+    capsule actually is. The LED, fire, trail and charcoal emitters all read those
+    points, so the glow comes out of the cap rather than off the rim.
 
-    Cross-section is drawn about 2x the real object, the same exaggeration staff
-    uses (a 25mm tube on a 660mm prop would otherwise be a hairline). The thin
-    middle and fat ends are NOT exaggeration — that silhouette is the prop.
+    Stations are offsets from the pivot, and they are the same numbers
+    scripts/build-capsule-baton-model.py laths the 3D from, so the two renderings
+    are one object:
+      cable    0     -> 72.0     half-height 5.0
+      coupler  72.0  -> 82.0     5.2 swelling to 9.6
+      tube     80.5  -> 120.0    10.0        (13.5cm, the real end tube)
+      cap      113.0 -> 126.4    11.6 flaring to 15.0, then domed
+    The one place the drawing departs from that table is the cap's inner lip: the
+    lathe starts flaring at 113.0, and the drawing starts at 107.0, because a cap
+    only 13 units long against a 30-unit face reads as a plate rather than a
+    dome once the cross-section exaggeration is applied. The flare, the widest
+    point and the tip are all still on the table.
+    Cross-sections are 1 : 2 : 3 across cable, tube and cap, which is what the
+    reference photograph measures, and the whole cross-section is exaggerated
+    ~2.7x against length so a 12mm cable still reads inside a pictograph cell.
+    The 3D divides that exaggeration back out through CROSS_SCALE, which is why
+    the same 15.0 half-units there comes out as a true 38.1mm flowcap.
+
+    Two earlier drawings got the LENGTHS wrong in the same direction: the cable
+    was drawn as a fat hatched tube, the coupler as a short band, and the cap ran
+    longer than the tube it slides onto. The real tube is 13.5cm and the real cap
+    is about 3.8cm, so the cap is a squat dome on a long tube, never the other way
+    around.
+
+    There is no grip. An earlier drawing put a 60-unit silicone grip across the
+    pivot; the object has bare cable end to end, and the grip was the single
+    largest reason the drawing did not look like the photograph.
+
+    There are no vent holes. An earlier drawing ruled a facing pair near each
+    tube's rim. The tube is sealed polycarbonate around a rechargeable light, so
+    holes in it would be a defect. Venting belongs to fire props.
 
   Color contract (packages/render-core/src/svg-color.ts, selective mode):
-    Selective mode preserves a fill that is dark (luminance < 0.4) OR tinted
-    (saturation > 0.05), and repaints everything else to the motion color. So a
-    flat neutral gray is the only way to ask for blue or red.
-    The lit section asks for it: each clear tube (#B4B4B4) and each frosted cap
-    (#C9C9C9) are neutral, so both ends glow the motion color end to end. That is
-    the whole point — the lit part of the prop is the part that carries blue or red.
-    The hardware stays silver by being LIGHT AND SLIGHTLY COOL rather than dark:
-    shaft #C3CDDC, grip #7C8899, collars #9AA7B8, grip rings #E6EDF6, cap rims
-    #AEB9C8, tube rims #39424F, vent holes #2A313B. Every one clears saturation
-    0.05, so it survives the repaint. A NEUTRAL light gray would not — it would be
-    read as a request for the motion color, which is exactly what #B4B4B4 does.
-    Do not darken this palette back down. The prop is drawn on a near-black cell
-    (rgb(10,10,15) behind the pictograph), so hardware that qualifies as
-    "preserved" by being below 0.4 luminance is preserved as invisible: the baton
-    shipped that way and read as two small colored caps floating in the dark.
-    Highlights are #FFF6E8 (saturation 0.09 > 0.05), preserved like the energy
-    pair's pale cores. Pure #ffffff would NOT survive selective mode as a fill.
-    The tube shading, the braid tape and the cap's internal bloom are drawn as a
-    second gradient/pattern fill over the flat base — `fill="url(#...)"` cannot
-    match the recolor regex, so that layer is immune and shades whatever color the
-    base underneath it ended up as. Strokes
-    are never rewritten (no consumer passes transformStroke), so the cap flutes
-    stay pale over whichever color the cap takes.
+    Selective mode preserves a fill that is dark (luminance below 0.4) OR tinted
+    (saturation above 0.05), and repaints everything else to the motion color.
+    Saturation is what decides it for the plastic here, since every plastic part
+    has to stay light to read on a near-black cell: a flat neutral gray is the
+    only way to ask for blue or red.
+
+    Identity lives in the CABLE and in the light inside each cap, and the plastic
+    stays clear — which is how the object is sold, flowtoys offering the shaft in
+    several colors under clear ends, and what the photograph shows: a colored
+    cable, clear tubes with a metallic capsule inside them, and caps that are
+    clear except for the light glowing through.
+      Asks for the motion color (neutral #B4B4B4): the cable base, the bloom off
+      the lit end of the capsule, and the glow inside each cap.
+      Stays clear (light and cool, so saturation clears 0.05): coupler #CBD8E6,
+      tube #D5E0EC, cap #E2EBF6, capsule #AAB6C4, stamp #8794A6, tube rim #39424F.
+    Do not darken this palette. The prop is drawn on a near-black cell
+    (rgb(10,10,15) behind the pictograph), so anything preserved by being dark is
+    preserved as invisible: the baton shipped that way once and read as two small
+    colored caps floating in the dark.
+    Highlights are #FFF6E8 (saturation 0.09), preserved like the energy pair's
+    pale cores. Pure #ffffff would NOT survive selective mode as a fill.
+    The braid, the tube shading and the cap bloom are drawn as gradient or pattern
+    fills over the flat base — fill="url(#...)" cannot match the recolor regex, so
+    that layer is immune and shades whatever color the base underneath it ended up
+    as. The braid pattern therefore has NO base rect: it is strands over
+    transparency, or it would hide the color it is supposed to be shading.
+    Strokes are never rewritten (no consumer passes transformStroke), so the cap
+    facets stay pale over whichever color the cap takes.
     Every id is prefixed `cbaton` and gets suffixed per motion color when the
     loader inlines both props into one document.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 252.8 40">
   <defs>
-    <!-- Twisted silver deco tape over the shaft, brighter than what it sits on. -->
-    <pattern id="cbatonBraid" width="7.6" height="10" patternUnits="userSpaceOnUse">
-      <rect width="7.6" height="10" fill="#C3CDDC"/>
-      <path d="M-3.5 12 L8.5 -2" stroke="#DFE7F2" stroke-width="3" fill="none"/>
-      <path d="M-1.7 12 L10.3 -2" stroke="#FFFFFF" stroke-width="1" fill="none" opacity="0.85"/>
+    <!-- Steel cable lay. Strands over TRANSPARENCY, never over a base rect: the
+         cable's color comes from the recolored fill underneath this. Pitch 5.4
+         against a 10-tall cable is the ~0.55x lay the photograph measures. -->
+    <pattern id="cbatonBraid" width="6.4" height="11" patternUnits="userSpaceOnUse">
+      <path d="M-4.6 12.4 L4.4 -1.4" stroke="#070A0F" stroke-width="1.3" fill="none" opacity="0.28"/>
+      <path d="M-3.2 12.4 L5.8 -1.4" stroke="#FFFFFF" stroke-width="0.9" fill="none" opacity="0.4"/>
     </pattern>
 
-    <!-- Clear polycarbonate tube: bright top edge, dark underside. -->
+    <!-- Clear polycarbonate: bright top edge, dark underside. -->
     <linearGradient id="cbatonTube" x1="0" y1="10" x2="0" y2="30" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#DFE8F3" stop-opacity="0.62"/>
-      <stop offset="0.24" stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="0" stop-color="#DFE8F3" stop-opacity="0.7"/>
+      <stop offset="0.24" stop-color="#FFFFFF" stop-opacity="0.36"/>
       <stop offset="0.58" stop-color="#78838F" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#080B10" stop-opacity="0.68"/>
+      <stop offset="1" stop-color="#080B10" stop-opacity="0.7"/>
     </linearGradient>
 
-    <!-- Grip and collar sheen, same read as the tube's. -->
-    <linearGradient id="cbatonSheen" x1="0" y1="13" x2="0" y2="27" gradientUnits="userSpaceOnUse">
+    <!-- Coupler and cap sheen, same read as the tube's. -->
+    <linearGradient id="cbatonSheen" x1="0" y1="5" x2="0" y2="35" gradientUnits="userSpaceOnUse">
       <stop offset="0.06" stop-color="#FFFFFF" stop-opacity="0"/>
       <stop offset="0.3" stop-color="#FFFFFF" stop-opacity="0.42"/>
       <stop offset="0.56" stop-color="#FFFFFF" stop-opacity="0.03"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.52"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.48"/>
     </linearGradient>
 
-    <!-- Capsule sitting inside the frosted cap: bright core, soft falloff. -->
+    <!-- Hot center of the light, over the colored bloom. -->
     <radialGradient id="cbatonCore" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.9"/>
-      <stop offset="0.42" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="0.4" stop-color="#FFFFFF" stop-opacity="0.32"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- The cap silhouette is inlined at both ends rather than <use>d from defs:
-       the loader's makeClassNamesUnique rewrites id= and url(#...) but not
-       href=, so a <use> reference would dangle once both props share a doc. -->
+  <!-- Cable, pivot out to both couplers -->
+  <rect x="54.4" y="15" width="144" height="10" rx="5" fill="#B4B4B4"/>
+  <rect x="54.4" y="15" width="144" height="10" rx="5" fill="url(#cbatonBraid)"/>
+  <rect x="54.4" y="15.8" width="144" height="1.5" rx="0.75" fill="#FFF6E8" opacity="0.5"/>
+  <rect x="54.4" y="22.9" width="144" height="1.3" rx="0.65" fill="#0A0D12" opacity="0.55"/>
 
-  <!-- ── Shaft ───────────────────────────────────────────────────────────── -->
-  <rect x="40.4" y="15" width="172" height="10" rx="5" fill="#C3CDDC"/>
-  <rect x="40.4" y="15" width="172" height="10" rx="5" fill="url(#cbatonBraid)"/>
-  <rect x="40.4" y="16" width="172" height="1.7" rx="0.85" fill="#FFF6E8" opacity="0.55"/>
-  <rect x="40.4" y="22.9" width="172" height="1.5" rx="0.75" fill="#0A0D12" opacity="0.6"/>
-
-  <!-- ── Grip, centered on the pivot ──────────────────────────────────────── -->
-  <rect x="96.4" y="13.7" width="60" height="12.6" rx="6.3" fill="#7C8899"/>
-  <rect x="96.4" y="13.7" width="60" height="12.6" rx="6.3" fill="url(#cbatonSheen)"/>
-  <rect x="98.6" y="13.7" width="1.8" height="12.6" rx="0.9" fill="#E6EDF6"/>
-  <rect x="152.4" y="13.7" width="1.8" height="12.6" rx="0.9" fill="#E6EDF6"/>
+  <!-- Both ends are inlined rather than <use>d from defs: the loader's
+       makeClassNamesUnique rewrites id= and url(#...) but not href=, so a <use>
+       reference would dangle once both props share a document. -->
 
   <!-- ══ RIGHT END ═══════════════════════════════════════════════════════════ -->
-  <!-- Tapered collar where the shaft enters the tube -->
-  <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z" fill="#9AA7B8"/>
-  <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z" fill="url(#cbatonSheen)"/>
-  <!-- Clear tube -->
-  <rect x="212" y="10" width="40.8" height="20" rx="4.5" fill="#B4B4B4" opacity="0.8"/>
-  <rect x="212" y="10" width="40.8" height="20" rx="4.5" fill="url(#cbatonTube)"/>
-  <!-- Open rim of the tube, so it reads as a separate part from the shaft -->
-  <path d="M212.6 11.2 L215.4 11.2 L215.4 28.8 L212.6 28.8 Z" fill="#39424F" opacity="0.85"/>
-  <!-- Hard specular running the tube's length -->
-  <rect x="216" y="12.3" width="33" height="2.3" rx="1.15" fill="#FFF6E8" opacity="0.85"/>
-  <!-- Paired vent holes near the open rim -->
-  <circle cx="220.5" cy="15.8" r="1.35" fill="#2A313B"/>
-  <circle cx="220.5" cy="24.2" r="1.35" fill="#2A313B"/>
-  <!-- Frosted fluted cap — the part that takes the motion color -->
-  <path d="M232 8.3 L244.5 10.1 C250.7 11.6 252.8 15.4 252.8 20 C252.8 24.6 250.7 28.4 244.5 29.9 L232 31.7 Z" fill="#C9C9C9"/>
-  <ellipse cx="242.5" cy="20" rx="12" ry="10" fill="url(#cbatonCore)"/>
-  <!-- Axial flutes -->
-  <path d="M233.4 11.4 L249.4 13.7 M233.4 28.6 L249.4 26.3" stroke="#FFF6E8" stroke-width="1" opacity="0.6" fill="none"/>
-  <path d="M233 15.4 L251 16.5 M233 24.6 L251 23.5" stroke="#FFF6E8" stroke-width="0.9" opacity="0.4" fill="none"/>
-  <!-- Rim where the cap slides over the tube -->
-  <path d="M232 8.3 L235.2 8.8 L235.2 31.2 L232 31.7 Z" fill="#AEB9C8" opacity="0.8"/>
+  <g>
+    <!-- Clear tube, 13.5cm of it -->
+    <rect x="206.9" y="10" width="39.5" height="20" rx="2.2" fill="#D5E0EC"/>
+    <!-- Light capsule, metallic body visible through the tube -->
+    <rect x="218.4" y="11.7" width="25.8" height="16.6" rx="8.3" fill="#AAB6C4"/>
+    <rect x="220.4" y="13.6" width="21.8" height="5.4" rx="2.7" fill="#E2EBF6" opacity="0.7"/>
+    <!-- The capsule's lit end, blooming toward the cap -->
+    <ellipse cx="241.6" cy="20" rx="7.4" ry="8.3" fill="#B4B4B4" opacity="0.85"/>
+    <!-- Glass over all of it -->
+    <rect x="206.9" y="10" width="39.5" height="20" rx="2.2" fill="url(#cbatonTube)"/>
+    <rect x="211.4" y="11.7" width="27" height="2.3" rx="1.15" fill="#FFF6E8" opacity="0.8"/>
+    <!-- Open rim at the tube's inner end -->
+    <path d="M207.1 10.6 L209.7 10.6 L209.7 29.4 L207.1 29.4 Z" fill="#39424F" opacity="0.8"/>
+
+    <!-- Coupler: a clear swell taking the cable into the tube -->
+    <path d="M198.4 14.8 C202.2 14.6 203.8 10.6 208.4 10.4 L208.4 29.6 C203.8 29.4 202.2 25.4 198.4 25.2 Z" fill="#CBD8E6"/>
+    <path d="M198.4 14.8 C202.2 14.6 203.8 10.6 208.4 10.4 L208.4 29.6 C203.8 29.4 202.2 25.4 198.4 25.2 Z" fill="url(#cbatonSheen)"/>
+    <!-- Stamped rosette, the way the reference prop is marked -->
+    <circle cx="204.2" cy="20" r="3.4" fill="#8794A6" opacity="0.7"/>
+    <circle cx="204.2" cy="20" r="1.6" fill="#CBD8E6" opacity="0.9"/>
+    <path d="M204.2 16.6 V23.4 M200.8 20 H207.6 M201.8 17.6 L206.6 22.4 M206.6 17.6 L201.8 22.4" stroke="#5E6A7B" stroke-width="0.4" opacity="0.55" fill="none"/>
+
+    <!-- Frosted flowcap: flares off the tube, then domes over -->
+    <path d="M233.4 7.6 C235.4 5.6 237 5 239.6 5 L245 5 C249.4 5 252.8 11.4 252.8 20 C252.8 28.6 249.4 35 245 35 L239.6 35 C237 35 235.4 34.4 233.4 32.4 Z" fill="#E2EBF6"/>
+    <!-- The light glowing through the cap. This is the loudest colored thing on
+         the real prop, and the second thing that takes the motion color here. -->
+    <ellipse cx="241.6" cy="20" rx="11.6" ry="14.8" fill="#B4B4B4" opacity="0.62"/>
+    <ellipse cx="243.6" cy="20" rx="8.6" ry="10.8" fill="#B4B4B4" opacity="0.8"/>
+    <ellipse cx="243.6" cy="20" rx="12.6" ry="15.8" fill="url(#cbatonCore)"/>
+    <path d="M233.4 7.6 C235.4 5.6 237 5 239.6 5 L245 5 C249.4 5 252.8 11.4 252.8 20 C252.8 28.6 249.4 35 245 35 L239.6 35 C237 35 235.4 34.4 233.4 32.4 Z" fill="url(#cbatonSheen)"/>
+    <!-- Moulded facets -->
+    <path d="M241.8 6.2 L248.6 6.6 M241.8 33.8 L248.6 33.4" stroke="#FFF6E8" stroke-width="1" opacity="0.5" fill="none"/>
+    <path d="M240.2 11.4 L251.4 12.4 M240.2 28.6 L251.4 27.6" stroke="#FFF6E8" stroke-width="0.9" opacity="0.3" fill="none"/>
+    <!-- Lip where the silicone grips the tube -->
+    <path d="M239.4 8.4 C240.6 6.2 241.6 5 243.6 5 L243.6 35 C241.6 35 240.6 33.8 239.4 31.6 Z" fill="#CBD8E6" opacity="0.8"/>
+  </g>
 
   <!-- ══ LEFT END (mirror) ═══════════════════════════════════════════════════ -->
   <g transform="translate(252.8,0) scale(-1,1)">
-    <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z" fill="#9AA7B8"/>
-    <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z" fill="url(#cbatonSheen)"/>
-    <rect x="212" y="10" width="40.8" height="20" rx="4.5" fill="#B4B4B4" opacity="0.8"/>
-    <rect x="212" y="10" width="40.8" height="20" rx="4.5" fill="url(#cbatonTube)"/>
-    <path d="M212.6 11.2 L215.4 11.2 L215.4 28.8 L212.6 28.8 Z" fill="#39424F" opacity="0.85"/>
-    <rect x="216" y="12.3" width="33" height="2.3" rx="1.15" fill="#FFF6E8" opacity="0.85"/>
-    <circle cx="220.5" cy="15.8" r="1.35" fill="#2A313B"/>
-    <circle cx="220.5" cy="24.2" r="1.35" fill="#2A313B"/>
-    <path d="M232 8.3 L244.5 10.1 C250.7 11.6 252.8 15.4 252.8 20 C252.8 24.6 250.7 28.4 244.5 29.9 L232 31.7 Z" fill="#C9C9C9"/>
-    <ellipse cx="242.5" cy="20" rx="12" ry="10" fill="url(#cbatonCore)"/>
-    <path d="M233.4 11.4 L249.4 13.7 M233.4 28.6 L249.4 26.3" stroke="#FFF6E8" stroke-width="1" opacity="0.6" fill="none"/>
-    <path d="M233 15.4 L251 16.5 M233 24.6 L251 23.5" stroke="#FFF6E8" stroke-width="0.9" opacity="0.4" fill="none"/>
-    <path d="M232 8.3 L235.2 8.8 L235.2 31.2 L232 31.7 Z" fill="#AEB9C8" opacity="0.8"/>
+    <rect x="206.9" y="10" width="39.5" height="20" rx="2.2" fill="#D5E0EC"/>
+    <rect x="216.4" y="11.7" width="29" height="16.6" rx="8.3" fill="#AAB6C4"/>
+    <rect x="218.6" y="13.8" width="20.4" height="4.6" rx="2.3" fill="#E2EBF6" opacity="0.55"/>
+    <ellipse cx="233.8" cy="20" rx="8.4" ry="8.3" fill="#B4B4B4" opacity="0.9"/>
+    <rect x="206.9" y="10" width="39.5" height="20" rx="2.2" fill="url(#cbatonTube)"/>
+    <rect x="211.4" y="11.7" width="27" height="2.3" rx="1.15" fill="#FFF6E8" opacity="0.8"/>
+    <path d="M207.1 10.6 L209.7 10.6 L209.7 29.4 L207.1 29.4 Z" fill="#39424F" opacity="0.8"/>
+    <path d="M198.4 14.8 C202.2 14.6 203.8 10.6 208.4 10.4 L208.4 29.6 C203.8 29.4 202.2 25.4 198.4 25.2 Z" fill="#CBD8E6"/>
+    <path d="M198.4 14.8 C202.2 14.6 203.8 10.6 208.4 10.4 L208.4 29.6 C203.8 29.4 202.2 25.4 198.4 25.2 Z" fill="url(#cbatonSheen)"/>
+    <circle cx="204.2" cy="20" r="3.4" fill="#8794A6" opacity="0.7"/>
+    <circle cx="204.2" cy="20" r="1.6" fill="#CBD8E6" opacity="0.9"/>
+    <path d="M204.2 16.6 V23.4 M200.8 20 H207.6 M201.8 17.6 L206.6 22.4 M206.6 17.6 L201.8 22.4" stroke="#5E6A7B" stroke-width="0.4" opacity="0.55" fill="none"/>
+    <path d="M233.4 7.6 C235.4 5.6 237 5 239.6 5 L245 5 C249.4 5 252.8 11.4 252.8 20 C252.8 28.6 249.4 35 245 35 L239.6 35 C237 35 235.4 34.4 233.4 32.4 Z" fill="#E2EBF6"/>
+    <ellipse cx="241.6" cy="20" rx="11.6" ry="14.8" fill="#B4B4B4" opacity="0.62"/>
+    <ellipse cx="243.6" cy="20" rx="8.6" ry="10.8" fill="#B4B4B4" opacity="0.8"/>
+    <ellipse cx="243.6" cy="20" rx="12.6" ry="15.8" fill="url(#cbatonCore)"/>
+    <path d="M233.4 7.6 C235.4 5.6 237 5 239.6 5 L245 5 C249.4 5 252.8 11.4 252.8 20 C252.8 28.6 249.4 35 245 35 L239.6 35 C237 35 235.4 34.4 233.4 32.4 Z" fill="url(#cbatonSheen)"/>
+    <path d="M237.6 5.9 L246.4 6.2 M237.6 34.1 L246.4 33.8" stroke="#FFF6E8" stroke-width="1" opacity="0.45" fill="none"/>
+    <path d="M235.4 10.6 L250.4 11.6 M235.4 29.4 L250.4 28.4" stroke="#FFF6E8" stroke-width="0.9" opacity="0.28" fill="none"/>
+    <path d="M233.4 7.6 C234.8 6.1 235.8 5.4 237.2 5.1 L237.2 34.9 C235.8 34.6 234.8 33.9 233.4 32.4 Z" fill="#CBD8E6" opacity="0.8"/>
   </g>
 </svg>

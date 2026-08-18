@@ -43,7 +43,7 @@ const SVG_TO_M = AUTHORED_LENGTH_M / SVG_SPAN_UNITS;
 // flowtoys composite iso baton / lumina twirl baton. Published numbers.
 const TUBE_OD_M = 0.0254; // 1" polycarbonate end tube
 const TUBE_LENGTH_M = 0.135; // 13.5cm of clear tube per end
-const SHAFT_OD_M = 0.014; // 12mm carbon + 1mm elastomer grip tape each side
+const SHAFT_OD_M = 0.014; // 12mm carbon cable, 14mm over its braid
 const CAP_OD_M = 0.0381; // 1.5" silicone flowcap pushed over that tube
 
 /**
@@ -87,7 +87,6 @@ const requiredNodes = [
   "TKA_CapsuleBaton",
   "TKA_Hand_Pivot",
   "TKA_Baton_Fittings",
-  "TKA_Baton_Grip",
   "TKA_Baton_Lit",
 ];
 for (const nodeName of requiredNodes) {
@@ -133,11 +132,11 @@ invariant(
   recolorable[0].name === "TKA_Baton_Shaft_Recolor",
   `Unexpected recolorable material: ${recolorable[0].name}`
 );
-for (const name of ["TKA_Baton_Grip", "TKA_Baton_Tube", "TKA_Baton_Cap"]) {
+for (const name of ["TKA_Baton_Tube", "TKA_Baton_Cap"]) {
   invariant(materialNames.has(name), `Material is missing: ${name}`);
 }
 invariant(
-  materialNames.size === 4,
+  materialNames.size === 3,
   `Unexpected material set: ${[...materialNames].join(", ")}`
 );
 
@@ -168,17 +167,7 @@ for (const name of ["TKA_Baton_Tube", "TKA_Baton_Cap"]) {
   );
 }
 
-// The grip is the one thing that has to stay legible against the shaft, or the
-// middle of the prop reads as one undifferentiated tube.
-const gripLuminance = luminance(baseColor("TKA_Baton_Grip"));
-const shaftLuminance = luminance(shaftColor);
-invariant(
-  gripLuminance < shaftLuminance * 0.6,
-  `Grip must read darker than the shaft: ${gripLuminance.toFixed(4)} ` +
-    `against ${shaftLuminance.toFixed(4)}`
-);
-
-// --- Size and grip ------------------------------------------------------
+// --- Size --------------------------------------------------------------
 near(
   stats.dimensions.y,
   AUTHORED_LENGTH_M,
@@ -253,21 +242,19 @@ const bounds = (name) => {
   return found;
 };
 const fittings = bounds("TKA_Baton_Fittings");
-const grip = bounds("TKA_Baton_Grip");
 const lit = bounds("TKA_Baton_Lit");
 
-near(grip.maximum.y, axial(30.0), "Grip ends where the drawing's rect ends");
-near(grip.minimum.y, -axial(30.0), "Grip is centred on the hand");
-// Only the rubber sleeve is in this group. Its two end rings are silver in the
-// drawing, so they ship with the hardware and stand proud of the sleeve there.
-near(grip.maximum.x, radial(6.3), "Grip sleeve matches the drawing's rect");
-invariant(
-  fittings.maximum.x > grip.maximum.x,
-  "Grip end rings must stand proud of the sleeve, or the grip reads as a stripe"
+// The cable runs bare from end to end. A grip sleeve lived here for several
+// revisions because the drawing had one; the physical prop does not, so any
+// swell across the pivot is a regression, not a detail.
+near(
+  fittings.maximum.x,
+  radial(10.35),
+  "The widest hardware is the tube rim, not anything near the hand"
 );
 invariant(
-  fittings.maximum.y > grip.maximum.y,
-  "Shaft no longer runs past the grip"
+  fittings.maximum.y > axial(80.0),
+  "The cable must reach the couplers"
 );
 invariant(
   lit.minimum.y < 0 && lit.maximum.y > 0,

@@ -1,16 +1,20 @@
 """Build the production LED capsule baton prop and multi-angle proof renders.
 
 Geometry is driven by static/images/props/pictograph/capsule_baton.svg, which is
-the authority for the prop's shape: a braided shaft, a silicone grip centred on
-the pivot, a tapered coupler where the shaft enters each clear polycarbonate
-tube, and a frosted silicone cap over each tube's tip with the light capsule
-inside.
+the authority for the prop's shape: a braided cable running bare from end to
+end, a coupler where the cable enters each clear polycarbonate tube, and a
+frosted silicone cap over each tube's tip with the light capsule inside.
 
-Where the drawing and the physical prop disagree, the prop wins and the
-divergence is commented at the constant. The drawing exaggerates its
-cross-section about 2x for legibility on a pictograph cell, rules a facing pair
-of vent holes the real sealed tube does not have, and gives the cap two and a
-half times its real length.
+The two renderings share one station table, listed in the drawing's header and
+repeated in the constants below. Where the drawing and the physical prop
+disagree, the prop wins and the divergence is commented at the constant. The
+only standing divergence is scale: the drawing exaggerates its cross-section
+about 2.7x so a 12mm cable reads on a pictograph cell, and CROSS_SCALE divides
+that back out here.
+
+There is no grip. The drawing carried a 60-unit silicone grip across the pivot
+for several revisions and the model followed it; the object has bare cable
+there, so both dropped it.
 
 Colour follows the object rather than the drawing: the SHAFT carries the
 "Recolor" marker prop-model-recolor.ts looks for, so it takes the hand colour at
@@ -56,7 +60,7 @@ SVG_TO_M = AUTHORED_LENGTH_M / SVG_SPAN_UNITS
 # --- The physical prop, measured -----------------------------------------
 # flowtoys composite iso baton / lumina twirl baton, which is the object this
 # prop is. Published numbers, not estimates:
-#   shaft     12mm OD carbon fibre, 14mm with the elastomer grip tape
+#   shaft     12mm OD carbon fibre, bare braided cable, no grip section
 #   end tube  1" OD (25.4mm) polycarbonate, 13.5cm long, one per end
 #   capsule   88mm x 21mm light, sitting INSIDE the tube
 #   flowcap   silicone, ~30mm across, blunt thimble, soft ribs, NO holes
@@ -93,15 +97,6 @@ def radial(svg_units: float) -> float:
 # drafting artifact, not a design, so the 3D shaft is symmetric on the larger.
 SHAFT_HALF_Y = axial(86.0)
 SHAFT_R = radial(5.0)
-
-# Grip: <rect x="96.4" width="60" y="13.7" height="12.6" rx="6.3">
-GRIP_HALF_Y = axial(30.0)
-GRIP_R = radial(6.3)
-
-# Grip end rings: <rect x="98.6" width="1.8" ...> and its mirror at x="152.4".
-GRIP_RING_Y = axial(26.9)
-GRIP_RING_HALF_Y = axial(0.9)
-GRIP_RING_R = radial(6.6)
 
 # Tapered coupler where the shaft enters the tube, drawn as
 # <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z">. On the real prop this is
@@ -415,12 +410,6 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         metallic=0.0,
         coat=0.22,
     )
-    grip_material = make_material(  # #7C8899, the silicone grip
-        "TKA_Baton_Grip",
-        (0.2018, 0.2464, 0.3186, 1.0),
-        roughness=0.72,
-        metallic=0.05,
-    )
     # Clear polycarbonate, so it is glossy and nearly white and the capsule
     # inside it is what the eye is meant to find.
     tube_material = make_material(  # #DCE6F0
@@ -463,43 +452,10 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         segments=24,
     )
 
-    # The drawing draws the grip as a rounded rect, so its ends are domed rather
-    # than cut square.
-    grip_profile = (
-        (-1.00, 0.42),
-        (-0.97, 0.78),
-        (-0.93, 0.95),
-        (-0.50, 1.00),
-        (0.50, 1.00),
-        (0.93, 0.95),
-        (0.97, 0.78),
-        (1.00, 0.42),
-    )
-    grip = lathe(
-        "TKA_Baton_Grip",
-        tuple(
-            (GRIP_HALF_Y * position, GRIP_R * radius_scale)
-            for position, radius_scale in grip_profile
-        ),
-        grip_material,
-        segments=26,
-    )
-
     fittings: list[bpy.types.Object] = []
     lit: list[bpy.types.Object] = []
 
     for label, sign in (("Left", -1.0), ("Right", 1.0)):
-        fittings.append(
-            lathe(
-                f"TKA_Baton_GripRing_{label}",
-                (
-                    (sign * (GRIP_RING_Y - GRIP_RING_HALF_Y), GRIP_RING_R),
-                    (sign * (GRIP_RING_Y + GRIP_RING_HALF_Y), GRIP_RING_R),
-                ),
-                shaft_material,
-                segments=20,
-            )
-        )
         fittings.append(
             lathe(
                 f"TKA_Baton_Collar_{label}",
@@ -545,10 +501,9 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         )
     shaft_group = join_objects("TKA_Baton_Fittings", [shaft, *fittings])
     crease_by_angle(shaft_group)
-    crease_by_angle(grip)
     lit_group = join_objects("TKA_Baton_Lit", lit)
     crease_by_angle(lit_group)
-    objects = [shaft_group, grip, lit_group]
+    objects = [shaft_group, lit_group]
     for item in objects:
         item.parent = root
         item["tka_runtime_recolor"] = any(
@@ -611,7 +566,7 @@ def add_proof_lighting() -> bpy.types.Object:
     background.inputs["Strength"].default_value = 0.22
 
     # Dimmer than the sword rig by roughly a third. The baton is a pale silver
-    # prop where the sword is dark steel, so the sword's key blew the grip and
+    # prop where the sword is dark steel, so the sword's key blew the cable and
     # the caps to the same white in the first proof pass and no material read.
     for name, location, energy, size, color in (
         ("QA_Key", (-0.70, 0.50, 1.00), 34, 0.80, (1.0, 0.94, 0.84)),
@@ -668,7 +623,7 @@ def render_proofs(render_dir: Path) -> None:
     for label, (location, rotation) in {
         "cap": ((0.0, 0.345, 0.52), (0.0, 0.0, 0.0)),
         "cap-profile": ((0.52, 0.345, 0.0), (0.0, math.radians(90), 0.0)),
-        "grip": ((0.0, 0.0, 0.62), (0.0, 0.0, 0.0)),
+        "pivot": ((0.0, 0.0, 0.62), (0.0, 0.0, 0.0)),
     }.items():
         camera.location = location
         camera.rotation_euler = rotation
