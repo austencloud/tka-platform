@@ -14,17 +14,23 @@
 </script>
 
 <!-- On desktop the recipe is a column, not a drawer: every control in it changes
-     the result, and a sheet from the right covered the one panel showing that
-     result. It reads left to right as cause, material, effect. -->
+     the result, and a sheet over the result covered the one panel showing what
+     the controls were doing. As a track it pushes instead of covers, and it
+     opens on the same edge as the buttons that summon it. -->
 <aside class="fuse-recipe-column" aria-label="Fuse recipe">
   <FuseRecipeSettings bind:destination {singleDestination} {onClose} />
 </aside>
 
 <style>
+  /* `flex-end` because the track grows leftward off the workspace's right edge:
+     pinning the panel to that edge means the widening track uncovers it from the
+     right, the direction it is travelling. Pinned to the left edge instead, the
+     panel would sit still while a gap opened beside it. */
   .fuse-recipe-column {
     position: relative;
     grid-area: recipe;
     display: flex;
+    justify-content: flex-end;
     min-width: 0;
     min-height: 0;
     overflow: hidden;

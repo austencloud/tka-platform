@@ -310,8 +310,9 @@
        opened: every one of those rows — Length, Level, Grid, Style, Starting —
        is a card in the rail below, holding its own control. A door onto a list
        that restates the row of cards under it is the redundancy this rail was
-       built to remove. The rule editor still opens on the left, but from the
-       Rule card, which is the only setting a card cannot hold outright. */
+       built to remove. The rule editor still opens as a track on the right, but
+       from the Rule card at the right end of the rail — the only setting a card
+       cannot hold outright, and now the panel grows out of the card itself. */
     .recipe-trigger {
       display: none;
     }

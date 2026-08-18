@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import { holdBackgroundFor } from "$lib/shared/background/shared/state/background-hold.svelte";
   import {
     BREAKPOINTS,
@@ -150,9 +151,36 @@
     untrack(() => holdBackgroundFor("fuse-recipe-track", BACKDROP_HOLD_MS));
   });
 
+  // Closing the recipe collapses its track back to nothing over the same 280ms
+  // the opening took, so the panel has to stay on screen for that long — wiped
+  // away by its own shrinking track. Unmounting it the instant it closed left
+  // those 280ms as an empty widening gap: the result card slid out over blank
+  // space instead of over the panel it was replacing, which is the same pop the
+  // opening was written to avoid, played backwards.
+  //
+  // Reopening during the collapse cancels the unmount, so a double-click on the
+  // recipe button never tears the panel down and rebuilds it.
+  let recipeMounted = $state(false);
+  $effect(() => {
+    if (recipeColumn) {
+      recipeMounted = true;
+      return;
+    }
+    const timer = setTimeout(() => {
+      recipeMounted = false;
+      // Deferred with the unmount rather than run at close: nulling it while
+      // the panel is still visible swaps the open editor back to the settings
+      // list for the length of the collapse. Guarded on the recipe actually
+      // being shut, because the column also goes away when the window narrows
+      // past the fit — there the recipe did not close, it moved into the sheet,
+      // and it has to arrive there still showing the editor you had open.
+      if (!settingsOpen) settingsDestination = null;
+    }, motionDuration(RECIPE_TRANSITION_MS));
+    return () => clearTimeout(timer);
+  });
+
   function closeRecipe(): void {
     settingsOpen = false;
-    settingsDestination = null;
   }
 
   // Widening past the column threshold with the sheet open closes the sheet,
@@ -536,7 +564,7 @@
       onOpenSetting={openSettings}
       onModeChange={changeMode}
     />
-    {#if recipeColumn}
+    {#if recipeMounted && fullCard}
       <FuseRecipeColumn
         bind:destination={settingsDestination}
         singleDestination={wideWorkspace}
@@ -779,8 +807,14 @@
   /* Full-card markup and its grid must change as one state transition. Keeping
      the layout behind a second CSS threshold let browser zoom put the markup
      and grid on opposite sides of the seam, creating implicit columns. */
-  /* The recipe opens as a track on the left, and the other two give way rather
+  /* The recipe opens as a track on the RIGHT, and the other two give way rather
      than being covered — the thing a drawer over the result could never do.
+
+     Right, because every door onto the recipe is on the right: the Fuse recipe
+     button sits at the right end of the header, and Rule — the one card that
+     opens the editor rather than holding its own control — is the last card in
+     the rail. A panel that answered a right-hand control by growing out of the
+     opposite edge of the screen made you look away from what you just clicked.
 
      The track count never changes, because CSS only interpolates two track lists
      of equal length: going from two tracks to three snapped to the end value on
@@ -788,16 +822,16 @@
      So the recipe track and its seam are always present and measure 0 when the
      recipe is closed, and the gaps are spent as explicit tracks rather than as
      `column-gap` — a uniform gap cannot be collapsed for one seam alone, and a
-     zero-width track with a live gap after it would inset the cards from the
+     zero-width track with a live gap before it would inset the cards from the
      header above them. Every track is a length, so the whole list interpolates. */
   .fuse-workspace.full-card-workspace {
     grid-template-columns:
-      var(--fuse-recipe-w, 0px) var(--fuse-recipe-seam, 0px)
-      var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr);
+      var(--fuse-left, 1.8fr) var(--fuse-col-gap) minmax(0, 1fr)
+      var(--fuse-recipe-seam, 0px) var(--fuse-recipe-w, 0px);
     grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "header header header header header"
-      "recipe . left . preview";
+      "left . preview . recipe";
     align-content: stretch;
     column-gap: 0;
     row-gap: var(--fuse-col-gap);

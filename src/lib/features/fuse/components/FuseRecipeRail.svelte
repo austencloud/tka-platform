@@ -273,7 +273,7 @@
   }
 
   /* Two cards come and go with the recipe: Turns above level 1, Rule when the
-     paths are Linked. Linked also opens the rule editor as a track on the left
+     paths are Linked. Linked also opens the rule editor as a track on the right
      of the workspace, so that is two tracks widening at once and it has to read
      as one gesture — same clock, same curve, no stagger. `--duration-emphasis`
      on `--ease-out` is what the workspace itself uses; keep these in step with
@@ -333,8 +333,16 @@
         minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     }
 
+    /* Spelled out rather than `repeat(8, minmax(0, 1fr))`, which reads as the
+       same eight tracks and is not: the browser will not interpolate a repeat()
+       against an explicit list, so this — the state every open rail lands in —
+       snapped to its end value on frame one while the workspace beside it eased
+       over 280ms. The Rule card arrived at full width in a rail that had already
+       jumped, and only its fade was left to suggest it had moved. */
     .recipe-rail.turns.linked {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns:
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)
+        minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
     }
   }
 
