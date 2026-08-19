@@ -707,7 +707,7 @@ git commit -m "feat(3d): planes tab gets a diagram, labeled hand chips, and a pr
 
 This component is shared with other effects hosts; the change is purely additive (a wider container tier), so other consumers only gain the tier if their `looks` container ever exceeds 40rem.
 
-- [ ] **Step 1: Add the wide-tier column derivation**
+- [x] **Step 1: Add the wide-tier column derivation**
 
 Current:
 
@@ -727,7 +727,7 @@ Add directly below it:
   );
 ```
 
-- [ ] **Step 2: Emit it on the grid**
+- [x] **Step 2: Emit it on the grid**
 
 Current:
 
@@ -741,7 +741,7 @@ Replace:
       <div class="preset-grid" data-cols={wideCols} data-cols-wide={ultraCols}>
 ```
 
-- [ ] **Step 3: Add the container tier**
+- [x] **Step 3: Add the container tier**
 
 Directly after the existing block:
 
@@ -763,7 +763,7 @@ add:
   }
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "feat(effects): looks grid steps to four columns on wide containers" -- src/lib/shared/animation-engine/components/effects-panel/EffectPresetsSection.svelte
