@@ -160,7 +160,9 @@
   /* Category counts are 5/5/5/3 and each category restarts its rows at the
      full-width label, so column counts must divide 5 cleanly (or leave >1 in
      the remainder) — 3 and 5, never 4/6/8. Re-check if the prop registry
-     changes. */
+     changes.
+     Variant counts are 2 or 4 (Staff is the only 4-variant family), so the
+     wide tier pins 4 capped tracks and left-aligns instead of stretching. */
   .family-grid,
   .variant-grid {
     display: grid;
@@ -187,7 +189,8 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
     .variant-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 8.75rem));
+      justify-content: start;
     }
   }
   .prop-choice {

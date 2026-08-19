@@ -253,13 +253,15 @@ Replace the entire `{:else}` branch (the `.picker-intro` + `.family-groups` bloc
 
 Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `@container (min-width: 600px) { .family-groups { ... } }` block. Replace the shared `.family-grid, .variant-grid` rule (currently `repeat(auto-fit, minmax(88px, 1fr))`) with pinned counts:
 
-**Deviation from spec (coordinator-approved amendment):** the code below originally specced 4/6/8 columns. The registry's real post-filter category counts are 5/5/5/3 (`staves-clubs`, `curved`, `novelty` each 5; `singles` 3), and each category restarts its own rows at its full-width label — 4 columns strands one orphan tile per 5-item category (`5 % 4 == 1`), and 6/8 columns leave dead trailing tracks. 3 and 5 are the only orphan-free pins for this data (`5 % 3 == 2`, `3 % 3 == 0`, `5 % 5 == 0`), so the family-grid tiers are 3 → 5 (at 480px), not 4 → 6 → 8. The variant-grid (family drill-in) tops out at 4 variants (Staff); 2 → 4 (at 480px) covers it without orphans.
+**Deviation from spec (coordinator-approved amendment):** the code below originally specced 4/6/8 columns. The registry's real post-filter category counts are 5/5/5/3 (`staves-clubs`, `curved`, `novelty` each 5; `singles` 3), and each category restarts its own rows at its full-width label — 4 columns strands one orphan tile per 5-item category (`5 % 4 == 1`), and 6/8 columns leave dead trailing tracks. 3 and 5 are the only orphan-free pins for this data (`5 % 3 == 2`, `3 % 3 == 0`, `5 % 5 == 0`), so the family-grid tiers are 3 → 5 (at 480px), not 4 → 6 → 8. The variant-grid (family drill-in) has counts of 2 or 4 — 10 of the 11 drillable families carry exactly 2 active variants and only Staff carries 4. A `repeat(4, minmax(0, 1fr))` wide tier stretches those 2-variant families into 2 filled + 2 empty declared tracks, the same dead-trailing-tracks defect just fixed on the family grid — so the wide tier instead pins 4 **capped, non-stretching** tracks (`minmax(0, 8.75rem)`) with `justify-content: start`: a 4-variant family fills one row of ~140px tiles, and a 2-variant family renders as two neat left-aligned tiles with no stretched or dead-looking columns.
 
 ```css
   /* Category counts are 5/5/5/3 and each category restarts its rows at the
      full-width label, so column counts must divide 5 cleanly (or leave >1 in
      the remainder) — 3 and 5, never 4/6/8. Re-check if the prop registry
-     changes. */
+     changes.
+     Variant counts are 2 or 4 (Staff is the only 4-variant family), so the
+     wide tier pins 4 capped tracks and left-aligns instead of stretching. */
   .family-grid,
   .variant-grid {
     display: grid;
@@ -286,7 +288,8 @@ Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
     .variant-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 8.75rem));
+      justify-content: start;
     }
   }
 ```
