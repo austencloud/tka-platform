@@ -290,57 +290,65 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="viewer-3d-canvas" data-swipe-block>
   {#if avatarState && sequenceData}
-    {#if canvasMountReady}
-      <Canvas
-        dpr={adaptiveQuality.pixelRatio}
-        shadows={adaptiveQuality.config.enableShadows}
-        createRenderer={(canvas) =>
-          new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
-      >
-        <PerfMonitor
-          visible={viewer3DState.showPerf}
-          adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
-        />
-        <Viewer3DCanvasRef {onRendererReady} />
-        {#if adaptiveQuality.initialized}
-          <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
-          <ScenePostProcessing>
-            <Viewer3DCamera
-              cameraPlayerAvatar={cameraPlayer.avatarState}
-              cameraPlayerPhysics={cameraPlayer.physicsProvider}
-              {onSettingChange}
+    <!-- The transport is a layout sibling of the stage, not an overlay: it
+         takes real space at the bottom and the stage shrinks to fit, so the
+         bar never covers the scene. The loading curtain stays parented to the
+         root so it still covers the transport during the scene-load hold. -->
+    <div class="stage-area">
+      {#if canvasMountReady}
+        <Canvas
+          dpr={adaptiveQuality.pixelRatio}
+          shadows={adaptiveQuality.config.enableShadows}
+          createRenderer={(canvas) =>
+            new WebGLRenderer({ canvas, preserveDrawingBuffer: true })}
+        >
+          <PerfMonitor
+            visible={viewer3DState.showPerf}
+            adaptive={sceneReady && isPlaying && !viewer3DState.isExporting}
+          />
+          <Viewer3DCanvasRef {onRendererReady} />
+          {#if adaptiveQuality.initialized}
+            <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
+            <ScenePostProcessing>
+              <Viewer3DCamera
+                cameraPlayerAvatar={cameraPlayer.avatarState}
+                cameraPlayerPhysics={cameraPlayer.physicsProvider}
+                {onSettingChange}
+              />
+              <Viewer3DScene
+                {sequenceData}
+                {currentStep}
+                {isPlaying}
+                {avatarState}
+                bluePropTypeOverride={bluePropType}
+                redPropTypeOverride={redPropType}
+                {hideSceneMarkers}
+                {hidePerformerBadges}
+                onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
+              />
+            </ScenePostProcessing>
+          {/if}
+        </Canvas>
+      {/if}
+      {#if !hideOverlays}
+        <SceneAudioPlayer />
+        {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
+          <div class="beat-strip-container">
+            <StepPlaneStrip
+              totalSteps={avatarState.totalSteps}
+              currentStepIndex={avatarState.currentStepIndex}
+              beatPlaneOverrides={avatarState.beatPlaneOverrides}
+              onStepClick={handleBeatPlaneStepClick}
             />
-            <Viewer3DScene
-              {sequenceData}
-              {currentStep}
-              {isPlaying}
-              {avatarState}
-              bluePropTypeOverride={bluePropType}
-              redPropTypeOverride={redPropType}
-              {hideSceneMarkers}
-              {hidePerformerBadges}
-              onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
-            />
-          </ScenePostProcessing>
+          </div>
         {/if}
-      </Canvas>
-    {/if}
+      {/if}
+    </div>
     <SceneLoadingCurtain />
     {#if !hideOverlays}
-      <SceneAudioPlayer />
       <div class="timeline-anchor">
         <UnifiedTimeline playback={playbackAdapter} />
       </div>
-      {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
-        <div class="beat-strip-container">
-          <StepPlaneStrip
-            totalSteps={avatarState.totalSteps}
-            currentStepIndex={avatarState.currentStepIndex}
-            beatPlaneOverrides={avatarState.beatPlaneOverrides}
-            onStepClick={handleBeatPlaneStepClick}
-          />
-        </div>
-      {/if}
     {/if}
   {:else}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
@@ -353,20 +361,26 @@
     height: 100%;
     position: relative;
     background: #1a1a2e;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stage-area {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .timeline-anchor {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
+    flex: 0 0 auto;
     z-index: 20;
     pointer-events: auto;
   }
 
   .beat-strip-container {
     position: absolute;
-    bottom: 80px;
+    bottom: 12px;
     left: 12px;
     right: 12px;
     z-index: 10;
