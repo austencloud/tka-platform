@@ -318,7 +318,7 @@ git commit -m "feat(3d): prop picker is one continuous grid with inline category
 
 Keep-separate note (chip-primitives.md): the Blue/Red hand chips form a per-column radio MATRIX across three rows — an assignment model `SegmentedControl` cannot express and `FilterChipBase` toggles would mis-model (exactly-one-per-hand across rows). They stay hand-built, colored by the shared `--prop-blue`/`--prop-red` semantics.
 
-- [ ] **Step 1: Create the inline SVG diagram**
+- [x] **Step 1: Create the inline SVG diagram**
 
 `src/lib/shared/3d/components/PlanesDiagram.svelte`:
 
@@ -386,7 +386,7 @@ Keep-separate note (chip-primitives.md): the Blue/Red hand chips form a per-colu
 </style>
 ```
 
-- [ ] **Step 2: Restructure the popover markup**
+- [x] **Step 2: Restructure the popover markup**
 
 In `PlanesPopover.svelte`, add the import:
 
@@ -513,7 +513,7 @@ Replace everything from `<div class="plane-matrix">` through the closing `{/if}`
 </button>
 ```
 
-- [ ] **Step 3: Replace the affected CSS**
+- [x] **Step 3: Replace the affected CSS**
 
 Delete these rules from `PlanesPopover.svelte`: `.hand-slot` and every `.hand-slot.*` variant, `.planes-footer`, `.label-toggle-row`, `.toggle-label`, `.label-toggle`, `.toggle-track`, `.label-toggle.active .toggle-track`, `.toggle-thumb`, `.label-toggle.active .toggle-thumb`. Keep `.plane-matrix`, `.plane-row*`, `.plane-left`, `.plane-right`, `.plane-toggle*`, `.plane-eye`, `.plane-label`, `.reset-btn*`, `.override-badge` as they are, and add:
 
@@ -684,7 +684,7 @@ Delete these rules from `PlanesPopover.svelte`: `.hand-slot` and every `.hand-sl
 
 Also move the `.reset-btn` `margin-top` off (it was in the footer context): change `.planes-footer`-era spacing by ensuring `.reset-btn` has `flex-shrink: 0;` added to its existing rule (it now sits in the header row).
 
-- [ ] **Step 4: Grep proofs**
+- [x] **Step 4: Grep proofs**
 
 ```bash
 grep -n "toggle-track\|toggle-thumb\|type=\"checkbox\"" src/lib/shared/3d/components/PlanesPopover.svelte
@@ -692,7 +692,7 @@ grep -n "toggle-track\|toggle-thumb\|type=\"checkbox\"" src/lib/shared/3d/compon
 
 Expected: no matches (iOS switch gone, no checkboxes introduced).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(3d): planes tab gets a diagram, labeled hand chips, and a proper toggle button" -- src/lib/shared/3d/components/PlanesPopover.svelte src/lib/shared/3d/components/PlanesDiagram.svelte
