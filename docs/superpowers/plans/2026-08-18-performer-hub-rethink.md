@@ -1873,6 +1873,25 @@ git commit -m "fix(3d): dock dismissal reuses sheet-dismiss primitive and spares
 
 ---
 
+## Mid-Execution Fix (2026-08-18, commit ec6308da3f)
+
+Austen reported (with screenshot) that opening the Prop tab occluded the entire
+performance area. Root cause: `.hub-detail` sized itself `44vw` against the
+viewport (not the scene column) with no height cap. Fixed inline, outside the
+task loop:
+
+- `PerformerHub.svelte` `.hub-anchor` now spans the column (`right: 16px`), and
+  `.detail-panel` owns the sizing: `width: clamp(32.5rem, 50%, 68.75rem)`,
+  `max-height: min(100%, 48rem)`.
+- `PerformerHubDetail.svelte` `.hub-detail` is `width: 100%` (fills its host's
+  box; MobileScenePerformerSheet already overrode it to 100%).
+
+Verified via DevTools: 1855x1487 -> dock 919x768 (49% x 48% of column);
+3840x2160 -> 1100x768 (27% wide). Tasks 4-9 inherit this sizing model - the
+dock is a control surface over the stage, never a modal.
+
+---
+
 ## Self-Review Notes (completed)
 
 - **Spec coverage:** dock shell width/gradient → Task 1; TKA glyph everywhere → Tasks 2 + 8; prop grid → Task 3; planes → Task 4; effects width → Task 5; avatar modal + live preview → Task 6; natural-pose thumbnails → Task 7; sequence pane + picker preview → Task 8; out-of-scope items (spine interaction, transport bar, Effort tab) have no tasks by design; verification → Task 9.
