@@ -336,6 +336,29 @@ def terrain_height(x, y):
     )
 
 
+# How far below the lowest terrain sample a tree's flare is planted. Trees rest
+# on the LOWEST ground under their root footprint rather than on the height at
+# the trunk axis, so a slope buries the uphill side (natural) instead of
+# floating the downhill roots (the 2026-08-18 defect).
+TREE_EMBED_METRES = 0.12
+
+
+def grounded_tree_base_height(x, y, base_radius_world, lean_radians):
+    lowest = terrain_height(x, y)
+    if base_radius_world > 0.0:
+        for step in range(8):
+            angle = math.tau * step / 8.0
+            lowest = min(
+                lowest,
+                terrain_height(
+                    x + math.cos(angle) * base_radius_world,
+                    y + math.sin(angle) * base_radius_world,
+                ),
+            )
+    lean_lift = math.sin(abs(lean_radians)) * base_radius_world
+    return lowest - lean_lift - TREE_EMBED_METRES
+
+
 def forest_floor_material(
     name,
     diffuse_path,
@@ -1322,11 +1345,23 @@ def import_tree_prototype(asset, variant=None, overhead_support=False):
     source_height = source_max_z - source_min_z
     if source_height <= 0.01:
         raise RuntimeError(f"Tree {asset['id']} has invalid height {source_height}")
+    # Horizontal reach of the root flare: every vertex in the lowest 4% of the
+    # tree, measured from the trunk axis. Grounding needs this because a
+    # PlantCatalog oak's flare spans metres -- resting only the trunk centre on
+    # the terrain leaves the downhill half of the flare hanging in the air on
+    # any slope.
+    base_cutoff = source_min_z + 0.04 * source_height
+    source_base_radius = 0.0
+    for vertex in prototype.data.vertices:
+        if vertex.co.z <= base_cutoff:
+            reach = math.hypot(vertex.co.x, vertex.co.y)
+            if reach > source_base_radius:
+                source_base_radius = reach
     prototype["tka_tree_variant"] = variant_id
     prototype.data.name = (
         f"ForestTreeMesh_{asset['id']}_{variant_id}"
     )
-    return prototype, source_min_z, source_height
+    return prototype, source_min_z, source_height, source_base_radius
 
 
 def import_tree_prototypes(asset, overhead_support=False):
@@ -1738,9 +1773,9 @@ def create_near_frame_layer(tree_placements, ground_life_metrics):
         asset = TREE_ASSETS[asset_id]
         prototypes = import_tree_prototypes(asset)
         for frame_index, frame in enumerate(frames):
-            prototype, source_min_z, source_height, variant_id = prototypes[
-                frame_index % len(prototypes)
-            ]
+            prototype, source_min_z, source_height, source_base_radius, variant_id = (
+                prototypes[frame_index % len(prototypes)]
+            )
             normalized_scale = float(asset["targetHeightMetres"]) / source_height
             x, y = map(float, frame["position"])
             scale = normalized_scale * float(frame["scale"])
@@ -1751,12 +1786,17 @@ def create_near_frame_layer(tree_placements, ground_life_metrics):
             tree.scale = (scale, scale, scale)
             tree.rotation_mode = "XYZ"
             tree.rotation_euler[2] = math.radians(float(frame["rotationDegrees"]))
-            tree.location = (x, y, terrain_height(x, y) - source_min_z * scale)
+            tree.location = (
+                x,
+                y,
+                grounded_tree_base_height(x, y, source_base_radius * scale, 0.0)
+                - source_min_z * scale,
+            )
             mark_near_frame_object(tree, "near-frame-tree", asset_id, frame["id"])
             tree["tka_frame_tree_id"] = frame["id"]
             tree["tka_tree_variant"] = variant_id
             created_meshes.append(tree)
-        for prototype, _source_min_z, _source_height, _variant_id in prototypes:
+        for prototype, _min_z, _height, _base_radius, _variant_id in prototypes:
             bpy.data.objects.remove(prototype, do_unlink=True)
 
     props_by_source = {source_id: [] for source_id in STATIC_PROP_SOURCES}
@@ -1840,9 +1880,9 @@ def create_tree_composition(terrain):
         asset = TREE_ASSETS[asset_id]
         prototypes = import_tree_prototypes(asset, overhead_support=True)
         for index, placement in enumerate(asset_placements):
-            prototype, source_min_z, source_height, variant_id = prototypes[
-                index % len(prototypes)
-            ]
+            prototype, source_min_z, source_height, source_base_radius, variant_id = (
+                prototypes[index % len(prototypes)]
+            )
             normalized_scale = float(asset["targetHeightMetres"]) / source_height
             scale = normalized_scale * placement["scaleVariation"]
             aspect = placement["aspectVariation"]
@@ -1862,7 +1902,12 @@ def create_tree_composition(terrain):
             tree.location = (
                 placement["x"],
                 placement["y"],
-                terrain_height(placement["x"], placement["y"])
+                grounded_tree_base_height(
+                    placement["x"],
+                    placement["y"],
+                    source_base_radius * scale * max(aspect, 1.0 / aspect),
+                    max(abs(placement["leanX"]), abs(placement["leanY"])),
+                )
                 - source_min_z * height_scale,
             )
             tree["tka_role"] = "tree"
@@ -1876,7 +1921,7 @@ def create_tree_composition(terrain):
             tree["tka_tree_layout_sha256"] = TREE_LAYOUT_SHA256
             placement["variantId"] = variant_id
             counts[asset_id] += 1
-        for prototype, _source_min_z, _source_height, _variant_id in prototypes:
+        for prototype, _source_min_z, _source_height, _base_radius, _variant_id in prototypes:
             bpy.data.objects.remove(prototype, do_unlink=True)
 
     terrain["tka_tree_phase"] = "forest-composition"
