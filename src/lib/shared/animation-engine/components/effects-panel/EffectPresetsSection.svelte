@@ -76,6 +76,12 @@
   const wideCols = $derived(
     presetModels.length % 3 === 1 && presetModels.length % 2 === 0 ? 2 : 3
   );
+
+  /* Fourth column on genuinely wide docks (the performer hub at 4K). Skip it
+   * when it would strand one card on the last row - those counts stay at 3. */
+  const ultraCols = $derived(
+    presetModels.length >= 4 && presetModels.length % 4 !== 1 ? 4 : 3
+  );
 </script>
 
 <div class="presets-section">
@@ -87,7 +93,7 @@
     aria-label="Choose a {effectLabel} look"
   >
     {#if presetModels.length > 0}
-      <div class="preset-grid" data-cols={wideCols}>
+      <div class="preset-grid" data-cols={wideCols} data-cols-wide={ultraCols}>
         {#each presetModels as item (item.preset.id)}
           {@const isActive = item.preset.id === activePresetId}
           <button
@@ -452,6 +458,16 @@
   @container looks (min-width: 26rem) {
     .preset-grid[data-cols="3"] {
       grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  /* Fourth column on genuinely wide docks (the performer hub at 4K, content up
+     to ~1070px). 40rem so this only fires on containers well past the 26rem
+     three-column tier - other EffectPresetsSection consumers only gain this
+     tier if their container also clears 40rem. */
+  @container looks (min-width: 40rem) {
+    .preset-grid[data-cols-wide="4"] {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
