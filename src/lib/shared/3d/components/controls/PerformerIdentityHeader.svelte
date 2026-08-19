@@ -6,6 +6,7 @@
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
     performer: AvatarInstanceState | null;
@@ -147,9 +148,14 @@
         {/if}
         <div class="sub-row">
           {#if sequenceWord}
-            <span class="sequence-chip" title={sequenceWord}>
+            <div
+              class="sequence-chip"
+              role="img"
+              aria-label={simplifyRepeatedWord(sequenceWord)}
+              title={simplifyRepeatedWord(sequenceWord)}
+            >
               <TKAWordGlyph word={sequenceWord} height={16} darkMode fitToParent />
-            </span>
+            </div>
             <span class="sequence-dot" aria-hidden="true">·</span>
           {/if}
           <span class:muted={sequenceSteps === null} class="sequence-steps">
@@ -291,6 +297,9 @@
     font-style: italic;
   }
   .sequence-chip {
+    /* TKAWordGlyph's fallback text uses the same "TKA Letters" font as the
+       resolved glyph images, so the fallback-to-image swap on cold cache
+       keeps this chip's width stable — no layout shift on the siblings. */
     display: inline-flex;
     align-items: center;
     min-width: 0;
