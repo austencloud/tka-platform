@@ -1,6 +1,9 @@
 <script lang="ts">
   /** Shared fixed-shot and first-person camera for environment review routes. */
+  import { onDestroy } from "svelte";
   import { T } from "@threlte/core";
+  import { Vector3 } from "three";
+  import type CameraControls from "camera-controls";
   import {
     CAMERA_DEFAULTS,
     CameraMode,
@@ -47,6 +50,39 @@
     }
   );
   const destinationDefaults = { [destinationId]: CameraMode.FIRST_PERSON };
+
+  // Orbit-mode pose sync: mirror the live camera into ?cam=/?look= so a
+  // refresh restores the exact view and the URL itself communicates "the
+  // thing I am looking at". Raw history.replaceState on purpose - routing
+  // through SvelteKit's reactive page.url would recompute the preset and
+  // snap the camera to the rounded pose on every write.
+  const scratchPosition = new Vector3();
+  const scratchTarget = new Vector3();
+  let poseSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function schedulePoseSync(controls: CameraControls) {
+    if (poseSyncTimer !== null) clearTimeout(poseSyncTimer);
+    poseSyncTimer = setTimeout(() => writePoseToUrl(controls), 350);
+  }
+
+  function writePoseToUrl(controls: CameraControls) {
+    poseSyncTimer = null;
+    controls.getPosition(scratchPosition);
+    controls.getTarget(scratchTarget);
+    const format = (vector: Vector3) =>
+      [vector.x, vector.y, vector.z].map((value) => value.toFixed(2)).join(",");
+    const url = new URL(window.location.href);
+    url.searchParams.set("cam", format(scratchPosition));
+    url.searchParams.set("look", format(scratchTarget));
+    if (!url.searchParams.has("fov")) {
+      url.searchParams.set("fov", String(preset.fov));
+    }
+    window.history.replaceState(window.history.state, "", url);
+  }
+
+  onDestroy(() => {
+    if (poseSyncTimer !== null) clearTimeout(poseSyncTimer);
+  });
 </script>
 
 {#if walk}
@@ -82,6 +118,7 @@
       minDistance={2}
       maxDistance={maxOrbitDistance}
       maxPolarAngle={Math.PI / 2 + 0.04}
+      onchange={schedulePoseSync}
     />
   </T.PerspectiveCamera>
 {/if}

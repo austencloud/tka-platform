@@ -14,7 +14,11 @@ import random
 import bpy
 from mathutils import Vector
 
-from forest_ground_ecosystem import create_forest_ground_ecosystem
+from forest_ground_ecosystem import (
+    _inside_tree_keep_out,
+    create_forest_ground_ecosystem,
+    set_tree_keep_outs,
+)
 
 
 VARIANT_DEFINITIONS = {
@@ -639,6 +643,8 @@ def _plant_position_is_valid(
         trunk_clearance = 0.45 + float(tree_asset["footprintRadius"]) * 0.12
         if math.hypot(x - tree["x"], y - tree["y"]) < trunk_clearance:
             return False
+    if _inside_tree_keep_out(x, y):
+        return False
     clearance = PLANT_CLEARANCE[family]
     for occupied_x, occupied_y, occupied_clearance in occupied:
         if math.hypot(x - occupied_x, y - occupied_y) < (
@@ -1411,7 +1417,9 @@ def build_ground_life(
     qa_dir,
     near_frame_layout=None,
     near_frame_layout_sha256=None,
+    tree_grass_keep_outs=None,
 ):
+    set_tree_keep_outs(tree_grass_keep_outs or [])
     habitat_definitions = {habitat["id"]: habitat for habitat in ecology["habitats"]}
     ground_collection = bpy.data.collections.new("Forest Ground Life")
     bpy.context.scene.collection.children.link(ground_collection)

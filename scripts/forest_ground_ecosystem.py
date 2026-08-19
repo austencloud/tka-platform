@@ -20,6 +20,40 @@ ECOSYSTEM_VERSION = 7
 MEADOW_SYSTEM_VERSION = 10
 
 
+# Root-flare keep-outs registered by the build script before scatter runs.
+# Each is an (x, y, radius) world-metre circle covering a tree's flare
+# footprint plus a shoulder margin. No ground plant is placed inside one, so
+# blades never pierce a trunk or root flare and every tree keeps the bare
+# shade ring a real broadleaf strips around its base. Circles are bucketed
+# into a coarse grid because the turf sweep tests hundreds of thousands of
+# sample points.
+_TREE_KEEP_OUT_CELL_METRES = 8.0
+_TREE_KEEP_OUT_GRID = defaultdict(list)
+
+
+def set_tree_keep_outs(keep_outs):
+    _TREE_KEEP_OUT_GRID.clear()
+    for x, y, radius in keep_outs:
+        entry = (float(x), float(y), float(radius))
+        cell_x = math.floor(entry[0] / _TREE_KEEP_OUT_CELL_METRES)
+        cell_y = math.floor(entry[1] / _TREE_KEEP_OUT_CELL_METRES)
+        reach = int(math.ceil(entry[2] / _TREE_KEEP_OUT_CELL_METRES))
+        for neighbor_x in range(cell_x - reach, cell_x + reach + 1):
+            for neighbor_y in range(cell_y - reach, cell_y + reach + 1):
+                _TREE_KEEP_OUT_GRID[(neighbor_x, neighbor_y)].append(entry)
+
+
+def _inside_tree_keep_out(x, y):
+    cell = (
+        math.floor(x / _TREE_KEEP_OUT_CELL_METRES),
+        math.floor(y / _TREE_KEEP_OUT_CELL_METRES),
+    )
+    return any(
+        (x - tree_x) ** 2 + (y - tree_y) ** 2 < radius * radius
+        for tree_x, tree_y, radius in _TREE_KEEP_OUT_GRID.get(cell, ())
+    )
+
+
 GRASS_STRATA = {
     "worn": {
         "weight": 0.0,
@@ -421,6 +455,8 @@ def _protected(x, y, minimum_core_radius, path_margin, distance_to_path, paths, 
         return True
     if any(math.hypot(x - mx, y - my) < 0.78 for mx, my in mushroom_positions):
         return True
+    if _inside_tree_keep_out(x, y):
+        return True
     return False
 
 
@@ -698,6 +734,10 @@ def _continuous_turf_positions(
                 math.hypot(sample_x - mushroom_x, sample_y - mushroom_y) < 0.54
                 for mushroom_x, mushroom_y in mushroom_positions
             ):
+                protected_samples += 1
+                x += spacing
+                continue
+            if _inside_tree_keep_out(sample_x, sample_y):
                 protected_samples += 1
                 x += spacing
                 continue

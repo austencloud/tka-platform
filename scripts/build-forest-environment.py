@@ -336,11 +336,34 @@ def terrain_height(x, y):
     )
 
 
-# How far below the lowest terrain sample a tree's flare is planted. Trees rest
-# on the LOWEST ground under their root footprint rather than on the height at
-# the trunk axis, so a slope buries the uphill side (natural) instead of
-# floating the downhill roots (the 2026-08-18 defect).
-TREE_EMBED_METRES = 0.12
+# Trees rest on the LOWEST ground under their root footprint rather than on the
+# height at the trunk axis, so a slope buries the uphill side (natural) instead
+# of floating the downhill roots (the 2026-08-18 defect). The embed depth scales
+# with the flare radius: PlantFactory oaks carry arched root claws whose tips
+# reach the soil while the arch hovers, so a fixed shallow embed still reads as
+# floating from grass level. Sinking a flare-proportional depth puts the arch
+# underside in the dirt and leaves only the root tops exposed. The cap keeps a
+# huge oak's trunk taper above ground.
+TREE_EMBED_FLOOR_METRES = 0.12
+TREE_EMBED_FLARE_FRACTION = 0.45
+TREE_EMBED_MAX_METRES = 1.15
+
+# Grass keep-out circles collected while trees are placed, consumed by the
+# ground-life grass scatter so blades never pierce a root flare. Each entry is
+# (x, y, radius) in world metres: the flare footprint plus a shoulder margin.
+TREE_GRASS_KEEP_OUTS = []
+FLARE_RATIO_BY_ASSET = {}
+TREE_GRASS_KEEP_OUT_MARGIN_METRES = 0.30
+# Frame-tree assets that never appear in the mass wave have no measured flare
+# ratio; PlantFactory broadleafs flare roughly this fraction of their height.
+FALLBACK_FLARE_RATIO = 0.16
+
+
+def tree_embed_depth(base_radius_world):
+    return min(
+        TREE_EMBED_MAX_METRES,
+        max(TREE_EMBED_FLOOR_METRES, TREE_EMBED_FLARE_FRACTION * base_radius_world),
+    )
 
 
 def grounded_tree_base_height(x, y, base_radius_world, lean_radians):
@@ -356,7 +379,7 @@ def grounded_tree_base_height(x, y, base_radius_world, lean_radians):
                 ),
             )
     lean_lift = math.sin(abs(lean_radians)) * base_radius_world
-    return lowest - lean_lift - TREE_EMBED_METRES
+    return lowest - lean_lift - tree_embed_depth(base_radius_world)
 
 
 def forest_floor_material(
@@ -1887,6 +1910,17 @@ def create_tree_composition(terrain):
             scale = normalized_scale * placement["scaleVariation"]
             aspect = placement["aspectVariation"]
             height_scale = scale * placement["heightVariation"]
+            FLARE_RATIO_BY_ASSET.setdefault(
+                asset_id, source_base_radius / source_height
+            )
+            flare_radius_world = source_base_radius * scale * max(aspect, 1.0 / aspect)
+            TREE_GRASS_KEEP_OUTS.append(
+                (
+                    placement["x"],
+                    placement["y"],
+                    flare_radius_world + TREE_GRASS_KEEP_OUT_MARGIN_METRES,
+                )
+            )
             tree = prototype.copy()
             tree.data = prototype.data
             bpy.context.collection.objects.link(tree)
@@ -2312,6 +2346,20 @@ verify_terrain()
 verify_path_layout()
 tree_placements, tree_counts = create_tree_composition(terrain)
 verify_tree_composition(tree_placements, tree_counts)
+for frame in STATIC_PROP_LAYOUT["frameTrees"]:
+    frame_asset = TREE_ASSETS[frame["assetId"]]
+    frame_flare_ratio = FLARE_RATIO_BY_ASSET.get(
+        frame["assetId"], FALLBACK_FLARE_RATIO
+    )
+    frame_x, frame_y = map(float, frame["position"])
+    frame_flare_radius = (
+        frame_flare_ratio
+        * float(frame_asset["targetHeightMetres"])
+        * float(frame["scale"])
+    )
+    TREE_GRASS_KEEP_OUTS.append(
+        (frame_x, frame_y, frame_flare_radius + TREE_GRASS_KEEP_OUT_MARGIN_METRES)
+    )
 ground_life_metrics, near_frame_ground_life, near_frame_ground_life_metrics = build_ground_life(
     project_root=PROJECT_ROOT,
     layout=GROUND_LAYOUT,
@@ -2329,6 +2377,7 @@ ground_life_metrics, near_frame_ground_life, near_frame_ground_life_metrics = bu
     qa_dir=QA_DIR,
     near_frame_layout=STATIC_PROP_LAYOUT,
     near_frame_layout_sha256=STATIC_PROP_LAYOUT_SHA256,
+    tree_grass_keep_outs=TREE_GRASS_KEEP_OUTS,
 )
 near_frame_static_objects, near_frame_metrics = create_near_frame_layer(
     tree_placements,
