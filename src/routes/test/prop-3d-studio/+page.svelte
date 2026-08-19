@@ -7,13 +7,21 @@
     type PropFinish,
   } from "@austencloud/scene-3d";
   import { replaceState } from "$app/navigation";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
+  import { cubicOut } from "svelte/easing";
+
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+  import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
+  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
+  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
   import {
@@ -180,21 +188,40 @@
    * the user was in the middle of reading a prop from.
    */
   let cameraIsFree = $state(false);
-  let sequence = $state.raw<SequenceData | null>(null);
+  /**
+   * The app's playback clock, not a local one. It owns the invariant this page
+   * used to get wrong: step N's motion spans currentStep N to N+1, so a
+   * 16-count LOOP has to reach 17 before it has actually played its closing
+   * step, and a seamless LOOP skips the start-position hold on every pass after
+   * the first. The hand-rolled counter that wrapped at `steps.length` from zero
+   * paid a dead beat at the top and then cut the motion that returns the props
+   * to where they started -- the LOOP never closed.
+   *
+   * `ephemeral` keeps this harness out of the global speed and loop
+   * preferences, and the shared-workspace sink is off so a review LOOP cannot
+   * light up the beat grid of whatever sequence Create has open behind it.
+   */
+  const animation = createAnimationPanelState({ ephemeral: true });
+  const playback = new AnimationPlaybackController(
+    new SequenceAnimationOrchestrator(new AnimationStateManager()),
+    new AnimationLoop(),
+    { syncSharedWorkspaceState: false }
+  );
+
   let preloadedSequence = $state.raw<SequenceData | null>(null);
-  let currentStep = $state(0);
   let bpm = $state(76);
-  let playing = $state(true);
   let sceneReady = $state(false);
   let loading = $state(true);
   let preloading = $state(false);
-  let swapping = $state(false);
   let error = $state("");
   let loopNumber = $state(0);
   let viewportWidth = $state(1600);
   let viewportHeight = $state(900);
   let generationToken = 0;
-  let raf = 0;
+
+  const sequence = $derived(animation.sequenceData);
+  const currentStep = $derived(animation.currentStep);
+  const playing = $derived(animation.isPlaying);
 
   const selectedLabel = $derived(getPropTypeDisplayInfo(selectedProp).label);
   const currentLoopLabel = $derived(
@@ -290,6 +317,32 @@
     propHasFinishVariants(toScenePropType(selectedProp))
   );
 
+  /** Matches the column gap `.deck-top` hands each group as a right margin. */
+  const DECK_COLUMN_GAP = 30;
+
+  /**
+   * Collapses a control group along the row instead of popping it out of it.
+   * Width AND the group's own gap animate together, so the neighbours slide
+   * over rather than jumping, and nothing is left holding an empty column.
+   */
+  function collapseInline(node: HTMLElement) {
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const width = node.getBoundingClientRect().width;
+
+    return {
+      duration: reduced ? 0 : DURATION.emphasis,
+      easing: cubicOut,
+      css: (t: number, u: number) =>
+        `overflow: hidden;` +
+        `width: ${t * width}px;` +
+        `margin-right: ${t * DECK_COLUMN_GAP}px;` +
+        `opacity: ${t};` +
+        `transform: translateY(${u * 6}px);`,
+    };
+  }
+
   async function generateRotatedLoop(): Promise<SequenceData> {
     const generated = await getGenerationOrchestrator().generateSequence({
       mode: GenerationMode.CIRCULAR,
@@ -324,19 +377,40 @@
     }
   }
 
+  /**
+   * Hand the prepared LOOP to the clock rather than watching for the end here.
+   * The controller consumes this inside the frame that crosses the boundary, so
+   * the closing step and the next LOOP's opening step are sampled before the
+   * same paint: the props run out of one LOOP and into the next with no gap.
+   */
+  playback.onSequenceBoundary(() => {
+    const next = preloadedSequence;
+    if (!next) return null;
+    return {
+      sequence: next,
+      accept: () => {
+        preloadedSequence = null;
+        loopNumber += 1;
+        void preloadNextLoop();
+      },
+    };
+  });
+
+  /** Start a LOOP from the top. The first one, and the deck's own swap button. */
   function installSequence(next: SequenceData): void {
-    sequence = next;
-    currentStep = 0;
+    if (!playback.initialize(next, animation)) {
+      error = "The generated motion could not be played.";
+      return;
+    }
+    animation.setShouldLoop(true);
+    playback.setSpeed(bpm / 60);
     loopNumber += 1;
-    viewer.enter3D(next);
-    viewer.hideAllPlanes();
+    playback.togglePlayback();
     // Deliberately does NOT touch the camera. `enter3D` leaves it alone, so the
     // view survives the swap — which is the whole point of the fix.
   }
 
   async function advanceLoop(): Promise<void> {
-    if (swapping) return;
-    swapping = true;
     try {
       const next = preloadedSequence ?? (await generateRotatedLoop());
       preloadedSequence = null;
@@ -349,10 +423,28 @@
           ? cause.message
           : "A new LOOP could not be generated.";
     } finally {
-      swapping = false;
       loading = false;
     }
   }
+
+  /**
+   * The avatar builds its own step configs, so every sequence the clock accepts
+   * has to reach the viewer -- the first one, a button swap, and the ones the
+   * boundary hand-off installs without this page ever calling a function.
+   */
+  $effect(() => {
+    const next = animation.sequenceData;
+    if (!next) return;
+    untrack(() => {
+      viewer.enter3D(next);
+      viewer.hideAllPlanes();
+    });
+  });
+
+  /** Tempo is the clock's, not a number this page multiplies by itself. */
+  $effect(() => {
+    playback.setSpeed(bpm / 60);
+  });
 
   function handleSceneReady(ready: boolean): void {
     sceneReady = ready;
@@ -382,33 +474,13 @@
             ? cause.message
             : "The first LOOP could not be generated.";
       });
-
-    let previous = performance.now();
-    const tick = (now: number) => {
-      const deltaSeconds = Math.min((now - previous) / 1000, 0.1);
-      previous = now;
-      if (playing && sequence && !swapping) {
-        currentStep += deltaSeconds * (bpm / 60);
-        if (
-          currentStep >= sequence.steps.length / 2 &&
-          !preloadedSequence &&
-          !preloading
-        ) {
-          void preloadNextLoop();
-        }
-        if (currentStep >= sequence.steps.length) {
-          currentStep %= sequence.steps.length;
-          void advanceLoop();
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
   });
 
   onDestroy(() => {
     generationToken += 1;
-    if (typeof cancelAnimationFrame !== "undefined") cancelAnimationFrame(raf);
+    playback.offSequenceBoundary();
+    playback.dispose(animation);
+    animation.dispose();
     viewer.dispose();
   });
 </script>
@@ -432,6 +504,8 @@
   data-prop-studio-prop={selectedProp}
   data-prop-studio-angle={activeAngle}
   data-prop-studio-loop={loopNumber}
+  data-prop-studio-step={currentStep.toFixed(3)}
+  data-prop-studio-total={animation.totalSteps}
 >
   <section class="stage" aria-label="Live 3D prop review">
     {#if sequence}
@@ -515,7 +589,7 @@
           on this harness.
         -->
         {#if showFinishes}
-          <div class="control-group">
+          <div class="control-group build-group" transition:collapseInline>
             <span class="control-label">Build</span>
             <div class="button-row">
               {#each FINISHES as finish}
@@ -532,14 +606,14 @@
           </div>
         {/if}
 
-        <div class="control-group">
+        <div class="control-group playback-group">
           <span class="control-label">Playback</span>
           <div class="transport-row">
             <button
               type="button"
               class="transport"
               aria-pressed={!playing}
-              onclick={() => (playing = !playing)}
+              onclick={() => playback.togglePlayback()}
             >
               {playing ? "Pause" : "Play"}
             </button>
@@ -691,11 +765,35 @@
   .deck-top {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 30px;
+    /* Column gap lives on the groups themselves: a hidden Build has to take its
+       own spacing with it, and a `gap` cannot be animated per item. */
+    gap: 12px 0;
   }
 
   .control-group {
     min-width: 0;
+  }
+
+  .deck-top > .control-group {
+    margin-right: 30px;
+  }
+
+  .deck-top > .control-group:last-child {
+    margin-right: 0;
+  }
+
+  /* Two short labels, and it has to clip cleanly while it collapses. */
+  .build-group .button-row {
+    flex-wrap: nowrap;
+  }
+
+  /*
+    Takes the rest of the line instead of leaving a dead column beside Build,
+    and its own basis is small enough that Build appearing squeezes the tempo
+    row rather than wrapping the whole group onto a second line.
+  */
+  .playback-group {
+    flex: 1 1 460px;
   }
 
   .control-label {
@@ -875,7 +973,11 @@
   }
 
   .preload-state {
+    /* Rides the right edge, so the width the group grows into is used rather
+       than left as a gap. */
+    margin-left: auto;
     min-width: 130px;
+    text-align: right;
     color: rgba(255, 255, 255, 0.5);
     font-size: var(--font-size-compact, 12px);
   }
