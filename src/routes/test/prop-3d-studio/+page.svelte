@@ -2,6 +2,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import {
     propFinishState,
+    propHasFinishVariants,
     type CameraStateSnapshot,
     type PropFinish,
   } from "@austencloud/scene-3d";
@@ -26,6 +27,7 @@
   } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
@@ -280,6 +282,14 @@
     propFinishState.set(finish);
   }
 
+  /**
+   * Only three props are built twice. Offering Fire/Day beside a staff is a
+   * switch wired to nothing, so the row is only here when it does something.
+   */
+  const showFinishes = $derived(
+    propHasFinishVariants(toScenePropType(selectedProp))
+  );
+
   async function generateRotatedLoop(): Promise<SequenceData> {
     const generated = await getGenerationOrchestrator().generateSequence({
       mode: GenerationMode.CIRCULAR,
@@ -504,21 +514,23 @@
           so one shared control among two hand-built rows would read as a mistake
           on this harness.
         -->
-        <div class="control-group">
-          <span class="control-label">Build</span>
-          <div class="button-row">
-            {#each FINISHES as finish}
-              <button
-                type="button"
-                class:active={propFinishState.finish === finish.id}
-                aria-pressed={propFinishState.finish === finish.id}
-                onclick={() => chooseFinish(finish.id)}
-              >
-                {finish.label}
-              </button>
-            {/each}
+        {#if showFinishes}
+          <div class="control-group">
+            <span class="control-label">Build</span>
+            <div class="button-row">
+              {#each FINISHES as finish}
+                <button
+                  type="button"
+                  class:active={propFinishState.finish === finish.id}
+                  aria-pressed={propFinishState.finish === finish.id}
+                  onclick={() => chooseFinish(finish.id)}
+                >
+                  {finish.label}
+                </button>
+              {/each}
+            </div>
           </div>
-        </div>
+        {/if}
 
         <div class="control-group">
           <span class="control-label">Playback</span>

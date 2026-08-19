@@ -4987,7 +4987,7 @@ index 15844ec32763c63fe4955b8c893dbcdd5156ff4b..a8507115c4d774151a6609a773c30ce9
      PropType["BIGTORCH"] = "bigtorch";
      PropType["POI"] = "poi";
 diff --git a/dist/lib/index.d.ts b/dist/lib/index.d.ts
-index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c138ac8d7 100644
+index b6c16afd1233f1d026941e108cf2912a86e92d03..106af8b8b98d5e75a0eae6532425d94d9b349ae5 100644
 --- a/dist/lib/index.d.ts
 +++ b/dist/lib/index.d.ts
 @@ -41,6 +41,7 @@ export type { FormationPreset } from "./domain/formation";
@@ -4998,19 +4998,23 @@ index b6c16afd1233f1d026941e108cf2912a86e92d03..2abd553e21fab51c4b2dc2d62d74f61c
  export type { AvatarId, AvatarDefinition } from "./config/avatar-definitions";
  export { cmToUnits, deriveSceneProportions, AUSTEN_STAFF } from "./config/avatar-proportions";
  export { DEFAULT_SCENE_DIMENSIONS, inchesToCm, COMMON_HEIGHTS, COMMON_STAFF_LENGTHS } from "./config/user-proportions";
-@@ -48,6 +49,7 @@ export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO }
+@@ -48,6 +49,11 @@ export { PRESET_VALID_COUNTS, createFormationFromPreset, FORMATION_PRESET_INFO }
  export { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
  export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
  export { userProportionsState } from "./state/user-proportions-state.svelte";
-+export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
++export {
++	propFinishState,
++	propHasFinishVariants,
++	type PropFinish,
++} from "./state/prop-finish-state.svelte";
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
  export { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
  export type { ViewerVisibilityState } from "./context/viewer-visibility-context";
 diff --git a/dist/lib/index.js b/dist/lib/index.js
-index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7ad6807bfa 100644
+index 10260a02337aeff1c9a1b880aff958088813053b..97a18ae883a3adb4bfb5089cb981961b07f5d794 100644
 --- a/dist/lib/index.js
 +++ b/dist/lib/index.js
-@@ -1,91 +1,190 @@
+@@ -1,91 +1,191 @@
 -// Components
 -export { default as Avatar3D } from "./components/Avatar3D.svelte";
 -export { default as PerformerRig } from "./components/PerformerRig.svelte";
@@ -5141,7 +5145,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7a
 +import { SCALE, STAGE, WORLDS } from "./scale/scale-constants";
 +import { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shouldUsePlayerBodyLayer } from "./layers/layer-constants";
 +import { userProportionsState } from "./state/user-proportions-state.svelte";
-+import { propFinishState } from "./state/prop-finish-state.svelte";
++import { propFinishState, propHasFinishVariants } from "./state/prop-finish-state.svelte";
 +import { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
 +import { setViewerVisibilityContext, getViewerVisibilityContext, tryGetViewerVisibilityContext } from "./context/viewer-visibility-context";
 +import { LocomotionState } from "./services/contracts/IAnimationStateMachine";
@@ -5281,6 +5285,7 @@ index 10260a02337aeff1c9a1b880aff958088813053b..9c4d049ae66741aa353c6705c82a6c7a
 +  lerpCameraPosition,
 +  lerpCameraState,
 +  propFinishState,
++  propHasFinishVariants,
 +  seatedAudienceLoader,
 +  setViewer3DContext,
 +  setViewerVisibilityContext,
@@ -8584,16 +8589,17 @@ index 0000000000000000000000000000000000000000..05462eb708ffedd23a2919320a1afad3
 +}
 diff --git a/dist/lib/state/prop-finish-state.svelte.d.ts b/dist/lib/state/prop-finish-state.svelte.d.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..5a4e62e9120ac50ca63e817251aa9fc4031f6906
+index 0000000000000000000000000000000000000000..862945eed583abf5c8842c40a5ffee261dbda63f
 --- /dev/null
 +++ b/dist/lib/state/prop-finish-state.svelte.d.ts
-@@ -0,0 +1,15 @@
+@@ -0,0 +1,17 @@
 +/**
 + * Prop Finish State
 + *
 + * Some props exist in two real builds: the fire one you burn and the day one
 + * you practise with.
 + */
++import { PropType } from "../domain/enums/PropType";
 +export type PropFinish = "fire" | "day";
 +declare class PropFinishState {
 +    private _finish;
@@ -8602,13 +8608,15 @@ index 0000000000000000000000000000000000000000..5a4e62e9120ac50ca63e817251aa9fc4
 +    toggle(): void;
 +}
 +export declare const propFinishState: PropFinishState;
++export declare function propHasFinishVariants(propType: PropType): boolean;
 +export {};
 diff --git a/dist/lib/state/prop-finish-state.svelte.js b/dist/lib/state/prop-finish-state.svelte.js
 new file mode 100644
-index 0000000000000000000000000000000000000000..c84cb200c2a3c064299293d5418b8ed0e8d6f44b
+index 0000000000000000000000000000000000000000..ddbc31affc0d205738c5361fe6f6bf94305c0db8
 --- /dev/null
 +++ b/dist/lib/state/prop-finish-state.svelte.js
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,26 @@
++import { PropType } from "../domain/enums/PropType";
 +class PropFinishState {
 +  _finish = $state("fire");
 +  get finish() {
@@ -8622,8 +8630,17 @@ index 0000000000000000000000000000000000000000..c84cb200c2a3c064299293d5418b8ed0
 +  }
 +}
 +const propFinishState = new PropFinishState();
++const PROPS_WITH_FINISH_VARIANTS = /* @__PURE__ */ new Set([
++  PropType.TRIAD,
++  PropType.BIGTRIAD,
++  PropType.QUIAD
++]);
++function propHasFinishVariants(propType) {
++  return PROPS_WITH_FINISH_VARIANTS.has(propType);
++}
 +export {
-+  propFinishState
++  propFinishState,
++  propHasFinishVariants
 +};
 diff --git a/src/lib/components/Avatar3D.svelte b/src/lib/components/Avatar3D.svelte
 index 9b167be2ff90dd8f228587b0a15afe75f53cdf9d..4321d72e9da57e4dd80b0f842de15f57e5586d0e 100644
@@ -14137,18 +14154,22 @@ index a6a29aa9b928eb98fc102f572da1ed2035c658ba..1dea0ef2ebfe75fa76a2851192b4c081
  	BIGTORCH = "bigtorch",
  	POI = "poi",
 diff --git a/src/lib/index.ts b/src/lib/index.ts
-index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..6e5033f0b3a941ef39c62ab16bf6dd11dc296c0e 100644
+index 68c4a74d3b2fe5ba08879790479da3cd64dcae1d..cf64997a4b0c5b4b68bddfe6fd05312f3f7fe23b 100644
 --- a/src/lib/index.ts
 +++ b/src/lib/index.ts
-@@ -71,6 +71,7 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
+@@ -71,6 +71,11 @@ export { LAYER_WORLD, LAYER_PLAYER_BODY, LAYER_VIEWMODEL, getCameraLayers, shoul
  
  // State
  export { userProportionsState } from "./state/user-proportions-state.svelte";
-+export { propFinishState, type PropFinish } from "./state/prop-finish-state.svelte";
++export {
++	propFinishState,
++	propHasFinishVariants,
++	type PropFinish,
++} from "./state/prop-finish-state.svelte";
  
  // Context
  export { setViewer3DContext, getViewer3DContext, tryGetViewer3DContext } from "./context/viewer-3d-context";
-@@ -151,3 +152,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
+@@ -151,3 +156,7 @@ export { PROP_COLORS, METAL_COLORS } from "./components/props/Prop3DProps";
  
  // Data
  export { STAFF_GRIP_POSES } from "./data/grip-poses/staff-grip-poses";
@@ -16324,10 +16345,10 @@ index 0000000000000000000000000000000000000000..812243e7d2e1bb545800d21c6b6411a7
 +}
 diff --git a/src/lib/state/prop-finish-state.svelte.ts b/src/lib/state/prop-finish-state.svelte.ts
 new file mode 100644
-index 0000000000000000000000000000000000000000..5ba92a5fbedbbd73e1d926c150335c900f4bac51
+index 0000000000000000000000000000000000000000..90026cb917179add0ed9e934278c117fc3bcc517
 --- /dev/null
 +++ b/src/lib/state/prop-finish-state.svelte.ts
-@@ -0,0 +1,31 @@
+@@ -0,0 +1,52 @@
 +/**
 + * Prop Finish State
 + *
@@ -16339,6 +16360,8 @@ index 0000000000000000000000000000000000000000..5ba92a5fbedbbd73e1d926c150335c90
 + * reactive setting rather than as a second `PropType`. Prop components read it
 + * and pick their build; nothing about the sequence changes.
 + */
++
++import { PropType } from "../domain/enums/PropType";
 +
 +export type PropFinish = "fire" | "day";
 +
@@ -16359,3 +16382,22 @@ index 0000000000000000000000000000000000000000..5ba92a5fbedbbd73e1d926c150335c90
 +}
 +
 +export const propFinishState = new PropFinishState();
++
++/**
++ * The props Prop3D actually builds twice. Everything else ignores the finish,
++ * so a Fire/Day control shown next to them is a switch wired to nothing --
++ * surfaces ask this before offering the choice.
++ *
++ * A fire double staff and an LED baton are NOT on this list: those are separate
++ * objects with their own reach and their own notation entry, not two builds of
++ * one prop.
++ */
++const PROPS_WITH_FINISH_VARIANTS: ReadonlySet<PropType> = new Set([
++	PropType.TRIAD,
++	PropType.BIGTRIAD,
++	PropType.QUIAD,
++]);
++
++export function propHasFinishVariants(propType: PropType): boolean {
++	return PROPS_WITH_FINISH_VARIANTS.has(propType);
++}
