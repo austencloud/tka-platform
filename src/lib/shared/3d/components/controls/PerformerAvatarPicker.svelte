@@ -1,6 +1,6 @@
 <script lang="ts">
   import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
-  import { R2_CDN } from "../../constants/r2-cdn";
+  import { avatarThumbnailUrl } from "../../constants/r2-cdn";
 
   interface Props {
     selectedAvatarId: AvatarId | null;
@@ -19,10 +19,6 @@
   }: Props = $props();
 
   let loadedThumbs = $state(new Set<string>());
-
-  function avatarThumbUrl(id: string): string {
-    return `${R2_CDN}/models/avatars/thumbnails/${id}.webp`;
-  }
 
   function moveSelection(event: KeyboardEvent, id: AvatarId): void {
     const currentIndex = AVATAR_DEFINITIONS.findIndex(
@@ -90,7 +86,7 @@
         <img
           class="avatar-thumb"
           class:loaded={loadedThumbs.has(definition.id)}
-          src={avatarThumbUrl(definition.id)}
+          src={avatarThumbnailUrl(definition.id)}
           alt=""
           loading="lazy"
           onload={() =>

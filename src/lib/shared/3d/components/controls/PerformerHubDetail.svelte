@@ -10,7 +10,8 @@
   import { getPerformerColor } from "../../constants/performer-colors";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
-  import PerformerAvatarPicker from "./PerformerAvatarPicker.svelte";
+  import AvatarSelectModal from "./avatar-select/AvatarSelectModal.svelte";
+  import { avatarThumbnailUrl } from "../../constants/r2-cdn";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import PerformerSequencePanel from "./PerformerSequencePanel.svelte";
@@ -70,6 +71,17 @@
       ? first
       : null;
   });
+
+  // The summary row describes exactly what is on the performer(s) right now.
+  // Null means the selection spans several different avatars, which is a real
+  // state to show rather than a body to guess at.
+  const summaryAvatarDef = $derived(
+    currentAvatarId
+      ? (AVATAR_DEFINITIONS.find((a) => a.id === currentAvatarId) ?? null)
+      : null
+  );
+
+  let avatarModalOpen = $state(false);
 
   async function pickAvatar(id: AvatarId): Promise<void> {
     cancelAvatarSelectionIntent();
@@ -347,13 +359,43 @@
         aria-labelledby="hub-tab-avatar"
       >
         <div class="avatar-section">
-          <PerformerAvatarPicker
-            selectedAvatarId={currentAvatarId}
-            {pendingAvatarId}
-            onSelect={(id) => void pickAvatar(id)}
-            onIntent={queueAvatarSelectionIntent}
-            onCancelIntent={cancelAvatarSelectionIntent}
-          />
+          <div class="avatar-summary">
+            {#if summaryAvatarDef}
+              <img
+                class="avatar-summary-thumb"
+                src={avatarThumbnailUrl(summaryAvatarDef.id)}
+                alt=""
+                loading="lazy"
+              />
+            {:else}
+              <div class="avatar-summary-thumb is-empty" aria-hidden="true">
+                <i class="fas fa-users"></i>
+              </div>
+            {/if}
+
+            <div class="avatar-summary-meta">
+              <span class="avatar-summary-name">
+                {summaryAvatarDef?.name ?? "Mixed avatars"}
+              </span>
+              <span class="avatar-summary-desc">
+                {#if pendingAvatarId}
+                  Loading avatar…
+                {:else}
+                  {summaryAvatarDef?.description ??
+                    "Performers use different avatars"}
+                {/if}
+              </span>
+            </div>
+
+            <button
+              class="avatar-change-btn"
+              type="button"
+              onclick={() => (avatarModalOpen = true)}
+            >
+              <i class="fas fa-user-pen" aria-hidden="true"></i>
+              <span>Change avatar</span>
+            </button>
+          </div>
         </div>
       </div>
     {/if}
@@ -480,6 +522,17 @@
     {/each}
   </div>
 </div>
+
+<AvatarSelectModal
+  bind:open={avatarModalOpen}
+  {currentAvatarId}
+  {pendingAvatarId}
+  {performerColor}
+  onIntent={queueAvatarSelectionIntent}
+  onCancelIntent={cancelAvatarSelectionIntent}
+  onCommit={(id) => void pickAvatar(id)}
+  onClose={() => (avatarModalOpen = false)}
+/>
 
 <ConfirmDialog
   bind:isOpen={removeConfirmOpen}
@@ -642,6 +695,97 @@
     container-type: inline-size;
   }
 
+  .avatar-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 12px;
+    background: var(--surface-inset-deep);
+  }
+
+  .avatar-summary-thumb {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    object-fit: cover;
+    object-position: center top;
+    background: var(--theme-card-bg);
+  }
+
+  .avatar-summary-thumb.is-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text-dim);
+    font-size: 20px;
+  }
+
+  .avatar-summary-meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    /* Name plus a two-line description. Reserved so the row keeps its height
+       when the description swaps for the shorter loading line. */
+    min-height: 56px;
+  }
+
+  .avatar-summary-name {
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--theme-text);
+  }
+
+  .avatar-summary-desc {
+    font-size: 14px;
+    line-height: 1.3;
+    color: var(--theme-text-dim);
+  }
+
+  .avatar-change-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-height: 44px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid
+      color-mix(in srgb, var(--performer-color) 45%, transparent);
+    background: color-mix(in srgb, var(--performer-color) 18%, transparent);
+    color: var(--theme-text);
+    font-size: 14px;
+    font-weight: 650;
+    cursor: pointer;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .avatar-change-btn:hover {
+    background: color-mix(in srgb, var(--performer-color) 30%, transparent);
+    border-color: var(--performer-color);
+  }
+
+  @container (max-width: 380px) {
+    .avatar-change-btn span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  }
+
   /* ─── Prop tab ─── */
   .prop-section {
     display: flex;
@@ -713,6 +857,9 @@
     }
     .tab-pane {
       animation: none;
+    }
+    .avatar-change-btn {
+      transition: none;
     }
   }
 
