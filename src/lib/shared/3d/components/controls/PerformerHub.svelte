@@ -3,6 +3,7 @@
   import { getPerformerColor } from "../../constants/performer-colors";
   import PerformerSpine from "./PerformerSpine.svelte";
   import PerformerHubDetail from "./PerformerHubDetail.svelte";
+  import { createSheetDismiss } from "./BottomSheet.svelte";
   import { slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import {
@@ -55,20 +56,31 @@
 
   let hubEl = $state<HTMLElement | null>(null);
 
-  function handleOutsidePointer(event: PointerEvent) {
-    if (detailCollapsed) return;
-    const target = event.target;
-    if (!(target instanceof Node)) return;
-    if (hubEl?.contains(target)) return;
-    // Modals launched from the hub (avatar select, sequence picker, confirm
-    // dialogs) render in top-layer <dialog> elements outside the hub subtree;
-    // interacting with them must not dismiss the dock behind them.
-    if (target instanceof Element && target.closest("dialog")) return;
-    collapseDetail();
+  // Top-layer/portalled modals opened from inside the dock - the sequence
+  // picker's native <dialog>, and Bits UI dialogs (e.g. the "Remove
+  // performer?" ConfirmDialog) that portal their content to document.body as
+  // a plain div - must not dismiss the dock behind them. `contains()` alone
+  // misses the portalled case since that content never lives inside hubEl.
+  function isModalTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      target.closest(
+        "dialog, [role='dialog'], [role='alertdialog'], [data-dialog-content]"
+      ) !== null
+    );
   }
+
+  const dismiss = createSheetDismiss(collapseDetail, () => hubEl, isModalTarget);
 </script>
 
-<svelte:window onpointerdowncapture={handleOutsidePointer} />
+<svelte:window
+  onpointerdowncapture={(e) => {
+    if (!detailCollapsed) dismiss.onBackdropPointerDown(e);
+  }}
+  onkeydown={(e) => {
+    if (!detailCollapsed) dismiss.onKeydown(e);
+  }}
+/>
 
 {#if performers.length >= 1}
   <div class="hub-anchor" bind:this={hubEl} style:--panel-color={performerColor}>
@@ -99,7 +111,7 @@
 {/if}
 
 <style>
-  .hub-anchor {
+  div.hub-anchor {
     position: absolute;
     top: 12px;
     bottom: 90px;

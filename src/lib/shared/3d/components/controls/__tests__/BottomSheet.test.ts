@@ -41,4 +41,58 @@ describe("createSheetDismiss", () => {
     d.onBackdropPointerDown({ target: child } as unknown as PointerEvent);
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  describe("isExempt predicate", () => {
+    it("does NOT close on outside pointerdown when the target is exempt", () => {
+      const onClose = vi.fn();
+      const panel = el("div");
+      const modalTarget = el("div");
+      const d = createSheetDismiss(onClose, () => panel, () => true);
+      d.onBackdropPointerDown({ target: modalTarget } as unknown as PointerEvent);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("does NOT close on Escape when the target is exempt", () => {
+      const onClose = vi.fn();
+      const panel = el("div");
+      const modalTarget = el("div");
+      const d = createSheetDismiss(onClose, () => panel, () => true);
+      d.onKeydown({
+        key: "Escape",
+        target: modalTarget,
+      } as unknown as KeyboardEvent);
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it("still closes on outside pointerdown when the target is NOT exempt", () => {
+      const onClose = vi.fn();
+      const panel = el("div");
+      const outside = el("div");
+      const d = createSheetDismiss(onClose, () => panel, () => false);
+      d.onBackdropPointerDown({ target: outside } as unknown as PointerEvent);
+      expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it("still closes on Escape when the target is NOT exempt", () => {
+      const onClose = vi.fn();
+      const panel = el("div");
+      const outside = el("div");
+      const d = createSheetDismiss(onClose, () => panel, () => false);
+      d.onKeydown({
+        key: "Escape",
+        target: outside,
+      } as unknown as KeyboardEvent);
+      expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it("defaults to non-exempt when no predicate is passed (BottomSheet's own usage is unchanged)", () => {
+      const onClose = vi.fn();
+      const panel = el("div");
+      const outside = el("div");
+      const d = createSheetDismiss(onClose, () => panel);
+      d.onBackdropPointerDown({ target: outside } as unknown as PointerEvent);
+      d.onKeydown({ key: "Escape", target: outside } as unknown as KeyboardEvent);
+      expect(onClose).toHaveBeenCalledTimes(2);
+    });
+  });
 });

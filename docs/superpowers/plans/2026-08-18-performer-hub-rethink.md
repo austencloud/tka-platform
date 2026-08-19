@@ -1743,49 +1743,121 @@ overscroll-behavior: contain;
 
 - [x] **Step 3: Tap-outside dismissal**
 
-In `PerformerHub.svelte`:
+**Revised during code review (CHANGES_REQUIRED, addressed same day):** the first
+pass hand-rolled a `handleOutsidePointer` function whose top-layer exemption
+only matched native `<dialog>` elements. `ConfirmDialog.svelte` ("Remove
+performer?", opened from inside the open dock) is built on Bits UI's
+`Dialog`, which portals its content to `document.body` as a plain `<div
+role="dialog" data-dialog-content>` — not a `<dialog>`. A pointerdown on its
+Cancel/Remove button fired the capture-phase handler, collapsed the dock, and
+unmounted `PerformerHubDetail` (and the `ConfirmDialog` it renders) mid-press.
+The same directory already owns a dismiss primitive with an identical
+contract — `createSheetDismiss` in `BottomSheet.svelte`
+(Escape closes; pointerdown outside the panel closes; inside is ignored;
+unit-tested in `__tests__/BottomSheet.test.ts`) — so per
+`never-hand-roll.md` the fix extends that owner with an exemption predicate
+instead of keeping a duplicate. This also gives the dock Escape-to-close for
+free.
 
-Script — add a root element ref and the handler (below `collapseDetail`):
+In `BottomSheet.svelte`'s module script, extend `createSheetDismiss` with an
+optional `isExempt` predicate, honored by BOTH handlers (Escape too — a modal
+can capture Escape as easily as a pointerdown):
 
 ```ts
-let hubEl = $state<HTMLElement | null>(null);
-
-function handleOutsidePointer(event: PointerEvent) {
-  if (detailCollapsed) return;
-  const target = event.target;
-  if (!(target instanceof Node)) return;
-  if (hubEl?.contains(target)) return;
-  // Modals launched from the hub (avatar select, sequence picker, confirm
-  // dialogs) render in top-layer <dialog> elements outside the hub subtree;
-  // interacting with them must not dismiss the dock behind them.
-  if (target instanceof Element && target.closest("dialog")) return;
-  collapseDetail();
+export function createSheetDismiss(
+  onClose: () => void,
+  getPanel: () => HTMLElement | null = () => null,
+  isExempt: (target: EventTarget | null) => boolean = () => false,
+) {
+  return {
+    onKeydown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (isExempt(e.target)) return;
+      onClose();
+    },
+    onBackdropPointerDown(e: PointerEvent) {
+      const panel = getPanel();
+      if (panel && e.target instanceof Node && panel.contains(e.target)) return;
+      if (isExempt(e.target)) return;
+      onClose();
+    },
+  };
 }
 ```
 
-Markup — bind the ref and listen at the window in capture phase (scene canvases may stop propagation of bubbling events):
+`BottomSheet.svelte`'s own call site (`createSheetDismiss(onClose, () => panelEl)`)
+passes no predicate, so its behavior is unchanged.
 
-```svelte
-<svelte:window onpointerdowncapture={handleOutsidePointer} />
+In `PerformerHub.svelte`, import the primitive, add the root element ref, and
+replace the hand-rolled handler with a wired-up `dismiss` object (below
+`collapseDetail`):
+
+```ts
+import { createSheetDismiss } from "./BottomSheet.svelte";
+
+let hubEl = $state<HTMLElement | null>(null);
+
+// Top-layer/portalled modals opened from inside the dock - the sequence
+// picker's native <dialog>, and Bits UI dialogs (e.g. the "Remove
+// performer?" ConfirmDialog) that portal their content to document.body as
+// a plain div - must not dismiss the dock behind them. `contains()` alone
+// misses the portalled case since that content never lives inside hubEl.
+function isModalTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest(
+      "dialog, [role='dialog'], [role='alertdialog'], [data-dialog-content]"
+    ) !== null
+  );
+}
+
+const dismiss = createSheetDismiss(collapseDetail, () => hubEl, isModalTarget);
 ```
 
-and on the anchor div:
+Markup — listen at the window in capture phase for pointerdown (scene canvases
+may stop propagation of bubbling events) and at bubble phase for keydown, both
+gated on the dock being open, and bind the ref on the anchor div:
 
 ```svelte
+<svelte:window
+  onpointerdowncapture={(e) => {
+    if (!detailCollapsed) dismiss.onBackdropPointerDown(e);
+  }}
+  onkeydown={(e) => {
+    if (!detailCollapsed) dismiss.onKeydown(e);
+  }}
+/>
+
 <div class="hub-anchor" bind:this={hubEl} style:--panel-color={performerColor}>
 ```
 
-Do NOT call `preventDefault` — the same tap that dismisses the panel still reaches the scene (standard light-dismiss behavior).
+Do NOT call `preventDefault` — the same tap that dismisses the panel still
+reaches the scene (standard light-dismiss behavior).
 
-- [ ] **Step 4: Typecheck**
+**Selector verification:** `ConfirmDialog.svelte` uses `DialogPrimitive.Root`
+with no `variant` prop, so Bits UI's `DialogContentState.props` (`bits-ui/dist/bits/dialog/dialog.svelte.js`)
+resolves `role: "dialog"` and stamps `data-dialog-content` (via
+`getBitsAttr("content")` with `variant` = `"dialog"`) — both alternatives in
+the union selector match its portalled content element; the native-`<dialog>`
+alternative still covers `BaseModal`-based modals (avatar select, sequence
+picker).
 
-Run: `npm run check:fast > /tmp/task10-check.log 2>&1; grep -niE "error" /tmp/task10-check.log | grep -iE "PerformerHub" || echo CLEAN`
-Expected: CLEAN (repo has known pre-existing errors in other sessions' files; only PerformerHub/PerformerHubDetail matter here).
+**Selector specificity hardening (code review finding 3):** `.hub-anchor {
+pointer-events: none }` tied at specificity with the global
+`.split-view .persistent-rail > * { pointer-events: auto }` rule (both two
+classes after Svelte's scope class) and only won by load order. Changed the
+scoped selector from `.hub-anchor` to `div.hub-anchor` (declarations
+unchanged) so it wins structurally.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Typecheck**
+
+Run: `npm run check:fast > /tmp/task10-fix-check.log 2>&1; grep -niE "error" /tmp/task10-fix-check.log | grep -iE "PerformerHub|BottomSheet" || echo CLEAN`
+Expected: CLEAN (repo has known pre-existing errors in other sessions' files; only PerformerHub/PerformerHubDetail/BottomSheet matter here).
+
+- [x] **Step 5: Commit**
 
 ```bash
-git commit -m "fix(3d): performer dock caps to the viewport and taps outside dismiss it" -- src/lib/shared/3d/components/controls/PerformerHub.svelte src/lib/shared/3d/components/controls/PerformerHubDetail.svelte docs/superpowers/plans/2026-08-18-performer-hub-rethink.md
+git commit -m "fix(3d): dock dismissal reuses sheet-dismiss primitive and spares portal dialogs" -- src/lib/shared/3d/components/controls/PerformerHub.svelte src/lib/shared/3d/components/controls/BottomSheet.svelte src/lib/shared/3d/components/controls/__tests__/BottomSheet.test.ts docs/superpowers/plans/2026-08-18-performer-hub-rethink.md
 ```
 
 ---
