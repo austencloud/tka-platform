@@ -157,11 +157,20 @@
     font-size: 14px;
     line-height: 1.35;
   }
+  /* Category counts are 5/5/5/3 and each category restarts its rows at the
+     full-width label, so column counts must divide 5 cleanly (or leave >1 in
+     the remainder) — 3 and 5, never 4/6/8. Re-check if the prop registry
+     changes. */
   .family-grid,
   .variant-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+  }
+  .family-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .variant-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .category-label {
     grid-column: 1 / -1;
@@ -173,15 +182,12 @@
   .family-grid > .category-label:first-child {
     margin-top: 0;
   }
-  @container (min-width: 640px) {
-    .family-grid,
-    .variant-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-  }
-  @container (min-width: 960px) {
+  @container (min-width: 480px) {
     .family-grid {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .variant-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
   .prop-choice {

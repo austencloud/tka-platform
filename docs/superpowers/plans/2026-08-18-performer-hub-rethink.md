@@ -253,12 +253,23 @@ Replace the entire `{:else}` branch (the `.picker-intro` + `.family-groups` bloc
 
 Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `@container (min-width: 600px) { .family-groups { ... } }` block. Replace the shared `.family-grid, .variant-grid` rule (currently `repeat(auto-fit, minmax(88px, 1fr))`) with pinned counts:
 
+**Deviation from spec (coordinator-approved amendment):** the code below originally specced 4/6/8 columns. The registry's real post-filter category counts are 5/5/5/3 (`staves-clubs`, `curved`, `novelty` each 5; `singles` 3), and each category restarts its own rows at its full-width label — 4 columns strands one orphan tile per 5-item category (`5 % 4 == 1`), and 6/8 columns leave dead trailing tracks. 3 and 5 are the only orphan-free pins for this data (`5 % 3 == 2`, `3 % 3 == 0`, `5 % 5 == 0`), so the family-grid tiers are 3 → 5 (at 480px), not 4 → 6 → 8. The variant-grid (family drill-in) tops out at 4 variants (Staff); 2 → 4 (at 480px) covers it without orphans.
+
 ```css
+  /* Category counts are 5/5/5/3 and each category restarts its rows at the
+     full-width label, so column counts must divide 5 cleanly (or leave >1 in
+     the remainder) — 3 and 5, never 4/6/8. Re-check if the prop registry
+     changes. */
   .family-grid,
   .variant-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
+  }
+  .family-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .variant-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .category-label {
     grid-column: 1 / -1;
@@ -270,15 +281,12 @@ Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `
   .family-grid > .category-label:first-child {
     margin-top: 0;
   }
-  @container (min-width: 640px) {
-    .family-grid,
-    .variant-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-  }
-  @container (min-width: 960px) {
+  @container (min-width: 480px) {
     .family-grid {
-      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .variant-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 ```
