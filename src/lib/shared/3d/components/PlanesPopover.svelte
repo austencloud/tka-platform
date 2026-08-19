@@ -2,6 +2,7 @@
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import CascadeBadge from "./controls/CascadeBadge.svelte";
+  import PlanesDiagram from "./PlanesDiagram.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
@@ -178,116 +179,135 @@
   }
 </script>
 
-{#if isAllMode && overrideCount > 0}
-  <CascadeBadge
-    mode="overrides"
-    {overrideCount}
-    categoryLabel="planes"
-    onReset={resetAllOverrides}
-  />
-{:else if !isAllMode && isOverridden}
-  <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
-{:else if !isAllMode}
-  <CascadeBadge mode="default" />
-{/if}
+<div class="planes-popover">
+  {#if isAllMode && overrideCount > 0}
+    <CascadeBadge
+      mode="overrides"
+      {overrideCount}
+      categoryLabel="planes"
+      onReset={resetAllOverrides}
+    />
+  {:else if !isAllMode && isOverridden}
+    <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
+  {:else if !isAllMode}
+    <CascadeBadge mode="default" />
+  {/if}
 
-<div class="plane-matrix">
-  {#each PLANES as { plane, label }}
-    {@const handAssigned = hasHandOnPlane(plane)}
-    {@const visible = isVisible(plane)}
-    {@const color = PLANE_COLORS[plane]}
-    <div
-      class="plane-row"
-      class:with-hand={handAssigned}
-      class:hidden-row={!visible}
-    >
+  <div class="planes-header">
+    <p class="planes-hint">
+      Each hand spins in one plane. Tap <strong>Blue</strong> or
+      <strong>Red</strong> to move that hand; the eye shows or hides a plane's
+      guide ring.
+    </p>
+    {#if isPlaneStateNonDefault}
       <button
-        class="plane-left"
-        onclick={(e) => handlePlaneToggleClick(e, plane)}
-        aria-pressed={visible}
-        aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
+        class="reset-btn"
+        class:with-overrides={hasStepOverrides}
+        onclick={handleResetPlanesClick}
+        aria-label={hasStepOverrides
+          ? "Reset all planes and clear step overrides"
+          : "Reset all planes"}
+        title={hasStepOverrides
+          ? "Reset all planes and clear step overrides"
+          : "Reset all planes"}
       >
-        <span
-          class="plane-toggle"
-          class:visible
-          class:hidden={!visible}
-          style="--dot-color: {color};"
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
         >
-          <i
-            class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
-            aria-hidden="true"
-          ></i>
-        </span>
-        <span class="plane-label">{label}</span>
+          <path d="M3 7v6h6" />
+          <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+        </svg>
+        Reset
+        {#if hasStepOverrides}
+          <span class="override-badge" aria-hidden="true"></span>
+        {/if}
       </button>
-      <div class="plane-right">
-        <button
-          class="hand-slot blue"
-          class:filled={bluePlane === plane}
-          onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-          aria-pressed={bluePlane === plane}
-          aria-label={`Blue hand on ${label}`}
-        ></button>
-        <button
-          class="hand-slot red"
-          class:filled={redPlane === plane}
-          onclick={(e) => handleHandSlotClick(e, "red", plane)}
-          aria-pressed={redPlane === plane}
-          aria-label={`Red hand on ${label}`}
-        ></button>
-      </div>
-    </div>
-  {/each}
-</div>
+    {/if}
+  </div>
 
-<div class="label-toggle-row">
-  <span class="toggle-label">Location labels</span>
+  <div class="planes-body">
+    <PlanesDiagram {bluePlane} {redPlane} visiblePlanes={viewer.visiblePlanes} />
+
+    <div class="plane-matrix">
+      {#each PLANES as { plane, label }}
+        {@const visible = isVisible(plane)}
+        {@const handAssigned = hasHandOnPlane(plane)}
+        {@const color = PLANE_COLORS[plane]}
+        <div
+          class="plane-row"
+          class:with-hand={handAssigned}
+          class:hidden-row={!visible}
+        >
+          <button
+            class="plane-left"
+            onclick={(e) => handlePlaneToggleClick(e, plane)}
+            aria-pressed={visible}
+            aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
+          >
+            <span
+              class="plane-toggle"
+              class:visible
+              class:hidden={!visible}
+              style="--dot-color: {color};"
+            >
+              <i
+                class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
+                aria-hidden="true"
+              ></i>
+            </span>
+            <span class="plane-name">
+              <span class="plane-label">{label}</span>
+              <span class="eye-state">{visible ? "Shown" : "Hidden"}</span>
+            </span>
+          </button>
+          <div class="plane-right">
+            <button
+              class="hand-chip blue"
+              class:filled={bluePlane === plane}
+              onclick={(e) => handleHandSlotClick(e, "blue", plane)}
+              aria-pressed={bluePlane === plane}
+              aria-label={`Blue hand on ${label}`}
+            >
+              Blue
+            </button>
+            <button
+              class="hand-chip red"
+              class:filled={redPlane === plane}
+              onclick={(e) => handleHandSlotClick(e, "red", plane)}
+              aria-pressed={redPlane === plane}
+              aria-label={`Red hand on ${label}`}
+            >
+              Red
+            </button>
+          </div>
+        </div>
+      {/each}
+    </div>
+  </div>
+
   <button
-    class="label-toggle"
+    class="setting-toggle"
     class:active={viewer.showGridLabels}
     onclick={toggleGridLabels}
     aria-pressed={viewer.showGridLabels}
-    aria-label="Toggle grid location labels"
   >
-    <span class="toggle-track">
-      <span class="toggle-thumb"></span>
-    </span>
+    <i
+      class="toggle-glyph {viewer.showGridLabels
+        ? 'fas fa-check-circle'
+        : 'far fa-circle'}"
+      aria-hidden="true"
+    ></i>
+    <span class="setting-label">Location labels</span>
+    <span class="state-word">{viewer.showGridLabels ? "On" : "Off"}</span>
   </button>
 </div>
-
-{#if isPlaneStateNonDefault}
-  <div class="planes-footer">
-    <button
-      class="reset-btn"
-      class:with-overrides={hasStepOverrides}
-      onclick={handleResetPlanesClick}
-      aria-label={hasStepOverrides
-        ? "Reset all planes and clear step overrides"
-        : "Reset all planes"}
-      title={hasStepOverrides
-        ? "Reset all planes and clear step overrides"
-        : "Reset all planes"}
-    >
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M3 7v6h6" />
-        <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
-      </svg>
-      Reset
-      {#if hasStepOverrides}
-        <span class="override-badge" aria-hidden="true"></span>
-      {/if}
-    </button>
-  </div>
-{/if}
 
 <style>
   .plane-matrix {
@@ -392,53 +412,6 @@
     color: var(--theme-text-dim);
   }
 
-  .hand-slot {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border: 2px dashed;
-    cursor: pointer;
-    background: transparent;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
-    flex-shrink: 0;
-    padding: 0;
-  }
-
-  .hand-slot.blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 40%, transparent);
-  }
-  .hand-slot.red {
-    border-color: color-mix(in srgb, var(--prop-red) 40%, transparent);
-  }
-
-  .hand-slot:hover:not(.filled).blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 70%, transparent);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-blue) 20%, transparent);
-  }
-
-  .hand-slot:hover:not(.filled).red {
-    border-color: color-mix(in srgb, var(--prop-red) 70%, transparent);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-red) 20%, transparent);
-  }
-
-  .hand-slot.filled.blue {
-    background: var(--prop-blue);
-    border: 2px solid var(--prop-blue);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-blue) 50%, transparent);
-  }
-
-  .hand-slot.filled.red {
-    background: var(--prop-red);
-    border: 2px solid var(--prop-red);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-red) 50%, transparent);
-  }
-
-  .planes-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-  }
-
   .reset-btn {
     display: flex;
     align-items: center;
@@ -453,6 +426,7 @@
     font-weight: 600;
     cursor: pointer;
     position: relative;
+    flex-shrink: 0;
     transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
@@ -461,64 +435,6 @@
     border-color: var(--theme-stroke-strong);
     background: var(--theme-card-hover-bg);
     transform: translateY(-1px);
-  }
-
-  .label-toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    margin-top: 6px;
-    border-radius: 10px;
-    background: var(--surface-inset);
-    border: 1px solid var(--theme-stroke);
-  }
-
-  .toggle-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--theme-text-dim);
-  }
-
-  .label-toggle {
-    position: relative;
-    background: none;
-    border: none;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-  }
-
-  .toggle-track {
-    display: block;
-    width: 36px;
-    height: 20px;
-    border-radius: 10px;
-    background: var(--theme-stroke-strong);
-    transition: background 180ms ease;
-    position: relative;
-  }
-
-  .label-toggle.active .toggle-track {
-    background: color-mix(in srgb, var(--theme-accent) 70%, transparent);
-  }
-
-  .toggle-thumb {
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--theme-text);
-    transition: transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
-  }
-
-  .label-toggle.active .toggle-thumb {
-    transform: translateX(16px);
   }
 
   .reset-btn.with-overrides .override-badge {
@@ -530,5 +446,150 @@
     border-radius: 50%;
     background: var(--semantic-warning);
     border: 1.5px solid var(--surface-darker);
+  }
+
+  .planes-popover {
+    container-type: inline-size;
+  }
+
+  .planes-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .planes-hint {
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: 14px;
+    line-height: 1.45;
+    max-width: 34rem;
+  }
+  .planes-hint strong {
+    color: var(--theme-text);
+    font-weight: 700;
+  }
+  .planes-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .planes-body :global(.planes-diagram) {
+    flex: 0 0 auto;
+    width: clamp(7rem, 26%, 13.75rem);
+  }
+  .plane-matrix {
+    flex: 1;
+    min-width: 0;
+  }
+  .plane-name {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .eye-state {
+    /* "Hidden" is the widest state; reserve it so rows never shift. */
+    min-width: 3.5rem;
+    color: var(--theme-text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .hand-chip {
+    min-width: 3.75rem;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 22px;
+    border: 2px solid;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 750;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    flex-shrink: 0;
+  }
+  .hand-chip.blue {
+    border-color: color-mix(in srgb, var(--prop-blue) 45%, transparent);
+    color: color-mix(in srgb, var(--prop-blue) 80%, var(--theme-text));
+  }
+  .hand-chip.red {
+    border-color: color-mix(in srgb, var(--prop-red) 45%, transparent);
+    color: color-mix(in srgb, var(--prop-red) 80%, var(--theme-text));
+  }
+  .hand-chip:hover:not(.filled).blue {
+    border-color: color-mix(in srgb, var(--prop-blue) 75%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-blue) 20%, transparent);
+  }
+  .hand-chip:hover:not(.filled).red {
+    border-color: color-mix(in srgb, var(--prop-red) 75%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--prop-red) 20%, transparent);
+  }
+  .hand-chip.filled.blue {
+    background: var(--prop-blue);
+    border-color: var(--prop-blue);
+    color: white;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-blue) 50%, transparent);
+  }
+  .hand-chip.filled.red {
+    background: var(--prop-red);
+    border-color: var(--prop-red);
+    color: white;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--prop-red) 50%, transparent);
+  }
+  .setting-toggle {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    padding: 0 12px;
+    border-radius: 10px;
+    background: var(--surface-inset);
+    border: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+  .setting-toggle:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-stroke-strong);
+    color: var(--theme-text);
+  }
+  .setting-toggle.active {
+    color: var(--theme-text);
+    border-color: color-mix(in srgb, var(--theme-accent) 45%, var(--theme-stroke));
+  }
+  .setting-toggle.active .toggle-glyph {
+    color: var(--theme-accent);
+  }
+  .setting-label {
+    flex: 1;
+    text-align: left;
+  }
+  .state-word {
+    min-width: 2.2rem;
+    text-align: right;
+    color: var(--theme-text-tertiary);
+    font-weight: 700;
+  }
+  .setting-toggle.active .state-word {
+    color: var(--theme-text);
+  }
+  @container (max-width: 460px) {
+    .planes-body {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .planes-body :global(.planes-diagram) {
+      width: clamp(7rem, 45%, 10rem);
+      margin: 0 auto;
+    }
   }
 </style>
