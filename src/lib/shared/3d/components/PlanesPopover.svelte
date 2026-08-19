@@ -79,11 +79,18 @@
       : (selected?.hasStepOverrides ?? false)
   );
 
+  // visiblePlanes is genuinely global scene state (single $state on the
+  // viewer, not scoped per performer - see viewer-3d-state.svelte.ts). The
+  // all-mode reset branch calls hideAllPlanes() so it's fair to count toward
+  // "non-default" there; the per-performer branch deliberately does NOT touch
+  // it (a single performer's reset shouldn't hide guide rings for the whole
+  // scene), so it must not count there either - otherwise Reset can never
+  // reach a state where it disappears again.
   const isPlaneStateNonDefault = $derived(
     bluePlane !== Plane.WALL ||
       redPlane !== Plane.WALL ||
       hasStepOverrides ||
-      viewer.visiblePlanes.size > 0
+      (isAllMode && viewer.visiblePlanes.size > 0)
   );
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
@@ -199,37 +206,38 @@
       <strong>Red</strong> to move that hand; the eye shows or hides a plane's
       guide ring.
     </p>
-    {#if isPlaneStateNonDefault}
-      <button
-        class="reset-btn"
-        class:with-overrides={hasStepOverrides}
-        onclick={handleResetPlanesClick}
-        aria-label={hasStepOverrides
-          ? "Reset all planes and clear step overrides"
-          : "Reset all planes"}
-        title={hasStepOverrides
-          ? "Reset all planes and clear step overrides"
-          : "Reset all planes"}
+    <button
+      class="reset-btn"
+      class:with-overrides={hasStepOverrides}
+      class:reset-btn-hidden={!isPlaneStateNonDefault}
+      onclick={handleResetPlanesClick}
+      aria-hidden={!isPlaneStateNonDefault}
+      tabindex={isPlaneStateNonDefault ? 0 : -1}
+      aria-label={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
+      title={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
+    >
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       >
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M3 7v6h6" />
-          <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
-        </svg>
-        Reset
-        {#if hasStepOverrides}
-          <span class="override-badge" aria-hidden="true"></span>
-        {/if}
-      </button>
-    {/if}
+        <path d="M3 7v6h6" />
+        <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
+      </svg>
+      Reset
+      {#if hasStepOverrides}
+        <span class="override-badge" aria-hidden="true"></span>
+      {/if}
+    </button>
   </div>
 
   <div class="planes-body">
@@ -249,7 +257,6 @@
             class="plane-left"
             onclick={(e) => handlePlaneToggleClick(e, plane)}
             aria-pressed={visible}
-            aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
           >
             <span
               class="plane-toggle"
@@ -310,12 +317,6 @@
 </div>
 
 <style>
-  .plane-matrix {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
   .plane-row {
     display: flex;
     align-items: center;
@@ -448,8 +449,17 @@
     border: 1.5px solid var(--surface-darker);
   }
 
+  .reset-btn.reset-btn-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
   .planes-popover {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     container-type: inline-size;
+    container-name: planes-popover;
   }
 
   .planes-header {
@@ -457,7 +467,6 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 10px;
   }
   .planes-hint {
     margin: 0;
@@ -480,8 +489,12 @@
     width: clamp(7rem, 26%, 13.75rem);
   }
   .plane-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     flex: 1;
     min-width: 0;
+    max-width: 34rem;
   }
   .plane-name {
     display: flex;
@@ -490,8 +503,6 @@
     min-width: 0;
   }
   .eye-state {
-    /* "Hidden" is the widest state; reserve it so rows never shift. */
-    min-width: 3.5rem;
     color: var(--theme-text-tertiary);
     font-size: 12px;
     font-weight: 600;
@@ -506,16 +517,28 @@
     cursor: pointer;
     font-size: 13px;
     font-weight: 750;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      background 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      border-color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      box-shadow 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      color 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
     flex-shrink: 0;
   }
   .hand-chip.blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 45%, transparent);
-    color: color-mix(in srgb, var(--prop-blue) 80%, var(--theme-text));
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue) 55%,
+      var(--theme-stroke-strong, var(--theme-stroke))
+    );
+    color: color-mix(in srgb, var(--prop-blue) 55%, var(--theme-text));
   }
   .hand-chip.red {
-    border-color: color-mix(in srgb, var(--prop-red) 45%, transparent);
-    color: color-mix(in srgb, var(--prop-red) 80%, var(--theme-text));
+    border-color: color-mix(
+      in srgb,
+      var(--prop-red) 55%,
+      var(--theme-stroke-strong, var(--theme-stroke))
+    );
+    color: color-mix(in srgb, var(--prop-red) 55%, var(--theme-text));
   }
   .hand-chip:hover:not(.filled).blue {
     border-color: color-mix(in srgb, var(--prop-blue) 75%, transparent);
@@ -532,8 +555,8 @@
     box-shadow: 0 0 12px color-mix(in srgb, var(--prop-blue) 50%, transparent);
   }
   .hand-chip.filled.red {
-    background: var(--prop-red);
-    border-color: var(--prop-red);
+    background: color-mix(in srgb, var(--prop-red) 85%, black);
+    border-color: color-mix(in srgb, var(--prop-red) 85%, black);
     color: white;
     box-shadow: 0 0 12px color-mix(in srgb, var(--prop-red) 50%, transparent);
   }
@@ -543,7 +566,6 @@
     gap: 9px;
     width: 100%;
     min-height: 44px;
-    margin-top: 10px;
     padding: 0 12px;
     border-radius: 10px;
     background: var(--surface-inset);
@@ -582,7 +604,7 @@
   .setting-toggle.active .state-word {
     color: var(--theme-text);
   }
-  @container (max-width: 460px) {
+  @container planes-popover (max-width: 460px) {
     .planes-body {
       flex-direction: column;
       align-items: stretch;
