@@ -5,6 +5,7 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 
   interface Props {
     performer: AvatarInstanceState | null;
@@ -146,7 +147,9 @@
         {/if}
         <div class="sub-row">
           {#if sequenceWord}
-            <span class="sequence-chip">{sequenceWord}</span>
+            <span class="sequence-chip" title={sequenceWord}>
+              <TKAWordGlyph word={sequenceWord} height={16} darkMode fitToParent />
+            </span>
             <span class="sequence-dot" aria-hidden="true">·</span>
           {/if}
           <span class:muted={sequenceSteps === null} class="sequence-steps">
@@ -279,7 +282,6 @@
     line-height: 1.3;
   }
   .all-hint,
-  .sequence-chip,
   .sequence-dot,
   .sequence-steps {
     color: var(--theme-text-dim);
@@ -289,10 +291,11 @@
     font-style: italic;
   }
   .sequence-chip {
-    font-weight: 650;
-    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 14rem;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
   .sequence-dot {
     color: var(--theme-text-tertiary);

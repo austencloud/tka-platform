@@ -118,7 +118,7 @@ git commit -m "feat(3d): performer dock widens fluidly and drops the directional
 **Files:**
 - Modify: `src/lib/shared/3d/components/controls/PerformerIdentityHeader.svelte` (markup ~line 149, styles ~282–296)
 
-- [ ] **Step 1: Import the glyph**
+- [x] **Step 1: Import the glyph**
 
 Add to the `<script>` block:
 
@@ -126,7 +126,7 @@ Add to the `<script>` block:
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
 ```
 
-- [ ] **Step 2: Replace the raw word span**
+- [x] **Step 2: Replace the raw word span**
 
 Current markup:
 
@@ -152,7 +152,7 @@ Replace the chip line:
 
 `TKAWordGlyph` collapses repeated words internally (`compressWord`), so "FΨFΨFΨFΨ" renders as FΨ with a repeat dot — do NOT pre-simplify the string (the glyph needs the full word to detect repeats).
 
-- [ ] **Step 3: Adjust the chip CSS**
+- [x] **Step 3: Adjust the chip CSS**
 
 The `.sequence-chip` rule currently ellipsizes text:
 
@@ -179,7 +179,7 @@ Replace with a flex box that lets `fitToParent` do the shrinking:
 
 Also remove `.sequence-chip` from the shared color/font-size selector group (`.all-hint, .sequence-chip, .sequence-dot, .sequence-steps { ... }`) — the glyph is an image row, the text styles are dead weight on it. Leave `.sequence-dot`/`.sequence-steps` in that group.
 
-- [ ] **Step 4: Grep proof (simplified-word-display self-check)**
+- [x] **Step 4: Grep proof (simplified-word-display self-check)**
 
 ```bash
 grep -n "sequenceWord" src/lib/shared/3d/components/controls/PerformerIdentityHeader.svelte
@@ -187,7 +187,7 @@ grep -n "sequenceWord" src/lib/shared/3d/components/controls/PerformerIdentityHe
 
 Expected: hits only in props/`title=` attribute and the `<TKAWordGlyph word={sequenceWord}` line — no raw `{sequenceWord}` text node remains.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(3d): performer header renders the word as TKA glyphs" -- src/lib/shared/3d/components/controls/PerformerIdentityHeader.svelte
