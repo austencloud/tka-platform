@@ -99,7 +99,7 @@
   }
 
   .plane-ring {
-    stroke: color-mix(in srgb, var(--raw-color) 70%, var(--theme-text));
+    stroke: color-mix(in srgb, var(--raw-color) 50%, var(--theme-text));
     transition:
       stroke-width 180ms ease,
       opacity 180ms ease;

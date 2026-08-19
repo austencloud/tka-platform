@@ -326,7 +326,12 @@
     border-radius: 10px;
     background: var(--surface-inset-deep);
     border: 1px solid var(--theme-stroke);
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      background 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      border-color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      box-shadow 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .plane-row:hover {
@@ -373,7 +378,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      background 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      border-color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      box-shadow 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
     background: transparent;
     flex-shrink: 0;
     padding: 0;
@@ -428,7 +438,12 @@
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
-    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+    transition:
+      background 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      border-color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      box-shadow 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      color 180ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      transform 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
 
   .reset-btn:hover {
@@ -458,6 +473,10 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* One band for header, body, and toggle: diagram (10rem) + gap + matrix
+       (34rem). Centered so wide docks split the leftover evenly. */
+    max-width: 45rem;
+    margin-inline: auto;
     container-type: inline-size;
     container-name: planes-popover;
   }
@@ -486,7 +505,7 @@
   }
   .planes-body :global(.planes-diagram) {
     flex: 0 0 auto;
-    width: clamp(7rem, 26%, 13.75rem);
+    width: clamp(7rem, 26%, 10rem);
   }
   .plane-matrix {
     display: flex;
@@ -525,19 +544,11 @@
     flex-shrink: 0;
   }
   .hand-chip.blue {
-    border-color: color-mix(
-      in srgb,
-      var(--prop-blue) 55%,
-      var(--theme-stroke-strong, var(--theme-stroke))
-    );
+    border-color: color-mix(in srgb, var(--prop-blue) 45%, var(--theme-text-dim));
     color: color-mix(in srgb, var(--prop-blue) 55%, var(--theme-text));
   }
   .hand-chip.red {
-    border-color: color-mix(
-      in srgb,
-      var(--prop-red) 55%,
-      var(--theme-stroke-strong, var(--theme-stroke))
-    );
+    border-color: color-mix(in srgb, var(--prop-red) 45%, var(--theme-text-dim));
     color: color-mix(in srgb, var(--prop-red) 55%, var(--theme-text));
   }
   .hand-chip:hover:not(.filled).blue {
