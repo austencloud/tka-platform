@@ -116,6 +116,7 @@
     top: 12px;
     bottom: 90px;
     left: 16px;
+    right: 16px;
     z-index: 20;
     display: flex;
     flex-direction: row;
@@ -177,7 +178,12 @@
     max-width: calc(100vw - 140px);
     pointer-events: auto;
     display: flex;
-    max-height: 100%;
+    /* The dock is a control surface over the stage, never a modal: cap it to
+       half the scene column and a fixed tall-screen ceiling so the performer
+       stays visible behind it. Width resolves against the anchor, which now
+       spans the column (left+right), not the viewport. */
+    width: clamp(32.5rem, 50%, 68.75rem);
+    max-height: min(100%, 48rem);
   }
 
   .close-tab {

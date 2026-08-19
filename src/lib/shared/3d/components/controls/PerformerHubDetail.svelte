@@ -494,7 +494,7 @@
 
 <style>
   .hub-detail {
-    width: clamp(32.5rem, 44vw, 68.75rem);
+    width: 100%;
     max-width: 100%;
     display: flex;
     flex-direction: column;
