@@ -5,23 +5,51 @@
   "installedPlantFactoryVersion": "4.8.0.0",
   "executable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
   "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
-  "activeExportSet": "proof",
+  "activeExportSet": "productionWaveR1",
   "activeJobs": [
-    "quercus-robur-forest-hd-s41",
-    "quercus-robur-forest-ld-s41"
+    "quercus-robur-forest-ld-s89",
+    "quercus-robur-urban-ld-s13",
+    "aesculus-carnea-ld-s23",
+    "quercus-robur-forest-ld-s67",
+    "quercus-robur-colonised-ld-s29",
+    "salix-alba-ld-s11"
   ],
   "sourceResults": [
     {
-      "id": "quercus-robur-forest-hd-s41",
-      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest HD.tpf",
-      "bytes": 162210025,
-      "sha256": "0e7b831f590af4063b4ffdad286a1f11aeb6660a5521e1882b85850e114c06e6"
-    },
-    {
-      "id": "quercus-robur-forest-ld-s41",
+      "id": "quercus-robur-forest-ld-s89",
       "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
       "bytes": 155922326,
       "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
+    },
+    {
+      "id": "quercus-robur-urban-ld-s13",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur urban LD.tpf",
+      "bytes": 147899442,
+      "sha256": "4248a8632b6d7ff4c3a47c8759d5b781fc8382a6ba6901106e5bb7fd94ae5e2c"
+    },
+    {
+      "id": "aesculus-carnea-ld-s23",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Aesculus x carnea LD.tpf",
+      "bytes": 24091017,
+      "sha256": "c7b7671ac4da80b7575efba845a5329ca169bbacedc09accb4848c6b800f2118"
+    },
+    {
+      "id": "quercus-robur-forest-ld-s67",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest LD.tpf",
+      "bytes": 155922326,
+      "sha256": "2cb531632d9f2a3ffd9597f1eed76354dc2e6cd34f57eea33f26aa1240ba6a55"
+    },
+    {
+      "id": "quercus-robur-colonised-ld-s29",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Quercus robur forest colonised LD.tpf",
+      "bytes": 186762973,
+      "sha256": "d2c8864903955189fe0fcc6b196e921f810547000765d1a8aa29cd49939eaebe"
+    },
+    {
+      "id": "salix-alba-ld-s11",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantCatalog/Broadleaf Trees/Salix alba LD.tpf",
+      "bytes": 122542006,
+      "sha256": "20c143069432d85c211f742067feb7bae62a8e1bc2f9c1d5eeb278641610406a"
     }
   ],
   "apiSignaturesVerified": true,

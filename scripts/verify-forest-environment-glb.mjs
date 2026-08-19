@@ -88,7 +88,16 @@ const expectedGroundVariantIds = groundEcology.families.flatMap((family) =>
   family.variants.map((variant) => `${family.id}-${variant}`)
 );
 const expectedGroundModuleTypes = groundEcology.groundModules;
-const maximumBytes = 20 * 1024 * 1024;
+// Raised from 20 MiB with the 2026-08-18 PlantCatalog wave: seven botanical
+// trees replaced the six Meshy Semantic Summer distance trees, and their
+// canopies are genuine alpha-card geometry the conditioning discipline forbids
+// thinning. The optimizer already applies every principled lever -- explicit
+// Draco quantization (position 12 / normal 8 / texcoord 10 / color 8),
+// error-bounded opaque-wood simplify, and a weld pass -- and the measured
+// floor of that ladder is 22,382,900 bytes. Tightening further (7-bit normals,
+// 9-bit texcoords) bands trunk shading and lets cutout alpha edges crawl for
+// ~1.3 MiB, which is the wrong trade for the scene's centerpiece assets.
+const maximumBytes = 22 * 1024 * 1024;
 const expectedMaterialZones = [
   "Packed Performance Clearing",
   "Path Soil",

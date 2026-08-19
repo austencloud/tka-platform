@@ -320,10 +320,27 @@ for (const jobId of activeIds) {
     }
   }
   const promisedFoliage = conditioned.reduction?.foliageTrianglesConditioned;
-  if (promisedFoliage !== undefined) {
+  const foliageSimplifyRatio = job.reduction?.foliageSimplifyRatio;
+  if (promisedFoliage !== undefined && foliageSimplifyRatio === undefined) {
     invariant(
       foliageTriangles === promisedFoliage,
       `${jobId} canopy changed after conditioning: ${foliageTriangles.toLocaleString()} vs ${promisedFoliage.toLocaleString()} foliage triangles`
+    );
+  } else if (promisedFoliage !== undefined) {
+    // A job that declared foliageSimplifyRatio has geometric leaflets rather
+    // than flat cards, and its canopy is REQUIRED to shrink -- but never past
+    // the declared target, which is the line between reduction and the
+    // near-frame incident where a simplify pass silently deleted 78% of a
+    // canopy. The error bound means the simplifier may legitimately stop short
+    // of the target; it cannot legitimately pass it.
+    invariant(
+      foliageTriangles < promisedFoliage,
+      `${jobId} declared foliageSimplifyRatio but its canopy was not reduced: ${foliageTriangles.toLocaleString()} vs ${promisedFoliage.toLocaleString()} foliage triangles`
+    );
+    const floor = Math.floor(promisedFoliage * foliageSimplifyRatio * 0.9);
+    invariant(
+      foliageTriangles >= floor,
+      `${jobId} canopy over-reduced: ${foliageTriangles.toLocaleString()} foliage triangles is below the declared floor of ${floor.toLocaleString()}`
     );
   }
   invariant(

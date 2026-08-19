@@ -32,7 +32,7 @@ async function resizeDistanceTierTextures(input, output) {
   const [
     { NodeIO },
     { ALL_EXTENSIONS },
-    { simplifyPrimitive },
+    { simplifyPrimitive, weld },
     { MeshoptSimplifier },
   ] = await Promise.all([
     import(pathToFileURL(requireFromCli.resolve("@gltf-transform/core"))),
@@ -43,6 +43,12 @@ async function resizeDistanceTierTextures(input, output) {
   await MeshoptSimplifier.ready;
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
   const document = await io.read(input);
+  // Lossless: merges only bitwise-identical vertices. The Blender round-trip
+  // splits vertices at every face corner -- the PlantCatalog oak arrived at
+  // 2.77 vertices per triangle -- and the simplifier below can only collapse
+  // across shared vertices, so welding is both a direct size win and the
+  // precondition for the wood reduction to do anything.
+  await document.transform(weld());
   const root = document.getRoot();
   const textureTiers = new Map();
 
@@ -167,21 +173,33 @@ async function resizeDistanceTierTextures(input, output) {
       const isSemanticCanopyLod =
         /ForestSemanticCanopy_.*_canopy_lod/i.test(materialName);
       const isHybridPhotographicFoliage = /_hybrid/i.test(materialName);
-      // PlantCatalog trees arrive already reduced, and reduced by a rule this
-      // ladder cannot express: their conditioning stage decimates solid trunk and
-      // branch volume while leaving every alpha card untouched, because a card's
-      // shape lives in its alpha mask rather than in its edges. Handing them to
-      // the branches below would undo that -- the generic foliage branch would
-      // simplify leaf cards at 0.53, which is the exact collapse the canopy_lod
-      // branch above already refuses to perform on authored cards.
+      // PlantCatalog cutout cards never enter this ladder: a card's shape lives
+      // in its alpha mask rather than in its edges, so the generic foliage
+      // branch's 0.53 would only delete leaves -- the exact collapse the
+      // canopy_lod branch above already refuses to perform on authored cards.
+      // Opaque wood is the opposite case. It is real surface geometry with a
+      // bounded silhouette error, the same property the bridge conditioning
+      // stage exploits with its own opaque-only simplify, and this file is the
+      // distance layer -- the near-frame GLB owns every close-up. Without this
+      // branch the seven PlantCatalog trees carry ~81 MB of decoded vertex data
+      // into a 20 MiB budget.
       const isPlantCatalog = /^ForestPlantCatalog_/.test(materialName);
+      const isPlantCatalogOpaque =
+        isPlantCatalog && materialName.includes("_Opaque_");
       const before =
         (primitive.getIndices()?.getCount() ??
           primitive.getAttribute("POSITION")?.getCount() ??
           0) / 3;
       treeTrianglesBefore += before;
-      if (isPlantCatalog) {
-        // Intentionally nothing.
+      if (isPlantCatalogOpaque && before >= 1_000) {
+        simplifyPrimitive(primitive, {
+          simplifier: MeshoptSimplifier,
+          ratio: 0.35,
+          error: 0.025,
+          lockBorder: false,
+        });
+      } else if (isPlantCatalog) {
+        // Intentionally nothing: cutout cards keep every triangle.
       } else if (isSemanticCanopyLod && before >= 1_000) {
         simplifyPrimitive(primitive, {
           simplifier: MeshoptSimplifier,
@@ -266,7 +284,26 @@ try {
   ]);
   console.log("\nApply Forest distance texture tiers");
   await resizeDistanceTierTextures(TMP, TMP_TEXTURES);
-  run("Apply Draco geometry compression", ["draco", TMP_TEXTURES, OUTPUT]);
+  // Explicit quantization, because the defaults left the PlantCatalog wave at
+  // 26.9 MiB against the 20 MiB budget. 12-bit positions resolve to under 4 mm
+  // across the largest tree's bounds and ~2 cm across the 80 m terrain --
+  // below what the distance tier can show. Normals at 8 bits suit matte
+  // foliage; texcoords keep 10 bits so cutout alpha edges stay within one
+  // texel of the 512-1024 px atlases; COLOR_0 is the wind mask, and 8 bits
+  // still gives 256 amplitude steps to a displacement of a few tens of cm.
+  run("Apply Draco geometry compression", [
+    "draco",
+    TMP_TEXTURES,
+    OUTPUT,
+    "--quantize-position",
+    "12",
+    "--quantize-normal",
+    "8",
+    "--quantize-texcoord",
+    "10",
+    "--quantize-color",
+    "8",
+  ]);
 } finally {
   if (existsSync(TMP)) rmSync(TMP);
   if (existsSync(TMP_TEXTURES)) rmSync(TMP_TEXTURES);

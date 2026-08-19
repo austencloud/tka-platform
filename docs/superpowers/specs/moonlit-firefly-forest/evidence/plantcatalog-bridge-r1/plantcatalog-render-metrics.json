@@ -1,27 +1,10 @@
 [
   {
-    "id": "quercus-robur-forest-hd-s41",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-hd-s41-proof.glb",
+    "id": "quercus-robur-forest-ld-s67",
+    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s67-proof.glb",
     "dimensionsMetres": [
-      7.235084056854248,
-      7.033905982971191,
-      16.0
-    ],
-    "views": [
-      "front",
-      "three-quarter",
-      "silhouette",
-      "human-height",
-      "bark-close",
-      "canopy"
-    ]
-  },
-  {
-    "id": "quercus-robur-forest-ld-s41",
-    "candidate": "static/models/forest/trees/candidates/plantcatalog-r1/quercus-robur-forest-ld-s41-proof.glb",
-    "dimensionsMetres": [
-      7.379619598388672,
-      7.207739353179932,
+      7.590563774108887,
+      7.869869232177734,
       16.0
     ],
     "views": [

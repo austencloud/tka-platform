@@ -70,6 +70,14 @@ EPIPHYTE_TOKENS = (
     "moss",
     "evernia",
     "parmelia",
+    # The colonised oak's ground-truth run exposed two more genera. Polytrichum is
+    # a moss that ships under its genus name only, so the "moss" token never saw
+    # it -- ten materials and ~100k triangles fell to unmatched-fallback and the
+    # epiphyte triangle budget skipped all of them. Polypodium is an epiphytic
+    # fern pinned to the trunk; its "front/back" texture names typed it foliage,
+    # which hands bark-glued fronds full leaf flutter.
+    "polytrichum",
+    "polypodium",
 )
 NON_COLOR_TOKENS = (
     "alpha",
@@ -164,16 +172,24 @@ def image_nodes(material: bpy.types.Material) -> list[bpy.types.ShaderNodeTexIma
 
 
 def sampled_alpha_range(image: bpy.types.Image) -> tuple[float, float] | None:
+    # Exact min/max over every pixel, never a strided sample. A stride of
+    # pixel_count // 4096 aliases with atlas grids whose cell size divides the
+    # image width -- Salix alba's 512x1024 leaf atlas gave a stride of 128, so
+    # the only x-columns ever sampled were the four transparent 128px-cell
+    # gutters, and a canopy with a real 0..255 alpha mask classified as opaque.
+    # foreach_get is a C-level bulk copy, so the exact scan is faster than the
+    # old Python-loop sample was.
     if image.channels < 4 or image.size[0] <= 0 or image.size[1] <= 0:
         return None
     try:
-        pixels = image.pixels
-        pixel_count = image.size[0] * image.size[1]
-        step = max(1, pixel_count // 4096)
-        sampled = [pixels[index * 4 + 3] for index in range(0, pixel_count, step)]
-        if not sampled:
+        import numpy as np
+
+        buffer = np.empty(len(image.pixels), dtype=np.float32)
+        image.pixels.foreach_get(buffer)
+        alpha = buffer[3::4]
+        if alpha.size == 0:
             return None
-        return min(sampled), max(sampled)
+        return float(alpha.min()), float(alpha.max())
     except Exception:
         return None
 
@@ -430,6 +446,36 @@ def reduce_geometry(
         if epiphytes is not None:
             dropped = triangles_of(epiphytes)
             bpy.data.objects.remove(epiphytes, do_unlink=True)
+    elif reduction.get("epiphyteTriangleBudget") is not None:
+        # The middle path between "all the moss" and "no moss". The colonised oak
+        # carries ~200k triangles of lichen cards -- two thirds of the whole tree
+        # -- which at population distance reads as trunk texture, not as 200k
+        # triangles' worth of anything. Cards are still never cut: whole epiphyte
+        # MATERIALS are kept largest-first until the budget is spent, because the
+        # densest lichen layer is the one that carries the mossy read, and the
+        # small scattered tufts are what cost budget without being seen.
+        budget = int(reduction["epiphyteTriangleBudget"])
+        epiphyte_slots = slots_where(
+            tree, lambda metric: metric["familyClassification"] == "epiphyte-token"
+        )
+        counts = {}
+        for polygon in tree.data.polygons:
+            if polygon.material_index in epiphyte_slots:
+                counts[polygon.material_index] = counts.get(polygon.material_index, 0) + max(
+                    0, len(polygon.vertices) - 2
+                )
+        kept = set()
+        spent = 0
+        for slot, count in sorted(counts.items(), key=lambda item: -item[1]):
+            if spent + count <= budget:
+                kept.add(slot)
+                spent += count
+        drop_slots = set(counts) - kept
+        if drop_slots:
+            epiphytes = separate_by_material_predicate(tree, drop_slots)
+            if epiphytes is not None:
+                dropped = triangles_of(epiphytes)
+                bpy.data.objects.remove(epiphytes, do_unlink=True)
 
     # Geometry reduction deliberately does NOT happen here. Blender's COLLAPSE
     # decimate takes a ratio and nothing else: it will hit that ratio whatever the
@@ -658,5 +704,17 @@ if unknown:
 metrics = [condition_job(jobs_by_id[job_id], state) for job_id in selected_ids]
 EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
 metrics_path = EVIDENCE_ROOT / "plantcatalog-conditioning-metrics.json"
-metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+# Merge rather than overwrite: a per-job conditioning run must not discard the
+# entries other jobs already earned, or two `--job=` invocations silently erase
+# each other and the optimizer -- which iterates this file -- no-ops with exit 0.
+# Entries keep manifest order so the file is stable across write sequences.
+existing = []
+if metrics_path.exists():
+    existing = json.loads(metrics_path.read_text(encoding="utf-8"))
+merged = {entry["id"]: entry for entry in existing}
+for entry in metrics:
+    merged[entry["id"]] = entry
+manifest_order = {job["id"]: index for index, job in enumerate(MANIFEST["jobs"])}
+combined = sorted(merged.values(), key=lambda entry: manifest_order.get(entry["id"], len(manifest_order)))
+metrics_path.write_text(json.dumps(combined, indent=2) + "\n", encoding="utf-8")
 print(json.dumps(metrics, indent=2))

@@ -133,6 +133,40 @@ for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.i
         ` (target ${reduction.opaqueSimplifyRatio}, error ${reduction.opaqueSimplifyError ?? 0.005})`
     );
   }
+  // Foliage simplification is opt-in per job, because "cutout foliage" spans two
+  // different kinds of geometry. Oak leaves are flat cards -- one or two
+  // triangles whose whole shape lives in the alpha mask, where the simplifier
+  // has no surface error to bound and can only delete leaves (the near-frame
+  // incident). Aesculus leaves are the opposite: each palmate leaf is ~62
+  // triangles of real leaflet surface, which is exactly the geometry an
+  // error-bounded simplifier handles well, and which no card-preserving rule
+  // was written for. A job declares foliageSimplifyRatio only when its canopy
+  // is surface geometry; card canopies stay untouched and the verifier holds
+  // them to exact triangle equality.
+  let foliageBefore = 0;
+  let foliageAfter = 0;
+  if (reduction.foliageSimplifyRatio !== undefined) {
+    await document.transform(weld());
+    for (const mesh of document.getRoot().listMeshes()) {
+      for (const primitive of mesh.listPrimitives()) {
+        const name = primitive.getMaterial()?.getName() ?? "";
+        if (!name.includes("_Foliage_") || !name.includes("_Cutout_")) continue;
+        const count = (primitive.getIndices()?.getCount() ?? 0) / 3;
+        foliageBefore += count;
+        simplifyPrimitive(primitive, {
+          simplifier: meshopt.MeshoptSimplifier,
+          ratio: reduction.foliageSimplifyRatio,
+          error: reduction.foliageSimplifyError ?? 0.01,
+          lockBorder: false,
+        });
+        foliageAfter += (primitive.getIndices()?.getCount() ?? 0) / 3;
+      }
+    }
+    console.log(
+      `${entry.id}: foliage ${foliageBefore.toLocaleString()} -> ${foliageAfter.toLocaleString()} triangles` +
+        ` (target ${reduction.foliageSimplifyRatio}, error ${reduction.foliageSimplifyError ?? 0.01})`
+    );
+  }
   await document.transform(
     dedup(),
     weld(),
