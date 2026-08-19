@@ -200,7 +200,7 @@ git commit -m "feat(3d): performer header renders the word as TKA glyphs" -- src
 **Files:**
 - Modify: `src/lib/shared/3d/components/controls/PropFamilyPicker.svelte`
 
-- [ ] **Step 1: Flatten the category islands into one grid**
+- [x] **Step 1: Flatten the category islands into one grid**
 
 Replace the entire `{:else}` branch (the `.picker-intro` + `.family-groups` block, lines ~94–143) with:
 
@@ -249,7 +249,7 @@ Replace the entire `{:else}` branch (the `.picker-intro` + `.family-groups` bloc
 
 (The `<section>`/`aria-labelledby` wrappers go away; each button carries `aria-describedby` to its category label instead.)
 
-- [ ] **Step 2: Replace the grid CSS**
+- [x] **Step 2: Replace the grid CSS**
 
 Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `@container (min-width: 600px) { .family-groups { ... } }` block. Replace the shared `.family-grid, .variant-grid` rule (currently `repeat(auto-fit, minmax(88px, 1fr))`) with pinned counts:
 
@@ -283,7 +283,7 @@ Delete the `.family-groups`, `.family-group`, `.family-group h3` rules and the `
   }
 ```
 
-- [ ] **Step 3: Grep proof (no auto-fit against a known count)**
+- [x] **Step 3: Grep proof (no auto-fit against a known count)**
 
 ```bash
 grep -n "auto-fit\|auto-fill" src/lib/shared/3d/components/controls/PropFamilyPicker.svelte
@@ -291,7 +291,7 @@ grep -n "auto-fit\|auto-fill" src/lib/shared/3d/components/controls/PropFamilyPi
 
 Expected: no matches.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -m "feat(3d): prop picker is one continuous grid with inline category labels" -- src/lib/shared/3d/components/controls/PropFamilyPicker.svelte
