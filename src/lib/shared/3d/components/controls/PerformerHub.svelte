@@ -52,10 +52,26 @@
       false
     );
   }
+
+  let hubEl = $state<HTMLElement | null>(null);
+
+  function handleOutsidePointer(event: PointerEvent) {
+    if (detailCollapsed) return;
+    const target = event.target;
+    if (!(target instanceof Node)) return;
+    if (hubEl?.contains(target)) return;
+    // Modals launched from the hub (avatar select, sequence picker, confirm
+    // dialogs) render in top-layer <dialog> elements outside the hub subtree;
+    // interacting with them must not dismiss the dock behind them.
+    if (target instanceof Element && target.closest("dialog")) return;
+    collapseDetail();
+  }
 </script>
 
+<svelte:window onpointerdowncapture={handleOutsidePointer} />
+
 {#if performers.length >= 1}
-  <div class="hub-anchor" style:--panel-color={performerColor}>
+  <div class="hub-anchor" bind:this={hubEl} style:--panel-color={performerColor}>
     <div class="spine-panel" class:has-detail={!detailCollapsed}>
       <PerformerSpine
         onInteract={handleSpineInteract}
@@ -85,12 +101,16 @@
 <style>
   .hub-anchor {
     position: absolute;
+    top: 12px;
     bottom: 90px;
     left: 16px;
     z-index: 20;
     display: flex;
     flex-direction: row;
     align-items: flex-end;
+    /* The anchor spans the scene height so the detail panel can cap to it.
+       It must not intercept scene input in the empty area above the panels. */
+    pointer-events: none;
   }
 
   .spine-panel {
@@ -111,6 +131,7 @@
       var(--theme-panel-shadow),
       0 1px 0 inset color-mix(in srgb, var(--theme-text) 4%, transparent);
     flex-shrink: 0;
+    pointer-events: auto;
     transition:
       border-radius 220ms ease,
       border-color 220ms ease,
@@ -142,6 +163,9 @@
       inset 1px 0 0 color-mix(in srgb, var(--theme-text) 3%, transparent);
     overflow: hidden;
     max-width: calc(100vw - 140px);
+    pointer-events: auto;
+    display: flex;
+    max-height: 100%;
   }
 
   .close-tab {

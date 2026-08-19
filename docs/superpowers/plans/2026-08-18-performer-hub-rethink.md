@@ -1676,6 +1676,120 @@ Kill the vite server from Step 2 (and its npx parent). Close the task-owned brow
 
 ---
 
+### Task 10: Detail dock fits the viewport + tap-outside dismissal
+
+**Why (field report, 2026-08-17):** On a Z Fold 6 (tall content, short screen) the Prop / Planes / Effort / Effects panes grow taller than the viewport. The dock is bottom-anchored, so overflow pushes the top edge — and the X close tab — off-screen: after choosing a prop there is no reachable way to close the panel. Tapping the 3D scene outside the panel is also expected to dismiss it and never was wired up.
+
+**Fix shape:** (a) cap the detail panel to the space between the top of the scene and the transport bar, with ONLY the tab pane content scrolling — identity header stays pinned at top (X stays reachable), tab bar stays pinned at bottom; (b) a window-level pointerdown listener dismisses the open detail when the tap lands outside the hub, with a guard so top-layer `<dialog>` modals (avatar select, sequence picker, confirm dialogs) don't dismiss the dock behind them.
+
+**Execution order note:** runs after Task 8 and BEFORE Task 9 (Task 9's 960x412 and 375x667 sweeps must verify this fix: Prop tab open, X visible, pane content scrolls).
+
+**Files:**
+- Modify: `src/lib/shared/3d/components/controls/PerformerHub.svelte`
+- Modify: `src/lib/shared/3d/components/controls/PerformerHubDetail.svelte`
+
+- [x] **Step 1: Stretch the anchor so the panel has a height budget**
+
+In `PerformerHub.svelte`, replace the `.hub-anchor` rule and add `pointer-events` handling. The anchor becomes a full-height strip (top of scene to just above the transport bar); it must NOT swallow scene pointer input, so it goes `pointer-events: none` with the two panels opting back in:
+
+```css
+.hub-anchor {
+  position: absolute;
+  top: 12px;
+  bottom: 90px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  /* The anchor spans the scene height so the detail panel can cap to it.
+     It must not intercept scene input in the empty area above the panels. */
+  pointer-events: none;
+}
+```
+
+Add to the existing `.spine-panel` rule:
+
+```css
+pointer-events: auto;
+```
+
+Add to the existing `.detail-panel` rule (keep everything already there):
+
+```css
+pointer-events: auto;
+display: flex;
+max-height: 100%;
+```
+
+- [x] **Step 2: Make only the tab pane scroll**
+
+In `PerformerHubDetail.svelte`, extend `.hub-detail` (keep existing declarations):
+
+```css
+max-height: 100%;
+min-height: 0;
+```
+
+and extend `.tab-content` (keep its padding):
+
+```css
+overflow-y: auto;
+min-height: 0;
+overscroll-behavior: contain;
+```
+
+`.hub-detail` is a column flex: accent strip, identity header, divider, `.tab-content`, divider, `.tab-bar`. With `min-height: 0` on the scrollable middle, the header and tab bar stay pinned while the pane scrolls. Do NOT put `overflow` on `.hub-detail` itself — that would scroll the close tab and tab bar out of reach, which is the exact bug.
+
+- [x] **Step 3: Tap-outside dismissal**
+
+In `PerformerHub.svelte`:
+
+Script — add a root element ref and the handler (below `collapseDetail`):
+
+```ts
+let hubEl = $state<HTMLElement | null>(null);
+
+function handleOutsidePointer(event: PointerEvent) {
+  if (detailCollapsed) return;
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  if (hubEl?.contains(target)) return;
+  // Modals launched from the hub (avatar select, sequence picker, confirm
+  // dialogs) render in top-layer <dialog> elements outside the hub subtree;
+  // interacting with them must not dismiss the dock behind them.
+  if (target instanceof Element && target.closest("dialog")) return;
+  collapseDetail();
+}
+```
+
+Markup — bind the ref and listen at the window in capture phase (scene canvases may stop propagation of bubbling events):
+
+```svelte
+<svelte:window onpointerdowncapture={handleOutsidePointer} />
+```
+
+and on the anchor div:
+
+```svelte
+<div class="hub-anchor" bind:this={hubEl} style:--panel-color={performerColor}>
+```
+
+Do NOT call `preventDefault` — the same tap that dismisses the panel still reaches the scene (standard light-dismiss behavior).
+
+- [ ] **Step 4: Typecheck**
+
+Run: `npm run check:fast > /tmp/task10-check.log 2>&1; grep -niE "error" /tmp/task10-check.log | grep -iE "PerformerHub" || echo CLEAN`
+Expected: CLEAN (repo has known pre-existing errors in other sessions' files; only PerformerHub/PerformerHubDetail matter here).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "fix(3d): performer dock caps to the viewport and taps outside dismiss it" -- src/lib/shared/3d/components/controls/PerformerHub.svelte src/lib/shared/3d/components/controls/PerformerHubDetail.svelte docs/superpowers/plans/2026-08-18-performer-hub-rethink.md
+```
+
+---
+
 ## Self-Review Notes (completed)
 
 - **Spec coverage:** dock shell width/gradient → Task 1; TKA glyph everywhere → Tasks 2 + 8; prop grid → Task 3; planes → Task 4; effects width → Task 5; avatar modal + live preview → Task 6; natural-pose thumbnails → Task 7; sequence pane + picker preview → Task 8; out-of-scope items (spine interaction, transport bar, Effort tab) have no tasks by design; verification → Task 9.

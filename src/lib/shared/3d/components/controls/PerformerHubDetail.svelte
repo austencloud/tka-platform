@@ -499,6 +499,8 @@
     display: flex;
     flex-direction: column;
     container-type: inline-size;
+    max-height: 100%;
+    min-height: 0;
   }
 
   /* ─── Accent strip ─── */
@@ -605,6 +607,9 @@
   /* ─── Tab content ─── */
   .tab-content {
     padding: 12px 14px 14px;
+    overflow-y: auto;
+    min-height: 0;
+    overscroll-behavior: contain;
   }
 
   .tab-pane {
