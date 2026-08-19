@@ -10,6 +10,7 @@
  * Run: node scripts/verify-capsule-baton-glb.cjs
  */
 
+const fs = require("fs");
 const path = require("path");
 
 const { Vector3 } = require("three");
@@ -35,16 +36,23 @@ const glbPath = path.join(
 // at 132.0. Anything below that quotes an svg number is a claim about the
 // artwork, so a builder edit that breaks one of these is a divergence from the
 // drawing and should fail.
-const SVG_SPAN_UNITS = 252.8;
+// Stations come from scripts/capsule-baton-stations.json, which the SVG
+// generator emits. Hardcoding them here was the third copy of the same table,
+// and three copies is how the drawing, the lathe and this file each ended up
+// asserting a different prop.
+const STATIONS = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, "scripts", "capsule-baton-stations.json"), "utf8")
+);
+const SVG_SPAN_UNITS = STATIONS.span_units;
 const AUTHORED_LENGTH_M = 0.8636;
 const SVG_TO_M = AUTHORED_LENGTH_M / SVG_SPAN_UNITS;
 
 // --- The physical prop, the size authority -------------------------------
-// flowtoys composite iso baton / lumina twirl baton. Published numbers.
-const TUBE_OD_M = 0.0254; // 1" polycarbonate end tube
-const TUBE_LENGTH_M = 0.135; // 13.5cm of clear tube per end
-const SHAFT_OD_M = 0.014; // 12mm carbon cable, 14mm over its braid
-const CAP_OD_M = 0.0381; // 1.5" silicone flowcap pushed over that tube
+// flowtoys lumina twirl baton. Published where published, measured off the
+// flowtoys exploded shot against the capsule's spec'd 21mm where not.
+const TUBE_OD_M = STATIONS.tube_od_mm / 1000; // 1" polycarbonate end tube
+const SHAFT_OD_M = 0.014; // 12mm carbon shaft, 14mm over its 1mm grip
+const CAP_OD_M = 0.0342; // silicone flowcap, measured at its widest
 
 /**
  * The drawing exaggerates every cross-section about 2x so a hairline shaft
@@ -57,7 +65,7 @@ const CAP_OD_M = 0.0381; // 1.5" silicone flowcap pushed over that tube
  * 50mm tubes, almost exactly twice the real object at every station. That is
  * what the real-prop assertions further down exist to catch.
  */
-const CROSS_SCALE = TUBE_OD_M / 2 / (10.0 * SVG_TO_M);
+const CROSS_SCALE = TUBE_OD_M / 2 / (STATIONS.tube_half * SVG_TO_M);
 
 /** Signed distance from the pivot, in metres, for an offset in svg units. */
 const axial = (units) => units * SVG_TO_M;
@@ -173,17 +181,17 @@ near(
   AUTHORED_LENGTH_M,
   "Overall length must match the 34in staff"
 );
-near(stats.maximum.y, axial(126.4), "Cap tip sits where the drawing puts it");
+near(stats.maximum.y, axial(STATIONS.tip), "Cap tip sits where the drawing puts it");
 near(
   stats.minimum.y,
-  -axial(126.4),
+  -axial(STATIONS.tip),
   "The baton is bilateral: both caps close at the same distance"
 );
 // The widest point is the cap's shoulder. There is no proud rim band any more:
 // it only ever existed to hide a z-fight against the old cap cone.
 near(
   stats.dimensions.x,
-  radial(15.0) * 2,
+  radial(STATIONS.cap_widest_half) * 2,
   "Widest section is the cap's shoulder"
 );
 near(
@@ -215,8 +223,12 @@ invariant(
 // end would fire the effect off the tip instead of out of the capsule.
 near(
   rootNode.extras?.tracked_tip_y ?? 0,
-  axial(120.0),
+  axial(STATIONS.tracked_tip),
   "Tracked tip must sit at the cap's glow centre"
+);
+invariant(
+  STATIONS.tracked_tip > STATIONS.cap_mouth && STATIONS.tracked_tip < STATIONS.tip,
+  "Tracked tip must sit inside the cap, where the capsule's lit end is"
 );
 invariant(
   (rootNode.extras?.tracked_tip_y ?? 0) < stats.maximum.y,
@@ -249,18 +261,18 @@ const lit = bounds("TKA_Baton_Lit");
 // swell across the pivot is a regression, not a detail.
 near(
   fittings.maximum.x,
-  radial(10.35),
+  radial(STATIONS.tube_half) * 1.035,
   "The widest hardware is the tube rim, not anything near the hand"
 );
 invariant(
-  fittings.maximum.y > axial(80.0),
-  "The cable must reach the couplers"
+  fittings.maximum.y > axial(STATIONS.bumper_end),
+  "The shaft must reach the bumper collars"
 );
 invariant(
   lit.minimum.y < 0 && lit.maximum.y > 0,
   "The lit meshes must be a symmetric pair, one per end"
 );
-near(lit.maximum.y, axial(126.4), "The cap is part of the lit section");
+near(lit.maximum.y, axial(STATIONS.tip), "The cap is part of the lit section");
 invariant(
   lit.maximum.y > fittings.maximum.y,
   "The cap must stand past the collar and rim hardware"
@@ -285,38 +297,57 @@ function nearReal(actual, expected, message) {
   );
 }
 
-nearReal(radial(5.0) * 2, SHAFT_OD_M, "Shaft is a 12mm carbon shaft under tape");
-nearReal(radial(10.0) * 2, TUBE_OD_M, 'End tube is 1" polycarbonate');
-nearReal(radial(15.0) * 2, CAP_OD_M, "Flowcap fits over that tube");
+nearReal(
+  radial(STATIONS.shaft_half) * 2,
+  SHAFT_OD_M,
+  "Shaft is a 12mm carbon shaft under its grip"
+);
+nearReal(radial(STATIONS.tube_half) * 2, TUBE_OD_M, 'End tube is 1" polycarbonate');
+nearReal(
+  radial(STATIONS.cap_widest_half) * 2,
+  CAP_OD_M,
+  "Flowcap fits over that tube"
+);
 
 // The step from tube to cap is the whole silhouette of a lit end, and it is the
 // thing a second build lost by over-correcting a too-long cap into a too-thin
 // one. A cap that only just clears its tube reads as a sleeve, not as a cap.
+// Measured off the shipped bytes, not off two constants compared to each other:
+// the previous form could not fail whatever the model contained.
+const capStep = stats.dimensions.x / (radial(STATIONS.tube_half) * 2);
 invariant(
-  CAP_OD_M / TUBE_OD_M > 1.35,
-  `Cap must step visibly out from its tube: ${(CAP_OD_M / TUBE_OD_M).toFixed(2)}x`
+  capStep > 1.3,
+  `Cap must step visibly out from its tube: ${capStep.toFixed(2)}x`
 );
 
 // The tube is the long part of each end and the cap is a short lid over its tip.
 // Getting this backwards is what made the first build read as a bulb on a stick.
-const tubeOuterY = axial(120.0);
-const capInnerY = axial(113.0);
-nearReal(
-  tubeOuterY - TUBE_LENGTH_M >= 0 ? TUBE_LENGTH_M : 0,
-  TUBE_LENGTH_M,
-  "Clear tube runs the real prop's 13.5cm"
-);
+const tubeOuterY = axial(STATIONS.tube_end);
+const tubeInnerY = axial(STATIONS.bumper_end);
+const capInnerY = axial(STATIONS.cap_mouth);
 invariant(
   capInnerY < tubeOuterY,
   "Cap must overlap the tube's tip, or the two lathes leave a seam"
 );
 invariant(
-  stats.maximum.y - capInnerY < TUBE_LENGTH_M / 2,
-  "Cap must be a short lid, not a cone eating the tube's length"
+  stats.maximum.y - capInnerY < tubeOuterY - tubeInnerY,
+  "Cap must be a thimble over the tube, not a cone eating the tube's length"
 );
+// The bumper collar is the only thing between the shaft and the tube, and it
+// has to bridge them exactly: a gap leaves the prop in two pieces, an overlap
+// puts a swell where the hand goes.
 invariant(
-  tubeOuterY - TUBE_LENGTH_M < axial(86.0),
-  "Tube must reach in past the shaft's end, or the parts do not connect"
+  Math.abs(tubeInnerY - axial(STATIONS.bumper_end)) < axial(0.01) &&
+    STATIONS.bumper_end > STATIONS.shaft_end,
+  "Bumper collar must bridge the shaft to the tube with no gap"
+);
+// The cap keeps the object's own aspect: 44.7mm long across 34.2mm wide. Width-
+// only exaggeration inverted that to 0.87 and the cap read as a ball.
+const capAspect =
+  (STATIONS.tip - STATIONS.cap_mouth) / (STATIONS.cap_widest_half * 2);
+invariant(
+  capAspect > 1.15 && capAspect < 1.5,
+  `Cap must stay longer than it is wide: ${capAspect.toFixed(2)}`
 );
 
 // --- The shipped registry -----------------------------------------------
@@ -347,9 +378,9 @@ console.log(
 );
 console.log(
   `  length ${inches(stats.dimensions.y)}` +
-    `, shaft dia ${(radial(5.0) * 2000).toFixed(1)}mm` +
-    `, tube dia ${(radial(10.0) * 2000).toFixed(1)}mm` +
-    `, cap dia ${(radial(15.0) * 2000).toFixed(1)}mm`
+    `, shaft dia ${(radial(STATIONS.shaft_half) * 2000).toFixed(1)}mm` +
+    `, tube dia ${(radial(STATIONS.tube_half) * 2000).toFixed(1)}mm` +
+    `, cap dia ${(radial(STATIONS.cap_widest_half) * 2000).toFixed(1)}mm`
 );
 console.log(
   `  hand at the middle: ${inches(stats.maximum.y)} to each cap tip, ` +

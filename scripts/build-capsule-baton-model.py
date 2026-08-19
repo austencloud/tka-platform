@@ -37,6 +37,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import sys
 from pathlib import Path
@@ -48,38 +49,41 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "static" / "models" / "props" / "capsule-baton.glb"
 
 # --- capsule_baton.svg, converted once ------------------------------------
-# viewBox 252.8 x 40, so the prop pivot -- the drawing's centre -- sits at
-# x 126.4. Every axial number below is an offset from that pivot in drawing
-# units, so it can be checked against the artwork by eye.
-SVG_SPAN_UNITS = 252.8
+# The station table is NOT repeated here. scripts/build-capsule-baton-svg.py
+# emits scripts/capsule-baton-stations.json and this reads it, because for three
+# revisions the drawing and the lathe each kept their own copy and the two
+# quietly disagreed: the drawing would get a new cap and the model would keep
+# the old one, and nothing failed loudly enough to notice.
+#
+# Re-run the SVG generator first if the JSON is stale.
+STATIONS = json.loads((ROOT / "scripts" / "capsule-baton-stations.json").read_text("utf-8"))
+
+SVG_SPAN_UNITS = STATIONS["span_units"]
 #: A 34" baton, the same overall length as the default staff in
 #: config/user-proportions.ts. The artwork owns shape; published sizes own size.
 AUTHORED_LENGTH_M = 0.8636
 SVG_TO_M = AUTHORED_LENGTH_M / SVG_SPAN_UNITS
 
 # --- The physical prop, measured -----------------------------------------
-# flowtoys composite iso baton / lumina twirl baton, which is the object this
-# prop is. Published numbers, not estimates:
-#   shaft     12mm OD carbon fibre, bare braided cable, no grip section
+# flowtoys lumina twirl baton, which is the object this prop is, and the model
+# the reference photographs show. Published numbers, not estimates:
+#   shaft     12mm OD carbon fibre, 14mm over its grip, no separate grip section
 #   end tube  1" OD (25.4mm) polycarbonate, 13.5cm long, one per end
 #   capsule   88mm x 21mm light, sitting INSIDE the tube
-#   flowcap   silicone, ~30mm across, blunt thimble, soft ribs, NO holes
-#   overall   80cm with a 59cm shaft (90cm and 100cm options also exist)
-TUBE_OD_M = 0.0254
-TUBE_LENGTH_M = 0.135
+#   flowcap   silicone thimble, 25.2mm at the mouth, 34.2mm widest, 44.7mm long
+#   overall   66cm with a 45cm shaft (the 80/90/100cm iso batons share hardware)
+TUBE_OD_M = STATIONS["tube_od_mm"] / 1000.0
 
-#: The drawing states its own cross-section is about 2x the real object, because
-#: a 25mm tube on a 660mm prop would otherwise be a hairline. 3D has no such
-#: problem, so perpendicular measurements come back down by one factor and the
-#: silhouette the drawing asserts -- thin middle, fat ends -- survives intact.
+#: The drawing exaggerates its cross-section so a 12mm shaft reads on a
+#: pictograph cell; 3D has no such problem, so perpendicular measurements come
+#: back down by that factor and the silhouette the drawing asserts survives.
 #:
 #: The anchor is the END TUBE at its published 1" OD. An earlier build anchored
 #: on the 3D staff's radius instead, assuming a baton shaft and a staff share a
 #: cross-section. They do not: a staff tube is 25mm and a baton shaft is 12mm, so
 #: that build came out almost exactly twice as thick as the real object at every
-#: station -- a 25mm shaft and 50mm tubes. Anchoring on the tube puts the shaft
-#: at 12.7mm and the cap at 30.2mm, both within a millimetre of the real prop.
-CROSS_SCALE = (TUBE_OD_M / 2) / (10.0 * SVG_TO_M)
+#: station. Anchoring on the tube keeps every station within a millimetre.
+CROSS_SCALE = (TUBE_OD_M / 2) / (STATIONS["tube_half"] * SVG_TO_M)
 
 
 def axial(offset_units: float) -> float:
@@ -92,86 +96,67 @@ def radial(svg_units: float) -> float:
     return svg_units * SVG_TO_M * CROSS_SCALE
 
 
-# Shaft: <rect x="40.4" width="172" y="15" height="10" rx="5">
-# 126.4 - 40.4 = 86.0 and 212 - 126.4 = 85.6; the 0.4-unit difference is a
-# drafting artifact, not a design, so the 3D shaft is symmetric on the larger.
-SHAFT_HALF_Y = axial(86.0)
-SHAFT_R = radial(5.0)
+# Bare braided shaft, pivot out to each bumper collar.
+SHAFT_HALF_Y = axial(STATIONS["shaft_end"])
+SHAFT_R = radial(STATIONS["shaft_half"])
 
-# Tapered coupler where the shaft enters the tube, drawn as
-# <path d="M203 14.5 L214 11.5 L214 28.5 L203 25.5 Z">. On the real prop this is
-# the short conical swell just inboard of each tube, so it climbs from the
-# shaft's radius to the tube's and then disappears under it.
-COLLAR_INNER_Y = axial(72.0)
-COLLAR_OUTER_Y = axial(82.0)
-COLLAR_INNER_R = radial(5.2)
-COLLAR_OUTER_R = radial(9.6)
+# The bumper collar: a short swell where the shaft enters the tube, climbing
+# from the shaft's radius to the tube's. There is no coupler cone and no stamped
+# rosette; earlier revisions drew both and neither is on the object.
+COLLAR_INNER_Y = SHAFT_HALF_Y
+COLLAR_OUTER_Y = axial(STATIONS["bumper_end"])
+COLLAR_INNER_R = SHAFT_R
+COLLAR_OUTER_R = radial(STATIONS["tube_half"])
 
-# Clear tube: <rect x="212" width="40.8" y="10" height="20" rx="4.5">, but its
-# LENGTH comes from the real prop rather than from the drawing's edge.
-TUBE_R = radial(10.0)
-#: The tube is the long part of each end -- 13.5cm of clear polycarbonate with
-#: the capsule inside it -- and the cap is a short blunt lid over its tip. An
-#: earlier build had that ratio backwards, an 8.3cm tube under a 7.1cm cone, so
-#: each end read as a bulb on a stick instead of as a lit tube.
-#:
-#: Run the tube a little way in under the cap so the two lathes never share a
-#: surface, which reads as z-fighting on a prop this small on screen.
-TUBE_OUTER_Y = axial(120.0)
-TUBE_INNER_Y = TUBE_OUTER_Y - TUBE_LENGTH_M
+# Clear tube: 13.5cm of polycarbonate with the capsule inside it, and the cap a
+# short thimble over its tip. An earlier build had that ratio backwards, an
+# 8.3cm tube under a 7.1cm cone, so each end read as a bulb on a stick.
+TUBE_R = radial(STATIONS["tube_half"])
+TUBE_INNER_Y = axial(STATIONS["bumper_end"])
+TUBE_OUTER_Y = axial(STATIONS["tube_end"])
 
-# Open rim of the tube, at its inner end:
-# <path d="M212.6 11.2 L215.4 11.2 L215.4 28.8 L212.6 28.8">
+# Open rim of the tube, at its inner end.
 TUBE_RIM_INNER_Y = TUBE_INNER_Y
-TUBE_RIM_OUTER_Y = TUBE_INNER_Y + axial(2.8)
-TUBE_RIM_R = radial(10.35)
+TUBE_RIM_OUTER_Y = TUBE_INNER_Y + axial(2.0)
+TUBE_RIM_R = TUBE_R * 1.035
 
-# No vents. The drawing rules a facing pair of holes near each tube's rim and an
-# earlier build drilled four of them, but the real tube is sealed polycarbonate
-# around a rechargeable light: holes in it would be a defect, and none of the
-# reference photographs show any. Venting belongs to fire props.
+# No vents. The real tube is sealed polycarbonate around a rechargeable light:
+# holes in it would be a defect, and no reference photograph shows any. Venting
+# belongs to fire props.
 
-# Frosted silicone flowcap. Two shapes were wrong before this one. The drawing's
-#   <path d="M232 8.3 L244.5 10.1 C250.7 11.6 252.8 15.4 252.8 20 ...">
-# read as a cone tapering to a near-point, which is a fire-torch. Correcting that
-# over-corrected into a stubby lid barely wider than the tube it sat on, and a
-# cap that does not step out from its tube is the one thing every photograph of
-# this prop shows that it does.
+# Silicone flowcap, measured off the flowtoys exploded shot against the
+# capsule's published 21mm: 25.2mm at the mouth, 34.2mm at its widest, 44.7mm
+# long. A flared barrel, not a dome and not a cone -- its mouth grips the tube,
+# it swells toward the tip, then rounds across a broad face. Three earlier
+# shapes were wrong: a cone tapering to a near-point (a fire torch), a stubby
+# lid barely wider than its tube, and an egg widest at its middle.
 #
-# The real flowcap is a 1.5" silicone thimble pushed onto a 1" tube: it flares
-# off the lip, runs out to a good 12mm wider than the tube, and only then domes
-# over. That step is the whole silhouette of the lit end.
-#
-# Half-heights off the drawing's y=20 centreline, at pivot offsets, lip outward.
-CAP_PROFILE = (
-    (113.0, 11.6),
-    (115.2, 13.3),
-    (119.0, 14.5),
-    (122.8, 15.0),
-    (124.6, 15.0),
-)
-CAP_INNER_Y = axial(CAP_PROFILE[0][0])
-CAP_TIP_Y = axial(126.4)
-#: Widest point on the prop: the cap's shoulder, 38mm across.
+# The drawing scales the cap UNIFORMLY, length as well as width, so it keeps the
+# object's real 1.31 aspect; the profile below is already in those units and
+# de-exaggerates the same way every other station does.
+CAP_PROFILE = tuple((x, h) for x, h in STATIONS["cap_profile"])
+CAP_INNER_Y = axial(STATIONS["cap_mouth"])
+CAP_TIP_Y = axial(STATIONS["tip"])
+#: Widest point on the prop: the cap's shoulder.
 CAP_MAX_R = max(radial(half_units) for _, half_units in CAP_PROFILE)
-#: Cubic control points closing the dome, as (pivot offset, half-height).
+#: Cubic control points closing the tip face, as (pivot offset, half-height).
+# The face is BROAD. Rotated upright, iso-closeup.jpg still measures 0.75 of the
+# cap's widest a hair short of the tip, so the silhouette holds its width and
+# only the corner rounds over. Collapsing through 0.62 of the tip radius put a
+# soft point on it, which is what read as a flower bud in the first render.
 CAP_CURVE = (
-    (124.6, 15.0),
-    (126.0, 14.7),
-    (126.4, 9.2),
-    (126.4, 0.0),
+    (CAP_PROFILE[-1][0], CAP_PROFILE[-1][1]),
+    (STATIONS["tip"] - 0.35, STATIONS["cap_tip_half"] * 1.06),
+    (STATIONS["tip"], STATIONS["cap_tip_half"]),
+    (STATIONS["tip"], 0.0),
 )
-#: Eight soft ribs, running the body and over the dome, where they scallop the
-#: cap's top edge the way the reference caps' petals do. On the real cap these
+#: Eight soft ribs, running the body and over the tip face, where they scallop
+#: the cap's edge the way the reference caps' petals do. On the real cap these
 #: are shallow creases in frosted silicone, but "shallow" still has to survive a
 #: smoothed normal: at 0.05 and again at 0.075 they vanished completely and the
-#: cap rendered as a blank pill. The reference caps scallop their own silhouette,
-#: so the ripple has to be deep enough to do that too.
+#: cap rendered as a blank pill.
 CAP_FLUTES = 8
 CAP_FLUTE_DEPTH = 0.12
-#: Four columns per rib. 48 spread each rib over six columns so gently that
-#: auto-smooth averaged it away; four keeps a real shading break at every valley
-#: while staying round enough to read as moulded silicone.
 CAP_SEGMENTS = 32
 
 # No proud rim band around the cap. It existed to hide a z-fight between a
@@ -183,7 +168,7 @@ CAP_SEGMENTS = 32
 #: glow concentrated. Reported into the GLB's root extras so
 #: verify-capsule-baton-glb.cjs and prop-tip-geometry-3d.ts hold one number.
 #: The 2D drawing keeps its own +/-117 -- correct for its own, longer cap.
-TRACKED_TIP_Y = axial(120.0)
+TRACKED_TIP_Y = axial(STATIONS["tracked_tip"])
 
 
 def parse_args() -> argparse.Namespace:
@@ -304,6 +289,7 @@ def lathe(
     segments: int = 28,
     flutes: int = 0,
     flute_depth: float = 0.0,
+    flute_ramp: int = 0,
     rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
     location: tuple[float, float, float] = (0.0, 0.0, 0.0),
 ) -> bpy.types.Object:
@@ -311,17 +297,22 @@ def lathe(
 
     Each section is (y, radius). `flutes` adds a cosine ripple to the radius
     around the axis, which is how the cap gets its axial flutes without a
-    separate mesh per ridge.
+    separate mesh per ridge. `flute_ramp` fades that ripple in over the first N
+    rings, because a rippled first ring scallops the open edge into teeth: the
+    real cap's mouth is a clean round rim and only its body is creased.
     """
     if len(sections) < 2:
         raise ValueError(f"Lathe {name} needs at least two sections")
 
     vertices: list[tuple[float, float, float]] = []
-    for y, radius in sections:
+    for ring_index, (y, radius) in enumerate(sections):
+        depth = flute_depth
+        if flutes and flute_ramp:
+            depth *= min(1.0, ring_index / flute_ramp)
         for column in range(segments):
             angle = math.tau * column / segments
             ripple = (
-                1.0 - flute_depth * (0.5 - 0.5 * math.cos(flutes * angle))
+                1.0 - depth * (0.5 - 0.5 * math.cos(flutes * angle))
                 if flutes
                 else 1.0
             )
@@ -497,6 +488,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
                 segments=CAP_SEGMENTS,
                 flutes=CAP_FLUTES,
                 flute_depth=CAP_FLUTE_DEPTH,
+                flute_ramp=3,
             )
         )
     shaft_group = join_objects("TKA_Baton_Fittings", [shaft, *fittings])
