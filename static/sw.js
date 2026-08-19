@@ -141,14 +141,17 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3D model assets: cache-first in dedicated cache (GLB, KTX2, Draco WASM)
-  // These are large binaries that rarely change — skip 304 round-trips entirely
+  // 3D model assets keep an offline copy in their own cache, but their public
+  // URLs are stable while the art behind them changes. Cache-first left people
+  // looking at an old forest or Autumn build forever after one visit. Online
+  // loads therefore wait for the current model and replace the offline copy;
+  // a failed connection or timeout still falls back to the last working scene.
   if (
     /\/models\/.*\.glb$/.test(url.pathname) ||
     /\/models\/.*\.ktx2$/.test(url.pathname) ||
     url.pathname.startsWith("/draco/")
   ) {
-    event.respondWith(cacheFirstDedicated(event.request, ASSETS_3D_CACHE));
+    event.respondWith(networkFirstDedicated(event.request, ASSETS_3D_CACHE));
     return;
   }
 
@@ -256,6 +259,18 @@ async function cacheFirstDedicated(request, cacheName) {
   const response = await fetch(request);
   if (response.ok) cache.put(request, response.clone());
   return response;
+}
+
+async function networkFirstDedicated(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const response = await fetchWithTimeout(request, 10000);
+    if (response.ok) await cache.put(request, response.clone());
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || new Response("Offline", { status: 503 });
+  }
 }
 
 async function networkFirst(request) {

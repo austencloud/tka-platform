@@ -151,6 +151,29 @@ describe("sw.js activate", () => {
   });
 });
 
+describe("sw.js 3D asset freshness", () => {
+  it("replaces a cached model online and uses that model offline", async () => {
+    const h = createSwHarness();
+    const modelUrl = "/models/forest/forest-environment.glb";
+    await h.seedCache(
+      h.constants.assets3dCacheName,
+      modelUrl,
+      "old forest"
+    );
+    h.route(modelUrl, respondWith("current forest"));
+
+    const online = await h.dispatchFetch(`${ORIGIN}${modelUrl}`);
+    expect(await online!.text()).toBe("current forest");
+    expect(
+      await h.cacheBody(h.constants.assets3dCacheName, modelUrl)
+    ).toBe("current forest");
+
+    h.routes.delete(modelUrl);
+    const offline = await h.dispatchFetch(`${ORIGIN}${modelUrl}`);
+    expect(await offline!.text()).toBe("current forest");
+  });
+});
+
 describe("sw.js /images/* stale-while-revalidate", () => {
   // Fix: audit 2026-06-30 BLOCKER — /images was network-only before the rule
   // existed, so pictographs rendered blank offline. SWR must serve the cache
