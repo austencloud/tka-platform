@@ -95,6 +95,9 @@
 
   .spine-panel {
     padding: 8px 6px;
+    /* --theme-panel-bg is translucent in dark mode; the identical-stop gradient
+       is an image layer stacked over the opaque black underlay. Do not collapse
+       to a plain background-color - that loses opacity against the 3D scene. */
     background:
       linear-gradient(
         color-mix(in srgb, var(--panel-color) 6%, var(--theme-panel-bg)),
