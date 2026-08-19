@@ -20,7 +20,7 @@
 - Modify: `src/lib/shared/3d/components/controls/PerformerHub.svelte` (styles ~96–143)
 - Modify: `src/lib/shared/3d/components/controls/PerformerHubDetail.svelte:497`
 
-- [ ] **Step 1: Widen the detail dock**
+- [x] **Step 1: Widen the detail dock**
 
 In `PerformerHubDetail.svelte`, the `.hub-detail` rule currently reads:
 
@@ -38,7 +38,7 @@ Replace the width line:
 
 (32.5rem = 520px floor unchanged; 44vw ≈ 845px at 1920, ≈ 1690px at 3840; 68.75rem = 1100px ceiling that grows with the root ramp.)
 
-- [ ] **Step 2: Flatten the spine panel surface**
+- [x] **Step 2: Flatten the spine panel surface**
 
 In `PerformerHub.svelte`, `.spine-panel` currently has:
 
@@ -63,7 +63,7 @@ Replace with a flat wash (keep the opaque `black` underlay — `--theme-panel-bg
       black;
 ```
 
-- [ ] **Step 3: Flatten the detail panel + restore its left seam**
+- [x] **Step 3: Flatten the detail panel + restore its left seam**
 
 In the same file, `.detail-panel` currently has:
 
@@ -97,7 +97,7 @@ Replace the background with the SAME flat wash as the spine (identical color = n
 
 Leave `border-radius`, `box-shadow`, `max-width: calc(100vw - 140px)`, and the `.spine-panel.has-detail` fused-corner rules untouched.
 
-- [ ] **Step 4: Verify with grep**
+- [x] **Step 4: Verify with grep**
 
 ```bash
 grep -n "linear-gradient(" src/lib/shared/3d/components/controls/PerformerHub.svelte
@@ -105,7 +105,7 @@ grep -n "linear-gradient(" src/lib/shared/3d/components/controls/PerformerHub.sv
 
 Expected: only the two flat (no-angle, same-color) gradients from Steps 2–3, plus any gradient on `.close-tab`-unrelated rules that already existed WITHOUT an angle keyword. No `135deg` / `180deg` hits remain in `.spine-panel`/`.detail-panel`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(3d): performer dock widens fluidly and drops the directional gradient" -- src/lib/shared/3d/components/controls/PerformerHub.svelte src/lib/shared/3d/components/controls/PerformerHubDetail.svelte

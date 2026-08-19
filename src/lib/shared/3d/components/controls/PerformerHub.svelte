@@ -97,9 +97,8 @@
     padding: 8px 6px;
     background:
       linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--panel-color) 9%, var(--theme-panel-bg)),
-        color-mix(in srgb, var(--panel-color) 3%, var(--theme-panel-bg))
+        color-mix(in srgb, var(--panel-color) 6%, var(--theme-panel-bg)),
+        color-mix(in srgb, var(--panel-color) 6%, var(--theme-panel-bg))
       ),
       black;
     border: 1px solid
@@ -125,14 +124,14 @@
     position: relative;
     background:
       linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--panel-color) 11%, var(--theme-panel-bg)),
-        color-mix(in srgb, var(--panel-color) 3%, var(--theme-panel-bg))
+        color-mix(in srgb, var(--panel-color) 6%, var(--theme-panel-bg)),
+        color-mix(in srgb, var(--panel-color) 6%, var(--theme-panel-bg))
       ),
       black;
     border: 1px solid
       color-mix(in srgb, var(--panel-color) 28%, var(--theme-stroke));
-    border-left: none;
+    border-left: 1px solid
+      color-mix(in srgb, var(--panel-color) 14%, transparent);
     border-radius: 0 14px 14px 0;
     box-shadow:
       var(--theme-panel-shadow),
