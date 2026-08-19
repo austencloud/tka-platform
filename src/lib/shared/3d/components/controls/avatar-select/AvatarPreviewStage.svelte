@@ -13,6 +13,9 @@
   `groundOffset`) puts the feet on y = 0, which is where the pedestal is.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
+  import { Tween } from "svelte/motion";
+  import { cubicOut } from "svelte/easing";
   import { Canvas, T } from "@threlte/core";
   import {
     Avatar3D,
@@ -27,6 +30,41 @@
   }
 
   let { avatarId }: Props = $props();
+
+  const reduceMotion = $derived(prefersReducedMotion());
+  const fadeOutMs = $derived(reduceMotion ? 0 : 120);
+  const fadeInMs = $derived(reduceMotion ? 0 : 180);
+
+  // Avatar3D applies whatever `opacity` it is handed to every material on the
+  // loaded model, and fires `onModelSwapped` once the replacement root is
+  // compiled and live. It never animates between the two on its own — that is
+  // exactly the seam this stage fills, so browsing the grid dissolves between
+  // bodies instead of cutting.
+  const modelOpacity = new Tween(1, { duration: 180, easing: cubicOut });
+
+  // The avatar currently being faded toward. Comparing against the live prop
+  // in the callback is the race guard: if focus moved again while a model was
+  // loading, the older load's `onModelSwapped` names a body we no longer want
+  // and must not ramp opacity back up over the newer one still in flight.
+  let requestedId: AvatarId | null = null;
+
+  $effect(() => {
+    const nextId = avatarId;
+    untrack(() => {
+      // First run is the initial load, which has nothing on screen to fade out.
+      if (requestedId === null || requestedId === nextId) {
+        requestedId = nextId;
+        return;
+      }
+      requestedId = nextId;
+      void modelOpacity.set(0, { duration: fadeOutMs });
+    });
+  });
+
+  function handleModelSwapped(swappedId: string): void {
+    if (swappedId !== avatarId) return;
+    void modelOpacity.set(1, { duration: fadeInMs });
+  }
 
   const CAMERA_POSITION: [number, number, number] = [0, 1.35, 3.1];
   const ORBIT_TARGET: [number, number, number] = [0, 0.95, 0];
@@ -59,9 +97,11 @@
     <T.DirectionalLight position={[-3, 2.2, -2]} intensity={0.5} />
 
     <T.Group position.y={groundOffset}>
-      <!-- Avatar3D owns avatar swapping internally (it reloads and cross-fades
-           when `avatarId` changes), so this is a live prop rather than a
-           keyed remount that would tear down its services on every hover. -->
+      <!-- `avatarId` is a live prop rather than a keyed remount: Avatar3D
+           hot-swaps its model root without ever flashing empty, and keying
+           would tear down its services and this stage's camera on every
+           hover. The dissolve across that swap is owned here — opacity down,
+           then back up when onModelSwapped reports the new body is live. -->
       <Avatar3D
         id="avatar-select-preview"
         {avatarId}
@@ -70,6 +110,8 @@
         isActive={false}
         enableLocomotion
         enableFootPlanting
+        opacity={modelOpacity.current}
+        onModelSwapped={handleModelSwapped}
       />
     </T.Group>
 
