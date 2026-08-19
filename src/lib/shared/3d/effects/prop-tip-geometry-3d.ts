@@ -126,6 +126,18 @@ const SINGLE_ENDED_REACH_3D: Partial<
 const CAPSULE_BATON_REACH_M = 0.4099367;
 
 /**
+ * Hand to a wick's centre, in metres. `fire-double-staff.glb` authors the 90cm
+ * model, so its wicks close at +/-0.45, but a monkey fist burns from its middle
+ * -- 37mm inboard at +/-0.413, `tracked_tip_y` in the model's root extras,
+ * printed by `scripts/build-fire-double-staff-model.py` and gated by
+ * `scripts/verify-fire-double-staff-glb.cjs`.
+ *
+ * Absolute, not a ratio: a GLB prop is a fixed-size object and does not follow
+ * the user's staff length.
+ */
+const FIRE_DOUBLE_STAFF_REACH_M = 0.413;
+
+/**
  * Two-ended props whose ends sit somewhere other than half a staff from the
  * hand. Keyed by prop type, valued in metres given the staff length in metres.
  *
@@ -137,6 +149,7 @@ const TWO_ENDED_REACH_3D: Partial<
   Record<PropType, (staffLength: number) => number>
 > = {
   [PropType.CAPSULE_BATON]: () => CAPSULE_BATON_REACH_M,
+  [PropType.FIRE_DOUBLE_STAFF]: () => FIRE_DOUBLE_STAFF_REACH_M,
 };
 
 /**

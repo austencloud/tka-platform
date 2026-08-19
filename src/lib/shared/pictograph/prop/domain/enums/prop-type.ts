@@ -21,6 +21,11 @@ export enum PropType {
   // its tracked tips sit at the cap centers, where the light actually is, so the
   // LED/fire/trail emitters come out of the caps instead of off the rims.
   CAPSULE_BATON = "capsule_baton",
+  // A kevlar fire double staff: 16mm anodized tube, overgrip across the middle,
+  // and a monkey-fist wick at each end. Staff family — same reach, same two
+  // tracked ends — but its tracked tips sit at the wick centers, where the fuel
+  // is, so fire and trails come off the burning part instead of the far rim.
+  FIRE_DOUBLE_STAFF = "fire_double_staff",
 
   // === CLUB FAMILY ===
   CLUB = "club",

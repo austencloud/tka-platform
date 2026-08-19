@@ -82,6 +82,10 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // in a shallow box because the prop really is that thin.
   capsule_baton: { width: 252.8, height: 40 },
 
+  // Fire double staff — staff's exact span so the mandala radius and beta
+  // spacing match, in the same shallow box its artwork is drawn in.
+  fire_double_staff: { width: 252.8, height: 24 },
+
   // Chicken family
   chicken: { width: 325, height: 30.3 },
   bigchicken: { width: 252.8, height: 44.4 },

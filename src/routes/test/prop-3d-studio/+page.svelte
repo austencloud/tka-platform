@@ -68,6 +68,7 @@
     PropType.SWORD,
     PropType.QUIAD,
     PropType.CAPSULE_BATON,
+    PropType.FIRE_DOUBLE_STAFF,
     PropType.POI,
     PropType.GUITAR,
   ] as const;

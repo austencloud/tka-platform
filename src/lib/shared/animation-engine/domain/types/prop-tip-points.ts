@@ -71,6 +71,16 @@ const CAPSULE_BATON_TIP_POINTS: PropTipConfig = {
   ],
 };
 
+// Bilateral, and deliberately shorter than the 126.4 half-width its artwork
+// spans. Fire comes off the middle of a monkey-fist wick, not off its far face,
+// so every emitter that reads this table fires from where the fuel actually is.
+const FIRE_DOUBLE_STAFF_TIP_POINTS: PropTipConfig = {
+  points: [
+    { dx: -114.7, dy: 0 },
+    { dx: 114.7, dy: 0 },
+  ],
+};
+
 const BIGSTAFF_TIP_POINTS: PropTipConfig = {
   points: [
     { dx: -300, dy: 0 },
@@ -368,6 +378,7 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
   bigstaff: BIGSTAFF_TIP_POINTS,
   staff_v2: STAFF_V2_TIP_POINTS,
   capsule_baton: CAPSULE_BATON_TIP_POINTS,
+  fire_double_staff: FIRE_DOUBLE_STAFF_TIP_POINTS,
 
   // Club family
   club: CLUB_TIP_POINTS,

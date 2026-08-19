@@ -4471,7 +4471,7 @@ index ec4e1d1b822aeb9661dfb0d838ba06684737fd83..d8c709b915835fdcb8e67d672a013c91
  /**
   * Registry of available GLTF prop models.
 diff --git a/dist/lib/components/props/prop-model-registry.js b/dist/lib/components/props/prop-model-registry.js
-index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a70b59176 100644
+index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..c6c3f7dcd036a6f2cf03ea460cfaefe9e5d15af6 100644
 --- a/dist/lib/components/props/prop-model-registry.js
 +++ b/dist/lib/components/props/prop-model-registry.js
 @@ -25,6 +25,35 @@ function modelUrl(filename) {
@@ -4510,7 +4510,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a
  /**
   * Registry of available GLTF prop models.
   *
-@@ -32,8 +61,54 @@ function modelUrl(filename) {
+@@ -32,8 +61,59 @@ function modelUrl(filename) {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY = {
@@ -4560,6 +4560,11 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a
 +        scale: 1,
 +        gripOffsetY: 0,
 +    },
++    [PropType.FIRE_DOUBLE_STAFF]: {
++        modelUrl: modelUrl("fire-double-staff.glb"),
++        scale: 1,
++        gripOffsetY: 0,
++    },
 +};
 +/** Smaller prop families that reuse an authored base model. */
 +export const SHARED_MODEL_VARIANT_MAP = {
@@ -4567,7 +4572,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a
  };
  /**
   * Look up a GLTF model for a prop type. Returns null if no model
-@@ -49,11 +124,13 @@ export function getPropModel(propType) {
+@@ -49,11 +129,13 @@ export function getPropModel(propType) {
  export const BIG_VARIANT_MAP = {
      [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
      [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -4583,7 +4588,7 @@ index d26cd3a0b4aecdbc58a6132f134f8d0965a94ebf..389d14d1a99ee5197abd5a822800be2a
      [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
      [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
      [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -72,6 +149,15 @@ export function resolvePropModel(propType) {
+@@ -72,6 +154,15 @@ export function resolvePropModel(propType) {
      const direct = getPropModel(propType);
      if (direct)
          return { entry: direct, scale: direct.scale };
@@ -4956,26 +4961,28 @@ index 0000000000000000000000000000000000000000..2dcfeee2b011ba97b3f53352b7ed6913
 +  buildTriquetraShape
 +};
 diff --git a/dist/lib/domain/enums/PropType.d.ts b/dist/lib/domain/enums/PropType.d.ts
-index 99cbd14ea7c5d0a22c1af6a8937375c15c9214a5..d5aef31b86d89bcc04a5c8b7d4b7214b2eca4f96 100644
+index 99cbd14ea7c5d0a22c1af6a8937375c15c9214a5..d43063dce407806e304d7bb1050ced46fa894a86 100644
 --- a/dist/lib/domain/enums/PropType.d.ts
 +++ b/dist/lib/domain/enums/PropType.d.ts
-@@ -32,6 +32,7 @@ export declare enum PropType {
+@@ -32,6 +32,8 @@ export declare enum PropType {
      DOUBLECONTACTBALL = "doublecontactball",
      BIGDOUBLECONTACTBALL = "bigdoublecontactball",
      QUIAD = "quiad",
 +    CAPSULE_BATON = "capsule_baton",
++    FIRE_DOUBLE_STAFF = "fire_double_staff",
      TORCH = "torch",
      BIGTORCH = "bigtorch",
      POI = "poi"
 diff --git a/dist/lib/domain/enums/PropType.js b/dist/lib/domain/enums/PropType.js
-index 15844ec32763c63fe4955b8c893dbcdd5156ff4b..5be6007795a731071d4b21813fc965cbc417c9b7 100644
+index 15844ec32763c63fe4955b8c893dbcdd5156ff4b..a8507115c4d774151a6609a773c30ce904d34c0a 100644
 --- a/dist/lib/domain/enums/PropType.js
 +++ b/dist/lib/domain/enums/PropType.js
-@@ -33,6 +33,7 @@ export var PropType;
+@@ -33,6 +33,8 @@ export var PropType;
      PropType["DOUBLECONTACTBALL"] = "doublecontactball";
      PropType["BIGDOUBLECONTACTBALL"] = "bigdoublecontactball";
      PropType["QUIAD"] = "quiad";
 +    PropType["CAPSULE_BATON"] = "capsule_baton";
++    PropType["FIRE_DOUBLE_STAFF"] = "fire_double_staff";
      PropType["TORCH"] = "torch";
      PropType["BIGTORCH"] = "bigtorch";
      PropType["POI"] = "poi";
@@ -13443,7 +13450,7 @@ index 6d8e91ce13c491ba06883641fbabc36adb2beeb0..4d060a78614d837ee99987e922d76e17
    });
  }
 diff --git a/src/lib/components/props/prop-model-registry.ts b/src/lib/components/props/prop-model-registry.ts
-index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf5eb28427 100644
+index 899e076e7e08becffb11b36d6651a9099ab43d6c..e1be3c31ad130cf185d81f01d46dae8e0f41b0dd 100644
 --- a/src/lib/components/props/prop-model-registry.ts
 +++ b/src/lib/components/props/prop-model-registry.ts
 @@ -20,6 +20,16 @@ export interface PropModelEntry {
@@ -13508,7 +13515,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf
  /**
   * Registry of available GLTF prop models.
   *
-@@ -46,8 +94,76 @@ function modelUrl(filename: string): string {
+@@ -46,8 +94,92 @@ function modelUrl(filename: string): string {
   * Add entries as models become available - the system degrades gracefully.
   */
  export const PROP_MODEL_REGISTRY: Partial<Record<PropType, PropModelEntry>> = {
@@ -13577,6 +13584,22 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf
 +    scale: 1,
 +    gripOffsetY: 0,
 +  },
++  /**
++   * Kevlar fire double staff, built from
++   * static/images/props/pictograph/fire_double_staff.svg by
++   * scripts/build-fire-double-staff-model.py. Bilateral, so the drawing's
++   * viewBox center is already the grip and neither offset nor flip applies.
++   *
++   * TKA_FireStaff_Tube_Recolor is the only material carrying the recolor
++   * marker, so blue/red identity lives in the anodized tube -- the part these
++   * are actually sold in colours of -- and the kevlar wicks stay kevlar on both
++   * hands. Same split the 2D artwork uses.
++   */
++  [PropType.FIRE_DOUBLE_STAFF]: {
++    modelUrl: modelUrl("fire-double-staff.glb"),
++    scale: 1,
++    gripOffsetY: 0,
++  },
 +};
 +
 +/** Smaller prop families that reuse an authored base model. */
@@ -13587,7 +13610,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf
  };
  
  /**
-@@ -67,11 +183,13 @@ export const BIG_VARIANT_MAP: Partial<
+@@ -67,11 +199,13 @@ export const BIG_VARIANT_MAP: Partial<
  > = {
    [PropType.BIGSTAFF]: { base: PropType.STAFF, scale: 1.4 },
    [PropType.BIGCLUB]: { base: PropType.CLUB, scale: 1.4 },
@@ -13603,7 +13626,7 @@ index 899e076e7e08becffb11b36d6651a9099ab43d6c..ba9e0d0b5cd0439ef5e3bc4c8b5511bf
    [PropType.BIGDOUBLESTAR]: { base: PropType.DOUBLESTAR, scale: 1.4 },
    [PropType.BIGEIGHTRINGS]: { base: PropType.EIGHTRINGS, scale: 1.4 },
    [PropType.BIGCONTACTBALL]: { base: PropType.CONTACTBALL, scale: 1.4 },
-@@ -93,6 +211,16 @@ export function resolvePropModel(
+@@ -93,6 +227,16 @@ export function resolvePropModel(
    const direct = getPropModel(propType);
    if (direct) return { entry: direct, scale: direct.scale };
  
@@ -14101,14 +14124,15 @@ index 0000000000000000000000000000000000000000..e78e9296e60edb2d417b43b47b32edff
 +  return shape;
 +}
 diff --git a/src/lib/domain/enums/PropType.ts b/src/lib/domain/enums/PropType.ts
-index a6a29aa9b928eb98fc102f572da1ed2035c658ba..92637e5dbce2174ecdfbbbc409d29430b751842e 100644
+index a6a29aa9b928eb98fc102f572da1ed2035c658ba..1dea0ef2ebfe75fa76a2851192b4c081c664295d 100644
 --- a/src/lib/domain/enums/PropType.ts
 +++ b/src/lib/domain/enums/PropType.ts
-@@ -32,6 +32,7 @@ export enum PropType {
+@@ -32,6 +32,8 @@ export enum PropType {
  	DOUBLECONTACTBALL = "doublecontactball",
  	BIGDOUBLECONTACTBALL = "bigdoublecontactball",
  	QUIAD = "quiad",
 +	CAPSULE_BATON = "capsule_baton",
++	FIRE_DOUBLE_STAFF = "fire_double_staff",
  	TORCH = "torch",
  	BIGTORCH = "bigtorch",
  	POI = "poi",

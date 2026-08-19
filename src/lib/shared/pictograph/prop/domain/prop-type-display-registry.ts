@@ -49,6 +49,11 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
       image: "/images/props/buttons/capsule_baton.svg",
       category: "staves-clubs",
     },
+    [PropType.FIRE_DOUBLE_STAFF]: {
+      label: "Fire Staff",
+      image: "/images/props/buttons/fire_double_staff.svg",
+      category: "staves-clubs",
+    },
 
     // === CLUB FAMILY ===
     [PropType.CLUB]: {
@@ -625,6 +630,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
     props: [
       PropType.STAFF,
       PropType.CAPSULE_BATON,
+      PropType.FIRE_DOUBLE_STAFF,
       PropType.CLUB,
       PropType.FAN,
       PropType.TRIAD,

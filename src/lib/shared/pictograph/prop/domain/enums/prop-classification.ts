@@ -71,6 +71,9 @@ export const SMALL_BILATERAL_PROPS = [
   "staff_v2",
   // The LED baton is a staff: same span, same small-prop beta offset.
   "capsule_baton",
+  // The fire double staff is a staff too, and its 90cm tube is exactly what the
+  // span was measured from.
+  "fire_double_staff",
   // Energy Staff follows staff exactly: same reach, same small-prop beta offset.
   "energy_staff",
   "buugeng",
@@ -205,6 +208,9 @@ const STAFF_FAMILY_PROPS = [
   // The LED baton's two ends are mirror images, so the pinky/thumb landmark is
   // carried by which hand end you gripped — same as every other staff.
   "capsule_baton",
+  // The fire double staff marks its thumb end with a gold band, but the wicks
+  // themselves are identical, so the landmark still rides on the grip.
+  "fire_double_staff",
 ] as const;
 
 /**

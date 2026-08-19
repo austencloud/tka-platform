@@ -114,6 +114,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.STAFF2]: "2",
   // Same code the current codec uses, so a sequence keeps its prop across formats.
   [PropType.CAPSULE_BATON]: "5",
+  // Digit for the same reason: every letter that reads as "fire",
+  // "double" or "staff" is taken.
+  [PropType.FIRE_DOUBLE_STAFF]: "6",
   [PropType.CLUB]: "C",
   [PropType.BIGCLUB]: "c",
   [PropType.FAN]: "F",

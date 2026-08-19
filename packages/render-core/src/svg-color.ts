@@ -46,6 +46,10 @@ export const SELECTIVE_COLOR_PROP_TYPES = [
   // and take blue or red, while the couplers, tubes and cap shells stay clear --
   // which is how the real prop is sold, colored shaft under clear ends.
   "capsule_baton",
+  // Fire double staff: the anodized tube and its overgrip are neutral gray and
+  // take blue or red, while the kevlar wicks and the gold thumb bands stay as
+  // authored. Kevlar is never blue or red.
+  "fire_double_staff",
   "sword-knight",
   "sword-saber",
   "sword-flamberge",
