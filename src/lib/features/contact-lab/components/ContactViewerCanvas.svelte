@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Canvas } from "@threlte/core";
-  import ContactCanvasLifecycle from "./ContactCanvasLifecycle.svelte";
+  import CanvasLifecycle from "$lib/shared/3d/components/CanvasLifecycle.svelte";
   import ContactScene from "./ContactScene.svelte";
 
   interface Props {
@@ -15,7 +15,7 @@
   aria-label="Contact juggling hand-level motion viewer"
 >
   <Canvas dpr={2}>
-    <ContactCanvasLifecycle />
+    <CanvasLifecycle />
     <ContactScene {aspect} />
   </Canvas>
 </div>

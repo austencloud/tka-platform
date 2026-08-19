@@ -772,17 +772,17 @@
     border-color: var(--performer-color);
   }
 
+  /* In a narrow dock the button wraps to its own full-width line rather than
+     shedding its label — an unlabelled pencil icon on a row that already has
+     a name and a description reads as an edit-the-name control. */
   @container (max-width: 380px) {
-    .avatar-change-btn span {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
+    .avatar-summary {
+      flex-wrap: wrap;
+    }
+
+    .avatar-change-btn {
+      flex: 1 0 100%;
+      justify-content: center;
     }
   }
 

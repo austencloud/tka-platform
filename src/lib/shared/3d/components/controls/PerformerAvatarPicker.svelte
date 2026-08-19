@@ -3,8 +3,15 @@
   import { avatarThumbnailUrl } from "../../constants/r2-cdn";
 
   interface Props {
+    /** The tile the radiogroup treats as chosen. In the select modal this is
+        the previewed avatar, which is not yet the applied one. */
     selectedAvatarId: AvatarId | null;
+    /** The avatar actually on the performer(s) right now. Marked with a badge
+        so previewing another body never erases where you started. */
+    appliedAvatarId?: AvatarId | null;
     pendingAvatarId: AvatarId | null;
+    /** Names what choosing a tile does, since it is not always "select". */
+    groupLabel?: string;
     onSelect: (id: AvatarId) => void;
     onIntent: (id: AvatarId) => void;
     onCancelIntent: () => void;
@@ -12,7 +19,9 @@
 
   let {
     selectedAvatarId,
+    appliedAvatarId = null,
     pendingAvatarId,
+    groupLabel = "Select avatar",
     onSelect,
     onIntent,
     onCancelIntent,
@@ -47,11 +56,7 @@
 </script>
 
 <div class="avatar-picker">
-  <div class="picker-intro">
-    <strong>Choose an avatar</strong>
-    <span>Hovering prepares models before you select them.</span>
-  </div>
-  <div class="avatar-grid" role="radiogroup" aria-label="Select avatar">
+  <div class="avatar-grid" role="radiogroup" aria-label={groupLabel}>
     {#each AVATAR_DEFINITIONS as definition, index (definition.id)}
       <button
         class="avatar-card"
@@ -74,6 +79,9 @@
         onkeydown={(event) => moveSelection(event, definition.id as AvatarId)}
         onclick={() => onSelect(definition.id as AvatarId)}
         title={definition.description}
+        aria-label={appliedAvatarId === definition.id
+          ? `${definition.name}, current avatar`
+          : definition.name}
       >
         {#if pendingAvatarId === definition.id}
           <span class="avatar-loading" aria-hidden="true"></span>
@@ -92,6 +100,9 @@
           onload={() =>
             (loadedThumbs = new Set(loadedThumbs).add(definition.id))}
         />
+        {#if appliedAvatarId === definition.id}
+          <span class="avatar-current-badge" aria-hidden="true">Current</span>
+        {/if}
         <span class="avatar-card-name">{definition.name}</span>
       </button>
     {/each}
@@ -104,21 +115,6 @@
     flex-direction: column;
     gap: 10px;
     container-type: inline-size;
-  }
-  .picker-intro {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .picker-intro strong {
-    color: var(--theme-text);
-    font-size: 15px;
-    line-height: 1.2;
-  }
-  .picker-intro span {
-    color: var(--theme-text-dim);
-    font-size: 14px;
-    line-height: 1.35;
   }
   .avatar-grid {
     display: grid;
@@ -173,6 +169,20 @@
   .avatar-card.has-thumb:hover .avatar-thumb,
   .avatar-card.has-thumb.selected .avatar-thumb {
     opacity: 1;
+  }
+  .avatar-current-badge {
+    position: absolute;
+    z-index: 2;
+    top: 4px;
+    left: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--performer-color) 82%, black);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
   }
   .avatar-card-name {
     position: relative;

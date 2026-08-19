@@ -11,9 +11,13 @@
   the host owns the commit (prepare / apply / pending / error) through onCommit.
 -->
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
-  import { AVATAR_DEFINITIONS, type AvatarId } from "@austencloud/scene-3d";
+  import {
+    AVATAR_DEFINITIONS,
+    DEFAULT_AVATAR_ID,
+    type AvatarId,
+  } from "@austencloud/scene-3d";
   import PerformerAvatarPicker from "../PerformerAvatarPicker.svelte";
   import AvatarPreviewStage from "./AvatarPreviewStage.svelte";
 
@@ -44,16 +48,43 @@
     onClose,
   }: Props = $props();
 
-  const FIRST_AVATAR_ID = (AVATAR_DEFINITIONS[0]?.id ?? "x-bot") as AvatarId;
+  let focusedId = $state<AvatarId>(DEFAULT_AVATAR_ID);
 
-  let focusedId = $state<AvatarId>(FIRST_AVATAR_ID);
+  // Arrow-key traversal moves focus faster than a GLTF loads. The grid
+  // highlight and the meta text follow every keypress; the 3D stage waits for
+  // the focus to settle, so holding an arrow key crosses the grid instead of
+  // queueing a model load per tile.
+  const PREVIEW_SETTLE_MS = 180;
+  let previewId = $state<AvatarId>(DEFAULT_AVATAR_ID);
+  let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearSettle(): void {
+    if (settleTimer === null) return;
+    clearTimeout(settleTimer);
+    settleTimer = null;
+  }
+
+  function focusAvatar(id: AvatarId, immediate = false): void {
+    focusedId = id;
+    clearSettle();
+    if (immediate) {
+      previewId = id;
+      return;
+    }
+    settleTimer = setTimeout(() => {
+      settleTimer = null;
+      previewId = id;
+    }, PREVIEW_SETTLE_MS);
+  }
+
+  onDestroy(clearSettle);
 
   // Re-anchor on every open: a modal that reopens still holding last session's
   // browsing position would misrepresent what the performer is wearing now.
   $effect(() => {
     if (!open) return;
     untrack(() => {
-      focusedId = currentAvatarId ?? FIRST_AVATAR_ID;
+      focusAvatar(currentAvatarId ?? DEFAULT_AVATAR_ID, true);
     });
   });
 
@@ -64,12 +95,14 @@
 
   function commit(): void {
     if (isCurrent) return;
+    clearSettle();
     onCancelIntent();
     onCommit(focusedId);
     onClose();
   }
 
   function close(): void {
+    clearSettle();
     onCancelIntent();
     onClose();
   }
@@ -98,33 +131,39 @@
 
   <div class="select-shell" style:--performer-color={performerColor}>
     <div class="select-body">
-      <section class="preview-pane" aria-label="Avatar preview">
-        <AvatarPreviewStage avatarId={focusedId} />
+      <div class="preview-pane">
+        <AvatarPreviewStage avatarId={previewId} />
 
         <div class="focus-meta">
           <span class="focus-name">{focusedDef?.name ?? "Avatar"}</span>
           <span class="focus-desc">{focusedDef?.description ?? ""}</span>
         </div>
 
+        <!-- aria-disabled rather than disabled: the button stays focusable so
+             a keyboard user can reach it and hear why it is inert. commit()
+             short-circuits on the same condition. -->
         <button
           class="select-btn"
+          class:is-current={isCurrent}
           type="button"
+          aria-disabled={isCurrent}
           onclick={commit}
-          disabled={isCurrent}
         >
           {isCurrent ? "This is your avatar" : "Select this avatar"}
         </button>
-      </section>
+      </div>
 
-      <section class="picker-pane" aria-label="All avatars">
+      <div class="picker-pane">
         <PerformerAvatarPicker
           selectedAvatarId={focusedId}
+          appliedAvatarId={currentAvatarId}
+          groupLabel="Preview avatar"
           {pendingAvatarId}
-          onSelect={(id) => (focusedId = id)}
+          onSelect={(id) => focusAvatar(id)}
           {onIntent}
           {onCancelIntent}
         />
-      </section>
+      </div>
     </div>
   </div>
 </BaseModal>
@@ -134,7 +173,7 @@
      wide for one figure and a tile grid. Capped above the token's own mobile
      breakpoint so the full-bleed phone layout is left alone. */
   @media (min-width: 521px) {
-    :global(dialog.base-modal.avatar-select-modal) {
+    :global(dialog.base-modal[data-size="xl"].avatar-select-modal) {
       width: min(92vw, 56rem);
     }
   }
@@ -239,33 +278,30 @@
       border-color 140ms ease;
   }
 
-  .select-btn:hover:not(:disabled) {
+  .select-btn:hover:not(.is-current) {
     background: color-mix(in srgb, var(--performer-color) 32%, transparent);
     border-color: var(--performer-color);
   }
 
-  .select-btn:disabled {
+  .select-btn.is-current {
     background: var(--surface-inset-deep);
     border-color: var(--theme-stroke);
     color: var(--theme-text-dim);
     cursor: default;
   }
 
+  /* min-height: 0 is what lets the pane actually scroll — a grid item's auto
+     minimum otherwise grows the row to the full grid height, which would drag
+     the 3D canvas taller with it. */
   .picker-pane {
     min-width: 0;
+    min-height: 0;
+    max-height: min(60vh, 34rem);
     overflow-y: auto;
   }
 
-  /* The dialog header already says "Choose your avatar", and the picker's own
-     hint ("hovering prepares models before you select them") describes the
-     inline flow this modal replaced — here a tile focuses the preview and the
-     Select button commits. */
-  .picker-pane :global(.picker-intro) {
-    display: none;
-  }
-
   button:focus-visible {
-    outline: 2px solid var(--performer-color, var(--theme-accent));
+    outline: 2px solid var(--performer-color);
     outline-offset: 2px;
   }
 
