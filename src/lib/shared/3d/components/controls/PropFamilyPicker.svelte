@@ -97,47 +97,36 @@
       <span>Families with variants open a focused second page.</span>
     </div>
 
-    <div class="family-groups">
+    <div class="family-grid" role="group" aria-label="Prop families">
       {#each PROP_CATEGORIES as category}
         {@const bases = propCategories.get(category.id) ?? []}
         {#if bases.length > 0}
-          <section
-            class="family-group"
-            aria-labelledby={`prop-category-${category.id}`}
-          >
-            <h3 id={`prop-category-${category.id}`}>{category.label}</h3>
-            <div class="family-grid">
-              {#each bases as base}
-                {@const info = getPropTypeDisplayInfo(base)}
-                {@const variantTotal = activeVariants(base).length}
-                <button
-                  class="prop-choice family-choice"
-                  class:selected={selectedBase === base}
-                  type="button"
-                  aria-pressed={selectedBase === base}
-                  onclick={() => chooseFamily(base)}
-                >
-                  {#if variantTotal > 1}
-                    <span
-                      class="variant-count"
-                      aria-label={`${variantTotal} variants`}
-                    >
-                      {variantTotal}
-                    </span>
-                  {/if}
-                  <PropCompositionPreview
-                    propType={base}
-                    size={42}
-                    darkBackground
-                  />
-                  <span>{info.label}</span>
-                  {#if variantTotal > 1}
-                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          </section>
+          <h3 class="category-label" id={`prop-category-${category.id}`}>
+            {category.label}
+          </h3>
+          {#each bases as base}
+            {@const info = getPropTypeDisplayInfo(base)}
+            {@const variantTotal = activeVariants(base).length}
+            <button
+              class="prop-choice family-choice"
+              class:selected={selectedBase === base}
+              type="button"
+              aria-pressed={selectedBase === base}
+              aria-describedby={`prop-category-${category.id}`}
+              onclick={() => chooseFamily(base)}
+            >
+              {#if variantTotal > 1}
+                <span class="variant-count" aria-label={`${variantTotal} variants`}>
+                  {variantTotal}
+                </span>
+              {/if}
+              <PropCompositionPreview propType={base} size={42} darkBackground />
+              <span>{info.label}</span>
+              {#if variantTotal > 1}
+                <i class="fas fa-chevron-right" aria-hidden="true"></i>
+              {/if}
+            </button>
+          {/each}
         {/if}
       {/each}
     </div>
@@ -168,25 +157,32 @@
     font-size: 14px;
     line-height: 1.35;
   }
-  .family-groups {
+  .family-grid,
+  .variant-grid {
     display: grid;
-    gap: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
   }
-  .family-group {
-    display: grid;
-    gap: 6px;
-  }
-  .family-group h3 {
-    margin: 0;
+  .category-label {
+    grid-column: 1 / -1;
+    margin: 6px 0 0;
     color: var(--theme-text-dim);
     font-size: 14px;
     font-weight: 700;
   }
-  .family-grid,
-  .variant-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-    gap: 8px;
+  .family-grid > .category-label:first-child {
+    margin-top: 0;
+  }
+  @container (min-width: 640px) {
+    .family-grid,
+    .variant-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+  @container (min-width: 960px) {
+    .family-grid {
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+    }
   }
   .prop-choice {
     position: relative;
@@ -282,12 +278,6 @@
   button:focus-visible {
     outline: 2px solid var(--prop-accent);
     outline-offset: 2px;
-  }
-  @container (min-width: 600px) {
-    .family-groups {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
   }
   @media (prefers-reduced-motion: reduce) {
     .prop-choice {
