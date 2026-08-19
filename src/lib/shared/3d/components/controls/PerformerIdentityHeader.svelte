@@ -97,6 +97,9 @@
       commitName();
     } else if (event.key === "Escape") {
       event.preventDefault();
+      // Escape here only cancels the rename; without this, the hub's
+      // window-level dismiss would also collapse the whole detail panel.
+      event.stopPropagation();
       cancelEditName();
     }
   }
