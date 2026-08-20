@@ -17,6 +17,7 @@
   import GalleryLoopEditor from "./value-editors/GalleryLoopEditor.svelte";
   import GalleryMaxTurnEditor from "./value-editors/GalleryMaxTurnEditor.svelte";
   import GalleryPositionEditor from "./value-editors/GalleryPositionEditor.svelte";
+  import GalleryPerformanceEditor from "./value-editors/GalleryPerformanceEditor.svelte";
   import type { GalleryWorkspaceProps } from "./gallery-workspace-types";
 
   let {
@@ -155,6 +156,14 @@
     />
   {:else if section === "gridmode"}
     <GalleryGridModeEditor
+      {catalog}
+      {stackHint}
+      {isValueApplied}
+      {onPickValue}
+      {valueHead}
+    />
+  {:else if section === "performance"}
+    <GalleryPerformanceEditor
       {catalog}
       {stackHint}
       {isValueApplied}

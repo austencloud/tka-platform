@@ -130,6 +130,15 @@ export function readExistingPublicOwnedFields(
   const forkCount = finiteNumber(data["forkCount"]);
   const viewCount = finiteNumber(data["viewCount"]);
   const starCount = finiteNumber(data["starCount"]);
+  const rawPublicPerformanceCount = finiteNumber(
+    data["publicPerformanceCount"]
+  );
+  const publicPerformanceCount =
+    rawPublicPerformanceCount !== undefined &&
+    Number.isInteger(rawPublicPerformanceCount) &&
+    rawPublicPerformanceCount >= 0
+      ? rawPublicPerformanceCount
+      : undefined;
   const publicProjectionRevision = finiteNumber(
     data["publicProjectionRevision"]
   );
@@ -148,6 +157,12 @@ export function readExistingPublicOwnedFields(
     ...(forkCount !== undefined && { forkCount }),
     ...(viewCount !== undefined && { viewCount }),
     ...(starCount !== undefined && { starCount }),
+    ...(publicPerformanceCount !== undefined && { publicPerformanceCount }),
+    ...(data["latestPublicPerformanceAt"] != null && {
+      latestPublicPerformanceAt: data[
+        "latestPublicPerformanceAt"
+      ] as PublicProjectionTimestamp,
+    }),
     ...(publicProjectionRevision !== undefined && { publicProjectionRevision }),
     ...(publicProjectionDigest !== undefined && { publicProjectionDigest }),
   };

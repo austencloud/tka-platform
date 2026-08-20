@@ -11,7 +11,10 @@ import { z } from "zod";
 // Import from the leaf module, not the $lib/shared/firestore barrel: the barrel
 // pulls in the CRUD layer, creating an import cycle that leaves firestoreDate in
 // the temporal dead zone (undefined) when this module evaluates first.
-import { firestoreDate, firestoreDateLenient } from "$lib/shared/firestore/firestore-date";
+import {
+  firestoreDate,
+  firestoreDateLenient,
+} from "$lib/shared/firestore/firestore-date";
 
 // --- Nested objects ---
 
@@ -68,6 +71,8 @@ export const LibrarySequenceDocSchema = z
     forkCount: z.number().default(0),
     viewCount: z.number().default(0),
     starCount: z.number().default(0),
+    publicPerformanceCount: z.number().int().nonnegative().default(0),
+    latestPublicPerformanceAt: firestoreDateLenient,
 
     // Sync
     _version: z.number().optional(),

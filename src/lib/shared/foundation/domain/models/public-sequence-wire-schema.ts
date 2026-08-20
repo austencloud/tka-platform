@@ -171,7 +171,8 @@ export function isWireTimestamp(value: unknown): value is WireTimestamp {
   if (value instanceof Date) return !Number.isNaN(value.getTime());
 
   if (value !== null && typeof value === "object") {
-    if (typeof (value as { toDate?: unknown }).toDate === "function") return true;
+    if (typeof (value as { toDate?: unknown }).toDate === "function")
+      return true;
     return secondsOf(value) !== undefined;
   }
 
@@ -301,6 +302,8 @@ export const PublicSequenceWireSchema = z
     forkCount: z.number().default(0),
     viewCount: z.number().default(0),
     starCount: z.number().default(0),
+    publicPerformanceCount: z.number().int().nonnegative().default(0),
+    latestPublicPerformanceAt: wireTimestamp.optional(),
 
     // --- fork attribution ---------------------------------------------------
     isForked: z.boolean().default(false),
@@ -349,7 +352,9 @@ export const PublicSequenceWireSchema = z
   .passthrough();
 
 /** The validated wire document. Date fields are still WIRE values here. */
-export type PublicSequenceWireDocument = z.infer<typeof PublicSequenceWireSchema>;
+export type PublicSequenceWireDocument = z.infer<
+  typeof PublicSequenceWireSchema
+>;
 
 // ---------------------------------------------------------------------------
 // The application model
@@ -366,8 +371,10 @@ export type PublicSequenceWireDocument = z.infer<typeof PublicSequenceWireSchema
  * Everything else is inherited, so the existing interface stays the shared
  * vocabulary while this type carries the fields it never declared.
  */
-export interface PublicSequenceProjection
-  extends Omit<PublicSequenceIndex, "publishedAt" | "updatedAt"> {
+export interface PublicSequenceProjection extends Omit<
+  PublicSequenceIndex,
+  "publishedAt" | "updatedAt"
+> {
   readonly publishedAt?: Date;
   readonly updatedAt?: Date;
 
@@ -415,6 +422,9 @@ export function toPublicSequenceProjection(
   const birthday = toApplicationDate(wire.birthday);
   const publishedAt = toApplicationDate(wire.publishedAt);
   const updatedAt = toApplicationDate(wire.updatedAt);
+  const latestPublicPerformanceAt = toApplicationDate(
+    wire.latestPublicPerformanceAt
+  );
 
   return {
     id: wire.id,
@@ -422,7 +432,9 @@ export function toPublicSequenceProjection(
 
     ownerId: wire.ownerId,
     ownerDisplayName: wire.ownerDisplayName,
-    ...(wire.ownerAvatarUrl !== undefined && { ownerAvatarUrl: wire.ownerAvatarUrl }),
+    ...(wire.ownerAvatarUrl !== undefined && {
+      ownerAvatarUrl: wire.ownerAvatarUrl,
+    }),
 
     name: wire.name,
     ...(wire.displayName !== undefined && { displayName: wire.displayName }),
@@ -430,8 +442,12 @@ export function toPublicSequenceProjection(
     word: wire.word,
     thumbnails: wire.thumbnails,
 
-    ...(wire.sequenceLength !== undefined && { sequenceLength: wire.sequenceLength }),
-    ...(wire.difficultyLevel !== undefined && { difficultyLevel: wire.difficultyLevel }),
+    ...(wire.sequenceLength !== undefined && {
+      sequenceLength: wire.sequenceLength,
+    }),
+    ...(wire.difficultyLevel !== undefined && {
+      difficultyLevel: wire.difficultyLevel,
+    }),
     ...(wire.level !== undefined && { level: wire.level }),
 
     isCircular: wire.isCircular,
@@ -451,13 +467,19 @@ export function toPublicSequenceProjection(
     ...(wire.gridMode !== undefined && {
       gridMode: wire.gridMode as SequenceData["gridMode"],
     }),
-    ...(wire.reversalPattern !== undefined && { reversalPattern: wire.reversalPattern }),
+    ...(wire.reversalPattern !== undefined && {
+      reversalPattern: wire.reversalPattern,
+    }),
 
     tags: wire.tags,
 
     forkCount: wire.forkCount,
     viewCount: wire.viewCount,
     starCount: wire.starCount,
+    publicPerformanceCount: wire.publicPerformanceCount,
+    ...(latestPublicPerformanceAt !== undefined && {
+      latestPublicPerformanceAt,
+    }),
 
     isForked: wire.isForked,
     ...(wire.originalCreatorId !== undefined && {
@@ -487,7 +509,8 @@ export function toPublicSequenceProjection(
       stepPairings: wire.stepPairings as unknown as readonly StepPairingData[],
     }),
     ...(wire.startPosition !== undefined && {
-      startPosition: wire.startPosition as unknown as SequenceData["startPosition"],
+      startPosition:
+        wire.startPosition as unknown as SequenceData["startPosition"],
     }),
 
     ...(wire.creatorIntent !== undefined && {
@@ -694,7 +717,8 @@ export function isLegacyPublicDocument(candidate: {
   readonly publicProjectionSchemaVersion?: number;
 }): boolean {
   return (
-    readPublicProjectionSchemaVersion(candidate) < PUBLIC_PROJECTION_SCHEMA_VERSION
+    readPublicProjectionSchemaVersion(candidate) <
+    PUBLIC_PROJECTION_SCHEMA_VERSION
   );
 }
 

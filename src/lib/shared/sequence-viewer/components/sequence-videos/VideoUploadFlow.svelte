@@ -22,9 +22,16 @@
     type ThumbnailResult,
   } from "$lib/shared/video-collaboration/utils/thumbnail-extractor";
   import { saveSequenceVideo } from "$lib/shared/video-collaboration/state/sequence-videos-store.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import {
+    DEFAULT_VIDEO_VISIBILITY,
+    VIDEO_VISIBILITY_OPTIONS,
+    describeVideoVisibility,
+    type VideoVisibility,
+  } from "$lib/shared/video-collaboration/domain/video-visibility";
 
   interface Props {
     sequence: SequenceData;
@@ -55,6 +62,7 @@
   let videoPreviewUrl = $state<string | null>(null);
   let videoDuration = $state(0);
   let thumbnail = $state<ThumbnailResult | null>(null);
+  let visibility = $state<VideoVisibility>(DEFAULT_VIDEO_VISIBILITY);
 
   let uploadProgress = $state(0);
   let uploadError = $state<string | null>(null);
@@ -188,7 +196,7 @@
         creatorId: currentUser.uid,
         creatorDisplayName: currentUser.displayName ?? undefined,
         creatorAvatarUrl: currentUser.photoURL ?? undefined,
-        visibility: "public",
+        visibility,
         thumbnailUrl,
       });
 
@@ -217,6 +225,7 @@
     videoDuration = 0;
     uploadProgress = 0;
     thumbnail = null;
+    visibility = DEFAULT_VIDEO_VISIBILITY;
   }
 
   function handleCancel() {
@@ -308,6 +317,23 @@
         {#if videoDuration > 0}
           &middot; {formatDuration(videoDuration)}
         {/if}
+      </span>
+    </div>
+
+    <div class="visibility-choice">
+      <span class="visibility-label" id="performance-visibility-label">
+        Who can see this in TKA?
+      </span>
+      <SegmentedControl
+        options={VIDEO_VISIBILITY_OPTIONS}
+        value={visibility}
+        onchange={(next) => (visibility = next)}
+        color="accent"
+        semantics="radiogroup"
+        ariaLabelledby="performance-visibility-label"
+      />
+      <span class="visibility-hint" aria-live="polite">
+        {describeVideoVisibility(visibility)}
       </span>
     </div>
 
@@ -522,6 +548,25 @@
     flex-direction: column;
     gap: 0.125rem;
     text-align: center;
+  }
+
+  .visibility-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .visibility-label {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+
+  .visibility-hint {
+    min-block-size: 1.25rem;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.4;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .file-name {

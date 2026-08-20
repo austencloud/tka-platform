@@ -124,6 +124,9 @@ export function mapDocToSequence(
     // thumbnail render in a collection crashed on that. Absent stays absent
     // (the renderer falls back to createdAt).
     ...(data["birthday"] != null && { birthday: toDate(data["birthday"]) }),
+    ...(data["latestPublicPerformanceAt"] != null && {
+      latestPublicPerformanceAt: toDate(data["latestPublicPerformanceAt"]),
+    }),
     steps: data["steps"] ?? [],
   } as LibrarySequence;
 
@@ -162,7 +165,9 @@ export async function batchFetchSequences(
   // viewer's quota. Cap the work; legitimate collections never exceed 500.
   const MAX_FETCH = 500;
   const ids =
-    sequenceIds.length > MAX_FETCH ? sequenceIds.slice(0, MAX_FETCH) : sequenceIds;
+    sequenceIds.length > MAX_FETCH
+      ? sequenceIds.slice(0, MAX_FETCH)
+      : sequenceIds;
   if (sequenceIds.length > MAX_FETCH) {
     console.warn(
       `[collection-firestore-mapper] sequenceIds length ${sequenceIds.length} exceeds ${MAX_FETCH}; capping the fetch.`
@@ -222,7 +227,10 @@ export async function batchFetchPublicSequences(
         continue;
       }
 
-      const sequence = mapDocToSequence(parsed.data as DocumentData, docSnap.id);
+      const sequence = mapDocToSequence(
+        parsed.data as DocumentData,
+        docSnap.id
+      );
       results.push({
         ...sequence,
         source: "imported",

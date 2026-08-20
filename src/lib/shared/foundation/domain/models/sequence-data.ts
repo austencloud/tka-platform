@@ -150,6 +150,11 @@ export interface SequenceData {
   readonly ownerDisplayName?: string;
   readonly ownerAvatarUrl?: string;
 
+  /** Number of performance videos whose visibility is public. Server-owned. */
+  readonly publicPerformanceCount?: number;
+  /** Newest public performance timestamp, used for discovery ordering. */
+  readonly latestPublicPerformanceAt?: Date;
+
   // Video/animation storage
   /** Firebase Storage URL to user's performance video */
   readonly performanceVideoUrl?: string;
@@ -272,7 +277,9 @@ export function createSequenceData(
     ...(data.level !== undefined && { level: data.level }),
     ...(data.dateAdded !== undefined && { dateAdded: data.dateAdded }),
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),
-    ...(data.timeSignature !== undefined && { timeSignature: data.timeSignature }),
+    ...(data.timeSignature !== undefined && {
+      timeSignature: data.timeSignature,
+    }),
     ...(data.startingPosition !== undefined && {
       startingPosition: data.startingPosition,
     }),
@@ -306,6 +313,12 @@ export function createSequenceData(
     ...(data.ownerAvatarUrl !== undefined && {
       ownerAvatarUrl: data.ownerAvatarUrl,
     }),
+    ...(data.publicPerformanceCount !== undefined && {
+      publicPerformanceCount: data.publicPerformanceCount,
+    }),
+    ...(data.latestPublicPerformanceAt !== undefined && {
+      latestPublicPerformanceAt: data.latestPublicPerformanceAt,
+    }),
     // Video/animation storage
     ...(data.performanceVideoUrl !== undefined && {
       performanceVideoUrl: data.performanceVideoUrl,
@@ -323,9 +336,13 @@ export function createSequenceData(
       animatedSequencePath: data.animatedSequencePath,
     }),
     ...(data.notes !== undefined && { notes: data.notes }),
-    ...(data.effortTimeline !== undefined && { effortTimeline: data.effortTimeline }),
+    ...(data.effortTimeline !== undefined && {
+      effortTimeline: data.effortTimeline,
+    }),
     ...(data.intendedProp !== undefined && { intendedProp: data.intendedProp }),
-    ...(data.creatorIntent !== undefined && { creatorIntent: data.creatorIntent }),
+    ...(data.creatorIntent !== undefined && {
+      creatorIntent: data.creatorIntent,
+    }),
     // Compositional structure passthrough
     ...(data.blueSoloProp !== undefined && { blueSoloProp: data.blueSoloProp }),
     ...(data.redSoloProp !== undefined && { redSoloProp: data.redSoloProp }),

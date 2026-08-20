@@ -3,7 +3,7 @@
  *
  * The category catalog shared by the gallery's two products: the editorial
  * LANDING (GalleryLanding) and the filter WORKSPACE (GalleryWorkspace, plus the
- * persistent desktop rail). Both render the same eleven categories from the
+ * persistent desktop rail). Both render the same category catalog from the
  * same live counts — the shape that makes landing/workspace drift impossible.
  *
  * Split out of GalleryDrill.svelte (2026-08-04) as part of the split-pane
@@ -42,6 +42,7 @@ export type Section =
   | "position"
   | "gridmode"
   | "author"
+  | "performance"
   | "loop"
   | "family"
   | "max_turn_intensity"
@@ -55,6 +56,7 @@ export const SECTIONS: readonly Section[] = [
   "position",
   "gridmode",
   "author",
+  "performance",
   "loop",
   "family",
   "max_turn_intensity",
@@ -70,6 +72,7 @@ export const SCREEN_CLASS: Record<Section, string> = {
   position: "screen-positions",
   gridmode: "screen-gridmode",
   author: "screen-creator",
+  performance: "screen-performance",
   loop: "screen-loop",
   family: "screen-family",
   max_turn_intensity: "screen-max-turns",
@@ -467,6 +470,31 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
   const recentCount = $derived(
     deps.getCount(BrowseFilterType.RECENT, "recent")
   );
+  const performanceValues = $derived([
+    {
+      value: "has-public-performance",
+      label: "Has public performances",
+      desc: "Sequences with at least one performance anyone can watch.",
+      icon: "fa-circle-play",
+      count: deps.getCount(
+        BrowseFilterType.PERFORMANCE_AVAILABILITY,
+        "has-public-performance"
+      ),
+    },
+    {
+      value: "no-public-performance",
+      label: "No public performances yet",
+      desc: "Find a sequence to perform and share.",
+      icon: "fa-video",
+      count: deps.getCount(
+        BrowseFilterType.PERFORMANCE_AVAILABILITY,
+        "no-public-performance"
+      ),
+    },
+  ]);
+  const maxPerformanceCount = $derived(
+    Math.max(1, ...performanceValues.map((v) => v.count))
+  );
   const favoritesCount = $derived(
     deps.getCount(BrowseFilterType.FAVORITES, "favorites")
   );
@@ -491,6 +519,7 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
     gridmode: gridModeValues.length > 1,
     loop: loopValues.some((v) => v.count > 0),
     author: creatorValues.length > 1,
+    performance: performanceValues.some((v) => v.count > 0),
     recent: recentCount > 0,
     favorites: favoritesCount > 0,
     family: familyValues.some((v) => v.count > 0),
@@ -635,6 +664,20 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
         narrowedOut: sectionNarrowedOut("author"),
       });
     }
+    if (showSection("performance")) {
+      const withPerformance = performanceValues[0]?.count ?? 0;
+      const waiting = performanceValues[1]?.count ?? 0;
+      out.push({
+        key: "performance",
+        title: "Performances",
+        sub: sectionNarrowedOut("performance")
+          ? "No matches with this rule"
+          : `${withPerformance} performed · ${waiting} waiting`,
+        art: { kind: "icon", icon: "fa-circle-play" },
+        section: "performance",
+        narrowedOut: sectionNarrowedOut("performance"),
+      });
+    }
     if (showSection("recent")) {
       out.push({
         key: "recent",
@@ -755,6 +798,12 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
     },
     get maxGridModeCount() {
       return maxGridModeCount;
+    },
+    get performanceValues() {
+      return performanceValues;
+    },
+    get maxPerformanceCount() {
+      return maxPerformanceCount;
     },
     get loopValues() {
       return loopValues;

@@ -9,11 +9,8 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
-import type {
-  LOOPType} from "$lib/shared/foundation/domain/models/generation/circular-models";
-import {
-  LOOP_TYPE_LABELS,
-} from "$lib/shared/foundation/domain/models/generation/circular-models";
+import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { LOOP_TYPE_LABELS } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
@@ -55,7 +52,10 @@ function filterByCollection(
   sequences: SequenceData[],
   filterValue: BrowseFilterValue
 ): SequenceData[] {
-  const memberIds = collectionMembershipResolver?.(String(filterValue), sequences);
+  const memberIds = collectionMembershipResolver?.(
+    String(filterValue),
+    sequences
+  );
   if (!memberIds) return [];
   return sequences.filter((seq) => memberIds.has(seq.id));
 }
@@ -100,6 +100,8 @@ export function applyFilter(
       return filterByFavorites(sequences);
     case BrowseFilterType.RECENT:
       return filterByRecent(sequences);
+    case BrowseFilterType.PERFORMANCE_AVAILABILITY:
+      return filterByPerformanceAvailability(sequences, filterValue);
     case BrowseFilterType.LOOP_TYPE:
       return filterByLOOPType(sequences, filterValue);
     case BrowseFilterType.TND_FAMILY:
@@ -199,33 +201,35 @@ function filterByContainsLetters(
   const searchTerm = filterValue.toLowerCase();
 
   // Sort sequences to prioritize those starting with the searchTerm
-  return sequences.filter((seq) => {
-    const word = seq.word.toLowerCase();
-    const name = seq.name.toLowerCase();
-    const intended = seq.intendedWord?.toLowerCase() || "";
-    const display = seq.displayName?.toLowerCase() || "";
+  return sequences
+    .filter((seq) => {
+      const word = seq.word.toLowerCase();
+      const name = seq.name.toLowerCase();
+      const intended = seq.intendedWord?.toLowerCase() || "";
+      const display = seq.displayName?.toLowerCase() || "";
 
-    return (
-      word.includes(searchTerm) ||
-      name.includes(searchTerm) ||
-      intended.includes(searchTerm) ||
-      display.includes(searchTerm)
-    );
-  }).sort((a, b) => {
-    // Primary priority: Word starts with search term
-    const aStarts = a.word.toLowerCase().startsWith(searchTerm);
-    const bStarts = b.word.toLowerCase().startsWith(searchTerm);
-    if (aStarts && !bStarts) return -1;
-    if (!aStarts && bStarts) return 1;
+      return (
+        word.includes(searchTerm) ||
+        name.includes(searchTerm) ||
+        intended.includes(searchTerm) ||
+        display.includes(searchTerm)
+      );
+    })
+    .sort((a, b) => {
+      // Primary priority: Word starts with search term
+      const aStarts = a.word.toLowerCase().startsWith(searchTerm);
+      const bStarts = b.word.toLowerCase().startsWith(searchTerm);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
 
-    // Secondary priority: Name starts with search term
-    const aNameStarts = a.name.toLowerCase().startsWith(searchTerm);
-    const bNameStarts = b.name.toLowerCase().startsWith(searchTerm);
-    if (aNameStarts && !bNameStarts) return -1;
-    if (!aNameStarts && bNameStarts) return 1;
+      // Secondary priority: Name starts with search term
+      const aNameStarts = a.name.toLowerCase().startsWith(searchTerm);
+      const bNameStarts = b.name.toLowerCase().startsWith(searchTerm);
+      if (aNameStarts && !bNameStarts) return -1;
+      if (!aNameStarts && bNameStarts) return 1;
 
-    return 0;
-  });
+      return 0;
+    });
 }
 
 /** Step count with the same fallback the sorter/drill use (resolveStepCount):
@@ -480,6 +484,24 @@ function filterByRecent(sequences: SequenceData[]): SequenceData[] {
   });
 }
 
+function filterByPerformanceAvailability(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  if (filterValue === "has-public-performance") {
+    return sequences.filter((seq) => (seq.publicPerformanceCount ?? 0) > 0);
+  }
+
+  if (filterValue === "no-public-performance") {
+    // Missing is intentionally treated as zero while legacy public documents
+    // are backfilled. The field counts public videos only, so this reveals no
+    // private or collaborators-only activity.
+    return sequences.filter((seq) => (seq.publicPerformanceCount ?? 0) === 0);
+  }
+
+  return sequences;
+}
+
 /**
  * Filter sequences by LOOP type (Continuous Assembly Pattern)
  * Supports special values:
@@ -500,7 +522,10 @@ function filterByLOOPType(
 
   // Component-based filtering (new): "component:rotated_halved", "component:mirrored", etc.
   if (filterStr.startsWith("component:")) {
-    return filterByLOOPComponent(sequences, filterStr.slice("component:".length));
+    return filterByLOOPComponent(
+      sequences,
+      filterStr.slice("component:".length)
+    );
   }
 
   // Special case: filter all circular sequences
@@ -527,7 +552,8 @@ function filterByLOOPType(
 
 function getSequenceComponents(seq: SequenceData): readonly LOOPComponent[] {
   if (seq.components?.length) return seq.components;
-  if (seq.loopType) return Array.from(parseLoopComponents(seq.loopType as LOOPType));
+  if (seq.loopType)
+    return Array.from(parseLoopComponents(seq.loopType as LOOPType));
   return [];
 }
 
@@ -544,18 +570,24 @@ function filterByLOOPComponent(
   if (componentKey === "rotated_halved") {
     return sequences.filter((seq) => {
       const comps = getSequenceComponents(seq);
-      return comps.includes(LOOPComponent.ROTATED) && getSequencePeriod(seq) <= 2;
+      return (
+        comps.includes(LOOPComponent.ROTATED) && getSequencePeriod(seq) <= 2
+      );
     });
   }
   if (componentKey === "rotated_quartered") {
     return sequences.filter((seq) => {
       const comps = getSequenceComponents(seq);
-      return comps.includes(LOOPComponent.ROTATED) && getSequencePeriod(seq) === 4;
+      return (
+        comps.includes(LOOPComponent.ROTATED) && getSequencePeriod(seq) === 4
+      );
     });
   }
 
   const componentEnum = componentKey as LOOPComponent;
-  return sequences.filter((seq) => getSequenceComponents(seq).includes(componentEnum));
+  return sequences.filter((seq) =>
+    getSequenceComponents(seq).includes(componentEnum)
+  );
 }
 
 // ============================================================================
@@ -606,7 +638,9 @@ function filterByTnDFamily(
   if (!filterValue || typeof filterValue !== "string") {
     return sequences;
   }
-  return sequences.filter((seq) => getSequenceTnDFamilies(seq).has(filterValue));
+  return sequences.filter((seq) =>
+    getSequenceTnDFamilies(seq).has(filterValue)
+  );
 }
 
 // ============================================================================
@@ -645,7 +679,9 @@ function filterByMaxTurnIntensity(
   filterValue: BrowseFilterValue
 ): SequenceData[] {
   const ceiling =
-    typeof filterValue === "number" ? filterValue : parseFloat(String(filterValue));
+    typeof filterValue === "number"
+      ? filterValue
+      : parseFloat(String(filterValue));
   if (isNaN(ceiling)) return sequences;
   return sequences.filter((seq) => getSequenceMaxTurn(seq) <= ceiling);
 }
@@ -660,7 +696,9 @@ function filterByReversalPattern(
   filterValue: BrowseFilterValue
 ): SequenceData[] {
   const want = String(filterValue);
-  return sequences.filter((seq) => (seq.reversalPattern ?? "continuous") === want);
+  return sequences.filter(
+    (seq) => (seq.reversalPattern ?? "continuous") === want
+  );
 }
 
 // ============================================================================

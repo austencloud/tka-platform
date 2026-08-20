@@ -92,6 +92,8 @@
  * | `forkCount` | ENG | path B only (`library-schemas.ts:68`) |
  * | `viewCount` | ENG | path B only (`library-schemas.ts:69`) |
  * | `starCount` | ENG | path B only (`library-schemas.ts:70`) |
+ * | `publicPerformanceCount` | ENG | server-reconciled public-video discovery count |
+ * | `latestPublicPerformanceAt` | ENG | server-reconciled newest public-video timestamp |
  * | `publishedAt` | PUB | `public-sequences-loader.ts:328` (fallback when `birthday` is absent) |
  * | `updatedAt` | WRT | `public-sequences-loader.ts:330` |
  * | `publicProjectionRevision` | WRT | new — pairs with the owner doc's copy |
@@ -169,6 +171,8 @@ export const PUBLIC_THUMBNAIL_LIMIT = 3;
  * - `forkCount`, `viewCount`, `starCount` — engagement bucket. A star must not
  *   look like a content edit, or every counter operation forces a projection
  *   revision (spec section 4).
+ * - `publicPerformanceCount`, `latestPublicPerformanceAt` — server-owned
+ *   discovery metadata. A video event must not masquerade as a sequence edit.
  * - `publishedAt`, `updatedAt`, `birthday` — timestamps. Excluded by the spec,
  *   and independently unusable: `canonicalJSON` emits `{}` for `Date`,
  *   Firestore `Timestamp`, and `FieldValue` alike (see `canonical-digest.ts`),
@@ -190,6 +194,8 @@ export const PROJECTION_DIGEST_EXCLUDED_KEYS = [
   "forkCount",
   "viewCount",
   "starCount",
+  "publicPerformanceCount",
+  "latestPublicPerformanceAt",
   "publishedAt",
   "updatedAt",
   "birthday",
@@ -341,6 +347,8 @@ export interface ExistingPublicOwnedFields {
   readonly forkCount?: number;
   readonly viewCount?: number;
   readonly starCount?: number;
+  readonly publicPerformanceCount?: number;
+  readonly latestPublicPerformanceAt?: PublicProjectionTimestamp;
   /**
    * The stored digest, revision, and update time.
    *
@@ -441,6 +449,8 @@ export interface PublicSequenceProjectionWrite {
   readonly forkCount: number;
   readonly viewCount: number;
   readonly starCount: number;
+  readonly publicPerformanceCount: number;
+  readonly latestPublicPerformanceAt?: PublicProjectionTimestamp;
 
   // --- timestamps ---
   readonly birthday?: PublicProjectionTimestamp;
@@ -554,7 +564,9 @@ export async function buildPublicSequenceProjection(
 
     // presentation
     name: source.name,
-    ...(source.displayName !== undefined && { displayName: source.displayName }),
+    ...(source.displayName !== undefined && {
+      displayName: source.displayName,
+    }),
     ...(source.intendedWord !== undefined && {
       intendedWord: source.intendedWord,
     }),
@@ -613,18 +625,24 @@ export async function buildPublicSequenceProjection(
     ...(source.bluePathHash !== undefined && {
       bluePathHash: source.bluePathHash,
     }),
-    ...(source.redPathHash !== undefined && { redPathHash: source.redPathHash }),
+    ...(source.redPathHash !== undefined && {
+      redPathHash: source.redPathHash,
+    }),
     ...(source.blueSoloHash !== undefined && {
       blueSoloHash: source.blueSoloHash,
     }),
-    ...(source.redSoloHash !== undefined && { redSoloHash: source.redSoloHash }),
+    ...(source.redSoloHash !== undefined && {
+      redSoloHash: source.redSoloHash,
+    }),
     ...(source.startPosition !== undefined && {
       startPosition: source.startPosition,
     }),
 
     // creator intent. `null` means "legacy, none recorded" and is dropped
     // rather than stored, matching `public-index-syncer.ts:194`.
-    ...(source.creatorIntent != null && { creatorIntent: source.creatorIntent }),
+    ...(source.creatorIntent != null && {
+      creatorIntent: source.creatorIntent,
+    }),
 
     // media
     ...(source.animatedSequenceUrl !== undefined && {
@@ -656,7 +674,9 @@ export async function buildPublicSequenceProjection(
     ...(source.blueSoloProp !== undefined && {
       blueSoloProp: source.blueSoloProp,
     }),
-    ...(source.redSoloProp !== undefined && { redSoloProp: source.redSoloProp }),
+    ...(source.redSoloProp !== undefined && {
+      redSoloProp: source.redSoloProp,
+    }),
     ...(source.stepPairings !== undefined && {
       stepPairings: source.stepPairings,
     }),
@@ -665,6 +685,10 @@ export async function buildPublicSequenceProjection(
     forkCount: existing?.forkCount ?? source.forkCount ?? 0,
     viewCount: existing?.viewCount ?? source.viewCount ?? 0,
     starCount: existing?.starCount ?? source.starCount ?? 0,
+    publicPerformanceCount: existing?.publicPerformanceCount ?? 0,
+    ...(existing?.latestPublicPerformanceAt !== undefined && {
+      latestPublicPerformanceAt: existing.latestPublicPerformanceAt,
+    }),
 
     // The real creation date, so the gallery shows a birthday rather than a
     // bulk-publish date (`public-index-syncer.ts:172-173`).

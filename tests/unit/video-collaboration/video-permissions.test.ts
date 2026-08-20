@@ -63,7 +63,12 @@ describe("getCreatorDisplayName", () => {
   it("reads the creator's roster entry when there is one", () => {
     const video = makeVideo({
       collaborators: [
-        { userId: CREATOR, displayName: "Austen Cloud", joinedAt: new Date(), role: "creator" },
+        {
+          userId: CREATOR,
+          displayName: "Austen Cloud",
+          joinedAt: new Date(),
+          role: "creator",
+        },
       ],
     });
     expect(getCreatorDisplayName(video)).toBe("Austen Cloud");
@@ -81,11 +86,25 @@ describe("getCreatorDisplayName", () => {
   });
 
   it("admits when the document carries no name at all", () => {
-    expect(getCreatorDisplayName(makeVideo({ collaborators: [] }))).toBeUndefined();
+    expect(
+      getCreatorDisplayName(makeVideo({ collaborators: [] }))
+    ).toBeUndefined();
   });
 });
 
 describe("canViewVideo", () => {
+  it("creates new videos as private unless the uploader opts in to publishing", () => {
+    const video = makeVideo();
+
+    expect(video.visibility).toBe("private");
+    expect(canViewVideo(video, CREATOR)).toBe(true);
+    expect(canViewVideo(video, STRANGER)).toBe(false);
+  });
+
+  it("lets everyone view a video explicitly published as public", () => {
+    expect(canViewVideo(makeVideo({ visibility: "public" }))).toBe(true);
+  });
+
   it("lets the creator see a collaborators-only video with an empty roster", () => {
     const legacy = makeVideo({
       collaborators: [],

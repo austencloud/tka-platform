@@ -33,7 +33,10 @@ class FakeTimestamp {
 
 const SOLO_PROP = {
   id: "solo-blue",
-  steps: [{ location: "n", orientation: "in" }, { location: "e", orientation: "in" }],
+  steps: [
+    { location: "n", orientation: "in" },
+    { location: "e", orientation: "in" },
+  ],
   startLocation: "n",
   startOrientation: "in",
   contentHash: "abc",
@@ -87,6 +90,8 @@ function schemaTwoDoc(overrides: Record<string, unknown> = {}) {
     forkCount: 3,
     viewCount: 12,
     starCount: 1,
+    publicPerformanceCount: 2,
+    latestPublicPerformanceAt: new FakeTimestamp(1_735_000_000),
     isForked: false,
     contentHash: "hash-1",
     contentHashVersion: 2,
@@ -99,7 +104,13 @@ function schemaTwoDoc(overrides: Record<string, unknown> = {}) {
     redSoloProp: { ...SOLO_PROP, id: "solo-red" },
     stepPairings: STEP_PAIRINGS,
     startPosition: { isStartPosition: true, id: "start-1" },
-    creatorIntent: { propConfig: { bluePropType: "staff", redPropType: "staff", catDogMode: false } },
+    creatorIntent: {
+      propConfig: {
+        bluePropType: "staff",
+        redPropType: "staff",
+        catDogMode: false,
+      },
+    },
     animatedSequenceUrl: "https://example.test/a.webp",
     animationFormat: "webp",
     birthday: new FakeTimestamp(1_700_000_000),
@@ -144,7 +155,10 @@ describe("PublicSequenceWireSchema", () => {
   });
 
   it("classifies a complete schema-2 document as current", () => {
-    const classification = classifyPublicSequenceDocument(schemaTwoDoc(), "seq_abc");
+    const classification = classifyPublicSequenceDocument(
+      schemaTwoDoc(),
+      "seq_abc"
+    );
 
     expect(classification.disposition).toBe("current");
     expect(classification.legacy).toBe(false);
@@ -156,7 +170,10 @@ describe("PublicSequenceWireSchema", () => {
   });
 
   it("carries every field the loader currently reaches through a cast", () => {
-    const { projection } = classifyPublicSequenceDocument(schemaTwoDoc(), "seq_abc");
+    const { projection } = classifyPublicSequenceDocument(
+      schemaTwoDoc(),
+      "seq_abc"
+    );
 
     // public-sequences-loader.ts:301-306 casts to reach these four.
     expect(projection?.displayName).toBe("My Loop");
@@ -166,7 +183,10 @@ describe("PublicSequenceWireSchema", () => {
   });
 
   it("carries the fields consumers read but the syncer never writes", () => {
-    const { projection } = classifyPublicSequenceDocument(schemaTwoDoc(), "seq_abc");
+    const { projection } = classifyPublicSequenceDocument(
+      schemaTwoDoc(),
+      "seq_abc"
+    );
 
     expect(projection?.intendedWord).toBe("AB");
     expect(projection?.gridMode).toBe("diamond");
@@ -178,15 +198,25 @@ describe("PublicSequenceWireSchema", () => {
   });
 
   it("carries the seven fields the public-collection path reads and Browse drops", () => {
-    const { projection } = classifyPublicSequenceDocument(schemaTwoDoc(), "seq_abc");
+    const { projection } = classifyPublicSequenceDocument(
+      schemaTwoDoc(),
+      "seq_abc"
+    );
 
     expect(projection?.forkCount).toBe(3);
     expect(projection?.viewCount).toBe(12);
     expect(projection?.starCount).toBe(1);
+    expect(projection?.publicPerformanceCount).toBe(2);
+    expect(projection?.latestPublicPerformanceAt).toEqual(
+      new Date(1_735_000_000_000)
+    );
     expect(projection?.contentHash).toBe("hash-1");
     expect(projection?.contentHashVersion).toBe(2);
     expect(projection?.creatorIntent).toBeDefined();
-    expect(projection?.startPosition).toEqual({ isStartPosition: true, id: "start-1" });
+    expect(projection?.startPosition).toEqual({
+      isStartPosition: true,
+      id: "start-1",
+    });
   });
 
   it("prefers the snapshot id over a stale denormalized id field", () => {
@@ -226,6 +256,7 @@ describe("PublicSequenceWireSchema", () => {
     expect(result.document.forkCount).toBe(0);
     expect(result.document.viewCount).toBe(0);
     expect(result.document.starCount).toBe(0);
+    expect(result.document.publicPerformanceCount).toBe(0);
     expect(result.document.isForked).toBe(false);
     expect(result.document.isCircular).toBe(false);
     expect(result.document.word).toBe("");
@@ -250,9 +281,9 @@ describe("forward compatibility", () => {
 
     expect(result.success).toBe(true);
     if (!result.success) return;
-    expect(
-      (result.data as Record<string, unknown>).someFutureField
-    ).toEqual({ nested: [1, 2, 3] });
+    expect((result.data as Record<string, unknown>).someFutureField).toEqual({
+      nested: [1, 2, 3],
+    });
   });
 
   it("still classifies a document from a newer schema version as non-legacy", () => {
@@ -325,10 +356,18 @@ describe("timestamp conversion", () => {
   it("accepts every wire encoding a public document arrives in", () => {
     const expected = 1_720_000_000_000;
 
-    expect(toApplicationDate(new FakeTimestamp(1_720_000_000))?.getTime()).toBe(expected);
-    expect(toApplicationDate({ seconds: 1_720_000_000, nanoseconds: 0 })?.getTime()).toBe(expected);
-    expect(toApplicationDate({ _seconds: 1_720_000_000, _nanoseconds: 0 })?.getTime()).toBe(expected);
-    expect(toApplicationDate(new Date(expected).toISOString())?.getTime()).toBe(expected);
+    expect(toApplicationDate(new FakeTimestamp(1_720_000_000))?.getTime()).toBe(
+      expected
+    );
+    expect(
+      toApplicationDate({ seconds: 1_720_000_000, nanoseconds: 0 })?.getTime()
+    ).toBe(expected);
+    expect(
+      toApplicationDate({ _seconds: 1_720_000_000, _nanoseconds: 0 })?.getTime()
+    ).toBe(expected);
+    expect(toApplicationDate(new Date(expected).toISOString())?.getTime()).toBe(
+      expected
+    );
     expect(toApplicationDate(expected)?.getTime()).toBe(expected);
   });
 
@@ -475,7 +514,10 @@ describe("self-containment", () => {
 
 describe("legacy detection", () => {
   it("identifies a stampless document as legacy, not invalid", () => {
-    const classification = classifyPublicSequenceDocument(legacyDoc(), "seq_legacy");
+    const classification = classifyPublicSequenceDocument(
+      legacyDoc(),
+      "seq_legacy"
+    );
 
     expect(classification.disposition).not.toBe("invalid");
     expect(classification.legacy).toBe(true);
@@ -485,7 +527,10 @@ describe("legacy detection", () => {
   });
 
   it("marks a self-contained legacy document as needing no fallback", () => {
-    const classification = classifyPublicSequenceDocument(legacyDoc(), "seq_legacy");
+    const classification = classifyPublicSequenceDocument(
+      legacyDoc(),
+      "seq_legacy"
+    );
 
     expect(classification.disposition).toBe("legacy-self-contained");
     expect(classification.selfContainment.selfContained).toBe(true);
@@ -497,7 +542,10 @@ describe("legacy detection", () => {
     delete (incomplete as Record<string, unknown>).redSoloProp;
     delete (incomplete as Record<string, unknown>).stepPairings;
 
-    const classification = classifyPublicSequenceDocument(incomplete, "seq_legacy");
+    const classification = classifyPublicSequenceDocument(
+      incomplete,
+      "seq_legacy"
+    );
 
     expect(classification.disposition).toBe("legacy-fallback");
     expect(classification.projection?.sourceRef).toBe(
@@ -522,8 +570,14 @@ describe("legacy detection", () => {
     ).toBe(2);
 
     expect(isLegacyPublicDocument({})).toBe(true);
-    expect(isLegacyPublicDocument({ publicProjectionSchemaVersion: 1 })).toBe(true);
-    expect(isLegacyPublicDocument({ publicProjectionSchemaVersion: 2 })).toBe(false);
-    expect(isCurrentPublicProjection({ publicProjectionSchemaVersion: 2 })).toBe(true);
+    expect(isLegacyPublicDocument({ publicProjectionSchemaVersion: 1 })).toBe(
+      true
+    );
+    expect(isLegacyPublicDocument({ publicProjectionSchemaVersion: 2 })).toBe(
+      false
+    );
+    expect(
+      isCurrentPublicProjection({ publicProjectionSchemaVersion: 2 })
+    ).toBe(true);
   });
 });

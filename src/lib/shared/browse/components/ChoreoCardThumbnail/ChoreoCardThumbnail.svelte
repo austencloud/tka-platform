@@ -674,6 +674,17 @@ Variation support:
 
   <SyncStatusBadge status={displayedSequence.syncStatus} />
 
+  {#if (displayedSequence.publicPerformanceCount ?? 0) > 0}
+    <span
+      class="performance-count"
+      aria-label={`${displayedSequence.publicPerformanceCount} public ${displayedSequence.publicPerformanceCount === 1 ? "performance" : "performances"}`}
+      title={`${displayedSequence.publicPerformanceCount} public ${displayedSequence.publicPerformanceCount === 1 ? "performance" : "performances"}`}
+    >
+      <i class="fas fa-play" aria-hidden="true"></i>
+      {displayedSequence.publicPerformanceCount}
+    </span>
+  {/if}
+
   {#if selectionMode || isLongPressing}
     <span
       class="selection-indicator"
@@ -885,6 +896,32 @@ Variation support:
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .performance-count {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    z-index: 10;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    min-height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-card-bg) 88%, transparent);
+    color: var(--theme-text);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+    backdrop-filter: blur(8px);
+  }
+
+  .performance-count i {
+    color: var(--theme-accent);
+    font-size: 0.8em;
   }
 
   /* Smooth crossfade when cycling variations */

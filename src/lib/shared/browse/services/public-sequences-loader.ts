@@ -27,7 +27,7 @@ import {
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PublicSequenceIndex } from "$lib/shared/foundation/domain/models/public-sequence-index";
 import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import type { GalleryOfflineCache } from "$lib/shared/offline/services/gallery-offline-cache";
 import { networkStatusState } from "$lib/shared/offline/state/network-status-state.svelte";
 
@@ -44,8 +44,8 @@ export class PublicSequencesLoader {
   constructor(galleryOfflineCache?: GalleryOfflineCache) {
     this.galleryOfflineCache = galleryOfflineCache ?? null;
     if (this.galleryOfflineCache) {
-      this.galleryOfflineCache.setConverter(
-        (data, id) => this.mapPublicIndexToSequenceData(data, id)
+      this.galleryOfflineCache.setConverter((data, id) =>
+        this.mapPublicIndexToSequenceData(data, id)
       );
     }
   }
@@ -79,7 +79,8 @@ export class PublicSequencesLoader {
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
         message: "Couldn't load the gallery",
-        technicalDetails: error instanceof Error ? error.message : String(error),
+        technicalDetails:
+          error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "error",
         context: { module: "browse", action: "load-gallery" },
@@ -100,7 +101,10 @@ export class PublicSequencesLoader {
         const sequences = await this.fetchPublicSequences();
         if (this.galleryOfflineCache) {
           this.persistToOfflineCache().catch((err) =>
-            console.warn("[PublicSequencesLoader] Offline cache persist failed:", err)
+            console.warn(
+              "[PublicSequencesLoader] Offline cache persist failed:",
+              err
+            )
           );
         }
         return sequences;
@@ -123,7 +127,9 @@ export class PublicSequencesLoader {
       }
     }
 
-    throw new Error("No network connection and no cached gallery data available");
+    throw new Error(
+      "No network connection and no cached gallery data available"
+    );
   }
 
   private async persistToOfflineCache(): Promise<void> {
@@ -144,11 +150,17 @@ export class PublicSequencesLoader {
    * Lenient: any failure reads as "not public". Callers that must not mistake a
    * failed read for a deleted sequence use {@link loadFullSequenceDataStrict}.
    */
-  async loadFullSequenceData(sequenceName: string, sequenceId?: string): Promise<SequenceData | null> {
+  async loadFullSequenceData(
+    sequenceName: string,
+    sequenceId?: string
+  ): Promise<SequenceData | null> {
     try {
       return await this.loadFullSequenceDataStrict(sequenceName, sequenceId);
     } catch (error) {
-      console.error(`[PublicSequencesLoader] Failed to load full sequence:`, error);
+      console.error(
+        `[PublicSequencesLoader] Failed to load full sequence:`,
+        error
+      );
       return null;
     }
   }
@@ -159,7 +171,10 @@ export class PublicSequencesLoader {
    * serves `get()` from an empty local cache before its connection is up), throws
    * — the caller can retry instead of reporting the sequence as gone.
    */
-  async loadFullSequenceDataStrict(sequenceName: string, sequenceId?: string): Promise<SequenceData | null> {
+  async loadFullSequenceDataStrict(
+    sequenceName: string,
+    sequenceId?: string
+  ): Promise<SequenceData | null> {
     // Ensure metadata is loaded first (populates sourceRef cache)
     if (!this.cachedSequences) {
       await this.loadSequenceMetadata();
@@ -167,13 +182,17 @@ export class PublicSequencesLoader {
 
     // When an ID is supplied, resolve only that exact document. Falling back to
     // a word here can silently load somebody else's same-word variation.
-    let sourceRef = sequenceId ? this.sourceRefCache.get(`id:${sequenceId}`) : undefined;
+    let sourceRef = sequenceId
+      ? this.sourceRefCache.get(`id:${sequenceId}`)
+      : undefined;
 
     // IndexedDB caches written before the ID-key fix only carried word/name
     // source refs. Their sequence metadata still has enough owner information
     // to reconstruct the canonical source path without a network lookup.
     if (!sourceRef && sequenceId) {
-      const match = this.cachedSequences?.find((sequence) => sequence.id === sequenceId);
+      const match = this.cachedSequences?.find(
+        (sequence) => sequence.id === sequenceId
+      );
       if (match?.ownerId && match.id) {
         sourceRef = `users/${match.ownerId}/sequences/${match.id}`;
         this.cacheSourceRef(match.id, sourceRef, match.word, match.name);
@@ -185,7 +204,9 @@ export class PublicSequencesLoader {
     // public index document before returning null.
     if (!sourceRef && sequenceId) {
       const firestore = await getFirestoreInstance();
-      const publicDoc = await getDoc(doc(firestore, getPublicSequencePath(sequenceId)));
+      const publicDoc = await getDoc(
+        doc(firestore, getPublicSequencePath(sequenceId))
+      );
       if (!publicDoc.exists()) {
         if (publicDoc.metadata.fromCache) {
           throw new Error(
@@ -201,9 +222,17 @@ export class PublicSequencesLoader {
       const indexData = publicDoc.data() as PublicSequenceIndex;
       if (indexData.sourceRef) {
         sourceRef = indexData.sourceRef;
-        this.cacheSourceRef(publicDoc.id, indexData.sourceRef, indexData.word, indexData.name);
+        this.cacheSourceRef(
+          publicDoc.id,
+          indexData.sourceRef,
+          indexData.word,
+          indexData.name
+        );
       } else {
-        const indexedSequence = this.mapPublicIndexToSequenceData(indexData, publicDoc.id);
+        const indexedSequence = this.mapPublicIndexToSequenceData(
+          indexData,
+          publicDoc.id
+        );
         if ((indexedSequence.steps?.length ?? 0) > 0) return indexedSequence;
         throw new Error(
           `[PublicSequencesLoader] Public index ${getPublicSequencePath(sequenceId)} has no sourceRef or renderable steps`
@@ -217,7 +246,8 @@ export class PublicSequencesLoader {
       sourceRef = this.sourceRefCache.get(sequenceName);
       if (!sourceRef) {
         const match = this.cachedSequences?.find(
-          (sequence) => sequence.name === sequenceName || sequence.word === sequenceName
+          (sequence) =>
+            sequence.name === sequenceName || sequence.word === sequenceName
         );
         if (match?.ownerId && match.id) {
           sourceRef = `users/${match.ownerId}/sequences/${match.id}`;
@@ -226,7 +256,9 @@ export class PublicSequencesLoader {
       }
     }
     if (!sourceRef) {
-      console.warn(`[PublicSequencesLoader] No sequence found for "${sequenceName}"${sequenceId ? ` (id: ${sequenceId})` : ""}`);
+      console.warn(
+        `[PublicSequencesLoader] No sequence found for "${sequenceName}"${sequenceId ? ` (id: ${sequenceId})` : ""}`
+      );
       return null;
     }
 
@@ -239,7 +271,9 @@ export class PublicSequencesLoader {
           `[PublicSequencesLoader] Read of ${sourceRef} never reached the server`
         );
       }
-      console.warn(`[PublicSequencesLoader] Source sequence not found: ${sourceRef}`);
+      console.warn(
+        `[PublicSequencesLoader] Source sequence not found: ${sourceRef}`
+      );
       return null;
     }
 
@@ -253,7 +287,9 @@ export class PublicSequencesLoader {
    */
   removeFromCache(sequenceId: string): void {
     if (this.cachedSequences) {
-      this.cachedSequences = this.cachedSequences.filter((s) => s.id !== sequenceId);
+      this.cachedSequences = this.cachedSequences.filter(
+        (s) => s.id !== sequenceId
+      );
     }
     this.sourceRefCache.delete(`id:${sequenceId}`);
   }
@@ -266,7 +302,9 @@ export class PublicSequencesLoader {
    */
   addToCache(sequence: SequenceData): void {
     if (!this.cachedSequences) return;
-    const existingIndex = this.cachedSequences.findIndex((s) => s.id === sequence.id);
+    const existingIndex = this.cachedSequences.findIndex(
+      (s) => s.id === sequence.id
+    );
     if (existingIndex >= 0) {
       // Replace the existing entry so re-saves with a new word show correctly.
       this.cachedSequences = [
@@ -287,7 +325,10 @@ export class PublicSequencesLoader {
     }
   }
 
-  warmFromCache(sequences: SequenceData[], sourceRefs: Map<string, string>): void {
+  warmFromCache(
+    sequences: SequenceData[],
+    sourceRefs: Map<string, string>
+  ): void {
     if (this.cachedSequences) return; // Already warmed or loaded - don't overwrite
     this.cachedSequences = sequences;
     for (const [key, value] of sourceRefs) {
@@ -336,7 +377,10 @@ export class PublicSequencesLoader {
     // Persist to offline cache for next session
     if (this.galleryOfflineCache) {
       this.persistToOfflineCache().catch((err) =>
-        console.warn("[PublicSequencesLoader] Offline cache persist failed:", err)
+        console.warn(
+          "[PublicSequencesLoader] Offline cache persist failed:",
+          err
+        )
       );
     }
 
@@ -360,7 +404,10 @@ export class PublicSequencesLoader {
       sequences.push(this.mapPublicIndexToSequenceData(data, docSnap.id));
 
       // Capture raw doc for offline cache persistence after this fetch
-      this.lastFetchedDocs.push({ ...data, id: docSnap.id } as PublicSequenceIndex);
+      this.lastFetchedDocs.push({
+        ...data,
+        id: docSnap.id,
+      } as PublicSequenceIndex);
 
       // Cache sourceRef for efficient full data lookup later.
       // Store under both word AND ID so we can look up by either.
@@ -420,6 +467,8 @@ export class PublicSequencesLoader {
       ownerId: data.ownerId,
       ownerDisplayName: data.ownerDisplayName,
       ownerAvatarUrl: data.ownerAvatarUrl,
+      publicPerformanceCount: data.publicPerformanceCount ?? 0,
+      latestPublicPerformanceAt: this.toDate(data.latestPublicPerformanceAt),
       // Compositional fields (if present in the public index)
       blueSoloProp: data.blueSoloProp,
       redSoloProp: data.redSoloProp,
@@ -459,7 +508,9 @@ export class PublicSequencesLoader {
   }
 
   /** Convert legacy difficultyLevel string to numeric level */
-  private difficultyStringToLevel(difficultyLevel?: string): number | undefined {
+  private difficultyStringToLevel(
+    difficultyLevel?: string
+  ): number | undefined {
     if (!difficultyLevel) return undefined;
     const map: Record<string, number> = {
       beginner: 1,
@@ -502,21 +553,29 @@ export class PublicSequencesLoader {
       displayName: data.displayName as string | undefined,
       word: (data.word as string) ?? "",
       // Backwards compatibility: support old 'beats' property name
-      steps: (data.steps as SequenceData["steps"]) ?? (data.beats as SequenceData["steps"]) ?? [],
+      steps:
+        (data.steps as SequenceData["steps"]) ??
+        (data.beats as SequenceData["steps"]) ??
+        [],
       startPosition: data.startPosition as SequenceData["startPosition"],
-      startingPosition: data.startingPosition as SequenceData["startingPosition"],
-      startingPositionGroup: data.startingPositionGroup as SequenceData["startingPositionGroup"],
+      startingPosition:
+        data.startingPosition as SequenceData["startingPosition"],
+      startingPositionGroup:
+        data.startingPositionGroup as SequenceData["startingPositionGroup"],
       thumbnails: (data.thumbnails as readonly string[]) ?? [],
       sequenceLength: data.sequenceLength as number | undefined,
       author: data.author as string | undefined,
       level: data.level as number | undefined,
-      dateAdded: data.dateAdded ? new Date(data.dateAdded as string) : undefined,
+      dateAdded: data.dateAdded
+        ? new Date(data.dateAdded as string)
+        : undefined,
       gridMode: data.gridMode as SequenceData["gridMode"],
       // propType removed - prop type is a viewer preference, not sequence data
       isFavorite: (data.isFavorite as boolean) ?? false,
       isCircular: (data.isCircular as boolean) ?? false,
       loopType: data.loopType as SequenceData["loopType"],
-      orientationCycleCount: data.orientationCycleCount as SequenceData["orientationCycleCount"],
+      orientationCycleCount:
+        data.orientationCycleCount as SequenceData["orientationCycleCount"],
       difficultyLevel: data.difficultyLevel as string | undefined,
       tags: (data.tags as readonly string[]) ?? [],
       metadata: (data.metadata as Record<string, unknown>) ?? {},

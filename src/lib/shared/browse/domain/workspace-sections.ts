@@ -15,6 +15,7 @@ export type WorkspaceSection =
   | "position"
   | "gridmode"
   | "author"
+  | "performance"
   | "collection"
   | "collections"
   | "loop"
@@ -30,6 +31,7 @@ export const SECTION_FOR_FILTER_TYPE: Partial<
   [BrowseFilterType.STARTING_POSITION]: "position",
   [BrowseFilterType.GRID_MODE]: "gridmode",
   [BrowseFilterType.OWNER]: "author",
+  [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "performance",
   [BrowseFilterType.LOOP_TYPE]: "loop",
   [BrowseFilterType.TND_FAMILY]: "family",
   [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",

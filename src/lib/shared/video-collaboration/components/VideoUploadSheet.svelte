@@ -13,11 +13,17 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { getAuthSync } from "$lib/shared/auth/firebase";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     createVideoFromUpload,
     getVideoFileMetadata,
   } from "../helpers/create-video-from-upload";
   import type { VideoVisibility } from "../domain/collaborative-video";
+  import {
+    DEFAULT_VIDEO_VISIBILITY,
+    VIDEO_VISIBILITY_OPTIONS,
+    describeVideoVisibility,
+  } from "../domain/video-visibility";
   import {
     extractVideoThumbnail,
     type ThumbnailResult,
@@ -43,7 +49,7 @@
   let selectedFile = $state<File | null>(null);
   let videoPreviewUrl = $state<string | null>(null);
   let videoDuration = $state<number>(0);
-  let visibility = $state<VideoVisibility>("public");
+  let visibility = $state<VideoVisibility>(DEFAULT_VIDEO_VISIBILITY);
   let description = $state("");
   let thumbnail = $state<ThumbnailResult | null>(null);
 
@@ -209,7 +215,7 @@
     videoPreviewUrl = null;
     videoDuration = 0;
     description = "";
-    visibility = "public";
+    visibility = DEFAULT_VIDEO_VISIBILITY;
     uploadProgress = 0;
     uploadError = null;
     thumbnail = null;
@@ -308,37 +314,20 @@
         <div class="options">
           <!-- Visibility -->
           <div class="option-group">
-            <span class="option-label" id="visibility-label">Visibility</span>
-            <div
-              class="visibility-options"
-              role="group"
-              aria-labelledby="visibility-label"
-            >
-              <button
-                class="visibility-btn"
-                class:active={visibility === "public"}
-                onclick={() => (visibility = "public")}
-              >
-                <i class="fas fa-globe" aria-hidden="true"></i>
-                Public
-              </button>
-              <button
-                class="visibility-btn"
-                class:active={visibility === "collaborators-only"}
-                onclick={() => (visibility = "collaborators-only")}
-              >
-                <i class="fas fa-user-friends" aria-hidden="true"></i>
-                Collaborators
-              </button>
-              <button
-                class="visibility-btn"
-                class:active={visibility === "private"}
-                onclick={() => (visibility = "private")}
-              >
-                <i class="fas fa-lock" aria-hidden="true"></i>
-                Private
-              </button>
-            </div>
+            <span class="option-label" id="visibility-label">
+              Who can see this in TKA?
+            </span>
+            <SegmentedControl
+              options={VIDEO_VISIBILITY_OPTIONS}
+              value={visibility}
+              onchange={(next) => (visibility = next)}
+              color="accent"
+              semantics="radiogroup"
+              ariaLabelledby="visibility-label"
+            />
+            <span class="visibility-hint" aria-live="polite">
+              {describeVideoVisibility(visibility)}
+            </span>
           </div>
 
           <!-- Description -->
@@ -602,36 +591,11 @@
     color: var(--text-primary);
   }
 
-  .visibility-options {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .visibility-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    padding: 0.625rem;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 8px;
+  .visibility-hint {
+    min-block-size: 1.25rem;
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.4;
     color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-normal) ease;
-  }
-
-  .visibility-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .visibility-btn.active {
-    background: rgba(59, 130, 246, 0.15);
-    border-color: rgba(59, 130, 246, 0.5);
-    color: var(--semantic-info);
   }
 
   .option-group textarea {
@@ -757,10 +721,6 @@
     }
 
     .upload-sheet__footer {
-      flex-direction: column;
-    }
-
-    .visibility-options {
       flex-direction: column;
     }
   }

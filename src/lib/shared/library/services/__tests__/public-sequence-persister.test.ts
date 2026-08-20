@@ -43,6 +43,7 @@ import {
   publicSequenceClaimId,
   deleteSequenceCompletely,
   softDeleteSequenceEverywhere,
+  readExistingPublicOwnedFields,
 } from "../public-sequence-persister";
 import { computeStoredProjectionDigest } from "../public-sequence-projection";
 
@@ -59,6 +60,27 @@ const FIRESTORE = {} as never;
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe("readExistingPublicOwnedFields", () => {
+  it("preserves server-owned public performance metadata", () => {
+    const latestPublicPerformanceAt = { toDate: () => new Date() };
+    expect(
+      readExistingPublicOwnedFields({
+        publicPerformanceCount: 5,
+        latestPublicPerformanceAt,
+      })
+    ).toEqual({ publicPerformanceCount: 5, latestPublicPerformanceAt });
+  });
+
+  it("drops malformed public performance counters", () => {
+    expect(
+      readExistingPublicOwnedFields({ publicPerformanceCount: -1 })
+    ).toEqual({});
+    expect(
+      readExistingPublicOwnedFields({ publicPerformanceCount: 1.5 })
+    ).toEqual({});
+  });
 });
 
 describe("unpublishPublicSequence", () => {

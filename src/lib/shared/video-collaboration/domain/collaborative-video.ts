@@ -1,4 +1,9 @@
-export type VideoVisibility = "public" | "private" | "collaborators-only";
+import {
+  DEFAULT_VIDEO_VISIBILITY,
+  type VideoVisibility,
+} from "./video-visibility";
+
+export type { VideoVisibility } from "./video-visibility";
 
 export type InviteStatus = "pending" | "accepted" | "declined" | "expired";
 
@@ -134,7 +139,7 @@ export function createCollaborativeVideo(
       },
     ],
     pendingInvites: [],
-    visibility: input.visibility ?? "public",
+    visibility: input.visibility ?? DEFAULT_VIDEO_VISIBILITY,
     description: input.description,
     createdAt: now,
     updatedAt: now,

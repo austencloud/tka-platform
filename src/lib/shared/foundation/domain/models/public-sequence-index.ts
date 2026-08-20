@@ -87,6 +87,12 @@ export interface PublicSequenceIndex {
   /** Number of users who starred/liked this */
   readonly starCount: number;
 
+  /** Public videos linked to this sequence. Never includes restricted videos. */
+  readonly publicPerformanceCount: number;
+
+  /** Creation time of the newest public performance, when one exists. */
+  readonly latestPublicPerformanceAt?: Date;
+
   // ============================================================
   // CATEGORIZATION
   // ============================================================
@@ -203,6 +209,7 @@ export function createPublicSequenceIndex(
     forkCount: sequence.forkCount,
     viewCount: sequence.viewCount,
     starCount: sequence.starCount,
+    publicPerformanceCount: 0,
     tags: tagNames,
     isForked: sequence.source === "forked",
     originalCreatorId: sequence.forkAttribution?.originalCreatorId,

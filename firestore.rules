@@ -1246,21 +1246,64 @@ service cloud.firestore {
     // ============================================================================
 
     // Videos collection - for collaborative video uploads
-    // Note: Public videos are readable by all authenticated users to support
-    // browsing and discovery. Private video access requires collaborator status.
+    // Public videos support signed-in discovery. Private videos stay with their
+    // creator; collaborator rosters grant reads only in collaborators-only mode.
     match /videos/{videoId} {
-      // Authenticated users can read any video
-      // Privacy is enforced at query level (filter by visibility/collaboratorIds)
-      allow read: if isAuthenticated();
+      function visibility(data) {
+        return data.get('visibility', 'private');
+      }
+
+      function collaboratorIds(data) {
+        return data.get('collaboratorIds', []);
+      }
+
+      function pendingInviteUserIds(data) {
+        return data.get('pendingInviteUserIds', []);
+      }
+
+      function hasValidVisibility(data) {
+        return visibility(data) in ['public', 'private', 'collaborators-only'];
+      }
+
+      allow read: if isAuthenticated()
+        && (
+          visibility(resource.data) == 'public'
+          || resource.data.creatorId == request.auth.uid
+          || (
+            visibility(resource.data) == 'collaborators-only'
+            && request.auth.uid in collaboratorIds(resource.data)
+          )
+          // Invite recipients need the record in order to accept or decline.
+          || request.auth.uid in pendingInviteUserIds(resource.data)
+        );
 
       // Only creator can create
       allow create: if isFullUser()
-        && request.resource.data.creatorId == request.auth.uid;
+        && request.resource.data.creatorId == request.auth.uid
+        && hasValidVisibility(request.resource.data);
 
-      // Creator can update, collaborators can update limited fields
+      // The creator controls publishing and descriptive metadata. Collaborators
+      // and invite recipients can change only collaboration data and beat maps.
       allow update: if isAuthenticated()
-        && (resource.data.creatorId == request.auth.uid
-            || request.auth.uid in resource.data.collaboratorIds);
+        && request.resource.data.creatorId == resource.data.creatorId
+        && hasValidVisibility(request.resource.data)
+        && (
+          resource.data.creatorId == request.auth.uid
+          || (
+            (
+              request.auth.uid in collaboratorIds(resource.data)
+              || request.auth.uid in pendingInviteUserIds(resource.data)
+            )
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'beatMap',
+              'collaborators',
+              'collaboratorIds',
+              'pendingInvites',
+              'pendingInviteUserIds',
+              'updatedAt'
+            ])
+          )
+        );
 
       // Only creator can delete
       allow delete: if isAuthenticated()
@@ -1495,6 +1538,8 @@ service cloud.firestore {
       // public cloud sync instead of creating drift.
       allow create: if isFullUser()
         && request.resource.data.get('ownerId', '') == request.auth.uid
+        && request.resource.data.get('publicPerformanceCount', 0) == 0
+        && !request.resource.data.keys().hasAny(['latestPublicPerformanceAt'])
         && request.resource.data.get('publicProjectionSchemaVersion', 0) == 2
         && isValidSchemaTwoPublicWrite(sequenceId)
         && publicOwnerParityAfter(sequenceId)
@@ -1506,6 +1551,12 @@ service cloud.firestore {
       allow update: if isFullUser()
         && resource.data.get('ownerId', '') == request.auth.uid
         && request.resource.data.get('ownerId', '') == request.auth.uid
+        // Public-performance discovery is reconciled by Admin triggers. An
+        // owner republish may preserve these fields, never forge or erase them.
+        && request.resource.data.get('publicPerformanceCount', 0)
+          == resource.data.get('publicPerformanceCount', 0)
+        && request.resource.data.get('latestPublicPerformanceAt', null)
+          == resource.data.get('latestPublicPerformanceAt', null)
         && request.resource.data.get('publicProjectionSchemaVersion', 0) == 2
         && isValidSchemaTwoPublicWrite(sequenceId)
         && publicOwnerParityAfter(sequenceId)

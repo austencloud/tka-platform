@@ -211,6 +211,33 @@ describe("publicSequences: phase-4 strict writes", () => {
     }
   });
 
+  it("denies a client publish that forges server-owned performance metadata", async () => {
+    const { seqId, hash, claimId } = ids("forgedperformance");
+    await seedOwnerDoc(seqId, ownerDocInParity(hash));
+    const db = ownerDb();
+    const batch = writeBatch(db);
+    batch.set(
+      doc(db, `publicSequences/${seqId}`),
+      schemaTwoDoc(seqId, hash, { publicPerformanceCount: 1 })
+    );
+    batch.set(
+      doc(db, `publicSequenceHashes/${claimId}`),
+      claimDoc(seqId, hash)
+    );
+    await assertFails(batch.commit());
+  });
+
+  it("denies an owner update that changes server-owned performance metadata", async () => {
+    const { seqId, hash, claimId } = ids("mutateperformance");
+    await seedPublishedSequence(seqId, hash, claimId);
+
+    await assertFails(
+      updateDoc(doc(ownerDb(), `publicSequences/${seqId}`), {
+        publicPerformanceCount: 99,
+      })
+    );
+  });
+
   it("allows the FULL publish batch that also stamps the owner document", async () => {
     // The exact publishPublicSequence shape: owner stamp update + public set
     // + claim set in one atomic commit, starting from an unstamped owner doc

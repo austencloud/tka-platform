@@ -163,6 +163,7 @@ compensation), so the detail view behind this sheet updates on its own.
     | "position"
     | "gridmode"
     | "author"
+    | "performance"
     | "loop"
     | "family"
     | "max_turn_intensity";
@@ -173,6 +174,7 @@ compensation), so the detail view behind this sheet updates on its own.
     [BrowseFilterType.STARTING_POSITION]: "position",
     [BrowseFilterType.GRID_MODE]: "gridmode",
     [BrowseFilterType.OWNER]: "author",
+    [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "performance",
     [BrowseFilterType.LOOP_TYPE]: "loop",
     [BrowseFilterType.TND_FAMILY]: "family",
     [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",

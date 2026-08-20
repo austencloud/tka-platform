@@ -15,7 +15,6 @@ import {
   query,
   where,
   orderBy,
-  limit as firestoreLimit,
   serverTimestamp,
   arrayUnion,
   arrayRemove,
@@ -173,7 +172,9 @@ function docToVideo(
     collaborators,
     pendingInvites,
     beatMap,
-    visibility: (docData.visibility as VideoVisibility) ?? "public",
+    // Missing visibility predates the publishing contract. Fail closed rather
+    // than manufacturing public consent for a legacy document.
+    visibility: (docData.visibility as VideoVisibility) ?? "private",
     description: docData.description as string | undefined,
     createdAt: createdAtField?.toDate?.() ?? new Date(),
     updatedAt: updatedAtField?.toDate?.() ?? new Date(),
@@ -241,13 +242,18 @@ export async function saveVideo(video: CollaborativeVideo): Promise<void> {
     const docRef = doc(firestore, VIDEOS_COLLECTION, video.id);
     await setDoc(docRef, videoToDoc(video));
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to save video:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to save video:",
+      error
+    );
     toast.error("Failed to save video.");
     throw error;
   }
 }
 
-export async function getVideo(videoId: string): Promise<CollaborativeVideo | null> {
+export async function getVideo(
+  videoId: string
+): Promise<CollaborativeVideo | null> {
   try {
     const firestore = await readFirestore();
     const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
@@ -284,7 +290,10 @@ export async function deleteVideo(videoId: string): Promise<void> {
     const docRef = doc(firestore, VIDEOS_COLLECTION, videoId);
     await deleteDoc(docRef);
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to delete video:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to delete video:",
+      error
+    );
     toast.error("Failed to delete video.");
     throw error;
   }
@@ -313,13 +322,19 @@ export async function updateVideo(
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to update video:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to update video:",
+      error
+    );
     toast.error("Failed to update video.");
     throw error;
   }
 }
 
-export async function updateStepMap(videoId: string, beatMap: StepMap): Promise<void> {
+export async function updateStepMap(
+  videoId: string,
+  beatMap: StepMap
+): Promise<void> {
   try {
     const firestore = await getFirestoreInstance();
     const userId = getUserId();
@@ -353,7 +368,10 @@ export async function updateStepMap(videoId: string, beatMap: StepMap): Promise<
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to update beat map:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to update beat map:",
+      error
+    );
     toast.error("Failed to save beat mapping.");
     throw error;
   }
@@ -414,7 +432,10 @@ export async function inviteCollaborator(
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to invite collaborator:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to invite collaborator:",
+      error
+    );
     toast.error("Failed to send collaboration invite.");
     throw error;
   }
@@ -476,7 +497,10 @@ export async function acceptInvite(videoId: string): Promise<void> {
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to accept invite:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to accept invite:",
+      error
+    );
     toast.error("Failed to accept collaboration invite.");
     throw error;
   }
@@ -521,13 +545,19 @@ export async function declineInvite(videoId: string): Promise<void> {
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to decline invite:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to decline invite:",
+      error
+    );
     toast.error("Failed to decline collaboration invite.");
     throw error;
   }
 }
 
-export async function removeCollaborator(videoId: string, userId: string): Promise<void> {
+export async function removeCollaborator(
+  videoId: string,
+  userId: string
+): Promise<void> {
   try {
     const firestore = await getFirestoreInstance();
     const currentUserId = getUserId();
@@ -567,7 +597,10 @@ export async function removeCollaborator(videoId: string, userId: string): Promi
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to remove collaborator:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to remove collaborator:",
+      error
+    );
     toast.error("Failed to remove collaborator.");
     throw error;
   }
@@ -578,20 +611,52 @@ export async function getVideosForSequence(
 ): Promise<CollaborativeVideo[]> {
   try {
     const firestore = await readFirestore();
+    const userId = getUserId();
     const collectionRef = collection(firestore, VIDEOS_COLLECTION);
-    const q = query(
+
+    // Firestore rules are not result filters. Each query proves one access
+    // path, then the client merges them into the sequence's visible set.
+    const publicQuery = query(
       collectionRef,
       where("sequenceId", "==", sequenceId),
-      orderBy("createdAt", "desc")
+      where("visibility", "==", "public")
+    );
+    const createdQuery = query(
+      collectionRef,
+      where("sequenceId", "==", sequenceId),
+      where("creatorId", "==", userId)
+    );
+    const collaboratorQuery = query(
+      collectionRef,
+      where("sequenceId", "==", sequenceId),
+      where("visibility", "==", "collaborators-only"),
+      where("collaboratorIds", "array-contains", userId)
     );
 
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => docToVideo(doc.data(), doc.id));
+    const snapshots = await Promise.all([
+      getDocs(publicQuery),
+      getDocs(createdQuery),
+      getDocs(collaboratorQuery),
+    ]);
+
+    const byId = new Map<string, CollaborativeVideo>();
+    for (const snapshot of snapshots) {
+      for (const videoDoc of snapshot.docs) {
+        byId.set(videoDoc.id, docToVideo(videoDoc.data(), videoDoc.id));
+      }
+    }
+
+    return [...byId.values()].sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    );
   } catch (error) {
     // Never an empty array: every caller already tells a failed load apart from
     // a genuine zero, and returning [] here overrode all of them - a denied
     // read rendered as "No videos yet" beside an upload button.
-    console.error("❌ [CollaborativeVideoManager] Failed to get videos for sequence:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to get videos for sequence:",
+      error
+    );
     throw error;
   }
 }
@@ -607,6 +672,7 @@ export async function getUserVideoLibrary(): Promise<UserVideoLibrary> {
     const collaboratorQuery = query(
       collectionRef,
       where("collaboratorIds", "array-contains", userId),
+      where("visibility", "==", "collaborators-only"),
       orderBy("createdAt", "desc")
     );
 
@@ -647,7 +713,10 @@ export async function getUserVideoLibrary(): Promise<UserVideoLibrary> {
 
     return { created, collaborations, pendingInvites };
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to get user video library:", error);
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to get user video library:",
+      error
+    );
     toast.error("Failed to load your video library.");
     return { created: [], collaborations: [], pendingInvites: [] };
   }
@@ -669,27 +738,10 @@ export async function getPendingInvites(): Promise<CollaborativeVideo[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => docToVideo(doc.data(), doc.id));
   } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to get pending invites:", error);
-    return [];
-  }
-}
-
-export async function getPublicVideos(limit = 50): Promise<CollaborativeVideo[]> {
-  try {
-    const firestore = await readFirestore();
-    const collectionRef = collection(firestore, VIDEOS_COLLECTION);
-
-    const q = query(
-      collectionRef,
-      where("visibility", "==", "public"),
-      orderBy("createdAt", "desc"),
-      firestoreLimit(limit)
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to get pending invites:",
+      error
     );
-
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => docToVideo(doc.data(), doc.id));
-  } catch (error) {
-    console.error("❌ [CollaborativeVideoManager] Failed to get public videos:", error);
     return [];
   }
 }

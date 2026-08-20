@@ -36,6 +36,7 @@ one rail while the live matching grid gets the rest of the canvas.
     | "position"
     | "gridmode"
     | "author"
+    | "performance"
     | "loop"
     | "family"
     | "max_turn_intensity";
@@ -126,6 +127,7 @@ one rail while the live matching grid gets the rest of the canvas.
     [BrowseFilterType.STARTING_POSITION]: "position",
     [BrowseFilterType.GRID_MODE]: "gridmode",
     [BrowseFilterType.OWNER]: "author",
+    [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "performance",
     [BrowseFilterType.LOOP_TYPE]: "loop",
     [BrowseFilterType.TND_FAMILY]: "family",
     [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",

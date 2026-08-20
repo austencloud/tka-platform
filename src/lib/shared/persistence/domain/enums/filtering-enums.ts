@@ -21,6 +21,9 @@ export enum BrowseFilterType {
   STARTING_POSITION = "startPosition",
   END_POSITION = "endPosition",
   RECENT = "recent",
+  /** Public performance availability projected onto publicSequences. This
+   * never reveals private or collaborators-only video existence. */
+  PERFORMANCE_AVAILABILITY = "performance_availability",
   FAVORITES = "favorites",
   ALL_SEQUENCES = "all_sequences",
   /** Filter by circular sequences and LOOP type */

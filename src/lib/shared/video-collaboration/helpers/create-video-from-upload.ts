@@ -12,6 +12,7 @@ import {
   type VideoVisibility,
 } from "../domain/collaborative-video";
 import type { VideoUploadResult } from "../../share/services/types";
+import { DEFAULT_VIDEO_VISIBILITY } from "../domain/video-visibility";
 
 export interface CreateVideoFromUploadOptions {
   /** The upload result from R2VideoUploader */
@@ -79,7 +80,7 @@ export function createVideoFromUpload(
     creatorId,
     creatorDisplayName,
     creatorAvatarUrl,
-    visibility = "public",
+    visibility = DEFAULT_VIDEO_VISIBILITY,
     description,
     thumbnailUrl,
   } = options;

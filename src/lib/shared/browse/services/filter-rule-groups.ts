@@ -49,6 +49,7 @@ const CATEGORY_LABELS: Partial<Record<string, string>> = {
   [BrowseFilterType.GRID_MODE]: "Grid",
   [BrowseFilterType.OWNER]: "Creator",
   [BrowseFilterType.AUTHOR]: "Author",
+  [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "Performances",
   [BrowseFilterType.LOOP_TYPE]: "LOOPs",
   [BrowseFilterType.TND_FAMILY]: "Families",
   [BrowseFilterType.MAX_TURN_INTENSITY]: "Max turns",

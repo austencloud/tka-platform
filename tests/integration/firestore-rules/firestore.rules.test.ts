@@ -675,6 +675,143 @@ describe("Hall of Shame age verification", () => {
   });
 });
 
+describe("video visibility boundaries", () => {
+  const OWNER_UID = "video-owner";
+  const COLLABORATOR_UID = "video-collaborator";
+  const STRANGER_UID = "video-stranger";
+
+  function userCtx(uid: string) {
+    return testEnv
+      .authenticatedContext(uid, {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+  }
+
+  async function seedVideos() {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore(SDK_SETTINGS);
+      const shared = {
+        sequenceId: "sequence-1",
+        collaboratorIds: [],
+        pendingInviteUserIds: [],
+      };
+
+      await setDoc(doc(db, "videos/public-video"), {
+        ...shared,
+        creatorId: OWNER_UID,
+        visibility: "public",
+      });
+      await setDoc(doc(db, "videos/private-video"), {
+        ...shared,
+        creatorId: OWNER_UID,
+        visibility: "private",
+      });
+      await setDoc(doc(db, "videos/collaborator-video"), {
+        ...shared,
+        creatorId: OWNER_UID,
+        visibility: "collaborators-only",
+        collaboratorIds: [OWNER_UID, COLLABORATOR_UID],
+      });
+      await setDoc(doc(db, "videos/pending-video"), {
+        ...shared,
+        creatorId: OWNER_UID,
+        visibility: "collaborators-only",
+        pendingInviteUserIds: [COLLABORATOR_UID],
+      });
+    });
+  }
+
+  it("allows only the audiences selected by the creator", async () => {
+    await seedVideos();
+
+    const owner = userCtx(OWNER_UID);
+    const collaborator = userCtx(COLLABORATOR_UID);
+    const stranger = userCtx(STRANGER_UID);
+    const signedOut = testEnv.unauthenticatedContext().firestore(SDK_SETTINGS);
+
+    await assertSucceeds(getDoc(doc(stranger, "videos/public-video")));
+    await assertFails(getDoc(doc(signedOut, "videos/public-video")));
+    await assertSucceeds(getDoc(doc(owner, "videos/private-video")));
+    await assertFails(getDoc(doc(collaborator, "videos/private-video")));
+    await assertSucceeds(
+      getDoc(doc(collaborator, "videos/collaborator-video"))
+    );
+    await assertFails(getDoc(doc(stranger, "videos/collaborator-video")));
+    await assertSucceeds(getDoc(doc(collaborator, "videos/pending-video")));
+  });
+
+  it("requires collection queries to prove one allowed audience", async () => {
+    await seedVideos();
+    const collaborator = userCtx(COLLABORATOR_UID);
+    const owner = userCtx(OWNER_UID);
+
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(collaborator, "videos"),
+          where("visibility", "==", "public")
+        )
+      )
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(collaborator, "videos"),
+          where("visibility", "==", "collaborators-only"),
+          where("collaboratorIds", "array-contains", COLLABORATOR_UID)
+        )
+      )
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(owner, "videos"),
+          where("creatorId", "==", OWNER_UID)
+        )
+      )
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(collaborator, "videos"),
+          where(
+            "pendingInviteUserIds",
+            "array-contains",
+            COLLABORATOR_UID
+          )
+        )
+      )
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collection(collaborator, "videos"),
+          where("sequenceId", "==", "sequence-1")
+        )
+      )
+    );
+  });
+
+  it("keeps publishing and creator identity out of collaborator updates", async () => {
+    await seedVideos();
+    const collaboratorRef = doc(
+      userCtx(COLLABORATOR_UID),
+      "videos/collaborator-video"
+    );
+    const ownerRef = doc(userCtx(OWNER_UID), "videos/collaborator-video");
+
+    await assertSucceeds(
+      updateDoc(collaboratorRef, {
+        beatMap: { beatTimestamps: [0, 1], stepCount: 1, source: "manual" },
+        updatedAt: new Date(),
+      })
+    );
+    await assertFails(updateDoc(collaboratorRef, { visibility: "public" }));
+    await assertFails(updateDoc(ownerRef, { creatorId: STRANGER_UID }));
+  });
+});
+
 describe("full users: community write paths succeed", () => {
   it("can create feedback", async () => {
     const db = fullCtx().firestore(SDK_SETTINGS);
@@ -726,7 +863,18 @@ describe("full users: community write paths succeed", () => {
   });
   it("can create a video", async () => {
     const db = fullCtx().firestore(SDK_SETTINGS);
-    await assertSucceeds(setDoc(doc(db, `videos/v1`), { creatorId: FULL_UID }));
+    await assertSucceeds(
+      setDoc(doc(db, `videos/v1`), {
+        creatorId: FULL_UID,
+        visibility: "private",
+      })
+    );
+    await assertFails(
+      setDoc(doc(db, `videos/v2`), {
+        creatorId: FULL_UID,
+        visibility: "friends-only",
+      })
+    );
   });
   it("can publish a publicHandPath", async () => {
     const db = fullCtx().firestore(SDK_SETTINGS);
