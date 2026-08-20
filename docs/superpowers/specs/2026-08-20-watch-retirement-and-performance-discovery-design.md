@@ -1,7 +1,7 @@
 # Watch Retirement and Performance Discovery
 
-**Date:** 2026-08-20  
-**Status:** Implemented locally; deployment, backfill, and visual verification pending
+**Date:** 2026-08-20
+**Status:** Web and backend shipped; native OTA blocked by Capgo plan
 
 ## Decision
 
@@ -155,3 +155,23 @@ Do not expose it until all gates hold:
   preservation across sequence republishes.
 - UI screenshots are required before calling the new visibility controls
   visually verified.
+
+## Rollout evidence
+
+- Released on `main` in `a2f3e8ac2c`, `c5d00d95fe`, and `3a3708afb2`.
+- Focused retirement, availability, and viewer-handoff coverage passed: 3 test
+  files and 12 tests.
+- `pnpm check` completed with zero errors and zero warnings. The full Web App CI
+  run `32415926537` passed type checking, app tests, workspace package tests,
+  production build, offline artifact verification, and browser component tests.
+- Browse and the performance handoff were visually verified at 375x667,
+  960x412, 820px tablet, 1440px, 1920px, 2560px, and 3840px.
+- Firestore rules and indexes deployed successfully. Both metadata triggers are
+  active in `us-central1` on Cloud Functions v2.
+- The migration dry-run reported 565 pending documents. The apply run wrote 565
+  documents, and the verification dry-run reported `would-write=0`.
+- The gated Pages workflow `32417193050` successfully triggered the Cloudflare
+  production build. The production Browse route returned HTTP 200 afterward.
+- The pinned Capgo build completed, but OTA upload run `32417192934` was rejected
+  because the Capgo organization requires a plan upgrade. No native OTA bundle
+  was published.
