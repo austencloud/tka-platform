@@ -391,6 +391,7 @@
           initialBpm={overlay.initialBpm}
           initialStep={overlay.initialStep}
           initialViewMode={overlay.initialViewMode}
+          initialViewerMode={overlay.initialViewerMode}
           handPathMode={overlay.handPathMode}
           playOnOpen={overlay.playOnOpen}
           {playbackReleased}

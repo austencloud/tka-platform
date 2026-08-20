@@ -15,6 +15,7 @@ import { handleModuleChange } from "../../../../shared/navigation-coordinator/na
 import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+import { resolveBrowseInitialViewerMode } from "./performance-browse-intent";
 
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 export class BrowseEventHandler {
@@ -98,6 +99,9 @@ export class BrowseEventHandler {
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
+      initialViewerMode: resolveBrowseInitialViewerMode(
+        this.params!.engine.activeFilters
+      ),
       handPathMode: isHandsMode,
       variations,
     });

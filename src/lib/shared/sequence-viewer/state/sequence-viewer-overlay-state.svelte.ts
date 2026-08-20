@@ -1,5 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ViewMode } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
+import type { ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
@@ -18,6 +19,7 @@ let _returnLabel = $state("Back");
 let _initialBpm = $state(60);
 let _initialStep = $state(0);
 let _initialViewMode = $state<ViewMode | undefined>();
+let _initialViewerMode = $state<ViewerMode | undefined>();
 let _dismissPath = $state<string | null>(null);
 let _handPathMode = $state(false);
 let _playOnOpen = $state(false);
@@ -33,6 +35,7 @@ export function openSequenceOverlay(
     initialBpm?: number;
     initialStep?: number;
     initialViewMode?: ViewMode;
+    initialViewerMode?: ViewerMode;
     skipHistoryPush?: boolean;
     dismissPath?: string;
     variations?: SequenceData[];
@@ -52,6 +55,7 @@ export function openSequenceOverlay(
   _initialBpm = options?.initialBpm || 60;
   _initialStep = options?.initialStep || 0;
   _initialViewMode = options?.initialViewMode;
+  _initialViewerMode = options?.initialViewerMode;
   _dismissPath = options?.dismissPath || null;
   _handPathMode = options?.handPathMode ?? false;
   _playOnOpen = options?.playOnOpen ?? false;
@@ -162,6 +166,7 @@ export function closeSequenceOverlay(): void {
   _initialBpm = 60;
   _initialStep = 0;
   _initialViewMode = undefined;
+  _initialViewerMode = undefined;
   _dismissPath = null;
   _handPathMode = false;
   _playOnOpen = false;
@@ -207,6 +212,9 @@ export function getSequenceOverlayState() {
     },
     get initialViewMode() {
       return _initialViewMode;
+    },
+    get initialViewerMode() {
+      return _initialViewerMode;
     },
     get dismissPath() {
       return _dismissPath;

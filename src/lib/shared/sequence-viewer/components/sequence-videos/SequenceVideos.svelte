@@ -285,7 +285,7 @@
   {:else if store.loading}
     <div class="gallery-empty">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      <span>Loading videos...</span>
+      <span>Loading performances...</span>
     </div>
   {:else if store.error}
     <div class="gallery-empty error" role="alert">
@@ -297,9 +297,14 @@
       </button>
     </div>
   {:else if videos.length === 0}
-    <div class="gallery-empty">
-      <i class="fas fa-video" aria-hidden="true"></i>
-      <span>No videos yet</span>
+    <div class="gallery-empty performance-empty">
+      <span class="empty-icon" aria-hidden="true">
+        <i class="fas fa-video"></i>
+      </span>
+      <div class="empty-copy">
+        <h2>No performances yet</h2>
+        <p>Be the first to share how this sequence moves.</p>
+      </div>
       {#if canUpload}
         <button
           type="button"
@@ -307,10 +312,10 @@
           onclick={() => onUploadOpenChange?.(true)}
         >
           <i class="fas fa-upload" aria-hidden="true"></i>
-          Upload a performance
+          Perform this sequence
         </button>
       {:else if !isLoggedIn}
-        <span class="sign-in-hint">Sign in to upload performances</span>
+        <span class="sign-in-hint">Sign in to perform this sequence</span>
       {/if}
     </div>
   {:else}
@@ -318,7 +323,7 @@
       <div class="gallery-header">
         <div class="gallery-heading">
           <span class="gallery-eyebrow">Performances</span>
-          <h2>{videos.length} video{videos.length !== 1 ? "s" : ""}</h2>
+          <h2>{videos.length} performance{videos.length !== 1 ? "s" : ""}</h2>
         </div>
         {#if canUpload}
           <button
@@ -513,9 +518,42 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  .gallery-empty i {
+  .gallery-empty > i {
     font-size: 2rem;
     opacity: 0.5;
+  }
+
+  .performance-empty {
+    gap: clamp(0.875rem, 1.2cqw, 2rem);
+    text-align: center;
+  }
+
+  .empty-icon {
+    display: grid;
+    place-items: center;
+    width: clamp(3.5rem, 5cqw, 9rem);
+    aspect-ratio: 1;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 50%;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-accent, #22d3ee);
+  }
+
+  .empty-icon i {
+    font-size: clamp(1.5rem, 2cqw, 3.5rem);
+  }
+
+  .empty-copy h2 {
+    margin: 0;
+    color: var(--theme-text, #fff);
+    font-size: clamp(1.375rem, 1.4cqw, 3.5rem);
+    line-height: 1.1;
+  }
+
+  .empty-copy p {
+    margin: 0.5em 0 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: clamp(var(--font-size-min, 14px), 0.7cqw, 1.75rem);
   }
 
   .gallery-empty.error {
@@ -550,6 +588,18 @@
   .upload-btn:hover {
     filter: brightness(1.08);
     transform: translateY(-1px);
+  }
+
+  .performance-empty .upload-btn {
+    min-height: clamp(var(--min-touch-target, 44px), 3cqw, 4.5rem);
+    padding: clamp(0.75rem, 0.8cqw, 1.5rem)
+      clamp(1.125rem, 1.4cqw, 2.75rem);
+    font-size: clamp(var(--font-size-min, 14px), 0.7cqw, 1.75rem);
+  }
+
+  .upload-btn i {
+    font-size: 1em;
+    opacity: 1;
   }
 
   /* Spans both tracks so the heading and Add performance sit over the content
