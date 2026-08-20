@@ -29,15 +29,41 @@
   const currentTabs = $derived(currentModuleDef?.sections ?? []);
 
   // Module categorization for filtering
-  const SEQUENCE_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "choreo"]);
-  const SETTINGS_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "choreo", "settings"]);
-  const PROP_MODULES = new Set(["create", "browse", "compose", "learn", "train", "choreo_card"]);
+  const SEQUENCE_MODULES = new Set([
+    "create",
+    "browse",
+    "compose",
+    "learn",
+    "train",
+    "choreo_card",
+    "choreo",
+  ]);
+  const SETTINGS_MODULES = new Set([
+    "create",
+    "browse",
+    "compose",
+    "learn",
+    "train",
+    "choreo_card",
+    "choreo",
+    "settings",
+  ]);
+  const PROP_MODULES = new Set([
+    "create",
+    "browse",
+    "compose",
+    "learn",
+    "train",
+    "choreo_card",
+  ]);
 
   const isSequenceModule = $derived(SEQUENCE_MODULES.has(currentModule));
   const isSettingsModule = $derived(SETTINGS_MODULES.has(currentModule));
   const isPropModule = $derived(PROP_MODULES.has(currentModule));
   const isOnGenerateTab = $derived(
-    currentModule === "create" && currentTab === "generate" && getGeneratorVoiceRef() !== null
+    currentModule === "create" &&
+      currentTab === "generate" &&
+      getGeneratorVoiceRef() !== null
   );
 
   interface CommandEntry {
@@ -100,11 +126,17 @@
         title: "Generator",
         icon: "fa-dice",
         commands: [
-          { phrase: "generate / go / again", description: "Generate a sequence" },
+          {
+            phrase: "generate / go / again",
+            description: "Generate a sequence",
+          },
           { phrase: "set level to 3", description: "Set parameter value" },
           { phrase: "toggle grid mode", description: "Cycle parameter values" },
           { phrase: "increase length", description: "Increment a parameter" },
-          { phrase: "what is loop type", description: "Open help for a control" },
+          {
+            phrase: "what is loop type",
+            description: "Open help for a control",
+          },
         ],
       });
     }
@@ -162,7 +194,10 @@
         title: "Props",
         icon: "fa-fire",
         commands: [
-          { phrase: "use poi / fans / staff", description: "Change both props" },
+          {
+            phrase: "use poi / fans / staff",
+            description: "Change both props",
+          },
           { phrase: "change blue to clubs", description: "Change one hand" },
           { phrase: "change red to hoop", description: "Change other hand" },
         ],
@@ -244,7 +279,9 @@
         <div class="help-title-row">
           <i class="fas fa-microphone help-title-icon"></i>
           <h2 class="help-title">What can I say?</h2>
-          <span class="context-badge">{currentModuleLabel}{currentTab ? ` / ${currentTab}` : ""}</span>
+          <span class="context-badge"
+            >{currentModuleLabel}{currentTab ? ` / ${currentTab}` : ""}</span
+          >
         </div>
         <button class="close-btn" onclick={handleClose} aria-label="Close help">
           <i class="fas fa-xmark"></i>
@@ -297,8 +334,12 @@
   }
 
   @keyframes backdrop-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   .help-panel {
@@ -315,8 +356,14 @@
   }
 
   @keyframes panel-in {
-    from { opacity: 0; transform: scale(0.95) translateY(12px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   /* ═══ Header ═══ */

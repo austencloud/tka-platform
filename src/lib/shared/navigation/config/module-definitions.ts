@@ -15,7 +15,6 @@ import {
   FEEDBACK_TABS,
   ADMIN_TABS,
   SETTINGS_TABS,
-  WATCH_TABS,
   LAB_TABS,
   LAB_GROUPS,
   ARENA_TABS,
@@ -67,6 +66,8 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // Moderation folded into Admin as a tab (2026-06-30) — lands on Admin;
   // navigation-state deep-link handling routes the "moderation" section.
   moderation: "admin",
+  // Watch retired (Aug 2026). Performances live on their sequence in Browse.
+  watch: "browse",
 };
 
 /**
@@ -183,18 +184,6 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // Playground/Art module dissolved 2026-07-12: the tunnel/scene/mandala
   // galleries now mount inside the Library's Art shelf detail pane
   // (MyCollectionsPanel). PLAYGROUND_TABS survives as their metadata source.
-  {
-    id: "watch",
-    labelKey: "module_watch",
-    descKey: "module_desc_watch",
-    label: "Watch",
-    icon: '<i class="fas fa-play-circle" style="color: #ef4444;" aria-hidden="true"></i>',
-    color: "#ef4444", // Red - video/playback
-    description: "Browse videos from the community",
-    isMain: true,
-    sections: WATCH_TABS,
-    // Feed tab now has TikTok-style scroll experience
-  },
   {
     id: "arena",
     labelKey: "module_arena",
@@ -416,7 +405,6 @@ const FEATURE_ENABLED: Record<string, boolean> = {
     typeof __FEATURE_PREMIUM__ !== "undefined" ? __FEATURE_PREMIUM__ : true,
   compose:
     typeof __FEATURE_COMPOSE__ !== "undefined" ? __FEATURE_COMPOSE__ : true,
-  watch: typeof __FEATURE_WATCH__ !== "undefined" ? __FEATURE_WATCH__ : true,
   arena: typeof __FEATURE_ARENA__ !== "undefined" ? __FEATURE_ARENA__ : true,
   train: typeof __FEATURE_TRAIN__ !== "undefined" ? __FEATURE_TRAIN__ : true,
   choreo_card:

@@ -79,7 +79,7 @@ Set confidence 0.0-1.0. Use 0.9+ for clear matches, 0.5-0.8 for reasonable guess
 If truly unrecognizable, return category "system", action "unknown".
 
 ## Domain Vocabulary
-- Modules: create, browse, compose, learn, train, watch, settings, tika, lab
+- Modules: create, browse, compose, learn, train, video, settings, tika, lab
 - Props: staff, poi, fan, club, hoop, buugeng, triad, sword, hand, energy_saber, energy_staff
 - Generator params: level (1-5), length (1-64), mode (freeform/circular), gridMode (diamond/box), propContinuity (continuous/random), turnIntensity (0-3)
 - "smooth" or "continuous" → propContinuity: "continuous"

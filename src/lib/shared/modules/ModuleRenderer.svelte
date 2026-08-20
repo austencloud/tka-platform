@@ -24,7 +24,10 @@
   import { SvelteMap } from "svelte/reactivity";
   import ModuleSkeleton from "$lib/shared/modules/skeletons/ModuleSkeleton.svelte";
   import { authState } from "../auth/state/auth-state.svelte";
-  import { resolveAccessTier, resolveOptimisticAccessTier } from "../auth/domain/access-tier";
+  import {
+    resolveAccessTier,
+    resolveOptimisticAccessTier,
+  } from "../auth/domain/access-tier";
   import { readBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
   import { isModuleAccessible } from "../auth/domain/guest-access-config";
   import { isPremiumOrAbove } from "../auth/domain/models/user-role";
@@ -40,7 +43,7 @@
 
   // Only assign view-transition-name during module switches.
   // If set permanently, ANY view transition on the page captures this element.
-  const vtName = $derived(getIsTransitioning() ? 'module-content' : undefined);
+  const vtName = $derived(getIsTransitioning() ? "module-content" : undefined);
 
   interface Props {
     activeModule: string | null;
@@ -80,7 +83,7 @@
   let keepAliveVersion = $state(0);
   const keepAlive: KeepAliveController = createKeepAliveController(
     KEEP_ALIVE_MODULES,
-    { onChange: () => (keepAliveVersion += 1) },
+    { onChange: () => (keepAliveVersion += 1) }
   );
 
   // Drive the controller from activeModule, and make sure mounted keep-alive
@@ -166,8 +169,6 @@
       import("../../features/train/prop-tracking-lab/components/PropTrackingLabModule.svelte"),
     // compose module
     compose: () => import("../../features/compose/ComposeModule.svelte"),
-    // watch module - video browsing hub
-    watch: () => import("../../features/watch/WatchModule.svelte"),
     // arena module - community pairwise ranking
     arena: () => import("../../features/arena/ArenaModule.svelte"),
     // connect graduated to Social module (Mar 2026)
@@ -185,7 +186,8 @@
     // Levels module - L4-L7 position labs + Poi (graduated from Lab Mar 2026)
     levels: () => import("../../features/levels/LevelsModule.svelte"),
     // Hand Paths module - graduated from Lab (Mar 2026)
-    "hand-paths": () => import("../../features/hand-paths/HandPathModule.svelte"),
+    "hand-paths": () =>
+      import("../../features/hand-paths/HandPathModule.svelte"),
     // Video module - Video Trails, Video Lab, Skel2TKA (graduated from Lab Mar 2026)
     video: () => import("../../features/video/VideoModule.svelte"),
     // Lab module - ALL experiments consolidated here (Skew, Poi, Realm, Terrain, Mandala, Backgrounds, Landing)
@@ -216,7 +218,7 @@
   // Load module with caching
   async function loadModule(
     moduleName: string,
-    recoverOnFailure = false,
+    recoverOnFailure = false
   ): Promise<Component<any> | null> {
     if (!moduleName || !moduleLoaders[moduleName]) return null;
 
@@ -248,7 +250,7 @@
     try {
       ({ default: ModuleComponent } = await resilientLazyImport(
         moduleLoaders[moduleName],
-        4,
+        4
       )());
     } catch (err) {
       if (recoverOnFailure) recoverFromModuleChunkFailure(moduleName);
@@ -266,14 +268,14 @@
       performance.measure(
         `module-chunk:${moduleName}`,
         `module-chunk:${moduleName}:start`,
-        `module-chunk:${moduleName}:end`,
+        `module-chunk:${moduleName}:end`
       );
     } catch {
       /* measure API unavailable */
     }
     console.debug(
       `%c[ModuleLoad] ${moduleName}: chunk fetch+eval ${chunkMs}ms`,
-      chunkMs > 400 ? "color:#ff7043;font-weight:bold" : "color:inherit",
+      chunkMs > 400 ? "color:#ff7043;font-weight:bold" : "color:inherit"
     );
     moduleCache.set(moduleName, ModuleComponent);
 
@@ -282,7 +284,7 @@
     // idempotent: only the first signal prints the summary, later module
     // switches are no-ops (they're navigation, not boot).
     import("$lib/shared/analytics/boot-profiler").then(({ bootProfiler }) =>
-      bootProfiler.signalReady(moduleName),
+      bootProfiler.signalReady(moduleName)
     );
 
     return ModuleComponent;
@@ -295,7 +297,11 @@
 
   const _snapshotTier = readBootSnapshot()?.tier ?? null;
   const _realTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
   );
   const accessTier = $derived(
     resolveOptimisticAccessTier(authState.loading, _realTier, _snapshotTier)
@@ -317,7 +323,12 @@
 {#if isModuleLoading}
   <!-- Loading state while module is being restored -->
   {#if activeModule === "museum"}
-    <div class="museum-skeleton" role="status" aria-live="polite" aria-busy="true">
+    <div
+      class="museum-skeleton"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <div class="museum-skeleton-icon">
         <i class="fas fa-landmark" aria-hidden="true"></i>
       </div>
@@ -329,66 +340,62 @@
   {:else}
     <ModuleSkeleton moduleKey={activeModule} />
   {/if}
-{:else}
-  {#if isModuleBlocked}
-    <div class="module-gate" style="display: flex; align-items: center; justify-content: center; height: 100%;">
-      <AuthNudge
-        trigger={getModuleNudgeTrigger(activeModule!)}
-        onCreateAccount={() => authDrawerState.show("signup", getModuleNudgeTrigger(activeModule!))}
-        onLogin={() => authDrawerState.show("signin", getModuleNudgeTrigger(activeModule!))}
-        onDismiss={() => switchModule("create")}
-      />
-    </div>
-  {:else if activeModule && keepAlive.isKeepAlive(activeModule)}
-    <!-- Keep-alive modules render in the persistent host below; the keyed path
+{:else if isModuleBlocked}
+  <div
+    class="module-gate"
+    style="display: flex; align-items: center; justify-content: center; height: 100%;"
+  >
+    <AuthNudge
+      trigger={getModuleNudgeTrigger(activeModule!)}
+      onCreateAccount={() =>
+        authDrawerState.show("signup", getModuleNudgeTrigger(activeModule!))}
+      onLogin={() =>
+        authDrawerState.show("signin", getModuleNudgeTrigger(activeModule!))}
+      onDismiss={() => switchModule("create")}
+    />
+  </div>
+{:else if activeModule && keepAlive.isKeepAlive(activeModule)}
+  <!-- Keep-alive modules render in the persistent host below; the keyed path
          is bypassed so they are never destroyed on switch. -->
-    <div class="transition-container"></div>
-  {:else}
-    <!-- Transition container for overlaying content -->
-    <div class="transition-container">
-      {#key activeModule}
-        <div class="module-content" style:view-transition-name={vtName}>
-          {#await modulePromise}
-            <!-- Loading state while module chunk is being fetched -->
-            {#if activeModule === "museum"}
-              <div class="museum-skeleton" role="status" aria-live="polite" aria-busy="true">
-                <div class="museum-skeleton-icon">
-                  <i class="fas fa-landmark" aria-hidden="true"></i>
-                </div>
-                <p class="museum-skeleton-title">Entering The Archive...</p>
-                <div class="museum-skeleton-track">
-                  <div class="museum-skeleton-fill"></div>
-                </div>
+  <div class="transition-container"></div>
+{:else}
+  <!-- Transition container for overlaying content -->
+  <div class="transition-container">
+    {#key activeModule}
+      <div class="module-content" style:view-transition-name={vtName}>
+        {#await modulePromise}
+          <!-- Loading state while module chunk is being fetched -->
+          {#if activeModule === "museum"}
+            <div
+              class="museum-skeleton"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div class="museum-skeleton-icon">
+                <i class="fas fa-landmark" aria-hidden="true"></i>
               </div>
+              <p class="museum-skeleton-title">Entering The Archive...</p>
+              <div class="museum-skeleton-track">
+                <div class="museum-skeleton-fill"></div>
+              </div>
+            </div>
+          {:else}
+            <ModuleSkeleton moduleKey={activeModule} />
+          {/if}
+        {:then LoadedModule}
+          {#if LoadedModule}
+            {#if isModuleActive("create")}
+              <LoadedModule {onTabAccessibilityChange} {onCurrentWordChange} />
+            {:else if isModuleActive("learn")}
+              <LoadedModule onHeaderChange={onLearnHeaderChange} />
             {:else}
-              <ModuleSkeleton moduleKey={activeModule} />
+              <LoadedModule />
             {/if}
-          {:then LoadedModule}
-            {#if LoadedModule}
-              {#if isModuleActive("create")}
-                <LoadedModule {onTabAccessibilityChange} {onCurrentWordChange} />
-              {:else if isModuleActive("learn")}
-                <LoadedModule onHeaderChange={onLearnHeaderChange} />
-              {:else}
-                <LoadedModule />
-              {/if}
-            {:else if activeModule}
-              <!-- Module name is set but component didn't load - show error with retry -->
-              <div class="module-error" role="alert">
-                <p>Module "{activeModule}" failed to load</p>
-                <button
-                  class="reload-button"
-                  onclick={() => window.location.reload()}
-                  type="button"
-                >
-                  Reload Page
-                </button>
-              </div>
-            {/if}
-          {:catch error}
+          {:else if activeModule}
+            <!-- Module name is set but component didn't load - show error with retry -->
             <div class="module-error" role="alert">
-              <p>Failed to load module</p>
-              <p class="error-details">{error?.message || "Unknown error"}</p>
+              <p>Module "{activeModule}" failed to load</p>
               <button
                 class="reload-button"
                 onclick={() => window.location.reload()}
@@ -397,11 +404,23 @@
                 Reload Page
               </button>
             </div>
-          {/await}
-        </div>
-      {/key}
-    </div>
-  {/if}
+          {/if}
+        {:catch error}
+          <div class="module-error" role="alert">
+            <p>Failed to load module</p>
+            <p class="error-details">{error?.message || "Unknown error"}</p>
+            <button
+              class="reload-button"
+              onclick={() => window.location.reload()}
+              type="button"
+            >
+              Reload Page
+            </button>
+          </div>
+        {/await}
+      </div>
+    {/key}
+  </div>
 {/if}
 
 <!-- Persistent keep-alive modules: mounted once, hidden via display, never
@@ -554,13 +573,21 @@
   }
 
   @keyframes museum-pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   @keyframes museum-shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(433%); }
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(433%);
+    }
   }
-
 </style>

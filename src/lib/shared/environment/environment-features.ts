@@ -136,7 +136,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   choreo_card: true, // Production tool; module definition keeps it admin-only
   word_card: false, // Legacy alias for choreo_card
   choreo: false, // Choreo sheet builder (route renamed from "write" Jul 2026)
-  watch: false, // Watch videos/performances (unreleased)
   moderation: false, // Content moderation (admin-only)
   arena: false, // Arena pairwise ranking (unreleased)
   festivals: true, // Festival Hub (admin-only via feature flags)

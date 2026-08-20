@@ -251,7 +251,6 @@
     learn: () => import("$lib/features/learn/LearnTab.svelte"),
     train: () => import("$lib/features/train/components/TrainModule.svelte"),
     arena: () => import("$lib/features/arena/ArenaModule.svelte"),
-    watch: () => import("$lib/features/watch/WatchModule.svelte"),
     settings: () => import("$lib/features/settings/SettingsModule.svelte"),
     tika: () => import("$lib/features/tika/TikaModule.svelte"),
     festivals: () => import("$lib/features/festivals/FestivalModule.svelte"),

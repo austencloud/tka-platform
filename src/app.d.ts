@@ -77,7 +77,6 @@ declare global {
   const __FEATURE_WRITE__: boolean;
   const __FEATURE_ADMIN__: boolean;
   const __FEATURE_ARENA__: boolean;
-  const __FEATURE_WATCH__: boolean;
   const __FEATURE_RETRO__: boolean;
   const __FEATURE_COVEN__: boolean;
   const __FEATURE_MUSEUM__: boolean;

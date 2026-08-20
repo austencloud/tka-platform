@@ -549,31 +549,6 @@ export const FEEDBACK_TABS: Section[] = [
   },
 ];
 
-// Watch tabs configuration - video browsing hub
-// Note: Showcase content merged into Library. Curator is admin-only (handled by visibility logic).
-export const WATCH_TABS: Section[] = [
-  {
-    id: "feed",
-    labelKey: "tab_watch_feed",
-    descKey: "tab_desc_watch_feed",
-    label: "Feed",
-    icon: '<i class="fas fa-stream" aria-hidden="true"></i>',
-    description: "Videos from the community",
-    color: "#ef4444",
-    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
-  },
-  {
-    id: "library",
-    labelKey: "tab_watch_library",
-    descKey: "tab_desc_watch_library",
-    label: "Library",
-    icon: '<i class="fas fa-photo-video" aria-hidden="true"></i>',
-    description: "Your videos and saved performances",
-    color: "#3b82f6",
-    gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
-  },
-];
-
 // Arena tabs configuration (community pairwise ranking)
 export const ARENA_TABS: Section[] = [
   {

@@ -247,7 +247,12 @@ const VIEWER_3D_PERFORMER = (x: number, z: number) => ({
   customBluePlane: "wall",
   customRedPlane: "wall",
   name: null,
-  settings: { prop: null, effortId: "linear", effect: "petals", staffLengthCm: null },
+  settings: {
+    prop: null,
+    effortId: "linear",
+    effect: "petals",
+    staffLengthCm: null,
+  },
 });
 const VIEWER_3D_SEED: Record<string, string> = {
   "tka-modern-web-settings": '{"backgroundType":"ocean"}',
@@ -430,17 +435,6 @@ export const APP_MODULES: RouteConfig[] = [
               : ".animator-canvas, .animation-player",
     })
   ),
-
-  // ── Watch module ───────────────────────────────────────────────────────────
-  {
-    path: "/app",
-    label: "watch--feed",
-    requiresAuth: true,
-    isModule: true,
-    moduleId: "watch",
-    tabId: "feed",
-    waitSelector: ".feed-tab, .watch-module",
-  },
 
   // ── Train module ───────────────────────────────────────────────────────────
   {

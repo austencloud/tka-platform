@@ -114,11 +114,6 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/arena/"],
   },
   {
-    id: "watch",
-    tier: "shipped",
-    modulePaths: ["features/watch/"],
-  },
-  {
     id: "museum",
     tier: "shipped",
     modulePaths: ["features/museum/"],
@@ -334,7 +329,9 @@ export function isFeatureEnabled(featureId: string): boolean {
  * configuration.
  */
 export function getEnabledFeatures(): Set<string> {
-  return new Set(FEATURES.filter((f) => isFeatureEnabled(f.id)).map((f) => f.id));
+  return new Set(
+    FEATURES.filter((f) => isFeatureEnabled(f.id)).map((f) => f.id)
+  );
 }
 
 /**

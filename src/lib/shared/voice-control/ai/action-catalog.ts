@@ -6,8 +6,18 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "navigate_module",
     description: "Navigate to a module (main section of the app)",
     validTargets: [
-      "create", "browse", "compose", "learn", "train", "watch",
-      "settings", "tika", "choreo_card", "choreo", "lab", "feedback",
+      "create",
+      "browse",
+      "compose",
+      "learn",
+      "train",
+      "video",
+      "settings",
+      "tika",
+      "choreo_card",
+      "choreo",
+      "lab",
+      "feedback",
     ],
   },
   {
@@ -15,15 +25,33 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "switch_tab",
     description: "Switch to a tab within the current module",
     validTargets: [
-      "construct", "assemble", "generate", "spell",
-      "concepts", "play", "guide",
-      "gallery", "collections", "creators",
-      "arrange", "browse",
-      "practice", "challenges", "progress",
-      "profile", "props", "theme", "visibility", "keyboard",
-      "preferences", "language", "release-notes",
-      "submit", "my-feedback", "manage",
-      "feed", "library",
+      "construct",
+      "assemble",
+      "generate",
+      "spell",
+      "concepts",
+      "play",
+      "guide",
+      "gallery",
+      "collections",
+      "creators",
+      "arrange",
+      "browse",
+      "practice",
+      "challenges",
+      "progress",
+      "profile",
+      "props",
+      "theme",
+      "visibility",
+      "keyboard",
+      "preferences",
+      "language",
+      "release-notes",
+      "submit",
+      "my-feedback",
+      "manage",
+      "library",
     ],
   },
   {
@@ -90,11 +118,18 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "set",
     description: "Set a generator parameter to a specific value",
     validTargets: [
-      "level", "length", "mode", "gridMode",
-      "propContinuity", "turnIntensity", "loopType", "period",
+      "level",
+      "length",
+      "mode",
+      "gridMode",
+      "propContinuity",
+      "turnIntensity",
+      "loopType",
+      "period",
     ],
     validArgs: {
-      value: "The value to set. level: 1-5, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: rotated|mirrored|etc., period: halved|quartered",
+      value:
+        "The value to set. level: 1-5, length: 1-64, mode: freeform|circular, gridMode: diamond|box, propContinuity: continuous|random, turnIntensity: 0-3, loopType: rotated|mirrored|etc., period: halved|quartered",
     },
     activeInModules: ["create"],
     activeInTabs: ["generate"],
@@ -103,9 +138,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     category: "generator",
     action: "toggle",
     description: "Cycle a generator parameter to its next value",
-    validTargets: [
-      "mode", "gridMode", "propContinuity", "loopType", "period",
-    ],
+    validTargets: ["mode", "gridMode", "propContinuity", "loopType", "period"],
     activeInModules: ["create"],
     activeInTabs: ["generate"],
   },
@@ -178,10 +211,22 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "toggle",
     description: "Toggle a visual setting on/off",
     validTargets: [
-      "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
-      "darkMode", "wordHeader", "progressBar", "props",
-      "musicianMode", "hapticFeedback", "reducedMotion", "showShortcutHints",
+      "showGrid",
+      "stepNumbers",
+      "nonRadialPoints",
+      "tkaGlyph",
+      "tndGlyph",
+      "elementalGlyph",
+      "positionsGlyph",
+      "reversalIndicators",
+      "darkMode",
+      "wordHeader",
+      "progressBar",
+      "props",
+      "musicianMode",
+      "hapticFeedback",
+      "reducedMotion",
+      "showShortcutHints",
     ],
   },
   {
@@ -189,9 +234,18 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "show",
     description: "Enable/show a visual setting",
     validTargets: [
-      "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
-      "darkMode", "wordHeader", "progressBar", "props",
+      "showGrid",
+      "stepNumbers",
+      "nonRadialPoints",
+      "tkaGlyph",
+      "tndGlyph",
+      "elementalGlyph",
+      "positionsGlyph",
+      "reversalIndicators",
+      "darkMode",
+      "wordHeader",
+      "progressBar",
+      "props",
     ],
   },
   {
@@ -199,9 +253,17 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "hide",
     description: "Disable/hide a visual setting",
     validTargets: [
-      "showGrid", "stepNumbers", "nonRadialPoints",
-      "tkaGlyph", "tndGlyph", "elementalGlyph", "positionsGlyph", "reversalIndicators",
-      "wordHeader", "progressBar", "props",
+      "showGrid",
+      "stepNumbers",
+      "nonRadialPoints",
+      "tkaGlyph",
+      "tndGlyph",
+      "elementalGlyph",
+      "positionsGlyph",
+      "reversalIndicators",
+      "wordHeader",
+      "progressBar",
+      "props",
     ],
   },
   {
@@ -209,9 +271,21 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     action: "change_prop",
     description: "Change the prop type (for both hands or a specific hand)",
     validTargets: [
-      "staff", "poi", "fan", "club", "hoop", "buugeng",
-      "triad", "sword", "hand", "chicken", "guitar", "ukulele", "minihoop",
-      "energy_saber", "energy_staff",
+      "staff",
+      "poi",
+      "fan",
+      "club",
+      "hoop",
+      "buugeng",
+      "triad",
+      "sword",
+      "hand",
+      "chicken",
+      "guitar",
+      "ukulele",
+      "minihoop",
+      "energy_saber",
+      "energy_staff",
     ],
     validArgs: { hand: "both | blue | red" },
   },
@@ -295,16 +369,20 @@ export const ACTION_CATALOG: ActionDefinition[] = [
   {
     category: "system",
     action: "unknown",
-    description: "The command could not be understood. Use this only as a last resort.",
+    description:
+      "The command could not be understood. Use this only as a last resort.",
   },
 ];
 
 export function getAvailableActions(
   currentModule: string,
-  currentTab: string,
+  currentTab: string
 ): ActionDefinition[] {
   return ACTION_CATALOG.filter((action) => {
-    if (action.activeInModules && !action.activeInModules.includes(currentModule)) {
+    if (
+      action.activeInModules &&
+      !action.activeInModules.includes(currentModule)
+    ) {
       return false;
     }
     if (action.activeInTabs && !action.activeInTabs.includes(currentTab)) {
@@ -316,11 +394,13 @@ export function getAvailableActions(
 
 export function getAllActionsWithContext(
   currentModule: string,
-  currentTab: string,
+  currentTab: string
 ): (ActionDefinition & { requiresNavigation: boolean })[] {
   return ACTION_CATALOG.map((action) => {
-    const needsModule = action.activeInModules && !action.activeInModules.includes(currentModule);
-    const needsTab = action.activeInTabs && !action.activeInTabs.includes(currentTab);
+    const needsModule =
+      action.activeInModules && !action.activeInModules.includes(currentModule);
+    const needsTab =
+      action.activeInTabs && !action.activeInTabs.includes(currentTab);
     return {
       ...action,
       requiresNavigation: !!(needsModule || needsTab),
@@ -328,6 +408,4 @@ export function getAllActionsWithContext(
   });
 }
 
-export const VALID_CATEGORIES = new Set(
-  ACTION_CATALOG.map((a) => a.category),
-);
+export const VALID_CATEGORIES = new Set(ACTION_CATALOG.map((a) => a.category));

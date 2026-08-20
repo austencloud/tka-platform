@@ -50,6 +50,7 @@ instead of showing an empty shell.
   import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getSharedCollectionsContext } from "../context/shared-collections-context";
+  import UserVideoLibraryView from "$lib/shared/video-collaboration/components/UserVideoLibraryView.svelte";
 
   const signedIn = $derived(!!authState.user);
   const previewReadOnly = $derived(userPreviewState.isActive);
@@ -176,6 +177,24 @@ instead of showing an empty shell.
     updatedAt: new Date(0),
   });
 
+  // Performance uploads are still sequence artifacts, but their owner needs a
+  // reliable way back to private uploads and collaboration invites. Watch used
+  // to be the only host for this existing library view; Browse > Library now
+  // owns that personal doorway.
+  const PERFORMANCES_SHELF_ID = "video_performances";
+  const performancesShelf = $derived<LibraryCollection>({
+    id: PERFORMANCES_SHELF_ID,
+    name: "Performances",
+    ownerId: authState.effectiveUserId ?? "",
+    sequenceIds: [],
+    sequenceCount: 0,
+    icon: "fa-video",
+    isPublic: false,
+    sortOrder: -1900,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
+
   // The nav state is the single source of truth for which view is showing.
   // Foreign (community) collections encode their owner in the contextId as
   // "ownerId:collectionId" — own collection ids never contain a colon
@@ -277,6 +296,10 @@ instead of showing an empty shell.
 
   function isArtId(id: string): boolean {
     return id in ART_DETAIL;
+  }
+
+  function isPerformancesId(id: string): boolean {
+    return id === PERFORMANCES_SHELF_ID;
   }
 
   function openArtDetail(id: string) {
@@ -512,6 +535,18 @@ instead of showing an empty shell.
   {/if}
 {/snippet}
 
+{#snippet performancesShelfCard(
+  sel: { id: string; ownerId: string | null } | null
+)}
+  <CollectionCard
+    collection={performancesShelf}
+    readonly
+    selected={!!sel && !sel.ownerId && isPerformancesId(sel.id)}
+    countLabel="Uploads, collaborations, and invites"
+    onOpen={() => openCollection(PERFORMANCES_SHELF_ID, "Performances")}
+  />
+{/snippet}
+
 {#snippet artShelf(sel: { id: string; ownerId: string | null } | null)}
   <CollectionCard
     collection={tunnelsArtCard}
@@ -565,6 +600,23 @@ instead of showing an empty shell.
   </div>
 {/snippet}
 
+{#snippet performancesDetail(showBack: boolean)}
+  <div class="art-detail">
+    {#if showBack}
+      <header class="art-detail-bar">
+        <button type="button" class="art-back" onclick={backToList}>
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>Library</span>
+        </button>
+        <span class="art-detail-title">Performances</span>
+      </header>
+    {/if}
+    <div class="art-detail-body">
+      <UserVideoLibraryView />
+    </div>
+  </div>
+{/snippet}
+
 {#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
   {#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
     <CollectionCard
@@ -608,6 +660,11 @@ instead of showing an empty shell.
           {@render ownShelves(railSelection)}
         </div>
 
+        <h3 class="shelf-heading">Performances</h3>
+        <div class="rail-cards">
+          {@render performancesShelfCard(railSelection)}
+        </div>
+
         <h3 class="shelf-heading">Art</h3>
         <div class="rail-cards">
           {@render artShelf(railSelection)}
@@ -637,6 +694,8 @@ instead of showing an empty shell.
     <section class="detail-pane">
       {#if railSelection.id === "all" && !railSelection.ownerId}
         <AllLibraryView />
+      {:else if !railSelection.ownerId && isPerformancesId(railSelection.id)}
+        {@render performancesDetail(false)}
       {:else if !railSelection.ownerId && isArtId(railSelection.id)}
         {#key railSelection.id}
           {@render artDetail(railSelection.id, false)}
@@ -664,6 +723,8 @@ instead of showing an empty shell.
 {:else if detail}
   {#if detail.id === "all" && !detail.ownerId}
     <AllLibraryView onBack={backToList} />
+  {:else if !detail.ownerId && isPerformancesId(detail.id)}
+    {@render performancesDetail(true)}
   {:else if !detail.ownerId && isArtId(detail.id)}
     {#key detail.id}
       {@render artDetail(detail.id, true)}
@@ -722,6 +783,11 @@ instead of showing an empty shell.
       <h3 class="shelf-heading">My Collections</h3>
       <div class="card-grid">
         {@render ownShelves(null)}
+      </div>
+
+      <h3 class="shelf-heading">Performances</h3>
+      <div class="card-grid">
+        {@render performancesShelfCard(null)}
       </div>
 
       <h3 class="shelf-heading">Art</h3>

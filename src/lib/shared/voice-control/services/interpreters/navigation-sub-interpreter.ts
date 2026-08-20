@@ -1,5 +1,9 @@
 import type { ISubInterpreter } from "../ISubInterpreter";
-import type { VoiceCommand, VoiceCommandCategory, CommandContext } from "../../domain/voice-command-types";
+import type {
+  VoiceCommand,
+  VoiceCommandCategory,
+  CommandContext,
+} from "../../domain/voice-command-types";
 import { MODULE_DEFINITIONS } from "../../../navigation/config/module-definitions";
 import type { ModuleDefinition } from "../../../navigation/domain/types";
 
@@ -41,9 +45,10 @@ const MODULE_ALIASES: Record<string, string> = {
   animation: "compose",
   training: "train",
   practice: "train",
-  watching: "watch",
-  videos: "watch",
-  video: "watch",
+  watching: "browse",
+  performances: "browse",
+  videos: "browse",
+  video: "video",
   "choreo card": "choreo_card",
   "choreography card": "choreo_card",
   writing: "choreo",
@@ -116,9 +121,8 @@ const TAB_ALIASES: Record<string, string> = {
   preference: "preferences",
   languages: "language",
   translation: "language",
-  // Watch module tabs
-  videos: "feed",
-  stream: "feed",
+  videos: "gallery",
+  performances: "gallery",
   library: "library",
 };
 
@@ -181,7 +185,10 @@ export class NavigationSubInterpreter implements ISubInterpreter {
     return null;
   }
 
-  private tryParseTabCommand(text: string, context: CommandContext): VoiceCommand | null {
+  private tryParseTabCommand(
+    text: string,
+    context: CommandContext
+  ): VoiceCommand | null {
     for (const pattern of TAB_PATTERNS) {
       const match = text.match(pattern);
       if (!match?.[1]) continue;

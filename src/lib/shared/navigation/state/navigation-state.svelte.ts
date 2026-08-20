@@ -13,7 +13,10 @@ import {
   SETTINGS_TABS,
 } from "../config/tab-definitions";
 
-import { MODULE_DEFINITIONS, normalizeModuleId } from "../config/module-definitions";
+import {
+  MODULE_DEFINITIONS,
+  normalizeModuleId,
+} from "../config/module-definitions";
 
 import {
   CURRENT_MODULE_KEY,
@@ -27,10 +30,7 @@ import {
 
 import { panelPersistenceState } from "./panel-persistence-state.svelte";
 
-import {
-  hasMimeErrorOccurred,
-  verifyTabSwitch,
-} from "../../hmr-helper";
+import { hasMimeErrorOccurred, verifyTabSwitch } from "../../hmr-helper";
 
 export {
   CREATE_TABS,
@@ -50,17 +50,19 @@ export {
   ML_TRAINING_TABS,
   FEEDBACK_TABS,
   TRAIN_TABS,
-  WATCH_TABS,
 } from "../config/tab-definitions";
 
-export { MODULE_DEFINITIONS, ENABLED_MODULE_DEFINITIONS } from "../config/module-definitions";
+export {
+  MODULE_DEFINITIONS,
+  ENABLED_MODULE_DEFINITIONS,
+} from "../config/module-definitions";
 
 export function createNavigationState() {
   let currentCreateMode = $state<string>("construct");
   let currentLearnMode = $state<string>("concepts");
 
   let currentModule = $state<ModuleId>("create");
-  let activeTab = $state<string>(DEFAULT_CREATE_TAB); 
+  let activeTab = $state<string>(DEFAULT_CREATE_TAB);
 
   let previousModule = $state<ModuleId | null>(loadPreviousModuleFromSession());
 
@@ -106,7 +108,10 @@ export function createNavigationState() {
       map[moduleId] = tabId;
       localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify(map));
     } catch {
-      localStorage.setItem(MODULE_LAST_TABS_KEY, JSON.stringify({ [moduleId]: tabId }));
+      localStorage.setItem(
+        MODULE_LAST_TABS_KEY,
+        JSON.stringify({ [moduleId]: tabId })
+      );
     }
   }
 
@@ -156,7 +161,9 @@ export function createNavigationState() {
           }
         }
       } else {
-        console.warn(`Invalid module "${savedModule}" in localStorage, using default`);
+        console.warn(
+          `Invalid module "${savedModule}" in localStorage, using default`
+        );
         currentModule = "create";
         localStorage.setItem(CURRENT_MODULE_KEY, "create");
       }
@@ -182,7 +189,9 @@ export function createNavigationState() {
       const firstPart = pathParts[0];
       if (pathParts.length >= 1 && firstPart) {
         const rawUrlModule = firstPart.toLowerCase();
-        let urlTab = pathParts[1]?.toLowerCase() || searchParams.get("section")?.toLowerCase();
+        let urlTab =
+          pathParts[1]?.toLowerCase() ||
+          searchParams.get("section")?.toLowerCase();
 
         const normalizedModule = normalizeModuleId(rawUrlModule);
 
@@ -214,7 +223,10 @@ export function createNavigationState() {
                 activeTab = DEFAULT_CREATE_TAB;
               } else {
                 const savedTab = loadModuleTab(normalizedModule);
-                if (savedTab && urlModuleDefinition.sections.some((s) => s.id === savedTab)) {
+                if (
+                  savedTab &&
+                  urlModuleDefinition.sections.some((s) => s.id === savedTab)
+                ) {
                   activeTab = savedTab;
                 } else {
                   activeTab = urlModuleDefinition.sections[0]?.id || "";
@@ -298,7 +310,10 @@ export function createNavigationState() {
           nextTab = targetTab;
         } else {
           const savedTab = loadModuleTab(moduleId);
-          if (savedTab && moduleDefinition.sections.some((tab) => tab.id === savedTab)) {
+          if (
+            savedTab &&
+            moduleDefinition.sections.some((tab) => tab.id === savedTab)
+          ) {
             nextTab = savedTab;
           } else {
             nextTab =
@@ -314,17 +329,16 @@ export function createNavigationState() {
       if (previousModuleLocal !== moduleId) {
         try {
           const moduleWithTab = nextTab ? `${moduleId}:${nextTab}` : moduleId;
-          void logModuleView(
-            moduleWithTab,
-            previousModuleLocal
-          );
+          void logModuleView(moduleWithTab, previousModuleLocal);
         } catch {
           // ignore
         }
 
-        void import("../../presence/get-presence-tracker").then(({ getPresenceTracker }) => {
-          getPresenceTracker().updateLocation(moduleId, nextTab || null);
-        }).catch(() => {});
+        void import("../../presence/get-presence-tracker")
+          .then(({ getPresenceTracker }) => {
+            getPresenceTracker().updateLocation(moduleId, nextTab || null);
+          })
+          .catch(() => {});
       }
 
       if (typeof localStorage !== "undefined") {
@@ -347,7 +361,9 @@ export function createNavigationState() {
   }
 
   function setActiveTab(tabId: string) {
-    const debug = typeof window !== "undefined" && (window as unknown as Record<string, unknown>).__DEBUG_NAV__;
+    const debug =
+      typeof window !== "undefined" &&
+      (window as unknown as Record<string, unknown>).__DEBUG_NAV__;
 
     const moduleDefinition = MODULE_DEFINITIONS.find(
       (m) => m.id === currentModule
@@ -382,18 +398,19 @@ export function createNavigationState() {
     try {
       const moduleWithTab = `${currentModule}:${tabId}`;
       const previousModuleWithTab = `${currentModule}:${previousTab}`;
-      void logModuleView(
-        moduleWithTab,
-        previousModuleWithTab
-      );
+      void logModuleView(moduleWithTab, previousModuleWithTab);
     } catch {
       // ignore
     }
 
     try {
-      import("../../presence/get-presence-tracker").then(({ getPresenceTracker }) => {
-        void getPresenceTracker().updateLocation(currentModule, tabId);
-      }).catch(() => { /* presence is non-critical */ });
+      import("../../presence/get-presence-tracker")
+        .then(({ getPresenceTracker }) => {
+          void getPresenceTracker().updateLocation(currentModule, tabId);
+        })
+        .catch(() => {
+          /* presence is non-critical */
+        });
     } catch {
       // ignore
     }

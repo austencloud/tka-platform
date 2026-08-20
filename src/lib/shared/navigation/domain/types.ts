@@ -66,7 +66,6 @@ export type ModuleId =
   | "feedback"
   | "admin"
   | "settings"
-  | "watch" // Watch videos and performances
   | "moderation" // Content moderation (admin)
   | "arena" // Community pairwise ranking
   | "festivals" // Festival Hub - discover and apply to flow festivals
