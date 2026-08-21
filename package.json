@@ -214,7 +214,8 @@
     "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.16",
     "vitest-browser-svelte": "^2.1.1",
-    "web-vitals": "^5.1.0"
+    "web-vitals": "^5.1.0",
+    "wrangler": "4.125.0"
   },
   "engines": {
     "node": ">=22.0.0"
