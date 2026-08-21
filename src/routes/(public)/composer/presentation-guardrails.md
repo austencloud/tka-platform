@@ -3,6 +3,7 @@
 **Status:** Governs the planned `/composer` redesign  
 **Updated:** 2026-08-21  
 **Scope:** Public Composer presentation copy, page structure, demonstrations, and route-local styling
+**Feature truth:** [feature-truth-matrix.md](./feature-truth-matrix.md)
 
 ## The standard
 

@@ -1,0 +1,98 @@
+# Composer presentation feature truth
+
+**Updated:** 2026-08-21  
+**Scope:** Claims considered for the public Composer presentation  
+**Rule:** A registry entry is discovery evidence. It is not shipment evidence.
+
+## How a feature earns a status
+
+**Publicly released** means a visitor or ordinary account can reach a working
+surface through the current app shell or a public sequence path. Account,
+browser, and viewport conditions stay attached to the claim.
+
+**Functional but internal or beta** means a real render or state path works,
+but the combined workflow is a test route, operator tool, partial Studio
+surface, or production building block. It may guide a demonstration. It may not
+be described as an ordinary visitor workflow.
+
+**Incomplete** means a control or screen exists but the promised behavior is
+missing, disconnected, or materially narrower than its label.
+
+**Unavailable** means no current user or production path was found. A type,
+flag, mockup, or planned spec does not change that.
+
+## Publicly released
+
+| Capability                                         | Conditions and honest public wording                                                                                                                                          | Evidence beyond registration                                                                                                                                                                  |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Construct a sequence beat by beat                  | Open to guests under Create. “Build a sequence one beat at a time.”                                                                                                           | `CreateModule.svelte` is loaded by `ModuleRenderer.svelte`; `guest-access-config.ts` grants guests the Assemble, Construct, and Generate tabs.                                                |
+| Generate a sequence from choices                   | Open to guests in the full Create module. The current marketing demo only proves a fixed random draw.                                                                         | `CreateModule.svelte` mounts the real Generate tab. `ComposerGenerateDemo.svelte` calls the current generation orchestrator but hardcodes its inputs.                                         |
+| Play a sequence with pictographs beside the motion | Available in the shared sequence viewer and the real marketing player.                                                                                                        | `SequenceViewerOrchestrator.svelte` mounts the production viewer; `SequenceHeroDemo.svelte` is the working public demonstration.                                                              |
+| Change active prop visuals                         | The current picker includes staff, club, fan, triad, mini hoop, and buugeng. A visual change does not mean every movement transfers safely to that prop.                      | `BentoPropGrid.svelte` renders the active picker sections; `prop-type-manager.ts` prepares and starts live blue/red prop crossfades; the Canvas 2D renderer draws the selected prop assets.   |
+| Tunnel view                                        | Working as a live Composer demonstration and in the full app. Do not add mirrors, canons, or per-performer timing unless those controls are shown and verified.               | `ComposerTunnelDemo.svelte` mounts the real tunnel renderer. The Create module also has a routed Tunnel tab.                                                                                  |
+| 3D sequence viewing                                | Working with WebGL2 on viewports at least 600px in both directions. The full 3D Studio is not a guest module.                                                                 | `Viewer3DScene.svelte` renders current viewer state; `viewer-modes.ts` and the viewport capability gate decide availability; `guest-access-config.ts` does not grant guests the Stage module. |
+| Community Gallery                                  | Open to guests. Filtering and public sequence viewing are real.                                                                                                               | `BrowseModule.svelte` mounts `GalleryTab.svelte` and the current gallery workspace; guest access explicitly includes Browse > Gallery.                                                        |
+| Guest saves                                        | A guest may keep up to three sequences on the current device.                                                                                                                 | `library-save-service.ts` enforces `GUEST_SAVE_CAP`; `guest-access-config.ts` sets that cap to 3 and grants Browse > Library.                                                                 |
+| Cloud Library and ordinary collections             | Requires a full account for durable cross-device use.                                                                                                                         | `BrowseModule.svelte` mounts `MyCollectionsPanel.svelte`; the collection state and library repository back its working add, remove, and detail paths.                                         |
+| Smart Collections                                  | Requires a full account. Describe them as rule-based saved filters, not as AI.                                                                                                | `BrowseModule.svelte` mounts `SmartCollectionSaveDialog.svelte`; the gallery drill supplies the live rule catalogue and collection results.                                                   |
+| Image and animation-video downloads                | Visitors can configure and preview; downloading requires a full, non-anonymous account.                                                                                       | `export-coordinator.svelte.ts` gates both delivery paths through `ensureFullAccountForExport`; the current image and video exporters create the files.                                        |
+| QR on eligible image exports                       | Signed-in users can choose QR for the eligible image info cell. It is optional and is not present on every export.                                                            | `ExportImagePanel.svelte` exposes QR only when authenticated; `info-cell-display.ts` suppresses guest QR and resolves competition with the mandala cell.                                      |
+| Follow and unfollow creators                       | Requires sign-in. Following people is working; a personalized sequence feed is a different claim.                                                                             | `CreatorsPanel.svelte` and `UserProfilePanel.svelte` call the transactional `followUser` and `unfollowUser` repository paths and update the visible state.                                    |
+| Arcade games                                       | Available through Learn > Play for an account with module access. The routed shell currently mounts ten game components, so the claim does not rest on `GAME_REGISTRY` alone. | `LearnTab.svelte` mounts `PlayHub.svelte`; `GameShell.svelte` imports and routes the ten current game components, including Word Bridges and Trace Paths.                                     |
+| Install as a browser app                           | Keep only if the production manifest, service worker, and install prompt pass the release verification for the target browser.                                                | The PWA files provide an implementation path, but this claim still needs a production install test before final copy approval.                                                                |
+
+## Functional but internal or beta
+
+| Capability                               | What works                                                                                                            | Why it is not a public promise yet                                                                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Multi-performer Stage timing and marks   | Stage choreography can assign performer marks and per-performer sequence clips.                                       | `StageViewer.svelte` still supplies the default avatar, staff props, and `showEffects={false}`. The complete per-performer Studio story is not connected in that surface. |
+| Deterministic high-resolution 3D capture | `offline-3d-exporter.ts` steps synthetic time, interpolates camera keyframes, and captures at fixed frames.           | It is an export building block, not a public multi-shot film editor.                                                                                                      |
+| Camera choreography presets              | Current shot helpers include orbit, plane, reveal, and ensemble framing.                                              | The public recording chrome currently exposes Free Camera and Auto Orbit rather than the whole preset set.                                                                |
+| Broad 3D effect set                      | The current 3D effects layer has working render paths for fire, LED, trails, bubbles, electricity, and other effects. | Effect capabilities differ. Whole-rig control and effect-specific gaps mean the page should show approved examples, not promise identical controls for all effects.       |
+| Advanced experiments in Lab              | Some labs are functional enough for operator use.                                                                     | Lab is admin-only and its module definition explicitly calls it temporary experiments and prototypes.                                                                     |
+
+## Incomplete
+
+| Capability or claim                              | Evidence of the gap                                                                                                                                                                                                                    | Composer presentation decision                                                                                           |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Scene buttons in `Composer3DViewerDemo`          | The component writes `settingsService.backgroundType`; `Viewer3DScene.svelte` renders `viewer3DState.environmentId`. The selected label changes while the 3D world does not.                                                           | Do not publish this interaction until it calls the viewer's environment owner and uses an isolated, non-persistent seed. |
+| Isolated marketing 3D state                      | The demo calls `createViewer3DState()` without a seed, so saved performers, effects, formation, camera, and environment can appear in the public mockup.                                                                               | Seed a known scene and prevent all demo writes from persisting.                                                          |
+| Manual composing proof in the mockup             | The mockup describes Build and Generate, but only the fixed-recipe generator is interactive.                                                                                                                                           | Add one real, small beat-editing interaction. Keep the full editor in the app.                                           |
+| Generator choice claim in the mockup             | The copy says “set a few movement choices”; `ComposerGenerateDemo.svelte` exposes only one Generate button and hardcodes the choices.                                                                                                  | Either expose a small set of real choices or say that this particular button draws a prepared kind of sequence.          |
+| Distinct Train practice modes                    | Adaptive, Step by Step, and Timed appear in the picker and have configuration state. `TrainModePanel.svelte` receives `practiceMode` and `modeConfig` but its playback and scoring path does not use them to create distinct behavior. | Do not say “practice modes” are fully live. A narrower “camera practice workspace” claim needs its own runtime proof.    |
+| “Their new sequences surface when you come back” | Follow relationships and a Following creator roster exist. No personalized sequence-feed query or surface was found.                                                                                                                   | Say “follow creators” only. Remove feed behavior and “the list ends” until a working surface exists.                     |
+| Fully configurable multi-performer Stage         | The Stage module is routed, but `StageViewer.svelte` hardcodes default avatars, staff props, and disabled effects.                                                                                                                     | Treat Stage choreography as beta and show only the combinations that are actually wired.                                 |
+| Generator error explanation                      | `ComposerGenerateDemo.svelte` catches every failure and reports that the draw came up empty, including chunk or network failures.                                                                                                      | Separate a no-result draw from a load or engine failure before promotion.                                                |
+
+## Unavailable
+
+| Claim or idea                                        | Evidence                                                                                                                                                     | Decision                                                                                      |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| A following sequence feed                            | No current query or rendered feed was found for new sequences from followed creators.                                                                        | Keep out of public copy.                                                                      |
+| QR on every export                                   | Video export does not carry this image info cell, guests cannot mint the QR, and eligible images make it optional.                                           | The old “every export” sentence is false.                                                     |
+| Full movement equivalence across every prop          | The current movement model begins with double staves. Momentum props, tosses, contact rolling, and grip changes are not represented as equivalent transfers. | Keep the limitation beside any prop list.                                                     |
+| Eight-performer beat ripple in the general 3D viewer | `Viewer3DScene.svelte` drives the performers from the same current step; the two-avatar sync helper does not provide the proposed eight-person timeline.     | New film-director or Studio timing work is required.                                          |
+| Multi-shot 3D film director                          | Camera recording and fixed-frame export exist, but no current timeline stages complete shots, cuts, and crossfades.                                          | Govern new work with `docs/superpowers/specs/2026-08-21-composer-3d-showcase-film-design.md`. |
+| Astronaut or zombie performer                        | Neither appears in the deployed avatar set, effort types, or effects.                                                                                        | New compatible assets or motion work must be approved before marketing uses them.             |
+| Performer elevation or pedestal control              | No current standalone viewer path was proven for per-performer elevation.                                                                                    | Omit or build the real capability first.                                                      |
+| 3D on every device                                   | The current viewer requires WebGL2 and hides below the minimum two-dimensional viewport.                                                                     | Always provide a poster or 2D fallback.                                                       |
+
+## Verdict on the old “Also in the app today” block
+
+The block cannot survive as written.
+
+- Community Gallery is released.
+- Image and video download are released with a full-account condition.
+- QR is optional on eligible signed-in image exports, not on every export.
+- Library and Smart Collections are released with account and durability
+  conditions.
+- The six named prop visuals are valid, with the movement-transfer limit.
+- The arcade is routed and functional, but it is a Learn story rather than a
+  reason to lengthen the Composer page.
+- The three named practice modes do not yet have three distinct working
+  behavior paths.
+- Installation needs a production-browser proof before the copy is approved.
+
+The focused mockup is right to remove this catalogue. Released features can
+appear when they complete the Composer story. The rest belongs on its own
+product surface, in a truthful support page, or nowhere yet.
