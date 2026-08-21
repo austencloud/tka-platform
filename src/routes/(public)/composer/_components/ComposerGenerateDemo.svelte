@@ -20,7 +20,13 @@
 
   /** The page's per-visit demo sequence seeds the stages; null while it is
       still generating (the fixed-aspect stages hold the footprint). */
-  let { sequence }: { sequence: SequenceData | null } = $props();
+  let {
+    sequence,
+    onGenerated,
+  }: {
+    sequence: SequenceData | null;
+    onGenerated?: (sequence: SequenceData) => void;
+  } = $props();
 
   let current = $state<SequenceData | null>(null);
   let generating = $state(false);
@@ -68,6 +74,7 @@
       });
       // Plain-ify reactive proxies before handing to the player/mandala.
       current = JSON.parse(JSON.stringify(seq)) as SequenceData;
+      onGenerated?.(current);
       failedOnce = false;
     } catch {
       // Beam search found no path — rare; invite another tap instead of erroring.
