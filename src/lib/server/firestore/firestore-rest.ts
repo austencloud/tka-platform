@@ -1,8 +1,11 @@
-import { env } from "$env/dynamic/private";
-import { dev } from "$app/environment";
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { type FirestoreFields } from "./firestore-value-codec";
+import {
+  toFirestoreValue,
+  type FirestoreFields,
+} from "./firestore-value-codec";
+import {
+  getServiceAccountAuthorizer,
+  type ServiceAccountAuthorizer,
+} from "$lib/server/google/service-account-authorizer";
 
 export {
   fromFirestoreFields,
@@ -15,15 +18,7 @@ export {
 } from "./firestore-value-codec";
 
 const FIRESTORE_HOST = "https://firestore.googleapis.com/v1";
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DATASTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
-const TOKEN_REFRESH_SKEW_MS = 5 * 60 * 1000;
-
-interface ServiceAccountCredentials {
-  project_id: string;
-  client_email: string;
-  private_key: string;
-}
 
 export interface FirestoreDocument {
   name: string;
@@ -50,6 +45,18 @@ export interface FirestoreWrite {
     exists?: boolean;
     updateTime?: string;
   };
+}
+
+export interface FirestoreQuery {
+  collectionId: string;
+  fieldPath: string;
+  value: unknown;
+  limit?: number;
+}
+
+export interface FirestoreDocumentPage {
+  documents: FirestoreDocument[];
+  nextPageToken?: string;
 }
 
 export class FirestoreRestError extends Error {
@@ -81,90 +88,6 @@ function encodeDocumentPath(path: string): string {
     .join("/");
 }
 
-function parseServiceAccount(
-  raw: string | undefined
-): ServiceAccountCredentials {
-  if (!raw) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not configured");
-  }
-
-  let parsed: Partial<ServiceAccountCredentials>;
-  try {
-    parsed = JSON.parse(raw) as Partial<ServiceAccountCredentials>;
-  } catch {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not valid JSON");
-  }
-
-  if (!parsed.project_id || !parsed.client_email || !parsed.private_key) {
-    throw new Error("Firebase service account credentials are incomplete");
-  }
-
-  return parsed as ServiceAccountCredentials;
-}
-
-function loadCredentialSource(platformCredential?: string): string | undefined {
-  // Cloudflare Pages exposes request bindings on event.platform.env. Prefer
-  // that source so credentialed routes do not depend on adapter env hydration.
-  const requestScoped = platformCredential?.trim();
-  if (requestScoped) return requestScoped;
-
-  const configured = env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
-  if (configured) return configured;
-  if (!dev) return undefined;
-
-  const keyPath = [
-    resolve("serviceAccountKey.json"),
-    resolve("../../serviceAccountKey.json"),
-  ].find((candidate) => existsSync(candidate));
-  if (!keyPath) return undefined;
-
-  try {
-    return readFileSync(keyPath, "utf8");
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Could not read local Firebase credentials: ${message}`);
-  }
-}
-
-async function signServiceAccountJwt(
-  credentials: ServiceAccountCredentials,
-  nowSeconds: number
-): Promise<string> {
-  const header = encodeBase64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
-  const payload = encodeBase64Url(
-    JSON.stringify({
-      iss: credentials.client_email,
-      sub: credentials.client_email,
-      scope: DATASTORE_SCOPE,
-      aud: TOKEN_URL,
-      iat: nowSeconds,
-      exp: nowSeconds + 3600,
-    })
-  );
-  const unsigned = `${header}.${payload}`;
-  const pemContents = credentials.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const binaryKey = Uint8Array.from(atob(pemContents), (char) =>
-    char.charCodeAt(0)
-  );
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(unsigned)
-  );
-
-  return `${unsigned}.${encodeBase64Url(new Uint8Array(signature))}`;
-}
-
 export function readFirestoreString(
   document: FirestoreDocument,
   field: string
@@ -192,16 +115,10 @@ export function readFirestoreBoolean(
 }
 
 export class FirestoreRest {
-  private accessToken: { value: string; expiresAt: number } | null = null;
-  private tokenRequest: Promise<string> | null = null;
-
-  constructor(
-    private readonly credentials: ServiceAccountCredentials,
-    private readonly fetchImpl?: typeof fetch
-  ) {}
+  constructor(private readonly authorizer: ServiceAccountAuthorizer) {}
 
   get projectId(): string {
-    return this.credentials.project_id;
+    return this.authorizer.projectId;
   }
 
   documentName(path: string): string {
@@ -227,6 +144,41 @@ export class FirestoreRest {
     return (await response.json()) as FirestoreDocument;
   }
 
+  async listDocuments(
+    collectionId: string,
+    options: {
+      pageSize?: number;
+      pageToken?: string;
+      fieldPaths?: readonly string[];
+    } = {}
+  ): Promise<FirestoreDocumentPage> {
+    const pageSize = Math.max(
+      1,
+      Math.min(Math.trunc(options.pageSize ?? 100), 1000)
+    );
+    const query = new URLSearchParams({ pageSize: String(pageSize) });
+    if (options.pageToken) query.set("pageToken", options.pageToken);
+    for (const fieldPath of options.fieldPaths ?? []) {
+      query.append("mask.fieldPaths", fieldPath);
+    }
+    const url =
+      `${FIRESTORE_HOST}/projects/${this.projectId}/databases/(default)` +
+      `/documents/${encodeDocumentPath(collectionId)}?${query}`;
+    const response = await this.authorizedFetch(url, {
+      headers: { accept: "application/json" },
+    });
+
+    if (!response.ok) await this.throwResponseError("list", response);
+    const page = (await response.json()) as {
+      documents?: FirestoreDocument[];
+      nextPageToken?: string;
+    };
+    return {
+      documents: page.documents ?? [],
+      ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
+    };
+  }
+
   async commit(writes: FirestoreWrite[]): Promise<{ commitTime: string }> {
     if (writes.length === 0) {
       throw new Error("Firestore commit requires at least one write");
@@ -245,72 +197,41 @@ export class FirestoreRest {
     return (await response.json()) as { commitTime: string };
   }
 
+  async queryDocuments(query: FirestoreQuery): Promise<FirestoreDocument[]> {
+    const limit = Math.max(1, Math.min(Math.trunc(query.limit ?? 100), 1000));
+    const url =
+      `${FIRESTORE_HOST}/projects/${this.projectId}/databases/(default)` +
+      "/documents:runQuery";
+    const response = await this.authorizedFetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: query.collectionId }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: query.fieldPath },
+              op: "EQUAL",
+              value: toFirestoreValue(query.value),
+            },
+          },
+          limit,
+        },
+      }),
+    });
+
+    if (!response.ok) await this.throwResponseError("query", response);
+    const rows = (await response.json()) as Array<{
+      document?: FirestoreDocument;
+    }>;
+    return rows.flatMap((row) => (row.document ? [row.document] : []));
+  }
+
   private async authorizedFetch(
     input: string,
     init: RequestInit
   ): Promise<Response> {
-    const token = await this.getAccessToken();
-    const headers = new Headers(init.headers);
-    headers.set("Authorization", `Bearer ${token}`);
-    return this.request(input, { ...init, headers });
-  }
-
-  private request(input: string, init: RequestInit): Promise<Response> {
-    if (this.fetchImpl) {
-      // Calling an injected fetch through `this.fetchImpl(...)` gives it the
-      // Firestore client as its receiver. Cloudflare rejects that receiver
-      // before the request leaves the Worker.
-      const fetchImpl = this.fetchImpl;
-      return fetchImpl(input, init);
-    }
-    return fetch(input, init);
-  }
-
-  private async getAccessToken(): Promise<string> {
-    const now = Date.now();
-    if (
-      this.accessToken &&
-      this.accessToken.expiresAt - TOKEN_REFRESH_SKEW_MS > now
-    ) {
-      return this.accessToken.value;
-    }
-    if (this.tokenRequest) return this.tokenRequest;
-
-    this.tokenRequest = this.requestAccessToken().finally(() => {
-      this.tokenRequest = null;
-    });
-    return this.tokenRequest;
-  }
-
-  private async requestAccessToken(): Promise<string> {
-    const jwt = await signServiceAccountJwt(
-      this.credentials,
-      Math.floor(Date.now() / 1000)
-    );
-    const response = await this.request(TOKEN_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion: jwt,
-      }),
-    });
-    const body = (await response.json()) as {
-      access_token?: string;
-      expires_in?: number;
-      error?: string;
-    };
-    if (!response.ok || !body.access_token) {
-      throw new Error(
-        `Firebase service-account token exchange failed (${response.status})`
-      );
-    }
-
-    this.accessToken = {
-      value: body.access_token,
-      expiresAt: Date.now() + (body.expires_in ?? 3600) * 1000,
-    };
-    return body.access_token;
+    return this.authorizer.authorizedFetch(input, init, DATASTORE_SCOPE);
   }
 
   private async throwResponseError(
@@ -327,13 +248,13 @@ export class FirestoreRest {
 }
 
 let client: FirestoreRest | null = null;
-let credentialSource: string | null = null;
+let clientAuthorizer: ServiceAccountAuthorizer | null = null;
 
 export function getFirestoreRest(platformCredential?: string): FirestoreRest {
-  const raw = loadCredentialSource(platformCredential);
-  if (!client || credentialSource !== raw) {
-    client = new FirestoreRest(parseServiceAccount(raw));
-    credentialSource = raw ?? null;
+  const authorizer = getServiceAccountAuthorizer(platformCredential);
+  if (!client || clientAuthorizer !== authorizer) {
+    client = new FirestoreRest(authorizer);
+    clientAuthorizer = authorizer;
   }
   return client;
 }

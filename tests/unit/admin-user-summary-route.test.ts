@@ -17,13 +17,14 @@ vi.mock("$lib/server/security/withRateLimit", () => ({
 vi.mock("$lib/server/security/audit-logger", () => ({
   logAdminAction: mocks.logAdminAction,
 }));
-vi.mock("$lib/server/firebaseAdmin", () => ({
-  getAdminAuth: () => ({ listUsers: mocks.listUsers }),
-  getAdminDb: () => ({
-    collection: () => ({
-      select: () => ({ get: mocks.getProfiles }),
-    }),
-  }),
+vi.mock("$lib/server/auth/firebase-auth-rest", () => ({
+  getFirebaseAuthRest: () => ({ listUsers: mocks.listUsers }),
+}));
+vi.mock("$lib/server/firestore/firestore-rest", () => ({
+  fromFirestoreFields: (fields: {
+    isAnonymous?: { booleanValue: boolean };
+  }) => ({ isAnonymous: fields.isAnonymous?.booleanValue }),
+  getFirestoreRest: () => ({ listDocuments: mocks.getProfiles }),
 }));
 
 import { GET } from "../../src/routes/api/admin/user-summary/+server";
@@ -38,8 +39,8 @@ function authUser(uid: string, options: { anonymous?: boolean } = {}) {
 
 function profile(id: string, isAnonymous: boolean) {
   return {
-    id,
-    data: () => ({ isAnonymous }),
+    name: `projects/test/databases/(default)/documents/users/${id}`,
+    fields: { isAnonymous: { booleanValue: isAnonymous } },
   };
 }
 
@@ -56,7 +57,7 @@ describe("admin user summary route", () => {
     mocks.withRateLimit.mockResolvedValue(null);
     mocks.logAdminAction.mockResolvedValue(undefined);
     mocks.listUsers.mockResolvedValue({ users: [], pageToken: undefined });
-    mocks.getProfiles.mockResolvedValue({ docs: [], size: 0 });
+    mocks.getProfiles.mockResolvedValue({ documents: [] });
   });
 
   it("paginates Auth and reports registered accounts missing profiles", async () => {
@@ -73,8 +74,7 @@ describe("admin user summary route", () => {
         pageToken: undefined,
       });
     mocks.getProfiles.mockResolvedValue({
-      docs: [profile("registered-1", false), profile("guest", true)],
-      size: 2,
+      documents: [profile("registered-1", false), profile("guest", true)],
     });
 
     const response = await GET(event());
@@ -98,7 +98,8 @@ describe("admin user summary route", () => {
           registeredAccounts: 2,
           missingRegisteredProfiles: 1,
         },
-      })
+      }),
+      undefined
     );
   });
 

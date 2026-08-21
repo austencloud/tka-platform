@@ -2,13 +2,22 @@
 import type { RequestHandler } from "@sveltejs/kit";
 import { error, json } from "@sveltejs/kit";
 import { requireAdmin } from "$lib/server/auth/requireAdmin";
+import {
+  getFirebaseAuthRest,
+  type FirebaseAuthUser,
+} from "$lib/server/auth/firebase-auth-rest";
 import { getAdminAuth, getAdminDb } from "$lib/server/firebaseAdmin";
+import {
+  fromFirestoreFields,
+  getFirestoreRest,
+  toFirestoreFields,
+} from "$lib/server/firestore/firestore-rest";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { logAdminAction } from "$lib/server/security/audit-logger";
 import type { UserRole } from "$lib/shared/auth/domain/models/user-role";
 import type { UserRecord } from "firebase-admin/auth";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
 import { createHash, randomUUID } from "node:crypto";
 import {
   PUBLIC_PROFILE_FIELDS,
@@ -104,7 +113,7 @@ async function authorize(event: Parameters<RequestHandler>[0]) {
 }
 
 function authData(
-  userRecord: UserRecord,
+  userRecord: UserRecord | FirebaseAuthUser,
   contributor: { active: boolean; id: string | null },
   adminMetadata: AdminMetadata,
   privateProfile: { lastLocation: unknown | null }
@@ -147,21 +156,33 @@ function authData(
   };
 }
 
-async function readPrivateProfile(uid: string) {
-  const snapshot = await getAdminDb().doc(`userPrivateProfiles/${uid}`).get();
-  return { lastLocation: snapshot.data()?.lastLocation ?? null };
+async function readPrivateProfile(uid: string, platformCredential?: string) {
+  const document = await getFirestoreRest(platformCredential).getDocument(
+    `userPrivateProfiles/${uid}`,
+    ["lastLocation"]
+  );
+  const data = document ? fromFirestoreFields(document.fields ?? {}) : {};
+  return { lastLocation: data.lastLocation ?? null };
 }
 
-async function readAdminMetadata(uid: string): Promise<AdminMetadata> {
-  const db = getAdminDb();
-  const privateRef = db.doc(`userAdminMetadata/${uid}`);
-  const publicRef = db.doc(`users/${uid}`);
-  const [privateSnapshot, publicSnapshot] = await Promise.all([
-    privateRef.get(),
-    publicRef.get(),
+async function readAdminMetadata(
+  uid: string,
+  platformCredential?: string
+): Promise<AdminMetadata> {
+  const firestore = getFirestoreRest(platformCredential);
+  const [privateDocument, publicDocument] = await Promise.all([
+    firestore.getDocument(`userAdminMetadata/${uid}`, [
+      "adminLabel",
+      "adminNotes",
+    ]),
+    firestore.getDocument(`users/${uid}`),
   ]);
-  const privateData = privateSnapshot.data() ?? {};
-  const publicData = publicSnapshot.data() ?? {};
+  const privateData = privateDocument
+    ? fromFirestoreFields(privateDocument.fields ?? {})
+    : {};
+  const publicData = publicDocument
+    ? fromFirestoreFields(publicDocument.fields ?? {})
+    : {};
   const hasLegacyLabel = Object.hasOwn(publicData, "adminLabel");
   const hasLegacyNotes = Object.hasOwn(publicData, "adminNotes");
 
@@ -186,7 +207,15 @@ async function readAdminMetadata(uid: string): Promise<AdminMetadata> {
     // The private write completes first. If stripping the public copy fails,
     // rules keep that legacy profile unreadable until the next admin request
     // retries migration, so private values are never silently lost or exposed.
-    await privateRef.set(metadata, { merge: true });
+    await firestore.commit([
+      {
+        update: {
+          name: firestore.documentName(`userAdminMetadata/${uid}`),
+          fields: toFirestoreFields(metadata),
+        },
+        updateMask: { fieldPaths: ["adminLabel", "adminNotes"] },
+      },
+    ]);
   }
   if (hasLegacyLabel || hasLegacyNotes) {
     const remainingFields = Object.keys(publicData).filter(
@@ -195,29 +224,45 @@ async function readAdminMetadata(uid: string): Promise<AdminMetadata> {
     const canMarkPublic = remainingFields.every((field) =>
       PUBLIC_PROFILE_FIELDS.has(field)
     );
-    await publicRef.update({
-      ...(canMarkPublic
-        ? { publicProfileVersion: PUBLIC_PROFILE_VERSION }
-        : publicData.publicProfileVersion === PUBLIC_PROFILE_VERSION
-          ? { publicProfileVersion: FieldValue.delete() }
-          : {}),
-      ...(hasLegacyLabel && { adminLabel: FieldValue.delete() }),
-      ...(hasLegacyNotes && { adminNotes: FieldValue.delete() }),
-    });
+    const publicUpdate: Record<string, unknown> = {};
+    const fieldPaths: string[] = [];
+    if (canMarkPublic) {
+      publicUpdate.publicProfileVersion = PUBLIC_PROFILE_VERSION;
+      fieldPaths.push("publicProfileVersion");
+    } else if (publicData.publicProfileVersion === PUBLIC_PROFILE_VERSION) {
+      fieldPaths.push("publicProfileVersion");
+    }
+    if (hasLegacyLabel) fieldPaths.push("adminLabel");
+    if (hasLegacyNotes) fieldPaths.push("adminNotes");
+    await firestore.commit([
+      {
+        update: {
+          name: firestore.documentName(`users/${uid}`),
+          fields: toFirestoreFields(publicUpdate),
+        },
+        updateMask: { fieldPaths },
+      },
+    ]);
   }
 
   return metadata;
 }
 
-async function contributorState(uid: string) {
-  const snapshot = await getAdminDb()
-    .collection("contributors")
-    .where("userId", "==", uid)
-    .get();
+async function contributorState(uid: string, platformCredential?: string) {
+  const documents = await getFirestoreRest(platformCredential).queryDocuments({
+    collectionId: "contributors",
+    fieldPath: "userId",
+    value: uid,
+    limit: 1000,
+  });
+  const ids = documents.map((document) => {
+    const encodedId = document.name.split("/").at(-1) ?? "";
+    return decodeURIComponent(encodedId);
+  });
   return {
-    active: !snapshot.empty,
-    id: snapshot.empty ? null : snapshot.docs[0]!.id,
-    ids: snapshot.docs.map((document) => document.id),
+    active: ids.length > 0,
+    id: ids[0] ?? null,
+    ids,
   };
 }
 
@@ -468,19 +513,24 @@ export const GET: RequestHandler = async (event) => {
     const { caller, blocked } = await authorize(event);
     if (blocked) return blocked;
     const uid = targetUid(event);
+    const platformCredential =
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON;
     const [record, contributor, adminMetadata, privateProfile] =
       await Promise.all([
-        getAdminAuth().getUser(uid),
-        contributorState(uid),
-        readAdminMetadata(uid),
-        readPrivateProfile(uid),
+        getFirebaseAuthRest(platformCredential).getUser(uid),
+        contributorState(uid, platformCredential),
+        readAdminMetadata(uid, platformCredential),
+        readPrivateProfile(uid, platformCredential),
       ]);
-    await logAdminAction({
-      uid: caller.uid,
-      action: "user_auth_query",
-      target: uid,
-      ip: event.getClientAddress(),
-    });
+    await logAdminAction(
+      {
+        uid: caller.uid,
+        action: "user_auth_query",
+        target: uid,
+        ip: event.getClientAddress(),
+      },
+      platformCredential
+    );
     return json(authData(record, contributor, adminMetadata, privateProfile));
   } catch (cause) {
     return handleFailure(cause, "fetch user auth data");
@@ -492,6 +542,8 @@ export const PATCH: RequestHandler = async (event) => {
     const { caller, blocked } = await authorize(event);
     if (blocked) return blocked;
     const uid = targetUid(event);
+    const platformCredential =
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON;
     const mutation = mutationBody(await event.request.json());
     const auth = getAdminAuth();
     const db = getAdminDb();
@@ -562,7 +614,7 @@ export const PATCH: RequestHandler = async (event) => {
           throw cause;
         }
       } else if (mutation.action === "contributor") {
-        const state = await contributorState(uid);
+        const state = await contributorState(uid, platformCredential);
         const contributors = db.collection("contributors");
         const batch = db.batch();
         if (mutation.active) {
@@ -600,7 +652,7 @@ export const PATCH: RequestHandler = async (event) => {
         if (mutation.displayName) {
           const [profile, contributor] = await Promise.all([
             db.doc(`users/${uid}`).get(),
-            contributorState(uid),
+            contributorState(uid, platformCredential),
           ]);
           if (!profile.exists) throw error(404, "User profile not found");
           profileUpdate.displayName = mutation.displayName;
@@ -654,21 +706,26 @@ export const PATCH: RequestHandler = async (event) => {
       await mutationLease.release();
     }
 
-    await logAdminAction({
-      uid: caller.uid,
-      action: `user_${mutation.action}_update`,
-      target: uid,
-      metadata: {
-        changedFields: Object.keys(mutation).filter((key) => key !== "action"),
+    await logAdminAction(
+      {
+        uid: caller.uid,
+        action: `user_${mutation.action}_update`,
+        target: uid,
+        metadata: {
+          changedFields: Object.keys(mutation).filter(
+            (key) => key !== "action"
+          ),
+        },
+        ip: event.getClientAddress(),
       },
-      ip: event.getClientAddress(),
-    });
+      platformCredential
+    );
     const [record, contributor, adminMetadata, privateProfile] =
       await Promise.all([
         auth.getUser(uid),
-        contributorState(uid),
-        readAdminMetadata(uid),
-        readPrivateProfile(uid),
+        contributorState(uid, platformCredential),
+        readAdminMetadata(uid, platformCredential),
+        readPrivateProfile(uid, platformCredential),
       ]);
     return json({
       success: true,
@@ -684,6 +741,8 @@ export const DELETE: RequestHandler = async (event) => {
     const { caller, blocked } = await authorize(event);
     if (blocked) return blocked;
     const uid = targetUid(event);
+    const platformCredential =
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON;
     if (caller.uid === uid)
       throw error(409, "Administrators cannot delete their own account here");
     const mutationLease = await acquireUserMutationLocks(uid, true);
@@ -694,12 +753,15 @@ export const DELETE: RequestHandler = async (event) => {
     } finally {
       await mutationLease.release();
     }
-    await logAdminAction({
-      uid: caller.uid,
-      action: "user_deleted",
-      target: uid,
-      ip: event.getClientAddress(),
-    });
+    await logAdminAction(
+      {
+        uid: caller.uid,
+        action: "user_deleted",
+        target: uid,
+        ip: event.getClientAddress(),
+      },
+      platformCredential
+    );
     return json({ success: true });
   } catch (cause) {
     return handleFailure(cause, "delete user");

@@ -3,6 +3,7 @@ import {
   FirestoreRest,
   getFirestoreRest,
 } from "$lib/server/firestore/firestore-rest";
+import { ServiceAccountAuthorizer } from "$lib/server/google/service-account-authorizer";
 
 const PLATFORM_CREDENTIAL = JSON.stringify({
   project_id: "request-scoped-project",
@@ -38,7 +39,7 @@ describe("FirestoreRest requests", () => {
         )
       );
     }) as unknown as typeof fetch;
-    const firestore = new FirestoreRest(
+    const authorizer = new ServiceAccountAuthorizer(
       {
         project_id: "test",
         client_email: "cards@example.invalid",
@@ -46,13 +47,8 @@ describe("FirestoreRest requests", () => {
       },
       fetchImpl
     );
-    const clientState = firestore as unknown as {
-      accessToken: { value: string; expiresAt: number };
-    };
-    clientState.accessToken = {
-      value: "cached-token",
-      expiresAt: Date.now() + 60 * 60 * 1000,
-    };
+    vi.spyOn(authorizer, "getAccessToken").mockResolvedValue("cached-token");
+    const firestore = new FirestoreRest(authorizer);
 
     await expect(
       firestore.getDocument("shortcodes/ABCD")
@@ -61,5 +57,45 @@ describe("FirestoreRest requests", () => {
     });
 
     expect(receivers).toEqual([undefined]);
+  });
+
+  it("lists a collection with masks and pagination", async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(
+        Response.json({
+          documents: [
+            {
+              name: "projects/test/databases/(default)/documents/users/user-1",
+            },
+          ],
+          nextPageToken: "next-page",
+        })
+      )
+    ) as unknown as typeof fetch;
+    const authorizer = new ServiceAccountAuthorizer(
+      {
+        project_id: "test",
+        client_email: "cards@example.invalid",
+        private_key: "not-used-by-this-test",
+      },
+      fetchImpl
+    );
+    vi.spyOn(authorizer, "getAccessToken").mockResolvedValue("cached-token");
+    const firestore = new FirestoreRest(authorizer);
+
+    await expect(
+      firestore.listDocuments("users", {
+        pageSize: 1000,
+        pageToken: "current-page",
+        fieldPaths: ["isAnonymous"],
+      })
+    ).resolves.toMatchObject({
+      documents: [{ name: expect.stringContaining("users/user-1") }],
+      nextPageToken: "next-page",
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://firestore.googleapis.com/v1/projects/test/databases/(default)/documents/users?pageSize=1000&pageToken=current-page&mask.fieldPaths=isAnonymous",
+      expect.any(Object)
+    );
   });
 });

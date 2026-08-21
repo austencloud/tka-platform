@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => {
     batchUpdate: vi.fn(),
     batchDelete: vi.fn(),
     batchCommit: vi.fn(),
+    restGetDocument: vi.fn(),
+    restQueryDocuments: vi.fn(),
+    restCommit: vi.fn(),
     runTransaction: vi.fn(),
     mutationLocks: new Map<string, Record<string, unknown>>(),
     contributorDocs: [] as string[],
@@ -89,6 +92,61 @@ vi.mock("$lib/server/firebaseAdmin", () => ({
     }),
   }),
 }));
+vi.mock("$lib/server/auth/firebase-auth-rest", () => ({
+  getFirebaseAuthRest: () => ({ getUser: mocks.auth.getUser }),
+}));
+vi.mock("$lib/server/firestore/firestore-rest", () => {
+  function toFirestoreValue(value: unknown): Record<string, unknown> {
+    if (value === null || value === undefined) return { nullValue: null };
+    if (typeof value === "string") return { stringValue: value };
+    if (typeof value === "boolean") return { booleanValue: value };
+    if (typeof value === "number") return { integerValue: String(value) };
+    return {
+      mapValue: {
+        fields: toFirestoreFields(value as Record<string, unknown>),
+      },
+    };
+  }
+  function toFirestoreFields(value: Record<string, unknown>) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, toFirestoreValue(item)])
+    );
+  }
+  function fromFirestoreValue(value: Record<string, unknown>): unknown {
+    if ("nullValue" in value) return null;
+    if ("stringValue" in value) return value.stringValue;
+    if ("booleanValue" in value) return value.booleanValue;
+    if ("integerValue" in value) return Number(value.integerValue);
+    if ("mapValue" in value) {
+      return fromFirestoreFields(
+        (value.mapValue as { fields?: Record<string, Record<string, unknown>> })
+          .fields ?? {}
+      );
+    }
+    return undefined;
+  }
+  function fromFirestoreFields(
+    fields: Record<string, Record<string, unknown>>
+  ) {
+    return Object.fromEntries(
+      Object.entries(fields).map(([key, value]) => [
+        key,
+        fromFirestoreValue(value),
+      ])
+    );
+  }
+  return {
+    toFirestoreFields,
+    fromFirestoreFields,
+    getFirestoreRest: () => ({
+      documentName: (path: string) =>
+        `projects/test/databases/(default)/documents/${path}`,
+      getDocument: mocks.restGetDocument,
+      queryDocuments: mocks.restQueryDocuments,
+      commit: mocks.restCommit,
+    }),
+  };
+});
 
 import {
   DELETE,
@@ -211,6 +269,66 @@ describe("admin user mutation handlers", () => {
         }
       }
     });
+    mocks.restGetDocument.mockImplementation(async (path: string) => {
+      const data = path.startsWith("userAdminMetadata/")
+        ? mocks.privateMetadata
+        : path.startsWith("userPrivateProfiles/")
+          ? mocks.ownerPrivateMetadata
+          : mocks.publicProfile;
+      const fields = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === null
+            ? { nullValue: null }
+            : typeof value === "number"
+              ? { integerValue: String(value) }
+              : { stringValue: String(value) },
+        ])
+      );
+      return {
+        name: `projects/test/databases/(default)/documents/${path}`,
+        fields,
+      };
+    });
+    mocks.restQueryDocuments.mockImplementation(async () =>
+      mocks.contributorDocs.map((id) => ({
+        name: `projects/test/databases/(default)/documents/contributors/${id}`,
+      }))
+    );
+    mocks.restCommit.mockImplementation(async (writes) => {
+      for (const write of writes as Array<{
+        update?: {
+          name: string;
+          fields: Record<string, Record<string, unknown>>;
+        };
+        updateMask?: { fieldPaths: string[] };
+      }>) {
+        if (!write.update) continue;
+        const data = Object.fromEntries(
+          Object.entries(write.update.fields).map(([key, value]) => [
+            key,
+            "nullValue" in value
+              ? null
+              : "stringValue" in value
+                ? value.stringValue
+                : "integerValue" in value
+                  ? Number(value.integerValue)
+                  : undefined,
+          ])
+        );
+        if (write.update.name.includes("/userAdminMetadata/")) {
+          mocks.privateMetadata = { ...mocks.privateMetadata, ...data };
+        }
+        if (write.update.name.includes("/users/")) {
+          const next = { ...mocks.publicProfile, ...data };
+          for (const field of write.updateMask?.fieldPaths ?? []) {
+            if (!(field in data)) delete next[field];
+          }
+          mocks.publicProfile = next;
+        }
+      }
+      return { commitTime: new Date().toISOString() };
+    });
   });
 
   it("keeps role claims and Firestore privilege fields in parity", async () => {
@@ -232,7 +350,8 @@ describe("admin user mutation handlers", () => {
         uid: "caller",
         target: "target",
         action: "user_role_update",
-      })
+      }),
+      undefined
     );
   });
 
@@ -388,13 +507,28 @@ describe("admin user mutation handlers", () => {
       adminNotes: "Private note",
     };
     const response = await GET(event(undefined) as never);
-    expect(mocks.setAdminMetadata).toHaveBeenCalledWith(
-      { adminLabel: "Tuesday jam", adminNotes: "Private note" },
-      { merge: true }
+    expect(mocks.restCommit).toHaveBeenNthCalledWith(
+      1,
+      expect.arrayContaining([
+        expect.objectContaining({
+          update: expect.objectContaining({
+            name: expect.stringContaining("userAdminMetadata/target"),
+          }),
+          updateMask: { fieldPaths: ["adminLabel", "adminNotes"] },
+        }),
+      ])
     );
-    expect(mocks.updateProfile).toHaveBeenCalledOnce();
-    expect(mocks.updateProfile).toHaveBeenCalledWith(
-      expect.objectContaining({ publicProfileVersion: 2 })
+    expect(mocks.restCommit).toHaveBeenNthCalledWith(
+      2,
+      expect.arrayContaining([
+        expect.objectContaining({
+          update: expect.objectContaining({
+            fields: expect.objectContaining({
+              publicProfileVersion: { integerValue: "2" },
+            }),
+          }),
+        }),
+      ])
     );
     await expect(response.json()).resolves.toMatchObject({
       adminMetadata: {
@@ -414,14 +548,13 @@ describe("admin user mutation handlers", () => {
 
     await GET(event(undefined) as never);
 
-    const publicPatch = mocks.updateProfile.mock.calls[0]![0];
-    expect(publicPatch).toEqual(
-      expect.objectContaining({
-        publicProfileVersion: expect.anything(),
-        adminLabel: expect.anything(),
-      })
+    const publicWrite = mocks.restCommit.mock.calls[1]![0][0];
+    expect(publicWrite.updateMask.fieldPaths).toEqual(
+      expect.arrayContaining(["publicProfileVersion", "adminLabel"])
     );
-    expect(publicPatch.publicProfileVersion).not.toBe(2);
+    expect(publicWrite.update.fields).not.toHaveProperty(
+      "publicProfileVersion"
+    );
   });
 
   it("does not stamp a clean profile during an admin read", async () => {
@@ -429,7 +562,7 @@ describe("admin user mutation handlers", () => {
 
     await GET(event(undefined) as never);
 
-    expect(mocks.updateProfile).not.toHaveBeenCalled();
+    expect(mocks.restCommit).not.toHaveBeenCalled();
   });
 
   it("writes admin metadata only to the server-private document", async () => {
@@ -582,7 +715,8 @@ describe("admin user mutation handlers", () => {
         uid: "caller",
         target: "target",
         action: "user_deleted",
-      })
+      }),
+      undefined
     );
   });
 });

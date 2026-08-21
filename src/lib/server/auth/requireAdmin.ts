@@ -12,7 +12,7 @@
 import type { RequestEvent } from "@sveltejs/kit";
 import { error } from "@sveltejs/kit";
 import { requireFirebaseUser, type FirebaseUser } from "./requireFirebaseUser";
-import { getAdminAuth } from "$lib/server/firebaseAdmin";
+import { getFirebaseAuthRest } from "./firebase-auth-rest";
 
 export function hasAdminClaim(user: {
   admin?: unknown;
@@ -34,7 +34,9 @@ export async function requireAdmin(event: RequestEvent): Promise<FirebaseUser> {
   const caller = await requireFirebaseUser(event);
   let liveUser;
   try {
-    liveUser = await getAdminAuth().getUser(caller.uid);
+    liveUser = await getFirebaseAuthRest(
+      event.platform?.env?.FIREBASE_SERVICE_ACCOUNT_JSON
+    ).getUser(caller.uid);
   } catch (cause) {
     const code = firebaseErrorCode(cause);
     console.error("[requireAdmin] Failed to resolve live Auth user:", {

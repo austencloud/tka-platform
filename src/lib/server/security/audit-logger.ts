@@ -5,7 +5,10 @@
  * Callers may await durable completion. Audit failures remain non-fatal.
  */
 
-import { getAdminDb } from "$lib/server/firebaseAdmin";
+import {
+  getFirestoreRest,
+  toFirestoreFields,
+} from "$lib/server/firestore/firestore-rest";
 
 export interface AuditEntry {
   /** UID of the admin performing the action */
@@ -25,15 +28,25 @@ export interface AuditEntry {
  *
  * Resolves after the write attempt; errors are logged but never thrown.
  */
-export async function logAdminAction(entry: AuditEntry): Promise<void> {
-  const db = getAdminDb();
+export async function logAdminAction(
+  entry: AuditEntry,
+  platformCredential?: string
+): Promise<void> {
   const doc = {
     ...entry,
     timestamp: new Date().toISOString(),
   };
 
   try {
-    await db.collection("audit_log").add(doc);
+    const firestore = getFirestoreRest(platformCredential);
+    await firestore.commit([
+      {
+        update: {
+          name: firestore.documentName(`audit_log/${crypto.randomUUID()}`),
+          fields: toFirestoreFields(doc),
+        },
+      },
+    ]);
   } catch (err) {
     console.error("[audit-logger] Failed to write audit entry:", err, doc);
   }

@@ -7,8 +7,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("$lib/server/auth/requireFirebaseUser", () => ({
   requireFirebaseUser: mocks.requireFirebaseUser,
 }));
-vi.mock("$lib/server/firebaseAdmin", () => ({
-  getAdminAuth: () => ({ getUser: mocks.getUser }),
+vi.mock("$lib/server/auth/firebase-auth-rest", () => ({
+  getFirebaseAuthRest: () => ({ getUser: mocks.getUser }),
 }));
 
 import { requireAdmin } from "$lib/server/auth/requireAdmin";
