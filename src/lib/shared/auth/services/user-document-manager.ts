@@ -20,6 +20,7 @@ import {
   getCurrentPostHogSessionId,
 } from "$lib/shared/analytics/services/posthog";
 import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
+import { refreshPublicSequenceOwnerProfile } from "$lib/shared/library/services/public-sequence-persister";
 
 /**
  * Capitalize each word in a name (e.g., "brendan freaney" -> "Brendan Freaney")
@@ -315,6 +316,46 @@ export class UserDocumentManager {
             claimUsername(user.uid, existingUsername)
           );
         }
+
+        const projectedDisplayName =
+          typeof updateData.displayName === "string"
+            ? updateData.displayName
+            : typeof existingData?.displayName === "string" &&
+                existingData.displayName.length > 0
+              ? existingData.displayName
+              : "Unknown";
+        const projectedAvatarUrl =
+          typeof updateData.photoURL === "string"
+            ? updateData.photoURL
+            : typeof existingData?.photoURL === "string"
+              ? existingData.photoURL
+              : undefined;
+        const profileProjectionChanged =
+          projectedDisplayName !== existingData?.displayName ||
+          projectedAvatarUrl !== existingData?.photoURL;
+        const hasSavedSequences =
+          typeof existingData?.sequenceCount === "number" &&
+          existingData.sequenceCount > 0;
+
+        // A previous profile write may have landed while its projection fan-out
+        // failed offline. Sequence owners therefore run the idempotent check on
+        // later sign-ins too; current mirrors are filtered before transactions.
+        if (profileProjectionChanged || hasSavedSequences) {
+          currentStep = {
+            action: "refresh-public-sequence-owner-profile",
+            message:
+              "Could not refresh the signed-in user's public sequence profile",
+            path: "publicSequences/{sequenceId}",
+          };
+          await retryAuthenticatedFirestoreOperation(user, () =>
+            refreshPublicSequenceOwnerProfile(firestore, user.uid, {
+              displayName: projectedDisplayName,
+              ...(projectedAvatarUrl !== undefined && {
+                avatarUrl: projectedAvatarUrl,
+              }),
+            })
+          );
+        }
       }
     } catch (error) {
       const reportedError =
@@ -354,6 +395,22 @@ export class UserDocumentManager {
           },
           { merge: true }
         )
+      );
+
+      const profileSnapshot = await retryAuthenticatedFirestoreOperation(
+        user,
+        () => getDoc(userDocRef)
+      );
+      const storedDisplayName = profileSnapshot.data()?.displayName;
+      await retryAuthenticatedFirestoreOperation(user, () =>
+        refreshPublicSequenceOwnerProfile(firestore, user.uid, {
+          displayName:
+            typeof storedDisplayName === "string" &&
+            storedDisplayName.length > 0
+              ? storedDisplayName
+              : user.displayName?.trim() || "Unknown",
+          avatarUrl: photoURL,
+        })
       );
     } catch (error) {
       console.error(

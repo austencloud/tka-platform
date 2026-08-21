@@ -41,10 +41,14 @@
  */
 
 import {
+  collection,
   doc,
+  getDocs,
+  query,
   runTransaction,
   serverTimestamp,
   deleteField,
+  where,
   type Firestore,
 } from "firebase/firestore";
 
@@ -704,6 +708,162 @@ export async function updatePublicThumbnails(
         publicProjectionRevision: revision,
       });
     }
+
+    return { status: "updated" as const };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Owner profile projection (narrow patch)
+// ---------------------------------------------------------------------------
+
+export interface PublicSequenceOwnerProfile {
+  readonly displayName: string;
+  readonly avatarUrl?: string;
+}
+
+export interface RefreshPublicSequenceOwnerProfileResult {
+  readonly scanned: number;
+  readonly updated: number;
+  readonly unchanged: number;
+  readonly skipped: number;
+}
+
+type UpdatePublicSequenceOwnerProfileResult =
+  | { readonly status: "updated" }
+  | { readonly status: "unchanged" }
+  | { readonly status: "absent" };
+
+const PROFILE_PROJECTION_CONCURRENCY = 4;
+
+/**
+ * Refresh the denormalized owner name and avatar on every public sequence the
+ * user currently owns.
+ *
+ * Profile changes are a fan-out boundary: one user document can own any
+ * number of public sequences, so they cannot share one bounded Firestore
+ * transaction. Each sequence instead gets the same narrow transaction shape
+ * as thumbnail completion: patch the stored schema-2 projection, recompute
+ * its digest, and move the owner document's matching stamps in the same
+ * commit. Retrying the whole fan-out is safe because unchanged projections do
+ * not write or increment their revision.
+ */
+export async function refreshPublicSequenceOwnerProfile(
+  firestore: Firestore,
+  ownerId: string,
+  profile: PublicSequenceOwnerProfile
+): Promise<RefreshPublicSequenceOwnerProfileResult> {
+  const snapshot = await getDocs(
+    query(
+      collection(firestore, "publicSequences"),
+      where("ownerId", "==", ownerId)
+    )
+  );
+  const sequenceIds = snapshot.docs
+    .filter((document) => {
+      const data = document.data() as Record<string, unknown>;
+      const avatarUnchanged =
+        profile.avatarUrl === undefined
+          ? data["ownerAvatarUrl"] === undefined
+          : data["ownerAvatarUrl"] === profile.avatarUrl;
+      return (
+        data["ownerDisplayName"] !== profile.displayName || !avatarUnchanged
+      );
+    })
+    .map((document) => document.id);
+  let updated = 0;
+  let unchanged = snapshot.docs.length - sequenceIds.length;
+  let skipped = 0;
+
+  for (
+    let index = 0;
+    index < sequenceIds.length;
+    index += PROFILE_PROJECTION_CONCURRENCY
+  ) {
+    const chunk = sequenceIds.slice(
+      index,
+      index + PROFILE_PROJECTION_CONCURRENCY
+    );
+    const results = await Promise.all(
+      chunk.map((sequenceId) =>
+        updatePublicSequenceOwnerProfile(
+          firestore,
+          ownerId,
+          sequenceId,
+          profile
+        )
+      )
+    );
+    for (const result of results) {
+      if (result.status === "updated") updated += 1;
+      if (result.status === "unchanged") unchanged += 1;
+      if (result.status === "absent") skipped += 1;
+    }
+  }
+
+  return { scanned: snapshot.docs.length, updated, unchanged, skipped };
+}
+
+async function updatePublicSequenceOwnerProfile(
+  firestore: Firestore,
+  ownerId: string,
+  sequenceId: string,
+  profile: PublicSequenceOwnerProfile
+): Promise<UpdatePublicSequenceOwnerProfileResult> {
+  const publicRef = doc(firestore, getPublicSequencePath(sequenceId));
+  const ownerRef = doc(firestore, getUserSequencePath(ownerId, sequenceId));
+
+  return runTransaction(firestore, async (tx) => {
+    const publicSnap = await tx.get(publicRef);
+    const ownerSnap = await tx.get(ownerRef);
+    if (!publicSnap.exists() || !ownerSnap.exists()) {
+      return { status: "absent" as const };
+    }
+
+    const data = publicSnap.data() as Record<string, unknown>;
+    const ownerData = ownerSnap.data() as Record<string, unknown>;
+    if (
+      data["ownerId"] !== ownerId ||
+      ownerData["visibility"] !== "public" ||
+      data["publicProjectionSchemaVersion"] !== PUBLIC_PROJECTION_SCHEMA_VERSION
+    ) {
+      return { status: "absent" as const };
+    }
+
+    const storedAvatar = data["ownerAvatarUrl"];
+    const avatarUnchanged =
+      profile.avatarUrl === undefined
+        ? storedAvatar === undefined
+        : storedAvatar === profile.avatarUrl;
+    if (data["ownerDisplayName"] === profile.displayName && avatarUnchanged) {
+      return { status: "unchanged" as const };
+    }
+
+    const patched: Record<string, unknown> = {
+      ...data,
+      ownerDisplayName: profile.displayName,
+    };
+    if (profile.avatarUrl === undefined) {
+      delete patched["ownerAvatarUrl"];
+    } else {
+      patched["ownerAvatarUrl"] = profile.avatarUrl;
+    }
+
+    const digest = await computeStoredProjectionDigest(patched);
+    const revision =
+      ((data["publicProjectionRevision"] as number | undefined) ?? 0) + 1;
+
+    tx.update(publicRef, {
+      ownerDisplayName: profile.displayName,
+      ownerAvatarUrl: profile.avatarUrl ?? deleteField(),
+      updatedAt: serverTimestamp(),
+      publicProjectionDigest: digest,
+      publicProjectionRevision: revision,
+    });
+    tx.update(ownerRef, {
+      publicProjectionDigest: digest,
+      publicProjectionRevision: revision,
+    });
 
     return { status: "updated" as const };
   });

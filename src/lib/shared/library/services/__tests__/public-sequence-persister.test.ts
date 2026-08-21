@@ -10,6 +10,7 @@ const SERVER_TS = { __serverTimestamp: true } as const;
 const DELETE_FIELD = { __deleteField: true } as const;
 
 const mocks = vi.hoisted(() => ({
+  getDocs: vi.fn(),
   getDoc: vi.fn(),
   setDoc: vi.fn(),
   updateDoc: vi.fn(),
@@ -17,9 +18,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("firebase/firestore", () => ({
+  collection: vi.fn((_db: unknown, path: string) => ({ path })),
   doc: vi.fn((_db: unknown, ...segments: string[]) => ({
     path: segments.join("/"),
   })),
+  getDocs: (...args: unknown[]) => mocks.getDocs(...args),
+  query: vi.fn((ref: unknown) => ref),
+  where: vi.fn(() => ({ constraint: true })),
   serverTimestamp: vi.fn(() => SERVER_TS),
   deleteField: vi.fn(() => DELETE_FIELD),
   runTransaction: vi.fn(
@@ -44,6 +49,7 @@ import {
   deleteSequenceCompletely,
   softDeleteSequenceEverywhere,
   readExistingPublicOwnedFields,
+  refreshPublicSequenceOwnerProfile,
 } from "../public-sequence-persister";
 import { computeStoredProjectionDigest } from "../public-sequence-projection";
 
@@ -60,6 +66,100 @@ const FIRESTORE = {} as never;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getDocs.mockResolvedValue({ docs: [] });
+});
+
+describe("refreshPublicSequenceOwnerProfile", () => {
+  const stored = (): Record<string, unknown> => ({
+    id: "seq-1",
+    sourceRef: "users/owner-1/sequences/seq-1",
+    ownerId: "owner-1",
+    ownerDisplayName: "Old Name",
+    ownerAvatarUrl: "old-avatar.png",
+    word: "ABCD",
+    sequenceLength: 4,
+    contentHash: "h".repeat(64),
+    contentHashVersion: 2,
+    publicProjectionSchemaVersion: 2,
+    publicProjectionRevision: 3,
+    publicProjectionDigest: "stale-digest",
+  });
+
+  it("moves profile fields and matching owner stamps in one transaction", async () => {
+    const publicData = stored();
+    mocks.getDocs.mockResolvedValue({
+      docs: [{ id: "seq-1", data: () => publicData }],
+    });
+    primeDocs({
+      "publicSequences/seq-1": { exists: true, data: publicData },
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { visibility: "public" },
+      },
+    });
+
+    const result = await refreshPublicSequenceOwnerProfile(
+      FIRESTORE,
+      "owner-1",
+      { displayName: "New Name", avatarUrl: "new-avatar.png" }
+    );
+
+    expect(result).toEqual({
+      scanned: 1,
+      updated: 1,
+      unchanged: 0,
+      skipped: 0,
+    });
+    const publicPatch = mocks.updateDoc.mock.calls.find(
+      ([ref]) => (ref as { path: string }).path === "publicSequences/seq-1"
+    )![1] as Record<string, unknown>;
+    const expectedDigest = await computeStoredProjectionDigest({
+      ...publicData,
+      ownerDisplayName: "New Name",
+      ownerAvatarUrl: "new-avatar.png",
+    });
+    expect(publicPatch).toMatchObject({
+      ownerDisplayName: "New Name",
+      ownerAvatarUrl: "new-avatar.png",
+      publicProjectionDigest: expectedDigest,
+      publicProjectionRevision: 4,
+    });
+    expect(mocks.updateDoc).toHaveBeenCalledWith(
+      { path: "users/owner-1/sequences/seq-1" },
+      {
+        publicProjectionDigest: expectedDigest,
+        publicProjectionRevision: 4,
+      }
+    );
+  });
+
+  it("does not rewrite a projection whose profile fields are current", async () => {
+    const publicData = stored();
+    mocks.getDocs.mockResolvedValue({
+      docs: [{ id: "seq-1", data: () => publicData }],
+    });
+    primeDocs({
+      "publicSequences/seq-1": { exists: true, data: publicData },
+      "users/owner-1/sequences/seq-1": {
+        exists: true,
+        data: { visibility: "public" },
+      },
+    });
+
+    const result = await refreshPublicSequenceOwnerProfile(
+      FIRESTORE,
+      "owner-1",
+      { displayName: "Old Name", avatarUrl: "old-avatar.png" }
+    );
+
+    expect(result).toEqual({
+      scanned: 1,
+      updated: 0,
+      unchanged: 1,
+      skipped: 0,
+    });
+    expect(mocks.updateDoc).not.toHaveBeenCalled();
+  });
 });
 
 describe("readExistingPublicOwnedFields", () => {

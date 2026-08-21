@@ -22,6 +22,12 @@ const h = vi.hoisted(() => ({
   serverTimestamp: vi.fn(() => ({ __serverTimestamp: true })),
   setDoc: vi.fn(async () => undefined),
   reportErrorTelemetry: vi.fn(async () => undefined),
+  refreshPublicSequenceOwnerProfile: vi.fn(async () => ({
+    scanned: 0,
+    updated: 0,
+    unchanged: 0,
+    skipped: 0,
+  })),
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -58,6 +64,10 @@ vi.mock("$lib/shared/analytics/services/posthog", () => ({
 
 vi.mock("$lib/shared/error/services/error-telemetry-reporter", () => ({
   reportErrorTelemetry: h.reportErrorTelemetry,
+}));
+
+vi.mock("$lib/shared/library/services/public-sequence-persister", () => ({
+  refreshPublicSequenceOwnerProfile: h.refreshPublicSequenceOwnerProfile,
 }));
 
 import { UserDocumentManager } from "$lib/shared/auth/services/user-document-manager";
@@ -210,5 +220,65 @@ describe("UserDocumentManager parent reconstruction", () => {
     // production-profile writes altogether.
     expect(h.setDoc).not.toHaveBeenCalled();
     expect(h.claimUsername).not.toHaveBeenCalled();
+  });
+
+  it("refreshes public sequence projections when sign-in rotates the avatar", async () => {
+    const user = { ...fullUser(), photoURL: "new-avatar" } as User;
+    h.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        displayName: "Matty Mover",
+        photoURL: "old-avatar",
+        username: "matty",
+        usernameLowercase: "matty",
+        sequenceCount: 1,
+      }),
+    });
+
+    await new UserDocumentManager().createOrUpdateUserDocument(user);
+
+    expect(h.refreshPublicSequenceOwnerProfile).toHaveBeenCalledWith(
+      { name: "firestore" },
+      "user-1",
+      { displayName: "Matty Mover", avatarUrl: "new-avatar" }
+    );
+  });
+
+  it("rechecks sequence owners after a prior projection fan-out could have failed", async () => {
+    const user = { ...fullUser(), photoURL: "current-avatar" } as User;
+    h.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({
+        displayName: "Matty Mover",
+        photoURL: "current-avatar",
+        username: "matty",
+        usernameLowercase: "matty",
+        sequenceCount: 1,
+      }),
+    });
+
+    await new UserDocumentManager().createOrUpdateUserDocument(user);
+
+    expect(h.refreshPublicSequenceOwnerProfile).toHaveBeenCalledWith(
+      { name: "firestore" },
+      "user-1",
+      { displayName: "Matty Mover", avatarUrl: "current-avatar" }
+    );
+  });
+
+  it("refreshes public sequence projections after an explicit photo change", async () => {
+    h.getDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ displayName: "Matty Mover", photoURL: "new-avatar" }),
+    });
+    const user = fullUser();
+
+    await new UserDocumentManager().updatePhotoURL(user, "new-avatar");
+
+    expect(h.refreshPublicSequenceOwnerProfile).toHaveBeenCalledWith(
+      { name: "firestore" },
+      "user-1",
+      { displayName: "Matty Mover", avatarUrl: "new-avatar" }
+    );
   });
 });
