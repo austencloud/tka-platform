@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { Popover } from "bits-ui";
   import type { UnifiedPlaybackContext } from "./unified-playback-context";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import { onDestroy, type Snippet } from "svelte";
+  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
 
   const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
@@ -91,6 +93,11 @@
 
   const hasTempo = $derived(playback.bpm !== undefined && playback.onBpmChange !== undefined);
   const hasMode = $derived(playback.playbackMode !== undefined && playback.onPlaybackModeChange !== undefined);
+  const hasAdvancedControls = $derived(
+    hasTempo || hasMode || playback.isLooping !== undefined
+  );
+  let compactControlsOpen = $state(false);
+  let compactTriggerEl: HTMLButtonElement | undefined = $state();
 
   function selectPreset(preset: number) {
     playback.onBpmChange?.(preset);
@@ -249,6 +256,90 @@
       {#if trailing}
         <div class="pill-trailing">{@render trailing()}</div>
       {/if}
+
+      {#if hasAdvancedControls}
+        <!-- A narrow animation pane gets one useful row: transport, scrubber,
+             and a real button for everything less frequent. The same tempo and
+             mode owners render inside the popover, so compact playback does not
+             become a second implementation with different rules. -->
+        <button
+          bind:this={compactTriggerEl}
+          type="button"
+          class="compact-more"
+          aria-label="More playback controls"
+          title="More playback controls"
+          aria-haspopup="dialog"
+          aria-expanded={compactControlsOpen}
+          onclick={(event) => {
+            event.stopPropagation();
+            compactControlsOpen = !compactControlsOpen;
+          }}
+        >
+          <i class="fas fa-ellipsis" aria-hidden="true"></i>
+        </button>
+        <Popover.Root bind:open={compactControlsOpen}>
+          <Popover.Portal>
+            <Popover.Content
+              customAnchor={compactTriggerEl}
+              side="top"
+              align="end"
+              sideOffset={8}
+              collisionPadding={12}
+              class="compact-playback-pop"
+              data-escape-shortcut-local
+              onCloseAutoFocus={(event) => {
+                event.preventDefault();
+                compactTriggerEl?.focus();
+              }}
+            >
+              <div
+                class="compact-playback-panel"
+                role="group"
+                aria-label="Playback settings"
+              >
+                {#if hasTempo}
+                  <section class="compact-section compact-tempo">
+                    <h3>Tempo</h3>
+                    <BpmQuickPopover
+                      bpm={playback.bpm ?? 60}
+                      onBpmChange={(bpm) => playback.onBpmChange?.(bpm)}
+                    />
+                  </section>
+                {/if}
+
+                {#if hasMode}
+                  <section class="compact-section">
+                    <h3>Playback</h3>
+                    <PlaybackModeToggle
+                      playbackMode={playback.playbackMode ?? "continuous"}
+                      isPlaying={playback.isPlaying}
+                      onPlaybackModeChange={(mode) =>
+                        playback.onPlaybackModeChange?.(mode)}
+                      onPlaybackToggle={() => playback.togglePlay()}
+                    />
+                  </section>
+                {/if}
+
+                {#if playback.isLooping !== undefined}
+                  <button
+                    type="button"
+                    class="compact-loop"
+                    class:active={playback.isLooping}
+                    aria-pressed={playback.isLooping}
+                    onclick={() => playback.toggleLoop()}
+                  >
+                    <i class="fas fa-sync" aria-hidden="true"></i>
+                    <span>Loop sequence</span>
+                    <span class="compact-setting-state">
+                      {playback.isLooping ? "On" : "Off"}
+                    </span>
+                  </button>
+                {/if}
+              </div>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      {/if}
     </div>
 
     {#if showBpmPopover && hasTempo}
@@ -287,6 +378,8 @@
     padding: 0;
     box-sizing: border-box;
     position: relative;
+    container-type: inline-size;
+    container-name: playback-transport;
   }
 
   .transport-pill {
@@ -542,6 +635,184 @@
     border-color: rgba(99, 102, 241, 0.6);
   }
 
+  /* Compact transport ---------------------------------------------------
+     A pane can be narrow because the whole device is narrow or because the
+     viewer is split. Container width, not device width, is the useful fact. */
+  .compact-more {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    padding: 0;
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.88);
+    cursor: pointer;
+    flex: 0 0 auto;
+    font-size: 16px;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
+  }
+
+  .compact-more:hover,
+  .compact-more[aria-expanded="true"] {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 24%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 58%,
+      transparent
+    );
+  }
+
+  .compact-more:active {
+    transform: scale(0.94);
+  }
+
+  :global(.compact-playback-pop) {
+    z-index: var(--z-dropdown, 1000);
+    width: min(20rem, calc(100vw - 1.5rem));
+    transform-origin: bottom right;
+  }
+
+  :global(.compact-playback-pop[data-state="open"]) {
+    animation: compactPlaybackIn 170ms
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+
+  .compact-playback-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-height: min(31rem, calc(100vh - 2rem));
+    overflow-y: auto;
+    padding: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 16px;
+    background:
+      linear-gradient(
+        var(--theme-panel-bg, #0c0e16),
+        var(--theme-panel-bg, #0c0e16)
+      ),
+      linear-gradient(
+        var(--theme-panel-bg, #0c0e16),
+        var(--theme-panel-bg, #0c0e16)
+      ),
+      var(--theme-panel-bg, #0c0e16);
+    backdrop-filter: blur(24px) saturate(130%);
+    box-shadow: 0 14px 42px rgba(0, 0, 0, 0.62);
+    overscroll-behavior: contain;
+  }
+
+  .compact-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .compact-section + .compact-section,
+  .compact-loop {
+    padding-top: 12px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .compact-section h3 {
+    margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .compact-tempo :global(.bpm-quick) {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .compact-loop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    margin: 0;
+    background: transparent;
+    color: var(--theme-text, white);
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    cursor: pointer;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .compact-loop i {
+    width: 20px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-align: center;
+  }
+
+  .compact-loop.active i {
+    color: var(--theme-accent, #818cf8);
+  }
+
+  .compact-setting-state {
+    margin-left: auto;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.64));
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes compactPlaybackIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @container playback-transport (max-width: 64rem) {
+    .transport-pill {
+      flex-wrap: nowrap;
+      gap: 8px;
+      padding: 8px 10px;
+    }
+
+    .tempo-group,
+    .pill-mode-slot,
+    .pill-loop,
+    .pill-trailing {
+      display: none;
+    }
+
+    .pill-track {
+      min-width: 0;
+    }
+
+    .compact-more {
+      display: flex;
+    }
+  }
+
   /* ── BPM popover ── */
 
   .bpm-popover {
@@ -612,6 +883,8 @@
   .tempo-adjust:focus-visible,
   .pill-bpm:focus-visible,
   .pill-loop:focus-visible,
+  .compact-more:focus-visible,
+  .compact-loop:focus-visible,
   .bpm-preset:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
@@ -622,16 +895,22 @@
     .pill-loop,
     .pill-bpm,
     .tempo-adjust,
+    .compact-more,
+    .compact-loop,
     .bpm-preset {
       transition: none;
     }
     .bpm-popover {
       animation-duration: 0.01ms;
     }
+    :global(.compact-playback-pop[data-state="open"]) {
+      animation: none;
+    }
     .pill-play:hover,
     .pill-play:active,
     .pill-bpm:active,
-    .tempo-adjust:active {
+    .tempo-adjust:active,
+    .compact-more:active {
       transform: none;
     }
   }

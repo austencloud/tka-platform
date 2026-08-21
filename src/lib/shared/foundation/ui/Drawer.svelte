@@ -22,6 +22,7 @@
   import { FocusTrap } from "./drawer/focus-trap";
   import { SnapPoints, type SnapPointValue } from "./drawer/snap-points";
   import { DrawerEffects } from "./drawer/drawer-effects";
+  import { shouldDeferEscapeShortcut } from "$lib/shared/keyboard/domain/escape-shortcut-target";
   import {
     generateDrawerId,
     registerDrawer,
@@ -501,7 +502,12 @@
    * the cancel event before our handler can preventDefault.
    */
   function handleDialogCancel(event: Event) {
-    if (!closeOnEscape || !isTopDrawer(drawerId)) {
+    if (
+      event.defaultPrevented ||
+      shouldDeferEscapeShortcut(document) ||
+      !closeOnEscape ||
+      !isTopDrawer(drawerId)
+    ) {
       event.preventDefault(); // Don't close if not allowed or not top drawer
       return;
     }
