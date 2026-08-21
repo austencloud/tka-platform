@@ -117,9 +117,8 @@
         limitations.
       </p>
       <p>
-        When you're ready to actually learn, <a href="/learn/staff-spinning-choreography">learn
-        staff choreography</a> walks from your first isolation to written sequences, the
-        <a href="/guide">guide</a> introduces every concept in order, the
+        When you're ready to learn the notation, the <a href="/guide">guide</a>
+        introduces every concept in order, the
         <a href="/guide/codex">Double Staff Codex</a> collects the pictographs
         themselves, and the <a href="/glossary">glossary</a> defines every term used on this
         page.

@@ -456,9 +456,6 @@
       </p>
     </div>
     <div class="resource-row">
-      <a href="/roots/software" class="resource-chip"
-        >Read the history of flow arts software</a
-      >
       <a href="/faq" class="resource-chip">Read the common questions</a>
     </div>
   </section>

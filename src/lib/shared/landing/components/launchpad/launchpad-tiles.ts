@@ -140,14 +140,9 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 	},
 ];
 
-// The homepage already exposes its main routes through the hero, header, tiles,
-// and chips. Endless LOOPs, Poi and TKA, and Double Staff Codex intentionally
-// remain interior-page footer destinations instead of rebuilding that sitemap
-// below the launchpad.
-export const STRIP_LINKS: { label: string; href: string }[] = [
-	{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
-	{ label: "Software Roots", href: "/roots/software" },
-];
+// Keep this manifest available for future secondary destinations without
+// rendering links to pages that are currently withdrawn from production.
+export const STRIP_LINKS: { label: string; href: string }[] = [];
 
 export const HERO_POINTER = {
 	prefix: "New here? Start with ",

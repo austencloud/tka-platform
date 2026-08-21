@@ -231,12 +231,6 @@
           icon: "fa-circle-question",
           desc: "Common questions, answered",
         },
-        {
-          label: "Staff Choreography",
-          href: "/learn/staff-spinning-choreography",
-          icon: "fa-graduation-cap",
-          desc: "Why TKA starts with staves",
-        },
       ],
     },
     {

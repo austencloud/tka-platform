@@ -58,10 +58,6 @@
         { label: "Guide", href: "/guide" },
         { label: "Glossary", href: "/glossary" },
         { label: "FAQ", href: "/faq" },
-        {
-          label: "Staff Choreography",
-          href: "/learn/staff-spinning-choreography",
-        },
         { label: "Double Staff Codex", href: "/guide/codex" },
       ],
     },

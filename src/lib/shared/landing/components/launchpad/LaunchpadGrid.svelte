@@ -198,7 +198,7 @@
       {/each}
     </ul>
 
-    {#if showStrip}
+    {#if showStrip && stripLinks.length > 0}
       <ul class="strip">
         {#each stripLinks as link (link.href)}
           <li>

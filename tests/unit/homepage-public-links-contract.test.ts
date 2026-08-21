@@ -202,13 +202,7 @@ describe("homepage public-links contract", () => {
 			0
 		);
 		expect(occupiedCells).toBe(12);
-		expect(STRIP_LINKS).toEqual([
-			{
-				label: "Staff Choreography",
-				href: "/learn/staff-spinning-choreography",
-			},
-			{ label: "Software Roots", href: "/roots/software" },
-		]);
+		expect(STRIP_LINKS).toEqual([]);
 		expect(hrefEntries.some(({ href }) => href === "/notation/letters")).toBe(
 			false
 		);

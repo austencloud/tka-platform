@@ -219,9 +219,6 @@
         class="resource-chip"
         rel="noopener noreferrer">Seed Fund announcement</a
       >
-      <a href="/roots/software" class="resource-chip"
-        >Read the software history</a
-      >
       <a href="mailto:support@tkaflowarts.com" class="resource-chip"
         >Email support</a
       >
