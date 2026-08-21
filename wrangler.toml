@@ -1,5 +1,7 @@
 name = "tka-platform"
-compatibility_date = "2025-04-01"
+# Native Node crypto is required by firebase-admin service-account signing.
+# 2026-08-04 enables the current Node compatibility runtime for Pages.
+compatibility_date = "2026-08-04"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".svelte-kit/cloudflare"
 
