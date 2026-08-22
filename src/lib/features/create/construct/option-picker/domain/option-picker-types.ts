@@ -1,7 +1,10 @@
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 // ===== Basic State Types =====
-export type OptionPickerState = "loading" | "ready" | "error";
+// "idle" is the pre-load state: no load has been attempted yet, so an empty
+// option list means "nothing fetched", NOT "nothing matches". Consumers must
+// not render an empty/no-results state until a load has actually resolved.
+export type OptionPickerState = "idle" | "loading" | "ready" | "error";
 
 // ===== Sort and Filter Types =====
 export type SortMethod = "type" | "endPosition" | "reversals";

@@ -108,6 +108,16 @@ Delegates all rendering to child components.
   let isSelecting = $state(false);
   let initError = $state<string | null>(null);
 
+  // The grid can only speak truthfully once a load has resolved. Before that,
+  // an empty `preparedOptions` would render as "no pictographs match these
+  // settings" — a confident wrong answer about data we never fetched. Only the
+  // first fill is gated: on later refilters we keep showing the current tiles
+  // rather than blinking a spinner between them.
+  const isAwaitingFirstOptions = $derived(
+    preparedOptions.length === 0 &&
+      (pickerState?.state === "idle" || pickerState?.state === "loading")
+  );
+
   // Internal continuous filter state - initialize with default
   let internalContinuousOnly = $state(false);
 
@@ -334,9 +344,11 @@ Delegates all rendering to child components.
     const _bluePropType = settings.bluePropType;
     const _redPropType = settings.redPropType;
 
-    // Skip while loading - prevents preparing intermediate states when
-    // currentSequence updates before options finish loading
-    if (currentState === "loading") {
+    // Skip until a load has actually resolved. "loading" is mid-flight;
+    // "idle" is before the first load was even dispatched — in both cases an
+    // empty option list says nothing about whether options exist, so holding
+    // the previous frame beats flashing a false "no matches" state.
+    if (currentState === "loading" || currentState === "idle") {
       return;
     }
 
@@ -492,8 +504,8 @@ Delegates all rendering to child components.
     <p>Couldn't start the option picker: {initError}</p>
     <button onclick={initialize}>Retry</button>
   </div>
-{:else if !isReady}
-  <div class="loading">Initializing...</div>
+{:else if !isReady || isAwaitingFirstOptions}
+  <div class="loading">Loading options...</div>
 {:else if pickerState?.error}
   <div class="error" role="alert">
     <p>Error: {pickerState.error}</p>

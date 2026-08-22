@@ -37,7 +37,7 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
   const poiFilter = config.poiFilter ?? ((opts: readonly PictographData[]) => [...opts]);
 
   // Core reactive state
-  let state = $state<OptionPickerState>("ready");
+  let state = $state<OptionPickerState>("idle");
   let options = $state<PictographData[]>([]);
   let error = $state<string | null>(null);
   let sortMethod = $state<SortMethod>("type");
@@ -235,7 +235,9 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
   }
 
   function reset() {
-    state = "ready";
+    // Back to pre-load: options are cleared and nothing is in flight, so this
+    // is "nothing fetched yet", not "a load found nothing".
+    state = "idle";
     options = [];
     error = null;
     sortMethod = "type";
