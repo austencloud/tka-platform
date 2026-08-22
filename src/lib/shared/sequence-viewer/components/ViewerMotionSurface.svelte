@@ -255,16 +255,11 @@
         class="canvas-layer canvas-2d-layer"
         style="opacity:1;pointer-events:auto;"
       >
-        <!-- The 3D pane has always carried the full transport — scrubber, tempo,
-             continuous/step — while 2D showed only a passive progress line, so
-             switching panes changed what the viewer could control. Same transport
-             on both now, play button included: the 3D canvas has no tap handler
-             (orbit controls own the drag), so hiding the button in 2D alone made
-             the two panes look and work like different players. Tapping the 2D
-             canvas still toggles play — that is a shortcut on top of the button,
-             not a replacement for it. The bar is an in-flow row at the bottom of
-             the pane in both panes: it presses the canvas up rather than
-             floating over it, so it never occludes the scene or the glyphs. -->
+        <!-- Focused 2D keeps the full transport. In the phone's split view the
+             card already owns seeking and the canvas owns play/pause, so the
+             duplicate transport disappears and its height returns to the stage.
+             Practice keeps the transport because its read-ahead lane is not a
+             card navigator. -->
         <AnimatorCanvas
           sequenceData={playback.animationState.sequenceData}
           currentStep={playback.currentStep}
@@ -294,7 +289,10 @@
           focused={side === "left" && layout.focusedPane === "animation"}
           suppress2DOverlays={false}
           fillContainer
-          hideProgressBar={side === "left" ? suppressProgress : true}
+          hideProgressBar={side === "left"
+            ? suppressProgress ||
+              (!practiceActive && layout.isMobile && layout.focusedPane === null)
+            : true}
           hideHeader
           tapToToggle={side === "left"}
           hidePlay={false}
