@@ -9,8 +9,6 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { ConversationPreview } from "$lib/shared/messaging/domain/models/conversation-models";
   import { conversationService } from "$lib/shared/messaging/services/conversation-manager";
-  import { messagingService } from "$lib/shared/messaging/services/messenger";
-  import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
   import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
@@ -21,15 +19,17 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import ConversationItem from "./ConversationItem.svelte";
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
+  import { getMessageDeliveryContext } from "../../context/message-delivery-context";
 
   interface Props {
     attachment: PendingMessageAttachment;
     /** Prefilled note. Share intake passes the shared text that was not a code. */
     initialNote?: string;
     /**
-     * The conversations that actually received it, in send order. Plural
-     * because one share can now go to several people; a partial success
-     * reports only the ones that landed.
+     * The conversations that accepted it into their outbox, in queue order.
+     * Plural because one share can now go to several people; a partial success
+     * reports only the durable entries that were created.
      */
     onSent: (conversationIds: string[]) => void;
   }
@@ -37,10 +37,12 @@
   type SelectedUser = {
     id: string;
     displayName: string;
+    username?: string | null;
     avatar?: string;
   };
 
   let { attachment, initialNote = "", onSent }: Props = $props();
+  const messageDeliveryState = getMessageDeliveryContext();
 
   // Naming this `payload` is what keeps the nine existing payload.* references
   // in this file working across the generalization.
@@ -142,7 +144,7 @@
   const destinationName = $derived(
     selectedConversation
       ? conversationName(selectedConversation)
-      : selectedUser?.displayName || ""
+      : getUserIdentityLabels(selectedUser, "").primary
   );
   const destinationDetail = $derived.by(() => {
     if (selectedConversation?.type === "group") {
@@ -177,7 +179,7 @@
     })),
     ...selectedUsers.map((user) => ({
       key: `u:${user.id}`,
-      name: user.displayName,
+      name: getUserIdentityLabels(user).primary,
       avatar: user.avatar,
       isGroup: false,
       remove: () => removeUser(user.id),
@@ -217,7 +219,7 @@
   function conversationName(conversation: ConversationPreview): string {
     return conversation.type === "group"
       ? conversation.groupName || "Unnamed group"
-      : conversation.otherParticipant?.displayName || "Unknown";
+      : getUserIdentityLabels(conversation.otherParticipant, "Unknown").primary;
   }
 
   function isConversationSelected(id: string): boolean {
@@ -249,7 +251,12 @@
     if (!selectedUsers.some((entry) => entry.id === user.uid)) {
       selectedUsers = [
         ...selectedUsers,
-        { id: user.uid, displayName, avatar: user.photoURL },
+        {
+          id: user.uid,
+          displayName,
+          username: user.username,
+          avatar: user.photoURL,
+        },
       ];
     }
     // Clear the field rather than parking the name in it: the chosen person is
@@ -275,45 +282,49 @@
     user: SelectedUser | null
   ): Promise<string> {
     if (conversation) return conversation.id;
-    const created = await conversationService.getOrCreateConversation(user!.id, {
-      silent: true,
-    });
+    const created = await conversationService.getOrCreateConversation(
+      user!.id,
+      {
+        silent: true,
+      }
+    );
     return created.conversation.id;
   }
 
   /**
-   * Deliver the attachment to one already-resolved conversation.
+   * Place the attachment in one already-resolved conversation's outbox.
    *
    * Split out of send() so the multi-recipient loop has one place to call and
    * one place to fail. `sequenceAttachment` is built ONCE by the caller: the
    * short code is a network write, and minting a fresh one per recipient would
-   * scatter N codes for a single share.
+   * scatter N codes for a single share. The raw sequence stays on the outbox
+   * item for its optimistic preview; the prepared attachment prevents the
+   * delivery coordinator from creating another code.
    */
   async function deliverTo(
     conversationId: string,
     sequenceAttachment: ReturnType<typeof buildSequenceMessageAttachment> | null
   ): Promise<void> {
-    if (sequenceAttachment) {
-      await messagingService.sendMessage({
-        conversationId,
-        content: message.trim(),
-        attachments: [sequenceAttachment],
-      });
-      return;
-    }
+    // Each image recipient needs distinct stable IDs. Reusing the IDs on the
+    // share-intake attachment would collapse several destinations into one
+    // outbox row.
+    const queuedAttachment: PendingMessageAttachment =
+      attachment.type === "image"
+        ? {
+            ...attachment,
+            messageId: crypto.randomUUID(),
+            attachmentId: crypto.randomUUID(),
+          }
+        : attachment;
 
-    // The image path is a Storage upload, not a message write:
-    // IMessageImageSender owns finalization and clears staging itself, and it
-    // needs the conversation id up front. Fresh message/attachment ids per
-    // recipient - these identify a MESSAGE, and each recipient gets their own.
-    await getMessageImageSender().send({
+    await messageDeliveryState.queueMessage({
       conversationId,
-      messageId: crypto.randomUUID(),
-      attachmentId: crypto.randomUUID(),
-      file: (attachment as Extract<PendingMessageAttachment, { type: "image" }>)
-        .file,
       content: message.trim(),
-    }).promise;
+      attachment: queuedAttachment,
+      preparedAttachments: sequenceAttachment
+        ? [sequenceAttachment]
+        : undefined,
+    });
   }
 
   async function send(): Promise<void> {
@@ -352,7 +363,7 @@
       // Sequential, not Promise.all. Each image recipient is a full upload of
       // the same bytes; firing four at once on a phone's uplink makes all four
       // slower and starves the rest of the app.
-      const sentTo: string[] = [];
+      const queuedFor: string[] = [];
       const failures: string[] = [];
       let firstError: unknown = null;
 
@@ -363,7 +374,7 @@
         try {
           const id = await resolve();
           await deliverTo(id, sequenceAttachment);
-          sentTo.push(id);
+          queuedFor.push(id);
         } catch (caught) {
           failures.push(label);
           firstError ??= caught;
@@ -385,8 +396,10 @@
       // Nobody got it. Rethrow the UNDERLYING error rather than a summary, so
       // the report keeps the real cause ("permission denied") in
       // technicalDetails instead of a sentence we wrote.
-      if (sentTo.length === 0) {
-        throw firstError ?? new Error("Couldn't send to anyone you picked.");
+      if (queuedFor.length === 0) {
+        throw (
+          firstError ?? new Error("Couldn't queue this for anyone you picked.")
+        );
       }
 
       // Some got it, some did not. Do NOT re-send silently and do NOT discard
@@ -394,13 +407,13 @@
       if (failures.length > 0) {
         toast.error(
           failures.length === 1
-            ? `Sent, but ${failures[0]} didn't get it.`
-            : `Sent to ${sentTo.length}, but ${failures.length} didn't get it.`
+            ? `Queued, but ${failures[0]} couldn't be added.`
+            : `Queued for ${queuedFor.length}, but ${failures.length} couldn't be added.`
         );
       }
 
       hapticService?.trigger("success");
-      onSent(sentTo);
+      onSent(queuedFor);
     } catch (caught) {
       const failure =
         caught instanceof Error ? caught : new Error(String(caught));
@@ -408,8 +421,8 @@
         message:
           getShortCodeShareMessage(caught) ??
           (attachment.type === "image"
-            ? "The image wasn’t sent. Try again."
-            : "The sequence wasn’t sent. Try again."),
+            ? "The image couldn’t be saved to the outbox. Try again."
+            : "The sequence couldn’t be saved to the outbox. Try again."),
         technicalDetails: failure.message,
         error: failure,
         severity: "warning",
@@ -436,163 +449,163 @@
   created IMPLICIT, auto-sized tracks. It looked right and was unsizable.
 -->
 <div class="sheet-shell">
-<div
-  class="send-attachment-sheet"
-  class:destination-selected={hasDestination}
-  aria-busy={phase === "sending"}
->
-  <article class="sequence-preview" aria-label="Attachment being shared">
-    <div class="preview-thumbnail">
-      {#if payload && previewThumbnailUrl && !thumbnailFailed}
-        <img
-          src={previewThumbnailUrl}
-          alt=""
-          class="thumbnail-img"
-          onerror={() => {
-            thumbnailFailed = true;
-          }}
-        />
-      {:else if imagePreviewUrl}
-        <img src={imagePreviewUrl} alt="" class="thumbnail-img" />
-      {:else}
-        <div class="thumbnail-fallback" aria-hidden="true">
-          <i class="fas {image ? 'fa-image' : 'fa-layer-group'}"></i>
-        </div>
-      {/if}
-    </div>
-
-    <div class="preview-info">
-      <span class="preview-kicker">{kicker}</span>
-      <strong class="preview-word">{displayWord || "Attachment"}</strong>
-      <div class="preview-meta">
-        {#if payload?.sequenceStepCount}
-          <span>{payload.sequenceStepCount} steps</span>
-        {/if}
-        {#if payload?.sequenceAuthor}
-          <span>by {payload.sequenceAuthor}</span>
-        {/if}
-      </div>
-    </div>
-  </article>
-
-  <section
-    class="destination-section"
-    aria-labelledby="share-destination-title"
+  <div
+    class="send-attachment-sheet"
+    class:destination-selected={hasDestination}
+    aria-busy={phase === "sending"}
   >
-    <div class="section-heading">
-      <div>
-        <span class="section-kicker">Destination</span>
-        <h3 id="share-destination-title">Send to</h3>
+    <article class="sequence-preview" aria-label="Attachment being shared">
+      <div class="preview-thumbnail">
+        {#if payload && previewThumbnailUrl && !thumbnailFailed}
+          <img
+            src={previewThumbnailUrl}
+            alt=""
+            class="thumbnail-img"
+            onerror={() => {
+              thumbnailFailed = true;
+            }}
+          />
+        {:else if imagePreviewUrl}
+          <img src={imagePreviewUrl} alt="" class="thumbnail-img" />
+        {:else}
+          <div class="thumbnail-fallback" aria-hidden="true">
+            <i class="fas {image ? 'fa-image' : 'fa-layer-group'}"></i>
+          </div>
+        {/if}
       </div>
-    </div>
 
-    <div class="selected-slot" aria-live="polite">
-      {#if destinationCount > 1}
-        <!-- Two or more: chips, so every recipient is visible and individually
+      <div class="preview-info">
+        <span class="preview-kicker">{kicker}</span>
+        <strong class="preview-word">{displayWord || "Attachment"}</strong>
+        <div class="preview-meta">
+          {#if payload?.sequenceStepCount}
+            <span>{payload.sequenceStepCount} steps</span>
+          {/if}
+          {#if payload?.sequenceAuthor}
+            <span>by {payload.sequenceAuthor}</span>
+          {/if}
+        </div>
+      </div>
+    </article>
+
+    <section
+      class="destination-section"
+      aria-labelledby="share-destination-title"
+    >
+      <div class="section-heading">
+        <div>
+          <span class="section-kicker">Destination</span>
+          <h3 id="share-destination-title">Send to</h3>
+        </div>
+      </div>
+
+      <div class="selected-slot" aria-live="polite">
+        {#if destinationCount > 1}
+          <!-- Two or more: chips, so every recipient is visible and individually
              removable. A single "3 people" summary hides WHO, which is the one
              thing worth double-checking before sending a photo. -->
-        <div class="selected-destination selected-many">
-          <div class="destination-chips">
-            {#each destinationChips as chip (chip.key)}
-              <span class="destination-chip">
-                {#if chip.isGroup}
-                  <span class="chip-avatar group-fallback" aria-hidden="true">
+          <div class="selected-destination selected-many">
+            <div class="destination-chips">
+              {#each destinationChips as chip (chip.key)}
+                <span class="destination-chip">
+                  {#if chip.isGroup}
+                    <span class="chip-avatar group-fallback" aria-hidden="true">
+                      <i class="fas fa-user-group"></i>
+                    </span>
+                  {:else}
+                    <RobustAvatar
+                      src={chip.avatar}
+                      name={chip.name}
+                      alt=""
+                      customSize={28}
+                    />
+                  {/if}
+                  <span class="chip-name">{chip.name}</span>
+                  <button
+                    type="button"
+                    class="chip-remove"
+                    onclick={chip.remove}
+                    disabled={phase === "sending"}
+                    aria-label={`Remove ${chip.name}`}
+                  >
+                    <i class="fas fa-xmark" aria-hidden="true"></i>
+                  </button>
+                </span>
+              {/each}
+            </div>
+            <button
+              type="button"
+              class="clear-destination"
+              onclick={clearDestination}
+              disabled={phase === "sending"}
+            >
+              Clear
+            </button>
+          </div>
+        {:else if hasDestination}
+          <div class="selected-destination">
+            <div class="selected-avatar">
+              {#if selectedConversationIsGroup && selectedConversation}
+                {#if selectedConversation.participantPreviews?.length}
+                  <GroupAvatarStack
+                    participants={selectedConversation.participantPreviews}
+                    customAvatar={selectedConversation.groupAvatar}
+                    size={44}
+                    maxVisible={3}
+                  />
+                {:else}
+                  <span class="group-fallback" aria-hidden="true">
                     <i class="fas fa-user-group"></i>
                   </span>
-                {:else}
-                  <RobustAvatar
-                    src={chip.avatar}
-                    name={chip.name}
-                    alt=""
-                    customSize={28}
-                  />
                 {/if}
-                <span class="chip-name">{chip.name}</span>
-                <button
-                  type="button"
-                  class="chip-remove"
-                  onclick={chip.remove}
-                  disabled={phase === "sending"}
-                  aria-label={`Remove ${chip.name}`}
-                >
-                  <i class="fas fa-xmark" aria-hidden="true"></i>
-                </button>
-              </span>
-            {/each}
-          </div>
-          <button
-            type="button"
-            class="clear-destination"
-            onclick={clearDestination}
-            disabled={phase === "sending"}
-          >
-            Clear
-          </button>
-        </div>
-      {:else if hasDestination}
-        <div class="selected-destination">
-          <div class="selected-avatar">
-            {#if selectedConversationIsGroup && selectedConversation}
-              {#if selectedConversation.participantPreviews?.length}
-                <GroupAvatarStack
-                  participants={selectedConversation.participantPreviews}
-                  customAvatar={selectedConversation.groupAvatar}
-                  size={44}
-                  maxVisible={3}
-                />
               {:else}
-                <span class="group-fallback" aria-hidden="true">
-                  <i class="fas fa-user-group"></i>
-                </span>
+                <RobustAvatar
+                  src={selectedConversation?.otherParticipant?.avatar ??
+                    selectedUser?.avatar}
+                  name={destinationName}
+                  alt=""
+                  customSize={44}
+                />
               {/if}
-            {:else}
-              <RobustAvatar
-                src={selectedConversation?.otherParticipant?.avatar ??
-                  selectedUser?.avatar}
-                name={destinationName}
-                alt=""
-                customSize={44}
-              />
-            {/if}
+            </div>
+            <div class="selected-copy">
+              <strong>{destinationName}</strong>
+              <span>{destinationDetail}</span>
+            </div>
+            <button
+              type="button"
+              class="clear-destination"
+              onclick={clearDestination}
+              disabled={phase === "sending"}
+            >
+              Change
+            </button>
           </div>
-          <div class="selected-copy">
-            <strong>{destinationName}</strong>
-            <span>{destinationDetail}</span>
+        {:else}
+          <div class="destination-placeholder">
+            <span class="placeholder-icon" aria-hidden="true">
+              <i class="fas fa-paper-plane"></i>
+            </span>
+            <div>
+              <strong>Choose a conversation</strong>
+              <span>Pick a recent chat or find someone new.</span>
+            </div>
           </div>
-          <button
-            type="button"
-            class="clear-destination"
-            onclick={clearDestination}
-            disabled={phase === "sending"}
-          >
-            Change
-          </button>
-        </div>
-      {:else}
-        <div class="destination-placeholder">
-          <span class="placeholder-icon" aria-hidden="true">
-            <i class="fas fa-paper-plane"></i>
-          </span>
-          <div>
-            <strong>Choose a conversation</strong>
-            <span>Pick a recent chat or find someone new.</span>
-          </div>
-        </div>
-      {/if}
-    </div>
+        {/if}
+      </div>
 
-    <!--
+      <!--
       Rendered unconditionally, then hidden by CSS in the narrow layout once a
       destination is chosen. The wide (two-column) layout keeps the list on
       screen next to the chosen destination, so switching recipient is one tap
       instead of Change-then-repick - and the sheet's column count no longer
       changes on select, which would have moved every element on the page.
     -->
-    <div
-      class="destination-browser"
-      inert={phase === "sending"}
-      aria-label="Share destinations"
-    >
+      <div
+        class="destination-browser"
+        inert={phase === "sending"}
+        aria-label="Share destinations"
+      >
         {#if recentConversations.length > 0}
           <div class="destination-group">
             <h4>Recent conversations</h4>
@@ -620,7 +633,7 @@
               selectedUserId={searchUserId}
               selectedUserDisplay={searchUserDisplay}
               onSelect={selectUser}
-              placeholder="Search by name or email"
+              placeholder="Search by username or name"
               inlineResults
               {excludeUserIds}
               autofocus={recentConversations.length === 0 && !hasDestination}
@@ -628,40 +641,45 @@
           {/key}
         </div>
       </div>
-  </section>
+    </section>
 
-  <div class="message-section">
-    <label for="sequence-share-message">
-      Note <span>Optional</span>
-    </label>
-    <textarea
-      id="sequence-share-message"
-      class="message-input"
-      bind:value={message}
-      placeholder="Add a note"
-      maxlength={MESSAGE_MAX}
-      rows={2}
-      disabled={phase === "sending"}
-    ></textarea>
-    <span
-      class="char-count"
-      class:visible={message.length > MESSAGE_MAX * 0.8}
-      aria-hidden={message.length <= MESSAGE_MAX * 0.8}
+    <div class="message-section">
+      <label for="sequence-share-message">
+        Note <span>Optional</span>
+      </label>
+      <textarea
+        id="sequence-share-message"
+        class="message-input"
+        bind:value={message}
+        placeholder="Add a note"
+        maxlength={MESSAGE_MAX}
+        rows={2}
+        disabled={phase === "sending"}
+      ></textarea>
+      <span
+        class="char-count"
+        class:visible={message.length > MESSAGE_MAX * 0.8}
+        aria-hidden={message.length <= MESSAGE_MAX * 0.8}
+      >
+        {message.length}/{MESSAGE_MAX}
+      </span>
+    </div>
+
+    <button
+      type="button"
+      class="send-button"
+      onclick={send}
+      disabled={!canSend}
     >
-      {message.length}/{MESSAGE_MAX}
-    </span>
+      <i
+        class="fas {phase === 'sending'
+          ? 'fa-spinner fa-spin'
+          : 'fa-paper-plane'}"
+        aria-hidden="true"
+      ></i>
+      <span>{phase === "sending" ? "Sending…" : sendLabel}</span>
+    </button>
   </div>
-
-  <button type="button" class="send-button" onclick={send} disabled={!canSend}>
-    <i
-      class="fas {phase === 'sending'
-        ? 'fa-spinner fa-spin'
-        : 'fa-paper-plane'}"
-      aria-hidden="true"
-    ></i>
-    <span>{phase === "sending" ? "Sending…" : sendLabel}</span>
-  </button>
-</div>
 </div>
 
 <style>

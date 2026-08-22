@@ -18,6 +18,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { buildAdminSessionReplayUrl } from "$lib/features/admin/domain/session-replay-target";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { resolveAdminCreatedSequenceTarget } from "../../domain/admin-created-sequence-target";
 
   interface Props {
     notification: UserNotification;
@@ -28,6 +29,7 @@
 
   // Track if this notification just became read (for animation)
   let justMarkedRead = $state(false);
+  let openingCreatedSequence = $state(false);
 
   // Watch for read state changes to trigger animation
   $effect(() => {
@@ -153,6 +155,84 @@
     }
   }
 
+  /**
+   * Open the exact owner-scoped sequence named by a Pulse notification.
+   * Some new saves are private, so the public sequence route cannot be the
+   * fallback here. Admins can read the owner's library record directly, then
+   * hand the mapped sequence to the same viewer used everywhere else.
+   */
+  async function openAdminCreatedSequence(
+    ownerId: string | undefined,
+    sequenceId: string | undefined,
+    ownerDisplayName: string | undefined
+  ) {
+    if (openingCreatedSequence) return;
+
+    const report = (failure: Error) => {
+      getErrorHandler().showUserError({
+        message: "This saved sequence could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: {
+          module: "inbox",
+          tab: "notifications",
+          action: "openCreatedSequence",
+        },
+      });
+    };
+
+    const target = resolveAdminCreatedSequenceTarget(ownerId, sequenceId);
+    if (!target) {
+      report(new Error("Notification has no saved-sequence destination"));
+      return;
+    }
+
+    openingCreatedSequence = true;
+    try {
+      const [
+        { doc, getDocFromServer },
+        { getFirestoreInstance },
+        { mapDocToSequence },
+        { openSequenceViewer },
+      ] = await Promise.all([
+        import("firebase/firestore"),
+        import("$lib/shared/auth/firebase"),
+        import("$lib/shared/library/services/collection-firestore-mapper"),
+        import("$lib/shared/sequence-viewer/services/sequence-viewer-navigator"),
+      ]);
+
+      const firestore = await getFirestoreInstance();
+      const snapshot = await getDocFromServer(doc(firestore, target.path));
+      if (!snapshot.exists()) {
+        throw new Error("The saved sequence no longer exists");
+      }
+
+      const mapped = mapDocToSequence(snapshot.data(), snapshot.id);
+      const sequence = {
+        ...mapped,
+        ownerId: mapped.ownerId || target.ownerId,
+        ownerDisplayName: mapped.ownerDisplayName || ownerDisplayName,
+      };
+
+      inboxState.close();
+      openSequenceViewer(sequence, {
+        returnPath: window.location.pathname,
+        returnLabel: "Notifications",
+      });
+    } catch (caught) {
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      console.error(
+        "[InboxNotificationItem] Failed to open saved sequence:",
+        failure
+      );
+      report(failure);
+    } finally {
+      openingCreatedSequence = false;
+    }
+  }
+
   // Handle card click - navigate directly (Facebook/Instagram pattern)
   async function handleCardClick() {
     hapticService?.trigger("selection");
@@ -170,7 +250,8 @@
         | "actionUrl"
         | "shortCode"
         | "returnedUserId"
-        | "postHogSessionId",
+        | "postHogSessionId"
+        | "contentType",
         string
       >
     > & { scanLat?: number | null; scanLng?: number | null };
@@ -253,6 +334,16 @@
           });
           inboxState.close();
           await handleModuleChange("choreo_card", "scan-activity");
+        }
+        break;
+
+      case "admin-content-created":
+        if (n["contentType"] === "sequence") {
+          await openAdminCreatedSequence(
+            n["fromUserId"],
+            n["sequenceId"],
+            n["fromUserName"]
+          );
         }
         break;
 

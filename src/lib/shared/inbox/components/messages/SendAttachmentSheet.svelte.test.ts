@@ -13,8 +13,7 @@ const mocks = vi.hoisted(() => ({
   ensureGuestIdentity: vi.fn(),
   getOrCreateConversation: vi.fn(),
   searchUsers: vi.fn(),
-  sendMessage: vi.fn(),
-  sendImage: vi.fn(),
+  queueMessage: vi.fn(),
   showUserError: vi.fn(),
   authDrawerShow: vi.fn(),
   cancelSequenceShare: vi.fn(),
@@ -52,12 +51,8 @@ vi.mock("$lib/shared/messaging/services/conversation-manager", () => ({
   },
 }));
 
-vi.mock("$lib/shared/messaging/services/messenger", () => ({
-  messagingService: { sendMessage: mocks.sendMessage },
-}));
-
-vi.mock("$lib/shared/messaging/get-message-image-sender", () => ({
-  getMessageImageSender: () => ({ send: mocks.sendImage }),
+vi.mock("../../context/message-delivery-context", () => ({
+  getMessageDeliveryContext: () => ({ queueMessage: mocks.queueMessage }),
 }));
 
 vi.mock("$lib/shared/qr/get-short-code-manager", () => ({
@@ -86,7 +81,8 @@ vi.mock("../../state/inbox-state.svelte", () => ({
       _attachment: unknown,
       options: { conversationId?: string } = {}
     ) {
-      mocks.inbox.shareAttachmentConversationId = options.conversationId ?? null;
+      mocks.inbox.shareAttachmentConversationId =
+        options.conversationId ?? null;
     },
   },
 }));
@@ -167,18 +163,8 @@ describe("SendAttachmentSheet", () => {
     mocks.ensureGuestIdentity.mockResolvedValue(undefined);
     mocks.getOrCreateConversation.mockReset();
     mocks.searchUsers.mockReset();
-    mocks.sendMessage.mockReset();
-    mocks.sendMessage.mockResolvedValue({ id: "message-1" });
-    mocks.sendImage.mockReset();
-    mocks.sendImage.mockReturnValue({
-      promise: Promise.resolve({
-        messageId: "message-1",
-        storagePath: "p",
-        width: 1,
-        height: 1,
-      }),
-      cancel: vi.fn(),
-    });
+    mocks.queueMessage.mockReset();
+    mocks.queueMessage.mockResolvedValue("message-1");
     mocks.showUserError.mockReset();
     mocks.authDrawerShow.mockReset();
     mocks.cancelSequenceShare.mockReset();
@@ -203,7 +189,8 @@ describe("SendAttachmentSheet", () => {
     let previewUrl = "";
 
     await vi.waitFor(() => {
-      const preview = document.querySelector<HTMLImageElement>(".thumbnail-img");
+      const preview =
+        document.querySelector<HTMLImageElement>(".thumbnail-img");
       expect(preview?.src).toMatch(/^blob:/);
       previewUrl = preview?.src ?? "";
     });
@@ -231,7 +218,7 @@ describe("SendAttachmentSheet", () => {
     );
     expect(mocks.ensureGuestIdentity).not.toHaveBeenCalled();
     expect(mocks.createShortCode).not.toHaveBeenCalled();
-    expect(mocks.sendMessage).not.toHaveBeenCalled();
+    expect(mocks.queueMessage).not.toHaveBeenCalled();
   });
 
   it("sends an attachment-only message to an existing group", async () => {
@@ -260,7 +247,7 @@ describe("SendAttachmentSheet", () => {
     await page.getByRole("button", { name: "Send sequence" }).click();
 
     await vi.waitFor(() => {
-      expect(mocks.sendMessage).toHaveBeenCalledOnce();
+      expect(mocks.queueMessage).toHaveBeenCalledOnce();
     });
 
     expect(mocks.getOrCreateConversation).not.toHaveBeenCalled();
@@ -268,10 +255,14 @@ describe("SendAttachmentSheet", () => {
       expect.objectContaining({ id: "sequence-1" }),
       { embedSequenceData: true }
     );
-    expect(mocks.sendMessage).toHaveBeenCalledWith({
+    expect(mocks.queueMessage).toHaveBeenCalledWith({
       conversationId: "group-1",
       content: "",
-      attachments: [
+      attachment: expect.objectContaining({
+        type: "sequence",
+        payload: expect.objectContaining({ sequenceId: "sequence-1" }),
+      }),
+      preparedAttachments: [
         expect.objectContaining({
           type: "sequence",
           url: "/q/SHARE1",
@@ -309,13 +300,13 @@ describe("SendAttachmentSheet", () => {
     await page.getByRole("button", { name: "Send sequence" }).click();
 
     await vi.waitFor(() => {
-      expect(mocks.sendMessage).toHaveBeenCalledOnce();
+      expect(mocks.queueMessage).toHaveBeenCalledOnce();
     });
 
     expect(mocks.getOrCreateConversation).toHaveBeenCalledWith("new-user", {
       silent: true,
     });
-    expect(mocks.sendMessage).toHaveBeenCalledWith(
+    expect(mocks.queueMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: "direct-1",
         content: "Try this one",
@@ -326,7 +317,7 @@ describe("SendAttachmentSheet", () => {
 
   it("surfaces a send failure and restores the send action", async () => {
     addGroupConversation();
-    mocks.sendMessage.mockRejectedValue(new Error("permission denied"));
+    mocks.queueMessage.mockRejectedValue(new Error("permission denied"));
 
     render(SendAttachmentSheet, {
       attachment: { type: "sequence", payload: createPayload() },
@@ -339,7 +330,7 @@ describe("SendAttachmentSheet", () => {
     await vi.waitFor(() => {
       expect(mocks.showUserError).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "The sequence wasn’t sent. Try again.",
+          message: "The sequence couldn’t be saved to the outbox. Try again.",
           technicalDetails: "permission denied",
         })
       );
@@ -350,7 +341,7 @@ describe("SendAttachmentSheet", () => {
       .toBeEnabled();
   });
 
-  it("uploads an image attachment through the image sender", async () => {
+  it("queues an image attachment with fresh IDs for its recipient", async () => {
     addGroupConversation();
     const onSent = vi.fn();
 
@@ -371,21 +362,23 @@ describe("SendAttachmentSheet", () => {
     await page.getByRole("button", { name: "Send image" }).click();
 
     await vi.waitFor(() => {
-      expect(mocks.sendImage).toHaveBeenCalledOnce();
+      expect(mocks.queueMessage).toHaveBeenCalledOnce();
     });
 
-    expect(mocks.sendImage).toHaveBeenCalledWith(
+    expect(mocks.queueMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         conversationId: "group-1",
-        // Minted per recipient, not carried from the attachment: with several
-        // recipients each one is a distinct message.
-        messageId: expect.any(String),
-        attachmentId: expect.any(String),
         content: "from the share sheet",
+        attachment: expect.objectContaining({
+          type: "image",
+          messageId: expect.any(String),
+          attachmentId: expect.any(String),
+        }),
       })
     );
-    // An image never goes through the message writer; the sender owns the write.
-    expect(mocks.sendMessage).not.toHaveBeenCalled();
+    const queuedImage = mocks.queueMessage.mock.calls[0]?.[0]?.attachment;
+    expect(queuedImage.messageId).not.toBe("msg-1");
+    expect(queuedImage.attachmentId).not.toBe("att-1");
     expect(onSent).toHaveBeenCalledWith(["group-1"]);
   });
 
@@ -464,16 +457,16 @@ describe("SendAttachmentSheet", () => {
       await page.getByRole("button", { name: "Send sequence to 2" }).click();
 
       await vi.waitFor(() => {
-        expect(mocks.sendMessage).toHaveBeenCalledTimes(2);
+        expect(mocks.queueMessage).toHaveBeenCalledTimes(2);
       });
 
       // One short code for the whole share, not one per recipient.
       expect(mocks.createShortCode).toHaveBeenCalledOnce();
-      expect(mocks.sendMessage).toHaveBeenNthCalledWith(
+      expect(mocks.queueMessage).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({ conversationId: "group-1" })
       );
-      expect(mocks.sendMessage).toHaveBeenNthCalledWith(
+      expect(mocks.queueMessage).toHaveBeenNthCalledWith(
         2,
         expect.objectContaining({ conversationId: "conv_paul" })
       );
@@ -530,8 +523,8 @@ describe("SendAttachmentSheet", () => {
       const onSent = vi.fn();
       // Second delivery only. A partial failure must not discard the share for
       // the people who DID receive it, and must not silently swallow the miss.
-      mocks.sendMessage
-        .mockResolvedValueOnce({ id: "message-1" })
+      mocks.queueMessage
+        .mockResolvedValueOnce("message-1")
         .mockRejectedValueOnce(new Error("permission denied"));
 
       render(SendAttachmentSheet, {
@@ -556,7 +549,7 @@ describe("SendAttachmentSheet", () => {
       addGroupConversation();
       addDirectConversation();
       const onSent = vi.fn();
-      mocks.sendMessage.mockRejectedValue(new Error("permission denied"));
+      mocks.queueMessage.mockRejectedValue(new Error("permission denied"));
 
       render(SendAttachmentSheet, {
         attachment: { type: "sequence", payload: createPayload() },

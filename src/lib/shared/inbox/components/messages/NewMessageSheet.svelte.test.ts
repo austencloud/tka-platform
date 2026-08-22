@@ -36,8 +36,8 @@ describe("NewMessageSheet group creation", () => {
   beforeEach(() => {
     mocks.getFollowing.mockReset();
     mocks.getFollowing.mockResolvedValue([
-      { id: "user-1", displayName: "Alex Rivera" },
-      { id: "user-2", displayName: "Bowie Stone" },
+      { id: "user-1", displayName: "Alex Rivera", username: "alex" },
+      { id: "user-2", displayName: "Bowie Stone", username: "bowie" },
     ]);
     mocks.getOrCreateConversation.mockReset();
     mocks.getOrCreateGroupConversation.mockReset();
@@ -56,14 +56,14 @@ describe("NewMessageSheet group creation", () => {
       onCancel: vi.fn(),
     });
 
-    await page.getByRole("button", { name: "Alex Rivera" }).click();
+    await page.getByRole("button", { name: /Alex Rivera @alex/ }).click();
 
     const groupName = page.getByRole("textbox", { name: /Group name/ });
     const startGroup = page.getByRole("button", { name: "Start Group" });
     await groupName.fill("Fire Jam");
     await expect.element(startGroup).toBeDisabled();
 
-    await page.getByRole("button", { name: "Bowie Stone" }).click();
+    await page.getByRole("button", { name: /Bowie Stone @bowie/ }).click();
     await expect.element(startGroup).toBeEnabled();
     await startGroup.click();
 

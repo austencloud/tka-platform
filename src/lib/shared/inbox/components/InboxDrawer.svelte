@@ -35,6 +35,18 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { createKeyboardInset } from "$lib/shared/mobile/utils/keyboard-inset.svelte";
   import { FULL_BLEED_DRAWER_QUERY } from "../domain/full-bleed-drawer";
+  import { createMessageDeliveryState } from "../state/message-delivery-state.svelte";
+  import { getMessageDeliveryRepository } from "../get-message-delivery-repository";
+  import { getMessageDeliveryCoordinator } from "../get-message-delivery-coordinator";
+  import { setMessageDeliveryContext } from "../context/message-delivery-context";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+
+  const messageDeliveryState = createMessageDeliveryState({
+    repository: getMessageDeliveryRepository(),
+    coordinator: getMessageDeliveryCoordinator(),
+  });
+  setMessageDeliveryContext(messageDeliveryState);
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
 
   // Responsive placement. `isMobile` is really "the drawer owns the screen" —
   // true on any handheld, in either orientation, not merely on narrow ones.
@@ -76,10 +88,49 @@
     mediaQuery = window.matchMedia(FULL_BLEED_DRAWER_QUERY);
     isMobile = mediaQuery.matches;
     mediaQuery.addEventListener("change", handleMediaChange);
+    window.addEventListener("online", messageDeliveryState.handleOnline);
   });
 
   onDestroy(() => {
     mediaQuery?.removeEventListener("change", handleMediaChange);
+    window.removeEventListener("online", messageDeliveryState.handleOnline);
+    messageDeliveryState.dispose();
+  });
+
+  $effect(() => {
+    const userId = authState.user?.uid;
+    if (!userId) {
+      messageDeliveryState.deactivate();
+      return;
+    }
+
+    void messageDeliveryState.activate(userId).catch((error) => {
+      const failure = error instanceof Error ? error : new Error(String(error));
+      getErrorHandler().showUserError({
+        message: "Saved message drafts could not be opened.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: {
+          module: "inbox",
+          tab: "messages",
+          action: "loadMessageDeliveryState",
+        },
+      });
+    });
+  });
+
+  $effect(() => {
+    for (const conversation of inboxState.conversations) {
+      const messageId = conversation.lastMessage?.messageId;
+      if (messageId) {
+        void messageDeliveryState
+          .reconcile(conversation.id, [{ id: messageId }])
+          .catch((error) =>
+            console.error("Failed to reconcile delivered message:", error)
+          );
+      }
+    }
   });
 
   // Handle pending navigation from dashboard widgets
@@ -201,6 +252,11 @@
         messagingService.subscribeToMessages(conversationId, (messages) => {
           inboxState.setMessages(messages);
           inboxState.setLoadingMessages(false);
+          void messageDeliveryState
+            .reconcile(conversationId, messages)
+            .catch((error) =>
+              console.error("Failed to reconcile message outbox:", error)
+            );
         });
 
         // Mark as read
@@ -297,15 +353,20 @@
     }
   }
 
-  // Get thread header title - group name or participant name
-  const threadTitle = $derived(() => {
-    if (!inboxState.selectedConversation) return "Conversation";
+  // The chosen community name leads the thread. The unique @username stays
+  // visible underneath so similar display names cannot be confused.
+  const threadIdentity = $derived.by(() => {
+    if (!inboxState.selectedConversation) {
+      return { primary: "Conversation", secondary: null };
+    }
 
     // Group conversation - use group name
     if (inboxState.selectedConversation.type === "group") {
-      return (
-        inboxState.selectedConversation.groupMetadata?.name || "Group Chat"
-      );
+      return {
+        primary:
+          inboxState.selectedConversation.groupMetadata?.name || "Group Chat",
+        secondary: null,
+      };
     }
 
     // Direct conversation - use other participant's name
@@ -313,7 +374,10 @@
     const otherKey = Object.keys(participantInfo || {}).find(
       (k) => k !== currentUserId
     );
-    return otherKey ? participantInfo[otherKey]?.displayName : "Conversation";
+    return getUserIdentityLabels(
+      otherKey ? participantInfo[otherKey] : undefined,
+      "Conversation"
+    );
   });
 
   // Check if current conversation is a group
@@ -372,7 +436,10 @@
     // Add participant info
     lines.push("", "### Participants");
     for (const [uid, info] of Object.entries(conv.participantInfo || {})) {
-      lines.push(`- **${info.displayName}** (\`${uid}\`)`);
+      const identity = getUserIdentityLabels(info);
+      lines.push(
+        `- **${identity.primary}**${identity.secondary ? ` (${identity.secondary})` : ""} (\`${uid}\`)`
+      );
     }
 
     // Add messages
@@ -510,7 +577,12 @@
         >
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
         </button>
-        <h2 id="inbox-title">{threadTitle()}</h2>
+        <div class="thread-heading">
+          <h2 id="inbox-title">{threadIdentity.primary}</h2>
+          {#if threadIdentity.secondary}
+            <p>{threadIdentity.secondary}</p>
+          {/if}
+        </div>
         {#if isGroupConversation}
           <button
             class="settings-button"
@@ -673,6 +745,28 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .thread-heading {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .thread-heading h2 {
+    flex: none;
+  }
+
+  .thread-heading p {
+    overflow: hidden;
+    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .back-button,

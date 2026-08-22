@@ -18,6 +18,14 @@
   import { getFollowing } from "$lib/shared/community/services/user-repository";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
+
+  interface MessageRecipient {
+    id: string;
+    displayName: string;
+    username?: string | null;
+    avatar?: string;
+  }
 
   interface Props {
     recipientId?: string | null;
@@ -36,9 +44,7 @@
   }: Props = $props();
 
   // Form state
-  let selectedUsers = $state<
-    Array<{ id: string; displayName: string; avatar?: string }>
-  >([]);
+  let selectedUsers = $state<MessageRecipient[]>([]);
   let groupName = $state("");
   let isCreating = $state(false);
   let error = $state<string | null>(null);
@@ -49,9 +55,7 @@
 
   // Suggestions state
   let followedUsers = $state<UserProfile[]>([]);
-  let recentUsers = $state<
-    Array<{ id: string; displayName: string; avatar?: string }>
-  >([]);
+  let recentUsers = $state<MessageRecipient[]>([]);
   let isLoadingSuggestions = $state(true);
 
   // Services
@@ -111,6 +115,7 @@
         .map((conv) => ({
           id: conv.otherParticipant!.userId,
           displayName: conv.otherParticipant!.displayName,
+          username: conv.otherParticipant!.username,
           avatar: conv.otherParticipant!.avatar,
         }))
         .filter((user) => user.id !== currentUserId);
@@ -138,6 +143,7 @@
       {
         id: user.uid,
         displayName: user.displayName || user.username || "Unknown",
+        username: user.username,
         avatar: user.photoURL,
       },
     ];
@@ -150,6 +156,7 @@
   function handleSuggestionClick(
     userId: string,
     displayName: string,
+    username?: string | null,
     avatar?: string
   ) {
     // Check if already selected
@@ -158,7 +165,10 @@
     }
 
     hapticService?.trigger("selection");
-    selectedUsers = [...selectedUsers, { id: userId, displayName, avatar }];
+    selectedUsers = [
+      ...selectedUsers,
+      { id: userId, displayName, username, avatar },
+    ];
     error = null;
   }
 
@@ -256,19 +266,20 @@
           </div>
           <div class="selected-chips">
             {#each selectedUsers as user (user.id)}
+              {@const identity = getUserIdentityLabels(user)}
               <div class="user-chip">
                 <RobustAvatar
                   src={user.avatar}
-                  name={user.displayName}
+                  name={identity.primary}
                   alt=""
                   customSize={24}
                 />
-                <span class="chip-name">{user.displayName}</span>
+                <span class="chip-name">{identity.primary}</span>
                 <button
                   type="button"
                   class="chip-remove"
                   onclick={() => removeUser(user.id)}
-                  aria-label="Remove {user.displayName}"
+                  aria-label="Remove {identity.primary}"
                 >
                   <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
@@ -313,7 +324,7 @@
           selectedUserId={searchUserId}
           selectedUserDisplay={searchUserDisplay}
           onSelect={handleUserSelect}
-          placeholder="Search by name or email..."
+          placeholder="Search by username or name..."
           inlineResults={true}
           {excludeUserIds}
         />
@@ -338,23 +349,30 @@
               </h3>
               <div class="suggestion-grid">
                 {#each availableSuggestions.slice(0, 12) as user (user.id)}
+                  {@const identity = getUserIdentityLabels(user)}
                   <button
                     class="suggestion-card"
                     onclick={() =>
                       handleSuggestionClick(
                         user.id,
                         user.displayName,
+                        user.username,
                         user.avatar
                       )}
                     type="button"
                   >
                     <RobustAvatar
                       src={user.avatar}
-                      name={user.displayName}
+                      name={identity.primary}
                       alt=""
                       customSize={48}
                     />
-                    <span class="suggestion-name">{user.displayName}</span>
+                    <span class="suggestion-name">{identity.primary}</span>
+                    {#if identity.secondary}
+                      <span class="suggestion-account-name">
+                        {identity.secondary}
+                      </span>
+                    {/if}
                   </button>
                 {/each}
               </div>
@@ -370,23 +388,33 @@
               </h3>
               <div class="suggestion-list">
                 {#each availableRecentUsers as user (user.id)}
+                  {@const identity = getUserIdentityLabels(user)}
                   <button
                     class="suggestion-row"
                     onclick={() =>
                       handleSuggestionClick(
                         user.id,
                         user.displayName,
+                        user.username,
                         user.avatar
                       )}
                     type="button"
                   >
                     <RobustAvatar
                       src={user.avatar}
-                      name={user.displayName}
+                      name={identity.primary}
                       alt=""
                       customSize={40}
                     />
-                    <span class="suggestion-row-name">{user.displayName}</span>
+                    <span class="suggestion-row-identity">
+                      <span class="suggestion-row-name">{identity.primary}</span
+                      >
+                      {#if identity.secondary}
+                        <span class="suggestion-row-account-name">
+                          {identity.secondary}
+                        </span>
+                      {/if}
+                    </span>
                     <i class="fas fa-plus suggestion-add" aria-hidden="true"
                     ></i>
                   </button>
@@ -712,6 +740,16 @@
     max-width: 100%;
   }
 
+  .suggestion-account-name {
+    max-width: 100%;
+    overflow: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .suggestion-list {
     display: flex;
     flex-direction: column;
@@ -745,12 +783,30 @@
       color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
-  .suggestion-row-name {
+  .suggestion-row-identity {
     flex: 1;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .suggestion-row-name {
     font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--theme-text);
-    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .suggestion-row-account-name {
+    overflow: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .suggestion-add {

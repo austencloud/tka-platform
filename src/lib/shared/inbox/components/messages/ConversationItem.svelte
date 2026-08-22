@@ -13,6 +13,8 @@
   import GroupAvatarStack from "./GroupAvatarStack.svelte";
   import { formatRelativeTime, truncateText } from "../../utils/format";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { getMessageDeliveryContext } from "../../context/message-delivery-context";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
 
   interface Props {
     conversation: ConversationPreview;
@@ -30,6 +32,7 @@
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
+  const messageDeliveryState = getMessageDeliveryContext();
 
   onMount(() => {
     hapticService = getHapticFeedback();
@@ -42,17 +45,50 @@
 
   // Derived display values based on conversation type
   const isGroup = $derived(conversation.type === "group");
-  const displayName = $derived(
-    isGroup
-      ? conversation.groupName || "Unnamed Group"
-      : conversation.otherParticipant?.displayName || "Unknown"
+  const directIdentity = $derived(
+    getUserIdentityLabels(conversation.otherParticipant, "Unknown")
   );
+  const displayName = $derived(
+    isGroup ? conversation.groupName || "Unnamed Group" : directIdentity.primary
+  );
+  const draft = $derived(
+    selectionMode ? undefined : messageDeliveryState.draftFor(conversation.id)
+  );
+  const draftPreview = $derived.by(() => {
+    if (!draft) return "";
+    const content = draft.content.trim();
+    if (content) return content;
+    switch (draft.attachment?.type) {
+      case "image":
+        return "Image";
+      case "sequence":
+        return "Sequence";
+      case "collection":
+        return "Collection";
+      default:
+        return "Reply";
+    }
+  });
+  const displayTime = $derived(
+    draft ? new Date(draft.updatedAt) : conversation.updatedAt
+  );
+  const accountName = $derived(isGroup ? null : directIdentity.secondary);
+  const relativeTime = $derived(formatRelativeTime(displayTime));
+  const accessiblePreview = $derived.by(() => {
+    if (draft) return `Draft ${draftPreview}`;
+    if (!conversation.lastMessage) return "No messages yet";
+    const sender =
+      isGroup && conversation.lastMessage.senderName
+        ? `${conversation.lastMessage.senderName}: `
+        : "";
+    return `${sender}${conversation.lastMessage.content}`;
+  });
   const ariaLabel = $derived(
     selectionMode
-      ? `${selected ? "Selected. " : ""}Send to ${displayName}${isGroup && conversation.participantCount ? `, ${conversation.participantCount} members` : ""}`
+      ? `${selected ? "Selected. " : ""}Send to ${displayName}${accountName ? `, ${accountName}` : ""}${isGroup && conversation.participantCount ? `, ${conversation.participantCount} members` : ""}`
       : isGroup
-        ? `Group: ${displayName}, ${conversation.participantCount} members${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
-        : `Conversation with ${displayName}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+        ? `Group: ${displayName}, ${conversation.participantCount} members, ${relativeTime}, ${accessiblePreview}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
+        : `Conversation with ${displayName}${accountName ? `, ${accountName}` : ""}, ${relativeTime}, ${accessiblePreview}${conversation.unreadCount > 0 ? `, ${conversation.unreadCount} unread` : ""}`
   );
 </script>
 
@@ -71,7 +107,7 @@
   {/if}
 
   <!-- Avatar -->
-  <div class="avatar-wrapper">
+  <div class="avatar-wrapper" aria-hidden="true">
     {#if isGroup}
       <GroupAvatarStack
         participants={conversation.participantPreviews || []}
@@ -83,7 +119,7 @@
       <RobustAvatar
         src={conversation.otherParticipant.avatar}
         name={conversation.otherParticipant.displayName}
-        alt="Avatar for {conversation.otherParticipant.displayName}"
+        alt="Avatar for {directIdentity.primary}"
         customSize={44}
       />
     {/if}
@@ -95,15 +131,25 @@
   <!-- Content -->
   <div class="content">
     <div class="header">
-      <span class="name">
-        {#if isGroup}
-          <i class="fas fa-users group-icon" aria-hidden="true"></i>
+      <span class="identity">
+        <span class="name">
+          {#if isGroup}
+            <i class="fas fa-users group-icon" aria-hidden="true"></i>
+          {/if}
+          {displayName}
+        </span>
+        {#if accountName}
+          <span class="account-name">{accountName}</span>
         {/if}
-        {displayName}
       </span>
-      <span class="time">{formatRelativeTime(conversation.updatedAt)}</span>
+      <span class="time">{relativeTime}</span>
     </div>
-    {#if conversation.lastMessage}
+    {#if draft}
+      <p class="preview draft-preview">
+        <span class="draft-label">Draft</span>
+        {truncateText(draftPreview, isGroup ? 45 : 60)}
+      </p>
+    {:else if conversation.lastMessage}
       <p class="preview">
         {#if isGroup && conversation.lastMessage.senderName}
           <span class="sender">{conversation.lastMessage.senderName}:</span>
@@ -229,10 +275,18 @@
 
   .header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 2px;
+  }
+
+  .identity {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
   }
 
   .name {
@@ -245,6 +299,15 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .account-name {
+    overflow: hidden;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .group-icon {
@@ -281,6 +344,16 @@
     font-weight: 500;
     color: var(--theme-text);
     margin-right: 4px;
+  }
+
+  .draft-label {
+    margin-right: 4px;
+    color: var(--semantic-error);
+    font-weight: 700;
+  }
+
+  .draft-preview {
+    color: var(--theme-text);
   }
 
   .preview.empty {

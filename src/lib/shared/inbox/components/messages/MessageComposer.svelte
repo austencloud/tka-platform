@@ -9,24 +9,21 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount, untrack } from "svelte";
   import { messagingService } from "../../../messaging/services/messenger";
-  import { toast } from "../../../toast/state/toast-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { inboxState } from "../../state/inbox-state.svelte";
   import ReplyPreview from "./ReplyPreview.svelte";
   import MessageAttachmentPicker from "./MessageAttachmentPicker.svelte";
   import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { buildSequenceMessageAttachment } from "../../domain/message-attachment-builders";
   import { buildSequenceSharePayload } from "../../domain/build-sequence-share-payload";
   import { buildReplyPreview } from "$lib/shared/messaging/domain/message-preview";
-  import { getMessageImageSender } from "$lib/shared/messaging/get-message-image-sender";
-  import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { getShortCodeShareMessage } from "$lib/shared/qr/domain/short-code-error";
   import type {
-    MessageImageSendHandle,
-    MessageImageSendProgress,
-  } from "$lib/shared/messaging/services/contracts/IMessageImageSender";
-  import type { Message } from "$lib/shared/messaging/domain/models/message-models";
+    Message,
+    ReplyPreview as MessageReplyPreview,
+  } from "$lib/shared/messaging/domain/models/message-models";
+  import { getMessageDeliveryContext } from "../../context/message-delivery-context";
+  import { restoreMessageAttachment } from "../../domain/message-delivery-models";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
   interface Props {
     conversationId: string;
@@ -35,37 +32,59 @@
 
   let { conversationId, lastEditableMessage }: Props = $props();
 
+  const messageDeliveryState = getMessageDeliveryContext();
   let messageText = $state("");
   let isSending = $state(false);
   let inputElement: HTMLTextAreaElement | undefined = $state();
-  let sendSuccess = $state(false);
   let pendingAttachment = $state<PendingMessageAttachment | null>(null);
-  let attachmentProgress = $state<MessageImageSendProgress | null>(null);
-  let imageSendHandle: MessageImageSendHandle | null = null;
   let activeEditId: string | null = null;
   let draftBeforeEdit: string | null = null;
   let lastFocusedReplyId: string | null = null;
+  let restoredReplyPreview = $state<MessageReplyPreview | null>(null);
+  let hydratedConversationId = "";
+  let suppressDraftPersistence = false;
+  let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  let draftSaveError = $state<string | null>(null);
+  let draftFailureReported = false;
+  const MAX_INPUT_HEIGHT_PX = 120;
+  const DRAFT_SAVE_DELAY_MS = 300;
 
   // Typing indicator debounce
   let typingTimeout: ReturnType<typeof setTimeout> | null = null;
   const TYPING_DEBOUNCE_MS = 1000;
-
-  // Brief success indicator timer (cleared on unmount to avoid late state writes)
-  let successTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Haptic feedback service
   let hapticService: HapticFeedback | undefined;
 
   onMount(() => {
     hapticService = getHapticFeedback();
+    let resizeFrame: number | null = null;
+    const handleWindowResize = () => {
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        resizeInput();
+      });
+    };
+    window.addEventListener("resize", handleWindowResize);
+
     // Capture at mount time so the cleanup doesn't access a stale/null prop
     const mountedConversationId = conversationId;
 
     // Cleanup typing on unmount
     return () => {
       if (typingTimeout) clearTimeout(typingTimeout);
-      if (successTimeout) clearTimeout(successTimeout);
-      imageSendHandle?.cancel();
+      if (draftSaveTimer) clearTimeout(draftSaveTimer);
+      if (resizeFrame !== null) cancelAnimationFrame(resizeFrame);
+      window.removeEventListener("resize", handleWindowResize);
+      if (
+        !inboxState.isEditing &&
+        messageDeliveryState.ready &&
+        messageDeliveryState.activeUserId &&
+        hydratedConversationId === conversationId
+      ) {
+        void persistCurrentDraft();
+      }
       if (mountedConversationId) {
         messagingService
           .setTyping(mountedConversationId, false)
@@ -77,7 +96,13 @@
   function resizeInput(): void {
     if (!inputElement) return;
     inputElement.style.height = "auto";
-    inputElement.style.height = Math.min(inputElement.scrollHeight, 120) + "px";
+    const borderHeight = inputElement.offsetHeight - inputElement.clientHeight;
+    const naturalHeight = inputElement.scrollHeight + borderHeight;
+
+    inputElement.style.height =
+      Math.min(naturalHeight, MAX_INPUT_HEIGHT_PX) + "px";
+    inputElement.style.overflowY =
+      naturalHeight > MAX_INPUT_HEIGHT_PX ? "auto" : "hidden";
   }
 
   function focusInputAtEnd(): void {
@@ -90,8 +115,104 @@
   const replyPreview = $derived(
     inboxState.replyToMessage
       ? buildReplyPreview(inboxState.replyToMessage)
-      : null
+      : restoredReplyPreview
   );
+
+  $effect(() => {
+    if (inboxState.replyToMessage) restoredReplyPreview = null;
+  });
+
+  // A thread does not become editable until its device-local draft has been
+  // read. That small gate prevents fast typing from being overwritten by a
+  // draft that finishes loading a moment later.
+  $effect(() => {
+    if (!messageDeliveryState.ready || !conversationId) return;
+    if (hydratedConversationId === conversationId) return;
+
+    const draft = messageDeliveryState.draftFor(conversationId);
+    suppressDraftPersistence = true;
+    hydratedConversationId = conversationId;
+    messageText = draft?.content ?? "";
+    pendingAttachment = draft?.attachment
+      ? restoreMessageAttachment(draft.attachment)
+      : null;
+    restoredReplyPreview = draft?.replyTo ?? null;
+    draftSaveError = null;
+
+    const hydrationTimer = setTimeout(() => {
+      suppressDraftPersistence = false;
+      resizeInput();
+    }, 0);
+    return () => clearTimeout(hydrationTimer);
+  });
+
+  $effect(() => {
+    const content = messageText;
+    const attachment = pendingAttachment;
+    const replyTo = replyPreview;
+    const editing = inboxState.isEditing;
+    const ready = messageDeliveryState.ready;
+    const activeConversationId = conversationId;
+
+    if (
+      !ready ||
+      editing ||
+      suppressDraftPersistence ||
+      hydratedConversationId !== activeConversationId
+    ) {
+      return;
+    }
+
+    if (draftSaveTimer) clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(() => {
+      draftSaveTimer = null;
+      void saveDraftSnapshot(content, replyTo, attachment);
+    }, DRAFT_SAVE_DELAY_MS);
+  });
+
+  async function saveDraftSnapshot(
+    content: string,
+    replyTo: MessageReplyPreview | null,
+    attachment: PendingMessageAttachment | null
+  ): Promise<void> {
+    try {
+      await messageDeliveryState.saveDraft(conversationId, {
+        content,
+        replyTo: replyTo ?? undefined,
+        attachment: attachment ?? undefined,
+      });
+      draftSaveError = null;
+      draftFailureReported = false;
+    } catch (error) {
+      draftSaveError = "Draft not saved";
+      if (draftFailureReported) return;
+      draftFailureReported = true;
+      showComposerFailure(
+        "This draft could not be saved on this device.",
+        error,
+        "saveMessageDraft"
+      );
+    }
+  }
+
+  async function persistCurrentDraft(): Promise<void> {
+    return saveDraftSnapshot(messageText, replyPreview, pendingAttachment);
+  }
+
+  function showComposerFailure(
+    message: string,
+    error: unknown,
+    action: string
+  ): void {
+    const failure = error instanceof Error ? error : new Error(String(error));
+    getErrorHandler().showUserError({
+      message,
+      technicalDetails: failure.message,
+      error: failure,
+      severity: "error",
+      context: { module: "inbox", tab: "messages", action },
+    });
+  }
 
   // Starting a reply should be one action, not "choose Reply, then find the
   // composer." The draft stays exactly where it was and receives focus.
@@ -173,12 +294,16 @@
       }
       if (inboxState.isReplying) {
         event.preventDefault();
-        inboxState.clearReplyTo();
+        dismissReply();
+        return;
+      }
+      if (restoredReplyPreview) {
+        event.preventDefault();
+        dismissReply();
         return;
       }
       if (pendingAttachment) {
         pendingAttachment = null;
-        attachmentProgress = null;
         return;
       }
     }
@@ -189,7 +314,7 @@
       event.key === "ArrowUp" &&
       messageText.length === 0 &&
       !inboxState.isEditing &&
-      !inboxState.isReplying &&
+      !isReplying &&
       !pendingAttachment &&
       lastEditableMessage
     ) {
@@ -211,7 +336,12 @@
 
   async function sendMessage() {
     const text = messageText.trim();
-    if ((!text && !pendingAttachment) || isSending) return;
+    if (
+      (!text && !pendingAttachment) ||
+      isSending ||
+      !messageDeliveryState.ready
+    )
+      return;
 
     hapticService?.trigger("selection");
 
@@ -225,65 +355,38 @@
 
     isSending = true;
     try {
-      if (attachment?.type === "image") {
-        imageSendHandle = getMessageImageSender().send({
-          conversationId,
-          messageId: attachment.messageId,
-          attachmentId: attachment.attachmentId,
-          file: attachment.file,
-          content: text,
-          replyTo,
-          onProgress: (progress) => {
-            attachmentProgress = progress;
-          },
-        });
-        await imageSendHandle.promise;
-      } else {
-        const sequenceAttachment =
-          attachment?.type === "sequence"
-            ? buildSequenceMessageAttachment(
-                attachment.payload.sequence,
-                (
-                  await getShortCodeManager().createShortCode(
-                    attachment.payload.sequence,
-                    { embedSequenceData: true }
-                  )
-                ).code
-              )
-            : undefined;
-
-        await messagingService.sendMessage({
-          conversationId,
-          content: text,
-          attachments: sequenceAttachment ? [sequenceAttachment] : undefined,
-          replyTo,
-        });
+      if (draftSaveTimer) {
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = null;
       }
+      await messageDeliveryState.queueMessage({
+        conversationId,
+        content: text,
+        attachment: attachment ?? undefined,
+        replyTo,
+      });
 
+      suppressDraftPersistence = true;
       messageText = "";
       pendingAttachment = null;
-      attachmentProgress = null;
       inboxState.clearReplyTo();
-      if (inputElement) inputElement.style.height = "auto";
-
-      // Show brief success indicator with haptic feedback
-      hapticService?.trigger("success");
-      sendSuccess = true;
-      if (successTimeout) clearTimeout(successTimeout);
-      successTimeout = setTimeout(() => {
-        sendSuccess = false;
-      }, 1500);
+      restoredReplyPreview = null;
+      draftSaveError = null;
+      if (inputElement) {
+        inputElement.style.height = "auto";
+        inputElement.style.overflowY = "hidden";
+      }
+      setTimeout(() => {
+        suppressDraftPersistence = false;
+      }, 0);
     } catch (error) {
       console.error("Failed to send message:", error);
-
-      // Show error toast
-      toast.error(
-        getShortCodeShareMessage(error) ??
-          "Failed to send message. Please try again."
+      showComposerFailure(
+        "This message could not be placed in the outbox. Your draft is still here.",
+        error,
+        "queueMessage"
       );
     } finally {
-      imageSendHandle = null;
-      attachmentProgress = null;
       isSending = false;
     }
   }
@@ -295,7 +398,6 @@
       messageId: crypto.randomUUID(),
       attachmentId: crypto.randomUUID(),
     };
-    attachmentProgress = null;
   }
 
   function selectSequence(sequence: SequenceData) {
@@ -305,13 +407,11 @@
       type: "sequence",
       payload: buildSequenceSharePayload(sequence),
     };
-    attachmentProgress = null;
   }
 
   function removeAttachment() {
     if (isSending) return;
     pendingAttachment = null;
-    attachmentProgress = null;
   }
 
   async function saveEdit() {
@@ -339,15 +439,13 @@
 
       hapticService?.trigger("success");
       inboxState.clearEditingMessage();
-
-      sendSuccess = true;
-      if (successTimeout) clearTimeout(successTimeout);
-      successTimeout = setTimeout(() => {
-        sendSuccess = false;
-      }, 1500);
     } catch (error) {
       console.error("Failed to edit message:", error);
-      toast.error("Failed to save changes. Please try again.");
+      showComposerFailure(
+        "These changes could not be saved.",
+        error,
+        "editMessage"
+      );
     } finally {
       isSending = false;
     }
@@ -357,11 +455,16 @@
     inboxState.clearEditingMessage();
   }
 
+  function dismissReply() {
+    inboxState.clearReplyTo();
+    restoredReplyPreview = null;
+  }
+
   // Derive button state
   const isEditing = $derived(inboxState.isEditing);
-  const isReplying = $derived(inboxState.isReplying);
+  const isReplying = $derived(replyPreview !== null);
   const canSend = $derived.by(() => {
-    if (isSending) return false;
+    if (isSending || !messageDeliveryState.ready) return false;
 
     const text = messageText.trim();
     if (!isEditing) {
@@ -376,12 +479,12 @@
 
 <div class="message-composer" class:editing={isEditing}>
   <!-- Reply preview strip -->
-  {#if isReplying && replyPreview}
+  {#if isReplying && replyPreview && !isEditing}
     <div class="reply-strip">
       <ReplyPreview
         reply={replyPreview}
         domId="message-reply-context"
-        onDismiss={() => inboxState.clearReplyTo()}
+        onDismiss={dismissReply}
       />
     </div>
   {/if}
@@ -407,7 +510,7 @@
       <MessageAttachmentPicker
         attachment={pendingAttachment}
         disabled={isSending}
-        progress={attachmentProgress}
+        progress={null}
         onImageSelected={selectImage}
         onSequenceSelected={selectSequence}
         onRemove={removeAttachment}
@@ -419,31 +522,33 @@
       name="message"
       oninput={handleInput}
       onkeydown={handleKeydown}
-      placeholder={isEditing ? "Edit your message..." : "Type a message..."}
+      placeholder={!messageDeliveryState.ready
+        ? "Restoring draft..."
+        : isEditing
+          ? "Edit your message..."
+          : "Type a message..."}
       rows="1"
       maxlength={2000}
-      disabled={isSending}
+      spellcheck="true"
+      disabled={isSending || !messageDeliveryState.ready}
       aria-label={isEditing ? "Edit message" : "Message input"}
       aria-describedby={isReplying ? "message-reply-context" : undefined}
     ></textarea>
     <button
       data-save-shortcut={isEditing ? "" : undefined}
       class="send-button"
-      class:success={sendSuccess}
       onclick={isEditing ? saveEdit : sendMessage}
       disabled={!canSend}
       aria-label={isSending
-        ? "Sending..."
-        : sendSuccess
-          ? "Sent"
-          : isEditing
-            ? "Save changes"
-            : "Send message"}
+        ? isEditing
+          ? "Saving changes..."
+          : "Saving message to outbox..."
+        : isEditing
+          ? "Save changes"
+          : "Send message"}
     >
       {#if isSending}
         <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-      {:else if sendSuccess}
-        <i class="fas fa-check" aria-hidden="true"></i>
       {:else if isEditing}
         <i class="fas fa-check" aria-hidden="true"></i>
       {:else}
@@ -451,6 +556,12 @@
       {/if}
     </button>
   </div>
+  {#if draftSaveError}
+    <p class="draft-save-error" role="status">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      {draftSaveError}
+    </p>
+  {/if}
 </div>
 
 <style>
@@ -537,6 +648,7 @@
     font-size: var(--font-size-base);
     line-height: 1.4;
     resize: none;
+    overflow-y: hidden;
     outline: none;
     transition:
       border-color 0.2s ease,
@@ -620,23 +732,6 @@
     cursor: not-allowed;
   }
 
-  .send-button.success {
-    background: var(--semantic-success, var(--semantic-success));
-    animation: successPop var(--duration-emphasis) ease;
-  }
-
-  @keyframes successPop {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.15);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
   .send-button i {
     font-size: var(--font-size-base);
     transition: transform var(--duration-normal) ease;
@@ -646,20 +741,13 @@
     transform: translateX(1px);
   }
 
-  .send-button.success i {
-    animation: checkPop var(--duration-emphasis) ease;
-  }
-
-  @keyframes checkPop {
-    0% {
-      transform: scale(0);
-    }
-    50% {
-      transform: scale(1.2);
-    }
-    100% {
-      transform: scale(1);
-    }
+  .draft-save-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0 52px;
+    color: var(--semantic-error);
+    font-size: var(--font-size-compact, 12px);
   }
 
   /* Reduced motion */

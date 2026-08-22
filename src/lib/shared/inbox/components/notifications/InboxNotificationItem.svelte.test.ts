@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   setNotificationTargetFeedback: vi.fn(),
   setScanNotificationTarget: vi.fn(),
   showUserError: vi.fn(),
+  getFirestoreInstance: vi.fn(),
+  getDocFromServer: vi.fn(),
+  mapDocToSequence: vi.fn(),
+  openSequenceViewer: vi.fn(),
 }));
 
 vi.mock("$app/navigation", () => ({
@@ -28,6 +32,24 @@ vi.mock("$lib/shared/application/get-haptic-feedback", () => ({
 vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
   authState: { effectiveUserId: "admin-user" },
 }));
+
+vi.mock("$lib/shared/auth/firebase", () => ({
+  getFirestoreInstance: mocks.getFirestoreInstance,
+}));
+
+vi.mock("firebase/firestore", () => ({
+  doc: (_firestore: unknown, path: string) => ({ path }),
+  getDocFromServer: mocks.getDocFromServer,
+}));
+
+vi.mock("$lib/shared/library/services/collection-firestore-mapper", () => ({
+  mapDocToSequence: mocks.mapDocToSequence,
+}));
+
+vi.mock(
+  "$lib/shared/sequence-viewer/services/sequence-viewer-navigator",
+  () => ({ openSequenceViewer: mocks.openSequenceViewer })
+);
 
 vi.mock(
   "$lib/shared/navigation-coordinator/navigation-coordinator.svelte",
@@ -54,7 +76,7 @@ vi.mock("../../state/inbox-state.svelte", () => ({
   },
 }));
 
-describe("InboxNotificationItem returning-user navigation", () => {
+describe("InboxNotificationItem navigation", () => {
   beforeEach(() => {
     mocks.closeInbox.mockReset();
     mocks.goto.mockReset();
@@ -62,6 +84,11 @@ describe("InboxNotificationItem returning-user navigation", () => {
     mocks.handleModuleChange.mockReset();
     mocks.handleModuleChange.mockResolvedValue(undefined);
     mocks.showUserError.mockReset();
+    mocks.getFirestoreInstance.mockReset();
+    mocks.getFirestoreInstance.mockResolvedValue({ kind: "firestore" });
+    mocks.getDocFromServer.mockReset();
+    mocks.mapDocToSequence.mockReset();
+    mocks.openSequenceViewer.mockReset();
   });
 
   it("opens the user activity page when an older live payload only has fromUserId", async () => {
@@ -91,6 +118,59 @@ describe("InboxNotificationItem returning-user navigation", () => {
     expect(mocks.handleModuleChange).toHaveBeenCalledWith("admin", "users", {
       skipHistory: true,
     });
+    expect(mocks.showUserError).not.toHaveBeenCalled();
+  });
+
+  it("opens an admin content notification from the owner's private library", async () => {
+    const notification = {
+      id: "created-1",
+      userId: "admin-user",
+      type: "admin-content-created",
+      message: 'Handsome_banana saved "ABC"',
+      createdAt: new Date("2026-08-20T14:00:00.000Z"),
+      read: true,
+      fromUserId: "creator-1",
+      fromUserName: "Handsome_banana",
+      contentType: "sequence",
+      sequenceId: "sequence-1",
+      word: "ABC",
+    } satisfies UserNotification;
+    const mappedSequence = {
+      id: "sequence-1",
+      word: "ABC",
+      steps: [],
+    };
+    mocks.getDocFromServer.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ word: "ABC", visibility: "private" }),
+      id: "sequence-1",
+    });
+    mocks.mapDocToSequence.mockReturnValue(mappedSequence);
+
+    render(InboxNotificationItem, { notification });
+
+    await page
+      .getByRole("button", { name: 'Handsome_banana saved "ABC"' })
+      .click();
+
+    await vi.waitFor(() => {
+      expect(mocks.getDocFromServer).toHaveBeenCalledWith({
+        path: "users/creator-1/sequences/sequence-1",
+      });
+    });
+    expect(mocks.openSequenceViewer).toHaveBeenCalledWith(
+      {
+        ...mappedSequence,
+        ownerId: "creator-1",
+        ownerDisplayName: "Handsome_banana",
+      },
+      {
+        returnPath: window.location.pathname,
+        returnLabel: "Notifications",
+      }
+    );
+    expect(mocks.closeInbox).toHaveBeenCalledOnce();
+    expect(mocks.goto).not.toHaveBeenCalled();
     expect(mocks.showUserError).not.toHaveBeenCalled();
   });
 });

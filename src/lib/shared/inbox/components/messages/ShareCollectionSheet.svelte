@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import type { PendingMessageAttachment } from "../../domain/pending-message-attachment";
   import { inboxState } from "../../state/inbox-state.svelte";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
 
   interface Props {
     attachment: Extract<PendingMessageAttachment, { type: "collection" }>;
@@ -24,6 +25,7 @@
   interface SelectedPerson {
     id: string;
     displayName: string;
+    username?: string | null;
     avatar?: string;
     conversationId?: string;
   }
@@ -79,6 +81,7 @@
       people.push({
         id: person.id,
         displayName: person.displayName || "Unknown",
+        username: person.username,
         avatar: person.avatar,
         conversationId: conversation.id,
       });
@@ -137,6 +140,7 @@
       {
         id: user.uid,
         displayName: user.displayName || user.username || "Unknown",
+        username: user.username,
         avatar: user.photoURL,
       },
     ];
@@ -305,7 +309,7 @@
     {#key searchResetKey}
       <UserSearchInput
         onSelect={selectSearchResult}
-        placeholder="Search by name or email"
+        placeholder="Search by username or name"
         inlineResults
         {excludeUserIds}
         disabled={phase === "sending"}
@@ -315,20 +319,21 @@
     {#if selectedPeople.length > 0}
       <div class="selected-people" aria-label="Selected people">
         {#each selectedPeople as person (person.id)}
+          {@const identity = getUserIdentityLabels(person)}
           <button
             class="person-chip"
             type="button"
             onclick={() => togglePerson(person)}
             disabled={phase === "sending"}
-            aria-label={`Remove ${person.displayName}`}
+            aria-label={`Remove ${identity.primary}`}
           >
             <RobustAvatar
               src={person.avatar}
-              name={person.displayName}
+              name={identity.primary}
               alt=""
               customSize={28}
             />
-            <span>{person.displayName}</span>
+            <span>{identity.primary}</span>
             <i class="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         {/each}
@@ -340,6 +345,7 @@
         <span class="field-label">Recent</span>
         <div class="recent-list">
           {#each recentPeople as person (person.id)}
+            {@const identity = getUserIdentityLabels(person)}
             <button
               type="button"
               class="recent-person"
@@ -347,11 +353,11 @@
             >
               <RobustAvatar
                 src={person.avatar}
-                name={person.displayName}
+                name={identity.primary}
                 alt=""
                 customSize={36}
               />
-              <span>{person.displayName}</span>
+              <span>{identity.primary}</span>
               <i class="fa-solid fa-plus" aria-hidden="true"></i>
             </button>
           {/each}

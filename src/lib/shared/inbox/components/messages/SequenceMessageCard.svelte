@@ -28,6 +28,7 @@
     playbackActive?: boolean;
     playbackMounted?: boolean;
     onRequestPlayback?: () => void;
+    localSequence?: SequenceData;
   }
 
   let {
@@ -36,6 +37,7 @@
     playbackActive = true,
     playbackMounted = playbackActive,
     onRequestPlayback,
+    localSequence,
   }: Props = $props();
 
   // We don't pre-check if sequence exists - sequences can be in publicSequences OR user libraries
@@ -76,6 +78,7 @@
   });
 
   async function loadPreviewSequence(): Promise<SequenceData | null> {
+    if (localSequence) return localSequence;
     let payload = await resolvePreviewMetadata();
     if (!payload) {
       // Inbox messages can render before the authenticated Firestore stream is
@@ -139,7 +142,9 @@
 
     try {
       const sequence =
-        resolvedPreview?.sequence ?? (await loadPreviewSequence());
+        localSequence ??
+        resolvedPreview?.sequence ??
+        (await loadPreviewSequence());
       if (!sequence) {
         isDeleted = true;
         return;

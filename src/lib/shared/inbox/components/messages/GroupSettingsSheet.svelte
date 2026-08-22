@@ -18,6 +18,7 @@
   import UserSearchInput from "$lib/shared/user-search/UserSearchInput.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
 
   interface Props {
     conversation: Conversation;
@@ -72,7 +73,9 @@
     return info.sort((a, b) => {
       if (a.isAdmin && !b.isAdmin) return -1;
       if (!a.isAdmin && b.isAdmin) return 1;
-      return a.displayName.localeCompare(b.displayName);
+      return getUserIdentityLabels(a).primary.localeCompare(
+        getUserIdentityLabels(b).primary
+      );
     });
   });
 
@@ -198,7 +201,12 @@
 
 <div class="group-settings">
   <div class="header">
-    <button type="button" class="back-btn" onclick={onClose} aria-label="Close settings">
+    <button
+      type="button"
+      class="back-btn"
+      onclick={onClose}
+      aria-label="Close settings"
+    >
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
     </button>
     <h2>Group Settings</h2>
@@ -275,7 +283,7 @@
           selectedUserId={searchUserId}
           selectedUserDisplay={searchUserDisplay}
           onSelect={handleAddMember}
-          placeholder="Add member by name or email..."
+          placeholder="Add member by username or name..."
           inlineResults={true}
           {excludeUserIds}
         />
@@ -291,20 +299,24 @@
     <!-- Member List -->
     <div class="member-list">
       {#each participants as member (member.userId)}
+        {@const identity = getUserIdentityLabels(member)}
         <div class="member-row">
           <RobustAvatar
             src={member.avatar}
-            name={member.displayName}
+            name={identity.primary}
             alt=""
             customSize={40}
           />
           <div class="member-info">
             <span class="member-name">
-              {member.displayName}
+              {identity.primary}
               {#if member.userId === currentUserId}
                 <span class="you-badge">(You)</span>
               {/if}
             </span>
+            {#if identity.secondary}
+              <span class="member-account-name">{identity.secondary}</span>
+            {/if}
             {#if member.isAdmin}
               <span class="admin-badge">Admin</span>
             {/if}
@@ -571,6 +583,11 @@
     font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--theme-text);
+  }
+
+  .member-account-name {
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact);
   }
 
   .you-badge {

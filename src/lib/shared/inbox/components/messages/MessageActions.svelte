@@ -19,6 +19,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
+  import MessageActionSheet from "./MessageActionSheet.svelte";
 
   const LONG_PRESS_MS = 400;
   const REPLY_SWIPE_THRESHOLD = 56;
@@ -27,16 +28,25 @@
   const REPLY_SWIPE_VELOCITY = 0.45;
   const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "👎"];
 
-  let { message, isOwn, children } = $props<{
+  let {
+    message,
+    isOwn,
+    actionsEnabled = true,
+    children,
+  } = $props<{
     message: Message;
     isOwn: boolean;
+    actionsEnabled?: boolean;
     children: Snippet;
   }>();
 
   let showReactions = $state(false);
   let showMoreMenu = $state(false);
+  let showTouchSheet = $state(false);
+  let renderTouchSheet = $state(false);
   let showDeleteConfirm = $state(false);
   let menuOpensAbove = $state(false);
+  let menuShiftY = $state(0);
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let wrapperEl: HTMLDivElement | undefined = $state();
   let moreButtonEl: HTMLButtonElement | undefined = $state();
@@ -54,6 +64,8 @@
   let isSwiping = $state(false);
   let replyThresholdCrossed = false;
   let suppressNextClick = false;
+  let suppressClickTimer: ReturnType<typeof setTimeout> | null = null;
+  let touchSheetUnmountTimer: ReturnType<typeof setTimeout> | null = null;
 
   let hapticService: HapticFeedback | undefined;
 
@@ -74,6 +86,8 @@
 
     return () => {
       if (longPressTimer) clearTimeout(longPressTimer);
+      if (suppressClickTimer) clearTimeout(suppressClickTimer);
+      if (touchSheetUnmountTimer) clearTimeout(touchSheetUnmountTimer);
       cancelAnimationFrame(positionFrame);
       resizeObserver.disconnect();
     };
@@ -82,7 +96,7 @@
   // Direct DOM click listener - bypasses Svelte 5 event delegation
   // which doesn't reliably fire inside <dialog> elements opened with .show()
   $effect(() => {
-    if (!wrapperEl) return;
+    if (!wrapperEl || !actionsEnabled) return;
     const handler = (e: MouseEvent) => {
       handleClick(e);
     };
@@ -96,8 +110,8 @@
   const isAuthenticated = $derived(
     authState.isAuthenticated && !authState.loading
   );
-  const canEdit = $derived(isOwn && !message.isDeleted);
-  const canDelete = $derived(isOwn && !message.isDeleted);
+  const canEdit = $derived(actionsEnabled && isOwn && !message.isDeleted);
+  const canDelete = $derived(actionsEnabled && isOwn && !message.isDeleted);
   const messageActionLabel = $derived(
     isOwn
       ? "Actions for your message"
@@ -110,14 +124,72 @@
     Math.min(32, Math.max(0, swipeDistance) * 0.48)
   );
 
-  // Long-press for mobile
-  function handleTouchStart(event: TouchEvent) {
-    if (!isMobile) return;
-    if (isSelectableTarget(event.target)) {
-      clearLongPress();
-      resetSwipe();
+  $effect(() => {
+    if (showTouchSheet) {
+      if (touchSheetUnmountTimer) {
+        clearTimeout(touchSheetUnmountTimer);
+        touchSheetUnmountTimer = null;
+      }
+      renderTouchSheet = true;
       return;
     }
+
+    if (renderTouchSheet) {
+      touchSheetUnmountTimer = setTimeout(() => {
+        renderTouchSheet = false;
+        touchSheetUnmountTimer = null;
+      }, 450);
+    }
+  });
+
+  function isActionSheetTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      Boolean(
+        target.closest(".message-action-sheet, .message-action-sheet-backdrop")
+      )
+    );
+  }
+
+  function suppressClickAfterGesture(): void {
+    suppressNextClick = true;
+    if (suppressClickTimer) clearTimeout(suppressClickTimer);
+    suppressClickTimer = setTimeout(() => {
+      suppressNextClick = false;
+      suppressClickTimer = null;
+    }, 800);
+  }
+
+  function handleClickCapture(event: MouseEvent): void {
+    if (!suppressNextClick || isActionSheetTarget(event.target)) return;
+
+    suppressNextClick = false;
+    if (suppressClickTimer) {
+      clearTimeout(suppressClickTimer);
+      suppressClickTimer = null;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function closeActionSurfaces(): void {
+    showReactions = false;
+    showMoreMenu = false;
+    showTouchSheet = false;
+  }
+
+  function openTouchActions(withHaptic: boolean): void {
+    showReactions = false;
+    showMoreMenu = false;
+    renderTouchSheet = true;
+    moreButtonEl?.focus({ preventScroll: true });
+    showTouchSheet = true;
+    if (withHaptic) hapticService?.trigger("selection");
+  }
+
+  // Long-press for mobile
+  function handleTouchStart(event: TouchEvent) {
+    if (!isMobile || isActionSheetTarget(event.target)) return;
     const touch = event.touches[0];
     if (!touch || message.isDeleted) return;
 
@@ -137,9 +209,9 @@
     }
 
     longPressTimer = setTimeout(() => {
-      hapticService?.trigger("selection");
-      showReactions = true;
-      showMoreMenu = true;
+      longPressTimer = null;
+      suppressClickAfterGesture();
+      openTouchActions(true);
       swipeIntent = null;
     }, LONG_PRESS_MS);
   }
@@ -159,7 +231,7 @@
   }
 
   function handleTouchMove(event: TouchEvent) {
-    if (!isMobile || !swipeIntent) return;
+    if (!isMobile || !swipeIntent || isActionSheetTarget(event.target)) return;
     const touch = event.touches[0];
     if (!touch) return;
 
@@ -210,7 +282,7 @@
       swipeDistance >= REPLY_SWIPE_THRESHOLD ||
       (swipeDistance >= 24 && velocity >= REPLY_SWIPE_VELOCITY);
 
-    suppressNextClick = true;
+    suppressClickAfterGesture();
     resetSwipe();
     if (shouldReply) startReply(false);
   }
@@ -222,8 +294,8 @@
 
   // Click to toggle reactions on desktop (supplements hover)
   function handleClick(event: MouseEvent) {
+    if (isActionSheetTarget(event.target)) return;
     if (isMobile) {
-      suppressNextClick = false;
       return;
     }
     if (suppressNextClick) {
@@ -234,6 +306,7 @@
     // Don't toggle if clicking inside the reaction bar itself
     const target = event.target as HTMLElement;
     if (target.closest(".reaction-bar")) return;
+    if (target.closest(".action-menu-anchor")) return;
     if (target.closest("[data-message-link='true']")) return;
     if (isSelectableTarget(target) && !window.getSelection()?.isCollapsed) {
       return;
@@ -245,6 +318,15 @@
 
   // Prevent native context menu (right-click / long-press)
   function handleContextMenu(event: MouseEvent) {
+    if (isActionSheetTarget(event.target)) return;
+    if (isMobile) {
+      event.preventDefault();
+      openTouchActions(true);
+      return;
+    }
+    // Desktop message copy remains selectable. On the touch layout, holding
+    // that same copy is how people reach Reply, Copy, reactions, and the rest
+    // of the message actions, so the app menu takes precedence there.
     if (isSelectableTarget(event.target)) return;
     event.preventDefault();
     hapticService?.trigger("selection");
@@ -310,8 +392,7 @@
 
   // Copy message text to clipboard
   async function handleCopyText() {
-    showReactions = false;
-    showMoreMenu = false;
+    closeActionSurfaces();
     hapticService?.trigger("selection");
 
     try {
@@ -325,8 +406,7 @@
 
   // Copy message with full metadata for AI analysis
   async function handleCopyForAI() {
-    showReactions = false;
-    showMoreMenu = false;
+    closeActionSurfaces();
     hapticService?.trigger("selection");
 
     try {
@@ -450,7 +530,21 @@
     const spaceAbove = anchorRect.top - bounds.top;
     const spaceBelow = bounds.bottom - anchorRect.bottom;
 
-    menuOpensAbove = spaceBelow < requiredSpace && spaceAbove >= requiredSpace;
+    const opensAbove =
+      spaceBelow < requiredSpace &&
+      (spaceAbove >= requiredSpace || spaceAbove > spaceBelow);
+    const naturalTop = opensAbove
+      ? anchorRect.top - menuHeight - 8
+      : anchorRect.bottom + 8;
+    const minimumTop = bounds.top + 8;
+    const maximumTop = bounds.bottom - menuHeight - 8;
+    const clampedTop =
+      maximumTop >= minimumTop
+        ? Math.min(maximumTop, Math.max(minimumTop, naturalTop))
+        : minimumTop;
+
+    menuOpensAbove = opensAbove;
+    menuShiftY = clampedTop - naturalTop;
   }
 
   $effect(() => {
@@ -459,6 +553,7 @@
 
     if (!showMoreMenu || !actionAnchor || !menu) {
       menuOpensAbove = false;
+      menuShiftY = 0;
       return;
     }
 
@@ -487,7 +582,7 @@
 
   // Actions
   async function handleReaction(emoji: string) {
-    showReactions = false;
+    closeActionSurfaces();
     hapticService?.trigger("selection");
 
     // Guard: ensure authenticated before attempting reaction
@@ -514,6 +609,10 @@
 
   function handleMoreClick(event: MouseEvent) {
     event.stopPropagation();
+    if (isMobile) {
+      openTouchActions(true);
+      return;
+    }
     updateActionTriggerPosition();
     hapticService?.trigger("selection");
     showMoreMenu = !showMoreMenu;
@@ -560,8 +659,7 @@
   }
 
   function startReply(withHaptic: boolean): void {
-    showReactions = false;
-    showMoreMenu = false;
+    closeActionSurfaces();
     inboxState.setReplyTo(message);
     if (withHaptic) hapticService?.trigger("selection");
   }
@@ -571,16 +669,27 @@
   }
 
   function handleEdit() {
-    showReactions = false;
-    showMoreMenu = false;
+    closeActionSurfaces();
     inboxState.setEditingMessage(message);
     hapticService?.trigger("selection");
   }
 
   function handleDeleteRequest() {
-    showReactions = false;
-    showMoreMenu = false;
+    closeActionSurfaces();
     showDeleteConfirm = true;
+  }
+
+  async function handleCopySelection(text: string): Promise<void> {
+    closeActionSurfaces();
+    hapticService?.trigger("selection");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Selection copied");
+    } catch (error) {
+      console.error("Failed to copy selected message text:", error);
+      toast.error("Failed to copy selection");
+    }
   }
 
   async function handleDeleteConfirm() {
@@ -609,11 +718,12 @@
       showMoreMenu = false;
     }
   }}
-  ontouchstart={handleTouchStart}
-  ontouchend={handleTouchEnd}
-  ontouchmove={handleTouchMove}
-  ontouchcancel={handleTouchCancel}
-  oncontextmenu={handleContextMenu}
+  ontouchstart={actionsEnabled ? handleTouchStart : undefined}
+  ontouchend={actionsEnabled ? handleTouchEnd : undefined}
+  ontouchmove={actionsEnabled ? handleTouchMove : undefined}
+  ontouchcancel={actionsEnabled ? handleTouchCancel : undefined}
+  oncontextmenu={actionsEnabled ? handleContextMenu : undefined}
+  onclickcapture={actionsEnabled ? handleClickCapture : undefined}
 >
   <span
     class="reply-swipe-cue"
@@ -634,11 +744,11 @@
     {@render children()}
   </div>
 
-  {#if !message.isDeleted}
+  {#if actionsEnabled && !message.isDeleted}
     <div
       class="action-menu-anchor"
       class:own={isOwn}
-      class:open={showMoreMenu}
+      class:open={showMoreMenu || showTouchSheet}
       class:ready={actionTriggerReady}
       style:left="{actionTriggerLeft}px"
       style:top="{actionTriggerTop}px"
@@ -647,21 +757,22 @@
       <button
         type="button"
         class="message-action-trigger"
-        class:active={showMoreMenu}
+        class:active={showMoreMenu || showTouchSheet}
         bind:this={moreButtonEl}
         onclick={handleMoreClick}
         aria-label={messageActionLabel}
-        aria-haspopup="menu"
-        aria-expanded={showMoreMenu}
+        aria-haspopup={isMobile ? "dialog" : "menu"}
+        aria-expanded={isMobile ? showTouchSheet : showMoreMenu}
         title="Message actions"
       >
         <i class="fa-solid fa-ellipsis" aria-hidden="true"></i>
       </button>
 
-      {#if showMoreMenu}
+      {#if showMoreMenu && !isMobile}
         <div
           class="more-menu"
           class:above={menuOpensAbove}
+          style:--menu-shift-y="{menuShiftY}px"
           bind:this={moreMenuEl}
           role="menu"
           tabindex="-1"
@@ -669,6 +780,20 @@
           onkeydown={handleMenuKeydown}
           onfocusout={handleMenuFocusout}
         >
+          <div class="reaction-menu" role="group" aria-label="React to message">
+            <span class="reaction-menu-label" aria-hidden="true">React</span>
+            {#each REACTIONS as emoji}
+              <button
+                type="button"
+                class="reaction-menu-option"
+                role="menuitem"
+                onclick={() => handleReaction(emoji)}
+                aria-label="React with {emoji}"
+              >
+                <span aria-hidden="true">{emoji}</span>
+              </button>
+            {/each}
+          </div>
           <button
             type="button"
             class="menu-item"
@@ -726,7 +851,7 @@
   {/if}
 
   <!-- Floating reaction bar (Facebook Messenger style) -->
-  {#if showReactions && !message.isDeleted}
+  {#if actionsEnabled && showReactions && !message.isDeleted}
     <div class="reaction-bar" class:own={isOwn}>
       <!-- Emoji reactions with staggered animation -->
       {#each REACTIONS as emoji, i}
@@ -756,6 +881,25 @@
   {/if}
 </div>
 
+{#if renderTouchSheet}
+  <MessageActionSheet
+    bind:isOpen={showTouchSheet}
+    {message}
+    {isOwn}
+    {canEdit}
+    {canDelete}
+    showAdminCopy={authState.isAdmin}
+    reactions={REACTIONS}
+    onReaction={handleReaction}
+    onReply={handleReply}
+    onCopy={handleCopyText}
+    onCopySelection={handleCopySelection}
+    onCopyForAI={handleCopyForAI}
+    onEdit={handleEdit}
+    onDelete={handleDeleteRequest}
+  />
+{/if}
+
 <!-- Delete confirmation -->
 <ConfirmDialog
   bind:isOpen={showDeleteConfirm}
@@ -781,6 +925,15 @@
     -webkit-touch-callout: default;
     -webkit-user-select: text;
     user-select: text;
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .message-wrapper :global([data-message-selectable="true"]) {
+      cursor: default;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   }
 
   .swipe-content {
@@ -1047,6 +1200,7 @@
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
     animation: menu-slide var(--duration-fast) ease-out;
+    translate: 0 var(--menu-shift-y, 0);
     z-index: 101;
   }
 
@@ -1118,6 +1272,61 @@
     color: var(--semantic-error);
   }
 
+  .reaction-menu {
+    display: grid;
+    grid-template-columns: repeat(3, var(--touch-target-min, 44px));
+    justify-content: center;
+    gap: 2px;
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .reaction-menu-label {
+    grid-column: 1 / -1;
+    padding: 2px 6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+  }
+
+  .reaction-menu-option {
+    display: grid;
+    place-items: center;
+    width: var(--touch-target-min, 44px);
+    height: var(--touch-target-min, 44px);
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text, #ffffff);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 120ms) ease,
+      border-color var(--duration-fast, 120ms) ease,
+      transform var(--duration-fast, 120ms) ease;
+  }
+
+  .reaction-menu-option:hover,
+  .reaction-menu-option:focus-visible {
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 48%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.12))
+    );
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.14));
+  }
+
+  .reaction-menu-option:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 1px;
+  }
+
+  .reaction-menu-option:active {
+    transform: scale(0.94);
+  }
+
   /* Mobile: larger touch targets */
   @media (max-width: 768px) {
     .emoji-btn {
@@ -1158,7 +1367,8 @@
     }
 
     .emoji-btn:hover,
-    .emoji-btn:active {
+    .emoji-btn:active,
+    .reaction-menu-option:active {
       transform: none;
     }
   }

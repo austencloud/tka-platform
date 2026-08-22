@@ -11,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   setTyping: vi.fn(),
   toastError: vi.fn(),
+  queueMessage: vi.fn(),
+  saveDraft: vi.fn(),
+  draftFor: vi.fn(),
+  showUserError: vi.fn(),
 }));
 
 vi.mock("$lib/shared/application/get-haptic-feedback", () => ({
@@ -23,6 +27,19 @@ vi.mock("$lib/shared/messaging/services/messenger", () => ({
     sendMessage: mocks.sendMessage,
     setTyping: mocks.setTyping,
   },
+}));
+
+vi.mock("../../context/message-delivery-context", () => ({
+  getMessageDeliveryContext: () => ({
+    ready: true,
+    draftFor: mocks.draftFor,
+    saveDraft: mocks.saveDraft,
+    queueMessage: mocks.queueMessage,
+  }),
+}));
+
+vi.mock("$lib/shared/application/get-error-handler", () => ({
+  getErrorHandler: () => ({ showUserError: mocks.showUserError }),
 }));
 
 vi.mock("$lib/shared/messaging/get-message-image-sender", () => ({
@@ -87,6 +104,55 @@ describe("MessageComposer editing", () => {
     mocks.setTyping.mockReset();
     mocks.setTyping.mockResolvedValue(undefined);
     mocks.toastError.mockReset();
+    mocks.queueMessage.mockReset();
+    mocks.queueMessage.mockResolvedValue("outbox-message");
+    mocks.saveDraft.mockReset();
+    mocks.saveDraft.mockResolvedValue(undefined);
+    mocks.draftFor.mockReset();
+    mocks.draftFor.mockReturnValue(undefined);
+    mocks.showUserError.mockReset();
+  });
+
+  it("enables native spelling suggestions in the message field", async () => {
+    render(MessageComposer, { conversationId: "conversation-1" });
+    const composer = page.getByRole("textbox", { name: "Message input" });
+
+    await expect.element(composer).toHaveAttribute("spellcheck", "true");
+    expect((composer.element() as HTMLTextAreaElement).spellcheck).toBe(true);
+  });
+
+  it("shows a scrollbar only after the message exceeds its maximum height", async () => {
+    render(MessageComposer, { conversationId: "conversation-1" });
+    const composer = page.getByRole("textbox", { name: "Message input" });
+    const input = composer.element() as HTMLTextAreaElement;
+
+    await composer.fill("A short message");
+    expect(getComputedStyle(input).overflowY).toBe("hidden");
+    expect(input.scrollHeight).toBeLessThanOrEqual(input.clientHeight);
+
+    await composer.fill(
+      Array.from({ length: 20 }, (_, index) => `Line ${index}`).join("\n")
+    );
+    expect(input.style.height).toBe("120px");
+    expect(getComputedStyle(input).overflowY).toBe("auto");
+    expect(input.scrollHeight).toBeGreaterThan(input.clientHeight);
+  });
+
+  it("resizes wrapped text when the composer becomes narrower", async () => {
+    render(MessageComposer, { conversationId: "conversation-1" });
+    const composer = page.getByRole("textbox", { name: "Message input" });
+    const input = composer.element() as HTMLTextAreaElement;
+
+    input.style.width = "600px";
+    await composer.fill("Hey! I'm excited to see you guys trying out the app!");
+    const wideHeight = input.offsetHeight;
+    input.style.width = "180px";
+    window.dispatchEvent(new Event("resize"));
+
+    await vi.waitFor(() => {
+      expect(input.offsetHeight).toBeGreaterThan(wideHeight);
+      expect(input.scrollHeight).toBeLessThanOrEqual(input.clientHeight);
+    });
   });
 
   it("restores an unsent draft after saving an edit", async () => {
@@ -116,6 +182,37 @@ describe("MessageComposer editing", () => {
     await expect
       .element(page.getByRole("textbox", { name: "Message input" }))
       .toHaveValue("Keep this draft");
+  });
+
+  it("restores a durable conversation draft on mount", async () => {
+    mocks.draftFor.mockReturnValue({
+      id: "current-user:conversation-1",
+      userId: "current-user",
+      conversationId: "conversation-1",
+      content: "Survived the reload",
+      updatedAt: Date.now(),
+    });
+
+    render(MessageComposer, { conversationId: "conversation-1" });
+
+    await expect
+      .element(page.getByRole("textbox", { name: "Message input" }))
+      .toHaveValue("Survived the reload");
+  });
+
+  it("autosaves an unfinished message for its conversation", async () => {
+    render(MessageComposer, { conversationId: "conversation-1" });
+    await page
+      .getByRole("textbox", { name: "Message input" })
+      .fill("Keep this after closing");
+
+    await vi.waitFor(() => {
+      expect(mocks.saveDraft).toHaveBeenCalledWith("conversation-1", {
+        content: "Keep this after closing",
+        replyTo: undefined,
+        attachment: undefined,
+      });
+    });
   });
 
   it("opens the latest editable message with Arrow Up and cancels with Escape", async () => {
@@ -173,8 +270,11 @@ describe("MessageComposer editing", () => {
     await page.getByRole("button", { name: "Save changes" }).click();
 
     await vi.waitFor(() => {
-      expect(mocks.toastError).toHaveBeenCalledWith(
-        "Failed to save changes. Please try again."
+      expect(mocks.showUserError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "These changes could not be saved.",
+          context: expect.objectContaining({ action: "editMessage" }),
+        })
       );
     });
     await expect.element(editor).toHaveValue("Keep this correction");
@@ -233,10 +333,10 @@ describe("MessageComposer editing", () => {
     await page.getByRole("button", { name: "Send message" }).click();
 
     await vi.waitFor(() => {
-      expect(mocks.sendMessage).toHaveBeenCalledWith({
+      expect(mocks.queueMessage).toHaveBeenCalledWith({
         conversationId: "conversation-1",
         content: "This is the answer",
-        attachments: undefined,
+        attachment: undefined,
         replyTo: {
           messageId: "original-message",
           senderId: "other-user",
@@ -265,6 +365,6 @@ describe("MessageComposer editing", () => {
 
     expect(inboxState.replyToMessage).toBeNull();
     await expect.element(composer).toHaveValue("Keep this draft");
-    expect(mocks.sendMessage).not.toHaveBeenCalled();
+    expect(mocks.queueMessage).not.toHaveBeenCalled();
   });
 });

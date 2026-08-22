@@ -7,9 +7,10 @@
   interface Props {
     attachment: MessageAttachment;
     caption?: string;
+    localFile?: Blob;
   }
 
-  let { attachment, caption = "" }: Props = $props();
+  let { attachment, caption = "", localFile }: Props = $props();
   let imageUrl = $state<string | null>(null);
   let loadError = $state(false);
   let spotlightOpen = $state(false);
@@ -40,6 +41,12 @@
     let objectUrl: string | null = null;
     imageUrl = null;
     loadError = false;
+
+    if (localFile) {
+      objectUrl = URL.createObjectURL(localFile);
+      imageUrl = objectUrl;
+      return () => URL.revokeObjectURL(objectUrl!);
+    }
 
     if (!storagePath?.startsWith("message-images/")) {
       loadError = true;

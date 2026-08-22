@@ -26,6 +26,9 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { messageHasSequencePreview } from "../../domain/message-link-parts";
   import { createSequencePreviewCoordinator } from "../../state/sequence-preview-coordinator.svelte";
+  import { getMessageDeliveryContext } from "../../context/message-delivery-context";
+  import { buildOutgoingMessage } from "../../domain/outgoing-message-mapper";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
   interface Props {
     conversation: Conversation;
@@ -34,6 +37,7 @@
   }
 
   let { conversation, messages, isLoading }: Props = $props();
+  const messageDeliveryState = getMessageDeliveryContext();
 
   // Determine conversation type (defaults to "direct" for backward compatibility)
   // Use optional chaining: parent {#if} guard unmounts this component when
@@ -80,7 +84,27 @@
       : authState.user?.uid
   );
 
-  const displayedMessages = $derived(contextualMessages ?? messages);
+  const localOutbox = $derived(
+    conversation?.id ? messageDeliveryState.outboxFor(conversation.id) : []
+  );
+  const localOutboxById = $derived(
+    new Map(localOutbox.map((item) => [item.id, item] as const))
+  );
+  const latestMessages = $derived.by(() => {
+    const serverIds = new Set(messages.map((message) => message.id));
+    const sender = {
+      id: authState.user?.uid ?? currentUserId ?? "",
+      name: authState.user?.displayName || "You",
+      avatar: authState.user?.photoURL ?? undefined,
+    };
+    return [
+      ...messages,
+      ...localOutbox
+        .filter((item) => !serverIds.has(item.id))
+        .map((item) => buildOutgoingMessage(item, sender)),
+    ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  });
+  const displayedMessages = $derived(contextualMessages ?? latestMessages);
   const messagesById = $derived.by(
     () =>
       new Map(
@@ -95,6 +119,15 @@
       const message = messagesById.get(messageId);
       return Boolean(message && messageHasSequencePreview(message));
     },
+  });
+
+  $effect(() => {
+    if (!conversation?.id || messages.length === 0) return;
+    void messageDeliveryState
+      .reconcile(conversation.id, messages)
+      .catch((error) =>
+        console.error("Failed to reconcile delivered messages:", error)
+      );
   });
 
   $effect(() => {
@@ -113,7 +146,7 @@
   // Initial load and messages sent by the current user go to the latest
   // message. Incoming messages never pull someone away from older context.
   $effect(() => {
-    const latestMessage = messages.at(-1);
+    const latestMessage = latestMessages.at(-1);
     const container = messagesContainer;
     if (!latestMessage || !container) return;
     if (latestMessage.id === previousLatestMessageId) return;
@@ -223,6 +256,29 @@
       top: messagesContainer.scrollHeight,
       behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
+  }
+
+  function showOutboxFailure(error: unknown, action: string): void {
+    const failure = error instanceof Error ? error : new Error(String(error));
+    getErrorHandler().showUserError({
+      message: "The outbox could not be updated.",
+      technicalDetails: failure.message,
+      error: failure,
+      severity: "error",
+      context: { module: "inbox", tab: "messages", action },
+    });
+  }
+
+  function retryOutgoingMessage(messageId: string): void {
+    void messageDeliveryState
+      .retry(messageId)
+      .catch((error) => showOutboxFailure(error, "retryMessage"));
+  }
+
+  function removeOutgoingMessage(messageId: string): void {
+    void messageDeliveryState
+      .remove(messageId)
+      .catch((error) => showOutboxFailure(error, "removeOutboxMessage"));
   }
 
   // Get other participant info
@@ -364,6 +420,9 @@
               )}
               onSequencePlaybackRequest={() =>
                 sequencePreviewCoordinator.requestPlayback(message.id)}
+              outboxItem={localOutboxById.get(message.id)}
+              onRetry={() => retryOutgoingMessage(message.id)}
+              onRemove={() => removeOutgoingMessage(message.id)}
             />
           {/each}
         {/each}

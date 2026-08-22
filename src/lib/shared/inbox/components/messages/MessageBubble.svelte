@@ -33,6 +33,8 @@
     findMessageSequenceLink,
     messageHasSequencePreview,
   } from "../../domain/message-link-parts";
+  import type { MessageOutboxRecord } from "../../domain/message-delivery-models";
+  import { getUserIdentityLabels } from "$lib/shared/community/domain/user-identity-labels";
 
   interface Props {
     message: Message;
@@ -49,6 +51,9 @@
     sequencePlaybackActive?: boolean;
     sequencePlaybackMounted?: boolean;
     onSequencePlaybackRequest?: () => void;
+    outboxItem?: MessageOutboxRecord;
+    onRetry?: () => void;
+    onRemove?: () => void;
   }
 
   let {
@@ -66,9 +71,13 @@
     sequencePlaybackActive = true,
     sequencePlaybackMounted = sequencePlaybackActive,
     onSequencePlaybackRequest,
+    outboxItem,
+    onRetry,
+    onRemove,
   }: Props = $props();
 
   const showSender = $derived(isGroup && !isOwn && senderInfo);
+  const senderIdentity = $derived(getUserIdentityLabels(senderInfo));
   let showEditHistory = $state(false);
   const wasEdited = $derived(message.editedAt !== undefined);
   const hasReactions = $derived(
@@ -117,6 +126,20 @@
     if (!otherParticipantId || !message.readAt) return null;
     return message.readAt[otherParticipantId] || null;
   });
+  const localAttachment = $derived(outboxItem?.attachment);
+  const deliveryLabel = $derived.by(() => {
+    if (!outboxItem) return "";
+    if (outboxItem.status === "sending") {
+      return outboxItem.progress?.label || "Sending";
+    }
+    if (outboxItem.status === "queued") {
+      return outboxItem.lastError || "Waiting to send";
+    }
+    if (outboxItem.status === "failed") {
+      return outboxItem.lastError || "Message could not be sent";
+    }
+    return "Sent";
+  });
 
   function formatReadTime(date: Date): string {
     return formatTime(date);
@@ -157,7 +180,13 @@
   {#if message.isDeleted}
     <RichMessageText content={message.content} {isOwn} linkify={false} />
   {:else if imageAttachment}
-    <ImageMessageCard attachment={imageAttachment} caption={message.content} />
+    <ImageMessageCard
+      attachment={imageAttachment}
+      caption={message.content}
+      localFile={localAttachment?.type === "image"
+        ? localAttachment.blob
+        : undefined}
+    />
     {#if message.content}
       <RichMessageText content={message.content} {isOwn} attachment />
     {/if}
@@ -168,6 +197,9 @@
       playbackActive={sequencePlaybackActive}
       playbackMounted={sequencePlaybackMounted}
       onRequestPlayback={onSequencePlaybackRequest}
+      localSequence={localAttachment?.type === "sequence"
+        ? localAttachment.payload.sequence
+        : undefined}
     />
     {#if message.content && !message.content.startsWith("Check out this sequence")}
       <RichMessageText content={message.content} {isOwn} attachment />
@@ -228,6 +260,33 @@
         {/if}
       </span>
     {/if}
+    {#if outboxItem}
+      <span
+        class="delivery-state"
+        class:failed={outboxItem.status === "failed"}
+        role="status"
+      >
+        <i
+          class="fa-solid {outboxItem.status === 'sending'
+            ? 'fa-spinner fa-spin'
+            : outboxItem.status === 'queued'
+              ? 'fa-clock'
+              : outboxItem.status === 'failed'
+                ? 'fa-circle-exclamation'
+                : 'fa-check'}"
+          aria-hidden="true"
+        ></i>
+        <span>{deliveryLabel}</span>
+        {#if outboxItem.status === "failed"}
+          <button type="button" onclick={onRetry}>Retry</button>
+        {/if}
+        {#if outboxItem.status === "failed" || outboxItem.status === "queued"}
+          <button type="button" class="remove-delivery" onclick={onRemove}
+            >Remove</button
+          >
+        {/if}
+      </span>
+    {/if}
   </div>
 {/snippet}
 
@@ -244,14 +303,14 @@
   {/if}
 {/snippet}
 
-<MessageActions {message} {isOwn}>
+<MessageActions {message} {isOwn} actionsEnabled={!outboxItem}>
   {#if showSender && senderInfo}
     <!-- Group messages from others: avatar gutter layout -->
     <div class="group-message-row">
       <div class="avatar-gutter">
         <RobustAvatar
           src={senderInfo.avatar}
-          name={senderInfo.displayName}
+          name={senderIdentity.primary}
           alt=""
           customSize={28}
         />
@@ -264,13 +323,16 @@
         class:has-reactions={hasReactions}
         class:has-sender={true}
         class:has-sequence={hasSequencePreview}
+        class:has-delivery={Boolean(outboxItem)}
         class:highlighted={isHighlighted}
         data-message-id={message.id}
         role="article"
         tabindex="-1"
-        aria-label="{message.senderName}: {accessibleMessage}"
+        aria-label="{message.senderName}: {accessibleMessage}{deliveryLabel
+          ? `, ${deliveryLabel}`
+          : ''}"
       >
-        <span class="sender-name">{senderInfo.displayName}</span>
+        <span class="sender-name">{senderIdentity.primary}</span>
         <div class="bubble" data-message-action-anchor="true">
           {@render bubbleContent()}
           {@render reactionBadge()}
@@ -287,11 +349,16 @@
       class:has-attachment={hasAttachment}
       class:has-reactions={hasReactions}
       class:has-sequence={hasSequencePreview}
+      class:has-delivery={Boolean(outboxItem)}
       class:highlighted={isHighlighted}
       data-message-id={message.id}
       role="article"
       tabindex="-1"
-      aria-label="{isOwn ? 'You' : message.senderName}: {accessibleMessage}"
+      aria-label="{isOwn
+        ? 'You'
+        : message.senderName}: {accessibleMessage}{deliveryLabel
+        ? `, ${deliveryLabel}`
+        : ''}"
     >
       <div class="bubble" data-message-action-anchor="true">
         {@render bubbleContent()}
@@ -329,6 +396,10 @@
   .message-bubble.has-sequence {
     width: min(32rem, 96%);
     max-width: min(32rem, 96%);
+  }
+
+  .message-bubble.has-delivery {
+    max-width: min(30rem, 96%);
   }
 
   .message-bubble.has-sequence .bubble {
@@ -400,7 +471,17 @@
   }
 
   .own .bubble {
-    background: var(--theme-accent, var(--semantic-info));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, var(--semantic-info)) 45%,
+      black
+    );
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--theme-accent, var(--semantic-info)) 72%,
+        transparent
+      );
     color: white;
     border-bottom-right-radius: 6px;
   }
@@ -485,6 +566,60 @@
     justify-content: flex-end;
   }
 
+  .has-delivery .meta {
+    flex-wrap: wrap;
+    width: 100%;
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .has-delivery .time {
+    white-space: nowrap;
+  }
+
+  .delivery-state {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .delivery-state.failed {
+    color: color-mix(in srgb, var(--semantic-error) 52%, white);
+  }
+
+  .delivery-state.failed button {
+    color: white;
+  }
+
+  .delivery-state button {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 8px;
+    border: 0;
+    border-radius: 8px;
+    background: color-mix(in srgb, white 18%, transparent);
+    color: inherit;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .delivery-state button:hover,
+  .delivery-state button:focus-visible {
+    background: color-mix(in srgb, white 24%, transparent);
+  }
+
+  .delivery-state button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+  }
+
+  .delivery-state .remove-delivery {
+    font-weight: 500;
+  }
+
   .edited {
     font-style: italic;
   }
@@ -531,7 +666,8 @@
   /* ===== Reduced motion ===== */
   @media (prefers-reduced-motion: reduce) {
     .message-bubble,
-    .bubble {
+    .bubble,
+    .delivery-state i {
       animation: none !important;
       transition: none !important;
     }

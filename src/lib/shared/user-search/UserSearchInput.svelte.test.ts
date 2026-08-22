@@ -152,4 +152,34 @@ describe("UserSearchInput", () => {
       page.getByRole("listbox", { name: "Search results" }).elements()
     ).toHaveLength(0);
   });
+
+  it("shows the chosen display name with the unique username", async () => {
+    mocks.searchUsers.mockResolvedValue([
+      {
+        uid: "user-1",
+        displayName: "Myst13purple",
+        username: "andrewpelarinos",
+      },
+    ]);
+
+    render(UserSearchInput, {
+      onSelect: vi.fn(),
+      inlineResults: true,
+    });
+
+    const input = page.getByRole("combobox", { name: "Search users" });
+    await input.fill("myst");
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    const option = page.getByRole("option", {
+      name: /Myst13purple @andrewpelarinos/,
+    });
+    await expect.element(option).toBeInTheDocument();
+    expect(
+      option.element().querySelector(".result-name")?.textContent?.trim()
+    ).toBe("Myst13purple");
+    expect(
+      option.element().querySelector(".result-username")?.textContent?.trim()
+    ).toBe("@andrewpelarinos");
+  });
 });

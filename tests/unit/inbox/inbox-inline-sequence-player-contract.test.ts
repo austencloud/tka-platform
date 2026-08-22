@@ -24,44 +24,50 @@ const thread = read(
 const preview = read(
   "src/lib/shared/inbox/components/messages/SequenceMessagePreview.svelte"
 );
+const showcase = read(
+  "src/lib/shared/sequence-preview/components/SequenceShowcasePreview.svelte"
+);
 const player = read(
   "src/lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
 );
 
 describe("inbox inline sequence player contract", () => {
   it("keeps playback out of the eager inbox graph until Play is selected", () => {
-    expect(preview).toContain("LazyMount");
-    expect(preview).toMatch(
+    expect(preview).toContain("SequenceShowcasePreview");
+    expect(preview).toContain('activation="manual"');
+    expect(preview).not.toContain('activation="ambient"');
+    expect(showcase).toContain("LazyMount");
+    expect(showcase).toMatch(
       /loader=\{\(\) =>[\s\S]*import\("\$lib\/features\/browse\/sequences\/display\/components\/media-viewer\/InlineAnimationPlayer\.svelte"\)/
     );
-    expect(preview).toContain("let playerRequested = $state(false)");
-    expect(preview).toContain("active={playerMounted}");
-    expect(preview).toContain("keepAlive={false}");
-    expect(preview).toContain("onclick={requestPlayback}");
-    expect(preview).not.toContain("autoStart");
-    expect(preview).not.toContain("onpointerenter");
-    expect(preview).not.toContain("onHoverStart");
+    expect(showcase).toContain("let manualPlayerRequested = $state(false)");
+    expect(showcase).toContain("active={playerMounted}");
+    expect(showcase).toContain("keepAlive={false}");
+    expect(showcase).toContain("onclick={requestPlayback}");
+    expect(showcase).not.toContain("autoStart");
   });
 
   it("composes the Choreo Card and compact player in one fixed stage", () => {
-    expect(preview).toContain("PropAwareThumbnail");
-    expect(preview).toContain(
+    expect(showcase).toContain("PropAwareThumbnail");
+    expect(showcase).toContain(
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
-    expect(preview).toContain('class="card-layer"');
-    expect(preview).toContain('class="strip-zone"');
-    expect(preview).toContain("currentStep: playbackStep");
-    expect(preview).toContain(
+    expect(showcase).toContain('class="card-layer"');
+    expect(showcase).toContain('class="strip-zone"');
+    expect(showcase).toContain("currentStep: playbackStep");
+    expect(showcase).toContain(
       "onStepChange: (step: number) => (playbackStep = step)"
     );
-    expect(preview).toContain('density: "compact"');
-    expect(preview).toContain("fillHeight: true");
-    expect(preview).toContain("interactive: true");
-    expect(preview).toContain('hoverHint: "none"');
-    expect(preview).toContain("cornerToggle: true");
-    expect(preview).toContain("playbackAllowed: playbackActive && visible");
-    expect(preview).toContain("resumeWhenPlaybackAllowed: true");
-    expect(preview).toContain("disableContextMenu: true");
+    expect(showcase).toContain('density: "compact"');
+    expect(showcase).toContain("fillHeight: true");
+    expect(showcase).toContain('interactive: activation === "manual"');
+    expect(showcase).toContain('hoverHint: "none"');
+    expect(showcase).toContain('cornerToggle: activation === "manual"');
+    expect(showcase).toContain(
+      "playbackActive && visible && !ambientCardRevealed"
+    );
+    expect(showcase).toContain("resumeWhenPlaybackAllowed: true");
+    expect(showcase).toContain("disableContextMenu: true");
     expect(player).toContain('hoverHint = "badge"');
     expect(player).toContain("cornerToggle = false");
     expect(player).toContain("playbackAllowed = true");
@@ -91,9 +97,9 @@ describe("inbox inline sequence player contract", () => {
   });
 
   it("isolates inline animation state from the Create workspace", () => {
-    expect(preview).toContain("createAnimationScope");
-    expect(preview).toContain("visibilityManagerOverride:");
-    expect(preview).toContain("effectsConfigState:");
+    expect(showcase).toContain("createAnimationScope");
+    expect(showcase).toContain("visibilityManagerOverride:");
+    expect(showcase).toContain("effectsConfigState:");
     expect(player).toContain("syncSharedWorkspaceState: false");
   });
 
@@ -106,7 +112,8 @@ describe("inbox inline sequence player contract", () => {
     expect(bubble).toContain("playbackActive={sequencePlaybackActive}");
     expect(bubble).not.toContain("onSequenceHoverStart");
     expect(card).toContain("{playbackActive}");
-    expect(preview).toContain(
+    expect(preview).toContain('activation="manual"');
+    expect(showcase).toContain(
       "playbackMounted && playerRequested && sequence !== null"
     );
   });
