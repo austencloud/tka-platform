@@ -207,6 +207,25 @@ export class Autosaver {
   }
 
   /**
+   * Resolve the session identity before autosave starts. A normal Create reload
+   * resumes the local draft's identity; an explicit deep link or pending edit
+   * starts a distinct session so unrelated work is never folded together.
+   */
+  async resolveSessionForStart(
+    allowRecovery: boolean,
+    createId: () => string = () => crypto.randomUUID()
+  ): Promise<{ sessionId: string; recovered: boolean }> {
+    if (allowRecovery) {
+      const draft = await this.loadDraft();
+      if (draft?.sessionId?.trim()) {
+        return { sessionId: draft.sessionId, recovered: true };
+      }
+    }
+
+    return { sessionId: createId(), recovered: false };
+  }
+
+  /**
    * Delete a draft
    */
   async deleteDraft(sessionId: string): Promise<void> {

@@ -473,30 +473,12 @@
           canRestorePanels: () => CreateModuleState?.canAccessEditTab ?? false,
         });
 
+        // The coordinator can mark the current draft dirty while persistence is
+        // restoring, so give it the autosaver before any effects begin.
+        autosaver = new Autosaver();
+
         // Start effect coordinator (manages all reactive effects)
         setupEffectCoordinator();
-
-        // One collision-resistant ID owns the draft and the session record.
-        const sessionId = crypto.randomUUID();
-        sessionManager = new SessionManager(sessionId);
-
-        // The first non-empty autosave creates the Firestore session. Opening
-        // and closing an untouched workspace leaves no empty cloud record.
-        autosaver = new Autosaver();
-        autosaver.startAutosave(
-          () =>
-            CreateModuleState?.isTutorialWorkspaceIsolated
-              ? null
-              : CreateModuleState?.sequenceState.currentSequence || null,
-          sessionId,
-          30000,
-          (sequence) =>
-            sessionManager?.recordAutosave(sequence.steps.length, sequence.name)
-        );
-
-        logger.success("Autosave started");
-
-        logger.success("CreateModule initialized successfully");
 
         // Load sequence from deep link or pending edit, then initialize persistence
         await tick(); // Ensure DOM is ready
@@ -515,6 +497,39 @@
 
           hasDeepLink = true;
         }
+
+        // A browser/WebContent reload resumes the same draft and analytics
+        // session. Explicitly loaded work gets a fresh identity instead.
+        const sessionStart = await autosaver.resolveSessionForStart(
+          !loadResult.sequenceLoaded
+        );
+        sessionManager = new SessionManager(sessionStart.sessionId);
+        if (sessionStart.recovered) {
+          try {
+            await sessionManager.loadSession(sessionStart.sessionId);
+          } catch (sessionError) {
+            logger.warn(
+              "[CreateModule] Existing session metadata could not be restored:",
+              sessionError
+            );
+          }
+        }
+
+        // The first non-empty autosave creates or resumes the Firestore session.
+        // Opening and closing an untouched workspace leaves no empty cloud record.
+        autosaver.startAutosave(
+          () =>
+            CreateModuleState?.isTutorialWorkspaceIsolated
+              ? null
+              : CreateModuleState?.sequenceState.currentSequence || null,
+          sessionStart.sessionId,
+          30000,
+          (sequence) =>
+            sessionManager?.recordAutosave(sequence.steps.length, sequence.name)
+        );
+
+        logger.success("Autosave started");
+        logger.success("CreateModule initialized successfully");
 
         // Restore previously open panel if returning to create module
         // Only restore if no deep link was processed (deep link takes priority)

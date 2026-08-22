@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => {
   const collection = {
     delete: vi.fn().mockResolvedValue(undefined),
     toArray: vi.fn(async () => draftRows),
-    sortBy: vi.fn().mockResolvedValue([]),
+    sortBy: vi.fn(async () => draftRows),
   };
   const equals = vi.fn(() => collection);
   const where = vi.fn(() => ({ equals }));
@@ -111,6 +111,36 @@ describe("Autosaver lifecycle", () => {
       })
     );
     expect(onDraftSaved).toHaveBeenCalledWith(sequence);
+  });
+
+  it("resumes the local draft session after an ordinary reload", async () => {
+    mocks.draftRows.push({
+      id: 1,
+      data: { sessionId: "recovered-session" },
+    });
+    const autosaver = new Autosaver();
+
+    await expect(
+      autosaver.resolveSessionForStart(true, () => "new-session")
+    ).resolves.toEqual({
+      sessionId: "recovered-session",
+      recovered: true,
+    });
+  });
+
+  it("starts a distinct session for explicitly loaded work", async () => {
+    mocks.draftRows.push({
+      id: 1,
+      data: { sessionId: "unrelated-local-draft" },
+    });
+    const autosaver = new Autosaver();
+
+    await expect(
+      autosaver.resolveSessionForStart(false, () => "new-session")
+    ).resolves.toEqual({
+      sessionId: "new-session",
+      recovered: false,
+    });
   });
 
   it("does not create a session record for an empty sequence", async () => {
