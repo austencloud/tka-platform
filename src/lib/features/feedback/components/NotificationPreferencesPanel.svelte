@@ -1,13 +1,21 @@
 <!--
-  NotificationPreferencesPanel - User Notification Settings
+  NotificationPreferencesPanel — notification settings orchestration.
 
-  Allows users to control which notification types they want to receive.
+  Delivery presentation and topic rows live in focused child components. This
+  file owns loading, persistence, device registration, and page composition.
 -->
 <script lang="ts">
-  import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
-  import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
+  import type { PushDeviceRegistrationState } from "$lib/shared/push/services/fcm-token-manager";
+  import {
+    userPreviewState,
+    getPreviewNotificationPreferences,
+  } from "$lib/shared/debug/state/user-preview-state.svelte";
   import type {
     NotificationPreferences,
     NotificationType,
@@ -17,42 +25,51 @@
     NOTIFICATION_TYPE_CONFIG,
     getPreferenceKeyForType,
   } from "$lib/shared/feedback/domain/models/notification-models";
+  import * as notificationPreferencesManager from "$lib/features/feedback/services/notification-preferences-manager";
+  import { getNotificationPreferenceGroup } from "$lib/features/feedback/domain/notification-preference-group";
+  import NotificationDeliverySection from "./notifications/NotificationDeliverySection.svelte";
   import PreferenceGroup from "./notifications/PreferenceGroup.svelte";
   import type { PreferenceItem } from "./notifications/preference-item";
-  import {
-    userPreviewState,
-    getPreviewNotificationPreferences,
-  } from "$lib/shared/debug/state/user-preview-state.svelte";
-  import type { FCMTokenManager } from "$lib/shared/push/services/fcm-token-manager";
-  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
-  // State
+  type PreferenceGroupId = "messages" | "feedback" | "activity" | "admin";
+
+  type PreferenceGroupData = {
+    id: PreferenceGroupId;
+    title: string;
+    description: string;
+    icon: string;
+    items: PreferenceItem[];
+  };
+
   let preferences = $state<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES
   );
   let isLoading = $state(true);
   let bulkBusy = $state<"enable" | "disable" | null>(null);
-  let bulkPressed = $state<"enable" | "disable" | null>(null);
   let pendingKeys = $state<Set<keyof NotificationPreferences>>(new Set());
   let pushToggleBusy = $state(false);
+  let emailToggleBusy = $state(false);
+  let pushDeviceState = $state<PushDeviceRegistrationState>("checking");
 
-  // Preview mode - show another user's preferences (read-only)
   const isPreviewMode = $derived(userPreviewState.isActive);
+  const showAdminPreferences = $derived(
+    isPreviewMode
+      ? userPreviewState.data.profile?.role === "admin"
+      : Boolean(authState.isAdmin)
+  );
 
-  // Load preferences on mount
   onMount(async () => {
     await loadPreferences();
+    await loadPushDeviceState();
   });
 
-  // React to preview mode changes
   $effect(() => {
-    if (isPreviewMode) {
-      const previewPrefs = getPreviewNotificationPreferences();
-      if (previewPrefs) {
-        preferences = previewPrefs;
-        isLoading = false;
-      }
+    if (!isPreviewMode) return;
+
+    const previewPrefs = getPreviewNotificationPreferences();
+    if (previewPrefs) {
+      preferences = previewPrefs;
+      isLoading = false;
     }
   });
 
@@ -75,69 +92,56 @@
     }
   }
 
+  async function refreshPreferences(userId: string) {
+    preferences = await notificationPreferencesManager.getPreferences(userId);
+  }
+
+  async function loadPushDeviceState() {
+    const user = authState.user;
+    if (!user) return;
+
+    const fcmTokenManager = getFCMTokenManager();
+    pushDeviceState = "checking";
+    pushDeviceState = preferences.pushEnabled
+      ? await fcmTokenManager.getRegistrationState(user.uid)
+      : await fcmTokenManager.getSetupState();
+  }
+
   async function togglePreference(key: keyof NotificationPreferences) {
-    // Block changes in preview mode
     if (isPreviewMode) return;
 
     const user = authState.user;
-    if (!user) return;
-    if (pendingKeys.has(key)) return;
+    if (!user || pendingKeys.has(key)) return;
 
     try {
       pendingKeys.add(key);
-      // Optimistic update
       preferences = { ...preferences, [key]: !preferences[key] };
       await notificationPreferencesManager.togglePreference(user.uid, key);
     } catch (error) {
       console.error("Failed to toggle preference:", error);
-      // Revert on error
-      await loadPreferences();
+      await refreshPreferences(user.uid);
     } finally {
       pendingKeys.delete(key);
     }
   }
 
-  function clearBulkPressedSoon() {
-    setTimeout(() => {
-      bulkPressed = null;
-    }, 120);
-  }
-
-  async function enableAll() {
-    // Block changes in preview mode
+  async function setAllAlerts(enabled: boolean) {
     if (isPreviewMode) return;
 
     const user = authState.user;
     if (!user || bulkBusy) return;
 
     try {
-      bulkBusy = "enable";
-      await notificationPreferencesManager.enableAll(user.uid);
-      await loadPreferences();
+      bulkBusy = enabled ? "enable" : "disable";
+      await notificationPreferencesManager.setAllEventPreferences(
+        user.uid,
+        enabled
+      );
+      await refreshPreferences(user.uid);
     } catch (error) {
-      console.error("Failed to enable all:", error);
+      console.error("Failed to update all alert preferences:", error);
     } finally {
       bulkBusy = null;
-      clearBulkPressedSoon();
-    }
-  }
-
-  async function disableAll() {
-    // Block changes in preview mode
-    if (isPreviewMode) return;
-
-    const user = authState.user;
-    if (!user || bulkBusy) return;
-
-    try {
-      bulkBusy = "disable";
-      await notificationPreferencesManager.disableAll(user.uid);
-      await loadPreferences();
-    } catch (error) {
-      console.error("Failed to disable all:", error);
-    } finally {
-      bulkBusy = null;
-      clearBulkPressedSoon();
     }
   }
 
@@ -148,148 +152,205 @@
     if (!user || pushToggleBusy) return;
 
     const fcmTokenManager = getFCMTokenManager();
-    const wasEnabled = preferences.pushEnabled;
-
     try {
       pushToggleBusy = true;
 
-      if (wasEnabled) {
-        // Turning OFF: unregister token, then save preference
+      if (preferences.pushEnabled && pushDeviceState === "ready") {
         await fcmTokenManager.unregisterToken(user.uid);
         preferences = { ...preferences, pushEnabled: false };
         await notificationPreferencesManager.savePreferences(
           user.uid,
           preferences
         );
-      } else {
-        // Turning ON: check/request permission, then register token
-        let permission = await fcmTokenManager.getPermissionState();
+        pushDeviceState = await fcmTokenManager.getSetupState();
+        return;
+      }
 
-        if (permission !== "granted") {
-          permission = await fcmTokenManager.requestPermission();
-        }
+      if (
+        preferences.pushEnabled &&
+        ["unsupported", "blocked", "failed"].includes(pushDeviceState)
+      ) {
+        preferences = { ...preferences, pushEnabled: false };
+        await notificationPreferencesManager.savePreferences(
+          user.uid,
+          preferences
+        );
+        return;
+      }
 
-        if (permission === "denied") {
-          showToast(
-            "Push notifications blocked. Check your browser settings.",
-            "warning",
-            5000
-          );
-          return;
-        }
+      pushDeviceState = await fcmTokenManager.enableForCurrentDevice(user.uid);
 
-        if (permission !== "granted") {
-          showToast(
-            "Push notification permission not granted.",
-            "warning",
-            4000
-          );
-          return;
-        }
-
-        // Permission granted, register token and save preference
+      if (pushDeviceState === "ready") {
         preferences = { ...preferences, pushEnabled: true };
         await notificationPreferencesManager.savePreferences(
           user.uid,
           preferences
         );
-        await fcmTokenManager.registerToken(user.uid);
+      } else if (pushDeviceState === "blocked") {
+        showToast(t("feedback_push_blocked_desc"), "warning", 5000);
+      } else if (pushDeviceState === "unsupported") {
+        showToast(t("feedback_push_unsupported_desc"), "warning", 5000);
+      } else if (pushDeviceState === "failed") {
+        showToast(t("feedback_push_failed_desc"), "error", 5000);
       }
     } catch (error) {
       console.error("Failed to toggle push notifications:", error);
-      // Revert on error
-      await loadPreferences();
+      await refreshPreferences(user.uid);
     } finally {
       pushToggleBusy = false;
     }
   }
 
-  // Preference descriptions (keyed by notification type for clarity)
-  const typeDescriptions: Partial<Record<NotificationType, string>> = {
-    "feedback-resolved": t("feedback_notif_desc_resolved"),
-    "feedback-in-progress": t("feedback_notif_desc_in_progress"),
-    "feedback-needs-info": t("feedback_notif_desc_needs_info"),
-    "feedback-response": t("feedback_notif_desc_response"),
-    "sequence-liked": t("feedback_notif_desc_liked"),
-    "user-followed": t("feedback_notif_desc_followed"),
-    "achievement-unlocked": t("feedback_notif_desc_achievement"),
-    "message-received": t("feedback_notif_desc_message"),
-    "admin-new-user-signup": t("feedback_notif_desc_signup"),
-    "admin-user-returned": t("feedback_notif_desc_user_returned"),
-    "admin-qr-scan": t("feedback_notif_desc_qr_scan"),
-    "admin-content-created": t("feedback_notif_desc_content_created"),
-    "system-announcement": t("feedback_notif_desc_system"),
-    "moderation-warning": t("feedback_notif_desc_moderation"),
-  };
+  async function toggleEmailEnabled() {
+    if (isPreviewMode) return;
 
-  // Dynamically generate preference groups from NOTIFICATION_TYPE_CONFIG
-  function generatePreferenceGroups(): {
-    title: string;
-    description: string;
-    items: PreferenceItem[];
-  }[] {
-    const groups: {
-      title: string;
-      description: string;
-      items: PreferenceItem[];
-    }[] = [];
+    const user = authState.user;
+    if (!user || emailToggleBusy || !user.email || !user.emailVerified) return;
 
-    // Group by category
+    const enabling = !preferences.emailEnabled;
+    const noCategoriesSelected =
+      !preferences.emailMessages &&
+      !preferences.emailFeedback &&
+      !preferences.emailPlatformUpdates;
+
+    try {
+      emailToggleBusy = true;
+      preferences = {
+        ...preferences,
+        emailEnabled: enabling,
+        ...(enabling && noCategoriesSelected
+          ? {
+              emailMessages: true,
+              emailFeedback: true,
+              emailPlatformUpdates: true,
+            }
+          : {}),
+      };
+      await notificationPreferencesManager.savePreferences(
+        user.uid,
+        preferences
+      );
+    } catch (error) {
+      console.error("Failed to toggle email notifications:", error);
+      await refreshPreferences(user.uid);
+    } finally {
+      emailToggleBusy = false;
+    }
+  }
+
+  function getPushDescription(): string {
+    if (!preferences.pushEnabled) return t("feedback_push_account_off_desc");
+
+    const descriptions: Record<PushDeviceRegistrationState, string> = {
+      checking: t("feedback_push_checking_desc"),
+      unsupported: t("feedback_push_unsupported_desc"),
+      blocked: t("feedback_push_blocked_desc"),
+      "setup-required": t("feedback_push_setup_desc"),
+      ready: t("feedback_push_ready_desc"),
+      failed: t("feedback_push_failed_desc"),
+    };
+    return descriptions[pushDeviceState];
+  }
+
+  function getPushStatus(): string {
+    if (!preferences.pushEnabled) return t("feedback_push_off");
+
+    const statuses: Record<PushDeviceRegistrationState, string> = {
+      checking: t("feedback_push_checking"),
+      unsupported: t("feedback_push_unavailable"),
+      blocked: t("feedback_push_blocked"),
+      "setup-required": t("feedback_push_setup"),
+      ready: t("feedback_push_on"),
+      failed: t("feedback_push_retry"),
+    };
+    return statuses[pushDeviceState];
+  }
+
+  function getEmailDescription(): string {
+    const user = authState.user;
+    if (!user?.email) return t("feedback_email_missing_desc");
+    if (!user.emailVerified) return t("feedback_email_unverified_desc");
+    if (!preferences.emailEnabled) return t("feedback_email_off_desc");
+    return t("feedback_email_on_desc", { email: user.email });
+  }
+
+  function generatePreferenceGroups(): PreferenceGroupData[] {
+    const messages: PreferenceItem[] = [];
     const feedback: PreferenceItem[] = [];
-    const sequence: PreferenceItem[] = [];
+    const engagement: PreferenceItem[] = [];
     const social: PreferenceItem[] = [];
     const admin: PreferenceItem[] = [];
+    const itemsByGroup = { messages, feedback, engagement, social, admin };
+
+    const typeDescriptions: Partial<Record<NotificationType, string>> = {
+      "feedback-resolved": t("feedback_notif_desc_resolved"),
+      "feedback-in-progress": t("feedback_notif_desc_in_progress"),
+      "feedback-needs-info": t("feedback_notif_desc_needs_info"),
+      "feedback-response": t("feedback_notif_desc_response"),
+      "sequence-liked": t("feedback_notif_desc_liked"),
+      "user-followed": t("feedback_notif_desc_followed"),
+      "achievement-unlocked": t("feedback_notif_desc_achievement"),
+      "message-received": t("feedback_notif_desc_message"),
+      "admin-new-user-signup": t("feedback_notif_desc_signup"),
+      "admin-user-returned": t("feedback_notif_desc_user_returned"),
+      "admin-qr-scan": t("feedback_notif_desc_qr_scan"),
+      "admin-content-created": t("feedback_notif_desc_content_created"),
+    };
 
     for (const [type, config] of Object.entries(NOTIFICATION_TYPE_CONFIG)) {
-      const prefKey = getPreferenceKeyForType(type as NotificationType);
-      if (!prefKey) continue; // Skip types without preferences (system-announcement)
+      const notificationType = type as NotificationType;
+      const prefKey = getPreferenceKeyForType(notificationType);
+      if (!prefKey) continue;
 
-      const item: PreferenceItem = {
+      const group = getNotificationPreferenceGroup(notificationType);
+      if (!group) continue;
+
+      itemsByGroup[group].push({
         key: prefKey,
         label: config.label,
-        description: typeDescriptions[type as NotificationType] || config.label,
-      };
+        description: typeDescriptions[notificationType] ?? config.label,
+      });
+    }
 
-      // Categorize
-      if (type.startsWith("feedback-")) {
-        feedback.push(item);
-      } else if (type.startsWith("sequence-")) {
-        sequence.push(item);
-      } else if (type === "user-followed" || type === "achievement-unlocked") {
-        social.push(item);
-      } else if (type.startsWith("admin-")) {
-        admin.push(item);
-      }
+    const groups: PreferenceGroupData[] = [];
+
+    if (messages.length > 0) {
+      groups.push({
+        id: "messages",
+        title: t("feedback_group_messages"),
+        description: t("feedback_group_messages_desc"),
+        icon: "fa-message",
+        items: messages,
+      });
     }
 
     if (feedback.length > 0) {
       groups.push({
+        id: "feedback",
         title: t("feedback_group_feedback"),
         description: t("feedback_group_feedback_desc"),
+        icon: "fa-comment-dots",
         items: feedback,
       });
     }
 
-    if (sequence.length > 0) {
+    const activity = [...engagement, ...social];
+    if (activity.length > 0) {
       groups.push({
-        title: t("feedback_group_engagement"),
-        description: t("feedback_group_engagement_desc"),
-        items: sequence,
-      });
-    }
-
-    if (social.length > 0) {
-      groups.push({
-        title: t("feedback_group_social"),
-        description: t("feedback_group_social_desc"),
-        items: social,
+        id: "activity",
+        title: t("feedback_group_activity"),
+        description: t("feedback_group_activity_desc"),
+        icon: "fa-heart",
+        items: activity,
       });
     }
 
     if (admin.length > 0) {
       groups.push({
+        id: "admin",
         title: t("feedback_group_admin"),
         description: t("feedback_group_admin_desc"),
+        icon: "fa-shield-halved",
         items: admin,
       });
     }
@@ -298,449 +359,532 @@
   }
 
   const preferenceGroups = $derived(generatePreferenceGroups());
+  const standardPreferenceGroups = $derived(
+    preferenceGroups.filter((group) => group.id !== "admin")
+  );
+  const adminPreferenceGroup = $derived(
+    showAdminPreferences
+      ? (preferenceGroups.find((group) => group.id === "admin") ?? null)
+      : null
+  );
+  const emailPreferenceItems = $derived<PreferenceItem[]>([
+    {
+      key: "emailMessages",
+      label: t("feedback_email_messages"),
+      description: t("feedback_email_messages_desc"),
+    },
+    {
+      key: "emailFeedback",
+      label: t("feedback_email_feedback"),
+      description: t("feedback_email_feedback_desc"),
+    },
+    {
+      key: "emailPlatformUpdates",
+      label: t("feedback_email_platform_updates"),
+      description: t("feedback_email_platform_updates_desc"),
+    },
+  ]);
 </script>
 
-<div class="notification-preferences-panel">
-  <div class="panel-header">
-    <h2>{t("feedback_notification_prefs")}</h2>
-    <p class="subtitle">{t("feedback_notification_prefs_subtitle")}</p>
-  </div>
+<div class="notification-preferences-panel" class:preview-mode={isPreviewMode}>
+  <header class="page-header">
+    <span class="page-icon" aria-hidden="true">
+      <i class="fas fa-bell"></i>
+    </span>
+    <span class="page-heading">
+      <h1>{t("feedback_notification_prefs")}</h1>
+      <p>{t("feedback_notification_prefs_subtitle")}</p>
+    </span>
+  </header>
 
   {#if isPreviewMode}
     <div class="preview-banner">
       <i class="fas fa-eye" aria-hidden="true"></i>
-      <span
-        >Viewing {userPreviewState.data.profile?.displayName ?? "user"}'s
-        preferences (read-only)</span
-      >
+      <span>
+        Viewing {userPreviewState.data.profile?.displayName ?? "user"}'s
+        preferences. Changes are disabled.
+      </span>
     </div>
   {/if}
 
   {#if isLoading}
-    <div class="loading-state shell">
+    <div class="state-surface" role="status">
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       <p>{t("feedback_loading_prefs")}</p>
     </div>
   {:else if !authState.isAuthenticated}
-    <div class="empty-state shell">
+    <div class="state-surface">
       <i class="fas fa-user-slash" aria-hidden="true"></i>
       <p>{t("feedback_sign_in_prefs")}</p>
     </div>
   {:else}
-    <!-- Quick Actions (hidden in preview mode) -->
-    {#if !isPreviewMode}
-      <div class="quick-actions">
-        <button
-          class="action-button"
-          class:pressed={bulkPressed === "enable"}
-          onclick={enableAll}
-          onpointerdown={() => (bulkPressed = "enable")}
-          onpointerup={() => clearBulkPressedSoon()}
-          onpointerleave={() => (bulkPressed = null)}
-          aria-label="Enable all notifications"
-          aria-busy={bulkBusy === "enable"}
-        >
-          <i class="fas fa-check-circle" aria-hidden="true"></i>
-          {t("feedback_enable_all")}
-        </button>
-        <button
-          class="action-button"
-          class:pressed={bulkPressed === "disable"}
-          onclick={disableAll}
-          onpointerdown={() => (bulkPressed = "disable")}
-          onpointerup={() => clearBulkPressedSoon()}
-          onpointerleave={() => (bulkPressed = null)}
-          aria-label={t("feedback_disable_all")}
-          aria-busy={bulkBusy === "disable"}
-        >
-          <i class="fas fa-times-circle" aria-hidden="true"></i>
-          {t("feedback_disable_all")}
-        </button>
-      </div>
-    {/if}
-
-    <!-- Push Notifications Master Toggle -->
-    {#if !isPreviewMode}
-      <button
-        class="push-toggle"
-        class:enabled={preferences.pushEnabled}
-        onclick={togglePushEnabled}
-        disabled={pushToggleBusy}
-        aria-label="Toggle push notifications"
-        aria-pressed={preferences.pushEnabled}
-        aria-busy={pushToggleBusy}
-      >
-        <div class="push-toggle-content">
-          <div class="push-toggle-icon">
-            <i
-              class="fas"
-              class:fa-bell={preferences.pushEnabled}
-              class:fa-bell-slash={!preferences.pushEnabled}
-              aria-hidden="true"
-            ></i>
-          </div>
-          <div class="push-toggle-text">
-            <span class="push-toggle-label"
-              >{t("feedback_push_notifications")}</span
-            >
-            <span class="push-toggle-description">
-              {preferences.pushEnabled
-                ? t("feedback_push_enabled_desc")
-                : t("feedback_push_disabled_desc")}
-            </span>
-          </div>
-          <span class="push-toggle-status" aria-hidden="true">
-            {preferences.pushEnabled
-              ? t("feedback_push_on")
-              : t("feedback_push_off")}
-          </span>
+    <div class="notification-workspace">
+      {#if !isPreviewMode}
+        <div class="delivery-pane">
+          <NotificationDeliverySection
+            {preferences}
+            {pushDeviceState}
+            pushDescription={getPushDescription()}
+            pushStatus={getPushStatus()}
+            emailDescription={getEmailDescription()}
+            {emailPreferenceItems}
+            pushBusy={pushToggleBusy}
+            emailBusy={emailToggleBusy}
+            emailUnavailable={!preferences.emailEnabled &&
+              (!authState.user?.email || !authState.user.emailVerified)}
+            isBusyKey={(key) => pendingKeys.has(key)}
+            onTogglePush={togglePushEnabled}
+            onToggleEmail={toggleEmailEnabled}
+            onTogglePreference={togglePreference}
+          />
         </div>
-      </button>
-    {/if}
+      {/if}
 
-    <!-- Preference Groups Grid -->
-    <div class="preference-groups-grid">
-      {#each preferenceGroups as group}
-        <PreferenceGroup
-          title={group.title}
-          description={group.description}
-          items={group.items}
-          {preferences}
-          isBusyKey={(key) => pendingKeys.has(key)}
-          onToggle={togglePreference}
-          disabled={isPreviewMode}
-        />
-      {/each}
-    </div>
+      <section class="alerts-region" aria-labelledby="alerts-heading">
+        <header class="alerts-header">
+          <span class="region-icon" aria-hidden="true">
+            <i class="fas fa-inbox"></i>
+          </span>
+          <span class="region-heading">
+            <h2 id="alerts-heading">{t("feedback_in_app_alerts")}</h2>
+            <p>{t("feedback_in_app_alerts_desc")}</p>
+          </span>
 
-    <!-- System Notifications Notice -->
-    <div class="system-notice">
-      <i class="fas fa-info-circle" aria-hidden="true"></i>
-      <p>{t("feedback_system_notice")}</p>
+          {#if !isPreviewMode}
+            <span class="alert-actions" aria-label="Bulk alert controls">
+              <PanelButton
+                variant="secondary"
+                onclick={() => setAllAlerts(true)}
+                disabled={bulkBusy !== null}
+                ariaLabel={t("feedback_enable_all")}
+                ariaBusy={bulkBusy === "enable"}
+              >
+                <i class="fas fa-check" aria-hidden="true"></i>
+                <span>{t("feedback_enable_all")}</span>
+              </PanelButton>
+              <PanelButton
+                variant="secondary"
+                onclick={() => setAllAlerts(false)}
+                disabled={bulkBusy !== null}
+                ariaLabel={t("feedback_disable_all")}
+                ariaBusy={bulkBusy === "disable"}
+              >
+                <i class="fas fa-ban" aria-hidden="true"></i>
+                <span>{t("feedback_disable_all")}</span>
+              </PanelButton>
+            </span>
+          {/if}
+        </header>
+
+        <div class="alerts-body">
+          <div class="standard-groups">
+            {#each standardPreferenceGroups as group (group.id)}
+              <div
+                class="group-slot"
+                class:group-messages={group.id === "messages"}
+                class:group-feedback={group.id === "feedback"}
+                class:group-activity={group.id === "activity"}
+              >
+                <PreferenceGroup
+                  title={group.title}
+                  description={group.description}
+                  icon={group.icon}
+                  items={group.items}
+                  {preferences}
+                  isBusyKey={(key) => pendingKeys.has(key)}
+                  onToggle={togglePreference}
+                  disabled={isPreviewMode}
+                />
+              </div>
+            {/each}
+          </div>
+
+          {#if adminPreferenceGroup}
+            <div class="admin-group">
+              <PreferenceGroup
+                title={adminPreferenceGroup.title}
+                description={adminPreferenceGroup.description}
+                icon={adminPreferenceGroup.icon}
+                items={adminPreferenceGroup.items}
+                {preferences}
+                isBusyKey={(key) => pendingKeys.has(key)}
+                onToggle={togglePreference}
+                disabled={isPreviewMode}
+                layout="grid"
+              />
+            </div>
+          {/if}
+        </div>
+      </section>
+
+      <footer class="system-notice">
+        <i class="fas fa-shield" aria-hidden="true"></i>
+        <p>{t("feedback_system_notice")}</p>
+      </footer>
     </div>
   {/if}
 </div>
 
 <style>
   .notification-preferences-panel {
+    container: notification-preferences / inline-size;
+    display: grid;
+    flex: 0 0 auto;
+    align-content: safe center;
+    gap: 0.9em;
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--shell-w, min(108rem, 92vw));
+    min-height: 100%;
+    min-width: 0;
     margin: 0 auto;
-    padding: 12px;
+    padding: clamp(0.75em, 1.4cqi, 1.75em) clamp(0.65em, 2cqi, 3em);
   }
 
-  /* ============================================================================
-     PANEL HEADER
-     ============================================================================ */
-  .panel-header {
-    margin-bottom: 18px;
+  @media (min-width: 1680px) and (min-height: 45rem) {
+    .notification-preferences-panel {
+      font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
+      --font-size-min: 0.875em;
+      --font-size-compact: 0.75em;
+      --font-size-xs: 0.75em;
+      --font-size-sm: 0.875em;
+      --font-size-base: 1em;
+      --font-size-lg: 1.125em;
+      --font-size-xl: 1.25em;
+      --font-size-2xl: 1.5em;
+      --font-size-3xl: 1.875em;
+    }
   }
 
-  .panel-header h2 {
-    font-size: var(--font-size-xl);
-    font-weight: 600;
-    color: var(--theme-text);
-    margin: 0 0 6px 0;
-  }
-
-  .subtitle {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 0;
-  }
-
-  /* ============================================================================
-     PREVIEW BANNER
-     ============================================================================ */
-  .preview-banner {
-    display: flex;
+  .page-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    margin-bottom: 16px;
-    background: rgba(139, 92, 246, 0.12);
-    border: 1px solid rgba(139, 92, 246, 0.25);
-    border-radius: 10px;
-    font-size: var(--font-size-sm);
-    color: #a78bfa;
-  }
-
-  .preview-banner i {
-    font-size: var(--font-size-base);
-    flex-shrink: 0;
-  }
-
-  /* ============================================================================
-     LOADING/EMPTY STATES
-     ============================================================================ */
-  .loading-state,
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 40px 18px;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-  }
-
-  .loading-state i,
-  .empty-state i {
-    font-size: var(--font-size-3xl);
-  }
-
-  .shell {
-    background: var(--theme-card-bg);
-    border: 1px dashed var(--theme-stroke);
-    border-radius: 12px;
-  }
-
-  /* ============================================================================
-     QUICK ACTIONS
-     ============================================================================ */
-  .quick-actions {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-
-  .action-button {
-    flex: 1;
-    padding: 10px 16px;
-    background: linear-gradient(
-      135deg,
-      var(--theme-card-bg),
-      var(--theme-panel-bg)
-    );
-    border: 1px solid var(--theme-stroke);
-    border-radius: 10px;
-    color: var(--theme-text, var(--theme-text));
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    cursor: pointer;
-    transition:
-      transform 180ms ease,
-      box-shadow 180ms ease,
-      border-color 180ms ease,
-      filter 180ms ease,
-      background 180ms ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    box-shadow: var(--theme-shadow, 0 10px 24px rgba(0, 0, 0, 0.28));
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .action-button:hover:not(:disabled) {
-    border-color: var(--theme-stroke-strong);
-    transform: translateY(-1px);
-    box-shadow: var(--theme-shadow, 0 14px 30px rgba(0, 0, 0, 0.35));
-    background: linear-gradient(
-      135deg,
-      var(--theme-card-hover-bg),
-      var(--theme-panel-bg)
-    );
-  }
-
-  .action-button:active:not(:disabled),
-  .action-button.pressed:not(:disabled) {
-    transform: translateY(0) scale(0.98);
-    box-shadow: var(--theme-shadow, 0 8px 18px rgba(0, 0, 0, 0.25));
-    filter: brightness(0.97);
-  }
-
-  /* ============================================================================
-     PUSH TOGGLE
-     ============================================================================ */
-  .push-toggle {
-    width: 100%;
-    padding: 16px;
-    margin-bottom: 18px;
-    background: linear-gradient(
-      150deg,
-      var(--theme-card-bg),
-      var(--theme-panel-bg)
-    );
-    border: 1.5px solid var(--theme-stroke);
-    border-radius: 14px;
-    cursor: pointer;
-    transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms ease;
-    text-align: left;
-    box-shadow: var(--theme-shadow, 0 8px 20px rgba(0, 0, 0, 0.28));
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .push-toggle:hover:not(:disabled) {
-    border-color: var(--theme-stroke-strong);
-    transform: translateY(-1px);
-    box-shadow: var(--theme-shadow, 0 12px 26px rgba(0, 0, 0, 0.32));
-  }
-
-  .push-toggle:active:not(:disabled) {
-    transform: translateY(0) scale(0.99);
-    transition-duration: 60ms;
-  }
-
-  .push-toggle[aria-busy="true"] {
-    opacity: 0.7;
-    cursor: wait;
-  }
-
-  .push-toggle.enabled {
-    background: linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--theme-card-bg) 75%, var(--theme-accent)),
-      var(--theme-card-bg)
-    );
-    border-color: var(--theme-accent);
-  }
-
-  .push-toggle.enabled:hover:not(:disabled) {
-    background: linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--theme-card-hover-bg) 70%, var(--theme-accent)),
-      var(--theme-panel-bg)
-    );
-    border-color: var(--theme-accent-strong);
-  }
-
-  .push-toggle-content {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .push-toggle-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
-    font-size: var(--font-size-lg);
-    color: var(--theme-text-dim);
-  }
-
-  .push-toggle.enabled .push-toggle-icon {
-    background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    color: var(--theme-accent);
-  }
-
-  .push-toggle-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
+    gap: 0.9em;
     min-width: 0;
   }
 
-  .push-toggle-label {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--theme-text);
-    line-height: 1.2;
-  }
-
-  .push-toggle.enabled .push-toggle-label {
-    color: var(--theme-accent);
-  }
-
-  .push-toggle-description {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim);
-    line-height: 1.3;
-  }
-
-  .push-toggle-status {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    font-size: var(--font-size-compact);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--theme-text-dim);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-    flex-shrink: 0;
-  }
-
-  .push-toggle.enabled .push-toggle-status {
-    color: #0d1b2a;
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent),
-      var(--theme-accent-strong)
-    );
-    border-color: transparent;
-  }
-
-  /* ============================================================================
-     PREFERENCE GROUPS GRID
-     ============================================================================ */
-  .preference-groups-grid {
+  .page-icon {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 14px;
-    margin-bottom: 16px;
+    width: 3.5em;
+    height: 3.5em;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    border-radius: 1em;
+    color: var(--theme-text-on-accent, #fff);
+    background: linear-gradient(
+      145deg,
+      var(--theme-accent-strong, var(--theme-accent)),
+      color-mix(in srgb, var(--theme-accent) 72%, #6d184b)
+    );
+    box-shadow: 0 0.7em 1.8em
+      color-mix(in srgb, var(--theme-accent) 18%, transparent);
   }
 
-  /* ============================================================================
-     SYSTEM NOTICE
-     ============================================================================ */
-  .system-notice {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--theme-accent) 20%, transparent);
-    border-radius: 8px;
+  .page-heading {
+    min-width: 0;
   }
 
-  .system-notice i {
-    color: color-mix(in srgb, var(--theme-accent) 80%, transparent);
-    font-size: var(--font-size-sm);
-    flex-shrink: 0;
-  }
-
-  .system-notice p {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
+  .page-heading h1,
+  .page-heading p {
     margin: 0;
+  }
+
+  .page-heading h1 {
+    color: var(--theme-text);
+    font-size: max(1.5rem, var(--font-size-2xl));
+    font-weight: 775;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .page-heading p {
+    margin-top: 0.25em;
+    color: var(--theme-text-dim);
+    font-size: max(0.875rem, var(--font-size-min));
     line-height: 1.4;
   }
 
-  /* ============================================================================
-     RESPONSIVE
-     ============================================================================ */
-  @media (max-width: 640px) {
-    .notification-preferences-panel {
-      padding: 14px;
+  .preview-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.65em;
+    min-height: var(--min-touch-target);
+    padding: 0.65em 0.9em;
+    border: 1px solid color-mix(in srgb, #8b5cf6 45%, transparent);
+    border-radius: 0.75em;
+    color: #ddd6fe;
+    background: color-mix(in srgb, #8b5cf6 14%, var(--theme-panel-bg));
+    font-size: max(0.875rem, var(--font-size-sm));
+  }
+
+  .state-surface {
+    display: flex;
+    min-height: 18em;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.75em;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 1.25em;
+    color: var(--theme-text-dim);
+    background: var(--theme-panel-bg);
+  }
+
+  .state-surface i {
+    font-size: var(--font-size-3xl);
+  }
+
+  .state-surface p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+  }
+
+  .notification-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 1.25em;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(0, 0, 0, 0.88)) 14%,
+      #070b10 86%
+    );
+    box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.35));
+    isolation: isolate;
+  }
+
+  :global(html[data-theme-luminance="bright"]) .notification-workspace {
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(255, 255, 255, 0.88)) 14%,
+      #f6f7f9 86%
+    );
+  }
+
+  .delivery-pane {
+    min-width: 0;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .alerts-region {
+    container: alerts-region / inline-size;
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .alerts-header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.8em;
+    min-height: 5em;
+    padding: 0.9em 1.1em;
+    border-bottom: 1px solid var(--theme-stroke);
+    background: color-mix(in srgb, var(--theme-text) 3%, transparent);
+  }
+
+  .region-icon {
+    display: grid;
+    width: 2.7em;
+    height: 2.7em;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 24%, transparent);
+    border-radius: 0.75em;
+    color: var(--theme-accent-text, var(--theme-accent));
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .region-heading {
+    min-width: 0;
+  }
+
+  .region-heading h2,
+  .region-heading p {
+    margin: 0;
+  }
+
+  .region-heading h2 {
+    color: var(--theme-text);
+    font-size: max(1.125rem, var(--font-size-lg));
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .region-heading p {
+    margin-top: 0.2em;
+    color: var(--theme-text-dim);
+    font-size: max(0.875rem, var(--font-size-min));
+    line-height: 1.35;
+  }
+
+  .alert-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+
+  .alert-actions :global(.panel-btn) {
+    width: auto;
+    min-width: 7.4em;
+    padding-inline: 0.9em;
+  }
+
+  .alerts-body {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.75em;
+    padding: 1em;
+  }
+
+  .standard-groups {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75em;
+  }
+
+  .group-slot,
+  .admin-group {
+    min-width: 0;
+  }
+
+  .system-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.65em;
+    min-height: var(--min-touch-target);
+    padding: 0.75em 1.1em;
+    border-top: 1px solid var(--theme-stroke);
+    color: var(--theme-text-dim);
+    background: color-mix(in srgb, var(--theme-accent) 6%, transparent);
+  }
+
+  .system-notice i {
+    flex: 0 0 auto;
+    color: var(--theme-accent-text, var(--theme-accent));
+  }
+
+  .system-notice p {
+    margin: 0;
+    font-size: max(0.75rem, var(--font-size-compact));
+    line-height: 1.4;
+  }
+
+  @container alerts-region (min-width: 48rem) {
+    .standard-groups {
+      grid-template-areas:
+        "feedback messages"
+        "feedback activity";
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
     }
 
-    .panel-header h2 {
-      font-size: var(--font-size-lg);
+    .group-messages {
+      grid-area: messages;
     }
 
-    .quick-actions {
-      flex-direction: column;
+    .group-feedback {
+      grid-area: feedback;
+    }
+
+    .group-activity {
+      grid-area: activity;
     }
   }
 
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
+  @container notification-preferences (min-width: 70rem) {
+    .notification-workspace {
+      grid-template-columns: minmax(22rem, 0.82fr) minmax(36rem, 1.38fr);
+    }
+
+    .delivery-pane {
+      border-right: 1px solid var(--theme-stroke);
+      border-bottom: 0;
+    }
+
+    .preview-mode .alerts-region {
+      grid-column: 1 / -1;
+    }
+
+    .system-notice {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container notification-preferences (max-width: 40rem) {
+    .notification-preferences-panel {
+      align-content: start;
+      padding-inline: 0.6rem;
+    }
+
+    .page-icon {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 0.85rem;
+    }
+
+    .page-heading h1 {
+      font-size: 1.4rem;
+    }
+
+    .notification-workspace {
+      border-radius: 0.95rem;
+    }
+
+    .alerts-header {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      padding: 0.85rem;
+    }
+
+    .alert-actions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: 100%;
+    }
+
+    .alert-actions :global(.panel-btn) {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .alerts-body {
+      padding: 0.75rem;
+    }
+  }
+
+  @media (max-height: 34rem) {
+    .notification-preferences-panel {
+      align-content: start;
+      gap: 0.65rem;
+      padding-block: 0.6rem;
+    }
+
+    .page-icon {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .page-heading p {
+      margin-top: 0.1rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .action-button,
-    .push-toggle {
-      transition: none;
+    .notification-preferences-panel {
+      scroll-behavior: auto;
+    }
+  }
+
+  @media (prefers-contrast: high) {
+    .notification-workspace,
+    .preview-banner {
+      border-width: 2px;
     }
   }
 </style>

@@ -222,6 +222,12 @@ export interface NotificationPreferences {
   // Push notifications master toggle
   pushEnabled: boolean;
 
+  // Email notifications are opt-in and use their own category controls.
+  emailEnabled: boolean;
+  emailMessages: boolean;
+  emailFeedback: boolean;
+  emailPlatformUpdates: boolean;
+
   // Feedback notifications
   feedbackResolved: boolean;
   feedbackInProgress: boolean;
@@ -256,6 +262,10 @@ export interface NotificationPreferences {
  */
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   pushEnabled: true,
+  emailEnabled: false,
+  emailMessages: false,
+  emailFeedback: false,
+  emailPlatformUpdates: false,
   feedbackResolved: true,
   feedbackInProgress: true,
   feedbackNeedsInfo: true,

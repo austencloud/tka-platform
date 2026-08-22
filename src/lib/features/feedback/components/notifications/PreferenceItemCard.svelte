@@ -19,152 +19,142 @@
 </script>
 
 <button
+  type="button"
   class="preference-item"
   class:enabled
-  class:disabled
   onclick={onToggle}
   {disabled}
-  aria-label={`Toggle ${label}`}
+  aria-label={`${label}: ${enabled ? "on" : "off"}`}
   aria-pressed={enabled}
   aria-busy={isBusy}
 >
-  <div class="item-content">
-    <div class="item-header">
-      <span class="item-label">{label}</span>
-      <span class="item-status" aria-hidden="true"
-        >{enabled ? "On" : "Off"}</span
-      >
-    </div>
-    <p class="item-description">{description}</p>
-  </div>
+  <span class="item-copy">
+    <span class="item-label">{label}</span>
+    <span class="item-description">{description}</span>
+  </span>
+
+  <span class="toggle-switch" aria-hidden="true">
+    <span class="toggle-knob"></span>
+  </span>
 </button>
 
 <style>
   .preference-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1em;
     width: 100%;
-    padding: 14px 14px;
-    background: linear-gradient(
-      150deg,
-      var(--theme-card-bg),
-      var(--theme-panel-bg)
-    );
-    border: 1px solid var(--theme-stroke);
-    border-radius: 14px;
-    cursor: pointer;
-    transition:
-      background 180ms ease,
-      border-color 180ms ease,
-      transform 180ms ease;
+    min-height: 4.5em;
+    padding: 0.8em 1em;
+    border: 0;
+    color: var(--theme-text);
+    background: transparent;
+    font: inherit;
     text-align: left;
-    box-shadow: var(--theme-shadow, 0 6px 16px rgba(0, 0, 0, 0.28));
+    cursor: pointer;
+    transition: background var(--duration-fast) ease;
     -webkit-tap-highlight-color: transparent;
   }
 
-  .preference-item:hover {
-    background: linear-gradient(
-      150deg,
-      var(--theme-card-hover-bg),
-      var(--theme-panel-bg)
-    );
-    border-color: var(--theme-stroke-strong);
-    box-shadow: var(--theme-shadow, 0 10px 20px rgba(0, 0, 0, 0.32));
-    transform: translateY(-1px);
+  .preference-item:hover:not(:disabled) {
+    background: var(--theme-card-hover-bg);
   }
 
-  .preference-item:active {
-    transform: translateY(0) scale(0.98);
-    transition-duration: var(--duration-instant);
+  .preference-item:active:not(:disabled) {
+    background: color-mix(
+      in srgb,
+      var(--theme-card-hover-bg) 82%,
+      var(--theme-accent) 8%
+    );
+  }
+
+  .preference-item:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid var(--theme-accent);
+    outline-offset: -2px;
+  }
+
+  .preference-item:disabled {
+    cursor: not-allowed;
+    opacity: 0.48;
   }
 
   .preference-item[aria-busy="true"] {
-    opacity: 0.7;
     cursor: wait;
+    opacity: 0.68;
   }
 
-  .preference-item.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .preference-item.enabled {
-    background: linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--theme-card-bg) 80%, var(--theme-accent)),
-      var(--theme-card-bg)
-    );
-    border-color: var(--theme-accent);
-    box-shadow: var(--theme-shadow, 0 10px 20px rgba(0, 0, 0, 0.32));
-  }
-
-  .preference-item.enabled:hover:not(:disabled) {
-    background: linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--theme-card-hover-bg) 75%, var(--theme-accent)),
-      var(--theme-panel-bg)
-    );
-    border-color: var(--theme-accent-strong);
-  }
-
-  .item-content {
+  .item-copy {
     display: flex;
+    min-width: 0;
     flex-direction: column;
-    gap: 6px;
-  }
-
-  .item-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    gap: 0.2em;
   }
 
   .item-label {
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    color: var(--theme-text, var(--theme-text));
-    line-height: 1.2;
-    letter-spacing: -0.08px;
-    flex: 1;
-  }
-
-  .preference-item.enabled .item-label {
-    color: var(--theme-accent);
-  }
-
-  .item-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: var(--font-size-compact);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 999px;
-  }
-
-  .preference-item.enabled .item-status {
-    color: #0d1b2a;
-    background: linear-gradient(
-      135deg,
-      var(--theme-accent),
-      var(--theme-accent-strong)
-    );
-    border-color: transparent;
-    box-shadow: none;
+    color: var(--theme-text);
+    font-size: max(0.875rem, var(--font-size-sm));
+    font-weight: 650;
+    line-height: 1.25;
   }
 
   .item-description {
-    font-size: var(--font-size-compact);
-    color: var(--theme-text-dim, var(--theme-text-dim));
-    margin: 0;
+    color: var(--theme-text-dim);
+    font-size: max(0.75rem, var(--font-size-compact));
     line-height: 1.4;
   }
 
-  .preference-item.enabled .item-description {
-    color: var(--theme-text, var(--theme-text-dim));
+  .toggle-switch {
+    box-sizing: border-box;
+    display: flex;
+    width: 2.8em;
+    height: 1.65em;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 0.2em;
+    border: 1px solid var(--theme-stroke-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-text) 10%, transparent);
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease;
+  }
+
+  .toggle-knob {
+    width: 1.15em;
+    height: 1.15em;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--theme-text) 72%, transparent);
+    box-shadow: 0 0.12em 0.3em rgba(0, 0, 0, 0.28);
+    transition:
+      transform var(--duration-normal) ease,
+      background var(--duration-normal) ease;
+  }
+
+  .preference-item.enabled .toggle-switch {
+    border-color: var(--theme-accent);
+    background: var(--theme-accent);
+  }
+
+  .preference-item.enabled .toggle-knob {
+    transform: translateX(1.15em);
+    background: var(--theme-text-on-accent, #fff);
+  }
+
+  @container notification-preferences (max-width: 32rem) {
+    .preference-item {
+      min-height: 4.25rem;
+      padding: 0.75rem 0.85rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .preference-item,
+    .toggle-switch,
+    .toggle-knob {
+      transition: none;
+    }
   }
 </style>

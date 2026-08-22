@@ -7,6 +7,24 @@ const preferencesCollection = (userId: string) => `users/${userId}/settings`;
 const PREFERENCES_DOCUMENT = "notificationPreferences";
 const PREFERENCES_FIELD = "notificationPreferences";
 
+const EVENT_ALERT_KEYS = [
+  "feedbackResolved",
+  "feedbackInProgress",
+  "feedbackNeedsInfo",
+  "feedbackResponse",
+  "sequenceSaved",
+  "sequenceVideoSubmitted",
+  "sequenceLiked",
+  "sequenceCommented",
+  "userFollowed",
+  "achievementUnlocked",
+  "messageReceived",
+  "adminNewUserSignup",
+  "adminUserReturned",
+  "adminQrScan",
+  "adminContentCreated",
+] as const satisfies readonly (keyof NotificationPreferences)[];
+
 /**
  * Get notification preferences for a user
  * Returns default preferences if none are set
@@ -18,7 +36,7 @@ export async function getPreferences(
     const userDoc = await firestoreGet(
       preferencesCollection(userId),
       PREFERENCES_DOCUMENT,
-      NotificationPreferencesDocSchema,
+      NotificationPreferencesDocSchema
     );
 
     if (!userDoc) {
@@ -54,7 +72,7 @@ export async function savePreferences(
       preferencesCollection(userId),
       PREFERENCES_DOCUMENT,
       { [PREFERENCES_FIELD]: preferences } as Record<string, unknown>,
-      { merge: true },
+      { merge: true }
     );
   } catch (error) {
     console.error("Error saving notification preferences:", error);
@@ -78,11 +96,37 @@ export async function togglePreference(
 }
 
 /**
+ * Set every event-level alert without changing push registration or email
+ * consent. Channel choices stay explicit because they have different setup and
+ * privacy contracts from an in-app alert preference.
+ */
+export async function setAllEventPreferences(
+  userId: string,
+  enabled: boolean
+): Promise<void> {
+  const current = await getPreferences(userId);
+  const updated = { ...current };
+
+  for (const key of EVENT_ALERT_KEYS) {
+    updated[key] = enabled;
+  }
+
+  await savePreferences(userId, updated);
+}
+
+/**
  * Enable all notifications
  */
 export async function enableAll(userId: string): Promise<void> {
+  const current = await getPreferences(userId);
   const allEnabled: NotificationPreferences = {
     pushEnabled: true,
+    // A generic bulk action must not quietly opt someone into email. Email has
+    // its own explicit switch and keeps the choices the user already made.
+    emailEnabled: current.emailEnabled,
+    emailMessages: current.emailMessages,
+    emailFeedback: current.emailFeedback,
+    emailPlatformUpdates: current.emailPlatformUpdates,
     feedbackResolved: true,
     feedbackInProgress: true,
     feedbackNeedsInfo: true,
@@ -108,6 +152,10 @@ export async function enableAll(userId: string): Promise<void> {
 export async function disableAll(userId: string): Promise<void> {
   const allDisabled: NotificationPreferences = {
     pushEnabled: false,
+    emailEnabled: false,
+    emailMessages: false,
+    emailFeedback: false,
+    emailPlatformUpdates: false,
     feedbackResolved: false,
     feedbackInProgress: false,
     feedbackNeedsInfo: false,
