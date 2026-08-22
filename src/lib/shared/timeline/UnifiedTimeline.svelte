@@ -311,6 +311,7 @@
                   <section class="compact-section">
                     <h3>Playback</h3>
                     <PlaybackModeToggle
+                      layout="inline"
                       playbackMode={playback.playbackMode ?? "continuous"}
                       isPlaying={playback.isPlaying}
                       onPlaybackModeChange={(mode) =>
@@ -694,7 +695,10 @@
     flex-direction: column;
     gap: 14px;
     width: 100%;
-    max-height: min(31rem, calc(100vh - 2rem));
+    max-height: min(
+      31rem,
+      var(--bits-popover-content-available-height, calc(100dvh - 2rem))
+    );
     overflow-y: auto;
     padding: 14px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
@@ -734,6 +738,10 @@
     letter-spacing: 0.06em;
     line-height: 1.2;
     text-transform: uppercase;
+  }
+
+  .compact-playback-panel .compact-section :global(.mode-btn) {
+    min-height: var(--min-touch-target, 44px);
   }
 
   .compact-tempo :global(.bpm-quick) {
