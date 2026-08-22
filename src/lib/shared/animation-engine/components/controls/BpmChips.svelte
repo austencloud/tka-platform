@@ -422,6 +422,16 @@
     width: 100%;
   }
 
+  /* Six presets cannot keep honest touch targets in a phone-width popover.
+     The canonical selector owns that responsive decision so every narrow host
+     gets the same three-by-two layout instead of squeezing its own copy. */
+  @container bpm-chips (max-width: 19rem) {
+    .preset-chips {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(var(--min-touch-target), 1fr));
+    }
+  }
+
   .preset-chip {
     flex: 1;
     min-width: 0;

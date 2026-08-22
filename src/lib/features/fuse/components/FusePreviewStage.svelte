@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
@@ -212,10 +212,10 @@
               collisionPadding={12}
               class="fuse-tempo-popover"
             >
-              <BpmQuickPopover
+              <BpmChips
                 bpm={fuseState.bpm}
+                variant="full"
                 onBpmChange={(value) => fuseState.setBpm(value)}
-                onClose={() => (tempoOpen = false)}
               />
             </Popover.Content>
           </Popover.Portal>
@@ -279,6 +279,12 @@
   :global(.fuse-tempo-popover) {
     --min-touch-target: 48px;
     z-index: var(--z-dropdown, 1000);
+    width: min(22rem, calc(100vw - 1.5rem));
+    padding: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 16px;
+    background: var(--theme-panel-bg, #0c0e16);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   }
 
   .preview-stage {

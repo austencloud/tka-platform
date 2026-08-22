@@ -19,7 +19,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import { Popover } from "bits-ui";
-  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import type { TempoPracticeProgress } from "../services/tempo-practice-orchestrator";
 
   interface Props {
@@ -187,12 +187,12 @@
         </Popover.Trigger>
         <Popover.Portal>
           <Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="pb-bpm-pop">
-            <BpmQuickPopover
+            <BpmChips
               {bpm}
               min={progress.startBpm}
               max={progress.maxBpm}
+              variant="full"
               {onBpmChange}
-              onClose={() => (bpmOpen = false)}
             />
           </Popover.Content>
         </Popover.Portal>
@@ -567,10 +567,18 @@
   }
   .pb-bpm-unit i { font-size: 9px; opacity: 0.8; }
 
-  /* Popover panel wrapper — BpmQuickPopover supplies its own surface; this just
-     lifts the portalled content above app chrome. :global because bits-ui
-     portals the content out of this component's scope. */
-  :global(.pb-bpm-pop) { z-index: var(--z-dropdown, 1000); transform-origin: bottom center; }
+  /* The canonical BPM selector supplies the controls; this wrapper only owns
+     popover geometry and keeps the portalled surface above app chrome. */
+  :global(.pb-bpm-pop) {
+    z-index: var(--z-dropdown, 1000);
+    width: min(22rem, calc(100vw - 1.5rem));
+    padding: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 16px;
+    background: var(--theme-panel-bg, #0c0e16);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+    transform-origin: bottom center;
+  }
   /* Entrance animation via bits-ui data-state — the popover rises + fades in
      from the readout instead of snapping open. */
   :global(.pb-bpm-pop[data-state="open"]) {

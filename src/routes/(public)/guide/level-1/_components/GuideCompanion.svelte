@@ -6,9 +6,8 @@
    * feedback_minimal_player_chrome); NOT the retired UnifiedTimeline scrubber.
    *
    * Tempo (Guide Companion v2, 2026-07-10): BPM chips demoted off the top -
-   * a small "N BPM" button below the animator opens BpmQuickPopover in a
-   * bits-ui Popover, same wrapping pattern as PracticeBar.svelte:190 (content
-   * primitive is reused; NO sequence-viewer chrome internals imported).
+   * a small "N BPM" button below the animator opens the canonical BpmChips in
+   * a bits-ui Popover (NO sequence-viewer chrome internals imported).
    *
    * Admin-only additions: Copy-for-AI in the header (hand a broken sequence to
    * Claude instead of describing it) and an edit action row (Replace via

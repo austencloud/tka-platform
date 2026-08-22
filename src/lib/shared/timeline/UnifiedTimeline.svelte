@@ -3,7 +3,7 @@
   import type { UnifiedPlaybackContext } from "./unified-playback-context";
   import { formatTime } from "$lib/shared/sequence-viewer/utils/format-time";
   import { onDestroy, type Snippet } from "svelte";
-  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
 
   const BPM_PRESETS = [15, 30, 60, 90, 120, 150];
@@ -300,8 +300,9 @@
                 {#if hasTempo}
                   <section class="compact-section compact-tempo">
                     <h3>Tempo</h3>
-                    <BpmQuickPopover
+                    <BpmChips
                       bpm={playback.bpm ?? 60}
+                      variant="full"
                       onBpmChange={(bpm) => playback.onBpmChange?.(bpm)}
                     />
                   </section>
@@ -742,15 +743,6 @@
 
   .compact-playback-panel .compact-section :global(.mode-btn) {
     min-height: var(--min-touch-target, 44px);
-  }
-
-  .compact-tempo :global(.bpm-quick) {
-    width: 100%;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
   }
 
   .compact-loop {
