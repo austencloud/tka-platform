@@ -7,6 +7,87 @@ export type { VideoVisibility } from "./video-visibility";
 
 export type InviteStatus = "pending" | "accepted" | "declined" | "expired";
 
+export type MediaSubjectType = "sequence" | "tunnel";
+export type MediaRelationship = "performance" | "realization";
+
+export interface MediaAssociation {
+  readonly subjectType: MediaSubjectType;
+  readonly subjectId: string;
+  readonly relationship: MediaRelationship;
+  readonly subjectLabel?: string;
+  /** A tunnel can explain where its motion came from without claiming that
+   * its real-world footage is a direct performance of that notation. */
+  readonly sourceSequenceId?: string;
+}
+
+export interface VideoPerformerCredit {
+  /** Account id when known; an external identity such as `ig:name` otherwise. */
+  readonly id: string;
+  readonly displayName: string;
+  readonly avatarUrl?: string;
+}
+
+export function mediaAssociationKey(
+  association: Pick<MediaAssociation, "subjectType" | "subjectId">
+): string {
+  return `${association.subjectType}:${association.subjectId}`;
+}
+
+export function createSequencePerformanceAssociation(
+  sequenceId: string,
+  subjectLabel?: string
+): MediaAssociation {
+  return {
+    subjectType: "sequence",
+    subjectId: sequenceId,
+    relationship: "performance",
+    ...(subjectLabel ? { subjectLabel } : {}),
+  };
+}
+
+export function createTunnelRealizationAssociation(
+  tunnelId: string,
+  subjectLabel?: string,
+  sourceSequenceId?: string
+): MediaAssociation {
+  return {
+    subjectType: "tunnel",
+    subjectId: tunnelId,
+    relationship: "realization",
+    ...(subjectLabel ? { subjectLabel } : {}),
+    ...(sourceSequenceId ? { sourceSequenceId } : {}),
+  };
+}
+
+/** Old video documents named only a sequence. Hydrating that field into the
+ * typed contract lets every new consumer use associations without requiring a
+ * destructive corpus migration first. */
+export function normalizeMediaAssociations(input: {
+  readonly associations?: readonly MediaAssociation[];
+  readonly sequenceId?: string;
+  readonly sequenceName?: string;
+}): readonly MediaAssociation[] {
+  const byKey = new Map<string, MediaAssociation>();
+  for (const association of input.associations ?? []) {
+    if (!association.subjectId.trim()) continue;
+    byKey.set(
+      `${mediaAssociationKey(association)}:${association.relationship}`,
+      association
+    );
+  }
+
+  if (input.sequenceId?.trim()) {
+    const legacy = createSequencePerformanceAssociation(
+      input.sequenceId,
+      input.sequenceName
+    );
+    const key = `${mediaAssociationKey(legacy)}:${legacy.relationship}`;
+    if (!byKey.has(key)) byKey.set(key, legacy);
+  }
+
+  return [...byKey.values()];
+}
+
 export interface CollaborationInvite {
   readonly userId: string;
   readonly displayName?: string;
@@ -65,10 +146,14 @@ export interface CollaborativeVideo {
   readonly fileSize: number;
   readonly mimeType: string;
 
-  // ---- Sequence reference ----
-  readonly sequenceId: string;
+  // ---- Subject references ----
+  /** Compatibility field for deployed sequence-video clients. Tunnel-only
+   * realization records intentionally omit it. */
+  readonly sequenceId?: string;
   readonly sequenceName?: string;
   readonly sequenceOwnerId?: string;
+  readonly associations: readonly MediaAssociation[];
+  readonly performers: readonly VideoPerformerCredit[];
 
   // ---- Collaboration structure ----
   readonly creatorId: string;
@@ -100,7 +185,9 @@ export interface CreateCollaborativeVideoInput {
   duration: number;
   fileSize: number;
   mimeType: string;
-  sequenceId: string;
+  sequenceId?: string;
+  associations?: readonly MediaAssociation[];
+  performers?: readonly VideoPerformerCredit[];
   creatorId: string;
   id?: string;
   thumbnailUrl?: string;
@@ -116,6 +203,23 @@ export function createCollaborativeVideo(
   creatorAvatarUrl?: string
 ): CollaborativeVideo {
   const now = new Date();
+  const associations = normalizeMediaAssociations(input);
+  if (associations.length === 0) {
+    throw new Error("A video must be associated with a sequence or artwork");
+  }
+  const sequenceAssociation = associations.find(
+    (association) =>
+      association.subjectType === "sequence" &&
+      association.relationship === "performance"
+  );
+  const sequenceId = input.sequenceId ?? sequenceAssociation?.subjectId;
+  const performers = input.performers ?? [
+    {
+      id: input.creatorId,
+      displayName: creatorDisplayName ?? "Unknown performer",
+      ...(creatorAvatarUrl ? { avatarUrl: creatorAvatarUrl } : {}),
+    },
+  ];
 
   return {
     id: input.id ?? crypto.randomUUID(),
@@ -125,9 +229,11 @@ export function createCollaborativeVideo(
     duration: input.duration,
     fileSize: input.fileSize,
     mimeType: input.mimeType,
-    sequenceId: input.sequenceId,
+    ...(sequenceId ? { sequenceId } : {}),
     sequenceName: input.sequenceName,
     sequenceOwnerId: input.sequenceOwnerId,
+    associations,
+    performers,
     creatorId: input.creatorId,
     collaborators: [
       {

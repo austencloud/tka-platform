@@ -16,6 +16,7 @@
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     createVideoFromUpload,
+    createTunnelRealizationFromUpload,
     getVideoFileMetadata,
   } from "../helpers/create-video-from-upload";
   import type { VideoVisibility } from "../domain/collaborative-video";
@@ -32,11 +33,17 @@
   const {
     show = false,
     sequence,
+    tunnel,
     onClose,
     onUploaded,
   }: {
     show?: boolean;
-    sequence: SequenceData;
+    sequence?: SequenceData;
+    tunnel?: {
+      id: string;
+      name: string;
+      sourceSequenceId?: string;
+    };
     onClose?: () => void;
     onUploaded?: () => void;
   } = $props();
@@ -63,6 +70,21 @@
 
   // Current user
   const currentUser = $derived(getAuthSync().currentUser);
+  const uploadSubject = $derived(
+    sequence
+      ? {
+          kind: "sequence" as const,
+          storageKey: sequence.id,
+          label: sequence.name || sequence.word,
+        }
+      : tunnel
+        ? {
+            kind: "tunnel" as const,
+            storageKey: `tunnel_${tunnel.id}`,
+            label: tunnel.name,
+          }
+        : null
+  );
 
   function handleFileSelect(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -124,6 +146,10 @@
       uploadError = "No video file selected.";
       return;
     }
+    if (!uploadSubject) {
+      uploadError = "Choose a sequence or saved artwork for this video.";
+      return;
+    }
     if (!uploadService) {
       console.error("VideoUploader not available");
       uploadError =
@@ -142,8 +168,8 @@
 
     try {
       // 1. Upload video to Firebase Storage
-      const uploadResult = await uploadService.uploadPerformanceVideo(
-        sequence.id,
+      const uploadResult = await uploadService.uploadAssociatedVideo(
+        uploadSubject.storageKey,
         selectedFile,
         {
           onProgress: (progress: number) => {
@@ -162,7 +188,7 @@
             uploadResult.key.split("/").pop()?.split(".")[0] || "0"
           );
           const thumbnailResult = await uploadService.uploadVideoThumbnail(
-            sequence.id,
+            uploadSubject.storageKey,
             thumbnail.blob,
             videoTimestamp
           );
@@ -177,9 +203,8 @@
       const metadata = await getVideoFileMetadata(selectedFile);
 
       // 4. Create collaborative video
-      const video = createVideoFromUpload({
+      const common = {
         uploadResult,
-        sequence,
         duration: metadata.duration || videoDuration,
         fileSize: metadata.fileSize,
         mimeType: metadata.mimeType,
@@ -189,7 +214,10 @@
         visibility,
         description: description.trim() || undefined,
         thumbnailUrl,
-      });
+      };
+      const video = sequence
+        ? createVideoFromUpload({ ...common, sequence })
+        : createTunnelRealizationFromUpload({ ...common, tunnel: tunnel! });
 
       // 5. Save to Firestore
       await saveVideo(video);
@@ -251,7 +279,11 @@
     <header class="upload-sheet__header">
       <div class="header-content">
         <i class="fas fa-video header-icon" aria-hidden="true"></i>
-        <h2 id="video-upload-title">Upload Video</h2>
+        <h2 id="video-upload-title">
+          {uploadSubject?.kind === "tunnel"
+            ? "Add tunnel footage"
+            : "Upload performance"}
+        </h2>
       </div>
       {#if !isUploading}
         <button class="close-button" onclick={handleClose} aria-label="Close">
@@ -262,10 +294,17 @@
 
     <!-- Content -->
     <div class="upload-sheet__content">
-      <!-- Sequence Info -->
+      <!-- The subject stays visible while choosing publication settings so a
+           tunnel realization can never be mistaken for a sequence performance. -->
       <div class="sequence-info">
-        <span class="sequence-label">For sequence:</span>
-        <span class="sequence-name">{sequence.name || sequence.word}</span>
+        <span class="sequence-label">
+          {uploadSubject?.kind === "tunnel"
+            ? "Realization of:"
+            : "Performance of:"}
+        </span>
+        <span class="sequence-name"
+          >{uploadSubject?.label ?? "No subject selected"}</span
+        >
       </div>
 
       <!-- File Selection -->
@@ -429,7 +468,7 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .close-button {
@@ -441,14 +480,14 @@
     border: none;
     background: var(--theme-card-bg);
     border-radius: 8px;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .close-button:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .upload-sheet__content {
@@ -472,13 +511,13 @@
 
   .sequence-label {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
   }
 
   .sequence-name {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .file-drop-zone {
@@ -508,12 +547,12 @@
   .drop-text {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .drop-hint {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
   }
 
   .video-preview {
@@ -541,7 +580,7 @@
   .file-name {
     font-size: 0.9rem;
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--theme-text);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -549,7 +588,7 @@
 
   .file-details {
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
   }
 
   .change-btn {
@@ -588,14 +627,14 @@
   .option-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .visibility-hint {
     min-block-size: 1.25rem;
     font-size: var(--font-size-compact, 12px);
     line-height: 1.4;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
   }
 
   .option-group textarea {
@@ -603,7 +642,7 @@
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 8px;
-    color: var(--text-primary);
+    color: var(--theme-text);
     font-size: 0.9rem;
     font-family: inherit;
     resize: none;
@@ -618,7 +657,7 @@
 
   .char-count {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
     text-align: right;
   }
 
@@ -648,7 +687,7 @@
 
   .progress-text {
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--theme-text-dim);
     text-align: center;
   }
 
@@ -689,7 +728,7 @@
 
   .btn-secondary {
     background: var(--theme-card-bg);
-    color: var(--text-primary);
+    color: var(--theme-text);
   }
 
   .btn-secondary:hover {

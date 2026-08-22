@@ -6,12 +6,27 @@ import {
 
 type VideoDocument = Readonly<Record<string, unknown>>;
 
-function publicSequenceId(data: VideoDocument | undefined): string | null {
-  if (data?.visibility !== "public") return null;
-  const sequenceId = data.sequenceId;
-  return typeof sequenceId === "string" && sequenceId.length > 0
-    ? sequenceId
-    : null;
+function publicSequenceIds(data: VideoDocument | undefined): string[] {
+  if (data?.visibility !== "public") return [];
+  const ids = new Set<string>();
+  if (typeof data.sequenceId === "string" && data.sequenceId.length > 0) {
+    ids.add(data.sequenceId);
+  }
+  if (Array.isArray(data.associations)) {
+    for (const value of data.associations) {
+      if (!value || typeof value !== "object") continue;
+      const association = value as Record<string, unknown>;
+      if (
+        association.subjectType === "sequence" &&
+        association.relationship === "performance" &&
+        typeof association.subjectId === "string" &&
+        association.subjectId.length > 0
+      ) {
+        ids.add(association.subjectId);
+      }
+    }
+  }
+  return [...ids];
 }
 
 /**
@@ -24,13 +39,14 @@ export function _affectedPublicSequenceIds(
   after: VideoDocument | undefined
 ): string[] {
   return Array.from(
-    new Set([publicSequenceId(before), publicSequenceId(after)].filter(Boolean))
-  ) as string[];
+    new Set([...publicSequenceIds(before), ...publicSequenceIds(after)])
+  );
 }
 
 /**
  * Rebuild the public performance metadata from authoritative public video
- * documents. Aggregate/query reads run in the same transaction snapshot, so
+ * documents. Legacy and typed-association queries run in the same transaction
+ * snapshot and are de-duplicated by video id, so
  * duplicate event delivery and overlapping writes converge without counters
  * drifting. A missing public projection is intentionally a no-op; its create
  * trigger will reconcile when the sequence is published later.
@@ -40,23 +56,39 @@ export async function _reconcilePublicPerformanceMetadata(
   db: FirebaseFirestore.Firestore = admin.firestore()
 ): Promise<boolean> {
   const publicSequenceRef = db.doc(`publicSequences/${sequenceId}`);
-  const publicVideos = db
-    .collection("videos")
+  const videos = db.collection("videos");
+  const legacyPublicVideos = videos
     .where("sequenceId", "==", sequenceId)
+    .where("visibility", "==", "public");
+  const associatedPublicVideos = videos
+    .where("associationKeys", "array-contains", `sequence:${sequenceId}`)
     .where("visibility", "==", "public");
 
   return db.runTransaction(async (transaction) => {
     const publicSequence = await transaction.get(publicSequenceRef);
     if (!publicSequence.exists) return false;
 
-    const [countSnapshot, latestSnapshot] = await Promise.all([
-      transaction.get(publicVideos.count()),
-      transaction.get(publicVideos.orderBy("createdAt", "desc").limit(1)),
+    const [legacySnapshot, associatedSnapshot] = await Promise.all([
+      transaction.get(legacyPublicVideos),
+      transaction.get(associatedPublicVideos),
     ]);
-    const latestCreatedAt = latestSnapshot.docs[0]?.data().createdAt;
+    const videosById = new Map<
+      string,
+      FirebaseFirestore.QueryDocumentSnapshot
+    >();
+    for (const video of [...legacySnapshot.docs, ...associatedSnapshot.docs]) {
+      videosById.set(video.id, video);
+    }
+    const publicVideos = [...videosById.values()];
+    const latest = publicVideos.sort((left, right) => {
+      const leftMillis = left.data().createdAt?.toMillis?.() ?? 0;
+      const rightMillis = right.data().createdAt?.toMillis?.() ?? 0;
+      return rightMillis - leftMillis;
+    })[0];
+    const latestCreatedAt = latest?.data().createdAt;
 
     transaction.update(publicSequenceRef, {
-      publicPerformanceCount: countSnapshot.data().count,
+      publicPerformanceCount: publicVideos.length,
       latestPublicPerformanceAt:
         latestCreatedAt ?? admin.firestore.FieldValue.delete(),
     });

@@ -6,15 +6,17 @@
   reason to scroll. The attribution strip is the load-bearing half — an
   uncredited thumbnail is browse, not creators.
 
-  Thumbnail rendering, caching and lazy loading all belong to
-  PropAwareThumbnail (the same component ProfileTabs, BrowseGrid and the
-  watch feed use). Nothing about pictograph rendering is reimplemented here.
+  The media stage is the same animation + pictograph-strip showcase used by
+  sequence attachments in Messages. This tile only adds creator attribution
+  and navigation; it does not own another preview player.
 -->
 <script lang="ts">
-  import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
+  import SequenceShowcasePreview from "$lib/shared/sequence-preview/components/SequenceShowcasePreview.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
+  import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
     sequence: SequenceData;
@@ -29,23 +31,24 @@
   let { sequence, creator, unitPx, onselect, oncreator }: Props = $props();
 
   const avatarSize = $derived(Math.round(1.5 * unitPx));
+  const sequenceWord = $derived(simplifyRepeatedWord(deriveWord(sequence)));
+
+  function loadSequence(): Promise<SequenceData> {
+    return Promise.resolve(sequence);
+  }
 </script>
 
 <div class="tile">
-  <button
-    class="art"
-    type="button"
-    onclick={() => onselect(sequence)}
-    aria-label="Open {creator.displayName}'s sequence"
-  >
-    <!--
-      allowQR defaults to TRUE on PropAwareThumbnail, and the component's own
-      docs say grids and peeks must turn it off: a QR at tile size is
-      unscannable, and it eats a step cell that would otherwise show the work.
-      The first render of this wall had a QR block in every tile.
-    -->
-    <PropAwareThumbnail {sequence} allowQR={false} />
-  </button>
+  <div class="art">
+    <SequenceShowcasePreview
+      word={sequenceWord}
+      {loadSequence}
+      activation="ambient"
+      allowQR={false}
+      onopen={() => onselect(sequence)}
+      openLabel="Open {creator.displayName}'s {sequenceWord} sequence"
+    />
+  </div>
 
   <!--
     A separate control, not a nested button: the thumbnail opens the work and
@@ -90,30 +93,10 @@
   .art {
     display: block;
     width: 100%;
-    padding: 0;
-    background: none;
-    border: none;
-    cursor: pointer;
-    /* Establishes the query container PropAwareThumbnail sizes against — same
-       contract as ProfileTabs' `.card-thumbnail`. */
-    container-type: inline-size;
-    container-name: sequence-card;
-
-    /* A sequence sheet's height scales with its step count, so left alone the
-       tiles ranged 429px to 950px and the wall read as rubble. A fixed window
-       onto the top of each sheet — title glyph and opening steps — makes the
-       row uniform. This is a wall of samples, not a reader; the whole sheet is
-       one click away. */
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1;
     overflow: hidden;
-    /* Fades the cut edge instead of slicing a row of pictographs in half, so
-       the crop reads as a deliberate window rather than a rendering accident. */
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      #000 72%,
-      rgba(0, 0, 0, 0.25) 100%
-    );
-    mask-image: linear-gradient(to bottom, #000 72%, rgba(0, 0, 0, 0.25) 100%);
+    --sequence-showcase-border: 0;
+    --sequence-showcase-radius: 0;
   }
 
   .credit {
@@ -139,7 +122,6 @@
     color: var(--theme-text, rgba(255, 255, 255, 0.95));
   }
 
-  .art:focus-visible,
   .credit:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: -2px;

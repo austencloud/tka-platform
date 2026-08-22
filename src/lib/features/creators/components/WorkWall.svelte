@@ -95,10 +95,8 @@
     display: grid;
     grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
     gap: 0.75em;
-    /* Thumbnail height varies with step count, so tiles hug their own content
-       instead of stretching to the row's tallest — the same rule BrowseGrid
-       and ProfileTabs use, without which short sequences render as blank
-       slabs. */
+    /* Every showcase owns a square media stage; the credit strip is the only
+       content below it, so the row stays aligned at every sequence length. */
     align-items: start;
   }
 </style>

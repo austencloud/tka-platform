@@ -8,6 +8,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   createCollaborativeVideo,
+  createTunnelRealizationAssociation,
   type CollaborativeVideo,
   type VideoVisibility,
 } from "../domain/collaborative-video";
@@ -96,6 +97,68 @@ export function createVideoFromUpload(
       sequenceId: sequence.id,
       sequenceName: sequence.name || sequence.word,
       sequenceOwnerId: sequence.ownerId,
+      creatorId,
+      visibility,
+      description,
+    },
+    creatorDisplayName,
+    creatorAvatarUrl
+  );
+}
+
+export interface CreateTunnelRealizationFromUploadOptions {
+  uploadResult: VideoUploadResult;
+  tunnel: {
+    id: string;
+    name: string;
+    sourceSequenceId?: string;
+  };
+  duration: number;
+  fileSize: number;
+  mimeType: string;
+  creatorId: string;
+  creatorDisplayName?: string;
+  creatorAvatarUrl?: string;
+  visibility?: VideoVisibility;
+  description?: string;
+  thumbnailUrl?: string;
+}
+
+/** A real-world tunnel video describes the saved artwork, not merely the
+ * notation that generated its motion. Its optional source sequence stays on
+ * the association as lineage and never becomes the compatibility sequenceId. */
+export function createTunnelRealizationFromUpload(
+  options: CreateTunnelRealizationFromUploadOptions
+): CollaborativeVideo {
+  const {
+    uploadResult,
+    tunnel,
+    duration,
+    fileSize,
+    mimeType,
+    creatorId,
+    creatorDisplayName,
+    creatorAvatarUrl,
+    visibility = DEFAULT_VIDEO_VISIBILITY,
+    description,
+    thumbnailUrl,
+  } = options;
+
+  return createCollaborativeVideo(
+    {
+      videoUrl: uploadResult.url,
+      storagePath: uploadResult.key,
+      thumbnailUrl,
+      duration,
+      fileSize,
+      mimeType,
+      associations: [
+        createTunnelRealizationAssociation(
+          tunnel.id,
+          tunnel.name,
+          tunnel.sourceSequenceId
+        ),
+      ],
       creatorId,
       visibility,
       description,

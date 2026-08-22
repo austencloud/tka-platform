@@ -28,6 +28,10 @@ import {
   type CollaborationInvite,
   type VideoVisibility,
   type StepMap,
+  type MediaAssociation,
+  type VideoPerformerCredit,
+  mediaAssociationKey,
+  normalizeMediaAssociations,
 } from "../domain/collaborative-video";
 import type { UserVideoLibrary } from "./types";
 
@@ -156,6 +160,67 @@ function docToVideo(
       }
     : undefined;
 
+  const rawAssociations = Array.isArray(docData.associations)
+    ? docData.associations
+    : [];
+  const associations = normalizeMediaAssociations({
+    associations: rawAssociations.flatMap((value): MediaAssociation[] => {
+      if (!value || typeof value !== "object") return [];
+      const item = value as Record<string, unknown>;
+      const subjectType = item.subjectType;
+      const relationship = item.relationship;
+      const subjectId = item.subjectId;
+      const validPair =
+        (subjectType === "sequence" && relationship === "performance") ||
+        (subjectType === "tunnel" && relationship === "realization");
+      if (!validPair || typeof subjectId !== "string" || !subjectId.trim()) {
+        return [];
+      }
+      return [
+        {
+          subjectType,
+          subjectId,
+          relationship,
+          ...(typeof item.subjectLabel === "string"
+            ? { subjectLabel: item.subjectLabel }
+            : {}),
+          ...(typeof item.sourceSequenceId === "string"
+            ? { sourceSequenceId: item.sourceSequenceId }
+            : {}),
+        } as MediaAssociation,
+      ];
+    }),
+    sequenceId:
+      typeof docData.sequenceId === "string" ? docData.sequenceId : undefined,
+    sequenceName:
+      typeof docData.sequenceName === "string"
+        ? docData.sequenceName
+        : undefined,
+  });
+
+  const performers: VideoPerformerCredit[] = Array.isArray(docData.performers)
+    ? docData.performers.flatMap((value): VideoPerformerCredit[] => {
+        if (!value || typeof value !== "object") return [];
+        const item = value as Record<string, unknown>;
+        if (
+          typeof item.id !== "string" ||
+          typeof item.displayName !== "string" ||
+          !item.displayName.trim()
+        ) {
+          return [];
+        }
+        return [
+          {
+            id: item.id,
+            displayName: item.displayName,
+            ...(typeof item.avatarUrl === "string"
+              ? { avatarUrl: item.avatarUrl }
+              : {}),
+          },
+        ];
+      })
+    : [];
+
   return {
     id: videoId,
     videoUrl: docData.videoUrl as string,
@@ -164,9 +229,13 @@ function docToVideo(
     duration: docData.duration as number,
     fileSize: docData.fileSize as number,
     mimeType: docData.mimeType as string,
-    sequenceId: docData.sequenceId as string,
+    ...(typeof docData.sequenceId === "string"
+      ? { sequenceId: docData.sequenceId }
+      : {}),
     sequenceName: docData.sequenceName as string | undefined,
     sequenceOwnerId: docData.sequenceOwnerId as string | undefined,
+    associations,
+    performers,
     creatorId: docData.creatorId as string,
     creatorDisplayName: (docData.creatorDisplayName as string) || undefined,
     collaborators,
@@ -189,9 +258,22 @@ function videoToDoc(video: CollaborativeVideo): Record<string, unknown> {
     duration: video.duration,
     fileSize: video.fileSize,
     mimeType: video.mimeType,
-    sequenceId: video.sequenceId,
+    sequenceId: video.sequenceId ?? null,
     sequenceName: video.sequenceName ?? null,
     sequenceOwnerId: video.sequenceOwnerId ?? null,
+    associations: video.associations.map((association) => ({
+      subjectType: association.subjectType,
+      subjectId: association.subjectId,
+      relationship: association.relationship,
+      subjectLabel: association.subjectLabel ?? null,
+      sourceSequenceId: association.sourceSequenceId ?? null,
+    })),
+    associationKeys: [...new Set(video.associations.map(mediaAssociationKey))],
+    performers: video.performers.map((performer) => ({
+      id: performer.id,
+      displayName: performer.displayName,
+      avatarUrl: performer.avatarUrl ?? null,
+    })),
     creatorId: video.creatorId,
     creatorDisplayName: getCreatorDisplayName(video) ?? null,
     collaborators: video.collaborators.map((c) => ({
@@ -655,6 +737,65 @@ export async function getVideosForSequence(
     // read rendered as "No videos yet" beside an upload button.
     console.error(
       "❌ [CollaborativeVideoManager] Failed to get videos for sequence:",
+      error
+    );
+    throw error;
+  }
+}
+
+export async function getVideosForTunnel(
+  tunnelId: string
+): Promise<CollaborativeVideo[]> {
+  try {
+    const firestore = await readFirestore();
+    const userId = getUserId();
+    const collectionRef = collection(firestore, VIDEOS_COLLECTION);
+    const associationKey = `tunnel:${tunnelId}`;
+
+    const publicQuery = query(
+      collectionRef,
+      where("associationKeys", "array-contains", associationKey),
+      where("visibility", "==", "public")
+    );
+    const createdQuery = query(
+      collectionRef,
+      where("associationKeys", "array-contains", associationKey),
+      where("creatorId", "==", userId)
+    );
+    // Firestore permits only one array-contains field in a query. Load the
+    // user's already-authorized collaborator set, then keep this tunnel's
+    // records locally instead of combining collaboratorIds + associationKeys.
+    const collaboratorQuery = query(
+      collectionRef,
+      where("visibility", "==", "collaborators-only"),
+      where("collaboratorIds", "array-contains", userId)
+    );
+
+    const snapshots = await Promise.all([
+      getDocs(publicQuery),
+      getDocs(createdQuery),
+      getDocs(collaboratorQuery),
+    ]);
+    const byId = new Map<string, CollaborativeVideo>();
+    for (const snapshot of snapshots) {
+      for (const videoDoc of snapshot.docs) {
+        const video = docToVideo(videoDoc.data(), videoDoc.id);
+        if (
+          video.associations.some(
+            (association) => mediaAssociationKey(association) === associationKey
+          )
+        ) {
+          byId.set(video.id, video);
+        }
+      }
+    }
+
+    return [...byId.values()].sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    );
+  } catch (error) {
+    console.error(
+      "❌ [CollaborativeVideoManager] Failed to get videos for tunnel:",
       error
     );
     throw error;

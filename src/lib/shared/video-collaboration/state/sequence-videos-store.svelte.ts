@@ -142,6 +142,9 @@ export function getSequenceVideosStore(
 export async function saveSequenceVideo(
   video: CollaborativeVideo
 ): Promise<void> {
+  if (!video.sequenceId) {
+    throw new Error("A sequence video must include a sequence association");
+  }
   await saveVideo(video);
   getSequenceVideosStore(video.sequenceId).add(video);
 }
