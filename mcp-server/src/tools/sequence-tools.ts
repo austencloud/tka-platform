@@ -229,7 +229,7 @@ export function registerSequenceTools(server: McpServer): void {
       maxAttempts: z.number().optional().default(500).describe("Maximum generation attempts (default 500 handles complex words)"),
       bridgeSelections: z.record(z.string(), z.number()).optional().describe('Map of bridge transition index to preferred bridge option index. E.g., {"0": 1} uses the 2nd bridge option for the first bridge needed.'),
       constraints: z.string().optional().describe('Natural language constraints, e.g., "maximize continuity, all pro motions", "smooth flow with blue clockwise"'),
-      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth (maximize continuity), reversal (break every step), isolation (all pro), antispin (all anti), pro-cw, anti-ccw, no-dash, maximize-dash (prefer Type 4/5 letters), maximum-chaos, smooth-hands (hand path continuity), smooth-props (prop spin continuity)'),
+      constraintPreset: z.enum(["smooth", "smooth-hands", "smooth-props", "reversal", "isolation", "antispin", "no-dash", "no-static", "maximize-dash", "maximum-chaos"]).optional().describe('Predefined constraint preset: smooth, smooth-hands, smooth-props, reversal, isolation, antispin, no-dash, no-static, maximize-dash, or maximum-chaos'),
       compact: z.boolean().optional().default(false).describe("Compact output - summary only without full step data (saves ~2000+ tokens for long sequences)"),
     },
     async ({ word, gridMode = "diamond", maxAttempts = 500, bridgeSelections, constraints, constraintPreset, compact = false }) => {

@@ -11,6 +11,7 @@ export interface TypeDefinition {
   };
   letterCount: number;
   letters: string;
+  registeredExtensions?: string;
   keyFact: string;
   rotationPattern?: {
     description: string;
@@ -72,7 +73,8 @@ export const TYPE_DEFINITIONS: Record<number, TypeDefinition> = {
     motionPattern: { blue: "static OR dash", red: "dash OR static" },
     letterCount: 3,
     letters: "Φ, Ψ, Λ",
-    keyFact: "Only 3 letters. The dash motion moves to the opposite grid point.",
+    registeredExtensions: "τ- (Tau-Dash, Level 4; no dataframe variations yet)",
+    keyFact: "The Level 1 dataframe has 3 letters. Tau-Dash is a registered Type 4 extension, not a letter type.",
   },
   5: {
     type: 5,
@@ -121,13 +123,13 @@ export function getTypeComparison(type1: number, type2: number): string {
   const t2 = TYPE_DEFINITIONS[type2];
   if (!t1 || !t2) return `Invalid type number. Types range from 1-6.`;
   const [first, second] = type1 < type2 ? [t1, t2] : [t2, t1];
-  return `## Type ${first.type} (${first.name}) vs Type ${second.type} (${second.name})\n\n**Type ${first.type} - ${first.name}:**\n- ${first.description}\n- Blue hand: ${first.motionPattern.blue}\n- Red hand: ${first.motionPattern.red}\n- ${first.letterCount} letters: ${first.letters}\n\n**Type ${second.type} - ${second.name}:**\n- ${second.description}\n- Blue hand: ${second.motionPattern.blue}\n- Red hand: ${second.motionPattern.red}\n- ${second.letterCount} letters: ${second.letters}\n\n**Key difference:** ${getKeyDifference(first.type, second.type)}`;
+  return `## Type ${first.type} (${first.name}) vs Type ${second.type} (${second.name})\n\n**Type ${first.type} - ${first.name}:**\n- ${first.description}\n- Blue hand: ${first.motionPattern.blue}\n- Red hand: ${first.motionPattern.red}\n- ${first.letterCount} Level 1/dataframe letters: ${first.letters}${first.registeredExtensions ? `\n- Registered extensions: ${first.registeredExtensions}` : ""}\n\n**Type ${second.type} - ${second.name}:**\n- ${second.description}\n- Blue hand: ${second.motionPattern.blue}\n- Red hand: ${second.motionPattern.red}\n- ${second.letterCount} Level 1/dataframe letters: ${second.letters}${second.registeredExtensions ? `\n- Registered extensions: ${second.registeredExtensions}` : ""}\n\n**Key difference:** ${getKeyDifference(first.type, second.type)}`;
 }
 
 export function getTypeExplanation(type: number): string {
   const t = TYPE_DEFINITIONS[type];
   if (!t) return `Invalid type number ${type}. Types range from 1-6.`;
-  let explanation = `## Type ${t.type}: ${t.name}\n\n**Definition:** ${t.description}\n\n**Motion pattern:** ${t.motionPattern.blue === t.motionPattern.red ? `Both hands ${t.motionPattern.blue}` : `Blue: ${t.motionPattern.blue}, Red: ${t.motionPattern.red}`}\n\n**Letters (${t.letterCount}):** ${t.letters}\n\n**Key fact:** ${t.keyFact}`;
+  let explanation = `## Type ${t.type}: ${t.name}\n\n**Definition:** ${t.description}\n\n**Motion pattern:** ${t.motionPattern.blue === t.motionPattern.red ? `Both hands ${t.motionPattern.blue}` : `Blue: ${t.motionPattern.blue}, Red: ${t.motionPattern.red}`}\n\n**Level 1/dataframe letters (${t.letterCount}):** ${t.letters}${t.registeredExtensions ? `\n\n**Registered extensions:** ${t.registeredExtensions}` : ""}\n\n**Key fact:** ${t.keyFact}`;
   if (t.rotationPattern) {
     explanation += `\n\n**Organization:** ${t.rotationPattern.description}\n`;
     for (const group of t.rotationPattern.groups) {

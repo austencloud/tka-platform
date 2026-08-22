@@ -58,7 +58,7 @@ export const KNOWLEDGE_GRAPH: KnowledgeConcept[] = [
     name: "Letter Types",
     prerequisites: ["1.4"],
     terms: ["Type 1", "Type 2", "Type 3", "Type 4", "Type 5", "Type 6", "dual-shift", "shift", "cross-shift", "dash", "dual-dash", "static", "letter type"],
-    description: "The 6 categories that organize all 47 letters",
+    description: "The 6 categories that organize the 47 Level 1 dataframe letters",
   },
   {
     id: "1.6",

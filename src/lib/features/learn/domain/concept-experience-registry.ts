@@ -1,0 +1,110 @@
+import type { Component } from "svelte";
+import type { ExperienceViewMode, LearnConcept } from "./types";
+import { TKA_CONCEPTS } from "./concepts";
+
+interface ConceptExperienceProps {
+  viewMode?: ExperienceViewMode;
+  onComplete?: () => void;
+  onBack?: () => void;
+}
+
+export type ConceptExperienceComponent = Component<ConceptExperienceProps>;
+
+export interface ConceptExperienceDefinition {
+  conceptId: string;
+  guideSlug: string;
+  guideLabel: string;
+  reviewStatus: "confirmed" | "built";
+  load: () => Promise<{ default: ConceptExperienceComponent }>;
+}
+
+function experience(
+  definition: ConceptExperienceDefinition
+): ConceptExperienceDefinition {
+  return definition;
+}
+
+/**
+ * The lessons a learner can actually open today. Curriculum planning still
+ * lives in concepts.ts, but this registry is the product truth for published
+ * experiences. Cards, routes, and the lesson renderer all read this one list,
+ * so a future lesson cannot appear available before its component exists.
+ */
+export const CONCEPT_EXPERIENCES = [
+  experience({
+    conceptId: "grid",
+    guideSlug: "the-grid",
+    guideLabel: "The Grid",
+    reviewStatus: "confirmed",
+    load: () =>
+      import("../components/interactive/GridConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "hand-positions",
+    guideSlug: "hand-positions",
+    guideLabel: "Hand Positions",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/positions/PositionsConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "hand-motions-intro",
+    guideSlug: "hand-motions",
+    guideLabel: "Hand Motions",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/motions/MotionsConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "staff-positions",
+    guideSlug: "staff-positions",
+    guideLabel: "Staff Positions and Rotations",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/staff/StaffConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "type1-abc-ghi",
+    guideSlug: "lt1-abc-ghi",
+    guideLabel: "Type 1: ABC and GHI",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/letters/type1/Type1ConceptExperience.svelte"),
+  }),
+  experience({
+    conceptId: "words-alpha-beta",
+    guideSlug: "words",
+    guideLabel: "Words",
+    reviewStatus: "built",
+    load: () =>
+      import("../components/interactive/words/WordsConceptExperience.svelte"),
+  }),
+] as const satisfies readonly ConceptExperienceDefinition[];
+
+const byConceptId = new Map(
+  CONCEPT_EXPERIENCES.map((definition) => [definition.conceptId, definition])
+);
+
+const byGuideSlug = new Map(
+  CONCEPT_EXPERIENCES.map((definition) => [definition.guideSlug, definition])
+);
+
+export function getConceptExperience(
+  conceptId: string
+): ConceptExperienceDefinition | undefined {
+  return byConceptId.get(conceptId);
+}
+
+export function getConceptExperienceForGuideSlug(
+  guideSlug: string
+): ConceptExperienceDefinition | undefined {
+  return byGuideSlug.get(guideSlug);
+}
+
+export function isConceptExperienceAvailable(conceptId: string): boolean {
+  return byConceptId.has(conceptId);
+}
+
+export function getAvailableConcepts(): LearnConcept[] {
+  return TKA_CONCEPTS.filter((concept) => byConceptId.has(concept.id));
+}

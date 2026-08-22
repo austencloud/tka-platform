@@ -9,135 +9,136 @@
 import type { Component } from "svelte";
 
 export interface LaunchpadTileDef {
-	id: string;
-	href: string;
-	heading: string;
-	descriptor: string;
-	span: "2x2" | "2x1" | "1x1";
-	/** Per-destination signature color (hex), consumed as the tile's --c var. */
-	color: string;
-	/** FontAwesome solid icon class, e.g. "fa-pen-nib". */
-	icon: string;
-	/** Which live media embed (if any) fills the tile's decorative layer. */
-	media?:
-		| "mandala"
-		| "choreo-card"
-		| "pictograph"
-		| "pictograph-fade"
-		| "dictionary"
-		| "guide-cover"
-		| "alphabet-strip";
-	/**
-	 * Generic decorative-media path for consumers outside the homepage (e.g. the
-	 * composer bento): a dynamic import of any Svelte component, mounted through
-	 * LazyMount alongside the closed `media` union. Only used when `media` is
-	 * unset — homepage tiles keep the union branches untouched.
-	 */
-	mediaLoader?: () => Promise<{ default: Component }>;
-	/** Props forwarded to the `mediaLoader` component. */
-	mediaProps?: Record<string, unknown>;
-	chips?: { label: string; href: string }[];
-	/** Opt this tile into the pointer-follow magnetic pull (composer only). */
-	magnetic?: boolean;
-	/**
-	 * Enhance an ordinary primary link activation with the grid's
-	 * `onActivate(tile)` callback. The href stays in the rendered anchor for
-	 * no-JS navigation and modified-click browser behavior.
-	 */
-	activate?: boolean;
-	/**
-	 * Static view-transition-name for the cross-route shared-element morph
-	 * (landing tile -> destination page hero). Present on both endpoints;
-	 * inert unless a morph navigation runs. Rev. 3 pairs all six primary
-	 * destinations; the route allowlist is derived from these names.
-	 */
-	morphName?: string;
+  id: string;
+  href: string;
+  heading: string;
+  descriptor: string;
+  span: "2x2" | "2x1" | "1x1";
+  /** Per-destination signature color (hex), consumed as the tile's --c var. */
+  color: string;
+  /** FontAwesome solid icon class, e.g. "fa-pen-nib". */
+  icon: string;
+  /** Which live media embed (if any) fills the tile's decorative layer. */
+  media?:
+    | "mandala"
+    | "choreo-card"
+    | "pictograph"
+    | "pictograph-fade"
+    | "dictionary"
+    | "guide-cover"
+    | "alphabet-strip";
+  /**
+   * Generic decorative-media path for consumers outside the homepage (e.g. the
+   * composer bento): a dynamic import of any Svelte component, mounted through
+   * LazyMount alongside the closed `media` union. Only used when `media` is
+   * unset — homepage tiles keep the union branches untouched.
+   */
+  mediaLoader?: () => Promise<{ default: Component }>;
+  /** Props forwarded to the `mediaLoader` component. */
+  mediaProps?: Record<string, unknown>;
+  chips?: { label: string; href: string }[];
+  /** Opt this tile into the pointer-follow magnetic pull (composer only). */
+  magnetic?: boolean;
+  /**
+   * Enhance an ordinary primary link activation with the grid's
+   * `onActivate(tile)` callback. The href stays in the rendered anchor for
+   * no-JS navigation and modified-click browser behavior.
+   */
+  activate?: boolean;
+  /**
+   * Static view-transition-name for the cross-route shared-element morph
+   * (landing tile -> destination page hero). Present on both endpoints;
+   * inert unless a morph navigation runs. Rev. 3 pairs all six primary
+   * destinations; the route allowlist is derived from these names.
+   */
+  morphName?: string;
 }
 
 export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
-	{
-		id: "composer",
-		href: "/composer",
-		heading: "Composer",
-		descriptor: "Build, animate, collect, and share TKA sequences!",
-		span: "2x2",
-		color: "#a78bfa",
-		icon: "fa-pen-nib",
-		media: "mandala",
-		magnetic: true,
-		morphName: "launchpad-composer",
-	},
-	{
-		id: "choreo-cards",
-		href: "/shop",
-		heading: "Choreo Cards",
-		descriptor: "Printed decks of real sequences. Scan a card and it plays.",
-		span: "2x1",
-		color: "#34d399",
-		icon: "fa-layer-group",
-		media: "choreo-card",
-		morphName: "launchpad-choreo-cards",
-		chips: [
-			{ label: "LOOP Deck", href: "/shop/loop-deck" },
-			{ label: "Starter Pack", href: "/shop/starter-pack" },
-		],
-	},
-	{
-		id: "guide",
-		href: "/guide",
-		heading: "The Guide",
-		descriptor: "Read and write TKA, level by level.",
-		span: "2x1",
-		color: "#60a5fa",
-		icon: "fa-map-signs",
-		media: "guide-cover",
-		morphName: "launchpad-guide",
-	},
-	// The grid's cell count must stay a multiple of 4 or the last row ships
-	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
-	// Source order follows the tablet bento's visual reading order: do
-	// (Composer), hold (Choreo Cards), learn (Guide), understand (Notation),
-	// ask (FAQ), and look up (Glossary).
-	// Deeper theory stays in the Notation dropdown instead of competing with
-	// the front doors. Secondary destinations live in the strip.
-	{
-		id: "notation",
-		href: "/notation",
-		heading: "History",
-		descriptor: "How flow arts notation developed, 2009–2022.",
-		span: "2x1",
-		color: "#22d3ee",
-		icon: "fa-bezier-curve",
-		media: "pictograph",
-		morphName: "launchpad-notation",
-		chips: [
-			{ label: "Staves", href: "/notation/staves" },
-			{ label: "Fans", href: "/notation/fans" },
-			{ label: "Clubs", href: "/notation/clubs" },
-			{ label: "Buugeng", href: "/notation/buugeng" },
-		],
-	},
-	{
-		id: "faq",
-		href: "/faq",
-		heading: "FAQ",
-		descriptor: "Questions spinners actually ask.",
-		span: "1x1",
-		color: "#f59e0b",
-		icon: "fa-circle-question",
-		morphName: "launchpad-faq",
-	},
-	{
-		id: "glossary",
-		href: "/glossary",
-		heading: "Glossary",
-		descriptor: "TKA terms, defined.",
-		span: "1x1",
-		color: "#94a3b8",
-		icon: "fa-book-open",
-		media: "dictionary",
-		morphName: "launchpad-glossary",
-	},
+  {
+    id: "composer",
+    href: "/composer",
+    heading: "Composer",
+    descriptor: "Build, animate, collect, and share TKA sequences!",
+    span: "2x2",
+    color: "#a78bfa",
+    icon: "fa-pen-nib",
+    media: "mandala",
+    magnetic: true,
+    morphName: "launchpad-composer",
+  },
+  {
+    id: "choreo-cards",
+    href: "/shop",
+    heading: "Choreo Cards",
+    descriptor: "Printed decks of real sequences. Scan a card and it plays.",
+    span: "2x1",
+    color: "#34d399",
+    icon: "fa-layer-group",
+    media: "choreo-card",
+    morphName: "launchpad-choreo-cards",
+    chips: [
+      { label: "LOOP Deck", href: "/shop/loop-deck" },
+      { label: "Starter Pack", href: "/shop/starter-pack" },
+    ],
+  },
+  {
+    id: "guide",
+    href: "/learn/concepts",
+    heading: "Learn TKA",
+    descriptor: "Interactive lessons, one idea at a time.",
+    span: "2x1",
+    color: "#60a5fa",
+    icon: "fa-map-signs",
+    media: "guide-cover",
+    morphName: "launchpad-guide",
+    chips: [{ label: "Read the Guide", href: "/guide" }],
+  },
+  // The grid's cell count must stay a multiple of 4 or the last row ships
+  // holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
+  // Source order follows the tablet bento's visual reading order: do
+  // (Composer), hold (Choreo Cards), learn (Guide), understand (Notation),
+  // ask (FAQ), and look up (Glossary).
+  // Deeper theory stays in the Notation dropdown instead of competing with
+  // the front doors. Secondary destinations live in the strip.
+  {
+    id: "notation",
+    href: "/notation",
+    heading: "History",
+    descriptor: "How flow arts notation developed, 2009–2022.",
+    span: "2x1",
+    color: "#22d3ee",
+    icon: "fa-bezier-curve",
+    media: "pictograph",
+    morphName: "launchpad-notation",
+    chips: [
+      { label: "Staves", href: "/notation/staves" },
+      { label: "Fans", href: "/notation/fans" },
+      { label: "Clubs", href: "/notation/clubs" },
+      { label: "Buugeng", href: "/notation/buugeng" },
+    ],
+  },
+  {
+    id: "faq",
+    href: "/faq",
+    heading: "FAQ",
+    descriptor: "Questions spinners actually ask.",
+    span: "1x1",
+    color: "#f59e0b",
+    icon: "fa-circle-question",
+    morphName: "launchpad-faq",
+  },
+  {
+    id: "glossary",
+    href: "/glossary",
+    heading: "Glossary",
+    descriptor: "TKA terms, defined.",
+    span: "1x1",
+    color: "#94a3b8",
+    icon: "fa-book-open",
+    media: "dictionary",
+    morphName: "launchpad-glossary",
+  },
 ];
 
 // Keep this manifest available for future secondary destinations without
@@ -145,9 +146,9 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 export const STRIP_LINKS: { label: string; href: string }[] = [];
 
 export const HERO_POINTER = {
-	prefix: "New here? Start with ",
-	label: "What is TKA?",
-	href: "/about",
+  prefix: "New here? Start with ",
+  label: "What is TKA?",
+  href: "/about",
 } as const;
 
 /**
@@ -162,12 +163,12 @@ export const HERO_POINTER = {
  * for that breakdown to silently split in half the first time the rule changes.
  */
 export function hrefSlug(href: string): string {
-	return href.replace(/^\//, "").replace(/\//g, "-");
+  return href.replace(/^\//, "").replace(/\//g, "-");
 }
 
 /** Is this one of the six production tiles the `LaunchpadTileId` union names?
  *  LaunchpadTile also renders non-canonical tile lists (the composer bento),
  *  whose ids must never reach the closed union. */
 export function isProductionTileId(id: string): boolean {
-	return LAUNCHPAD_TILES.some((tile) => tile.id === id);
+  return LAUNCHPAD_TILES.some((tile) => tile.id === id);
 }

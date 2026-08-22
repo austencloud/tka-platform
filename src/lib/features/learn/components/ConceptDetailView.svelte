@@ -9,16 +9,13 @@ Supports two navigation modes:
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { onMount } from "svelte";
-  import type { LearnConcept, ConceptProgress, ExperienceViewMode } from "../domain/types";
+  import type {
+    LearnConcept,
+    ConceptProgress,
+    ExperienceViewMode,
+  } from "../domain/types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
-  import type { ConceptProgressTracker } from "../services/concept-progress-tracker";
-  import GridConceptExperience from "./interactive/GridConceptExperience.svelte";
-  import Type1ConceptExperience from "./interactive/letters/type1/Type1ConceptExperience.svelte";
-  import MotionsConceptExperience from "./interactive/motions/MotionsConceptExperience.svelte";
-  import PositionsConceptExperience from "./interactive/positions/PositionsConceptExperience.svelte";
-  import StaffConceptExperience from "./interactive/staff/StaffConceptExperience.svelte";
-  import VTGConceptExperience from "./interactive/vtg/VTGConceptExperience.svelte";
-  import WordsConceptExperience from "./interactive/words/WordsConceptExperience.svelte";
+  import { getConceptExperience } from "../domain/concept-experience-registry";
 
   let { concept, onClose } = $props<{
     concept: LearnConcept;
@@ -46,6 +43,7 @@ Supports two navigation modes:
 
   // Check if concept is completed (enables scroll mode)
   let isCompleted = $derived(progress.status === "completed");
+  const experience = $derived(getConceptExperience(concept.id));
 
   // Sync progress when concept changes
   $effect(() => {
@@ -53,7 +51,16 @@ Supports two navigation modes:
   });
 
   // Reference to the current experience component for back navigation
-  let experienceComponent: { handleBack?: () => void } | null = $state(null);
+  let experienceComponent: unknown = $state(null);
+
+  function hasBackHandler(value: unknown): value is { handleBack: () => void } {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "handleBack" in value &&
+      typeof value.handleBack === "function"
+    );
+  }
 
   function toggleViewMode() {
     hapticService?.trigger("selection");
@@ -82,7 +89,7 @@ Supports two navigation modes:
   function handleBackButton() {
     hapticService?.trigger("selection");
     // Try to navigate back within the experience first
-    if (experienceComponent?.handleBack) {
+    if (hasBackHandler(experienceComponent)) {
       experienceComponent.handleBack();
     } else {
       // No experience or no back handler, just close
@@ -97,72 +104,71 @@ Supports two navigation modes:
     // After completing, go back to concept list
     handleClose();
   }
-
-  // Check if this concept has interactive content
-  function hasInteractiveContent(conceptId: string): boolean {
-    return (
-      conceptId === "grid" ||
-      conceptId === "hand-positions" ||
-      conceptId === "hand-motions" ||
-      conceptId === "vtg-fundamentals" ||
-      conceptId === "words-alpha-beta" ||
-      conceptId === "staff-positions" ||
-      conceptId === "type1-abc-ghi"
-    );
-  }
 </script>
 
 <div class="concept-detail">
   <!-- Header bar with back button and mode toggle -->
   <div class="header-bar">
-    <button class="back-button" onclick={handleBackButton} aria-label={t("learn_go_back")}>
+    <button
+      class="back-button"
+      onclick={handleBackButton}
+      aria-label={t("learn_go_back")}
+    >
       <span class="back-icon">‹</span>
       <span class="back-text">{t("learn_back")}</span>
     </button>
 
-    <!-- Mode toggle - only visible for completed concepts -->
-    {#if isCompleted && hasInteractiveContent(concept.id)}
-      <button
-        class="mode-toggle"
-        onclick={toggleViewMode}
-        aria-label={viewMode === "step" ? t("learn_switch_to_scroll") : t("learn_switch_to_step")}
-        title={viewMode === "step" ? t("learn_switch_to_scroll") : t("learn_switch_to_step")}
-      >
-        {#if viewMode === "step"}
-          <i class="fa-solid fa-scroll" aria-hidden="true"></i>
-          <span class="mode-label">{t("learn_review")}</span>
-        {:else}
-          <i class="fa-solid fa-stairs" aria-hidden="true"></i>
-          <span class="mode-label">{t("learn_steps")}</span>
-        {/if}
-      </button>
-    {/if}
+    <div class="header-actions">
+      {#if experience}
+        <a
+          class="reference-link"
+          href="/guide/level-1/{experience.guideSlug}"
+          aria-label="Read {experience.guideLabel} in the written Guide"
+        >
+          <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+          <span>Read this topic</span>
+        </a>
+      {/if}
+
+      <!-- Review mode is earned after completing an interactive lesson. -->
+      {#if isCompleted && experience}
+        <button
+          class="mode-toggle"
+          onclick={toggleViewMode}
+          aria-label={viewMode === "step"
+            ? t("learn_switch_to_scroll")
+            : t("learn_switch_to_step")}
+          title={viewMode === "step"
+            ? t("learn_switch_to_scroll")
+            : t("learn_switch_to_step")}
+        >
+          {#if viewMode === "step"}
+            <i class="fa-solid fa-scroll" aria-hidden="true"></i>
+            <span class="mode-label">{t("learn_review")}</span>
+          {:else}
+            <i class="fa-solid fa-stairs" aria-hidden="true"></i>
+            <span class="mode-label">{t("learn_steps")}</span>
+          {/if}
+        </button>
+      {/if}
+    </div>
   </div>
 
   <!-- Content - key block forces full remount when concept changes -->
   <div class="concept-detail-content">
     {#key `${concept.id}-${viewMode}`}
-      {#if hasInteractiveContent(concept.id)}
-        {#if concept.id === "grid"}
-          <GridConceptExperience
+      {#if experience}
+        {#await experience.load()}
+          <div class="lesson-loading" role="status">Loading lesson…</div>
+        {:then loaded}
+          {@const Experience = loaded.default}
+          <Experience
             bind:this={experienceComponent}
             {viewMode}
             onComplete={handlePracticeComplete}
             onBack={handleClose}
           />
-        {:else if concept.id === "hand-positions"}
-          <PositionsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {:else if concept.id === "hand-motions"}
-          <MotionsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {:else if concept.id === "vtg-fundamentals"}
-          <VTGConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {:else if concept.id === "words-alpha-beta"}
-          <WordsConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {:else if concept.id === "staff-positions"}
-          <StaffConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {:else if concept.id === "type1-abc-ghi"}
-          <Type1ConceptExperience {viewMode} onComplete={handlePracticeComplete} />
-        {/if}
+        {/await}
       {:else}
         <!-- Coming Soon placeholder -->
         <div class="coming-soon">
@@ -204,6 +210,12 @@ Supports two navigation modes:
     pointer-events: auto;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .back-button {
     display: flex;
     align-items: center;
@@ -234,6 +246,7 @@ Supports two navigation modes:
     line-height: 1;
   }
 
+  .reference-link,
   .mode-toggle {
     display: flex;
     align-items: center;
@@ -246,14 +259,17 @@ Supports two navigation modes:
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
+    text-decoration: none;
     transition: all var(--duration-normal) ease;
   }
 
+  .reference-link:hover,
   .mode-toggle:hover {
     background: var(--theme-card-hover-bg);
     border-color: var(--theme-accent);
   }
 
+  .reference-link i,
   .mode-toggle i {
     font-size: 1rem;
     color: var(--theme-accent);
@@ -268,6 +284,14 @@ Supports two navigation modes:
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .lesson-loading {
+    display: grid;
+    place-items: center;
+    min-height: 100%;
+    color: var(--theme-text-dim);
+    font-size: 1rem;
   }
 
   .coming-soon {
@@ -311,6 +335,14 @@ Supports two navigation modes:
       padding: 0.375rem 0.75rem;
     }
 
+    .reference-link {
+      min-width: var(--min-touch-target, 44px);
+      min-height: var(--min-touch-target, 44px);
+      justify-content: center;
+      padding: 0.375rem 0.75rem;
+    }
+
+    .reference-link span,
     .mode-label {
       display: none;
     }

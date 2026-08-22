@@ -10,11 +10,9 @@ Learning destinations:
 Navigation via bottom tabs (mobile-first UX pattern)
 -->
 <script lang="ts">
-
-import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestrator";
+  import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestrator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { onMount, untrack } from "svelte";
-  import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
   import { fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";
@@ -24,6 +22,12 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import GuideTab from "./guide/GuideTab.svelte";
   import type { LearnConcept } from "./domain/types";
   import { getConceptById } from "./domain/concepts";
+  import { isConceptExperienceAvailable } from "./domain/concept-experience-registry";
+  import {
+    buildConceptPath,
+    conceptIdFromPathname,
+    isConceptPath,
+  } from "./domain/concept-routes";
   import {
     getActiveConceptId,
     setActiveConceptId,
@@ -33,7 +37,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import { setDelightOrchestrator } from "$lib/shared/delight/context/delight-context";
   import ConfettiBurst from "$lib/shared/delight/components/ConfettiBurst.svelte";
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
-  import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+  import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
 
   type LearnMode = "concepts" | "play" | "tika" | "guide";
 
@@ -47,9 +51,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
     onHeaderChange?: (header: string) => void;
   } = $props();
 
-  // Services from DI
   const delightOrchestrator = getDelightOrchestrator();
-  const conceptProgressTracker = getConceptProgressTracker();
 
   // Provide delight orchestrator to child components via context
   setDelightOrchestrator(delightOrchestrator);
@@ -111,6 +113,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
     if (mode !== prev && prev !== null) {
       untrack(() => {
         selectedConcept = null;
+        if (prev === "concepts") clearActiveConceptId();
       });
     }
   });
@@ -125,7 +128,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
       if (selectedConcept) {
         header = selectedConcept.name || t("learn_concept_details");
       } else {
-        header = t("learn_learning_path");
+        header = "Interactive lessons";
       }
     } else if (activeMode === "play") {
       header = t("learn_play");
@@ -138,36 +141,92 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
     onHeaderChange(header);
   });
 
-  // Initialize on mount
-  onMount(async () => {
-    // Set default mode if none persisted
+  function writeConceptUrl(
+    conceptId: string | undefined,
+    mode: "push" | "replace"
+  ) {
+    mutateCurrentUrl(
+      (url) => {
+        url.pathname = buildConceptPath(conceptId);
+        url.search = "";
+        url.hash = "";
+      },
+      { mode }
+    );
+  }
+
+  function openConcept(
+    concept: LearnConcept,
+    routeMode: "push" | "replace" | "none"
+  ) {
+    if (!isConceptExperienceAvailable(concept.id)) return;
+
+    if (selectedConcept?.id !== concept.id) conceptOpenCount++;
+    selectedConcept = concept;
+    setActiveConceptId(concept.id);
+
+    if (routeMode !== "none") writeConceptUrl(concept.id, routeMode);
+  }
+
+  function syncConceptFromUrl(restoreSavedConcept: boolean) {
+    if (typeof window === "undefined") return;
+    const pathname = window.location.pathname;
+    if (!isConceptPath(pathname)) return;
+
+    const routeConceptId = conceptIdFromPathname(pathname);
+    const routeConcept = routeConceptId
+      ? getConceptById(routeConceptId)
+      : undefined;
+
+    if (routeConcept && isConceptExperienceAvailable(routeConcept.id)) {
+      openConcept(routeConcept, "none");
+      return;
+    }
+
+    if (!routeConceptId && restoreSavedConcept) {
+      const savedConceptId = getActiveConceptId();
+      const savedConcept = savedConceptId
+        ? getConceptById(savedConceptId)
+        : undefined;
+      if (savedConcept && isConceptExperienceAvailable(savedConcept.id)) {
+        openConcept(savedConcept, "replace");
+        return;
+      }
+    }
+
+    selectedConcept = null;
+    clearActiveConceptId();
+    if (routeConceptId) writeConceptUrl(undefined, "replace");
+  }
+
+  // The URL is the durable owner of the open lesson. Local persistence only
+  // helps the bare course URL resume an interrupted lesson after a reload.
+  onMount(() => {
+    // A public course URL always owns the Concepts mode, even if the full app
+    // last persisted Play, TIKA, or Guide. Other Learn entry points keep their
+    // saved tab behavior.
+    const conceptRoute = isConceptPath(window.location.pathname);
     const navMode = navigationState.currentLearnMode;
-    if (!navMode) {
+    if (conceptRoute || !navMode) {
       navigationState.setLearnMode("concepts");
     }
 
-    // Restore active concept from persistence (survives refresh)
-    const activeConceptId = getActiveConceptId();
-    if (activeConceptId) {
-      const concept = getConceptById(activeConceptId);
-      if (concept) {
-        conceptOpenCount++;
-        selectedConcept = concept;
-      }
-    }
+    syncConceptFromUrl(true);
+    const handlePopstate = () => syncConceptFromUrl(false);
+    window.addEventListener("popstate", handlePopstate);
+    return () => window.removeEventListener("popstate", handlePopstate);
   });
 
   // Handle concept selection
   function handleConceptClick(concept: LearnConcept) {
-    conceptOpenCount++; // Increment to force fresh mount
-    selectedConcept = concept;
-    setActiveConceptId(concept.id); // Persist for refresh survival
+    openConcept(concept, "push");
   }
 
   // Handle back from detail view
   function handleBackToPath() {
     selectedConcept = null;
-    clearActiveConceptId(); // Clear persistence when closing
+    clearActiveConceptId();
+    writeConceptUrl(undefined, "replace");
   }
 
   // Check if mode is active

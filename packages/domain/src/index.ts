@@ -75,6 +75,9 @@ export {
 } from "./data/reversals.js";
 
 export {
+  BASE_ALPHABET_LETTERS,
+  EXTENDED_ALPHABET_LETTERS,
+  REGISTERED_ALPHABET_LETTERS,
   ALL_LETTERS,
   LETTER_TO_TYPE,
   getLetterType,

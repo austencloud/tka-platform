@@ -7,11 +7,8 @@ Shows:
 - Clean, minimal design
 -->
 <script lang="ts">
-  import {
-    TKA_CONCEPTS,
-    CONCEPT_CATEGORIES,
-    getConceptsByCategory,
-  } from "../domain/concepts";
+  import { CONCEPT_CATEGORIES } from "../domain/concepts";
+  import { getAvailableConcepts } from "../domain/concept-experience-registry";
   import type { LearningProgress, ConceptCategory } from "../domain/types";
 
   let {
@@ -20,23 +17,25 @@ Shows:
     progress: LearningProgress;
   } = $props();
 
-  const totalConcepts = TKA_CONCEPTS.length;
-  const completedCount = $derived(progress.completedConcepts.size);
-  const progressPercent = $derived(
-    Math.round((completedCount / totalConcepts) * 100)
+  const availableConcepts = getAvailableConcepts();
+  const totalConcepts = availableConcepts.length;
+  const completedCount = $derived(
+    availableConcepts.filter((concept) =>
+      progress.completedConcepts.has(concept.id)
+    ).length
   );
-
   // Category segments for the arc
-  const categories: ConceptCategory[] = [
-    "foundation",
-    "letters",
-    "combinations",
-    "advanced",
-  ];
+  const categories: ConceptCategory[] = (
+    ["foundation", "letters", "combinations", "advanced"] as const
+  ).filter((category) =>
+    availableConcepts.some((concept) => concept.category === category)
+  );
 
   const categoryData = $derived(
     categories.map((cat) => {
-      const concepts = getConceptsByCategory(cat);
+      const concepts = availableConcepts.filter(
+        (concept) => concept.category === cat
+      );
       const completed = concepts.filter((c) =>
         progress.completedConcepts.has(c.id)
       ).length;
@@ -46,7 +45,8 @@ Shows:
         color: CONCEPT_CATEGORIES[cat].color,
         total: concepts.length,
         completed,
-        percent: (concepts.length / totalConcepts) * 100,
+        percent:
+          totalConcepts > 0 ? (concepts.length / totalConcepts) * 100 : 0,
       };
     })
   );
@@ -55,8 +55,6 @@ Shows:
   const size = 120;
   const strokeWidth = 8;
   const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-
   // Calculate arc segments
   const getArcPath = (startPercent: number, endPercent: number) => {
     const startAngle = (startPercent / 100) * 360 - 90;
@@ -126,7 +124,14 @@ Shows:
         {@const y1 = size / 2 + (radius - strokeWidth / 2 - 2) * Math.sin(rad)}
         {@const x2 = size / 2 + (radius + strokeWidth / 2 + 2) * Math.cos(rad)}
         {@const y2 = size / 2 + (radius + strokeWidth / 2 + 2) * Math.sin(rad)}
-        <line {x1} {y1} {x2} {y2} stroke="var(--theme-panel-bg, rgb(20, 20, 28))" stroke-width="3" />
+        <line
+          {x1}
+          {y1}
+          {x2}
+          {y2}
+          stroke="var(--theme-panel-bg, rgb(20, 20, 28))"
+          stroke-width="3"
+        />
       {/if}
     {/each}
   </svg>

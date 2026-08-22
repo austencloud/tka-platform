@@ -25,7 +25,9 @@
 
   let level = $state<Level>(initialLevel());
 
-  const config = $derived(level === "2" ? LEVEL2_READER_CONFIG : LEVEL1_READER_CONFIG);
+  const config = $derived(
+    level === "2" ? LEVEL2_READER_CONFIG : LEVEL1_READER_CONFIG
+  );
 
   function pick(next: Level) {
     level = next;
@@ -39,6 +41,10 @@
 
 <div class="guide-tab">
   <div class="level-bar">
+    <a class="lessons-link" href="/learn/concepts">
+      <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+      <span>Interactive lessons</span>
+    </a>
     <div class="level-switch">
       <SegmentedControl
         options={[
@@ -72,7 +78,9 @@
   .level-bar {
     flex: 0 0 auto;
     display: flex;
+    align-items: center;
     justify-content: center;
+    gap: 1rem;
     padding: 8px 12px;
     background: var(--theme-panel-bg, oklch(0.15 0.02 270 / 0.6));
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
@@ -81,9 +89,37 @@
     width: 100%;
     max-width: 320px;
   }
+  .lessons-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
+    color: var(--theme-text, #fff);
+    font-size: 0.875rem;
+    font-weight: 650;
+    text-decoration: none;
+  }
+  .lessons-link:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--theme-accent);
+  }
   .reader-host {
     flex: 1;
     min-height: 0;
     width: 100%;
+  }
+
+  @container (max-width: 540px) {
+    .level-bar {
+      gap: 0.5rem;
+    }
+    .lessons-link span {
+      display: none;
+    }
   }
 </style>

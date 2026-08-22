@@ -15,19 +15,19 @@ TKA (The Kinetic Alphabet) is a notation system for encoding flow arts movements
 
 **Purpose:** Before TKA, flow artists could only share movements through video. TKA provides a written language - you can write down a sequence, share it, and another spinner can read and perform it.
 
-**How it works:** Each "letter" represents one beat of motion, encoding:
+**How it works:** Each "letter" represents one step of motion, encoding:
 - Where the hands start (position)
 - Where the hands end (position)
 - How each hand moves (motion type: shift, dash, or static)
-- How each prop rotates (pro or anti)
+- How each prop rotates
 
-**Structure:** 47 letters in 6 types, organized by motion pattern.`,
+**Structure:** The Level 1 pictograph dataframe contains 47 base letters in 6 types. Higher levels can register extensions, such as the Type 4 Tau-Dash letter, before their variations enter the dataframe.`,
 
   "what is vtg": `[INTERNAL - DO NOT show this message to the user] For VTG questions, use the get_vtg_info tool instead of this answer. Call get_vtg_info(query="what is VTG") for comprehensive, sourced VTG information.`,
 
   "what is a pictograph": `## What is a Pictograph?
 
-A pictograph is the visual representation of one TKA letter - one beat of motion.
+A pictograph is the visual representation of one TKA letter - one step of motion.
 
 **Components:**
 - **Grid:** The reference frame (diamond or box orientation)

@@ -45,9 +45,8 @@
   onMount(() => {
     if (!browser || !ownsStandaloneChrome) return;
     void (async () => {
-      const { applyThemeForBackground } = await import(
-        "$lib/shared/settings/utils/background-theme-calculator"
-      );
+      const { applyThemeForBackground } =
+        await import("$lib/shared/settings/utils/background-theme-calculator");
       const { BackgroundType } = await import("@austencloud/backgrounds");
       applyThemeForBackground(BackgroundType.COSMIC);
     })();
@@ -62,9 +61,14 @@
   <button
     class="mobile-menu-btn"
     onclick={() => (sidebarOpen = !sidebarOpen)}
-    aria-label="Toggle navigation"
+    aria-label={sidebarOpen ? "Close Guide contents" : "Open Guide contents"}
+    aria-expanded={sidebarOpen}
   >
-    ☰
+    <i
+      class="fa-solid {sidebarOpen ? 'fa-xmark' : 'fa-list'}"
+      aria-hidden="true"
+    ></i>
+    <span>Guide contents</span>
   </button>
 
   <aside class="guide-sidebar" class:open={sidebarOpen}>
@@ -102,23 +106,26 @@
     top: calc(64px + 1rem);
     left: 1rem;
     z-index: 60;
-    font-size: 1.5rem;
     background: oklch(0.18 0.02 270 / 0.8);
     backdrop-filter: blur(12px);
-    border: 1px solid oklch(0.30 0.04 270 / 0.3);
-    border-radius: 10px;
-    padding: 0.25rem 0.5rem;
+    border: 1px solid oklch(0.3 0.04 270 / 0.3);
+    border-radius: 999px;
+    padding: 0.55rem 0.8rem;
     cursor: pointer;
-    min-width: 44px;
     min-height: 44px;
-    color: oklch(0.80 0.04 270);
+    color: oklch(0.8 0.04 270);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 0.8rem;
+    font-weight: 750;
+    letter-spacing: 0.01em;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
     .mobile-menu-btn {
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 0.5rem;
     }
   }
 </style>

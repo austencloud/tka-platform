@@ -28,6 +28,8 @@
   import GuidePage from "./GuidePage.svelte";
   import GuideCompanionHost from "../../_components/GuideCompanionHost.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { getConceptExperienceForGuideSlug } from "$lib/features/learn/domain/concept-experience-registry";
+  import { buildConceptPath } from "$lib/features/learn/domain/concept-routes";
   import { setGuidePrintMode } from "../_data/guide-data-context";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
   import {
@@ -45,6 +47,7 @@
   const content = $derived(GUIDE_CONTENT[slug] ?? null);
   const Sheet = $derived(BUILT[slug]);
   const canFlow = $derived(hasReflowContent(slug));
+  const interactiveLesson = $derived(getConceptExperienceForGuideSlug(slug));
 
   const prev = $derived(bodyIndex > 0 ? GUIDE_BODY_PAGES[bodyIndex - 1] : null);
   const next = $derived(
@@ -114,7 +117,10 @@
       // left edge on ~850px viewports). Content width keeps scale>1 exactly in
       // sync with "margin:auto is actively centering".
       const cs = getComputedStyle(el);
-      const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const inner =
+        el.clientWidth -
+        parseFloat(cs.paddingLeft) -
+        parseFloat(cs.paddingRight);
       scale = Math.min(inner / 816, 1.9);
     };
     fit();
@@ -172,7 +178,10 @@
         const maxScroll =
           document.documentElement.scrollHeight - window.innerHeight;
         if (maxScroll >= target || attempts >= 120) {
-          window.scrollTo({ top: Math.min(target, Math.max(0, maxScroll)), behavior: "instant" });
+          window.scrollTo({
+            top: Math.min(target, Math.max(0, maxScroll)),
+            behavior: "instant",
+          });
           restoringScroll = false;
           return;
         }
@@ -192,7 +201,10 @@
     resolveTheme();
     mq.addEventListener("change", resolveTheme);
     const themeObs = new MutationObserver(resolveTheme);
-    themeObs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    themeObs.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
 
     return () => {
       cancelled = true;
@@ -205,78 +217,97 @@
 </script>
 
 <GuideCompanionHost pageTitle={meta?.title ?? ""} levelLabel="Level 1">
-<main class="guide-page-route">
-  <header class="topic-hero">
-    <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
+  <main class="guide-page-route">
+    <header class="topic-hero">
+      <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
          OWN calligraphic title + intro line. Showing the hero title/tagline above
          it repeats both. So the hero title is visually hidden in sheet mode (kept
          in the a11y tree as the page h1) and the tagline is dropped; the reflow
          view keeps them (FlowFrame drops the sheet's copies instead). -->
-    <h1 class:visually-hidden={frame === "sheet"}>{seo.h1}</h1>
-    {#if seo.tagline && frame === "flow"}<p class="hero-tagline">{seo.tagline}</p>{/if}
-    {#if canFlow}
-      <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
+      <h1 class:visually-hidden={frame === "sheet"}>{seo.h1}</h1>
+      {#if seo.tagline && frame === "flow"}<p class="hero-tagline">
+          {seo.tagline}
+        </p>{/if}
+      {#if interactiveLesson}
+        <a
+          class="interactive-lesson-link"
+          href={buildConceptPath(interactiveLesson.conceptId)}
+        >
+          <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+          Learn this interactively
+        </a>
+      {/if}
+      {#if canFlow}
+        <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
            stub list (25 MiB worker cap - reference_cf_worker_size_limit), so its
            SSR stub is not a valid component and crashes prerender. The toggle is
            interactive-only (no crawl value), so render it client-side; the
            reserved-height wrapper keeps the flow content from shifting when it
            hydrates in (no-layout-shift). -->
-      <div class="frame-toggle">
-        {#if browser}
-          <SegmentedControl
-            options={[
-              { value: "flow", label: "Reflow" },
-              { value: "sheet", label: "Page" },
-            ]}
-            value={frame}
-            onchange={pickFrame}
-            size="sm"
-            color="accent"
-          />
-        {/if}
-      </div>
-    {/if}
-  </header>
+        <div class="frame-toggle">
+          {#if browser}
+            <SegmentedControl
+              options={[
+                { value: "flow", label: "Reflow" },
+                { value: "sheet", label: "Page" },
+              ]}
+              value={frame}
+              onchange={pickFrame}
+              size="sm"
+              color="accent"
+            />
+          {/if}
+        </div>
+      {/if}
+    </header>
 
-  {#if frame === "flow" && content}
-    <FlowFrame {content} darkMode={isDark} tagline={seo.tagline ?? ""} />
-  {:else if Sheet}
-    <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
+    {#if frame === "flow" && content}
+      <FlowFrame {content} darkMode={isDark} tagline={seo.tagline ?? ""} />
+    {:else if Sheet}
+      <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
          to fit width. Horizontal scroll guards narrow viewports. -->
-    <div class="sheet-wrap" bind:this={sheetWrap} style="height: {1056 * scale}px">
       <div
-        class="sheet-scale"
-        style="transform: translateX(-{sheetShiftPx}px) scale({scale})"
+        class="sheet-wrap"
+        bind:this={sheetWrap}
+        style="height: {1056 * scale}px"
       >
-        <GuidePage
-          title={meta?.title}
-          pageNumber={bodyIndex >= 0 ? bodyIndex + 1 : undefined}
-          fullBleed={true}
+        <div
+          class="sheet-scale"
+          style="transform: translateX(-{sheetShiftPx}px) scale({scale})"
         >
-          <Sheet />
-        </GuidePage>
+          <GuidePage
+            title={meta?.title}
+            pageNumber={bodyIndex >= 0 ? bodyIndex + 1 : undefined}
+            fullBleed={true}
+          >
+            <Sheet />
+          </GuidePage>
+        </div>
       </div>
-    </div>
-  {/if}
+    {/if}
 
-  <nav class="topic-nav" aria-label="Guide navigation">
-    {#if prev}
-      <a class="nav-link prev" href="/guide/level-1/{prev.id}">
-        <span class="nav-dir">Previous</span><span class="nav-title">{prev.title}</span>
-      </a>
-    {:else}
-      <span class="nav-spacer"></span>
-    {/if}
-    <a class="nav-link hub" href="/guide">All guides</a>
-    {#if next}
-      <a class="nav-link next" href="/guide/level-1/{next.id}">
-        <span class="nav-dir">Next</span><span class="nav-title">{next.title}</span>
-      </a>
-    {:else}
-      <span class="nav-spacer"></span>
-    {/if}
-  </nav>
-</main>
+    <nav class="topic-nav" aria-label="Guide navigation">
+      {#if prev}
+        <a class="nav-link prev" href="/guide/level-1/{prev.id}">
+          <span class="nav-dir">Previous</span><span class="nav-title"
+            >{prev.title}</span
+          >
+        </a>
+      {:else}
+        <span class="nav-spacer"></span>
+      {/if}
+      <a class="nav-link hub" href="/guide">All guides</a>
+      {#if next}
+        <a class="nav-link next" href="/guide/level-1/{next.id}">
+          <span class="nav-dir">Next</span><span class="nav-title"
+            >{next.title}</span
+          >
+        </a>
+      {:else}
+        <span class="nav-spacer"></span>
+      {/if}
+    </nav>
+  </main>
 </GuideCompanionHost>
 
 <style>
@@ -343,6 +374,29 @@
        hydrates in client-side (it renders SSR-empty - see the browser gate). */
     min-height: 50px;
   }
+  .interactive-lesson-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    margin: 0.75rem auto 1rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid color-mix(in oklab, #647ff1 58%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklab, #647ff1 12%, transparent);
+    color: color-mix(in oklab, var(--ink, #1a1a1a) 78%, #647ff1);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      background 120ms ease,
+      border-color 120ms ease;
+  }
+  .interactive-lesson-link:hover {
+    border-color: #647ff1;
+    background: color-mix(in oklab, #647ff1 20%, transparent);
+  }
   .frame-toggle :global(.segmented-control) {
     max-width: 18rem;
   }
@@ -379,7 +433,8 @@
     align-items: stretch;
     justify-content: space-between;
     gap: 0.75rem;
-    border-top: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 15%, transparent);
+    border-top: 1px solid
+      color-mix(in oklab, var(--ink, #1a1a1a) 15%, transparent);
   }
   .nav-link {
     display: flex;
@@ -448,5 +503,11 @@
     --ink: #ececf2;
     --ink-dim: #a8a8b4;
     --glyph-invert: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .interactive-lesson-link {
+      transition: none;
+    }
   }
 </style>

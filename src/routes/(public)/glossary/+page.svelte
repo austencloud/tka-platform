@@ -6,6 +6,10 @@
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
+  import {
+    matchesGlossaryTerm,
+    normalizeGlossarySearchText,
+  } from "./glossary-search";
 
   let { data } = $props();
 
@@ -27,10 +31,11 @@
     },
   };
 
-  const TITLE =
-    "Flow Arts Glossary: The Kinetic Alphabet Lexicon | Every Term Defined";
-  const DESCRIPTION =
-    "Definitions for every term in The Kinetic Alphabet flow arts notation: positions (alpha, beta, gamma), letter types, motions, grid modes, and the notation vocabulary. The canonical lexicon.";
+  const GLOSSARY_NAME = "The Kinetic Alphabet Glossary";
+  const SCOPE_STATEMENT =
+    "An evolving glossary for The Kinetic Alphabet concepts, including terms used elsewhere in Flow Arts. It is not a complete glossary of all Flow Arts vocabulary.";
+  const TITLE = "Flow Arts Glossary | The Kinetic Alphabet";
+  const DESCRIPTION = SCOPE_STATEMENT;
   const URL = "https://tkaflowarts.com/glossary";
   const LEXICON_ID = `${URL}#lexicon`;
 
@@ -60,10 +65,9 @@
       {
         "@type": "DefinedTermSet",
         "@id": LEXICON_ID,
-        name: "The Kinetic Alphabet Lexicon",
+        name: GLOSSARY_NAME,
         url: URL,
-        description:
-          "The controlled vocabulary of The Kinetic Alphabet, a notation system for flow arts choreography.",
+        description: DESCRIPTION,
         hasDefinedTerm: data.groups.flatMap((g) =>
           g.terms.map((t) => ({
             "@type": "DefinedTerm",
@@ -118,19 +122,8 @@
     data.groups.map((g) => [g.sectionSlug, g.key] as const)
   );
 
-  const normalizedQuery = $derived(query.trim().toLowerCase());
+  const normalizedQuery = $derived(normalizeGlossarySearchText(query));
   const filtering = $derived(normalizedQuery.length > 0);
-
-  function termMatches(t: GlossaryTerm, q: string): boolean {
-    return (
-      t.term.toLowerCase().includes(q) ||
-      t.definition.toLowerCase().includes(q) ||
-      (t.benefit?.toLowerCase().includes(q) ?? false) ||
-      (t.importance?.toLowerCase().includes(q) ?? false) ||
-      t.examples.some((ex) => ex.toLowerCase().includes(q)) ||
-      t.related.some((r) => r.term.toLowerCase().includes(q))
-    );
-  }
 
   // Search always looks everywhere, regardless of the current drill.
   const searchGroups = $derived(
@@ -139,7 +132,9 @@
       : data.groups
           .map((g) => ({
             ...g,
-            terms: g.terms.filter((t) => termMatches(t, normalizedQuery)),
+            terms: g.terms.filter((t) =>
+              matchesGlossaryTerm(t, normalizedQuery)
+            ),
           }))
           .filter((g) => g.terms.length > 0)
   );
@@ -377,6 +372,7 @@
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         <input
           data-glossary-search
+          name="glossary-search"
           type="search"
           placeholder="Filter terms"
           aria-label="Filter glossary terms"
@@ -412,13 +408,11 @@
       style:view-transition-name="launchpad-glossary"
     >
       <h1 class="page-title">Flow Arts Glossary</h1>
-      <p class="page-subtitle">The Kinetic Alphabet Lexicon</p>
+      <p class="page-subtitle">{GLOSSARY_NAME}</p>
     </header>
 
     <div class="lede">
-      <p>
-        Every term in The Kinetic Alphabet, defined. Pick a category or search.
-      </p>
+      <p>{SCOPE_STATEMENT} Pick a category or search.</p>
     </div>
 
     <!-- Landing hub search (desktop): stands in for the hidden sidebar search
@@ -430,6 +424,7 @@
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         <input
           data-glossary-search
+          name="glossary-search"
           type="search"
           placeholder="Filter terms"
           aria-label="Filter glossary terms"
@@ -933,20 +928,17 @@
   }
 
   /* ── landing: category cards ──
-     Column COUNT is the whole design here. auto-fill against a 260px floor
-     put 8 thin cards on one line and orphaned the 9th on a row of its own —
-     the wider the screen, the worse it got. Wide screens get FEWER, BIGGER
-     cards instead: 3 columns × 3 rows for the 9 categories, a square block
-     that reads as one object and uses the vertical canvas 4K actually has. */
+     Column count is deliberate on wide screens. The ten categories form two
+     balanced rows instead of leaving an orphan card at the bottom. */
   .cat-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 0.9rem;
     margin: 0 0 1.5rem;
   }
-  @media (min-width: 1024px) {
+  @media (min-width: 720px) {
     .cat-cards {
-      grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1rem;
       /* Every row the height of the tallest. The reserved 2-line sample keeps
          cards even until the lockstep ramp grows the label enough to wrap
@@ -958,20 +950,9 @@
   }
   @media (min-width: 1680px) {
     .cat-cards {
-      /* Explicit 3, not an auto-fill floor: the floor that yields 3 at 1720px
-         is a 26–35rem window, and any drift in the shell width silently flips
-         it to 4 (→ 4+4+1, the orphan again). Pin it. */
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 1.25rem;
       margin-bottom: 2rem;
-    }
-  }
-  @media (min-width: 2600px) {
-    .cat-cards {
-      /* The band tops out at 2600 here, so 3 columns would mean ~850px cards.
-         5, not 4: 9 categories over 4 columns is 4+4+1 — the orphan row again.
-         5 gives 5+4. */
-      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
   .cat-card {
@@ -1065,8 +1046,7 @@
     color: oklch(0.8 0.12 275);
     transform: translateY(-50%) translateX(3px);
   }
-  /* Big screens: three wide cards per row can carry more presence — deeper
-     padding, a display-scale label, a bigger tap surface. */
+  /* Big screens carry a display-scale label and a larger tap surface. */
   @media (min-width: 1680px) {
     .cat-card {
       gap: 0.6rem;

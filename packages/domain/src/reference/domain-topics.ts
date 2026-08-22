@@ -1057,11 +1057,11 @@ These two slots contain numbers (or the string \`fl\` for float) that indicate h
 | Letter type | Example letters | High slot | Low slot |
 |---|---|---|---|
 | Type 1 pro/anti hybrid | C, F, I, L, O, R, U, V | Pro | Anti |
-| Type 2 (shift + static) | W, X, Y, Z, Σ, Δ, θ, Ω | Shift | Static |
-| Type 3 (shift + dash) | W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω- | Shift | Dash |
+| Type 2 (shift + static) | W, X, Y, Z, Σ, Δ, Θ, Ω | Shift | Static |
+| Type 3 (shift + dash) | W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω- | Shift | Dash |
 | Type 4 (dash + static) | Φ, Ψ, Λ | Dash | Static |
 
-**When motion types match** (A, B, D, E, G, H, J, K, M, N, P, Q plus the dual-dashes Φ-, Ψ-, Λ- and statics α, β, Γ), PADS doesn't disambiguate because both hands have the same type. The convention is **left hand goes high, right hand goes low**.
+**When motion types match** (A, B, D, E, G, H, J, K, M, N, P, Q plus the dual-dashes Φ-, Ψ-, Λ- and statics α, β, γ), PADS doesn't disambiguate because both hands have the same type. The convention is **left hand goes high, right hand goes low**.
 
 **S and T are exceptions** to the matching-type rule. Even though both of their hands share a motion type (pro|pro or anti|anti), they have a leader/follower asymmetry. For S and T, **leading goes high, following goes low** — this is how their base forms are disambiguated in the glyph.
 
@@ -1078,13 +1078,13 @@ When **both** hands are rotating in a single step (not just one), their rotation
 
 Rotational relationship **only applies when both props rotate**. Pictographs with only one rotating prop have nothing to describe. Φ(1,0) — only the dash rotates — has no dot.
 
-Rotational relationship applies to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs (whenever both hands rotate). It does **not** apply to Lambda (Λ, Λ-) or Gamma (Γ), which use opening/closing instead.
+Rotational relationship applies to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs (whenever both hands rotate). It does **not** apply to Lambda (Λ, Λ-) or gamma (γ), which use opening/closing instead.
 
 In the codebase, rotational relationship is derived at render time by comparing \`blueMotion.rotationDirection\` to \`redMotion.rotationDirection\` (see \`TurnsTupleGenerator.ts\` lines ~192-248 for Type 2, ~448-452 for Type 5, ~551-555 for Type 6). It is not a stored field on \`MotionData\`. The visual dot is rendered by \`src/lib/shared/pictograph/tka-glyph/components/DirectionDot.svelte\`.
 
 ### Opening and Closing: The Lambda/Gamma Exception
 
-Lambda (Λ), Lambda-Dash (Λ-), and Gamma (Γ) use **opening/closing** instead of same/opp. This is not an additional modifier alongside rotational relationship — it **replaces** it for these letters.
+Lambda (Λ), Lambda-Dash (Λ-), and gamma (γ) use **opening/closing** instead of same/opp. This is not an additional modifier alongside rotational relationship — it **replaces** it for these letters.
 
 The reason: gamma's right-angle position is geometrically asymmetric in a way alpha and beta are not. The same-direction vs opposite-direction distinction collapses here; rotation direction combined with the asymmetric geometry produces variants that cannot be captured by same/opp.
 
@@ -1102,7 +1102,7 @@ All four are distinct pictographs. **No rotation, reflection, or mirror** can tr
 
 When only one hand rotates (e.g., Λ(0,1) with a 1-turn static and base dash), only that rotating hand gets an op/cl flag: \`Λ(0,1,op)\`. The non-rotating hand has no trajectory to extrapolate.
 
-In the codebase, opening/closing is **computed at placement-key-generation time**, not stored. The rule is encoded in hard-coded lookup tables keyed by \`\${endLocation}|\${otherHandEndLocation}|\${rotationDirection}\` in \`src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/PropRotationStateTracker.ts\` (see \`blueRotationMap\`, \`redRotationMap\`, \`dashRotationMap\`, \`staticRotationMap\` around lines 110-375). The \`TurnsTupleGenerator\` calls into this tracker for Lambda, Λ-, and Γ generation (lines ~307-630).
+In the codebase, opening/closing is **computed at placement-key-generation time**, not stored. The rule is encoded in hard-coded lookup tables keyed by \`\${endLocation}|\${otherHandEndLocation}|\${rotationDirection}\` in \`src/lib/shared/pictograph/arrow/positioning/placement/services/implementations/PropRotationStateTracker.ts\` (see \`blueRotationMap\`, \`redRotationMap\`, \`dashRotationMap\`, \`staticRotationMap\` around lines 110-375). The \`TurnsTupleGenerator\` calls into this tracker for Lambda, Λ-, and γ generation (lines ~307-630).
 
 ### Turn Notation: Written Forms
 
@@ -1116,7 +1116,7 @@ TKA has several ways to write a turn-annotated letter:
 - \`Λ(0,1,op)\` = Lambda with 0-turn dash, 1-turn opening static
 - \`Λ-(1,1,op,cl)\` = Lambda-Dash with blue opening, red closing (positional: two turn values then two op/cl flags in the same hand order as the turns)
 
-**Type 3 letters** (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-) have the dash as part of the letter itself — \`Z-\` is its own letter, spoken "Z-Dash". The parenthetical parameters follow the full letter: \`Z-(s,0,1)\`.
+**Type 3 letters** (W-, X-, Y-, Z-, Σ-, Δ-, Θ-, Ω-) have the dash as part of the letter itself — \`Z-\` is its own letter, spoken "Z-Dash". The parenthetical parameters follow the full letter: \`Z-(s,0,1)\`.
 
 **Unicode shorthand (print only):** for whole integer turns, the Level 2 Guide's printed books use superscripts and subscripts — \`C¹\` = \`C(1,0)\`, \`C₁\` = \`C(0,1)\`. This form cannot encode \`fl\` or fractional values like \`0.5\`, so it does not generalize to software or higher levels. The parenthetical form is canonical.
 

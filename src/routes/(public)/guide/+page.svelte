@@ -1,23 +1,8 @@
-<!--
-  /guide - the Guide hub. Renders inside GuideShell (the same sidebar shell
-  every /guide/level-* page uses), so clicking Guide from the landing page
-  lands directly in the navigable guide instead of a separate cosmic-
-  background page first. This page is the guide's front door: what it is,
-  a way straight into Level 1, and a way into Level 2. It commits to being
-  the guide, not apologizing for what isn't built yet.
-
-  The full Level 1 topic corpus (/guide/level-1/<slug>) is not repeated in an
-  in-page TOC here - GuideShell's sidebar (GuideSidebar.svelte) already lists
-  every one of those routes in SSR HTML, so they stay crawlable without a
-  duplicate list on this page. Same for the PDF downloads - the sidebar's
-  Downloads group carries them.
--->
 <script lang="ts">
   import GuideShell from "./_components/GuideShell.svelte";
   import { bodyPagesByGroup } from "./level-1/_data/guide-manifest";
   import { seoForSlug } from "./level-1/_data/guide-page-seo";
 
-  // The guide's actual first page - "Start reading" goes straight there.
   const firstTopic = bodyPagesByGroup()[0]?.entries[0]?.entry;
   const firstTopicHref = firstTopic
     ? `/guide/level-1/${firstTopic.id}`
@@ -26,53 +11,56 @@
     ? seoForSlug(firstTopic.id, firstTopic.title).h1
     : "Level 1";
 
-  let email = $state("");
-  let status = $state<"idle" | "submitting" | "done" | "error">("idle");
-  let errorMessage = $state("");
-
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const canSubmit = $derived(
-    EMAIL_RE.test(email.trim()) && status !== "submitting"
-  );
-
-  async function handleSubmit(e: Event) {
-    e.preventDefault();
-    if (!EMAIL_RE.test(email.trim())) {
-      status = "error";
-      errorMessage = "That email doesn't look right.";
-      return;
-    }
-    status = "submitting";
-    errorMessage = "";
-    try {
-      // Firestore is only needed after someone submits. Keeping it behind the
-      // gesture prevents the Guide route morph from fetching and parsing the
-      // Firebase graph for visitors who are only here to read.
-      const { joinWaitlist } =
-        await import("$lib/features/store/services/waitlist");
-      await joinWaitlist(email, "guide-coming-soon");
-      status = "done";
-    } catch (err) {
-      console.error("[GuidePage] waitlist write failed:", err);
-      status = "error";
-      errorMessage = "Couldn't save that just now. Try again in a moment.";
-    }
-  }
+  const references = [
+    {
+      eyebrow: "Level 1",
+      title: "The foundation",
+      description: "The grid, positions, motions, letters, and words.",
+      href: firstTopicHref,
+      action: `Begin with ${firstTopicLabel}`,
+      icon: "fa-compass-drafting",
+    },
+    {
+      eyebrow: "Level 2",
+      title: "Turns and transitions",
+      description: "Continue into the intermediate notation system.",
+      href: "/guide/level-2/turns",
+      action: "Explore Level 2",
+      icon: "fa-rotate",
+    },
+    {
+      eyebrow: "Reference",
+      title: "The Codex",
+      description: "Browse every published Kinetic Alphabet letter.",
+      href: "/guide/codex",
+      action: "Open the Codex",
+      icon: "fa-table-cells-large",
+    },
+    {
+      eyebrow: "Printable",
+      title: "Level 1 PDF",
+      description: "Keep the book layout or take it away from the screen.",
+      href: "/guides/level-1.pdf",
+      action: "Download the PDF",
+      icon: "fa-file-arrow-down",
+      download: true,
+    },
+  ] as const;
 </script>
 
 <svelte:head>
-  <title>Flow Arts Guide | The Kinetic Alphabet</title>
+  <title>The Kinetic Alphabet Guide | Flow Arts Notation</title>
   <meta
     name="description"
-    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
+    content="Read The Kinetic Alphabet as a written flow arts notation reference, or learn the available concepts through interactive lessons."
   />
   <link rel="canonical" href="https://tkaflowarts.com/guide" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tkaflowarts.com/guide" />
-  <meta property="og:title" content="Flow Arts Guide | The Kinetic Alphabet" />
+  <meta property="og:title" content="The Kinetic Alphabet Guide" />
   <meta
     property="og:description"
-    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
+    content="Read the written Guide or learn The Kinetic Alphabet through interactive lessons."
   />
   <meta property="og:site_name" content="The Kinetic Alphabet" />
   <meta
@@ -82,524 +70,482 @@
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="The Kinetic Alphabet" />
-
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@tkaflowarts" />
-  <meta name="twitter:creator" content="@tkaflowarts" />
-  <meta name="twitter:title" content="Flow Arts Guide | The Kinetic Alphabet" />
+  <meta name="twitter:title" content="The Kinetic Alphabet Guide" />
   <meta
     name="twitter:description"
-    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
+    content="Read the written Guide or learn The Kinetic Alphabet through interactive lessons."
   />
   <meta
     name="twitter:image"
     content="https://tkaflowarts.com/branding/og-image.png"
   />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin="anonymous"
-  />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap"
-    rel="stylesheet"
-  />
 </svelte:head>
 
 <GuideShell>
-  <!-- guide-page-route: the shared guide.css hook that lets a route span the
-     full guide-content width instead of the narrow prose column (see
-     guide.css's `.guide-content > .guide-page-route` rule) - needed so the
-     2200px recomposition below actually gets the width to recompose into. -->
-  <main class="guide guide-page-route">
+  <main class="guide-hub guide-page-route">
     <section class="hero" style:view-transition-name="launchpad-guide">
-      <h1>The Kinetic Alphabet Guide</h1>
-      <p class="lede">
-        Written notation for flow arts. Level 1 covers the grid, hand positions
-        and motions, letters, and words. Level 2 covers turns and the
-        intermediate system.
-      </p>
-      <div class="hero-ctas">
-        <a class="btn btn-primary" href={firstTopicHref}>
-          Start reading
-          <span class="btn-sub">{firstTopicLabel}</span>
-        </a>
-        <a class="btn btn-secondary" href="/guide/level-2/turns">
-          Read Level 2
-          <span class="btn-sub">Turns</span>
-        </a>
-      </div>
-    </section>
-
-    <section class="more" aria-labelledby="more-heading">
-      <h2 id="more-heading">More in the guide</h2>
-      <div class="available-links">
-        <a href="/guide/codex" class="guide-link">
-          <span class="guide-link-title">The Codex</span>
-          <span class="guide-link-sub"
-            >Every letter of the Kinetic Alphabet, rendered</span
-          >
-        </a>
-      </div>
-    </section>
-
-    <section class="notify" aria-labelledby="notify-heading">
-      <div class="notify-card">
-        <h2 id="notify-heading">New sections are still landing</h2>
-        <p class="notify-intro">
-          Leave your email to get one message when they do.
+      <div class="hero-copy">
+        <span class="kicker">The Kinetic Alphabet</span>
+        <h1>Learn it or look it up.</h1>
+        <p>
+          Interactive lessons teach one idea at a time. The written Guide keeps
+          the complete reference close when you want to read, scan, or print it.
         </p>
-
-        <!-- Reserved-height slot so swapping form -> confirmation never shifts
-             the layout below (no-layout-shift rule). -->
-        <div class="notify-slot">
-          {#if status === "done"}
-            <div class="confirmed" role="status">
-              <i class="fas fa-circle-check" aria-hidden="true"></i>
-              <span
-                >You're on the list. You'll get an email when new sections land.</span
-              >
-            </div>
-          {:else}
-            <form class="notify-form" onsubmit={handleSubmit}>
-              <label class="sr-only" for="guide-notify-email"
-                >Email address</label
-              >
-              <input
-                id="guide-notify-email"
-                class="text-input"
-                type="email"
-                inputmode="email"
-                autocomplete="email"
-                placeholder="you@email.com"
-                bind:value={email}
-                aria-invalid={status === "error"}
-              />
-              <button class="notify-btn" type="submit" disabled={!canSubmit}>
-                {#if status === "submitting"}
-                  <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                {/if}
-                <span>Notify me</span>
-              </button>
-            </form>
-            <p
-              class="error-line"
-              class:visible={status === "error"}
-              aria-live="polite"
-            >
-              {errorMessage}
-            </p>
-          {/if}
+        <div class="hero-actions">
+          <a class="primary-action" href="/learn/concepts">
+            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+            <span>
+              <strong>Start learning</strong>
+              <small>Six interactive lessons available</small>
+            </span>
+          </a>
+          <a class="secondary-action" href={firstTopicHref}>
+            <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+            <span>
+              <strong>Start reading</strong>
+              <small>{firstTopicLabel}</small>
+            </span>
+          </a>
         </div>
+      </div>
+
+      <div class="route-card" aria-label="Two ways to use The Kinetic Alphabet">
+        <div class="route-option featured">
+          <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
+          <div>
+            <span>Learn</span>
+            <strong>Try the idea</strong>
+            <p>Guided, interactive, and progress-aware.</p>
+          </div>
+        </div>
+        <div class="route-connector" aria-hidden="true">
+          <span></span><i class="fa-solid fa-plus"></i><span></span>
+        </div>
+        <div class="route-option">
+          <i class="fa-solid fa-book" aria-hidden="true"></i>
+          <div>
+            <span>Reference</span>
+            <strong>Read the system</strong>
+            <p>Web chapters, the Codex, and printable PDFs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reference-section" aria-labelledby="reference-heading">
+      <div class="section-heading">
+        <span class="kicker">Written reference</span>
+        <h2 id="reference-heading">Pick up exactly where you need to.</h2>
+        <p>
+          The contents button opens every chapter. These are the main routes
+          through the published material.
+        </p>
+      </div>
+
+      <div class="reference-grid">
+        {#each references as reference}
+          <a
+            class="reference-card"
+            href={reference.href}
+            download={reference.download ? true : undefined}
+          >
+            <span class="reference-icon">
+              <i class="fa-solid {reference.icon}" aria-hidden="true"></i>
+            </span>
+            <span class="reference-copy">
+              <small>{reference.eyebrow}</small>
+              <strong>{reference.title}</strong>
+              <span>{reference.description}</span>
+            </span>
+            <span class="reference-action">
+              {reference.action}
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </span>
+          </a>
+        {/each}
       </div>
     </section>
   </main>
 </GuideShell>
 
 <style>
-  .guide {
-    font-family:
-      system-ui,
-      -apple-system,
-      sans-serif;
-    --landing-heading-font: "Playfair Display", Georgia, serif;
-    color: #ece9f5;
+  .guide-hub {
+    --guide-blue: #7c9cff;
+    --guide-violet: #9d7cff;
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    padding: clamp(2.5rem, 7vw, 6rem) clamp(1rem, 4vw, 4rem) 6rem;
+    color: #f6f4ff;
+    font-family: Inter, system-ui, sans-serif;
   }
 
-  /* ── Hero ─────────────────────────────────────────────────────────── */
-  /* Widths and spacing use rem so browser text preferences scale the hub as a
-     unit. Unlike standalone Guide chapters, this exact route keeps the public
-     site's root metrics so the persistent header cannot jump during a morph. */
   .hero {
-    max-width: 47.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(19rem, 0.9fr);
+    gap: clamp(2rem, 6vw, 7rem);
+    align-items: center;
+    width: min(100%, 92rem);
     margin: 0 auto;
-    padding: 6rem 1.5rem 0;
-    text-align: center;
   }
-  h1 {
-    /* Brand Fraunces wonky italic - the page-title voice shared across every
-       public page. Section h2s below stay Playfair (h1 vs h2 hierarchy). */
+
+  .kicker {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #9db5ff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2 {
+    margin: 0;
+    color: #fff;
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
-    font-weight: 700;
     font-variation-settings:
       "opsz" 144,
       "wght" 700,
       "SOFT" 0,
       "WONK" 1;
-    font-size: clamp(2rem, 5vw, 3.2rem);
-    line-height: 1.1;
-    letter-spacing: -0.015em;
-    margin: 0;
-    color: #fff;
-    /* Even out the line lengths so it doesn't break to a ragged "for the web". */
     text-wrap: balance;
   }
-  .lede {
-    max-width: 38.75rem;
-    margin: 1.5rem auto 0;
-    font-size: clamp(1.02rem, 2vw, 1.18rem);
+
+  h1 {
+    max-width: 12ch;
+    font-size: clamp(3rem, 6.8vw, 6.8rem);
+    line-height: 0.94;
+    letter-spacing: -0.045em;
+  }
+
+  .hero-copy > p {
+    max-width: 40rem;
+    margin: 1.5rem 0 0;
+    color: rgba(236, 233, 245, 0.72);
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
     line-height: 1.65;
-    color: rgba(236, 233, 245, 0.7);
-    text-wrap: balance;
-  }
-
-  /* ── Hero CTAs ────────────────────────────────────────────────────── */
-  .hero-ctas {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.875rem;
-    margin-top: 2.25rem;
-  }
-  .btn {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-width: 12.5rem;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0.875rem 1.75rem;
-    border-radius: 14px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 1.05rem;
-    transition:
-      filter 0.18s ease,
-      transform 0.18s ease,
-      background 0.18s ease;
-  }
-  .btn:hover {
-    transform: translateY(-2px);
-  }
-  .btn-primary {
-    background: linear-gradient(135deg, #6f8cff, #8b6cff);
-    color: #fff;
-    box-shadow: 0 8px 26px rgba(111, 140, 255, 0.35);
-  }
-  .btn-primary:hover {
-    filter: brightness(1.08);
-  }
-  .btn-secondary {
-    background: rgba(20, 19, 38, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: #fff;
-  }
-  .btn-secondary:hover {
-    border-color: rgba(139, 108, 255, 0.6);
-    background: rgba(30, 27, 56, 0.6);
-  }
-  .btn-sub {
-    font-weight: 400;
-    font-size: 0.78rem;
-    opacity: 0.75;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .btn {
-      transition: none;
-    }
-    .btn:hover {
-      transform: none;
-    }
-  }
-
-  h2 {
-    font-family: "Playfair Display", Georgia, serif;
-    font-weight: 500;
-    font-size: clamp(1.5rem, 3.6vw, 2.1rem);
-    line-height: 1.15;
-    margin: 0 0 14px;
-    color: #fff;
-    text-wrap: balance;
-  }
-
-  /* ── More in the guide ───────────────────────────────────────────── */
-  .more {
-    max-width: 47.5rem;
-    margin: 6rem auto 0;
-    padding: 0 1.5rem;
-    text-align: center;
-  }
-  .available-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 1.5rem;
-  }
-  .guide-link {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    flex: 1 1 15rem;
-    min-width: 15rem;
-    max-width: 20rem;
-    padding: 1.25rem 1.5rem;
-    min-height: var(--min-touch-target, 44px);
-    border-radius: 16px;
-    background: rgba(20, 19, 38, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    text-decoration: none;
-    text-align: left;
-    transition:
-      border-color 0.18s ease,
-      transform 0.18s ease,
-      background 0.18s ease;
-  }
-  .guide-link:hover {
-    border-color: rgba(139, 108, 255, 0.6);
-    background: rgba(30, 27, 56, 0.6);
-    transform: translateY(-2px);
-  }
-  .guide-link-title {
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: 1.35rem;
-    color: #fff;
-  }
-  .guide-link-sub {
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: rgba(236, 233, 245, 0.62);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .guide-link {
-      transition: none;
-    }
-    .guide-link:hover {
-      transform: none;
-    }
-  }
-
-  /* ── Notify ───────────────────────────────────────────────────────── */
-  .notify {
-    padding: 1rem 1.5rem 6.5rem;
-    display: flex;
-    justify-content: center;
-  }
-  .notify-card {
-    width: 100%;
-    max-width: 35rem;
-    padding: 2.75rem 2.5rem 2.5rem;
-    text-align: center;
-    border-radius: 18px;
-    background: rgba(20, 19, 38, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-  }
-  .notify-card h2 {
-    font-size: clamp(1.35rem, 3.2vw, 1.7rem);
-    margin: 0 0 10px;
-  }
-  .notify-intro {
-    font-size: 1rem;
-    line-height: 1.6;
-    color: rgba(236, 233, 245, 0.6);
-    margin: 0 auto 1.5rem;
-    max-width: 25rem;
     text-wrap: pretty;
   }
 
-  .notify-slot {
-    min-height: 6rem;
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .primary-action,
+  .secondary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 4rem;
+    padding: 0.7rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: #fff;
+    text-decoration: none;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+
+  .primary-action {
+    background: linear-gradient(135deg, #647ff1, #855bd9);
+    box-shadow: 0 16px 40px rgba(101, 88, 218, 0.3);
+  }
+
+  .secondary-action {
+    background: rgba(255, 255, 255, 0.045);
+    border-color: rgba(255, 255, 255, 0.13);
+  }
+
+  .primary-action:hover,
+  .secondary-action:hover {
+    transform: translateY(-2px);
+  }
+
+  .secondary-action:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(157, 124, 255, 0.6);
+  }
+
+  .primary-action > i,
+  .secondary-action > i {
+    width: 1.3rem;
+    font-size: 1.15rem;
+    text-align: center;
+  }
+
+  .primary-action span,
+  .secondary-action span {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 0.1rem;
   }
-  .notify-form {
+
+  .primary-action strong,
+  .secondary-action strong {
+    font-size: 0.95rem;
+  }
+
+  .primary-action small,
+  .secondary-action small {
+    color: rgba(255, 255, 255, 0.68);
+    font-size: 0.75rem;
+  }
+
+  .route-card {
+    padding: clamp(1.25rem, 3vw, 2rem);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    background:
+      radial-gradient(
+        circle at 12% 0%,
+        rgba(124, 156, 255, 0.14),
+        transparent 48%
+      ),
+      rgba(18, 17, 35, 0.62);
+    box-shadow: 0 28px 80px rgba(2, 3, 15, 0.3);
+    backdrop-filter: blur(18px);
+  }
+
+  .route-option {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    padding: 1.15rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .route-option.featured {
+    border-color: rgba(124, 156, 255, 0.42);
+    background: rgba(124, 156, 255, 0.08);
+  }
+
+  .route-option > i {
+    display: grid;
+    width: 3.25rem;
+    height: 3.25rem;
+    place-items: center;
+    border-radius: 12px;
+    background: rgba(124, 156, 255, 0.14);
+    color: #b6c6ff;
+    font-size: 1.15rem;
+  }
+
+  .route-option div {
     display: flex;
-    gap: 10px;
-    width: 100%;
-    max-width: 27.5rem;
-  }
-  .text-input {
-    flex: 1;
-    min-width: 0;
-    padding: 14px 18px;
-    min-height: var(--min-touch-target, 44px);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 12px;
-    color: #fff;
-    font-size: 0.95rem;
-    font-family: inherit;
-    transition:
-      border-color 0.2s ease,
-      background 0.2s ease;
-  }
-  .text-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
-  }
-  .text-input:focus {
-    outline: none;
-    border-color: #8b6cff;
-    background: rgba(255, 255, 255, 0.09);
-  }
-  .text-input[aria-invalid="true"] {
-    border-color: var(--semantic-error, #ef4444);
+    flex-direction: column;
   }
 
-  .notify-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 22px;
-    min-height: var(--min-touch-target, 44px);
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #6f8cff, #8b6cff);
-    color: #fff;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: filter 0.18s ease;
-  }
-  .notify-btn:hover:not(:disabled) {
-    filter: brightness(1.08);
-  }
-  .notify-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .route-option span {
+    margin-bottom: 0.2rem;
+    color: #9db5ff;
+    font-size: 0.7rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  .error-line {
-    margin: 0;
-    min-height: 1.2em;
+  .route-option strong {
+    font-size: 1.05rem;
+  }
+
+  .route-option p {
+    margin: 0.35rem 0 0;
+    color: rgba(236, 233, 245, 0.6);
     font-size: 0.85rem;
-    color: #ff8a8a;
-    opacity: 0;
-  }
-  .error-line.visible {
-    opacity: 1;
+    line-height: 1.5;
   }
 
-  .confirmed {
-    display: inline-flex;
+  .route-connector {
+    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px 22px;
-    border-radius: 14px;
-    background: rgba(52, 211, 153, 0.12);
-    border: 1px solid rgba(52, 211, 153, 0.4);
-    color: #a7f3d0;
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-  .confirmed i {
-    font-size: 1.2rem;
+    gap: 0.7rem;
+    padding: 0.7rem 1.5rem;
+    color: rgba(255, 255, 255, 0.35);
   }
 
-  .sr-only {
-    position: absolute;
-    width: 1px;
+  .route-connector span {
     height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.08);
   }
 
-  /* ── 4K / ultrawide: recompose, don't just enlarge ────────────────────
-     The hub becomes a two-column composition: the hero spans the top, then
-     "More in the guide" sits LEFT while the notify card sits RIGHT as a true
-     sidebar - the two share one glance instead of a long scroll. Pure grid
-     placement on existing DOM; below 2200px the original stacked flow is
-     untouched. */
-  /* 1680 is early enough to reach the two-column composition on a 4K monitor
-     at 200% OS scaling (~1920 CSS px). The page recomposes locally while the
-     persistent public header keeps the same metrics it had on the homepage. */
-  @media (min-width: 1680px) {
-    .guide {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-      grid-template-areas:
-        "hero hero"
-        "more notify";
-      column-gap: 6rem;
-      /* A bounded reading composition, centered in the guide-content track. */
-      max-width: 100rem;
-      margin: 0 auto;
-      align-items: start;
+  .reference-section {
+    width: min(100%, 92rem);
+    margin: clamp(5rem, 10vw, 10rem) auto 0;
+  }
+
+  .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(18rem, 1.2fr);
+    column-gap: 2rem;
+    align-items: end;
+  }
+
+  .section-heading .kicker {
+    grid-column: 1 / -1;
+  }
+
+  h2 {
+    max-width: 16ch;
+    font-size: clamp(2rem, 4vw, 3.75rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  .section-heading p {
+    max-width: 34rem;
+    margin: 0 0 0.25rem;
+    justify-self: end;
+    color: rgba(236, 233, 245, 0.65);
+    line-height: 1.6;
+  }
+
+  .reference-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-top: 2rem;
+  }
+
+  .reference-card {
+    display: flex;
+    min-height: 18rem;
+    flex-direction: column;
+    padding: 1.4rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.035);
+    color: #fff;
+    text-decoration: none;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+
+  .reference-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(124, 156, 255, 0.52);
+    background: rgba(124, 156, 255, 0.07);
+  }
+
+  .reference-icon {
+    display: grid;
+    width: 2.8rem;
+    height: 2.8rem;
+    place-items: center;
+    border-radius: 11px;
+    background: rgba(124, 156, 255, 0.12);
+    color: #aabfff;
+  }
+
+  .reference-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-top: 2rem;
+  }
+
+  .reference-copy small {
+    color: #9db5ff;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .reference-copy strong {
+    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+    font-size: 1.35rem;
+  }
+
+  .reference-copy > span {
+    color: rgba(236, 233, 245, 0.58);
+    font-size: 0.875rem;
+    line-height: 1.55;
+  }
+
+  .reference-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 1.5rem;
+    color: #c8d3ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1120px) {
+    .reference-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    .reference-card {
+      min-height: 15rem;
+    }
+  }
+
+  @media (max-width: 840px) {
     .hero {
-      grid-area: hero;
-      max-width: 69rem;
-      justify-self: center;
+      grid-template-columns: 1fr;
     }
-    .more {
-      grid-area: more;
-      justify-self: end;
-      text-align: left;
-      max-width: 40rem;
-      margin-top: 6rem;
-      padding: 0;
+    h1 {
+      max-width: 14ch;
     }
-    .more h2 {
-      text-align: left;
-    }
-    /* Stack the links so the left column reads as a list. */
-    .available-links {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .guide-link {
-      max-width: none;
-      flex: 0 0 auto;
-      padding: 1.625rem 1.875rem;
-      gap: 8px;
-    }
-    .notify {
-      grid-area: notify;
-      justify-self: start;
-      align-self: stretch;
-      display: flex;
-      align-items: center;
-      margin-top: 6rem;
-      padding: 0;
-    }
-
-    /* Typography already uses responsive clamps; the ultrawide rule changes
-       composition without changing the document root or persistent chrome. */
-    .lede {
-      max-width: 50rem;
-    }
-    .notify-card {
-      max-width: 40rem;
-      padding: 3.25rem 3rem 3rem;
-    }
-    .notify-intro {
-      max-width: 31.25rem;
-    }
-    .notify-form {
-      max-width: 32.5rem;
+    .route-card {
+      max-width: 38rem;
     }
   }
 
-  @media (max-width: 480px) {
-    .notify-form {
+  @media (max-width: 640px) {
+    .guide-hub {
+      padding-top: 6.5rem;
+    }
+    .hero-actions {
+      align-items: stretch;
       flex-direction: column;
     }
-    .notify-slot {
-      min-height: 140px;
+    .primary-action,
+    .secondary-action {
+      width: 100%;
     }
-    .notify-card {
-      padding: 36px 24px 32px;
+    .section-heading {
+      grid-template-columns: 1fr;
+    }
+    .section-heading p {
+      margin-top: 1rem;
+      justify-self: start;
+    }
+    .reference-grid {
+      grid-template-columns: 1fr;
+    }
+    .reference-card {
+      min-height: 13rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .text-input,
-    .notify-btn {
+    .primary-action,
+    .secondary-action,
+    .reference-card {
       transition: none;
+    }
+    .primary-action:hover,
+    .secondary-action:hover,
+    .reference-card:hover {
+      transform: none;
     }
   }
 </style>

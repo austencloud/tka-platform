@@ -62,6 +62,7 @@
       <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
       <input
         data-glossary-search
+        name="glossary-search"
         type="search"
         placeholder="Filter terms"
         aria-label="Filter glossary terms"

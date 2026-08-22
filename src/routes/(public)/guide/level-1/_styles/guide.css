@@ -673,7 +673,7 @@
 }
 
 /* === Mobile: collapse sidebar === */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .guide-sidebar {
     display: none;
   }
@@ -691,12 +691,11 @@
 
   .guide-content {
     margin-left: 0;
+    padding-top: 4rem;
     grid-template-columns:
       [full-start] minmax(1rem, 1fr)
-      [breakout-start] 0
-      [prose-start] min(65ch, 100%)
-      [prose-end] 0
-      [breakout-end] minmax(1rem, 1fr)
+      [breakout-start prose-start] minmax(0, 65ch)
+      [prose-end breakout-end] minmax(1rem, 1fr)
       [full-end];
   }
 

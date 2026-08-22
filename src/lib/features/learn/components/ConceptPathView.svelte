@@ -11,15 +11,13 @@ Shows:
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import { getConceptProgressTracker } from "$lib/features/learn/get-concept-progress-tracker";
-  import {
-    TKA_CONCEPTS,
-    CONCEPT_CATEGORIES,
-    getConceptsByCategory,
-    getNextConcept,
-    getPreviousConcept,
-  } from "../domain/concepts";
-  import type { LearnConcept, ConceptCategory, LearningProgress } from "../domain/types";
-  import type { ConceptProgressTracker } from "../services/concept-progress-tracker";
+  import { getConceptsByCategory } from "../domain/concepts";
+  import { getAvailableConcepts } from "../domain/concept-experience-registry";
+  import type {
+    LearnConcept,
+    ConceptCategory,
+    LearningProgress,
+  } from "../domain/types";
   import { CAPABILITY_NUDGES } from "$lib/shared/subscription/domain/capability-nudges";
   import PremiumNudge from "$lib/shared/subscription/components/PremiumNudge.svelte";
   import ProgressMiniMap from "./ProgressMiniMap.svelte";
@@ -37,37 +35,47 @@ Shows:
   // Progress state
   let progress = $state(conceptProgressService.getProgress());
   let showAllConcepts = $state(true); // Auto-expanded by default
+  const availableConcepts = getAvailableConcepts();
+  const availableConceptIds = new Set(
+    availableConcepts.map((concept) => concept.id)
+  );
+  const completedAvailableCount = $derived(
+    availableConcepts.filter((concept) =>
+      progress.completedConcepts.has(concept.id)
+    ).length
+  );
 
   // Subscribe to progress updates
   onMount(() => {
-    const unsubscribe = conceptProgressService.subscribe((newProgress: LearningProgress) => {
-      progress = newProgress;
-    });
+    const unsubscribe = conceptProgressService.subscribe(
+      (newProgress: LearningProgress) => {
+        progress = newProgress;
+      }
+    );
     return unsubscribe;
   });
 
   // Find the current concept (first non-completed, non-locked)
-  // Always returns a concept since TKA_CONCEPTS is never empty
+  // The experience registry only contains lessons with a real component.
   const currentConcept = $derived((): LearnConcept => {
     // First, find any in-progress concept
-    const inProgress = TKA_CONCEPTS.find(
+    const inProgress = availableConcepts.find(
       (c) => conceptProgressService.getConceptStatus(c.id) === "in-progress"
     );
     if (inProgress) return inProgress;
 
     // Otherwise, find first available concept
-    const available = TKA_CONCEPTS.find(
+    const available = availableConcepts.find(
       (c) => conceptProgressService.getConceptStatus(c.id) === "available"
     );
     if (available) return available;
 
     // If all completed, return last concept
-    if (progress.completedConcepts.size === TKA_CONCEPTS.length) {
-      return TKA_CONCEPTS[TKA_CONCEPTS.length - 1]!;
+    if (completedAvailableCount === availableConcepts.length) {
+      return availableConcepts[availableConcepts.length - 1]!;
     }
 
-    // Default to first concept (always exists)
-    return TKA_CONCEPTS[0]!;
+    return availableConcepts[0]!;
   });
 
   const currentConceptStatus = $derived(
@@ -77,14 +85,20 @@ Shows:
   // Previous and next for context
   const previousConcept = $derived(() => {
     const current = currentConcept();
-    if (!current) return undefined;
-    return getPreviousConcept(current.id);
+    const index = availableConcepts.findIndex(
+      (concept) => concept.id === current.id
+    );
+    return index > 0 ? availableConcepts[index - 1] : undefined;
   });
 
   const nextUpConcept = $derived(() => {
     const current = currentConcept();
-    if (!current) return undefined;
-    return getNextConcept(current.id);
+    const index = availableConcepts.findIndex(
+      (concept) => concept.id === current.id
+    );
+    return index >= 0 && index < availableConcepts.length - 1
+      ? availableConcepts[index + 1]
+      : undefined;
   });
 
   // Categories for "View all" section
@@ -96,15 +110,22 @@ Shows:
   ];
 
   function getCategoryProgress(category: ConceptCategory) {
-    const concepts = getConceptsByCategory(category);
+    const concepts = availableConcepts.filter(
+      (concept) => concept.category === category
+    );
     const completed = concepts.filter((c) =>
       progress.completedConcepts.has(c.id)
     ).length;
     return { completed, total: concepts.length };
   }
 
+  const availableCategories = categories.filter((category) =>
+    availableConcepts.some((concept) => concept.category === category)
+  );
+
   // Premium gating - Foundation is free, everything else shows preview nudge
-  const curriculumNudge = CAPABILITY_NUDGES["capability:learn:full-curriculum"]!;
+  const curriculumNudge =
+    CAPABILITY_NUDGES["capability:learn:full-curriculum"]!;
   let premiumNudgeVisible = $state(false);
   let pendingPremiumConcept = $state<LearnConcept | null>(null);
 
@@ -144,13 +165,26 @@ Shows:
 
   // Check if journey is complete
   const isJourneyComplete = $derived(
-    progress.completedConcepts.size === TKA_CONCEPTS.length
+    availableConcepts.length > 0 &&
+      completedAvailableCount === availableConcepts.length
   );
 </script>
 
 <div class="concept-path">
-  <!-- Progress Arc -->
-  <ProgressMiniMap {progress} />
+  <header class="course-intro" style:view-transition-name="launchpad-guide">
+    <div>
+      <span class="course-kicker">Learn by doing</span>
+      <h1>Interactive TKA lessons</h1>
+      <p>
+        Start with the grid and build toward reading words. Each lesson gives
+        you one thing to play with at a time.
+      </p>
+    </div>
+    <a class="read-guide-link" href="/guide">
+      <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+      <span>Read the Guide</span>
+    </a>
+  </header>
 
   <!-- Main content area -->
   <div class="main-content">
@@ -161,7 +195,7 @@ Shows:
           <i class="fa-solid fa-trophy" aria-hidden="true"></i>
         </div>
         <h2>Level 1 Complete!</h2>
-        <p>You've mastered all 28 concepts of The Kinetic Alphabet.</p>
+        <p>You've completed every interactive lesson currently available.</p>
         <button class="review-button" onclick={() => (showAllConcepts = true)}>
           <i class="fa-solid fa-rotate" aria-hidden="true"></i>
           Review Concepts
@@ -183,6 +217,10 @@ Shows:
     {/if}
   </div>
 
+  <div class="progress-overview">
+    <ProgressMiniMap {progress} />
+  </div>
+
   <!-- View All Toggle -->
   <button class="view-all-toggle" onclick={toggleShowAll}>
     <span>{showAllConcepts ? "Hide learning path" : "View learning path"}</span>
@@ -195,9 +233,11 @@ Shows:
   <!-- Expandable All Concepts Path -->
   {#if showAllConcepts}
     <div class="all-concepts" transition:slide={{ duration: 300 }}>
-      {#each categories as category, categoryIndex}
+      {#each availableCategories as category}
         {@const categoryProgress = getCategoryProgress(category)}
-        {@const concepts = getConceptsByCategory(category)}
+        {@const concepts = getConceptsByCategory(category).filter((concept) =>
+          availableConceptIds.has(concept.id)
+        )}
 
         <section class="category-section">
           <CategoryHeader
@@ -253,6 +293,69 @@ Shows:
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
+  .course-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--theme-panel-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: 16px;
+  }
+
+  .course-intro > div {
+    min-width: 0;
+  }
+
+  .course-kicker {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--prop-blue, #60a5fa);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .course-intro h1 {
+    margin: 0;
+    color: var(--theme-text);
+    font-size: clamp(1.35rem, 3cqw, 2rem);
+    line-height: 1.1;
+  }
+
+  .course-intro p {
+    max-width: 42rem;
+    margin: 0.5rem 0 0;
+    color: var(--theme-text-dim);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .read-guide-link {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
+    border-radius: 10px;
+    color: var(--theme-text);
+    font-size: 0.875rem;
+    font-weight: 650;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .read-guide-link:hover {
+    background: var(--theme-card-hover-bg);
+    border-color: var(--prop-blue, #60a5fa);
+  }
+
   /* Webkit scrollbar styling */
   .concept-path::-webkit-scrollbar {
     width: 6px;
@@ -281,6 +384,12 @@ Shows:
     width: 100%;
   }
 
+  .progress-overview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   /* Completion celebration */
   .completion-celebration {
     --achievement-gold: #ffd700;
@@ -294,7 +403,8 @@ Shows:
       color-mix(in srgb, var(--achievement-gold) 10%, transparent) 0%,
       color-mix(in srgb, var(--achievement-gold) 2%, transparent) 100%
     );
-    border: 1px solid color-mix(in srgb, var(--achievement-gold) 20%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--achievement-gold) 20%, transparent);
     border-radius: 16px;
   }
 
@@ -312,7 +422,8 @@ Shows:
   .celebration-icon i {
     font-size: 2.5rem;
     color: var(--achievement-gold);
-    text-shadow: 0 0 24px color-mix(in srgb, var(--achievement-gold) 50%, transparent);
+    text-shadow: 0 0 24px
+      color-mix(in srgb, var(--achievement-gold) 50%, transparent);
   }
 
   .completion-celebration h2 {
@@ -335,7 +446,8 @@ Shows:
     padding: 0.875rem 1.5rem;
     min-height: var(--min-touch-target);
     background: color-mix(in srgb, var(--achievement-gold) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--achievement-gold) 30%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--achievement-gold) 30%, transparent);
     border-radius: 10px;
     color: var(--achievement-gold);
     font-size: 1rem;
@@ -420,6 +532,66 @@ Shows:
     .view-all-toggle i,
     .review-button {
       transition: none;
+    }
+  }
+
+  @container learn-tab (max-width: 620px) {
+    .course-intro {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    .read-guide-link {
+      align-self: flex-start;
+    }
+  }
+
+  @container learn-tab (min-width: 1800px) {
+    .concept-path {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(22rem, 0.75fr);
+      grid-template-areas:
+        "intro intro"
+        "lesson progress"
+        "toggle toggle"
+        "concepts concepts";
+      align-content: start;
+      column-gap: clamp(2rem, 4cqw, 5rem);
+      max-width: min(2200px, 90cqw);
+      font-size: clamp(16px, calc(16px + (100cqw - 1680px) * 8 / 2160), 24px);
+    }
+
+    .course-intro {
+      grid-area: intro;
+    }
+
+    .main-content {
+      grid-area: lesson;
+      max-width: none;
+      justify-content: center;
+    }
+
+    .progress-overview {
+      grid-area: progress;
+      align-self: center;
+    }
+
+    .view-all-toggle {
+      grid-area: toggle;
+    }
+
+    .all-concepts {
+      grid-area: concepts;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .concept-list {
+      grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
     }
   }
 </style>

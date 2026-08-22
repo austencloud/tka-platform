@@ -14,7 +14,6 @@ import {
   getLetterTypes,
 } from "../shared/server-context.js";
 import {
-  TERM_ALIASES,
   resolveTermAlias,
   POSITION_DEFINITIONS,
   listDomainTopics,
@@ -39,7 +38,7 @@ export function registerEducationalTools(server: McpServer): void {
 - Positions: Alpha=opposite, Beta=same, Gamma=right-angle, Zeta=obtuse, Eta=acute, Tau=one-center, Terra=both-center
 - Hand paths: Static=stay, Shift=arc to adjacent, Dash=straight to opposite(180°), Hash=straight to/from center (L4, "half-dash")
 - Prop rotations: Pro=with hand path (0 turns=isolation, preserves center-relative orientation), Anti=against, Float=holds absolute spatial angle
-- Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(Φ,Ψ,Λ), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
+- Types: 1=Dual-Shift(A-V), 2=Shift(W-Ω), 3=Cross-Shift(W--Ω-), 4=Dash(base Φ,Ψ,Λ; registered L4 extension τ-), 5=Dual-Dash(Φ-,Ψ-,Λ-), 6=Static(α,β,γ)
 - Skewed positions (zeta/eta) are their own L5 positions. A-L and M-V are Type 1 letters for the 4-point grid (alpha/beta and gamma respectively); how Type 1 letters apply to zeta/eta transitions is a separate, unresolved question — don't assume either group "handles" skewed transitions. Type 4 in skewed uses Phi(diverge)/Psi(converge), Lambda can't be skewed
 - "[Letter] dash" = Type 3 with "-" suffix (e.g. "Σ dash" = Σ-)
 - Orientations: in, out, clock, counter + Level 6 interradial: clockIn, clockOut, counterIn, counterOut
@@ -132,8 +131,8 @@ One hand shifts, one stays static.
 One hand shifts + one hand dashes. Named with "-" suffix.
 - **CRITICAL**: "Sigma dash" = Σ- (the Type 3 letter), NOT "Sigma with dash motion"
 
-### Type 4: Dash (3 letters: Φ, Ψ, Λ)
-One hand dashes, one stays static.
+### Type 4: Dash (3 Level 1 letters: Φ, Ψ, Λ; Level 4 extension: τ-)
+One hand follows the dash family and one stays static. Tau-Dash (τ-) is a registered Level 4 letter with the static hand at center; it does not yet have variations in the Level 1 pictograph dataframe.
 
 ### Type 5: Dual-Dash (3 letters: Φ-, Ψ-, Λ-)
 Both hands dash. Named with "-" suffix.
@@ -228,14 +227,17 @@ Use \`list_letter_variations\` to see all variations for a specific letter.`;
       const variations = allPictographs.filter((p) => p.letter === letter);
 
       if (variations.length === 0) {
+        const registeredType = LETTER_TO_TYPE[letter];
         return {
           content: [
             {
               type: "text" as const,
-              text: `Letter "${letter}" not found in the TKA alphabet. Use list_available_letters to see all valid letters.`,
+              text: registeredType
+                ? `Letter "${letter}" is registered as Type ${registeredType.type.replace("type", "")}, but it has no variations in the current pictograph dataframe. Use get_term_definition for its glossary entry.`
+                : `Letter "${letter}" is not in the registered TKA alphabet or the current pictograph dataframe. Use list_available_letters to inspect the dataframe set.`,
             },
           ],
-          isError: true,
+          isError: !registeredType,
         };
       }
 
@@ -308,7 +310,9 @@ Other Type ${typeNum} letters: ${fullTypeInfo?.letters?.filter(l => l !== letter
       const glossary = getGlossary();
       const normalizedTerm = term.toLowerCase().trim();
 
-      const resolvedTerm = resolveTermAlias(normalizedTerm);
+      const resolvedTerm = glossary[normalizedTerm]
+        ? normalizedTerm
+        : resolveTermAlias(normalizedTerm);
       const entry = glossary[resolvedTerm];
 
       if (!entry) {
@@ -549,10 +553,13 @@ ${relationships.length > 0 ? `\n## Relationships\n${relationships.map(r => `- ${
       }
 
       if (compact) {
+        const extensionText = typeInfo.extendedLetters?.length
+          ? ` | Registered extension${typeInfo.extendedLetters.length === 1 ? "" : "s"}: ${typeInfo.extendedLetters.join(", ")} (no dataframe variations)`
+          : "";
         return {
           content: [{
             type: "text" as const,
-            text: `Type ${type} (${typeInfo.name}): ${typeInfo.letters.join(", ")}`,
+            text: `Type ${type} (${typeInfo.name}) — Level 1/dataframe: ${typeInfo.letters.join(", ")}${extensionText}`,
           }],
         };
       }
@@ -577,7 +584,8 @@ ${typeInfo.motionPattern.note ? `- Note: ${typeInfo.motionPattern.note}` : ""}
 ${typeInfo.characteristics.map(c => `- ${c}`).join("\n")}
 
 **Letters (${typeInfo.letters.length} total):**
-${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join("\n")}`;
+${letterCounts.map(({ letter, count }) => `- **${letter}** (${count} variations)`).join("\n")}
+${typeInfo.extendedLetters?.length ? `\n**Registered higher-level extensions (no dataframe variations):**\n${typeInfo.extendedLetters.map(letter => `- **${letter}**`).join("\n")}` : ""}`;
 
       return {
         content: [{ type: "text" as const, text: output }],

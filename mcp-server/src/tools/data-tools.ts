@@ -199,11 +199,16 @@ export function registerDataTools(server: McpServer): void {
 
       if (compact) {
         const byType: string[] = [];
+        const registeredExtensions: string[] = [];
         for (const [_typeKey, typeInfo] of Object.entries(LETTER_TYPES)) {
           const presentLetters = typeInfo.letters.filter((l) => availableLetters.has(l));
           if (presentLetters.length > 0) {
             byType.push(`${typeInfo.name.split(":")[0]}: ${presentLetters.join(",")}`);
           }
+          registeredExtensions.push(...(typeInfo.extendedLetters ?? []));
+        }
+        if (registeredExtensions.length > 0) {
+          byType.push(`Registered extensions without dataframe variations: ${registeredExtensions.join(",")}`);
         }
         return {
           content: [{ type: "text" as const, text: byType.join("\n") }],
@@ -222,12 +227,15 @@ export function registerDataTools(server: McpServer): void {
         if (presentLetters.length > 0) {
           output.push(`## ${typeInfo.name}`);
           output.push(`${typeInfo.description}`);
-          output.push(`Letters: ${presentLetters.join(", ")}`);
+          output.push(`Level 1/dataframe letters: ${presentLetters.join(", ")}`);
+          if (typeInfo.extendedLetters?.length) {
+            output.push(`Registered higher-level extensions without dataframe variations: ${typeInfo.extendedLetters.join(", ")}`);
+          }
           output.push("");
         }
       }
 
-      output.push(`Total: ${availableLetters.size} letters`);
+      output.push(`Total available in the pictograph dataframe: ${availableLetters.size} letters`);
 
       return {
         content: [
