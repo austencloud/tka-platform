@@ -149,6 +149,26 @@ describe("CollectionState", () => {
     expect(s.collection[0]?.name).toBe("E");
   });
 
+  it("update() preserves identity and rolls back a failed artifact edit", async () => {
+    await s.init("user-1");
+    const entry = await s.add(base);
+    repo.saved.length = 0;
+
+    const updated = await s.update(entry.id, { name: "Reconstructed tunnel" });
+    expect(updated).toMatchObject({
+      id: entry.id,
+      createdAt: entry.createdAt,
+      name: "Reconstructed tunnel",
+    });
+    expect(repo.saved).toEqual([updated]);
+
+    repo.failNextSave = true;
+    await expect(s.update(entry.id, { name: "Lost update" })).rejects.toThrow(
+      "save denied"
+    );
+    expect(s.collection[0]?.name).toBe("Reconstructed tunnel");
+  });
+
   it("shows a separate read-only preview and restores the owner's saved Art", async () => {
     const owned = { id: "owned", name: "Owner Art", createdAt: 1 };
     const previewed = { id: "preview", name: "Preview Art", createdAt: 2 };
@@ -166,6 +186,9 @@ describe("CollectionState", () => {
     await expect(s.add(base)).rejects.toThrow("read-only");
     await expect(s.remove(previewed.id)).rejects.toThrow("read-only");
     await expect(s.rename(previewed.id, "Changed")).rejects.toThrow(
+      "read-only"
+    );
+    await expect(s.update(previewed.id, { name: "Changed" })).rejects.toThrow(
       "read-only"
     );
     expect(repo.saved).toHaveLength(savedBefore);

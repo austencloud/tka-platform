@@ -28,7 +28,7 @@ instead of showing an empty shell.
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
   import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
-  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
   import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
   import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
@@ -51,9 +51,16 @@ instead of showing an empty shell.
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { getSharedCollectionsContext } from "../context/shared-collections-context";
   import UserVideoLibraryView from "$lib/shared/video-collaboration/components/UserVideoLibraryView.svelte";
+  import {
+    trackBrowseCollectionOpened,
+    trackBrowseVisualTypeOpened,
+    type BrowseCollectionEntry,
+    type BrowseVisualType,
+  } from "$lib/shared/analytics/browse-events";
 
   const signedIn = $derived(!!authState.user);
   const previewReadOnly = $derived(userPreviewState.isActive);
+  const browseNavigationState = getBrowseNavigationContext();
   const sharedCollectionsState = getSharedCollectionsContext();
   const sharedCollections = $derived(sharedCollectionsState.items);
 
@@ -201,21 +208,48 @@ instead of showing an empty shell.
   // (Firestore auto-ids + "system_favorites").
   const detail = $derived.by(() => {
     const loc = browseNavigationState.currentLocation;
-    if (loc?.tab !== "library" || loc.view !== "detail" || !loc.contextId) {
+    if (loc?.primary !== "you") {
       return null;
     }
-    const sep = loc.contextId.indexOf(":");
-    if (sep > 0) {
-      const ownerId = loc.contextId.slice(0, sep);
-      const collectionId = loc.contextId.slice(sep + 1);
+
+    if (loc.section === "videos") {
+      return {
+        id: PERFORMANCES_SHELF_ID,
+        ownerId: null,
+        ownerName: undefined,
+      };
+    }
+
+    if (loc.section === "visuals") {
+      const artIdByType = {
+        tunnels: "art_tunnels",
+        scenes: "art_scenes",
+        mandalas: "art_mandala",
+      } as const;
+      return {
+        id: artIdByType[loc.visualType ?? "tunnels"],
+        ownerId: null,
+        ownerName: undefined,
+      };
+    }
+
+    if (
+      loc.section !== "collections" ||
+      loc.view !== "detail" ||
+      !loc.contextId
+    ) {
+      return null;
+    }
+
+    if (loc.ownerId) {
       const shared = sharedCollections.find(
         (item) =>
-          item.grant.ownerId === ownerId &&
-          item.grant.collectionId === collectionId
+          item.grant.ownerId === loc.ownerId &&
+          item.grant.collectionId === loc.contextId
       );
       return {
-        id: collectionId,
-        ownerId,
+        id: loc.contextId,
+        ownerId: loc.ownerId,
         ownerName: shared?.ownerName ?? loc.filter?.displayName,
         accessRole: shared?.grant.role,
       };
@@ -241,8 +275,17 @@ instead of showing an empty shell.
       ownerName: undefined as string | undefined,
     }
   );
+  const isYouSequences = $derived(
+    browseNavigationState.currentLocation?.primary === "you" &&
+      browseNavigationState.currentLocation?.section === "sequences"
+  );
 
-  function openCollection(id: string, name: string) {
+  function openCollection(
+    id: string,
+    name: string,
+    entry: BrowseCollectionEntry = "owned-card"
+  ) {
+    trackBrowseCollectionOpened(entry);
     browseNavigationState.viewCollectionDetail(id, name);
   }
 
@@ -252,10 +295,13 @@ instead of showing an empty shell.
     name: string,
     ownerName?: string
   ) {
+    trackBrowseCollectionOpened("shared-card");
     browseNavigationState.navigateTo({
-      tab: "library",
+      primary: "you",
+      section: "collections",
       view: "detail",
-      contextId: `${ownerId}:${collectionId}`,
+      ownerId,
+      contextId: collectionId,
       filter: {
         type: "collectionName",
         value: name,
@@ -303,6 +349,13 @@ instead of showing an empty shell.
   }
 
   function openArtDetail(id: string) {
+    const typeById: Record<string, BrowseVisualType> = {
+      art_tunnels: "tunnel",
+      art_scenes: "scene",
+      art_mandala: "mandala",
+    };
+    const visualType = typeById[id];
+    if (visualType) trackBrowseVisualTypeOpened(visualType);
     browseNavigationState.viewCollectionDetail(
       id,
       ART_DETAIL[id]?.label ?? "Art"
@@ -543,7 +596,12 @@ instead of showing an empty shell.
     readonly
     selected={!!sel && !sel.ownerId && isPerformancesId(sel.id)}
     countLabel="Uploads, collaborations, and invites"
-    onOpen={() => openCollection(PERFORMANCES_SHELF_ID, "Performances")}
+    onOpen={() =>
+      openCollection(
+        PERFORMANCES_SHELF_ID,
+        "Performances",
+        "performance-shelf"
+      )}
   />
 {/snippet}
 
@@ -580,7 +638,7 @@ instead of showing an empty shell.
       <header class="art-detail-bar">
         <button type="button" class="art-back" onclick={backToList}>
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Library</span>
+          <span>You</span>
         </button>
         <span class="art-detail-title">{ART_DETAIL[artId]?.label}</span>
       </header>
@@ -606,7 +664,7 @@ instead of showing an empty shell.
       <header class="art-detail-bar">
         <button type="button" class="art-back" onclick={backToList}>
           <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Library</span>
+          <span>You</span>
         </button>
         <span class="art-detail-title">Performances</span>
       </header>
@@ -641,11 +699,13 @@ instead of showing an empty shell.
   {/each}
 {/snippet}
 
-{#if isSideBySide && signedIn}
+{#if !signedIn && isYouSequences}
+  <AllLibraryView />
+{:else if isSideBySide && signedIn}
   <div class="library-split">
     <aside class="rail" aria-label="Your collections">
       <header class="list-header">
-        <h2 class="list-title">Library</h2>
+        <h2 class="list-title">Your work</h2>
       </header>
 
       {#if loading && collections.length === 0}
@@ -713,7 +773,9 @@ instead of showing an empty shell.
           collectionId={railSelection.id}
           foreignOwnerId={railSelection.ownerId}
           ownerName={railSelection.ownerName}
-          accessRole={railSelection.accessRole}
+          accessRole={"accessRole" in railSelection
+            ? railSelection.accessRole
+            : undefined}
           onBack={backToList}
           showBack={false}
         />
@@ -745,7 +807,7 @@ instead of showing an empty shell.
 {:else}
   <div class="collections-list">
     <header class="list-header">
-      <h2 class="list-title">Library</h2>
+      <h2 class="list-title">Your work</h2>
     </header>
 
     {#if !signedIn}
@@ -753,7 +815,7 @@ instead of showing an empty shell.
         <span class="signed-out-icon">
           <i class="fas fa-folder-open" aria-hidden="true"></i>
         </span>
-        <p class="signed-out-title">Your library lives in your account</p>
+        <p class="signed-out-title">Your work lives in your account</p>
         <p class="signed-out-hint">
           Log in or create a free account to keep saved sequences together,
           build Smart Collections, and follow collections other people share.

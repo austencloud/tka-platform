@@ -128,6 +128,7 @@ one rail while the live matching grid gets the rest of the canvas.
     [BrowseFilterType.GRID_MODE]: "gridmode",
     [BrowseFilterType.OWNER]: "author",
     [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "performance",
+    [BrowseFilterType.RECENT_PERFORMANCE]: "performance",
     [BrowseFilterType.LOOP_TYPE]: "loop",
     [BrowseFilterType.TND_FAMILY]: "family",
     [BrowseFilterType.MAX_TURN_INTENSITY]: "max_turn_intensity",
@@ -405,7 +406,10 @@ one rail while the live matching grid gets the rest of the canvas.
                     String(BrowseFilterType.LOOP_TYPE)
                   ] ?? "any"}
                   onLoopConnectiveChange={(connective) =>
-                    engine.setConnective(BrowseFilterType.LOOP_TYPE, connective)}
+                    engine.setConnective(
+                      BrowseFilterType.LOOP_TYPE,
+                      connective
+                    )}
                   onToggleLoop={(value, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(
@@ -424,7 +428,10 @@ one rail while the live matching grid gets the rest of the canvas.
                     String(BrowseFilterType.TND_FAMILY)
                   ] ?? "any"}
                   onFamilyConnectiveChange={(connective) =>
-                    engine.setConnective(BrowseFilterType.TND_FAMILY, connective)}
+                    engine.setConnective(
+                      BrowseFilterType.TND_FAMILY,
+                      connective
+                    )}
                   onToggleFamily={(familyId, label, color, nowActive) => {
                     if (nowActive) {
                       engine.addFilter(

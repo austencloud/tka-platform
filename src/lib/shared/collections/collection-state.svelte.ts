@@ -213,6 +213,40 @@ export class CollectionState<T extends CollectionEntry> {
     return next;
   }
 
+  /** Update an existing saved artifact without giving it a new identity. This
+   * is what lets someone reopen a tunnel, change its choreography, and keep
+   * every video already attached to that tunnel. */
+  async update(
+    id: string,
+    patch: Partial<Omit<T, "id" | "createdAt">>
+  ): Promise<T | null> {
+    this.assertWritable();
+    this.ensureLocalLoaded();
+    const idx = this.ownedCollection.findIndex((entry) => entry.id === id);
+    if (idx === -1) return null;
+
+    const previous = this.ownedCollection[idx]!;
+    const next = {
+      ...previous,
+      ...patch,
+      id,
+      createdAt: previous.createdAt,
+    } as T;
+    this.ownedCollection[idx] = next;
+
+    if (this.userId) {
+      try {
+        await this.repo.save(this.userId, next);
+      } catch (error) {
+        this.ownedCollection[idx] = previous;
+        throw error;
+      }
+    } else {
+      this.localRepo.save(this.ownedCollection);
+    }
+    return next;
+  }
+
   get count(): number {
     return this.collection.length;
   }
