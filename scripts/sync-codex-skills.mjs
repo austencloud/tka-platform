@@ -332,14 +332,14 @@ if ($latestTag) {
     adapted = adapted.replace(
       /```bash\nnode scripts\/import-sequence\.cjs <file\.json> \\\n([\s\S]*?)\n```/,
       `\`\`\`text
-node scripts/import-sequence.cjs <file.json> [--stdin] [--circular] [--loop-type <type>] [--notes "tagline"] [--visibility private|public] [--dry-run]
+node scripts/import-sequence.cjs <file.json> [--stdin] [--circular] [--loop-type <type>] [--notes "tagline"] [--visibility private|unlisted] [--dry-run]
 \`\`\`
 
 - --stdin: read JSON from stdin instead of a file.
 - --circular: force isCircular=true.
 - --loop-type <type>: force the LOOP type.
 - --notes "tagline": attach notes or a tagline.
-- --visibility private|public: set visibility; defaults to private.
+- --visibility private|unlisted: set visibility; defaults to private. Publish through the app so the owner record, public projection, and content-hash claim commit together.
 - --dry-run: preview without writing to Firestore.`
     );
   }

@@ -19,7 +19,13 @@
 const { readFileSync } = require("fs");
 const { resolve } = require("path");
 const crypto = require("crypto");
-const { AUSTEN_UID, detectLoop, buildFirestoreDoc } = require("./import-sequence.cjs");
+const {
+  AUSTEN_UID,
+  detectLoop,
+  buildFirestoreDoc,
+  normalizeFirestoreDoc,
+  stampNewSequenceTimestamps,
+} = require("./import-sequence.cjs");
 
 const args = process.argv.slice(2);
 const isCommit = args.includes("--commit");
@@ -38,12 +44,10 @@ const cells = JSON.parse(
 async function main() {
   console.log(`Cells: ${cells.length}`);
 
-  const mockFieldValue = { serverTimestamp: () => "<SERVER_TIMESTAMP>" };
-  const fieldValue = isCommit
-    ? require("firebase-admin").firestore.FieldValue
-    : mockFieldValue;
+  const localClock = { serverTimestamp: () => new Date() };
 
   let db = null;
+  let writeFieldValue = localClock;
   if (isCommit) {
     const admin = require("firebase-admin");
     const serviceAccount = JSON.parse(
@@ -53,19 +57,28 @@ async function main() {
       admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     }
     db = admin.firestore();
+    writeFieldValue = admin.firestore.FieldValue;
   }
 
   const built = [];
   for (const cell of cells) {
     const loopInfo = detectLoop(cell);
-    const { id, data } = buildFirestoreDoc(cell, fieldValue, loopInfo, {
+    const { id, data } = buildFirestoreDoc(cell, localClock, loopInfo, {
       visibility: "private",
       notes: `${NOTES} ${cell.metadata.cell}`,
     });
     // Collision guard: buildFirestoreDoc derives ids from Date.now() + 4 random
     // bytes, and 72 docs are minted inside the same millisecond.
     const uniqueId = `${id}_${cell.metadata.cell.replace("-", "")}`;
-    built.push({ id: uniqueId, data: { ...data, id: uniqueId }, cell: cell.metadata.cell });
+    const normalized = await normalizeFirestoreDoc({
+      id: uniqueId,
+      data: { ...data, id: uniqueId },
+    });
+    built.push({
+      id: uniqueId,
+      data: normalized.data,
+      cell: cell.metadata.cell,
+    });
   }
 
   const ids = new Set(built.map((b) => b.id));
@@ -89,8 +102,8 @@ async function main() {
     isPublic: false,
     sortOrder: 0,
     kind: "manual",
-    createdAt: fieldValue.serverTimestamp(),
-    updatedAt: fieldValue.serverTimestamp(),
+    createdAt: writeFieldValue.serverTimestamp(),
+    updatedAt: writeFieldValue.serverTimestamp(),
   };
 
   if (!isCommit) {
@@ -103,7 +116,10 @@ async function main() {
   // Firestore batches cap at 500 writes; 72 + 1 fits in one.
   const batch = db.batch();
   for (const b of built) {
-    batch.set(db.doc(`users/${AUSTEN_UID}/sequences/${b.id}`), b.data);
+    batch.set(
+      db.doc(`users/${AUSTEN_UID}/sequences/${b.id}`),
+      stampNewSequenceTimestamps(b.data, writeFieldValue)
+    );
   }
   batch.set(db.doc(`users/${AUSTEN_UID}/collections/${collectionId}`), collectionDoc);
   await batch.commit();

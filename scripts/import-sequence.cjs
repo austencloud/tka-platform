@@ -17,6 +17,7 @@
 
 const { readFileSync } = require("fs");
 const { resolve } = require("path");
+const { pathToFileURL } = require("url");
 const crypto = require("crypto");
 const { decomposeSequence } = require("./lib/compose-sequence.cjs");
 
@@ -53,7 +54,9 @@ function parseCliArgs() {
   }
 
   if (!jsonPath && !useStdin) {
-    console.error("Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--dry-run]");
+    console.error(
+      "Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--visibility private|unlisted] [--dry-run]"
+    );
     console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
     process.exit(1);
   }
@@ -64,6 +67,47 @@ function parseCliArgs() {
 // ---------------------------------------------------------------------------
 
 const AUSTEN_UID = "PBp3GSBO6igCKPwJyLZNmVEmamI3";
+
+// The app's persistence normalizer is the behavior owner for exact words,
+// composition, canonical step count, and content identity. This script still
+// runs under plain Node, so load that TypeScript module through tsx instead of
+// maintaining a second import-only version of the same rules.
+let normalizerPromise = null;
+function loadPersistenceNormalizer() {
+  normalizerPromise ??= import("tsx/esm/api").then(({ tsImport }) =>
+    tsImport(
+      "../src/lib/shared/library/services/sequence-persistence-normalizer.ts",
+      pathToFileURL(__filename).href
+    )
+  );
+  return normalizerPromise;
+}
+
+async function normalizeFirestoreDoc(built) {
+  const { normalizeSequenceForPersistence } =
+    await loadPersistenceNormalizer();
+  const normalized = await normalizeSequenceForPersistence({
+    ...built.data,
+    id: built.id,
+  });
+
+  return {
+    id: built.id,
+    data: { ...normalized.ownerData, id: built.id },
+    hydrated: normalized.hydrated,
+    contentHash: normalized.contentHash,
+    contentHashVersion: normalized.contentHashVersion,
+  };
+}
+
+function stampNewSequenceTimestamps(data, fieldValue) {
+  return {
+    ...data,
+    birthday: fieldValue.serverTimestamp(),
+    createdAt: fieldValue.serverTimestamp(),
+    updatedAt: fieldValue.serverTimestamp(),
+  };
+}
 
 // ---------------------------------------------------------------------------
 // LOOP Detection
@@ -307,6 +351,17 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
   const optForceCircular = opts.forceCircular ?? forceCircular;
   const optForceLoopType = opts.forceLoopType ?? forceLoopType;
 
+  if (optVisibility === "public") {
+    throw new Error(
+      "Script imports must land private or unlisted. Publish through the app so the owner, public projection, and hash claim commit together."
+    );
+  }
+  if (optVisibility !== "private" && optVisibility !== "unlisted") {
+    throw new Error(
+      `Unsupported import visibility ${JSON.stringify(optVisibility)}; expected private or unlisted.`
+    );
+  }
+
   const sequenceId = `seq_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
   const now = fieldValue.serverTimestamp();
 
@@ -359,8 +414,8 @@ function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
     tags: opts.demo ? ["demo"] : [],
     isFavorite: false,
     isCircular,
-    // The publicSequences sync (sync-missing-public-sequences.js) queries
-    // metadata.visibility, so it must mirror the top-level field.
+    // Legacy readers still inspect metadata.visibility, so keep it aligned
+    // with the top-level owner field even though imports cannot publish.
     metadata: { visibility: optVisibility },
     ownerId: AUSTEN_UID,
     visibility: optVisibility,
@@ -431,8 +486,9 @@ async function main() {
   }
 
   if (dryRun) {
-    const mockFieldValue = { serverTimestamp: () => "<SERVER_TIMESTAMP>" };
-    const { id, data } = buildFirestoreDoc(raw, mockFieldValue, loopInfo);
+    const localClock = { serverTimestamp: () => new Date() };
+    const built = buildFirestoreDoc(raw, localClock, loopInfo);
+    const { id, data } = await normalizeFirestoreDoc(built);
     console.log(`\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`);
     console.log(`Fields: ${Object.keys(data).join(", ")}`);
     console.log(`Visibility: ${data.visibility}`);
@@ -459,7 +515,14 @@ async function main() {
   }
 
   const db = admin.firestore();
-  const { id, data } = buildFirestoreDoc(raw, admin.firestore.FieldValue, loopInfo);
+  const localClock = { serverTimestamp: () => new Date() };
+  const built = buildFirestoreDoc(raw, localClock, loopInfo);
+  const normalized = await normalizeFirestoreDoc(built);
+  const id = normalized.id;
+  const data = stampNewSequenceTimestamps(
+    normalized.data,
+    admin.firestore.FieldValue
+  );
 
   const docPath = `users/${AUSTEN_UID}/sequences/${id}`;
   console.log(`\nSaving to: ${docPath}`);
@@ -488,5 +551,11 @@ if (require.main === module) {
     });
 }
 
-// Reused by scripts/show-sequence.mjs — keep signatures stable.
-module.exports = { AUSTEN_UID, detectLoop, buildFirestoreDoc };
+// Reused by the batch importer and the one-shot QR pipeline.
+module.exports = {
+  AUSTEN_UID,
+  detectLoop,
+  buildFirestoreDoc,
+  normalizeFirestoreDoc,
+  stampNewSequenceTimestamps,
+};

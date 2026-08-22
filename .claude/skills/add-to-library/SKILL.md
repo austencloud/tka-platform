@@ -69,7 +69,8 @@ Flag rules:
 - `--circular` — add when sequence is circular (endPosition == startPosition)
 - `--loop-type X` — add when loop type is known (from input metadata or detection)
 - `--notes "text"` — add when user provides a tagline or description
-- `--visibility` — always `private` unless user says otherwise
+- `--visibility` — `private` by default; `unlisted` is allowed when explicitly requested
+- Public publishing is not supported by this script. Publish through the app so the owner record, public projection, and content-hash claim commit together.
 
 ### 6. Report result
 

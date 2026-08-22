@@ -3,8 +3,9 @@
  * One-shot "show me this sequence" pipeline.
  *
  * Takes raw sequence JSON (the same app/MCP format import-sequence.cjs
- * accepts) and in one command: imports it into Austen's library, indexes it
- * in publicSequences, mints a tka.run short code, and prints the link.
+ * accepts) and in one command: imports it privately into Austen's library,
+ * mints a self-contained tka.run short code, and prints the link. A scan does
+ * not require a public gallery projection, so this path never publishes.
  *
  * Usage:
  *   node scripts/show-sequence.mjs sequence.json
@@ -17,10 +18,10 @@
  * doc (matched by content hash) and its existing short code.
  *
  * Reuses:
- *   - scripts/import-sequence.cjs   (doc building + LOOP detection)
+ *   - scripts/import-sequence.cjs   (canonical owner normalization + LOOP detection)
  *   - scripts/create-shortcodes-batch.js (minting, transaction-guarded)
- *   - scripts/lib/firestore-provider.js  (forced to Admin SDK: the pipeline
- *     writes publicSequences and runs query-in-transaction minting)
+ *   - scripts/lib/firestore-provider.js  (forced to Admin SDK for the
+ *     query-in-transaction shortcode mint)
  */
 
 // Force the Admin SDK before firestore-provider loads its priority chain.
@@ -34,7 +35,13 @@ import { initFirestore } from "./lib/firestore-provider.js";
 import { createShortcode, findExistingShortcode } from "./create-shortcodes-batch.js";
 
 const require = createRequire(import.meta.url);
-const { AUSTEN_UID, detectLoop, buildFirestoreDoc } = require("./import-sequence.cjs");
+const {
+  AUSTEN_UID,
+  detectLoop,
+  buildFirestoreDoc,
+  normalizeFirestoreDoc,
+  stampNewSequenceTimestamps,
+} = require("./import-sequence.cjs");
 
 // ---------------------------------------------------------------------------
 // Args
@@ -131,15 +138,15 @@ async function purgeDemos(db) {
     console.log(`  shortcode: ${d.id} -> https://tka.run/${d.id}`);
   }
 
-  if (!flags.confirm) {
-    console.log("\nDry run. Re-run with --confirm to delete these docs.");
-    return;
+  if (flags.confirm) {
+    throw new Error(
+      "Direct demo purging is disabled because it bypassed owner/public/hash-claim transactions. Delete the library sequences through the app."
+    );
   }
 
-  for (const d of libSnap.docs) await d.ref.delete();
-  for (const d of pubSnap.docs) await d.ref.delete();
-  for (const d of codeDocs) await d.ref.delete();
-  console.log(`\nDeleted ${libSnap.size} library, ${pubSnap.size} public, ${codeDocs.length} shortcode docs.`);
+  console.log(
+    "\nRead-only listing. Direct purge is disabled; delete the library sequences through the app."
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -163,36 +170,50 @@ async function run() {
     process.exit(1);
   }
 
-  const hash = contentHashOf(raw);
-  console.log(`Sequence "${raw.word || "(no word)"}" (${(raw.steps || []).length} steps, hash ${hash.slice(0, 8)})`);
+  const loopInfo = detectLoop(raw);
+  const localClock = { serverTimestamp: () => new Date() };
+  const built = buildFirestoreDoc(raw, localClock, loopInfo, {
+    visibility: "private",
+    notes: flags.notes,
+    demo: flags.demo,
+  });
+  if (flags.prop) {
+    const propConfig = {
+      bluePropType: flags.prop,
+      redPropType: flags.prop,
+      catDogMode: false,
+    };
+    built.data.intendedProp = propConfig;
+    built.data.creatorIntent = { propConfig };
+  }
+  const candidate = await normalizeFirestoreDoc(built);
+  const hash = candidate.contentHash;
+  const legacyHash = contentHashOf(raw);
+  console.log(`Sequence "${candidate.data.word || "(no word)"}" (${candidate.hydrated.steps?.length || 0} steps, hash ${hash.slice(0, 8)})`);
 
   // 1. Import into library (or reuse an existing import of the same content).
   const seqCollection = db.collection(`users/${AUSTEN_UID}/sequences`);
   let seqId;
   let libData;
-  const dupSnap = await seqCollection.where("contentHash", "==", hash).limit(1).get();
+  let dupSnap = await seqCollection.where("contentHash", "==", hash).limit(1).get();
+  if (dupSnap.empty && legacyHash !== hash) {
+    dupSnap = await seqCollection
+      .where("contentHash", "==", legacyHash)
+      .limit(1)
+      .get();
+  }
+  let hydrated;
   if (!dupSnap.empty) {
     seqId = dupSnap.docs[0].id;
     libData = dupSnap.docs[0].data();
+    hydrated = (await normalizeFirestoreDoc({ id: seqId, data: libData }))
+      .hydrated;
     console.log(`Reusing existing library doc ${seqId}`);
   } else {
-    const loopInfo = detectLoop(raw);
-    const { id, data } = buildFirestoreDoc(raw, FieldValue, loopInfo, {
-      visibility: "public",
-      notes: flags.notes,
-      demo: flags.demo,
-    });
-    data.contentHash = hash;
-    if (flags.prop) {
-      data.intendedProp = {
-        bluePropType: flags.prop,
-        redPropType: flags.prop,
-        catDogMode: false,
-      };
-    }
-    seqId = id;
-    libData = data;
-    await seqCollection.doc(seqId).set(data);
+    seqId = candidate.id;
+    hydrated = candidate.hydrated;
+    libData = stampNewSequenceTimestamps(candidate.data, FieldValue);
+    await seqCollection.doc(seqId).set(libData);
     await db.doc(`users/${AUSTEN_UID}`).set(
       {
         sequenceCount: FieldValue.increment(1),
@@ -203,47 +224,29 @@ async function run() {
     console.log(`Imported as users/${AUSTEN_UID}/sequences/${seqId}`);
   }
 
-  // 2. Index in publicSequences directly (the full all-users sync scan takes
-  //    minutes; we know exactly which doc changed).
-  const pubRef = db.doc(`publicSequences/${seqId}`);
-  const pubSnap = await pubRef.get();
-  if (pubSnap.exists) {
-    console.log(`publicSequences/${seqId} already exists`);
-  } else {
-    const userDoc = await db.doc(`users/${AUSTEN_UID}`).get();
-    const userData = userDoc.data() || {};
-    const pubData = {
-      id: seqId,
-      sourceRef: `users/${AUSTEN_UID}/sequences/${seqId}`,
-      ownerId: AUSTEN_UID,
-      ownerDisplayName: userData.displayName || "Unknown",
-      name: libData.name || libData.word || seqId,
-      word: libData.word || "",
-      thumbnails: libData.thumbnails || [],
-      sequenceLength: libData.sequenceLength || (libData.steps || []).length,
-      viewCount: 0,
-      starCount: 0,
-      tags: flags.demo ? ["demo"] : [],
-      isForked: false,
-      publishedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    };
-    if (userData.photoURL) pubData.ownerAvatarUrl = userData.photoURL;
-    if (flags.demo) pubData.demo = true;
-    await pubRef.set(pubData);
-    console.log(`Indexed in publicSequences/${seqId}`);
-  }
-
-  // 3. Mint (or reuse) the tka.run short code. createShortcode is
+  // 2. Mint (or reuse) the tka.run short code. createShortcode is
   //    transaction-guarded against concurrent duplicate mints; this pre-check
   //    just skips the transaction on the common re-run path.
   let code = await findExistingShortcode(db, seqId, isAdmin);
   if (code) {
     console.log(`Reusing existing shortcode ${code}`);
   } else {
-    const pubData = (await pubRef.get()).data();
-    const sourceData = { steps: libData.steps || [], startPosition: libData.startPosition || null };
-    code = await createShortcode(db, seqId, pubData, sourceData, isAdmin, FieldValue);
+    const descriptor = {
+      ownerId: libData.ownerId || AUSTEN_UID,
+      word: libData.word || candidate.data.word,
+    };
+    const sourceData = {
+      steps: hydrated.steps || [],
+      startPosition: hydrated.startPosition || null,
+    };
+    code = await createShortcode(
+      db,
+      seqId,
+      descriptor,
+      sourceData,
+      isAdmin,
+      FieldValue
+    );
     console.log(`Minted shortcode ${code}`);
   }
 

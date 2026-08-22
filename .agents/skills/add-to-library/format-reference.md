@@ -83,7 +83,7 @@ Center: `c`
 Compounds: `mirrored_swapped`, `mirrored_inverted`, etc.
 
 ### visibility
-`private` (default), `unlisted`, `public`
+`private` (default), `unlisted`. Public publishing must go through the app's canonical owner/projection/hash-claim transaction.
 
 ## Optional Beat Notation Fields
 
@@ -166,12 +166,12 @@ See the JDΘ-W import from 2026-05-04:
 ## Import Script Flags
 
 ```text
-node scripts/import-sequence.cjs <file.json> [--stdin] [--circular] [--loop-type <type>] [--notes "tagline"] [--visibility private|public] [--dry-run]
+node scripts/import-sequence.cjs <file.json> [--stdin] [--circular] [--loop-type <type>] [--notes "tagline"] [--visibility private|unlisted] [--dry-run]
 ```
 
 - --stdin: read JSON from stdin instead of a file.
 - --circular: force isCircular=true.
 - --loop-type <type>: force the LOOP type.
 - --notes "tagline": attach notes or a tagline.
-- --visibility private|public: set visibility; defaults to private.
+- --visibility private|unlisted: set visibility; defaults to private. Publish through the app so the owner record, public projection, and content-hash claim commit together.
 - --dry-run: preview without writing to Firestore.

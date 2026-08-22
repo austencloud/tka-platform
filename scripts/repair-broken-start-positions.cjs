@@ -10,6 +10,8 @@
  * through a string `startPosition` (e.g. "beta5" from MCP generate_sequence)
  * and wrote an object with undefined nested fields. Symptom: the gallery
  * thumbnail renders the Start cell with grid + label but no props.
+ * Public sequences are reported but never changed by this owner-only script;
+ * use reconcile-sequence-public-projections.ts for public parity repair.
  *
  * Usage:
  *   node scripts/repair-broken-start-positions.cjs                    # dry-run, all users
@@ -135,6 +137,16 @@ async function processDoc(docSnap, stats) {
     stats.ok++;
     return;
   }
+  if (data.visibility === "public") {
+    // This repair performs an owner-only update. A public sequence must be
+    // changed through the canonical persistence/reconciliation path so its
+    // projection and content-hash claim move in the same transaction.
+    stats.publicSkipped++;
+    console.log(
+      `  [public skipped] ${docSnap.ref.path} — use reconcile-sequence-public-projections.ts`
+    );
+    return;
+  }
 
   const repaired = repairStartPosition(data, docSnap.id);
   if (!repaired) {
@@ -156,7 +168,13 @@ async function processDoc(docSnap, stats) {
 
 async function main() {
   console.log(`Repair Broken Start Positions ${isCommit ? "(COMMIT)" : "(dry-run)"}`);
-  const stats = { ok: 0, willRepair: 0, committed: 0, unrepairable: 0 };
+  const stats = {
+    ok: 0,
+    willRepair: 0,
+    committed: 0,
+    unrepairable: 0,
+    publicSkipped: 0,
+  };
 
   if (targetId) {
     // Single doc across all users
@@ -187,6 +205,7 @@ async function main() {
   console.log(`  Repairable:          ${stats.willRepair}`);
   console.log(`  Committed:           ${stats.committed}`);
   console.log(`  Unrepairable:        ${stats.unrepairable}`);
+  console.log(`  Public skipped:      ${stats.publicSkipped}`);
   if (!isCommit && stats.willRepair > 0) {
     console.log("\nRe-run with --commit to write.");
   }

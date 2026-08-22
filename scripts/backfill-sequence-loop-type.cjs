@@ -9,6 +9,8 @@
  * a loopType. The converter is fixed; this repairs the docs it already wrote.
  *
  * Non-circular sequences legitimately have no loopType and are left alone.
+ * Public sequences are also left alone because this is an owner-only legacy
+ * repair; reconcile-sequence-public-projections.ts owns public parity repair.
  *
  * Usage:
  *   node scripts/backfill-sequence-loop-type.cjs                    # dry-run
@@ -41,11 +43,19 @@ async function main() {
   let alreadySet = 0;
   let notCircular = 0;
   let undetectable = 0;
+  let publicSkipped = 0;
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
     if (data.loopType) {
       alreadySet++;
+      return;
+    }
+    if (data.visibility === "public") {
+      // This legacy backfill only owns a single library document. Updating a
+      // public owner here would strand its mirror and hash claim. Public
+      // sequences must go through the canonical reconciliation migration.
+      publicSkipped++;
       return;
     }
     const info = detectLoop(data);
@@ -70,7 +80,8 @@ async function main() {
 
   console.log(
     `already set: ${alreadySet}   no loop signal: ${notCircular}   ` +
-      `detector unavailable: ${undetectable}   to update: ${updates.length}`
+      `detector unavailable: ${undetectable}   public skipped: ${publicSkipped}   ` +
+      `to update: ${updates.length}`
   );
   for (const u of updates.slice(0, 15)) {
     console.log(`  ${String(u.word).slice(0, 24).padEnd(26)} ${u.note}`);

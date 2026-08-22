@@ -83,7 +83,7 @@ Center: `c`
 Compounds: `mirrored_swapped`, `mirrored_inverted`, etc.
 
 ### visibility
-`private` (default), `unlisted`, `public`
+`private` (default), `unlisted`. Public publishing must go through the app's canonical owner/projection/hash-claim transaction.
 
 ## Optional Beat Notation Fields
 
@@ -171,6 +171,6 @@ node scripts/import-sequence.cjs <file.json> \
   [--circular]                     # Force isCircular=true
   [--loop-type <type>]             # Force LOOP type
   [--notes "tagline"]              # Attach notes/tagline
-  [--visibility private|public]    # Default: private
+  [--visibility private|unlisted] # Default: private; public is app-only
   [--dry-run]                      # Preview without writing to Firestore
 ```
