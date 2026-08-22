@@ -1,6 +1,9 @@
 <!-- FeedbackKanbanColumn - A single status column in the Kanban board -->
 <script lang="ts">
-  import type { FeedbackItem, FeedbackStatus, } from "$lib/shared/feedback/domain/models/feedback-models";
+  import type {
+    FeedbackItem,
+    FeedbackStatus,
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import FeedbackKanbanCard from "./FeedbackKanbanCard.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { ClaimStatusDeriver } from "../../services/claim-status-deriver";
@@ -14,6 +17,7 @@
     isActiveTab = false,
     selectedItemId,
     disableDrag = false,
+    queueMode = false,
     wipStatus,
     claimStatusDeriver,
     onDragStart,
@@ -33,7 +37,13 @@
     isActiveTab?: boolean;
     selectedItemId: string | null;
     disableDrag?: boolean;
-    wipStatus?: { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean };
+    queueMode?: boolean;
+    wipStatus?: {
+      count: number;
+      limit: number;
+      isAtLimit: boolean;
+      isOverLimit: boolean;
+    };
     claimStatusDeriver?: ClaimStatusDeriver;
     onDragStart: (item: FeedbackItem) => void;
     onDragEnd: () => void;
@@ -47,7 +57,12 @@
 
   // Derive claim health for an item
   function getClaimHealth(item: FeedbackItem) {
-    if (!claimStatusDeriver) return { claimHealth: undefined, claimAgeMs: undefined, claimTokenShort: undefined };
+    if (!claimStatusDeriver)
+      return {
+        claimHealth: undefined,
+        claimAgeMs: undefined,
+        claimTokenShort: undefined,
+      };
     const effective = claimStatusDeriver.deriveEffectiveStatus(item);
     return {
       claimHealth: effective.claimHealth,
@@ -81,6 +96,7 @@
   class:drop-target={isDropTarget}
   class:drag-active={isDragActive}
   class:active-tab={isActiveTab}
+  class:queue-mode={queueMode}
   style="--column-color: {config.color}"
   ondragover={handleDragOver}
   ondragleave={handleDragLeave}
@@ -100,7 +116,11 @@
         class="header-count wip-indicator"
         class:at-limit={wipStatus.isAtLimit}
         class:over-limit={wipStatus.isOverLimit}
-        title={wipStatus.isOverLimit ? `Over WIP limit of ${wipStatus.limit}` : wipStatus.isAtLimit ? `At WIP limit` : `${wipStatus.count}/${wipStatus.limit}`}
+        title={wipStatus.isOverLimit
+          ? `Over WIP limit of ${wipStatus.limit}`
+          : wipStatus.isAtLimit
+            ? `At WIP limit`
+            : `${wipStatus.count}/${wipStatus.limit}`}
       >
         {wipStatus.count}/{wipStatus.limit}
       </span>
@@ -144,7 +164,8 @@
       </div>
     {:else}
       {#each items as item (item.id)}
-        {@const { claimHealth, claimAgeMs, claimTokenShort } = getClaimHealth(item)}
+        {@const { claimHealth, claimAgeMs, claimTokenShort } =
+          getClaimHealth(item)}
         <FeedbackKanbanCard
           {item}
           isSelected={selectedItemId === item.id}
@@ -201,8 +222,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    /* Fluid column width - grows to fill but with reasonable max */
-    max-width: 552px;
+    min-width: 17.5rem;
     flex: 1;
     /* Colorful gradient background based on column color */
     background: linear-gradient(
@@ -220,6 +240,16 @@
     box-shadow:
       0 4px 20px color-mix(in srgb, var(--column-color) 15%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .kanban-column.queue-mode {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .kanban-column.queue-mode:hover {
+    transform: none;
   }
 
   .kanban-column:hover {
@@ -320,8 +350,13 @@
   }
 
   @keyframes pulse-warning {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
   }
 
   /* Cards Container */
@@ -333,6 +368,39 @@
     padding: var(--kc-space-sm);
     overflow-y: auto;
     min-height: clamp(80px, 15cqi, 120px);
+  }
+
+  @container kanban (min-width: 2600px) {
+    .kanban-column {
+      --kc-text-xs: 0.9375rem;
+      --kc-text-sm: 1rem;
+      --kc-text-base: 1.125rem;
+      --kc-text-lg: 1.25rem;
+    }
+
+    .cards-container {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-content: start;
+    }
+
+    .empty-state,
+    .drop-indicator {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container kanban (min-width: 1100px) and (max-width: 1319px) {
+    .kanban-column.queue-mode .cards-container {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-content: start;
+    }
+
+    .kanban-column.queue-mode .empty-state,
+    .kanban-column.queue-mode .drop-indicator {
+      grid-column: 1 / -1;
+    }
   }
 
   .cards-container::-webkit-scrollbar {

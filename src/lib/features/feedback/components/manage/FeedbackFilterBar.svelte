@@ -47,9 +47,12 @@
   <div class="search-wrapper">
     <i class="fas fa-search search-icon" aria-hidden="true"></i>
     <input
+      id="feedback-manage-search"
+      name="feedback-manage-search"
       type="text"
       class="search-input"
       placeholder={t("feedback_search_placeholder")}
+      aria-label={t("feedback_search_placeholder")}
       value={manageState.searchQuery}
       oninput={(e) => manageState.setSearchQuery(e.currentTarget.value)}
     />
@@ -66,13 +69,15 @@
   </div>
 
   <!-- Mobile: Filters button -->
-  <FilterButton
-    label={t("feedback_filters")}
-    icon="fa-sliders-h"
-    badgeCount={uiState.activeFilterCount}
-    onClick={() => uiState.openSheet()}
-    isActive={uiState.isSheetOpen}
-  />
+  <div class="mobile-filter-trigger">
+    <FilterButton
+      label={t("feedback_filters")}
+      icon="fa-sliders-h"
+      badgeCount={uiState.activeFilterCount}
+      onClick={() => uiState.openSheet()}
+      isActive={uiState.isSheetOpen}
+    />
+  </div>
 
   <!-- Desktop: Inline filter chips -->
   <div class="desktop-filters">
@@ -251,6 +256,10 @@
     gap: 13px;
   }
 
+  .mobile-filter-trigger {
+    flex: 0 0 auto;
+  }
+
   .chip-group {
     display: flex;
     align-items: center;
@@ -282,41 +291,38 @@
     color: var(--semantic-error, var(--semantic-error));
   }
 
-  /* Mobile hidden by default, shown for mobile */
-  @media (max-width: 767px) {
-    .desktop-filters {
-      display: none;
-    }
-  }
-
-  /* Tablet+ (768px) - Switch to inline filters */
-  @media (min-width: 768px) {
+  /* The board, not the viewport, decides when the complete filter row fits. */
+  @container kanban (min-width: 1320px) {
     .filter-bar {
-      padding: 21px;
-      gap: 21px;
+      padding: 0.75rem 1rem;
+      gap: 1rem;
     }
 
     .desktop-filters {
       display: flex;
     }
 
+    .mobile-filter-trigger {
+      display: none;
+    }
+
     .search-wrapper {
       flex: unset;
-      width: 280px;
+      width: 17.5rem;
     }
   }
 
-  /* Desktop (1024px+) */
-  @media (min-width: 1024px) {
-    .search-wrapper {
-      width: 320px;
+  @container kanban (min-width: 2600px) {
+    .filter-bar {
+      font-size: 1rem;
     }
-  }
 
-  /* Wide (1440px+) */
-  @media (min-width: 1440px) {
     .search-wrapper {
-      width: 380px;
+      width: 24rem;
+    }
+
+    .search-input {
+      font-size: 1rem;
     }
   }
 </style>

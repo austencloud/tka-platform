@@ -4,8 +4,12 @@ import type {
   FeedbackStatus,
 } from "$lib/shared/feedback/domain/models/feedback-models";
 import { STATUS_CONFIG } from "$lib/shared/feedback/domain/models/feedback-models";
-import { safeLocalStorageGet, safeLocalStorageSet } from '$lib/shared/foundation/services/storage-manager';
+import {
+  safeLocalStorageGet,
+  safeLocalStorageSet,
+} from "$lib/shared/foundation/services/storage-manager";
 import { FeedbackSorter } from "../services/feedback-sorter";
+import type { FeedbackManageLayoutMode } from "../domain/feedback-manage-layout";
 
 type KanbanStatus = "new" | "in-progress" | "in-review" | "completed";
 
@@ -32,11 +36,14 @@ export interface KanbanBoardState {
   activeStatusColor: string;
   itemsByStatus: Record<KanbanStatus, FeedbackItem[]>;
   deferredItems: FeedbackItem[];
-  wipStatus: Record<KanbanStatus, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }>;
+  wipStatus: Record<
+    KanbanStatus,
+    { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }
+  >;
   draggedItem: FeedbackItem | null;
   dragOverColumn: FeedbackStatus | "deferred" | "trash" | null;
   touchDragPosition: { x: number; y: number } | null;
-  isMobileView: boolean;
+  layoutMode: FeedbackManageLayoutMode;
   showDeferDialog: boolean;
   itemToDefer: FeedbackItem | null;
   deferDate: string;
@@ -62,7 +69,7 @@ export interface KanbanBoardState {
   setDraggedItem(item: FeedbackItem | null): void;
   setDragOverColumn(status: FeedbackStatus | "deferred" | "trash" | null): void;
   setTouchDragPosition(pos: { x: number; y: number } | null): void;
-  setIsMobileView(isMobile: boolean): void;
+  setLayoutMode(mode: FeedbackManageLayoutMode): void;
   setShowDeferDialog(show: boolean): void;
   setItemToDefer(item: FeedbackItem | null): void;
   setDeferDate(date: string): void;
@@ -73,19 +80,19 @@ export interface KanbanBoardState {
   setItemToTrash(item: FeedbackItem | null): void;
   setIsSubmittingTrash(isSubmitting: boolean): void;
   resetTrashDialog(): void;
-  getColumnAtPosition(x: number, y: number): FeedbackStatus | "deferred" | "trash" | null;
+  getColumnAtPosition(
+    x: number,
+    y: number
+  ): FeedbackStatus | "deferred" | "trash" | null;
 }
 
 export function createKanbanBoardState(
   manageState: FeedbackManageState,
-  sortingService: FeedbackSorter,
+  sortingService: FeedbackSorter
 ): KanbanBoardState {
   // Load saved active status or default to "new"
   const loadSavedStatus = (): FeedbackStatus => {
-    const saved = safeLocalStorageGet<FeedbackStatus>(
-      STORAGE_KEY,
-      "new"
-    );
+    const saved = safeLocalStorageGet<FeedbackStatus>(STORAGE_KEY, "new");
     const validStatuses: FeedbackStatus[] = [
       "new",
       "in-progress",
@@ -103,9 +110,10 @@ export function createKanbanBoardState(
   // Derived: active status color
   const activeStatusColor = $derived(STATUS_CONFIG[activeStatus].color);
 
-  // Derived: group items by status
+  // Search and filters belong to manage state, so both board presentations use
+  // the same visible collection.
   const itemsByStatus = $derived.by(() => {
-    return sortingService.groupByStatus(manageState.allItems);
+    return sortingService.groupByStatus(manageState.items);
   });
 
   // Derived: deferred items
@@ -117,18 +125,32 @@ export function createKanbanBoardState(
   // CRITICAL: For "in-progress", count is based on ACTIVE CLAIMS, not column length
   // This ensures orphaned/stale items don't count toward the WIP limit
   const wipStatus = $derived.by(() => {
-    const limits: Record<KanbanStatus, number> = { 'new': 0, 'in-progress': 4, 'in-review': 5, 'completed': 0 };
-    const result: Record<string, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }> = {};
+    const limits: Record<KanbanStatus, number> = {
+      new: 0,
+      "in-progress": 4,
+      "in-review": 5,
+      completed: 0,
+    };
+    const result: Record<
+      string,
+      { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }
+    > = {};
 
     // Get claim status deriver for accurate WIP counting
-    const claimDeriver = sortingService instanceof FeedbackSorter
-      ? sortingService.getClaimStatusDeriver()
-      : null;
+    const claimDeriver =
+      sortingService instanceof FeedbackSorter
+        ? sortingService.getClaimStatusDeriver()
+        : null;
 
-    for (const status of ['new', 'in-progress', 'in-review', 'completed'] as const) {
+    for (const status of [
+      "new",
+      "in-progress",
+      "in-review",
+      "completed",
+    ] as const) {
       let count: number;
 
-      if (status === 'in-progress' && claimDeriver) {
+      if (status === "in-progress" && claimDeriver) {
         // For in-progress, count only items with ACTIVE claims
         // This is the key fix: WIP = active work, not orphaned items
         count = claimDeriver.countActiveClaims(manageState.allItems);
@@ -145,16 +167,20 @@ export function createKanbanBoardState(
         isOverLimit: limit > 0 && count > limit,
       };
     }
-    return result as Record<KanbanStatus, { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }>;
+    return result as Record<
+      KanbanStatus,
+      { count: number; limit: number; isAtLimit: boolean; isOverLimit: boolean }
+    >;
   });
 
   // Drag state
   let draggedItem = $state<FeedbackItem | null>(null);
-  let dragOverColumn = $state<FeedbackStatus | "deferred" | "trash" | null>(null);
+  let dragOverColumn = $state<FeedbackStatus | "deferred" | "trash" | null>(
+    null
+  );
   let touchDragPosition = $state<{ x: number; y: number } | null>(null);
 
-  // Mobile view detection
-  let isMobileView = $state(false);
+  let layoutMode = $state<FeedbackManageLayoutMode>("compact");
 
   // Defer dialog state
   let showDeferDialog = $state(false);
@@ -184,7 +210,12 @@ export function createKanbanBoardState(
     x: number,
     y: number
   ): FeedbackStatus | "deferred" | "trash" | null {
-    const validStatuses: FeedbackStatus[] = ["new", "in-progress", "in-review", "completed"];
+    const validStatuses: FeedbackStatus[] = [
+      "new",
+      "in-progress",
+      "in-review",
+      "completed",
+    ];
 
     // Strategy 1: Walk DOM from elementFromPoint
     const element = document.elementFromPoint(x, y);
@@ -192,7 +223,8 @@ export function createKanbanBoardState(
       let current: Element | null = element;
       while (current) {
         if (current.classList?.contains("defer-drop-zone")) return "deferred";
-        if (current.classList?.contains("archive-drop-zone")) return "archived" as FeedbackStatus;
+        if (current.classList?.contains("archive-drop-zone"))
+          return "archived" as FeedbackStatus;
         if (current.classList?.contains("trash-drop-zone")) return "trash";
 
         if (current.classList?.contains("kanban-column")) {
@@ -208,11 +240,20 @@ export function createKanbanBoardState(
 
     // Strategy 2: Bounding rect scan - catches gaps, overlays, or ghost interference
     // Check special drop zones first
-    for (const cls of ["defer-drop-zone", "archive-drop-zone", "trash-drop-zone"] as const) {
+    for (const cls of [
+      "defer-drop-zone",
+      "archive-drop-zone",
+      "trash-drop-zone",
+    ] as const) {
       const zone = document.querySelector(`.${cls}`);
       if (zone) {
         const rect = zone.getBoundingClientRect();
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        if (
+          x >= rect.left &&
+          x <= rect.right &&
+          y >= rect.top &&
+          y <= rect.bottom
+        ) {
           if (cls === "defer-drop-zone") return "deferred";
           if (cls === "archive-drop-zone") return "archived" as FeedbackStatus;
           return "trash";
@@ -224,7 +265,12 @@ export function createKanbanBoardState(
     const columns = document.querySelectorAll(".kanban-column");
     for (const col of columns) {
       const rect = col.getBoundingClientRect();
-      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      if (
+        x >= rect.left &&
+        x <= rect.right &&
+        y >= rect.top &&
+        y <= rect.bottom
+      ) {
         const id = col.id;
         if (id?.startsWith("column-")) {
           const status = id.replace("column-", "") as FeedbackStatus;
@@ -314,8 +360,8 @@ export function createKanbanBoardState(
     get touchDragPosition() {
       return touchDragPosition;
     },
-    get isMobileView() {
-      return isMobileView;
+    get layoutMode() {
+      return layoutMode;
     },
     get showDeferDialog() {
       return showDeferDialog;
@@ -365,8 +411,8 @@ export function createKanbanBoardState(
     setTouchDragPosition(pos: { x: number; y: number } | null) {
       touchDragPosition = pos;
     },
-    setIsMobileView(isMobile: boolean) {
-      isMobileView = isMobile;
+    setLayoutMode(mode: FeedbackManageLayoutMode) {
+      layoutMode = mode;
     },
     setShowDeferDialog(show: boolean) {
       showDeferDialog = show;

@@ -13,6 +13,11 @@
   import TrashFeedbackDialog from "./TrashFeedbackDialog.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
+  import FeedbackFilterBar from "./FeedbackFilterBar.svelte";
+  import {
+    getFeedbackManageLayoutMode,
+    isFeedbackManageQueueMode,
+  } from "../../domain/feedback-manage-layout";
 
   interface Props {
     manageState: FeedbackManageState;
@@ -23,13 +28,15 @@
 
   // Resolve services
   let boardState = $state<KanbanBoardState | null>(null);
+  let boardElement = $state<HTMLDivElement | null>(null);
   const sortingService = getFeedbackSorter();
 
   // Get claim status deriver for UI indicators
   import { FeedbackSorter } from "../../services/feedback-sorter";
-  const claimStatusDeriver = sortingService instanceof FeedbackSorter
-    ? sortingService.getClaimStatusDeriver()
-    : undefined;
+  const claimStatusDeriver =
+    sortingService instanceof FeedbackSorter
+      ? sortingService.getClaimStatusDeriver()
+      : undefined;
 
   // Debounce flag to prevent rapid undo/redo
   let isProcessingUndoRedo = $state(false);
@@ -61,7 +68,8 @@
         newStatus: action.previousStatus,
         timestamp: Date.now(),
       });
-      const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
+      const statusLabel =
+        STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
       toast.info(t("feedback_moved_back_to", { status: statusLabel }));
     } catch (err) {
       console.error("[FeedbackKanbanBoard] Failed to undo:", err);
@@ -101,7 +109,8 @@
         },
         false // Don't clear redo stack
       );
-      const statusLabel = STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
+      const statusLabel =
+        STATUS_CONFIG[action.previousStatus]?.label || action.previousStatus;
       toast.info(t("feedback_restored_to", { status: statusLabel }));
     } catch (err) {
       console.error("[FeedbackKanbanBoard] Failed to redo:", err);
@@ -116,19 +125,18 @@
 
     async function initializeBoard() {
       try {
-        boardState = createKanbanBoardState(
-          manageState,
-          sortingService,
-        );
+        boardState = createKanbanBoardState(manageState, sortingService);
 
-        // Set up ResizeObserver to detect mobile view (< 652px container width)
-        const boardElement = document.querySelector(".kanban-board");
         if (!boardElement) return;
 
         resizeObserver = new ResizeObserver((entries) => {
           for (const entry of entries) {
-            const width = entry.contentRect.width;
-            boardState?.setIsMobileView(width < 652);
+            boardState?.setLayoutMode(
+              getFeedbackManageLayoutMode({
+                width: entry.contentRect.width,
+                height: entry.contentRect.height,
+              })
+            );
           }
         });
 
@@ -144,11 +152,12 @@
       resizeObserver?.disconnect();
     };
   });
-
 </script>
 
 <div
+  bind:this={boardElement}
   data-edit-history-shortcut-scope
+  data-layout-mode={boardState?.layoutMode ?? "loading"}
   class="kanban-board"
   style="--active-color: {boardState?.activeStatusColor}"
 >
@@ -159,11 +168,26 @@
     canRedo={Boolean(boardState?.canRedo) && !isProcessingUndoRedo}
   />
   {#if boardState}
-    {#if boardState.isMobileView}
-      <KanbanMobileView {boardState} {manageState} {claimStatusDeriver} {onOpenArchive} />
-    {:else}
-      <KanbanDesktopView {boardState} {manageState} {claimStatusDeriver} {onOpenArchive} />
-    {/if}
+    <FeedbackFilterBar {manageState} />
+
+    <div class="board-viewport">
+      {#if isFeedbackManageQueueMode(boardState.layoutMode)}
+        <KanbanMobileView
+          {boardState}
+          {manageState}
+          {claimStatusDeriver}
+          {onOpenArchive}
+          layoutMode={boardState.layoutMode}
+        />
+      {:else}
+        <KanbanDesktopView
+          {boardState}
+          {manageState}
+          {claimStatusDeriver}
+          {onOpenArchive}
+        />
+      {/if}
+    </div>
 
     {#if manageState.isLoading && manageState.items.length === 0}
       <div class="loading-overlay">
@@ -265,6 +289,14 @@
     backdrop-filter: none;
     box-shadow: none;
     transition: background 0.5s ease;
+  }
+
+  .board-viewport {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* ===== LOADING SKELETON ===== */

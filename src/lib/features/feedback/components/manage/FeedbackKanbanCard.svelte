@@ -3,7 +3,9 @@
   import { onMount } from "svelte";
   import type { FeedbackItem } from "$lib/shared/feedback/domain/models/feedback-models";
   import {
-    TYPE_CONFIG, PRIORITY_CONFIG, } from "$lib/shared/feedback/domain/models/feedback-models";
+    TYPE_CONFIG,
+    PRIORITY_CONFIG,
+  } from "$lib/shared/feedback/domain/models/feedback-models";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { ClaimHealth } from "$lib/shared/feedback/domain/feedback-contract-types";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -48,10 +50,16 @@
   const claimTooltip = $derived.by(() => {
     if (!claimHealth || claimHealth === "none") return "";
     if (claimHealth === "active") {
-      return t("feedback_claim_active", { token: claimTokenShort ?? "", age: claimAgeFormatted });
+      return t("feedback_claim_active", {
+        token: claimTokenShort ?? "",
+        age: claimAgeFormatted,
+      });
     }
     if (claimHealth === "stale") {
-      return t("feedback_claim_stale", { token: claimTokenShort ?? "", age: claimAgeFormatted });
+      return t("feedback_claim_stale", {
+        token: claimTokenShort ?? "",
+        age: claimAgeFormatted,
+      });
     }
     if (claimHealth === "orphaned") {
       return t("feedback_claim_orphaned");
@@ -72,10 +80,10 @@
 
   // Derive lane from item properties
   const lane = $derived.by(() => {
-    if (item.priority === 'critical' && item.type === 'bug') return 'critical';
-    if (item.source === 'terminal') return 'internal';
-    if (item.priority === 'low' || item.deferredUntil) return 'backlog';
-    return 'normal';
+    if (item.priority === "critical" && item.type === "bug") return "critical";
+    if (item.source === "terminal") return "internal";
+    if (item.priority === "low" || item.deferredUntil) return "backlog";
+    return "normal";
   });
 
   // Use Google photo if available, fallback to generated avatar
@@ -335,7 +343,12 @@
       />
       <h4 class="card-title">{item.title}</h4>
       {#if priorityConfig}
-        <span class="priority-badge" title={t("feedback_priority_title", { priority: priorityConfig.label })}>
+        <span
+          class="priority-badge"
+          title={t("feedback_priority_title", {
+            priority: priorityConfig.label,
+          })}
+        >
           {#if item.priority === "critical"}
             <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
           {:else if item.priority === "high"}
@@ -347,28 +360,31 @@
           {/if}
         </span>
       {/if}
-      {#if lane !== 'normal'}
-        <span class="lane-badge lane-{lane}" title={t("feedback_lane_title", { lane })}>
-          {#if lane === 'critical'}
+      {#if lane !== "normal"}
+        <span
+          class="lane-badge lane-{lane}"
+          title={t("feedback_lane_title", { lane })}
+        >
+          {#if lane === "critical"}
             <i class="fas fa-fire" aria-hidden="true"></i>
-          {:else if lane === 'internal'}
+          {:else if lane === "internal"}
             <i class="fas fa-code" aria-hidden="true"></i>
-          {:else if lane === 'backlog'}
+          {:else if lane === "backlog"}
             <i class="fas fa-clock" aria-hidden="true"></i>
           {/if}
         </span>
       {/if}
-      {#if claimHealth && claimHealth !== 'none'}
+      {#if claimHealth && claimHealth !== "none"}
         <span
           class="claim-indicator claim-{claimHealth}"
           title={claimTooltip}
           aria-label={claimTooltip}
         >
-          {#if claimHealth === 'active'}
+          {#if claimHealth === "active"}
             <i class="fas fa-user-check" aria-hidden="true"></i>
-          {:else if claimHealth === 'stale'}
+          {:else if claimHealth === "stale"}
             <i class="fas fa-user-clock" aria-hidden="true"></i>
-          {:else if claimHealth === 'orphaned'}
+          {:else if claimHealth === "orphaned"}
             <i class="fas fa-user-slash" aria-hidden="true"></i>
           {/if}
         </span>
@@ -382,7 +398,11 @@
     {#if item.imageUrls && item.imageUrls.length > 0}
       <div class="screenshot-indicator">
         <i class="fas fa-images" aria-hidden="true"></i>
-        <span>{t("feedback_screenshot_count", { count: item.imageUrls.length })}</span>
+        <span
+          >{t("feedback_screenshot_count", {
+            count: item.imageUrls.length,
+          })}</span
+        >
       </div>
     {/if}
 
@@ -709,8 +729,13 @@
   }
 
   @keyframes pulse-stale {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 
   @keyframes pulse-critical {
@@ -789,6 +814,14 @@
     /* Slightly larger touch targets */
     .card-content {
       padding: var(--kc-space-sm) var(--kc-space-sm);
+    }
+  }
+
+  @container kanban (min-width: 2600px) {
+    .kanban-card {
+      --kc-text-2xs: 0.875rem;
+      --kc-text-xs: 0.9375rem;
+      --kc-text-sm: 1rem;
     }
   }
 
