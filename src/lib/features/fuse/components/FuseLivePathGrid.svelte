@@ -66,7 +66,7 @@
     disableContentTransitions={true}
     showGrid={true}
     showTKA={false}
-    showReversals={false}
+    showReversals={true}
     showNonRadialPoints={false}
     showTnD={false}
     showElemental={false}
@@ -97,7 +97,7 @@
         disableContentTransitions={true}
         showGrid={true}
         showTKA={false}
-        showReversals={false}
+        showReversals={true}
         showNonRadialPoints={false}
         showTnD={false}
         showElemental={false}

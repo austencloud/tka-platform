@@ -50,7 +50,11 @@ export interface PictographWithReversals extends PictographData {
  */
 export function processReversals(sequence: SequenceData): SequenceData {
   const flags = deriveReversals(sequence.steps, {
-    loop: !!sequence.loopType,
+    // One-hand LOOP artifacts and freeform circular sequences do not always
+    // have a two-hand LOOP label. `isCircular` is the user's actual promise
+    // that playback crosses the seam, so step 1 still needs to compare against
+    // the tail in those cards.
+    loop: sequence.isCircular || !!sequence.loopType,
   });
 
   const processedSteps = sequence.steps.map((step, i) =>

@@ -272,12 +272,7 @@
   // over three handed the paths the width they had to themselves and left the
   // result whatever was after it, which at 2560 was its bare floor. Each layout
   // now remembers its own seam.
-  const bucketOf = (
-    w: number,
-    h: number,
-    steps: number,
-    withRecipe: boolean
-  ) =>
+  const bucketOf = (w: number, h: number, steps: number, withRecipe: boolean) =>
     `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}${
       withRecipe ? "r" : ""
     }`;
@@ -534,6 +529,7 @@
         visibility: "private",
         tags: [],
         notes: "Created in Fuse",
+        analyticsSource: "fuse",
       });
       showToast("Fused LOOP saved to your library", "success");
     } catch (failure) {

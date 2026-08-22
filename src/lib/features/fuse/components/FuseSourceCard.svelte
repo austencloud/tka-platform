@@ -7,12 +7,12 @@
   import FuseSoloLoopPicker from "./FuseSoloLoopPicker.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import FuseLivePathGrid from "./FuseLivePathGrid.svelte";
   import FuseSourceActionPopover from "./FuseSourceActionPopover.svelte";
   import CardInspectModal from "$lib/features/choreo-card/components/CardInspectModal.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { soloPropToSequence } from "$lib/shared/foundation/services/solo-prop-sequence-adapter";
   import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
   import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -27,6 +27,7 @@
   import type { FuseSourceAdjustment } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
   import { resolveFusePictographMotionFrame } from "../services/fuse-pictograph-motion-frame";
+  import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
 
   let {
     side,
@@ -90,6 +91,7 @@
   );
   let isSavingLoop = $state(false);
   let inspectedSequence = $state<SequenceData | null>(null);
+  let cardContextMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
   // Symmetry mode: the driver keeps its source + controls; the follower renders
   // the derived result (fuseState.symmetryPreview) read-only, so this card shows the
@@ -108,7 +110,7 @@
     const solo = side === "blue" ? preview?.blueSoloProp : preview?.redSoloProp;
     if (!solo) return null;
 
-    return soloPropToSequence(solo, side === "blue" ? "left" : "right");
+    return createCircularFuseSoloSequence(side, solo);
   });
   const followerTransformLabel = $derived(
     fuseRuleLabel(fuseState.previewRule)
@@ -249,12 +251,11 @@
     });
   }
 
-  async function saveCurrentLoop(): Promise<void> {
-    if (isSavingLoop || !source.sequence) return;
-    const solo =
-      side === "blue"
-        ? source.sequence.blueSoloProp
-        : source.sequence.redSoloProp;
+  async function saveCurrentLoop(
+    sequence: SequenceData | null = source.sequence
+  ): Promise<void> {
+    if (isSavingLoop || !sequence) return;
+    const solo = side === "blue" ? sequence.blueSoloProp : sequence.redSoloProp;
     if (!solo) {
       showToast("This path is not ready to save yet", "info");
       return;
@@ -301,6 +302,12 @@
   function viewChoreoCard(): void {
     if (!source.sequence) return;
     inspectedSequence = source.sequence;
+  }
+
+  function openCardContextMenu(event: MouseEvent): void {
+    if (!displaySequence) return;
+    event.preventDefault();
+    cardContextMenuHost?.openContextMenu(event.clientX, event.clientY);
   }
 
   async function chooseInlineFirstStep(stepIndex: number): Promise<void> {
@@ -381,7 +388,11 @@
     </div>
   {/if}
 
-  <div class="notation-stage" bind:this={stageEl}>
+  <div
+    class="notation-stage"
+    bind:this={stageEl}
+    oncontextmenu={openCardContextMenu}
+  >
     {#if compactHero && compactStep}
       <div class="compact-live-pictograph">
         <PictographContainer
@@ -389,7 +400,7 @@
           disableTransitions={true}
           showGrid={true}
           showTKA={false}
-          showReversals={false}
+          showReversals={true}
           showNonRadialPoints={false}
           showTnD={false}
           showElemental={false}
@@ -596,6 +607,15 @@
     {/if}
   {/if}
 </section>
+
+{#if displaySequence}
+  <ChoreoCardContextMenuHost
+    bind:this={cardContextMenuHost}
+    sequence={displaySequence}
+    onSaveToLibrary={() => saveCurrentLoop(displaySequence)}
+    includePictographSection={false}
+  />
+{/if}
 
 {#if nextSequence && !isSymmetryFollower && !toolbarOnly}
   {#key nextSequence}

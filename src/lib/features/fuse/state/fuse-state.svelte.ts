@@ -69,6 +69,7 @@ import {
   type FuseRule,
 } from "../domain/fuse-rule";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
+import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence";
 import {
   createFuseShufflePool,
   type FuseBrowseLoader,
@@ -592,13 +593,6 @@ export function createFuseState({
     return side === "blue" ? blueBaseSolo : redBaseSolo;
   }
 
-  function sequenceForSolo(side: FuseSide, solo: SoloPropData): SequenceData {
-    return updateSequenceData(
-      soloPropToSequence(solo, side === "blue" ? "left" : "right"),
-      { isCircular: true }
-    );
-  }
-
   async function generateSource(
     side: FuseSide,
     length: FuseLength
@@ -608,7 +602,7 @@ export function createFuseState({
     }
     const generated = await generateSoloLoop(length, generationRecipe());
     return {
-      sequence: sequenceForSolo(side, generated.solo),
+      sequence: createCircularFuseSoloSequence(side, generated.solo),
       origin: {
         kind: "generated",
         label: "Generated solo LOOP",
@@ -760,7 +754,7 @@ export function createFuseState({
       throw new Error(`The ${side} preview is missing its solo path`);
     }
 
-    const projected = sequenceForSolo(side, tiledSolo);
+    const projected = createCircularFuseSoloSequence(side, tiledSolo);
     return {
       ...injected,
       ...projected,
@@ -1598,7 +1592,7 @@ export function createFuseState({
 
     try {
       const base = baseSoloFor(side) ?? currentSolo;
-      let transformed = sequenceForSolo(
+      let transformed = createCircularFuseSoloSequence(
         side,
         adjustment.kind === "reset" ? base : currentSolo
       );
@@ -1635,7 +1629,7 @@ export function createFuseState({
         side === "blue"
           ? extractBlueSoloProp(transformed)
           : extractRedSoloProp(transformed);
-      const injected = sequenceForSolo(side, solo);
+      const injected = createCircularFuseSoloSequence(side, solo);
       const blueSequence = side === "blue" ? injected : counterpart;
       const redSequence = side === "red" ? injected : counterpart;
       const preview = createPreview(blueSequence, redSequence, appliedLength);

@@ -11,6 +11,8 @@ import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictogra
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { FuseOptions } from "./types";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
+import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
 
 const DEFAULT_MAX_STEPS = 64;
 
@@ -250,7 +252,7 @@ export function fuseSequences(
 			? `${blueHandPath.name} + ${redHandPath.name}`
 			: "Fused sequence";
 
-	return createSequenceData({
+	const sequence = createSequenceData({
 		name: placeholderName,
 		displayName: placeholderName,
 		word: "__fused__",
@@ -265,4 +267,26 @@ export function fuseSequences(
 		gridMode,
 		metadata: { fusedFrom: [blueHandPath.id, redHandPath.id] },
 	});
+
+	// Fuse normally receives two already-verified one-hand LOOPs, but this service
+	// also accepts bare hand paths. Measure the combined seam instead of asserting
+	// it, then let the canonical detector compare step 1 with the tail only when
+	// the resulting motion really closes in both position and orientation.
+	const withCircularity = {
+		...sequence,
+		isCircular: isSeamlesslyLoopable(sequence),
+	};
+	const withReversals = reversalDetector.processReversals(withCircularity);
+	const synchronizedPairings = withReversals.stepPairings?.map(
+		(pairing, index) => ({
+			...pairing,
+			blueReversal: withReversals.steps[index]?.blueReversal ?? false,
+			redReversal: withReversals.steps[index]?.redReversal ?? false,
+		})
+	);
+
+	return {
+		...withReversals,
+		...(synchronizedPairings && { stepPairings: synchronizedPairings }),
+	};
 }

@@ -65,6 +65,28 @@ describe("Fuse sequence actions contract", () => {
     expect(compactMenu).not.toContain('label: "Choose first step"');
   });
 
+  it("keeps the live source grid inside the canonical Choreo Card contract", () => {
+    const card = read("src/lib/features/fuse/components/FuseSourceCard.svelte");
+    const grid = read(
+      "src/lib/features/fuse/components/FuseLivePathGrid.svelte"
+    );
+
+    expect(card).toContain(
+      'import ChoreoCardContextMenuHost from "$lib/shared/sequence-viewer/components/choreo-card-context-menu/ChoreoCardContextMenuHost.svelte"'
+    );
+    expect(card).toContain("oncontextmenu={openCardContextMenu}");
+    expect(card).toContain("<ChoreoCardContextMenuHost");
+    expect(card).toContain("includePictographSection={false}");
+    expect(card).toContain("showReversals={true}");
+    expect(grid).toContain("showReversals={true}");
+    expect(card).toContain(
+      'import { createCircularFuseSoloSequence } from "../services/fuse-solo-sequence"'
+    );
+    expect(card).toContain("createCircularFuseSoloSequence(side, solo)");
+    expect(card).not.toContain("showReversals={false}");
+    expect(grid).not.toContain("showReversals={false}");
+  });
+
   it("reserves readable width for the desktop tempo control", () => {
     const preview = read(
       "src/lib/features/fuse/components/FusePreviewStage.svelte"
