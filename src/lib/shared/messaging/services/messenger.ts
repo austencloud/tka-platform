@@ -18,11 +18,15 @@ import {
   startAfter,
   getDoc,
   writeBatch,
-  increment,
   runTransaction,
   startAt,
+  type SnapshotMetadata,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import {
+  getFirestoreInstance,
+  getFunctionsInstance,
+} from "$lib/shared/auth/firebase";
+import { httpsCallable } from "firebase/functions";
 import {
   authState,
   getEffectiveUserId,
@@ -35,14 +39,10 @@ import type {
   Message,
   CreateMessageInput,
   MessageFetchOptions,
-  MessagePreview,
   MessageReaction,
   MessageEdit,
 } from "../domain/models/message-models";
-import {
-  buildReplyPreview,
-  getMessagePreviewText,
-} from "../domain/message-preview";
+import { getMessagePreviewText } from "../domain/message-preview";
 
 const CONVERSATIONS_COLLECTION = "conversations";
 const MESSAGES_SUBCOLLECTION = "messages";
@@ -118,6 +118,7 @@ export class Messenger {
   async sendMessage(input: CreateMessageInput): Promise<Message> {
     try {
       const {
+        messageId: requestedMessageId,
         conversationId,
         content,
         attachments,
@@ -127,10 +128,13 @@ export class Messenger {
 
       // Rate limiting - prevent spam
       const now = Date.now();
-      if (now - this.lastMessageTime < MIN_MESSAGE_INTERVAL_MS) {
+      if (
+        !requestedMessageId &&
+        now - this.lastMessageTime < MIN_MESSAGE_INTERVAL_MS
+      ) {
         throw new Error("Please wait before sending another message");
       }
-      this.lastMessageTime = now;
+      if (!requestedMessageId) this.lastMessageTime = now;
 
       // Content validation
       if (normalizedContent.length > MAX_MESSAGE_LENGTH) {
@@ -148,112 +152,31 @@ export class Messenger {
         throw new Error("Image messages must use the private image sender");
       }
 
-      const firestore = await getFirestoreInstance();
       const effectiveUser = this.getEffectiveUserInfo();
-
-      // Validate conversation exists and user is a participant
-      const conversationRef = doc(
-        firestore,
-        CONVERSATIONS_COLLECTION,
-        conversationId
-      );
-      const conversationSnap = await getDoc(conversationRef);
-
-      if (!conversationSnap.exists()) {
-        throw new Error("Conversation not found");
-      }
-
-      const conversationData = conversationSnap.data();
-      const participants = conversationData["participants"] as string[];
-
-      if (!participants.includes(effectiveUser.uid)) {
-        throw new Error("User is not a participant in this conversation");
-      }
-
-      // Display fields in a quote are not trusted input. Resolve the message in
-      // this conversation immediately before sending so edits and attachment
-      // context cannot leave a forged or stale reply behind.
-      let replyTo: Message["replyTo"];
-      if (requestedReply) {
-        const replySnapshot = await getDoc(
-          doc(
-            firestore,
-            CONVERSATIONS_COLLECTION,
-            conversationId,
-            MESSAGES_SUBCOLLECTION,
-            requestedReply.messageId
-          )
-        );
-        if (
-          !replySnapshot.exists() ||
-          replySnapshot.data()["isDeleted"] === true
-        ) {
-          throw new Error("The original message is no longer available");
-        }
-        replyTo = buildReplyPreview(
-          this.mapDocToMessage(
-            replySnapshot.id,
-            conversationId,
-            replySnapshot.data()
-          )
-        );
-      }
-
-      // Create the message
-      const messagesRef = collection(
-        firestore,
-        CONVERSATIONS_COLLECTION,
+      const messageId = requestedMessageId ?? crypto.randomUUID();
+      const functions = await getFunctionsInstance();
+      const deliver = httpsCallable<
+        {
+          messageId: string;
+          conversationId: string;
+          content: string;
+          attachments?: Message["attachments"];
+          replyTo?: Message["replyTo"];
+        },
+        { messageId: string; alreadyDelivered: boolean }
+      >(functions, "deliverMessage");
+      await deliver({
+        messageId,
         conversationId,
-        MESSAGES_SUBCOLLECTION
-      );
-
-      const messageData = {
-        senderId: effectiveUser.uid,
-        senderName: effectiveUser.displayName,
-        senderAvatar: effectiveUser.photoURL,
         content: normalizedContent,
-        createdAt: serverTimestamp(),
-        readBy: [effectiveUser.uid], // Sender has read their own message
-        attachments: attachments || null,
-        isDeleted: false,
-        replyTo: replyTo || null,
-        reactions: null,
-        editHistory: null,
-      };
-
-      const messageRef = doc(messagesRef);
-
-      // Update conversation with last message and increment unread count for ALL other participants
-      const otherUserIds = participants.filter((p) => p !== effectiveUser.uid);
-      const lastMessage: MessagePreview = {
-        messageId: messageRef.id,
-        content: getMessagePreviewText(normalizedContent, attachments),
-        senderId: effectiveUser.uid,
-        senderName: effectiveUser.displayName,
-        createdAt: new Date(),
-        hasAttachment: !!(attachments && attachments.length > 0),
-      };
-
-      const batch = writeBatch(firestore);
-
-      const unreadUpdates: Record<string, ReturnType<typeof increment>> = {};
-      for (const userId of otherUserIds) {
-        unreadUpdates[`unreadCount.${userId}`] = increment(1);
-      }
-
-      batch.set(messageRef, messageData);
-      batch.update(conversationRef, {
-        lastMessage,
-        updatedAt: serverTimestamp(),
-        ...unreadUpdates,
+        ...(attachments?.length ? { attachments } : {}),
+        ...(requestedReply ? { replyTo: requestedReply } : {}),
       });
-
-      await batch.commit();
 
       // Note: No in-app notification created - messages tab shows unread badge instead
 
       return {
-        id: messageRef.id,
+        id: messageId,
         conversationId,
         senderId: effectiveUser.uid,
         senderName: effectiveUser.displayName,
@@ -262,11 +185,10 @@ export class Messenger {
         createdAt: new Date(),
         readBy: [effectiveUser.uid],
         attachments,
-        replyTo,
+        replyTo: requestedReply,
       };
     } catch (error) {
       console.error("[Messenger] Failed to send message:", error);
-      toast.error("Failed to send message. Please try again.");
       throw error;
     }
   }
@@ -415,10 +337,16 @@ export class Messenger {
 
         const unsubscribe = onSnapshot(
           q,
+          { includeMetadataChanges: true },
           (snapshot) => {
             const messages = snapshot.docs
               .map((docSnap) =>
-                this.mapDocToMessage(docSnap.id, conversationId, docSnap.data())
+                this.mapDocToMessage(
+                  docSnap.id,
+                  conversationId,
+                  docSnap.data(),
+                  docSnap.metadata
+                )
               )
               .reverse(); // Chronological order
             callback(messages);
@@ -694,7 +622,8 @@ export class Messenger {
   private mapDocToMessage(
     id: string,
     conversationId: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
+    metadata?: SnapshotMetadata
   ): Message {
     // Map edit history timestamps
     const rawEditHistory = data["editHistory"] as
@@ -737,6 +666,8 @@ export class Messenger {
       reactions: data["reactions"] as MessageReaction[] | undefined,
       replyTo: data["replyTo"] as Message["replyTo"],
       editHistory,
+      hasPendingWrites: metadata?.hasPendingWrites,
+      fromCache: metadata?.fromCache,
     };
   }
 

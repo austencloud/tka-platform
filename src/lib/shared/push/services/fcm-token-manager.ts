@@ -22,6 +22,14 @@ import { VAPID_KEY } from "../config/vapid";
 
 const FCM_TOKENS_COLLECTION = "fcmTokens";
 
+export type PushDeviceRegistrationState =
+  | "checking"
+  | "unsupported"
+  | "blocked"
+  | "setup-required"
+  | "ready"
+  | "failed";
+
 export class FCMTokenManager {
   private currentToken: string | null = null;
 
@@ -135,6 +143,41 @@ export class FCMTokenManager {
     }
     if (!("Notification" in window)) return "denied";
     return Notification.requestPermission();
+  }
+
+  async getRegistrationState(
+    userId: string
+  ): Promise<PushDeviceRegistrationState> {
+    if (!(await this.isSupported())) return "unsupported";
+
+    const permission = await this.getPermissionState();
+    if (permission === "denied") return "blocked";
+    if (permission !== "granted") return "setup-required";
+
+    return (await this.registerToken(userId)) ? "ready" : "failed";
+  }
+
+  async getSetupState(): Promise<PushDeviceRegistrationState> {
+    if (!(await this.isSupported())) return "unsupported";
+
+    const permission = await this.getPermissionState();
+    if (permission === "denied") return "blocked";
+    return "setup-required";
+  }
+
+  async enableForCurrentDevice(
+    userId: string
+  ): Promise<PushDeviceRegistrationState> {
+    if (!(await this.isSupported())) return "unsupported";
+
+    let permission = await this.getPermissionState();
+    if (permission !== "granted") {
+      permission = await this.requestPermission();
+    }
+    if (permission === "denied") return "blocked";
+    if (permission !== "granted") return "setup-required";
+
+    return (await this.registerToken(userId)) ? "ready" : "failed";
   }
 
   private async registerNativeAndroidToken(

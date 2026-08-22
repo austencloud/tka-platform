@@ -1,0 +1,167 @@
+import {
+  createFeedbackEmail,
+  createMessageEmail,
+  createNotificationMailId,
+  getEmailPreferenceForNotificationType,
+  queueUserNotificationEmail,
+  wantsNotificationEmail,
+  type NotificationEmailDependencies,
+} from "./notificationEmailQueue";
+
+function dependencies(
+  overrides: Partial<NotificationEmailDependencies> = {}
+): NotificationEmailDependencies {
+  return {
+    getPreferences: jest.fn(async () => ({
+      emailEnabled: true,
+      emailMessages: true,
+    })),
+    getAuthUser: jest.fn(async () => ({
+      email: "reader@example.com",
+      emailVerified: true,
+      disabled: false,
+    })),
+    createMailIfAbsent: jest.fn(async () => true),
+    ...overrides,
+  };
+}
+
+describe("notification email policy", () => {
+  it("requires both the email master switch and requested category", () => {
+    expect(
+      wantsNotificationEmail(
+        { emailEnabled: true, emailMessages: true },
+        "emailMessages"
+      )
+    ).toBe(true);
+    expect(
+      wantsNotificationEmail(
+        { emailEnabled: false, emailMessages: true },
+        "emailMessages"
+      )
+    ).toBe(false);
+    expect(
+      wantsNotificationEmail(
+        { emailEnabled: true, emailMessages: false },
+        "emailMessages"
+      )
+    ).toBe(false);
+  });
+
+  it("routes only feedback outcomes through the feedback email category", () => {
+    expect(getEmailPreferenceForNotificationType("feedback-resolved")).toBe(
+      "emailFeedback"
+    );
+    expect(getEmailPreferenceForNotificationType("feedback-response")).toBe(
+      "emailFeedback"
+    );
+    expect(getEmailPreferenceForNotificationType("sequence-liked")).toBeNull();
+  });
+
+  it("uses a stable per-event, per-recipient queue ID", () => {
+    const first = createNotificationMailId("message", "message-1", "user-1");
+    expect(createNotificationMailId("message", "message-1", "user-1")).toBe(
+      first
+    );
+    expect(createNotificationMailId("message", "message-1", "user-2")).not.toBe(
+      first
+    );
+  });
+});
+
+describe("queueUserNotificationEmail", () => {
+  it("queues once for an opted-in user with a verified email", async () => {
+    const deps = dependencies();
+
+    const result = await queueUserNotificationEmail(
+      {
+        userId: "user-1",
+        preferenceKey: "emailMessages",
+        sourceType: "message",
+        sourceId: "message-1",
+        email: createMessageEmail("Austen", "conversation-1"),
+      },
+      deps
+    );
+
+    expect(result.state).toBe("queued");
+    expect(deps.createMailIfAbsent).toHaveBeenCalledTimes(1);
+    expect(deps.createMailIfAbsent).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        to: ["reader@example.com"],
+        metadata: expect.objectContaining({ sourceId: "message-1" }),
+      })
+    );
+  });
+
+  it("does not queue for an unverified email address", async () => {
+    const deps = dependencies({
+      getAuthUser: jest.fn(async () => ({
+        email: "reader@example.com",
+        emailVerified: false,
+        disabled: false,
+      })),
+    });
+
+    const result = await queueUserNotificationEmail(
+      {
+        userId: "user-1",
+        preferenceKey: "emailMessages",
+        sourceType: "message",
+        sourceId: "message-1",
+        email: createMessageEmail("Austen", "conversation-1"),
+      },
+      deps
+    );
+
+    expect(result).toEqual({
+      state: "skipped",
+      reason: "email-unavailable",
+    });
+    expect(deps.createMailIfAbsent).not.toHaveBeenCalled();
+  });
+
+  it("treats an existing deterministic mail document as delivered work", async () => {
+    const deps = dependencies({
+      createMailIfAbsent: jest.fn(async () => false),
+    });
+
+    const result = await queueUserNotificationEmail(
+      {
+        userId: "user-1",
+        preferenceKey: "emailMessages",
+        sourceType: "message",
+        sourceId: "message-1",
+        email: createMessageEmail("Austen", "conversation-1"),
+      },
+      deps
+    );
+
+    expect(result).toEqual({ state: "skipped", reason: "already-queued" });
+  });
+});
+
+describe("notification email content", () => {
+  it("keeps private chat content out of message email", () => {
+    const email = createMessageEmail("Sky <script>", "conversation-1");
+
+    expect(email.subject).toBe("New message from Sky <script>");
+    expect(email.text).not.toContain("messagePreview");
+    expect(email.html).toContain("Sky &lt;script&gt;");
+    expect(email.html).not.toContain("Sky <script>");
+  });
+
+  it("escapes feedback copy before placing it in HTML", () => {
+    const email = createFeedbackEmail({
+      type: "feedback-resolved",
+      feedbackId: "feedback-1",
+      feedbackTitle: "Broken <button>",
+      message: "Fixed <strong>today</strong>",
+    });
+
+    expect(email.html).toContain("Broken &lt;button&gt;");
+    expect(email.html).toContain("Fixed &lt;strong&gt;today&lt;/strong&gt;");
+    expect(email.html).not.toContain("<strong>today</strong>");
+  });
+});

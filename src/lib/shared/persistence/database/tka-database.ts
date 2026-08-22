@@ -29,6 +29,10 @@ import {
 import type { UserProject } from "../domain/models/user-project";
 import type { UserWorkData } from "../domain/models/user-work-data";
 import type { MediaCompositionPreset } from "$lib/shared/media-composition/domain/media-composition-preset-schema";
+import type {
+  MessageDraftRecord,
+  MessageOutboxRecord,
+} from "$lib/shared/inbox/domain/message-delivery-models";
 
 // ============================================================================
 // DATABASE CLASS
@@ -64,6 +68,10 @@ export class TKADatabase extends Dexie {
 
   // Shared Post Studio / Compose layout presets (v9)
   mediaCompositionPresets!: EntityTable<MediaCompositionPreset, "id">;
+
+  // Inbox reliability (v10)
+  messageDrafts!: EntityTable<MessageDraftRecord, "id">;
+  messageOutbox!: EntityTable<MessageOutboxRecord, "id">;
 
   constructor() {
     super(DATABASE_NAME);
@@ -126,6 +134,8 @@ export async function clearAllData(): Promise<void> {
       db.galleryCacheMeta,
       db.generatedMandalaPool,
       db.mediaCompositionPresets,
+      db.messageDrafts,
+      db.messageOutbox,
     ],
     async () => {
       await db.sequences.clear();
@@ -140,6 +150,8 @@ export async function clearAllData(): Promise<void> {
       await db.galleryCacheMeta.clear();
       await db.generatedMandalaPool.clear();
       await db.mediaCompositionPresets.clear();
+      await db.messageDrafts.clear();
+      await db.messageOutbox.clear();
     }
   );
 }
@@ -160,6 +172,8 @@ export async function getDatabaseInfo(): Promise<{
   galleryCacheMeta: number;
   generatedMandalaPool: number;
   mediaCompositionPresets: number;
+  messageDrafts: number;
+  messageOutbox: number;
 }> {
   const info = {
     sequences: await db.sequences.count(),
@@ -178,6 +192,8 @@ export async function getDatabaseInfo(): Promise<{
     // Mandala loader pool (v8)
     generatedMandalaPool: await db.generatedMandalaPool.count(),
     mediaCompositionPresets: await db.mediaCompositionPresets.count(),
+    messageDrafts: await db.messageDrafts.count(),
+    messageOutbox: await db.messageOutbox.count(),
   };
   return info;
 }

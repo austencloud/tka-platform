@@ -133,12 +133,21 @@ export function mapDocToPreview(
 export function previewNeedsRefresh(
   preview: ConversationPreview | null
 ): string | undefined {
-  if (
-    preview?.type === "direct" &&
-    preview.otherParticipant?.displayName === "Loading..."
-  ) {
-    return preview.otherParticipant.userId;
+  if (preview?.type === "direct" && preview.otherParticipant) {
+    if (
+      preview.otherParticipant.displayName === "Loading..." ||
+      preview.otherParticipant.username === undefined
+    ) {
+      return preview.otherParticipant.userId;
+    }
   }
+
+  if (preview?.type === "group") {
+    return preview.participantPreviews?.find(
+      (participant) => participant.username === undefined
+    )?.userId;
+  }
+
   return undefined;
 }
 
@@ -146,15 +155,20 @@ export async function refreshParticipantInfo(
   firestore: Firestore,
   conversationId: string,
   userId: string,
-  fetchUserInfo: (
-    uid: string
-  ) => Promise<{ displayName: string; photoURL?: string }>
+  fetchUserInfo: (uid: string) => Promise<{
+    displayName: string;
+    username?: string | null;
+    photoURL?: string;
+  }>
 ): Promise<void> {
   try {
     const userInfo = await fetchUserInfo(userId);
     const conversationRef = doc(firestore, "conversations", conversationId);
     await updateDoc(conversationRef, {
       [`participantInfo.${userId}.displayName`]: userInfo.displayName,
+      ...(userInfo.username !== undefined && {
+        [`participantInfo.${userId}.username`]: userInfo.username,
+      }),
       ...(userInfo.photoURL && {
         [`participantInfo.${userId}.avatar`]: userInfo.photoURL,
       }),

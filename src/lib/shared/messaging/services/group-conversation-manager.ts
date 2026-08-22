@@ -27,8 +27,17 @@ const MAX_GROUP_PARTICIPANTS = 50;
 
 export interface GroupConversationDeps {
   getCurrentUserId: () => string;
-  getEffectiveUserInfo: () => { uid: string; displayName: string; photoURL: string | null };
-  fetchUserInfo: (userId: string) => Promise<{ displayName: string; photoURL?: string }>;
+  getEffectiveUserInfo: () => {
+    uid: string;
+    displayName: string;
+    username?: string;
+    photoURL: string | null;
+  };
+  fetchUserInfo: (userId: string) => Promise<{
+    displayName: string;
+    username?: string | null;
+    photoURL?: string;
+  }>;
   getConversation: (conversationId: string) => Promise<Conversation | null>;
 }
 
@@ -62,6 +71,9 @@ export class GroupConversationManager {
         [currentUserId]: {
           userId: currentUserId,
           displayName: effectiveUser.displayName,
+          ...(effectiveUser.username !== undefined && {
+            username: effectiveUser.username,
+          }),
           ...(effectiveUser.photoURL && { avatar: effectiveUser.photoURL }),
           joinedAt: now,
         },
@@ -79,6 +91,9 @@ export class GroupConversationManager {
           participantInfo[userId] = {
             userId,
             displayName: userInfo.displayName,
+            ...(userInfo.username !== undefined && {
+              username: userInfo.username,
+            }),
             ...(userInfo.photoURL && { avatar: userInfo.photoURL }),
             joinedAt: now,
           };
@@ -243,6 +258,9 @@ export class GroupConversationManager {
         [`participantInfo.${userId}`]: {
           userId,
           displayName: userInfo.displayName,
+          ...(userInfo.username !== undefined && {
+            username: userInfo.username,
+          }),
           ...(userInfo.photoURL && { avatar: userInfo.photoURL }),
           joinedAt: now,
         },

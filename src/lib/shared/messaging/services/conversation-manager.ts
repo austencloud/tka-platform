@@ -73,6 +73,7 @@ export class ConversationManager {
   private getEffectiveUserInfo(): {
     uid: string;
     displayName: string;
+    username?: string;
     photoURL: string | null;
   } {
     if (userPreviewState.isActive && userPreviewState.data.profile) {
@@ -80,6 +81,7 @@ export class ConversationManager {
       return {
         uid: profile.uid,
         displayName: profile.displayName || "Unknown User",
+        ...(profile.username && { username: profile.username }),
         photoURL: profile.photoURL || null,
       };
     }
@@ -94,18 +96,25 @@ export class ConversationManager {
     };
   }
 
-  private async fetchUserInfo(
-    userId: string
-  ): Promise<{ displayName: string; photoURL?: string }> {
+  private async fetchUserInfo(userId: string): Promise<{
+    displayName: string;
+    username?: string | null;
+    photoURL?: string;
+  }> {
     try {
       const firestore = await getFirestoreInstance();
       const userRef = doc(firestore, "users", userId);
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
         const data = userDoc.data();
+        const username =
+          typeof data["username"] === "string" && data["username"].trim()
+            ? data["username"].trim()
+            : null;
         return {
           displayName:
             data["displayName"] || data["username"] || "Unknown User",
+          username,
           photoURL: data["photoURL"] || undefined,
         };
       }
@@ -113,6 +122,59 @@ export class ConversationManager {
       console.error("[ConversationManager] Failed to fetch user info:", error);
     }
     return { displayName: "Unknown User" };
+  }
+
+  private async hydrateParticipantProfiles(
+    firestore: Awaited<ReturnType<typeof getFirestoreInstance>>,
+    conversation: Conversation
+  ): Promise<Conversation> {
+    const refreshedUsers = await Promise.all(
+      conversation.participants.map(async (userId) => ({
+        userId,
+        userInfo: await this.fetchUserInfo(userId),
+      }))
+    );
+    const updates: Record<string, unknown> = {};
+
+    for (const { userId, userInfo } of refreshedUsers) {
+      const participant = conversation.participantInfo[userId];
+      if (!participant || userInfo.username === undefined) continue;
+
+      if (participant.username !== userInfo.username) {
+        participant.username = userInfo.username;
+        updates[`participantInfo.${userId}.username`] = userInfo.username;
+      }
+
+      if (
+        userInfo.displayName !== "Unknown User" &&
+        participant.displayName !== userInfo.displayName
+      ) {
+        participant.displayName = userInfo.displayName;
+        updates[`participantInfo.${userId}.displayName`] = userInfo.displayName;
+      }
+      if (userInfo.photoURL && participant.avatar !== userInfo.photoURL) {
+        participant.avatar = userInfo.photoURL;
+        updates[`participantInfo.${userId}.avatar`] = userInfo.photoURL;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      try {
+        await updateDoc(
+          doc(firestore, CONVERSATIONS_COLLECTION, conversation.id),
+          updates
+        );
+      } catch (error) {
+        // The current profile is already available in this open thread. A
+        // later load can retry the snapshot update without blocking messages.
+        console.warn(
+          "[ConversationManager] Failed to refresh participant profiles:",
+          error
+        );
+      }
+    }
+
+    return conversation;
   }
 
   private generateDirectConversationId(
@@ -147,10 +209,14 @@ export class ConversationManager {
       const existingDoc = await getDoc(conversationRef);
 
       if (existingDoc.exists()) {
+        const conversation = mapDocToConversation(
+          existingDoc.id,
+          existingDoc.data()
+        );
         return {
-          conversation: mapDocToConversation(
-            existingDoc.id,
-            existingDoc.data()
+          conversation: await this.hydrateParticipantProfiles(
+            firestore,
+            conversation
           ),
           isNew: false,
         };
@@ -165,12 +231,18 @@ export class ConversationManager {
         [currentUserId]: {
           userId: currentUserId,
           displayName: effectiveUser.displayName,
+          ...(effectiveUser.username !== undefined && {
+            username: effectiveUser.username,
+          }),
           ...(effectiveUser.photoURL && { avatar: effectiveUser.photoURL }),
           joinedAt: now,
         },
         [otherUserId]: {
           userId: otherUserId,
           displayName: otherUserInfo.displayName,
+          ...(otherUserInfo.username !== undefined && {
+            username: otherUserInfo.username,
+          }),
           ...(otherUserInfo.photoURL && { avatar: otherUserInfo.photoURL }),
           joinedAt: now,
         },
@@ -291,7 +363,8 @@ export class ConversationManager {
         return null;
       }
 
-      return mapDocToConversation(snapshot.id, snapshot.data());
+      const conversation = mapDocToConversation(snapshot.id, snapshot.data());
+      return await this.hydrateParticipantProfiles(firestore, conversation);
     } catch (error) {
       console.error("[ConversationManager] Failed to get conversation:", error);
       toast.error("Failed to load conversation.");

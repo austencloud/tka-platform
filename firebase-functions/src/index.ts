@@ -15,6 +15,9 @@ export { transcribeAudio } from "./transcribeAudio";
 export { onNewMessage } from "./push/onNewMessage";
 export { onNewNotification } from "./push/onNewNotification";
 export { onNotificationSync } from "./push/onNotificationSync";
+export { onNewMessageEmail } from "./email/onNewMessageEmail";
+export { onNewNotificationEmail } from "./email/onNewNotificationEmail";
+export { onNewVersionEmail } from "./email/onNewVersionEmail";
 export {
   pulseUserActivity,
   pulseScanActivity,
@@ -75,6 +78,7 @@ export {
 export { cleanupStaleAnonymousAccounts } from "./cleanupStaleAnonymousAccounts";
 export { cleanupStagedUploads } from "./cleanupStagedUploads";
 export { finalizeMessageImage } from "./messaging/finalizeMessageImage";
+export { deliverMessage } from "./messaging/deliverMessage";
 export { deleteMessageImages } from "./messaging/deleteMessageImages";
 export {
   shareCollection,

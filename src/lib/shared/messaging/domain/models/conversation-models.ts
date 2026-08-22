@@ -18,6 +18,8 @@ export type ConversationType = "direct" | "group";
 export interface ParticipantInfo {
   userId: string;
   displayName: string;
+  /** Unique public handle. Null means the profile has no handle. */
+  username?: string | null;
   avatar?: string;
   joinedAt: Date;
 }

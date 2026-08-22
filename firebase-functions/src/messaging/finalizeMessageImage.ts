@@ -5,10 +5,17 @@ import {
   InvalidMessageImageError,
   normalizeMessageImage,
 } from "./messageImageNormalizer";
+import {
+  buildCanonicalReplyPreview,
+  isAnonymousToken,
+  MAX_MESSAGE_LENGTH,
+  optionalReplyMessageId,
+  requireSafeId,
+} from "./messageDeliveryValidation";
+
+export { buildCanonicalReplyPreview } from "./messageDeliveryValidation";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const MAX_MESSAGE_LENGTH = 2000;
-const SAFE_ID = /^[A-Za-z0-9_-]{1,128}$/;
 const DECLARED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 interface FinalizeMessageImageRequest {
@@ -21,77 +28,11 @@ interface FinalizeMessageImageRequest {
   };
 }
 
-interface CanonicalReplyPreview {
-  messageId: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  attachmentType?: string;
-}
-
 interface FinalizeMessageImageResponse {
   messageId: string;
   storagePath: string;
   width: number;
   height: number;
-}
-
-function requireSafeId(value: unknown, field: string): string {
-  if (typeof value !== "string" || !SAFE_ID.test(value)) {
-    throw new HttpsError("invalid-argument", `${field} is invalid.`);
-  }
-  return value;
-}
-
-function optionalReplyMessageId(value: unknown): string | undefined {
-  if (value == null) return undefined;
-  if (typeof value !== "object") {
-    throw new HttpsError("invalid-argument", "Reply preview is invalid.");
-  }
-
-  const reply = value as Record<string, unknown>;
-  return requireSafeId(reply.messageId, "Reply message ID");
-}
-
-export function buildCanonicalReplyPreview(
-  messageId: string,
-  data: Record<string, unknown> | undefined
-): CanonicalReplyPreview {
-  if (!data || data.isDeleted === true) {
-    throw new HttpsError(
-      "failed-precondition",
-      "The original message is no longer available."
-    );
-  }
-
-  const senderId = typeof data.senderId === "string" ? data.senderId : "";
-  const senderName =
-    typeof data.senderName === "string" ? data.senderName.trim() : "";
-  const content = typeof data.content === "string" ? data.content : "";
-  if (!senderId || !senderName || content.length > MAX_MESSAGE_LENGTH) {
-    throw new HttpsError(
-      "failed-precondition",
-      "The original message cannot be quoted."
-    );
-  }
-
-  const preview: CanonicalReplyPreview = {
-    messageId,
-    senderId,
-    senderName: senderName.slice(0, 120),
-    content,
-  };
-  const attachments = Array.isArray(data.attachments) ? data.attachments : [];
-  const attachment = attachments[0] as Record<string, unknown> | undefined;
-  if (typeof attachment?.type === "string") {
-    preview.attachmentType = attachment.type;
-  }
-  return preview;
-}
-
-function isAnonymousToken(token: Record<string, unknown>): boolean {
-  const firebase = token.firebase as { sign_in_provider?: string } | undefined;
-  return firebase?.sign_in_provider === "anonymous";
 }
 
 export const finalizeMessageImage = onCall(

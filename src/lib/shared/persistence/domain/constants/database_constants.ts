@@ -27,8 +27,9 @@ export const DATABASE_NAME = "TKADatabase";
  *            sequences for the in-app MandalaLoader (drop-oldest at cap).
  * Version 9: Added role-bound media composition presets for Post Studio and
  *            Compose.
+ * Version 10: Added user-scoped message drafts and the durable message outbox.
  */
-export const DATABASE_VERSION = 9;
+export const DATABASE_VERSION = 10;
 
 // ============================================================================
 // TABLE NAMES
@@ -51,6 +52,8 @@ export const TABLE_NAMES = {
   // Mandala loader pool (v8)
   GENERATED_MANDALA_POOL: "generatedMandalaPool",
   MEDIA_COMPOSITION_PRESETS: "mediaCompositionPresets",
+  MESSAGE_DRAFTS: "messageDrafts",
+  MESSAGE_OUTBOX: "messageOutbox",
 } as const;
 
 // ============================================================================
@@ -84,6 +87,10 @@ export const TABLE_INDEXES = {
   [TABLE_NAMES.GENERATED_MANDALA_POOL]: "id, generatedAt",
   [TABLE_NAMES.MEDIA_COMPOSITION_PRESETS]:
     "id, ownerId, updatedAt, createdAt, name",
+  [TABLE_NAMES.MESSAGE_DRAFTS]:
+    "id, userId, conversationId, [userId+conversationId], updatedAt",
+  [TABLE_NAMES.MESSAGE_OUTBOX]:
+    "id, userId, conversationId, [userId+conversationId], status, createdAt, updatedAt",
 } as const;
 
 // ============================================================================

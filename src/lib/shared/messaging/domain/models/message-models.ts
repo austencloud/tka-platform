@@ -122,12 +122,18 @@ export interface Message {
   reactions?: MessageReaction[]; // Emoji reactions on this message
   replyTo?: ReplyPreview; // Message this is replying to
   editHistory?: MessageEdit[]; // Previous versions for abuse prevention
+  /** Local Firestore writes can appear before the server acknowledges them. */
+  hasPendingWrites?: boolean;
+  /** True when this snapshot is currently being served from the local cache. */
+  fromCache?: boolean;
 }
 
 /**
  * Input for creating a new message
  */
 export interface CreateMessageInput {
+  /** Stable client ID used by the durable outbox for idempotent retries. */
+  messageId?: string;
   conversationId: string;
   content: string;
   attachments?: MessageAttachment[];
