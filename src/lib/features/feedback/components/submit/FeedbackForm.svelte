@@ -4,7 +4,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { VoiceRecordingResult } from "$lib/shared/feedback/domain/feedback-contract-types";
   import { getVoiceRecorder } from "$lib/features/feedback/get-voice-recorder";
   import * as transcriptionClient from "$lib/features/feedback/services/transcription-client";
@@ -23,9 +23,17 @@
   import MobileInputToolbar from "$lib/shared/components/MobileInputToolbar.svelte";
   import VoiceInputButton from "./VoiceInputButton.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 
   // Props
-  const { formState, hideSuccessState = false, isInputMode = false, isTouchDevice: isTouchDeviceProp, onInputFocusChange, onKeyboardHeightChange } = $props<{
+  const {
+    formState,
+    hideSuccessState = false,
+    isInputMode = false,
+    isTouchDevice: isTouchDeviceProp,
+    onInputFocusChange,
+    onKeyboardHeightChange,
+  } = $props<{
     formState: FeedbackSubmitState;
     hideSuccessState?: boolean;
     /** When true, form enters distraction-free input mode (mobile bottom sheet) */
@@ -48,6 +56,7 @@
 
   // Component state
   let isMobileDevice = $state(false);
+  let isIOSPlatform = $state(false);
   let isVoiceRecording = $state(false);
   let isTranscribing = $state(false);
   let transcriptionError = $state("");
@@ -60,6 +69,9 @@
 
   onMount(() => {
     isMobileDevice = deviceDetector.isMobile();
+    isIOSPlatform = detectPlatform() === "ios";
+    const flushDraft = () => draftPersister.flushPendingSave();
+    window.addEventListener("pagehide", flushDraft);
 
     // Restore draft if form is empty and a draft exists
     if (
@@ -75,6 +87,8 @@
     }
 
     return () => {
+      window.removeEventListener("pagehide", flushDraft);
+      flushDraft();
       audioAnalyzer.stop();
     };
   });
@@ -89,9 +103,7 @@
       draftPersister.scheduleSave(formState.formData);
     }
 
-    return () => {
-      draftPersister?.cancelPendingSave();
-    };
+    return undefined;
   });
 
   // Clear draft after successful submission
@@ -122,7 +134,7 @@
     try {
       const transcript = await transcriptionClient.transcribe(
         result.blob,
-        result.mimeType,
+        result.mimeType
       );
 
       if (transcript) {
@@ -262,6 +274,7 @@
       onImageRemoved={(index) => formState.removeImage(index)}
       disabled={formState.isSubmitting}
       {isInputMode}
+      isIOSInputMode={isInputMode && isIOSPlatform}
       {isVoiceRecording}
       {audioAnalyzer}
       {voiceRecorder}
@@ -305,7 +318,7 @@
   </form>
 
   <!-- Touch device keyboard toolbar - rendered outside form to position above keyboard -->
-  {#if deviceDetector.isTouchDevice()}
+  {#if deviceDetector.isTouchDevice() && !isIOSPlatform}
     <MobileInputToolbar
       visible={isTextareaFocused}
       disabled={formState.isSubmitting}

@@ -20,10 +20,11 @@
   import type { FeedbackType } from "$lib/shared/feedback/domain/models/feedback-models";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
-  import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
+  import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 
   const debug = createComponentLogger("QuickFeedbackPanel");
 
@@ -34,6 +35,7 @@
   let hasShownSuccessToast = $state(false);
   let isInputFocused = $state(false);
   let keyboardHeight = $state(0);
+  let isIOSPlatform = $state(false);
   // Initialize synchronously to prevent placement flip during drawer animation
   // This MUST have the correct value before first render, not in onMount
   let isTouchDevice = $state(deviceDetector.isTouchDevice());
@@ -49,7 +51,9 @@
   // Input mode triggers on ANY touch device when focused, not just bottom sheet
   // This handles Z Fold landscape (side drawer + touch keyboard) correctly
   // Stay in input mode while submitting to avoid UI flash before panel closes
-  const isInputMode = $derived((isInputFocused || formState.isSubmitting) && isTouchDevice);
+  const isInputMode = $derived(
+    (isInputFocused || formState.isSubmitting) && isTouchDevice
+  );
 
   // Show keyboard hints only on non-touch devices (true desktop with physical keyboard)
   const showKeyboardHints = $derived(!isTouchDevice);
@@ -57,21 +61,35 @@
   // Get haptic feedback service
   const hapticService = getHapticFeedback();
 
-  function handleTypeChange(event: MouseEvent, type: FeedbackType) {
+  function handleTypeChange(event: PointerEvent, type: FeedbackType) {
     // Prevent focus loss from textarea when clicking type buttons
     event.preventDefault();
     hapticService?.trigger("selection");
     formState.setType(type);
   }
 
-  function handleClose() {
-    debug.log("handleClose called, current isOpen:", quickFeedbackState.isOpen);
+  function closePanel() {
+    quickFeedbackState.close();
+  }
+
+  function handleInputModeClose(event: PointerEvent) {
+    // Closing on pointer-down keeps iOS from blurring and unmounting this
+    // compact header before the later click event can reach the button.
+    event.preventDefault();
+    closePanel();
+  }
+
+  function handleDrawerClosed() {
+    debug.log(
+      "handleDrawerClosed called, current isOpen:",
+      quickFeedbackState.isOpen
+    );
 
     // Show "draft saved" toast if user had content and closed without submitting
     const hasContent = formState.formData.description.trim().length > 0;
     const wasSubmitted = formState.submitStatus === "success";
 
-    quickFeedbackState.close();
+    closePanel();
     debug.log("After close(), isOpen:", quickFeedbackState.isOpen);
 
     // Reset the toast flag when panel closes
@@ -96,6 +114,7 @@
   }
 
   onMount(() => {
+    isIOSPlatform = detectPlatform() === "ios";
     syncResponsiveSettings();
     // Note: isTouchDevice is initialized synchronously above, no need to set here
     // Only subscribe to changes for dynamic updates (e.g., connecting/disconnecting touch input)
@@ -128,11 +147,8 @@
       // Brief delay for keyboard to start closing, then close panel
       // This makes both animations happen together instead of sequentially
       setTimeout(() => {
-        handleClose();
-        toast.success(
-          t("feedback_submitted_toast"),
-          3000
-        );
+        closePanel();
+        toast.success(t("feedback_submitted_toast"), 3000);
 
         // Reset the shared state after panel is closed
         resetSharedFeedbackSubmitState();
@@ -144,24 +160,28 @@
 <Drawer
   isOpen={quickFeedbackState.isOpen}
   placement={drawerPlacement}
-  onclose={handleClose}
+  onclose={handleDrawerClosed}
   onbackdropclick={(e) => {
     // Don't close while user is typing - they might accidentally tap outside
     if (isInputFocused && isBottomSheet) {
       return false;
     }
-    handleClose();
     return true;
   }}
   closeOnBackdrop={true}
   closeOnEscape={true}
   ariaLabel="Quick Feedback"
   showHandle={isBottomSheet}
-  dismissible={true}
-  class={`quick-feedback-drawer ${isBottomSheet ? "bottom-sheet" : ""}`}
+  dismissible={!isInputFocused}
+  class={`quick-feedback-drawer ${isBottomSheet ? "bottom-sheet" : ""} ${isInputMode && isIOSPlatform ? "ios-input-mode" : ""}`}
 >
-  <div class="quick-feedback-panel" class:bottom-sheet={isBottomSheet} class:input-mode={isInputMode}
-    style={isInputMode && keyboardHeight > 0 ? `height: calc(100% - ${keyboardHeight}px)` : ''}
+  <div
+    class="quick-feedback-panel"
+    class:bottom-sheet={isBottomSheet}
+    class:input-mode={isInputMode}
+    style={isInputMode && !isIOSPlatform && keyboardHeight > 0
+      ? `height: calc(100% - ${keyboardHeight}px)`
+      : ""}
   >
     <!-- Left edge drag handle for swipe-to-dismiss -->
     <div class="swipe-edge" class:hidden={isBottomSheet} aria-hidden="true">
@@ -178,7 +198,7 @@
         </div>
         <button
           class="close-btn"
-          onclick={handleClose}
+          onclick={closePanel}
           aria-label="Close panel"
           type="button"
         >
@@ -195,14 +215,28 @@
                 type="button"
                 class="type-chip"
                 class:selected={formState.formData.type === type}
-                onmousedown={(e) => handleTypeChange(e, type as FeedbackType)}
+                onpointerdown={(e) => handleTypeChange(e, type as FeedbackType)}
                 style="--type-color: {config.color}"
               >
                 <i class="fas {config.icon}" aria-hidden="true"></i>
-                <span>{config.label.replace(" Report", "").replace(" Request", "").replace(" Feedback", "")}</span>
+                <span
+                  >{config.label
+                    .replace(" Report", "")
+                    .replace(" Request", "")
+                    .replace(" Feedback", "")}</span
+                >
               </button>
             {/each}
           </div>
+          <button
+            class="close-btn input-mode-close"
+            onpointerdown={handleInputModeClose}
+            onclick={closePanel}
+            aria-label="Close panel"
+            type="button"
+          >
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
         </header>
       {/if}
 
@@ -216,13 +250,15 @@
         </div>
       {/if}
 
-      <main class="panel-body">
+      <main class="panel-body" data-swipe-block>
         <FeedbackForm
           {formState}
           hideSuccessState={true}
           {isInputMode}
           {isTouchDevice}
-          onInputFocusChange={(focused) => { isInputFocused = focused; }}
+          onInputFocusChange={(focused) => {
+            isInputFocused = focused;
+          }}
           onKeyboardHeightChange={(height) => {
             keyboardHeight = height;
           }}
@@ -495,6 +531,16 @@
     height: 100dvh; /* Modern: accounts for iPhone browser chrome */
   }
 
+  /* iOS pans the visual viewport when its keyboard opens. Anchor the sheet to
+     the live visible rectangle instead of subtracting a second keyboard inset. */
+  :global(.quick-feedback-drawer.bottom-sheet.ios-input-mode) {
+    top: var(--viewport-offset-top, 0px);
+    bottom: auto;
+    height: var(--viewport-height, 100dvh);
+    min-height: var(--viewport-height, 100dvh);
+    max-height: var(--viewport-height, 100dvh);
+  }
+
   .quick-feedback-panel.bottom-sheet {
     flex-direction: column;
     /* Use 100% to fill drawer-inner, not viewport units which overflow past the handle */
@@ -540,6 +586,7 @@
     border-bottom: 1px solid var(--border-subtle);
     flex-shrink: 0;
     animation: fadeSlideDown 150ms ease-out;
+    gap: 8px;
   }
 
   @keyframes fadeSlideDown {
@@ -559,6 +606,11 @@
     flex-wrap: nowrap;
     justify-content: space-between;
     width: 100%;
+    min-width: 0;
+  }
+
+  .input-mode-close {
+    flex: 0 0 var(--min-touch-target);
   }
 
   .input-mode-types::-webkit-scrollbar {
@@ -583,6 +635,13 @@
     cursor: pointer;
     transition: all var(--duration-fast) ease;
     white-space: nowrap;
+  }
+
+  @container quick-feedback (max-width: 399px) {
+    .type-chip {
+      gap: 4px;
+      padding-inline: 6px;
+    }
   }
 
   .type-chip:hover {

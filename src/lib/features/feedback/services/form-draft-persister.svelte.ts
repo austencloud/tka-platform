@@ -17,6 +17,7 @@ export class FormDraftPersister {
   private _saveStatus = $state<DraftSaveStatus>("idle");
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private resetTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingDraft: FeedbackFormData | null = null;
 
   get saveStatus(): DraftSaveStatus {
     return this._saveStatus;
@@ -31,24 +32,33 @@ export class FormDraftPersister {
       formData.description.trim().length === 0 &&
       formData.title.trim().length === 0
     ) {
+      this.pendingDraft = null;
       clearFromStorage();
       this._saveStatus = "idle";
       return;
     }
+
+    // Snapshot the reactive form object. A later keystroke must not mutate the
+    // value associated with this timer behind the persister's back.
+    this.pendingDraft = { ...formData };
 
     // Set status to saving
     this._saveStatus = "saving";
 
     // Debounce save
     this.saveTimer = setTimeout(() => {
-      saveToStorage(formData);
-      this._saveStatus = "saved";
-
-      // Reset to idle after 2 seconds
-      this.resetTimer = setTimeout(() => {
-        this._saveStatus = "idle";
-      }, 2000);
+      this.saveTimer = null;
+      this.savePendingDraft();
     }, debounceMs);
+  }
+
+  /** Persist the latest keystrokes synchronously before page teardown. */
+  flushPendingSave(): void {
+    if (this.saveTimer) {
+      clearTimeout(this.saveTimer);
+      this.saveTimer = null;
+    }
+    this.savePendingDraft();
   }
 
   loadDraft(): FeedbackDraft | null {
@@ -56,6 +66,8 @@ export class FormDraftPersister {
   }
 
   clearDraft(): void {
+    this.cancelPendingSave();
+    this.pendingDraft = null;
     clearFromStorage();
     this._saveStatus = "idle";
   }
@@ -73,5 +85,19 @@ export class FormDraftPersister {
       clearTimeout(this.resetTimer);
       this.resetTimer = null;
     }
+  }
+
+  private savePendingDraft(): void {
+    const draft = this.pendingDraft;
+    if (!draft) return;
+
+    saveToStorage(draft);
+    this.pendingDraft = null;
+    this._saveStatus = "saved";
+
+    this.resetTimer = setTimeout(() => {
+      this._saveStatus = "idle";
+      this.resetTimer = null;
+    }, 2000);
   }
 }

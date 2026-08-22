@@ -26,6 +26,7 @@
     onImageRemoved,
     disabled = false,
     isInputMode = false,
+    isIOSInputMode = false,
     isVoiceRecording = false,
     audioAnalyzer,
     voiceRecorder,
@@ -51,6 +52,8 @@
     onImageRemoved?: (index: number) => void;
     disabled?: boolean;
     isInputMode?: boolean;
+    /** iOS keyboard mode uses the visual viewport and keeps this editor bounded */
+    isIOSInputMode?: boolean;
     /** Whether voice recording is active (shows waveform) */
     isVoiceRecording?: boolean;
     /** Audio analyzer for waveform visualization */
@@ -82,10 +85,15 @@
     // On mobile, scroll the textarea into view after keyboard animation
     if (isMobile && textareaElement) {
       setTimeout(() => {
-        textareaElement?.scrollIntoView({
-          behavior: prefersReducedMotion ? "auto" : "smooth",
-          block: "center",
-        });
+        // The mobile drawer's input mode already owns the visible viewport and
+        // scrolls the textarea internally. Scrolling the document as well moves
+        // the sheet under the keyboard and hides the text the user is editing.
+        if (!isInputMode) {
+          textareaElement?.scrollIntoView({
+            behavior: prefersReducedMotion ? "auto" : "smooth",
+            block: "center",
+          });
+        }
       }, 300);
     }
   }
@@ -105,7 +113,11 @@
   const charsMet = $derived(value.trim().length >= minChars);
 </script>
 
-<div class="field" class:input-mode={isInputMode}>
+<div
+  class="field"
+  class:input-mode={isInputMode}
+  class:ios-input-mode={isIOSInputMode}
+>
   <label for="fb-description" class="sr-only"
     >{t("feedback_description_label")}</label
   >
@@ -546,6 +558,15 @@
     min-height: 100px;
     max-height: 100%;
     overflow-y: auto;
+  }
+
+  /* A focused textarea that fills the whole pre-keyboard sheet makes Safari
+     pan it above the screen before visualViewport reports the keyboard. Keep a
+     useful editor height, then let the textarea itself scroll as text grows. */
+  .field.ios-input-mode .textarea-wrapper {
+    flex: 0 1 clamp(100px, 50cqi, 220px);
+    min-height: 100px;
+    max-height: 220px;
   }
 
   /* Hide action buttons in textarea during input mode - they're in the toolbar */

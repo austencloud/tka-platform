@@ -311,6 +311,10 @@ export const NotificationPreferencesDocSchema = z
     notificationPreferences: z
       .object({
         pushEnabled: z.boolean().optional(),
+        emailEnabled: z.boolean().optional(),
+        emailMessages: z.boolean().optional(),
+        emailFeedback: z.boolean().optional(),
+        emailPlatformUpdates: z.boolean().optional(),
         feedbackResolved: z.boolean().optional(),
         feedbackInProgress: z.boolean().optional(),
         feedbackNeedsInfo: z.boolean().optional(),
