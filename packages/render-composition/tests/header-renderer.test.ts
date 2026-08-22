@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import {
   calculateHeaderWordSideInset,
   renderHeader,
 } from "../src/header-renderer.js";
+import { DARK_MONOCHROME_IMAGE_COLOR } from "../src/tinted-image.js";
 import type { GlyphImageData, LOOPComponentId } from "../src/types.js";
 
 function createMockCtx() {
@@ -16,6 +17,7 @@ function createMockCtx() {
     shadowColor: "",
     shadowBlur: 0,
     shadowOffsetY: 0,
+    filter: "none",
     fillRect: vi.fn(),
     fillText: vi.fn(),
     strokeText: vi.fn(),
@@ -39,6 +41,10 @@ function createMockCtx() {
     roundRect: vi.fn(),
   } as unknown as CanvasRenderingContext2D;
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("renderHeader", () => {
   it("draws header background in dark mode", () => {
@@ -165,6 +171,58 @@ describe("renderHeader", () => {
       expect(ctx.save).not.toHaveBeenCalled();
       expect(ctx.restore).not.toHaveBeenCalled();
       expect(ctx.drawImage).toHaveBeenCalledTimes(1);
+    });
+
+    it("alpha-tints the dark G/H/I/S/T/U/V headers instead of using canvas filters", () => {
+      const scratchContexts: Array<{
+        drawImage: ReturnType<typeof vi.fn>;
+        fillRect: ReturnType<typeof vi.fn>;
+        globalCompositeOperation: string;
+        fillStyle: string;
+      }> = [];
+
+      class MockOffscreenCanvas {
+        constructor(
+          readonly width: number,
+          readonly height: number
+        ) {}
+
+        getContext() {
+          const scratchContext = {
+            drawImage: vi.fn(),
+            fillRect: vi.fn(),
+            globalCompositeOperation: "source-over",
+            fillStyle: "",
+          };
+          scratchContexts.push(scratchContext);
+          return scratchContext;
+        }
+      }
+
+      vi.stubGlobal("OffscreenCanvas", MockOffscreenCanvas);
+
+      const ctx = createMockCtx();
+      const letters = ["G", "H", "I", "S", "T", "U", "V"];
+      const glyphImages = new Map<string, GlyphImageData>(
+        letters.map((letter) => [letter, makeGlyphImage()])
+      );
+
+      renderHeader(ctx, {
+        canvasWidth: 900,
+        headerHeight: 100,
+        word: letters.join(""),
+        darkMode: true,
+        glyphImages,
+      });
+
+      expect(scratchContexts).toHaveLength(letters.length);
+      for (const scratchContext of scratchContexts) {
+        expect(scratchContext.globalCompositeOperation).toBe("source-in");
+        expect(scratchContext.fillStyle).toBe(DARK_MONOCHROME_IMAGE_COLOR);
+        expect(scratchContext.fillRect).toHaveBeenCalledOnce();
+      }
+      expect(ctx.filter).toBe("none");
+      expect(ctx.drawImage).toHaveBeenCalledTimes(letters.length);
     });
 
     it("calls roundRect for dash letters", () => {

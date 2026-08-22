@@ -28,6 +28,7 @@ import {
   type LoopInversionPeriod,
   type LoopReflectionAxis,
 } from "./loop-icons.js";
+import { drawMonochromeImage } from "./tinted-image.js";
 
 export interface HeaderOptions {
   canvasWidth: number;
@@ -198,14 +199,16 @@ function renderGlyphWord(
       baseGlyphY +
       (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
-    if (darkMode && !glyphImagesAreThemeColored) {
-      ctx.save();
-      ctx.filter = "invert(0.9)";
-    }
-    ctx.drawImage(data.image, cursorX, glyphY, glyphW, fittedGlyphHeight);
-    if (darkMode && !glyphImagesAreThemeColored) {
-      ctx.restore();
-    }
+    drawMonochromeImage(
+      ctx,
+      data.image,
+      cursorX,
+      glyphY,
+      glyphW,
+      fittedGlyphHeight,
+      darkMode,
+      glyphImagesAreThemeColored
+    );
 
     if (data.isDash) {
       const dashW = DASH_W_SVG * scale;
@@ -300,14 +303,16 @@ function renderCompressedGlyphWord(
         baseGlyphY +
         (isAlphaToken(token) ? fittedGlyphHeight * ALPHA_BASELINE_SHIFT : 0);
 
-      if (darkMode && !glyphImagesAreThemeColored) {
-        ctx.save();
-        ctx.filter = "invert(0.9)";
-      }
-      ctx.drawImage(data.image, cursorX, glyphY, glyphW, fittedGlyphHeight);
-      if (darkMode && !glyphImagesAreThemeColored) {
-        ctx.restore();
-      }
+      drawMonochromeImage(
+        ctx,
+        data.image,
+        cursorX,
+        glyphY,
+        glyphW,
+        fittedGlyphHeight,
+        darkMode,
+        glyphImagesAreThemeColored
+      );
 
       if (data.isDash) {
         const dashW = DASH_W_SVG * scale;

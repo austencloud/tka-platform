@@ -2,6 +2,11 @@
 export * from "./types.js";
 export { tokenizeGlyphWord } from "./glyph-word.js";
 export { sanitizeSvgForBitmap } from "./svg-bitmap-sanitize.js";
+export {
+  DARK_MONOCHROME_IMAGE_COLOR,
+  drawMonochromeImage,
+  drawTintedImage,
+} from "./tinted-image.js";
 export * from "./difficulty-config.js";
 export {
   drawSvgPath,
