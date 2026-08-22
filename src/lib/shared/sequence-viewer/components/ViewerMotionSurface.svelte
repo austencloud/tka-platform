@@ -5,9 +5,11 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
   import type { ViewerMotionSurfaceProps } from "./viewer-split-pane-types";
-  import RightRail from "./RightRail.svelte";
+  import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
+  import type { SceneControlLayout } from "$lib/shared/3d/domain/scene-control-layout";
   import ContactViewerRequired from "$lib/shared/3d/components/ContactViewerRequired.svelte";
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
+  import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
 
   let {
     side,
@@ -19,6 +21,7 @@
     trailSettings,
     bpm,
     onBpmChange,
+    onSaveToLibrary,
     onUnfocusPane,
     onCanvasReady,
     onPlaybackToggle,
@@ -61,9 +64,6 @@
 
   const loadViewer3DCanvas = () =>
     import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
-  const loadPerformerHub = () =>
-    import("$lib/shared/3d/components/controls/PerformerHub.svelte");
-
   let scene3DReady = $state(false);
   let pane2D: HTMLDivElement | undefined = $state();
   let pane3D: HTMLDivElement | undefined = $state();
@@ -71,6 +71,18 @@
   let rail3D: HTMLDivElement | undefined = $state();
   let previousPane = $state(selectedPane);
   let contactBoundaryReportedReady = $state(false);
+  let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
+  let sceneControlLayout = $state<SceneControlLayout>({
+    presentation: "overlay",
+    panelWidth: 520,
+    reservedWidth: 0,
+  });
+
+  function handle3DContextMenu(event: MouseEvent): void {
+    if (event.defaultPrevented || !is3DActive) return;
+    event.preventDefault();
+    saveMenuHost?.openContextMenu(event.clientX, event.clientY);
+  }
 
   // The contact boundary is an intentional ready state, not a failed scene
   // load. Reporting ready keeps shared playback from being held behind a
@@ -149,6 +161,9 @@
     class:persistent-3d={side === "left"}
     class:content-overlay={side === "right"}
     class:persistent-3d-hidden={side === "left" && !is3DActive}
+    data-scene-inspector-docked={sceneControlLayout.reservedWidth > 0 ||
+      undefined}
+    style:--scene-control-reserved-width="{sceneControlLayout.reservedWidth}px"
   >
     {#if side === "left" && is3DActive && layout.focusedPane === "animation" && !layout.isMobile && !layout.suppressCloseButton}
       <div
@@ -166,9 +181,11 @@
       </div>
     {/if}
 
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="canvas-layer canvas-3d-layer"
       style="opacity:1;pointer-events:auto;"
+      oncontextmenu={handle3DContextMenu}
     >
       {#if requiresContactViewer}
         <ContactViewerRequired compact={side === "right"} />
@@ -304,20 +321,25 @@
             ? onPlaybackModeChange
             : undefined}
           resizePaused={practiceResizePaused}
+          {onSaveToLibrary}
         />
       </div>
     {/if}
   </div>
 {/if}
 
+<VisualSequenceSaveContextMenuHost
+  bind:this={saveMenuHost}
+  {sequence}
+  {onSaveToLibrary}
+/>
+
 {#if side === "left" && is2DMounted}
   <div
     bind:this={rail2D}
     class="persistent-rail"
     class:persistent-rail-hidden={!is2DActive}
-  >
-    <RightRail renderMode="2d" />
-  </div>
+  ></div>
 {/if}
 
 {#if side === "left" && is3DMounted && !requiresContactViewer}
@@ -326,17 +348,11 @@
     class="persistent-rail"
     class:persistent-rail-hidden={!is3DActive || !scene3DReady}
   >
-    <RightRail
-      renderMode="3d"
+    <SceneControlWorkspace
       {bpm}
       onSettingChange={onViewer3DSettingChange}
       onAction={onViewer3DAction}
-    />
-    <LazyMount
-      loader={loadPerformerHub}
-      active={is3DActive}
-      debugName="3D performer controls"
-      props={{ onSettingChange: onViewer3DSettingChange }}
+      onLayoutChange={(next) => (sceneControlLayout = next)}
     />
   </div>
 {/if}

@@ -12,6 +12,7 @@ import type {
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { GridCell } from "../../../../state/arrange-grid-state.svelte";
 import type { TransformType, CellEffect } from "$lib/shared/animation-engine/domain/compose-types";
+import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
 import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
 import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
 
@@ -294,6 +295,14 @@ export function buildCellContextMenuItems(
   const items: ContextMenuEntry[] = [];
 
   if (hasLayers) {
+    const primarySequence = cell.layers[0]?.sequence;
+    if (primarySequence) {
+      items.push(
+        buildVisualSequenceSaveMenuItem(primarySequence),
+        { type: "separator" as const },
+      );
+    }
+
     items.push(
       {
         id: "transform-submenu",

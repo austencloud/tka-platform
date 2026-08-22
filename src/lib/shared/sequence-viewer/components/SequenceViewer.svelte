@@ -27,6 +27,7 @@
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
 	import { browser } from "$app/environment";
+	import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
 
 	const MEDIA_TYPE_STORAGE_KEY = "sequence-viewer-media-type";
 
@@ -51,6 +52,12 @@
 	} = $props();
 
 	let hapticService: HapticFeedback | null = null;
+	let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
+
+	function handleVideoContextMenu(event: MouseEvent): void {
+		event.preventDefault();
+		saveMenuHost?.openContextMenu(event.clientX, event.clientY);
+	}
 
 	// Check if we're in Export panel context (external control mode)
 	const animationExportContext = tryGetAnimationExportContext();
@@ -436,6 +443,7 @@
 						controls
 						playsinline
 						class="video-player"
+						oncontextmenu={handleVideoContextMenu}
 					>
 						<track kind="captions" />
 						Your browser does not support video playback.
@@ -464,6 +472,8 @@
 		{/if}
 	</div>
 </div>
+
+<VisualSequenceSaveContextMenuHost bind:this={saveMenuHost} {sequence} />
 
 <style>
 	.media-viewer {

@@ -12,6 +12,7 @@
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -88,6 +89,7 @@
 
   let hapticService: HapticFeedback;
   let thumbnailRef: PropAwareThumbnail | undefined = $state();
+  let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
 
   export function rerender(): void {
     preRenderedCleared = true;
@@ -137,9 +139,12 @@
   }
 
   function handleContextMenu(event: MouseEvent) {
-    if (!onContextMenu) return;
     event.preventDefault();
-    onContextMenu(event.clientX, event.clientY, rerender);
+    if (onContextMenu) {
+      onContextMenu(event.clientX, event.clientY, rerender);
+      return;
+    }
+    saveMenuHost?.openContextMenu(event.clientX, event.clientY);
   }
 </script>
 
@@ -183,6 +188,16 @@
     {/if}
   </div>
 </button>
+
+<VisualSequenceSaveContextMenuHost
+  bind:this={saveMenuHost}
+  {sequence}
+  intent={{
+    bluePropType: propSettings.bluePropType,
+    redPropType: propSettings.redPropType,
+    catDogModeEnabled: propSettings.catDogMode,
+  }}
+/>
 
 <style>
   /* Print-mode semantic tokens for choreo cards (light mode for paper) */

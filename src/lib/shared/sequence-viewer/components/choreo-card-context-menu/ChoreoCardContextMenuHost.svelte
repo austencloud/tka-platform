@@ -1,8 +1,8 @@
 <!--
   ChoreoCardContextMenuHost — Orchestrates the ChoreoCard right-click context menu.
-  Additive composition: "Pictograph" section (global visibility toggles — viewer
-  cards live-follow the VisibilityStateManager) + "Card" section (columns,
-  Re-render, Send to, Sticker Lab).
+  Additive composition: optional "Pictograph" section (global visibility
+  toggles for cards that live-follow the VisibilityStateManager) + "Card"
+  section (columns, Re-render, Send to, Sticker Lab).
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -11,23 +11,31 @@
     ContextMenuState,
     ContextMenuEntry,
   } from "$lib/shared/components/context-menu/context-menu-types";
-  import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
+  import {
+    composeMenu,
+    type MenuSection,
+  } from "$lib/shared/components/context-menu/compose-menu";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { buildPictographContextMenuItems } from "$lib/shared/pictograph/shared/components/context-menu/pictograph-context-menu-builder";
   import { getVisibilityStateManager } from "$lib/shared/pictograph/shared/state/visibility-state.svelte";
   import type { ExportOptionsStateManager } from "$lib/shared/animation-panel/state/export-options-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     contextMenuCloseCounts,
     instrumentContextMenuEntries,
   } from "../../services/context-menu-analytics";
 
   interface Props {
+    sequence?: SequenceData | null;
+    onSaveToLibrary?: () => void | Promise<void>;
     onRerender?: () => void;
     isExportMode?: boolean;
     exportOptions?: ExportOptionsStateManager;
     onSendTo?: () => void;
     onSendToStickerLab?: () => void;
     stepCount?: number;
+    /** False when a card deliberately fixes its glyph visibility. */
+    includePictographSection?: boolean;
     onAction?: (
       action: string,
       properties?: Record<string, string | number | boolean | null>,
@@ -36,12 +44,15 @@
   }
 
   const {
+    sequence,
+    onSaveToLibrary,
     onRerender,
     isExportMode = false,
     exportOptions,
     onSendTo,
     onSendToStickerLab,
     stepCount = 0,
+    includePictographSection = true,
     onAction,
   }: Props = $props();
 
@@ -52,6 +63,7 @@
 
   // Rebuild menu items (fresh checked states) whenever any visibility changes.
   onMount(() => {
+    if (!includePictographSection) return;
     const bump = () => {
       menuVersion++;
     };
@@ -73,8 +85,9 @@
 
   const menuItems: ContextMenuEntry[] = $derived.by(() => {
     void menuVersion;
-    return composeMenu([
-      {
+    const sections: MenuSection[] = [];
+    if (includePictographSection) {
+      sections.push({
         header: "Pictograph",
         entries: instrumentContextMenuEntries(
           buildPictographContextMenuItems({
@@ -86,39 +99,42 @@
           "pictograph",
           onAction
         ),
-      },
-      {
-        header: "Card",
-        entries: instrumentContextMenuEntries(
-          buildCardMenuSection({
-            onSendTo: onSendTo
-              ? () => {
-                  closeContextMenu("item");
-                  onSendTo();
-                }
-              : undefined,
-            onSendToStickerLab: onSendToStickerLab
-              ? () => {
-                  closeContextMenu("item");
-                  onSendToStickerLab();
-                }
-              : undefined,
-            onRerender: onRerender
-              ? () => {
-                  closeContextMenu("item");
-                  onRerender();
-                }
-              : undefined,
-            stepCount,
-            onColumnCountChange: () => {
-              menuVersion++;
-            },
-          }),
-          "card",
-          onAction
-        ),
-      },
-    ]);
+      });
+    }
+    sections.push({
+      header: "Card",
+      entries: instrumentContextMenuEntries(
+        buildCardMenuSection({
+          sequenceForLibrarySave: sequence ?? undefined,
+          onSaveToLibrary,
+          onSendTo: onSendTo
+            ? () => {
+                closeContextMenu("item");
+                onSendTo();
+              }
+            : undefined,
+          onSendToStickerLab: onSendToStickerLab
+            ? () => {
+                closeContextMenu("item");
+                onSendToStickerLab();
+              }
+            : undefined,
+          onRerender: onRerender
+            ? () => {
+                closeContextMenu("item");
+                onRerender();
+              }
+            : undefined,
+          stepCount,
+          onColumnCountChange: () => {
+            menuVersion++;
+          },
+        }),
+        "card",
+        onAction
+      ),
+    });
+    return composeMenu(sections);
   });
 
   export function openContextMenu(x: number, y: number): void {

@@ -32,6 +32,7 @@
   import DeleteConfirmDialog from "../DeleteConfirmDialog.svelte";
   import StepMapEditor from "../step-mapping/StepMapEditor.svelte";
   import VideoUploadFlow from "./VideoUploadFlow.svelte";
+  import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
 
   interface Props {
     sequence: SequenceData;
@@ -49,6 +50,7 @@
      */
     uploadRequested?: boolean;
     onSaveFirst?: () => Promise<void>;
+    onSaveToLibrary?: () => void | Promise<void>;
     onUploadOpenChange?: (open: boolean) => void;
   }
 
@@ -60,6 +62,7 @@
     canUpload = false,
     uploadRequested = false,
     onSaveFirst,
+    onSaveToLibrary,
     onUploadOpenChange,
   }: Props = $props();
 
@@ -72,6 +75,7 @@
   let isDeleting = $state(false);
   let deleteError = $state("");
   let videoAspectRatios = $state<Record<string, number>>({});
+  let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
 
   const store = $derived(getSequenceVideosStore(sequence?.id ?? ""));
 
@@ -259,9 +263,21 @@
         : null
     );
   }
+
+  function handleVideoContextMenu(event: MouseEvent): void {
+    const target = event.target as Element | null;
+    if (!target?.closest("video")) return;
+    event.preventDefault();
+    saveMenuHost?.openContextMenu(event.clientX, event.clientY);
+  }
 </script>
 
-<div class="sequence-videos" in:fade={{ duration: 200 }}>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="sequence-videos"
+  in:fade={{ duration: 200 }}
+  oncontextmenu={handleVideoContextMenu}
+>
   {#if view === "upload"}
     <VideoUploadFlow
       {sequence}
@@ -486,6 +502,12 @@
       }}
     />
   {/if}
+
+  <VisualSequenceSaveContextMenuHost
+    bind:this={saveMenuHost}
+    {sequence}
+    {onSaveToLibrary}
+  />
 </div>
 
 <style>

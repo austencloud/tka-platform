@@ -38,6 +38,28 @@ describe("buildCardMenuSection", () => {
     expect(ids(entries)).toEqual(["rerender", "send-to", "send-to-sticker-lab"]);
   });
 
+  it("puts the universal library action first when a card has a sequence", () => {
+    const entries = buildCardMenuSection({
+      sequenceForLibrarySave: SEQ,
+      onRerender: () => {},
+    });
+    expect(ids(entries)).toEqual(["save-to-library", "rerender"]);
+  });
+
+  it("delegates viewer-owned saves to the host state owner", async () => {
+    const onSaveToLibrary = vi.fn();
+    const entries = buildCardMenuSection({
+      sequenceForLibrarySave: SEQ,
+      onSaveToLibrary,
+    });
+    const save = entries[0];
+    if (!(save && "action" in save)) throw new Error("save action missing");
+
+    await save.action?.();
+
+    expect(onSaveToLibrary).toHaveBeenCalledOnce();
+  });
+
   it("columns submenu appears for stepCount >= 4 with Auto + even choices", () => {
     const entries = buildCardMenuSection({ stepCount: 8, onRerender: () => {} });
     expect(ids(entries)).toEqual(["columns-submenu", "rerender"]);

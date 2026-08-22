@@ -9,6 +9,9 @@
     ContextMenuState,
     ContextMenuEntry,
   } from "$lib/shared/components/context-menu/context-menu-types";
+  import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
+  import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { buildCanvasContextMenuItems } from "./canvas-context-menu-builder";
   import {
     getAnimationVisibilityManager,
@@ -17,6 +20,11 @@
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   interface Props {
+    sequence?: SequenceData | null;
+    bluePropType?: string | null;
+    redPropType?: string | null;
+    showSettings?: boolean;
+    onSaveToLibrary?: () => void | Promise<void>;
     disassembled?: boolean;
     onToggleDisassemble?: () => void;
     captureEffectDiagnostics?: () => Record<string, unknown>;
@@ -29,6 +37,11 @@
   }
 
   const {
+    sequence,
+    bluePropType,
+    redPropType,
+    showSettings = true,
+    onSaveToLibrary,
     disassembled = false,
     onToggleDisassemble,
     captureEffectDiagnostics,
@@ -78,18 +91,39 @@
     // Touch menuItemsVersion to re-derive when visibility settings change
     void menuItemsVersion;
 
-    return [
-      ...extraItems,
-      ...buildCanvasContextMenuItems({
-        visibilityManager,
-        effectsConfigState,
-        disassembled,
-        onToggleDisassemble,
-        captureEffectDiagnostics,
-        viewer3DState,
-        onToggle3DView,
-      }),
-    ];
+    return composeMenu([
+      {
+        entries: [
+          ...(sequence
+            ? [
+                buildVisualSequenceSaveMenuItem(
+                  sequence,
+                  {
+                    bluePropType,
+                    redPropType,
+                    pathShape: visibilityManager.getPathShape(),
+                  },
+                  onSaveToLibrary
+                ),
+              ]
+            : []),
+          ...extraItems,
+        ],
+      },
+      {
+        entries: showSettings
+          ? buildCanvasContextMenuItems({
+              visibilityManager,
+              effectsConfigState,
+              disassembled,
+              onToggleDisassemble,
+              captureEffectDiagnostics,
+              viewer3DState,
+              onToggle3DView,
+            })
+          : [],
+      },
+    ]);
   });
 
   export function openContextMenu(x: number, y: number): void {

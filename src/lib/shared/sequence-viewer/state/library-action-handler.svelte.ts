@@ -3,23 +3,16 @@ import {
   toggleFavorite as doToggleFavorite,
 } from "$lib/shared/library/services/collection-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-import { getLibrarySaveService } from "$lib/features/library/get-library-save-service";
+import { getVisualSequenceSaveCoordinator } from "$lib/shared/library/get-visual-sequence-save-coordinator";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
-import { LibraryError } from "$lib/shared/library/domain/library-error";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
-import {
-  removeToast,
-  showToast,
-} from "$lib/shared/toast/state/toast-state.svelte";
-import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-import { postSaveActivation } from "$lib/shared/onboarding/state/post-save-activation-state.svelte";
 
 export interface LibraryActionHandlerDeps {
   getSequence: () => SequenceData | null;
@@ -141,90 +134,23 @@ export function createLibraryActionHandler(deps: LibraryActionHandlerDeps) {
 
     savedStateRevision += 1;
     isSaving = true;
-    const pendingToastId = showToast({
-      message: "Saving to library…",
-      type: "info",
-      duration: 0,
-      announcement: "polite",
-    });
 
     try {
-      await ensureGuestIdentity();
-      const currentPathShape = getAnimationVisibilityManager().getPathShape();
-      const pathShapeMetadata =
-        currentPathShape !== "arc"
-          ? { ...sequence.metadata, pathShape: currentPathShape }
-          : sequence.metadata;
-      const bluePropType = deps.getBluePropType() ?? PropType.STAFF;
-      const redPropType = deps.getRedPropType() ?? PropType.STAFF;
-      const catDogMode = deps.getCatDogModeEnabled() ?? false;
-      const sequenceWithIntent = createSequenceData({
-        ...sequence,
-        metadata: pathShapeMetadata,
-        creatorIntent: {
-          propConfig: {
-            bluePropType,
-            redPropType,
-            catDogMode,
-          },
-          ...(sequence?.creatorIntent?.effortTimeline && {
-            effortTimeline: sequence.creatorIntent.effortTimeline,
-          }),
-          ...(sequence?.effortTimeline && {
-            effortTimeline: sequence.effortTimeline,
-          }),
-        },
-        intendedProp: {
-          bluePropType,
-          redPropType,
-          catDogMode,
-        },
+      const coordinator = await getVisualSequenceSaveCoordinator();
+      const outcome = await coordinator.save(sequence, {
+        bluePropType: deps.getBluePropType(),
+        redPropType: deps.getRedPropType(),
+        catDogModeEnabled: deps.getCatDogModeEnabled(),
+        pathShape: getAnimationVisibilityManager().getPathShape(),
       });
-      const name =
-        sequenceWithIntent.word ||
-        sequenceWithIntent.steps
-          ?.map((step) => step?.letter || "")
-          .filter(Boolean)
-          .join("") ||
-        "";
-      const result = await getLibrarySaveService().saveSequence(
-        sequenceWithIntent,
-        {
-          name,
-          visibility: "public",
-          tags: [],
-          notes: "",
-        }
-      );
+      if (outcome.status === "failed") return;
+
       isSaved = true;
-      isOwnedLibraryRecord =
-        result.persisted && result.sequenceId === sequence.id;
-      const contentHash = (sequenceWithIntent as LibrarySequence).contentHash;
-      if (contentHash) savedHashCache.set(contentHash, true);
-      removeToast(pendingToastId, "programmatic");
-      showToast("Saved to library", "success");
-
-      // SP3 Part B: viewer save has no panel to close first (unlike the
-      // Create Save panel), so fire straight from the result — this is the
-      // root-level "no panel" case the design doc calls out.
-      if (result.persisted) {
-        postSaveActivation.onGuestSaveSucceeded(result.sequenceId);
+      savedHashCache.set(outcome.contentHash, true);
+      if (outcome.status === "saved") {
+        isOwnedLibraryRecord =
+          outcome.result.persisted && outcome.result.sequenceId === sequence.id;
       }
-    } catch (error) {
-      removeToast(pendingToastId, "programmatic");
-      if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
-        isSaved = true;
-        void computeHash(sequence)
-          .then((hash) => savedHashCache.set(hash, true))
-          .catch(() => {});
-        showToast("Already in library", "info");
-        return;
-      }
-
-      console.error("Failed to save sequence:", error);
-      const msg =
-        error instanceof Error ? error.message : "Failed to save sequence";
-      showToast(msg, "error");
     } finally {
       isSaving = false;
     }

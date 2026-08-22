@@ -1,4 +1,5 @@
 import { registerPublicIndexSyncerFactory } from "../library/get-library-repository";
+import { registerVisualSequenceSaveCoordinatorFactory } from "../library/get-visual-sequence-save-coordinator";
 import { createLazyPublicIndexSyncer } from "../library/services/create-lazy-public-index-syncer";
 
 /**
@@ -16,4 +17,10 @@ export function registerLibraryRepository(): void {
       return getPublicIndexSyncer();
     })
   );
+
+  registerVisualSequenceSaveCoordinatorFactory(async () => {
+    const { getVisualSequenceSaveCoordinator } =
+      await import("$lib/features/library/get-visual-sequence-save-coordinator");
+    return getVisualSequenceSaveCoordinator();
+  });
 }

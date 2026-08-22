@@ -18,6 +18,7 @@ import type {
 } from "$lib/shared/components/context-menu/context-menu-types";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+import { buildVisualSequenceSaveMenuItem } from "$lib/shared/library/services/visual-sequence-save-menu-item";
 
 export interface CardMenuSectionDeps {
   /** Step count of the sequence — enables the columns submenu (>=4 steps). */
@@ -27,6 +28,9 @@ export interface CardMenuSectionDeps {
   onRerender?: () => void;
   onSendTo?: () => void;
   onSendToStickerLab?: () => void;
+  onSaveToLibrary?: () => void | Promise<void>;
+  /** The sequence represented by this card, enabling the canonical library action. */
+  sequenceForLibrarySave?: SequenceData;
   /** Admin image actions (Save/Copy/Copy for Claude) target this sequence. */
   sequenceForImageActions?: SequenceData;
   /** Gate for the image actions — they render only when this is true. */
@@ -35,6 +39,16 @@ export interface CardMenuSectionDeps {
 
 export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntry[] {
   const items: ContextMenuEntry[] = [];
+
+  if (deps.sequenceForLibrarySave) {
+    items.push(
+      buildVisualSequenceSaveMenuItem(
+        deps.sequenceForLibrarySave,
+        {},
+        deps.onSaveToLibrary
+      )
+    );
+  }
 
   // Columns submenu (only for 4+ steps)
   if (deps.stepCount && deps.stepCount >= 4) {

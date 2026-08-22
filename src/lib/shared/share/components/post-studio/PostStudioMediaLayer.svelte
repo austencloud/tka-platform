@@ -13,6 +13,7 @@
     calculateMediaFit,
     resolvePanOffset,
   } from "$lib/shared/media-composition/services/media-fit";
+  import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
 
   interface Props {
     binding: CompositionSourceBinding;
@@ -43,6 +44,7 @@
   }: Props = $props();
   const composition = getMediaCompositionContext();
   let video = $state<HTMLVideoElement | null>(null);
+  let saveMenuHost: VisualSequenceSaveContextMenuHost | undefined = $state();
 
   /**
    * Pan is resolved here rather than expressed as a percentage of the layer,
@@ -104,6 +106,12 @@
     sourceHeight = image.naturalHeight;
   }
 
+  function handleContextMenu(event: MouseEvent): void {
+    if (event.defaultPrevented) return;
+    event.preventDefault();
+    saveMenuHost?.openContextMenu(event.clientX, event.clientY);
+  }
+
   $effect(() => {
     sourceTimeSeconds;
     playing;
@@ -117,6 +125,7 @@
   });
 </script>
 
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="media-layer"
   bind:clientWidth={boxWidth}
@@ -126,6 +135,7 @@
   data-clip-id={clipId}
   data-source-role={binding.roleKey}
   data-render-mode={binding.renderMode ?? "external-media"}
+  oncontextmenu={handleContextMenu}
 >
   {#if binding.renderMode === "sequence-animation" && sequencePosition !== undefined}
     <PostStudioSequenceAnimationLayer
@@ -183,6 +193,8 @@
     />
   {/if}
 </div>
+
+<VisualSequenceSaveContextMenuHost bind:this={saveMenuHost} {sequence} />
 
 <style>
   /* The layer used to be pointer-transparent so the slot button underneath got

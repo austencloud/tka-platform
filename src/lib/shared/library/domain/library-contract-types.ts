@@ -70,6 +70,15 @@ export interface SaveToLibraryOptions {
   tags: string[];
   /** Optional notes */
   notes: string;
+  /** UI path that initiated the save, for lifecycle funnel breakdowns. */
+  analyticsSource?:
+    | "create_save_panel"
+    | "viewer"
+    | "share_intake"
+    | "scan_import"
+    | "video_record"
+    | "retro"
+    | "fuse";
 }
 
 export interface SaveProgress {

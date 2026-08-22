@@ -1,0 +1,122 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { LibraryError } from "$lib/shared/library/domain/library-error";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+const { computeHash, showToast, removeToast, onGuestSaveSucceeded } =
+  vi.hoisted(() => ({
+    computeHash: vi.fn(async () => "content-hash"),
+    showToast: vi.fn(() => "toast-id"),
+    removeToast: vi.fn(),
+    onGuestSaveSucceeded: vi.fn(),
+  }));
+
+vi.mock("$lib/shared/library/services/sequence-content-hasher", () => ({
+  computeHash,
+}));
+
+vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
+  showToast,
+  removeToast,
+}));
+
+vi.mock(
+  "$lib/shared/onboarding/state/post-save-activation-state.svelte",
+  () => ({
+    postSaveActivation: { onGuestSaveSucceeded },
+  })
+);
+
+import { VisualSequenceSaveCoordinator } from "$lib/features/library/services/implementations/VisualSequenceSaveCoordinator";
+
+const SEQUENCE = {
+  id: "seq-1",
+  name: "AB",
+  word: "AB",
+  steps: [{ letter: "A" }, { letter: "B" }],
+  thumbnails: [],
+  isFavorite: false,
+  isCircular: false,
+  tags: [],
+  metadata: {},
+} as unknown as SequenceData;
+
+beforeEach(() => {
+  computeHash.mockClear();
+  showToast.mockClear();
+  removeToast.mockClear();
+  onGuestSaveSucceeded.mockClear();
+});
+
+describe("VisualSequenceSaveCoordinator", () => {
+  it("saves the sequence with the presentation visible at the click site", async () => {
+    const saveSequence = vi.fn().mockResolvedValue({
+      sequenceId: "seq-1",
+      persisted: true,
+      isGuest: false,
+    });
+    const coordinator = new VisualSequenceSaveCoordinator({ saveSequence });
+
+    const outcome = await coordinator.save(SEQUENCE, {
+      bluePropType: PropType.POI,
+      redPropType: PropType.FAN,
+      catDogModeEnabled: true,
+      pathShape: "concave",
+    });
+
+    expect(outcome.status).toBe("saved");
+    const saved = saveSequence.mock.calls[0]![0] as SequenceData;
+    expect(saved.intendedProp).toEqual({
+      bluePropType: PropType.POI,
+      redPropType: PropType.FAN,
+      catDogMode: true,
+    });
+    expect(saved.creatorIntent?.propConfig).toEqual(saved.intendedProp);
+    expect(saved.metadata?.pathShape).toBe("concave");
+    expect(saveSequence.mock.calls[0]![1]).toMatchObject({
+      name: "AB",
+      visibility: "public",
+    });
+    expect(onGuestSaveSucceeded).toHaveBeenCalledWith("seq-1");
+  });
+
+  it("shares one persistence operation across concurrent clicks", async () => {
+    let finish!: (value: {
+      sequenceId: string;
+      persisted: boolean;
+      isGuest: boolean;
+    }) => void;
+    const pending = new Promise<{
+      sequenceId: string;
+      persisted: boolean;
+      isGuest: boolean;
+    }>((resolve) => {
+      finish = resolve;
+    });
+    const saveSequence = vi.fn(() => pending);
+    const coordinator = new VisualSequenceSaveCoordinator({ saveSequence });
+
+    const first = coordinator.save(SEQUENCE);
+    const second = coordinator.save(SEQUENCE);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(saveSequence).toHaveBeenCalledTimes(1);
+
+    finish({ sequenceId: "seq-1", persisted: true, isGuest: false });
+    expect(await first).toEqual(await second);
+  });
+
+  it("reports an existing library match without treating it as a failure", async () => {
+    const saveSequence = vi
+      .fn()
+      .mockRejectedValue(
+        new LibraryError("Already saved", "ALREADY_EXISTS", "seq-1")
+      );
+    const coordinator = new VisualSequenceSaveCoordinator({ saveSequence });
+
+    const outcome = await coordinator.save(SEQUENCE);
+
+    expect(outcome.status).toBe("already-saved");
+    expect(showToast).toHaveBeenCalledWith("Already in library", "info");
+  });
+});
