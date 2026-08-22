@@ -3,26 +3,29 @@ export type StickerBackground = "transparent" | "white" | "radial-gradient";
 export type StickerSize = "3in-round"; // versioned string; Phase 2 may add "2in-round", "5in-round"
 export type StickerPresentation = "pure"; // Phase 1 only value; Phase 2 may add "word-label", "qr"
 export type SheetSize = "8.5x11" | "13x19";
+export type PrimitiveIdentityKind = "sequence-proxy-v1" | "geometry-v1";
 
 /** Reference to a LOOP sequence - used as a back-link annotation only. */
 export interface LoopRef {
   readonly sequenceId: string;
-  readonly word: string;      // denormalized for display
-  readonly loopType: string;  // e.g. "rotated-loop", "mirrored-loop"
+  readonly word: string; // denormalized for display
+  readonly loopType: string; // e.g. "rotated-loop", "mirrored-loop"
 }
 
 /**
  * Stable content-addressed reference to a mandala primitive shape.
- *
- * Stage A: shapeHash and ultraHash are set to the canonical representative's
- * sequenceId (a proxy hash). Stage B will replace these with geometric SHA-256
- * hashes derived from MandalaCanonicalizer.
+ * Geometric identity answers "is this the same shape?" while the representative
+ * sequence answers "where can the app reload the paths after a refresh?"
  */
 export interface MandalaPrimitiveRef {
-  /** Hash identifying the shape tier. Stage A: sequenceId proxy. Stage B: geometric SHA-256. */
+  /** Exact, color-blind geometric shape identity. */
   readonly shapeHash: string;
-  /** Hash identifying the ultra-equivalence class. Stage A: same as shapeHash. */
+  /** Rotation/reflection-invariant geometric identity. */
   readonly ultraHash: string;
+  /** How shapeHash and ultraHash were produced. Legacy sheets upgrade lazily. */
+  readonly identityKind: PrimitiveIdentityKind;
+  /** Sequence used only to reconstruct paths after the in-memory cache is gone. */
+  readonly representativeSequenceId: string;
   /**
    * Optional back-link to the canonical source LOOP.
    * Present in Stage A catalog; null for future chimera / synthetic primitives.
@@ -68,7 +71,9 @@ export interface CreateStickerUnitInput {
   copies?: number;
 }
 
-export function createDefaultStickerUnit(input: CreateStickerUnitInput): StickerUnit {
+export function createDefaultStickerUnit(
+  input: CreateStickerUnitInput
+): StickerUnit {
   return {
     id: generateId("sticker"),
     primitiveRef: input.primitiveRef,

@@ -18,17 +18,21 @@
 
   // Expand sticker copies into a flat list for layout.
   const flattened = $derived(
-    stickerState.sheet.stickers.flatMap((s) => Array.from({ length: s.copies }, () => s))
+    stickerState.sheet.stickers.flatMap((s) =>
+      Array.from({ length: s.copies }, () => s)
+    )
   );
 
   const layout = $derived.by(() => {
-    const { width: sw, height: sh } = SHEET_DIMENSIONS_IN[stickerState.sheet.sheetSize];
+    const { width: sw, height: sh } =
+      SHEET_DIMENSIONS_IN[stickerState.sheet.sheetSize];
     const diameter = 3;
     const pitch = diameter + STICKER_GAP_IN;
     const cols = Math.floor((sw + STICKER_GAP_IN) / pitch);
     const rows = Math.floor((sh + STICKER_GAP_IN) / pitch);
     const perPage = cols * rows;
-    const pages = perPage > 0 ? Math.max(1, Math.ceil(flattened.length / perPage)) : 1;
+    const pages =
+      perPage > 0 ? Math.max(1, Math.ceil(flattened.length / perPage)) : 1;
     return { sheetWidthIn: sw, sheetHeightIn: sh, cols, rows, perPage, pages };
   });
 
@@ -42,25 +46,50 @@
   // as soon as paths resolve.
   $effect(() => {
     for (const sticker of stickerState.sheet.stickers) {
-      void loadPrimitivePaths(sticker.primitiveRef.shapeHash);
+      void loadPrimitivePaths(sticker.primitiveRef);
     }
   });
 
   const pageStickers = $derived(
-    flattened.slice(activePage * layout.perPage, (activePage + 1) * layout.perPage)
+    flattened.slice(
+      activePage * layout.perPage,
+      (activePage + 1) * layout.perPage
+    )
   );
 </script>
 
 <div class="preview">
   <div class="toolbar">
-    <button class="toggle-btn" aria-pressed={showCutLines} onclick={() => showCutLines = !showCutLines}>Cut lines</button>
-    <button class="toggle-btn" aria-pressed={showBleed} onclick={() => showBleed = !showBleed}>Bleed</button>
-    <span class="count">{flattened.length} stickers across {layout.pages} sheet{layout.pages === 1 ? "" : "s"}</span>
+    <button
+      class="toggle-btn"
+      aria-pressed={showCutLines}
+      onclick={() => (showCutLines = !showCutLines)}>Cut lines</button
+    >
+    <button
+      class="toggle-btn"
+      aria-pressed={showBleed}
+      onclick={() => (showBleed = !showBleed)}>Bleed</button
+    >
+    <span class="count"
+      >{flattened.length} stickers across {layout.pages} sheet{layout.pages ===
+      1
+        ? ""
+        : "s"}</span
+    >
     {#if layout.pages > 1}
       <nav class="pager" aria-label="Sheet pages">
-        <button onclick={() => (activePage = Math.max(0, activePage - 1))} disabled={activePage === 0} aria-label="Previous sheet">‹</button>
+        <button
+          onclick={() => (activePage = Math.max(0, activePage - 1))}
+          disabled={activePage === 0}
+          aria-label="Previous sheet">‹</button
+        >
         <span>Sheet {activePage + 1} of {layout.pages}</span>
-        <button onclick={() => (activePage = Math.min(layout.pages - 1, activePage + 1))} disabled={activePage >= layout.pages - 1} aria-label="Next sheet">›</button>
+        <button
+          onclick={() =>
+            (activePage = Math.min(layout.pages - 1, activePage + 1))}
+          disabled={activePage >= layout.pages - 1}
+          aria-label="Next sheet">›</button
+        >
       </nav>
     {/if}
   </div>
@@ -83,7 +112,10 @@
             <!-- Inline SVG rendering. The SVG already includes its own bleed padding. -->
             {@html renderStickerUnitSVG(sticker, paths)}
           {:else}
-            <div class="missing">No paths for {sticker.primitiveRef.displayName ?? sticker.primitiveRef.shapeHash.slice(0, 8)}</div>
+            <div class="missing">
+              No paths for {sticker.primitiveRef.displayName ??
+                sticker.primitiveRef.shapeHash.slice(0, 8)}
+            </div>
           {/if}
         </div>
       {/each}
@@ -117,7 +149,9 @@
     color: var(--theme-text, white);
     cursor: pointer;
     font-size: var(--font-size-sm);
-    transition: background var(--duration-fast), border-color var(--duration-fast);
+    transition:
+      background var(--duration-fast),
+      border-color var(--duration-fast);
   }
   .toolbar .toggle-btn[aria-pressed="true"] {
     background: rgba(255, 255, 255, 0.15);

@@ -8,6 +8,8 @@ import {
 const testRef: MandalaPrimitiveRef = {
   shapeHash: "shape-abc",
   ultraHash: "shape-abc",
+  identityKind: "geometry-v1",
+  representativeSequenceId: "sequence-abc",
   displayName: "Alpha",
 };
 

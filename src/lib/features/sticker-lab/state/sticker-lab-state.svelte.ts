@@ -5,16 +5,16 @@ import type {
   StickerVariant,
   SheetSize,
 } from "../domain/sticker-types";
-import {
-  createDefaultStickerSheet,
-  createDefaultStickerUnit,
-} from "../domain/sticker-types";
+import { createDefaultStickerSheet } from "../domain/sticker-types";
 import { MAX_COPIES_PER_STICKER } from "../domain/sticker-constants";
-import { LocalStickerSheetRepository } from "../services/local-sticker-sheet-repository";
+import { addPrimitiveToSheet } from "../domain/sticker-sheet-mutations";
+import type { IStickerPrimitiveMigrator } from "../services/contracts/IStickerPrimitiveMigrator";
+import type { IStickerSheetRepository } from "../services/contracts/IStickerSheetRepository";
 
 export interface StickerLabState {
   readonly sheet: StickerSheet;
   addPrimitive(ref: MandalaPrimitiveRef): void;
+  migrateLegacyPrimitiveIdentities(): Promise<void>;
   setVariant(stickerId: string, variant: StickerVariant): void;
   setBackground(stickerId: string, background: StickerBackground): void;
   setCopies(stickerId: string, copies: number): void;
@@ -24,9 +24,12 @@ export interface StickerLabState {
 }
 
 export function createStickerLabState(
-  repository: LocalStickerSheetRepository = new LocalStickerSheetRepository()
+  repository: IStickerSheetRepository,
+  primitiveMigrator: IStickerPrimitiveMigrator
 ): StickerLabState {
-  let sheet = $state<StickerSheet>(repository.load() ?? createDefaultStickerSheet());
+  let sheet = $state<StickerSheet>(
+    repository.load() ?? createDefaultStickerSheet()
+  );
 
   function mutate(updater: (s: StickerSheet) => StickerSheet): void {
     sheet = { ...updater(sheet), updatedAt: Date.now() };
@@ -39,44 +42,65 @@ export function createStickerLabState(
     },
 
     addPrimitive(ref: MandalaPrimitiveRef): void {
-      // Deduplicate by shapeHash - one shape tile per sheet entry.
-      const existing = sheet.stickers.find(
-        (s) => s.primitiveRef.shapeHash === ref.shapeHash
+      sheet = addPrimitiveToSheet(sheet, ref);
+      repository.save(sheet);
+    },
+
+    async migrateLegacyPrimitiveIdentities(): Promise<void> {
+      const legacyStickers = sheet.stickers.filter(
+        (sticker) => sticker.primitiveRef.identityKind === "sequence-proxy-v1"
       );
-      if (existing) {
-        // Increment copies on existing entry rather than adding a duplicate unit.
-        const clamped = Math.min(MAX_COPIES_PER_STICKER, existing.copies + 1);
-        mutate((s) => ({
-          ...s,
-          stickers: s.stickers.map((x) =>
-            x.id === existing.id ? { ...x, copies: clamped } : x
-          ),
-        }));
-        return;
+      for (const sticker of legacyStickers) {
+        try {
+          const resolved = await primitiveMigrator.resolveGeometryIdentity(
+            sticker.primitiveRef
+          );
+          if (!resolved || resolved.identityKind !== "geometry-v1") continue;
+          mutate((current) => ({
+            ...current,
+            stickers: current.stickers.map((candidate) =>
+              candidate.id === sticker.id
+                ? { ...candidate, primitiveRef: resolved }
+                : candidate
+            ),
+          }));
+        } catch (error) {
+          // A legacy sticker still renders through its representative sequence.
+          // Keep the saved reference intact so a temporary catalog failure never
+          // turns into destructive migration.
+          console.warn(`[sticker-lab] couldn't upgrade ${sticker.id}:`, error);
+        }
       }
-      const unit = createDefaultStickerUnit({ primitiveRef: ref });
-      mutate((s) => ({ ...s, stickers: [...s.stickers, unit] }));
     },
 
     setVariant(stickerId: string, variant: StickerVariant): void {
       mutate((s) => ({
         ...s,
-        stickers: s.stickers.map((x) => (x.id === stickerId ? { ...x, variant } : x)),
+        stickers: s.stickers.map((x) =>
+          x.id === stickerId ? { ...x, variant } : x
+        ),
       }));
     },
 
     setBackground(stickerId: string, background: StickerBackground): void {
       mutate((s) => ({
         ...s,
-        stickers: s.stickers.map((x) => (x.id === stickerId ? { ...x, background } : x)),
+        stickers: s.stickers.map((x) =>
+          x.id === stickerId ? { ...x, background } : x
+        ),
       }));
     },
 
     setCopies(stickerId: string, copies: number): void {
-      const clamped = Math.max(1, Math.min(MAX_COPIES_PER_STICKER, Math.floor(copies)));
+      const clamped = Math.max(
+        1,
+        Math.min(MAX_COPIES_PER_STICKER, Math.floor(copies))
+      );
       mutate((s) => ({
         ...s,
-        stickers: s.stickers.map((x) => (x.id === stickerId ? { ...x, copies: clamped } : x)),
+        stickers: s.stickers.map((x) =>
+          x.id === stickerId ? { ...x, copies: clamped } : x
+        ),
       }));
     },
 

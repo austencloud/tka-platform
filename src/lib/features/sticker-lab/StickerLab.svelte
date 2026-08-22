@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { createStickerLabState } from "./state/sticker-lab-state.svelte";
   import { setStickerLabContext } from "./context/sticker-lab-context";
   import StickerList from "./components/StickerList.svelte";
@@ -6,9 +7,18 @@
   import StickerExportPanel from "./components/StickerExportPanel.svelte";
   import ShapeBrowser from "./components/ShapeBrowser.svelte";
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import { getStickerSheetRepository } from "./get-sticker-sheet-repository";
+  import { getStickerPrimitiveMigrator } from "./get-sticker-primitive-migrator";
 
-  const labState = createStickerLabState();
+  const labState = createStickerLabState(
+    getStickerSheetRepository(),
+    getStickerPrimitiveMigrator()
+  );
   setStickerLabContext(labState);
+
+  onMount(() => {
+    void labState.migrateLegacyPrimitiveIdentities();
+  });
 
   type ViewMode = "shapes" | "sheet";
   let viewMode: ViewMode = $state<ViewMode>("shapes");
@@ -16,7 +26,10 @@
 </script>
 
 <div class="sticker-lab">
-  <section class="col col-main" aria-label={viewMode === "shapes" ? "Shape browser" : "Sheet preview"}>
+  <section
+    class="col col-main"
+    aria-label={viewMode === "shapes" ? "Shape browser" : "Sheet preview"}
+  >
     <header>
       <div class="view-toggle">
         <button
@@ -44,7 +57,10 @@
 
   <section class="col col-list" aria-label="Sticker list">
     <header><h2>Stickers</h2></header>
-    <StickerList onExportClick={() => (exportDrawerOpen = true)} onBrowseClick={() => (viewMode = "shapes")} />
+    <StickerList
+      onExportClick={() => (exportDrawerOpen = true)}
+      onBrowseClick={() => (viewMode = "shapes")}
+    />
   </section>
 </div>
 
@@ -77,27 +93,39 @@
 <style>
   .sticker-lab {
     display: grid;
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: minmax(0, 1fr) clamp(18rem, 22vw, 26rem);
     gap: var(--spacing-md);
     height: 100%;
     padding: var(--spacing-md);
     box-sizing: border-box;
   }
 
-  @media (max-width: 640px) {
+  @media (max-width: 56rem) and (min-height: 45rem), (max-width: 40rem) {
     .sticker-lab {
       grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: minmax(0, 1fr) auto;
     }
     .col-list {
-      max-height: 200px;
+      max-height: 16rem;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .sticker-lab {
+      grid-template-rows: minmax(40rem, auto) auto;
+      align-content: start;
+      overflow-y: auto;
+    }
+
+    .col-main {
+      min-height: 40rem;
     }
   }
 
   .col {
     display: flex;
     flex-direction: column;
-    background: var(--theme-surface, rgba(255, 255, 255, 0.04));
+    background: var(--theme-panel-bg, rgba(255, 255, 255, 0.04));
     border-radius: var(--radius-2026-sm);
     padding: var(--spacing-md);
     overflow: hidden;
@@ -124,6 +152,7 @@
   /* View toggle */
   .view-toggle {
     display: flex;
+    width: fit-content;
     gap: 1px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
@@ -131,7 +160,8 @@
   }
 
   .view-toggle button {
-    flex: 1;
+    flex: 0 0 auto;
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -141,7 +171,7 @@
     border-radius: 6px;
     background: transparent;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: 0.72rem;
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -150,6 +180,16 @@
     background: rgba(168, 85, 246, 0.2);
     color: var(--theme-text, white);
     box-shadow: 0 1px 4px rgba(168, 85, 246, 0.15);
+  }
+
+  @media (max-width: 40rem) {
+    .view-toggle {
+      width: 100%;
+    }
+
+    .view-toggle button {
+      flex: 1;
+    }
   }
 
   :global(.drawer-content.sticker-export-drawer[data-placement="right"]) {

@@ -24,6 +24,8 @@ function mockLocalStorage(): Storage {
 const testRef: MandalaPrimitiveRef = {
   shapeHash: "shape-abc",
   ultraHash: "shape-abc",
+  identityKind: "geometry-v1",
+  representativeSequenceId: "sequence-abc",
   displayName: "Alpha",
 };
 
@@ -40,7 +42,7 @@ describe("LocalStickerSheetRepository", () => {
     expect(repo.load()).toBeNull();
   });
 
-  it("save then load returns the same sheet with v2 stickers intact", () => {
+  it("save then load returns the same sheet with v3 stickers intact", () => {
     const sheet = {
       ...createDefaultStickerSheet(),
       stickers: [createDefaultStickerUnit({ primitiveRef: testRef })],
@@ -72,7 +74,7 @@ describe("LocalStickerSheetRepository", () => {
     expect(repo.load()).toBeNull();
   });
 
-  it("migrates a v1 sheet to v2 — sticker gets primitiveRef with sequenceId proxy", () => {
+  it("migrates a v1 sheet to v3 and marks its sequence proxy for lazy upgrade", () => {
     const v1Sheet = {
       id: "s1",
       name: "Old",
@@ -80,7 +82,11 @@ describe("LocalStickerSheetRepository", () => {
       stickers: [
         {
           id: "st1",
-          sourceLoop: { sequenceId: "seq-xyz", word: "ALPHA", loopType: "rotated-loop" },
+          sourceLoop: {
+            sequenceId: "seq-xyz",
+            word: "ALPHA",
+            loopType: "rotated-loop",
+          },
           variant: "full",
           size: "3in-round",
           background: "transparent",
@@ -91,7 +97,10 @@ describe("LocalStickerSheetRepository", () => {
       createdAt: 1000,
       updatedAt: 1000,
     };
-    storage.setItem(STORAGE_KEY_ACTIVE_SHEET, JSON.stringify({ version: 1, sheet: v1Sheet }));
+    storage.setItem(
+      STORAGE_KEY_ACTIVE_SHEET,
+      JSON.stringify({ version: 1, sheet: v1Sheet })
+    );
 
     const loaded = repo.load();
     expect(loaded).not.toBeNull();
@@ -99,6 +108,8 @@ describe("LocalStickerSheetRepository", () => {
     const sticker = loaded!.stickers[0]!;
     expect(sticker.primitiveRef.shapeHash).toBe("seq-xyz");
     expect(sticker.primitiveRef.ultraHash).toBe("seq-xyz");
+    expect(sticker.primitiveRef.identityKind).toBe("sequence-proxy-v1");
+    expect(sticker.primitiveRef.representativeSequenceId).toBe("seq-xyz");
     expect(sticker.primitiveRef.displayName).toBe("ALPHA");
     expect(sticker.copies).toBe(2);
     // deprecated back-link preserved for audit trail
@@ -124,11 +135,19 @@ describe("LocalStickerSheetRepository", () => {
       createdAt: 1000,
       updatedAt: 1000,
     };
-    storage.setItem(STORAGE_KEY_ACTIVE_SHEET, JSON.stringify({ version: 1, sheet: v1Sheet }));
+    storage.setItem(
+      STORAGE_KEY_ACTIVE_SHEET,
+      JSON.stringify({ version: 1, sheet: v1Sheet })
+    );
 
     const loaded = repo.load();
     expect(loaded!.stickers[0]!.primitiveRef.shapeHash).toBe("legacy-st42");
-    expect(loaded!.stickers[0]!.primitiveRef.displayName).toBe("Imported sticker");
+    expect(loaded!.stickers[0]!.primitiveRef.representativeSequenceId).toBe(
+      "legacy-st42"
+    );
+    expect(loaded!.stickers[0]!.primitiveRef.displayName).toBe(
+      "Imported sticker"
+    );
   });
 
   it("v2 sheet with sheetSize=13x19 round-trips through save/load", () => {
@@ -139,5 +158,38 @@ describe("LocalStickerSheetRepository", () => {
     repo.save(sheet);
     const loaded = repo.load();
     expect(loaded!.sheetSize).toBe("13x19");
+  });
+
+  it("migrates a v2 primitive without losing its representative source", () => {
+    const unit = createDefaultStickerUnit({ primitiveRef: testRef });
+    const sheet = {
+      ...createDefaultStickerSheet(),
+      stickers: [
+        {
+          ...unit,
+          primitiveRef: {
+            shapeHash: "seq-old",
+            ultraHash: "seq-old",
+            sourceLoop: {
+              sequenceId: "seq-old",
+              word: "OLD",
+              loopType: "rotated-loop",
+            },
+            displayName: "OLD",
+          },
+        },
+      ],
+    };
+    storage.setItem(
+      STORAGE_KEY_ACTIVE_SHEET,
+      JSON.stringify({ version: 2, sheet })
+    );
+
+    expect(repo.load()!.stickers[0]!.primitiveRef).toMatchObject({
+      shapeHash: "seq-old",
+      identityKind: "sequence-proxy-v1",
+      representativeSequenceId: "seq-old",
+      displayName: "OLD",
+    });
   });
 });

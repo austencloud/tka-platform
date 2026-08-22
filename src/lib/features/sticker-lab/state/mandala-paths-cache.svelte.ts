@@ -1,6 +1,7 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
+import type { MandalaPrimitiveRef } from "../domain/sticker-types";
 
 const cache = $state<Record<string, MandalaPaths>>({});
 const inFlight = new Map<string, Promise<MandalaPaths | null>>();
@@ -9,31 +10,42 @@ export function getPrimitivePaths(shapeHash: string): MandalaPaths | null {
   return cache[shapeHash] ?? null;
 }
 
-export async function loadPrimitivePaths(shapeHash: string): Promise<MandalaPaths | null> {
-  if (cache[shapeHash]) return cache[shapeHash]!;
-  const existing = inFlight.get(shapeHash);
+export async function loadPrimitivePaths(
+  ref: MandalaPrimitiveRef
+): Promise<MandalaPaths | null> {
+  if (cache[ref.shapeHash]) return cache[ref.shapeHash]!;
+  const existing = inFlight.get(ref.shapeHash);
   if (existing) return existing;
 
   const promise = (async () => {
     try {
-      const seq = await getSequenceRepository().getSequence(shapeHash);
+      if (!ref.representativeSequenceId) return null;
+      const seq = await getSequenceRepository().getSequence(
+        ref.representativeSequenceId
+      );
       if (!seq?.steps) return null;
       const paths = calculateMandalaGeometry(seq.steps);
-      cache[shapeHash] = paths;
+      cache[ref.shapeHash] = paths;
       return paths;
     } catch (err) {
-      console.error(`[mandala-paths-cache] load failed for ${shapeHash}:`, err);
+      console.error(
+        `[mandala-paths-cache] load failed for ${ref.representativeSequenceId}:`,
+        err
+      );
       return null;
     } finally {
-      inFlight.delete(shapeHash);
+      inFlight.delete(ref.shapeHash);
     }
   })();
 
-  inFlight.set(shapeHash, promise);
+  inFlight.set(ref.shapeHash, promise);
   return promise;
 }
 
-export function cachePrimitivePaths(shapeHash: string, paths: MandalaPaths): void {
+export function cachePrimitivePaths(
+  shapeHash: string,
+  paths: MandalaPaths
+): void {
   cache[shapeHash] = paths;
 }
 

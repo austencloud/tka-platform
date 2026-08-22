@@ -1,376 +1,348 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-  import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
-  import { loadCatalogs, loadCatalogSequencesPage, getCachedCatalogs } from "$lib/features/choreo-card/services/catalog-loader";
-  import { getStickerLabContext } from "../context/sticker-lab-context";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { cachePrimitivePaths } from "../state/mandala-paths-cache.svelte";
-  import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { MandalaPaths, MandalaPalette, SVGPathData } from "$lib/shared/mandala/domain/mandala-types";
   import type { QueryDocumentSnapshot } from "firebase/firestore";
-
-  const stickerState = getStickerLabContext();
-
-  const MONO_PALETTE: MandalaPalette = {
-    blueStroke: "#c0b8e8",
-    blueFill: "rgba(192, 184, 232, 0.1)",
-    redStroke: "#c0b8e8",
-    redFill: "rgba(192, 184, 232, 0.1)",
-    purpleStroke: "#c0b8e8",
-    purpleFill: "rgba(192, 184, 232, 0.1)",
-  };
-
-  const COLOR_PALETTE: MandalaPalette = {
-    blueStroke: "#3b82f6",
-    blueFill: "rgba(59, 130, 246, 0.08)",
-    redStroke: "#ef4444",
-    redFill: "rgba(239, 68, 68, 0.08)",
-    purpleStroke: "#a855f6",
-    purpleFill: "rgba(168, 85, 246, 0.08)",
-  };
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
+  import {
+    getCachedCatalogs,
+    loadCatalogs,
+    loadCatalogSequencesPage,
+  } from "$lib/features/choreo-card/services/catalog-loader";
+  import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { getStickerLabContext } from "../context/sticker-lab-context";
+  import { cachePrimitivePaths } from "../state/mandala-paths-cache.svelte";
+  import {
+    addCatalogShapeMembers,
+    createCatalogShapeMembers,
+    sortCatalogShapeGroups,
+    type CatalogShapeGroup,
+    type CatalogShapeMember,
+    type CatalogShapeScope,
+  } from "../services/catalog-shape-index";
+  import CatalogShapeGallery from "./shape-browser/CatalogShapeGallery.svelte";
+  import ShapeInspector from "./shape-browser/ShapeInspector.svelte";
 
   const FETCH_PAGE = 200;
-
-  // --- Solo prop path extraction ---
-  interface SoloEntry {
-    paths: SVGPathData[];
-    word: string;
-    prop: "blue" | "red";
-    seq: SequenceData;
-    fullPaths: MandalaPaths;
-  }
-
-  function extractSolos(seq: SequenceData, paths: MandalaPaths): SoloEntry[] {
-    return [
-      { paths: paths.blue, word: seq.word ?? seq.id, prop: "blue" as const, seq, fullPaths: paths },
-      { paths: paths.red, word: seq.word ?? seq.id, prop: "red" as const, seq, fullPaths: paths },
-    ].filter(s => s.paths.length > 0);
-  }
-
-  // Render one solo as mono SVG — put solo paths in blue slot
-  function renderSolo(solo: SoloEntry, key: string): string {
-    const cached = svgCache.get(key);
-    if (cached) return cached;
-    const asMandala: MandalaPaths = { blue: solo.paths, red: [], purple: [] };
-    const svg = renderMandalaSVG(asMandala, {
-      size: 300,
-      style: "stroke",
-      show: "both",
-      strokeWidth: 2.5,
-      palette: MONO_PALETTE,
-    });
-    svgCache.set(key, svg);
-    return svg;
-  }
-
-  // --- Fingerprint: rotation-invariant sample-point matching ---
-  function samplePathPoints(d: string): [number, number][] {
-    const pts: [number, number][] = [];
-    let cx = 0, cy = 0;
-    const commands = d.match(/[MC][^MC]*/g);
-    if (!commands) return pts;
-    for (const cmd of commands) {
-      const nums = cmd.slice(1).match(/-?\d+\.?\d*/g)?.map(Number) ?? [];
-      if (cmd[0] === "M" && nums.length >= 2) {
-        cx = nums[0]!; cy = nums[1]!;
-        pts.push([cx, cy]);
-      } else if (cmd[0] === "C" && nums.length >= 6) {
-        const cp1x = nums[0]!, cp1y = nums[1]!;
-        const cp2x = nums[2]!, cp2y = nums[3]!;
-        const ex = nums[4]!, ey = nums[5]!;
-        for (let t = 0.1; t <= 1.0; t += 0.1) {
-          const u = 1 - t;
-          const x = u*u*u*cx + 3*u*u*t*cp1x + 3*u*t*t*cp2x + t*t*t*ex;
-          const y = u*u*u*cy + 3*u*u*t*cp1y + 3*u*t*t*cp2y + t*t*t*ey;
-          pts.push([x, y]);
-        }
-        cx = ex; cy = ey;
-      }
-    }
-    return pts;
-  }
-
-  function subsample(pts: [number, number][], target: number): [number, number][] {
-    if (pts.length <= target) return pts;
-    const step = (pts.length - 1) / (target - 1);
-    const out: [number, number][] = [];
-    for (let i = 0; i < target; i++) out.push(pts[Math.round(i * step)]!);
-    return out;
-  }
-
-  // Fingerprint: radii signature per tip, sorted. Rotation-invariant.
-  // Two solos with same radial profile at same sample positions = same shape regardless of rotation.
-  function soloFingerprint(solo: SoloEntry): string {
-    const tipSigs = solo.paths
-      .map(p => {
-        const pts = samplePathPoints(p.d);
-        const radii = pts.map(([x, y]) => Math.round(Math.sqrt(x * x + y * y)));
-        const sub = subsample(radii.map((r, i) => [r, i] as [number, number]), 16)
-          .map(([r]) => r);
-        return sub.join(",");
-      })
-      .sort();
-    return tipSigs.join("|");
-  }
-
-  interface SoloGroup {
-    fp: string;
-    repSolo: SoloEntry;
-    members: SoloEntry[];
-  }
+  const stickerState = getStickerLabContext();
 
   type View =
     | { kind: "catalogs" }
-    | { kind: "solos"; catalog: Catalog }
-    | { kind: "members"; catalog: Catalog; group: SoloGroup };
+    | { kind: "groups"; catalog: Catalog }
+    | { kind: "members"; catalog: Catalog; group: CatalogShapeGroup }
+    | {
+        kind: "inspect";
+        catalog: Catalog;
+        group: CatalogShapeGroup;
+        memberIndex: number;
+      };
+
+  const scopeOptions = [
+    { value: "solo" as const, label: "Solo" },
+    { value: "combined" as const, label: "Combined" },
+  ];
 
   let catalogs = $state<Catalog[]>([]);
-  let loading = $state(true);
+  let catalogsLoading = $state(true);
+  let catalogsError = $state<string | null>(null);
+  let scope = $state<CatalogShapeScope>("solo");
   let view = $state<View>({ kind: "catalogs" });
-  let groups = $state<SoloGroup[]>([]);
+  let groups = $state<CatalogShapeGroup[]>([]);
   let scanProgress = $state("");
-  let loadError = $state<string | null>(null);
+  let scanError = $state<string | null>(null);
+  let scanGeneration = 0;
 
   const copiesMap = $derived(
-    new Map(stickerState.sheet.stickers.map((s) => [s.primitiveRef.shapeHash, s.copies])),
+    new Map(
+      stickerState.sheet.stickers.map((sticker) => [
+        sticker.primitiveRef.shapeHash,
+        sticker.copies,
+      ])
+    )
   );
 
-  onMount(async () => {
-    try {
-      const cached = getCachedCatalogs();
-      if (cached && cached.length > 0) catalogs = cached;
-      const fresh = await loadCatalogs();
-      catalogs = fresh;
-    } catch (err) {
-      console.error("Failed to load sticker catalogs", err);
-      loadError = "Couldn't load catalogs. Check your connection and try again.";
-      toast.error(loadError);
-    } finally {
-      loading = false;
-    }
+  onMount(() => {
+    void refreshCatalogs();
   });
 
-  async function openCatalog(catalog: Catalog) {
-    view = { kind: "solos", catalog };
-    groups = [];
-    scanProgress = "Loading...";
+  async function refreshCatalogs(): Promise<void> {
+    catalogsLoading = true;
+    catalogsError = null;
+    const cached = getCachedCatalogs();
+    if (cached?.length) catalogs = cached;
 
-    const groupMap = new Map<string, SoloGroup>();
+    try {
+      catalogs = await loadCatalogs();
+    } catch (error) {
+      console.error("[sticker-lab] catalog load failed:", error);
+      catalogsError =
+        "Couldn't load catalogs. Check your connection and try again.";
+    } finally {
+      catalogsLoading = false;
+    }
+  }
+
+  async function openCatalog(catalog: Catalog): Promise<void> {
+    const generation = ++scanGeneration;
+    view = { kind: "groups", catalog };
+    groups = [];
+    scanProgress = "Loading catalog…";
+    scanError = null;
+
+    const groupMap = new Map<string, CatalogShapeGroup>();
     let lastDoc: QueryDocumentSnapshot | null = null;
     let hasMore = true;
     let loaded = 0;
 
-    while (hasMore) {
-      const page = await loadCatalogSequencesPage(catalog.id, FETCH_PAGE, lastDoc ?? undefined);
-      for (const seq of page.sequences) {
-        if (!seq.steps || seq.steps.length === 0) continue;
-        const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
-        const solos = extractSolos(seq, paths);
-        for (const solo of solos) {
-          const fp = soloFingerprint(solo);
-          const existing = groupMap.get(fp);
-          if (existing) {
-            existing.members.push(solo);
-          } else {
-            groupMap.set(fp, { fp, repSolo: solo, members: [solo] });
-          }
+    try {
+      while (hasMore && generation === scanGeneration) {
+        const page = await loadCatalogSequencesPage(
+          catalog.id,
+          FETCH_PAGE,
+          lastDoc ?? undefined
+        );
+        if (generation !== scanGeneration) return;
+
+        for (const sequence of page.sequences) {
+          if (!sequence.steps?.length) continue;
+          const paths = calculateMandalaGeometry(
+            sequence.steps,
+            "staff",
+            "staff"
+          );
+          addCatalogShapeMembers(
+            groupMap,
+            createCatalogShapeMembers(sequence, paths, scope)
+          );
         }
+
+        loaded += page.sequences.length;
+        groups = sortCatalogShapeGroups(groupMap);
+        scanProgress = `${loaded.toLocaleString()} sequences · ${groups.length.toLocaleString()} ${scope === "solo" ? "solo orbits" : "combined shapes"}`;
+        lastDoc = page.lastDoc;
+        hasMore = page.sequences.length === FETCH_PAGE;
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
-      loaded += page.sequences.length;
-      scanProgress = `${loaded} sequences, ${groupMap.size} solo shapes`;
-      groups = [...groupMap.values()].sort((a, b) => b.members.length - a.members.length);
-      lastDoc = page.lastDoc;
-      hasMore = page.sequences.length === FETCH_PAGE;
-      await new Promise((r) => setTimeout(r, 0));
+    } catch (error) {
+      if (generation !== scanGeneration) return;
+      console.error(`[sticker-lab] ${catalog.id} scan failed:`, error);
+      scanError = "This catalog couldn't be scanned. Try it again.";
+    } finally {
+      if (generation === scanGeneration) scanProgress = "";
     }
+  }
+
+  function selectScope(next: CatalogShapeScope): void {
+    if (next === scope) return;
+    scope = next;
+    if (view.kind !== "catalogs") {
+      void openCatalog(view.catalog);
+    }
+  }
+
+  function backToCatalogs(): void {
+    scanGeneration++;
+    groups = [];
     scanProgress = "";
+    scanError = null;
+    view = { kind: "catalogs" };
   }
 
-  function openMembers(group: SoloGroup, catalog: Catalog) {
-    view = { kind: "members", catalog, group };
+  function openGroup(group: CatalogShapeGroup): void {
+    if (view.kind !== "groups") return;
+    view = { kind: "members", catalog: view.catalog, group };
   }
 
-  function addToSheet(seq: SequenceData, paths: MandalaPaths) {
-    cachePrimitivePaths(seq.id, paths);
-    stickerState.addPrimitive({
-      shapeHash: seq.id,
-      ultraHash: seq.id,
-      sourceLoop: {
-        sequenceId: seq.id,
-        word: seq.word ?? seq.id,
-        loopType: "rotated",
-      },
-      displayName: seq.word ?? seq.id,
-    });
+  function inspectMember(group: CatalogShapeGroup, memberIndex: number): void {
+    if (view.kind !== "members") return;
+    view = {
+      kind: "inspect",
+      catalog: view.catalog,
+      group,
+      memberIndex,
+    };
   }
 
-  const svgCache = new Map<string, string>();
+  function backFromInspector(): void {
+    if (view.kind !== "inspect") return;
+    view = {
+      kind: "members",
+      catalog: view.catalog,
+      group: view.group,
+    };
+  }
 
-  function renderCombined(seq: SequenceData): { svg: string; paths: MandalaPaths } | null {
-    const key = `c_${seq.id}`;
-    const cached = svgCache.get(key);
-    if (cached) {
-      const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
-      return { svg: cached, paths };
-    }
-    if (!seq.steps || seq.steps.length === 0) return null;
-    const paths = calculateMandalaGeometry(seq.steps, "staff", "staff");
-    const svg = renderMandalaSVG(paths, {
-      size: 300,
-      style: "stroke",
-      show: "both",
-      strokeWidth: 2.5,
-      palette: COLOR_PALETTE,
-    });
-    svgCache.set(key, svg);
-    return { svg, paths };
+  function addMember(member: CatalogShapeMember): void {
+    cachePrimitivePaths(member.primitiveRef.shapeHash, member.fullPaths);
+    stickerState.addPrimitive(member.primitiveRef);
+    toast.success(`${member.word} added to the sheet`);
+  }
+
+  function copyCount(member: CatalogShapeMember): number {
+    return copiesMap.get(member.primitiveRef.shapeHash) ?? 0;
   }
 
   function catalogLabel(catalog: Catalog): string {
-    return catalog.name ?? `${catalog.turnPattern ?? ""}`.replace("uniform-", "").replace("t", " Turn");
-  }
-
-  // --- Diagnostic ---
-  function buildDiagnostic(solo: SoloEntry): string {
-    const lines: string[] = [`SOLO: ${solo.word} [${solo.prop}]`];
-    for (const p of solo.paths) {
-      const allPts = samplePathPoints(p.d);
-      const pts = subsample(allPts, 12);
-      const radii = allPts.map(([x, y]) => Math.sqrt(x * x + y * y));
-      const minR = Math.round(Math.min(...radii));
-      const maxR = Math.round(Math.max(...radii));
-      const coords = pts.map(([x, y]) => `${Math.round(x)},${Math.round(y)}`).join(" ");
-      lines.push(`tip${p.tipIndex} r:[${minR}..${maxR}]: ${coords}`);
-    }
-    lines.push(`FP: ${soloFingerprint(solo)}`);
-    return lines.join("\n");
-  }
-
-  let copiedKey = $state<string | null>(null);
-
-  async function copyDiagnostic(key: string, solo: SoloEntry) {
-    const text = buildDiagnostic(solo);
-    await navigator.clipboard.writeText(text);
-    toast.success("Diagnostic copied");
-    copiedKey = key;
-    setTimeout(() => { if (copiedKey === key) copiedKey = null; }, 800);
+    return (
+      catalog.name ??
+      `${catalog.turnPattern ?? ""}`
+        .replace("uniform-", "")
+        .replace("t", " Turn")
+    );
   }
 </script>
 
 <div class="shape-browser">
-  {#if view.kind === "members"}
-    <nav class="sb-nav">
-      <button class="back-btn" onclick={() => view = { kind: "solos", catalog: view.kind === "members" ? view.catalog : catalogs[0]! }}>
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        Solos
-      </button>
-      <span class="sep" aria-hidden="true">/</span>
-      <span class="current">{view.group.members.length} members</span>
-      <span class="hint">right-click = diagnostic</span>
-    </nav>
-
-    <div class="grid">
-      {#each view.group.members as solo, i (i)}
-        {@const key = `m_${solo.word}_${solo.prop}_${i}`}
-        <button
-          class="tile"
-          class:copied={copiedKey === key}
-          oncontextmenu={(e) => { e.preventDefault(); copyDiagnostic(key, solo); }}
-          onclick={() => {
-            const result = renderCombined(solo.seq);
-            if (result) addToSheet(solo.seq, result.paths);
-          }}
-        >
-          <div class="art">{@html renderSolo(solo, `solo_${solo.word}_${solo.prop}`)}</div>
-          <span class="label">{solo.word} <span class="prop-tag">{solo.prop}</span></span>
-        </button>
-      {/each}
+  <header class="browser-header">
+    <div class="heading">
+      <h2>Mandala Shapes</h2>
+      <p>
+        {scope === "solo"
+          ? "Group one-hand paths across rotations, then choose the full mandala to print."
+          : "Browse complete two-hand mandalas grouped by exact shape."}
+      </p>
     </div>
+    <div class="scope-control">
+      <span>Shape scope</span>
+      <SegmentedControl
+        options={scopeOptions}
+        value={scope}
+        onchange={selectScope}
+        color="accent"
+        size="sm"
+      />
+    </div>
+  </header>
 
-  {:else if view.kind === "solos"}
-    <nav class="sb-nav">
-      <button class="back-btn" onclick={() => { view = { kind: "catalogs" }; groups = []; }}>
+  {#if view.kind === "inspect"}
+    <ShapeInspector
+      members={view.group.members}
+      initialIndex={view.memberIndex}
+      {copyCount}
+      onBack={backFromInspector}
+      onAdd={addMember}
+    />
+  {:else if view.kind === "members"}
+    <nav class="breadcrumb" aria-label="Shape browser location">
+      <button
+        type="button"
+        onclick={() =>
+          (view = {
+            kind: "groups",
+            catalog: view.kind === "members" ? view.catalog : catalogs[0]!,
+          })}
+      >
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        Shapes
+      </button>
+      <span aria-hidden="true">/</span>
+      <strong>{view.group.members.length} members</strong>
+      <small
+        >Select a preview to inspect it. Add creates the full sticker.</small
+      >
+    </nav>
+    <CatalogShapeGallery
+      group={view.group}
+      {copyCount}
+      onOpenGroup={openGroup}
+      onInspect={inspectMember}
+      onAdd={addMember}
+    />
+  {:else if view.kind === "groups"}
+    <nav class="breadcrumb" aria-label="Shape browser location">
+      <button type="button" onclick={backToCatalogs}>
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
         Catalogs
       </button>
-      <span class="sep" aria-hidden="true">/</span>
-      <span class="current">{catalogLabel(view.catalog)}</span>
+      <span aria-hidden="true">/</span>
+      <strong>{catalogLabel(view.catalog)}</strong>
       {#if scanProgress}
-        <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> {scanProgress}</span>
+        <small class="progress">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          {scanProgress}
+        </small>
       {:else}
-        <span class="hint">{groups.length} solo shapes — right-click = diagnostic</span>
+        <small>{groups.length.toLocaleString()} shapes</small>
       {/if}
     </nav>
 
-    <div class="grid">
-      {#each groups as group (group.fp)}
+    {#if scanError}
+      <div class="error" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <span>{scanError}</span>
         <button
-          class="tile"
-          class:copied={copiedKey === `s_${group.fp}`}
-          onclick={() => { if (view.kind === "solos") openMembers(group, view.catalog); }}
-          oncontextmenu={(e) => { e.preventDefault(); copyDiagnostic(`s_${group.fp}`, group.repSolo); }}
+          type="button"
+          onclick={() =>
+            openCatalog(view.kind === "groups" ? view.catalog : catalogs[0]!)}
+          >Retry</button
         >
-          <div class="art">{@html renderSolo(group.repSolo, group.fp)}</div>
-          <span class="label">{group.repSolo.word}</span>
-          {#if group.members.length > 1}<span class="count">{group.members.length}</span>{/if}
-        </button>
-      {/each}
-
-      {#if groups.length === 0 && !scanProgress}
-        <p class="empty">No sequences in this catalog</p>
-      {/if}
-    </div>
-
+      </div>
+    {:else}
+      <CatalogShapeGallery
+        {groups}
+        {scanProgress}
+        {copyCount}
+        onOpenGroup={openGroup}
+        onInspect={inspectMember}
+        onAdd={addMember}
+      />
+    {/if}
   {:else}
-    <div class="sb-header">
-      <span class="title">Solo Mandala Shapes</span>
-      {#if loading}
-        <span class="status"><i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i> Loading</span>
-      {:else}
-        <span class="status">{catalogs.length} catalogs</span>
-      {/if}
-    </div>
-
-    {@const loopCatalogs = catalogs.filter(d => d.collection === 'LOOPs')}
-    {@const tndCatalogs = catalogs.filter(d => d.collection !== 'LOOPs')}
-
     <div class="catalog-list">
-      {#if loopCatalogs.length > 0}
-        <section>
-          <h3 class="section-label">LOOP Catalogs <span class="dim">({loopCatalogs.length})</span></h3>
-          <div class="catalog-grid">
-            {#each loopCatalogs as catalog (catalog.id)}
-              <button class="catalog-card" onclick={() => openCatalog(catalog)}>
-                <span class="catalog-name">{catalogLabel(catalog)}</span>
-                <span class="catalog-meta">{catalog.totalSequences.toLocaleString()} seq</span>
-              </button>
-            {/each}
-          </div>
-        </section>
-      {/if}
-      {#if tndCatalogs.length > 0}
-        <section>
-          <h3 class="section-label">TnD Catalogs <span class="dim">({tndCatalogs.length})</span></h3>
-          <div class="catalog-grid">
-            {#each tndCatalogs as catalog (catalog.id)}
-              <button class="catalog-card" onclick={() => openCatalog(catalog)}>
-                <span class="catalog-name">{catalogLabel(catalog)}</span>
-                <span class="catalog-meta">{catalog.totalSequences.toLocaleString()} seq</span>
-              </button>
-            {/each}
-          </div>
-        </section>
-      {/if}
-
-      {#if !loading && loadError}
-        <div class="error-state" role="alert">
-          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-          <p>{loadError}</p>
+      {#if catalogsLoading && catalogs.length === 0}
+        <div class="loading" role="status">
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          Loading catalogs…
         </div>
-      {:else if !loading && catalogs.length === 0}
-        <p class="empty">No catalogs found</p>
+      {:else if catalogsError && catalogs.length === 0}
+        <div class="error" role="alert">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          <span>{catalogsError}</span>
+          <button type="button" onclick={refreshCatalogs}>Retry</button>
+        </div>
+      {:else}
+        {@const loopCatalogs = catalogs.filter(
+          (catalog) => catalog.collection === "LOOPs"
+        )}
+        {@const tndCatalogs = catalogs.filter(
+          (catalog) => catalog.collection !== "LOOPs"
+        )}
+
+        {#if loopCatalogs.length > 0}
+          <section>
+            <h3>LOOP Catalogs <span>{loopCatalogs.length}</span></h3>
+            <div class="catalog-grid">
+              {#each loopCatalogs as catalog (catalog.id)}
+                <button type="button" onclick={() => openCatalog(catalog)}>
+                  <strong>{catalogLabel(catalog)}</strong>
+                  <span
+                    >{catalog.totalSequences.toLocaleString()} sequences</span
+                  >
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if tndCatalogs.length > 0}
+          <section>
+            <h3>T&amp;D Catalogs <span>{tndCatalogs.length}</span></h3>
+            <div class="catalog-grid">
+              {#each tndCatalogs as catalog (catalog.id)}
+                <button type="button" onclick={() => openCatalog(catalog)}>
+                  <strong>{catalogLabel(catalog)}</strong>
+                  <span
+                    >{catalog.totalSequences.toLocaleString()} sequences</span
+                  >
+                </button>
+              {/each}
+            </div>
+          </section>
+        {/if}
+
+        {#if catalogs.length === 0}
+          <div class="loading">No catalogs found.</div>
+        {/if}
       {/if}
     </div>
   {/if}
@@ -378,209 +350,230 @@
 
 <style>
   .shape-browser {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    height: 100%;
     overflow: hidden;
+    container-type: inline-size;
   }
 
-  .sb-nav {
+  .browser-header {
     flex-shrink: 0;
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  .back-btn {
+  .heading {
+    min-width: 0;
+  }
+
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-lg, 18px);
+    font-weight: 650;
+  }
+
+  .heading p {
+    margin-top: var(--spacing-xs);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.45;
+  }
+
+  .scope-control {
+    flex: 0 0 auto;
+    width: min(18rem, 42cqw);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .scope-control > span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .breadcrumb {
+    flex-shrink: 0;
+    min-height: var(--min-touch-target);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+  }
+
+  .breadcrumb button,
+  .error button {
+    min-height: var(--min-touch-target);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    min-height: 36px;
-    padding: 6px 12px;
-    background: none;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 6px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font: inherit;
-    font-size: 13px;
+    border-radius: var(--radius-2026-sm);
+    background: transparent;
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
     cursor: pointer;
   }
-  .back-btn:hover { color: var(--theme-text, #fff); border-color: var(--theme-stroke, rgba(255, 255, 255, 0.25)); }
-  .back-btn:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
 
-  .sep { color: var(--theme-text-dim, rgba(255, 255, 255, 0.2)); font-size: 13px; }
-  .current { font-size: 13px; font-weight: 600; color: var(--theme-text, #fff); }
-  .hint { margin-left: auto; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.25)); }
-  .status { margin-left: auto; font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); display: flex; align-items: center; gap: 6px; }
-
-  .sb-header {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  .breadcrumb strong {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
   }
-  .title { font-size: 14px; font-weight: 600; color: var(--theme-text, #fff); }
+
+  .breadcrumb small {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-compact, 12px);
+  }
 
   .catalog-list {
     flex: 1;
-    overflow-y: auto;
-    padding: 16px;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--spacing-xl);
+    overflow-y: auto;
+    padding: var(--spacing-md);
     scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)) transparent;
+    scrollbar-color: var(--theme-stroke, rgba(255, 255, 255, 0.14)) transparent;
   }
 
-  .section-label {
-    margin: 0 0 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
   }
-  .dim { font-weight: 400; }
+
+  h3 {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-min, 14px);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  h3 span {
+    opacity: 0.58;
+    font-weight: 400;
+  }
 
   .catalog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-sm);
   }
 
-  .catalog-card {
+  .catalog-grid button {
+    min-height: 4.5rem;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 12px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--theme-text, #fff);
+    border-radius: var(--radius-2026-sm);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.035));
+    color: var(--theme-text, white);
     text-align: left;
-    font: inherit;
+    cursor: pointer;
   }
-  .catalog-card:hover { border-color: var(--accent, #63b7cd); }
-  .catalog-card:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
-  .catalog-name { font-size: 13px; font-weight: 600; }
-  .catalog-meta { font-size: 11px; color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
 
-  .grid {
+  .catalog-grid button:hover,
+  button:focus-visible {
+    border-color: var(--theme-accent, #a78bfa);
+    outline: none;
+  }
+
+  .catalog-grid strong {
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .catalog-grid span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .loading,
+  .error {
     flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    grid-auto-rows: min-content;
-    gap: 8px;
-    padding: 16px;
-    overflow-y: auto;
-    align-content: start;
-    scrollbar-width: thin;
-    scrollbar-color: var(--theme-stroke, rgba(255, 255, 255, 0.12)) transparent;
-  }
-
-  .tile {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
-    cursor: pointer;
-    color: var(--theme-text, #fff);
-    font: inherit;
-    text-align: left;
-  }
-  .tile:hover { border-color: var(--accent, #63b7cd); }
-  .tile:focus-visible { outline: 2px solid var(--accent, #63b7cd); outline-offset: 2px; }
-  .tile.copied {
-    border-color: var(--semantic-success, #22c55e);
-    box-shadow: 0 0 0 1px var(--semantic-success, #22c55e);
-  }
-
-  .art {
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .art :global(svg) { width: 100%; height: 100%; }
-
-  .label {
-    font-size: 11px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .prop-tag {
-    font-size: 10px;
-    opacity: 0.5;
-  }
-
-  .count {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    min-width: 22px;
-    height: 22px;
+    min-height: 14rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 5px;
-    border-radius: 11px;
-    font-size: 11px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    background: var(--theme-overlay-strong, rgba(0, 0, 0, 0.6));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    color: var(--theme-text, #fff);
+    gap: var(--spacing-sm);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-min, 14px);
   }
 
-  .empty {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 48px 24px;
-    margin: 0;
-    font-size: 13px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-  }
-
-  .error-state {
-    display: flex;
+  .error {
     flex-direction: column;
-    align-items: center;
-    gap: 12px;
     text-align: center;
-    padding: 48px 24px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-  }
-  .error-state i {
-    font-size: 24px;
     color: var(--semantic-error, #ef4444);
   }
-  .error-state p {
-    margin: 0;
-    font-size: 13px;
-    max-width: 32ch;
+
+  @container (min-width: 48rem) {
+    .catalog-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
-  @media (max-width: 768px) {
-    .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-    .grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); padding: 12px; }
-    .catalog-list { padding: 12px; gap: 16px; }
-    .sb-nav, .sb-header { padding: 10px 12px; }
+  @container (min-width: 72rem) {
+    .catalog-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .tile, .catalog-card, .back-btn { transition: none; }
+  @container (min-width: 104rem) {
+    .catalog-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 142rem) {
+    .catalog-grid {
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 42rem) {
+    .browser-header {
+      align-items: stretch;
+      flex-direction: column;
+      gap: var(--spacing-sm);
+    }
+
+    .scope-control {
+      width: 100%;
+    }
+
+    .breadcrumb {
+      flex-wrap: wrap;
+    }
+
+    .breadcrumb small {
+      width: 100%;
+      margin-left: 0;
+    }
   }
 </style>
