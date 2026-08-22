@@ -6,8 +6,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type {
-  BrowseEventHandlerParams } from "./types";
+import type { BrowseEventHandlerParams } from "./types";
 import { sequencePanelManager } from "$lib/shared/browse/state/sequence-panel-state.svelte";
 import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
@@ -16,14 +15,13 @@ import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
 import { resolveBrowseInitialViewerMode } from "./performance-browse-intent";
+import { trackPerformancePlaybackIntent } from "$lib/shared/analytics/browse-events";
 
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 export class BrowseEventHandler {
   private params: BrowseEventHandlerParams | null = null;
 
-  constructor(
-    private loaderService: PublicSequencesLoader | null
-  ) {}
+  constructor(private loaderService: PublicSequencesLoader | null) {}
 
   /**
    * Initialize the service with required parameters
@@ -91,6 +89,12 @@ export class BrowseEventHandler {
 
   handleViewDetail(sequence: SequenceData, variations?: SequenceData[]): void {
     const isHandsMode = this.params?.engine.viewMode.subject === "hands";
+    const initialViewerMode = resolveBrowseInitialViewerMode(
+      this.params!.engine.activeFilters
+    );
+    if (initialViewerMode === "videos") {
+      trackPerformancePlaybackIntent();
+    }
     // One card, one behaviour: clicking always opens the viewer. Multi-variation
     // cards pass their siblings through, and the viewer's own variation strip
     // takes over the picking - the overlay selects the variation the card was
@@ -99,9 +103,7 @@ export class BrowseEventHandler {
       returnPath: "/browse/gallery",
       returnLabel: "Browse",
       scrollY: browseScrollState.lastScrollY,
-      initialViewerMode: resolveBrowseInitialViewerMode(
-        this.params!.engine.activeFilters
-      ),
+      initialViewerMode,
       handPathMode: isHandsMode,
       variations,
     });

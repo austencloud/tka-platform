@@ -18,6 +18,8 @@
     onClear?: () => void;
     placeholder?: string;
     value?: string;
+    /** Edge that stays fixed while the collapsed control expands. */
+    expansionAnchor?: "start" | "end";
   }
 
   let {
@@ -25,6 +27,7 @@
     onClear,
     placeholder = "Search...",
     value = "",
+    expansionAnchor = "start",
   }: Props = $props();
 
   // Local state - initialized empty; the $effect below syncs the prop value
@@ -132,6 +135,7 @@
 <div
   class="search-container"
   class:expanded={isExpanded}
+  class:anchor-end={expansionAnchor === "end"}
   bind:this={containerRef}
   role="search"
 >
@@ -255,6 +259,17 @@
     opacity: 1;
     transform: translateX(0) scale(1);
     pointer-events: auto;
+  }
+
+  .search-container.anchor-end .search-input-wrapper {
+    inset-inline-start: auto;
+    inset-inline-end: 0;
+    transform: translateX(0.75rem) scale(0.94);
+    transform-origin: right center;
+  }
+
+  .search-container.anchor-end.expanded .search-input-wrapper {
+    transform: translateX(0) scale(1);
   }
 
   .search-input-wrapper:focus-within {

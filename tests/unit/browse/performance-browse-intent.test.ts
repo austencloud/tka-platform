@@ -54,6 +54,21 @@ describe("performance Browse intent", () => {
     expect(resolveBrowseInitialViewerMode(filters)).toBe("videos");
   });
 
+  it("opens recently performed results on Performances", () => {
+    const filters = new Map<string, ActiveFilter>([
+      [
+        BrowseFilterType.RECENT_PERFORMANCE,
+        filter(
+          BrowseFilterType.RECENT_PERFORMANCE,
+          "recent-performance",
+          "Recently performed"
+        ),
+      ],
+    ]);
+
+    expect(resolveBrowseInitialViewerMode(filters)).toBe("videos");
+  });
+
   it("leaves the ordinary viewer destination alone without that rule", () => {
     const filters = new Map<string, ActiveFilter>([
       [BrowseFilterType.LENGTH, filter(BrowseFilterType.LENGTH, 8, "8 steps")],

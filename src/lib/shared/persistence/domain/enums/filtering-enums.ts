@@ -24,6 +24,10 @@ export enum BrowseFilterType {
   /** Public performance availability projected onto publicSequences. This
    * never reveals private or collaborators-only video existence. */
   PERFORMANCE_AVAILABILITY = "performance_availability",
+  /** Sequences whose newest public performance was shared in the last 30
+   * days. This is intentionally separate from RECENT, which means the
+   * sequence itself was recently added. */
+  RECENT_PERFORMANCE = "recent_performance",
   FAVORITES = "favorites",
   ALL_SEQUENCES = "all_sequences",
   /** Filter by circular sequences and LOOP type */

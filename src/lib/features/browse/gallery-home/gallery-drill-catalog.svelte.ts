@@ -16,7 +16,10 @@ import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { LOOP_COMPONENT_MAP } from "$lib/shared/browse/domain/constants/loop-constants";
 import { resolveStepCount } from "$lib/shared/browse/services/browse-sorter";
-import { getSequenceMaxTurn } from "$lib/shared/browse/services/browse-filter";
+import {
+  applyFilter,
+  getSequenceMaxTurn,
+} from "$lib/shared/browse/services/browse-filter";
 import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -472,24 +475,49 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
   );
   const performanceValues = $derived([
     {
+      type: BrowseFilterType.PERFORMANCE_AVAILABILITY,
       value: "has-public-performance",
-      label: "Has public performances",
-      desc: "Sequences with at least one performance anyone can watch.",
+      label: "With a public performance",
       icon: "fa-circle-play",
       count: deps.getCount(
         BrowseFilterType.PERFORMANCE_AVAILABILITY,
         "has-public-performance"
       ),
+      overallCount: applyFilter(
+        [...deps.pool],
+        BrowseFilterType.PERFORMANCE_AVAILABILITY,
+        "has-public-performance"
+      ).length,
     },
     {
+      type: BrowseFilterType.PERFORMANCE_AVAILABILITY,
       value: "no-public-performance",
-      label: "No public performances yet",
-      desc: "Find a sequence to perform and share.",
+      label: "Without a public performance",
       icon: "fa-video",
       count: deps.getCount(
         BrowseFilterType.PERFORMANCE_AVAILABILITY,
         "no-public-performance"
       ),
+      overallCount: applyFilter(
+        [...deps.pool],
+        BrowseFilterType.PERFORMANCE_AVAILABILITY,
+        "no-public-performance"
+      ).length,
+    },
+    {
+      type: BrowseFilterType.RECENT_PERFORMANCE,
+      value: "recent-performance",
+      label: "Recently performed",
+      icon: "fa-clock-rotate-left",
+      count: deps.getCount(
+        BrowseFilterType.RECENT_PERFORMANCE,
+        "recent-performance"
+      ),
+      overallCount: applyFilter(
+        [...deps.pool],
+        BrowseFilterType.RECENT_PERFORMANCE,
+        "recent-performance"
+      ).length,
     },
   ]);
   const maxPerformanceCount = $derived(
@@ -672,7 +700,7 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
         title: "Performances",
         sub: sectionNarrowedOut("performance")
           ? "No matches with this rule"
-          : `${withPerformance} performed · ${waiting} waiting`,
+          : `${withPerformance} with video · ${waiting} without in results`,
         art: { kind: "icon", icon: "fa-circle-play" },
         section: "performance",
         narrowedOut: sectionNarrowedOut("performance"),
@@ -685,8 +713,8 @@ export function createGalleryCatalog(deps: GalleryCatalogDeps) {
         sub: sectionNarrowedOut("recent")
           ? "No matches with this rule"
           : deps.unifiedFilterChooser
-            ? `Last 30 days · ${recentCount} · applies instantly`
-            : `Last 30 days · ${recentCount}`,
+            ? `Sequences added in the last 30 days · ${recentCount} · applies instantly`
+            : `Sequences added in the last 30 days · ${recentCount}`,
         art: { kind: "icon", icon: "fa-clock-rotate-left" },
         apply: {
           type: BrowseFilterType.RECENT,

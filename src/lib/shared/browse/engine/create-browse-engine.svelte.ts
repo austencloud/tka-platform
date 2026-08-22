@@ -91,6 +91,24 @@ function sameViewMode(a: BrowseViewMode, b: BrowseViewMode): boolean {
   );
 }
 
+/** Filter labels are presentation copy, not durable user data. Normalize old
+ * persisted labels on read so retired wording cannot survive indefinitely in
+ * rule chips after the underlying meaning has changed. */
+function currentFilterLabel(filter: ActiveFilter): string {
+  if (filter.type === BrowseFilterType.PERFORMANCE_AVAILABILITY) {
+    if (filter.value === "has-public-performance") {
+      return "With a public performance";
+    }
+    if (filter.value === "no-public-performance") {
+      return "Without a public performance";
+    }
+  }
+  if (filter.type === BrowseFilterType.RECENT_PERFORMANCE) {
+    return "Recently performed";
+  }
+  return filter.label;
+}
+
 // ---------------------------------------------------------------------------
 // Persistence
 // ---------------------------------------------------------------------------
@@ -148,7 +166,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
       for (const [key, filter] of persisted.activeFilters) {
         // Don't let persisted user filters overwrite locked constraints
         if (!merged.has(key)) {
-          merged.set(key, { ...filter, locked: false });
+          merged.set(key, {
+            ...filter,
+            label: currentFilterLabel(filter),
+            locked: false,
+          });
         }
       }
     }

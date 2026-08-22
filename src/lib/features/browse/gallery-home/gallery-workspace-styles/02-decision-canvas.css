@@ -67,7 +67,7 @@
   flex: 1 1 0;
   min-height: 0;
   align-self: center;
-  align-content: center;
+  align-content: safe center;
   gap: 0.5rem;
 }
 .drill-ctx.adaptive-value-layout .screen-gridmode .value-grid-preview {
@@ -294,7 +294,7 @@
     font-size: 1.05rem;
   }
   .drill-ctx.adaptive-value-layout .drill-head p {
-    font-size: 0.72rem;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.25;
     text-wrap: balance;
   }
@@ -387,7 +387,7 @@
   }
   .drill-ctx.adaptive-value-layout .level-tile .value-desc,
   .drill-ctx.adaptive-value-layout .monument .value-desc {
-    font-size: 0.66rem;
+    font-size: var(--font-size-compact, 12px);
     line-height: 1.2;
   }
   .drill-ctx.adaptive-value-layout .monument .value-numeral.small {
@@ -429,19 +429,13 @@
     display: none;
   }
 
-  /* The phone builder has one job per screen. Bounded catalogs use a
-       composition sized to their real option count, so the full decision is
-       visible without turning the modal body into a scrolling list. */
-  .drill-ctx.adaptive-value-layout .screen-length,
-  .drill-ctx.adaptive-value-layout .screen-loop,
-  .drill-ctx.adaptive-value-layout .screen-family,
-  .drill-ctx.adaptive-value-layout .screen-max-turns {
-    overflow-y: hidden;
-  }
+  /* Center bounded catalogs when they fit. `safe` falls back to the start
+       edge when they do not, so every first option remains reachable on a
+       short phone instead of being clipped above a hidden scrollport. */
   .drill-ctx.adaptive-value-layout .screen-length > .value-list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-rows: minmax(6.5rem, 7rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.45rem;
   }
 
@@ -488,7 +482,7 @@
   .drill-ctx.adaptive-value-layout .screen-gridmode > .value-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: minmax(13rem, 15rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.65rem;
   }
   .drill-ctx.adaptive-value-layout .screen-gridmode .length-row.monument {
@@ -532,7 +526,7 @@
   .drill-ctx.adaptive-value-layout .screen-loop > .value-list {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(44px, 2.9rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.35rem;
   }
   .drill-ctx.adaptive-value-layout .screen-loop .length-row.monument {
@@ -575,7 +569,7 @@
   .drill-ctx.adaptive-value-layout .screen-creator > .creator-list {
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(44px, 3rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.35rem;
   }
   .drill-ctx.adaptive-value-layout .screen-creator .creator-row {
@@ -623,7 +617,7 @@
   .drill-ctx.adaptive-value-layout .screen-family > .value-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-auto-rows: minmax(5.25rem, 5.5rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.45rem;
   }
   .drill-ctx.adaptive-value-layout .screen-family .length-row.monument {
@@ -654,7 +648,7 @@
   .drill-ctx.adaptive-value-layout .screen-max-turns > .value-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: minmax(5.5rem, 6rem);
-    align-content: center;
+    align-content: safe center;
     gap: 0.4rem;
   }
   .drill-ctx.adaptive-value-layout .screen-max-turns .length-row.monument {

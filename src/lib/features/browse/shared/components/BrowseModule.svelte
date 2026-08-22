@@ -28,10 +28,12 @@
   import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import {
-    browseNavigationState,
+    createBrowseNavigationState,
     getCollectionScanTargetFromURL,
     type BrowseLocation,
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { setBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
+  import type { BrowsePrimary } from "$lib/shared/browse/navigation/browse-route-resolver";
   import { setPendingScanIntent } from "$lib/features/browse/state/pending-scan-intent.svelte";
   import { removeCurrentUrlParams } from "$lib/shared/navigation/services/url-state";
   import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
@@ -43,7 +45,6 @@
     peekPendingBrowseIntent,
     clearPendingBrowseIntent,
   } from "../../state/pending-browse-intent.svelte";
-  import HallOfShameGallery from "$lib/features/hall-of-shame/components/HallOfShameGallery.svelte";
   import { openSequenceViewer } from "../../../../shared/sequence-viewer/services/sequence-viewer-navigator";
   import {
     getGalleryViewState,
@@ -57,25 +58,17 @@
   import { getCollectionCollaborationManager } from "$lib/shared/library/get-collection-collaboration-manager";
   import { getCollectionOptions } from "$lib/features/browse/gallery-home/collection-options.svelte";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+  import { trackBrowseDestinationEntered } from "$lib/shared/analytics/browse-events";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
-  // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
-  // work (label Library, was id "collections"); "collections" is community
-  // collection discovery (label Collections, was id "discover"). Legacy URLs
-  // (/browse/discover, /browse/collections/{id} scan links) and persisted nav
-  // state migrate in navigation-coordinator.svelte.ts and
-  // browse-navigation-state.svelte.ts.
-  type BrowseModuleType =
-    | "gallery"
-    | "library"
-    | "collections"
-    | "hall-of-shame";
-
-  // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = [
-    "gallery",
-    "library",
-    "collections",
-    "hall-of-shame",
+  type ExploreSection = "sequences" | "collections";
+  const PRIMARY_ORDER: BrowsePrimary[] = ["explore", "you"];
+  const EXPLORE_OPTIONS: Array<{
+    value: ExploreSection;
+    label: string;
+  }> = [
+    { value: "sequences", label: "Sequences" },
+    { value: "collections", label: "Collections" },
   ];
 
   // Transition configuration
@@ -133,6 +126,10 @@
   );
   setSharedCollectionsContext(sharedCollectionsState);
 
+  const browseNavigationState = setBrowseNavigationContext(
+    createBrowseNavigationState()
+  );
+
   $effect(() => {
     sharedCollectionsState.start(authState.effectiveUserId);
   });
@@ -140,7 +137,41 @@
   // ✅ PURE RUNES: Local state
   let _selectedSequence = $state<SequenceData | null>(null);
   let error = $state<string | null>(null);
-  let activeTab = $state<BrowseModuleType>("gallery");
+  const activePrimary = $derived<BrowsePrimary>(
+    browseNavigationState.currentLocation?.primary ?? "explore"
+  );
+  const exploreSection = $derived<ExploreSection>(
+    browseNavigationState.currentLocation?.primary === "explore" &&
+      browseNavigationState.currentLocation.section === "collections"
+      ? "collections"
+      : "sequences"
+  );
+  const activePanelKey = $derived(
+    activePrimary === "explore"
+      ? `${activePrimary}:${exploreSection}`
+      : activePrimary
+  );
+  let lastTrackedDestination: "gallery" | "library" | "collections" | null =
+    null;
+
+  // Browse stays mounted while someone uses another module. Resetting when it
+  // is hidden means returning to the same destination counts as a fresh visit,
+  // while unrelated reactive updates never inflate the event.
+  $effect(() => {
+    if (!visible) {
+      lastTrackedDestination = null;
+      return;
+    }
+    const destination =
+      activePrimary === "you"
+        ? "library"
+        : exploreSection === "collections"
+          ? "collections"
+          : "gallery";
+    if (destination === lastTrackedDestination) return;
+    lastTrackedDestination = destination;
+    trackBrowseDestinationEntered(destination);
+  });
   // Gallery opens on the drill front door (GalleryDrill); any pick or
   // "Browse all" reveals the full GalleryTab. Stays on the chosen view
   // while mounted, and this session's view survives reload/HMR.
@@ -198,7 +229,7 @@
         // effect that mirrors it into the active tab will happily pull the
         // Library tab back over a gallery handoff. Say where we are in that
         // vocabulary too, so both sources of truth agree.
-        browseNavigationState.navigateTo({ tab: "gallery", view: "list" });
+        browseNavigationState.viewExploreSequences();
         // Exactly what the drill's own creator row applies
         // (GalleryDrill.svelte), so the destination is the familiar filtered
         // grid rather than a second thing that means the same.
@@ -246,7 +277,7 @@
 
   // Slide direction for tab transitions (1 = right, -1 = left)
   let slideDirection = $state<1 | -1>(1);
-  let previousTab = $state<BrowseModuleType | null>(null);
+  let previousPrimary = $state<BrowsePrimary | null>(null);
 
   // Services
   let deviceDetector: DeviceDetector | null = null;
@@ -274,63 +305,34 @@
       : "min(600px, 90vw)"
   );
 
-  // ✅ SYNC WITH BOTTOM NAVIGATION STATE
-  // This effect syncs the local tab state with the global navigation state
+  // The global navigation owns only Browse's two primary jobs. The Browse
+  // route state owns every inner destination and its complete URL.
   $effect(() => {
     const navTab = navigationState.activeTab;
-    let newTab: BrowseModuleType = "gallery";
+    const newPrimary: BrowsePrimary =
+      navTab === "you" || navTab === "library" ? "you" : "explore";
 
-    // Map navigation state to local browse tab. Ids match labels since
-    // 2026-07-10: "library" = Library panel, "collections" = community
-    // Collections panel.
-    if (navTab === "gallery" || navTab === "browse") {
-      newTab = "gallery";
-    } else if (navTab === "library") {
-      newTab = "library";
-    } else if (navTab === "collections" || navTab === "community") {
-      // "community" was the transient 2026-07-10 id between the two renames;
-      // accept it defensively (stale history/persisted state).
-      newTab = "collections";
-    } else if (navTab === "hall-of-shame") {
-      newTab = "hall-of-shame";
+    if (newPrimary !== activePrimary && !browseNavigationState.isNavigating) {
+      // The outer tab click already pushed /browse/{primary}; replace that
+      // entry with the explicit inner route instead of adding a second click.
+      browseNavigationState.selectPrimary(newPrimary, true);
     }
 
-    // Only push to history if this is a user-initiated tab change (not from history nav)
-    if (newTab !== activeTab && !browseNavigationState.isNavigating) {
-      // Map to the browse navigation tab format
-      const browseTab =
-        newTab === "gallery"
-          ? "gallery"
-          : (newTab as "library" | "collections");
-      browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
-    }
-
-    // Calculate slide direction based on tab order
-    if (previousTab !== null && newTab !== previousTab) {
-      const oldIndex = TAB_ORDER.indexOf(previousTab);
-      const newIndex = TAB_ORDER.indexOf(newTab);
+    if (previousPrimary !== null && newPrimary !== previousPrimary) {
+      const oldIndex = PRIMARY_ORDER.indexOf(previousPrimary);
+      const newIndex = PRIMARY_ORDER.indexOf(newPrimary);
       slideDirection = newIndex > oldIndex ? 1 : -1;
     }
-
-    previousTab = activeTab;
-    activeTab = newTab;
+    previousPrimary = newPrimary;
   });
 
-  // ✅ SYNC UI FROM NAVIGATION STATE
-  // When browseNavigationState.currentLocation changes, mirror the active tab
-  // (gallery / library / collections). Creators now lives in Social.
+  // Browser back/forward and direct deep links update the global primary tab
+  // without asking the global coordinator to parse Browse's inner vocabulary.
   $effect(() => {
     const location = browseNavigationState.currentLocation;
     if (!location) return;
-
-    // Map the location tab to internal activeTab
-    const internalTab = location.tab === "gallery" ? "gallery" : location.tab;
-
-    // Update tab if needed (this will trigger bottom nav sync)
-    if (internalTab !== activeTab) {
-      navigationState.setActiveTab(
-        location.tab === "gallery" ? "gallery" : location.tab
-      );
+    if (navigationState.activeTab !== location.primary) {
+      navigationState.setActiveTab(location.primary);
     }
   });
 
@@ -338,19 +340,13 @@
    * Handle navigation from history back/forward buttons
    */
   function handleHistoryNavigation(location: BrowseLocation) {
-    // Map gallery tab back to sequences for internal state
-    const internalTab = location.tab === "gallery" ? "gallery" : location.tab;
-
-    // Navigate to the tab via global navigation state
-    if (internalTab !== activeTab) {
-      navigationState.setActiveTab(
-        location.tab === "gallery" ? "gallery" : location.tab
-      );
+    if (location.primary !== activePrimary) {
+      navigationState.setActiveTab(location.primary);
     }
 
-    // Handle gallery detail view
     if (
-      location.tab === "gallery" &&
+      location.primary === "explore" &&
+      location.section === "sequences" &&
       location.view === "detail" &&
       location.contextId
     ) {
@@ -422,14 +418,14 @@
       }
     });
 
-    // Collection deep links (/browse/library/[id]?scan=1) —
+    // Collection deep links (current and already-printed legacy forms) —
     // this is the URL a phone lands on after scanning the desktop scan sheet's
     // handoff QR. The scan flag asks the detail view to open the scanner
     // immediately, so the phone goes from QR scan to camera in one hop.
     const scanTarget = getCollectionScanTargetFromURL();
 
-    // Initialize navigation state (restores from localStorage if available)
-    browseNavigationState.initialize("gallery");
+    // URL wins on direct load; versioned persisted state fills in otherwise.
+    browseNavigationState.initialize();
 
     if (scanTarget) {
       // The URL is the source of truth on load — override localStorage.
@@ -487,7 +483,7 @@
           );
           if (sequence) {
             openSequenceViewer(sequence, {
-              returnPath: "/browse/gallery",
+              returnPath: "/browse/explore/sequences",
               returnLabel: "Browse",
             });
           } else {
@@ -515,6 +511,7 @@
 
   onDestroy(() => {
     sharedCollectionsState.stop();
+    browseNavigationState.destroy();
   });
 
   // Cancel all pending thumbnail renders when leaving the browse module
@@ -573,7 +570,7 @@
 <div class="browse-content">
   <!-- Tab Content - uses {#key} with directional slide transitions (like Learn module) -->
   <div class="browse-tab-content">
-    {#key activeTab}
+    {#key activePanelKey}
       <div
         class="tab-panel"
         in:fly={{
@@ -587,50 +584,80 @@
           easing: cubicOut,
         }}
       >
-        {#if activeTab === "gallery"}
-          {#if galleryView === "start-here"}
-            <FilterWorkspace
-              {engine}
-              collections={collectionOptions}
-              {resultsPane}
-              onSaveSmart={() => (smartSaveOpen = true)}
-              onEject={applyToGrid}
-            />
-          {:else}
-            <GalleryTab
-              {isMobile}
-              {drawerWidth}
-              {engine}
-              {error}
-              warming={gridWarming}
-              onSequenceAction={(action, sequence, variations) => {
-                return (
-                  eventHandlerService?.handleSequenceAction(
-                    action,
-                    sequence,
-                    variations
-                  ) ?? Promise.resolve()
-                );
-              }}
-              onBackToStart={() => {
-                // Back to the WORKSPACE, rule intact — the strip shows and
-                // edits it there. Only transient search resets.
-                engine.setSearch("");
-                galleryView = "start-here";
-              }}
-              onOpenWorkspace={() => {
-                engine.setSearch("");
-                galleryView = "start-here";
-              }}
-              onSaveSmart={() => (smartSaveOpen = true)}
-            />
-          {/if}
-        {:else if activeTab === "library"}
+        {#if activePrimary === "explore"}
+          <div class="explore-shell">
+            <header class="explore-header">
+              <div class="explore-heading">
+                <span class="explore-eyebrow">Explore</span>
+                <h1>
+                  {exploreSection === "sequences"
+                    ? "Find a sequence"
+                    : "Community collections"}
+                </h1>
+              </div>
+              <div class="explore-switcher">
+                <SegmentedControl
+                  options={EXPLORE_OPTIONS}
+                  value={exploreSection}
+                  onchange={(section) => {
+                    if (section === "collections") {
+                      browseNavigationState.viewExploreCollections();
+                    } else {
+                      browseNavigationState.viewExploreSequences();
+                    }
+                  }}
+                  color="accent"
+                  size="sm"
+                  semantics="tabs"
+                  ariaLabel="Explore content type"
+                />
+              </div>
+            </header>
+
+            <div class="explore-body">
+              {#if exploreSection === "sequences"}
+                {#if galleryView === "start-here"}
+                  <FilterWorkspace
+                    {engine}
+                    collections={collectionOptions}
+                    {resultsPane}
+                    onSaveSmart={() => (smartSaveOpen = true)}
+                    onEject={applyToGrid}
+                  />
+                {:else}
+                  <GalleryTab
+                    {isMobile}
+                    {drawerWidth}
+                    {engine}
+                    {error}
+                    warming={gridWarming}
+                    onSequenceAction={(action, sequence, variations) => {
+                      return (
+                        eventHandlerService?.handleSequenceAction(
+                          action,
+                          sequence,
+                          variations
+                        ) ?? Promise.resolve()
+                      );
+                    }}
+                    onBackToStart={() => {
+                      engine.setSearch("");
+                      galleryView = "start-here";
+                    }}
+                    onOpenWorkspace={() => {
+                      engine.setSearch("");
+                      galleryView = "start-here";
+                    }}
+                    onSaveSmart={() => (smartSaveOpen = true)}
+                  />
+                {/if}
+              {:else}
+                <CommunityCollectionsPanel />
+              {/if}
+            </div>
+          </div>
+        {:else}
           <MyCollectionsPanel />
-        {:else if activeTab === "collections"}
-          <CommunityCollectionsPanel />
-        {:else if activeTab === "hall-of-shame"}
-          <HallOfShameGallery />
         {/if}
       </div>
     {/key}
@@ -658,5 +685,89 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+  }
+
+  .explore-shell {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .explore-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-lg, 16px);
+    min-height: 68px;
+    padding: 10px clamp(12px, 2cqi, 28px);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--theme-text, #fff) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-background, #090b16) 88%,
+      transparent
+    );
+  }
+
+  .explore-heading {
+    min-width: 0;
+  }
+
+  .explore-eyebrow {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-xs, 12px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .explore-heading h1 {
+    margin: 0;
+    overflow: hidden;
+    color: var(--theme-text, #fff);
+    font-size: clamp(18px, 2.1cqi, 26px);
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .explore-switcher {
+    width: min(360px, 46cqi);
+    min-width: 248px;
+  }
+
+  .explore-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  @media (max-width: 560px) {
+    .explore-header {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 8px;
+      min-height: auto;
+      padding-block: 8px;
+    }
+
+    .explore-heading {
+      display: none;
+    }
+
+    .explore-switcher {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tab-panel {
+      transition: none;
+    }
   }
 </style>

@@ -11,7 +11,9 @@ export function resolveBrowseInitialViewerMode(
   activeFilters: BrowseEngine["activeFilters"]
 ): ViewerMode | undefined {
   const performanceIntent = [...activeFilters.values()].some(
-    (filter) => filter.type === BrowseFilterType.PERFORMANCE_AVAILABILITY
+    (filter) =>
+      filter.type === BrowseFilterType.PERFORMANCE_AVAILABILITY ||
+      filter.type === BrowseFilterType.RECENT_PERFORMANCE
   );
 
   return performanceIntent ? "videos" : undefined;

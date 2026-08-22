@@ -94,53 +94,58 @@
 
 <div class="drill-screen screen-max-turns">
   {@render valueHead("Set a turn limit")}
-  {#if adaptiveValueLayout && selectedMaxTurn}
-    <div class="turn-picker">
-      <div class="turn-summary" aria-live="polite">
-        <span class="turn-limit" class:turn-limit-any={atNoLimit}>
-          {atNoLimit ? "Any" : `≤${selectedMaxTurn.value}`}
-        </span>
-        <span class="turn-unit">turns</span>
-        <span class="turn-count">{selectedMaxTurn.count} matches</span>
-      </div>
+  {#if adaptiveValueLayout}
+    <!-- Bits Slider normalizes an invalid initial value to its minimum and
+         reports that as a change. Wait for our applied/no-limit sync so merely
+         opening this editor cannot commit the first stop. -->
+    {#if Number.isFinite(pendingMaxTurn) && selectedMaxTurn}
+      <div class="turn-picker">
+        <div class="turn-summary" aria-live="polite">
+          <span class="turn-limit" class:turn-limit-any={atNoLimit}>
+            {atNoLimit ? "Any" : `≤${selectedMaxTurn.value}`}
+          </span>
+          <span class="turn-unit">turns</span>
+          <span class="turn-count">{selectedMaxTurn.count} matches</span>
+        </div>
 
-      <div class="turn-slider-shell">
-        <Slider.Root
-          type="single"
-          min={maxTurnStops[0]}
-          max={maxTurnStops.at(-1)}
-          step={maxTurnStops}
-          bind:value={pendingMaxTurn}
-          onValueChange={commitMaxTurn}
-          class="turn-slider-root"
-          trackPadding={3}
-        >
-          {#snippet children({ tickItems })}
-            <span class="turn-slider-track">
-              <Slider.Range class="turn-slider-range" />
-            </span>
-            {#each tickItems as { index, value } (value)}
-              <Slider.Tick {index} class="turn-slider-tick" />
-              <Slider.TickLabel
-                {index}
-                position="bottom"
-                class="turn-slider-label"
-              >
-                {value === NO_TURN_LIMIT ? "Any" : `≤${value}`}
-              </Slider.TickLabel>
-            {/each}
-            <Slider.Thumb
-              index={0}
-              class="turn-slider-thumb"
-              aria-label="Maximum turn intensity"
-              aria-valuetext={atNoLimit
-                ? `No turn limit, ${selectedMaxTurn.count} matches`
-                : `At most ${selectedMaxTurn.value} turns, ${selectedMaxTurn.count} matches`}
-            />
-          {/snippet}
-        </Slider.Root>
+        <div class="turn-slider-shell">
+          <Slider.Root
+            type="single"
+            min={maxTurnStops[0]}
+            max={maxTurnStops.at(-1)}
+            step={maxTurnStops}
+            bind:value={pendingMaxTurn}
+            onValueChange={commitMaxTurn}
+            class="turn-slider-root"
+            trackPadding={3}
+          >
+            {#snippet children({ tickItems })}
+              <span class="turn-slider-track">
+                <Slider.Range class="turn-slider-range" />
+              </span>
+              {#each tickItems as { index, value } (value)}
+                <Slider.Tick {index} class="turn-slider-tick" />
+                <Slider.TickLabel
+                  {index}
+                  position="bottom"
+                  class="turn-slider-label"
+                >
+                  {value === NO_TURN_LIMIT ? "Any" : `≤${value}`}
+                </Slider.TickLabel>
+              {/each}
+              <Slider.Thumb
+                index={0}
+                class="turn-slider-thumb"
+                aria-label="Maximum turn intensity"
+                aria-valuetext={atNoLimit
+                  ? `No turn limit, ${selectedMaxTurn.count} matches`
+                  : `At most ${selectedMaxTurn.value} turns, ${selectedMaxTurn.count} matches`}
+              />
+            {/snippet}
+          </Slider.Root>
+        </div>
       </div>
-    </div>
+    {/if}
   {:else}
     <div class="value-list">
       {#each catalog.maxTurnIntensityValues as v (v.value)}

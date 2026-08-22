@@ -8,7 +8,8 @@ import type { ActiveFilter } from "$lib/shared/browse/domain/multi-filter-models
 function sequence(
   id: string,
   publicPerformanceCount: number | undefined,
-  sequenceLength = 4
+  sequenceLength = 4,
+  latestPublicPerformanceAt?: Date
 ): SequenceData {
   return {
     id,
@@ -16,6 +17,7 @@ function sequence(
     steps: [],
     sequenceLength,
     ...(publicPerformanceCount !== undefined && { publicPerformanceCount }),
+    ...(latestPublicPerformanceAt && { latestPublicPerformanceAt }),
   } as unknown as SequenceData;
 }
 
@@ -100,5 +102,29 @@ describe("performance availability browse filter", () => {
     expect(applyFilters(pool, filters).map((item) => item.id)).toEqual([
       "zero",
     ]);
+  });
+
+  it("keeps recently performed separate from recently added", () => {
+    const now = Date.now();
+    const recentlyPerformed = sequence(
+      "old-sequence-new-performance",
+      1,
+      4,
+      new Date(now - 2 * 24 * 60 * 60 * 1000)
+    );
+    const olderPerformance = sequence(
+      "old-performance",
+      1,
+      4,
+      new Date(now - 31 * 24 * 60 * 60 * 1000)
+    );
+
+    expect(
+      applyFilter(
+        [recentlyPerformed, olderPerformance],
+        BrowseFilterType.RECENT_PERFORMANCE,
+        "recent-performance"
+      ).map((item) => item.id)
+    ).toEqual(["old-sequence-new-performance"]);
   });
 });

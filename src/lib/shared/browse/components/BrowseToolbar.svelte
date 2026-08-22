@@ -633,6 +633,7 @@
         onSearch={(q) => withResultsMorph(() => engine.setSearch(q))}
         value={engine.searchQuery}
         placeholder="Search sequences..."
+        expansionAnchor="end"
       />
     </div>
   {/if}

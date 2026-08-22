@@ -17,33 +17,31 @@
 
 <div class="drill-screen screen-performance">
   {@render valueHead(
-    "Browse by performances",
-    stackHint ?? "Only performances shared publicly count here."
+    "Performances in these results",
+    "Counts include every filter already applied. Tap several to match any."
   )}
   <div class="value-list">
     {#each catalog.performanceValues as v (v.value)}
-      {@const applied =
-        isValueApplied?.(BrowseFilterType.PERFORMANCE_AVAILABILITY, v.value) ??
-        false}
+      {@const applied = isValueApplied?.(v.type, v.value) ?? false}
       <button
         class="length-row tall monument"
         class:value-applied={applied}
         type="button"
         aria-pressed={isValueApplied ? applied : undefined}
         disabled={valueDisabled(v.count, applied)}
-        onclick={() =>
-          onPickValue(
-            BrowseFilterType.PERFORMANCE_AVAILABILITY,
-            v.value,
-            v.label
-          )}
+        onclick={() => onPickValue(v.type, v.value, v.label)}
       >
         <span class="loop-icon" aria-hidden="true">
           <i class="fas {v.icon}"></i>
         </span>
         <span class="value-main">
           <span class="value-label">{v.label}</span>
-          <span class="value-desc">{v.desc}</span>
+          <span class="value-desc">
+            {v.count} in these results
+            {#if v.count !== v.overallCount}
+              · {v.overallCount} overall
+            {/if}
+          </span>
           <span class="density-bar">
             <span
               class="density-fill"

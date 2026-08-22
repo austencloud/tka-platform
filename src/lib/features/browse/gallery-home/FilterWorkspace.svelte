@@ -390,4 +390,29 @@ the below-seam actions mutate the engine in place.
   .strip-motion-anchor {
     view-transition-class: filter-rule-token;
   }
+
+  @media (max-width: 520px) {
+    /* Count + rule remain one readable sentence; the single result handoff
+       gets its own full-width row and 44px target on compact pickers. */
+    .gallery-rule-strip {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      gap: 0.4rem 0.6rem;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .gallery-rule-strip :global(.rule-sentence) {
+      min-width: 0;
+    }
+
+    .strip-actions {
+      width: 100%;
+      margin-left: 0;
+      grid-column: 1 / -1;
+    }
+
+    .strip-actions :global(button) {
+      flex: 1;
+    }
+  }
 </style>

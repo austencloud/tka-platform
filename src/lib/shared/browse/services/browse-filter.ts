@@ -102,6 +102,8 @@ export function applyFilter(
       return filterByRecent(sequences);
     case BrowseFilterType.PERFORMANCE_AVAILABILITY:
       return filterByPerformanceAvailability(sequences, filterValue);
+    case BrowseFilterType.RECENT_PERFORMANCE:
+      return filterByRecentPerformance(sequences);
     case BrowseFilterType.LOOP_TYPE:
       return filterByLOOPType(sequences, filterValue);
     case BrowseFilterType.TND_FAMILY:
@@ -500,6 +502,19 @@ function filterByPerformanceAvailability(
   }
 
   return sequences;
+}
+
+function filterByRecentPerformance(sequences: SequenceData[]): SequenceData[] {
+  const thirtyDaysAgo = Date.now() - THIRTY_DAYS_MS;
+  return sequences.filter((seq) => {
+    const performedAt = seq.latestPublicPerformanceAt;
+    if (!performedAt) return false;
+    const timestamp =
+      performedAt instanceof Date
+        ? performedAt.getTime()
+        : new Date(performedAt).getTime();
+    return Number.isFinite(timestamp) && timestamp >= thirtyDaysAgo;
+  });
 }
 
 /**

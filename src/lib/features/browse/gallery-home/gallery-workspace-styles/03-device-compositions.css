@@ -181,7 +181,7 @@
        editors stack, and losing it while a "choose one" footer shows was a
        flat contradiction (audit C-1). */
   .drill-ctx.adaptive-value-layout
-    .drill-screen:not(.screen-loop, .screen-family)
+    .drill-screen:not(.screen-loop, .screen-family, .screen-performance)
     .drill-head
     p {
     display: none;
@@ -200,6 +200,9 @@
   }
   .drill-ctx.adaptive-value-layout .screen-gridmode > .value-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .drill-ctx.adaptive-value-layout .screen-performance > .value-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .drill-ctx.adaptive-value-layout .screen-loop > .value-list {
     grid-template-columns: repeat(8, minmax(0, 1fr));

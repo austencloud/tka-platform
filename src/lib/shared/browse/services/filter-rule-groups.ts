@@ -50,6 +50,7 @@ const CATEGORY_LABELS: Partial<Record<string, string>> = {
   [BrowseFilterType.OWNER]: "Creator",
   [BrowseFilterType.AUTHOR]: "Author",
   [BrowseFilterType.PERFORMANCE_AVAILABILITY]: "Performances",
+  [BrowseFilterType.RECENT_PERFORMANCE]: "Performed",
   [BrowseFilterType.LOOP_TYPE]: "LOOPs",
   [BrowseFilterType.TND_FAMILY]: "Families",
   [BrowseFilterType.MAX_TURN_INTENSITY]: "Max turns",
@@ -57,7 +58,7 @@ const CATEGORY_LABELS: Partial<Record<string, string>> = {
   [BrowseFilterType.COLLECTION]: "In",
   [BrowseFilterType.REVERSAL_PATTERN]: "Reversals",
   [BrowseFilterType.FAVORITES]: "Favorites",
-  [BrowseFilterType.RECENT]: "Recent",
+  [BrowseFilterType.RECENT]: "Added",
   search: "Search",
 };
 
