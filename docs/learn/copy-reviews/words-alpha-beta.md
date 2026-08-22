@@ -3,7 +3,23 @@
 **Concept ID:** `words-alpha-beta`  
 **Review state:** DRAFT  
 **Implementation gate:** CLOSED  
-**Last reviewed:** 2026-08-21
+**Last reviewed:** 2026-08-22
+
+## Current Implementation Boundary
+
+On 2026-08-22 Austen corrected the example source: “Look at the TKA 1:
+Learning Letters deck. Those are the 19 words.” He then authorized the data and
+interaction correction with “fix it.”
+
+The lesson may therefore load and present the deck's canonical 19 sequence
+objects. This does not approve new explanatory TKA copy. The live lesson uses
+only routine interface labels, the verified deck/family names, card counts,
+and canonical glyphs. The explanatory-copy gate remains closed.
+
+The old generated `AABB` / `GGGG` / `CCCC` exercise and the proposed
+three-card AABB replacement below are both superseded as the primary lesson
+interaction. They remain documented here so rejected or unapproved copy is not
+silently restored.
 
 ## Rejected Copy
 
@@ -32,6 +48,10 @@ do not contain all the information required to perform a specific sequence.
   different thumb orientations and require different negative-space pathways.
   The guide says the letters organize motion combinations into categories and
   that the complete pictographs provide the missing performance detail.
+- `src/routes/(public)/guide/level-1/_data/content/words.content.ts`: the live
+  guide builds the three AABB strips as `in | in`, `out | out`, and `in | out`
+  from explicit staff-orientation data. This is the implementation source the
+  interactive lesson must reuse rather than regenerating unrelated words.
 
 ## Unresolved Instructional Framing
 
@@ -56,13 +76,13 @@ invent a negative-space visualization. The repository does not currently have
 a canonical Learn primitive that truthfully demonstrates the body's
 negative-space pathway.
 
-## Proposed Learning Objective
+## Superseded Proposed Learning Objective
 
 > Recognize that the same TKA word can have multiple valid pictographic
 > executions, and use the full pictographs to identify the starting thumb
 > orientation for a specific execution.
 
-## Proposed Exact On-Screen Copy
+## Superseded Proposed Exact On-Screen Copy
 
 ### Compare
 

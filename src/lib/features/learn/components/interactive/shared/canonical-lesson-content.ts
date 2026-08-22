@@ -105,44 +105,4 @@ export const TYPE1_QUESTIONS = [
   },
 ] as const;
 
-export const WORD_LESSON_EXAMPLES = [
-  {
-    word: "AABB",
-    label: "Switch the spin",
-    detail: "Two pro + pro steps, then two anti + anti steps.",
-  },
-  {
-    word: "GGGG",
-    label: "Stay in beta",
-    detail: "The same beta-to-beta pro + pro letter repeats.",
-  },
-  {
-    word: "CCCC",
-    label: "Run the hybrid",
-    detail: "The same alpha-to-alpha hybrid letter repeats.",
-  },
-] as const;
-
-export const WORD_QUESTIONS = [
-  {
-    prompt: "Which word keeps both hands in beta?",
-    choices: ["AABB", "GGGG", "CCCC"],
-    answer: "GGGG",
-    explanation:
-      "G begins and ends in beta, so every G hands beta to the next G.",
-  },
-  {
-    prompt: "Which word uses a hybrid letter on every step?",
-    choices: ["AABB", "GGGG", "CCCC"],
-    answer: "CCCC",
-    explanation: "C combines one pro motion with one anti motion.",
-  },
-  {
-    prompt: "Which word changes from pro + pro to anti + anti?",
-    choices: ["AABB", "GGGG", "CCCC"],
-    answer: "AABB",
-    explanation: "A is pro + pro. B is anti + anti.",
-  },
-] as const;
-
 export const TYPE1_ACCENTS = LETTER_TYPE_COLORS[LetterType.TYPE1];

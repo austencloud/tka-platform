@@ -10,8 +10,6 @@ import {
   TYPE1_ACCENTS,
   TYPE1_LESSON_LETTERS,
   TYPE1_QUESTIONS,
-  WORD_LESSON_EXAMPLES,
-  WORD_QUESTIONS,
 } from "../../../src/lib/features/learn/components/interactive/shared/canonical-lesson-content";
 
 const readSource = (path: string) =>
@@ -65,19 +63,6 @@ describe("canonical concept lesson content", () => {
       )
     ).toBe(true);
   });
-
-  it("uses the three generated words promised by the lesson", () => {
-    expect(WORD_LESSON_EXAMPLES.map((item) => item.word)).toEqual([
-      "AABB",
-      "GGGG",
-      "CCCC",
-    ]);
-    expect(
-      WORD_QUESTIONS.every((question) =>
-        question.choices.includes(question.answer)
-      )
-    ).toBe(true);
-  });
 });
 
 describe("canonical concept lesson composition", () => {
@@ -107,23 +92,39 @@ describe("canonical concept lesson composition", () => {
     expect(type1).not.toContain("Type1ProspinPage");
   });
 
-  it("renders words through the production generator, player, and card", () => {
+  it("loads the Learning Letters deck and pairs the production player with the production card", () => {
     const stage = readSource(
-      "src/lib/features/learn/components/interactive/shared/CanonicalWordStage.svelte"
+      "src/lib/features/learn/components/interactive/words/WordSequencePair.svelte"
     );
     const words = readSource(
       "src/lib/features/learn/components/interactive/words/WordsConceptExperience.svelte"
     );
 
-    expect(words).toContain("getWordSequenceGenerator");
-    expect(words).toContain("PropAwareThumbnail");
-    expect(words).toContain("word-answer-grid");
+    expect(words).toContain("loadCanonicalLearningLettersSequences");
+    expect(words).toContain("ChoreoCard");
+    expect(words).not.toContain("PropAwareThumbnail");
+    expect(words).toContain("TKAWordGlyph");
+    expect(words).toContain("family-cards");
+    expect(words).toContain("answer-grid");
+    expect(words).toContain("resetLessonScroll");
+    expect(words).toContain("scrollIntoView");
     expect(stage).toContain("InlineAnimationPlayer");
     expect(stage).toContain("ChoreoCard");
-    expect(stage).toContain("SegmentedControl");
-    expect(words).toContain("CanonicalWordStage");
+    expect(stage).toContain(
+      "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)"
+    );
 
-    expect(words).not.toContain("selectedAnswer ?? activeQuestion.choices[0]");
+    expect(words).not.toContain("getWordSequenceGenerator");
+    expect(words).not.toContain("WORD_LESSON_EXAMPLES");
+    expect(words).not.toContain("WORD_QUESTIONS");
+    expect(words).not.toContain('"AABB"');
+    expect(words).not.toContain("CanonicalWordStage");
+    expect(stage).not.toContain("SegmentedControl");
+    expect(words).not.toContain("letter-train");
+    expect(words).not.toContain('.split("")');
+    expect(words).not.toContain("<strong>{word}</strong>");
+    expect(words).not.toMatch(/box-shadow:\s*inset\s+0\s+-?\d+px/);
+    expect(words).not.toMatch(/border-(left|right|top|bottom):\s*[2-9]\d*px/);
     expect(words).not.toContain("WordVisualizer");
     expect(words).not.toContain("AABBDemoPage");
     expect(words).not.toContain("MorePatternsPage");
@@ -145,5 +146,19 @@ describe("canonical concept lesson composition", () => {
     for (const copy of rejectedCopy) {
       expect(words).not.toContain(copy);
     }
+  });
+});
+
+describe("concept visual grounding workflow", () => {
+  it("requires component ownership evidence before lesson UI changes", () => {
+    const skill = readSource(".claude/skills/concepts/SKILL.md");
+    const gate = readSource(".claude/skills/concepts/visual-grounding-gate.md");
+
+    expect(skill).toContain("visual-grounding-gate.md");
+    expect(gate).toContain("| Capability");
+    expect(gate).toContain("no-left-edge-accent-bar.md");
+    expect(gate).toContain("TKAWordGlyph");
+    expect(gate).toContain("inspectable before selection");
+    expect(gate).toContain("simultaneous split/stack contract");
   });
 });

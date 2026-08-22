@@ -40,6 +40,7 @@ function safeTurn(pattern: string): string {
 }
 
 let poolPromise: Promise<readonly SequenceData[]> | null = null;
+let learningLettersPromise: Promise<readonly SequenceData[]> | null = null;
 
 /**
  * Resolve the full canonical pool (all six families × all 49 turn patterns).
@@ -56,12 +57,35 @@ export function loadCanonicalTnDSequences(): Promise<readonly SequenceData[]> {
   return poolPromise;
 }
 
-async function resolvePool(): Promise<readonly SequenceData[]> {
+/**
+ * Resolve the exact TKA 1: Learning Letters deck: the canonical 0|0 card from
+ * every diamond T&D family. The family resolver removes the three mirrored
+ * gamma duplicates, so this returns the same 19 cards as the founding smart
+ * collection without building the other 48 turn patterns per seed.
+ */
+export function loadCanonicalLearningLettersSequences(): Promise<
+  readonly SequenceData[]
+> {
+  if (!learningLettersPromise) {
+    learningLettersPromise = resolvePool(["0|0"]).catch((err) => {
+      learningLettersPromise = null;
+      throw err;
+    });
+  }
+  return learningLettersPromise;
+}
+
+async function resolvePool(
+  patterns?: readonly string[]
+): Promise<readonly SequenceData[]> {
   const out: SequenceData[] = [];
   // Sequential per family: each call shares the same cached base catalog, and
   // the resolution work is CPU-bound — parallelism buys nothing but jank.
   for (const element of TND_ELEMENTS) {
-    const matrices = await resolveTnDFamilyCards(element.familyId);
+    const matrices = await resolveTnDFamilyCards(
+      element.familyId,
+      patterns ? { patterns } : {}
+    );
     for (const matrix of matrices) {
       for (const [pattern, seq] of matrix.byTurn) {
         const tagged = updateSequenceData(seq, {
@@ -75,6 +99,9 @@ async function resolvePool(): Promise<readonly SequenceData[]> {
           // level and printed badge can never disagree. Whole turns resolve
           // radial (level 2); half turns end non-radial (level 3).
           level: calculateDifficultyLevel([...(seq.steps ?? [])]),
+          // The resolver is the family authority. Stamping its result keeps
+          // downstream deck views independent of older catalog metadata.
+          metadata: { ...seq.metadata, familyId: element.familyId },
         });
         // Re-derive reversal dots from the turn-applied motions. The canonical
         // display policy re-derives reversal flags on every hydrate, but these
@@ -100,9 +127,16 @@ const BOOK_TURN = "1|1";
 
 const BOOK_PATTERN: ResolvedReversalPattern = (() => {
   const def = getReversalPattern("book");
-  if (!def) throw new Error('reversal pattern "book" missing from REVERSAL_PATTERNS');
+  if (!def)
+    throw new Error('reversal pattern "book" missing from REVERSAL_PATTERNS');
   // Both hands reverse an even number of times over PPPP → clean loop.
-  return { id: def.id, label: def.label, sequence: def.sequence, isNamed: true, isCleanLoop: true };
+  return {
+    id: def.id,
+    label: def.label,
+    sequence: def.sequence,
+    isNamed: true,
+    isCleanLoop: true,
+  };
 })();
 
 let bookPromise: Promise<readonly SequenceData[]> | null = null;
@@ -115,7 +149,9 @@ let bookPromise: Promise<readonly SequenceData[]> | null = null;
  * REVERSAL_PATTERN "book" selects exactly these. Injected ONLY into the Book
  * collection's engine (never the main gallery), so it adds zero gallery flood.
  */
-export function loadCanonicalBookVariations(): Promise<readonly SequenceData[]> {
+export function loadCanonicalBookVariations(): Promise<
+  readonly SequenceData[]
+> {
   if (!bookPromise) {
     bookPromise = resolveBookPool().catch((err) => {
       bookPromise = null;

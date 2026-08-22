@@ -1,30 +1,30 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { getWordSequenceGenerator } from "$lib/features/create/spell/get-word-sequence-generator";
-  import { getCodexLetterMappingRepo } from "$lib/features/learn/codex/get-codex-letter-mapping-repo";
+  import { loadCanonicalLearningLettersSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+  import {
+    TND_ELEMENTS,
+    type TnDElement,
+  } from "$lib/features/choreo-card/domain/tnd-element";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { startPositionDeriver } from "$lib/shared/pictograph/shared/services/start-position-deriver";
+  import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import type { ExperienceViewMode } from "../../../domain/types";
   import { getExperiencePersistence } from "../../../state/experience-persistence.svelte";
   import ExperienceProgressIndicator from "../ExperienceProgressIndicator.svelte";
-  import CanonicalWordStage from "../shared/CanonicalWordStage.svelte";
-  import {
-    TYPE1_ACCENTS,
-    WORD_LESSON_EXAMPLES,
-    WORD_QUESTIONS,
-  } from "../shared/canonical-lesson-content";
+  import WordSequencePair from "./WordSequencePair.svelte";
 
-  type LessonWord = (typeof WORD_LESSON_EXAMPLES)[number]["word"];
-  type WordLoadState = "idle" | "loading" | "ready" | "error";
+  type LoadState = "loading" | "ready" | "error";
+  type AnswerState = "correct" | "wrong" | null;
 
-  const LESSON_WORDS = WORD_LESSON_EXAMPLES.map(
-    (example) => example.word
-  ) as LessonWord[];
+  interface LearningLettersFamily {
+    element: TnDElement;
+    sequences: readonly SequenceData[];
+  }
 
   let {
     onComplete,
@@ -37,1116 +37,886 @@
   const haptic = getHapticFeedback();
   const persistence = getExperiencePersistence("words-alpha-beta");
   const saved = persistence.load();
-  let generator: ReturnType<typeof getWordSequenceGenerator> | null = null;
 
   let phase = $state(Math.min(3, Math.max(1, saved.step || 1)));
-  let selectedWord = $state(
-    persistence.getPhaseData<LessonWord>(
-      "selectedWord",
-      WORD_LESSON_EXAMPLES[0].word
-    )
+  let loadState = $state<LoadState>("loading");
+  let loadError = $state<string | null>(null);
+  let sequences = $state<readonly SequenceData[]>([]);
+  let selectedSequenceId = $state(
+    persistence.getPhaseData<string>("selectedSequenceId", "")
   );
-  let questionIndex = $state(
+  let challengeFamilyIndex = $state(
     Math.min(
-      WORD_QUESTIONS.length - 1,
-      persistence.getPhaseData<number>("questionIndex", 0)
+      TND_ELEMENTS.length - 1,
+      Math.max(0, persistence.getPhaseData<number>("challengeFamilyIndex", 0))
     )
   );
-  let selectedAnswer = $state<LessonWord | null>(null);
-  let answerState = $state<"correct" | "wrong" | null>(null);
-  let sequences = $state<Record<LessonWord, SequenceData | null>>({
-    AABB: null,
-    GGGG: null,
-    CCCC: null,
-  });
-  let wordLoadStates = $state<Record<LessonWord, WordLoadState>>({
-    AABB: "idle",
-    GGGG: "idle",
-    CCCC: "idle",
-  });
-  let wordErrors = $state<Record<LessonWord, string | null>>({
-    AABB: null,
-    GGGG: null,
-    CCCC: null,
-  });
+  let selectedAnswerId = $state<string | null>(null);
+  let answerState = $state<AnswerState>(null);
+  let experienceElement = $state<HTMLDivElement | null>(null);
 
-  const activeExample = $derived(
-    WORD_LESSON_EXAMPLES.find((item) => item.word === selectedWord) ??
-      WORD_LESSON_EXAMPLES[0]
-  );
-  const activeQuestion = $derived(WORD_QUESTIONS[questionIndex]);
-  const stageWord = $derived<LessonWord>(phase === 3 ? "AABB" : selectedWord);
-  const selectedAnswerExample = $derived(
-    WORD_LESSON_EXAMPLES.find((item) => item.word === selectedAnswer) ?? null
+  const families = $derived.by((): LearningLettersFamily[] =>
+    TND_ELEMENTS.map((element) => ({
+      element,
+      sequences: sequences.filter(
+        (sequence) => sequence.metadata["familyId"] === element.familyId
+      ),
+    })).filter((family) => family.sequences.length > 0)
   );
 
-  async function loadWord(word: LessonWord) {
-    if (!generator || wordLoadStates[word] === "loading") return;
-    wordLoadStates[word] = "loading";
-    wordErrors[word] = null;
+  const selectedSequence = $derived(
+    sequences.find((sequence) => sequence.id === selectedSequenceId) ??
+      sequences[0] ??
+      null
+  );
 
-    try {
-      const result = await generator.generateFromWord({
-        word,
-        preferences: {
-          targetStepCount: null,
-          motionTypeFilter: null,
-          maxReversals: null,
-          highContinuity: false,
-          handPathMode: "smooth",
-          makeCircular: false,
-          selectedLOOPType: null,
-          constraintPreset: "smooth",
-        },
-      });
+  const selectedFamily = $derived(
+    selectedSequence
+      ? (families.find(
+          (family) =>
+            family.element.familyId === selectedSequence.metadata["familyId"]
+        ) ?? null)
+      : null
+  );
 
-      if (!result.success || !result.sequence) {
-        throw new Error(result.error || `Could not build ${word}`);
-      }
+  const activeFamily = $derived(families[challengeFamilyIndex] ?? null);
 
-      const startPosition =
-        result.sequence.startPosition ??
-        (result.sequence.steps[0]
-          ? startPositionDeriver.deriveFromFirstStep(result.sequence.steps[0])
-          : null);
+  const activeTarget = $derived.by(() => {
+    const family = activeFamily;
+    if (!family || family.sequences.length === 0) return null;
+    return (
+      family.sequences[(challengeFamilyIndex + 1) % family.sequences.length] ??
+      null
+    );
+  });
 
-      sequences[word] = {
-        ...result.sequence,
-        startPosition: startPosition ?? result.sequence.startPosition,
-      };
-      wordLoadStates[word] = "ready";
-    } catch (caught) {
-      sequences[word] = null;
-      wordErrors[word] =
-        caught instanceof Error ? caught.message : `Could not build ${word}`;
-      wordLoadStates[word] = "error";
-    }
+  const selectedAnswer = $derived(
+    selectedAnswerId
+      ? (sequences.find((sequence) => sequence.id === selectedAnswerId) ?? null)
+      : null
+  );
+
+  function displayWord(sequence: SequenceData): string {
+    return simplifyRepeatedWord(sequence.word || sequence.name);
   }
 
-  async function loadLessonWords() {
-    // The transition graph initializes on the first request. Warming the three
-    // cards in order keeps that one-time setup from racing itself, while the UI
-    // still reserves all three answer slots immediately.
-    for (const word of LESSON_WORDS) {
-      await loadWord(word);
+  async function loadDeck(): Promise<void> {
+    loadState = "loading";
+    loadError = null;
+
+    try {
+      const loaded = await loadCanonicalLearningLettersSequences();
+      if (loaded.length !== 19) {
+        throw new Error(
+          `Learning Letters resolved ${loaded.length} cards instead of 19`
+        );
+      }
+
+      sequences = loaded;
+      if (!loaded.some((sequence) => sequence.id === selectedSequenceId)) {
+        selectedSequenceId = loaded[0]?.id ?? "";
+      }
+      loadState = "ready";
+    } catch (caught) {
+      console.error("Learning Letters deck failed to load", caught);
+      loadError = "The Learning Letters deck could not be loaded.";
+      loadState = "error";
     }
   }
 
   onMount(() => {
-    getCodexLetterMappingRepo();
-    generator = getWordSequenceGenerator();
-    void loadLessonWords();
+    void loadDeck();
   });
 
-  function chooseWord(word: LessonWord) {
-    selectedWord = word;
-    persistence.savePhaseData("selectedWord", word);
+  function chooseSequence(sequence: SequenceData): void {
+    selectedSequenceId = sequence.id;
+    persistence.savePhaseData("selectedSequenceId", sequence.id);
     haptic?.trigger("selection");
   }
 
-  function goToPhase(nextPhase: number) {
+  function resetLessonScroll(): void {
+    requestAnimationFrame(() => {
+      experienceElement?.scrollTo({ top: 0, behavior: "auto" });
+      experienceElement?.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }
+
+  function goToPhase(nextPhase: number): void {
     phase = Math.min(3, Math.max(1, nextPhase));
     persistence.saveStep(phase);
-    selectedAnswer = null;
+    selectedAnswerId = null;
     answerState = null;
     haptic?.trigger("selection");
+    resetLessonScroll();
   }
 
-  function answerQuestion(word: LessonWord) {
-    if (answerState === "correct" || wordLoadStates[word] !== "ready") return;
-    selectedAnswer = word;
-    answerState = word === activeQuestion.answer ? "correct" : "wrong";
+  function answerQuestion(sequence: SequenceData): void {
+    if (!activeTarget || answerState === "correct") return;
+    selectedAnswerId = sequence.id;
+    answerState = sequence.id === activeTarget.id ? "correct" : "wrong";
     haptic?.trigger(answerState === "correct" ? "success" : "warning");
   }
 
-  function nextQuestion() {
-    if (questionIndex < WORD_QUESTIONS.length - 1) {
-      questionIndex += 1;
-      persistence.savePhaseData("questionIndex", questionIndex);
-      selectedAnswer = null;
+  function nextChallenge(): void {
+    if (challengeFamilyIndex < families.length - 1) {
+      challengeFamilyIndex += 1;
+      persistence.savePhaseData("challengeFamilyIndex", challengeFamilyIndex);
+      selectedAnswerId = null;
       answerState = null;
       haptic?.trigger("selection");
+      resetLessonScroll();
       return;
     }
     goToPhase(3);
   }
 
-  function complete() {
+  function complete(): void {
     persistence.reset();
     haptic?.trigger("success");
     onComplete?.();
   }
 
-  export function handleBack() {
+  export function handleBack(): void {
+    if (phase === 2 && challengeFamilyIndex > 0) {
+      challengeFamilyIndex -= 1;
+      persistence.savePhaseData("challengeFamilyIndex", challengeFamilyIndex);
+      selectedAnswerId = null;
+      answerState = null;
+      resetLessonScroll();
+      return;
+    }
     if (phase > 1) goToPhase(phase - 1);
   }
 </script>
 
+{#snippet cardArtwork(sequence: SequenceData)}
+  <ChoreoCard
+    {sequence}
+    showWord
+    showStepNumbers
+    showDifficultyLevel={false}
+    includeStartPosition
+    showNotes={false}
+    showLoopGlyph={false}
+    showQRCode={false}
+    darkMode
+    forceContain
+    bluePropType={PropType.STAFF}
+    redPropType={PropType.STAFF}
+  />
+{/snippet}
+
 <div
   class="experience"
   class:review-mode={viewMode === "scroll"}
-  style:--type-one={TYPE1_ACCENTS[0]}
-  style:--type-one-pair={TYPE1_ACCENTS[1]}
+  bind:this={experienceElement}
 >
-  {#if phase === 1}
-    <section class="explore-grid" aria-labelledby="words-title">
-      <div class="copy-column">
-        <p class="eyebrow">Letters become movement</p>
-        <h1 id="words-title">A word is a sequence you can perform.</h1>
-        <p class="lede">
-          Each letter contributes one real pictograph. The end of one step
-          becomes the start of the next, so the word has to connect as movement,
-          not just spelling.
-        </p>
+  {#if loadState === "loading"}
+    <section class="load-state" role="status">
+      <ProgressRing percent={-1} size={44} strokeWidth={3} />
+      <p>Loading Learning Letters…</p>
+    </section>
+  {:else if loadState === "error"}
+    <section class="load-state" role="alert">
+      <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      <p>{loadError}</p>
+      <PanelButton variant="secondary" onclick={loadDeck}>
+        <i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"></i>
+        <span>Try again</span>
+      </PanelButton>
+    </section>
+  {:else if selectedSequence}
+    {#if phase === 1}
+      <section class="explore" aria-labelledby="learning-letters-title">
+        <header class="deck-header">
+          <div>
+            <p class="eyebrow">TKA 1</p>
+            <h1 id="learning-letters-title">Learning Letters</h1>
+          </div>
+          <p class="deck-count">19 words · 6 families</p>
+        </header>
 
-        <div class="word-picker" aria-label="Choose a word">
-          {#each WORD_LESSON_EXAMPLES as item}
+        <div class="explore-layout">
+          <div class="stage-column">
+            <header class="stage-header">
+              {#if selectedFamily}
+                <span class="family-identity">
+                  <img src={selectedFamily.element.iconPath} alt="" />
+                  <span>{selectedFamily.element.name}</span>
+                </span>
+              {/if}
+              <TKAWordGlyph
+                word={displayWord(selectedSequence)}
+                height={34}
+                darkMode
+                fitToParent
+              />
+            </header>
+            <WordSequencePair sequence={selectedSequence} />
+          </div>
+
+          <div class="deck-column" aria-label="Learning Letters deck">
+            {#each families as family (family.element.familyId)}
+              <section
+                class="family-section"
+                style:--family-accent={family.element.accentColor}
+                aria-labelledby={`family-${family.element.familyId}`}
+              >
+                <header class="family-header">
+                  <span class="family-name">
+                    <img src={family.element.iconPath} alt="" />
+                    <span id={`family-${family.element.familyId}`}>
+                      {family.element.name}
+                    </span>
+                  </span>
+                  <span class="family-count">{family.sequences.length}</span>
+                </header>
+
+                <div
+                  class="family-cards themed-scrollbar"
+                  class:four-up={family.sequences.length === 4}
+                >
+                  {#each family.sequences as sequence (sequence.id)}
+                    <button
+                      type="button"
+                      class="deck-card"
+                      class:selected={selectedSequence.id === sequence.id}
+                      aria-pressed={selectedSequence.id === sequence.id}
+                      aria-label={`Inspect ${displayWord(sequence)}`}
+                      onclick={() => chooseSequence(sequence)}
+                    >
+                      {@render cardArtwork(sequence)}
+                    </button>
+                  {/each}
+                </div>
+              </section>
+            {/each}
+          </div>
+        </div>
+
+        <footer class="phase-action">
+          <PanelButton variant="primary" onclick={() => goToPhase(2)}>
+            <span>Practice the deck</span>
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+          </PanelButton>
+        </footer>
+      </section>
+    {:else if phase === 2 && activeFamily && activeTarget}
+      <section class="challenge" aria-labelledby="word-check-title">
+        <header class="challenge-header">
+          <div class="challenge-family">
+            <img src={activeFamily.element.iconPath} alt="" />
+            <span>{activeFamily.element.name}</span>
+            <span aria-hidden="true">·</span>
+            <span>{challengeFamilyIndex + 1} of {families.length}</span>
+          </div>
+          <h1 id="word-check-title">Find the word</h1>
+          <TKAWordGlyph
+            word={displayWord(activeTarget)}
+            height={58}
+            darkMode
+            fitToParent
+          />
+          <p>Choose the matching card.</p>
+        </header>
+
+        <div
+          class="answer-grid"
+          class:four-up={activeFamily.sequences.length === 4}
+          aria-label={`Choose ${displayWord(activeTarget)}`}
+        >
+          {#each activeFamily.sequences as sequence (sequence.id)}
             <button
               type="button"
-              class:active={selectedWord === item.word}
-              aria-pressed={selectedWord === item.word}
-              onclick={() => chooseWord(item.word)}
+              class="answer-card"
+              class:correct={answerState !== null &&
+                sequence.id === activeTarget.id}
+              class:wrong={answerState === "wrong" &&
+                selectedAnswerId === sequence.id}
+              disabled={answerState === "correct"}
+              aria-label={`Choose ${displayWord(sequence)}`}
+              onclick={() => answerQuestion(sequence)}
             >
-              <strong>{item.word}</strong>
-              <span>{item.label}</span>
+              {@render cardArtwork(sequence)}
             </button>
           {/each}
         </div>
 
-        <div class="word-reading">
-          <div
-            class="letter-train"
-            aria-label="{activeExample.word} as individual letters"
-          >
-            {#each activeExample.word.split("") as letter, index}
-              <span>{letter}</span>
-              {#if index < activeExample.word.length - 1}
-                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-              {/if}
-            {/each}
+        <div
+          class="answer-dock"
+          class:wrong-state={answerState === "wrong"}
+          class:correct-state={answerState === "correct"}
+          aria-live="polite"
+        >
+          <div class="answer-message">
+            {#if answerState === "wrong" && selectedAnswer}
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              <span>You chose</span>
+              <TKAWordGlyph
+                word={displayWord(selectedAnswer)}
+                height={20}
+                darkMode
+              />
+              <span>.</span>
+            {:else if answerState === "correct"}
+              <i class="fa-solid fa-check" aria-hidden="true"></i>
+              <span>Matched.</span>
+            {:else}
+              <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
+              <span>Choose one card.</span>
+            {/if}
           </div>
-          <p>{activeExample.detail}</p>
-        </div>
 
-        <div class="action-row">
-          <PanelButton variant="primary" onclick={() => goToPhase(2)}>
-            <span>Check the connections</span>
+          <PanelButton
+            variant="primary"
+            disabled={answerState !== "correct"}
+            onclick={nextChallenge}
+          >
+            <span>
+              {challengeFamilyIndex === families.length - 1
+                ? "Review the deck"
+                : "Next family"}
+            </span>
             <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
           </PanelButton>
         </div>
-      </div>
-
-      <div class="stage-column">
-        <CanonicalWordStage
-          word={stageWord}
-          sequence={sequences[stageWord]}
-          loading={wordLoadStates[stageWord] !== "ready" &&
-            wordLoadStates[stageWord] !== "error"}
-          error={wordErrors[stageWord]}
-          onretry={() => loadWord(stageWord)}
-        />
-        <p>
-          Move plays the generated sequence. Read the card shows the same data
-          through the production choreography-card component.
-        </p>
-      </div>
-    </section>
-  {:else if phase === 2}
-    <section class="challenge" aria-labelledby="word-check-title">
-      <div class="challenge-header">
-        <div class="question-progress" aria-label="Question progress">
-          <span>Word check</span>
-          <strong>{questionIndex + 1} / {WORD_QUESTIONS.length}</strong>
-          <div class="question-track" aria-hidden="true">
-            <i
-              style:width={`${((questionIndex + 1) / WORD_QUESTIONS.length) * 100}%`}
-            ></i>
+      </section>
+    {:else}
+      <section class="summary" aria-labelledby="words-summary-title">
+        <header class="summary-header">
+          <div>
+            <p class="eyebrow">TKA 1</p>
+            <h1 id="words-summary-title">Learning Letters complete</h1>
           </div>
-        </div>
-        <div class="question-copy">
-          <h1 id="word-check-title">{activeQuestion.prompt}</h1>
-          <p>Compare all three cards, then pick the sequence that matches.</p>
-        </div>
-      </div>
+          <p>19 words · 6 families</p>
+        </header>
 
-      <div class="word-answer-grid" aria-label="Choose a sequence">
-        {#each activeQuestion.choices as word}
-          {@const loadState = wordLoadStates[word]}
-          {@const sequence = sequences[word]}
-          <button
-            type="button"
-            class="word-answer-card"
-            class:selected={selectedAnswer === word}
-            class:correct={answerState !== null &&
-              word === activeQuestion.answer}
-            class:wrong={answerState === "wrong" && selectedAnswer === word}
-            disabled={answerState === "correct" ||
-              loadState === "loading" ||
-              loadState === "idle"}
-            aria-label={loadState === "error"
-              ? `Build ${word} again`
-              : `Choose ${word}`}
-            onclick={() =>
-              loadState === "error"
-                ? void loadWord(word)
-                : answerQuestion(word)}
-          >
-            <span class="answer-art">
-              {#if loadState === "ready" && sequence}
-                <PropAwareThumbnail
-                  {sequence}
-                  bluePropType={PropType.STAFF}
-                  redPropType={PropType.STAFF}
-                  lightMode={false}
-                  variant="gallery"
-                  addWord
-                  addDifficultyLevel={false}
-                  includeStartPosition
-                  showNotes={false}
-                  showLoopGlyph={false}
-                  allowQR={false}
-                  eager
-                />
-              {:else if loadState === "error"}
-                <span class="answer-error">
-                  <i class="fa-solid fa-arrow-rotate-right" aria-hidden="true"
-                  ></i>
-                  <span>Build again</span>
+        <div class="summary-families">
+          {#each families as family (family.element.familyId)}
+            <section
+              class="summary-family"
+              style:--family-accent={family.element.accentColor}
+            >
+              <header class="family-header">
+                <span class="family-name">
+                  <img src={family.element.iconPath} alt="" />
+                  <span>{family.element.name}</span>
                 </span>
-              {:else}
-                <span class="answer-loading">
-                  <ProgressRing percent={-1} size={28} strokeWidth={2} />
-                  <span>Building {word}</span>
-                </span>
-              {/if}
-            </span>
-
-            <span class="answer-footer">
-              <span>
-                <strong>{word}</strong>
-                <small>{sequence?.steps.length ?? 4} beats</small>
-              </span>
-              <span
-                class="result-slot"
-                class:visible={answerState !== null &&
-                  (word === activeQuestion.answer || selectedAnswer === word)}
-                class:is-correct={word === activeQuestion.answer}
-                aria-hidden="true"
-              >
-                <i
-                  class={word === activeQuestion.answer
-                    ? "fa-solid fa-check"
-                    : "fa-solid fa-xmark"}
-                ></i>
-              </span>
-            </span>
-          </button>
-        {/each}
-      </div>
-
-      <div
-        class="answer-dock"
-        class:wrong-state={answerState === "wrong"}
-        class:correct-state={answerState === "correct"}
-        aria-live="polite"
-      >
-        <div class="answer-message">
-          {#if answerState === "wrong" && selectedAnswerExample}
-            <i class="fa-solid fa-arrows-left-right" aria-hidden="true"></i>
-            <p>
-              <strong>{selectedAnswerExample.word}:</strong>
-              {selectedAnswerExample.detail} Compare it with the green card.
-            </p>
-          {:else if answerState === "correct"}
-            <i class="fa-solid fa-check" aria-hidden="true"></i>
-            <p>
-              <strong>{activeQuestion.answer}.</strong>
-              {activeQuestion.explanation}
-            </p>
-          {:else}
-            <i class="fa-solid fa-hand-pointer" aria-hidden="true"></i>
-            <p>
-              Read the hand positions first. Use the arrows as the tiebreaker.
-            </p>
-          {/if}
+              </header>
+              <div class="summary-words">
+                {#each family.sequences as sequence (sequence.id)}
+                  <span class="summary-word">
+                    <TKAWordGlyph
+                      word={displayWord(sequence)}
+                      height={28}
+                      darkMode
+                      fitToParent
+                    />
+                  </span>
+                {/each}
+              </div>
+            </section>
+          {/each}
         </div>
 
-        <PanelButton
-          variant="primary"
-          disabled={answerState !== "correct"}
-          onclick={nextQuestion}
-        >
-          <span>
-            {questionIndex === WORD_QUESTIONS.length - 1
-              ? "Build the AB idea"
-              : "Next connection"}
-          </span>
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-        </PanelButton>
-      </div>
-    </section>
-  {:else}
-    <section class="summary-grid" aria-labelledby="words-summary-title">
-      <div class="summary-copy">
-        <p class="eyebrow">The AB idea</p>
-        <h1 id="words-summary-title">AABB is more than four labels.</h1>
-        <p class="summary-lede">
-          A contributes the pro + pro pattern. B contributes anti + anti.
-        </p>
-
-        <div class="composition" aria-label="AABB composition">
-          <div class="composition-block a-block">
-            <span>A</span><span>A</span>
-            <small>pro + pro</small>
-          </div>
-          <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-          <div class="composition-block b-block">
-            <span>B</span><span>B</span>
-            <small>anti + anti</small>
-          </div>
-        </div>
-
-        <div class="action-row">
+        <footer class="phase-action">
           <PanelButton variant="primary" onclick={complete}>
-            <span>Complete words</span>
+            <span>Complete lesson</span>
             <i class="fa-solid fa-check" aria-hidden="true"></i>
           </PanelButton>
-        </div>
-      </div>
+        </footer>
+      </section>
+    {/if}
 
-      <CanonicalWordStage
-        word="AABB"
-        sequence={sequences.AABB}
-        loading={wordLoadStates.AABB !== "ready" &&
-          wordLoadStates.AABB !== "error"}
-        error={wordErrors.AABB}
-        onretry={() => loadWord("AABB")}
-      />
-    </section>
+    <ExperienceProgressIndicator currentStep={phase} totalSteps={3} />
   {/if}
-
-  <ExperienceProgressIndicator currentStep={phase} totalSteps={3} />
 </div>
 
 <style>
   .experience {
-    --lesson-max: 92rem;
-    --lesson-accent: var(--type-one);
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto;
-    gap: 0.75rem;
+    gap: var(--spacing-sm, 0.75rem);
     width: 100%;
     height: 100%;
     min-height: 0;
-    padding: 4.25rem clamp(1rem, 2.5cqw, 2.5rem) 0.75rem;
+    padding: 4.5rem clamp(0.75rem, 1.8cqw, 2.25rem) 0.75rem;
     overflow: auto;
     color: var(--theme-text);
     container-type: inline-size;
   }
 
-  .explore-grid,
+  .explore,
   .challenge,
-  .summary-grid {
-    width: min(100%, var(--lesson-max));
-    margin-block: 0;
-    margin-inline: auto;
-  }
-
-  .explore-grid,
-  .summary-grid {
-    display: grid;
-    grid-template-columns: minmax(20rem, 0.9fr) minmax(24rem, 1.1fr);
-    align-items: center;
-    gap: clamp(1rem, 2.5cqw, 2.5rem);
-  }
-
-  .copy-column,
-  .summary-copy {
-    display: grid;
-    align-content: center;
-    gap: 1rem;
+  .summary {
+    width: 100%;
     min-width: 0;
-    padding: clamp(1rem, 2cqw, 1.75rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.9rem;
-    background: var(--theme-panel-bg);
+  }
+
+  .explore,
+  .summary {
+    display: grid;
+    align-content: start;
+    gap: clamp(0.85rem, 1.2cqw, 1.35rem);
+  }
+
+  .deck-header,
+  .summary-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--theme-stroke);
   }
 
   .eyebrow {
-    margin: 0;
-    color: var(--lesson-accent);
-    font-size: clamp(0.75rem, 0.75cqw, 0.9rem);
+    margin: 0 0 0.2rem;
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact, 0.75rem);
     font-weight: 750;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
   }
 
   h1 {
-    max-width: 22ch;
     margin: 0;
     color: var(--theme-text);
-    font-size: clamp(1.9rem, 2.7cqw, 3rem);
-    font-weight: 780;
-    letter-spacing: -0.03em;
+    font-size: clamp(1.8rem, 2.1cqw, 3rem);
+    font-weight: 760;
+    letter-spacing: -0.035em;
     line-height: 1.05;
-    text-wrap: balance;
   }
 
-  .lede,
-  .summary-lede {
-    max-width: 58ch;
+  .deck-count,
+  .summary-header > p:last-child,
+  .challenge-header > p {
     margin: 0;
     color: var(--theme-text-dim);
-    font-size: clamp(0.95rem, 1cqw, 1.08rem);
-    line-height: 1.5;
+    font-size: var(--font-size-min, 0.875rem);
+    font-variant-numeric: tabular-nums;
   }
 
-  .word-picker {
+  .explore-layout {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .word-picker button {
-    display: grid;
-    gap: 0.25rem;
-    min-height: 4rem;
-    padding: 0.7rem;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.65rem;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-  }
-
-  .word-picker button strong {
-    font-size: 1rem;
-    letter-spacing: 0.05em;
-  }
-
-  .word-picker button span {
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.3;
-  }
-
-  .word-picker button:hover,
-  .word-picker button.active {
-    border-color: var(--lesson-accent);
-    background: color-mix(
-      in srgb,
-      var(--lesson-accent) 10%,
-      var(--theme-card-bg)
-    );
-    box-shadow: inset 0 -3px 0 var(--lesson-accent);
-  }
-
-  .word-reading {
-    display: grid;
-    gap: 0.65rem;
-    padding: 0.9rem 1rem;
-    border-left: 3px solid var(--lesson-accent);
-    border-radius: 0 0.85rem 0.85rem 0;
-    background: color-mix(
-      in srgb,
-      var(--lesson-accent) 8%,
-      var(--theme-card-bg)
-    );
-  }
-
-  .letter-train {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-  }
-
-  .letter-train span {
-    display: grid;
-    place-items: center;
-    width: 2.25rem;
-    aspect-ratio: 1;
-    border: 1px solid
-      color-mix(in srgb, var(--lesson-accent) 50%, var(--theme-stroke));
-    border-radius: 0.55rem;
-    background: var(--theme-panel-bg);
-    color: var(--theme-text);
-    font-weight: 900;
-  }
-
-  .letter-train i {
-    color: var(--theme-text-dim);
-    font-size: 0.65rem;
-  }
-
-  .word-reading p {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: 0.86rem;
-    line-height: 1.4;
-  }
-
-  .action-row {
-    justify-self: start;
-    --theme-accent: var(--lesson-accent);
-    --theme-text-on-accent: #061013;
-  }
-
-  button:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--lesson-accent) 72%, white);
-    outline-offset: 2px;
+    grid-template-columns: minmax(0, 1.18fr) minmax(32rem, 0.82fr);
+    align-items: start;
+    gap: clamp(1rem, 1.6cqw, 2rem);
+    min-width: 0;
   }
 
   .stage-column {
+    position: sticky;
+    top: 0;
     display: grid;
-    gap: 0.65rem;
     min-width: 0;
-    --theme-accent: var(--lesson-accent);
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-lg, 0.75rem);
+    background: var(--theme-panel-bg);
+    container-type: inline-size;
   }
 
-  .stage-column > p {
-    max-width: 56ch;
-    margin: 0 auto;
+  .stage-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    min-height: 3.5rem;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  .stage-header :global(.tka-word-glyph) {
+    max-width: min(18rem, 45cqw);
+  }
+
+  .family-identity,
+  .family-name,
+  .challenge-family {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 680;
+  }
+
+  .family-identity img,
+  .family-name img,
+  .challenge-family img {
+    width: 1.6rem;
+    height: 1.6rem;
+    flex: none;
+    object-fit: contain;
+  }
+
+  .deck-column {
+    display: grid;
+    gap: clamp(1rem, 1.3cqw, 1.5rem);
+    min-width: 0;
+  }
+
+  .family-section,
+  .summary-family {
+    display: grid;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  .family-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2rem;
+  }
+
+  .family-count {
     color: var(--theme-text-dim);
-    font-size: 0.78rem;
-    line-height: 1.45;
-    text-align: center;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .family-cards,
+  .answer-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(0.45rem, 0.7cqw, 0.8rem);
+    min-width: 0;
+  }
+
+  .family-cards.four-up,
+  .answer-grid.four-up {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .deck-card,
+  .answer-card {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    aspect-ratio: 4 / 3;
+    container: image-container / size;
+  }
+
+  .deck-card :global(.choreo-card-root),
+  .answer-card :global(.choreo-card-root) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .deck-card:hover,
+  .answer-card:hover:not(:disabled) {
+    box-shadow: 0 0 0 1px var(--theme-stroke-strong);
+  }
+
+  .deck-card.selected {
+    z-index: 2;
+    box-shadow:
+      0 0 0 2px var(--theme-panel-bg),
+      0 0 0 4px var(--family-accent);
+  }
+
+  .deck-card:focus-visible,
+  .answer-card:focus-visible {
+    z-index: 3;
+    outline: 2px solid var(--theme-accent-strong);
+    outline-offset: 3px;
+  }
+
+  .phase-action {
+    display: flex;
+    justify-content: flex-end;
   }
 
   .challenge {
     display: grid;
-    align-content: start;
-    gap: clamp(0.75rem, 1.4cqw, 1.25rem);
+    align-content: safe center;
+    gap: clamp(1rem, 1.5cqw, 1.8rem);
+    min-height: 100%;
+    max-width: min(132rem, 94cqw);
+    margin-inline: auto;
   }
 
   .challenge-header {
     display: grid;
-    grid-template-columns: minmax(7rem, 0.18fr) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(0.9rem, 1.8cqw, 1.6rem);
-    padding: clamp(0.8rem, 1.2cqw, 1.15rem) clamp(0.9rem, 1.5cqw, 1.4rem);
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.85rem;
-    background: var(--theme-panel-bg);
-  }
-
-  .challenge-header h1 {
-    max-width: none;
-    font-size: clamp(1.55rem, 2cqw, 2.55rem);
-    line-height: 1.08;
-  }
-
-  .question-progress {
-    display: grid;
-    gap: 0.35rem;
-    min-width: 0;
-  }
-
-  .question-progress > span {
-    color: var(--lesson-accent);
-    font-size: var(--font-size-compact, 0.75rem);
-    font-weight: 750;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .question-progress strong {
-    color: var(--theme-text);
-    font-size: clamp(1rem, 1.2cqw, 1.35rem);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .question-track {
-    width: 100%;
-    height: 3px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: var(--theme-stroke);
-  }
-
-  .question-track i {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: linear-gradient(90deg, var(--type-one), var(--type-one-pair));
-    transition: width var(--duration-normal, 200ms) ease;
-  }
-
-  .question-copy {
-    display: grid;
-    gap: 0.25rem;
-    min-width: 0;
-  }
-
-  .question-copy p {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: clamp(0.85rem, 0.9cqw, 1rem);
-    line-height: 1.4;
-  }
-
-  .word-answer-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(0.55rem, 1.2cqw, 1rem);
-  }
-
-  .word-answer-card {
-    --theme-accent: var(--lesson-accent);
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    min-width: 0;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 0.8rem;
-    background: var(--theme-card-bg);
-    color: var(--theme-text);
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast, 150ms) ease,
-      background var(--duration-fast, 150ms) ease,
-      transform var(--duration-fast, 150ms) ease,
-      box-shadow var(--duration-fast, 150ms) ease;
-  }
-
-  .word-answer-card:hover:not(:disabled),
-  .word-answer-card.selected {
-    border-color: color-mix(in srgb, var(--lesson-accent) 72%, white 8%);
-    background: color-mix(
-      in srgb,
-      var(--lesson-accent) 7%,
-      var(--theme-card-bg)
-    );
-    box-shadow: 0 0 0 1px
-      color-mix(in srgb, var(--lesson-accent) 26%, transparent);
-  }
-
-  .word-answer-card:hover:not(:disabled) {
-    transform: translateY(-2px);
-  }
-
-  .word-answer-card:disabled {
-    cursor: default;
-  }
-
-  .word-answer-card.correct {
-    border-color: var(--semantic-success);
-    box-shadow: inset 0 -3px 0 var(--semantic-success);
-  }
-
-  .word-answer-card.wrong {
-    border-color: var(--semantic-error);
-    box-shadow: inset 0 -3px 0 var(--semantic-error);
-  }
-
-  .answer-art {
-    display: grid;
-    place-items: center;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    min-height: 0;
-    overflow: hidden;
-    border-bottom: 1px solid var(--theme-stroke);
-    background: var(--theme-panel-bg);
-    container: image-container / size;
-  }
-
-  .answer-art :global(.prop-thumbnail) {
-    width: 100%;
-    height: 100%;
-    aspect-ratio: auto !important;
-  }
-
-  .answer-art :global(.prop-thumbnail > img) {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .answer-loading,
-  .answer-error {
-    display: grid;
-    place-items: center;
-    gap: 0.5rem;
-    color: var(--theme-text-dim);
-    font-size: clamp(0.75rem, 0.8cqw, 0.9rem);
+    justify-items: center;
+    gap: 0.55rem;
     text-align: center;
   }
 
-  .answer-error i {
-    color: var(--semantic-warning, #f0b429);
-    font-size: 1.2rem;
-  }
-
-  .answer-footer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 0.6rem;
-    min-height: 3.75rem;
-    padding: 0.65rem 0.75rem;
-  }
-
-  .answer-footer > span:first-child {
-    display: grid;
-    gap: 0.1rem;
-    min-width: 0;
-  }
-
-  .answer-footer strong {
-    color: var(--theme-text);
-    font-size: clamp(0.95rem, 1.1cqw, 1.25rem);
-    font-weight: 800;
-    letter-spacing: 0.06em;
-  }
-
-  .answer-footer small {
+  .challenge-family {
     color: var(--theme-text-dim);
-    font-size: var(--font-size-compact, 0.75rem);
   }
 
-  .result-slot {
-    display: grid;
-    place-items: center;
-    width: 1.8rem;
-    height: 1.8rem;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--semantic-error) 16%, transparent);
-    color: var(--semantic-error);
-    opacity: 0;
-    transition: opacity var(--duration-fast, 150ms) ease;
+  .challenge-header :global(.tka-word-glyph) {
+    width: auto;
+    max-width: min(34rem, 80cqw);
   }
 
-  .result-slot.visible {
-    opacity: 1;
+  .answer-card.correct {
+    z-index: 2;
+    box-shadow:
+      0 0 0 2px var(--theme-panel-bg),
+      0 0 0 4px var(--semantic-success);
   }
 
-  .result-slot.is-correct {
-    background: color-mix(in srgb, var(--semantic-success) 16%, transparent);
-    color: var(--semantic-success);
+  .answer-card.wrong {
+    z-index: 2;
+    box-shadow:
+      0 0 0 2px var(--theme-panel-bg),
+      0 0 0 4px var(--semantic-error);
+  }
+
+  .answer-card:disabled {
+    cursor: default;
   }
 
   .answer-dock {
-    --theme-accent: var(--lesson-accent);
-    --theme-text-on-accent: #061013;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 1rem;
     min-height: 4.5rem;
-    padding: 0.65rem 0.75rem 0.65rem 1rem;
+    padding: 0.7rem 0.8rem 0.7rem 1rem;
     border: 1px solid var(--theme-stroke);
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md, 0.5rem);
     background: var(--theme-panel-bg);
   }
 
   .answer-message {
-    display: grid;
-    grid-template-columns: 1.3rem minmax(0, 1fr);
-    align-items: start;
-    gap: 0.65rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
     min-width: 0;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   .answer-message > i {
-    margin-top: 0.15rem;
-    color: var(--lesson-accent);
+    width: 1.2rem;
+    color: var(--theme-accent);
+    text-align: center;
   }
 
   .answer-dock.wrong-state .answer-message > i {
-    color: var(--semantic-warning, #f0b429);
+    color: var(--semantic-error);
   }
 
   .answer-dock.correct-state .answer-message > i {
     color: var(--semantic-success);
   }
 
-  .answer-message p {
-    margin: 0;
-    color: var(--theme-text-dim);
-    font-size: clamp(0.82rem, 0.85cqw, 0.95rem);
-    line-height: 1.45;
+  .summary {
+    max-width: 100rem;
+    margin-inline: auto;
   }
 
-  .answer-message strong {
-    color: var(--theme-text);
-  }
-
-  .summary-grid {
-    grid-template-columns: minmax(19rem, 0.82fr) minmax(24rem, 1.18fr);
-  }
-
-  .summary-grid > :last-child {
-    --theme-accent: var(--lesson-accent);
-  }
-
-  .composition {
+  .summary-families {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 0.7rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 1.5cqw, 1.6rem);
   }
 
-  .composition > i {
-    color: var(--theme-text-dim);
-  }
-
-  .composition-block {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.35rem;
-    padding: 0.75rem;
+  .summary-family {
+    padding: 0.85rem;
     border: 1px solid var(--theme-stroke);
-    border-radius: 0.85rem;
+    border-radius: var(--radius-md, 0.5rem);
     background: var(--theme-card-bg);
   }
 
-  .composition-block span {
+  .summary-words {
     display: grid;
-    place-items: center;
-    min-height: 2.7rem;
-    border-radius: 0.55rem;
-    background: color-mix(
-      in srgb,
-      var(--lesson-accent) 14%,
-      var(--theme-panel-bg)
-    );
-    color: var(--theme-text);
-    font-size: 1.15rem;
-    font-weight: 900;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.5rem;
   }
 
-  .composition-block small {
-    grid-column: 1 / -1;
+  .summary-word {
+    display: grid;
+    place-items: center;
+    min-height: 3.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--radius-sm, 0.35rem);
+    background: var(--theme-panel-bg);
+  }
+
+  .summary-word :global(.tka-word-glyph) {
+    max-width: 100%;
+  }
+
+  .load-state {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1rem;
+    min-height: 100%;
     color: var(--theme-text-dim);
-    font-size: 0.7rem;
     text-align: center;
   }
 
-  .summary-copy ul {
-    display: grid;
-    gap: 0.45rem;
+  .load-state > i {
+    color: var(--semantic-error);
+    font-size: 1.8rem;
+  }
+
+  .load-state p {
     margin: 0;
-    padding-left: 1.2rem;
-    color: var(--theme-text-dim);
-    font-size: 0.88rem;
-    line-height: 1.45;
+    font-size: var(--font-size-min, 0.875rem);
   }
 
   :global(.experience > .progress-indicator) {
     justify-self: center;
   }
 
-  @container (max-width: 820px) {
-    .explore-grid,
-    .summary-grid {
+  @container (max-width: 1180px) {
+    .explore-layout {
       grid-template-columns: 1fr;
     }
 
-    .stage-column,
-    .summary-grid > :last-child {
-      order: -1;
+    .stage-column {
+      position: static;
     }
 
-    h1 {
-      font-size: clamp(1.8rem, 6cqw, 2.7rem);
+    .answer-grid.four-up {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @container (max-width: 480px) {
+  @container (max-width: 780px) {
     .experience {
-      padding: 3.75rem 0.55rem 0.55rem;
+      padding: 4rem 0.65rem 0.6rem;
     }
 
-    .word-picker {
-      grid-template-columns: 1fr;
+    .deck-header,
+    .summary-header {
+      align-items: start;
+      flex-direction: column;
+      gap: 0.45rem;
     }
 
-    .word-picker button {
-      grid-template-columns: 5rem 1fr;
-      align-items: center;
-      min-height: 3.5rem;
+    .family-cards,
+    .family-cards.four-up {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(13rem, 74cqw);
+      padding: 0.2rem 0.25rem 0.55rem;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      overscroll-behavior-inline: contain;
     }
 
-    .challenge-header {
-      grid-template-columns: 1fr;
-      gap: 0.55rem;
+    .deck-card {
+      scroll-snap-align: start;
     }
 
-    .question-progress {
-      grid-template-columns: auto auto minmax(3rem, 1fr);
-      align-items: center;
-      gap: 0.55rem;
+    .answer-grid,
+    .answer-grid.four-up {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      width: 100%;
+      margin-inline: auto;
     }
 
-    .question-progress strong {
-      font-size: 0.9rem;
-    }
-
-    .challenge-header h1 {
-      font-size: clamp(1.35rem, 6cqw, 1.7rem);
-    }
-
-    .word-answer-grid {
-      gap: 0.35rem;
-    }
-
-    .word-answer-card {
-      border-radius: 0.55rem;
-    }
-
-    .answer-footer {
-      min-height: 2.85rem;
-      padding: 0.45rem 0.5rem;
-    }
-
-    .answer-footer strong {
-      font-size: 0.85rem;
-    }
-
-    .answer-footer small {
-      display: none;
-    }
-
-    .result-slot {
-      width: 1.35rem;
-      height: 1.35rem;
-      font-size: 0.7rem;
+    .answer-grid.four-up {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .answer-dock {
       grid-template-columns: 1fr;
-      gap: 0.55rem;
-      padding: 0.65rem;
+      align-items: stretch;
+    }
+
+    .answer-dock :global(.panel-btn),
+    .phase-action :global(.panel-btn) {
+      width: 100%;
+    }
+
+    .phase-action {
+      display: block;
+    }
+
+    .summary-families {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @container (max-width: 480px) {
+    .stage-header {
+      grid-template-columns: 1fr;
+      justify-items: start;
+    }
+
+    .stage-header :global(.tka-word-glyph) {
+      max-width: 70cqw;
+    }
+
+    .summary-words {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .answer-grid,
+    .answer-grid.four-up {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
   @container (min-width: 1680px) {
     .experience {
-      --lesson-max: min(92cqw, 150rem);
-      padding-inline: 4cqw;
+      padding-inline: 2.5cqw;
     }
 
-    .challenge-header,
-    .answer-dock {
-      border-radius: 1rem;
+    .explore-layout {
+      grid-template-columns: minmax(0, 1.3fr) minmax(38rem, 0.7fr);
     }
 
-    .word-answer-card {
-      border-radius: 1rem;
+    .summary-families {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
   @container (min-width: 2600px) {
     .experience {
-      --lesson-max: min(92cqw, 170rem);
-      padding-top: 5rem;
+      padding-top: 5.25rem;
     }
 
-    .challenge {
-      gap: 1.35rem;
+    .explore-layout {
+      grid-template-columns: minmax(0, 1.4fr) minmax(48rem, 0.6fr);
     }
 
-    .challenge-header {
-      padding: 1.25rem 1.5rem;
-    }
-
-    .answer-footer {
-      min-height: 4.5rem;
-      padding: 0.8rem 1rem;
-    }
-
-    .answer-dock {
-      min-height: 5.25rem;
-      padding: 0.8rem 0.9rem 0.8rem 1.2rem;
+    h1 {
+      font-size: clamp(2.8rem, 1.9cqw, 4.4rem);
     }
   }
 
-  @media (max-height: 560px) and (min-width: 700px) {
+  @media (max-height: 620px) and (min-width: 781px) {
     .experience {
-      padding: 3.35rem 0.75rem 0.45rem;
+      padding-top: 3.75rem;
     }
 
-    .explore-grid,
-    .summary-grid {
-      align-items: start;
+    .deck-header {
+      padding-bottom: 0.45rem;
     }
 
-    .challenge {
-      gap: 0.45rem;
+    .explore-layout {
+      grid-template-columns: minmax(0, 1.1fr) minmax(30rem, 0.9fr);
     }
 
-    .challenge-header {
-      padding: 0.5rem 0.75rem;
-    }
-
-    .challenge-header h1 {
-      font-size: 1.25rem;
-    }
-
-    .question-copy p {
-      display: none;
-    }
-
-    .answer-footer {
-      min-height: 1.8rem;
-      padding-block: 0.15rem;
-    }
-
-    .answer-footer small {
-      display: none;
-    }
-
-    .answer-art {
-      aspect-ratio: 2.4 / 1;
-    }
-
-    .answer-dock {
-      min-height: 2.8rem;
-      padding-block: 0;
+    .stage-column {
+      position: static;
     }
 
     :global(.experience > .progress-indicator) {
       display: none;
-    }
-
-    .copy-column,
-    .summary-copy {
-      gap: 0.6rem;
-    }
-
-    h1 {
-      font-size: clamp(1.7rem, 4cqw, 2.6rem);
-    }
-
-    .lede,
-    .stage-column > p {
-      font-size: 0.78rem;
-    }
-
-    .word-picker button {
-      min-height: 3.4rem;
-      padding: 0.55rem 0.65rem;
-    }
-
-    .word-reading {
-      padding: 0.6rem;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .word-answer-card,
-    .result-slot,
-    .question-track i {
-      transition: none;
-    }
-
-    .word-answer-card:hover:not(:disabled) {
-      transform: none;
     }
   }
 </style>
