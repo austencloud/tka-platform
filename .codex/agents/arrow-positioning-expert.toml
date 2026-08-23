@@ -42,6 +42,41 @@ You understand the complete arrow positioning pipeline:
    - Additive on top of all calculated positions, screen-space
    - Code: `src/lib/features/create/shared/services/keyboard-arrow-adjuster.ts`
 
+### Full-motion quarter-turn glyphs (August 2026)
+
+Level 6 `turns: 0.25` motions stay on the normal five-tier full-arrow path;
+they are not `motion.segment` frames. The shared render-core
+`arrow-asset-path.ts` resolver owns their browser/MCP asset selection and exact
+numeric filename formatting. PRO, ANTI, STATIC, and DASH have authored `0.25`
+assets for all four undirected center-relative start-orientation axes:
+
+- `from_radial` — IN / OUT
+- `from_nonradial` — CLOCK / COUNTER
+- `from_interradial_clock_in` — CLOCK_IN / COUNTER_OUT
+- `from_interradial_clock_out` — CLOCK_OUT / COUNTER_IN
+
+The resolver canonicalizes orientation tokens case-insensitively. This is
+required for MCP parity because the standalone renderer normalizes inputs such
+as `clockIn` to `clockin` before calling render-core.
+
+STATIC and DASH additionally have eight absolute-orientation families for valid
+CENTER motions (`from_center_n` through `from_center_nw`). Opposite center
+orientations cannot share an undirected asset because every CENTER rotation-map
+entry is 0 degrees; the selected asset therefore encodes the complete absolute
+axis and arrow direction. PRO/ANTI at CENTER are invalid hand paths.
+
+The two interradial folders must remain separate: their staff axes are
+perpendicular, so one glyph plus the normal motion-direction mirror cannot
+represent both. Full-arrow rotation remains turn-agnostic and uses the existing
+motion maps. Quarter glyphs are centered on their canonical arrow-location
+anchor. If no exact `0.25` default entry exists, `ArrowPlacer` preserves that
+anchor with `{0,0}`; it must not interpolate between legacy 0-turn and half-turn
+assets with unrelated bounds. An exact quarter entry or a higher cascade tier
+still wins. Skew `+`/`-` quarter shifts intentionally reuse the canonical
+quarter glyph instead of requesting nonexistent `_0.25_skew±` files; the skew
+hand-path modifier is carried by the motion data, while arrow placement remains
+anchored at the skew-aware location.
+
 ### The Half-Motion / Segment Path (July 2026 — architecturally parallel, NOT a 6th tier)
 
 Half-motion frames (`MotionData.segment?: { t0, t1 }`, see
@@ -99,12 +134,12 @@ entirely. Key differences from the full-motion cascade:
 
 **Tooling for this path:**
 
-| Tool | What it does |
-|---|---|
-| `/test/half-movements` harness | Click + WASD nudging per `(motionType, turns)` family, glyph-local; "one example per family" view; "Art holes" section listing missing glyph art |
-| `src/routes/test/half-movements/save/+server.ts` | Dev-only autosave: debounced WASD nudges rewrite the `_half` placement JSONs directly (canon on next load) |
-| `scripts/half-glyph-parity.mjs` | Numeric oracle: pushes each `_half` SVG through the exact pipeline transform and compares bearing/radius/axis/chirality against the guide's drawn halfway frames |
-| `scripts/half-domain-coverage.mjs` | Sweeps (motionType × turns × startOri × rotDir) through `buildHalvedStep` + `getArrowSvgPath`; classifies COVERED / MISSING (art hole) / BLOCKED (pipeline gap: off-lattice, float, skew, center-touching) |
+| Tool                                             | What it does                                                                                                                                                                                               |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/test/half-movements` harness                   | Click + WASD nudging per `(motionType, turns)` family, glyph-local; "one example per family" view; "Art holes" section listing missing glyph art                                                           |
+| `src/routes/test/half-movements/save/+server.ts` | Dev-only autosave: debounced WASD nudges rewrite the `_half` placement JSONs directly (canon on next load)                                                                                                 |
+| `scripts/half-glyph-parity.mjs`                  | Numeric oracle: pushes each `_half` SVG through the exact pipeline transform and compares bearing/radius/axis/chirality against the guide's drawn halfway frames                                           |
+| `scripts/half-domain-coverage.mjs`               | Sweeps (motionType × turns × startOri × rotDir) through `buildHalvedStep` + `getArrowSvgPath`; classifies COVERED / MISSING (art hole) / BLOCKED (pipeline gap: off-lattice, float, skew, center-touching) |
 
 Known state (2026-07-16): half-turns (0.5/1.5/2.5) and `fl` are engine-legal
 but lack drawn art (~24-glyph Illustrator work list, surfaced on the harness).
@@ -118,6 +153,7 @@ availability. The center-orientation fix IS on main (`cc8405fc4f`).
 ALL base adjustments (from any full-motion tier) go through directional tuple transformation before being applied. This rotates a reference adjustment (calibrated for one quadrant) to work in all four quadrants.
 
 The transformation depends on:
+
 - Motion type (shift vs dash/static)
 - Rotation direction (cw vs ccw)
 - Grid mode (diamond vs box)
@@ -140,31 +176,31 @@ Float rotation is a **pure map lookup keyed by geometric handpath direction** (s
 
 ### Key Files
 
-| Purpose | Path |
-|---------|------|
-| Main orchestrator | `arrow/orchestration/services/arrow-positioning-orchestrator.ts` |
-| Rotation-angle calculator (float map lookup) | `arrow/positioning/calculation/services/arrow-rotation-calculator.ts` |
-| Float rotation maps | `arrow/positioning/calculation/config/float-rotation-maps.ts` |
-| Adjustment calculator | `arrow/positioning/calculation/services/arrow-adjustment-calculator.ts` |
-| Location calculator (segment short-circuit) | `arrow/positioning/calculation/services/arrow-location-calculator.ts` |
-| Segment rotation | `arrow/positioning/calculation/services/segment-rotation.ts` |
-| Special placer | `arrow/positioning/placement/services/special-placer.ts` |
-| Default placer | `arrow/positioning/placement/services/default-placer.ts` |
-| Arrow placer (default-tier lookups incl. `_half`) | `arrow/positioning/placement/services/arrow-placer.ts` |
-| Global adjustment domain | `arrow/positioning/global/domain/global-arrow-adjustment.ts` |
-| Global adjustment repo | `arrow/positioning/global/services/global-arrow-adjustment-repository.ts` |
-| Prop geometry domain | `arrow/positioning/prop-geometry/domain/prop-geometry-adjustment.ts` |
-| Prop geometry repo | `arrow/positioning/prop-geometry/services/prop-geometry-adjustment-repository.ts` |
-| Prop geometry singleton | `arrow/positioning/prop-geometry/services/prop-geometry-singleton.ts` |
-| Directional tuples | `arrow/positioning/calculation/services/directional-tuple-processor.ts` |
-| Orientation key gen | `arrow/positioning/key-generation/services/special-placement-ori-key-generator.ts` |
-| Turns tuple key gen | `arrow/positioning/key-generation/services/turns-tuple-key-generator.ts` |
-| Placement key gen | `arrow/positioning/key-generation/services/arrow-placement-key-generator.ts` |
-| Half asset resolver | `arrow/rendering/services/arrow-path-resolver.ts` |
-| Arrow SVG (mirror conventions) | `arrow/rendering/components/ArrowSvg.svelte` |
-| Halved step builder | `src/lib/shared/animation-engine/services/build-halved-step.ts` |
-| Manual WASD adjuster (tier 5) | `src/lib/features/create/shared/services/keyboard-arrow-adjuster.ts` |
-| Seed script | `scripts/seed-prop-geometry-adjustments.ts` |
+| Purpose                                           | Path                                                                               |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Main orchestrator                                 | `arrow/orchestration/services/arrow-positioning-orchestrator.ts`                   |
+| Rotation-angle calculator (float map lookup)      | `arrow/positioning/calculation/services/arrow-rotation-calculator.ts`              |
+| Float rotation maps                               | `arrow/positioning/calculation/config/float-rotation-maps.ts`                      |
+| Adjustment calculator                             | `arrow/positioning/calculation/services/arrow-adjustment-calculator.ts`            |
+| Location calculator (segment short-circuit)       | `arrow/positioning/calculation/services/arrow-location-calculator.ts`              |
+| Segment rotation                                  | `arrow/positioning/calculation/services/segment-rotation.ts`                       |
+| Special placer                                    | `arrow/positioning/placement/services/special-placer.ts`                           |
+| Default placer                                    | `arrow/positioning/placement/services/default-placer.ts`                           |
+| Arrow placer (default-tier lookups incl. `_half`) | `arrow/positioning/placement/services/arrow-placer.ts`                             |
+| Global adjustment domain                          | `arrow/positioning/global/domain/global-arrow-adjustment.ts`                       |
+| Global adjustment repo                            | `arrow/positioning/global/services/global-arrow-adjustment-repository.ts`          |
+| Prop geometry domain                              | `arrow/positioning/prop-geometry/domain/prop-geometry-adjustment.ts`               |
+| Prop geometry repo                                | `arrow/positioning/prop-geometry/services/prop-geometry-adjustment-repository.ts`  |
+| Prop geometry singleton                           | `arrow/positioning/prop-geometry/services/prop-geometry-singleton.ts`              |
+| Directional tuples                                | `arrow/positioning/calculation/services/directional-tuple-processor.ts`            |
+| Orientation key gen                               | `arrow/positioning/key-generation/services/special-placement-ori-key-generator.ts` |
+| Turns tuple key gen                               | `arrow/positioning/key-generation/services/turns-tuple-key-generator.ts`           |
+| Placement key gen                                 | `arrow/positioning/key-generation/services/arrow-placement-key-generator.ts`       |
+| Half asset resolver                               | `arrow/rendering/services/arrow-path-resolver.ts`                                  |
+| Arrow SVG (mirror conventions)                    | `arrow/rendering/components/ArrowSvg.svelte`                                       |
+| Halved step builder                               | `src/lib/shared/animation-engine/services/build-halved-step.ts`                    |
+| Manual WASD adjuster (tier 5)                     | `src/lib/features/create/shared/services/keyboard-arrow-adjuster.ts`               |
+| Seed script                                       | `scripts/seed-prop-geometry-adjustments.ts`                                        |
 
 All paths relative to `src/lib/shared/pictograph/` unless they start with `src/` or `scripts/`.
 
