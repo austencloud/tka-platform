@@ -11,9 +11,7 @@ effects — regardless of the prop the user has set in the app. Meanwhile the
 scene-3d-collection preset system (save/load full 3D configurations) exists and
 works, but only the *save* half is reachable from the viewer (RightRail bookmark
 → `SaveSceneModal`); *loading* a saved scene requires navigating to Browse → My
-Collections → "3D Scenes", which nobody discovers. And the intentional 2D↔3D
-background coupling (the live viewer tracks the app-wide `backgroundType`) is
-never explained to the user — the app theme just changes.
+Collections → "3D Scenes", which nobody discovers.
 
 ## Decisions (settled in brainstorm)
 
@@ -25,12 +23,30 @@ never explained to the user — the app theme just changes.
    (performer count, formation, camera, effects); props re-seed from
    `settingsService` prop types. Loading a saved preset applies its snapshot
    verbatim, props included.
-3. **Scene↔theme:** stays linked (it is intentional and documented in
-   `viewer-3d-state.svelte.ts` → `seededBackgroundType`). The fix is copy: the
-   scene pickers state "This also sets your app theme."
+3. **Scene↔theme:** already decoupled in code — `Viewer3DScene.svelte:174`:
+   *"Every viewer owns its scene environment. BackgroundType remains only the
+   established renderer key; it is no longer an application preference."*
+   Picking a 3D scene does NOT set the app theme, and no copy should claim it
+   does. The one surviving link is one-directional and stays: the very first 3D
+   open seeds its scene from the current app theme
+   (`firstUseEnvironment: sceneEnvironmentIdForBackground(...)`). The intro's
+   scene step drives the viewer's environment through the same path as the
+   rail's scene tool (`SceneSelectorPopover`), never
+   `settingsService.updateSetting("backgroundType", …)`.
 4. **Flow shape:** live-scene steps — the 3D canvas loads immediately and
    guidance floats over it as skippable cards whose choices take effect live.
    No full-screen takeover (per `src/lib/shared/onboarding/README.md`).
+5. **Scope (2026-08-23, after Austen's stage question):** this experience
+   belongs to the **sequence-viewer 3D**, whose invariant is *one sequence,
+   many forms* — every performer renders the same sequence, and per-performer
+   sequence divergence is structurally impossible (`StoredPerformerSettings`
+   has no sequence field) and stays that way. The "different performers,
+   different sequences" experience already exists as the **Stage module**
+   (`src/lib/features/stage/` — per-performer `sequenceClips` timeline lanes,
+   `setPerformerCount`, formation editor, environment picker) and is NOT this
+   spec's target. Build the intro cards and presets panel as presentations
+   composing shared owners so the Stage module can adopt a guided setup later
+   without forking them.
 
 ## Components
 
@@ -45,17 +61,20 @@ the 3D pane host (`ViewerMotionSurface` / `Viewer3DCanvas` seam).
   `src/lib/shared/onboarding/services/onboarding-persister.ts` and
   `config/storage-keys.ts`. Same pattern as `CREATE_TUTORIAL_ENABLED`; NOT the
   disabled `AUTO_TOURS_ENABLED` coach-mark system.
-- **Step 1 — Scene:** reuse the `background-card` web components
-  (`@austencloud/backgrounds/card`) already used by
-  `BackgroundTab.svelte`. Selection applies live via
-  `settingsService.updateSetting("backgroundType", …)` +
-  `applyThemeFromColors()` — the world swaps behind the card. Card copy
-  includes: "This also sets your app theme."
-- **Step 2 — Formation:** reuse `FormationSelector.svelte` presets
-  (count-gating via `PRESET_VALID_COUNTS` already handled). Picking one
-  rearranges performers live through the existing viewer-3d-state formation
-  path.
-- **Step 3 — Presets:** if the scene-3d-collection store has saved scenes,
+- **Step 1 — Scene:** reuse `SceneSelectorPopover`
+  (`src/lib/shared/3d/components/SceneSelectorPopover.svelte`) — the viewer's
+  own scene picker, same path as the rail's scene tool. Selection swaps the
+  world live behind the card. No theme claim (decision 3).
+- **Step 2 — Performers:** "How many performers?" — count choices (1 / 2 / 4 /
+  8) applied live via the viewer state's existing
+  `addPerformerFromUI`/`removePerformerFromUI` until the count matches. All
+  performers render the same sequence (decision 5); the copy says so in one
+  line: "Everyone performs this sequence."
+- **Step 3 — Formation:** reuse `FormationPopover` presets (count-gating via
+  `PRESET_VALID_COUNTS` already handled). Picking one rearranges performers
+  live through the existing viewer-3d-state formation path. **Skipped
+  automatically when the count is 1** — a solo has nothing to arrange.
+- **Step 4 — Presets:** if the scene-3d-collection store has saved scenes,
   render them with `Scene3DPreview` thumbnails and one-tap apply
   (`applyScene3DLook`). If none, teach saving instead: point at the RightRail
   bookmark ("build something you like, then save it here").
@@ -94,14 +113,13 @@ In the plain-open restore path (`scene3d-persister` →
   mirroring the existing `SCENE_BPM_INTENT_KEY` pattern) so the next hydrate
   skips the prop re-seed exactly once.
 
-### 4. Copy additions (no architecture change)
-
-- Intro Step 1 card and settings `BackgroundTab` gain the one-liner explaining
-  the scene↔theme link.
-
 ## Out of scope
 
-- Decoupling 2D/3D backgrounds.
+- Per-performer sequences in the sequence viewer — forbidden by construction;
+  that experience is the Stage module's (`src/lib/features/stage/`), which gets
+  its own guided setup in a future spec reusing these components.
+- Any scene↔theme copy or coupling work — the coupling no longer exists
+  (decision 3); nothing to explain.
 - Per-sequence 3D memory.
 - Reviving the `AUTO_TOURS_ENABLED` coach-mark system.
 - Any change to the Browse "3D Scenes" management surface.

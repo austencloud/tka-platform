@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A first-ever 3D open gets a three-card live guided setup (scene → formation → presets); a Presets panel lands in the 3D rail with one-tap apply; plain 3D opens follow the current app prop instead of restoring stale prop configs.
+**Goal:** A first-ever 3D open gets a live guided setup (scene → performer count → formation → presets); a Presets panel lands in the 3D rail with one-tap apply; plain 3D opens follow the current app prop instead of restoring stale prop configs. Scope is the sequence-viewer 3D only: one sequence, many forms — per-performer sequences belong to the Stage module and stay out (spec decision 5).
 
 **Architecture:** Prop-follow is a hydrate-policy change in `viewer-3d-state.svelte.ts` gated by a one-shot sessionStorage "preset intent" that `applyScene3DLook` sets. Live preset apply is a new `applyPersistConfig` method on the viewer state driven by a config-builder extracted from `applyScene3DLook`. The intro and presets panel are new presentations composing existing owners: `SceneSelectorPopover`, `FormationPopover`, `scene3dCollectionState`, `SaveSceneModal` (per `never-hand-roll.md`: **Composing** existing capabilities; the only **Create** is the live-apply method, whose owner is `viewer-3d-state`).
 
@@ -22,7 +22,7 @@
 - [ ] Task 4: Live preset apply (`applyPersistConfig` + `applyScene3DLookLive`)
 - [ ] Task 5: Presets tool in the 3D rail
 - [ ] Task 6: Intro flag + persistence
-- [ ] Task 7: `Viewer3DIntro` component, mount, copy, test route
+- [ ] Task 7: `Viewer3DIntro` component, mount, test route
 - [ ] Task 8: Full verification pass
 
 ---
@@ -768,21 +768,21 @@ git commit -m "feat(onboarding): viewer3d intro flag with local+cloud persistenc
 
 ---
 
-### Task 7: `Viewer3DIntro` component, mount, copy, test route
+### Task 7: `Viewer3DIntro` component, mount, test route
 
 **Files:**
 - Create: `src/lib/shared/3d/components/onboarding/Viewer3DIntro.svelte`
 - Modify: `src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte:345-358`
-- Modify: `src/lib/shared/settings/components/tabs/background/BackgroundTab.svelte` (copy line)
 - Create: `src/routes/test/viewer3d-intro/+page.svelte`
 
 - [ ] **Step 1: Build Viewer3DIntro**
 
-A floating card overlay (bottom-center of the 3D pane; `position: absolute`, max-width ~30rem, theme-token surface matching `SceneControlInspector`'s panel styling), three steps with a dot indicator, Skip (always visible, top-right of the card), Back/Next/Done. Content per step:
+A floating card overlay (bottom-center of the 3D pane; `position: absolute`, max-width ~30rem, theme-token surface matching `SceneControlInspector`'s panel styling), four steps with a dot indicator, Skip (always visible, top-right of the card), Back/Next/Done. Content per step:
 
-1. **Scene** — heading "Pick your stage", `SceneSelectorPopover` (`src/lib/shared/3d/components/SceneSelectorPopover.svelte`, props `onSettingChange`), footnote: *"This also sets your app theme."*
-2. **Formation** — heading "Arrange your performers", `FormationPopover` (`./controls/FormationPopover.svelte`, prop `onSettingChange`).
-3. **Presets** — heading "Save and reload setups". If `scene3dCollectionState.collection.length > 0`: a horizontal poster strip (`scene.poster` `<img>`s, fixed aspect boxes) with tap-to-apply via `applyScene3DLookLive(scene, viewer)`. Else: copy *"Build something you like, then tap the bookmark in the rail to save it. Your saved setups will appear here and in the Presets panel."*
+1. **Scene** — heading "Pick your stage", `SceneSelectorPopover` (`src/lib/shared/3d/components/SceneSelectorPopover.svelte`, props `onSettingChange`). No theme copy — the scene is viewer-scoped (spec decision 3).
+2. **Performers** — heading "How many performers?", count chips 1 / 2 / 4 / 8 (a `SegmentedControl` with the current count selected; per `chip-primitives.md` this is exactly-one selection). On change, call the viewer state's `addPerformerFromUI()` / `removePerformerFromUI()` in a loop until `performerManager.performers.length` matches. One line of copy under the chips: *"Everyone performs this sequence."*
+3. **Formation** — heading "Arrange your performers", `FormationPopover` (`./controls/FormationPopover.svelte`, prop `onSettingChange`). **Auto-skipped when count is 1**: Next from the Performers step jumps to Presets, Back from Presets returns to Performers, and the dot indicator renders only the reachable steps (3 dots for a solo, 4 otherwise) — recompute the step list from the live count so raising the count later in the same run restores the Formation dot.
+4. **Presets** — heading "Save and reload setups". If `scene3dCollectionState.collection.length > 0`: a horizontal poster strip (`scene.poster` `<img>`s, fixed aspect boxes) with tap-to-apply via `applyScene3DLookLive(scene, viewer)`. Else: copy *"Build something you like, then tap the bookmark in the rail to save it. Your saved setups will appear here and in the Presets panel."*
 
 Mechanics:
 - Props: `{ onSettingChange?: ViewerControlSink; force?: boolean }` (`force` for the test route — bypasses the seen check but never writes the flag).
@@ -805,22 +805,18 @@ In the `side === "left" && is3DMounted && !requiresContactViewer` block (line ~3
 
 with `let showViewer3DIntro = $state(shouldShowViewer3DIntro());` in the script (module import from `$lib/shared/onboarding/state/viewer3d-intro-state.svelte`) and the component signalling dismissal via an `onDismiss` prop that sets `showViewer3DIntro = false` (add `onDismiss: () => void` to the intro's props; it calls it after marking seen). Gate mount so it renders above the canvas but below dialogs (z-index between the canvas layer and `SceneControlWorkspace`'s inspector, i.e. z-index ~28 given the rail is 30 and inspector 29 — pick a value and verify overlap visually in Task 8).
 
-- [ ] **Step 3: BackgroundTab copy line**
-
-In `BackgroundTab.svelte`, add one supplementary line under the picker heading (≥12px, `--theme-text-dim`): *"Your background is also the stage for 3D scenes."* Match the tab's existing helper-text styling if one exists; otherwise place it as a `<p class="tab-note">` styled with existing tokens.
-
-- [ ] **Step 4: Test route**
+- [ ] **Step 3: Test route**
 
 `src/routes/test/viewer3d-intro/+page.svelte`: creates `createViewer3DState(undefined, {})`, `setViewer3DContext(state)`, renders a full-viewport dark gradient stand-in stage div with `<Viewer3DIntro force />` mounted. Follow the structure of an existing minimal test route (e.g. `src/routes/test/viewer-3d/+page.svelte` and its `+layout@.svelte` bypass) so it loads unauthenticated. This route exists for visual iteration; the REAL surface is verified in Task 8.
 
-- [ ] **Step 5: Typecheck**
+- [ ] **Step 4: Typecheck**
 
 Run: `npm run check:fast > "$TEMP/check-task7.log" 2>&1; grep -icE "error" "$TEMP/check-task7.log"` → no new errors.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(3d): first-open guided setup overlay (Viewer3DIntro)" -- src/lib/shared/3d/components/onboarding/Viewer3DIntro.svelte src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte src/lib/shared/settings/components/tabs/background/BackgroundTab.svelte src/routes/test/viewer3d-intro/+page.svelte
+git commit -m "feat(3d): first-open guided setup overlay (Viewer3DIntro)" -- src/lib/shared/3d/components/onboarding/Viewer3DIntro.svelte src/lib/shared/sequence-viewer/components/ViewerMotionSurface.svelte src/routes/test/viewer3d-intro/+page.svelte
 ```
 
 (Include the test route's `+layout@.svelte` in the pathspec if one was created.)
@@ -845,7 +841,7 @@ Launch the shared browser via `pwsh -NoProfile -File scripts/launch-chrome-debug
 
 1. **Prop-follow:** in the app set prop to fans; seed a stale 3D config (`localStorage["tka-viewer3d-defaultProp"]="staff"`, performers with prop overrides via a saved elaborate setup); open a sequence's 3D pane → performers hold fans. Then apply a saved buugeng preset from the new panel → buugeng applies live; close/reopen the viewer in the same session → buugeng persists ONLY when arriving via a preset (fresh plain open follows the app prop again).
 2. **Presets panel:** open from the rail — list renders posters, apply works live, Undo toast reverts, "Save current setup" opens SaveSceneModal, empty state renders when the collection is empty.
-3. **Intro:** clear `tka-viewer3d-intro-seen`; first 3D open shows the card; scene selection swaps the world live and the theme note is present; formation step rearranges; skip/done sets the flag (verify the localStorage value flips and the overlay never remounts on reopen).
+3. **Intro:** clear `tka-viewer3d-intro-seen`; first 3D open shows the card; scene selection swaps the world live WITHOUT changing the app theme (spot-check the 2D background setting is untouched); the performer-count step adds/removes performers live; formation step rearranges (and is skipped when count is 1 — verify the dot indicator drops to 3); skip/done sets the flag (verify the localStorage value flips and the overlay never remounts on reopen).
 4. **Viewports:** the intro card and presets panel at 1920×1080, 2560×1440, 3840×2160, 1440×900, 820×1180, 960×412, 375×667. The compact (`<768px` workspace) presentation hides the rail — state which surfaces are legitimately unreachable per viewport instead of skipping silently. Read every frame against the checklist (absurd widths, dead space, orphans, contrast, legibility).
 
 - [ ] **Step 4: Deliver in the in-app Browser pane**
@@ -861,7 +857,7 @@ Mark ledger boxes `[x]`; commit fixes with scoped pathspecs.
 ## Out of scope (from spec)
 
 - Mobile/compact (`MobileSceneControls`) presets entry — the compact sheet has no save entry today either; a follow-up gets both at once.
-- Decoupling 2D/3D backgrounds; per-sequence 3D memory; reviving AUTO_TOURS; Browse "3D Scenes" management changes.
+- Per-performer sequences (Stage module territory — spec decision 5); scene↔theme copy or coupling work (already decoupled); per-sequence 3D memory; reviving AUTO_TOURS; Browse "3D Scenes" management changes.
 
 ## Known risks
 
