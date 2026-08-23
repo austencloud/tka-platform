@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D Viewer Intro + Presets — Flow Mockup</title>
+<style>
+  :root {
+    --bg: #0a0c14;
+    --panel: #10131f;
+    --panel-2: #161a2a;
+    --stroke: rgba(255,255,255,0.12);
+    --stroke-strong: rgba(255,255,255,0.22);
+    --text: rgba(255,255,255,0.94);
+    --dim: rgba(255,255,255,0.60);
+    --accent: #7c8cff;
+    --accent-soft: rgba(124,140,255,0.16);
+    --good: #59d49a;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem) 6rem;
+  }
+  h1 { font-size: clamp(1.6rem, 2.5vw, 2.4rem); letter-spacing: -0.01em; }
+  h2 { font-size: 1.25rem; margin: 3.5rem 0 0.75rem; }
+  .sub { color: var(--dim); max-width: 62rem; margin-top: 0.5rem; }
+  .kbd { color: var(--accent); font-weight: 600; }
+
+  /* ============ interactive demo stage ============ */
+  .demo-wrap { margin-top: 1.75rem; max-width: 1280px; }
+  .stage {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: 1.25rem;
+    border: 1px solid var(--stroke);
+    overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 10%, #123c5c 0%, #071626 55%, #04101c 100%);
+    transition: background 600ms ease;
+  }
+  .stage.scene-ocean   { background: radial-gradient(120% 90% at 50% 10%, #0e4a6e 0%, #06233c 55%, #031320 100%); }
+  .stage.scene-blossom { background: radial-gradient(120% 90% at 50% 10%, #5c2c55 0%, #2a1030 55%, #150818 100%); }
+  .stage.scene-forest  { background: radial-gradient(120% 90% at 50% 10%, #1d4a2c 0%, #0b2414 55%, #05130a 100%); }
+  .stage.scene-cosmic  { background: radial-gradient(120% 90% at 50% 10%, #2b2454 0%, #120e2c 55%, #080618 100%); }
+  .stage.scene-stagelight { background: radial-gradient(120% 90% at 50% 10%, #4a3420 0%, #241608 55%, #120a04 100%); }
+  .floor {
+    position: absolute; left: 50%; bottom: 6%;
+    width: 72%; height: 34%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255,255,255,0.10), rgba(255,255,255,0.03) 60%, transparent 72%);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .performer {
+    position: absolute;
+    width: 2.6%;
+    aspect-ratio: 1 / 2.6;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #dfe6ff 0%, #96a4e8 60%, #5d6bb8 100%);
+    box-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.5), 0 0 1.4rem rgba(124,140,255,0.35);
+    transform: translate(-50%, -100%);
+    transition: left 700ms cubic-bezier(.3,.9,.3,1), top 700ms cubic-bezier(.3,.9,.3,1);
+  }
+  .performer::before {
+    content: ""; position: absolute; top: -34%; left: 50%;
+    width: 92%; aspect-ratio: 1; border-radius: 50%;
+    transform: translateX(-50%);
+    background: inherit;
+  }
+  .performer .prop {
+    position: absolute; left: 50%; top: 8%;
+    width: 250%; height: 6%;
+    border-radius: 999px;
+    transform: translate(-50%, 0) rotate(-24deg);
+    background: #8fd0ff;
+    box-shadow: 0 0 0.9rem rgba(143,208,255,0.8);
+    transition: background 300ms, box-shadow 300ms;
+  }
+  .stage[data-prop="fans"] .prop { background: #ffb46b; box-shadow: 0 0 0.9rem rgba(255,180,107,0.8); width: 220%; height: 16%; border-radius: 0.4rem 2rem 0.4rem 2rem; }
+
+  /* right rail */
+  .rail {
+    position: absolute; top: 4%; right: 1.4%; bottom: 18%;
+    display: flex; flex-direction: column; gap: 0.6rem; align-items: center;
+    z-index: 5;
+  }
+  .rail button {
+    width: 3rem; height: 3rem;
+    display: grid; place-items: center;
+    border-radius: 0.85rem;
+    border: 1px solid var(--stroke);
+    background: rgba(12,14,22,0.82);
+    color: var(--dim);
+    font-size: 1.05rem;
+    cursor: pointer;
+    position: relative;
+  }
+  .rail button:hover { color: var(--text); border-color: var(--stroke-strong); }
+  .rail button.active { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .rail .sep { width: 2rem; height: 1px; background: var(--stroke); margin: 0.2rem 0; }
+  .rail .spacer { flex: 1; }
+  .badge-new {
+    position: absolute; top: -0.45rem; right: -0.55rem;
+    font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em;
+    background: var(--accent); color: #0a0c14;
+    padding: 0.1rem 0.32rem; border-radius: 999px;
+  }
+
+  /* the guided card — anchored bottom-LEFT so the live result it drives
+     (performers, scene) stays visible beside it, never behind it */
+  .card {
+    position: absolute;
+    left: 2.5%; bottom: 6%;
+    width: min(28rem, 46%);
+    background: rgba(13,16,26,0.92);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--stroke-strong);
+    border-radius: 1.1rem;
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.6);
+    padding: 1.1rem 1.2rem 1rem;
+    z-index: 6;
+  }
+  .card-top { display: flex; align-items: baseline; gap: 0.75rem; }
+  .card h3 { font-size: 1.05rem; }
+  .card .skip {
+    margin-left: auto;
+    background: none; border: 1px solid transparent; color: var(--dim);
+    font-size: 0.85rem; cursor: pointer; padding: 0.35rem 0.6rem; border-radius: 0.6rem;
+  }
+  .card .skip:hover { color: var(--text); border-color: var(--stroke); }
+  .card-body { min-height: 7.75rem; margin-top: 0.8rem; }
+  .note { color: var(--dim); font-size: 0.82rem; margin-top: 0.65rem; }
+  .note .link-word { color: var(--accent); }
+
+  .tile-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.55rem; }
+  .tile {
+    aspect-ratio: 1 / 0.72;
+    border-radius: 0.7rem;
+    border: 1px solid var(--stroke);
+    cursor: pointer; position: relative; overflow: hidden;
+    display: grid; align-items: end;
+    padding: 0.35rem 0.45rem;
+    font-size: 0.72rem; color: var(--text);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    background-size: cover;
+  }
+  .tile.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 1rem rgba(124,140,255,0.35); }
+  .t-ocean   { background: linear-gradient(160deg,#1479b4,#063054); }
+  .t-blossom { background: linear-gradient(160deg,#c46bb0,#4b1f4e); }
+  .t-forest  { background: linear-gradient(160deg,#3f9e57,#123c1e); }
+  .t-cosmic  { background: linear-gradient(160deg,#6d5fd8,#1b1442); }
+  .t-stagelight { background: linear-gradient(160deg,#c98d3f,#3c2410); }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .fchip {
+    padding: 0.55rem 0.95rem;
+    border-radius: 0.7rem;
+    border: 1px solid var(--stroke);
+    background: var(--panel-2);
+    color: var(--text); font-size: 0.86rem;
+    cursor: pointer;
+  }
+  .fchip.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+
+  .poster-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+  .poster {
+    border-radius: 0.7rem; border: 1px solid var(--stroke);
+    overflow: hidden; cursor: pointer; background: var(--panel-2);
+    text-align: left; padding: 0; color: var(--text);
+  }
+  .poster .thumb { aspect-ratio: 16/10; }
+  .poster .p1 { background: linear-gradient(150deg,#0d5c8c,#0a2a44); }
+  .poster .p2 { background: linear-gradient(150deg,#8c4a7d,#301334); }
+  .poster .p3 { background: linear-gradient(150deg,#514ab0,#171040); }
+  .poster figcaption { font-size: 0.74rem; padding: 0.4rem 0.55rem; color: var(--dim); }
+  .poster:hover { border-color: var(--accent); }
+
+  .card-nav { display: flex; align-items: center; gap: 0.9rem; margin-top: 1rem; }
+  .dots { display: flex; gap: 0.4rem; }
+  .dots span { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--stroke-strong); }
+  .dots span.on { background: var(--accent); }
+  .btn {
+    padding: 0.6rem 1.25rem; border-radius: 0.75rem;
+    border: 1px solid var(--stroke); background: var(--panel-2);
+    color: var(--text); font-size: 0.92rem; cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0a0c14; font-weight: 600; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .card-nav .grow { flex: 1; }
+
+  /* presets panel (post-onboarding) */
+  .panel {
+    position: absolute; top: 4%; right: 5.8rem; bottom: 20%;
+    width: min(22rem, 46%);
+    background: var(--panel);
+    border: 1px solid var(--stroke-strong);
+    border-radius: 1rem;
+    box-shadow: 0 1.25rem 4rem rgba(0,0,0,0.6);
+    z-index: 6;
+    display: none; flex-direction: column; overflow: hidden;
+  }
+  .panel.open { display: flex; }
+  .panel header {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--stroke);
+    font-weight: 600;
+  }
+  .panel header .icon { color: var(--accent); background: var(--accent-soft); width: 2.2rem; height: 2.2rem; display: grid; place-items: center; border-radius: 0.6rem; }
+  .panel header .x { margin-left: auto; background: none; border: 1px solid var(--stroke); color: var(--dim); border-radius: 0.6rem; width: 2.2rem; height: 2.2rem; cursor: pointer; }
+  .panel .body { padding: 0.8rem; overflow-y: auto; display: grid; gap: 0.6rem; }
+  .save-current {
+    display: flex; gap: 0.6rem; align-items: center; justify-content: center;
+    padding: 0.75rem; border-radius: 0.75rem;
+    border: 1px dashed var(--stroke-strong);
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 600; cursor: pointer; font-size: 0.92rem;
+  }
+  .saved-item {
+    display: grid; grid-template-columns: 5.4rem 1fr auto; gap: 0.7rem; align-items: center;
+    border: 1px solid var(--stroke); border-radius: 0.75rem;
+    background: var(--panel-2); padding: 0.45rem; cursor: pointer; color: var(--text);
+    text-align: left;
+  }
+  .saved-item:hover { border-color: var(--accent); }
+  .saved-item .thumb { aspect-ratio: 16/10; border-radius: 0.5rem; }
+  .saved-item .meta b { display: block; font-size: 0.9rem; }
+  .saved-item .meta span { font-size: 0.75rem; color: var(--dim); }
+  .saved-item .apply { font-size: 0.8rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 0.55rem; padding: 0.35rem 0.7rem; background: none; cursor: pointer; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 4%;
+    transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--stroke-strong);
+    border-radius: 0.8rem; padding: 0.65rem 1rem;
+    display: none; gap: 1rem; align-items: center; z-index: 8;
+    box-shadow: 0 0.8rem 2.5rem rgba(0,0,0,0.5);
+    font-size: 0.9rem;
+  }
+  .toast.show { display: flex; }
+  .toast .undo { color: var(--accent); background: none; border: none; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+
+  .demo-controls { display: flex; gap: 0.7rem; margin-top: 0.9rem; flex-wrap: wrap; }
+  .demo-controls .btn { font-size: 0.85rem; }
+  .hint { color: var(--dim); font-size: 0.85rem; margin-top: 0.5rem; }
+
+  /* ============ storyboard ============ */
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1.25rem; margin-top: 1.25rem; max-width: 1280px; }
+  .frame { border: 1px solid var(--stroke); border-radius: 1rem; overflow: hidden; background: var(--panel); }
+  .frame .pic { aspect-ratio: 16/10; position: relative; overflow: hidden; }
+  .frame .cap { padding: 0.8rem 1rem 1rem; }
+  .frame .cap b { display: block; margin-bottom: 0.25rem; }
+  .frame .cap p { font-size: 0.85rem; color: var(--dim); }
+  .step-tag {
+    position: absolute; top: 0.6rem; left: 0.6rem; z-index: 3;
+    background: var(--accent); color: #0a0c14; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.55rem; border-radius: 999px;
+  }
+  .mini-card {
+    position: absolute; left: 4%; bottom: 6%;
+    width: 58%; background: rgba(13,16,26,0.94);
+    border: 1px solid var(--stroke-strong); border-radius: 0.7rem;
+    padding: 0.55rem 0.65rem; font-size: 0.62rem; z-index: 2;
+  }
+  .mini-card b { font-size: 0.7rem; }
+  .mini-tiles { display: grid; grid-template-columns: repeat(5,1fr); gap: 0.25rem; margin-top: 0.35rem; }
+  .mini-tiles i { display: block; aspect-ratio: 1/0.7; border-radius: 0.3rem; }
+  .mini-chips { display: flex; gap: 0.25rem; margin-top: 0.35rem; flex-wrap: wrap; }
+  .mini-chips i { font-style: normal; border: 1px solid var(--stroke); border-radius: 0.4rem; padding: 0.15rem 0.4rem; font-size: 0.58rem; }
+  .mini-chips i.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .mini-note { color: var(--dim); font-size: 0.56rem; margin-top: 0.3rem; }
+  .mini-rail { position: absolute; top: 6%; right: 3%; display: flex; flex-direction: column; gap: 0.25rem; z-index: 2; }
+  .mini-rail i { display: grid; place-items: center; width: 1.35rem; height: 1.35rem; font-size: 0.62rem; font-style: normal; border: 1px solid var(--stroke); background: rgba(12,14,22,0.85); border-radius: 0.4rem; color: var(--dim); }
+  .mini-rail i.hot { border-color: var(--accent); color: var(--accent); }
+  .mini-perf { position: absolute; width: 4%; aspect-ratio: 1/2.4; border-radius: 999px; background: linear-gradient(180deg,#dfe6ff,#5d6bb8); transform: translate(-50%,-100%); }
+  .mini-perf::before { content:""; position:absolute; top:-32%; left:50%; width:90%; aspect-ratio:1; border-radius:50%; transform:translateX(-50%); background:inherit; }
+
+  /* prop-follow diagram */
+  .flowchart {
+    max-width: 1280px; margin-top: 1.25rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1rem;
+  }
+  .fc {
+    border: 1px solid var(--stroke); border-radius: 1rem; padding: 1.1rem 1.2rem;
+    background: var(--panel);
+  }
+  .fc b { color: var(--accent); }
+  .fc.good b { color: var(--good); }
+  .fc p { font-size: 0.88rem; color: var(--dim); margin-top: 0.4rem; }
+  .fc .verdict { margin-top: 0.6rem; font-size: 0.82rem; color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>3D Viewer: First-Open Guidance &amp; Presets</h1>
+<p class="sub">
+  Interactive mockup of the flow from the 2026-08-23 spec. The demo below is clickable —
+  walk the four steps (scene → performers → formation → presets) exactly as a
+  first-time user would, then use the <span class="kbd">Presets</span> rail button
+  the way a returning user would. Set the count to Solo and watch the formation
+  step drop out of the dots. Reset buttons underneath let you replay either state.
+</p>
+
+<h2>Live flow demo (click through it)</h2>
+<div class="demo-wrap">
+  <div class="stage scene-ocean" id="stage" data-prop="staves">
+    <div class="floor"></div>
+    <!-- performers (JS shows the first N) -->
+    <div class="performer"><div class="prop"></div></div>
+    <div class="performer"><div class="prop"></div></div>
+    <div class="performer"><div class="prop"></div></div>
+    <div class="performer"><div class="prop"></div></div>
+    <div class="performer" hidden><div class="prop"></div></div>
+    <div class="performer" hidden><div class="prop"></div></div>
+    <div class="performer" hidden><div class="prop"></div></div>
+    <div class="performer" hidden><div class="prop"></div></div>
+
+    <!-- right rail -->
+    <div class="rail">
+      <button title="Performers">&#9865;</button>
+      <button title="Formation">&#8646;</button>
+      <div class="sep"></div>
+      <button title="Camera">&#9635;</button>
+      <button title="Scene">&#9968;</button>
+      <div class="spacer"></div>
+      <button id="railPresets" title="Presets — NEW">&#9782;<span class="badge-new">NEW</span></button>
+      <button id="railSave" title="Save scene">&#9873;</button>
+    </div>
+
+    <!-- guided card -->
+    <div class="card" id="introCard">
+      <div class="card-top">
+        <h3 id="cardTitle">Pick your stage</h3>
+        <button class="skip" id="skipBtn">Skip</button>
+      </div>
+
+      <div class="card-body">
+        <!-- STEP: scene -->
+        <div class="step" id="stepScene">
+          <div class="tile-row">
+            <button class="tile t-ocean sel" data-scene="ocean">Ocean</button>
+            <button class="tile t-blossom" data-scene="blossom">Blossom</button>
+            <button class="tile t-forest" data-scene="forest">Forest</button>
+            <button class="tile t-cosmic" data-scene="cosmic">Cosmic</button>
+            <button class="tile t-stagelight" data-scene="stagelight">Stage</button>
+          </div>
+          <p class="note">The world changes behind this card as you tap. Just this viewer — <span class="link-word">your app theme stays put</span>.</p>
+        </div>
+
+        <!-- STEP: performer count -->
+        <div class="step" id="stepCount" hidden>
+          <div class="chip-row">
+            <button class="fchip count-chip" data-count="1">Solo</button>
+            <button class="fchip count-chip" data-count="2">2</button>
+            <button class="fchip count-chip sel" data-count="4">4</button>
+            <button class="fchip count-chip" data-count="8">8</button>
+          </div>
+          <p class="note">Performers appear and leave as you tap. <span class="link-word">Everyone performs this sequence</span> — one sequence, many forms.</p>
+        </div>
+
+        <!-- STEP: formation -->
+        <div class="step" id="stepFormation" hidden>
+          <div class="chip-row">
+            <button class="fchip sel" data-formation="pairs">Pairs</button>
+            <button class="fchip" data-formation="line">Line</button>
+            <button class="fchip" data-formation="circle">Circle</button>
+            <button class="fchip" data-formation="v">V-shape</button>
+            <button class="fchip" data-formation="diagonal">Diagonal</button>
+          </div>
+          <p class="note">Performers glide into place live — no commit button, what you see is what you keep. (This step disappears for a solo.)</p>
+        </div>
+
+        <!-- STEP: presets -->
+        <div class="step" id="stepPresets" hidden>
+          <div class="poster-row">
+            <button class="poster"><div class="thumb p1"></div><figcaption>Duo — fans, ocean</figcaption></button>
+            <button class="poster"><div class="thumb p2"></div><figcaption>8× mixed — blossom</figcaption></button>
+            <button class="poster"><div class="thumb p3"></div><figcaption>Solo trails — cosmic</figcaption></button>
+          </div>
+          <p class="note">Tap one to load it — or keep what you just built. Save any setup with the <span class="link-word">&#9873; bookmark</span> in the rail. Your presets live behind <span class="link-word">&#9782; Presets</span>, right above it.</p>
+        </div>
+      </div>
+
+      <div class="card-nav">
+        <div class="dots" id="dots"></div>
+        <div class="grow"></div>
+        <button class="btn" id="backBtn" disabled>Back</button>
+        <button class="btn primary" id="nextBtn">Next</button>
+      </div>
+    </div>
+
+    <!-- presets panel (post-onboarding) -->
+    <div class="panel" id="presetsPanel">
+      <header>
+        <span class="icon">&#9782;</span> Presets
+        <button class="x" id="panelClose">&#10005;</button>
+      </header>
+      <div class="body">
+        <button class="save-current" id="saveCurrent">&#9873; &nbsp;Save current setup</button>
+        <button class="saved-item" data-scene="ocean" data-formation="pairs">
+          <div class="thumb p1" style="background:linear-gradient(150deg,#0d5c8c,#0a2a44)"></div>
+          <div class="meta"><b>Duo — fans, ocean</b><span>2 performers · saved Aug 12</span></div>
+          <span class="apply">Apply</span>
+        </button>
+        <button class="saved-item" data-scene="blossom" data-formation="circle">
+          <div class="thumb p2" style="background:linear-gradient(150deg,#8c4a7d,#301334)"></div>
+          <div class="meta"><b>8× mixed — blossom</b><span>8 performers · saved Aug 15</span></div>
+          <span class="apply">Apply</span>
+        </button>
+        <button class="saved-item" data-scene="cosmic" data-formation="v">
+          <div class="thumb p3" style="background:linear-gradient(150deg,#514ab0,#171040)"></div>
+          <div class="meta"><b>Solo trails — cosmic</b><span>1 performer · saved Aug 20</span></div>
+          <span class="apply">Apply</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"><span id="toastMsg">Applied "Duo — fans, ocean"</span><button class="undo">Undo</button></div>
+  </div>
+
+  <div class="demo-controls">
+    <button class="btn" id="resetFirstOpen">&#8635; Replay first-open flow</button>
+    <button class="btn" id="jumpReturning">Returning user (skip to presets)</button>
+    <label class="btn" style="display:flex;gap:0.5rem;align-items:center;cursor:pointer">
+      App prop:
+      <select id="propSelect" style="background:var(--panel-2);color:var(--text);border:1px solid var(--stroke);border-radius:0.5rem;padding:0.25rem 0.5rem">
+        <option value="staves">Staves</option>
+        <option value="fans">Fans</option>
+      </select>
+    </label>
+  </div>
+  <p class="hint">The prop selector stands in for the app-wide prop setting: on a plain open the performers hold whatever it says. Applying a preset overrides it — that's the new contract.</p>
+</div>
+
+<h2>Storyboard — the five moments</h2>
+<div class="board">
+  <div class="frame">
+    <div class="pic scene-ocean" style="background:radial-gradient(120% 90% at 50% 10%, #0e4a6e 0%, #06233c 55%, #031320 100%)">
+      <span class="step-tag">STEP 1 · SCENE</span>
+      <div class="mini-perf" style="left:74%;top:58%"></div>
+      <div class="mini-perf" style="left:86%;top:58%"></div>
+      <div class="mini-card">
+        <b>Pick your stage</b>
+        <div class="mini-tiles">
+          <i style="background:linear-gradient(160deg,#1479b4,#063054);outline:1px solid var(--accent)"></i>
+          <i style="background:linear-gradient(160deg,#c46bb0,#4b1f4e)"></i>
+          <i style="background:linear-gradient(160deg,#3f9e57,#123c1e)"></i>
+          <i style="background:linear-gradient(160deg,#6d5fd8,#1b1442)"></i>
+          <i style="background:linear-gradient(160deg,#c98d3f,#3c2410)"></i>
+        </div>
+        <p class="mini-note">Viewer-scoped: the app theme stays untouched.</p>
+      </div>
+    </div>
+    <div class="cap"><b>First-ever 3D open: choose a world</b>
+      <p>The scene loads immediately; the card floats over it. Tapping a tile swaps the world live. The choice belongs to the 3D viewer alone — the app theme is not touched.</p>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="pic" style="background:radial-gradient(120% 90% at 50% 10%, #1d4a2c 0%, #0b2414 55%, #05130a 100%)">
+      <span class="step-tag">STEP 2 · PERFORMERS</span>
+      <div class="mini-perf" style="left:70%;top:58%"></div>
+      <div class="mini-perf" style="left:80%;top:52%"></div>
+      <div class="mini-perf" style="left:90%;top:58%"></div>
+      <div class="mini-card">
+        <b>How many performers?</b>
+        <div class="mini-chips"><i>Solo</i><i>2</i><i class="on">4</i><i>8</i></div>
+        <p class="mini-note">"Everyone performs this sequence" — one sequence, many forms.</p>
+      </div>
+    </div>
+    <div class="cap"><b>Count before arrangement</b>
+      <p>Performers appear and leave live as you tap. Every performer renders the same sequence — that is the sequence viewer's whole premise, and the card says so.</p>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="pic" style="background:radial-gradient(120% 90% at 50% 10%, #5c2c55 0%, #2a1030 55%, #150818 100%)">
+      <span class="step-tag">STEP 3 · FORMATION</span>
+      <div class="mini-perf" style="left:70%;top:60%"></div>
+      <div class="mini-perf" style="left:78%;top:52%"></div>
+      <div class="mini-perf" style="left:86%;top:52%"></div>
+      <div class="mini-perf" style="left:94%;top:60%"></div>
+      <div class="mini-card">
+        <b>Arrange your performers</b>
+        <div class="mini-chips"><i>Pairs</i><i class="on">V-shape</i><i>Line</i><i>Circle</i><i>Diagonal</i></div>
+        <p class="mini-note">Performers glide into place as you tap.</p>
+      </div>
+    </div>
+    <div class="cap"><b>Formation without hunting through menus</b>
+      <p>The existing formation presets, surfaced as one multiple-choice moment. No commit button — the arrangement they see is the arrangement they keep. A solo skips this step entirely.</p>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="pic" style="background:radial-gradient(120% 90% at 50% 10%, #2b2454 0%, #120e2c 55%, #080618 100%)">
+      <span class="step-tag">STEP 4 · PRESETS</span>
+      <div class="mini-rail"><i>&#9865;</i><i>&#8646;</i><i>&#9635;</i><i>&#9968;</i><i class="hot">&#9782;</i><i class="hot">&#9873;</i></div>
+      <div class="mini-card">
+        <b>Save and reload setups</b>
+        <div class="mini-tiles" style="grid-template-columns:repeat(3,1fr)">
+          <i style="background:linear-gradient(150deg,#0d5c8c,#0a2a44)"></i>
+          <i style="background:linear-gradient(150deg,#8c4a7d,#301334)"></i>
+          <i style="background:linear-gradient(150deg,#514ab0,#171040)"></i>
+        </div>
+        <p class="mini-note">Tap to load — or keep what you built and save it with the bookmark.</p>
+      </div>
+    </div>
+    <div class="cap"><b>The preset system, finally introduced</b>
+      <p>Saved scenes appear with real posters. A user with none gets taught the save bookmark instead. Either way they leave knowing where their setups live.</p>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="pic" style="background:radial-gradient(120% 90% at 50% 10%, #123c5c 0%, #071626 55%, #04101c 100%)">
+      <span class="step-tag">EVERY LATER OPEN</span>
+      <div class="mini-rail"><i>&#9865;</i><i>&#8646;</i><i>&#9635;</i><i>&#9968;</i><i class="hot">&#9782;</i><i>&#9873;</i></div>
+      <div class="mini-perf" style="left:14%;top:58%"></div>
+      <div class="mini-perf" style="left:26%;top:58%"></div>
+      <div class="mini-card" style="left:38%;width:52%">
+        <b>&#9782; Presets</b>
+        <div class="mini-chips" style="flex-direction:column;align-items:stretch">
+          <i style="border-style:dashed;color:var(--accent)">&#9873; Save current setup</i>
+          <i>Duo — fans, ocean · Apply</i>
+          <i>8× mixed — blossom · Apply</i>
+        </div>
+      </div>
+    </div>
+    <div class="cap"><b>Presets one tap from the rail</b>
+      <p>Load lives next to the save bookmark that already existed. Apply is instant with an Undo toast. Full management (rename, delete) stays in My Collections.</p>
+    </div>
+  </div>
+</div>
+
+<h2>The prop contract (why the 8-props ambush ends)</h2>
+<div class="flowchart">
+  <div class="fc">
+    <b>Today</b>
+    <p>Open 3D → restore <em>everything</em> from last time: 8 performers, 8 different props, 8 effects — even though you set the app to fans an hour ago.</p>
+    <p class="verdict">Surprise every time the contexts diverge.</p>
+  </div>
+  <div class="fc good">
+    <b>Plain open (new)</b>
+    <p>Structure restores — performer count, formation, camera, effects. Every prop re-seeds from your <em>current app prop</em>.</p>
+    <p class="verdict">The stage always matches the app you're holding.</p>
+  </div>
+  <div class="fc good">
+    <b>Preset open (new)</b>
+    <p>Loading a saved preset applies its snapshot verbatim — mixed props, effects, camera, scene, all of it. That's what presets are <em>for</em>.</p>
+    <p class="verdict">Elaborate setups live in presets, not in ambush.</p>
+  </div>
+</div>
+
+<h2>Where this lives (and where it doesn't)</h2>
+<div class="flowchart">
+  <div class="fc good">
+    <b>Sequence viewer 3D — this design</b>
+    <p>One sequence, many forms. Every performer renders the sequence you're viewing; per-performer sequences are structurally impossible here (performer settings carry prop, effort, and effect — there is no sequence field to diverge), and they stay impossible.</p>
+    <p class="verdict">The intro flow and Presets panel ship here first.</p>
+  </div>
+  <div class="fc">
+    <b>Stage module — already built for the rest</b>
+    <p>The "different performers, different sequences" experience exists today: the Stage module gives each performer their own sequence-clip lanes on a timeline, plus performer count, a formation editor, and its own scene picker.</p>
+    <p class="verdict">Its future guided setup reuses these same cards — nothing here forks.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  const stage = document.getElementById("stage");
+  const card = document.getElementById("introCard");
+  const panel = document.getElementById("presetsPanel");
+  const railPresets = document.getElementById("railPresets");
+  const railSave = document.getElementById("railSave");
+  const toast = document.getElementById("toast");
+  const toastMsg = document.getElementById("toastMsg");
+  const nextBtn = document.getElementById("nextBtn");
+  const backBtn = document.getElementById("backBtn");
+  const dotsEl = document.getElementById("dots");
+  const performers = Array.from(document.querySelectorAll(".performer"));
+
+  const stepIds = { scene: "stepScene", count: "stepCount", formation: "stepFormation", presets: "stepPresets" };
+  const titles = {
+    scene: "Pick your stage",
+    count: "How many performers?",
+    formation: "Arrange your performers",
+    presets: "Save and reload setups",
+  };
+
+  let count = 4;
+  let formation = "pairs";
+  let stepKey = "scene";
+  let toastTimer = null;
+
+  // Formation is skipped for a solo — nothing to arrange.
+  function stepOrder() {
+    return count === 1
+      ? ["scene", "count", "presets"]
+      : ["scene", "count", "formation", "presets"];
+  }
+
+  function formationPositions(name, n) {
+    // While an overlay is up, the stage "reframes" the performers into the
+    // clear half — mirroring the real viewer's frameAllPerformers-on-dock
+    // behavior. Intro card sits left → performers go right; presets panel
+    // sits right → performers go left. Centered again once dismissed.
+    const cardUp = card.style.display !== "none";
+    const panelUp = panel.classList.contains("open");
+    const cx = cardUp ? 66 : panelUp ? 36 : 50;
+    const compact = cardUp || panelUp;
+    const spreadCap = compact ? 34 : 52;
+    const pts = [];
+    if (n === 1) return [[cx, 82]];
+    if (name === "line") {
+      const spread = Math.min(10 * (n - 1), spreadCap);
+      for (let i = 0; i < n; i++) pts.push([cx - spread / 2 + (spread * i) / (n - 1), 82]);
+    } else if (name === "circle") {
+      const rx = compact ? 13 : 17;
+      for (let i = 0; i < n; i++) {
+        const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
+        pts.push([cx + rx * Math.cos(a), 79 + 11 * Math.sin(a)]);
+      }
+    } else if (name === "v") {
+      const step = compact ? 6.5 : 9;
+      pts.push([cx, 66]);
+      for (let i = 1; i < n; i++) {
+        const row = Math.ceil(i / 2);
+        const side = i % 2 === 1 ? -1 : 1;
+        pts.push([cx + side * row * step, Math.min(66 + row * 8, 92)]);
+      }
+    } else if (name === "diagonal") {
+      const span = compact ? 26 : 40;
+      for (let i = 0; i < n; i++)
+        pts.push([cx - span / 2 + (span * i) / (n - 1), 64 + (28 * i) / (n - 1)]);
+    } else {
+      // pairs: two rows
+      const front = Math.ceil(n / 2), back = n - front;
+      const spreadF = Math.min(10 * (front - 1), spreadCap);
+      for (let i = 0; i < front; i++)
+        pts.push([front === 1 ? cx : cx - spreadF / 2 + (spreadF * i) / (front - 1), 78]);
+      const spreadB = Math.min(10 * (back - 1), spreadCap);
+      for (let i = 0; i < back; i++)
+        pts.push([back === 1 ? cx : cx - spreadB / 2 + (spreadB * i) / (back - 1), 88]);
+    }
+    return pts;
+  }
+
+  function applyPerformers() {
+    performers.forEach((p, i) => (p.hidden = i >= count));
+    const pos = formationPositions(formation, count);
+    for (let i = 0; i < count; i++) {
+      performers[i].style.left = pos[i][0] + "%";
+      performers[i].style.top = pos[i][1] + "%";
+    }
+  }
+
+  function showStep(key) {
+    stepKey = key;
+    Object.values(stepIds).forEach((id) => (document.getElementById(id).hidden = true));
+    document.getElementById(stepIds[key]).hidden = false;
+    document.getElementById("cardTitle").textContent = titles[key];
+    const order = stepOrder();
+    const idx = order.indexOf(key);
+    dotsEl.innerHTML = "";
+    order.forEach((_, i) => {
+      const s = document.createElement("span");
+      if (i === idx) s.classList.add("on");
+      dotsEl.appendChild(s);
+    });
+    backBtn.disabled = idx === 0;
+    nextBtn.textContent = idx === order.length - 1 ? "Done" : "Next";
+  }
+
+  function dismissIntro() {
+    card.style.display = "none";
+    applyPerformers(); // reframe back to center once the card is gone
+  }
+
+  nextBtn.addEventListener("click", () => {
+    const order = stepOrder();
+    const idx = order.indexOf(stepKey);
+    if (idx === order.length - 1) dismissIntro();
+    else showStep(order[idx + 1]);
+  });
+  backBtn.addEventListener("click", () => {
+    const order = stepOrder();
+    const idx = order.indexOf(stepKey);
+    if (idx > 0) showStep(order[idx - 1]);
+  });
+  document.getElementById("skipBtn").addEventListener("click", dismissIntro);
+
+  // scene tiles — viewer-scoped: the app theme is untouched by design
+  const sceneClasses = ["scene-ocean","scene-blossom","scene-forest","scene-cosmic","scene-stagelight"];
+  function setScene(name) {
+    sceneClasses.forEach((c) => stage.classList.remove(c));
+    stage.classList.add("scene-" + name);
+  }
+  document.querySelectorAll(".tile").forEach((tile) => {
+    tile.addEventListener("click", () => {
+      document.querySelectorAll(".tile").forEach((t) => t.classList.remove("sel"));
+      tile.classList.add("sel");
+      setScene(tile.dataset.scene);
+    });
+  });
+
+  // performer count chips
+  function setCount(n) {
+    count = n;
+    document.querySelectorAll(".count-chip").forEach((c) =>
+      c.classList.toggle("sel", Number(c.dataset.count) === n)
+    );
+    applyPerformers();
+    if (card.style.display !== "none") showStep(stepKey); // dots may gain/lose the formation step
+  }
+  document.querySelectorAll(".count-chip").forEach((chip) => {
+    chip.addEventListener("click", () => setCount(Number(chip.dataset.count)));
+  });
+
+  // formation chips
+  function setFormation(name) {
+    formation = name;
+    document.querySelectorAll("[data-formation].fchip").forEach((c) =>
+      c.classList.toggle("sel", c.dataset.formation === name)
+    );
+    applyPerformers();
+  }
+  document.querySelectorAll("[data-formation].fchip").forEach((chip) => {
+    chip.addEventListener("click", () => setFormation(chip.dataset.formation));
+  });
+
+  // presets — a preset applies its snapshot verbatim: scene, count, formation, props
+  let undoSnapshot = null;
+  function currentScene() {
+    const c = sceneClasses.find((cls) => stage.classList.contains(cls));
+    return c ? c.replace("scene-", "") : "ocean";
+  }
+  function applyPreset(scene, formationName, n, label, prop) {
+    undoSnapshot = { scene: currentScene(), formation, count, prop: stage.dataset.prop };
+    setScene(scene);
+    count = n;
+    formation = formationName;
+    stage.dataset.prop = prop;
+    applyPerformers();
+    flashToast('Applied "' + label.trim() + '"', true);
+  }
+  const presetData = [
+    { scene: "ocean", formation: "pairs", count: 2, prop: "fans" },
+    { scene: "blossom", formation: "circle", count: 8, prop: "staves" },
+    { scene: "cosmic", formation: "v", count: 1, prop: "staves" },
+  ];
+  document.querySelectorAll("#stepPresets .poster").forEach((poster, i) => {
+    poster.addEventListener("click", () => {
+      const p = presetData[i];
+      applyPreset(p.scene, p.formation, p.count, poster.querySelector("figcaption").textContent, p.prop);
+      dismissIntro();
+    });
+  });
+  document.querySelectorAll(".saved-item").forEach((item, i) => {
+    item.addEventListener("click", () => {
+      const p = presetData[i];
+      applyPreset(p.scene, p.formation, p.count, item.querySelector("b").textContent, p.prop);
+    });
+  });
+
+  // rail
+  railPresets.addEventListener("click", () => {
+    panel.classList.toggle("open");
+    railPresets.classList.toggle("active", panel.classList.contains("open"));
+    applyPerformers();
+  });
+  document.getElementById("panelClose").addEventListener("click", () => {
+    panel.classList.remove("open");
+    railPresets.classList.remove("active");
+    applyPerformers();
+  });
+  railSave.addEventListener("click", () => flashToast("Save scene dialog opens here (already shipped)"));
+  document.getElementById("saveCurrent").addEventListener("click", () =>
+    flashToast("Save scene dialog opens here (already shipped)"));
+
+  function flashToast(msg, undoable) {
+    toastMsg.textContent = msg;
+    toast.querySelector(".undo").style.display = undoable ? "inline" : "none";
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
+  }
+  toast.querySelector(".undo").addEventListener("click", () => {
+    toast.classList.remove("show");
+    if (undoSnapshot) {
+      setScene(undoSnapshot.scene);
+      count = undoSnapshot.count;
+      formation = undoSnapshot.formation;
+      stage.dataset.prop = undoSnapshot.prop;
+      applyPerformers();
+      undoSnapshot = null;
+    }
+  });
+
+  // demo controls
+  document.getElementById("resetFirstOpen").addEventListener("click", () => {
+    card.style.display = "";
+    panel.classList.remove("open");
+    railPresets.classList.remove("active");
+    setScene("ocean");
+    setCount(4);
+    setFormation("pairs");
+    stage.dataset.prop = document.getElementById("propSelect").value;
+    showStep("scene");
+  });
+  document.getElementById("jumpReturning").addEventListener("click", () => {
+    dismissIntro();
+    panel.classList.add("open");
+    railPresets.classList.add("active");
+    applyPerformers();
+  });
+  document.getElementById("propSelect").addEventListener("change", (e) => {
+    stage.dataset.prop = e.target.value;
+    flashToast("Plain opens now seed performers with " + e.target.value);
+  });
+
+  applyPerformers();
+  showStep("scene");
+})();
+</script>
+</body>
+</html>

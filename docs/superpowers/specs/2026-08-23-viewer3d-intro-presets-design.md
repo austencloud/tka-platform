@@ -78,6 +78,14 @@ the 3D pane host (`ViewerMotionSurface` / `Viewer3DCanvas` seam).
   render them with `Scene3DPreview` thumbnails and one-tap apply
   (`applyScene3DLook`). If none, teach saving instead: point at the RightRail
   bookmark ("build something you like, then save it here").
+- **Placement (Austen, 2026-08-23):** the card must never cover the performers
+  it is configuring. It anchors bottom-LEFT (the rail owns the right), and
+  while it is mounted the stage reframes performers into the clear width using
+  the exact mechanism `SceneControlWorkspace` already uses when the dock opens
+  (`viewer.frameAllPerformers(stageWidth / workspaceHeight, true)` with the
+  overlay's width subtracted — `SceneControlWorkspace.svelte:98-109`). Reframe
+  back on dismiss. The presets panel gets the same treatment via the existing
+  dock path.
 - **Dismissal:** every step is skippable; completing or skipping sets the
   persisted flag. Reduced motion respected. No focus-trap takeover — the cards
   are an overlay on a live, interactive scene.
