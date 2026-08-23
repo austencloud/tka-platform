@@ -16,6 +16,10 @@
   import { scene3dCollectionState } from "../state/scene-3d-collection-state.svelte";
   import { SCENE_3D_GROUPS } from "../domain/scene-3d-collection-types";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import {
+    SceneEnvironmentId,
+    getSceneEnvironmentDefinition,
+  } from "$lib/shared/3d/environments/domain/scene-environment";
   import type {
     Scene3DGroupId,
     StepData,
@@ -163,8 +167,8 @@
         icon: "fa-mountain-sun",
         title: "Scene",
         summary:
-          `${settings.backgroundType}` +
-          (String(settings.backgroundType) === "ocean"
+          `${getSceneEnvironmentDefinition(viewer3DState.environmentId).label}` +
+          (viewer3DState.environmentId === SceneEnvironmentId.OCEAN
             ? ` · ${viewer3DState.oceanVariant}`
             : "") +
           (featureCount > 0
@@ -206,6 +210,10 @@
       previous,
       !previous
     );
+  }
+
+  function closeModal(): void {
+    if (!saving) open = false;
   }
 
   async function handleSave() {
@@ -250,7 +258,13 @@
   }
 </script>
 
-<BaseModal bind:open size="fit" labelledBy="save-scene-title">
+<BaseModal
+  bind:open
+  size="fit"
+  labelledBy="save-scene-title"
+  closeOnBackdrop={!saving}
+  closeOnEscape={!saving}
+>
   <div class="save-scene">
     <header class="head">
       {#if poster}
@@ -271,6 +285,16 @@
           maxlength="80"
         />
       </div>
+      <button
+        class="close-button"
+        type="button"
+        aria-label="Close Save 3D scene"
+        title="Close"
+        onclick={closeModal}
+        disabled={saving}
+      >
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+      </button>
     </header>
 
     <div class="rows" role="group" aria-label="What to include">
@@ -353,6 +377,38 @@
     gap: 8px;
     min-width: 0;
     flex: 1;
+  }
+
+  .close-button {
+    align-self: flex-start;
+    display: grid;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.64));
+    cursor: pointer;
+  }
+
+  .close-button:hover,
+  .close-button:focus-visible {
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, #fff);
+  }
+
+  .close-button:focus-visible {
+    outline: 2px solid var(--theme-accent, #4a9eff);
+    outline-offset: 2px;
+  }
+
+  .close-button:disabled {
+    cursor: wait;
+    opacity: 0.5;
   }
 
   h2 {

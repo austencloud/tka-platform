@@ -3,41 +3,48 @@
     getBasePropType,
     getAllVariations,
     getPropTypeDisplayInfo,
-    isPropActive,
-    getBasePropsByCategory,
     PROP_CATEGORIES,
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import {
-    filterSpinnerPropCategories,
-    isSpinnerViewerProp,
-  } from "../../domain/prop-motion-discipline";
+    isScenePhysicalProp,
+    SCENE_PROP_REPRESENTATIVES,
+  } from "../../domain/scene-prop-catalog";
 
   interface Props {
-    currentProp: PropType;
+    currentProp: PropType | null;
     accentColor: string;
     onSelect: (propType: PropType) => void;
   }
 
   let { currentProp, accentColor, onSelect }: Props = $props();
 
-  const propCategories = $derived(
-    filterSpinnerPropCategories(getBasePropsByCategory())
+  const propCategories = $derived.by(() => {
+    return new Map(
+      PROP_CATEGORIES.map((category) => [
+        category.id,
+        SCENE_PROP_REPRESENTATIVES.filter(
+          (prop) => getPropTypeDisplayInfo(prop).category === category.id
+        ),
+      ])
+    );
+  });
+  const selectedBase = $derived(
+    currentProp === null ? null : getBasePropType(currentProp)
   );
-  const selectedBase = $derived(getBasePropType(currentProp));
   let openFamily = $state<PropType | null>(null);
   const familyVariants = $derived(
     openFamily
-      ? getAllVariations(openFamily).filter(
-          (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+      ? getAllVariations(openFamily).filter((propType) =>
+          isScenePhysicalProp(propType)
         )
       : []
   );
 
   function activeVariants(base: PropType): PropType[] {
-    return getAllVariations(base).filter(
-      (propType) => isPropActive(propType) && isSpinnerViewerProp(propType)
+    return getAllVariations(base).filter((propType) =>
+      isScenePhysicalProp(propType)
     );
   }
 
@@ -94,39 +101,71 @@
   {:else}
     <div class="picker-intro">
       <strong>Choose a prop</strong>
-      <span>Families with variants open a focused second page.</span>
+      <span>The same physical catalog used by the 3D Prop Studio.</span>
     </div>
 
-    <div class="family-grid" role="group" aria-label="Prop families">
+    <button
+      class="bare-hands-choice"
+      class:selected={currentProp === PropType.HAND}
+      type="button"
+      aria-pressed={currentProp === PropType.HAND}
+      onclick={() => onSelect(PropType.HAND)}
+    >
+      <span class="bare-hands-icon" aria-hidden="true">
+        <i class="fas fa-hand"></i>
+      </span>
+      <span class="bare-hands-copy">
+        <strong>Bare hands</strong>
+        <small>No visible 3D prop</small>
+      </span>
+    </button>
+
+    <div class="category-list" aria-label="Physical 3D props">
       {#each PROP_CATEGORIES as category}
         {@const bases = propCategories.get(category.id) ?? []}
         {#if bases.length > 0}
-          <h3 class="category-label" id={`prop-category-${category.id}`}>
-            {category.label}
-          </h3>
-          {#each bases as base}
-            {@const info = getPropTypeDisplayInfo(base)}
-            {@const variantTotal = activeVariants(base).length}
-            <button
-              class="prop-choice family-choice"
-              class:selected={selectedBase === base}
-              type="button"
-              aria-pressed={selectedBase === base}
-              aria-describedby={`prop-category-${category.id}`}
-              onclick={() => chooseFamily(base)}
+          <section class="category-section">
+            <h3 class="category-label" id={`prop-category-${category.id}`}>
+              {category.label}
+            </h3>
+            <div
+              class="family-grid"
+              data-count={bases.length}
+              style:--family-columns={Math.min(bases.length, 5)}
+              role="group"
+              aria-labelledby={`prop-category-${category.id}`}
             >
-              {#if variantTotal > 1}
-                <span class="variant-count" aria-label={`${variantTotal} variants`}>
-                  {variantTotal}
-                </span>
-              {/if}
-              <PropCompositionPreview propType={base} size={42} darkBackground />
-              <span>{info.label}</span>
-              {#if variantTotal > 1}
-                <i class="fas fa-chevron-right" aria-hidden="true"></i>
-              {/if}
-            </button>
-          {/each}
+              {#each bases as base}
+                {@const info = getPropTypeDisplayInfo(base)}
+                {@const variantTotal = activeVariants(base).length}
+                <button
+                  class="prop-choice family-choice"
+                  class:selected={selectedBase === base}
+                  type="button"
+                  aria-pressed={selectedBase === base}
+                  onclick={() => chooseFamily(base)}
+                >
+                  {#if variantTotal > 1}
+                    <span
+                      class="variant-count"
+                      aria-label={`${variantTotal} variants`}
+                    >
+                      {variantTotal}
+                    </span>
+                  {/if}
+                  <PropCompositionPreview
+                    propType={base}
+                    size={42}
+                    darkBackground
+                  />
+                  <span>{info.label}</span>
+                  {#if variantTotal > 1}
+                    <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                  {/if}
+                </button>
+              {/each}
+            </div>
+          </section>
         {/if}
       {/each}
     </div>
@@ -157,41 +196,93 @@
     font-size: 14px;
     line-height: 1.35;
   }
-  /* Category counts are 5/5/5/3 and each category restarts its rows at the
-     full-width label, so column counts must divide 5 cleanly (or leave >1 in
-     the remainder) — 3 and 5, never 4/6/8. Re-check if the prop registry
-     changes.
-     Variant counts are 2 or 4 (Staff is the only 4-variant family), so the
-     wide tier pins 4 capped tracks and left-aligns instead of stretching. */
+  .category-list {
+    display: grid;
+    gap: 14px;
+  }
+  .category-section {
+    display: grid;
+    gap: 8px;
+  }
   .family-grid,
   .variant-grid {
     display: grid;
     gap: 8px;
   }
   .family-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .family-grid[data-count="3"],
+  .family-grid[data-count="5"] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .variant-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .category-label {
-    grid-column: 1 / -1;
-    margin: 6px 0 0;
+    margin: 0;
     color: var(--theme-text-dim);
     font-size: 14px;
     font-weight: 700;
   }
-  .family-grid > .category-label:first-child {
-    margin-top: 0;
-  }
   @container (min-width: 480px) {
     .family-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--family-columns), minmax(0, 8.75rem));
+      justify-content: start;
     }
     .variant-grid {
       grid-template-columns: repeat(4, minmax(0, 8.75rem));
       justify-content: start;
     }
+  }
+  .bare-hands-choice {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    width: min(100%, 18rem);
+    min-height: 56px;
+    padding: 7px 12px;
+    border: 1.5px solid var(--theme-stroke);
+    border-radius: 10px;
+    background: var(--theme-card-bg);
+    color: var(--theme-text-dim);
+    cursor: pointer;
+    text-align: left;
+  }
+  .bare-hands-choice:hover,
+  .bare-hands-choice:focus-visible {
+    border-color: var(--theme-stroke-strong);
+    background: var(--theme-card-hover-bg);
+    color: var(--theme-text);
+  }
+  .bare-hands-choice.selected {
+    border-color: var(--prop-accent);
+    background: color-mix(
+      in srgb,
+      var(--prop-accent) 14%,
+      var(--theme-card-bg)
+    );
+    color: white;
+  }
+  .bare-hands-icon {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border-radius: 9px;
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+  .bare-hands-copy {
+    display: grid;
+    gap: 2px;
+  }
+  .bare-hands-copy strong {
+    font-size: 14px;
+  }
+  .bare-hands-copy small {
+    color: var(--theme-text-dim);
+    font-size: 12px;
   }
   .prop-choice {
     position: relative;
@@ -238,6 +329,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  @container (max-width: 300px) {
+    .prop-choice > span:not(.variant-count) {
+      overflow: visible;
+      text-align: center;
+      text-overflow: clip;
+      white-space: normal;
+    }
   }
   .family-choice > i {
     position: absolute;

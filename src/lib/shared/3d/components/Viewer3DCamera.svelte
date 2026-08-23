@@ -9,6 +9,7 @@
    */
 
   import { onMount, onDestroy } from "svelte";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { T, useTask } from "@threlte/core";
   import { PerspectiveCamera, Vector3 } from "three";
   import type CameraControls from "camera-controls";
@@ -41,6 +42,9 @@
 
   const viewer3DState = getViewer3DContext();
   const navMode = $derived(viewer3DState.navMode);
+  const maxOrbitDistance = $derived(
+    viewer3DState.seededBackgroundType === BackgroundType.BLOSSOM ? 82 : 25
+  );
 
   // Grid center in 3D world space.
   // Y=0 is shoulder height (proportions reference). Grid T.Group is at
@@ -212,10 +216,7 @@
   const _reframePos = new Vector3();
   const _reframeTarget = new Vector3();
 
-  function sampleCameraReframe(
-    transition: ActiveCameraReframe,
-    nowMs: number
-  ) {
+  function sampleCameraReframe(transition: ActiveCameraReframe, nowMs: number) {
     return {
       position: sampleInterruptibleVector3(
         transition.startPosition,
@@ -339,30 +340,66 @@
     return false;
   }
 
-  // Debounce persistence - only save after user stops orbiting for 500ms.
+  // Camera pose persistence follows the same cadence as the museum/review
+  // resume-point writers: keep the latest live pose in memory, write at most
+  // once every 500ms while it moves, then flush synchronously at lifecycle
+  // boundaries. That last flush is what makes refreshes and Vite HMR restore
+  // the exact view instead of the previous completed drag.
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingSnapshot: CameraStateSnapshot | null = null;
   const _endPos = new Vector3();
   const _endTgt = new Vector3();
 
-  function flushCameraSave() {
-    if (saveTimer) clearTimeout(saveTimer);
+  function captureCameraSnapshot(
+    controls: CameraControls
+  ): CameraStateSnapshot | null {
+    const camera = cameraRef;
+    if (!camera) return null;
+
+    controls.getPosition(_endPos);
+    controls.getTarget(_endTgt);
+    if (_endPos.distanceTo(_endTgt) < ORBIT_COLLAPSE_THRESHOLD) return null;
+
+    return {
+      position: { x: _endPos.x, y: _endPos.y, z: _endPos.z },
+      rotation: {
+        x: camera.rotation.x,
+        y: camera.rotation.y,
+        z: camera.rotation.z,
+      },
+      fov: camera.fov ?? 50,
+      target: { x: _endTgt.x, y: _endTgt.y, z: _endTgt.z },
+      timestamp: Date.now(),
+    };
+  }
+
+  function flushCameraSave(controls: CameraControls | null = controlsInstance) {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    if (controls) {
+      pendingSnapshot = captureCameraSnapshot(controls) ?? pendingSnapshot;
+    }
     if (pendingSnapshot) {
       viewer3DState.updateCameraSnapshot(pendingSnapshot);
       pendingSnapshot = null;
     }
   }
 
-  function handleControlEnd(controls: CameraControls) {
-    const camera = cameraRef;
-    if (!camera) return;
+  function scheduleCameraSave(controls: CameraControls) {
+    pendingSnapshot = captureCameraSnapshot(controls) ?? pendingSnapshot;
+    if (!pendingSnapshot || saveTimer) return;
+    saveTimer = setTimeout(() => flushCameraSave(), 500);
+  }
 
-    controls.getPosition(_endPos);
-    controls.getTarget(_endTgt);
-    const d = _endPos.distanceTo(_endTgt);
-    if (d < ORBIT_COLLAPSE_THRESHOLD) {
+  function handleControlEnd(controls: CameraControls) {
+    const snapshot = captureCameraSnapshot(controls);
+    if (!snapshot) {
+      controls.getPosition(_endPos);
+      controls.getTarget(_endTgt);
       console.error(
-        `[Viewer3DCamera] 🔴 Blocked save of collapsed orbit state — distance=${d.toFixed(4)}`,
+        `[Viewer3DCamera] 🔴 Blocked save of collapsed orbit state — distance=${_endPos.distanceTo(_endTgt).toFixed(4)}`,
         `\n  pos: (${_endPos.x.toFixed(3)}, ${_endPos.y.toFixed(3)}, ${_endPos.z.toFixed(3)})`,
         `\n  tgt: (${_endTgt.x.toFixed(3)}, ${_endTgt.y.toFixed(3)}, ${_endTgt.z.toFixed(3)})`
       );
@@ -370,25 +407,8 @@
       return;
     }
 
-    const pos = { x: _endPos.x, y: _endPos.y, z: _endPos.z };
-    const tgt = { x: _endTgt.x, y: _endTgt.y, z: _endTgt.z };
-
-    pendingSnapshot = {
-      position: pos,
-      rotation: {
-        x: camera.rotation.x,
-        y: camera.rotation.y,
-        z: camera.rotation.z,
-      },
-      fov: camera.fov ?? 50,
-      target: tgt,
-      timestamp: Date.now(),
-    };
-
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      flushCameraSave();
-    }, 500);
+    pendingSnapshot = snapshot;
+    flushCameraSave(controls);
     onSettingChange?.("3d_camera", "orbit_gesture", null, "completed");
   }
 
@@ -438,31 +458,19 @@
     function onVisibilityChange() {
       if (!controlsInstance) return;
       if (document.hidden) {
-        const p = new Vector3();
-        const t = new Vector3();
-        controlsInstance.getPosition(p);
-        controlsInstance.getTarget(t);
-        const cam = cameraRef;
-        if (cam && distSq(p, t) >= MIN_ORBIT_RADIUS_SQ) {
-          viewer3DState.updateCameraSnapshot({
-            position: { x: p.x, y: p.y, z: p.z },
-            rotation: {
-              x: cam.rotation.x,
-              y: cam.rotation.y,
-              z: cam.rotation.z,
-            },
-            fov: cam.fov ?? 50,
-            target: { x: t.x, y: t.y, z: t.z },
-            timestamp: Date.now(),
-          });
-        }
+        flushCameraSave(controlsInstance);
       } else {
         checkOrbitHealth(controlsInstance);
       }
     }
+
+    const onPageHide = () => flushCameraSave(controlsInstance);
     document.addEventListener("visibilitychange", onVisibilityChange);
-    return () =>
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pagehide", onPageHide);
+    };
   });
 
   // Per-frame tick for the camera-choreography driver. Runs every frame;
@@ -478,7 +486,7 @@
 
   onDestroy(() => {
     cancelCameraReframe();
-    flushCameraSave();
+    flushCameraSave(controlsInstance);
   });
 </script>
 
@@ -492,7 +500,7 @@
 {#if navMode === "orbit" && cameraRef}
   <OrbitControls
     minDistance={1}
-    maxDistance={25}
+    maxDistance={maxOrbitDistance}
     maxPolarAngle={Math.PI / 2}
     paused={viewer3DState.isExporting}
     autoRotate={viewer3DState.seededAutoOrbit}
@@ -536,6 +544,7 @@
       cancelCameraReframe();
       viewer3DState.setCameraDragging(true);
     }}
+    onchange={(c) => scheduleCameraSave(c)}
     oncontrolend={(c) => {
       viewer3DState.setCameraDragging(false);
       handleControlEnd(c);

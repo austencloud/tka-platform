@@ -1,13 +1,12 @@
 <script lang="ts">
-  import CollapsibleSection from '$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte';
-  import TransportControls from '$lib/shared/animation-engine/components/controls/TransportControls.svelte';
-  import BpmChips from '$lib/shared/animation-engine/components/controls/BpmChips.svelte';
-  import FormationSelector from '$lib/shared/3d/components/controls/FormationSelector.svelte';
-  import MarkProperties from './MarkProperties.svelte';
-  import { getStageChoreographyState } from '../state/stage-choreography-state.svelte';
-  import type { StageEditMode } from '../state/stage-edit-mode.svelte';
-  import type { FormationPreset } from '@austencloud/scene-3d';
-  import type { FormationPresetId } from '../domain/stage-types';
+  import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
+  import FormationSelector from "$lib/shared/3d/components/controls/FormationSelector.svelte";
+  import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
+  import MarkProperties from "./MarkProperties.svelte";
+  import { getStageChoreographyContext } from "../context/stage-choreography-context";
+  import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import type { FormationPreset } from "@austencloud/scene-3d";
+  import type { FormationPresetId } from "../domain/stage-types";
 
   interface Props {
     editMode: StageEditMode;
@@ -15,20 +14,9 @@
 
   let { editMode }: Props = $props();
 
-  const stageState = getStageChoreographyState();
+  const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
-  const isPlaying = $derived(stageState.isPlaying);
-
-  let bpm = $state(120);
-  $effect(() => {
-    bpm = choreography.bpm;
-  });
-
-  function handleBpmChange(newBpm: number) {
-    stageState.setBpm(newBpm);
-  }
-
-  let activePreset = $state<FormationPreset>('line');
+  let activePreset = $state<FormationPreset>("line");
 
   function handlePresetChange(preset: FormationPreset) {
     activePreset = preset;
@@ -43,12 +31,18 @@
 <aside class="stage-sidebar" aria-label="Stage controls">
   <CollapsibleSection title="Performers" icon="fa-users" defaultOpen={true}>
     {#snippet children()}
-      <div class="performer-buttons" role="group" aria-label="Performer selection">
+      <div
+        class="performer-buttons"
+        role="group"
+        aria-label="Performer selection"
+      >
         {#each choreography.performers as performer}
           <button
             type="button"
             class="performer-btn"
-            class:selected={editMode.multiSelectedPerformerIds.has(performer.id)}
+            class:selected={editMode.multiSelectedPerformerIds.has(
+              performer.id
+            )}
             style="--performer-color: {performer.color}"
             onclick={(e) => handlePerformerClick(e, performer.id)}
             aria-pressed={editMode.multiSelectedPerformerIds.has(performer.id)}
@@ -62,17 +56,21 @@
         <button
           type="button"
           class="count-btn"
-          onclick={() => stageState.setPerformerCount(choreography.performers.length - 1)}
+          onclick={() =>
+            stageState.setPerformerCount(choreography.performers.length - 1)}
           disabled={choreography.performers.length <= 2}
           aria-label="Remove performer"
         >
           <i class="fas fa-minus" aria-hidden="true"></i>
         </button>
-        <span class="count-display" aria-live="polite">{choreography.performers.length}</span>
+        <span class="count-display" aria-live="polite"
+          >{choreography.performers.length}</span
+        >
         <button
           type="button"
           class="count-btn"
-          onclick={() => stageState.setPerformerCount(choreography.performers.length + 1)}
+          onclick={() =>
+            stageState.setPerformerCount(choreography.performers.length + 1)}
           disabled={choreography.performers.length >= 8}
           aria-label="Add performer"
         >
@@ -82,25 +80,30 @@
     {/snippet}
   </CollapsibleSection>
 
-  <CollapsibleSection title="Transport" icon="fa-play" defaultOpen={true}>
-    {#snippet children()}
-      <TransportControls
-        {isPlaying}
-        onPlaybackToggle={() => stageState.togglePlay()}
-        onRestartToStart={() => stageState.seek(0)}
-      />
-      <div class="bpm-section">
-        <BpmChips bind:bpm variant="compact" onBpmChange={handleBpmChange} />
-      </div>
-    {/snippet}
-  </CollapsibleSection>
-
-  <CollapsibleSection title="Formation Presets" icon="fa-shapes" defaultOpen={true}>
+  <CollapsibleSection
+    title="Formation Presets"
+    icon="fa-shapes"
+    defaultOpen={true}
+  >
     {#snippet children()}
       <FormationSelector
         value={activePreset}
         performerCount={choreography.performers.length}
         onchange={handlePresetChange}
+      />
+    {/snippet}
+  </CollapsibleSection>
+
+  <CollapsibleSection
+    title="Environment"
+    icon="fa-mountain-sun"
+    defaultOpen={true}
+  >
+    {#snippet children()}
+      <SceneSelectorPopover
+        value={choreography.environmentId}
+        onchange={(environmentId) =>
+          stageState.setEnvironmentId(environmentId)}
       />
     {/snippet}
   </CollapsibleSection>
@@ -135,7 +138,8 @@
     height: 48px;
     border-radius: 50%;
     background: color-mix(in srgb, var(--performer-color) 20%, transparent);
-    border: 2px solid color-mix(in srgb, var(--performer-color) 40%, transparent);
+    border: 2px solid
+      color-mix(in srgb, var(--performer-color) 40%, transparent);
     color: var(--performer-color);
     font-size: 1rem;
     font-weight: 700;
@@ -146,7 +150,8 @@
   .performer-btn.selected {
     background: color-mix(in srgb, var(--performer-color) 40%, transparent);
     border-color: var(--performer-color);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--performer-color) 40%, transparent);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--performer-color) 40%, transparent);
   }
 
   .performer-btn:hover:not(.selected) {
@@ -195,10 +200,6 @@
     font-variant-numeric: tabular-nums;
     min-width: 2ch;
     text-align: center;
-  }
-
-  .bpm-section {
-    margin-top: 8px;
   }
 
   .mark-section {

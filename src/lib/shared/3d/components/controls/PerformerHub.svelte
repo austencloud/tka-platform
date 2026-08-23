@@ -83,7 +83,12 @@
 />
 
 {#if performers.length >= 1}
-  <div class="hub-anchor" bind:this={hubEl} style:--panel-color={performerColor}>
+  <div
+    class="hub-anchor"
+    class:detail-open={!detailCollapsed}
+    bind:this={hubEl}
+    style:--panel-color={performerColor}
+  >
     <div class="spine-panel" class:has-detail={!detailCollapsed}>
       <PerformerSpine
         onInteract={handleSpineInteract}
@@ -121,9 +126,17 @@
     display: flex;
     flex-direction: row;
     align-items: flex-end;
+    container-type: inline-size;
     /* The anchor spans the scene height so the detail panel can cap to it.
        It must not intercept scene input in the empty area above the panels. */
     pointer-events: none;
+  }
+
+  .hub-anchor.detail-open {
+    /* One control surface owns the foreground at a time. On phones the detail
+       panel reaches beneath the scene rail, so it must sit above that rail
+       until the user closes the performer editor. */
+    z-index: 40;
   }
 
   .spine-panel {
@@ -184,6 +197,13 @@
        spans the column (left+right), not the viewport. */
     width: clamp(32.5rem, 50%, 68.75rem);
     max-height: min(100%, 48rem);
+  }
+
+  @container (max-width: 767px) {
+    .detail-panel {
+      width: calc(100cqw - 62px);
+      max-width: none;
+    }
   }
 
   .close-tab {

@@ -23,10 +23,9 @@ function readSceneFeatures(): Record<string, boolean> {
 }
 
 /**
- * Build a reproducible snapshot from the viewer's own serialize() plus the two
- * owners outside it: the global settingsService background + prop types, and
- * the persisted scene-feature toggles (their context is scoped inside
- * Viewer3DCanvas, so the persisted key is read directly).
+ * Build a reproducible snapshot from the viewer's own serialize() plus the
+ * remaining owners outside it: global prop defaults and persisted scene-feature
+ * toggles. The 3D environment belongs to the viewer itself.
  */
 export interface CaptureScene3DOptions {
   /** Playback tempo, threaded from the playback seam when available. */
@@ -53,9 +52,9 @@ export function captureScene3DSnapshot(
   }));
 
   return {
-    version: 2,
+    version: 3,
     scene: {
-      backgroundType: String(settings.backgroundType),
+      environmentId: cfg.environmentId,
       oceanVariant: cfg.oceanVariant,
     },
     camera: cfg.camera,

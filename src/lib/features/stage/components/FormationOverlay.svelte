@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { getStageChoreographyState } from '../state/stage-choreography-state.svelte';
-  import type { StageEditMode } from '../state/stage-edit-mode.svelte';
+  import { getStageChoreographyContext } from "../context/stage-choreography-context";
+  import type { StageEditMode } from "../state/stage-edit-mode.svelte";
 
   interface Props {
     editMode: StageEditMode;
@@ -8,7 +8,7 @@
 
   let { editMode }: Props = $props();
 
-  const stageState = getStageChoreographyState();
+  const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
 
   let containerEl: HTMLDivElement | null = $state(null);
@@ -37,16 +37,24 @@
   }
 
   function svgToStageX(svgX: number): number {
-    return ((svgX - margin) / (svgWidth - margin * 2)) * choreography.stageWidth;
+    return (
+      ((svgX - margin) / (svgWidth - margin * 2)) * choreography.stageWidth
+    );
   }
 
   function svgToStageZ(svgZ: number): number {
-    return ((svgZ - margin) / (svgHeight - margin * 2)) * choreography.stageDepth;
+    return (
+      ((svgZ - margin) / (svgHeight - margin * 2)) * choreography.stageDepth
+    );
   }
 
   let draggingMarkId: string | null = $state(null);
 
-  function handleMarkPointerDown(e: PointerEvent, markId: string, performerId: string) {
+  function handleMarkPointerDown(
+    e: PointerEvent,
+    markId: string,
+    performerId: string
+  ) {
     e.preventDefault();
     (e.currentTarget as SVGElement).setPointerCapture(e.pointerId);
     draggingMarkId = markId;
@@ -57,7 +65,7 @@
 
   function handlePointerMove(e: PointerEvent) {
     if (!draggingMarkId) return;
-    const svg = containerEl?.querySelector('svg');
+    const svg = containerEl?.querySelector("svg");
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
     const svgX = e.clientX - rect.left;
@@ -75,7 +83,7 @@
   function handleStageClick(e: MouseEvent) {
     if (!editMode.selectedPerformerId) return;
     if (editMode.isDragging) return;
-    const svg = containerEl?.querySelector('svg');
+    const svg = containerEl?.querySelector("svg");
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
     const svgX = e.clientX - rect.left;
@@ -89,7 +97,7 @@
   // stage center for the selected performer. Pointer placement stays the precise
   // path; this gives keyboard users a way to add marks at all.
   function handleStageKeydown(e: KeyboardEvent) {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.key !== "Enter" && e.key !== " ") return;
     if (!editMode.selectedPerformerId) return;
     if (editMode.isDragging) return;
     e.preventDefault();
@@ -185,8 +193,8 @@
       role="button"
       tabindex="0"
       aria-label={editMode.selectedPerformerId
-        ? 'Add a mark for the selected performer. Click to place, or press Enter to add at stage center.'
-        : 'Stage area. Select a performer to add marks.'}
+        ? "Add a mark for the selected performer. Click to place, or press Enter to add at stage center."
+        : "Stage area. Select a performer to add marks."}
       aria-disabled={!editMode.selectedPerformerId}
       onclick={handleStageClick}
       onkeydown={handleStageKeydown}
@@ -209,7 +217,7 @@
             stroke={performer.color}
             stroke-width={isSelected ? 2 : 1}
             stroke-opacity={isSelected ? 0.8 : 0.3}
-            stroke-dasharray={isSelected ? 'none' : '4 4'}
+            stroke-dasharray={isSelected ? "none" : "4 4"}
           />
 
           <!-- Beat label midpoint -->
@@ -221,8 +229,8 @@
               fill={performer.color}
               font-size="12"
               font-weight="600"
-              opacity="0.8"
-            >{mark.beats}b</text>
+              opacity="0.8">{mark.beats}b</text
+            >
           {/if}
         {/if}
       {/each}
@@ -233,11 +241,16 @@
           <!-- Origin dot (48px diameter = 24 radius) -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
-            onpointerdown={(e) => handleMarkPointerDown(e, mark.id, performer.id)}
-            style="cursor: {draggingMarkId === mark.id ? 'grabbing' : 'grab'}; touch-action: none;"
+            onpointerdown={(e) =>
+              handleMarkPointerDown(e, mark.id, performer.id)}
+            style="cursor: {draggingMarkId === mark.id
+              ? 'grabbing'
+              : 'grab'}; touch-action: none;"
             role="button"
             tabindex="0"
-            aria-label="Performer {performer.label} origin at {mark.x.toFixed(1)}, {mark.z.toFixed(1)}"
+            aria-label="Performer {performer.label} origin at {mark.x.toFixed(
+              1
+            )}, {mark.z.toFixed(1)}"
           >
             <circle
               cx={stageToSvgX(mark.x)}
@@ -245,7 +258,7 @@
               r={dotRadius}
               fill={performer.color}
               fill-opacity="0.9"
-              stroke={editMode.selectedMarkId === mark.id ? 'white' : 'none'}
+              stroke={editMode.selectedMarkId === mark.id ? "white" : "none"}
               stroke-width="2"
             />
             <text
@@ -255,18 +268,23 @@
               fill="white"
               font-size="16"
               font-weight="700"
-              pointer-events="none"
-            >{performer.label}</text>
+              pointer-events="none">{performer.label}</text
+            >
           </g>
         {:else}
           <!-- Numbered mark -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
-            onpointerdown={(e) => handleMarkPointerDown(e, mark.id, performer.id)}
-            style="cursor: {draggingMarkId === mark.id ? 'grabbing' : 'grab'}; touch-action: none;"
+            onpointerdown={(e) =>
+              handleMarkPointerDown(e, mark.id, performer.id)}
+            style="cursor: {draggingMarkId === mark.id
+              ? 'grabbing'
+              : 'grab'}; touch-action: none;"
             role="button"
             tabindex="0"
-            aria-label="Performer {performer.label} mark {i} at {mark.x.toFixed(1)}, {mark.z.toFixed(1)}"
+            aria-label="Performer {performer.label} mark {i} at {mark.x.toFixed(
+              1
+            )}, {mark.z.toFixed(1)}"
           >
             <circle
               cx={stageToSvgX(mark.x)}
@@ -274,7 +292,7 @@
               r={markRadius}
               fill={performer.color}
               fill-opacity="0.7"
-              stroke={editMode.selectedMarkId === mark.id ? 'white' : 'none'}
+              stroke={editMode.selectedMarkId === mark.id ? "white" : "none"}
               stroke-width="2"
             />
             <text
@@ -284,8 +302,8 @@
               fill="white"
               font-size="12"
               font-weight="600"
-              pointer-events="none"
-            >{i}</text>
+              pointer-events="none">{i}</text
+            >
           </g>
         {/if}
       {/each}
@@ -299,8 +317,8 @@
       fill="rgba(255, 255, 255, 0.35)"
       font-size="11"
       font-weight="600"
-      letter-spacing="1"
-    >AUDIENCE</text>
+      letter-spacing="1">AUDIENCE</text
+    >
     <text
       x={svgWidth / 2}
       y={svgHeight - margin + 24}
@@ -308,8 +326,8 @@
       fill="rgba(255, 255, 255, 0.35)"
       font-size="11"
       font-weight="600"
-      letter-spacing="1"
-    >BACKSTAGE</text>
+      letter-spacing="1">BACKSTAGE</text
+    >
   </svg>
 </div>
 

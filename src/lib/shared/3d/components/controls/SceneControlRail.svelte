@@ -1,0 +1,189 @@
+<script lang="ts">
+  import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
+  import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
+  import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
+  import SceneChromeButton from "./SceneChromeButton.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerActionSink,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    renderMode: "2d" | "3d";
+    activeTool?: SceneControlTool | null;
+    bpm?: number;
+    onSettingChange?: ViewerControlSink;
+    onAction?: ViewerActionSink;
+    onToolSelect?: (tool: SceneControlTool | null) => void;
+    /** Leaves room for host-owned close/fullscreen controls above the rail. */
+    topOffset?: string;
+  }
+
+  let {
+    renderMode,
+    activeTool = null,
+    bpm,
+    onSettingChange,
+    onAction,
+    onToolSelect,
+    topOffset = "12px",
+  }: Props = $props();
+
+  const viewer = getViewer3DContext();
+  let saveSceneOpen = $state(false);
+
+  type RailTool = {
+    id: Exclude<SceneControlTool, "dev">;
+    label: string;
+    icon: string;
+  };
+
+  const subjectTools: RailTool[] = [
+    { id: "performer", label: "Performers", icon: "fa-user-group" },
+    {
+      id: "formation",
+      label: "Formation",
+      icon: "fa-people-arrows-left-right",
+    },
+  ];
+
+  const shotTools: RailTool[] = [
+    { id: "camera", label: "Camera", icon: "fa-video" },
+    { id: "scene", label: "Scene", icon: "fa-mountain-sun" },
+  ];
+
+  function chooseTool(tool: SceneControlTool): void {
+    const next = activeTool === tool ? null : tool;
+    onToolSelect?.(next);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_rail",
+      `${tool}_open`,
+      activeTool === tool,
+      next === tool,
+      { count: next === tool }
+    );
+  }
+
+  function openSaveScene(): void {
+    onToolSelect?.(null);
+    const previous = saveSceneOpen;
+    saveSceneOpen = true;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_rail",
+      "save_scene_open",
+      previous,
+      true
+    );
+  }
+</script>
+
+{#if renderMode === "3d"}
+  <div
+    class="scene-control-rail"
+    style:--scene-control-rail-top={topOffset}
+    role="toolbar"
+    aria-label="Scene controls"
+  >
+    <EditHistoryShortcutBridge
+      onUndo={() => viewer.undo()}
+      onRedo={() => viewer.redo()}
+      canUndo={viewer.canUndo}
+      canRedo={viewer.canRedo}
+      undoLabel="3D scene change"
+      redoLabel="3D scene change"
+    />
+
+    <div class="rail-group" role="group" aria-label="Performers and formation">
+      {#each subjectTools as tool}
+        <SceneChromeButton
+          icon={tool.icon}
+          label={tool.label}
+          active={activeTool === tool.id}
+          aria-pressed={activeTool === tool.id}
+          data-scene-tool={tool.id}
+          onclick={() => chooseTool(tool.id)}
+        />
+      {/each}
+    </div>
+
+    <div class="rail-separator" aria-hidden="true"></div>
+
+    <div class="rail-group" role="group" aria-label="Camera and scene">
+      {#each shotTools as tool}
+        <SceneChromeButton
+          icon={tool.icon}
+          label={tool.label}
+          active={activeTool === tool.id}
+          aria-pressed={activeTool === tool.id}
+          data-scene-tool={tool.id}
+          onclick={() => chooseTool(tool.id)}
+        />
+      {/each}
+    </div>
+
+    <div class="utility-group" role="group" aria-label="Scene utilities">
+      <SceneChromeButton
+        icon="fa-bookmark"
+        label="Save scene"
+        data-save-shortcut
+        onclick={openSaveScene}
+      />
+
+      {#if authState.isAdmin}
+        <div class="rail-separator" aria-hidden="true"></div>
+        <SceneChromeButton
+          icon="fa-terminal"
+          label="Developer tools"
+          active={activeTool === "dev"}
+          aria-pressed={activeTool === "dev"}
+          data-scene-tool="dev"
+          onclick={() => chooseTool("dev")}
+        />
+      {/if}
+    </div>
+  </div>
+
+  <SaveSceneModal
+    bind:open={saveSceneOpen}
+    {bpm}
+    {onSettingChange}
+    {onAction}
+  />
+{/if}
+
+<style>
+  .scene-control-rail {
+    position: absolute;
+    top: var(--scene-control-rail-top, 0.75rem);
+    right: 0.75rem;
+    /* The transport owns the bottom edge of the viewer. */
+    bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .rail-group,
+  .utility-group {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .rail-separator {
+    width: 2rem;
+    height: 1px;
+    margin: 0 auto;
+    background: var(--theme-stroke);
+  }
+
+  .utility-group {
+    margin-top: auto;
+  }
+</style>

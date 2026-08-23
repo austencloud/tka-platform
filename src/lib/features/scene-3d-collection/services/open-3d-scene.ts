@@ -1,41 +1,41 @@
 import type { Collected3DScene, StoredPerformerSettings } from "../domain/scene-3d-collection-types";
-import { isGroupSaved } from "../domain/scene-3d-collection-types";
+import {
+  getScene3DEnvironmentId,
+  isGroupSaved,
+} from "../domain/scene-3d-collection-types";
 import { writeViewer3DConfig } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { Viewer3DPersistConfig } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
-import { openSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { BackgroundType } from "@austencloud/backgrounds";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ViewerNavMode } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import {
   captureSettingsCheckpoint,
-  revertSettingsCheckpoint,
 } from "$lib/shared/collections/settings-checkpoint.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
-import { closeSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
+import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
 const SCENE_FEATURES_STORAGE_KEY = "tka-scene-features";
 
-/** One-shot intent: seeds the viewer's playback tempo on the next mount
- *  (consumed by ArtPane, same pattern as the tunnel auto-export intent). */
+/** Legacy one-shot tempo handoff retained for Sequence Viewer compatibility. */
 export const SCENE_BPM_INTENT_KEY = "tka_scene_bpm";
+const SCENE_STUDIO_HANDOFF_KEY = "tka_scene_studio_handoff";
+
+export interface SceneStudioHandoff {
+  sequence: SequenceData;
+  bpm: number | null;
+}
 
 /**
  * Apply a saved scene's LOOK: seed the viewer-3d localStorage keys, the
- * scene-feature toggles, and the global background + prop types — but ONLY for
+ * scene-feature toggles, and global prop defaults — but ONLY for
  * the packing-list groups the save included (`snapshot.groups`; absent = all).
  * A fresh viewer mount reads these seeds (same mechanism as
  * open-tunnel-in-viewer). This does NOT open a sequence.
  *
- * Rewrites the global `backgroundType` when the scene group is saved, which
- * also changes the 2D background theme — accepted (documented in the design).
- *
- * Every write below overwrites settings the user configured for themselves.
  * `captureSettingsCheckpoint` snapshots the pre-apply state as the very first
- * act so a caller can offer Undo afterward (see `openScene3DInViewer` below
- * and `Scene3DCollectionModule`'s standalone "Apply look" action).
+ * act so the collection's standalone "Apply look" action can offer Undo.
  */
 export function applyScene3DLook(scene: Collected3DScene): void {
   const snap = scene.snapshot;
@@ -69,6 +69,7 @@ export function applyScene3DLook(scene: Collected3DScene): void {
     config.effectToggles = snap.effectToggles;
   }
   if (saved("scene")) {
+    config.environmentId = getScene3DEnvironmentId(snap);
     config.oceanVariant = snap.scene.oceanVariant;
   }
   if (saved("camera")) {
@@ -90,14 +91,8 @@ export function applyScene3DLook(scene: Collected3DScene): void {
     }
   }
 
-  // 3. Global background theme + prop types (settingsService applies theme +
-  //    body background internally).
-  if (saved("scene")) {
-    void settingsService.updateSetting(
-      "backgroundType",
-      snap.scene.backgroundType as BackgroundType,
-    );
-  }
+  // 3. Prop defaults remain app preferences. The environment above is viewer
+  //    state and never repaints the application.
   if (saved("props")) {
     const propUpdate: Record<string, PropType> = {};
     if (snap.props.bluePropType) propUpdate.bluePropType = snap.props.bluePropType as PropType;
@@ -123,28 +118,12 @@ function filterPerformerSettings(
 }
 
 /**
- * Reproduce a saved scene AS A PERFORMANCE: apply the look, then open the viewer
- * overlay with the stored sequence in 3D. Only meaningful when the performance
- * group was saved with steps; the module gates "Open in Viewer" on that.
- *
- * This is the one call site where an apply is immediately followed by opening
- * the viewer, so the Undo toast's action undoes the whole gesture — settings
- * AND the overlay it opened — not just the settings.
+ * Reproduce a saved scene as a performance in the dedicated Scene workspace.
+ * The handoff is one-shot so reopening 3D Studio later returns to its own
+ * current source instead of replaying an old Browse action.
  */
-export function openScene3DInViewer(scene: Collected3DScene): void {
+export function openScene3DInStudio(scene: Collected3DScene): void {
   applyScene3DLook(scene);
-
-  if (
-    isGroupSaved(scene.snapshot, "performance") &&
-    typeof scene.snapshot.bpm === "number" &&
-    typeof sessionStorage !== "undefined"
-  ) {
-    try {
-      sessionStorage.setItem(SCENE_BPM_INTENT_KEY, String(scene.snapshot.bpm));
-    } catch {
-      // Best-effort — viewer opens at its default tempo.
-    }
-  }
 
   const steps = scene.steps ?? [];
   const sequence: SequenceData = createSequenceData({
@@ -155,20 +134,47 @@ export function openScene3DInViewer(scene: Collected3DScene): void {
     gridMode: steps.find((s) => s.gridMode)?.gridMode,
   });
 
-  openSequenceOverlay(sequence);
+  if (typeof sessionStorage !== "undefined") {
+    try {
+      sessionStorage.setItem(
+        SCENE_STUDIO_HANDOFF_KEY,
+        JSON.stringify({
+          sequence,
+          bpm:
+            isGroupSaved(scene.snapshot, "performance") &&
+            typeof scene.snapshot.bpm === "number"
+              ? scene.snapshot.bpm
+              : null,
+        } satisfies SceneStudioHandoff)
+      );
+    } catch {
+      // Navigation still succeeds; Scene Studio will show its source picker.
+    }
+  }
 
   showToast({
-    message: `Viewer now using "${scene.name}"`,
+    message: `Opening "${scene.name}" in 3D Studio`,
     type: "success",
-    duration: 8000,
-    action: {
-      label: "Undo",
-      onClick: () => {
-        revertSettingsCheckpoint();
-        closeSequenceOverlay();
-      },
-    },
+    duration: 4000,
   });
+  void handleModuleChange("stage", "scene");
+}
+
+export function consumeSceneStudioHandoff(): SceneStudioHandoff | null {
+  if (typeof sessionStorage === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SCENE_STUDIO_HANDOFF_KEY);
+    sessionStorage.removeItem(SCENE_STUDIO_HANDOFF_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<SceneStudioHandoff>;
+    if (!parsed.sequence || !Array.isArray(parsed.sequence.steps)) return null;
+    return {
+      sequence: parsed.sequence,
+      bpm: typeof parsed.bpm === "number" ? parsed.bpm : null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Whether this saved scene carries a reproducible performance. */

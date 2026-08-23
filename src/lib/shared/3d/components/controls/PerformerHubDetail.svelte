@@ -10,8 +10,7 @@
   import { getPerformerColor } from "../../constants/performer-colors";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import PerformerPropSizeSlider from "./PerformerPropSizeSlider.svelte";
-  import AvatarSelectModal from "./avatar-select/AvatarSelectModal.svelte";
-  import { avatarThumbnailUrl } from "../../constants/r2-cdn";
+  import AvatarSelectWorkspace from "./avatar-select/AvatarSelectWorkspace.svelte";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import PerformerSequencePanel from "./PerformerSequencePanel.svelte";
@@ -26,11 +25,18 @@
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import type { PerformerHubTab } from "./performer-hub-types";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
+    activeTab?: PerformerHubTab;
+    showTabBar?: boolean;
   }
-  let { onSettingChange }: Props = $props();
+  let {
+    onSettingChange,
+    activeTab = $bindable("prop"),
+    showTabBar = true,
+  }: Props = $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -72,16 +78,9 @@
       : null;
   });
 
-  // The summary row describes exactly what is on the performer(s) right now.
-  // Null means the selection spans several different avatars, which is a real
-  // state to show rather than a body to guess at.
-  const summaryAvatarDef = $derived(
-    currentAvatarId
-      ? (AVATAR_DEFINITIONS.find((a) => a.id === currentAvatarId) ?? null)
-      : null
+  const avatarScopeKey = $derived(
+    selectedIndex === null ? "all-performers" : `performer-${selectedIndex}`
   );
-
-  let avatarModalOpen = $state(false);
 
   async function pickAvatar(id: AvatarId): Promise<void> {
     cancelAvatarSelectionIntent();
@@ -153,16 +152,7 @@
   });
 
   // ─── Tabs ───
-  type HubTab =
-    | "prop"
-    | "planes"
-    | "effort"
-    | "effects"
-    | "avatar"
-    | "sequence";
-  let activeTab = $state<HubTab>("prop");
-
-  const ALL_TABS: { id: HubTab; label: string; icon: string }[] = [
+  const ALL_TABS: { id: PerformerHubTab; label: string; icon: string }[] = [
     { id: "avatar", label: "Avatar", icon: "fa-user" },
     { id: "sequence", label: "Sequence", icon: "fa-film" },
     { id: "prop", label: "Prop", icon: "fa-shapes" },
@@ -171,7 +161,7 @@
     { id: "effects", label: "Effects", icon: "fa-wand-sparkles" },
   ];
 
-  const GLOBAL_TABS: { id: HubTab; label: string; icon: string }[] = [
+  const GLOBAL_TABS: { id: PerformerHubTab; label: string; icon: string }[] = [
     { id: "avatar", label: "Avatar", icon: "fa-user" },
     { id: "prop", label: "Prop", icon: "fa-shapes" },
     { id: "planes", label: "Planes", icon: "fa-layer-group" },
@@ -197,7 +187,7 @@
     }
   });
 
-  function selectTab(tab: HubTab): void {
+  function selectTab(tab: PerformerHubTab): void {
     const previous = activeTab;
     activeTab = tab;
     reportViewerControlChange(
@@ -359,43 +349,15 @@
         aria-labelledby="hub-tab-avatar"
       >
         <div class="avatar-section">
-          <div class="avatar-summary">
-            {#if summaryAvatarDef}
-              <img
-                class="avatar-summary-thumb"
-                src={avatarThumbnailUrl(summaryAvatarDef.id)}
-                alt=""
-                loading="lazy"
-              />
-            {:else}
-              <div class="avatar-summary-thumb is-empty" aria-hidden="true">
-                <i class="fas fa-users"></i>
-              </div>
-            {/if}
-
-            <div class="avatar-summary-meta">
-              <span class="avatar-summary-name">
-                {summaryAvatarDef?.name ?? "Mixed avatars"}
-              </span>
-              <span class="avatar-summary-desc">
-                {#if pendingAvatarId}
-                  Loading avatar…
-                {:else}
-                  {summaryAvatarDef?.description ??
-                    "Performers use different avatars"}
-                {/if}
-              </span>
-            </div>
-
-            <button
-              class="avatar-change-btn"
-              type="button"
-              onclick={() => (avatarModalOpen = true)}
-            >
-              <i class="fas fa-user-pen" aria-hidden="true"></i>
-              <span>Change avatar</span>
-            </button>
-          </div>
+          <AvatarSelectWorkspace
+            {currentAvatarId}
+            {pendingAvatarId}
+            {performerColor}
+            scopeKey={avatarScopeKey}
+            onIntent={queueAvatarSelectionIntent}
+            onCancelIntent={cancelAvatarSelectionIntent}
+            onCommit={(id) => void pickAvatar(id)}
+          />
         </div>
       </div>
     {/if}
@@ -493,46 +455,38 @@
     {/if}
   </div>
 
-  <div class="tab-divider" aria-hidden="true"></div>
+  {#if showTabBar}
+    <div class="tab-divider" aria-hidden="true"></div>
 
-  <!-- ─── Tab bar (bottom-anchored) ─── -->
-  <div
-    class="tab-bar"
-    role="tablist"
-    aria-label="Performer controls"
-    style:--active-index={tabIndex}
-    style:--tab-count={TABS.length}
-    onkeydown={handleTabKeydown}
-  >
-    <div class="tab-indicator" aria-hidden="true"></div>
-    {#each TABS as tab}
-      <button
-        id="hub-tab-{tab.id}"
-        class="tab-btn"
-        class:active={activeTab === tab.id}
-        role="tab"
-        aria-selected={activeTab === tab.id}
-        tabindex={activeTab === tab.id ? 0 : -1}
-        aria-controls="hub-panel-{tab.id}"
-        onclick={() => selectTab(tab.id)}
-      >
-        <i class="fas {tab.icon}" aria-hidden="true"></i>
-        <span class="tab-label">{tab.label}</span>
-      </button>
-    {/each}
-  </div>
+    <!-- ─── Tab bar (bottom-anchored) ─── -->
+    <div
+      class="tab-bar"
+      role="tablist"
+      tabindex="-1"
+      aria-label="Performer controls"
+      style:--active-index={tabIndex}
+      style:--tab-count={TABS.length}
+      onkeydown={handleTabKeydown}
+    >
+      <div class="tab-indicator" aria-hidden="true"></div>
+      {#each TABS as tab}
+        <button
+          id="hub-tab-{tab.id}"
+          class="tab-btn"
+          class:active={activeTab === tab.id}
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          tabindex={activeTab === tab.id ? 0 : -1}
+          aria-controls="hub-panel-{tab.id}"
+          onclick={() => selectTab(tab.id)}
+        >
+          <i class="fas {tab.icon}" aria-hidden="true"></i>
+          <span class="tab-label">{tab.label}</span>
+        </button>
+      {/each}
+    </div>
+  {/if}
 </div>
-
-<AvatarSelectModal
-  bind:open={avatarModalOpen}
-  {currentAvatarId}
-  {pendingAvatarId}
-  {performerColor}
-  onIntent={queueAvatarSelectionIntent}
-  onCancelIntent={cancelAvatarSelectionIntent}
-  onCommit={(id) => void pickAvatar(id)}
-  onClose={() => (avatarModalOpen = false)}
-/>
 
 <ConfirmDialog
   bind:isOpen={removeConfirmOpen}
@@ -695,97 +649,6 @@
     container-type: inline-size;
   }
 
-  .avatar-summary {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px;
-    border: 1px solid var(--theme-stroke);
-    border-radius: 12px;
-    background: var(--surface-inset-deep);
-  }
-
-  .avatar-summary-thumb {
-    flex: 0 0 auto;
-    width: 64px;
-    height: 64px;
-    border-radius: 10px;
-    object-fit: cover;
-    object-position: center top;
-    background: var(--theme-card-bg);
-  }
-
-  .avatar-summary-thumb.is-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--theme-text-dim);
-    font-size: 20px;
-  }
-
-  .avatar-summary-meta {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-    flex: 1;
-    min-width: 0;
-    /* Name plus a two-line description. Reserved so the row keeps its height
-       when the description swaps for the shorter loading line. */
-    min-height: 56px;
-  }
-
-  .avatar-summary-name {
-    font-size: 15px;
-    font-weight: 650;
-    color: var(--theme-text);
-  }
-
-  .avatar-summary-desc {
-    font-size: 14px;
-    line-height: 1.3;
-    color: var(--theme-text-dim);
-  }
-
-  .avatar-change-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 0 0 auto;
-    min-height: 44px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid
-      color-mix(in srgb, var(--performer-color) 45%, transparent);
-    background: color-mix(in srgb, var(--performer-color) 18%, transparent);
-    color: var(--theme-text);
-    font-size: 14px;
-    font-weight: 650;
-    cursor: pointer;
-    transition:
-      background 140ms ease,
-      border-color 140ms ease;
-  }
-
-  .avatar-change-btn:hover {
-    background: color-mix(in srgb, var(--performer-color) 30%, transparent);
-    border-color: var(--performer-color);
-  }
-
-  /* In a narrow dock the button wraps to its own full-width line rather than
-     shedding its label — an unlabelled pencil icon on a row that already has
-     a name and a description reads as an edit-the-name control. */
-  @container (max-width: 380px) {
-    .avatar-summary {
-      flex-wrap: wrap;
-    }
-
-    .avatar-change-btn {
-      flex: 1 0 100%;
-      justify-content: center;
-    }
-  }
-
   /* ─── Prop tab ─── */
   .prop-section {
     display: flex;
@@ -857,9 +720,6 @@
     }
     .tab-pane {
       animation: none;
-    }
-    .avatar-change-btn {
-      transition: none;
     }
   }
 

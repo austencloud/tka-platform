@@ -66,22 +66,19 @@
 
 {#if performers.length >= 1}
   <div class="performer-spine" role="toolbar" aria-label="Performer selection">
-    <!-- Add button at top -->
     <button
-      class="spine-chip add-chip"
-      aria-label="Add performer"
-      title="Add performer"
-      disabled={!canAdd}
-      onclick={addPerformer}
+      class="spine-chip all-chip"
+      aria-pressed={hasInteracted && selectedIndex === null}
+      aria-label="All performers"
+      title="All performers"
+      onclick={selectAll}
     >
-      <i class="fas fa-plus"></i>
+      <i class="fas fa-users"></i>
     </button>
 
     <div class="separator" aria-hidden="true"></div>
 
-    <!-- Performers: highest index at top, lowest at bottom -->
-    {#each [...performers].reverse() as _, ri (performers.length - 1 - ri)}
-      {@const i = performers.length - 1 - ri}
+    {#each performers as _, i (i)}
       {@const color = getPerformerColor(i)}
       <button
         class="spine-chip performer-chip"
@@ -98,15 +95,14 @@
 
     <div class="separator" aria-hidden="true"></div>
 
-    <!-- All button at bottom -->
     <button
-      class="spine-chip all-chip"
-      aria-pressed={hasInteracted && selectedIndex === null}
-      aria-label="All performers"
-      title="All performers"
-      onclick={selectAll}
+      class="spine-chip add-chip"
+      aria-label="Add performer"
+      title="Add performer"
+      disabled={!canAdd}
+      onclick={addPerformer}
     >
-      <i class="fas fa-users"></i>
+      <i class="fas fa-plus"></i>
     </button>
   </div>
 {/if}

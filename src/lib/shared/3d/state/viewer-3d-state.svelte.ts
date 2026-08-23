@@ -47,11 +47,15 @@ import { userProportionsState } from "@austencloud/scene-3d";
 import { createCameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
 import {
   computeChoreographerShot,
-  computeBehindPerformerShot,
   type PerformerShotSubject,
 } from "$lib/shared/sequence-viewer/camera-choreography/presets/shots";
 import type { OceanVariant } from "../environments/domain/enums/environment-enums";
 import type { TimedTransition } from "../camera/transitions";
+import {
+  DEFAULT_SCENE_ENVIRONMENT_ID,
+  normalizeSceneEnvironmentId,
+  type SceneEnvironmentId,
+} from "../environments/domain/scene-environment";
 
 // ============================================
 // Popover Stack
@@ -83,6 +87,7 @@ const STORAGE_KEY_NAV_MODE = "tka-viewer3d-navMode";
 const STORAGE_KEY_GRID_LABELS = "tka-viewer3d-gridLabels";
 const STORAGE_KEY_EFFECT_TOGGLES = "tka-viewer3d-effectToggles";
 const STORAGE_KEY_OCEAN_VARIANT = "tka-viewer3d-oceanVariant";
+const STORAGE_KEY_ENVIRONMENT = "tka-viewer3d-environment";
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
@@ -175,6 +180,37 @@ function persistMode(mode: "2d" | "3d") {
     localStorage.setItem(STORAGE_KEY_MODE, mode);
   } catch {
     // Storage full or unavailable
+  }
+}
+
+function loadPersistedEnvironment(
+  firstUseEnvironment: SceneEnvironmentId
+): SceneEnvironmentId {
+  if (typeof localStorage === "undefined") return firstUseEnvironment;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_ENVIRONMENT);
+    const environmentId = normalizeSceneEnvironmentId(
+      stored,
+      firstUseEnvironment
+    );
+
+    // The old viewer followed the app background forever. The first viewer
+    // opened after this migration remembers that look once, then owns it.
+    if (stored !== environmentId) {
+      localStorage.setItem(STORAGE_KEY_ENVIRONMENT, environmentId);
+    }
+    return environmentId;
+  } catch {
+    return firstUseEnvironment;
+  }
+}
+
+function persistEnvironment(environmentId: SceneEnvironmentId): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_ENVIRONMENT, environmentId);
+  } catch {
+    // Storage full or unavailable.
   }
 }
 
@@ -403,8 +439,7 @@ export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
   /** Force the initial render mode, bypassing the persisted one. A preview
    *  always wants "3d" regardless of where the user left the real viewer. */
   renderMode?: "2d" | "3d";
-  /** Environment to render INSIDE this viewer. Unseeded, the scene falls back
-   *  to the global settingsService value (the shared-viewer behaviour). */
+  /** Legacy v1/v2 saved-scene field. `environmentId` is canonical. */
   backgroundType?: string;
   /**
    * Orbit the camera around its target continuously, for as long as the viewer
@@ -429,7 +464,15 @@ export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
   sceneFeatures?: Record<string, boolean>;
 }
 
-function buildViewer3DState(seed?: Viewer3DStateSeed) {
+export interface Viewer3DStateOptions {
+  /** Used only when this user has never chosen a 3D environment. */
+  firstUseEnvironment?: SceneEnvironmentId;
+}
+
+function buildViewer3DState(
+  seed?: Viewer3DStateSeed,
+  options: Viewer3DStateOptions = {}
+) {
   const sceneUndo = getSceneUndoManager();
   const _webgl2Available = isWebGL2Available();
   /** A seeded field wins over storage; `undefined` means "not seeded". */
@@ -445,6 +488,14 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
    * namesake for this instance only; call sites are unchanged.
    */
   const persistent = seed === undefined;
+  const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
+  let environmentId = $state<SceneEnvironmentId>(
+    seededEnvironment !== undefined
+      ? normalizeSceneEnvironmentId(seededEnvironment)
+      : loadPersistedEnvironment(
+          options.firstUseEnvironment ?? DEFAULT_SCENE_ENVIRONMENT_ID
+        )
+  );
   const noop = () => {};
   const persistNavMode = persistent ? WRITERS.navMode : noop;
   const persistDefaultProp = persistent ? WRITERS.defaultProp : noop;
@@ -455,6 +506,7 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
   const persistActiveFormation = persistent ? WRITERS.activeFormation : noop;
   const persistSelectedIndex = persistent ? WRITERS.selectedIndex : noop;
   const persistEffectToggles = persistent ? WRITERS.effectToggles : noop;
+  const persistSceneEnvironment = persistent ? persistEnvironment : noop;
   /** The four keys written inline rather than through a `persist*` helper. */
   const writeKey = (key: string, value: string) => {
     if (!persistent) return;
@@ -598,6 +650,58 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
   }
 
   /**
+   * Refit the complete cast after the viewer gives real width to a dock. The
+   * calculated shot supplies the distance and group center, while the live
+   * camera supplies its direction. Opening controls therefore keeps the angle
+   * the user chose instead of snapping them back to a canned viewpoint.
+   */
+  function frameAllPerformers(
+    viewportAspect = currentViewportAspect(),
+    preserveViewingDirection = true
+  ): void {
+    const performers = performerManager.performers;
+    if (renderMode !== "3d" || !_snapToFn || performers.length === 0) return;
+
+    const shot = computeChoreographerShot(
+      performers,
+      stageGroundOffset,
+      viewportAspect
+    );
+    const target = shot.target;
+    let position = shot.eye;
+
+    const liveCamera = cameraSnapshot ?? _persistedCamera;
+    if (preserveViewingDirection && liveCamera) {
+      const dx = liveCamera.position.x - liveCamera.target.x;
+      const dy = liveCamera.position.y - liveCamera.target.y;
+      const dz = liveCamera.position.z - liveCamera.target.z;
+      const currentDistance = Math.hypot(dx, dy, dz);
+      const requiredDistance = Math.hypot(
+        shot.eye.x - shot.target.x,
+        shot.eye.y - shot.target.y,
+        shot.eye.z - shot.target.z
+      );
+
+      if (
+        Number.isFinite(currentDistance) &&
+        currentDistance > 0.001 &&
+        Number.isFinite(requiredDistance)
+      ) {
+        position = {
+          x: target.x + (dx / currentDistance) * requiredDistance,
+          y: target.y + (dy / currentDistance) * requiredDistance,
+          z: target.z + (dz / currentDistance) * requiredDistance,
+        };
+      }
+    }
+
+    snapCameraTo(
+      { x: position.x, y: position.y, z: position.z },
+      { x: target.x, y: target.y, z: target.z }
+    );
+  }
+
+  /**
    * Set the current selection scope. Pass null for "All".
    * Out-of-bounds indices are allowed - scopedPerformers() will return []
    * so individual write helpers no-op cleanly.
@@ -606,29 +710,24 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
     selectedPerformerIndex = index;
     persistSelectedIndex(index);
 
-    if (renderMode !== "3d" || !_snapToFn) return;
+    // Selecting a performer changes who the controls affect; it should not
+    // discard the camera angle the user chose while watching the formation.
+    // The light and ground ring in Viewer3DScene make the active performer
+    // visible without moving the view. Returning to All still restores the
+    // group overview promised by that control.
+    if (index !== null || renderMode !== "3d" || !_snapToFn) return;
     const performers = performerManager.performers;
     if (performers.length === 0) return;
 
-    if (index !== null) {
-      const performer = performers[index];
-      if (!performer) return;
-      const shot = computeBehindPerformerShot(performer, stageGroundOffset);
-      snapCameraTo(
-        { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-        { x: shot.target.x, y: shot.target.y, z: shot.target.z }
-      );
-    } else {
-      const shot = computeChoreographerShot(
-        performers,
-        stageGroundOffset,
-        currentViewportAspect()
-      );
-      snapCameraTo(
-        { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
-        { x: shot.target.x, y: shot.target.y, z: shot.target.z }
-      );
-    }
+    const shot = computeChoreographerShot(
+      performers,
+      stageGroundOffset,
+      currentViewportAspect()
+    );
+    snapCameraTo(
+      { x: shot.eye.x, y: shot.eye.y, z: shot.eye.z },
+      { x: shot.target.x, y: shot.target.y, z: shot.target.z }
+    );
   }
 
   /**
@@ -1145,12 +1244,13 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
   });
 
   /**
-   * Switch to 3D render mode and load a sequence for the viewer avatar.
-   * No-ops silently when WebGL2 is unavailable so callers don't need to
-   * guard every call site - they should just check webgl2Available before
-   * showing the "Enter 3D" button.
+   * Switch to 3D render mode, optionally loading choreography onto the stage.
+   * Scene-authoring surfaces can enter without a sequence so the environment,
+   * performers, and camera remain usable while the shot is being assembled.
+   * No-ops silently when WebGL2 is unavailable so callers don't need to guard
+   * every call site.
    */
-  function enter3D(sequenceData: SequenceData) {
+  function enter3D(sequenceData: SequenceData | null = null) {
     if (!_webgl2Available) return;
 
     // One-time migration of the deprecated visiblePlanes key. Idempotent -
@@ -1194,11 +1294,14 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
       });
     }
 
-    // Load sequence onto every restored performer. (v1: all performers
-    // share the same source sequence; per-performer offsets come later.)
+    // Load or clear choreography on every restored performer. (v1: all
+    // performers share the same source sequence; per-performer offsets come
+    // later.) An empty 3D workspace still owns a neutral performer so camera
+    // and environment controls have a concrete stage to frame.
     _currentSequenceData = sequenceData;
     for (const p of performerManager.performers) {
-      p.loadSequence(sequenceData);
+      if (sequenceData) p.loadSequence(sequenceData);
+      else p.clearSequence();
     }
 
     // Restore viewer-level state.
@@ -1214,9 +1317,10 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
     // future changes back to localStorage.
     _performersPersistReady = true;
 
-    // Queue welcome animation on first 3D entry this session.
-    // The snap executes when Viewer3DCamera registers its snapTo callback.
-    if (!_hasPlayedWelcome) {
+    // Queue welcome framing only when there is no camera to restore. A saved
+    // pose belongs to the user and must win across refreshes and HMR remounts.
+    // The snap executes when Viewer3DCamera registers its callback.
+    if (!_hasPlayedWelcome && !_persistedCamera) {
       _welcomeAnimationPending = true;
       _hasPlayedWelcome = true;
     }
@@ -1247,6 +1351,7 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
    */
   function serialize(): Viewer3DPersistConfig {
     return {
+      environmentId,
       camera: cameraSnapshot ?? _persistedCamera,
       performers: performerManager.performers.map((p) => ({
         position: { x: p.position.x, z: p.position.z },
@@ -1349,17 +1454,27 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
     get oceanVariant() {
       return oceanVariant;
     },
+    /** Environment rendered inside this viewer. */
+    get environmentId(): SceneEnvironmentId {
+      return environmentId;
+    },
+    setEnvironmentId(value: SceneEnvironmentId | string): void {
+      const next = normalizeSceneEnvironmentId(value, environmentId);
+      if (next === environmentId) return;
+      environmentId = next;
+      persistSceneEnvironment(next);
+    },
     /**
-     * Environment this viewer renders, when it was constructed with one.
-     * `null` = unseeded, and the scene falls back to the global
-     * `settingsService.settings.backgroundType` — the shared-viewer behaviour,
-     * where the 3D environment deliberately tracks the app-wide background.
-     *
-     * A seeded viewer (a saved-scene preview) needs its OWN environment without
-     * repainting the whole page, so it cannot read that global.
+     * Compatibility for older preview harnesses. Production controls use
+     * `environmentId` and `setEnvironmentId` for every viewer.
      */
     get seededBackgroundType(): string | null {
-      return seed?.backgroundType ?? null;
+      return persistent ? null : environmentId;
+    },
+    setSeededBackgroundType(value: string): boolean {
+      if (persistent) return false;
+      environmentId = normalizeSceneEnvironmentId(value, environmentId);
+      return true;
     },
     /**
      * Whether this viewer orbits its camera on its own, and how fast. Unseeded
@@ -1405,6 +1520,7 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
     },
     scopedPerformers,
     selectPerformerScope,
+    frameAllPerformers,
     get propSizeLinked() {
       return propSizeLinked;
     },
@@ -1626,9 +1742,10 @@ function buildViewer3DState(seed?: Viewer3DStateSeed) {
 export type Viewer3DState = ReturnType<typeof buildViewer3DState>;
 
 export function createViewer3DState(
-  seed?: Viewer3DStateSeed
+  seed?: Viewer3DStateSeed,
+  options?: Viewer3DStateOptions
 ): Viewer3DState {
-  return buildViewer3DState(seed);
+  return buildViewer3DState(seed, options);
 }
 
 /**
@@ -1640,6 +1757,7 @@ export function createViewer3DState(
  * STORAGE_KEY_* constants.
  */
 export interface Viewer3DPersistConfig {
+  environmentId: SceneEnvironmentId;
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
@@ -1675,6 +1793,8 @@ export function writeViewer3DConfig(
     }
   };
   set(STORAGE_KEY_MODE, "3d");
+  if (config.environmentId !== undefined)
+    set(STORAGE_KEY_ENVIRONMENT, config.environmentId);
   if (config.camera) set(STORAGE_KEY_CAMERA, JSON.stringify(config.camera));
   if (config.performers)
     set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));

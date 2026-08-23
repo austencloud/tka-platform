@@ -2,10 +2,11 @@ import type {
   StageChoreography,
   Performer,
   Mark,
+  StageSequenceClip,
   FormationPresetId,
   WalkStyle,
   EasingType,
-} from '../domain/stage-types';
+} from "../domain/stage-types";
 import {
   PERFORMER_COLORS,
   PERFORMER_LABELS,
@@ -13,9 +14,22 @@ import {
   DEFAULT_STAGE_DEPTH,
   DEFAULT_BPM,
   DEFAULT_PERFORMER_COUNT,
-} from '../domain/stage-types';
-import { generatePresetPositions } from './formation-presets';
-import type { UnifiedPlaybackContext } from '$lib/shared/timeline/unified-playback-context';
+} from "../domain/stage-types";
+import { generatePresetPositions } from "./formation-presets";
+import type { UnifiedPlaybackContext } from "$lib/shared/timeline/unified-playback-context";
+import {
+  samplePerformerPerformance,
+  sampleStagePerformance,
+  type StagePerformanceFrame,
+} from "../domain/stage-performance-sampler";
+import { DEFAULT_STAGE_SEQUENCE_ID } from "../services/stage-sequence-loader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { getPerformerSequenceEndBeat } from "../domain/stage-sequence-timeline";
+import {
+  DEFAULT_SCENE_ENVIRONMENT_ID,
+  normalizeSceneEnvironmentId,
+  type SceneEnvironmentId,
+} from "$lib/shared/3d/environments/domain/scene-environment";
 
 interface InterpolatedPosition {
   performerId: string;
@@ -32,9 +46,13 @@ interface InterpolatedPosition {
 export interface StageChoreographyState extends UnifiedPlaybackContext {
   readonly choreography: StageChoreography;
   readonly bpm: number;
+  readonly currentBeat: number;
+  readonly maxTotalBeats: number;
+  readonly performanceFrames: StagePerformanceFrame[];
   readonly interpolatedPositions: InterpolatedPosition[];
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  setEnvironmentId(environmentId: SceneEnvironmentId): void;
   seek(progress: number): void;
   togglePlay(): void;
   toggleLoop(): void;
@@ -42,7 +60,10 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   getPerformer(id: string): Performer | undefined;
   setPerformerCount(count: number): void;
   applyPreset(preset: FormationPresetId): void;
-  insertFormationAtPlayhead(preset: FormationPresetId, transitionBeats?: number): void;
+  insertFormationAtPlayhead(
+    preset: FormationPresetId,
+    transitionBeats?: number
+  ): void;
   addMark(performerId: string, x: number, z: number, beats?: number): void;
   beginDrag(): void;
   updateMarkPosition(markId: string, x: number, z: number): void;
@@ -50,9 +71,19 @@ export interface StageChoreographyState extends UnifiedPlaybackContext {
   updateMarkWalkStyle(markId: string, walkStyle: WalkStyle): void;
   updateMarkEasing(markId: string, easing: EasingType): void;
   deleteMark(markId: string): void;
+  addSequenceClip(
+    performerId: string,
+    sequence: SequenceData,
+    startBeat?: number
+  ): StageSequenceClip | null;
+  removeSequenceClip(clipId: string): void;
+  moveSequenceClip(clipId: string, startBeat: number): void;
+  resizeSequenceClip(clipId: string, durationBeats: number): void;
+  toggleSequenceClipLoop(clipId: string): void;
   setBpm(bpm: number): void;
   undo(): void;
   redo(): void;
+  destroy(): void;
 }
 
 function createPerformer(index: number): Performer {
@@ -60,10 +91,33 @@ function createPerformer(index: number): Performer {
     id: crypto.randomUUID(),
     index,
     label: PERFORMER_LABELS[index] ?? `P${index}`,
-    color: PERFORMER_COLORS[index] ?? '#888',
+    color: PERFORMER_COLORS[index] ?? "#888",
     marks: [],
-    sequenceId: null,
+    sequenceClips: [
+      createSequenceClip({
+        sequenceId: DEFAULT_STAGE_SEQUENCE_ID,
+        label: "Opening phrase",
+        startBeat: 0,
+        durationBeats: 8,
+        sourceBeatCount: 8,
+        loop: false,
+      }),
+      createSequenceClip({
+        sequenceId: DEFAULT_STAGE_SEQUENCE_ID,
+        label: "Second phrase",
+        startBeat: 8,
+        durationBeats: 8,
+        sourceBeatCount: 8,
+        loop: false,
+      }),
+    ],
   };
+}
+
+function createSequenceClip(
+  input: Omit<StageSequenceClip, "id">
+): StageSequenceClip {
+  return { id: crypto.randomUUID(), ...input };
 }
 
 function createMark(x: number, z: number, beats = 0): Mark {
@@ -72,50 +126,62 @@ function createMark(x: number, z: number, beats = 0): Mark {
     x,
     z,
     beats,
-    walkStyle: 'direct',
-    easing: 'linear',
+    walkStyle: "direct",
+    easing: "linear",
   };
 }
 
 function totalBeatsForPerformer(performer: Performer): number {
-  return performer.marks.reduce((sum, m) => sum + m.beats, 0);
+  return Math.max(
+    performer.marks.reduce((sum, m) => sum + m.beats, 0),
+    getPerformerSequenceEndBeat(performer)
+  );
 }
 
-function applyEasing(t: number, easing: EasingType): number {
-  switch (easing) {
-    case 'linear':
-      return t;
-    case 'easeIn':
-      return t * t;
-    case 'easeOut':
-      return 1 - (1 - t) * (1 - t);
-    case 'easeInOut':
-      return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  }
+export interface StageChoreographyStateOptions {
+  initialEnvironmentId?: SceneEnvironmentId;
 }
 
-export function createStageChoreographyState(): StageChoreographyState {
+export function createStageChoreographyState(
+  options: StageChoreographyStateOptions = {}
+): StageChoreographyState {
   let choreography = $state<StageChoreography>({
     id: crypto.randomUUID(),
-    name: 'Untitled Choreography',
+    name: "Untitled Choreography",
     bpm: DEFAULT_BPM,
     stageWidth: DEFAULT_STAGE_WIDTH,
     stageDepth: DEFAULT_STAGE_DEPTH,
-    performers: Array.from({ length: DEFAULT_PERFORMER_COUNT }, (_, i) => createPerformer(i)),
-    sharedSequenceId: null,
+    environmentId:
+      options.initialEnvironmentId ?? DEFAULT_SCENE_ENVIRONMENT_ID,
+    performers: Array.from({ length: DEFAULT_PERFORMER_COUNT }, (_, i) =>
+      createPerformer(i)
+    ),
+    sharedSequenceId: DEFAULT_STAGE_SEQUENCE_ID,
   });
 
-  // Apply default line preset
+  // The Stage opens on a real authored move, so the first press of Play proves
+  // the same thing users came here to build: performers travel while their TKA
+  // sequence continues. Both formations still use the ordinary mark model.
   const defaultPositions = generatePresetPositions(
-    'line',
+    "line",
+    DEFAULT_PERFORMER_COUNT,
+    DEFAULT_STAGE_WIDTH,
+    DEFAULT_STAGE_DEPTH
+  );
+  const defaultTargetPositions = generatePresetPositions(
+    "v-shape",
     DEFAULT_PERFORMER_COUNT,
     DEFAULT_STAGE_WIDTH,
     DEFAULT_STAGE_DEPTH
   );
   choreography.performers.forEach((performer, i) => {
     const pos = defaultPositions[i];
-    if (pos) {
-      performer.marks = [createMark(pos.x, pos.z, 0)];
+    const target = defaultTargetPositions[i];
+    if (pos && target) {
+      performer.marks = [
+        createMark(pos.x, pos.z, 0),
+        createMark(target.x, target.z, 8),
+      ];
     }
   });
 
@@ -123,42 +189,56 @@ export function createStageChoreographyState(): StageChoreographyState {
   let undoStack: string[] = [];
   let redoStack: string[] = [];
 
-  function snapshotPerformers(): string {
-    return JSON.stringify(
-      choreography.performers.map((p) => ({
+  function snapshotHistory(): string {
+    return JSON.stringify({
+      environmentId: choreography.environmentId,
+      performers: choreography.performers.map((p) => ({
         id: p.id,
         index: p.index,
         label: p.label,
         color: p.color,
         marks: p.marks.map((m) => ({ ...m })),
-        sequenceId: p.sequenceId,
-      }))
-    );
+        sequenceClips: p.sequenceClips.map((clip) => ({ ...clip })),
+      })),
+    });
   }
 
   function pushUndo() {
-    undoStack.push(snapshotPerformers());
+    undoStack.push(snapshotHistory());
     if (undoStack.length > MAX_UNDO_STACK) undoStack.shift();
     redoStack = [];
   }
 
-  function restorePerformers(json: string) {
-    const restored = JSON.parse(json) as Performer[];
-    choreography.performers = restored;
+  function restoreHistory(json: string) {
+    const restored = JSON.parse(json) as {
+      environmentId?: string;
+      performers: Performer[];
+    };
+    choreography.environmentId = normalizeSceneEnvironmentId(
+      restored.environmentId,
+      choreography.environmentId
+    );
+    choreography.performers = restored.performers;
   }
 
   function undo() {
     if (undoStack.length === 0) return;
-    redoStack.push(snapshotPerformers());
+    redoStack.push(snapshotHistory());
     const prev = undoStack.pop()!;
-    restorePerformers(prev);
+    restoreHistory(prev);
   }
 
   function redo() {
     if (redoStack.length === 0) return;
-    undoStack.push(snapshotPerformers());
+    undoStack.push(snapshotHistory());
     const next = redoStack.pop()!;
-    restorePerformers(next);
+    restoreHistory(next);
+  }
+
+  function setEnvironmentId(environmentId: SceneEnvironmentId) {
+    if (environmentId === choreography.environmentId) return;
+    pushUndo();
+    choreography.environmentId = environmentId;
   }
 
   let isPlaying = $state(false);
@@ -172,11 +252,15 @@ export function createStageChoreographyState(): StageChoreographyState {
 
   const duration = $derived((maxTotalBeats * 60) / choreography.bpm);
 
-  const overallProgress = $derived(duration > 0 ? Math.min(1, elapsed / duration) : 0);
+  const overallProgress = $derived(
+    duration > 0 ? Math.min(1, elapsed / duration) : 0
+  );
+  const currentBeat = $derived(overallProgress * maxTotalBeats);
 
   const currentStep = $derived.by(() => {
     const longestPerformer = choreography.performers.reduce(
-      (best, p) => (totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best),
+      (best, p) =>
+        totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best,
       choreography.performers[0]!
     );
     const currentBeat = overallProgress * maxTotalBeats;
@@ -189,13 +273,17 @@ export function createStageChoreographyState(): StageChoreographyState {
   });
 
   const totalSteps = $derived(
-    Math.max(1, ...choreography.performers.map((p) => Math.max(0, p.marks.length - 1)))
+    Math.max(
+      1,
+      ...choreography.performers.map((p) => Math.max(0, p.marks.length - 1))
+    )
   );
 
   const beatMarkerPositions = $derived.by((): readonly number[] => {
     if (maxTotalBeats <= 0) return [];
     const longestPerformer = choreography.performers.reduce(
-      (best, p) => (totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best),
+      (best, p) =>
+        totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best,
       choreography.performers[0]!
     );
     const positions: number[] = [];
@@ -207,52 +295,18 @@ export function createStageChoreographyState(): StageChoreographyState {
     return positions;
   });
 
-  const interpolatedPositions = $derived.by(() => {
-    const currentBeat = overallProgress * maxTotalBeats;
-    return choreography.performers.map((performer) => {
-      if (performer.marks.length === 0) {
-        return {
-          performerId: performer.id,
-          x: choreography.stageWidth / 2,
-          z: choreography.stageDepth / 2,
-          facing: 0,
-        };
-      }
-      if (performer.marks.length === 1) {
-        const m = performer.marks[0]!;
-        return { performerId: performer.id, x: m.x, z: m.z, facing: 0 };
-      }
+  const performanceFrames = $derived(
+    sampleStagePerformance(choreography, currentBeat)
+  );
 
-      let accumulated = 0;
-      for (let i = 1; i < performer.marks.length; i++) {
-        const mark = performer.marks[i]!;
-        const prevAccumulated = accumulated;
-        accumulated += mark.beats;
-        if (accumulated >= currentBeat || i === performer.marks.length - 1) {
-          const fromMark = performer.marks[i - 1]!;
-          const localProgress =
-            mark.beats > 0 ? Math.min(1, (currentBeat - prevAccumulated) / mark.beats) : 1;
-          const eased = applyEasing(localProgress, mark.easing);
-
-          let x: number, z: number, facing: number;
-          if (mark.walkStyle === 'crab') {
-            x = fromMark.x + (mark.x - fromMark.x) * eased;
-            z = fromMark.z + (mark.z - fromMark.z) * eased;
-            facing = 0;
-          } else {
-            x = fromMark.x + (mark.x - fromMark.x) * eased;
-            z = fromMark.z + (mark.z - fromMark.z) * eased;
-            const dx = mark.x - fromMark.x;
-            const dz = mark.z - fromMark.z;
-            facing = Math.abs(dx) + Math.abs(dz) > 0.01 ? Math.atan2(dx, -dz) : 0;
-          }
-          return { performerId: performer.id, x, z, facing };
-        }
-      }
-      const lastMark = performer.marks.at(-1)!;
-      return { performerId: performer.id, x: lastMark.x, z: lastMark.z, facing: 0 };
-    });
-  });
+  const interpolatedPositions = $derived(
+    performanceFrames.map((frame) => ({
+      performerId: frame.performerId,
+      x: frame.stagePosition.x,
+      z: frame.stagePosition.z,
+      facing: frame.bodyFacing,
+    }))
+  );
 
   function tick() {
     if (!isPlaying) return;
@@ -309,33 +363,18 @@ export function createStageChoreographyState(): StageChoreographyState {
     }
   }
 
-  function positionAtBeat(performer: Performer, targetBeat: number): { x: number; z: number } {
-    if (performer.marks.length === 0) {
-      return { x: choreography.stageWidth / 2, z: choreography.stageDepth / 2 };
-    }
-    if (performer.marks.length === 1) {
-      return { x: performer.marks[0]!.x, z: performer.marks[0]!.z };
-    }
-    let accumulated = 0;
-    for (let i = 1; i < performer.marks.length; i++) {
-      const mark = performer.marks[i]!;
-      const prevAccumulated = accumulated;
-      accumulated += mark.beats;
-      if (accumulated >= targetBeat || i === performer.marks.length - 1) {
-        const fromMark = performer.marks[i - 1]!;
-        const t = mark.beats > 0 ? Math.min(1, (targetBeat - prevAccumulated) / mark.beats) : 1;
-        const eased = applyEasing(t, mark.easing);
-        return {
-          x: fromMark.x + (mark.x - fromMark.x) * eased,
-          z: fromMark.z + (mark.z - fromMark.z) * eased,
-        };
-      }
-    }
-    const last = performer.marks.at(-1)!;
-    return { x: last.x, z: last.z };
+  function positionAtBeat(
+    performer: Performer,
+    targetBeat: number
+  ): { x: number; z: number } {
+    return samplePerformerPerformance(performer, choreography, targetBeat)
+      .stagePosition;
   }
 
-  function insertFormationAtPlayhead(preset: FormationPresetId, transitionBeats = 4) {
+  function insertFormationAtPlayhead(
+    preset: FormationPresetId,
+    transitionBeats = 4
+  ) {
     pushUndo();
     const currentBeat = overallProgress * maxTotalBeats;
     const positions = generatePresetPositions(
@@ -357,7 +396,9 @@ export function createStageChoreographyState(): StageChoreographyState {
       }
 
       if (currentBeat >= totalPerformerBeats) {
-        performer.marks.push(createMark(targetPos.x, targetPos.z, transitionBeats));
+        performer.marks.push(
+          createMark(targetPos.x, targetPos.z, transitionBeats)
+        );
       } else {
         const currentPos = positionAtBeat(performer, currentBeat);
         let accumulated = 0;
@@ -366,19 +407,30 @@ export function createStageChoreographyState(): StageChoreographyState {
           accumulated += performer.marks[j]!.beats;
           if (accumulated > currentBeat) {
             const remaining = accumulated - currentBeat;
-            performer.marks[j]!.beats = Math.round(currentBeat - (accumulated - performer.marks[j]!.beats));
+            performer.marks[j]!.beats = Math.round(
+              currentBeat - (accumulated - performer.marks[j]!.beats)
+            );
             const splitMark = createMark(currentPos.x, currentPos.z, 0);
             performer.marks.splice(j + 1, 0, splitMark);
             insertIdx = j + 2;
-            const targetMark = createMark(targetPos.x, targetPos.z, transitionBeats);
+            const targetMark = createMark(
+              targetPos.x,
+              targetPos.z,
+              transitionBeats
+            );
             performer.marks.splice(insertIdx, 0, targetMark);
             if (insertIdx + 1 < performer.marks.length) {
-              performer.marks[insertIdx + 1]!.beats = Math.max(1, Math.round(remaining));
+              performer.marks[insertIdx + 1]!.beats = Math.max(
+                1,
+                Math.round(remaining)
+              );
             }
             return;
           }
         }
-        performer.marks.push(createMark(targetPos.x, targetPos.z, transitionBeats));
+        performer.marks.push(
+          createMark(targetPos.x, targetPos.z, transitionBeats)
+        );
       }
     });
   }
@@ -455,8 +507,98 @@ export function createStageChoreographyState(): StageChoreographyState {
     }
   }
 
+  function addSequenceClip(
+    performerId: string,
+    sequence: SequenceData,
+    startBeat = currentBeat
+  ): StageSequenceClip | null {
+    const performer = choreography.performers.find(
+      (candidate) => candidate.id === performerId
+    );
+    if (!performer) return null;
+
+    pushUndo();
+    const sourceBeatCount = Math.max(1, sequence.steps.length);
+    const latestEnd = getPerformerSequenceEndBeat(performer);
+    const snappedStart = Math.max(0, Math.round(startBeat * 4) / 4);
+    const clip = createSequenceClip({
+      sequenceId: sequence.id,
+      label: sequence.word || sequence.name || "Untitled sequence",
+      startBeat: performer.sequenceClips.some(
+        (candidate) =>
+          snappedStart >= candidate.startBeat &&
+          snappedStart < candidate.startBeat + candidate.durationBeats
+      )
+        ? latestEnd
+        : snappedStart,
+      durationBeats: sourceBeatCount,
+      sourceBeatCount,
+      loop: sequence.isCircular === true,
+    });
+    performer.sequenceClips = [...performer.sequenceClips, clip].sort(
+      (a, b) => a.startBeat - b.startBeat
+    );
+    return clip;
+  }
+
+  function findSequenceClip(
+    clipId: string
+  ): { performer: Performer; clip: StageSequenceClip } | null {
+    for (const performer of choreography.performers) {
+      const clip = performer.sequenceClips.find(
+        (candidate) => candidate.id === clipId
+      );
+      if (clip) return { performer, clip };
+    }
+    return null;
+  }
+
+  function removeSequenceClip(clipId: string) {
+    const match = findSequenceClip(clipId);
+    if (!match) return;
+    pushUndo();
+    match.performer.sequenceClips = match.performer.sequenceClips.filter(
+      (clip) => clip.id !== clipId
+    );
+  }
+
+  function moveSequenceClip(clipId: string, startBeat: number) {
+    const match = findSequenceClip(clipId);
+    if (!match) return;
+    pushUndo();
+    match.clip.startBeat = Math.max(0, Math.round(startBeat * 4) / 4);
+    match.performer.sequenceClips = [...match.performer.sequenceClips].sort(
+      (a, b) => a.startBeat - b.startBeat
+    );
+  }
+
+  function resizeSequenceClip(clipId: string, durationBeats: number) {
+    const match = findSequenceClip(clipId);
+    if (!match) return;
+    pushUndo();
+    match.clip.durationBeats = Math.max(
+      0.25,
+      Math.round(durationBeats * 4) / 4
+    );
+  }
+
+  function toggleSequenceClipLoop(clipId: string) {
+    const match = findSequenceClip(clipId);
+    if (!match) return;
+    pushUndo();
+    match.clip.loop = !match.clip.loop;
+  }
+
   function setBpm(bpm: number) {
     choreography.bpm = Math.max(15, Math.min(180, bpm));
+  }
+
+  function destroy() {
+    isPlaying = false;
+    if (animationFrame !== null) {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+    }
   }
 
   return {
@@ -490,11 +632,20 @@ export function createStageChoreographyState(): StageChoreographyState {
     get bpm() {
       return choreography.bpm;
     },
+    get currentBeat() {
+      return currentBeat;
+    },
+    get maxTotalBeats() {
+      return maxTotalBeats;
+    },
     get playbackMode() {
       return undefined;
     },
     get interpolatedPositions() {
       return interpolatedPositions;
+    },
+    get performanceFrames() {
+      return performanceFrames;
     },
     get canUndo() {
       return undoStack.length > 0;
@@ -517,22 +668,15 @@ export function createStageChoreographyState(): StageChoreographyState {
     updateMarkWalkStyle,
     updateMarkEasing,
     deleteMark,
+    addSequenceClip,
+    removeSequenceClip,
+    moveSequenceClip,
+    resizeSequenceClip,
+    toggleSequenceClipLoop,
     setBpm,
+    setEnvironmentId,
     undo,
     redo,
+    destroy,
   } satisfies StageChoreographyState;
-}
-
-// NOTE: module-level singleton with no reset path. Tests that need isolation
-// must import createStageChoreographyState() directly to get a fresh instance,
-// since getStageChoreographyState() shares one instance across the module's
-// lifetime (and across HMR). Intentional for the app runtime; flagged for test
-// authors rather than rearchitected.
-let instance: StageChoreographyState | null = null;
-
-export function getStageChoreographyState(): StageChoreographyState {
-  if (!instance) {
-    instance = createStageChoreographyState();
-  }
-  return instance;
 }

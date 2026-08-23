@@ -8,9 +8,9 @@
    * viewer-3d context - the parent must have called setViewer3DContext() before
    * mounting this component.
    *
-   * Rendering is gated on avatarState being non-null AND sequenceData being
-   * present. Until both are ready a lightweight loading placeholder is shown
-   * so the Canvas (and its WebGL context) only initialize once.
+   * Ordinary viewers wait for choreography and its first performer before
+   * opening WebGL. Scene-authoring surfaces can opt into the empty environment
+   * so the workspace exists before choreography is chosen.
    */
 
   import { Canvas } from "@threlte/core";
@@ -20,8 +20,6 @@
   import Viewer3DCamera from "./Viewer3DCamera.svelte";
   import Viewer3DCanvasRef from "./Viewer3DCanvasRef.svelte";
   import PerfMonitor from "./PerfMonitor.svelte";
-  import ScenePostProcessing from "../effects/post-processing/ScenePostProcessing.svelte";
-  import StepPlaneStrip from "./controls/StepPlaneStrip.svelte";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import { createSceneFeatureState } from "../scene-features/state/scene-feature-state.svelte";
   import {
@@ -31,8 +29,6 @@
   import SceneLoadingCurtain from "../scene-features/components/SceneLoadingCurtain.svelte";
   import { createViewerCameraPlayerState } from "@austencloud/camera-3d";
   import { getInputCapabilities } from "$lib/shared/input/InputCapabilities.svelte";
-  import UnifiedTimeline from "$lib/shared/timeline/UnifiedTimeline.svelte";
-  import SceneAudioPlayer from "./SceneAudioPlayer.svelte";
   import SceneShaderWarmup from "./SceneShaderWarmup.svelte";
   import { createAvatarPlaybackAdapter } from "$lib/shared/timeline/adapters/avatar-playback-adapter.svelte";
   import type { PlaybackMode } from "$lib/shared/timeline/unified-playback-context";
@@ -43,12 +39,14 @@
   import { setAdaptiveQualityContext } from "../context/adaptive-quality-context";
   import { setEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
   import { createEnvironmentTransitionVisualState } from "../environments/state/environment-transition-visual-state.svelte";
+  import type { QualityTier } from "../effects/types";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CameraStateSnapshot } from "@austencloud/scene-3d";
   import type { BackgroundType } from "@austencloud/backgrounds";
   import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
+  import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
 
   interface Props {
     sequenceData: SequenceData | null;
@@ -81,7 +79,35 @@
     /** Fires when the scene load gate opens/closes (first-load latched). The
         parent withholds the 3D rail chrome until the stage is ready. */
     onSceneReadyChange?: (ready: boolean) => void;
+    /** Decorative async features that may finish after the studio is usable. */
+    initialRevealDeferredFeatures?: readonly string[];
+    /**
+     * `gated` preserves the production scene-change curtain. `streaming` puts
+     * the canvas on screen immediately and lets environment assets arrive in
+     * place, which is what focused scene-authoring surfaces need.
+     */
+    initialRevealMode?: "gated" | "streaming";
+    /** Model inspection can omit the full visual-effects runtime. */
+    enableEffects?: boolean;
+    /** Stationary review casts do not need the game locomotion pack. */
+    enablePerformerLocomotion?: boolean;
+    /** Cap expensive prop effects when one shot contains a large ensemble. */
+    effectQualityTier?: QualityTier;
+    /** Keep the first-load curtain up until every active avatar is visible. */
+    waitForPerformersOnInitialReveal?: boolean;
+    /** Per-performer count offsets for directed canon/ripple performances. */
+    performerStepOffsets?: readonly number[];
+    /** Keep reserved rigs mounted while rendering only the active shot's cast. */
+    visiblePerformerCount?: number;
+    /** Keep these already-prepared environments mounted between cinematic cuts. */
+    retainedEnvironmentTypes?: readonly BackgroundType[];
+    /** Lets a film-level compositor own the visible edit between retained worlds. */
+    environmentTransitionVisualMode?: "internal" | "host-controlled";
+    /** Host-specific rescue window for an intentionally heavy first scene. */
+    sceneLoadTimeoutMs?: number;
     onSettingChange?: ViewerControlSink;
+    /** Mount the environment and camera before choreography adds a performer. */
+    renderEmptyScene?: boolean;
   }
 
   let {
@@ -106,8 +132,44 @@
     playbackMode,
     onPlaybackModeChange,
     onSceneReadyChange,
+    initialRevealDeferredFeatures = [],
+    initialRevealMode = "gated",
+    enableEffects = true,
+    enablePerformerLocomotion = true,
+    effectQualityTier,
+    waitForPerformersOnInitialReveal = false,
+    performerStepOffsets = [],
+    visiblePerformerCount,
+    retainedEnvironmentTypes = [],
+    environmentTransitionVisualMode = "internal",
+    sceneLoadTimeoutMs = 15_000,
     onSettingChange,
+    renderEmptyScene = false,
   }: Props = $props();
+
+  type ScenePostProcessingModule =
+    typeof import("../effects/post-processing/ScenePostProcessing.svelte");
+  type SceneAudioPlayerModule = typeof import("./SceneAudioPlayer.svelte");
+  type StepPlaneStripModule = typeof import("./controls/StepPlaneStrip.svelte");
+  type UnifiedTimelineModule =
+    typeof import("$lib/shared/timeline/UnifiedTimeline.svelte");
+
+  let scenePostProcessingPromise: Promise<ScenePostProcessingModule> | null =
+    null;
+  let sceneAudioPlayerPromise: Promise<SceneAudioPlayerModule> | null = null;
+  let stepPlaneStripPromise: Promise<StepPlaneStripModule> | null = null;
+  let unifiedTimelinePromise: Promise<UnifiedTimelineModule> | null = null;
+
+  const loadScenePostProcessing = () =>
+    (scenePostProcessingPromise ??=
+      import("../effects/post-processing/ScenePostProcessing.svelte"));
+  const loadSceneAudioPlayer = () =>
+    (sceneAudioPlayerPromise ??= import("./SceneAudioPlayer.svelte"));
+  const loadStepPlaneStrip = () =>
+    (stepPlaneStripPromise ??= import("./controls/StepPlaneStrip.svelte"));
+  const loadUnifiedTimeline = () =>
+    (unifiedTimelinePromise ??=
+      import("$lib/shared/timeline/UnifiedTimeline.svelte"));
 
   const viewer3DState = getViewer3DContext();
   // Provide one stable, hardware-detected visual tier plus adaptive DPR to the
@@ -125,6 +187,8 @@
             onPlaybackToggle,
             onProgressBarSeek,
             getIsPlaying: () => isPlaying,
+            getCurrentStep: () => currentStep,
+            getTotalSteps: () => sequenceData?.steps.length ?? 0,
           }
         : undefined,
       onPlaybackModeChange
@@ -144,7 +208,10 @@
   const inheritedSceneFeatureState = tryGetSceneFeatureContext();
   const sceneFeatureState =
     seededFeatures !== null
-      ? createSceneFeatureState(seededFeatures, { isolated: true })
+      ? createSceneFeatureState(seededFeatures, {
+          isolated: true,
+          initialRevealDeferredFeatures,
+        })
       : (inheritedSceneFeatureState ?? createSceneFeatureState());
   setSceneFeatureContext(sceneFeatureState);
   // Primary performer - gates the Canvas on performer[0] existing. Multi-
@@ -153,12 +220,26 @@
   const avatarState = $derived(
     viewer3DState.performerManager.performers[0] ?? null
   );
+  const canRenderScene = $derived(
+    renderEmptyScene || Boolean(avatarState && sequenceData)
+  );
+  const shaderWarmupCacheKey = $derived(
+    retainedEnvironmentTypes.length > 0
+      ? getSceneEnvironmentRendererKey(viewer3DState.environmentId)
+      : null
+  );
 
-  // Defer Canvas mount by one frame so the loading curtain paints before
-  // WebGL context creation blocks the main thread.
+  // Production viewers give their curtain one frame to paint before WebGL
+  // starts. A focused scene workbench has no curtain, so delaying the canvas
+  // only creates a fake blank loading step.
   let canvasMountReady = $state(false);
   $effect(() => {
-    if (avatarState && sequenceData && !canvasMountReady) {
+    if (
+      initialRevealMode === "gated" &&
+      avatarState &&
+      sequenceData &&
+      !canvasMountReady
+    ) {
       requestAnimationFrame(() => {
         canvasMountReady = true;
       });
@@ -190,10 +271,12 @@
     }
   });
 
-  // Start safety timeout only after canvasMountReady - scene components
-  // (Environment3D, SeatedAudience3D) can't reportReady until they mount.
+  // Start the safety timeout after the canvas mounts. Streaming workbenches do
+  // not use canvasMountReady, but their scene components still need the same
+  // protection against an async feature that never reports completion.
   $effect(() => {
-    if (!canvasMountReady) return;
+    if (!renderEmptyScene && !canvasMountReady && initialRevealMode === "gated")
+      return;
     const features = sceneFeatureState.features.filter(
       (f) => f.requiresAsyncLoad && sceneFeatureState.isEnabled(f.key)
     );
@@ -210,7 +293,7 @@
       for (const f of pending) {
         sceneFeatureState.reportReady(f.key);
       }
-    }, 15_000);
+    }, sceneLoadTimeoutMs);
 
     return () => clearTimeout(timer);
   });
@@ -221,8 +304,34 @@
   // curtain's own latch), so the rail/playback gate only fires on first load.
   let rendererReady = $state(false);
   let sceneReady = $state(false);
+  let readyPerformerCount = $state(0);
+  let totalPerformerCount = $state(0);
+  const performersReady = $derived(
+    !waitForPerformersOnInitialReveal ||
+      totalPerformerCount === 0 ||
+      readyPerformerCount >= totalPerformerCount
+  );
+  const performerRevealProgress = $derived(
+    totalPerformerCount === 0
+      ? 1
+      : Math.min(readyPerformerCount / totalPerformerCount, 1)
+  );
+
+  function handlePerformerReadinessChange(
+    readyCount: number,
+    totalCount: number
+  ): void {
+    readyPerformerCount = readyCount;
+    totalPerformerCount = totalCount;
+  }
+
   $effect(() => {
-    if (!sceneReady && sceneFeatureState.allEnabledReady && rendererReady) {
+    if (
+      !sceneReady &&
+      sceneFeatureState.allInitialRevealFeaturesReady &&
+      rendererReady &&
+      performersReady
+    ) {
       sceneReady = true;
     }
   });
@@ -245,6 +354,15 @@
     onSceneReadyChange?.(sceneReady);
   });
 
+  // A host that exposes a shareable camera URL needs the settled orbit pose,
+  // not a second set of camera controls. Viewer3DCamera records that pose after
+  // the gesture ends; this forwards the existing snapshot through the public
+  // callback that Viewer3DCanvas already advertises.
+  $effect(() => {
+    const snapshot = viewer3DState.cameraSnapshot;
+    if (snapshot) onCameraStateChange?.(snapshot);
+  });
+
   // Hold playback while the curtain is up. Switching into 3D mid-play otherwise
   // keeps the shared clock advancing behind the loading screen, so the scene
   // reveals mid-sequence (the "it already went past loading" tell). Pause on
@@ -264,6 +382,11 @@
   }
 
   $effect(() => {
+    if (initialRevealMode === "streaming") {
+      if (heldForSceneLoad) synchronizeSceneLoadingPlayback(true);
+      heldForSceneLoad = false;
+      return;
+    }
     const transition = sceneLoadingPlaybackTransition({
       sceneReady,
       isPlaying,
@@ -289,13 +412,13 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="viewer-3d-canvas" data-swipe-block>
-  {#if avatarState && sequenceData}
+  {#if canRenderScene}
     <!-- The transport is a layout sibling of the stage, not an overlay: it
          takes real space at the bottom and the stage shrinks to fit, so the
          bar never covers the scene. The loading curtain stays parented to the
          root so it still covers the transport during the scene-load hold. -->
     <div class="stage-area">
-      {#if canvasMountReady}
+      {#if renderEmptyScene || canvasMountReady || initialRevealMode === "streaming"}
         <Canvas
           dpr={adaptiveQuality.pixelRatio}
           shadows={adaptiveQuality.config.enableShadows}
@@ -308,8 +431,13 @@
           />
           <Viewer3DCanvasRef {onRendererReady} />
           {#if adaptiveQuality.initialized}
-            <SceneShaderWarmup onReadyChange={handleRendererReadyChange} />
-            <ScenePostProcessing>
+            <SceneShaderWarmup
+              onReadyChange={handleRendererReadyChange}
+              waitForAllFeatures={initialRevealMode === "streaming"}
+              cacheKey={shaderWarmupCacheKey}
+              additionalReady={performersReady}
+            />
+            {#snippet sceneContent()}
               <Viewer3DCamera
                 cameraPlayerAvatar={cameraPlayer.avatarState}
                 cameraPlayerPhysics={cameraPlayer.physicsProvider}
@@ -324,33 +452,61 @@
                 redPropTypeOverride={redPropType}
                 {hideSceneMarkers}
                 {hidePerformerBadges}
+                {enableEffects}
+                {enablePerformerLocomotion}
+                {effectQualityTier}
+                {performerStepOffsets}
+                {visiblePerformerCount}
+                {retainedEnvironmentTypes}
+                {environmentTransitionVisualMode}
+                onPerformerReadinessChange={handlePerformerReadinessChange}
                 onEnvironmentTransitionChange={handleEnvironmentTransitionChange}
               />
-            </ScenePostProcessing>
+            {/snippet}
+            {@render sceneContent()}
+            {#if enableEffects}
+              {#await loadScenePostProcessing() then { default: ScenePostProcessing }}
+                <ScenePostProcessing />
+              {/await}
+            {/if}
           {/if}
         </Canvas>
       {/if}
-      {#if !hideOverlays}
-        <SceneAudioPlayer />
+      {#if sequenceData && !hideOverlays}
+        {#await loadSceneAudioPlayer() then { default: SceneAudioPlayer }}
+          <SceneAudioPlayer />
+        {/await}
         {#if avatarState && avatarState.totalSteps > 1 && avatarState.beatEditMode}
           <div class="beat-strip-container">
-            <StepPlaneStrip
-              totalSteps={avatarState.totalSteps}
-              currentStepIndex={avatarState.currentStepIndex}
-              beatPlaneOverrides={avatarState.beatPlaneOverrides}
-              onStepClick={handleBeatPlaneStepClick}
-            />
+            {#await loadStepPlaneStrip() then { default: StepPlaneStrip }}
+              <StepPlaneStrip
+                totalSteps={avatarState.totalSteps}
+                currentStepIndex={avatarState.currentStepIndex}
+                beatPlaneOverrides={avatarState.beatPlaneOverrides}
+                onStepClick={handleBeatPlaneStepClick}
+              />
+            {/await}
           </div>
         {/if}
       {/if}
     </div>
-    <SceneLoadingCurtain />
-    {#if !hideOverlays}
+    {#if sequenceData && initialRevealMode === "gated"}
+      <SceneLoadingCurtain
+        additionalRevealReady={performersReady}
+        additionalRevealProgress={waitForPerformersOnInitialReveal
+          ? performerRevealProgress
+          : null}
+        additionalRevealLabel="Dressing the cast"
+      />
+    {/if}
+    {#if sequenceData && !hideOverlays}
       <div class="timeline-anchor">
-        <UnifiedTimeline playback={playbackAdapter} />
+        {#await loadUnifiedTimeline() then { default: UnifiedTimeline }}
+          <UnifiedTimeline playback={playbackAdapter} />
+        {/await}
       </div>
     {/if}
-  {:else}
+  {:else if initialRevealMode === "gated"}
     <div class="viewer-3d-loading">Loading 3D viewer...</div>
   {/if}
 </div>

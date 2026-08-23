@@ -1,10 +1,14 @@
+import type { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
+
 export interface StageChoreography {
   id: string;
   name: string;
   bpm: number;
   stageWidth: number;
   stageDepth: number;
+  environmentId: SceneEnvironmentId;
   performers: Performer[];
+  /** Used when opening older Stage projects that predate performer clip lanes. */
   sharedSequenceId: string | null;
 }
 
@@ -14,7 +18,21 @@ export interface Performer {
   label: string;
   color: string;
   marks: Mark[];
-  sequenceId: string | null;
+  sequenceClips: StageSequenceClip[];
+}
+
+/**
+ * A sequence arranged on one performer's lane. Stage time is expressed in
+ * beats, so clips remain musically stable when the project BPM changes.
+ */
+export interface StageSequenceClip {
+  id: string;
+  sequenceId: string;
+  label: string;
+  startBeat: number;
+  durationBeats: number;
+  sourceBeatCount: number;
+  loop: boolean;
 }
 
 export interface Mark {
@@ -24,41 +42,52 @@ export interface Mark {
   beats: number;
   walkStyle: WalkStyle;
   easing: EasingType;
+  /** Explicit performance-facing yaw. Undefined keeps the legacy walk-style default. */
+  facingAngle?: number;
 }
 
-export type WalkStyle = 'crab' | 'direct';
-export type EasingType = 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
+export type WalkStyle = "crab" | "direct";
+export type EasingType = "linear" | "easeIn" | "easeOut" | "easeInOut";
 
 export type FormationPresetId =
-  | 'line'
-  | 'triangle'
-  | 'diamond'
-  | 'circle'
-  | 'v-shape'
-  | 'grid'
-  | 'grid-2x2'
-  | 'stagger'
-  | 'cluster'
-  | 'diagonal'
-  | 'solo'
-  | 'tunnel-stack'
-  | 'back-to-back'
-  | 'facing-each-other'
-  | 'stage-lr'
-  | 'side-by-side'
-  | 'custom';
+  | "line"
+  | "triangle"
+  | "diamond"
+  | "circle"
+  | "v-shape"
+  | "grid"
+  | "grid-2x2"
+  | "stagger"
+  | "cluster"
+  | "diagonal"
+  | "solo"
+  | "tunnel-stack"
+  | "back-to-back"
+  | "facing-each-other"
+  | "stage-lr"
+  | "side-by-side"
+  | "custom";
 
-export const PERFORMER_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
+export const PERFORMER_LABELS = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+] as const;
 
 export const PERFORMER_COLORS = [
-  '#ff6b6b',
-  '#4ecdc4',
-  '#ffe66d',
-  '#a06cd5',
-  '#ff9a76',
-  '#6bcf7f',
-  '#7eb8da',
-  '#e87ea1',
+  "#ff6b6b",
+  "#4ecdc4",
+  "#ffe66d",
+  "#a06cd5",
+  "#ff9a76",
+  "#6bcf7f",
+  "#7eb8da",
+  "#e87ea1",
 ] as const;
 
 export const DEFAULT_STAGE_WIDTH = 10;

@@ -2,6 +2,10 @@ import { z } from "zod";
 import { StepDataSchema } from "$lib/shared/foundation/domain/schemas";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { CameraStateSnapshot } from "@austencloud/scene-3d";
+import {
+  normalizeSceneEnvironmentId,
+  type SceneEnvironmentId,
+} from "$lib/shared/3d/environments/domain/scene-environment";
 
 /**
  * A reproducible snapshot of the 3D viewer configuration. Aggregates the four
@@ -22,9 +26,14 @@ export const SCENE_3D_GROUPS = [
 export type Scene3DGroupId = (typeof SCENE_3D_GROUPS)[number];
 
 export interface Scene3DSnapshot {
-  /** 1 = original shape; 2 = adds bpm, groups mask, per-performer settings. */
-  version: 1 | 2;
-  scene: { backgroundType: string; oceanVariant: string };
+  /** 3 separates the 3D environment from the application background. */
+  version: 1 | 2 | 3;
+  scene: {
+    environmentId?: SceneEnvironmentId | string;
+    /** Versions 1 and 2 used the application-background domain here. */
+    backgroundType?: string;
+    oceanVariant: string;
+  };
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
   selectedPerformerIndex: number | null;
@@ -109,8 +118,17 @@ const StoredPerformerSnapshotSchema = z.object({
 const GroupsSchema = z.record(z.enum(SCENE_3D_GROUPS), z.boolean());
 
 export const Scene3DSnapshotSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
-  scene: z.object({ backgroundType: z.string(), oceanVariant: z.string() }),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  scene: z
+    .object({
+      environmentId: z.string().optional(),
+      backgroundType: z.string().optional(),
+      oceanVariant: z.string(),
+    })
+    .refine(
+      (scene) => Boolean(scene.environmentId || scene.backgroundType),
+      "A saved 3D scene needs an environment identity"
+    ),
   camera: z.any().nullable(),
   performers: z.array(StoredPerformerSnapshotSchema),
   selectedPerformerIndex: z.number().nullable(),
@@ -142,6 +160,14 @@ export const Scene3DSnapshotSchema = z.object({
 /** Whether a group was saved. Absent mask (v1) = everything saved. */
 export function isGroupSaved(snapshot: Scene3DSnapshot, group: Scene3DGroupId): boolean {
   return snapshot.groups?.[group] ?? true;
+}
+
+export function getScene3DEnvironmentId(
+  snapshot: Scene3DSnapshot
+): SceneEnvironmentId {
+  return normalizeSceneEnvironmentId(
+    snapshot.scene.environmentId ?? snapshot.scene.backgroundType
+  );
 }
 
 export const Collected3DSceneSchema = z.object({

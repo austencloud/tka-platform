@@ -90,10 +90,11 @@
     align="start"
     avoidCollisions={true}
     collisionPadding={12}
+    sticky="always"
     forceMount
   >
     {#snippet child({ open, wrapperProps, props })}
-      <div {...wrapperProps}>
+      <div {...wrapperProps} style:z-index={30}>
         {#if open}
           <div
             {...props}
@@ -147,7 +148,13 @@
 
 <style>
   .viewer-popover-panel {
-    width: var(--popover-width, 420px);
+    display: flex;
+    /* The panel opens to the left of the 56px scene rail. Reserving the rail,
+       its 12px edge gap, the 10px popover gap, and collision breathing room
+       keeps the entire control surface visible even on a 375px phone. */
+    width: min(var(--popover-width, 420px), calc(100vw - 104px));
+    max-height: calc(100dvh - 24px);
+    flex-direction: column;
     border-radius: 18px;
     background: #0c0e16;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -175,7 +182,9 @@
     flex-shrink: 0;
   }
   .pop-body {
+    min-height: 0;
     padding: 12px 14px 14px;
+    overflow-y: auto;
   }
   .pop-footer {
     padding: 10px 14px 14px;

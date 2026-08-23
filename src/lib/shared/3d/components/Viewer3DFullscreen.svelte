@@ -2,25 +2,24 @@
   /**
    * Viewer3DFullscreen
    *
-   * Mobile full-screen overlay for the 3D viewer. Takes over the entire
-   * viewport so the 3D canvas has maximum real estate while the user is
-   * watching a sequence in 3D.
+   * Full-screen surface for the 3D viewer. It takes over the viewport so the
+   * canvas has maximum real estate while the user watches a sequence in 3D.
    *
-   * Floating top and bottom bars keep the UI out of the canvas until the
-   * user needs the controls. The bottom bar holds playback controls and
-   * the effect pills row.
+   * Floating top and bottom bars keep the UI out of the canvas until the user
+   * needs it. The same responsive control panel serves phones through 4K.
    *
    * The parent must have called setViewer3DContext() before mounting this.
    */
 
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import Viewer3DCanvas from "./Viewer3DCanvas.svelte";
-  import MobileSceneControls from "./MobileSceneControls.svelte";
-  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import type { SceneControlLayout } from "../domain/scene-control-layout";
+  import { onMount } from "svelte";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import SceneChromeButton from "./controls/SceneChromeButton.svelte";
 
   // Canonical effects config - single source of truth for both 2D canvas
   // and 3D viewer effect parameters. One-time migration from the old VM
@@ -41,14 +40,22 @@
     word: string | null;
     bluePropType?: string | null;
     redPropType?: string | null;
-    onClose: () => void;
+    onClose?: () => void;
     onPlaybackToggle: () => void;
     onBpmChange: (bpm: number) => void;
-    onStepForward: () => void;
-    onStepBackward: () => void;
+    onProgressBarSeek?: (targetStep: number) => void;
+    initialRevealMode?: "gated" | "streaming";
+    initialRevealDeferredFeatures?: readonly string[];
     /** Immersive toggle. Receives the overlay root for native fullscreen. */
     immersive?: boolean;
     onToggleImmersive?: (host: HTMLElement | null) => void;
+    /** Keep the surface inside its module workspace instead of covering the app. */
+    contained?: boolean;
+    onChangeSequence?: () => void;
+    onExport?: () => void;
+    exportBusy?: boolean;
+    /** Keep the environment and camera visible without a loaded sequence. */
+    renderEmptyScene?: boolean;
   }
 
   let {
@@ -62,13 +69,53 @@
     onClose,
     onPlaybackToggle,
     onBpmChange,
-    onStepForward,
-    onStepBackward,
+    onProgressBarSeek,
+    initialRevealMode = "gated",
+    initialRevealDeferredFeatures = [],
     immersive = false,
     onToggleImmersive,
+    contained = false,
+    onChangeSequence,
+    onExport,
+    exportBusy = false,
+    renderEmptyScene = false,
   }: Props = $props();
 
   let hostEl = $state<HTMLElement | null>(null);
+  type SceneControlWorkspaceComponent =
+    typeof import("./controls/SceneControlWorkspace.svelte").default;
+  type WordGlyphComponent =
+    typeof import("$lib/shared/choreo-card/components/TKAWordGlyph.svelte").default;
+
+  let SceneControls = $state<SceneControlWorkspaceComponent | null>(null);
+  let WordGlyph = $state<WordGlyphComponent | null>(null);
+  let sceneControlLayout = $state<SceneControlLayout>({
+    presentation: "overlay",
+    panelWidth: 520,
+    reservedWidth: 0,
+  });
+  const reservedSceneWidth = $derived(
+    immersive ? 0 : sceneControlLayout.reservedWidth
+  );
+
+  // The canvas is the product on this route. Controls and notation are useful
+  // once it is visible, but neither should hold the first scene frame hostage.
+  onMount(() => {
+    let active = true;
+    void import("./controls/SceneControlWorkspace.svelte").then(
+      ({ default: component }) => {
+        if (active) SceneControls = component;
+      }
+    );
+    void import("$lib/shared/choreo-card/components/TKAWordGlyph.svelte").then(
+      ({ default: component }) => {
+        if (active) WordGlyph = component;
+      }
+    );
+    return () => {
+      active = false;
+    };
+  });
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -77,31 +124,76 @@
 <div
   class="viewer-3d-fullscreen"
   class:immersive
+  class:contained
   bind:this={hostEl}
   onclick={immersive ? () => onToggleImmersive?.(hostEl) : undefined}
 >
-  <!-- Top bar: word label + immersive + close -->
-  <div class="top-bar" class:hidden={immersive}>
-    {#if word}
-      <span class="word-label"><TKAWordGlyph {word} height={14} darkMode /></span>
+  <div class="viewer-hud" class:hidden={immersive}>
+    {#if word && WordGlyph}
+      <span class="word-label"><WordGlyph {word} height={14} darkMode /></span>
     {/if}
-    <div class="top-actions">
-      <button
-        class="icon-button"
-        onclick={(e) => { e.stopPropagation(); onToggleImmersive?.(hostEl); }}
-        aria-label={immersive ? "Exit immersive" : "Immersive fullscreen"}
-        aria-pressed={immersive}
-      >
-        <i class="fas {immersive ? 'fa-compress' : 'fa-expand'}"></i>
-      </button>
-      <button class="icon-button" onclick={onClose} aria-label="Exit 3D view">
-        <i class="fas fa-xmark"></i>
-      </button>
+
+    <div class="scene-command-bar" aria-label="3D Studio commands">
+      <div class="command-group">
+        {#if onChangeSequence}
+          <SceneChromeButton
+            icon="fa-folder-open"
+            label="Change sequence"
+            tooltipSide="bottom"
+            onclick={(event) => {
+              event.stopPropagation();
+              onChangeSequence();
+            }}
+          />
+        {/if}
+        {#if onExport}
+          <SceneChromeButton
+            icon={exportBusy ? "fa-spinner fa-spin" : "fa-download"}
+            label={exportBusy ? "Exporting 3D video" : "Export 3D video"}
+            tooltipSide="bottom"
+            onclick={(event) => {
+              event.stopPropagation();
+              onExport();
+            }}
+            disabled={exportBusy}
+          />
+        {/if}
+      </div>
+
+      <span class="command-divider" aria-hidden="true"></span>
+
+      <div class="command-group">
+        <SceneChromeButton
+          icon={immersive ? "fa-compress" : "fa-expand"}
+          label={immersive ? "Exit immersive" : "Immersive fullscreen"}
+          tooltipSide="bottom"
+          onclick={(e) => {
+            e.stopPropagation();
+            onToggleImmersive?.(hostEl);
+          }}
+          aria-pressed={immersive}
+        />
+        {#if onClose}
+          <SceneChromeButton
+            icon="fa-xmark"
+            label="Exit 3D view"
+            tooltipSide="bottom"
+            onclick={(event) => {
+              event.stopPropagation();
+              onClose();
+            }}
+          />
+        {/if}
+      </div>
     </div>
   </div>
 
   <!-- 3D canvas fills remaining space -->
-  <div class="canvas-area">
+  <div
+    class="canvas-area"
+    data-scene-inspector-docked={reservedSceneWidth > 0 || undefined}
+    style:--scene-control-reserved-width="{reservedSceneWidth}px"
+  >
     <Viewer3DCanvas
       {sequenceData}
       {currentStep}
@@ -110,19 +202,26 @@
       {onBpmChange}
       {bluePropType}
       {redPropType}
-      hideOverlays={true}
+      hideOverlays={immersive}
+      {initialRevealMode}
+      {initialRevealDeferredFeatures}
+      {onPlaybackToggle}
+      {onProgressBarSeek}
+      {renderEmptyScene}
     />
   </div>
 
-  <!-- Bottom bar: consolidated controls -->
-  <div class="bottom-bar" class:hidden={immersive}>
-    <MobileSceneControls
-      {isPlaying}
-      {onPlaybackToggle}
-      {onStepForward}
-      {onStepBackward}
-    />
-  </div>
+  <!-- The standalone viewer uses the same adaptive scene-control owner as the
+       embedded viewer. Sequence Viewer chrome is not involved. -->
+  {#if SceneControls}
+    <div class="scene-controls" class:hidden={immersive}>
+      <SceneControls
+        {bpm}
+        topOffset="76px"
+        onLayoutChange={(next) => (sceneControlLayout = next)}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -135,64 +234,109 @@
     flex-direction: column;
   }
 
-  /* Top bar floats above the canvas with a gradient fade */
-  .top-bar {
+  /* z-index: auto, not a number: a contained viewer must not become a
+     stacking context, so a host's empty-state card (e.g. Scene Studio's
+     "No sequence loaded", z-index 3) can sit above the canvas and HUD yet
+     below the scene controls and their sheets (z-index 4+). */
+  .viewer-3d-fullscreen.contained {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    padding: 16px;
-    z-index: 1;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    z-index: auto;
+  }
+
+  .viewer-hud {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
   }
 
   .word-label {
+    position: absolute;
+    top: max(1rem, env(safe-area-inset-top));
+    left: max(1rem, env(safe-area-inset-left));
+    min-width: 0;
+    max-width: min(38rem, calc(100% - 24rem));
+    overflow: hidden;
     color: rgba(255, 255, 255, 0.9);
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     letter-spacing: 0.05em;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.65));
+    pointer-events: none;
   }
 
   /* Canvas fills all remaining space */
   .canvas-area {
     flex: 1;
     position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    margin-right: var(--scene-control-reserved-width, 0px);
+    transition: margin-right var(--duration-emphasis, 280ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
   }
 
-  /* Bottom bar floats above the canvas with a gradient fade */
-  .bottom-bar {
+  .scene-command-bar {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 16px;
-    z-index: 1;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+    top: max(1rem, env(safe-area-inset-top));
+    right: max(0.75rem, env(safe-area-inset-right));
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 0.625rem;
+    pointer-events: auto;
   }
 
-  .top-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
-  .icon-button {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: rgba(255, 255, 255, 0.85);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; padding: 0; font-size: 15px;
+  .command-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
-  .icon-button:active { background: rgba(255, 255, 255, 0.22); }
-  .top-bar.hidden, .bottom-bar.hidden {
+
+  .command-divider {
+    width: 1px;
+    height: 2rem;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+
+  .viewer-hud.hidden,
+  .scene-controls.hidden {
     opacity: 0;
     pointer-events: none;
     transition: opacity 180ms ease;
   }
-  .bottom-bar { gap: 14px; }
+  .scene-controls {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .scene-controls :global(button),
+  .scene-controls :global([role="button"]),
+  .scene-controls :global([role="dialog"]),
+  .scene-controls :global(.viewer-popover-panel) {
+    pointer-events: auto;
+  }
+
+  @media (max-width: 700px) {
+    .scene-command-bar {
+      right: max(0.5rem, env(safe-area-inset-right));
+      gap: 0.375rem;
+    }
+
+    .word-label {
+      left: max(5.5rem, env(safe-area-inset-left));
+      max-width: calc(100vw - 19rem);
+    }
+
+    .command-group {
+      gap: 0.375rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .canvas-area {
+      transition: none;
+    }
+  }
 </style>

@@ -9,8 +9,11 @@
   import Viewer3DFullscreen from "$lib/shared/3d/components/Viewer3DFullscreen.svelte";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
-  import { createFullscreenController } from "$lib/shared/sequence-viewer/state/fullscreen-controller.svelte";
-  import { loadCatalogs, loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
+  import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
+  import {
+    loadCatalogs,
+    loadCatalogSequences,
+  } from "$lib/features/choreo-card/services/catalog-loader";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   const viewer = createViewer3DState();
@@ -31,10 +34,16 @@
     try {
       const catalogs = await loadCatalogs();
       const first = catalogs[0];
-      if (!first) { error = "No catalogs available"; return; }
+      if (!first) {
+        error = "No catalogs available";
+        return;
+      }
       const seqs = await loadCatalogSequences(first.id);
       const seq = seqs.find((s) => (s.steps?.length ?? 0) > 1) ?? seqs[0];
-      if (!seq) { error = "No sequences in catalog"; return; }
+      if (!seq) {
+        error = "No sequences in catalog";
+        return;
+      }
       sequence = seq;
       viewer.enter3D(sequence);
     } catch (e) {
@@ -57,8 +66,6 @@
     onClose={() => history.back()}
     onPlaybackToggle={() => (isPlaying = !isPlaying)}
     onBpmChange={(b) => (bpm = b)}
-    onStepForward={() => (currentStep += 1)}
-    onStepBackward={() => (currentStep = Math.max(0, currentStep - 1))}
     immersive={fullscreen.immersive}
     onToggleImmersive={(host) => fullscreen.toggleImmersive(host)}
   />
@@ -68,9 +75,15 @@
 
 <style>
   .harness-error {
-    position: fixed; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: rgba(255,255,255,0.6); background: #0a0a14;
-    font-size: 14px; padding: 24px; text-align: center;
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.6);
+    background: #0a0a14;
+    font-size: 14px;
+    padding: 24px;
+    text-align: center;
   }
 </style>

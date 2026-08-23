@@ -1,0 +1,78 @@
+export type SceneControlTool =
+  | "performer"
+  | "formation"
+  | "camera"
+  | "scene"
+  | "dev";
+
+export type SceneControlPresentation = "compact" | "overlay" | "docked";
+
+export interface SceneControlLayout {
+  presentation: SceneControlPresentation;
+  panelWidth: number;
+  reservedWidth: number;
+}
+
+const COMPACT_WIDTH = 768;
+const COMPACT_HEIGHT = 544;
+const DOCK_MIN_WIDTH = 1680;
+const PANEL_MIN_WIDTH = 520;
+const PANEL_MAX_WIDTH = 1100;
+const PANEL_WIDTH_FRACTION = 0.32;
+const RAIL_AND_SEAM_WIDTH = 92;
+const MIN_DOCKED_STAGE_WIDTH = 960;
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+export function sceneInspectorPanelWidth(workspaceWidth: number): number {
+  if (!Number.isFinite(workspaceWidth) || workspaceWidth <= 0) {
+    return PANEL_MIN_WIDTH;
+  }
+
+  return Math.round(
+    clamp(
+      workspaceWidth * PANEL_WIDTH_FRACTION,
+      PANEL_MIN_WIDTH,
+      PANEL_MAX_WIDTH
+    )
+  );
+}
+
+export function resolveSceneControlLayout(
+  workspaceWidth: number,
+  workspaceHeight: number,
+  inspectorOpen: boolean,
+  inspectorUsesDock = inspectorOpen
+): SceneControlLayout {
+  const panelWidth = sceneInspectorPanelWidth(workspaceWidth);
+
+  if (
+    workspaceWidth > 0 &&
+    workspaceHeight > 0 &&
+    (workspaceWidth < COMPACT_WIDTH || workspaceHeight < COMPACT_HEIGHT)
+  ) {
+    return { presentation: "compact", panelWidth, reservedWidth: 0 };
+  }
+
+  const dockFits =
+    workspaceWidth >= DOCK_MIN_WIDTH &&
+    workspaceWidth - panelWidth - RAIL_AND_SEAM_WIDTH >= MIN_DOCKED_STAGE_WIDTH;
+
+  if (!dockFits) {
+    return { presentation: "overlay", panelWidth, reservedWidth: 0 };
+  }
+
+  // Short editors should float over the stage. Reserving their entire column
+  // would leave a large dead rectangle below a few rows of controls.
+  if (inspectorOpen && !inspectorUsesDock) {
+    return { presentation: "overlay", panelWidth, reservedWidth: 0 };
+  }
+
+  return {
+    presentation: "docked",
+    panelWidth,
+    reservedWidth: inspectorOpen ? panelWidth + RAIL_AND_SEAM_WIDTH : 0,
+  };
+}

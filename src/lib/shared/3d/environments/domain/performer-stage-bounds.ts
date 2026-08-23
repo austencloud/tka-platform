@@ -3,51 +3,80 @@ export interface PerformerStagePosition {
   z: number;
 }
 
+export interface PerformerStageBoundsOptions {
+  performerClearance?: number;
+}
+
 export interface PerformerStageBounds {
   width: number;
   depth: number;
+  radius: number;
   zOffset: number;
+}
+
+export interface StageCenterOffset {
+  x: number;
+  z: number;
 }
 
 const BASE_STAGE_WIDTH = 6;
 const BASE_STAGE_DEPTH = 6;
-const PERFORMER_BODY_PADDING = 1.5;
+export const DEFAULT_PERFORMER_STAGE_CLEARANCE = 1.5;
 
 /**
- * Keep the environment's stage under the complete performer formation.
- * Multi-performer layouts grow away from the camera, so the environment
- * shifts by half of the added depth while the performers stay centered.
+ * Scale the floor clearance with the same avatar scale that drives the rig.
+ * The default 1.5 m radius covers a performer's body and active prop space.
+ */
+export function getPerformerStageClearance(avatarScale: number): number {
+  return DEFAULT_PERFORMER_STAGE_CLEARANCE * avatarScale;
+}
+
+/**
+ * Keep every performer inside a stage centered on the scene origin.
+ *
+ * Formations can be edited off-center and they move continuously while a
+ * transition is playing. Measuring each point from the origin makes the deck
+ * follow both cases without sliding the environment out from under the cast.
  */
 export function getPerformerStageBounds(
-  performers: readonly PerformerStagePosition[]
+  performers: readonly PerformerStagePosition[],
+  options: PerformerStageBoundsOptions = {}
 ): PerformerStageBounds {
-  if (performers.length <= 1) {
-    return { width: BASE_STAGE_WIDTH, depth: BASE_STAGE_DEPTH, zOffset: 0 };
-  }
+  const performerClearance =
+    options.performerClearance ?? DEFAULT_PERFORMER_STAGE_CLEARANCE;
+  let halfWidth = BASE_STAGE_WIDTH / 2;
+  let halfDepth = BASE_STAGE_DEPTH / 2;
+  let radius = Math.min(BASE_STAGE_WIDTH, BASE_STAGE_DEPTH) / 2;
 
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minZ = Infinity;
-  let maxZ = -Infinity;
   for (const performer of performers) {
-    minX = Math.min(minX, performer.x);
-    maxX = Math.max(maxX, performer.x);
-    minZ = Math.min(minZ, performer.z);
-    maxZ = Math.max(maxZ, performer.z);
+    halfWidth = Math.max(halfWidth, Math.abs(performer.x) + performerClearance);
+    halfDepth = Math.max(halfDepth, Math.abs(performer.z) + performerClearance);
+    radius = Math.max(
+      radius,
+      Math.hypot(performer.x, performer.z) + performerClearance
+    );
   }
-
-  const width = Math.max(
-    BASE_STAGE_WIDTH,
-    maxX - minX + PERFORMER_BODY_PADDING * 2
-  );
-  const depth = Math.max(
-    BASE_STAGE_DEPTH,
-    maxZ - minZ + PERFORMER_BODY_PADDING * 2
-  );
 
   return {
-    width,
-    depth,
-    zOffset: -(depth - BASE_STAGE_DEPTH) / 2,
+    width: halfWidth * 2,
+    depth: halfDepth * 2,
+    radius,
+    zOffset: 0,
   };
+}
+
+/**
+ * Fit a circular stage to the performer radius. An authored stage whose center
+ * is offset from the scene origin gets the center distance as extra clearance,
+ * which guarantees containment for every direction of formation growth.
+ */
+export function resolveCircularStageRadius(
+  performerRadius: number,
+  minimumRadius: number,
+  centerOffset: StageCenterOffset = { x: 0, z: 0 }
+): number {
+  return Math.max(
+    minimumRadius,
+    performerRadius + Math.hypot(centerOffset.x, centerOffset.z)
+  );
 }

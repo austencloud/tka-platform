@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { getStageChoreographyState } from '../state/stage-choreography-state.svelte';
-  import type { StageEditMode } from '../state/stage-edit-mode.svelte';
-  import type { Mark } from '../domain/stage-types';
+  import { getStageChoreographyContext } from "../context/stage-choreography-context";
+  import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import type { Mark } from "../domain/stage-types";
 
   interface Props {
     editMode: StageEditMode;
@@ -9,18 +9,22 @@
 
   let { editMode }: Props = $props();
 
-  const stageState = getStageChoreographyState();
+  const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
 
   const selectedPerformer = $derived(
     editMode.selectedPerformerId
-      ? choreography.performers.find((p) => p.id === editMode.selectedPerformerId)
+      ? choreography.performers.find(
+          (p) => p.id === editMode.selectedPerformerId
+        )
       : undefined
   );
 
   const selectedMark = $derived.by((): Mark | undefined => {
     if (!editMode.selectedMarkId || !selectedPerformer) return undefined;
-    return selectedPerformer.marks.find((m) => m.id === editMode.selectedMarkId);
+    return selectedPerformer.marks.find(
+      (m) => m.id === editMode.selectedMarkId
+    );
   });
 
   const markIndex = $derived.by((): number => {
@@ -38,7 +42,7 @@
     stageState.updateMarkBeats(selectedMark.id, selectedMark.beats - 1);
   }
 
-  function setWalkStyle(style: 'direct' | 'crab') {
+  function setWalkStyle(style: "direct" | "crab") {
     if (!selectedMark) return;
     stageState.updateMarkWalkStyle(selectedMark.id, style);
   }
@@ -54,7 +58,10 @@
 {#if selectedPerformer && selectedMark && markIndex > 0}
   <div class="mark-properties" role="region" aria-label="Mark properties">
     <h4 class="mark-header">
-      <span class="performer-badge" style="background: {selectedPerformer.color}">
+      <span
+        class="performer-badge"
+        style="background: {selectedPerformer.color}"
+      >
         {selectedPerformer.label}
       </span>
       <span>Mark {markIndex}</span>
@@ -72,7 +79,9 @@
         >
           <i class="fas fa-minus" aria-hidden="true"></i>
         </button>
-        <span class="stepper-value" aria-live="polite">{selectedMark.beats}</span>
+        <span class="stepper-value" aria-live="polite"
+          >{selectedMark.beats}</span
+        >
         <button
           type="button"
           class="stepper-btn"
@@ -91,17 +100,17 @@
         <button
           type="button"
           class="toggle-btn"
-          class:active={selectedMark.walkStyle === 'direct'}
-          aria-pressed={selectedMark.walkStyle === 'direct'}
-          onclick={() => setWalkStyle('direct')}
-        >Direct</button>
+          class:active={selectedMark.walkStyle === "direct"}
+          aria-pressed={selectedMark.walkStyle === "direct"}
+          onclick={() => setWalkStyle("direct")}>Direct</button
+        >
         <button
           type="button"
           class="toggle-btn"
-          class:active={selectedMark.walkStyle === 'crab'}
-          aria-pressed={selectedMark.walkStyle === 'crab'}
-          onclick={() => setWalkStyle('crab')}
-        >Crab</button>
+          class:active={selectedMark.walkStyle === "crab"}
+          aria-pressed={selectedMark.walkStyle === "crab"}
+          onclick={() => setWalkStyle("crab")}>Crab</button
+        >
       </div>
     </div>
 
@@ -252,8 +261,13 @@
     min-height: 48px;
     padding: 10px 16px;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     color: var(--semantic-error, #ef4444);
     font-size: 0.875rem;
     font-weight: 500;
@@ -262,8 +276,16 @@
   }
 
   .delete-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 25%, transparent);
-    border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 25%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 50%,
+      transparent
+    );
   }
 
   @media (prefers-reduced-motion: reduce) {

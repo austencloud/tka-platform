@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { T, useTask, useThrelte, useScheduler } from "@threlte/core";
-  import { layers } from "@threlte/extras";
+  import { layers, type ThrelteLayers } from "@threlte/extras";
   import { onMount, onDestroy } from "svelte";
   import { PerformerRig } from "@austencloud/scene-3d";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -20,7 +19,7 @@
   import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
   import { resolvePerformerProp } from "$lib/shared/3d/state/performer-prop-resolution";
   import { Raycaster, Vector2, AdditiveBlending } from "three";
-  import type { Object3D, Scene } from "three";
+  import type { Group, Object3D, Scene } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
   import PerformerBadge3D from "./PerformerBadge3D.svelte";
   import { getPerformerColor } from "../constants/performer-colors";
@@ -28,17 +27,20 @@
   import { getSceneUndoManager } from "../undo/get-scene-undo-manager";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import AvatarSwapTransition from "./AvatarSwapTransition.svelte";
-  import EffectOrchestrator3D from "../effects/EffectOrchestrator3D.svelte";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
-  import SceneEffectsCoordinator3D from "../effects/scene-effects/SceneEffectsCoordinator3D.svelte";
-  import { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
-  import { setSceneEffectsContext } from "../effects/scene-effects/scene-effects-context";
+  import type { SceneEffectsManager3D } from "../effects/scene-effects/scene-effects-manager-3d";
+  import type { QualityTier } from "../effects/types";
   import { resolvePetalEnvironmentProfile } from "../effects/petals/petal-world-art-direction";
+  import { resolvePerformerPlaybackStep } from "../domain/performer-step-timing";
   import {
     getStageCoordinateFrame,
     isRenderable3DEnvironment,
   } from "../environments/domain/stage-coordinate-frame";
-  import { getPerformerStageBounds } from "../environments/domain/performer-stage-bounds";
+  import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
+  import {
+    getPerformerStageBounds,
+    getPerformerStageClearance,
+  } from "../environments/domain/performer-stage-bounds";
   import { tryGetEnvironmentTransitionVisualContext } from "../environments/context/environment-transition-visual-context";
   import type { EnvironmentTransitionObservation } from "../environments/domain/environment-transition";
   import {
@@ -49,12 +51,16 @@
 
   // Performer layer membership inherits through the nested PerformerRig tree.
   layers();
+  const PERFORMER_LAYERS: ThrelteLayers = [
+    BASE_SCENE_LAYER,
+    PROTECTED_PERFORMER_LAYER,
+  ];
 
   interface Props {
     sequenceData: SequenceData | null;
     currentStep: number;
     isPlaying: boolean;
-    avatarState: AvatarInstanceState;
+    avatarState: AvatarInstanceState | null;
     /** Explicit prop-type override from the viewer's Theirs/Mine toggle.
      *  When set, takes precedence over sequenceData.intendedProp and
      *  creatorIntent.propConfig so the viewer's prop-context choice is
@@ -66,6 +72,24 @@
     hideSceneMarkers?: boolean;
     /** Hide performer numbers while leaving grid references available. */
     hidePerformerBadges?: boolean;
+    /** Skip the effects runtime entirely in prop/model inspection surfaces. */
+    enableEffects?: boolean;
+    /** Stationary stage casts can skip walk, jump, and foot-planting setup. */
+    enablePerformerLocomotion?: boolean;
+    /** Explicit ensemble budget for the existing effect renderers. */
+    effectQualityTier?: QualityTier;
+    /** Per-performer count offsets, sampled against the same shared clock. */
+    performerStepOffsets?: readonly number[];
+    /** Reserved film rigs stay mounted, but only the active cast is rendered. */
+    visiblePerformerCount?: number;
+    /** Environments retained in the scene graph after the opening preparation. */
+    retainedEnvironmentTypes?: readonly BackgroundType[];
+    /** Lets a film-level compositor hide an atomic retained-world switch. */
+    environmentTransitionVisualMode?: "internal" | "host-controlled";
+    onPerformerReadinessChange?: (
+      readyCount: number,
+      totalCount: number
+    ) => void;
     onEnvironmentTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
@@ -80,40 +104,78 @@
     redPropTypeOverride = null,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
+    enableEffects = true,
+    enablePerformerLocomotion = true,
+    effectQualityTier,
+    performerStepOffsets = [],
+    visiblePerformerCount,
+    retainedEnvironmentTypes = [],
+    environmentTransitionVisualMode = "internal",
+    onPerformerReadinessChange,
     onEnvironmentTransitionChange,
   }: Props = $props();
-  // The `avatarState` prop is kept for backward-compat with Viewer3DCanvas;
-  // Task 14 removes it. The scene now iterates viewer3DState.performerManager.
+  // The scene now iterates viewer3DState.performerManager. This compatibility
+  // prop can be empty while 3D Studio shows the environment before choreography.
   $effect(() => {
     void avatarState;
   });
 
   const viewer3DState = getViewer3DContext();
+  type SettingsService =
+    (typeof import("$lib/shared/settings/state/settings-state.svelte"))["settingsService"];
+  let viewerSettings = $state<SettingsService | null>(null);
   const sequenceIsSeamless = $derived(
     sequenceData ? isSeamlesslyLoopable(sequenceData) : false
   );
   const sceneFeatures = getSceneFeatureContext();
-  const sceneEffectsManager = setSceneEffectsContext(
-    new SceneEffectsManager3D()
-  );
+  let sceneEffectsManager = $state<SceneEffectsManager3D | null>(null);
+  let readyAvatarKeys = $state<Record<string, true>>({});
+  const sceneEffectsCoordinatorModule = enableEffects
+    ? import("../effects/scene-effects/SceneEffectsCoordinator3D.svelte")
+    : null;
+  const effectOrchestratorModule = enableEffects
+    ? import("../effects/EffectOrchestrator3D.svelte")
+    : null;
   const transitionVisual = tryGetEnvironmentTransitionVisualContext();
   const { renderer, camera, scene } = useThrelte();
   const { scheduler, resetFrameInvalidation } = useScheduler();
 
-  // A viewer constructed with a seeded background renders THAT environment,
-  // regardless of the app-wide background — this is what lets a saved-scene
-  // preview show its own ocean inside its own box without repainting the page.
-  // Unseeded (the shared viewer), the environment tracks the global setting
-  // exactly as before.
-  const backgroundType = $derived.by((): BackgroundType => {
-    const seeded = viewer3DState.seededBackgroundType;
-    if (seeded) return seeded as BackgroundType;
-    try {
-      return settingsService.settings?.backgroundType ?? BackgroundType.COSMIC;
-    } catch {
-      return BackgroundType.COSMIC;
-    }
+  function markPerformerAvatarReady(
+    performerId: string,
+    avatarId: string
+  ): void {
+    readyAvatarKeys = {
+      ...readyAvatarKeys,
+      [`${performerId}:${avatarId}`]: true,
+    };
+  }
+
+  const performerReadiness = $derived.by(() => {
+    const performers = viewer3DState.performerManager.performers.slice(
+      0,
+      visiblePerformerCount
+    );
+    return {
+      readyCount: performers.filter(
+        (performer) =>
+          readyAvatarKeys[`${performer.id}:${performer.avatarModelId}`]
+      ).length,
+      totalCount: performers.length,
+    };
   });
+
+  $effect(() => {
+    onPerformerReadinessChange?.(
+      performerReadiness.readyCount,
+      performerReadiness.totalCount
+    );
+  });
+
+  // Every viewer owns its scene environment. BackgroundType remains only the
+  // established renderer key below; it is no longer an application preference.
+  const backgroundType = $derived(
+    getSceneEnvironmentRendererKey(viewer3DState.environmentId)
+  );
 
   // Reconstructs Threlte's default setAnimationLoop callback. We restore
   // this after the offline export pauses the loop.
@@ -223,16 +285,17 @@
       ? (viewer3DState.exportCurrentStep ?? currentStep)
       : currentStep;
 
-    const stepNumber = Math.floor(step);
-    const subBeatProgress = step - stepNumber;
-
-    for (const p of performerManager.performers) {
-      const wrappedBeat =
-        p.totalSteps > 0 && stepNumber >= p.totalSteps
-          ? stepNumber % p.totalSteps
-          : stepNumber;
-      p.goToStep(wrappedBeat);
-      p.setProgress(subBeatProgress);
+    for (const [performerIndex, p] of performerManager.performers
+      .slice(0, visiblePerformerCount)
+      .entries()) {
+      const performerStep = resolvePerformerPlaybackStep(
+        step,
+        performerStepOffsets[performerIndex] ?? 0,
+        p.totalSteps
+      );
+      const performerBeat = Math.floor(performerStep);
+      p.goToStep(performerBeat);
+      p.setProgress(performerStep - performerBeat);
     }
 
     // Drive formation transitions. transitionToFormation (called from the
@@ -312,15 +375,39 @@
   let _detachUndo: (() => void) | null = null;
 
   onMount(() => {
-    _raycasterCanvas = renderer?.current?.domElement ?? null;
-    if (!_raycasterCanvas) return;
-    _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
+    let mounted = true;
 
-    _detachUndo = attachSceneUndoKeyboard(
-      getSceneUndoManager(),
-      (desc) => toast.info(`Undid: ${desc}`, 1500),
-      (desc) => toast.info(`Redid: ${desc}`, 1500)
-    );
+    // Prop fallbacks still belong to app settings. Environment choice does not.
+    if (!bluePropTypeOverride || !redPropTypeOverride) {
+      void import("$lib/shared/settings/state/settings-state.svelte").then(
+        ({ settingsService }) => {
+          if (mounted) viewerSettings = settingsService;
+        }
+      );
+    }
+
+    if (enableEffects) {
+      void import("../effects/scene-effects/scene-effects-manager-3d").then(
+        ({ SceneEffectsManager3D }) => {
+          if (mounted) sceneEffectsManager = new SceneEffectsManager3D();
+        }
+      );
+    }
+
+    _raycasterCanvas = renderer?.current?.domElement ?? null;
+    if (_raycasterCanvas) {
+      _raycasterCanvas.addEventListener("pointerdown", onPointerDown);
+
+      _detachUndo = attachSceneUndoKeyboard(
+        getSceneUndoManager(),
+        (desc) => toast.info(`Undid: ${desc}`, 1500),
+        (desc) => toast.info(`Redid: ${desc}`, 1500)
+      );
+    }
+
+    return () => {
+      mounted = false;
+    };
   });
 
   onDestroy(() => {
@@ -337,8 +424,7 @@
     if (sequenceData?.creatorIntent?.propConfig?.bluePropType)
       return sequenceData.creatorIntent.propConfig.bluePropType;
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.bluePropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.bluePropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
@@ -350,8 +436,7 @@
     if (sequenceData?.creatorIntent?.propConfig?.redPropType)
       return sequenceData.creatorIntent.propConfig.redPropType;
     try {
-      const settings = settingsService;
-      return (settings as any)?.settings?.redPropType ?? PropType.STAFF;
+      return viewerSettings?.settings?.redPropType ?? PropType.STAFF;
     } catch {
       return PropType.STAFF;
     }
@@ -405,11 +490,25 @@
       : Number.parseInt(getPerformerColor(index).slice(1), 16);
   });
 
-  const performerCount = $derived(performerManager.performers.length);
+  const performerCount = $derived(
+    Math.min(
+      performerManager.performers.length,
+      visiblePerformerCount ?? performerManager.performers.length
+    )
+  );
+
+  const visiblePerformers = $derived(
+    performerManager.performers.slice(0, performerCount)
+  );
 
   const stageDimensions = $derived(
     getPerformerStageBounds(
-      performerManager.performers.map((performer) => performer.position)
+      visiblePerformers.map((performer) => performer.position),
+      {
+        performerClearance: getPerformerStageClearance(
+          userProportionsState.avatarScale
+        ),
+      }
     )
   );
 
@@ -421,8 +520,8 @@
 
   let ringPulsePhase = $state(0);
   const ringPulse = $derived(0.6 + 0.4 * Math.sin(ringPulsePhase));
-  let performerLayerRoot: Object3D | undefined;
-  let sceneEffectsLayerRoot: Object3D | undefined;
+  let performerLayerRoot = $state<Group>();
+  let sceneEffectsLayerRoot = $state<Group>();
 
   // When the background type doesn't produce a 3D environment (solid color,
   // gradient), Environment3D never mounts - so nothing will ever call
@@ -434,15 +533,16 @@
   });
 </script>
 
-<T.Group
-  bind:ref={sceneEffectsLayerRoot}
-  layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
-/>
-<SceneEffectsCoordinator3D
-  manager={sceneEffectsManager}
-  parent={sceneEffectsLayerRoot}
-  {petalEnvironmentProfile}
-/>
+<T.Group bind:ref={sceneEffectsLayerRoot} layers={PERFORMER_LAYERS} />
+{#if sceneEffectsManager && sceneEffectsCoordinatorModule}
+  {#await sceneEffectsCoordinatorModule then { default: SceneEffectsCoordinator3D }}
+    <SceneEffectsCoordinator3D
+      manager={sceneEffectsManager}
+      parent={sceneEffectsLayerRoot}
+      {petalEnvironmentProfile}
+    />
+  {/await}
+{/if}
 
 <!-- Environment (gated by scene feature toggle) -->
 {#if hasEnvironment && sceneFeatures.isEnabled("environment")}
@@ -451,7 +551,10 @@
     {performerCount}
     stageWidth={stageDimensions.width}
     stageDepth={stageDimensions.depth}
+    stageRadius={stageDimensions.radius}
     {stageZOffset}
+    {retainedEnvironmentTypes}
+    transitionVisualMode={environmentTransitionVisualMode}
     onTransitionChange={onEnvironmentTransitionChange}
   />
 {/if}
@@ -490,7 +593,7 @@
 <T.Group
   bind:ref={performerLayerRoot}
   position.z={stageZOffset}
-  layers={[BASE_SCENE_LAYER, PROTECTED_PERFORMER_LAYER]}
+  layers={PERFORMER_LAYERS}
 >
   <T.PointLight
     position={selectedPerformerLightPosition}
@@ -538,7 +641,7 @@
   </T.Group>
 
   {#each performerManager.performers as performer, i (performer.id)}
-    <T.Group userData={{ performerIndex: i }}>
+    <T.Group userData={{ performerIndex: i }} visible={i < performerCount}>
       {@const performerGridMode = (sequenceData?.gridMode ??
         "diamond") as GridMode}
       {@const performerGridOffset = GRID_OFFSETS[performer.planeMode]}
@@ -551,6 +654,11 @@
       {@const perfEffect =
         performer.rawEffect ?? globalTipEffectMap["*"]?.effect ?? "none"}
       {@const perfTipMap = { "*": { effect: perfEffect } }}
+      {@const performerCurrentStep = resolvePerformerPlaybackStep(
+        currentStep,
+        performerStepOffsets[i] ?? 0,
+        performer.totalSteps
+      )}
       <AvatarSwapTransition
         {performer}
         performerIndex={i}
@@ -584,10 +692,13 @@
             redPropState={performer.redPropState}
             tipEffectMap={perfTipMap}
             {propLength}
-            {isPlaying}
-            enableLocomotion={true}
-            enableFootPlanting={true}
-            {onAvatarSwapped}
+            isPlaying={isPlaying && i < performerCount}
+            enableLocomotion={enablePerformerLocomotion}
+            enableFootPlanting={enablePerformerLocomotion}
+            onAvatarSwapped={(avatarId) => {
+              onAvatarSwapped(avatarId);
+              markPerformerAvatarReady(performer.id, avatarId);
+            }}
             {avatarOpacity}
           >
             {#snippet gridSlot()}
@@ -614,33 +725,39 @@
               staffHalfLength,
               effectsParentRef,
             })}
-              <EffectOrchestrator3D
-                {bluePropState}
-                {redPropState}
-                bluePropType={toScenePropType(
-                  resolvePerformerProp(
-                    performer,
-                    bluePropType,
-                    bluePropTypeOverride as PropType | null
-                  )
-                )}
-                redPropType={toScenePropType(
-                  resolvePerformerProp(
-                    performer,
-                    redPropType,
-                    redPropTypeOverride as PropType | null
-                  )
-                )}
-                isPlaying={rigPlaying}
-                {staffHalfLength}
-                tipEffectMap={perfTipMap}
-                {blueHandPos}
-                {redHandPos}
-                {effectsParentRef}
-                {currentStep}
-                totalSteps={sequenceData?.steps.length ?? 0}
-                seamlesslyLoopable={sequenceIsSeamless}
-              />
+              {#if sceneEffectsManager && effectOrchestratorModule}
+                {#await effectOrchestratorModule then { default: EffectOrchestrator3D }}
+                  <EffectOrchestrator3D
+                    {bluePropState}
+                    {redPropState}
+                    bluePropType={toScenePropType(
+                      resolvePerformerProp(
+                        performer,
+                        bluePropType,
+                        bluePropTypeOverride as PropType | null
+                      )
+                    )}
+                    redPropType={toScenePropType(
+                      resolvePerformerProp(
+                        performer,
+                        redPropType,
+                        redPropTypeOverride as PropType | null
+                      )
+                    )}
+                    isPlaying={rigPlaying}
+                    {staffHalfLength}
+                    tipEffectMap={perfTipMap}
+                    {blueHandPos}
+                    {redHandPos}
+                    {effectsParentRef}
+                    sceneEffectsManagerOverride={sceneEffectsManager}
+                    qualityTierOverride={effectQualityTier}
+                    currentStep={performerCurrentStep}
+                    totalSteps={sequenceData?.steps.length ?? 0}
+                    seamlesslyLoopable={sequenceIsSeamless}
+                  />
+                {/await}
+              {/if}
             {/snippet}
           </PerformerRig>
         {/snippet}
