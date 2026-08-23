@@ -161,10 +161,14 @@ async function hydrateSequenceInternal(
     // Local lookup failed, continue to next source
   }
 
-  // Try public loader (Firebase sequences)
+  // Try public loader (Firebase sequences). The id goes along when there is
+  // one: this branch exists to honour the "prefer the exact variation" intent
+  // above, and dropping the id here was what reduced it to a word match.
   try {
-    const publicSequence =
-      await getBrowseLoader().loadFullSequenceData(identifier);
+    const publicSequence = await getBrowseLoader().loadFullSequenceData(
+      identifier,
+      sequence.id || undefined
+    );
     if (publicSequence && hasMotionData(publicSequence)) {
       return prepareForViewer(publicSequence);
     }
@@ -189,10 +193,24 @@ export async function loadByIdentifier(
     console.debug("[SequenceDataProvider] Local lookup failed:", error);
   }
 
-  // Try public loader
+  // Try public loader, asking for the exact document before falling back to the
+  // word.
+  //
+  // The identifier reaching this function comes from a route like
+  // /sequence/<id>, where it is a document id - and a public document's `name`
+  // is under no obligation to match it. `publicSequences/X-BΦ-θ-` is named
+  // "X-BΦ-Θ-", one Greek theta apart, and 278 of the 565 documents in the
+  // public index differ from their id by more than a letter case. Passing the
+  // id as a word alone rendered every one of those permalinks as "This
+  // sequence isn't available" while the document sat in the index.
+  //
+  // The word lookup still runs second, for the callers that really do hold a
+  // word rather than an id.
   try {
+    const loader = getBrowseLoader();
     const publicSequence =
-      await getBrowseLoader().loadFullSequenceData(identifier);
+      (await loader.loadFullSequenceData(identifier, identifier)) ??
+      (await loader.loadFullSequenceData(identifier));
     if (publicSequence) {
       return prepareForViewer(publicSequence);
     }
