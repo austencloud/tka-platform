@@ -37,7 +37,7 @@
     { content: viewerPanel, defaultSize: 2.6, minSize: 200, id: "viewer" },
     {
       content: timelinePanel,
-      defaultSize: 1.4,
+      defaultSize: 1.55,
       minSize: 170,
       maxSize: 540,
       id: "timeline",

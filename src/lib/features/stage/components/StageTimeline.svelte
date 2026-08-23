@@ -95,7 +95,17 @@
       0,
       Math.min(maxBeats, (event.clientX - rect.left) / effectivePixelsPerBeat)
     );
-    stageState.seek(beat / maxBeats);
+    const total = Math.max(1, stageState.maxTotalBeats);
+    stageState.seek(Math.min(beat, total) / total);
+  }
+
+  function stepPlayhead(deltaBeats: number): void {
+    const total = Math.max(1, stageState.maxTotalBeats);
+    const next = Math.max(
+      0,
+      Math.min(total, stageState.currentBeat + deltaBeats)
+    );
+    stageState.seek(next / total);
   }
 
   function selectClip(
@@ -207,44 +217,62 @@
   <header class="timeline-toolbar">
     <div class="timeline-title">
       <i class="fas fa-wave-square" aria-hidden="true"></i>
-      <span>Performance</span>
-      <strong>Beat {stageState.currentBeat.toFixed(1)}</strong>
+      <span>Choreography</span>
+      <strong
+        >Beat {stageState.currentBeat.toFixed(1)} / {Math.round(
+          stageState.maxTotalBeats
+        )}</strong
+      >
     </div>
 
     <TransportControls
       isPlaying={stageState.isPlaying}
       onPlaybackToggle={() => stageState.togglePlay()}
       onRestartToStart={() => stageState.seek(0)}
+      onStepHalfBeatBackward={() => stepPlayhead(-0.5)}
+      onStepHalfBeatForward={() => stepPlayhead(0.5)}
+      onStepFullBeatForward={() => stepPlayhead(1)}
     />
 
     <div class="timeline-tools">
-      <BpmChips
-        bind:bpm
-        variant="compact"
-        onBpmChange={(nextBpm) => stageState.setBpm(nextBpm)}
-      />
-      <div class="zoom-controls" role="group" aria-label="Timeline zoom">
+      <div class="tool-cluster tempo-cluster">
+        <span class="tool-label">Tempo</span>
+        <BpmChips
+          bind:bpm
+          variant="compact"
+          onBpmChange={(nextBpm) => stageState.setBpm(nextBpm)}
+        />
+      </div>
+      <span class="tool-divider" aria-hidden="true"></span>
+      <div
+        class="tool-cluster zoom-controls"
+        role="group"
+        aria-label="Timeline zoom"
+      >
+        <span class="tool-label">Zoom</span>
         <button type="button" onclick={() => zoom(-12)} aria-label="Zoom out">
-          <i class="fas fa-minus" aria-hidden="true"></i>
+          <i class="fas fa-magnifying-glass-minus" aria-hidden="true"></i>
         </button>
         <button type="button" onclick={() => zoom(12)} aria-label="Zoom in">
-          <i class="fas fa-plus" aria-hidden="true"></i>
+          <i class="fas fa-magnifying-glass-plus" aria-hidden="true"></i>
         </button>
       </div>
     </div>
   </header>
 
-  {#if selectedClip}
-    <div
-      class="clip-inspector"
-      style:--performer-color={selectedClip.performer.color}
-    >
+  <div
+    class="clip-strip"
+    class:has-selection={!!selectedClip}
+    style:--performer-color={selectedClip?.performer.color ?? "transparent"}
+  >
+    {#if selectedClip}
+      <span class="strip-label">Selected clip</span>
       <span class="selected-performer">{selectedClip.performer.label}</span>
       <strong>{selectedClip.clip.label}</strong>
-      <span
-        >{selectedClip.clip.startBeat.toFixed(1)}–{getStageSequenceClipEnd(
+      <span class="clip-range"
+        >beats {selectedClip.clip.startBeat.toFixed(1)}–{getStageSequenceClipEnd(
           selectedClip.clip
-        ).toFixed(1)} beats</span
+        ).toFixed(1)}</span
       >
       <button
         type="button"
@@ -259,15 +287,24 @@
         type="button"
         class="delete-clip"
         onclick={() => {
-          stageState.removeSequenceClip(selectedClip.clip.id);
-          editMode.selectPerformer(selectedClip.performer.id);
+          const { clip, performer } = selectedClip;
+          stageState.removeSequenceClip(clip.id);
+          editMode.selectPerformer(performer.id);
         }}
       >
         <i class="fas fa-trash" aria-hidden="true"></i>
         Remove
       </button>
-    </div>
-  {/if}
+    {:else}
+      <span class="strip-hint">
+        <i class="fas fa-circle-info" aria-hidden="true"></i>
+        <span class="hint-text"
+          >Each row is one performer. Drag a clip to move it, drag its right
+          edge to change its length, or click a lane to move the playhead.</span
+        >
+      </span>
+    {/if}
+  </div>
 
   <div class="timeline-scroll" bind:clientWidth={timelineViewportWidth}>
     <div
@@ -278,7 +315,13 @@
       )}px"
     >
       <div class="ruler-label" aria-hidden="true">PERFORMER</div>
-      <div class="ruler" style:width="var(--timeline-width)">
+      <div
+        class="ruler"
+        style:width="var(--timeline-width)"
+        onpointerdown={seekFromPointer}
+        role="group"
+        aria-label="Beat ruler. Click to move the playhead."
+      >
         <TimeRuler
           duration={maxBeats}
           pixelsPerSecond={effectivePixelsPerBeat}
@@ -330,6 +373,17 @@
             class="lane-playhead"
             style:left="{stageState.currentBeat * effectivePixelsPerBeat}px"
           ></div>
+          {#if performer.sequenceClips.length === 0}
+            <button
+              type="button"
+              class="lane-add-hint"
+              onpointerdown={(event) => event.stopPropagation()}
+              onclick={() => openPicker(performer.id)}
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+              Add sequence
+            </button>
+          {/if}
           {#each performer.sequenceClips as clip (clip.id)}
             <div
               class="sequence-clip"
@@ -410,8 +464,8 @@
 
   .timeline-title,
   .timeline-tools,
-  .zoom-controls,
-  .clip-inspector {
+  .tool-cluster,
+  .clip-strip {
     display: flex;
     align-items: center;
   }
@@ -436,15 +490,41 @@
   .timeline-tools {
     min-width: 0;
     justify-content: flex-end;
-    gap: 0.45rem;
+    gap: 0.65rem;
+  }
+
+  .tool-cluster {
+    min-width: 0;
+    gap: 0.5rem;
+  }
+
+  .tempo-cluster :global(.bpm-chips) {
+    width: auto;
+  }
+
+  .tool-label,
+  .strip-label {
+    flex: 0 0 auto;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    font-size: 0.65rem;
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .tool-divider {
+    width: 1px;
+    height: 1.9rem;
+    flex: 0 0 auto;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .zoom-controls {
-    gap: 0.25rem;
+    gap: 0.35rem;
   }
 
   .zoom-controls button,
-  .clip-inspector button {
+  .clip-strip button {
     min-width: 2.75rem;
     min-height: 2.75rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
@@ -454,8 +534,8 @@
     cursor: pointer;
   }
 
-  .clip-inspector {
-    min-height: 3rem;
+  .clip-strip {
+    min-height: 3.25rem;
     flex: 0 0 auto;
     gap: 0.55rem;
     padding: 0.25rem 0.65rem;
@@ -464,11 +544,31 @@
     font-size: var(--font-size-compact, 0.75rem);
   }
 
-  .clip-inspector strong {
+  .clip-strip strong {
     color: var(--theme-text, white);
   }
 
-  .clip-inspector button {
+  .strip-hint {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hint-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .strip-hint i {
+    flex: 0 0 auto;
+    color: var(--theme-accent, #f59e0b);
+    opacity: 0.75;
+  }
+
+  .clip-strip button {
     display: flex;
     min-height: 2.5rem;
     align-items: center;
@@ -476,16 +576,16 @@
     padding: 0 0.7rem;
   }
 
-  .clip-inspector button:first-of-type {
+  .clip-strip button:first-of-type {
     margin-left: auto;
   }
 
-  .clip-inspector button.active {
+  .clip-strip button.active {
     border-color: var(--performer-color);
     color: white;
   }
 
-  .clip-inspector .delete-clip {
+  .clip-strip .delete-clip {
     color: var(--semantic-error, #f87171);
   }
 
@@ -512,8 +612,10 @@
     display: grid;
     width: max-content;
     min-width: 100%;
+    min-height: 100%;
     grid-template-columns: 10.5rem var(--timeline-width);
-    grid-auto-rows: 3.5rem;
+    grid-auto-rows: minmax(3.5rem, 1fr);
+    grid-template-rows: 2.25rem;
   }
 
   .ruler-label,
@@ -544,10 +646,11 @@
   }
 
   .ruler {
-    height: 3.5rem;
+    height: 2.25rem;
     overflow: hidden;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background: #11131c;
+    cursor: pointer;
   }
 
   .ruler-playhead,
@@ -707,13 +810,48 @@
   }
 
   .resize-handle {
+    display: grid;
     width: 1rem;
     min-height: 2.75rem;
     flex: 0 0 auto;
+    place-items: center;
     border: 0;
     border-left: 1px solid rgba(255, 255, 255, 0.22);
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28));
     cursor: ew-resize;
+  }
+
+  .resize-handle::after {
+    width: 4px;
+    height: 1.1rem;
+    border-inline: 1.5px solid rgba(255, 255, 255, 0.8);
+    content: "";
+  }
+
+  .lane-add-hint {
+    position: absolute;
+    top: 50%;
+    left: 0.6rem;
+    z-index: 3;
+    display: flex;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0 0.85rem;
+    border: 1px dashed
+      color-mix(in srgb, var(--performer-color) 55%, transparent);
+    border-radius: 0.55rem;
+    background: color-mix(in srgb, var(--performer-color) 8%, transparent);
+    color: var(--performer-color);
+    cursor: pointer;
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    translate: 0 -50%;
+    white-space: nowrap;
+  }
+
+  .lane-add-hint:hover {
+    background: color-mix(in srgb, var(--performer-color) 16%, transparent);
   }
 
   button:focus-visible,
@@ -722,14 +860,20 @@
     outline-offset: 2px;
   }
 
+  @media (max-width: 1100px) {
+    .tempo-cluster,
+    .tool-divider {
+      display: none;
+    }
+  }
+
   @media (max-width: 920px) {
     .timeline-toolbar {
       grid-template-columns: 1fr auto;
       grid-template-rows: auto auto;
     }
 
-    .timeline-title strong,
-    .timeline-tools :global(.bpm-chips) {
+    .timeline-title strong {
       display: none;
     }
 
@@ -747,7 +891,12 @@
       grid-template-columns: 8rem var(--timeline-width);
     }
 
-    .clip-inspector > span:not(.selected-performer) {
+    .performer-select small {
+      display: none;
+    }
+
+    .clip-strip .clip-range,
+    .strip-label {
       display: none;
     }
   }
