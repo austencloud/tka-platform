@@ -70,24 +70,23 @@
   // of the staff rotation. Each station's parameter is the ARM ANGLE the
   // fore/aft reach should hold at that phase: positive = downstage (toward
   // the audience), negative = upstage, 0 = the plane intersecting the body.
+  //
+  // The angle is MINIMIZED, not fixed: just enough for the inboard staff end
+  // to clear the elbow and inner arm, which Austen estimates at 12–20°. The
+  // per-station sliders exist to dial that clearance in on the real avatar.
   const WEAVE_STATION_THETAS = [0, 90, 180, 270] as const;
   const WEAVE_STATION_DEFAULTS: readonly [number, number, number, number] = [
-    -45, 0, 45, 0,
+    -16, 0, 16, 0,
   ];
+  // The pre-minimization defaults — recognized in storage and migrated.
+  const WEAVE_STATION_LEGACY_DEFAULTS = [-45, 0, 45, 0] as const;
   type WeaveStations = [number, number, number, number];
 
-  // How the grip travels while the arm holds its fore/aft station angle.
-  // Both keep the grip on the station's ray from the body axis; they differ
-  // in what the arm gives up:
-  //  - "arc":  the grip keeps its DISTANCE from the body axis (the arm keeps
-  //            its length) and comes inboard as the reach goes fore/aft.
-  //  - "rail": the grip keeps its SIDEWAYS position over the hand point and
-  //            the reach lengthens at the extremes.
-  type WeaveReach = "arc" | "rail";
-  const WEAVE_REACH_OPTIONS: { value: WeaveReach; label: string }[] = [
-    { value: "arc", label: "Arc" },
-    { value: "rail", label: "Rail" },
-  ];
+  // The arm stays FULLY EXTENDED through the move, so the grip travels on
+  // the natural arc that extension produces: it keeps its distance from the
+  // body axis and comes slightly inboard as the reach goes fore/aft. (A
+  // "rail" variant that pinned the grip over the hand point was tried and
+  // rejected — it required the reach to lengthen at the extremes.)
 
   // The E hand point sits at exact shoulder height on the grid, which forces
   // a perfectly perpendicular arm. A naturally extended arm relaxes a hair
@@ -100,7 +99,15 @@
       value.length === 4 &&
       value.every((entry) => typeof entry === "number" && Number.isFinite(entry))
     ) {
-      return value.map((deg) => Math.max(-60, Math.min(60, deg))) as WeaveStations;
+      const clamped = value.map((deg) =>
+        Math.max(-60, Math.min(60, deg))
+      ) as WeaveStations;
+      // Stored state predating the minimized-clearance defaults: anyone still
+      // on the untouched ±45° defaults follows them to the new values.
+      if (clamped.every((deg, i) => deg === WEAVE_STATION_LEGACY_DEFAULTS[i])) {
+        return [...WEAVE_STATION_DEFAULTS] as WeaveStations;
+      }
+      return clamped;
     }
     return [...WEAVE_STATION_DEFAULTS] as WeaveStations;
   }
@@ -117,7 +124,6 @@
     weaveDepthDeg: number;
     weaveStationsDeg: WeaveStations;
     weavePhaseDeg: number;
-    weaveReach: WeaveReach;
   }
 
   function loadPersisted(): PersistedState {
@@ -133,7 +139,6 @@
       weaveDepthDeg: 0,
       weaveStationsDeg: [...WEAVE_STATION_DEFAULTS] as WeaveStations,
       weavePhaseDeg: 0,
-      weaveReach: "arc",
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -176,7 +181,6 @@
             ? Math.max(0, Math.min(180, parsed.weaveDepthDeg))
             : fallback.weaveDepthDeg,
         weaveStationsDeg: parseStations(parsed.weaveStationsDeg),
-        weaveReach: parsed.weaveReach === "rail" ? "rail" : "arc",
         weavePhaseDeg:
           typeof parsed.weavePhaseDeg === "number"
             ? Math.max(-180, Math.min(180, parsed.weavePhaseDeg))
@@ -199,7 +203,6 @@
   let weaveDepthDeg = $state(initial.weaveDepthDeg);
   let weaveStationsDeg = $state<WeaveStations>(initial.weaveStationsDeg);
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
-  let weaveReach = $state<WeaveReach>(initial.weaveReach);
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -214,7 +217,6 @@
       weaveDepthDeg,
       weaveStationsDeg: [...weaveStationsDeg] as WeaveStations,
       weavePhaseDeg,
-      weaveReach,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -291,16 +293,16 @@
       (-2 * u3 + 3 * u2) * p1 +
       (u3 - u2) * m1;
     // Extreme station combinations can overshoot the keys (standard
-    // Catmull-Rom); cap at the slider range so tan() stays sane.
+    // Catmull-Rom); cap at the slider range.
     return Math.max(-60, Math.min(60, interpolated));
   }
 
   // Angle→shift conversion, referenced to THE BODY ITSELF: the vertical
   // axis through the body center, which is the center of rotation the
-  // weave crosses. ±45° means the line from that axis to the grip sits at
-  // ±45° fore/aft — so the moment arm is the frontal-plane distance from
-  // the body axis to the hand point (the grid radius, 0.52m at a cardinal
-  // point), NOT the shoulder→hand arm.
+  // weave crosses. A station angle means the line from that axis to the
+  // grip sits at that fore/aft angle — so the moment arm is the
+  // frontal-plane distance from the body axis to the hand point (the grid
+  // radius, 0.52m at a cardinal point), NOT the shoulder→hand arm.
   //
   // WHERE ZERO LIVES: the rig parks wall-plane props AVATAR_GRID_OFFSET
   // (0.3m) downstage of the performer — the everyday holding plane. The
@@ -308,8 +310,8 @@
   // performer in half (head, shoulders, torso, calves), where the plane
   // sits when the arm extends straight out to the side. In weave mode the
   // parked offset is subtracted, so arm 0° drives the plane through the
-  // body, +45° downstage of it, −45° upstage of it — and the drawn grid
-  // rides along, bisecting the avatar at every crossing.
+  // body, a positive station downstage of it, a negative one upstage — and
+  // the drawn grid rides along, bisecting the avatar at every crossing.
 
   const weaveDeltaRad = $derived(
     ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
@@ -333,18 +335,12 @@
   );
   const effArmRad = $derived((effArmDeg * Math.PI) / 180);
 
-  // Grip z relative to the body's own bisecting plane, per reach mode.
-  const weaveZBodyM = $derived(
-    weaveReach === "arc"
-      ? Math.sin(effArmRad) * armLateralM
-      : Math.tan(effArmRad) * armLateralM
-  );
-  // Arc mode swings the grip on a circle about the body axis, so its
-  // sideways distance shortens as the fore/aft reach grows; rail mode pins
-  // it over the hand point.
-  const weaveLateralScale = $derived(
-    weaveAuto && weaveReach === "arc" ? Math.cos(effArmRad) : 1
-  );
+  // Grip z relative to the body's own bisecting plane. The fully extended
+  // arm swings the grip on a circle about the body axis, so z follows the
+  // sine of the arm angle and the sideways distance shortens by its cosine
+  // — at the 12–20° clearance angles both stay close to the lateral park.
+  const weaveZBodyM = $derived(Math.sin(effArmRad) * armLateralM);
+  const weaveLateralScale = $derived(weaveAuto ? Math.cos(effArmRad) : 1);
 
   // Consumers measure z from the PARKED plane (the rig's prop frame), so
   // weave mode folds the re-homing subtraction in here. Manual hand-travel
@@ -434,7 +430,7 @@
       `shift ${Math.round(weaveAuto ? weaveZBodyM * 100 : effTravelCm)}cm · ` +
       `stance ${stanceYawDeg}°` +
       (weaveAuto
-        ? ` · weave auto (${weaveReach} · stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}°)`
+        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}°)`
         : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
@@ -749,14 +745,6 @@
             onclick={() => (weaveAuto = !weaveAuto)}
           />
           {#if weaveAuto}
-            <SegmentedControl
-              options={WEAVE_REACH_OPTIONS}
-              value={weaveReach}
-              onchange={(next) => (weaveReach = next)}
-              size="sm"
-              color="red"
-              ariaLabel="Weave reach mode"
-            />
             <span class="weave-readout">
               arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)}
               cm · sweep {Math.round(effSweepDeg)}°
@@ -825,7 +813,7 @@
             </div>
           {/each}
           <datalist id="grip-lab-arm-ticks">
-            {#each [-60, -45, 0, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
+            {#each [-60, -45, -16, 0, 16, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
           </datalist>
 
           <div class="slider-control">
@@ -1064,7 +1052,7 @@
     color: var(--lab-muted);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    /* Worst case: "arm −60° · shift −90 cm · sweep 180°" — reserve it. */
+    /* Worst case: "arm −60° · shift −45 cm · sweep 180°" — reserve it. */
     min-width: 30ch;
   }
 
