@@ -1,18 +1,14 @@
-import type { Collected3DScene, StoredPerformerSettings } from "../domain/scene-3d-collection-types";
-import {
-  getScene3DEnvironmentId,
-  isGroupSaved,
-} from "../domain/scene-3d-collection-types";
+import type { Collected3DScene } from "../domain/scene-3d-collection-types";
+import { isGroupSaved } from "../domain/scene-3d-collection-types";
+import { buildScene3DPersistConfig } from "../domain/scene-3d-look";
 import {
   markViewer3DPresetIntent,
   writeViewer3DConfig,
 } from "$lib/shared/3d/state/viewer-3d-state.svelte";
-import type { Viewer3DPersistConfig } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
 import { createSequenceData, type SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import type { ViewerNavMode } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import {
   captureSettingsCheckpoint,
 } from "$lib/shared/collections/settings-checkpoint.svelte";
@@ -46,43 +42,8 @@ export function applyScene3DLook(scene: Collected3DScene): void {
 
   captureSettingsCheckpoint(scene.name);
 
-  // 1. Viewer-3d persistence keys, filtered by group. Per-performer cascade
-  //    overrides are split across groups: strip the fields whose group is off
-  //    so applying "performers only" doesn't smuggle prop/effort/effect data in.
-  const config: Partial<Viewer3DPersistConfig> = {};
-
-  if (saved("performers")) {
-    config.performers = snap.performers.map((p) => ({
-      position: p.position,
-      facingAngle: p.facingAngle,
-      // Stored plane strings are the Plane enum's string values; the viewer
-      // reads them back through the same untyped JSON path.
-      customBluePlane: p.customBluePlane as never,
-      customRedPlane: p.customRedPlane as never,
-      name: p.name ?? null,
-      ...(p.settings ? { settings: filterPerformerSettings(p.settings, saved) } : {}),
-    }));
-    config.selectedPerformerIndex = snap.selectedPerformerIndex;
-    config.activeFormation = snap.activeFormation as never;
-  }
-  if (saved("props")) {
-    config.defaultProp = snap.defaultSettings.prop;
-  }
-  if (saved("effects")) {
-    config.effectToggles = snap.effectToggles;
-  }
-  if (saved("scene")) {
-    config.environmentId = getScene3DEnvironmentId(snap);
-    config.oceanVariant = snap.scene.oceanVariant;
-  }
-  if (saved("camera")) {
-    config.camera = snap.camera;
-    config.navMode = snap.navMode as ViewerNavMode;
-    config.activePreset = snap.activePreset;
-    config.activeCameraPreset = snap.activeCameraPreset;
-    config.showGridLabels = snap.showGridLabels;
-    config.visiblePlanes = snap.visiblePlanes;
-  }
+  // 1. Viewer-3d persistence keys, filtered by group.
+  const config = buildScene3DPersistConfig(scene);
   writeViewer3DConfig(config);
 
   // 2. Scene-feature toggles (a fresh createSceneFeatureState reads this key).
@@ -110,18 +71,6 @@ export function applyScene3DLook(scene: Collected3DScene): void {
   // 5. Tell the next viewer mount this open was preset-sourced, so it restores
   //    prop identity verbatim instead of re-seeding it from the app prop.
   markViewer3DPresetIntent();
-}
-
-function filterPerformerSettings(
-  settings: StoredPerformerSettings,
-  saved: (g: "props" | "efforts" | "effects") => boolean,
-): StoredPerformerSettings {
-  return {
-    prop: saved("props") ? settings.prop : null,
-    staffLengthCm: saved("props") ? settings.staffLengthCm : null,
-    effortId: saved("efforts") ? settings.effortId : null,
-    effect: saved("effects") ? settings.effect : null,
-  };
 }
 
 /**
