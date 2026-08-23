@@ -3,32 +3,35 @@
   import {
     propFinishState,
     propHasFinishVariants,
+    propHasFanAppearanceOptions,
     type CameraStateSnapshot,
+    type FanBuild,
+    type FanCover,
+    type FanFrameColor,
     type PropFinish,
   } from "@austencloud/scene-3d";
   import { replaceState } from "$app/navigation";
-  import { onDestroy, onMount, untrack } from "svelte";
-  import { cubicOut } from "svelte/easing";
+  import { onDestroy, onMount, tick, untrack } from "svelte";
 
-  import { DURATION } from "$lib/shared/transitions/transitions";
-
-  import Viewer3DCanvas from "$lib/shared/3d/components/Viewer3DCanvas.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import {
+    clearCameraUrlPose,
+    readCameraUrlPose,
+    setCameraUrlPose,
+  } from "$lib/shared/3d/domain/camera-url-pose";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
-  import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
-  import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-  import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
-  import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
-  import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
+  import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import {
     LOOPType,
     Period,
   } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import {
+  import type {
     DifficultyLevel,
     GenerationMode,
     PropContinuity,
@@ -36,12 +39,30 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
+  import {
+    findScenePropFamily,
+    findScenePropFamilyByRepresentative,
+    SCENE_PROP_REPRESENTATIVES,
+    SCENE_PROP_TYPES,
+  } from "$lib/shared/3d/domain/scene-prop-catalog";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getPropTypeDisplayInfo } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropCompositionPreview from "$lib/shared/pictograph/prop/components/PropCompositionPreview.svelte";
   import { isEffectPreviewLoop } from "$lib/shared/effects/domain/effect-preview-loop-policy";
-  import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
-  import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { growFade, motionDuration } from "$lib/shared/transitions/motion";
+  import { createLayoutFlip } from "$lib/shared/transitions/layout-flip";
+  import PropBuildPicker from "./PropBuildPicker.svelte";
+  import {
+    fanBuildPreviewOptions,
+    fanCoverPreviewOptions,
+    fanFramePreviewOptions,
+    finishPreviewOptions,
+    propBuildPreviewImage,
+  } from "./prop-build-previews";
+
+  type Viewer3DCanvasComponent =
+    typeof import("$lib/shared/3d/components/Viewer3DCanvas.svelte").default;
 
   type ReviewAngle =
     | "front"
@@ -58,30 +79,14 @@
     target: CameraStateSnapshot["target"];
   }
 
-  const REVIEW_PROPS = [
-    PropType.CLUB,
-    PropType.FAN,
-    PropType.TRIAD,
-    PropType.MINIHOOP,
-    PropType.BUUGENG,
-    PropType.TRIGENG,
-    PropType.TRIQUETRA,
-    PropType.TRIQUETRA2,
-    PropType.CHICKEN,
-    // Big Chicken is not just small chicken scaled up: it is gripped through the
-    // middle instead of by the head, so it needs its own tile to review.
-    PropType.BIGCHICKEN,
-    PropType.DOUBLESTAR,
-    PropType.EIGHTRINGS,
-    PropType.TORCH,
-    PropType.DOUBLECONTACTBALL,
-    PropType.SWORD,
-    PropType.QUIAD,
-    PropType.CAPSULE_BATON,
-    PropType.FIRE_DOUBLE_STAFF,
-    PropType.POI,
-    PropType.GUITAR,
-  ] as const;
+  // The prop is the subject of this studio. Blossom remains enabled and loads
+  // into the already-visible sky and stage, but its 14 MB grove no longer keeps
+  // the performer and controls behind the loading curtain.
+  const INITIAL_REVEAL_DEFERRED_FEATURES = ["environment"] as const;
+  const ROTATED_LOOP_CACHE_KEY = "prop-studio:rotated-loop:v1";
+  const CIRCULAR_MODE = "circular" as GenerationMode;
+  const INTERMEDIATE_DIFFICULTY = "intermediate" as DifficultyLevel;
+  const CONTINUOUS_PROPS = "continuous" as PropContinuity;
 
   const REVIEW_CAMERAS: readonly ReviewCamera[] = [
     {
@@ -123,7 +128,7 @@
   ];
 
   function isReviewProp(value: string | null): value is PropType {
-    return REVIEW_PROPS.some((prop) => prop === value);
+    return SCENE_PROP_TYPES.some((prop) => prop === value);
   }
 
   /**
@@ -138,6 +143,10 @@
 
   const requestedProp = readParam("prop");
   const requestedAngle = readParam("angle");
+  const requestedCameraPose =
+    typeof window === "undefined"
+      ? null
+      : readCameraUrlPose(new URLSearchParams(window.location.search), 48);
   const initialProp = isReviewProp(requestedProp)
     ? requestedProp
     : PropType.CHICKEN;
@@ -146,10 +155,10 @@
     REVIEW_CAMERAS[1];
 
   const DEFAULT_CAMERA: CameraStateSnapshot = {
-    position: initialCamera.position,
+    position: requestedCameraPose?.position ?? initialCamera.position,
     rotation: { x: 0, y: 0, z: 0 },
-    target: initialCamera.target,
-    fov: 48,
+    target: requestedCameraPose?.target ?? initialCamera.target,
+    fov: requestedCameraPose?.fov ?? 48,
     timestamp: 0,
   };
 
@@ -174,9 +183,6 @@
   viewer.hideAllPlanes();
   setViewer3DContext(viewer);
 
-  const effectsConfig = createEffectsConfigState(undefined, { persist: false });
-  effectsConfig.setActiveEffect(null);
-  setEffectsConfigContext(effectsConfig);
   setScene3DRenderContext(createScene3DRenderState());
 
   let selectedProp = $state<PropType>(initialProp);
@@ -187,7 +193,7 @@
    * and the swap used to re-apply the active preset, which threw away the orbit
    * the user was in the middle of reading a prop from.
    */
-  let cameraIsFree = $state(false);
+  let cameraIsFree = $state(requestedCameraPose !== null);
   /**
    * The app's playback clock, not a local one. It owns the invariant this page
    * used to get wrong: step N's motion spans currentStep N to N+1, so a
@@ -202,39 +208,51 @@
    * light up the beat grid of whatever sequence Create has open behind it.
    */
   const animation = createAnimationPanelState({ ephemeral: true });
-  const playback = new AnimationPlaybackController(
-    new SequenceAnimationOrchestrator(new AnimationStateManager()),
-    new AnimationLoop(),
-    { syncSharedWorkspaceState: false }
-  );
-
-  let preloadedSequence = $state.raw<SequenceData | null>(null);
   let bpm = $state(76);
   let sceneReady = $state(false);
-  let loading = $state(true);
-  let preloading = $state(false);
+  let ViewerCanvasComponent = $state<Viewer3DCanvasComponent | null>(null);
+  let playback = $state<AnimationPlaybackController | null>(null);
+  let viewerModuleSettled = $state(false);
+  let initialSequenceSettled = $state(false);
   let error = $state("");
   let loopNumber = $state(0);
   let viewportWidth = $state(1600);
   let viewportHeight = $state(900);
   let generationToken = 0;
+  let playbackLoadPromise: Promise<AnimationPlaybackController> | null = null;
 
   const sequence = $derived(animation.sequenceData);
+  const loading = $derived(!viewerModuleSettled || !initialSequenceSettled);
   const currentStep = $derived(animation.currentStep);
   const playing = $derived(animation.isPlaying);
 
   const selectedLabel = $derived(getPropTypeDisplayInfo(selectedProp).label);
-  const currentLoopLabel = $derived(
-    sequence
-      ? `${sequence.steps.length}-count rotated LOOP`
-      : "Generating rotated LOOP"
-  );
+  const selectedFamily = $derived(findScenePropFamily(selectedProp));
+  const compactPlayback = $derived(viewportWidth < 1800);
 
   function syncUrl(): void {
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
     url.searchParams.set("prop", selectedProp);
-    url.searchParams.set("angle", activeAngle);
+    if (cameraIsFree) {
+      url.searchParams.delete("angle");
+    } else {
+      url.searchParams.set("angle", activeAngle);
+      clearCameraUrlPose(url);
+    }
+    replaceState(url, {});
+  }
+
+  function syncFreeCameraToUrl(snapshot: CameraStateSnapshot): void {
+    if (typeof window === "undefined" || !cameraIsFree) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("prop", selectedProp);
+    url.searchParams.delete("angle");
+    setCameraUrlPose(url, snapshot);
+
+    // This page reads its starting camera before constructing the viewer rather
+    // than reacting to every URL change, so the router-safe replacement lets the
+    // URL follow the view without feeding rounded coordinates back into it.
     replaceState(url, {});
   }
 
@@ -257,13 +275,6 @@
       undefined,
       false
     );
-  }
-
-  function chooseAngle(angle: ReviewAngle): void {
-    activeAngle = angle;
-    cameraIsFree = false;
-    syncUrl();
-    applyCamera();
   }
 
   /**
@@ -296,61 +307,144 @@
     syncUrl();
   }
 
-  /**
-   * Props that exist in a fire build and a practice build — a triad is steel
-   * and kevlar, or a printed hub with glow heads. Same reach, same notation.
-   */
-  const FINISHES: readonly { id: PropFinish; label: string }[] = [
-    { id: "fire", label: "Fire" },
-    { id: "day", label: "Day" },
-  ];
+  function chooseAuditProp(prop: PropType): void {
+    // Family tiles stay selected while their detail buttons change the model.
+    // Clicking one again should not throw the user back to its first variant.
+    if (selectedFamily?.representative === prop) return;
+    chooseProp(prop);
+  }
 
   function chooseFinish(finish: PropFinish): void {
     propFinishState.set(finish);
   }
 
+  function chooseFanBuild(build: FanBuild): void {
+    propFinishState.setFanBuild(build);
+  }
+
+  function chooseFanFrameColor(color: FanFrameColor): void {
+    propFinishState.setFanFrameColor(color);
+  }
+
+  function chooseFanCover(cover: FanCover): void {
+    propFinishState.setFanCover(cover);
+  }
+
   /**
-   * Only three props are built twice. Offering Fire/Day beside a staff is a
-   * switch wired to nothing, so the row is only here when it does something.
+   * Offering Fire/Day beside a staff is a switch wired to nothing, so the row
+   * is only here when the selected prop actually owns both builds.
    */
   const showFinishes = $derived(
     propHasFinishVariants(toScenePropType(selectedProp))
   );
+  const showFanAppearance = $derived(
+    propHasFanAppearanceOptions(toScenePropType(selectedProp))
+  );
+  const showFanFrameColors = $derived(
+    showFanAppearance && propFinishState.fanBuild === "day"
+  );
+  const showFanCover = $derived(
+    showFanAppearance && propFinishState.fanBuild !== "pictograph"
+  );
+  const showBuildControls = $derived(
+    showFinishes || showFanAppearance || selectedFamily !== undefined
+  );
+  // The outer crossfade belongs to actual panel replacement: moving between
+  // prop families. A subtype change keeps its family's primary picker alive so
+  // LayoutFlip can carry it to its new width instead of ghosting a second copy
+  // over the first one (Triad <-> Trigeng was the clearest offender).
+  const buildPanelKey = $derived(
+    selectedFamily?.representative ?? selectedProp
+  );
+  const buildLayoutSignature = $derived(
+    [
+      buildPanelKey,
+      selectedProp,
+      propFinishState.fanBuild,
+      showFinishes,
+      showFanFrameColors,
+      showFanCover,
+    ].join(":")
+  );
+  const fanBuildContext = $derived(
+    propFinishState.fanBuild === "day" ? "Day fan" : "Fire fan"
+  );
+  const finishOptions = $derived(finishPreviewOptions(selectedProp));
+  const fanBuildOptions = $derived(
+    fanBuildPreviewOptions(
+      propFinishState.fanFrameColor,
+      propFinishState.fanCover
+    )
+  );
+  const fanFrameOptions = $derived(
+    fanFramePreviewOptions(propFinishState.fanCover)
+  );
+  const fanCoverOptions = $derived(
+    fanCoverPreviewOptions(
+      propFinishState.fanBuild === "day" ? "day" : "fire",
+      propFinishState.fanFrameColor
+    )
+  );
+  const familyOptions = $derived(
+    selectedFamily?.variants.map((variant) => ({
+      ...variant,
+      image: propBuildPreviewImage(variant.id),
+    })) ?? []
+  );
 
-  /** Matches the column gap `.deck-top` hands each group as a right margin. */
-  const DECK_COLUMN_GAP = 30;
+  let buildStageElement: HTMLDivElement | null = null;
+  let previousBuildPanelKey: PropType | null = null;
+  let previousBuildLayoutSignature: string | null = null;
+  let buildLayoutTransitionToken = 0;
 
-  /**
-   * Collapses a control group along the row instead of popping it out of it.
-   * Width AND the group's own gap animate together, so the neighbours slide
-   * over rather than jumping, and nothing is left holding an empty column.
-   */
-  function collapseInline(node: HTMLElement) {
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const width = node.getBoundingClientRect().width;
+  const buildLayoutFlip = createLayoutFlip({
+    getRoot: () => buildStageElement,
+    groups: [
+      {
+        selector: "[data-build-layout-key]",
+        datasetKey: "buildLayoutKey",
+      },
+    ],
+    getDuration: () => motionDuration(DURATION.emphasis),
+  });
 
-    return {
-      duration: reduced ? 0 : DURATION.emphasis,
-      easing: cubicOut,
-      css: (t: number, u: number) =>
-        `overflow: hidden;` +
-        `width: ${t * width}px;` +
-        `margin-right: ${t * DECK_COLUMN_GAP}px;` +
-        `opacity: ${t};` +
-        `transform: translateY(${u * 6}px);`,
-    };
-  }
+  // Capture before Svelte recomposes a family's options, then animate the
+  // surviving controls from their old geometry to the new one. New/removed
+  // controls own their entrance/exit separately through the shared motion
+  // primitives below.
+  $effect.pre(() => {
+    const panelKey = buildPanelKey;
+    const signature = buildLayoutSignature;
+    const samePanel = previousBuildPanelKey === panelKey;
+    const changed =
+      previousBuildLayoutSignature !== null &&
+      previousBuildLayoutSignature !== signature;
+
+    previousBuildPanelKey = panelKey;
+    previousBuildLayoutSignature = signature;
+    if (!samePanel || !changed || !buildStageElement) return;
+
+    const captured = buildLayoutFlip.capture();
+    const token = ++buildLayoutTransitionToken;
+    void tick().then(() => {
+      if (token !== buildLayoutTransitionToken) return;
+      if (captured) buildLayoutFlip.play();
+    });
+  });
 
   async function generateRotatedLoop(): Promise<SequenceData> {
+    const [{ getGenerationOrchestrator }, { orientationCycleExtender }] =
+      await Promise.all([
+        import("$lib/features/create/generate/shared/get-generation-orchestrator"),
+        import("$lib/features/create/generate/circular/services/orientation-cycle-extender"),
+      ]);
     const generated = await getGenerationOrchestrator().generateSequence({
-      mode: GenerationMode.CIRCULAR,
+      mode: CIRCULAR_MODE,
       length: 16,
       gridMode: GridMode.DIAMOND,
       propType: PropType.STAFF,
-      difficulty: DifficultyLevel.INTERMEDIATE,
-      propContinuity: PropContinuity.CONTINUOUS,
+      difficulty: INTERMEDIATE_DIFFICULTY,
+      propContinuity: CONTINUOUS_PROPS,
       turnIntensity: 1,
       loopType: LOOPType.ROTATED,
       period: Period.QUARTERED,
@@ -359,46 +453,77 @@
     if (!isEffectPreviewLoop(extended)) {
       throw new Error("The generated motion did not close cleanly.");
     }
+    cacheRotatedLoop(extended);
     return extended;
   }
 
-  async function preloadNextLoop(): Promise<void> {
-    if (preloading || preloadedSequence) return;
-    preloading = true;
-    try {
-      preloadedSequence = await generateRotatedLoop();
-    } catch (cause: unknown) {
-      error =
-        cause instanceof Error
-          ? cause.message
-          : "The next LOOP could not be generated.";
-    } finally {
-      preloading = false;
-    }
+  /**
+   * The production playback owner is still used here, but it does not belong
+   * on the route's critical import path. Its orchestrator reaches application
+   * settings, which in turn reaches persistence, auth, analytics, and presence.
+   * Starting that branch beside the viewer makes refresh pay both costs once,
+   * concurrently, instead of waiting for the whole app branch before the 3D
+   * branch can even begin.
+   */
+  function loadPlaybackController(): Promise<AnimationPlaybackController> {
+    playbackLoadPromise ??= Promise.all([
+      import("$lib/shared/animation-engine/services/animation-playback-controller"),
+      import("$lib/shared/animation-engine/services/animation-loop"),
+      import("$lib/shared/animation-engine/services/animation-state-manager"),
+      import("$lib/shared/animation-engine/services/sequence-animation-orchestrator"),
+    ]).then(
+      ([
+        { AnimationPlaybackController },
+        { AnimationLoop },
+        { AnimationStateManager },
+        { SequenceAnimationOrchestrator },
+      ]) =>
+        new AnimationPlaybackController(
+          new SequenceAnimationOrchestrator(new AnimationStateManager()),
+          new AnimationLoop(),
+          { syncSharedWorkspaceState: false }
+        )
+    );
+
+    return playbackLoadPromise;
   }
 
   /**
-   * Hand the prepared LOOP to the clock rather than watching for the end here.
-   * The controller consumes this inside the frame that crosses the boundary, so
-   * the closing step and the next LOOP's opening step are sampled before the
-   * same paint: the props run out of one LOOP and into the next with no gap.
+   * A refresh should not pay for Create's generator graph and produce a second
+   * random LOOP before the studio can open. Only validated, JSON-safe preview
+   * loops cross this boundary; corrupt or stale entries are discarded and the
+   * normal generator path takes over.
    */
-  playback.onSequenceBoundary(() => {
-    const next = preloadedSequence;
-    if (!next) return null;
-    return {
-      sequence: next,
-      accept: () => {
-        preloadedSequence = null;
-        loopNumber += 1;
-        void preloadNextLoop();
-      },
-    };
-  });
+  function readCachedRotatedLoop(): SequenceData | null {
+    if (typeof window === "undefined") return null;
+
+    try {
+      const serialized = sessionStorage.getItem(ROTATED_LOOP_CACHE_KEY);
+      if (!serialized) return null;
+      const cached = JSON.parse(serialized) as SequenceData;
+      if (isEffectPreviewLoop(cached)) return cached;
+      sessionStorage.removeItem(ROTATED_LOOP_CACHE_KEY);
+    } catch {
+      sessionStorage.removeItem(ROTATED_LOOP_CACHE_KEY);
+    }
+
+    return null;
+  }
+
+  function cacheRotatedLoop(sequence: SequenceData): void {
+    if (typeof window === "undefined") return;
+
+    try {
+      sessionStorage.setItem(ROTATED_LOOP_CACHE_KEY, JSON.stringify(sequence));
+    } catch {
+      // Storage can be unavailable or full. Generation still succeeded, so the
+      // studio remains usable and simply regenerates on the next refresh.
+    }
+  }
 
   /** Start a LOOP from the top. The first one, and the deck's own swap button. */
   function installSequence(next: SequenceData): void {
-    if (!playback.initialize(next, animation)) {
+    if (!playback?.initialize(next, animation)) {
       error = "The generated motion could not be played.";
       return;
     }
@@ -410,20 +535,22 @@
     // view survives the swap — which is the whole point of the fix.
   }
 
+  // A validated LOOP repeats itself. Never replace it at a playback boundary:
+  // two independently closed LOOPs can still begin from different poses.
   async function advanceLoop(): Promise<void> {
     try {
-      const next = preloadedSequence ?? (await generateRotatedLoop());
-      preloadedSequence = null;
+      const [next, controller] = await Promise.all([
+        generateRotatedLoop(),
+        loadPlaybackController(),
+      ]);
+      playback ??= controller;
       installSequence(next);
       error = "";
-      void preloadNextLoop();
     } catch (cause: unknown) {
       error =
         cause instanceof Error
           ? cause.message
           : "A new LOOP could not be generated.";
-    } finally {
-      loading = false;
     }
   }
 
@@ -443,8 +570,12 @@
 
   /** Tempo is the clock's, not a number this page multiplies by itself. */
   $effect(() => {
-    playback.setSpeed(bpm / 60);
+    playback?.setSpeed(bpm / 60);
   });
+
+  function handleBpmChange(nextBpm: number): void {
+    bpm = nextBpm;
+  }
 
   function handleSceneReady(ready: boolean): void {
     sceneReady = ready;
@@ -459,27 +590,46 @@
 
   onMount(() => {
     const token = ++generationToken;
-    void generateRotatedLoop()
-      .then((initial) => {
+    const cachedSequence = readCachedRotatedLoop();
+    const initialSequencePromise = cachedSequence
+      ? Promise.resolve(cachedSequence)
+      : generateRotatedLoop();
+
+    void import("$lib/shared/3d/components/Viewer3DCanvas.svelte")
+      .then(({ default: component }) => {
         if (token !== generationToken) return;
-        installSequence(initial);
-        loading = false;
-        void preloadNextLoop();
+        ViewerCanvasComponent = component;
+        viewerModuleSettled = true;
       })
       .catch((cause: unknown) => {
         if (token !== generationToken) return;
-        loading = false;
+        viewerModuleSettled = true;
         error =
           cause instanceof Error
             ? cause.message
-            : "The first LOOP could not be generated.";
+            : "The 3D viewer could not be loaded.";
+      });
+
+    void Promise.all([loadPlaybackController(), initialSequencePromise])
+      .then(([controller, initial]) => {
+        if (token !== generationToken) return;
+        playback = controller;
+        installSequence(initial);
+        initialSequenceSettled = true;
+      })
+      .catch((cause: unknown) => {
+        if (token !== generationToken) return;
+        initialSequenceSettled = true;
+        error =
+          cause instanceof Error
+            ? cause.message
+            : "The first LOOP could not be prepared.";
       });
   });
 
   onDestroy(() => {
     generationToken += 1;
-    playback.offSequenceBoundary();
-    playback.dispose(animation);
+    playback?.dispose(animation);
     animation.dispose();
     viewer.dispose();
   });
@@ -494,7 +644,7 @@
   <title>3D prop studio</title>
   <meta
     name="description"
-    content="Inspect a prop from six camera angles while a performer cycles through generated rotated LOOPs."
+    content="Inspect and configure real 3D props while a performer cycles through generated rotated LOOPs."
   />
 </svelte:head>
 
@@ -508,7 +658,7 @@
   data-prop-studio-total={animation.totalSteps}
 >
   <section class="stage" aria-label="Live 3D prop review">
-    {#if sequence}
+    {#if sequence && ViewerCanvasComponent}
       <!--
         The wrapper exists so a drag or wheel on the SCENE marks the camera as
         the user's, while clicks on the deck overlay below do not.
@@ -521,7 +671,7 @@
         onpointercancel={sceneDragEnd}
         onwheel={() => (cameraIsFree = true)}
       >
-        <Viewer3DCanvas
+        <ViewerCanvasComponent
           sequenceData={sequence}
           {currentStep}
           isPlaying={playing}
@@ -531,7 +681,10 @@
           hideOverlays
           hideSceneMarkers
           hidePerformerBadges
+          enableEffects={false}
+          initialRevealDeferredFeatures={INITIAL_REVEAL_DEFERRED_FEATURES}
           onSceneReadyChange={handleSceneReady}
+          onCameraStateChange={syncFreeCameraToUrl}
         />
       </div>
     {/if}
@@ -539,9 +692,9 @@
     <div class="stage-shade" aria-hidden="true"></div>
 
     <header class="title-block">
-      <p class="eyebrow"><span class:ready={sceneReady}></span>Prop workshop</p>
-      <h1>{selectedLabel}</h1>
-      <p>{currentLoopLabel}. LOOP #{loopNumber || 1}.</p>
+      <Crossfade key={selectedLabel} duration={DURATION.normal}>
+        <h1>{selectedLabel}</h1>
+      </Crossfade>
     </header>
 
     {#if loading}
@@ -561,107 +714,207 @@
 
     <aside class="review-deck" aria-label="Prop review controls">
       <div class="deck-top">
-        <div class="control-group">
-          <span class="control-label">
-            Camera
-            <!-- Always in the DOM so switching to free orbit shifts nothing. -->
-            <em class:shown={cameraIsFree}>Free orbit</em>
-          </span>
-          <div class="button-row">
-            {#each REVIEW_CAMERAS as camera}
-              {@const on = !cameraIsFree && activeAngle === camera.id}
-              <button
-                type="button"
-                class:active={on}
-                aria-pressed={on}
-                onclick={() => chooseAngle(camera.id)}
+        <div
+          bind:this={buildStageElement}
+          class="build-stage"
+          aria-hidden={!showBuildControls}
+          inert={!showBuildControls}
+        >
+          <Crossfade
+            key={buildPanelKey}
+            duration={DURATION.normal}
+            animateHeight
+          >
+            {#if showFanAppearance}
+              <div
+                class="fan-build-layout"
+                class:has-customization={showFanFrameColors || showFanCover}
               >
-                {camera.label}
-              </button>
-            {/each}
-          </div>
+                <div
+                  class="fan-build-primary"
+                  data-build-layout-key="fan-build"
+                >
+                  <PropBuildPicker
+                    label="Build"
+                    value={propFinishState.fanBuild}
+                    options={fanBuildOptions}
+                    onchange={chooseFanBuild}
+                  />
+                </div>
+
+                {#if showFanFrameColors || showFanCover}
+                  <section
+                    class="fan-customization"
+                    aria-label={`${fanBuildContext} options`}
+                    transition:growFade={{
+                      duration: DURATION.normal,
+                      axis: "y",
+                    }}
+                  >
+                    <header class="customization-heading">
+                      <span>Optional add-ons</span>
+                      <Crossfade key={fanBuildContext} duration={DURATION.fast}>
+                        <strong>{fanBuildContext}</strong>
+                      </Crossfade>
+                    </header>
+                    <div
+                      class="fan-modifier-grid"
+                      class:has-frame-color={showFanFrameColors}
+                    >
+                      {#if showFanFrameColors}
+                        <div
+                          class="fan-modifier frame-color-modifier"
+                          transition:growFade={{
+                            duration: DURATION.normal,
+                            axis: "y",
+                          }}
+                        >
+                          <PropBuildPicker
+                            label="Frame color"
+                            value={propFinishState.fanFrameColor}
+                            options={fanFrameOptions}
+                            onchange={chooseFanFrameColor}
+                            density="secondary"
+                          />
+                        </div>
+                      {/if}
+                      {#if showFanCover}
+                        <div
+                          class="fan-modifier cover-modifier"
+                          data-build-layout-key="fan-cover"
+                        >
+                          <PropBuildPicker
+                            label="Wick cover"
+                            value={propFinishState.fanCover}
+                            options={fanCoverOptions}
+                            onchange={chooseFanCover}
+                            density="secondary"
+                          />
+                        </div>
+                      {/if}
+                    </div>
+                  </section>
+                {/if}
+              </div>
+            {:else if showBuildControls}
+              <div class="build-controls" class:has-finish={showFinishes}>
+                {#if selectedFamily}
+                  <div
+                    class="build-picker primary family-picker"
+                    data-build-layout-key="family-picker"
+                  >
+                    <PropBuildPicker
+                      label={selectedFamily.controlLabel}
+                      value={selectedProp}
+                      options={familyOptions}
+                      onchange={chooseProp}
+                    />
+                  </div>
+                  {#if showFinishes}
+                    <div
+                      class="build-picker secondary finish-picker"
+                      transition:growFade={{
+                        duration: DURATION.normal,
+                        axis: "y",
+                      }}
+                    >
+                      <PropBuildPicker
+                        label="Finish"
+                        value={propFinishState.finish}
+                        options={finishOptions}
+                        onchange={chooseFinish}
+                        density="secondary"
+                      />
+                    </div>
+                  {/if}
+                {:else if showFinishes}
+                  <div
+                    class="build-picker primary solo-finish-picker"
+                    data-build-layout-key="solo-finish"
+                  >
+                    <PropBuildPicker
+                      label="Finish"
+                      value={propFinishState.finish}
+                      options={finishOptions}
+                      onchange={chooseFinish}
+                    />
+                  </div>
+                {/if}
+              </div>
+            {:else}
+              <div class="build-controls-empty" aria-hidden="true"></div>
+            {/if}
+          </Crossfade>
         </div>
 
-        <!--
-          Local buttons rather than SegmentedControl: the Camera and Build rows
-          are the same single-select interaction and are already built this way,
-          so one shared control among two hand-built rows would read as a mistake
-          on this harness.
-        -->
-        {#if showFinishes}
-          <div class="control-group build-group" transition:collapseInline>
-            <span class="control-label">Build</span>
-            <div class="button-row">
-              {#each FINISHES as finish}
-                <button
-                  type="button"
-                  class:active={propFinishState.finish === finish.id}
-                  aria-pressed={propFinishState.finish === finish.id}
-                  onclick={() => chooseFinish(finish.id)}
-                >
-                  {finish.label}
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/if}
-
-        <div class="control-group playback-group">
+        <div
+          class="control-group playback-group"
+          class:compact={compactPlayback}
+        >
           <span class="control-label">Playback</span>
           <div class="transport-row">
+            <div class="transport-cell">
+              <TransportControls
+                isPlaying={playing}
+                onPlaybackToggle={() => playback?.togglePlayback()}
+              />
+            </div>
+            <div class="tempo-cell">
+              <TempoControl
+                {bpm}
+                onBpmChange={handleBpmChange}
+                showPractice={false}
+                presetsMode={compactPlayback ? "popover" : "inline"}
+              />
+            </div>
             <button
+              class="new-loop-button"
               type="button"
-              class="transport"
-              aria-pressed={!playing}
-              onclick={() => playback.togglePlayback()}
+              onclick={() => void advanceLoop()}
             >
-              {playing ? "Pause" : "Play"}
+              <i class="fas fa-rotate" aria-hidden="true"></i>
+              <span>New LOOP</span>
             </button>
-            <label>
-              <span>Tempo</span>
-              <input type="range" min="35" max="110" step="1" bind:value={bpm} />
-              <strong>{bpm} BPM</strong>
-            </label>
-            <button type="button" onclick={() => void advanceLoop()}>
-              New rotated LOOP
-            </button>
-            <span class="preload-state" aria-live="polite">
-              {preloading
-                ? "Preparing next LOOP"
-                : preloadedSequence
-                  ? "Next LOOP ready"
-                  : "Waiting for first LOOP"}
-            </span>
           </div>
         </div>
       </div>
 
       <!--
-        A grid, not a row. Seventeen props in one flex line collapsed every
+        A grid, not a row. Fourteen prop families in one flex line collapsed every
         button to the 44px touch floor and clipped thirteen of the labels, which
         is the opposite of what an audit surface is for. Column counts are pinned
         per tier and never leave a row of one (17 % cols != 1).
       -->
       <div class="control-group prop-group">
-        <span class="control-label">Audit prop</span>
+        <span class="control-label">Props</span>
         <div class="prop-grid" role="group" aria-label="Prop to audit">
-          {#each REVIEW_PROPS as prop}
+          {#each SCENE_PROP_REPRESENTATIVES as prop}
+            {@const family = findScenePropFamilyByRepresentative(prop)}
+            {@const active = family
+              ? selectedFamily?.representative === prop
+              : selectedProp === prop}
             <button
               type="button"
               class="prop-tile"
-              class:active={selectedProp === prop}
-              aria-pressed={selectedProp === prop}
-              onclick={() => chooseProp(prop)}
+              class:active
+              aria-pressed={active}
+              onclick={() => chooseAuditProp(prop)}
             >
               <span class="tile-art">
-                <PropCompositionPreview propType={prop} size={34} darkBackground />
+                <PropCompositionPreview
+                  propType={prop}
+                  size={34}
+                  darkBackground
+                  useSavedOverrides={false}
+                />
               </span>
-              <span class="tile-label">{getPropTypeDisplayInfo(prop).label}</span>
+              <span class="tile-label"
+                >{family?.tileLabel ?? getPropTypeDisplayInfo(prop).label}</span
+              >
             </button>
           {/each}
         </div>
       </div>
-
     </aside>
   </section>
 </main>
@@ -708,44 +961,16 @@
     pointer-events: none;
   }
 
-  .eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0 0 6px;
-    color: rgba(255, 255, 255, 0.58);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  .eyebrow span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--semantic-warning, #f6bb42);
-    box-shadow: 0 0 10px currentColor;
-  }
-
-  .eyebrow span.ready {
-    background: var(--semantic-success, #4fd79d);
-  }
-
   h1 {
     margin: 0;
-    font-size: clamp(34px, 5cqw, 72px);
-    line-height: 0.94;
-    letter-spacing: -0.045em;
-  }
-
-  .title-block > p:last-child {
-    margin: 10px 0 0;
-    color: rgba(255, 255, 255, 0.68);
-    font-size: var(--font-size-min, 14px);
+    font-size: clamp(30px, 3cqw, 52px);
+    line-height: 1;
+    letter-spacing: -0.035em;
   }
 
   .review-deck {
+    --studio-control-size: 50px;
+    --studio-transport-size: 68px;
     position: absolute;
     right: clamp(12px, 2.2cqw, 30px);
     bottom: clamp(12px, 2.4cqh, 28px);
@@ -760,40 +985,142 @@
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.36);
   }
 
-  /* Camera and Build sit side by side and size to their own content, so neither
-     ends up marooned in a 1300px-wide grid cell at 4K. */
   .deck-top {
-    display: flex;
-    flex-wrap: wrap;
-    /* Column gap lives on the groups themselves: a hidden Build has to take its
-       own spacing with it, and a `gap` cannot be animated per item. */
-    gap: 12px 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+    gap: clamp(18px, 2cqw, 30px);
   }
 
   .control-group {
     min-width: 0;
   }
 
-  .deck-top > .control-group {
-    margin-right: 30px;
+  .build-stage {
+    min-width: 0;
+    align-self: end;
   }
 
-  .deck-top > .control-group:last-child {
-    margin-right: 0;
+  .build-stage :global(.crossfade) {
+    min-width: 0;
   }
 
-  /* Two short labels, and it has to clip cleanly while it collapses. */
-  .build-group .button-row {
-    flex-wrap: nowrap;
+  .build-controls {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+    min-width: 0;
   }
 
-  /*
-    Takes the rest of the line instead of leaving a dead column beside Build,
-    and its own basis is small enough that Build appearing squeezes the tempo
-    row rather than wrapping the whole group onto a second line.
-  */
+  .build-controls-empty {
+    height: 0;
+  }
+
+  .build-picker {
+    min-width: 0;
+  }
+
+  .family-picker,
+  .solo-finish-picker {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .build-controls.has-finish .family-picker {
+    grid-column: span 8;
+  }
+
+  .finish-picker {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+
+  .fan-build-layout {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .fan-build-primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .fan-build-layout.has-customization .fan-build-primary {
+    grid-column: span 8;
+  }
+
+  .fan-customization {
+    grid-column: 9 / -1;
+    grid-row: 1;
+  }
+
+  .fan-build-primary,
+  .fan-modifier {
+    min-width: 0;
+  }
+
+  .fan-customization {
+    min-width: 0;
+    padding: 10px 12px 12px;
+    border: 1px solid color-mix(in srgb, var(--studio-accent) 22%, transparent);
+    border-radius: var(--settings-border-radius-lg, 16px);
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--studio-accent) 8%, transparent),
+        transparent 58%
+      ),
+      rgba(255, 255, 255, 0.025);
+  }
+
+  .customization-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: color-mix(in srgb, var(--studio-accent) 66%, white);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .customization-heading strong {
+    color: rgba(255, 255, 255, 0.52);
+    font-size: 0.92em;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .fan-modifier-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .cover-modifier {
+    grid-column: 1 / -1;
+  }
+
+  .fan-modifier-grid.has-frame-color .frame-color-modifier {
+    grid-column: 1;
+  }
+
+  .fan-modifier-grid.has-frame-color .cover-modifier {
+    grid-column: 2;
+  }
+
   .playback-group {
-    flex: 1 1 460px;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    justify-self: end;
   }
 
   .control-label {
@@ -808,28 +1135,8 @@
     text-transform: uppercase;
   }
 
-  .control-label em {
-    color: var(--studio-accent);
-    font-style: normal;
-    visibility: hidden;
-  }
-
-  .control-label em.shown {
-    visibility: visible;
-  }
-
-  .button-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-  }
-
-  /*
-    Without this the row's 44px min-height meets flex-shrink and every label gets
-    guillotined. Buttons keep their own width and wrap instead.
-  */
-  .button-row > button {
-    flex: 0 0 auto;
+  .playback-group .control-label {
+    color: color-mix(in srgb, var(--studio-accent) 78%, white);
   }
 
   .prop-grid {
@@ -838,9 +1145,9 @@
   }
 
   /*
-    Pinned column counts, never `auto-fill`: seventeen is a known count, and
+    Pinned column counts, never `auto-fill`: fourteen is a known count, and
     auto-fill would emit more and thinner tiles as the screen grew. Every count
-    here satisfies 17 % cols != 1, so no tier ever strands a row of one.
+    here satisfies 14 % cols != 1, so no tier ever strands a row of one.
     Width-only tiers — the compact block below owns what a SHORT screen drops.
   */
   .prop-grid {
@@ -861,10 +1168,9 @@
   */
   @container (min-width: 1200px) {
     .prop-grid {
-      grid-template-columns: repeat(9, minmax(0, 1fr));
+      grid-template-columns: repeat(7, minmax(0, 1fr));
     }
   }
-
 
   .prop-tile {
     display: flex;
@@ -917,11 +1223,20 @@
     font-weight: 650;
     white-space: nowrap;
     cursor: pointer;
+    transition:
+      transform var(--duration-fast, 150ms) ease,
+      background var(--duration-fast, 150ms) ease,
+      border-color var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      box-shadow var(--duration-fast, 150ms) ease;
   }
 
-  button:hover {
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
-    color: #fff;
+  @media (hover: hover) and (pointer: fine) {
+    button:hover {
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+      color: #fff;
+      transform: translateY(-1px);
+    }
   }
 
   button.active {
@@ -936,50 +1251,172 @@
       color-mix(in srgb, var(--studio-accent) 38%, transparent);
   }
 
-  button:focus-visible,
-  input:focus-visible {
+  button:focus-visible {
     outline: 2px solid var(--studio-accent);
     outline-offset: 2px;
   }
 
   .transport-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .transport-row > button {
-    flex: 0 0 auto;
-  }
-
-  .transport {
-    min-width: 76px;
-  }
-
-  label {
     display: grid;
-    /* Capped so Camera + Build + Playback still share one line at 1440x900 —
-       a second line there cost 72px of stage. */
-    grid-template-columns: auto minmax(90px, 170px) auto;
+    grid-template-areas: "tempo transport next";
+    grid-template-columns: max-content auto max-content;
     align-items: center;
-    gap: 10px;
-    color: rgba(255, 255, 255, 0.65);
-    font-size: var(--font-size-min, 14px);
+    gap: clamp(12px, 1.5cqw, 28px);
   }
 
-  input[type="range"] {
-    accent-color: var(--studio-accent);
+  /* At laptop widths the complete BPM editor lives behind its BPM button.
+     That preserves every tempo action without letting three preset chips drift
+     underneath the primary play control. */
+  .playback-group.compact .transport-row {
+    grid-template-columns: max-content auto max-content;
   }
 
-  .preload-state {
-    /* Rides the right edge, so the width the group grows into is used rather
-       than left as a gap. */
-    margin-left: auto;
-    min-width: 130px;
-    text-align: right;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: var(--font-size-compact, 12px);
+  @container (min-width: 761px) and (min-height: 621px) {
+    .playback-group.compact .tempo-cell :global(.tempo-wrapper) {
+      position: relative;
+    }
+
+    .playback-group.compact .tempo-cell :global(.bpm-popover) {
+      position: absolute;
+      right: 0;
+      bottom: calc(100% + 12px);
+      left: 0;
+      z-index: 2;
+      min-width: 280px;
+    }
+  }
+
+  .transport-cell {
+    grid-area: transport;
+    justify-self: center;
+    --min-touch-target: var(--studio-control-size);
+  }
+
+  .transport-cell :global(.transport-controls) {
+    margin: 0;
+  }
+
+  .transport-cell :global(.play-pause-btn.large) {
+    width: var(--studio-transport-size);
+    height: var(--studio-transport-size);
+    border: 2px solid color-mix(in srgb, var(--studio-accent) 70%, white);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--studio-accent) 92%, white),
+      var(--studio-accent)
+    );
+    color: #06101c;
+    font-size: 1.35rem;
+    box-shadow:
+      0 10px 28px color-mix(in srgb, var(--studio-accent) 38%, transparent),
+      0 0 0 5px color-mix(in srgb, var(--studio-accent) 12%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  }
+
+  .transport-cell :global(.play-pause-btn.large.playing) {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-success, #4fd79d) 78%,
+      white
+    );
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--semantic-success, #4fd79d) 86%, white),
+      var(--semantic-success, #4fd79d)
+    );
+    color: #06150f;
+    box-shadow:
+      0 10px 28px
+        color-mix(in srgb, var(--semantic-success, #4fd79d) 34%, transparent),
+      0 0 0 5px
+        color-mix(in srgb, var(--semantic-success, #4fd79d) 12%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .transport-cell :global(.play-pause-btn.large:hover:not(:disabled)) {
+      transform: translateY(-2px) scale(1.04);
+      filter: saturate(1.12) brightness(1.06);
+    }
+  }
+
+  .tempo-cell {
+    grid-area: tempo;
+    min-width: 0;
+    --min-touch-target: var(--studio-control-size);
+  }
+
+  .tempo-cell :global(.tempo-control) {
+    justify-content: flex-start;
+  }
+
+  .tempo-cell :global(.adjust-btn) {
+    border-color: color-mix(in srgb, var(--studio-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--studio-accent) 8%, var(--studio-card));
+    color: rgba(255, 255, 255, 0.82);
+  }
+
+  .tempo-cell :global(.bpm-display) {
+    min-width: 82px;
+    min-height: calc(var(--studio-control-size) + 4px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .tempo-cell :global(.preset-btn) {
+    min-height: var(--studio-control-size);
+    border-color: color-mix(in srgb, var(--studio-stroke) 82%, transparent);
+  }
+
+  .new-loop-button {
+    grid-area: next;
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: calc(var(--studio-control-size) + 4px);
+    padding-inline: 20px;
+    border-color: color-mix(in srgb, var(--studio-accent) 58%, white);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--studio-accent) 30%, var(--studio-card)),
+      color-mix(in srgb, var(--studio-accent) 16%, var(--studio-card))
+    );
+    color: #fff;
+    box-shadow:
+      0 7px 20px color-mix(in srgb, var(--studio-accent) 18%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  }
+
+  .new-loop-button i {
+    color: color-mix(in srgb, var(--studio-accent) 68%, white);
+    font-size: 1rem;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .new-loop-button:hover {
+      border-color: color-mix(in srgb, var(--studio-accent) 80%, white);
+      background: linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--studio-accent) 40%, var(--studio-card)),
+        color-mix(in srgb, var(--studio-accent) 22%, var(--studio-card))
+      );
+      box-shadow:
+        0 10px 26px color-mix(in srgb, var(--studio-accent) 28%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    }
+  }
+
+  .prop-tile.active {
+    border-color: color-mix(in srgb, var(--studio-accent) 82%, white);
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--studio-accent) 24%, var(--studio-card)),
+      color-mix(in srgb, var(--studio-accent) 12%, var(--studio-card))
+    );
+    box-shadow:
+      0 5px 16px color-mix(in srgb, var(--studio-accent) 18%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--studio-accent) 45%, transparent);
   }
 
   .status-card {
@@ -1023,26 +1460,19 @@
   }
 
   /*
-    At 4K@100% nothing is scaling for you, so the deck steps its own scale AND
-    recomposes: the three control groups stack into their own column so the prop
-    grid stays a sane width. Seventeen is prime, so some row is always partial —
-    nine columns leave one empty cell, twelve leave seven, which reads as a
-    stranded row. Nine it is.
+    At 4K@100% nothing is scaling for you, so the deck and the controls step up
+    together. The first row keeps using the full width instead of collapsing
+    into a narrow controls column beside the prop grid.
     Placed after the base `button` rule on purpose — a container query carries no
     extra specificity, so an earlier block would simply lose to it.
   */
   @container (min-width: 2600px) {
     .review-deck {
       --tile-art: 46px;
-      grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-      align-items: start;
+      --studio-control-size: 60px;
+      --studio-transport-size: 84px;
       padding: 22px;
-      gap: 18px 34px;
-    }
-
-    .deck-top {
-      flex-direction: column;
-      gap: 14px;
+      gap: 18px;
     }
 
     button {
@@ -1051,10 +1481,30 @@
       font-size: 18px;
     }
 
-    .control-label,
-    .preload-state,
-    label {
+    .control-label {
       font-size: 15px;
+    }
+
+    .transport-cell :global(.play-pause-btn.large) {
+      font-size: 1.65rem;
+    }
+
+    .prop-grid {
+      grid-template-columns: repeat(14, minmax(0, 1fr));
+    }
+  }
+
+  @container (max-width: 1360px) {
+    .deck-top {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .playback-group {
+      justify-self: stretch;
+    }
+
+    .transport-row {
+      grid-template-columns: max-content minmax(0, 1fr) max-content;
     }
   }
 
@@ -1063,13 +1513,9 @@
       max-width: calc(100% - 36px);
     }
 
-    h1 {
-      font-size: clamp(30px, 9cqw, 48px);
-    }
-
     .review-deck {
       gap: 12px;
-      max-height: 47cqh;
+      max-height: 58cqh;
       overflow-y: auto;
     }
 
@@ -1078,21 +1524,68 @@
     }
 
     .deck-top {
-      gap: 12px 18px;
+      gap: 12px;
     }
 
-    label {
-      flex: 1 1 240px;
+    .family-picker,
+    .build-controls.has-finish .family-picker,
+    .solo-finish-picker {
+      grid-column: 1 / -1;
     }
 
-    /*
-      The deck has to scroll on a 960x412 fold. Put the thing being audited at
-      the top of it, so all seventeen props are visible without scrolling and the
-      half-shown Camera group below is its own scroll affordance. Before this the
-      visible deck was controls only and the prop grid was entirely past the fold.
-    */
-    .prop-group {
-      order: -1;
+    .finish-picker {
+      grid-column: 1 / span 6;
+      grid-row: 2;
+    }
+
+    .transport-row {
+      grid-template-areas:
+        "transport next"
+        "tempo tempo";
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .transport-cell {
+      justify-self: start;
+    }
+
+    .tempo-cell :global(.tempo-control) {
+      justify-content: center;
+    }
+
+    .new-loop-button {
+      width: auto;
+    }
+  }
+
+  @container (max-width: 900px) {
+    .fan-build-primary,
+    .fan-build-layout.has-customization .fan-build-primary,
+    .fan-customization {
+      grid-column: 1 / -1;
+    }
+
+    .fan-customization {
+      grid-row: 2;
+    }
+  }
+
+  @container (max-width: 520px) {
+    .fan-modifier-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .fan-modifier-grid.has-frame-color .frame-color-modifier,
+    .fan-modifier-grid.has-frame-color .cover-modifier {
+      grid-column: 1;
+    }
+  }
+
+  @container (max-height: 620px) {
+    .review-deck {
+      --studio-control-size: 44px;
+      --studio-transport-size: 58px;
+      padding: 10px;
     }
   }
 
