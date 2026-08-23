@@ -122,6 +122,14 @@ function persistNavMode(value: ViewerNavMode) {
   }
 }
 
+/** Narrow an untrusted string (seed JSON, app settings) to a real PropType. */
+function asPropType(value: string | null | undefined): PropType | null {
+  if (!value) return null;
+  return Object.values(PropType).includes(value as PropType)
+    ? (value as PropType)
+    : null;
+}
+
 function loadPersistedDefaultProp(): PropType {
   if (typeof localStorage === "undefined") return PropType.STAFF;
   try {
@@ -499,9 +507,22 @@ function buildViewer3DState(
    * namesake for this instance only; call sites are unchanged.
    */
   const persistent = seed === undefined;
-  // Preset intent is only meaningful for the persistent (real) viewer; seeded
-  // previews always apply their seed verbatim.
-  const _presetSourcedOpen = persistent ? consumeViewer3DPresetIntent() : false;
+  /**
+   * Should restored performer settings be applied verbatim? Three cases:
+   *
+   * 1. Seeded preview (tiles, demos) — ALWAYS verbatim. A seed is the whole
+   *    point: it renders exactly the saved look, so nothing is stripped.
+   * 2. Persistent host that opted into prop-follow (passed `appDefaultProp`) —
+   *    the one-shot intent decides. Present = preset-sourced open, verbatim;
+   *    absent = plain open, prop identity re-seeds from the app prop.
+   * 3. Persistent host that did NOT opt in (e.g. /coven) — verbatim, the
+   *    pre-feature behavior. Crucially it does NOT consume the marker, so a
+   *    pending preset intent survives for the host it was written for.
+   */
+  const _restoreVerbatim =
+    persistent && options.appDefaultProp !== undefined
+      ? consumeViewer3DPresetIntent()
+      : true;
   const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
   let environmentId = $state<SceneEnvironmentId>(
     seededEnvironment !== undefined
@@ -576,28 +597,18 @@ function buildViewer3DState(
   // null overrides inherit from these defaults.
   const _defaultSettings = $state<DefaultPerformerSettings>({
     // Seeded prop arrives as a bare string (Viewer3DPersistConfig's shape, and
-    // what Firestore stores), so validate before trusting it as a PropType —
-    // an unknown value falls through to the persisted default rather than
-    // poisoning the cascade.
-    prop: (() => {
-      const seededProp =
-        seed?.defaultProp &&
-        Object.values(PropType).includes(seed.defaultProp as PropType)
-          ? (seed.defaultProp as PropType)
-          : null;
-      if (seededProp) return seededProp;
-      // Plain open: prop identity follows the app prop. Preset-sourced open:
-      // the persisted viewer prop (which applyScene3DLook just wrote) wins.
-      return resolveInitialDefaultProp({
-        presetSourced: _presetSourcedOpen,
-        appProp:
-          options.appDefaultProp &&
-          Object.values(PropType).includes(options.appDefaultProp as PropType)
-            ? options.appDefaultProp
-            : null,
+    // what Firestore stores), so `asPropType` validates before trusting it —
+    // an unknown value falls through rather than poisoning the cascade.
+    // Falling through: a plain open follows the app prop, while a verbatim open
+    // (preset-sourced, or a host that never opted in) keeps the persisted
+    // viewer prop, which applyScene3DLook just wrote for the preset case.
+    prop:
+      asPropType(seed?.defaultProp) ??
+      (resolveInitialDefaultProp({
+        presetSourced: _restoreVerbatim,
+        appProp: asPropType(options.appDefaultProp),
         persistedProp: loadPersistedDefaultProp(),
-      }) as PropType;
-    })(),
+      }) as PropType),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
     customBluePlane: Plane.WALL,
@@ -1308,12 +1319,14 @@ function buildViewer3DState(
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
           p.setDisplayName(snap.name ?? null);
-          // On a plain open the per-performer prop override is stripped, so
-          // the performer inherits _defaultSettings.prop — which points at the
-          // app prop. A preset-sourced open keeps the override verbatim.
+          // On a plain open the per-performer prop AND staffLengthCm overrides
+          // are stripped, so the performer inherits _defaultSettings.prop —
+          // which points at the app prop — at the app's own size. Effort and
+          // effect overrides survive either way. A verbatim open (seeded,
+          // preset-sourced, or non-opted-in host) keeps all four.
           const settings = resolvePlainOpenPerformerSettings(
             snap.settings,
-            _presetSourcedOpen
+            _restoreVerbatim
           );
           if (settings) {
             if (settings.prop !== null) p.setProp(settings.prop as PropType);
@@ -1802,11 +1815,13 @@ export function markViewer3DPresetIntent(): void {
 function consumeViewer3DPresetIntent(): boolean {
   if (typeof sessionStorage === "undefined") return false;
   try {
-    const present =
-      sessionStorage.getItem(VIEWER3D_PRESET_INTENT_KEY) === "1";
+    const present = sessionStorage.getItem(VIEWER3D_PRESET_INTENT_KEY) === "1";
     sessionStorage.removeItem(VIEWER3D_PRESET_INTENT_KEY);
     return present;
   } catch {
+    // Unreadable storage downgrades a preset open to a plain one. Acceptable:
+    // the same failure already cost us the persisted keys the preset wrote, so
+    // there is no verbatim look left to restore anyway.
     return false;
   }
 }
