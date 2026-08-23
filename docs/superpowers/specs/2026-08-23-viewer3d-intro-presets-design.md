@@ -1,6 +1,6 @@
 # 3D Viewer First-Open Guidance + Presets Surfacing — Design
 
-**Date:** 2026-08-18
+**Date:** 2026-08-23
 **Status:** Approved direction (Austen delegated remaining calls to recommendations)
 
 ## Problem
