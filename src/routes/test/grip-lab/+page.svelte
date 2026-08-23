@@ -18,6 +18,7 @@
   import { onDestroy, onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
   import { Quaternion, Vector3 } from "three";
+  import type { Group, Object3D } from "three";
   import {
     PerformerRig,
     Plane,
@@ -88,10 +89,11 @@
   // "rail" variant that pinned the grip over the hand point was tried and
   // rejected — it required the reach to lengthen at the extremes.)
 
-  // The E hand point sits at exact shoulder height on the grid, which forces
-  // a perfectly perpendicular arm. A naturally extended arm relaxes a hair
-  // below that, so the whole grid (and the grip with it) drops slightly.
-  const NATURAL_ARM_DROP_M = 0.06;
+  // A naturally extended arm relaxes a hair below perpendicular. The relax
+  // is a rotation of the whole (straight) arm at the shoulder, not a fixed
+  // height drop — the grip lands wherever the relaxed full extension puts it.
+  const NATURAL_RELAX_DEG = 6;
+  const NATURAL_RELAX_RAD = (NATURAL_RELAX_DEG * Math.PI) / 180;
 
   function parseStations(value: unknown): WeaveStations {
     if (
@@ -273,9 +275,10 @@
   // turn late, so the avatar was still reaching downstage when the pinky
   // end needed its upstage clearance.)
   //
-  // Stations are ANGLES, not centimeters: ±45° is the target reach, and the
-  // z shift is derived from the body-axis→grip geometry, so the downstage
-  // extreme can never silently out-reach the arm again.
+  // Stations are ANGLES, not centimeters: the z shift is derived by
+  // swinging the measured straight arm at the shoulder, so the downstage
+  // extreme can never out-reach the arm — over-reach is impossible by
+  // construction.
   //   sweep(θ) = (depth/2) · (1 − cos(θ − φ))   residual bend, default 0
   function trackArmDeg(thetaDeg: number): number {
     const t = ((thetaDeg % 360) + 360) % 360;
@@ -297,21 +300,24 @@
     return Math.max(-60, Math.min(60, interpolated));
   }
 
-  // Angle→shift conversion, referenced to THE BODY ITSELF: the vertical
-  // axis through the body center, which is the center of rotation the
-  // weave crosses. A station angle means the line from that axis to the
-  // grip sits at that fore/aft angle — so the moment arm is the
-  // frontal-plane distance from the body axis to the hand point (the grid
-  // radius, 0.52m at a cardinal point), NOT the shoulder→hand arm.
+  // THE BODY DEFINES THE GEOMETRY, the grid adheres to it. The drawn
+  // grid's hand-point radius is staff-derived (staffLength × 0.6 ≈ 0.52m),
+  // which sits well INSIDE a full arm extension — commanding the grip to
+  // that radius made the IK bend the elbow to reach back in. Austen's
+  // correction: the avatar just extends the arm naturally (straight, with
+  // a slight relax below perpendicular), the grip lands wherever that
+  // extension puts it, and the GRID rescales and re-centers so its hand
+  // point sits on that grip. The skeleton is measured once after load
+  // (shoulder position + straight-arm reach); until then the legacy
+  // grid-radius park is the fallback so the scene never renders empty.
   //
   // WHERE ZERO LIVES: the rig parks wall-plane props AVATAR_GRID_OFFSET
   // (0.3m) downstage of the performer — the everyday holding plane. The
   // weave's zero is NOT that parked plane; it is the plane that BISECTS the
   // performer in half (head, shoulders, torso, calves), where the plane
-  // sits when the arm extends straight out to the side. In weave mode the
-  // parked offset is subtracted, so arm 0° drives the plane through the
-  // body, a positive station downstage of it, a negative one upstage — and
-  // the drawn grid rides along, bisecting the avatar at every crossing.
+  // sits when the arm extends straight out to the side. Fore/aft stations
+  // swing the straight arm at the SHOULDER: a positive station carries the
+  // grip (and the grid riding with it) downstage, a negative one upstage.
 
   const weaveDeltaRad = $derived(
     ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
@@ -335,16 +341,131 @@
   );
   const effArmRad = $derived((effArmDeg * Math.PI) / 180);
 
-  // Grip z relative to the body's own bisecting plane. The fully extended
-  // arm swings the grip on a circle about the body axis, so z follows the
-  // sine of the arm angle and the sideways distance shortens by its cosine
-  // — at the 12–20° clearance angles both stay close to the lateral park.
-  const weaveZBodyM = $derived(Math.sin(effArmRad) * armLateralM);
-  const weaveLateralScale = $derived(weaveAuto ? Math.cos(effArmRad) : 1);
+  // ── Natural-reach measurement ──
+  // The production GLB's arm bones, measured once after the avatar loads.
+  // PerformerRig exposes no skeleton API, so the page traverses the scene
+  // graph under its own wrapper group for the arm chain (exact bone names
+  // on the production model, with a mixamorig-prefix tolerance for others),
+  // and converts the shoulder into the grid-slot frame via an identity
+  // group parented inside the slot — frame-exact regardless of how the rig
+  // nests its transforms.
+  interface NaturalReach {
+    shoulder: { x: number; y: number; z: number };
+    reachM: number;
+  }
+  let rigRootRef = $state<Group | undefined>();
+  let gridFrameRef = $state<Group | undefined>();
+  let naturalReach = $state<NaturalReach | null>(null);
 
-  // Consumers measure z from the PARKED plane (the rig's prop frame), so
-  // weave mode folds the re-homing subtraction in here. Manual hand-travel
-  // keeps its original parked-plane semantics.
+  function findBone(root: Object3D, name: string): Object3D | null {
+    let found: Object3D | null = null;
+    root.traverse((node) => {
+      if (found) return;
+      if (node.name.toLowerCase().replace(/^mixamorig:?/, "") === name) {
+        found = node;
+      }
+    });
+    return found;
+  }
+
+  $effect(() => {
+    const root = rigRootRef;
+    const frame = gridFrameRef;
+    if (!root || !frame || naturalReach) return;
+    const interval = setInterval(() => {
+      const shoulder = findBone(root, "rightarm");
+      const elbow = findBone(root, "rightforearm");
+      const wrist = findBone(root, "righthand");
+      if (!shoulder || !elbow || !wrist) return;
+      const shoulderW = shoulder.getWorldPosition(new Vector3());
+      const elbowW = elbow.getWorldPosition(new Vector3());
+      const wristW = wrist.getWorldPosition(new Vector3());
+      // Bone segment lengths are pose-invariant, so measuring mid-animation
+      // is safe; the grip point sits about half a palm past the wrist.
+      let reach = shoulderW.distanceTo(elbowW) + elbowW.distanceTo(wristW);
+      const knuckle = findBone(root, "righthandmiddle1");
+      if (knuckle) {
+        reach += wristW.distanceTo(knuckle.getWorldPosition(new Vector3())) / 2;
+      }
+      // A not-yet-settled skeleton reports collapsed bones; wait it out.
+      if (reach < 0.2) return;
+      frame.updateWorldMatrix(true, false);
+      const shoulderLocal = frame.worldToLocal(shoulderW.clone());
+      naturalReach = {
+        shoulder: { x: shoulderLocal.x, y: shoulderLocal.y, z: shoulderLocal.z },
+        reachM: reach,
+      };
+      clearInterval(interval);
+    }, 250);
+    return () => clearInterval(interval);
+  });
+
+  // Aim of the straight arm in the frontal plane: toward the selected hand
+  // point, relaxed a few degrees toward the ground. For the vertical points
+  // (N/S) there is no "toward the ground" side, so no relax applies.
+  const aimBaseRad = $derived(Math.atan2(basePosition.y, basePosition.x));
+  const aimSideSign = $derived.by(() => {
+    const c = Math.cos(aimBaseRad);
+    return Math.abs(c) < 1e-6 ? 0 : Math.sign(c);
+  });
+  const aimAngleRad = $derived(aimBaseRad - NATURAL_RELAX_RAD * aimSideSign);
+
+  // The grip in the grid-slot frame: shoulder + full reach along the relaxed
+  // aim, swung fore/aft by rotating the straight arm toward downstage (+z).
+  // The swing plane is spanned by the arm direction and the stage normal, so
+  // a positive station carries the grip downstage from ANY hand point and
+  // the reach length never changes — the arc model, on the real skeleton.
+  function gripAt(swingRad: number) {
+    if (!naturalReach) return null;
+    const cosSwing = Math.cos(swingRad);
+    const s = naturalReach.shoulder;
+    const r = naturalReach.reachM;
+    return {
+      x: s.x + r * Math.cos(aimAngleRad) * cosSwing,
+      y: s.y + r * Math.sin(aimAngleRad) * cosSwing,
+      z: s.z + r * Math.sin(swingRad),
+    };
+  }
+  const gripHome = $derived.by(() => gripAt(0));
+  const gripTarget = $derived.by(() => gripAt(weaveAuto ? effArmRad : 0));
+
+  // Where the grip actually sits along z in the grid-slot frame: the weave
+  // swing owns it in auto mode; the manual travel slider slides it from the
+  // natural home plane otherwise.
+  const gripZRigM = $derived.by(() => {
+    if (!gripTarget) return null;
+    return gripTarget.z + (weaveAuto ? 0 : handTravelCm / 100);
+  });
+
+  // ── Grid adherence ──
+  // The drawn grid re-centers and rescales so its hand-point ring passes
+  // through the natural grip. Center stays on the body axis; its height
+  // follows the relaxed home reach, so a horizontal point (E/W) lands
+  // exactly at ring height. The ring through a vertical point (N/S) keeps
+  // the correct radius from an axis-centered ring, though the natural reach
+  // is above the SHOULDER, not the head — N is a known different animal.
+  const gridCenterY = $derived.by(() => {
+    if (!naturalReach) return 0;
+    return (
+      naturalReach.shoulder.y -
+      naturalReach.reachM * Math.sin(NATURAL_RELAX_RAD) * Math.abs(aimSideSign)
+    );
+  });
+  const gridScale = $derived.by(() => {
+    if (!gripHome) return 1;
+    const ringRadius = Math.hypot(gripHome.x, gripHome.y - gridCenterY);
+    return ringRadius / userProportionsState.handPointRadius;
+  });
+
+  // Weave z readout relative to the bisecting plane; falls back to the
+  // grid-radius arc until the skeleton is measured.
+  const weaveZBodyM = $derived(
+    gripTarget ? gripTarget.z : Math.sin(effArmRad) * armLateralM
+  );
+
+  // Legacy park (pre-measurement fallback only). Consumers measure z from
+  // the PARKED plane (the rig's prop frame), so weave mode folds the
+  // re-homing subtraction in here.
   const effTravelCm = $derived(
     weaveAuto
       ? (weaveZBodyM - STAGE.AVATAR_GRID_OFFSET) * 100
@@ -357,11 +478,21 @@
   // staff angle. Built exactly like sequence playback builds its frames.
   const redPropState = $derived.by<PropState3D>(() => {
     const staffRad = (staffAngleDeg * Math.PI) / 180;
-    const worldPosition = new Vector3(
-      basePosition.x * weaveLateralScale,
-      basePosition.y - NATURAL_ARM_DROP_M,
-      basePosition.z + effTravelCm / 100
-    );
+    // The rig's prop frame sits AVATAR_GRID_OFFSET downstage of the
+    // grid-slot frame, so the measured grip subtracts it here and the rig
+    // adds it back. Pre-measurement fallback: the legacy grid-radius park.
+    const worldPosition =
+      gripTarget && gripZRigM !== null
+        ? new Vector3(
+            gripTarget.x,
+            gripTarget.y,
+            gripZRigM - STAGE.AVATAR_GRID_OFFSET
+          )
+        : new Vector3(
+            basePosition.x * (weaveAuto ? Math.cos(effArmRad) : 1),
+            basePosition.y,
+            basePosition.z + effTravelCm / 100
+          );
     const sweepQuat = new Quaternion().setFromAxisAngle(
       new Vector3(0, 1, 0),
       sweepYRad
@@ -379,9 +510,11 @@
 
   // Vertical pivot axis for the visible grid: the grip's x/z, so the drawn
   // plane visibly leaves frontal around the same axis the prop's plane does.
+  // The pivot groups live in the grid-slot frame, which sits
+  // AVATAR_GRID_OFFSET upstage of the prop-command frame.
   const gridPivot = $derived({
     x: redPropState.worldPosition.x,
-    z: redPropState.worldPosition.z,
+    z: redPropState.worldPosition.z + STAGE.AVATAR_GRID_OFFSET,
   });
 
   // ── Quarter-phase freeze ──
@@ -542,6 +675,7 @@
       <T.DirectionalLight position={[2, 4, 3]} intensity={1.4} />
 
       {#if avatarState}
+        <T.Group bind:ref={rigRootRef}>
         <PerformerRig
           position={{ x: 0, z: 0 }}
           facingAngle={0}
@@ -559,10 +693,15 @@
           weldGrip={true}
         >
           {#snippet gridSlot()}
+            <!-- Identity group at the slot origin: the reference frame the
+                 skeleton measurement converts the shoulder into. -->
+            <T.Group bind:ref={gridFrameRef} />
             <!-- The drawn grid IS the plane, so it rides the fore/aft shift
                  with the hand (the plane travels, it doesn't bend to meet
                  the grip) and pivots about the grip's vertical axis for any
-                 residual sweep. -->
+                 residual sweep. It also ADHERES TO THE BODY: re-centered on
+                 the relaxed natural reach and rescaled so the hand-point
+                 ring passes through the measured grip. -->
             <T.Group
               position={[gridPivot.x, 0, gridPivot.z]}
               rotation.y={sweepYRad}
@@ -571,9 +710,10 @@
                 <T.Group
                   position={[
                     0,
-                    -NATURAL_ARM_DROP_M,
-                    STAGE.AVATAR_GRID_OFFSET + effTravelCm / 100,
+                    gridCenterY,
+                    gripZRigM ?? STAGE.AVATAR_GRID_OFFSET + effTravelCm / 100,
                   ]}
+                  scale={gridScale}
                 >
                   <Grid3D
                     visiblePlanes={new Set([Plane.WALL])}
@@ -586,6 +726,7 @@
             </T.Group>
           {/snippet}
         </PerformerRig>
+        </T.Group>
       {/if}
     </Canvas>
 
