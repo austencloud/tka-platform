@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Weave Plane — Understanding Check</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel2: #1d212b;
+    --text: #e8eaf0;
+    --muted: #9aa3b2;
+    --plane: #4dd0e1;
+    --staff: #f5b942;
+    --thumb: #ef5350;
+    --pinky: #64b5f6;
+    --wrong: #f472b6;
+    --angle: #a78bfa;
+    --ok: #66bb6a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 system-ui, "Segoe UI", sans-serif;
+    padding: 2rem clamp(1rem, 4vw, 4rem) 4rem;
+  }
+  .wrap { max-width: 1600px; margin: 0 auto; }
+  h1 { font-size: 1.7rem; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.2rem; margin: 2.5rem 0 0.75rem; color: var(--plane); }
+  .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 70ch; }
+  .banner {
+    background: var(--panel);
+    border: 1px solid #2a2f3a;
+    border-left: none; border-right: none;
+    border-radius: 10px;
+    padding: 0.8rem 1.1rem;
+    margin: 1rem 0 0;
+    color: var(--text);
+  }
+  .banner strong { color: var(--ok); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); gap: 1.2rem; }
+  .card {
+    background: var(--panel);
+    border: 1px solid #262b36;
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.2rem;
+  }
+  .card h3 { margin: 0 0 0.2rem; font-size: 1.02rem; }
+  .card .cap { color: var(--muted); font-size: 0.92rem; margin: 0 0 0.8rem; max-width: 62ch; }
+  .views { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
+  .views figure { margin: 0; }
+  .views figcaption { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 0.25rem; }
+  svg { display: block; background: var(--panel2); border-radius: 8px; }
+  svg text { font: 12px system-ui, sans-serif; fill: var(--text); }
+  svg text.m { fill: var(--muted); font-size: 11px; }
+  .legend { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: 0.8rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  .legend span::before { content: "●"; margin-right: 0.35rem; }
+  .legend .lt::before { color: var(--thumb); }
+  .legend .lp::before { color: var(--pinky); }
+  .legend .lpl::before { color: var(--plane); }
+  .legend .lw::before { color: var(--wrong); }
+  .legend .ls::before { color: var(--staff); }
+  ul.pts { max-width: 75ch; }
+  ul.pts li { margin: 0.4rem 0; }
+  .q { border-color: var(--angle); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>The weave — what I now understand you to mean</h1>
+<p class="sub">No code has been changed. This page exists so you can tell me where the picture is wrong before I implement anything.</p>
+
+<div class="banner">
+  <strong>The core correction:</strong> "zero" is NOT the plane the props currently live on (~8&nbsp;in in front of the performer).
+  Zero is the plane that <em>bisects the performer in half</em> — through the head, shoulders, torso, and calves — where the plane
+  sits when the arm is extended directly to the side with no forward or backward angle. The whole ±45° weave is centered on
+  <em>that</em> plane, with the grid center at the solar plexus, right below shoulder height. What I built kept the plane
+  parked in front of the body at all times, so the back reach never got behind the body and the staff was forced out of plane.
+</div>
+
+<h2>1 · Where zero lives (side view, looking along the plane)</h2>
+<div class="card">
+  <div class="views">
+    <figure>
+      <svg width="620" height="380" viewBox="0 0 620 380">
+        <!-- stage direction arrows -->
+        <text x="70" y="26" class="m">← upstage (behind)</text>
+        <text x="430" y="26" class="m">downstage (audience) →</text>
+        <!-- ground -->
+        <line x1="20" y1="352" x2="600" y2="352" stroke="#3a4150" stroke-width="2"/>
+        <!-- back plane -->
+        <line x1="150" y1="40" x2="150" y2="352" stroke="#4dd0e1" stroke-width="2" opacity="0.55"/>
+        <text x="150" y="372" text-anchor="middle" class="m">arm −45°</text>
+        <text x="150" y="56" text-anchor="middle" style="fill:#4dd0e1">pinky end's room</text>
+        <!-- forward plane -->
+        <line x1="450" y1="40" x2="450" y2="352" stroke="#4dd0e1" stroke-width="2" opacity="0.55"/>
+        <text x="450" y="372" text-anchor="middle" class="m">arm +45°</text>
+        <text x="450" y="56" text-anchor="middle" style="fill:#4dd0e1">thumb end's room</text>
+        <!-- zero plane -->
+        <line x1="300" y1="40" x2="300" y2="352" stroke="#4dd0e1" stroke-width="3.5"/>
+        <text x="300" y="372" text-anchor="middle" style="fill:#4dd0e1">ZERO</text>
+        <!-- wrong zero -->
+        <line x1="355" y1="70" x2="355" y2="352" stroke="#f472b6" stroke-width="2" stroke-dasharray="7 5"/>
+        <text x="362" y="330" style="fill:#f472b6">where my zero sat (~8 in forward) — wrong</text>
+        <!-- body profile straddling the zero plane -->
+        <circle cx="300" cy="105" r="24" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+        <rect x="278" y="132" width="44" height="105" rx="18" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+        <line x1="290" y1="237" x2="288" y2="352" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+        <line x1="310" y1="237" x2="312" y2="352" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+        <!-- solar plexus grid center -->
+        <circle cx="300" cy="168" r="5" fill="#f5b942"/>
+        <text x="90" y="150" class="m">grid center:</text>
+        <text x="90" y="166" class="m">solar plexus,</text>
+        <text x="90" y="182" class="m">just below shoulders</text>
+        <line x1="215" y1="170" x2="292" y2="168" stroke="#9aa3b2" stroke-width="1" stroke-dasharray="3 3"/>
+        <!-- bisect note -->
+        <text x="308" y="98" class="m">zero cuts the head, shoulders,</text>
+        <text x="308" y="114" class="m">torso and calves in half</text>
+      </svg>
+      <figcaption>Side view. The three planes the weave visits. The arm extends toward the viewer (out to the side).</figcaption>
+    </figure>
+    <figure>
+      <svg width="330" height="380" viewBox="0 0 330 380">
+        <!-- front view: audience POV, arm straight out to the side -->
+        <text x="14" y="24" class="m">front view (audience POV)</text>
+        <!-- grid circle centered at solar plexus -->
+        <circle cx="120" cy="200" r="105" fill="none" stroke="#4dd0e1" stroke-width="1.5" opacity="0.6"/>
+        <line x1="120" y1="95" x2="120" y2="305" stroke="#4dd0e1" stroke-width="1" opacity="0.3"/>
+        <line x1="15" y1="200" x2="225" y2="200" stroke="#4dd0e1" stroke-width="1" opacity="0.3"/>
+        <!-- body -->
+        <circle cx="120" cy="112" r="22" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+        <rect x="97" y="137" width="46" height="100" rx="18" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+        <line x1="108" y1="237" x2="106" y2="352" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+        <line x1="132" y1="237" x2="134" y2="352" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+        <!-- arm straight out to the side -->
+        <line x1="143" y1="152" x2="225" y2="197" stroke="#6b7280" stroke-width="8" stroke-linecap="round"/>
+        <!-- grid center + grip -->
+        <circle cx="120" cy="200" r="5" fill="#f5b942"/>
+        <text x="128" y="218" class="m">solar plexus</text>
+        <circle cx="225" cy="200" r="6" fill="#f5b942"/>
+        <text x="196" y="232" class="m">grip point</text>
+      </svg>
+      <figcaption>Grid centered on the body, hand point directly to the side.</figcaption>
+    </figure>
+  </div>
+</div>
+
+<h2>2 · The timeline, stage by stage</h2>
+<p class="sub">Each card shows the same moment from the front (staff orientation in the plane) and from above (where the plane is, fore/aft). Thumb end in red, pinky end in blue.</p>
+
+<div class="cards">
+
+  <!-- STAGE 1: thumb down / pinky up, arm 0 -->
+  <div class="card">
+    <h3>① Thumb end straight down — arm at 0</h3>
+    <p class="cap">The plane is bisecting the body. Nothing needs clearance: the staff is vertical, off to the side past the shoulder. From here the <strong style="color:var(--thumb)">thumb end</strong> begins to rise — its path up sweeps through the inboard region.</p>
+    <div class="views">
+      <figure>
+        <svg width="230" height="240" viewBox="0 0 230 240">
+          <circle cx="80" cy="52" r="16" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <rect x="63" y="70" width="34" height="76" rx="14" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <line x1="71" y1="146" x2="70" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="89" y1="146" x2="90" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="97" y1="82" x2="172" y2="112" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+          <line x1="172" y1="42" x2="172" y2="182" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="172" cy="42" r="6" fill="#64b5f6"/>
+          <rect x="163" y="180" width="18" height="7" rx="3" fill="#ef5350"/>
+          <circle cx="172" cy="112" r="5" fill="#e8eaf0"/>
+        </svg>
+        <figcaption>front</figcaption>
+      </figure>
+      <figure>
+        <svg width="320" height="240" viewBox="0 0 320 240">
+          <text x="10" y="20" class="m">↑ upstage</text>
+          <text x="10" y="232" class="m">↓ audience</text>
+          <line x1="10" y1="120" x2="310" y2="120" stroke="#4dd0e1" stroke-width="3"/>
+          <ellipse cx="110" cy="120" rx="46" ry="19" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="120" r="13" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="120" r="3" fill="#e8eaf0"/>
+          <line x1="110" y1="120" x2="228" y2="120" stroke="#9aa3b2" stroke-width="2" stroke-dasharray="4 4"/>
+          <circle cx="228" cy="120" r="7" fill="none" stroke="#f5b942" stroke-width="3"/>
+          <text x="196" y="146" class="m">staff seen end-on</text>
+          <text x="118" y="102" class="m">plane bisects the body</text>
+        </svg>
+        <figcaption>top</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- STAGE 2: thumb inboard, arm +45 -->
+  <div class="card">
+    <h3>② Thumb end sweeping inboard — arm at +45° forward</h3>
+    <p class="cap">While the thumb end comes up through the inboard side, the arm holds a forward 45° from the body. That angle is the whole trick: the plane is downstage of the body, so the thumb end passes <em>in front of</em> the chest and face with clearance — the staff never has to bend out of the wall plane.</p>
+    <div class="views">
+      <figure>
+        <svg width="230" height="240" viewBox="0 0 230 240">
+          <circle cx="80" cy="52" r="16" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <rect x="63" y="70" width="34" height="76" rx="14" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <line x1="71" y1="146" x2="70" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="89" y1="146" x2="90" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="97" y1="82" x2="172" y2="112" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+          <line x1="100" y1="112" x2="222" y2="112" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <rect x="92" y="108" width="16" height="8" rx="3" fill="#ef5350"/>
+          <circle cx="222" cy="112" r="6" fill="#64b5f6"/>
+          <circle cx="172" cy="112" r="5" fill="#e8eaf0"/>
+          <text x="18" y="180" class="m">thumb end crosses the body</text>
+          <text x="18" y="196" class="m">— but IN FRONT of it</text>
+        </svg>
+        <figcaption>front</figcaption>
+      </figure>
+      <figure>
+        <svg width="320" height="240" viewBox="0 0 320 240">
+          <text x="10" y="20" class="m">↑ upstage</text>
+          <text x="10" y="232" class="m">↓ audience</text>
+          <ellipse cx="110" cy="110" rx="46" ry="19" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="110" r="13" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="110" r="3" fill="#e8eaf0"/>
+          <!-- 45 ray -->
+          <line x1="110" y1="110" x2="182" y2="182" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4 4"/>
+          <path d="M 152 110 A 42 42 0 0 1 140 140" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          <text x="158" y="136" style="fill:#a78bfa">45°</text>
+          <!-- plane + staff -->
+          <line x1="10" y1="182" x2="310" y2="182" stroke="#4dd0e1" stroke-width="3"/>
+          <line x1="58" y1="182" x2="300" y2="182" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <rect x="50" y="178" width="16" height="8" rx="3" fill="#ef5350"/>
+          <circle cx="300" cy="182" r="6" fill="#64b5f6"/>
+          <circle cx="182" cy="182" r="5" fill="#e8eaf0"/>
+          <!-- clearance -->
+          <line x1="84" y1="132" x2="84" y2="176" stroke="#66bb6a" stroke-width="1.5" marker-end="none"/>
+          <text x="30" y="158" style="fill:#66bb6a">clear</text>
+        </svg>
+        <figcaption>top — plane downstage of the body</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- STAGE 3: thumb up, arm 0 -->
+  <div class="card">
+    <h3>③ Thumb end straight up, pinky end straight down — arm back at 0</h3>
+    <p class="cap">Before the pinky end has begun to rise, the arm has returned to zero: extended directly from the body, no forward or backward angle. At this exact moment the plane — the visible grid and the plane the prop is tethered to — is bisecting the body in half again.</p>
+    <div class="views">
+      <figure>
+        <svg width="230" height="240" viewBox="0 0 230 240">
+          <circle cx="80" cy="52" r="16" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <rect x="63" y="70" width="34" height="76" rx="14" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <line x1="71" y1="146" x2="70" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="89" y1="146" x2="90" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="97" y1="82" x2="172" y2="112" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+          <line x1="172" y1="42" x2="172" y2="182" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <rect x="163" y="36" width="18" height="7" rx="3" fill="#ef5350"/>
+          <circle cx="172" cy="182" r="6" fill="#64b5f6"/>
+          <circle cx="172" cy="112" r="5" fill="#e8eaf0"/>
+        </svg>
+        <figcaption>front</figcaption>
+      </figure>
+      <figure>
+        <svg width="320" height="240" viewBox="0 0 320 240">
+          <text x="10" y="20" class="m">↑ upstage</text>
+          <text x="10" y="232" class="m">↓ audience</text>
+          <line x1="10" y1="120" x2="310" y2="120" stroke="#4dd0e1" stroke-width="3"/>
+          <ellipse cx="110" cy="120" rx="46" ry="19" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="120" r="13" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="120" r="3" fill="#e8eaf0"/>
+          <line x1="110" y1="120" x2="228" y2="120" stroke="#9aa3b2" stroke-width="2" stroke-dasharray="4 4"/>
+          <circle cx="228" cy="120" r="7" fill="none" stroke="#f5b942" stroke-width="3"/>
+          <text x="118" y="102" class="m">plane bisects the body again</text>
+        </svg>
+        <figcaption>top</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- STAGE 4: pinky inboard, arm -45 -->
+  <div class="card">
+    <h3>④ Pinky end sweeping inboard — arm at 45° behind</h3>
+    <p class="cap">The very next thing after the bisecting moment: as the pinky end comes up, the arm moves 45° behind, going upstage. The plane is now behind the body, so the pinky end naturally has <em>nothing in its way</em> as it sweeps past the back and head — again with no plane change required of the staff.</p>
+    <div class="views">
+      <figure>
+        <svg width="230" height="240" viewBox="0 0 230 240">
+          <circle cx="80" cy="52" r="16" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <rect x="63" y="70" width="34" height="76" rx="14" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <line x1="71" y1="146" x2="70" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="89" y1="146" x2="90" y2="228" stroke="#6b7280" stroke-width="6" stroke-linecap="round"/>
+          <line x1="97" y1="82" x2="172" y2="112" stroke="#6b7280" stroke-width="7" stroke-linecap="round"/>
+          <line x1="100" y1="112" x2="222" y2="112" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="100" cy="112" r="6" fill="#64b5f6"/>
+          <rect x="214" y="108" width="16" height="8" rx="3" fill="#ef5350"/>
+          <circle cx="172" cy="112" r="5" fill="#e8eaf0"/>
+          <text x="18" y="180" class="m">pinky end crosses the body</text>
+          <text x="18" y="196" class="m">— but BEHIND it</text>
+        </svg>
+        <figcaption>front</figcaption>
+      </figure>
+      <figure>
+        <svg width="320" height="240" viewBox="0 0 320 240">
+          <text x="10" y="20" class="m">↑ upstage</text>
+          <text x="10" y="232" class="m">↓ audience</text>
+          <ellipse cx="110" cy="130" rx="46" ry="19" fill="#2a2f3a" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="130" r="13" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+          <circle cx="110" cy="130" r="3" fill="#e8eaf0"/>
+          <line x1="110" y1="130" x2="182" y2="58" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4 4"/>
+          <path d="M 152 130 A 42 42 0 0 0 140 100" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+          <text x="158" y="112" style="fill:#a78bfa">45°</text>
+          <line x1="10" y1="58" x2="310" y2="58" stroke="#4dd0e1" stroke-width="3"/>
+          <line x1="58" y1="58" x2="300" y2="58" stroke="#f5b942" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="58" cy="58" r="6" fill="#64b5f6"/>
+          <rect x="292" y="54" width="16" height="8" rx="3" fill="#ef5350"/>
+          <circle cx="182" cy="58" r="5" fill="#e8eaf0"/>
+          <line x1="84" y1="64" x2="84" y2="108" stroke="#66bb6a" stroke-width="1.5"/>
+          <text x="30" y="90" style="fill:#66bb6a">clear</text>
+        </svg>
+        <figcaption>top — plane upstage of the body</figcaption>
+      </figure>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <span class="lt">thumb end</span>
+  <span class="lp">pinky end</span>
+  <span class="ls">staff / grip</span>
+  <span class="lpl">the plane (grid + prop tether, always the same plane)</span>
+  <span class="lw">my wrong zero</span>
+</div>
+
+<h2>3 · Arm angle over one rotation</h2>
+<div class="card">
+  <svg width="660" height="270" viewBox="0 0 660 270">
+    <line x1="60" y1="60" x2="580" y2="60" stroke="#2a2f3a"/>
+    <line x1="60" y1="120" x2="580" y2="120" stroke="#4dd0e1" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <line x1="60" y1="180" x2="580" y2="180" stroke="#2a2f3a"/>
+    <text x="10" y="64" class="m">+45°</text>
+    <text x="18" y="124" class="m">0°</text>
+    <text x="10" y="184" class="m">−45°</text>
+    <text x="590" y="124" class="m">= body's</text>
+    <text x="590" y="140" class="m">own plane</text>
+    <path d="M60,180 C110,180 150,155 190,120 C230,85 270,60 320,60 C370,60 410,85 450,120 C490,155 530,180 580,180"
+          fill="none" stroke="#f5b942" stroke-width="3"/>
+    <circle cx="60" cy="180" r="5" fill="#64b5f6"/>
+    <circle cx="190" cy="120" r="5" fill="#4dd0e1"/>
+    <circle cx="320" cy="60" r="5" fill="#ef5350"/>
+    <circle cx="450" cy="120" r="5" fill="#4dd0e1"/>
+    <circle cx="580" cy="180" r="5" fill="#64b5f6"/>
+    <text x="60" y="214" text-anchor="middle" class="m">pinky end inboard</text>
+    <text x="60" y="230" text-anchor="middle" class="m">BEHIND the body</text>
+    <text x="190" y="214" text-anchor="middle" class="m">thumb down</text>
+    <text x="190" y="230" text-anchor="middle" class="m">bisecting</text>
+    <text x="320" y="214" text-anchor="middle" class="m">thumb end inboard</text>
+    <text x="320" y="230" text-anchor="middle" class="m">IN FRONT of the body</text>
+    <text x="450" y="214" text-anchor="middle" class="m">thumb up</text>
+    <text x="450" y="230" text-anchor="middle" class="m">bisecting</text>
+    <text x="580" y="214" text-anchor="middle" class="m">pinky end inboard</text>
+    <text x="580" y="230" text-anchor="middle" class="m">BEHIND</text>
+    <text x="60" y="256" text-anchor="middle" class="m">…and around again</text>
+  </svg>
+  <p class="cap" style="color:var(--muted); font-size:0.92rem; max-width:72ch;">
+    The oscillation is symmetric about the body's own plane. The staff only ever leaves the wall plane as a last
+    resort — with the timing above it shouldn't need to at all. What I shipped centered this whole curve on a plane
+    parked ~8&nbsp;in in front of the body, so "45° back" never actually got behind you, and the staff paid for it by
+    bending out of plane.
+  </p>
+</div>
+
+<h2>4 · One question before I touch anything</h2>
+<div class="card q">
+  <p class="cap">When the arm holds the forward/back 45°, how does the grip travel? Both keep the grip on the 45° line from the body axis — they differ in whether the hand keeps its distance from you or keeps its sideways position.</p>
+  <div class="views">
+    <figure>
+      <svg width="300" height="230" viewBox="0 0 300 230">
+        <text x="10" y="20" class="m">A — swings on an arc</text>
+        <circle cx="90" cy="115" r="12" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+        <path d="M 210 115 A 120 120 0 0 1 175 200" fill="none" stroke="#9aa3b2" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <path d="M 210 115 A 120 120 0 0 0 175 30" fill="none" stroke="#9aa3b2" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <line x1="90" y1="115" x2="210" y2="115" stroke="#2a2f3a" stroke-width="2"/>
+        <line x1="90" y1="115" x2="175" y2="200" stroke="#a78bfa" stroke-width="2"/>
+        <circle cx="175" cy="200" r="6" fill="#f5b942"/>
+        <text x="16" y="215" class="m">same distance from the body;</text>
+        <text x="16" y="229" class="m">hand comes inward as it reaches</text>
+      </svg>
+    </figure>
+    <figure>
+      <svg width="300" height="230" viewBox="0 0 300 230">
+        <text x="10" y="20" class="m">B — stays over the same side point</text>
+        <circle cx="90" cy="115" r="12" fill="#333a48" stroke="#6b7280" stroke-width="2"/>
+        <line x1="210" y1="30" x2="210" y2="200" stroke="#9aa3b2" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <line x1="90" y1="115" x2="210" y2="115" stroke="#2a2f3a" stroke-width="2"/>
+        <line x1="90" y1="115" x2="210" y2="200" stroke="#a78bfa" stroke-width="2"/>
+        <circle cx="210" cy="200" r="6" fill="#f5b942"/>
+        <text x="16" y="215" class="m">sideways position fixed; the reach</text>
+        <text x="16" y="229" class="m">gets longer at the extremes (what's built now)</text>
+      </svg>
+    </figure>
+  </div>
+</div>
+
+<div class="banner" style="margin-top:2rem;">
+  Nothing has been implemented. If this picture matches what you meant — especially section 1's zero and the
+  bisecting moments in ① and ③ — say the word and I'll move the weave's center onto the body's own plane.
+  If anything is off, tell me which panel is wrong.
+</div>
+
+</div>
+</body>
+</html>
