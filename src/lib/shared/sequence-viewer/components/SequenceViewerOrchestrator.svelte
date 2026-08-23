@@ -48,6 +48,7 @@
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
   import { setViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
+  import { sceneEnvironmentIdForBackground } from "$lib/shared/3d/environments/domain/scene-environment";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { setViewerVisibilityContext } from "../context/viewer-visibility-context";
 
@@ -55,7 +56,7 @@
   import { createExportCoordinator } from "./export-coordinator.svelte";
   import { createImageCompositionSync } from "./image-composition-sync.svelte";
   import { createAuthActionQueue } from "./auth-action-queue.svelte";
-  import { createFullscreenController } from "../state/fullscreen-controller.svelte";
+  import { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
   import { createLibraryActionHandler } from "../state/library-action-handler.svelte";
   import {
     createViewerState,
@@ -171,7 +172,12 @@
     playback.bpmLocal = _sceneBpmIntent ?? initialBpm;
   });
 
-  const viewer3DState = createViewer3DState();
+  const viewer3DState = createViewer3DState(undefined, {
+    firstUseEnvironment: sceneEnvironmentIdForBackground(
+      getSettings().backgroundType
+    ),
+    appDefaultProp: getSettings().bluePropType ?? null,
+  });
   setViewer3DContext(viewer3DState);
 
   const accessibilityHelper = createModalAccessibilityHelper();
@@ -592,8 +598,7 @@
           compress: true,
           metadata,
         }).url,
-      getNavigator: () =>
-        typeof navigator === "undefined" ? null : navigator,
+      getNavigator: () => (typeof navigator === "undefined" ? null : navigator),
       setLocation: (url) => {
         window.location.href = url;
       },
@@ -666,8 +671,7 @@
       invokeGatedAction: (type, realHandler) =>
         authQueue.invokeGatedAction(type, realHandler, sequence),
       openSignInPrompt: () => authQueue.openSignInSheet("account"),
-      handleUnifiedDarkModeToggle:
-        propVisibility.handleUnifiedDarkModeToggle,
+      handleUnifiedDarkModeToggle: propVisibility.handleUnifiedDarkModeToggle,
       handlePracticeStart,
       enterPracticeMode,
       handleBpmChange,

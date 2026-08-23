@@ -49,6 +49,7 @@
     firstUseEnvironment: sceneEnvironmentIdForBackground(
       settings.backgroundType
     ),
+    appDefaultProp: settings.bluePropType ?? null,
   });
   // The Studio is a 3D workspace even before choreography is chosen. Entering
   // here keeps the render loop, environment, camera, and neutral performer live.

@@ -56,6 +56,10 @@ import {
   normalizeSceneEnvironmentId,
   type SceneEnvironmentId,
 } from "../environments/domain/scene-environment";
+import {
+  resolveInitialDefaultProp,
+  resolvePlainOpenPerformerSettings,
+} from "../domain/plain-open-policy";
 
 // ============================================
 // Popover Stack
@@ -146,6 +150,7 @@ const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
 const STORAGE_KEY_DEFAULT_PROP = "tka-viewer3d-defaultProp";
 
 /** Per-performer cascade overrides; null = inherit the viewer default. */
+// Mirrored structurally by domain/plain-open-policy.ts — keep field policy in sync when adding fields.
 export interface StoredPerformerSettings {
   prop: string | null;
   effortId: string | null;
@@ -467,6 +472,12 @@ export interface Viewer3DStateSeed extends Partial<Viewer3DPersistConfig> {
 export interface Viewer3DStateOptions {
   /** Used only when this user has never chosen a 3D environment. */
   firstUseEnvironment?: SceneEnvironmentId;
+  /**
+   * The app's current prop (settings.bluePropType). A PLAIN open re-seeds prop
+   * identity from this instead of the persisted viewer prop, so users stop
+   * being ambushed by a stale saved prop. A preset-sourced open ignores it.
+   */
+  appDefaultProp?: string | null;
 }
 
 function buildViewer3DState(
@@ -488,6 +499,9 @@ function buildViewer3DState(
    * namesake for this instance only; call sites are unchanged.
    */
   const persistent = seed === undefined;
+  // Preset intent is only meaningful for the persistent (real) viewer; seeded
+  // previews always apply their seed verbatim.
+  const _presetSourcedOpen = persistent ? consumeViewer3DPresetIntent() : false;
   const seededEnvironment = seed?.environmentId ?? seed?.backgroundType;
   let environmentId = $state<SceneEnvironmentId>(
     seededEnvironment !== undefined
@@ -565,11 +579,25 @@ function buildViewer3DState(
     // what Firestore stores), so validate before trusting it as a PropType —
     // an unknown value falls through to the persisted default rather than
     // poisoning the cascade.
-    prop:
-      seed?.defaultProp &&
-      Object.values(PropType).includes(seed.defaultProp as PropType)
-        ? (seed.defaultProp as PropType)
-        : loadPersistedDefaultProp(),
+    prop: (() => {
+      const seededProp =
+        seed?.defaultProp &&
+        Object.values(PropType).includes(seed.defaultProp as PropType)
+          ? (seed.defaultProp as PropType)
+          : null;
+      if (seededProp) return seededProp;
+      // Plain open: prop identity follows the app prop. Preset-sourced open:
+      // the persisted viewer prop (which applyScene3DLook just wrote) wins.
+      return resolveInitialDefaultProp({
+        presetSourced: _presetSourcedOpen,
+        appProp:
+          options.appDefaultProp &&
+          Object.values(PropType).includes(options.appDefaultProp as PropType)
+            ? options.appDefaultProp
+            : null,
+        persistedProp: loadPersistedDefaultProp(),
+      }) as PropType;
+    })(),
     effortId: "linear" as EffortId,
     planeMode: PlaneMode.WALL,
     customBluePlane: Plane.WALL,
@@ -1280,15 +1308,21 @@ function buildViewer3DState(
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
           p.setDisplayName(snap.name ?? null);
-          if (snap.settings) {
-            if (snap.settings.prop !== null)
-              p.setProp(snap.settings.prop as PropType);
-            if (snap.settings.effortId !== null)
-              p.setEffort(snap.settings.effortId as EffortId);
-            if (snap.settings.effect !== null)
-              p.setEffect(snap.settings.effect as EffectType);
-            if (snap.settings.staffLengthCm !== null)
-              p.setStaffLengthCm(snap.settings.staffLengthCm);
+          // On a plain open the per-performer prop override is stripped, so
+          // the performer inherits _defaultSettings.prop — which points at the
+          // app prop. A preset-sourced open keeps the override verbatim.
+          const settings = resolvePlainOpenPerformerSettings(
+            snap.settings,
+            _presetSourcedOpen
+          );
+          if (settings) {
+            if (settings.prop !== null) p.setProp(settings.prop as PropType);
+            if (settings.effortId !== null)
+              p.setEffort(settings.effortId as EffortId);
+            if (settings.effect !== null)
+              p.setEffect(settings.effect as EffectType);
+            if (settings.staffLengthCm !== null)
+              p.setStaffLengthCm(settings.staffLengthCm);
           }
         });
       });
@@ -1746,6 +1780,35 @@ export function createViewer3DState(
   options?: Viewer3DStateOptions
 ): Viewer3DState {
   return buildViewer3DState(seed, options);
+}
+
+/**
+ * One-shot marker that the NEXT viewer mount was seeded by a saved preset
+ * (applyScene3DLook). Consumed at construct; without it, a plain open
+ * re-seeds prop identity from the app prop (domain/plain-open-policy.ts).
+ * Same pattern as SCENE_BPM_INTENT_KEY.
+ */
+export const VIEWER3D_PRESET_INTENT_KEY = "tka-viewer3d-preset-intent";
+
+export function markViewer3DPresetIntent(): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.setItem(VIEWER3D_PRESET_INTENT_KEY, "1");
+  } catch {
+    // Quota/unavailable — worst case the next open follows the app prop.
+  }
+}
+
+function consumeViewer3DPresetIntent(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  try {
+    const present =
+      sessionStorage.getItem(VIEWER3D_PRESET_INTENT_KEY) === "1";
+    sessionStorage.removeItem(VIEWER3D_PRESET_INTENT_KEY);
+    return present;
+  } catch {
+    return false;
+  }
 }
 
 /**

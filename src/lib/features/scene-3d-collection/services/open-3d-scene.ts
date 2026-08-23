@@ -3,7 +3,10 @@ import {
   getScene3DEnvironmentId,
   isGroupSaved,
 } from "../domain/scene-3d-collection-types";
-import { writeViewer3DConfig } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import {
+  markViewer3DPresetIntent,
+  writeViewer3DConfig,
+} from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { Viewer3DPersistConfig } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
@@ -103,6 +106,10 @@ export function applyScene3DLook(scene: Collected3DScene): void {
   // 4. Viewer boots into 3D (a fresh createViewerState reads this via
   //    loadViewerMode(); wants3D derives from "animation-3d").
   persistViewerMode("animation-3d");
+
+  // 5. Tell the next viewer mount this open was preset-sourced, so it restores
+  //    prop identity verbatim instead of re-seeding it from the app prop.
+  markViewer3DPresetIntent();
 }
 
 function filterPerformerSettings(
