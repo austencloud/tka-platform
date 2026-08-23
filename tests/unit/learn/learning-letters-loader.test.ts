@@ -1,34 +1,23 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  LEARNING_LETTERS_SCHEMA_VERSION,
+  nextUnvisitedSequenceIndex,
+  normalizeLearningLettersProgress,
+} from "$lib/features/learn/components/interactive/words/learning-letters-progress";
 
-const { resolveFamily } = vi.hoisted(() => ({
-  resolveFamily: vi.fn(),
-}));
-
-vi.mock("$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards", () => ({
-  resolveTnDFamilyCards: resolveFamily,
-}));
-vi.mock("$lib/shared/browse/services/sequence-difficulty-calculator", () => ({
-  calculateDifficultyLevel: () => 1,
-}));
-vi.mock("$lib/shared/create/services/reversal-detector", () => ({
-  processReversals: (sequence: SequenceData) => sequence,
-}));
-vi.mock("$lib/features/choreo-card/services/reversal-seed-service", () => ({
-  transformSequence: (sequence: SequenceData) => sequence,
-}));
-vi.mock("$lib/features/choreo-card/services/pictograph-letter-lookup", () => ({
-  loadDiamondEdges: vi.fn(),
-}));
-vi.mock("$lib/features/choreo-card/domain/reversal-patterns", () => ({
-  getReversalPattern: () => ({
-    id: "book",
-    label: "Book",
-    sequence: ["P", "P", "P", "P"],
-  }),
+const { canonicalPool, loadCanonicalTnDSequences } = vi.hoisted(() => ({
+  canonicalPool: [] as SequenceData[],
+  loadCanonicalTnDSequences: vi.fn(),
 }));
 
-import { loadCanonicalLearningLettersSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+vi.mock("$lib/features/browse/gallery-home/canonical-tnd-pool", () => ({
+  CANONICAL_TND_AUTHOR: "T&D Alphabet",
+  loadCanonicalTnDSequences,
+  loadCanonicalBookVariations: vi.fn(async () => []),
+}));
+
+import { loadFoundingCollectionSequences } from "$lib/features/browse/collections/config/founding-collections";
 
 const WORDS_BY_FAMILY: Readonly<Record<string, readonly string[]>> = {
   "split-same": ["AAAA", "BBBB", "CCCC"],
@@ -44,28 +33,31 @@ function sequence(word: string, familyId: string): SequenceData {
     id: `tnd-${familyId}-${word.toLowerCase()}`,
     name: word,
     word,
+    author: "T&D Alphabet",
+    level: 1,
     steps: [],
     thumbnails: [],
     isFavorite: false,
     isCircular: true,
     tags: ["tnd-deck", familyId],
     metadata: { familyId },
-  };
+  } as SequenceData;
 }
 
-describe("Learning Letters canonical loader", () => {
-  it("resolves the exact 19 zero-turn deck cards in family order", async () => {
-    resolveFamily.mockImplementation(
-      async (familyId: string, options: { patterns?: readonly string[] }) => {
-        expect(options).toEqual({ patterns: ["0|0"] });
-        return (WORDS_BY_FAMILY[familyId] ?? []).map((word) => ({
-          seedId: `tnd-${familyId}-${word.toLowerCase()}`,
-          byTurn: new Map([["0|0", sequence(word, familyId)]]),
-        }));
-      }
+describe("Learning Letters founding deck loader", () => {
+  beforeEach(() => {
+    canonicalPool.splice(
+      0,
+      canonicalPool.length,
+      ...Object.entries(WORDS_BY_FAMILY).flatMap(([familyId, words]) =>
+        words.map((word) => sequence(word, familyId))
+      )
     );
+    loadCanonicalTnDSequences.mockResolvedValue(canonicalPool);
+  });
 
-    const cards = await loadCanonicalLearningLettersSequences();
+  it("resolves TKA 1 through the founding collection rule", async () => {
+    const cards = await loadFoundingCollectionSequences("founding_tka-1");
 
     expect(cards.map((card) => card.word)).toEqual([
       "AAAA",
@@ -89,6 +81,54 @@ describe("Learning Letters canonical loader", () => {
       "OROR",
     ]);
     expect(new Set(cards.map((card) => card.id)).size).toBe(19);
-    expect(resolveFamily).toHaveBeenCalledTimes(6);
+    expect(loadCanonicalTnDSequences).toHaveBeenCalledOnce();
+  });
+
+  it("rejects deck drift instead of presenting a partial lesson", async () => {
+    canonicalPool.pop();
+    await expect(
+      loadFoundingCollectionSequences("founding_tka-1")
+    ).rejects.toThrow("resolved 18 cards instead of 19");
+  });
+});
+
+describe("Learning Letters progress migration", () => {
+  const ids = ["a", "b", "c"];
+
+  it("resets the rejected quiz-phase shape to the first live deck card", () => {
+    const normalized = normalizeLearningLettersProgress(
+      { step: 3, phaseData: { questionIndex: 2 } },
+      ids
+    );
+
+    expect(normalized.migrated).toBe(true);
+    expect(normalized.progress).toEqual({
+      schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
+      selectedSequenceId: "a",
+      visitedSequenceIds: ["a"],
+    });
+  });
+
+  it("keeps current progress while removing stale ids", () => {
+    const normalized = normalizeLearningLettersProgress(
+      {
+        step: 1,
+        phaseData: {
+          schemaVersion: LEARNING_LETTERS_SCHEMA_VERSION,
+          selectedSequenceId: "b",
+          visitedSequenceIds: ["a", "stale", "b", "a"],
+        },
+      },
+      ids
+    );
+
+    expect(normalized.progress.selectedSequenceId).toBe("b");
+    expect(normalized.progress.visitedSequenceIds).toEqual(["a", "b"]);
+    expect(normalized.migrated).toBe(true);
+  });
+
+  it("walks to the next unvisited card and wraps after a family jump", () => {
+    expect(nextUnvisitedSequenceIndex(2, ids, new Set(["a"]))).toBe(1);
+    expect(nextUnvisitedSequenceIndex(1, ids, new Set(ids))).toBe(-1);
   });
 });

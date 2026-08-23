@@ -1,7 +1,7 @@
 # Words: Alpha/Beta Copy Review
 
 **Concept ID:** `words-alpha-beta`  
-**Review state:** DRAFT  
+**Review state:** REJECTED COPY / REDESIGN IN REVIEW
 **Implementation gate:** CLOSED  
 **Last reviewed:** 2026-08-22
 
@@ -12,9 +12,14 @@ Learning Letters deck. Those are the 19 words.” He then authorized the data an
 interaction correction with “fix it.”
 
 The lesson may therefore load and present the deck's canonical 19 sequence
-objects. This does not approve new explanatory TKA copy. The live lesson uses
-only routine interface labels, the verified deck/family names, card counts,
-and canonical glyphs. The explanatory-copy gate remains closed.
+objects. This does not approve new explanatory TKA copy. The replacement
+workspace uses only routine interface labels, the verified deck/family names,
+card counts, and canonical glyphs. The explanatory-copy gate remains closed.
+
+The rejected quiz and completion summary have been removed. The lesson now
+presents each active family's real cards before selection and keeps the chosen
+card beside its live motion. This interaction is awaiting Austen's review and
+is not recorded as approved.
 
 The old generated `AABB` / `GGGG` / `CCCC` exercise and the proposed
 three-card AABB replacement below are both superseded as the primary lesson

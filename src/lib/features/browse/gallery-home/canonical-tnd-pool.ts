@@ -40,7 +40,6 @@ function safeTurn(pattern: string): string {
 }
 
 let poolPromise: Promise<readonly SequenceData[]> | null = null;
-let learningLettersPromise: Promise<readonly SequenceData[]> | null = null;
 
 /**
  * Resolve the full canonical pool (all six families × all 49 turn patterns).
@@ -57,35 +56,12 @@ export function loadCanonicalTnDSequences(): Promise<readonly SequenceData[]> {
   return poolPromise;
 }
 
-/**
- * Resolve the exact TKA 1: Learning Letters deck: the canonical 0|0 card from
- * every diamond T&D family. The family resolver removes the three mirrored
- * gamma duplicates, so this returns the same 19 cards as the founding smart
- * collection without building the other 48 turn patterns per seed.
- */
-export function loadCanonicalLearningLettersSequences(): Promise<
-  readonly SequenceData[]
-> {
-  if (!learningLettersPromise) {
-    learningLettersPromise = resolvePool(["0|0"]).catch((err) => {
-      learningLettersPromise = null;
-      throw err;
-    });
-  }
-  return learningLettersPromise;
-}
-
-async function resolvePool(
-  patterns?: readonly string[]
-): Promise<readonly SequenceData[]> {
+async function resolvePool(): Promise<readonly SequenceData[]> {
   const out: SequenceData[] = [];
   // Sequential per family: each call shares the same cached base catalog, and
   // the resolution work is CPU-bound — parallelism buys nothing but jank.
   for (const element of TND_ELEMENTS) {
-    const matrices = await resolveTnDFamilyCards(
-      element.familyId,
-      patterns ? { patterns } : {}
-    );
+    const matrices = await resolveTnDFamilyCards(element.familyId);
     for (const matrix of matrices) {
       for (const [pattern, seq] of matrix.byTurn) {
         const tagged = updateSequenceData(seq, {

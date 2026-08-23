@@ -92,7 +92,7 @@ describe("canonical concept lesson composition", () => {
     expect(type1).not.toContain("Type1ProspinPage");
   });
 
-  it("loads the Learning Letters deck and pairs the production player with the production card", () => {
+  it("loads the founding Learning Letters deck and keeps every card inspectable", () => {
     const stage = readSource(
       "src/lib/features/learn/components/interactive/words/WordSequencePair.svelte"
     );
@@ -100,14 +100,13 @@ describe("canonical concept lesson composition", () => {
       "src/lib/features/learn/components/interactive/words/WordsConceptExperience.svelte"
     );
 
-    expect(words).toContain("loadCanonicalLearningLettersSequences");
-    expect(words).toContain("ChoreoCard");
-    expect(words).not.toContain("PropAwareThumbnail");
+    expect(words).toContain("loadFoundingCollectionSequences");
+    expect(words).toContain("ChoreoCardThumbnail");
+    expect(words).toContain("SegmentedControl");
     expect(words).toContain("TKAWordGlyph");
-    expect(words).toContain("family-cards");
-    expect(words).toContain("answer-grid");
-    expect(words).toContain("resetLessonScroll");
-    expect(words).toContain("scrollIntoView");
+    expect(words).toContain("word-choices");
+    expect(words).toContain("selected-workspace");
+    expect(words).toContain("visitedSequenceIds");
     expect(stage).toContain("InlineAnimationPlayer");
     expect(stage).toContain("ChoreoCard");
     expect(stage).toContain(
@@ -119,7 +118,9 @@ describe("canonical concept lesson composition", () => {
     expect(words).not.toContain("WORD_QUESTIONS");
     expect(words).not.toContain('"AABB"');
     expect(words).not.toContain("CanonicalWordStage");
-    expect(stage).not.toContain("SegmentedControl");
+    expect(words).not.toContain("answer-grid");
+    expect(words).not.toContain("challengeFamilyIndex");
+    expect(words).not.toContain("summary-families");
     expect(words).not.toContain("letter-train");
     expect(words).not.toContain('.split("")');
     expect(words).not.toContain("<strong>{word}</strong>");

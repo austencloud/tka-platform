@@ -9,7 +9,15 @@ import type {
   SmartFilterSpec,
 } from "$lib/shared/library/domain/models/collection";
 import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
-import { CANONICAL_TND_AUTHOR } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+import { BrowseSortMethod } from "$lib/shared/browse/domain/enums/browse-enums";
+import { deriveSpecMembers } from "$lib/shared/browse/services/smart-filter-spec";
+import { sortSequences } from "$lib/shared/browse/services/browse-sorter";
+import {
+  CANONICAL_TND_AUTHOR,
+  loadCanonicalBookVariations,
+  loadCanonicalTnDSequences,
+} from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export interface FoundingSmartCollection {
   /** Stable id, always prefixed "founding_" (underscore avoids the ":" used by
@@ -105,7 +113,8 @@ export const FOUNDING_SMART_COLLECTIONS: FoundingSmartCollection[] = [
   {
     id: "founding_book",
     name: "Classic Book Variations",
-    description: "The base motions at one turn, with the book reversal — both props reverse every step.",
+    description:
+      "The base motions at one turn, with the book reversal — both props reverse every step.",
     icon: "fa-book",
     sequenceCount: 19,
     filterSpec: {
@@ -125,16 +134,48 @@ export function isFoundingId(id: string): boolean {
 }
 
 export function getFoundingCollection(
-  id: string,
+  id: string
 ): FoundingSmartCollection | undefined {
   return FOUNDING_SMART_COLLECTIONS.find((c) => c.id === id);
+}
+
+/**
+ * Resolve a founding deck through the same config rule that owns its Browse
+ * collection. Learn lessons and other non-engine consumers call this instead
+ * of rebuilding a deck from a second set of assumptions.
+ */
+export async function loadFoundingCollectionSequences(
+  id: string
+): Promise<readonly SequenceData[]> {
+  const founding = getFoundingCollection(id);
+  if (!founding) throw new Error(`Unknown founding collection: ${id}`);
+
+  const pool = await (id === "founding_book"
+    ? loadCanonicalBookVariations()
+    : loadCanonicalTnDSequences());
+  const members = deriveSpecMembers([...pool], founding.filterSpec);
+  const sorted = sortSequences(
+    members,
+    founding.filterSpec.sortMethod as BrowseSortMethod
+  );
+  const ordered =
+    founding.filterSpec.sortDirection === "desc" ? sorted.reverse() : sorted;
+
+  if (ordered.length !== founding.sequenceCount) {
+    throw new Error(
+      `${founding.name} resolved ${ordered.length} cards instead of ${founding.sequenceCount}`
+    );
+  }
+  return ordered;
 }
 
 /**
  * Adapt a founding definition to a read-only smart LibraryCollection for the
  * rail and detail view. Never persisted to Firestore.
  */
-export function toSyntheticCollection(f: FoundingSmartCollection): LibraryCollection {
+export function toSyntheticCollection(
+  f: FoundingSmartCollection
+): LibraryCollection {
   return {
     id: f.id,
     name: f.name,

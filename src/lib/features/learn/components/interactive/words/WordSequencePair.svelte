@@ -45,10 +45,11 @@
 
 <style>
   .sequence-pair {
+    container: word-pair / size;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     width: 100%;
-    height: clamp(30rem, 66dvh, 48rem);
+    height: clamp(28rem, 51dvh, 44rem);
     min-width: 0;
     overflow: hidden;
     background: var(--theme-card-bg);
@@ -65,16 +66,16 @@
   }
 
   .card-pane {
-    padding: clamp(0.35rem, 0.8cqw, 0.9rem);
+    padding: clamp(0.35rem, 0.8cqw, 0.85rem);
     border-left: 1px solid var(--theme-stroke);
     background: var(--theme-panel-bg);
   }
 
-  @container (max-width: 760px) {
+  @media (max-width: 760px) {
     .sequence-pair {
       grid-template-columns: 1fr;
-      grid-template-rows: 21rem 29rem;
-      height: auto;
+      grid-template-rows: 18rem 24rem;
+      height: 42rem;
     }
 
     .card-pane {
@@ -83,22 +84,15 @@
     }
   }
 
-  @container (min-width: 1680px) {
-    .sequence-pair {
-      height: clamp(40rem, 66dvh, 58rem);
-    }
-  }
-
-  @container (min-width: 2600px) {
-    .sequence-pair {
-      height: clamp(50rem, 68dvh, 70rem);
-    }
-  }
-
   @media (max-height: 620px) and (min-width: 761px) {
     .sequence-pair {
-      height: calc(100dvh - 10rem);
-      min-height: 20rem;
+      height: 26rem;
+    }
+  }
+
+  @media (min-width: 2200px) {
+    .sequence-pair {
+      height: clamp(38rem, 48dvh, 52rem);
     }
   }
 </style>
