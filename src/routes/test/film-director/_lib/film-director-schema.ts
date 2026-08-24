@@ -9,8 +9,27 @@ import {
   type SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { directiveSchema } from "./directives";
 
 export const FILM_DIRECTOR_SCHEMA_VERSION = 1 as const;
+export const FILM_DIRECTOR_SCHEMA_VERSION_2 = 2 as const;
+
+export const FILM_DIRECTOR_DIRECTIVE_AXES = [
+  "avatarId",
+  "prop",
+  "effect",
+  "effort",
+  "staffLengthCm",
+  "environmentId",
+  "formation",
+] as const;
+
+const seedSchema = z
+  .object({
+    base: z.number().int().optional(),
+    axes: z.record(z.string(), z.number().int()).optional(),
+  })
+  .strict();
 
 export const DIRECTOR_EFFORT_IDS = [
   "linear",
@@ -103,14 +122,32 @@ const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
-    avatarId: avatarIdSchema.optional(),
-    prop: z.nativeEnum(PropType).optional(),
-    effect: effectIdSchema.optional(),
-    effort: z.enum(DIRECTOR_EFFORT_IDS).optional(),
+    avatarId: directiveSchema(avatarIdSchema).optional(),
+    prop: directiveSchema(z.nativeEnum(PropType)).optional(),
+    effect: directiveSchema(effectIdSchema).optional(),
+    effort: directiveSchema(z.enum(DIRECTOR_EFFORT_IDS)).optional(),
     position: position2Schema.optional(),
     facingDegrees: finiteNumber.optional(),
     beatOffset: finiteNumber.optional(),
-    staffLengthCm: finiteNumber.min(40).max(300).optional(),
+    staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
+  })
+  .strict();
+
+const castDefaultsSchema = z
+  .object({
+    avatarId: directiveSchema(avatarIdSchema).optional(),
+    prop: directiveSchema(z.nativeEnum(PropType)).optional(),
+    effect: directiveSchema(effectIdSchema).optional(),
+    effort: directiveSchema(z.enum(DIRECTOR_EFFORT_IDS)).optional(),
+    staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
+  })
+  .strict();
+
+const castSchema = z
+  .object({
+    count: z.number().int().min(1).max(8),
+    defaults: castDefaultsSchema.optional(),
+    performers: z.array(performerSchema).max(8).optional(),
   })
   .strict();
 
@@ -121,14 +158,19 @@ const performanceSchema = z
       .object({ source: z.literal("demo"), loop: z.boolean().optional() })
       .strict()
       .optional(),
-    formation: z.enum(DIRECTOR_FORMATIONS).optional(),
+    formation: directiveSchema(z.enum(DIRECTOR_FORMATIONS)).optional(),
+    cast: castSchema.optional(),
     performers: z.array(performerSchema).min(1).max(8).optional(),
   })
-  .strict();
+  .strict()
+  .refine((value) => !(value.cast && value.performers), {
+    message: "Use either a cast block or a performers array, not both.",
+    path: ["cast"],
+  });
 
 const sceneSchema = z
   .object({
-    environmentId: environmentIdSchema.optional(),
+    environmentId: directiveSchema(environmentIdSchema).optional(),
     showStage: z.boolean().optional(),
     showAudience: z.boolean().optional(),
     sceneFeatures: z.record(z.string(), z.boolean()).optional(),
@@ -167,7 +209,12 @@ const shotSchema = z
     transition: transitionSchema.optional(),
     scene: sceneSchema.optional(),
     performance: performanceSchema.optional(),
-    effectPresets: z.record(z.string(), z.string().min(1)).optional(),
+    effectPresets: z
+      .record(
+        z.string(),
+        z.union([z.string().min(1), z.object({ pick: z.literal("any") }).strict()])
+      )
+      .optional(),
     effectOverrides: z
       .record(configurableEffectIdSchema, z.record(z.string(), z.unknown()))
       .optional(),
@@ -177,10 +224,14 @@ const shotSchema = z
 
 export const FilmDirectorInputSchema = z
   .object({
-    version: z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
+    version: z.union([
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION),
+      z.literal(FILM_DIRECTOR_SCHEMA_VERSION_2),
+    ]),
     id: z.string().min(1),
     title: z.string().min(1),
     brief: z.string().min(1).optional(),
+    seed: seedSchema.optional(),
     format: z
       .object({
         width: z.number().int().min(640).max(7680).optional(),
@@ -202,6 +253,7 @@ export const FilmDirectorInputSchema = z
 
 export type FilmDirectorInput = z.input<typeof FilmDirectorInputSchema>;
 export type DirectorShotInput = z.infer<typeof shotSchema>;
+export type DirectorCastInput = z.infer<typeof castSchema>;
 export type DirectorCameraInput = z.infer<typeof cameraSchema>;
 export type DirectorCameraTargetInput = z.infer<typeof cameraTargetSchema>;
 export type DirectorCameraPreset = (typeof DIRECTOR_CAMERA_PRESETS)[number];
