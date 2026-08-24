@@ -1,6 +1,6 @@
 # Film Director Capability Matrix
 
-<!-- directive-axes: avatarId,prop,effect,effort,staffLengthCm,environmentId,formation -->
+<!-- directive-axes: avatarId,prop,effect,effort,staffLengthCm,environmentId,formation,bluePlane,redPlane,stepPlane -->
 
 One row per speakable axis of the `/test/film-director` schema (v2). "Source
 of truth" is the live registry/enum — never copy value lists here.

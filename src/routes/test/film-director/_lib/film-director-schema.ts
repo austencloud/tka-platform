@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AvatarId, FormationPreset } from "@austencloud/scene-3d";
+import { Plane, type AvatarId, type FormationPreset } from "@austencloud/scene-3d";
 
 import { EFFECTS } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
@@ -22,6 +22,9 @@ export const FILM_DIRECTOR_DIRECTIVE_AXES = [
   "staffLengthCm",
   "environmentId",
   "formation",
+  "bluePlane",
+  "redPlane",
+  "stepPlane",
 ] as const;
 
 const seedSchema = z
@@ -131,6 +134,52 @@ const configurableEffectIdSchema = z
     }
   );
 
+// Derived from the live enum, never retyped — see the comment above
+// effortIdSchema for why this is string+refine (with a type-predicate to
+// still narrow the inferred type to Plane) rather than z.enum/z.nativeEnum.
+// Unlike the other axis catalogs, an unknown plane also lists the full
+// catalog in its message: there is no "closest" plane the way there's an
+// obvious closest prop, so directors are more likely to need the full list.
+const PLANE_VALUES = Object.values(Plane) as Plane[];
+const planeSchema = z.string().refine(
+  (value): value is Plane =>
+    (PLANE_VALUES as readonly string[]).includes(value),
+  {
+    error: (issue) =>
+      `Unknown plane "${String(issue.input)}". Planes: ${PLANE_VALUES.join(", ")}.`,
+  }
+);
+
+function firstDuplicate(values: readonly string[]): string | undefined {
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (seen.has(value)) return value;
+    seen.add(value);
+  }
+  return undefined;
+}
+
+const visiblePlanesSchema = z.array(planeSchema).refine(
+  (values) => firstDuplicate(values) === undefined,
+  {
+    error: (issue) =>
+      `scene.visiblePlanes lists "${firstDuplicate(issue.input as readonly string[])}" twice.`,
+  }
+);
+
+// Per-step plane overrides are a shot-scope directive (literal, pick:any,
+// oneOf, not) resolved by resolveShotDirective in
+// resolve-film-director-spec.ts — distinct/sameAs make no sense pinned to a
+// single (performer, step, hand) triple, same reasoning as environmentId
+// and formation.
+const stepPlaneEntrySchema = z
+  .object({
+    step: z.number().int().min(0),
+    hand: z.enum(["blue", "red"]),
+    plane: directiveSchema(planeSchema),
+  })
+  .strict();
+
 const cameraTargetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("group") }).strict(),
   z
@@ -166,6 +215,9 @@ const performerSchema = z
     facingDegrees: finiteNumber.optional(),
     beatOffset: finiteNumber.optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
+    bluePlane: directiveSchema(planeSchema).optional(),
+    redPlane: directiveSchema(planeSchema).optional(),
+    stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
 
@@ -176,6 +228,9 @@ const castDefaultsSchema = z
     effect: directiveSchema(effectIdSchema).optional(),
     effort: directiveSchema(effortIdSchema).optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
+    bluePlane: directiveSchema(planeSchema).optional(),
+    redPlane: directiveSchema(planeSchema).optional(),
+    stepPlanes: z.array(stepPlaneEntrySchema).optional(),
   })
   .strict();
 
@@ -210,6 +265,7 @@ const sceneSchema = z
     showStage: z.boolean().optional(),
     showAudience: z.boolean().optional(),
     sceneFeatures: z.record(z.string(), z.boolean()).optional(),
+    visiblePlanes: visiblePlanesSchema.optional(),
   })
   .strict();
 
@@ -342,6 +398,12 @@ export type DirectorCameraPreset = (typeof DIRECTOR_CAMERA_PRESETS)[number];
 export type DirectorInterpolation = (typeof DIRECTOR_INTERPOLATIONS)[number];
 export type DirectorEasing = (typeof DIRECTOR_EASINGS)[number];
 
+export interface ResolvedDirectorStepPlane {
+  step: number;
+  hand: "blue" | "red";
+  plane: Plane;
+}
+
 export interface ResolvedDirectorPerformer {
   id: string;
   name: string;
@@ -353,6 +415,9 @@ export interface ResolvedDirectorPerformer {
   facingAngle: number;
   beatOffset: number;
   staffLengthCm: number | null;
+  bluePlane: Plane;
+  redPlane: Plane;
+  stepPlanes: ResolvedDirectorStepPlane[];
 }
 
 export interface ResolvedDirectorCameraKeyframe {
@@ -379,6 +444,7 @@ export interface ResolvedDirectorShot {
     showStage: boolean;
     showAudience: boolean;
     sceneFeatures: Record<string, boolean>;
+    visiblePlanes: Plane[];
   };
   performance: {
     bpm: number;
