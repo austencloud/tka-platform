@@ -389,6 +389,10 @@ static/models/**/_tmp_*.glb
 # Claude scratch / diagnostic artifacts (logs, traces, throwaway scripts)
 .claude-tmp/
 
+# Codex scratch / remote attachment artifacts (task-local, not source)
+/.codex-tmp/
+/.codex-remote-attachments/
+
 # Module-audit scratch (8-dimension audit JSON reports + debug chrome profile)
 .audit-evidence/
 
