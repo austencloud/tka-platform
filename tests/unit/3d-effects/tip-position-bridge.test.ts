@@ -248,7 +248,6 @@ describe("TipPositionBridge3D", () => {
 		expect(movingResult.tips[0].speed).toBeGreaterThan(0);
 	});
 });
-
 describe("resolveTrailSources3D", () => {
 	const stationary = { x: 0, y: 0, z: 0 };
 	const tips: TipPositionData3D[] = [
@@ -373,12 +372,19 @@ describe("resolvePropTipAnchors3D", () => {
 		PropType.TORCH,
 		PropType.CHICKEN,
 		PropType.GUITAR,
+		PropType.UKULELE,
 	])("gives %s exactly one tip, on the thumb slot", (propType) => {
 		const anchors = resolvePropTipAnchors3D(propType, halfLength);
 
 		expect(anchors).toHaveLength(1);
 		expect(anchors[0].effectTipIndex).toBe(1);
 		expect(anchors[0].axialOffset).toBeGreaterThan(0);
+	});
+
+	it("places the ukulele tip at its authored headstock-tip grip", () => {
+		expect(resolvePropTipAnchors3D(PropType.UKULELE, halfLength)).toEqual([
+			{ effectTipIndex: 1, axialOffset: 0.015 },
+		]);
 	});
 
 	it("emits from the ball itself for a contact ball, and from the hand for a bare hand", () => {
