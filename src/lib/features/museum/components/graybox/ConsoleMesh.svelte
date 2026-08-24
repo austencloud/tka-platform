@@ -18,8 +18,14 @@
   import { CanvasTexture, DoubleSide, SRGBColorSpace } from "three";
   import {
     CONSOLE_BUTTON_D,
+    CONSOLE_FACE,
     CONSOLE_FACE_TILT,
     VERB_LABELS,
+    consoleBodyHeight,
+    consoleColumnX,
+    consoleFaceSize,
+    consoleFaceY,
+    consoleRowY,
     type ConsoleVerb,
   } from "$lib/features/museum/domain/exhibit-console";
 
@@ -53,22 +59,20 @@
     bodyColor = "#2b3a41",
   }: Props = $props();
 
-  /** Along-the-slope length of the control face. */
-  const FACE_W = $derived(footprint.x - 0.06);
-  const FACE_H = $derived(footprint.z / Math.cos(CONSOLE_FACE_TILT) - 0.04);
-  const FACE_T = 0.035;
+  /** Plate size and datums come from the face's owner, never from local copies. */
+  const FACE_W = $derived(consoleFaceSize(footprint).w);
+  const FACE_H = $derived(consoleFaceSize(footprint).h);
+  const FACE_T = CONSOLE_FACE.thickness;
+  const BUTTON_V = CONSOLE_FACE.buttonV;
+  const LABEL_V = CONSOLE_FACE.labelV;
+  const RESTORE_BAR_V = CONSOLE_FACE.restoreBarV;
+  const RESTORE_LABEL_V = CONSOLE_FACE.restoreLabelV;
+  const LABEL_GUTTER = CONSOLE_FACE.labelGutter;
 
-  /** Where each control sits on the face, in face-local units of its own size. */
-  const BUTTON_V = 0.34;
-  const LABEL_V = 0.62;
-  const RESTORE_V = 0.86;
+  const faceY = $derived(consoleFaceY(height, footprint));
 
-  const faceY = $derived(height - (footprint.z / 2) * Math.tan(CONSOLE_FACE_TILT));
-
-  function localX(index: number, count: number, width: number): number {
-    return ((index + 0.5) / count - 0.5) * width;
-  }
-  const localY = (v: number, h: number) => h / 2 - v * h;
+  const localX = consoleColumnX;
+  const localY = consoleRowY;
 
   /**
    * The face's own graphics.
@@ -100,18 +104,45 @@
       ctx.fill();
     });
 
+    // Fit the type to the column instead of hoping it fits. Each label wraps
+    // on its spaces, then the whole set shrinks together until the widest line
+    // clears its column, so the four labels stay one size and read as a row.
+    const column = (w / labels.length) * (1 - LABEL_GUTTER);
+    const lines = labels.map((label) => label.toUpperCase().split(" "));
+    let size = Math.round(h * 0.115);
+    const widest = () => {
+      let worst = 0;
+      for (const parts of lines) {
+        for (const part of parts) {
+          worst = Math.max(worst, ctx.measureText(part).width);
+        }
+      }
+      return worst;
+    };
+    const setFont = (px: number) => {
+      ctx.font = `600 ${px}px system-ui, sans-serif`;
+    };
+    setFont(size);
+    while (size > 12 && widest() > column) {
+      size -= 1;
+      setFont(size);
+    }
+
     ctx.fillStyle = tint;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = `600 ${Math.round(h * 0.115)}px system-ui, sans-serif`;
-    labels.forEach((label, index) => {
+    const lineH = size * 1.12;
+    lines.forEach((parts, index) => {
       const cx = ((index + 0.5) / labels.length) * w;
-      ctx.fillText(label.toUpperCase(), cx, LABEL_V * h);
+      const top = LABEL_V * h - ((parts.length - 1) * lineH) / 2;
+      parts.forEach((part, row) => {
+        ctx.fillText(part, cx, top + row * lineH, column);
+      });
     });
 
-    ctx.font = `500 ${Math.round(h * 0.095)}px system-ui, sans-serif`;
+    ctx.font = `500 ${Math.round(h * 0.075)}px system-ui, sans-serif`;
     ctx.fillStyle = "#6d8a93";
-    ctx.fillText("RESTORE", w / 2, RESTORE_V * h);
+    ctx.fillText("RESTORE", w / 2, RESTORE_LABEL_V * h, w * 0.5);
 
     const texture = new CanvasTexture(canvas);
     texture.colorSpace = SRGBColorSpace;
@@ -125,15 +156,21 @@
     return () => texture?.dispose();
   });
 
-  /** Body stops short of the face so the slab reads as a separate plate. */
-  const bodyH = $derived(faceY - 0.02);
+  /** Body stops under the plate's near edge, so the slab is never buried in it. */
+  const bodyH = $derived(consoleBodyHeight(height, footprint));
 </script>
 
 <T.Group position={[position[0], position[1], position[2]]}>
   <!-- Body. A plain lectern column: this object is furniture, not a machine. -->
   <T.Mesh position={[0, bodyH / 2, 0]} castShadow receiveShadow>
     <T.BoxGeometry args={[footprint.x, bodyH, footprint.z]} />
-    <T.MeshStandardMaterial color={bodyColor} roughness={0.72} metalness={0.08} />
+    <T.MeshStandardMaterial
+      color={bodyColor}
+      emissive={bodyColor}
+      emissiveIntensity={0.05}
+      roughness={0.72}
+      metalness={0.08}
+    />
   </T.Mesh>
 
   <!-- The control face, tilted back toward the visitor who stands south of it.
@@ -182,7 +219,7 @@
 
     <!-- Restore: one handle, not a menu. Dull with nothing to undo. -->
     <T.Mesh
-      position={[0, localY(RESTORE_V, FACE_H) + FACE_H * 0.1, FACE_T / 2 + 0.012]}
+      position={[0, localY(RESTORE_BAR_V, FACE_H), FACE_T / 2 + 0.012]}
       castShadow
     >
       <T.BoxGeometry args={[FACE_W * 0.34, FACE_H * 0.075, 0.024]} />

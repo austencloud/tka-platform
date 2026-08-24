@@ -62,6 +62,92 @@ export const CONSOLE_FACE_TILT = Math.PI * 0.22;
 export const CONSOLE_BUTTON_D = 0.11;
 
 /**
+ * The control face's geometry, and where each row sits on it.
+ *
+ * ONE OWNER, because two of them need the same numbers: the mesh draws the
+ * face and the walk scene works out where a visitor's aim lands on it. While
+ * both kept private copies, moving a button in the mesh left its pressable
+ * target behind at the old spot — a console that looks right and cannot be
+ * used. Every consumer derives from here.
+ *
+ * The plate covers two thirds of the lectern's depth rather than all of it.
+ * At full depth the tilted slab hangs a fifth of a metre below its own centre,
+ * which is below the body's top, so the near end of the face — the RESTORE
+ * handle and the bottom line of every wrapped label — was buried inside the
+ * box it sits on.
+ */
+export const CONSOLE_FACE = {
+  /** How much of the footprint depth the plate spans, along the slope. */
+  depthFraction: 0.66,
+  widthInset: 0.06,
+  thickness: 0.035,
+  /** Row positions, far edge (0) to near edge (1). */
+  buttonV: 0.3,
+  labelV: 0.58,
+  restoreBarV: 0.8,
+  restoreLabelV: 0.92,
+  /** Gap between neighbouring labels, as a fraction of the button pitch. */
+  labelGutter: 0.16,
+} as const;
+
+export interface ConsoleFootprint {
+  x: number;
+  z: number;
+}
+
+/** The plate's own width and along-the-slope length. */
+export function consoleFaceSize(footprint: ConsoleFootprint): {
+  w: number;
+  h: number;
+} {
+  return {
+    w: footprint.x - CONSOLE_FACE.widthInset,
+    h: (footprint.z * CONSOLE_FACE.depthFraction) / Math.cos(CONSOLE_FACE_TILT),
+  };
+}
+
+/** How far the plate's near edge hangs below the plate's centre. */
+export function consoleFaceDrop(footprint: ConsoleFootprint): number {
+  return (consoleFaceSize(footprint).h / 2) * Math.cos(CONSOLE_FACE_TILT);
+}
+
+/**
+ * Height of the plate's centre above the console's base.
+ *
+ * Set so the plate's FAR edge finishes flush with the console's stated height:
+ * the visitor meets the near, lower edge, and nothing on the object stands
+ * taller than the number that names it.
+ */
+export function consoleFaceY(
+  height: number,
+  footprint: ConsoleFootprint
+): number {
+  return height - consoleFaceDrop(footprint);
+}
+
+/** Height of the lectern body, stopping just under the plate's near edge. */
+export function consoleBodyHeight(
+  height: number,
+  footprint: ConsoleFootprint
+): number {
+  return consoleFaceY(height, footprint) - consoleFaceDrop(footprint) - 0.01;
+}
+
+/** Local Y of a row on the plate, measured from the plate's centre. */
+export function consoleRowY(v: number, faceH: number): number {
+  return faceH / 2 - v * faceH;
+}
+
+/** Local X of the nth of count controls spread across the plate. */
+export function consoleColumnX(
+  index: number,
+  count: number,
+  faceW: number
+): number {
+  return ((index + 0.5) / count - 0.5) * faceW;
+}
+
+/**
  * How close the visitor must be for the face to wake.
  *
  * Dark from across the room, live at arm's length — the console's only approach
@@ -122,7 +208,10 @@ export function nextProp(current: string): string {
   const index = CAVE_PROP_CYCLE.findIndex(
     (prop) => prop.toLowerCase() === current.toLowerCase()
   );
-  return CAVE_PROP_CYCLE[(index + 1) % CAVE_PROP_CYCLE.length];
+  // The modulo keeps this in range, but the compiler cannot know that, and a
+  // non-null assertion would hide a real out-of-range bug if the cycle were
+  // ever emptied. The first entry is the honest answer to "no next prop".
+  return CAVE_PROP_CYCLE[(index + 1) % CAVE_PROP_CYCLE.length] ?? CAVE_PROP_CYCLE[0];
 }
 
 /** Press one button. Pure: the caller owns where the new state lives. */

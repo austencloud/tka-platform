@@ -31,10 +31,15 @@
   import { pedestalFaceDataUri } from "$lib/features/museum/services/pedestal-face";
   import {
     CONSOLE_BUTTON_D,
+    CONSOLE_FACE,
     CONSOLE_FACE_TILT,
     CONSOLE_FULL_M,
     CONSOLE_WAKE_M,
     applyVerb,
+    consoleColumnX,
+    consoleFaceSize,
+    consoleFaceY,
+    consoleRowY,
     defaultSettings,
     isHybrid,
     isModified,
@@ -52,7 +57,6 @@
   import {
     CAUSEWAY_Y,
     GROTTO_WATERLINE_Y,
-    EYE_ABOVE_FLOOR,
     SHELF_Y,
     WATERLINE_Y,
     DOME_APEX_Y,
@@ -323,6 +327,11 @@
     .map((fixture) => {
       const sequenceId = fixture.sequenceId!;
       const hybrid = isHybrid(boundSteps(sequenceId));
+      // The performer this console owns, so the key light can find them.
+      const showcase = layout.exhibitFixtures.find(
+        (other) =>
+          other.kind === "case-showcase" && other.caseWord === fixture.caseWord
+      )!;
       return {
         id: fixture.id,
         caseWord: fixture.caseWord!,
@@ -334,10 +343,24 @@
         height: fixture.height,
         footprint: fixture.size,
         verbs: verbsFor(hybrid),
+        // In front of the performer and above their head, on the visitor's
+        // side of the channel, so the lift models a lamp rather than a glow.
+        keyLight: [
+          showcase.centre.x - origin.x,
+          showcase.baseY + showcase.height + 0.9,
+          showcase.centre.z - origin.z + 1.5,
+        ] as [number, number, number],
       };
     });
 
-  /** Live camera position, mirrored each frame for the approach test. */
+  /**
+   * Where the visitor is, for the console approach test.
+   *
+   * Mirrored from BOTH movement paths on purpose. `playerPosition` only moves
+   * on a teleport and `livePosition` only moves under physics, so a console
+   * that watched either one alone would stay asleep for half the ways a
+   * visitor can arrive at it — including every review-bridge jump.
+   */
   let viewPoint = $state({ x: 0, y: 0, z: 0 });
   const aimOrigin = new Vector3();
   const aimDirection = new Vector3();
@@ -389,8 +412,9 @@
     const angle = CONSOLE_FACE_TILT - Math.PI / 2;
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    const faceY =
-      spec.height - (spec.footprint.z / 2) * Math.tan(CONSOLE_FACE_TILT);
+    // Same datum the mesh uses. Deriving it here a second time is how the
+    // pressable targets drifted away from the drawn buttons once already.
+    const faceY = consoleFaceY(spec.height, spec.footprint);
     return {
       x: spec.position[0] + lx,
       y: spec.position[1] + faceY + (ly * cos - lz * sin),
@@ -407,16 +431,15 @@
   /** Every pressable control in the wing, with its world position. */
   const consoleTargets = $derived(
     consoleSpecs.flatMap((spec): ConsoleTarget[] => {
-      const faceW = spec.footprint.x - 0.06;
-      const faceH = spec.footprint.z / Math.cos(CONSOLE_FACE_TILT) - 0.04;
-      const buttonY = faceH / 2 - 0.34 * faceH;
-      const restoreY = faceH / 2 - 0.86 * faceH + faceH * 0.1;
+      const { w: faceW, h: faceH } = consoleFaceSize(spec.footprint);
+      const buttonY = consoleRowY(CONSOLE_FACE.buttonV, faceH);
+      const restoreY = consoleRowY(CONSOLE_FACE.restoreBarV, faceH);
       const buttons = spec.verbs.map((verb, index) => ({
         caseWord: spec.caseWord,
         verb,
         point: controlWorldPoint(
           spec,
-          ((index + 0.5) / spec.verbs.length - 0.5) * faceW,
+          consoleColumnX(index, spec.verbs.length, faceW),
           buttonY,
           0.045
         ),
@@ -552,6 +575,15 @@
   let targetPlayerYaw = $state(bootPoint.yaw);
   /** Non-null only for the tick the review bridge is aiming the camera. */
   let reviewYaw = $state<number | null>(null);
+  /**
+   * A one-frame pitch nudge for the review bridge.
+   *
+   * Yaw alone cannot aim at a console: the buttons sit on a one-metre lectern
+   * roughly 0.7 m below eye level, so a horizontal ray passes over every one of
+   * them. The camera controller already accepts an external pitch; this scene
+   * simply never handed it one.
+   */
+  let reviewPitch = $state<number | null>(null);
   /** Physics-owned position, mirrored each frame so a reload can resume here. */
   let livePosition = { x: bootPoint.x, y: bootPoint.y, z: bootPoint.z };
   let resumeSaveElapsed = 0;
@@ -641,6 +673,7 @@
     const target = { x: spawn.x, y: spawn.y, z: spawn.z };
     physicsProvider?.teleport?.(target);
     playerPosition = target;
+    viewPoint = target;
     playerYaw = spawn.yaw;
     targetPlayerYaw = spawn.yaw;
     // Same seam as the review bridge: the camera's yaw is the controller's, so
@@ -660,14 +693,34 @@
    * PLAN metres (the same numbers the layout module and the Blender QA cameras
    * use) and converts to the GLB's authoring origin.
    */
+  /**
+   * How far the standing capsule's centre sits above the floor it rests on.
+   *
+   * Rapier settles the capsule with its bottom on the ground plus a small
+   * margin, which is where `spawn.y` already puts the visitor. Repeated here so
+   * the review bridge's teleports agree with the physics rather than fighting
+   * it for the first second after every jump.
+   */
+  const PLAYER_STANDING_RISE = 0.9;
+
   function installReviewBridge(): (() => void) | undefined {
     if (!import.meta.env.DEV || typeof window === "undefined") return;
     const bridge = {
-      /** Teleport to a plan-space point. `y` is an elevation, not an offset. */
-      go(planX: number, planZ: number, y = CAUSEWAY_Y + EYE_ABOVE_FLOOR) {
+      /**
+       * Teleport to a plan-space point. `y` is an elevation, not an offset.
+       *
+       * The default is the STANDING CAPSULE's centre, not the eye. The camera
+       * controller adds its own 0.75 m eye offset on top of the avatar, so a
+       * jump that landed the capsule at eye height put the review's eye 2.35 m
+       * above the floor — three quarters of a metre taller than the visitor
+       * every sightline in the plan was measured for, which is enough to put a
+       * console's buttons out of reach and make the room read as a model.
+       */
+      go(planX: number, planZ: number, y = CAUSEWAY_Y + PLAYER_STANDING_RISE) {
         const target = { x: planX - origin.x, y, z: planZ - origin.z };
         physicsProvider?.teleport?.(target);
         playerPosition = target;
+        viewPoint = target;
         return target;
       },
       /**
@@ -680,20 +733,96 @@
        * it is released on the next tick so the mouse still owns the camera the
        * moment a human takes over.
        */
-      lookAt(planX: number, planZ: number) {
-        const angle = Math.atan2(
-          planX - origin.x - playerPosition.x,
-          planZ - origin.z - playerPosition.z
-        );
+      /**
+       * Face a plan-space point. Pass `aimY` to look DOWN at it as well —
+       * without that, an aim at a console clears the buttons entirely.
+       */
+      lookAt(planX: number, planZ: number, aimY?: number) {
+        const dx = planX - origin.x - playerPosition.x;
+        const dz = planZ - origin.z - playerPosition.z;
+        const angle = Math.atan2(dx, dz);
         playerYaw = angle;
         targetPlayerYaw = angle;
         reviewYaw = angle;
+        let pitch = 0;
+        if (aimY !== undefined) {
+          // Prefer the real camera, but only once it has actually been placed.
+          // A scene whose render loop has never run — a hidden tab, a collapsed
+          // pane — still HAS a camera, sitting at the origin, and trusting that
+          // one silently aims the review upward instead of down at the lectern.
+          // Standing next to the visitor is what makes it the visitor's eye.
+          const eye = threlte.camera.current?.getWorldPosition(new Vector3());
+          const placed =
+            eye !== undefined &&
+            Math.hypot(eye.x - playerPosition.x, eye.z - playerPosition.z) < 1;
+          const eyeY = placed ? eye.y : playerPosition.y;
+          // Positive pitch looks down, per UnifiedCameraController.
+          pitch = Math.atan2(eyeY - aimY, Math.hypot(dx, dz));
+          reviewPitch = pitch;
+        }
         setTimeout(() => {
           reviewYaw = null;
+          reviewPitch = null;
         }, 0);
-        return angle;
+        return { yaw: angle, pitch };
       },
       where: () => ({ ...playerPosition, yaw: playerYaw, origin }),
+      /** What the consoles measure their approach against. */
+      viewPoint: () => ({ ...viewPoint }),
+      /**
+       * Every control and where the eye actually is.
+       *
+       * The bridge's `lookAt` sets yaw only, so a review that can aim
+       * horizontally still cannot aim DOWN at a lectern. This reports the miss
+       * rather than leaving `press()` returning a bare false.
+       */
+      controls: () => {
+        const camera = threlte.camera.current;
+        const eye = camera
+          ? camera.getWorldPosition(new Vector3())
+          : new Vector3();
+        return {
+          eye: { x: eye.x, y: eye.y, z: eye.z },
+          targets: consoleTargets.map((target) => ({
+            caseWord: target.caseWord,
+            verb: target.verb,
+            point: target.point,
+            drop: +(eye.y - target.point.y).toFixed(3),
+            range: +Math.hypot(
+              target.point.x - eye.x,
+              target.point.y - eye.y,
+              target.point.z - eye.z
+            ).toFixed(3),
+          })),
+        };
+      },
+      /** Press whatever control the view is currently aimed at. */
+      press: () => pressAimedControl(),
+      /**
+       * Press a named control directly, without aiming.
+       *
+       * The aimed path is the real one; this exists because a review pass that
+       * cannot take pointer lock still has to be able to prove that a verb
+       * changes the figure on the base.
+       */
+      set: (caseWord: string, verb: ConsoleVerb | "restore") => {
+        const current = performerSettings[caseWord];
+        if (!current) return null;
+        performerSettings[caseWord] =
+          verb === "restore"
+            ? defaultSettings(PEDESTAL_PROP)
+            : applyVerb(current, verb);
+        return { ...performerSettings[caseWord] };
+      },
+      settings: () => JSON.parse(JSON.stringify(performerSettings)),
+      consoles: () =>
+        consoles.map((station) => ({
+          id: station.id,
+          caseWord: station.caseWord,
+          verbs: [...station.verbs],
+          awake: station.awake,
+          modified: station.modified,
+        })),
       /** The live scene graph, so a review pass can count what actually mounted. */
       scene: () => threlte.scene,
       water: grottoWater,
@@ -737,12 +866,21 @@
 
   let removeReviewBridge: (() => void) | undefined;
   let removePageHide: (() => void) | undefined;
+  let removePressKey: (() => void) | undefined;
 
   onMount(async () => {
     removeReviewBridge = installReviewBridge();
     const onPageHide = () => writeResumePoint();
     window.addEventListener("pagehide", onPageHide);
     removePageHide = () => window.removeEventListener("pagehide", onPageHide);
+    // Reach out and press it. One key, because a console you walk up to should
+    // not need a vocabulary — you are already looking at the button you mean.
+    const onPress = (event: KeyboardEvent) => {
+      if (event.key !== "e" && event.key !== "E") return;
+      if (pressAimedControl()) event.preventDefault();
+    };
+    window.addEventListener("keydown", onPress);
+    removePressKey = () => window.removeEventListener("keydown", onPress);
     physicsState = createPhysicsWorldState();
     await initPhysicsWorld(physicsState, { x: 0, y: -9.81, z: 0 });
     if (isDisposed || !physicsState) return;
@@ -811,6 +949,15 @@
     if (!position) return;
     props.onPositionChange?.(position);
     livePosition = position;
+    // The consoles wake off the visitor's own position, so it has to be the
+    // live physics one rather than the teleport-only mirror.
+    if (
+      position.x !== viewPoint.x ||
+      position.y !== viewPoint.y ||
+      position.z !== viewPoint.z
+    ) {
+      viewPoint = { x: position.x, y: position.y, z: position.z };
+    }
     resumeSaveElapsed += delta;
     if (resumeSaveElapsed >= 0.5) {
       resumeSaveElapsed = 0;
@@ -823,6 +970,7 @@
     // A hard reload skips onDestroy's usual timing, so pagehide carries it too.
     writeResumePoint();
     removePageHide?.();
+    removePressKey?.();
     removeReviewBridge?.();
     if (playerState && physicsState) {
       disposePlayerController(physicsState, playerState);
@@ -909,6 +1057,34 @@
   />
 {/each}
 
+{#each consoles as station (station.id)}
+  <ConsoleMesh
+    position={station.position}
+    height={station.height}
+    footprint={station.footprint}
+    verbs={station.verbs}
+    engaged={station.engaged}
+    awake={station.awake}
+    modified={station.modified}
+    tint={WATER_TINT}
+  />
+  <!-- The key-light lift on the performer this console owns. It rises with the
+       visitor's approach and never falls below zero: nothing in the room dims
+       to make room for it, which is the whole difference between a light in a
+       room and an interface overlay. -->
+  <T.PointLight
+    position={[
+      station.keyLight[0],
+      station.keyLight[1],
+      station.keyLight[2],
+    ]}
+    color="#cfeff8"
+    intensity={22 * station.awake}
+    distance={6}
+    decay={2}
+  />
+{/each}
+
 {#each fixtureMeshes as fixture (fixture.id)}
   <T.Mesh
     position={fixture.position}
@@ -949,6 +1125,7 @@
     initialYaw={spawn.yaw}
     initialPitch={0}
     externalYaw={reviewYaw}
+    externalPitch={reviewPitch}
     allowedModes={[CameraMode.FIRST_PERSON]}
     disableModeToggle={true}
     moveSpeed={3.2}
