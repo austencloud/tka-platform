@@ -191,8 +191,11 @@
     display: flex;
     align-items: center;
     pointer-events: auto;
-    bottom: 80px;
-    right: 12px;
+    /* The host sets --record-scene-right / --record-scene-bottom to clear
+       the scene control rail (desktop) or the compact action bar
+       (SequenceViewerShell owns both offsets). */
+    bottom: var(--record-scene-bottom, 80px);
+    right: var(--record-scene-right, 12px);
   }
 
   .record-pill {
@@ -355,7 +358,10 @@
 
   @media (max-width: 600px) {
     .bottom-right {
-      bottom: 80px;
+      /* Below 600px the scene control workspace is always compact (no
+         rail on the right edge), so the right offset is never set; the
+         bottom offset still lifts the pill above the compact action bar. */
+      bottom: var(--record-scene-bottom, 80px);
       right: 8px;
     }
   }

@@ -1161,6 +1161,32 @@
     grid-template-columns: auto 1fr;
   }
 
+  /* The 3D scene rail pins its Presets/Save cluster to the same corner the
+     Record Scene pill anchors to (SceneControlRail: right 0.75rem, bottom
+     5rem, z-index 30 — above the pill). When the rail is present, shift the
+     pill left of the rail column (0.75rem gutter + 48px buttons + 0.75rem
+     gap) so the two never stack. Compact workspaces replace the rail with
+     the bottom bar and keep the pill's default inset. */
+  :global(
+      .viewer-and-export.record-scene-active:has(
+        [data-scene-control-workspace]:not([data-presentation="compact"])
+      )
+    ) {
+    --record-scene-right: calc(1.5rem + 48px);
+  }
+
+  /* Compact workspaces center the Performer/Scene action bar along the same
+     bottom band the pill anchors to. Lift the pill above the bar (57px bar
+     + 12px gap) instead of shifting it sideways — the bar is centered, so
+     no horizontal inset can guarantee clearance. */
+  :global(
+      .viewer-and-export.record-scene-active:has(
+        [data-scene-control-workspace][data-presentation="compact"]
+      )
+    ) {
+    --record-scene-bottom: calc(80px + 57px + 12px);
+  }
+
   .export-panel-container {
     overflow: hidden;
     overflow-y: auto;
