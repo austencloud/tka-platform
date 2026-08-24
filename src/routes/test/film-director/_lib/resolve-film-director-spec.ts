@@ -7,20 +7,34 @@ import {
   type FormationPreset,
 } from "@austencloud/scene-3d";
 
-import { getRegistration } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+import {
+  EFFECTS,
+  getRegistration,
+} from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
 import { getStageCoordinateFrame } from "$lib/shared/3d/environments/domain/stage-coordinate-frame";
 import { getPerformerStageBounds } from "$lib/shared/3d/environments/domain/performer-stage-bounds";
 import {
   getSceneEnvironmentRendererKey,
-  type SceneEnvironmentId,
+  SceneEnvironmentId,
 } from "$lib/shared/3d/environments/domain/scene-environment";
 import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import { resolveDirectorCameraTrack } from "./director-camera-track";
+import { isDirectiveExpression, type DirectiveValue } from "./directives";
 import {
+  createAxisStream,
+  resolveFilmSeed,
+  seededPick,
+  type FilmSeed,
+} from "./directive-random";
+import { resolveCastAxis } from "./resolve-directives";
+import {
+  DIRECTOR_EFFORT_IDS,
+  DIRECTOR_FORMATIONS,
   FilmDirectorInputSchema,
+  type DirectorCastInput,
   type DirectorShotInput,
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
@@ -32,9 +46,42 @@ const DEFAULT_AVATARS = AVATAR_DEFINITIONS.map(
   (avatar) => avatar.id
 ) as AvatarId[];
 
-function contextualEnvironment(shot: DirectorShotInput): SceneEnvironmentId {
-  const effects =
-    shot.performance?.performers?.map((performer) => performer.effect) ?? [];
+// Axis catalogs, built once at module scope. `effect` and `avatarId` stay
+// loosely typed as `string` here (see the per-axis comments in resolveShot)
+// because their schema fields are un-narrowed `z.string()` refinements —
+// the registry-type cast happens once, on the resolved concrete value, same
+// as this file did before directives existed.
+const PROP_CATALOG = Object.values(PropType);
+const EFFECT_CATALOG: readonly string[] = [
+  "none",
+  ...EFFECTS.map((effect) => effect.id),
+];
+const EFFORT_CATALOG = [...DIRECTOR_EFFORT_IDS] as EffortId[];
+const ENVIRONMENT_CATALOG = Object.values(SceneEnvironmentId);
+// "custom" needs per-performer positions, so an open formation pick never
+// selects it — the count filter below narrows further, per shot.
+const FORMATION_CATALOG = DIRECTOR_FORMATIONS.filter(
+  (preset) => preset !== "custom"
+) as FormationPreset[];
+
+type PerformerInput = NonNullable<DirectorCastInput["performers"]>[number];
+
+interface ResolvedPerformerFields {
+  id: string;
+  name?: string;
+  avatarId: AvatarId;
+  prop: PropType;
+  effect: EffectType;
+  effort: EffortId;
+  position?: { x: number; z: number };
+  facingDegrees?: number;
+  beatOffset?: number;
+  staffLengthCm: number | null;
+}
+
+function contextualEnvironmentFromEffects(
+  effects: readonly EffectType[]
+): SceneEnvironmentId {
   if (effects.includes("bubbles")) return "ocean";
   if (effects.includes("fire")) return "autumn";
   if (effects.some((effect) => effect === "led" || effect === "zap"))
@@ -48,13 +95,148 @@ function defaultFormation(count: number): FormationPreset {
   return "circle";
 }
 
-function resolvePerformers(
-  shot: DirectorShotInput,
+/**
+ * Expands a `cast` block into one performer-input slot per `cast.count`.
+ * Overrides match `performer-${index + 1}` by explicit id first; overrides
+ * with no id fill whatever slots remain, in array order. An override whose
+ * id doesn't name one of this cast's performers is a rejection, not a
+ * silent positional guess — that would put the wrong override on the wrong
+ * performer (e.g. a lone `{id:"performer-3", ...}` landing on performer-1).
+ */
+function buildCastPerformerInputs(cast: DirectorCastInput): PerformerInput[] {
+  const overrides = cast.performers ?? [];
+  const byIndex: (PerformerInput | undefined)[] = new Array(cast.count).fill(
+    undefined
+  );
+  const idLess: PerformerInput[] = [];
+  const idPattern = /^performer-(\d+)$/;
+
+  for (const override of overrides) {
+    if (override.id === undefined) {
+      idLess.push(override);
+      continue;
+    }
+    const match = idPattern.exec(override.id);
+    const index = match ? Number(match[1]) - 1 : -1;
+    if (index < 0 || index >= cast.count) {
+      throw new Error(
+        `Cast override "${override.id}" does not match any of the ${cast.count} performers.`
+      );
+    }
+    byIndex[index] = override;
+  }
+
+  let cursor = 0;
+  for (const override of idLess) {
+    while (cursor < cast.count && byIndex[cursor] !== undefined) cursor += 1;
+    if (cursor >= cast.count) break;
+    byIndex[cursor] = override;
+    cursor += 1;
+  }
+
+  return Array.from({ length: cast.count }, (_, index) => ({
+    ...(byIndex[index] ?? {}),
+    id: `performer-${index + 1}`,
+  }));
+}
+
+/**
+ * Resolves a single shot-scoped directive (formation, environmentId).
+ * `sameAs` and `pick: "distinct"` are performer-scoped concepts and have no
+ * meaning for a single shot-level value.
+ */
+function resolveShotDirective<T extends string>(
+  value: DirectiveValue<T> | undefined,
+  axis: string,
+  fallback: () => T,
+  shotId: string,
+  seed: FilmSeed,
+  catalog: readonly T[]
+): T {
+  if (value === undefined) return fallback();
+  if (!isDirectiveExpression(value)) return value;
+  if ("sameAs" in value || ("pick" in value && value.pick === "distinct")) {
+    throw new Error(
+      `Shot "${shotId}": "${axis}" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`
+    );
+  }
+  const [resolved] = resolveCastAxis<T>({
+    axis,
+    shotId,
+    performerIds: ["shot"],
+    values: [value],
+    catalog,
+    random: createAxisStream(seed, shotId, axis),
+  });
+  return resolved!;
+}
+
+function resolveEffectPresets(
+  effectPresets: Record<string, string | { pick: "any" }>,
+  shotId: string,
+  seed: FilmSeed
+): Record<string, string> {
+  const resolved: Record<string, string> = {};
+  for (const [effectId, presetValue] of Object.entries(effectPresets)) {
+    if (typeof presetValue === "string") {
+      const registration = getRegistration(effectId);
+      if (!registration) {
+        throw new Error(
+          `Effect preset references unknown effect "${effectId}".`
+        );
+      }
+      if (
+        !registration.presetGroup.presets.some(
+          (preset) => preset.id === presetValue
+        )
+      ) {
+        throw new Error(
+          `Effect "${effectId}" has no preset named "${presetValue}".`
+        );
+      }
+      resolved[effectId] = presetValue;
+      continue;
+    }
+
+    // { pick: "any" } — draw from the effect's registered presets. A missing
+    // registration and an empty preset group collapse to the same error:
+    // both mean there is nothing to pick from.
+    const registration = getRegistration(effectId);
+    const presetIds = registration?.presetGroup.presets.map(
+      (preset) => preset.id
+    );
+    const picked = presetIds?.length
+      ? seededPick(
+          presetIds,
+          createAxisStream(seed, shotId, `effectPreset:${effectId}`)
+        )
+      : undefined;
+    if (picked === undefined) {
+      throw new Error(
+        `Shot "${shotId}": effect "${effectId}" has no registered presets to pick from.`
+      );
+    }
+    resolved[effectId] = picked;
+  }
+  return resolved;
+}
+
+function validateEffectOverrides(
+  effectOverrides: Record<string, Record<string, unknown>>
+): void {
+  for (const effectId of Object.keys(effectOverrides)) {
+    if (!getRegistration(effectId)) {
+      throw new Error(
+        `Effect overrides reference unknown effect "${effectId}".`
+      );
+    }
+  }
+}
+
+function buildResolvedPerformers(
+  inputs: readonly ResolvedPerformerFields[],
   formationPreset: FormationPreset
 ): ResolvedDirectorPerformer[] {
-  const inputs = shot.performance?.performers?.length
-    ? shot.performance.performers
-    : [{}];
   const validCounts = PRESET_VALID_COUNTS[formationPreset];
   if (!validCounts.includes(inputs.length)) {
     throw new Error(
@@ -72,15 +254,13 @@ function resolvePerformers(
   const seenIds = new Set<string>();
 
   return inputs.map((input, index) => {
-    const id = input.id ?? `performer-${index + 1}`;
+    const id = input.id;
     if (seenIds.has(id)) throw new Error(`Performer id "${id}" is duplicated.`);
     seenIds.add(id);
 
-    const avatarId =
-      input.avatarId ?? DEFAULT_AVATARS[index % DEFAULT_AVATARS.length]!;
-    if (!AVATAR_DEFINITIONS.some((avatar) => avatar.id === avatarId)) {
+    if (!AVATAR_DEFINITIONS.some((avatar) => avatar.id === input.avatarId)) {
       throw new Error(
-        `Avatar "${avatarId}" is not in the deployed 3D catalog.`
+        `Avatar "${input.avatarId}" is not in the deployed 3D catalog.`
       );
     }
 
@@ -101,59 +281,167 @@ function resolvePerformers(
     return {
       id,
       name: input.name ?? `Performer ${index + 1}`,
-      avatarId: avatarId as AvatarId,
-      prop: input.prop ?? PropType.STAFF,
-      effect: (input.effect ?? "none") as EffectType,
-      effort: (input.effort ?? "linear") as EffortId,
+      avatarId: input.avatarId,
+      prop: input.prop,
+      effect: input.effect,
+      effort: input.effort,
       position: { ...position },
       facingAngle,
       beatOffset: input.beatOffset ?? 0,
-      staffLengthCm: input.staffLengthCm ?? null,
+      staffLengthCm: input.staffLengthCm,
     };
   });
-}
-
-function validateEffectPresets(effectPresets: Record<string, string>): void {
-  for (const [effectId, presetId] of Object.entries(effectPresets)) {
-    const registration = getRegistration(effectId);
-    if (!registration) {
-      throw new Error(`Effect preset references unknown effect "${effectId}".`);
-    }
-    if (
-      !registration.presetGroup.presets.some((preset) => preset.id === presetId)
-    ) {
-      throw new Error(
-        `Effect "${effectId}" has no preset named "${presetId}".`
-      );
-    }
-  }
-}
-
-function validateEffectOverrides(
-  effectOverrides: Record<string, Record<string, unknown>>
-): void {
-  for (const effectId of Object.keys(effectOverrides)) {
-    if (!getRegistration(effectId)) {
-      throw new Error(
-        `Effect overrides reference unknown effect "${effectId}".`
-      );
-    }
-  }
 }
 
 function resolveShot(
   shot: DirectorShotInput,
   shotIndex: number,
   startSeconds: number,
-  aspectRatio: number
+  aspectRatio: number,
+  filmSeed: FilmSeed
 ): ResolvedDirectorShot {
   const durationSeconds = shot.durationSeconds ?? 8;
-  const performerCount = shot.performance?.performers?.length ?? 1;
-  const formation =
-    shot.performance?.formation ?? defaultFormation(performerCount);
-  const performers = resolvePerformers(shot, formation);
-  const environmentId =
-    shot.scene?.environmentId ?? contextualEnvironment(shot);
+  const cast = shot.performance?.cast;
+
+  const rawInputs: PerformerInput[] = cast
+    ? buildCastPerformerInputs(cast)
+    : shot.performance?.performers?.length
+      ? shot.performance.performers
+      : [{}];
+
+  const performerIds = rawInputs.map(
+    (input, index) => input.id ?? `performer-${index + 1}`
+  );
+
+  // avatarId's schema field is an un-narrowed `z.string()` (validated at
+  // runtime against the deployed catalog, not by a literal-union schema), so
+  // the axis resolves as plain strings and the registry cast happens once on
+  // the resolved value below — same pattern this file used pre-directives.
+  const avatarIdValues: DirectiveValue<string>[] = rawInputs.map(
+    (input, index) =>
+      input.avatarId ??
+      cast?.defaults?.avatarId ??
+      DEFAULT_AVATARS[index % DEFAULT_AVATARS.length]!
+  );
+  const propValues: DirectiveValue<PropType>[] = rawInputs.map(
+    (input) => input.prop ?? cast?.defaults?.prop ?? PropType.STAFF
+  );
+  const effectValues: DirectiveValue<string>[] = rawInputs.map(
+    (input) => input.effect ?? cast?.defaults?.effect ?? "none"
+  );
+  const effortValues: DirectiveValue<EffortId>[] = rawInputs.map(
+    (input) => input.effort ?? cast?.defaults?.effort ?? "linear"
+  );
+
+  // Pre-validate literal avatarIds with the original, more specific error
+  // text ("not in the deployed 3D catalog") — resolveCastAxis's own catalog
+  // check exists too (needed so a distinct pick still has a pool to draw
+  // from), but its generic axis-catalog message is a worse error for the
+  // single-avatar case this file has always reported this way.
+  for (const value of avatarIdValues) {
+    if (isDirectiveExpression(value)) continue;
+    if (!AVATAR_DEFINITIONS.some((avatar) => avatar.id === value)) {
+      throw new Error(`Avatar "${value}" is not in the deployed 3D catalog.`);
+    }
+  }
+  const resolvedAvatarIds = resolveCastAxis<string>({
+    axis: "avatarId",
+    shotId: shot.id,
+    performerIds,
+    values: avatarIdValues,
+    catalog: DEFAULT_AVATARS,
+    random: createAxisStream(filmSeed, shot.id, "avatarId"),
+  });
+  const resolvedProps = resolveCastAxis<PropType>({
+    axis: "prop",
+    shotId: shot.id,
+    performerIds,
+    values: propValues,
+    catalog: PROP_CATALOG,
+    random: createAxisStream(filmSeed, shot.id, "prop"),
+  });
+  const resolvedEffects = resolveCastAxis<string>({
+    axis: "effect",
+    shotId: shot.id,
+    performerIds,
+    values: effectValues,
+    catalog: EFFECT_CATALOG,
+    random: createAxisStream(filmSeed, shot.id, "effect"),
+  });
+  const resolvedEfforts = resolveCastAxis<EffortId>({
+    axis: "effort",
+    shotId: shot.id,
+    performerIds,
+    values: effortValues,
+    catalog: EFFORT_CATALOG,
+    random: createAxisStream(filmSeed, shot.id, "effort"),
+  });
+
+  // staffLengthCm has no finite catalog (a pick needs an explicit "from"),
+  // and its system default is the literal `null` bypass — not a value on
+  // any axis. So only performers that actually state a directive or literal
+  // run through resolveCastAxis; everyone else keeps `null` untouched.
+  const staffLengthStates = rawInputs.map(
+    (input) => input.staffLengthCm ?? cast?.defaults?.staffLengthCm
+  );
+  const staffIndices = staffLengthStates
+    .map((value, index) => (value !== undefined ? index : -1))
+    .filter((index) => index >= 0);
+  const resolvedStaffLengths: (number | null)[] = rawInputs.map(() => null);
+  if (staffIndices.length > 0) {
+    const resolved = resolveCastAxis<number>({
+      axis: "staffLengthCm",
+      shotId: shot.id,
+      performerIds: staffIndices.map((index) => performerIds[index]!),
+      values: staffIndices.map((index) => staffLengthStates[index]!),
+      catalog: null,
+      random: createAxisStream(filmSeed, shot.id, "staffLengthCm"),
+    });
+    staffIndices.forEach((index, cursor) => {
+      resolvedStaffLengths[index] = resolved[cursor]!;
+    });
+  }
+
+  const resolvedFields: ResolvedPerformerFields[] = rawInputs.map(
+    (input, index) => ({
+      id: performerIds[index]!,
+      name: input.name,
+      avatarId: resolvedAvatarIds[index]! as AvatarId,
+      prop: resolvedProps[index]!,
+      effect: resolvedEffects[index]! as EffectType,
+      effort: resolvedEfforts[index]!,
+      position: input.position,
+      facingDegrees: input.facingDegrees,
+      beatOffset: input.beatOffset,
+      staffLengthCm: resolvedStaffLengths[index]!,
+    })
+  );
+
+  const environmentId = resolveShotDirective<SceneEnvironmentId>(
+    shot.scene?.environmentId,
+    "environmentId",
+    () =>
+      contextualEnvironmentFromEffects(resolvedFields.map((f) => f.effect)),
+    shot.id,
+    filmSeed,
+    ENVIRONMENT_CATALOG
+  );
+
+  const performerCount = resolvedFields.length;
+  const formationCatalog = FORMATION_CATALOG.filter((preset) =>
+    PRESET_VALID_COUNTS[preset].includes(performerCount)
+  );
+  const formation = resolveShotDirective<FormationPreset>(
+    shot.performance?.formation,
+    "formation",
+    () => defaultFormation(performerCount),
+    shot.id,
+    filmSeed,
+    formationCatalog
+  );
+
+  const performers = buildResolvedPerformers(resolvedFields, formation);
+
   const showStage = shot.scene?.showStage ?? false;
   const showAudience = shot.scene?.showAudience ?? false;
   const sceneFeatures = {
@@ -164,9 +452,12 @@ function resolveShot(
     tent: false,
     ...(shot.scene?.sceneFeatures ?? {}),
   };
-  const effectPresets = { ...(shot.effectPresets ?? {}) };
+  const effectPresets = resolveEffectPresets(
+    shot.effectPresets ?? {},
+    shot.id,
+    filmSeed
+  );
   const effectOverrides = { ...(shot.effectOverrides ?? {}) };
-  validateEffectPresets(effectPresets);
   validateEffectOverrides(effectOverrides);
 
   const rendererKey = getSceneEnvironmentRendererKey(environmentId);
@@ -234,6 +525,7 @@ export function resolveFilmDirectorSpec(
     fps: input.format?.fps ?? 30,
   };
   const aspectRatio = format.width / format.height;
+  const filmSeed = resolveFilmSeed(input.id, input.seed);
   const seenShotIds = new Set<string>();
   let cursorSeconds = 0;
 
@@ -241,7 +533,7 @@ export function resolveFilmDirectorSpec(
     if (seenShotIds.has(shot.id))
       throw new Error(`Shot id "${shot.id}" is duplicated.`);
     seenShotIds.add(shot.id);
-    const resolved = resolveShot(shot, index, cursorSeconds, aspectRatio);
+    const resolved = resolveShot(shot, index, cursorSeconds, aspectRatio, filmSeed);
     cursorSeconds += resolved.durationSeconds;
     return resolved;
   });
