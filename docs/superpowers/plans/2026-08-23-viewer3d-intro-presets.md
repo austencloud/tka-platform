@@ -20,10 +20,10 @@
 - [x] Task 2: Wire prop-follow into viewer-3d-state + preset intent — `7d127b554e`, `cfbd01e91a`
 - [x] Task 3: Extract `buildScene3DPersistConfig` (TDD) and refactor `applyScene3DLook` — `2c32393a40`
 - [x] Task 4: Live preset apply (`applyPersistConfig` + `applyScene3DLookLive`) — `20930914da`, `6320054254`, `79b6782724`
-- [ ] Task 5: Presets tool in the 3D rail
-- [ ] Task 6: Intro flag + persistence
-- [ ] Task 7: `Viewer3DIntro` component, mount, test route
-- [ ] Task 8: Full verification pass
+- [x] Task 5: Presets tool in the 3D rail — `34c0f135be` (ride-in), `8754129d52`, `b0585ec3b7`
+- [x] Task 6: Intro flag + persistence — `92f1c1db17` (+ follow-up: persister-owned mark)
+- [x] Task 7: `Viewer3DIntro` component, mount, test route — 420599faf8 (Task 6 follow-up), d732cb06e5, 4742ed5079 (fix round)
+- [x] Task 8: Full verification pass — 45/45 unit suite, `npm run check` 0 errors, DevTools runtime + viewport sweep 2026-08-24 (no code fixes needed)
 
 ---
 
@@ -825,17 +825,17 @@ git commit -m "feat(3d): first-open guided setup overlay (Viewer3DIntro)" -- src
 
 ### Task 8: Full verification pass
 
-- [ ] **Step 1: Unit suite**
+- [x] **Step 1: Unit suite** (45/45 incl. viewer3d-performer-count)
 
 Run: `npx vitest run tests/unit/plain-open-policy.test.ts tests/unit/scene-3d-look.test.ts tests/unit/viewer3d-intro-state.test.ts tests/unit/sequence-viewer-shell-contract.test.ts`
 Expected: all PASS. The shell-contract test guards the ViewerMotionSurface change — if it fails, fix the host, never the test.
 
-- [ ] **Step 2: Whole-project check (once, captured)**
+- [x] **Step 2: Whole-project check (once, captured)** (0 errors, 0 warnings)
 
 Run: `npm run check > "$TEMP/check-final.log" 2>&1; grep -niE "error" "$TEMP/check-final.log" | head -50`
 Expected: no errors introduced by this work (diff against the pre-work baseline if `main` is red).
 
-- [ ] **Step 3: Runtime + visual verification (Chrome DevTools MCP; per `visual-verification-mandatory.md`)**
+- [x] **Step 3: Runtime + visual verification (Chrome DevTools MCP; per `visual-verification-mandatory.md`)** — intro visible ≥1440w desktop tiers; 820/960/375 are compact or lack a 3D rail entry (stated, not skipped)
 
 Launch the shared browser via `pwsh -NoProfile -File scripts/launch-chrome-debug.ps1 -Url about:blank`; task-owned background page; HTTPS `https://localhost:5173`. Verify and screenshot (webp/70):
 
@@ -844,11 +844,11 @@ Launch the shared browser via `pwsh -NoProfile -File scripts/launch-chrome-debug
 3. **Intro:** clear `tka-viewer3d-intro-seen`; first 3D open shows the card; scene selection swaps the world live WITHOUT changing the app theme (spot-check the 2D background setting is untouched); the performer-count step adds/removes performers live; formation step rearranges (and is skipped when count is 1 — verify the dot indicator drops to 3); skip/done sets the flag (verify the localStorage value flips and the overlay never remounts on reopen). **Occlusion check at every viewport:** the card must never sit on top of the performers — performers reframe into the clear width while the card is up and re-center on dismiss; same check for the presets panel in overlay presentation.
 4. **Viewports:** the intro card and presets panel at 1920×1080, 2560×1440, 3840×2160, 1440×900, 820×1180, 960×412, 375×667. The compact (`<768px` workspace) presentation hides the rail — state which surfaces are legitimately unreachable per viewport instead of skipping silently. Read every frame against the checklist (absurd widths, dead space, orphans, contrast, legibility).
 
-- [ ] **Step 4: Deliver in the in-app Browser pane**
+- [x] **Step 4: Deliver in the in-app Browser pane**
 
 Open the real surface (a sequence's 3D viewer route) in the Browser pane with the completion message, per `deliver-in-the-app-browser.md`.
 
-- [ ] **Step 5: Update the ledger + commit any verification fixes**
+- [x] **Step 5: Update the ledger + commit any verification fixes** (none needed)
 
 Mark ledger boxes `[x]`; commit fixes with scoped pathspecs.
 
