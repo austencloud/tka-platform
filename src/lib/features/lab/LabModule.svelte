@@ -18,8 +18,6 @@
     // level4, level5, level6, level7, poi graduated to Levels module (Mar 2026)
     // mandala, mandala-collection graduated to Mandala module (May 2026)
     themes: () => import("$lib/features/themes-lab/ThemesLab.svelte"),
-    landing: () => import("$lib/features/landing-preview/LandingPreviewModule.svelte"),
-    composition: () => import("$lib/features/lab/constraint-layout-lab/CompositionLab.svelte"),
     // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
     // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
@@ -27,29 +25,32 @@
       import("./pronunciation-recorder/PronunciationRecorderLab.svelte"),
     vtg: () => import("$lib/features/lab/vtg-lab/VtgLabModule.svelte"),
     // skel2tka graduated to Video module (Mar 2026)
-    trigrid: () => import("$lib/features/lab/trigrid-lab/TriGridLabModule.svelte"),
-    duration: () => import("$lib/features/lab/duration-lab/DurationLabModule.svelte"),
-    effects: () => import("$lib/features/lab/effects-lab/EffectsLabModule.svelte"),
+    trigrid: () =>
+      import("$lib/features/lab/trigrid-lab/TriGridLabModule.svelte"),
+    effects: () =>
+      import("$lib/features/lab/effects-lab/EffectsLabModule.svelte"),
     "prop-buttons": () => import("./tabs/PropButtonLab.svelte"),
     // retro, ascii-pictograph, retro-pictograph graduated to Retro module (Mar 2026)
-    "phrase-effort": () => import("$lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte"),
+    "phrase-effort": () =>
+      import("$lib/features/lab/phrase-effort-lab/PhraseEffortLabModule.svelte"),
     village: () => import("$lib/features/village/VillageLabTab.svelte"),
     "pov-pattern": () => import("./tabs/PovPatternLab.svelte"),
     combinator: () => import("./tabs/combinator/CombinatorLab.svelte"),
     "collision-lab": () => import("./tabs/collision-lab/CollisionLab.svelte"),
     dodge: () => import("./tabs/dodge/DodgeTab.svelte"),
     "spatial-lab": () => import("./tabs/spatial-lab/SpatialLab.svelte"),
-    "fan-relations": () => import("./tabs/fan-relations/FanRelationsLab.svelte"),
+    "fan-relations": () =>
+      import("./tabs/fan-relations/FanRelationsLab.svelte"),
     stickers: () => import("$lib/features/sticker-lab/StickerLab.svelte"),
-    "path-mandalas": () => import("./tabs/PathMandalaLab.svelte"),
-    "viewer-3d": () => import("./tabs/Viewer3DLab.svelte"),
     // pictograph-explorer graduated to the learn Codex tab as the unified CodexExplorer (Jun 2026)
     // hand-path-explorer, hand-path-builder graduated to Hand Paths module (Mar 2026)
     // video-trails, video-lab graduated to Video module (Mar 2026)
   };
 
   // Get current tab, default to first tab
-  const activeTab = $derived(navigationState.activeTab || LAB_TABS[0]?.id || "spell-layouts");
+  const activeTab = $derived(
+    navigationState.activeTab || LAB_TABS[0]?.id || "spell-layouts"
+  );
 
   // Load the active tab component
   let TabComponent = $state<any>(null);
@@ -79,7 +80,10 @@
           if (mod && mod.default) {
             TabComponent = mod.default;
           } else {
-            console.error(`Unexpected loader result for "${activeTab}":`, result);
+            console.error(
+              `Unexpected loader result for "${activeTab}":`,
+              result
+            );
             loadError = `Failed to load "${activeTab}" tab`;
             TabComponent = null;
           }

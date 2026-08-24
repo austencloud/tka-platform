@@ -41,7 +41,6 @@ const DYNAMIC_LOADERS = [
   "src/lib/shared/settings/components/SettingsTabContent.svelte",
   "src/lib/shared/background/shared/services/implementations/BackgroundFactory.ts",
   "src/lib/shared/3d-core/destinations/definitions.ts",
-  "src/lib/features/landing-preview/LandingPreviewModule.svelte",
 ];
 
 // Static entry points (always reachable)
