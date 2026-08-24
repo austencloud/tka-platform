@@ -1,0 +1,24 @@
+{
+  "source": "C:\\Users\\Austen\\AppData\\Local\\Temp\\codex-clipboard-e3359c4b-fc7a-46ba-8e14-58e155cefb6b.png",
+  "sourceCrop": [
+    51,
+    149,
+    1203,
+    1052
+  ],
+  "sourceGripCenterPx": [
+    574.734,
+    514.941
+  ],
+  "sourceGripRadiusPx": 12.361,
+  "svgGripCenterPx": [
+    394.284,
+    428.941
+  ],
+  "spanPx": 789.7,
+  "widthPx": 789.7,
+  "heightPx": 723.005,
+  "outerPointCount": 240,
+  "holePointCount": 48,
+  "symmetryMethod": "2-of-3 vote at 0, 120, and 240 degrees"
+}

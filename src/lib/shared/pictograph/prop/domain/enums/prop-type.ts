@@ -60,6 +60,11 @@ export enum PropType {
   // === SWORD ===
   SWORD = "sword",
 
+  // === SICKLES ===
+  // A matched pair of directly gripped competition kamas. The blade apex is
+  // the one tracked tip; the handle establishes the prop's readable angle.
+  SICKLES = "sickles",
+
   // === ENERGY FAMILY (premium cosmetics) ===
   // Two paid prop styles that follow their physical parent in every registry:
   // Energy Saber spins exactly like a sword, Energy Staff exactly like a staff.

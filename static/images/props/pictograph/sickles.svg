@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Competition sickle (kama), aligned from the lower-handle grip to the blade apex. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 260">
+  <style>
+    .st0{fill:#2E3192}
+    .bridge{fill:none;stroke:#2E3192;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+  </style>
+  <g transform="translate(1.1 -50.9) rotate(25 188.9 200.9)">
+  <g class="st0" transform="rotate(-69 220 120)">
+    <rect x="96" y="106" width="240" height="28" rx="14"/>
+    <rect x="96" y="101" width="50" height="38" rx="12"/>
+    <rect x="146" y="101" width="134" height="38" rx="14"/>
+    <rect x="280" y="101" width="56" height="38" rx="12"/>
+    <rect x="139" y="98" width="9" height="44" rx="4.5"/>
+    <rect x="278" y="98" width="9" height="44" rx="4.5"/>
+  </g>
+  <path class="st0" fill-rule="evenodd" transform="matrix(.667 .2567 -.282 .7333 263.5 3)" d="
+    M 2 6
+    C 56 3, 124 23, 188 94
+    Q 190 97, 186 101
+    C 132 76, 76 59, 16 55
+    L 16 69
+    L 2 69 Z
+
+    M 20 16
+    C 44 17, 64 21, 82 28
+    L 73 45
+    C 57 39, 40 35, 24 34 Z
+
+    M 116 41
+    C 136 51, 153 63, 169 78
+    L 156 88
+    C 142 75, 127 65, 110 57 Z
+
+    M 113 51
+    A 18 18 0 1 1 77 51
+    A 18 18 0 1 1 113 51 Z
+  "/>
+  <path class="bridge" transform="matrix(.667 .2567 -.282 .7333 263.5 3)"
+    d="M 95 33 C 78 39, 79 48, 95 51 C 111 54, 112 63, 95 69"/>
+  </g>
+  <circle id="centerPoint" cx="190" cy="150" r="1" fill="#FF0000" opacity="0"/>
+</svg>

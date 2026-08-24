@@ -33,6 +33,7 @@
 		{ label: "Buugeng", types: ["buugeng", "bigbuugeng", "trigeng"] },
 		{ label: "Triquetra", types: ["triquetra", "triquetra2"] },
 		{ label: "Sword", types: ["sword"] },
+		{ label: "Sickles", types: ["sickles"] },
 		{ label: "Chicken", types: ["chicken", "bigchicken"] },
 		{ label: "Doublestar", types: ["doublestar", "bigdoublestar"] },
 		{ label: "Eightrings", types: ["eightrings", "bigeightrings"] },

@@ -28,6 +28,7 @@ export const CORE_PROPS: readonly PropType[] = [
 /** Exotic + variant props earned through play. */
 export const UNLOCKABLE_POOL: readonly PropType[] = [
   PropType.SWORD,
+  PropType.SICKLES,
   PropType.CHICKEN,
   PropType.GUITAR,
   PropType.DOUBLESTAR,

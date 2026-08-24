@@ -25,11 +25,18 @@ from mathutils import Vector
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "static" / "models" / "props" / "guitar.glb"
 AUTHORED_LENGTH_M = 0.80
+UKULELE_AUTHORED_LENGTH_M = 0.530225
+UKULELE_HEADSTOCK_GRIP_INSET_M = 0.015
 
 
 def parse_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--instrument",
+        choices=("guitar", "ukulele"),
+        default="guitar",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--render-dir", type=Path)
     parser.add_argument("--blend", type=Path)
@@ -441,7 +448,87 @@ def width_at_y(y: float, bottom_width: float, top_width: float) -> float:
     return bottom_width + (top_width - bottom_width) * max(0.0, min(1.0, ratio))
 
 
-def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
+def apply_ukulele_profile(
+    root: bpy.types.Object,
+    model_objects: list[bpy.types.Object],
+) -> None:
+    """Turn the guitar construction into a club-length soprano ukulele.
+
+    The source geometry stays shared so the neck set, headstock break, binding,
+    and acoustic shell remain identical in quality. Each mesh is then baked
+    through a global-space profile transform: the body becomes narrower, the
+    neck keeps a playable width, and the grip moves to the headstock tip.
+    """
+    source_y_values = [
+        (item.matrix_world @ vertex.co).y
+        for item in model_objects
+        if item.type == "MESH"
+        for vertex in item.data.vertices
+    ]
+    source_min_y = min(source_y_values)
+    source_max_y = max(source_y_values)
+    length_scale = UKULELE_AUTHORED_LENGTH_M / (source_max_y - source_min_y)
+    grip_source_y = (
+        source_max_y - UKULELE_HEADSTOCK_GRIP_INSET_M / length_scale
+    )
+    body_width_scale = 0.54
+    neck_width_scale = 0.90
+    round_feature_scale = length_scale
+    depth_scale = 0.70
+
+    neck_features = (
+        "Neck",
+        "Fret",
+        "Nut",
+        "Headstock",
+        "String",
+        "TuningMachines",
+        "PositionMarkers",
+        "BridgePins",
+    )
+    round_features = ("SoundHole", "Rosette")
+
+    for item in model_objects:
+        if item.type != "MESH":
+            continue
+        width_scale = (
+            round_feature_scale
+            if any(token in item.name for token in round_features)
+            else neck_width_scale
+            if any(token in item.name for token in neck_features)
+            else body_width_scale
+        )
+        world = item.matrix_world.copy()
+        for vertex in item.data.vertices:
+            position = world @ vertex.co
+            vertex.co = Vector(
+                (
+                    position.x * width_scale,
+                    (position.y - grip_source_y) * length_scale,
+                    position.z * depth_scale,
+                )
+            )
+        item.matrix_world.identity()
+        item.data.update()
+
+    for item in [root, *model_objects]:
+        item.name = item.name.replace("TKA_Guitar", "TKA_Ukulele").replace(
+            "SixStrings", "FourStrings"
+        )
+    for material in bpy.data.materials:
+        material.name = material.name.replace("TKA_Guitar", "TKA_Ukulele")
+
+    root["tka_prop_type"] = "ukulele"
+    root["authored_length_m"] = UKULELE_AUTHORED_LENGTH_M
+    root["grip_origin"] = "0,0,0"
+    root["tracked_tip_y"] = UKULELE_HEADSTOCK_GRIP_INSET_M
+    root["grip_site"] = "headstock tip"
+    root["reference_form"] = "club-length four-string soprano ukulele stage prop"
+    root["recolor_material"] = "TKA_Ukulele_Recolor"
+
+
+def build_prop(instrument: str = "guitar") -> tuple[bpy.types.Object, list[bpy.types.Object]]:
+    is_ukulele = instrument == "ukulele"
     recolor = make_material(
         "TKA_Guitar_Recolor",
         (0.055, 0.24, 0.70, 1.0),
@@ -541,74 +628,115 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     arch_back_surface(back)
     objects.append(back)
 
-    # The neck is the actual runtime grip. Its rounded back thickens by only a
-    # few millimeters at the origin so a hand looks planted without a sleeve.
+    # Keep the soundboard, fretboard, and strings on one readable side datum.
+    # A real acoustic neck is much shallower than the body; the old 43 mm slab
+    # was nearly half the body depth and only looked plausible from the front.
+    neck_bottom_y = -0.054
+    neck_top_y = 0.278
+    neck_front_at_body = 0.0480
+    neck_front_at_nut = 0.0438
+
+    def neck_front_z(y: float) -> float:
+        ratio = (y - neck_bottom_y) / (neck_top_y - neck_bottom_y)
+        return neck_front_at_body + (
+            neck_front_at_nut - neck_front_at_body
+        ) * max(0.0, min(1.0, ratio))
+
+    def headstock_front_z(y: float) -> float:
+        return 0.0475 - (y - 0.277) * math.tan(math.radians(12.0))
+
+    # The neck remains the runtime grip, but now has a believable 22-27 mm
+    # cross-section and a subtle one-degree set relative to the soundboard.
     neck = tapered_box(
         "TKA_Guitar_NeckGrip",
-        bottom_y=-0.054,
-        top_y=0.278,
-        bottom_width=0.057,
-        top_width=0.042,
-        center_z=0.024,
-        depth=0.043,
+        bottom_y=neck_bottom_y,
+        top_y=neck_top_y,
+        bottom_width=0.054,
+        top_width=0.041,
+        center_z=0.034,
+        depth=0.0225,
         material=recolor,
-        bevel=0.007,
+        bevel=0.0065,
         bevel_segments=5,
-        bottom_depth=0.047,
-        top_depth=0.035,
-        front_z=0.046,
+        bottom_depth=0.024,
+        top_depth=0.021,
+        front_z=neck_front_at_body,
     )
     for vertex in neck.data.vertices:
+        vertex.co.z += neck_front_z(vertex.co.y) - neck_front_at_body
         pressure = math.exp(-((vertex.co.y / 0.055) ** 2))
         vertex.co.x *= 1.0 + 0.035 * pressure
-        if vertex.co.z < 0.024:
-            vertex.co.z -= 0.0015 * pressure
+        if vertex.co.z < 0.034:
+            vertex.co.z -= 0.0008 * pressure
     neck.data.update()
     objects.append(neck)
-    objects.append(
-        add_ellipsoid(
-            "TKA_Guitar_NeckHeel",
-            (0.0, -0.046, -0.015),
-            (0.031, 0.046, 0.034),
-            recolor,
-            segments=24,
-            rings=14,
-        )
-    )
+
+    # The heel is a tapered structural continuation into the neck block, not
+    # a sphere stuck behind the joint. Its deep end disappears into the body.
     objects.append(
         tapered_box(
-            "TKA_Guitar_Fretboard",
-            bottom_y=-0.072,
-            top_y=0.281,
-            bottom_width=0.051,
-            top_width=0.036,
-            center_z=0.048,
-            depth=0.007,
-            material=fretboard,
-            bevel=0.0015,
-        )
-    )
-
-    objects.append(
-        flat_plate(
-            "TKA_Guitar_Headstock",
-            headstock_outline(),
-            z=0.027,
-            depth=0.039,
+            "TKA_Guitar_NeckHeel",
+            bottom_y=-0.080,
+            top_y=-0.010,
+            bottom_width=0.062,
+            top_width=0.050,
+            center_z=0.010,
+            depth=0.050,
             material=recolor,
-            bevel=0.004,
+            bevel=0.007,
+            bevel_segments=5,
+            bottom_depth=0.075,
+            top_depth=0.027,
+            front_z=0.0455,
         )
     )
-    objects.append(
-        flat_plate(
-            "TKA_Guitar_HeadstockFace",
-            [(x * 0.88, 0.319 + (y - 0.319) * 0.91) for x, y in headstock_outline()],
-            z=0.049,
-            depth=0.004,
-            material=fretboard,
-            bevel=0.0015,
-        )
+    fretboard_obj = tapered_box(
+        "TKA_Guitar_Fretboard",
+        bottom_y=-0.072,
+        top_y=0.281,
+        bottom_width=0.051,
+        top_width=0.036,
+        center_z=0.046,
+        depth=0.0055,
+        material=fretboard,
+        bevel=0.0013,
+        front_z=neck_front_z(-0.072) + 0.0052,
     )
+    fretboard_base_front = neck_front_z(-0.072) + 0.0052
+    for vertex in fretboard_obj.data.vertices:
+        vertex.co.z += (
+            neck_front_z(min(neck_top_y, max(neck_bottom_y, vertex.co.y)))
+            + 0.0052
+            - fretboard_base_front
+        )
+    fretboard_obj.data.update()
+    objects.append(fretboard_obj)
+
+    headstock = flat_plate(
+        "TKA_Guitar_Headstock",
+        headstock_outline(),
+        z=0.0415,
+        depth=0.012,
+        material=recolor,
+        bevel=0.003,
+    )
+    for vertex in headstock.data.vertices:
+        vertex.co.z += headstock_front_z(vertex.co.y) - 0.0475
+    headstock.data.update()
+    objects.append(headstock)
+
+    headstock_face = flat_plate(
+        "TKA_Guitar_HeadstockFace",
+        [(x * 0.88, 0.319 + (y - 0.319) * 0.91) for x, y in headstock_outline()],
+        z=0.0488,
+        depth=0.0026,
+        material=fretboard,
+        bevel=0.0012,
+    )
+    for vertex in headstock_face.data.vertices:
+        vertex.co.z += headstock_front_z(vertex.co.y) - 0.0475
+    headstock_face.data.update()
+    objects.append(headstock_face)
 
     # Sound hole and rosette are actual layered geometry, so the cavity stays
     # black under stage lighting instead of reading as paint.
@@ -673,8 +801,8 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     objects.append(
         add_cube(
             "TKA_Guitar_Nut",
-            (0.0, 0.277, 0.055),
-            (0.038, 0.005, 0.006),
+            (0.0, 0.277, 0.0517),
+            (0.038, 0.005, 0.0040),
             binding,
             bevel=0.0008,
         )
@@ -710,7 +838,12 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     )
 
     bridge_pin_parts: list[bpy.types.Object] = []
-    for index, x in enumerate((-0.0180, -0.0108, -0.0036, 0.0036, 0.0108, 0.0180)):
+    bridge_pin_xs = (
+        (-0.0150, -0.0050, 0.0050, 0.0150)
+        if is_ukulele
+        else (-0.0180, -0.0108, -0.0036, 0.0036, 0.0108, 0.0180)
+    )
+    for index, x in enumerate(bridge_pin_xs):
         bpy.ops.mesh.primitive_cylinder_add(
             vertices=12,
             radius=0.0019,
@@ -728,15 +861,17 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     nut_y = 0.277
     fret_parts: list[bpy.types.Object] = []
     fret_positions: list[float] = []
-    for fret_number in range(1, 19):
+    fret_count = 12 if is_ukulele else 18
+    for fret_number in range(1, fret_count + 1):
         y = nut_y - scale_length * (1.0 - 2.0 ** (-fret_number / 12.0))
         fret_positions.append(y)
         width = width_at_y(y, 0.051, 0.036) * 0.96
+        fret_z = neck_front_z(y) + 0.0060
         fret_parts.append(
             add_cube(
                 f"TKA_Guitar_Fret_{fret_number:02d}",
-                (0.0, y, 0.0532),
-                (width, 0.0016, 0.0020),
+                (0.0, y, fret_z),
+                (width, 0.0016, 0.0014),
                 metal,
                 bevel=0.00045,
             )
@@ -744,7 +879,8 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     objects.append(join_objects("TKA_Guitar_Frets", fret_parts, metal))
 
     marker_parts: list[bpy.types.Object] = []
-    for fret_number in (3, 5, 7, 9, 12, 15, 17):
+    marker_frets = (3, 5, 7, 9, 12) if is_ukulele else (3, 5, 7, 9, 12, 15, 17)
+    for fret_number in marker_frets:
         before = nut_y if fret_number == 1 else fret_positions[fret_number - 2]
         after = fret_positions[fret_number - 1]
         y = (before + after) * 0.5
@@ -753,8 +889,8 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             bpy.ops.mesh.primitive_cylinder_add(
                 vertices=16,
                 radius=0.0026,
-                depth=0.0012,
-                location=(x, y, 0.0548),
+                depth=0.0009,
+                location=(x, y, neck_front_z(y) + 0.00575),
             )
             marker = bpy.context.object
             marker.name = f"TKA_Guitar_Marker_{fret_number:02d}_{index + 1}"
@@ -764,15 +900,28 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     # Six strings run continuously from bridge to nut, then fan toward their
     # individual tuner posts. Slightly graduated gauges survive antialiasing.
     string_parts: list[bpy.types.Object] = []
-    bridge_xs = (-0.0180, -0.0108, -0.0036, 0.0036, 0.0108, 0.0180)
-    nut_xs = (-0.0140, -0.0084, -0.0028, 0.0028, 0.0084, 0.0140)
-    tuner_points = (
-        (-0.022, 0.294, 0.055),
-        (-0.024, 0.321, 0.055),
-        (-0.020, 0.348, 0.055),
-        (0.020, 0.348, 0.055),
-        (0.024, 0.321, 0.055),
-        (0.022, 0.294, 0.055),
+    if is_ukulele:
+        bridge_xs = (-0.0150, -0.0050, 0.0050, 0.0150)
+        nut_xs = (-0.0120, -0.0040, 0.0040, 0.0120)
+        tuner_layout = (
+            (-0.022, 0.301),
+            (-0.022, 0.341),
+            (0.022, 0.341),
+            (0.022, 0.301),
+        )
+    else:
+        bridge_xs = (-0.0180, -0.0108, -0.0036, 0.0036, 0.0108, 0.0180)
+        nut_xs = (-0.0140, -0.0084, -0.0028, 0.0028, 0.0084, 0.0140)
+        tuner_layout = (
+            (-0.022, 0.294),
+            (-0.024, 0.321),
+            (-0.020, 0.348),
+            (0.020, 0.348),
+            (0.024, 0.321),
+            (0.022, 0.294),
+        )
+    tuner_points = tuple(
+        (x, y, headstock_front_z(y) + 0.0022) for x, y in tuner_layout
     )
     for index, (bridge_x, nut_x, tuner_point) in enumerate(
         zip(bridge_xs, nut_xs, tuner_points, strict=True)
@@ -782,7 +931,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             cylinder_between(
                 f"TKA_Guitar_String_Main_{index + 1}",
                 (bridge_x, -0.301, 0.063),
-                (nut_x, 0.278, 0.058),
+                (nut_x, 0.278, 0.0538),
                 radius,
                 metal,
                 vertices=8,
@@ -791,22 +940,28 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         string_parts.append(
             cylinder_between(
                 f"TKA_Guitar_String_Head_{index + 1}",
-                (nut_x, 0.278, 0.058),
+                (nut_x, 0.278, 0.0538),
                 tuner_point,
                 radius,
                 metal,
                 vertices=8,
             )
         )
-    objects.append(join_objects("TKA_Guitar_SixStrings", string_parts, metal))
+    objects.append(
+        join_objects(
+            "TKA_Guitar_FourStrings" if is_ukulele else "TKA_Guitar_SixStrings",
+            string_parts,
+            metal,
+        )
+    )
 
     tuner_parts: list[bpy.types.Object] = []
     for index, (x, y, z) in enumerate(tuner_points):
         tuner_parts.append(
             cylinder_between(
                 f"TKA_Guitar_TunerPost_{index + 1}",
-                (x, y, 0.047),
-                (x, y, 0.062),
+                (x, y, z - 0.012),
+                (x, y, z + 0.004),
                 0.0031,
                 metal,
                 vertices=12,
@@ -816,8 +971,8 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         tuner_parts.append(
             cylinder_between(
                 f"TKA_Guitar_TunerAxle_{index + 1}",
-                (x, y, 0.032),
-                (side * 0.033, y, 0.032),
+                (x, y, z - 0.009),
+                (side * 0.033, y, z - 0.009),
                 0.0021,
                 metal,
                 vertices=10,
@@ -826,7 +981,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
         tuner_parts.append(
             add_ellipsoid(
                 f"TKA_Guitar_TunerKey_{index + 1}",
-                (side * 0.037, y, 0.032),
+                (side * 0.037, y, z - 0.009),
                 (0.0050, 0.0042, 0.0018),
                 metal,
                 segments=14,
@@ -840,7 +995,7 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
     objects.append(
         add_ellipsoid(
             "TKA_Guitar_HeadstockInlay",
-            (0.0, 0.337, 0.0525),
+            (0.0, 0.337, headstock_front_z(0.337) + 0.0020),
             (0.007, 0.011, 0.0015),
             binding,
             rotation=(0.0, 0.0, math.radians(45)),
@@ -865,7 +1020,11 @@ def build_prop() -> tuple[bpy.types.Object, list[bpy.types.Object]]:
             "Recolor" in material.name for material in item.data.materials
         )
 
-    return root, [pivot, *objects]
+    model_objects = [pivot, *objects]
+    if is_ukulele:
+        apply_ukulele_profile(root, model_objects)
+
+    return root, model_objects
 
 
 def export_glb(
@@ -937,7 +1096,7 @@ def add_proof_lighting() -> bpy.types.Object:
     return camera
 
 
-def render_proofs(render_dir: Path) -> None:
+def render_proofs(render_dir: Path, instrument: str = "guitar") -> None:
     render_dir.mkdir(parents=True, exist_ok=True)
     camera = add_proof_lighting()
     scene = bpy.context.scene
@@ -961,28 +1120,36 @@ def render_proofs(render_dir: Path) -> None:
     for label, (location, rotation) in views.items():
         camera.location = location
         camera.rotation_euler = rotation
-        scene.render.filepath = str(render_dir / f"guitar-{label}.png")
+        scene.render.filepath = str(render_dir / f"{instrument}-{label}.png")
         bpy.ops.render.render(write_still=True)
 
 
-def print_summary(output_path: Path, model_objects: list[bpy.types.Object]) -> None:
+def print_summary(
+    output_path: Path,
+    model_objects: list[bpy.types.Object],
+    instrument: str = "guitar",
+) -> None:
     meshes = [item for item in model_objects if item.type == "MESH"]
     vertices = sum(len(item.data.vertices) for item in meshes)
     polygons = sum(len(item.data.polygons) for item in meshes)
-    print(f"GUITAR_OUTPUT={output_path}")
-    print(f"GUITAR_BYTES={output_path.stat().st_size}")
-    print(f"GUITAR_MESHES={len(meshes)}")
-    print(f"GUITAR_VERTICES={vertices}")
-    print(f"GUITAR_POLYGONS={polygons}")
-    print(f"GUITAR_LENGTH_M={AUTHORED_LENGTH_M}")
-    print("GUITAR_HAND_PIVOT=0,0,0")
+    label = instrument.upper()
+    authored_length = (
+        UKULELE_AUTHORED_LENGTH_M if instrument == "ukulele" else AUTHORED_LENGTH_M
+    )
+    print(f"{label}_OUTPUT={output_path}")
+    print(f"{label}_BYTES={output_path.stat().st_size}")
+    print(f"{label}_MESHES={len(meshes)}")
+    print(f"{label}_VERTICES={vertices}")
+    print(f"{label}_POLYGONS={polygons}")
+    print(f"{label}_LENGTH_M={authored_length}")
+    print(f"{label}_HAND_PIVOT=0,0,0")
 
 
 def main() -> None:
     args = parse_args()
     output_path = args.output.resolve()
     reset_scene()
-    root, model_objects = build_prop()
+    root, model_objects = build_prop(args.instrument)
     export_glb(output_path, root, model_objects)
 
     if args.blend:
@@ -990,9 +1157,9 @@ def main() -> None:
         blend_path.parent.mkdir(parents=True, exist_ok=True)
         bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
     if args.render_dir:
-        render_proofs(args.render_dir.resolve())
+        render_proofs(args.render_dir.resolve(), args.instrument)
 
-    print_summary(output_path, model_objects)
+    print_summary(output_path, model_objects, args.instrument)
 
 
 if __name__ == "__main__":

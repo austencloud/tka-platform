@@ -60,8 +60,10 @@ const requiredNodes = [
   "TKA_Hand_Pivot",
   "TKA_Sword_Pommel",
   "TKA_Sword_Grip",
+  "TKA_Sword_GripBands",
   "TKA_Sword_Guard",
   "TKA_Sword_Blade",
+  "TKA_Sword_BladeSpine",
 ];
 for (const nodeName of requiredNodes) {
   invariant(
@@ -102,11 +104,21 @@ invariant(
   "Gold kevlar wick material is missing"
 );
 invariant(
-  !"TKA_Sword_Wick".includes("Recolor"),
-  "The wick must NOT carry the recolor marker; sword.svg preserves the blade"
+  materialNames.has("TKA_Sword_Grip"),
+  "Dark indexed-grip material is missing"
 );
 invariant(
-  materialNames.size === 2,
+  materialNames.has("TKA_Sword_WickSpine"),
+  "The wick's readable centre lane is missing"
+);
+invariant(
+  !["TKA_Sword_Wick", "TKA_Sword_Grip", "TKA_Sword_WickSpine"].some(
+    (name) => name.includes("Recolor")
+  ),
+  "Wick and grip materials must survive runtime recoloring"
+);
+invariant(
+  materialNames.size === 4,
   `Unexpected material set: ${[...materialNames].join(", ")}`
 );
 const wick = (document.materials ?? []).find(
@@ -135,8 +147,8 @@ near(
 );
 near(
   stats.dimensions.x,
-  svgR(56),
-  "Cross-guard span: bar plus both quillon balls"
+  svgR(81),
+  "Readable cross-guard span: bar plus both quillon balls"
 );
 invariant(
   stats.dimensions.z < stats.dimensions.x * 0.5,
@@ -204,7 +216,7 @@ invariant(
 // it is wide the whole way, or the lenticular section has become a rod.
 const bladeDepth = blade.maximum.z - blade.minimum.z;
 const bladeWidth = blade.maximum.x - blade.minimum.x;
-near(bladeWidth, svgR(18), "Blade width at the shoulder");
+near(bladeWidth, svgR(28), "Readable blade width at the shoulder");
 invariant(
   bladeDepth < bladeWidth * 0.75,
   `Blade section is not lenticular: ${bladeDepth.toFixed(4)}m thick against ` +
@@ -243,5 +255,7 @@ console.log(
   `  hand at the guard: ${inches(stats.maximum.y)} of blade forward, ` +
     `${inches(-stats.minimum.y)} of hilt back`
 );
-console.log("  materials: recolorable hardware + preserved gold wick");
+console.log(
+  "  materials: recolorable hardware + dark grip + layered preserved gold wick"
+);
 console.log("OK");

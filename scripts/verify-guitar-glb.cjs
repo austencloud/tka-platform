@@ -3,13 +3,25 @@ const path = require("path");
 
 const { Matrix4, Quaternion, Vector3 } = require("three");
 
+const instrumentArgument = process.argv.indexOf("--instrument");
+const instrument =
+  instrumentArgument >= 0 ? process.argv[instrumentArgument + 1] : "guitar";
+if (!new Set(["guitar", "ukulele"]).has(instrument)) {
+  throw new Error(`Unknown instrument: ${instrument}`);
+}
+
+const isUkulele = instrument === "ukulele";
+const displayName = isUkulele ? "Ukulele" : "Guitar";
+const prefix = `TKA_${displayName}`;
+const stringGroup = isUkulele ? "FourStrings" : "SixStrings";
+
 const glbPath = path.join(
   __dirname,
   "..",
   "static",
   "models",
   "props",
-  "guitar.glb"
+  `${instrument}.glb`
 );
 
 function invariant(condition, message) {
@@ -82,6 +94,7 @@ function collectScene(document, binary) {
   const minimum = new Vector3(Infinity, Infinity, Infinity);
   const maximum = new Vector3(-Infinity, -Infinity, -Infinity);
   const worldMatrices = new Map();
+  const positionsByNode = new Map();
   let vertexCount = 0;
   let triangleCount = 0;
   let primitiveCount = 0;
@@ -92,6 +105,7 @@ function collectScene(document, binary) {
     worldMatrices.set(nodeIndex, worldMatrix);
     if (node.mesh !== undefined) {
       const mesh = document.meshes[node.mesh];
+      const nodePositions = [];
       for (const primitive of mesh.primitives) {
         primitiveCount += 1;
         invariant(
@@ -114,6 +128,7 @@ function collectScene(document, binary) {
         vertexCount += positions.length;
         for (const position of positions) {
           position.applyMatrix4(worldMatrix);
+          nodePositions.push(position.clone());
           minimum.min(position);
           maximum.max(position);
         }
@@ -124,6 +139,7 @@ function collectScene(document, binary) {
         );
         triangleCount += indices.count / 3;
       }
+      positionsByNode.set(nodeIndex, nodePositions);
     }
     for (const child of node.children ?? []) visit(child, worldMatrix);
   }
@@ -138,6 +154,7 @@ function collectScene(document, binary) {
     triangleCount,
     primitiveCount,
     worldMatrices,
+    positionsByNode,
   };
 }
 
@@ -149,42 +166,101 @@ const materialNames = new Set(
   (document.materials ?? []).map((material) => material.name)
 );
 const expectedMaterials = new Set([
-  "TKA_Guitar_Recolor",
-  "TKA_Guitar_Fretboard",
-  "TKA_Guitar_Binding",
-  "TKA_Guitar_Metal",
-  "TKA_Guitar_SoundHole",
+  `${prefix}_Recolor`,
+  `${prefix}_Fretboard`,
+  `${prefix}_Binding`,
+  `${prefix}_Metal`,
+  `${prefix}_SoundHole`,
 ]);
 const requiredNodes = [
-  "TKA_Guitar",
+  prefix,
   "TKA_Hand_Pivot",
-  "TKA_Guitar_BodyShell",
-  "TKA_Guitar_Soundboard",
-  "TKA_Guitar_FrontBinding",
-  "TKA_Guitar_Back",
-  "TKA_Guitar_NeckGrip",
-  "TKA_Guitar_Fretboard",
-  "TKA_Guitar_Headstock",
-  "TKA_Guitar_SoundHole",
-  "TKA_Guitar_SoundHoleInnerLip",
-  "TKA_Guitar_Bridge",
-  "TKA_Guitar_BridgePins",
-  "TKA_Guitar_Pickguard",
-  "TKA_Guitar_Frets",
-  "TKA_Guitar_SixStrings",
-  "TKA_Guitar_TuningMachines",
+  `${prefix}_BodyShell`,
+  `${prefix}_Soundboard`,
+  `${prefix}_FrontBinding`,
+  `${prefix}_Back`,
+  `${prefix}_NeckGrip`,
+  `${prefix}_Fretboard`,
+  `${prefix}_Headstock`,
+  `${prefix}_SoundHole`,
+  `${prefix}_SoundHoleInnerLip`,
+  `${prefix}_Bridge`,
+  `${prefix}_BridgePins`,
+  `${prefix}_Pickguard`,
+  `${prefix}_Frets`,
+  `${prefix}_${stringGroup}`,
+  `${prefix}_TuningMachines`,
 ];
 
-invariant(bytes.length <= 1_250_000, `Guitar exceeds 1.25 MB: ${bytes.length}`);
-invariant(document.scenes?.length === 1, "Guitar must contain exactly one scene");
-invariant((document.cameras?.length ?? 0) === 0, "QA camera leaked into the GLB");
+invariant(
+  bytes.length <= 1_250_000,
+  `${displayName} exceeds 1.25 MB: ${bytes.length}`
+);
+invariant(
+  document.scenes?.length === 1,
+  `${displayName} must contain exactly one scene`
+);
+invariant(
+  (document.cameras?.length ?? 0) === 0,
+  "QA camera leaked into the GLB"
+);
 invariant(
   !(document.extensionsUsed ?? []).includes("KHR_lights_punctual"),
   "QA lights leaked into the GLB"
 );
 for (const nodeName of requiredNodes) {
-  invariant(nodeIndexByName.has(nodeName), `Required node is missing: ${nodeName}`);
+  invariant(
+    nodeIndexByName.has(nodeName),
+    `Required node is missing: ${nodeName}`
+  );
 }
+
+function namedPositions(nodeName) {
+  const nodeIndex = nodeIndexByName.get(nodeName);
+  const positions = stats.positionsByNode.get(nodeIndex) ?? [];
+  invariant(positions.length > 0, `${nodeName} has no mesh positions`);
+  return positions;
+}
+
+function spanFor(nodeName, axis) {
+  const values = namedPositions(nodeName).map((position) => position[axis]);
+  return Math.max(...values) - Math.min(...values);
+}
+
+function frontAtEnd(nodeName, end) {
+  const positions = namedPositions(nodeName);
+  const ys = positions.map((position) => position.y);
+  const minimumY = Math.min(...ys);
+  const maximumY = Math.max(...ys);
+  const band = (maximumY - minimumY) * 0.14;
+  const selected = positions.filter((position) =>
+    end === "low"
+      ? position.y <= minimumY + band
+      : position.y >= maximumY - band
+  );
+  return Math.max(...selected.map((position) => position.z));
+}
+
+const bodyDepth = spanFor(`${prefix}_BodyShell`, "z");
+const neckDepth = spanFor(`${prefix}_NeckGrip`, "z");
+const headstockFrontAtNut = frontAtEnd(`${prefix}_Headstock`, "low");
+const headstockFrontAtTip = frontAtEnd(`${prefix}_Headstock`, "high");
+const headstockDrop = headstockFrontAtNut - headstockFrontAtTip;
+
+invariant(
+  neckDepth >= (isUkulele ? 0.014 : 0.02) &&
+    neckDepth <= (isUkulele ? 0.022 : 0.031),
+  `Neck depth is outside the ${displayName} profile: ${neckDepth.toFixed(4)}`
+);
+invariant(
+  neckDepth / bodyDepth <= 0.39,
+  `Neck is slab-like at ${(neckDepth / bodyDepth).toFixed(3)} of body depth`
+);
+invariant(
+  headstockDrop >= (isUkulele ? 0.009 : 0.014) &&
+    headstockDrop <= (isUkulele ? 0.019 : 0.027),
+  `Headstock must break backward behind the nut, got ${headstockDrop.toFixed(4)} m of drop`
+);
 for (const materialName of expectedMaterials) {
   invariant(
     materialNames.has(materialName),
@@ -195,31 +271,73 @@ invariant(
   materialNames.size === expectedMaterials.size,
   `Unexpected material set: ${[...materialNames].join(", ")}`
 );
-invariant(stats.vertexCount <= 26_000, `Too many vertices: ${stats.vertexCount}`);
-invariant(stats.triangleCount <= 38_000, `Too many triangles: ${stats.triangleCount}`);
 invariant(
-  stats.dimensions.y >= 0.79 && stats.dimensions.y <= 0.82,
-  `Local Y length must be about 0.80m, got ${stats.dimensions.y.toFixed(4)}`
+  stats.vertexCount <= 26_000,
+  `Too many vertices: ${stats.vertexCount}`
 );
 invariant(
-  stats.dimensions.x >= 0.30 && stats.dimensions.x <= 0.33,
-  `Unexpected guitar width: ${stats.dimensions.x.toFixed(4)}`
+  stats.triangleCount <= 38_000,
+  `Too many triangles: ${stats.triangleCount}`
 );
 invariant(
-  stats.dimensions.z >= 0.075 && stats.dimensions.z <= 0.115,
-  `Unexpected guitar depth: ${stats.dimensions.z.toFixed(4)}`
+  stats.dimensions.y >= (isUkulele ? 0.525 : 0.79) &&
+    stats.dimensions.y <= (isUkulele ? 0.535 : 0.82),
+  `Unexpected ${instrument} length: ${stats.dimensions.y.toFixed(4)}`
 );
-invariant(stats.minimum.y < -0.42, "Body does not reach the authored negative-Y end");
-invariant(stats.maximum.y > 0.36, "Headstock does not reach the authored positive-Y end");
+invariant(
+  stats.dimensions.x >= (isUkulele ? 0.16 : 0.3) &&
+    stats.dimensions.x <= (isUkulele ? 0.18 : 0.33),
+  `Unexpected ${instrument} width: ${stats.dimensions.x.toFixed(4)}`
+);
+invariant(
+  stats.dimensions.z >= (isUkulele ? 0.05 : 0.075) &&
+    stats.dimensions.z <= (isUkulele ? 0.08 : 0.115),
+  `Unexpected ${instrument} depth: ${stats.dimensions.z.toFixed(4)}`
+);
+invariant(
+  stats.minimum.y < (isUkulele ? -0.35 : -0.42),
+  "Body does not reach the authored negative-Y end"
+);
+invariant(
+  stats.maximum.y > (isUkulele ? 0.014 : 0.36),
+  "Headstock does not reach the authored positive-Y end"
+);
 
-const rootNode = nodes[nodeIndexByName.get("TKA_Guitar")];
-invariant(rootNode.extras?.tka_prop_type === "guitar", "Root prop metadata is missing");
-invariant(rootNode.extras?.grip_origin === "0,0,0", "Root grip metadata is missing");
-invariant(rootNode.extras?.local_long_axis === "+Y", "Root axis metadata is missing");
+const rootNode = nodes[nodeIndexByName.get(prefix)];
 invariant(
-  rootNode.extras?.recolor_material === "TKA_Guitar_Recolor",
+  rootNode.extras?.tka_prop_type === instrument,
+  "Root prop metadata is missing"
+);
+invariant(
+  rootNode.extras?.grip_origin === "0,0,0",
+  "Root grip metadata is missing"
+);
+invariant(
+  rootNode.extras?.local_long_axis === "+Y",
+  "Root axis metadata is missing"
+);
+invariant(
+  rootNode.extras?.recolor_material === `${prefix}_Recolor`,
   "Root recolor metadata is missing"
 );
+if (isUkulele) {
+  invariant(
+    Math.abs(rootNode.extras?.authored_length_m - 0.530225) <= 0.000001,
+    "Ukulele authored-length metadata is missing"
+  );
+  invariant(
+    Math.abs(rootNode.extras?.tracked_tip_y - 0.015) <= 0.000001,
+    "Ukulele tracked-tip metadata is missing"
+  );
+  invariant(
+    rootNode.extras?.grip_site === "headstock tip",
+    "Ukulele headstock-grip metadata is missing"
+  );
+  invariant(
+    Math.abs(stats.maximum.y - 0.015) <= 0.0001,
+    `Ukulele hand must sit at the headstock tip, got ${stats.maximum.y.toFixed(4)} m above it`
+  );
+}
 
 const pivotIndex = nodeIndexByName.get("TKA_Hand_Pivot");
 const pivotPosition = new Vector3().setFromMatrixPosition(
@@ -241,5 +359,11 @@ console.log(
   `  bounds: ${stats.dimensions.x.toFixed(4)} x ${stats.dimensions.y.toFixed(4)} x ${stats.dimensions.z.toFixed(4)} m`
 );
 console.log(
-  `  hand pivot: ${pivotPosition.toArray().map((value) => value.toFixed(5)).join(", ")}`
+  `  hand pivot: ${pivotPosition
+    .toArray()
+    .map((value) => value.toFixed(5))
+    .join(", ")}`
+);
+console.log(
+  `  side geometry: ${(neckDepth * 1000).toFixed(1)}mm neck / ${(bodyDepth * 1000).toFixed(1)}mm body, ${(headstockDrop * 1000).toFixed(1)}mm headstock drop`
 );

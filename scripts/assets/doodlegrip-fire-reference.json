@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "source": "https://forgedfans.com/products/doodlegrip-fire-fans",
+  "source_image_px": [304, 336],
+  "isolated_upper_fan_bbox_px": {
+    "left": 32,
+    "top": 26,
+    "right": 272,
+    "bottom": 181
+  },
+  "lower_fan_excluded_below_px": 181,
+  "pivot_px": [152, 154],
+  "published_dimensions_m": [0.4826, 0.3302],
+  "pixel_scale_m": [0.0020108333333333334, 0.0021303225806451614],
+  "landmarks_px": {
+    "left_outer_wick_center": [44, 104],
+    "left_diagonal_wick_center": [87, 56],
+    "center_wick_top": [152, 26],
+    "right_diagonal_wick_center": [217, 56],
+    "right_outer_wick_center": [260, 104],
+    "left_handle_join": [124, 138],
+    "left_handle_outermost": [122, 154],
+    "left_handle_lower": [132, 173],
+    "handle_bottom": [152, 181]
+  },
+  "geometry_m": {
+    "outer_wick_center": [0.2217705, 0.10651612903225807],
+    "diagonal_wick_center": [0.13347298611111113, 0.20877161290322582],
+    "center_wick_center_y": 0.25363129032258064,
+    "handle_shell_top": [-0.05630333333333334, 0.03408516129032258],
+    "handle_shell_outermost": [-0.05831416666666667, 0.0],
+    "handle_shell_lower": [-0.04021666666666667, -0.04047612903225807],
+    "handle_shell_bottom": [0.0, -0.055137459677419355]
+  },
+  "calibration": {
+    "method": "upper fan isolated from paired front-on product photo; horizontal and vertical axes calibrated independently to the published 19 x 13 inch envelope",
+    "wick_length_m": 0.0381,
+    "ring_inside_diameter_m": 0.0381,
+    "handle_shell_flare_correction_px": 1,
+    "symmetry": "right side mirrored from measured left-side landmarks"
+  }
+}

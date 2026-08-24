@@ -279,6 +279,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
       "buugeng",
       "triad",
       "sword",
+      "sickles",
       "hand",
       "chicken",
       "guitar",

@@ -27,8 +27,15 @@ export function wrapSvgContent(
   // into the wrapped SVG so the composed image matches the live renderer. Props
   // never pass this — no prop halo. See arrow-halo.ts for the single definition.
   halo?: { id: string; isDarkMode: boolean }
-): { svg: string; offsetX: number; offsetY: number; newWidth: number; newHeight: number } {
-  let minX = 0, minY = 0;
+): {
+  svg: string;
+  offsetX: number;
+  offsetY: number;
+  newWidth: number;
+  newHeight: number;
+} {
+  let minX = 0,
+    minY = 0;
   if (fullViewBox) {
     const parts = fullViewBox.split(/\s+/);
     minX = parseFloat(parts[0] || "0") || 0;
@@ -43,7 +50,7 @@ export function wrapSvgContent(
 
   if (!expandViewBox) {
     return {
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${content}</svg>`,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${minX} ${minY} ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${content}</svg>`,
       offsetX: 0,
       offsetY: 0,
       newWidth: viewBoxWidth,
@@ -60,7 +67,7 @@ export function wrapSvgContent(
   const newMinY = minY - expandY;
 
   return {
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${newMinX} ${newMinY} ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${content}</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${newMinX} ${newMinY} ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${content}</svg>`,
     offsetX: expandX,
     offsetY: expandY,
     newWidth,
@@ -108,8 +115,15 @@ export function drawElementWithTransform(
   }
 ): void {
   const {
-    x, y, rotation, centerX, centerY,
-    viewBoxWidth, viewBoxHeight, scale, shouldMirror
+    x,
+    y,
+    rotation,
+    centerX,
+    centerY,
+    viewBoxWidth,
+    viewBoxHeight,
+    scale,
+    shouldMirror,
   } = params;
 
   ctx.save();

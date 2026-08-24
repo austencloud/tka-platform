@@ -71,6 +71,9 @@ export const PROP_DIMENSIONS: Record<string, PropDimensions> = {
   // Sword
   sword: { width: 572.3, height: 64 },
 
+  // Sickles — one competition kama, with an explicit off-center hand pivot.
+  sickles: { width: 440, height: 260 },
+
   // Energy family (premium cosmetics). Both boxes are padded beyond the prop
   // itself so the blade glow has somewhere to fall off, and both grew that
   // padding symmetrically around the prop center — the torch precedent — so the

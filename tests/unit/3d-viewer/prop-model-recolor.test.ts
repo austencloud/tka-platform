@@ -75,6 +75,26 @@ describe("prop model materials", () => {
     expect(recoloredBody.emissiveIntensity).toBe(0.18);
   });
 
+  it("uses the exact shared palette when an authored model opts in", () => {
+    const scene = new Group();
+    const modelRoot = new Group();
+    modelRoot.userData.tka_recolor_mode = "palette-main";
+    const body = new MeshStandardMaterial({ color: 0x9d76b5 });
+    body.name = "TKA_Doublestar_Recolor";
+    body.emissive.set(0x3b82f6);
+    body.emissiveIntensity = 0.18;
+    const mesh = new Mesh(new BoxGeometry(), body);
+    modelRoot.add(mesh);
+    scene.add(modelRoot);
+
+    recolorPropModel(scene, "blue");
+
+    const recoloredBody = mesh.material as MeshStandardMaterial;
+    expect(recoloredBody.color.getHex()).toBe(0x3b82f6);
+    expect(recoloredBody.emissive.getHex()).toBe(0x000000);
+    expect(recoloredBody.emissiveIntensity).toBe(0);
+  });
+
   it("does not replace non-standard materials in a mixed array", () => {
     const scene = new Group();
     const body = new MeshStandardMaterial({ color: 0xf1b81c });
@@ -149,9 +169,7 @@ describe("Sword GLB registry", () => {
       scale: 1,
     });
     // The blade already points at +Y; flipping would bury it in the arm.
-    expect(
-      resolvePropModel(PropType.SWORD)!.entry.flipLongAxis
-    ).toBeFalsy();
+    expect(resolvePropModel(PropType.SWORD)!.entry.flipLongAxis).toBeFalsy();
   });
 
   it("recolors the hilt hardware and preserves the gold kevlar wick", () => {
@@ -183,8 +201,8 @@ describe("Sword GLB registry", () => {
   });
 });
 
-describe("Guitar GLB registry", () => {
-  it("resolves Guitar and reuses the model at Ukulele scale", () => {
+describe("Guitar-family GLB registry", () => {
+  it("resolves Guitar and Ukulele to dedicated production models", () => {
     const guitar = resolvePropModel(PropType.GUITAR);
     const ukulele = resolvePropModel(PropType.UKULELE);
 
@@ -198,11 +216,11 @@ describe("Guitar GLB registry", () => {
     });
     expect(ukulele).toMatchObject({
       entry: {
-        modelUrl: "/models/props/guitar.glb",
+        modelUrl: "/models/props/ukulele.glb",
         scale: 1,
         gripOffsetY: 0,
       },
-      scale: 0.75,
+      scale: 1,
     });
   });
 });
@@ -216,6 +234,26 @@ describe("Trigeng GLB registry", () => {
         gripOffsetY: 0,
       },
       scale: 1,
+    });
+  });
+});
+
+describe("Double Star GLB registry", () => {
+  it("uses the real-photo-derived production model at its authored center grip", () => {
+    expect(resolvePropModel(PropType.DOUBLESTAR)).toMatchObject({
+      entry: {
+        modelUrl: "/models/props/doublestar.glb",
+        scale: 1,
+        gripOffsetY: 0,
+      },
+      scale: 1,
+    });
+
+    expect(resolvePropModel(PropType.BIGDOUBLESTAR)).toMatchObject({
+      entry: {
+        modelUrl: "/models/props/doublestar.glb",
+      },
+      scale: 1.4,
     });
   });
 });

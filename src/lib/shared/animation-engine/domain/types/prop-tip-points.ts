@@ -207,6 +207,15 @@ const SWORD_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 280, dy: 0 }],
 };
 
+// ─── Sickles ─────────────────────────────────────────────────────────────────
+
+// The SVG pivot is the lower wrapped grip at (190, 150). The physical kama is
+// rotated around that hand point so its blade apex lands on the +X kinetic axis;
+// the butt is not tracked.
+const SICKLES_TIP_POINTS: PropTipConfig = {
+  points: [{ dx: 192, dy: 0 }],
+};
+
 // ─── Energy Family (premium cosmetics) ────────────────────────────────────────
 
 // Energy Saber is a sword restyle, so it gets sword's reach exactly: the blade
@@ -410,6 +419,9 @@ export const PROP_TIP_POINTS: Record<string, PropTipConfig> = {
 
   // Sword
   sword: SWORD_TIP_POINTS,
+
+  // Sickles
+  sickles: SICKLES_TIP_POINTS,
 
   // Energy family (premium cosmetics) — reach copied from each parent
   energy_saber: ENERGY_SABER_TIP_POINTS,

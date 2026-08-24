@@ -11,12 +11,15 @@
 -->
 <script lang="ts">
   import { PropType } from "../domain/enums/prop-type";
-  import { getPropTypeDisplayInfo, getBasePropType } from "../domain/prop-type-display-registry";
+  import {
+    getPropTypeDisplayInfo,
+    getBasePropType,
+  } from "../domain/prop-type-display-registry";
   import {
     getCompositionRecipe,
     type CompositionRecipe,
   } from "../domain/prop-composition-recipes";
-  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+  import { onMount } from "svelte";
 
   let {
     propType,
@@ -24,6 +27,7 @@
     recipeOverride = undefined,
     darkBackground = false,
     neutral = false,
+    useSavedOverrides = true,
   }: {
     propType: PropType;
     size?: number;
@@ -32,30 +36,55 @@
     darkBackground?: boolean;
     /** Render a single white silhouette instead of blue+red pair */
     neutral?: boolean;
+    /** Standalone review surfaces can use the canonical recipe without loading
+     *  the authenticated app settings graph. */
+    useSavedOverrides?: boolean;
   } = $props();
+
+  type GetSettings =
+    (typeof import("$lib/shared/application/state/app-state.svelte"))["getSettings"];
+  let getSettings = $state<GetSettings | null>(null);
+
+  onMount(() => {
+    if (!useSavedOverrides) return;
+    let mounted = true;
+    void import("$lib/shared/application/state/app-state.svelte").then(
+      (module) => {
+        if (mounted) getSettings = module.getSettings;
+      }
+    );
+    return () => {
+      mounted = false;
+    };
+  });
 
   const displayInfo = $derived(getPropTypeDisplayInfo(propType));
 
   // Check for persisted overrides from the Prop Button Lab
-  const settings = $derived(getSettings());
-  const savedOverrides = $derived(settings.compositionRecipeOverrides ?? {});
+  const savedOverrides = $derived(
+    getSettings?.().compositionRecipeOverrides ?? {}
+  );
   const recipe = $derived.by(() => {
     if (recipeOverride) return recipeOverride;
     const base = getBasePropType(propType);
-    return savedOverrides[base] ?? savedOverrides[propType] ?? getCompositionRecipe(propType);
+    return (
+      savedOverrides[base] ??
+      savedOverrides[propType] ??
+      getCompositionRecipe(propType)
+    );
   });
 
   // Build transform strings for each prop
   const blueTransform = $derived(
     `translate(${recipe.blue.x}, ${recipe.blue.y}) ` +
-    `rotate(${recipe.blue.rotation}) ` +
-    `scale(${recipe.blue.scale * recipe.pairScale})`
+      `rotate(${recipe.blue.rotation}) ` +
+      `scale(${recipe.blue.scale * recipe.pairScale})`
   );
 
   const redTransform = $derived(
     `translate(${recipe.red.x}, ${recipe.red.y}) ` +
-    `rotate(${recipe.red.rotation}) ` +
-    `scale(${recipe.red.scale * recipe.pairScale})`
+      `rotate(${recipe.red.rotation}) ` +
+      `scale(${recipe.red.scale * recipe.pairScale})`
   );
 
   // Image dimensions in viewBox units - props are placed relative to their center

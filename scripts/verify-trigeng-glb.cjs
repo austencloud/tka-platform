@@ -150,16 +150,16 @@ const materialNames = new Set(
 );
 const expectedMaterials = new Set([
   "TKA_Trigeng_Recolor",
-  "TKA_Trigeng_ShellSeam",
+  "TKA_Trigeng_Grip",
 ]);
 const requiredNodes = [
   "TKA_Trigeng",
   "TKA_Hand_Pivot",
-  "TKA_Trigeng_CrownedShell",
-  "TKA_Trigeng_MoldSeam",
+  "TKA_Trigeng_ReferenceBody_Recolor",
+  "TKA_Trigeng_GripLiner",
 ];
 
-invariant(bytes.length <= 900_000, `Trigeng exceeds 900 KB: ${bytes.length}`);
+invariant(bytes.length <= 600_000, `Trigeng exceeds 600 KB: ${bytes.length}`);
 invariant(
   document.scenes?.length === 1,
   "Trigeng must contain exactly one scene"
@@ -189,23 +189,23 @@ invariant(
   `Unexpected material set: ${[...materialNames].join(", ")}`
 );
 invariant(
-  stats.vertexCount <= 40_000,
+  stats.vertexCount <= 15_000,
   `Too many vertices: ${stats.vertexCount}`
 );
 invariant(
-  stats.triangleCount <= 34_000,
+  stats.triangleCount <= 16_000,
   `Too many triangles: ${stats.triangleCount}`
 );
 invariant(
-  stats.dimensions.x >= 0.61 && stats.dimensions.x <= 0.67,
+  stats.dimensions.x >= 0.54 && stats.dimensions.x <= 0.57,
   `Unexpected Trigeng width: ${stats.dimensions.x.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.y >= 0.61 && stats.dimensions.y <= 0.67,
+  stats.dimensions.y >= 0.50 && stats.dimensions.y <= 0.525,
   `Unexpected Trigeng height: ${stats.dimensions.y.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.z >= 0.028 && stats.dimensions.z <= 0.055,
+  stats.dimensions.z >= 0.012 && stats.dimensions.z <= 0.018,
   `Unexpected Trigeng depth: ${stats.dimensions.z.toFixed(4)}`
 );
 
@@ -227,8 +227,23 @@ invariant(
   "Root recolor metadata is missing"
 );
 invariant(
-  rootNode.extras?.canonical_source === "static/images/props/trigeng.svg",
-  "Canonical source metadata is missing"
+  rootNode.extras?.plate_depth_m === 0.012,
+  "12mm plate metadata is missing"
+);
+invariant(
+  rootNode.extras?.reference_form ===
+    "threefold-symmetrized tri-blade reference silhouette",
+  "Reference silhouette metadata is missing"
+);
+invariant(
+  rootNode.extras?.canonical_source ===
+    "scripts/assets/trigeng-reference.svg",
+  "Canonical trace source metadata is missing"
+);
+invariant(
+  rootNode.extras?.symmetry_method ===
+    "2-of-3 vote at 0, 120, and 240 degrees",
+  "Threefold symmetry metadata is missing"
 );
 
 const pivotIndex = nodeIndexByName.get("TKA_Hand_Pivot");

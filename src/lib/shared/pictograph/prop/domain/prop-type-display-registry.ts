@@ -28,7 +28,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
   {
     // === STAFF FAMILY ===
     [PropType.STAFF]: {
-      label: "Staff",
+      label: "Double Staff",
       image: "/images/props/buttons/staff.svg?v=2",
       category: "staves-clubs",
     },
@@ -47,12 +47,10 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.CAPSULE_BATON]: {
       label: "LED Baton",
       image: "/images/props/buttons/capsule_baton.svg",
-      category: "staves-clubs",
     },
     [PropType.FIRE_DOUBLE_STAFF]: {
       label: "Fire Staff",
       image: "/images/props/buttons/fire_double_staff.svg",
-      category: "staves-clubs",
     },
 
     // === CLUB FAMILY ===
@@ -114,7 +112,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.TRIGENG]: {
       label: "Trigeng",
       image: "/images/props/buttons/trigeng.svg",
-      category: "curved",
     },
 
     // === HAND ===
@@ -139,6 +136,13 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.SWORD]: {
       label: "Sword",
       image: "/images/props/buttons/sword.svg",
+      category: "singles",
+    },
+
+    // === SICKLES ===
+    [PropType.SICKLES]: {
+      label: "Sickles",
+      image: "/images/props/buttons/sickles.svg",
       category: "singles",
     },
 
@@ -211,7 +215,6 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     [PropType.TORCH]: {
       label: "Torch",
       image: "/images/props/buttons/torch.svg",
-      category: "novelty",
     },
     [PropType.BIGTORCH]: {
       label: "Big Torch",
@@ -347,11 +350,16 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.SIMPLESTAFF,
   PropType.BIGSTAFF,
   PropType.STAFF2,
+  PropType.CAPSULE_BATON,
+  PropType.FIRE_DOUBLE_STAFF,
   // Club family
+  PropType.TORCH,
   PropType.BIGCLUB,
+  PropType.BIGTORCH,
   // Fan family
   PropType.BIGFAN,
   // Triad family
+  PropType.TRIGENG,
   PropType.BIGTRIAD,
   // Hoop family
   PropType.BIGHOOP,
@@ -367,11 +375,11 @@ export const VARIANT_PROP_TYPES: PropType[] = [
   PropType.BIGDOUBLESTAR,
   // Eightrings family
   PropType.BIGEIGHTRINGS,
+  // Sword family
+  PropType.SICKLES,
   // Contact ball family (DOUBLECONTACTBALL is now standalone)
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
-  // Torch family
-  PropType.BIGTORCH,
 ];
 
 /**
@@ -382,11 +390,16 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.SIMPLESTAFF]: PropType.STAFF,
   [PropType.BIGSTAFF]: PropType.STAFF,
   [PropType.STAFF2]: PropType.STAFF,
+  [PropType.CAPSULE_BATON]: PropType.STAFF,
+  [PropType.FIRE_DOUBLE_STAFF]: PropType.STAFF,
   // Club variations
+  [PropType.TORCH]: PropType.CLUB,
   [PropType.BIGCLUB]: PropType.CLUB,
+  [PropType.BIGTORCH]: PropType.CLUB,
   // Fan variations
   [PropType.BIGFAN]: PropType.FAN,
   // Triad variations
+  [PropType.TRIGENG]: PropType.TRIAD,
   [PropType.BIGTRIAD]: PropType.TRIAD,
   // Hoop variations
   [PropType.BIGHOOP]: PropType.MINIHOOP,
@@ -402,12 +415,12 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
   [PropType.BIGDOUBLESTAR]: PropType.DOUBLESTAR,
   // Eightrings variations
   [PropType.BIGEIGHTRINGS]: PropType.EIGHTRINGS,
+  // Weapon variations
+  [PropType.SICKLES]: PropType.SWORD,
   // Contact ball variations (CONTACTBALL, BIGCONTACTBALL, BIGDOUBLECONTACTBALL deactivated)
   [PropType.BIGCONTACTBALL]: PropType.CONTACTBALL,
   [PropType.BIGDOUBLECONTACTBALL]: PropType.CONTACTBALL,
   // DOUBLECONTACTBALL is now standalone (not a variant) since its base is deactivated
-  // Torch variations
-  [PropType.BIGTORCH]: PropType.TORCH,
 };
 
 /**
@@ -415,10 +428,16 @@ const VARIANT_TO_BASE: Partial<Record<PropType, PropType>> = {
  * Order matters - this determines the cycle order when toggling.
  */
 const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
-  [PropType.STAFF]: [PropType.SIMPLESTAFF, PropType.BIGSTAFF, PropType.STAFF2],
-  [PropType.CLUB]: [PropType.BIGCLUB],
+  [PropType.STAFF]: [
+    PropType.CAPSULE_BATON,
+    PropType.FIRE_DOUBLE_STAFF,
+    PropType.SIMPLESTAFF,
+    PropType.BIGSTAFF,
+    PropType.STAFF2,
+  ],
+  [PropType.CLUB]: [PropType.TORCH, PropType.BIGCLUB, PropType.BIGTORCH],
   [PropType.FAN]: [PropType.BIGFAN],
-  [PropType.TRIAD]: [PropType.BIGTRIAD],
+  [PropType.TRIAD]: [PropType.TRIGENG, PropType.BIGTRIAD],
   [PropType.MINIHOOP]: [PropType.BIGHOOP],
   [PropType.BUUGENG]: [PropType.BIGBUUGENG],
   [PropType.TRIQUETRA]: [PropType.TRIQUETRA2],
@@ -426,11 +445,11 @@ const BASE_TO_VARIANTS: Partial<Record<PropType, PropType[]>> = {
   [PropType.GUITAR]: [PropType.UKULELE],
   [PropType.DOUBLESTAR]: [PropType.BIGDOUBLESTAR],
   [PropType.EIGHTRINGS]: [PropType.BIGEIGHTRINGS],
+  [PropType.SWORD]: [PropType.SICKLES],
   [PropType.CONTACTBALL]: [
     PropType.BIGCONTACTBALL,
     PropType.BIGDOUBLECONTACTBALL,
   ],
-  [PropType.TORCH]: [PropType.BIGTORCH],
 };
 
 /**
@@ -641,6 +660,7 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.DOUBLECONTACTBALL,
       PropType.TORCH,
       PropType.SWORD,
+      PropType.SICKLES,
     ],
   },
   {

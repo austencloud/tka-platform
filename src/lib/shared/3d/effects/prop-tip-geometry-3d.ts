@@ -30,7 +30,6 @@ export interface PropTipAnchor3D {
    */
   readonly axialOffset: number;
 }
-
 /** `Prop3D.svelte` renders every "big" procedural variant at this scale. */
 const BIG_SCALE = 1.4;
 
@@ -41,6 +40,13 @@ const BIG_SCALE = 1.4;
  * rather than imported because the props package does not export it.
  */
 const CLUB_REACH_M = 0.50343;
+
+/**
+ * Headstock-tip grip to the final 15mm of wood above the hand, in metres.
+ * `ukulele.glb` authors this as `tracked_tip_y`; the builder and GLB verifier
+ * keep the model, pivot, and effect emitter in agreement.
+ */
+const UKULELE_REACH_M = 0.015;
 
 /** Hand to the top of the wick, as a fraction of staff length — `torch-profile.ts` `TORCH_REACH`. */
 const TORCH_REACH_RATIO = 0.59335;
@@ -53,6 +59,12 @@ const TORCH_REACH_RATIO = 0.59335;
  * the GLB replaced, and left the tracked tip about 7in past the point.
  */
 const SWORD_REACH_RATIO = 0.61706;
+
+/**
+ * Lower-handle grip to the aligned blade apex in sickles.glb. The physical kama
+ * is 36 x 19 cm; its internal kinetic-axis node rotates that reference onto +Y.
+ */
+const SICKLES_REACH_M = 0.274416;
 
 /**
  * Hand to the far rim, as a fraction of staff length — the outer contour of
@@ -83,7 +95,7 @@ const QUIAD_REACH_RATIO = 0.43202;
  * Keyed by prop type, valued in metres given the staff length in metres.
  *
  * A prop absent from this table falls back to `staffHalfLength`. That is the
- * honest default for the GLTF-backed props (chicken, guitar, ukulele, trigeng)
+ * honest default for the GLTF-backed props (chicken, guitar, trigeng)
  * whose reach lives in a .glb rather than in a number anyone can cite, and for
  * poi, whose ball centre lands within a centimetre of half a staff anyway.
  */
@@ -91,12 +103,14 @@ const SINGLE_ENDED_REACH_3D: Partial<
   Record<PropType, (staffLength: number) => number>
 > = {
   [PropType.CLUB]: () => CLUB_REACH_M,
+  [PropType.UKULELE]: () => UKULELE_REACH_M,
 
   [PropType.TORCH]: (staffLength) => staffLength * TORCH_REACH_RATIO,
   [PropType.BIGTORCH]: (staffLength) =>
     staffLength * TORCH_REACH_RATIO * BIG_SCALE,
 
   [PropType.SWORD]: (staffLength) => staffLength * SWORD_REACH_RATIO,
+  [PropType.SICKLES]: () => SICKLES_REACH_M,
 
   [PropType.FAN]: (staffLength) => staffLength * FAN_REACH_RATIO,
   [PropType.BIGFAN]: (staffLength) =>

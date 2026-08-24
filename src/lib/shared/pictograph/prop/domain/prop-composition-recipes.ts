@@ -125,6 +125,12 @@ const FAMILY_RECIPES: Partial<Record<PropType, CompositionRecipe>> = {
     red: { x: 50, y: 50, rotation: 40, scale: 0.55 },
     pairScale: 1,
   },
+  // Sickles: mirrored fighting pair, blades opening away from each other
+  [PropType.SICKLES]: {
+    blue: { x: 45, y: 51, rotation: -28, scale: 0.48 },
+    red: { x: 55, y: 49, rotation: 152, scale: 0.48 },
+    pairScale: 1,
+  },
   // Energy Saber: crossed, matching its sword parent
   [PropType.ENERGY_SABER]: {
     blue: { x: 50, y: 50, rotation: -40, scale: 0.55 },

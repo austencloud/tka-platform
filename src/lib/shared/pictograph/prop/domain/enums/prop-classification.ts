@@ -36,6 +36,8 @@ export const SMALL_UNILATERAL_PROPS = [
   "torch",
   "contactball",
   "poi", // single weighted end, gripped at the knob - same shape as contactball/club
+  // One gripped kama per hand, with one tracked blade apex.
+  "sickles",
 ] as const;
 
 /**
@@ -239,7 +241,11 @@ export function getBilateralEndLabels(propType: string): [string, string] {
   }
 
   // Sword: Tip End / Hilt End
-  if (normalizedType === "sword" || normalizedType === "energy_saber") {
+  if (
+    normalizedType === "sword" ||
+    normalizedType === "energy_saber" ||
+    normalizedType === "sickles"
+  ) {
     return ["Tip End", "Hilt End"];
   }
 

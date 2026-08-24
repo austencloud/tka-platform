@@ -130,7 +130,7 @@ const stats = collectScene(document, binary);
 const nodeNames = new Set((document.nodes ?? []).map((node) => node.name));
 const materialNames = new Set((document.materials ?? []).map((item) => item.name));
 
-invariant(bytes.length <= 500_000, `Buugeng exceeds 500 KB: ${bytes.length}`);
+invariant(bytes.length <= 600_000, `Buugeng exceeds 600 KB: ${bytes.length}`);
 invariant(document.scenes?.length === 1, "Buugeng must contain exactly one scene");
 invariant((document.cameras?.length ?? 0) === 0, "QA camera leaked into the GLB");
 invariant(
@@ -138,28 +138,53 @@ invariant(
   "QA lights leaked into the GLB"
 );
 invariant(nodeNames.has("TKA_Buugeng"), "Root node TKA_Buugeng is missing");
-invariant(nodeNames.has("TKA_Buugeng_Body"), "Body node is missing");
-invariant(materialNames.has("TKA_Body_Recolor"), "Body material is missing");
-invariant(materialNames.size === 1, `Buugeng must use one material, found ${materialNames.size}`);
 invariant(
-  [...nodeNames].every((name) => !name.includes("Grip")),
-  "Grip geometry must not return"
+  nodeNames.has("TKA_Buugeng_PerforatedBody_Recolor"),
+  "Perforated body node is missing"
 );
-invariant(stats.vertexCount <= 12_000, `Too many vertices: ${stats.vertexCount}`);
-invariant(stats.triangleCount <= 10_000, `Too many triangles: ${stats.triangleCount}`);
+invariant(nodeNames.has("TKA_Hand_Pivot"), "Hand pivot is missing");
+invariant(
+  !nodeNames.has("TKA_Buugeng_RubberizedGrip"),
+  "The obsolete bar grip is still present"
+);
+invariant(materialNames.has("TKA_Buugeng_Recolor"), "Recolor material is missing");
+invariant(
+  materialNames.size === 1,
+  `Unexpected Buugeng material set: ${[...materialNames].join(", ")}`
+);
+invariant(stats.vertexCount <= 14_000, `Too many vertices: ${stats.vertexCount}`);
+invariant(stats.triangleCount <= 14_000, `Too many triangles: ${stats.triangleCount}`);
 invariant(
   near(stats.dimensions.y, 0.83, 0.005),
   `Local Y length must be 0.83m, got ${stats.dimensions.y.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.x >= 0.39 && stats.dimensions.x <= 0.48,
+  stats.dimensions.x >= 0.29 && stats.dimensions.x <= 0.33,
   `Unexpected silhouette width: ${stats.dimensions.x.toFixed(4)}`
 );
 invariant(
-  stats.dimensions.z >= 0.0095 && stats.dimensions.z <= 0.0105,
-  `Body depth must be 10mm, got ${stats.dimensions.z.toFixed(4)}`
+  stats.dimensions.z >= 0.009 && stats.dimensions.z <= 0.012,
+  `Body stock depth is wrong: ${stats.dimensions.z.toFixed(4)}`
 );
 invariant(stats.center.length() <= 0.003, `Hand pivot drifted: ${stats.center.toArray()}`);
+
+const root = (document.nodes ?? []).find((node) => node.name === "TKA_Buugeng");
+invariant(root?.extras?.authored_length_m === 0.83, "83cm length metadata is missing");
+invariant(root?.extras?.body_depth_m === 0.0095, "9.5mm body metadata is missing");
+invariant(root?.extras?.grip_length_m === 0.15, "15cm waist metadata is missing");
+invariant(root?.extras?.cutout_count === 10, "Ten slots were not exported");
+invariant(
+  root?.extras?.waist_width_m >= 0.018 && root?.extras?.waist_width_m <= 0.03,
+  `Narrow waist metadata is wrong: ${root?.extras?.waist_width_m}`
+);
+invariant(
+  root?.extras?.canonical_source === "scripts/assets/buugeng-reference.svg",
+  "Reference trace metadata is missing"
+);
+invariant(
+  root?.extras?.symmetry_method === "lower reference half rotated 180 degrees",
+  "Half-turn symmetry metadata is missing"
+);
 
 console.log(`Verified ${glbPath}`);
 console.log(`  bytes: ${bytes.length}`);
