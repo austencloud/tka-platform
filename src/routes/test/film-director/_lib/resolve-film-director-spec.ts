@@ -216,7 +216,9 @@ function resolveStepPlanesForPerformer(
       shotId,
       seed,
       PLANE_CATALOG,
-      `${shotId} ${performerId} ${entry.step} ${entry.hand}`
+      // NUL-separated like createAxisStream's own key: authored ids may
+      // contain spaces, so a space-joined key would be ambiguous.
+      `${shotId}\u0000${performerId}\u0000${entry.step}\u0000${entry.hand}`
     ),
   }));
 }
