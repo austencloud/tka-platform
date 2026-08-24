@@ -7418,7 +7418,7 @@ index cac989e5e626274fb4d13d59e401a9a1b485760b..96628b1ae9062e0596e5bd0fd6b3ddba
 -//# sourceMappingURL=AvatarAnimator.d.ts.map
 \ No newline at end of file
 diff --git a/dist/lib/services/implementations/AvatarAnimator.js b/dist/lib/services/implementations/AvatarAnimator.js
-index bdd5ae35ed47c58d29c537a7805705783f9b9066..51281414bbf041206b97116b877242adfdc42149 100644
+index bdd5ae35ed47c58d29c537a7805705783f9b9066..1fd5b9a20ed209993151c5c4efb03903b59b90b3 100644
 --- a/dist/lib/services/implementations/AvatarAnimator.js
 +++ b/dist/lib/services/implementations/AvatarAnimator.js
 @@ -4,7 +4,38 @@
@@ -7451,7 +7451,7 @@ index bdd5ae35ed47c58d29c537a7805705783f9b9066..51281414bbf041206b97116b877242ad
 +/** Radians of spine lean per meter of reach deficit. */
 +const REACH_LEAN_GAIN = 1.2;
 +/** Stance yaw input clamp (~matches the thoracic+cervical twist budget). */
-+const MAX_STANCE_YAW = (60 * Math.PI) / 180;
++const MAX_STANCE_YAW = (90 * Math.PI) / 180;
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
 +const HEAD_DODGE_ENGAGE_DISTANCE = 0.32;
@@ -15627,7 +15627,7 @@ index 2627f729e9f27d0eafff53491ea15d219472ac24..9978035424ef915241040845a6806a4f
    ): SpineTwistResult;
  }
 diff --git a/src/lib/services/implementations/AvatarAnimator.ts b/src/lib/services/implementations/AvatarAnimator.ts
-index c73bcabe86e07dd117e6f737532aea88ac9ec194..376982320f49faa82e07da6da70f843cc9e55f92 100644
+index c73bcabe86e07dd117e6f737532aea88ac9ec194..4cdde5e488f53e0fbd1fa4e14632ea0dae5dd163 100644
 --- a/src/lib/services/implementations/AvatarAnimator.ts
 +++ b/src/lib/services/implementations/AvatarAnimator.ts
 @@ -5,7 +5,8 @@
@@ -15694,7 +15694,7 @@ index c73bcabe86e07dd117e6f737532aea88ac9ec194..376982320f49faa82e07da6da70f843c
 +const REACH_LEAN_GAIN = 1.2;
 +
 +/** Stance yaw input clamp (~matches the thoracic+cervical twist budget). */
-+const MAX_STANCE_YAW = (60 * Math.PI) / 180;
++const MAX_STANCE_YAW = (90 * Math.PI) / 180;
 +
 +const WORLD_UP = new Vector3(0, 1, 0);
 +const MAX_HEAD_DODGE = 0.42;
