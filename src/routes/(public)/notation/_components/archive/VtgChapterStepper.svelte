@@ -9,56 +9,56 @@
      you chose the moment, so there is nothing to soften.
 
   2. THE STEPS ARE THE DOCUMENT'S OWN TABLE OF CONTENTS, not a sequence anyone
-     here curated. Five chapters, five authors, in VTG V.1's printed order. The
-     rail deliberately echoes the archive's 2009–2022 timeline: this is that
-     timeline zoomed into one entry, not a second competing timeline.
+     here curated. Five chapters, five authors, in VTG V.1's printed order. A
+     labelled segmented control keeps chapter navigation visibly distinct from
+     the archive's chronological timeline.
 
   Every plate is cropped from the source PDF. Provenance and quotes:
   ../_lib/vtg-chronicle.ts
 -->
 <script lang="ts">
+	import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 	import { VTG1_CHAPTERS, vtgChapter } from "./_lib/vtg-chronicle.svelte";
 
 	let { active = false }: { active?: boolean } = $props();
 
 	const chapters = VTG1_CHAPTERS;
-	let stopButtons = $state<HTMLButtonElement[]>([]);
 	// Shared across every instance on the page — see vtgChapter's own comment.
 	const step = $derived(vtgChapter.index);
 	const current = $derived(chapters[step] ?? chapters[0]!);
+	const chapterOptions = $derived(
+		chapters.map((chapter, index) => ({
+			value: String(index),
+			label: String(index + 1),
+			ariaLabel: `Chapter ${index + 1} of ${chapters.length}: ${chapter.title}, ${chapter.people}`,
+			disabled: !active,
+			tone: "accent" as const,
+		}))
+	);
 
-	function go(n: number) {
+	function go(value: string) {
 		if (!active) return;
+		const n = Number(value);
 		vtgChapter.index = (n + chapters.length) % chapters.length;
 	}
 
-	function goAndFocus(n: number) {
-		const next = (n + chapters.length) % chapters.length;
-		go(next);
-		stopButtons[next]?.focus();
-	}
-
-	function onKeydown(event: KeyboardEvent) {
+	function onChapterKeydown(event: KeyboardEvent) {
 		if (!active) return;
-		if (!["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
+		if (
+			![
+				"ArrowRight",
+				"ArrowDown",
+				"ArrowLeft",
+				"ArrowUp",
+				"Home",
+				"End",
+			].includes(event.key)
+		) {
 			return;
 		}
-		// This tablist sits inside the archive's own arrow-key rail. The chapter
-		// consumes these keys so one press cannot advance both navigation layers.
+		// The shared SegmentedControl owns chapter movement. Stop the event before
+		// the outer archive can also advance to another record.
 		event.stopPropagation();
-		if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-			event.preventDefault();
-			goAndFocus(step + 1);
-		} else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-			event.preventDefault();
-			goAndFocus(step - 1);
-		} else if (event.key === "Home") {
-			event.preventDefault();
-			goAndFocus(0);
-		} else if (event.key === "End") {
-			event.preventDefault();
-			goAndFocus(chapters.length - 1);
-		}
 	}
 
 	/* Ghost sizers: the title and the credit both change length between
@@ -89,54 +89,43 @@
 		/>
 
 		<figcaption class="label">
-		<span class="title">
-			<span class="sizer" aria-hidden="true">{widestTitle}</span>
-			<span class="live">{current.title}</span>
-		</span>
-		<span class="people">
-			<span class="sizer" aria-hidden="true">{widestPeople}</span>
-			<span class="live">{current.people}</span>
-		</span>
-		<!-- Only rendered on a tall tile (see .note's container query). A 4K hero
+			<span class="title">
+				<span class="sizer" aria-hidden="true">{widestTitle}</span>
+				<span class="live">{current.title}</span>
+			</span>
+			<span class="people">
+				<span class="sizer" aria-hidden="true">{widestPeople}</span>
+				<span class="live">{current.people}</span>
+			</span>
+			<!-- Only rendered on a tall tile (see .note's container query). A 4K hero
 		     is 1702px tall and one landscape plate cannot fill it; rather than
 		     stretch the artwork, the room goes to Yee's own account of who wrote
 		     the chapter and where. -->
-		<span class="note">
-			<span class="sizer" aria-hidden="true">{widestNote}</span>
-			<span class="live">{current.note}</span>
-		</span>
+			<span class="note">
+				<span class="sizer" aria-hidden="true">{widestNote}</span>
+				<span class="live">{current.note}</span>
+			</span>
 		</figcaption>
 	</figure>
 
-	<!-- The rail. Tabs semantics rather than a listbox: each stop selects which
-	     plate is on the stage, which is exactly what a tablist does. -->
-	<div
-		class="rail"
-		role="tablist"
-		aria-label="Vulcan Tech Gospel volume 1, chapters"
-		tabindex="-1"
-		onkeydown={onKeydown}
-	>
-		{#each chapters as chapter, n (chapter.figure)}
-			<button
-				bind:this={stopButtons[n]}
-				type="button"
-				role="tab"
-				class="stop"
-				class:on={n === step}
-				class:done={n < step}
-				aria-selected={n === step}
-				aria-disabled={!active ? "true" : undefined}
-				tabindex={active && n === step ? 0 : -1}
-				title={`${n + 1}. ${chapter.title}`}
-				aria-label={`Chapter ${n + 1} of ${chapters.length}: ${chapter.title}, ${chapter.people}`}
-				onclick={() => go(n)}
-			>
-				<span class="tick" aria-hidden="true"></span>
-			</button>
-		{/each}
-
-		<span class="count" aria-hidden="true">{step + 1}<i>/</i>{chapters.length}</span>
+	<!-- The outer archive is chronological; this is explicitly a chapter
+	     selector. Different label, different control, different navigation
+	     scope. The old implementation repeated the archive's hairline ticks and
+	     gave a first-time reader no way to tell the two levels apart. -->
+	<div class="chapter-nav" onkeydown={onChapterKeydown}>
+		<div class="chapter-heading">
+			<span>Choose a chapter</span>
+			<strong>Chapter {step + 1} of {chapters.length}</strong>
+		</div>
+		<SegmentedControl
+			options={chapterOptions}
+			value={String(step)}
+			onchange={go}
+			color="accent"
+			size="md"
+			semantics="tabs"
+			ariaLabel="Vulcan Tech Gospel volume 1 chapters"
+		/>
 	</div>
 </div>
 
@@ -212,25 +201,25 @@
 	   even with a 2.1rem cap it can never reach. Raising the coefficient is what
 	   actually scales this; the cap only stops it running away on an ultrawide. */
 	.title {
-		font-size: clamp(0.8rem, 3.6cqi, 2.2rem);
+		font-size: clamp(var(--font-size-min, 0.875rem), 3.6cqi, 2.2rem);
 		font-weight: 600;
 		letter-spacing: -0.005em;
 		color: oklch(0.9 0.02 80);
 	}
 
 	.people {
-		font-size: clamp(0.6rem, 2.6cqi, 1.6rem);
+		font-size: clamp(var(--font-size-compact, 0.75rem), 2.6cqi, 1.6rem);
 		font-style: italic;
-		color: oklch(0.7 0.04 70);
+		color: var(--theme-text-dim, oklch(0.76 0.02 270));
 	}
 
 	.note {
 		display: none;
 		max-width: 44em;
 		margin-top: 0.6rem;
-		font-size: clamp(0.72rem, 2.2cqi, 1.4rem);
+		font-size: clamp(var(--font-size-min, 0.875rem), 2.2cqi, 1.4rem);
 		line-height: 1.5;
-		color: oklch(0.66 0.02 75);
+		color: var(--theme-text-dim, oklch(0.76 0.02 270));
 	}
 
 	/* Tall tiles only. The 1080 hero (~730px) has no room to spare; the 4K hero
@@ -260,74 +249,30 @@
 		min-width: 0;
 	}
 
-	/* Deliberately the archive timeline's own vocabulary — hairline ticks that
-	   grow when chosen — so this reads as that rail magnified onto one entry. */
-	.rail {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.1rem;
-	}
-
-	.vtg:not(.active) .rail {
-		pointer-events: none;
-	}
-
-	.stop {
+	.chapter-nav {
 		display: grid;
-		place-items: center;
-		/* 44px touch floor, kept as px on purpose: a target must not shrink with
-		   the type ramp (.claude/rules/4k-native-layout.md). */
-		width: 44px;
-		height: 44px;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		cursor: pointer;
+		gap: 0.35rem;
+		width: min(100%, 24rem);
+		margin-inline: auto;
 	}
 
-	.tick {
-		width: 2px;
-		height: 0.85rem;
-		border-radius: 2px;
-		background: oklch(0.45 0.02 270);
-		transition: background 240ms ease, height 240ms ease, width 240ms ease;
+	.chapter-heading {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.75rem;
+		padding-inline: 0.15rem;
+		color: var(--theme-text-dim, oklch(0.76 0.02 270));
+		font-size: var(--font-size-compact, 0.75rem);
 	}
 
-	.stop.done .tick {
-		background: oklch(0.6 0.09 40);
+	.chapter-heading > span {
+		font-size: var(--font-size-min, 0.875rem);
+		font-weight: 650;
 	}
 
-	.stop.on .tick {
-		width: 3px;
-		height: 1.5rem;
-		background: oklch(0.78 0.16 40);
-		box-shadow: 0 0 12px oklch(0.78 0.16 40 / 0.6);
-	}
-
-	.stop:hover .tick {
-		background: oklch(0.72 0.13 40);
-	}
-
-	.stop:focus-visible {
-		outline: 2px solid oklch(0.78 0.16 40);
-		outline-offset: -6px;
-		border-radius: 10px;
-	}
-
-	.count {
-		margin-left: 0.5rem;
-		font-size: clamp(0.55rem, 1.6cqi, 0.82rem);
-		/* The step number changes width between 1 and 5 in a proportional face;
-		   tabular figures stop the rail shifting under it. */
+	.chapter-heading strong {
 		font-variant-numeric: tabular-nums;
-		color: oklch(0.62 0.03 70);
-	}
-
-	.count i {
-		font-style: normal;
-		margin: 0 0.1em;
-		opacity: 0.55;
 	}
 
 	/* Small tile: the plate is the artifact. Credit and rail stand down rather
@@ -340,7 +285,7 @@
 	   chapter title, which is the one thing worth reading at that size. */
 	@container (max-height: 460px) {
 		.people,
-		.rail {
+		.chapter-nav {
 			display: none;
 		}
 	}

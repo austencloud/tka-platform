@@ -1,147 +1,144 @@
 /**
- * Static contract test for the playable-archive prototype.
- *
- * Two defects shipped here and both were invisible to typecheck and to the
- * existing state tests, because both lived in markup:
- *
- *   1. The stage `view-transition-name` was applied only to the ACTIVE tile,
- *      so during a select re-tile neither the outgoing nor the incoming name
- *      had a partner. Unpaired names do not travel: the new hero's visual
- *      entered at its final position while its tile was still morphing.
- *   2. Every entry's sourced prose and citation links existed only inside the
- *      conditional detail overlay, so the page was ~40 indexable words and one
- *      outbound link — the catalog's whole payload was unreachable to a
- *      crawler and to a screen reader that never opened the modal.
- *
- * These assertions lock both. If one fails, fix the component — do not loosen
- * the test.
+ * Static contract for the archive's information model. The visual details can
+ * evolve, but the page must not drift back into an ordered carousel that only
+ * looks chronological.
  */
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../.."
 );
-const ARCHIVE_PATH =
-  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte";
-const source = readFileSync(path.join(repoRoot, ARCHIVE_PATH), "utf8");
-const vtgSource = readFileSync(
-  path.join(
-    repoRoot,
-    "src/routes/(public)/notation/_components/archive/VtgChapterStepper.svelte"
-  ),
-  "utf8"
+
+function read(relativePath: string) {
+  return readFileSync(path.join(repoRoot, relativePath), "utf8");
+}
+
+const archiveSource = read(
+  "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte"
+);
+const timeMapSource = read(
+  "src/routes/(public)/notation/_components/archive/ArchiveTimeMap.svelte"
+);
+const mobileIndexSource = read(
+  "src/routes/(public)/notation/_components/archive/ArchiveChronologicalIndex.svelte"
+);
+const vtgSource = read(
+  "src/routes/(public)/notation/_components/archive/VtgChapterStepper.svelte"
+);
+const detailSource = read(
+  "src/routes/(public)/notation/_components/archive/ArchiveEntryDetail.svelte"
+);
+const submissionSource = read(
+  "src/routes/(public)/notation/_components/archive/ResearchSubmissionGuide.svelte"
 );
 
-describe("playable archive: transition-name pairing", () => {
-  it("names every stage, not only the active one", () => {
-    // The name must be present whenever the tile is NOT the open detail's
-    // source. An `isActive ? name : undefined` shape is the regression.
-    // The only reasons a stage goes unnamed: it is handing its name to the
-    // open detail, or a solo detail morph is narrowing the cast.
-    expect(source).toMatch(/\(archive\.detailOpen && isActive\)/);
-    expect(source).not.toMatch(
-      /view-transition-name=\{isActive && !archive\.detailOpen\s*\?/
+describe("playable archive: chronological overview", () => {
+  it("keeps all four lanes visible on one proportional calendar", () => {
+    expect(archiveSource).toContain("ArchiveTimeMap");
+    expect(timeMapSource).toContain("ARCHIVE_LANES");
+    expect(timeMapSource).toContain("ARCHIVE_YEAR_TICKS");
+    expect(timeMapSource).toContain("historicalYearPosition");
+    expect(timeMapSource).toContain(
+      "Position marks the first documented year. Spacing is proportional."
     );
   });
 
-  it("keeps names per-entry so no system can morph into another", () => {
-    // Canon guardrail: the spec forbids implying a relationship between
-    // systems. A shared/static name would morph one system's visual into
-    // another's during a select.
-    expect(source).toMatch(/`stage-\$\{entry\.id\}`/);
-    expect(source).toMatch(/`tile-\$\{entry\.id\}`/);
-    expect(source).not.toMatch(/view-transition-name:\s*(stage|tile)\b/);
+  it("names and expands the dense 2009–2011 period", () => {
+    expect(timeMapSource).toContain("ARCHIVE_CLUSTERS");
+    expect(timeMapSource).toContain("cluster-marker");
+    expect(timeMapSource).toContain("Dense period, separated for readability");
+    expect(timeMapSource).toContain("aria-expanded");
+    expect(timeMapSource).toContain("aria-controls");
   });
 
-  it("narrows the cast to one object when the detail morphs", () => {
-    // Names present in BOTH states still get captured and cross-faded, so
-    // opening the detail animated all eighteen groups and the whole board
-    // shimmered while one object flew. The flag must be set before the
-    // transition starts, or the old snapshot still holds every name.
-    expect(source).toContain("soloMorph");
-    expect(source).toMatch(/soloMorph = true;\s*\n\s*await tick\(\);/);
-    // Tiles drop names outright; stages keep only the active one.
-    expect(source).toMatch(
-      /style:view-transition-name=\{soloMorph\s*\n?\s*\?\s*undefined/
+  it("presents documented traces, not a definitive history", () => {
+    expect(archiveSource).toContain(
+      "Documented traces, not a definitive history."
     );
-    expect(source).toMatch(/soloMorph && !isActive/);
-    // And the flag must be cleared, or every later select would be a solo morph.
-    expect(source).toMatch(/finally\s*\{\s*soloMorph = false;/);
+    expect(archiveSource).toContain("better evidence changes the record");
   });
 
-  it("runs the modal chrome on the same clock as the artifact", () => {
-    // The root snapshot carries the panel, backdrop and prose. Its 250ms
-    // default against a 450ms morph put the modal on screen a fifth of a
-    // second before the object landed in it.
-    const root = source.slice(source.indexOf("::view-transition-group(root)"));
-    expect(root.slice(0, 400)).toContain("animation-duration: 0.45s");
+  it("draws activity as a dotted observation connector, never a solid lifespan bar", () => {
+    expect(timeMapSource).toContain("observation-connector");
+    expect(timeMapSource).toContain("entry.activity");
+    expect(timeMapSource).toContain("dotted");
   });
 
-  it("drives morphs natively rather than through a late WAAPI takeover", () => {
-    // motion's animateView attached ~300ms after commit, behind the artifact
-    // mounts, and replayed a journey the browser had already finished.
-    expect(source).toContain("document.startViewTransition");
-    expect(source).not.toMatch(/^\s*import\s*\{[^}]*animateView/m);
+  it("does not present the primary archive as a carousel, lane tabs, or slider", () => {
+    expect(archiveSource).not.toContain("embla");
+    expect(archiveSource).not.toContain("SegmentedControl");
+    expect(archiveSource).not.toContain("ArchiveChronology");
+    expect(archiveSource).not.toContain('aria-roledescription="carousel"');
+    expect(archiveSource).not.toContain('type="range"');
+    expect(archiveSource).not.toContain("discovered");
   });
 });
 
-describe("playable archive: crawlable content", () => {
-  it("renders the record block unconditionally inside the per-entry snippet", () => {
-    expect(source).toContain('<section class="tile-record">');
-    // The block must carry the prose and the citation list, not just a title.
-    expect(source).toContain("{entry.records}");
-    expect(source).toMatch(/\{#each entry\.sources as source/);
-  });
-
-  it("clips the record visually without removing it from the DOM or a11y tree", () => {
-    const block = source.slice(source.indexOf(".tile-record {"));
-    const rule = block.slice(0, block.indexOf("}"));
-    expect(rule).toContain("clip-path");
-    // display:none would drop it from the render tree; aria-hidden would drop
-    // it from the a11y tree. Both defeat the point.
-    expect(rule).not.toContain("display: none");
-    expect(source).not.toMatch(/<section class="tile-record"[^>]*aria-hidden/);
-  });
-
-  it("never hides the page's only h1 at any breakpoint", () => {
-    // A `display: none` on .room-header removed the h1 from the render tree
-    // at fold-landscape, taking the page's identity with it.
-    expect(source).not.toMatch(/\.room-header\s*\{[^}]*display:\s*none/);
-  });
-
-  it("has a citation link for every source in the catalog", () => {
-    // The markup iterates entry.sources, so the guarantee is really about the
-    // catalog being fully reachable: assert there is something to render.
-    const totalSources = NOTATION_CATALOG.reduce(
-      (n, e) => n + e.sources.length,
-      0
+describe("playable archive: selection context", () => {
+  it("keeps artifact, attribution, claims, and citations in a persistent detail region", () => {
+    expect(archiveSource).toContain('class="selected-record"');
+    expect(archiveSource).toContain("ArchiveRecordVisual");
+    expect(archiveSource).toContain("ArchiveEntryDetail");
+    expect(archiveSource).toContain("Selected record");
+    expect(archiveSource).toContain(
+      'aria-label="Previous and next archive records"'
     );
-    expect(NOTATION_CATALOG).toHaveLength(8);
-    expect(totalSources).toBeGreaterThanOrEqual(8);
-    for (const entry of NOTATION_CATALOG) {
-      expect(entry.sources.length).toBeGreaterThan(0);
-      expect(entry.records.length).toBeGreaterThan(0);
-    }
+  });
+
+  it("uses record hashes and browser history for restorable deep links", () => {
+    expect(archiveSource).toContain('const HASH_PREFIX = "#archive-record-"');
+		expect(archiveSource).toContain('import { pushState } from "$app/navigation"');
+		expect(archiveSource).toContain("pushState(nextHash");
+    expect(archiveSource).toContain('window.addEventListener("popstate"');
+    expect(timeMapSource).toContain("#archive-record-${entry.id}");
+  });
+
+  it("uses native links and buttons for pointer and keyboard behavior", () => {
+    expect(timeMapSource).toContain("<a");
+    expect(timeMapSource).toContain('<button\n\t\t\t\t\t\t\ttype="button"');
+    expect(timeMapSource).not.toContain("onkeydown");
   });
 });
 
-describe("playable archive: nested keyboard navigation", () => {
-  it("keeps VTG chapter arrows out of the outer archive rail", () => {
+describe("playable archive: claim-level evidence", () => {
+  it("labels each citation with its evidence basis and shows verified activity honestly", () => {
+    expect(detailSource).toContain("EVIDENCE_BASIS_LABELS");
+    expect(detailSource).toContain("activityLabel");
+    expect(detailSource).not.toContain("sourceType");
+  });
+
+  it("accepts corrections and counter-evidence, not just new records", () => {
+    expect(submissionSource).toContain("Correct a record");
+    expect(submissionSource).toContain("Counter-evidence");
+  });
+});
+
+describe("playable archive: compact screens", () => {
+  it("recomposes into a chronological index instead of hiding the overview", () => {
+    expect(archiveSource).toContain("ArchiveChronologicalIndex");
+    expect(mobileIndexSource).toContain("ARCHIVE_ENTRIES");
+    expect(mobileIndexSource).toContain("Chronological index");
+    expect(mobileIndexSource).toContain("artifact, claims, and sources");
+  });
+
+  it("opens the selected record in the shared drawer on phones and short-wide screens", () => {
+    expect(archiveSource).toContain("bind:isOpen={mobileRecordOpen}");
+    expect(archiveSource).toContain(
+      'placement={isShortWide.current ? "right" : "bottom"}'
+    );
+    expect(archiveSource).toContain("drawer-neighbors");
+  });
+});
+
+describe("playable archive: nested artifact controls", () => {
+  it("keeps VTG chapter navigation visibly separate from archive selection", () => {
+    expect(vtgSource).toContain("SegmentedControl");
+    expect(vtgSource).toContain('semantics="tabs"');
+    expect(vtgSource).toContain("Choose a chapter");
     expect(vtgSource).toContain("event.stopPropagation()");
-    expect(vtgSource.indexOf("event.stopPropagation()")).toBeLessThan(
-      vtgSource.indexOf('if (event.key === "ArrowRight"')
-    );
-    expect(vtgSource).toContain("stopButtons[next]?.focus()");
-  });
-});
-
-describe("playable archive: useful destinations before historical sources", () => {
-  it("does not make an external source the stage action when an explainer exists", () => {
-    expect(source).toContain("{#if primarySource && !activeEntry.explore}");
   });
 });

@@ -162,6 +162,7 @@ export async function saveRetroSequence(
     visibility: "public",
     tags: [],
     notes: "",
+    analyticsSource: "retro",
   });
 
   // Keep-on-first-save (SP3 Part B): the retro shell is the fifth durable save

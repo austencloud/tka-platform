@@ -5,20 +5,20 @@
   explaining systems it did not own and getting them wrong. The archive keeps
   the record, credits, and primary links attached to each artifact. Entry data
   and its sourcing rules live in
-  $lib/shared/notation/notation-catalog.ts.
+  _components/archive/_lib/archive-ledger.ts.
 
   Spec: docs/superpowers/specs/2026-07-26-notation-catalog-design.md
 -->
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import PlayableArchive from "./_components/archive/PlayableArchive.svelte";
-  import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
+  import { ARCHIVE_ENTRIES } from "./_components/archive/_lib/archive-ledger";
 
   // The archive documents eight systems, seven of them other people's. A
   // "| The Kinetic Alphabet" suffix here implied it owned all of them.
   const TITLE = "Flow Arts Notation Archive: Who Wrote It Down";
   const DESCRIPTION =
-    "A playable archive of eight systems for writing flow arts down, from CAPs on the Home of Poi forums in 2009 to the Kinetic Alphabet. Each entry links to its creator's own material.";
+    "A living index of documented traces: notation systems, movement languages, teaching archives, and current flow-arts research, 2004 to 2026. Every claim names its source.";
   const URL = "https://tkaflowarts.com/notation";
 
   const jsonLd = {
@@ -30,9 +30,11 @@
         description: DESCRIPTION,
         mainEntityOfPage: URL,
         author: { "@type": "Person", name: "Austen Cloud" },
-        about: NOTATION_CATALOG.map((entry) => ({
+        about: ARCHIVE_ENTRIES.map((entry) => ({
           "@type": "CreativeWork",
-          name: entry.system,
+          name: entry.title,
+          description: entry.summary,
+          dateCreated: String(entry.firstDocumentedYear),
         })),
       },
       {
@@ -85,5 +87,21 @@
     pointer-events: none;
     opacity: 0.05;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  @media (max-width: 760px), (max-height: 560px) {
+    .playable-viewport {
+      height: auto;
+      min-height: 100dvh;
+      overflow: visible;
+    }
+  }
+
+  @media (min-width: 700px) and (max-height: 560px) {
+    .playable-viewport {
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
   }
 </style>

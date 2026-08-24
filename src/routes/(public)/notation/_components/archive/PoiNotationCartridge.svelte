@@ -29,22 +29,25 @@
 </script>
 
 <div class="cartridge-wrap">
-<div class="cartridge" role="img" aria-label="An example of PoiNotation syntax from the repository">
-	<div class="cartridge-top" aria-hidden="true">
-		<span class="dot"></span>
-		<span class="dot"></span>
-		<span class="dot"></span>
-		<span class="path">PoiNotation</span>
+	<div
+		class="cartridge"
+		role="img"
+		aria-label="An example of PoiNotation syntax from the repository"
+	>
+		<div class="cartridge-top" aria-hidden="true">
+			<span class="dot"></span>
+			<span class="dot"></span>
+			<span class="dot"></span>
+			<span class="path">PoiNotation</span>
+		</div>
+		<pre class="code"><code
+				>{#each LINES as line, i (i)}<span
+						class="line"
+						class:lit={active && i === litLine}>{line}</span
+					>{/each}</code
+			></pre>
+		<p class="caption">"Moves can be sequenced to create choreographies."</p>
 	</div>
-	<pre class="code"><code
-			>{#each LINES as line, i (i)}<span
-				class="line"
-				class:lit={active && i === litLine}
-				>{line}</span
-			>{/each}</code
-		></pre>
-	<p class="caption">"Moves can be sequenced to create choreographies."</p>
-</div>
 </div>
 
 <style>
@@ -92,7 +95,7 @@
 	.path {
 		margin-left: 0.4rem;
 		font-family: ui-monospace, "Cascadia Code", monospace;
-		font-size: clamp(0.65rem, 1.8cqi, 0.8rem);
+		font-size: clamp(var(--font-size-compact, 0.75rem), 1.8cqi, 0.8rem);
 		color: oklch(0.7 0.06 150);
 	}
 
@@ -102,7 +105,11 @@
 		font-family: ui-monospace, "Cascadia Code", monospace;
 		/* Height-aware: in a short stage the type steps down instead of the
 		   block growing past the tile. */
-		font-size: clamp(0.55rem, min(1.9cqi, 7cqh), 1.15rem);
+		font-size: clamp(
+			var(--font-size-min, 0.875rem),
+			min(1.9cqi, 7cqh),
+			1.15rem
+		);
 		line-height: 1.75;
 	}
 
@@ -113,7 +120,9 @@
 		color: oklch(0.78 0.1 150);
 		border-radius: 6px;
 		padding-inline: 0.4rem;
-		transition: background 300ms ease, color 300ms ease;
+		transition:
+			background 300ms ease,
+			color 300ms ease;
 	}
 
 	.line.lit {
@@ -124,7 +133,7 @@
 	.caption {
 		margin: 0;
 		padding: 0 clamp(0.8rem, 3cqi, 1.4rem) clamp(0.7rem, 2.5cqi, 1.1rem);
-		font-size: clamp(0.65rem, 1.8cqi, 0.85rem);
+		font-size: clamp(var(--font-size-compact, 0.75rem), 1.8cqi, 0.85rem);
 		font-style: italic;
 		color: oklch(0.62 0.03 160);
 	}

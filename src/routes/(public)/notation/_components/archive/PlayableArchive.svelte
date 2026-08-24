@@ -1,1269 +1,600 @@
 <!--
-  The playable archive: eight notation systems on a one-screen, horizontal
-  focus-and-context rail. One artifact is live in the center; neighbors stay
-  visible as tangible objects; the sourced prose appears only after the
-  visitor asks for it (Inspect / Enter). Chronology is spatial, never causal.
+  The archive uses overview + detail, not a carousel. Calendar position owns
+  the horizontal axis, all four research lanes remain visible, and the dense
+  2009–2011 period expands into a named cluster. Compact screens receive the
+  same records as a vertical chronology and open one record in the shared
+  Drawer primitive.
 
-  Spec: docs/superpowers/specs/2026-07-27-notation-playable-archive-design.md
-  Movement engine: Embla. Feedback: existing tilt / pressSpring / magnetic /
-  haptic primitives. Select re-tiles and the detail morph run on the native
-  View Transition API (CSS-timed), with reduced-motion and no-support
-  fallbacks.
+  Spec: docs/superpowers/specs/shipped/2026-07-27-notation-playable-archive-design.md
 -->
 <script lang="ts">
-	import { tick } from "svelte";
+	import { onMount } from "svelte";
 	import { MediaQuery } from "svelte/reactivity";
-	import type { EmblaCarouselType } from "embla-carousel";
-	import emblaCarouselSvelte from "embla-carousel-svelte";
-	import { Popover } from "bits-ui";
-	import { NOTATION_CATALOG } from "$lib/shared/notation/notation-catalog";
+	import { pushState } from "$app/navigation";
 	import { tilt } from "$lib/actions/tilt";
 	import { cursorGlow } from "$lib/actions/cursor-glow";
 	import { pressSpring } from "$lib/actions/press-spring";
 	import { magnetic } from "$lib/actions/magnetic";
 	import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+	import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+	import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
-	import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
-	import ArtifactVisual from "./ArtifactVisual.svelte";
-	import ArtifactDetail from "./ArtifactDetail.svelte";
 	import {
-		closeDetail,
-		initialState,
-		openDetail,
-		select,
-	} from "./_lib/archive-state";
+		ARCHIVE_END_YEAR,
+		ARCHIVE_ENTRIES,
+		ARCHIVE_START_YEAR,
+		archiveEntry,
+		archiveLane,
+		type ArchiveEntry,
+	} from "./_lib/archive-ledger";
+	import { archiveAccent } from "./_lib/archive-appearance";
+	import ArchiveTimeMap from "./ArchiveTimeMap.svelte";
+	import ArchiveChronologicalIndex from "./ArchiveChronologicalIndex.svelte";
+	import ArchiveRecordVisual from "./ArchiveRecordVisual.svelte";
+	import ArchiveEntryDetail from "./ArchiveEntryDetail.svelte";
+	import ResearchSubmissionGuide from "./ResearchSubmissionGuide.svelte";
 
-	const entries = NOTATION_CATALOG;
-	const count = entries.length;
+	const HASH_PREFIX = "#archive-record-";
+	const DEFAULT_ENTRY_ID = "qft";
 
-	/** Per-entry accent, keyed by what the source material itself looks like. */
-	const ACCENTS: Record<string, string> = {
-		caps: "oklch(0.78 0.13 230)",
-		trochoid: "oklch(0.78 0.09 250)",
-		vtg: "oklch(0.74 0.15 40)",
-		"nine-square": "oklch(0.68 0.17 25)",
-		qft: "oklch(0.68 0.17 295)",
-		lorq: "oklch(0.8 0.14 80)",
-		poinotation: "oklch(0.78 0.14 150)",
-		tka: "oklch(0.74 0.15 305)",
-	};
-
-	let archive = $state(initialState(count));
-	const activeIndex = $derived(archive.activeIndex);
-	const activeEntry = $derived(entries[activeIndex]!);
-	const accent = $derived(ACCENTS[activeEntry.id] ?? "oklch(0.7 0.1 270)");
-
-	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
-	const isMobile = new MediaQuery("(max-width: 760px)");
-	/* The site-wide big-screen seam: above it all eight artifacts fit at once,
-	   so the rail becomes a no-scroll accordion instead of a carousel. */
-	const wideRail = new MediaQuery("(min-width: 1680px)");
-
-	let emblaApi = $state<EmblaCarouselType | null>(null);
-	let flourish = $state(false);
+	let activeEntry = $state<ArchiveEntry>(archiveEntry(DEFAULT_ENTRY_ID));
+	let mobileRecordOpen = $state(false);
+	let submissionOpen = $state(false);
 	let announcement = $state("");
-	let slideButtons: (HTMLButtonElement | null)[] = $state(Array(count).fill(null));
-	let railRegion = $state<HTMLElement | null>(null);
 
-	function onEmblaInit(event: CustomEvent<EmblaCarouselType>) {
-		emblaApi = event.detail;
-		emblaApi.on("select", () => {
-			const snap = emblaApi?.selectedScrollSnap();
-			if (snap != null && snap !== archive.activeIndex) applySelect(snap);
-		});
-	}
+	const isCompact = new MediaQuery(
+		"(max-width: 760px), (max-height: 560px)"
+	);
+	const isShortWide = new MediaQuery(
+		"(min-width: 700px) and (max-height: 560px)"
+	);
+	const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 
-	function applySelect(index: number) {
-		const commit = () => {
-			const result = select(archive, index, count);
-			archive = result.state;
-			const entry = entries[archive.activeIndex]!;
-			announcement = `${entry.year}, ${entry.system}, ${archive.activeIndex + 1} of ${count}`;
-			if (result.firstVisit) getHapticFeedback().trigger("selection");
-			if (result.justCompleted) {
-				flourish = true;
-				getHapticFeedback().trigger("success");
-				setTimeout(() => (flourish = false), 1600);
-			}
-			if (
-				!wideRail.current &&
-				emblaApi &&
-				emblaApi.selectedScrollSnap() !== archive.activeIndex
-			) {
-				emblaApi.scrollTo(archive.activeIndex, reduceMotion.current);
-			}
-		};
-		/* In bento mode a selection re-tiles the grid; the NATIVE View Transition
-		   morphs every tile to its new cell (each tile keeps its OWN transition
-		   name, so no system's visual ever morphs into another's — canon
-		   guardrail). Timing lives in CSS on the pseudo-groups. motion's
-		   animateView is deliberately NOT used: its WAAPI takeover arrived
-		   ~300ms late behind the artifact mounts, after the browser's default
-		   animation had already finished — the tile visibly snapped back and
-		   replayed the journey (instrumented 2026-07-27). */
-		if (
-			wideRail.current &&
-			!reduceMotion.current &&
-			typeof document !== "undefined" &&
-			"startViewTransition" in document
-		) {
-			const vt = document.startViewTransition(async () => {
-				commit();
-				await tick();
-			});
-			// A skipped transition rejects `ready` (and `finished` is unread on
-			// this path); unhandled, both become PostHog $exceptions.
-			vt.ready.catch(() => {});
-			vt.finished.catch(() => {});
-		} else {
-			commit();
-		}
-	}
+	const activeIndex = $derived(
+		ARCHIVE_ENTRIES.findIndex((entry) => entry.id === activeEntry.id)
+	);
+	const lane = $derived(archiveLane(activeEntry.lane));
+	const accent = $derived(archiveAccent(activeEntry.id));
+	const previousEntry = $derived(
+		activeIndex > 0 ? ARCHIVE_ENTRIES[activeIndex - 1] : undefined
+	);
+	const nextEntry = $derived(
+		activeIndex < ARCHIVE_ENTRIES.length - 1
+			? ARCHIVE_ENTRIES[activeIndex + 1]
+			: undefined
+	);
 
-	function onSlideClick(index: number) {
-		if (index === archive.activeIndex) {
-			openDetailView();
-		} else {
-			applySelect(index);
-		}
-	}
-
-	/**
-	 * The detail must visibly originate from the active artifact. The stage and
-	 * the detail hero swap one view-transition-name inside the update, so the
-	 * native shared-element morph carries the object across. Degrades to a
-	 * plain state change where the API is unsupported, on mobile (the Drawer
-	 * owns that motion), and under reduced motion (per contract).
-	 *
-	 * `soloMorph` narrows the cast first. Every tile and stage normally carries
-	 * a name (they must, so a select re-tile pairs each with itself). But a name
-	 * present in BOTH states still gets captured and cross-faded, so opening the
-	 * detail was animating all eighteen groups — the whole board shimmered while
-	 * one object flew. Stripping the other names BEFORE the transition starts
-	 * means old and new agree there is nothing there to animate, so exactly one
-	 * group moves. Tiles drop their names outright for this transition — the
-	 * grid does not re-tile when the detail opens, so a tile group could only
-	 * cross-fade in place. Measured: 55 pseudo-animations down to 3.
-	 */
-	let soloMorph = $state(false);
-
-	function canMorph() {
-		return (
-			!isMobile.current &&
-			!reduceMotion.current &&
-			typeof document !== "undefined" &&
-			"startViewTransition" in document
-		);
-	}
-
-	/** Run `update` as a solo morph: only the active entry keeps a name. */
-	async function morphDetail(update: () => Promise<void>, after?: () => void) {
-		if (!canMorph()) {
-			await update();
-			after?.();
-			return;
-		}
-		soloMorph = true;
-		await tick(); // names are off the other tiles before the snapshot
-		const vt = document.startViewTransition(update);
-		vt.ready.catch(() => {}); // skipped transitions reject `ready`
-		after?.();
-		try {
-			await vt.finished;
-		} finally {
-			soloMorph = false;
-		}
-	}
-
-	function openDetailView() {
-		void morphDetail(async () => {
-			archive = openDetail(archive);
-			await tick();
-		});
-	}
-
-	function closeDetailView() {
-		void morphDetail(async () => {
-			archive = closeDetail(archive);
-			await tick();
-		});
-	}
-
-	function onRailKeydown(event: KeyboardEvent) {
-		if (archive.detailOpen) return;
-		switch (event.key) {
-			case "ArrowLeft":
-				event.preventDefault();
-				applySelect(archive.activeIndex - 1);
-				break;
-			case "ArrowRight":
-				event.preventDefault();
-				applySelect(archive.activeIndex + 1);
-				break;
-			case "Home":
-				event.preventDefault();
-				applySelect(0);
-				break;
-			case "End":
-				event.preventDefault();
-				applySelect(count - 1);
-				break;
-			case "Enter":
-			case " ":
-				if (document.activeElement === slideButtons[archive.activeIndex]) {
-					event.preventDefault();
-					openDetailView();
-				}
-				break;
-		}
-	}
-
-	function onDetailKeydown(event: KeyboardEvent) {
-		if (event.key === "Escape") {
-			event.preventDefault();
-			closeDetailView();
-		}
-	}
-
-	const primarySource = $derived(activeEntry.sources[0]);
-	const desktopDetailOpen = $derived(archive.detailOpen && !isMobile.current);
-	let detailDialog = $state<HTMLElement | null>(null);
-	let detailCloseButton = $state<HTMLButtonElement | null>(null);
-	const detailFocusTrap = new FocusTrap({ inertExclusions: [] });
 	$effect(() => {
-		if (!desktopDetailOpen || !detailDialog || !detailCloseButton) return;
-		detailFocusTrap.updateOptions({ initialFocus: detailCloseButton });
-		detailFocusTrap.activate(detailDialog);
-		return () => detailFocusTrap.deactivate();
+		if (!isCompact.current) mobileRecordOpen = false;
 	});
 
-	let drawerOpen = $state(false);
-	$effect(() => {
-		drawerOpen = archive.detailOpen && isMobile.current;
+	function entryFromHash(hash: string): ArchiveEntry | undefined {
+		if (!hash.startsWith(HASH_PREFIX)) return undefined;
+		const entryId = decodeURIComponent(hash.slice(HASH_PREFIX.length));
+		return ARCHIVE_ENTRIES.find((entry) => entry.id === entryId);
+	}
+
+	function writeEntryHistory(entry: ArchiveEntry) {
+		if (typeof window === "undefined") return;
+		const nextHash = `${HASH_PREFIX}${encodeURIComponent(entry.id)}`;
+		if (window.location.hash === nextHash) return;
+		pushState(nextHash, { archiveRecord: entry.id });
+	}
+
+	function applyEntry(entry: ArchiveEntry, openCompactRecord: boolean) {
+		activeEntry = entry;
+		if (openCompactRecord && isCompact.current) mobileRecordOpen = true;
+		announcement = `${entry.dateLabel}, ${entry.title}. ${archiveLane(entry.lane).label}. Record ${ARCHIVE_ENTRIES.findIndex((candidate) => candidate.id === entry.id) + 1} of ${ARCHIVE_ENTRIES.length}.`;
+		getHapticFeedback().trigger("selection");
+	}
+
+	function selectEntry(entry: ArchiveEntry) {
+		if (entry.id !== activeEntry.id) {
+			applyEntry(entry, true);
+		} else if (isCompact.current) {
+			mobileRecordOpen = true;
+		}
+		writeEntryHistory(entry);
+	}
+
+	function selectNeighbor(entry: ArchiveEntry | undefined) {
+		if (!entry) return;
+		selectEntry(entry);
+	}
+
+	onMount(() => {
+		const linkedEntry = entryFromHash(window.location.hash);
+		if (linkedEntry) {
+			activeEntry = linkedEntry;
+			if (isCompact.current) mobileRecordOpen = true;
+		}
+
+		const restoreFromHistory = () => {
+			const restoredEntry = entryFromHash(window.location.hash);
+			if (restoredEntry) {
+				activeEntry = restoredEntry;
+				if (isCompact.current) mobileRecordOpen = true;
+				return;
+			}
+			activeEntry = archiveEntry(DEFAULT_ENTRY_ID);
+			mobileRecordOpen = false;
+		};
+
+		window.addEventListener("popstate", restoreFromHistory);
+		return () => window.removeEventListener("popstate", restoreFromHistory);
 	});
 </script>
 
 <section
-	class="room"
-	class:flourish
+	class="archive-room"
 	style:--artifact-accent={accent}
-	aria-label={`Writing flow arts down: ${count} notation systems, 2009 to 2022`}
+	aria-label={`Flow arts knowledge archive, ${ARCHIVE_START_YEAR} to ${ARCHIVE_END_YEAR}`}
 >
-	<!-- ROW 1: the masthead -->
-	<header class="room-header">
-		<div class="masthead">
-			<p class="kicker">{count} systems &middot; 2009&ndash;2022</p>
-			<h1 class="room-title">Writing flow arts down</h1>
+	<header class="archive-header">
+		<div>
+			<p>{ARCHIVE_ENTRIES.length} documented traces · {ARCHIVE_START_YEAR}–{ARCHIVE_END_YEAR}</p>
+			<h1>Writing flow arts down</h1>
+			<p class="premise">
+				Documented traces, not a definitive history. Each entry says exactly
+				what its sources support, and better evidence changes the record.
+			</p>
 		</div>
-		<div class="room-header-side">
-			{#if !wideRail.current}
-			<Popover.Root>
-				<Popover.Trigger class="loans-trigger">Two neighboring ideas</Popover.Trigger>
-				<Popover.Portal>
-					<Popover.Content class="loans-popover" sideOffset={10}>
-						<p>
-							Siteswap is a notation for juggling patterns. Read the
-							<a
-								href="https://jugglinglab.org/html/ssnotation.html"
-								target="_blank"
-								rel="noopener">siteswap guide</a
-							>. Music notation records a performance as a score. Both sit
-							outside flow arts, so neither is counted among these {count} systems.
-						</p>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
-			{/if}
-			<span class="discovered" aria-live="off">
-				<span class="discovered-count">{archive.visited.size} of {count}</span>
-				discovered
-			</span>
-		</div>
+		<PanelButton
+			variant="secondary"
+			ariaLabel="Contribute or correct an archive record"
+			onclick={() => (submissionOpen = true)}
+		>
+			Contribute
+		</PanelButton>
 	</header>
 
-	{#snippet slideCard(entry: (typeof entries)[number], i: number)}
-		{@const isActive = i === activeIndex}
-		<!-- The card div is a pointer convenience; the accessible path is the
-		     label button below (roving tabindex) and the Inspect action. Live
-		     artifacts own their pointer surface, so the card only opens detail
-		     when the click was not on an interactive child. -->
-		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-		<div
-			class="artifact"
-			style:--slide-accent={ACCENTS[entry.id]}
-			use:tilt={{ maxDegrees: isActive ? 3 : 2 }}
-			use:cursorGlow
-			onclick={(e) => {
-				if ((e.target as HTMLElement).closest("button, a")) return;
-				onSlideClick(i);
-			}}
-		>
-			<span class="ghost-year" aria-hidden="true">{entry.year}</span>
-			<!-- The name is PERSISTENT on every stage so that during a select
-			     re-tile each stage pairs with itself and travels with its tile.
-			     Active-only naming left the names unpaired across the transition,
-			     so the new hero's visual entered at its final position while the
-			     tile was still morphing. Only the open detail hands its name off
-			     (to the panel), which is what powers the Inspect morph. -->
-			<span
-				class="artifact-stage"
-				style:view-transition-name={(archive.detailOpen && isActive) ||
-				(soloMorph && !isActive)
-					? undefined
-					: `stage-${entry.id}`}
-			>
-				<ArtifactVisual {entry} active={isActive && !archive.detailOpen} />
-			</span>
-			<button
-				bind:this={slideButtons[i]}
-				type="button"
-				class="artifact-label"
-				tabindex={isActive ? 0 : -1}
-				aria-current={isActive ? "true" : undefined}
-				use:pressSpring
-				onclick={() => onSlideClick(i)}
-			>
-				<span class="artifact-year">{entry.year}</span>
-				<span class="artifact-name">{entry.system}</span>
-				<span class="sr-only">{isActive ? ", open detail" : ", select"}</span>
-			</button>
+	{#if isCompact.current}
+		<div class="compact-archive">
+			<ArchiveChronologicalIndex
+				activeEntryId={activeEntry.id}
+				onselect={selectEntry}
+			/>
+		</div>
+	{:else}
+		<div class="large-archive">
+			<ArchiveTimeMap
+				activeEntryId={activeEntry.id}
+				onselect={selectEntry}
+			/>
 
-			<!-- THE RECORD. Every entry's sourced prose and every citation link
-			     live here unconditionally, in every state, for all eight systems —
-			     the overlay is presentation, not the content's only existence.
-			     Clipped visually (the room is one screen by design), never
-			     display:none, never aria-hidden: crawlers index it and screen
-			     readers read the real catalog in chronological order instead of
-			     eight bare labels. The open overlay is aria-modal, so the
-			     background is out of the a11y tree and nothing is read twice. -->
-			<section class="tile-record">
-				<h2>
-					<span class="record-system">{entry.system}</span>,
-					<span class="record-year">{entry.year}</span>
-				</h2>
-				<p class="record-people">{entry.people}</p>
-				<p class="record-records">{entry.records}</p>
-				{#if entry.subWorks?.length}
-					<ul>
-						{#each entry.subWorks as work (work.name)}
-							<li><strong>{work.name}</strong> {work.note}</li>
-						{/each}
-					</ul>
-				{/if}
-				<ul class="record-sources">
-					{#if entry.explore}
-						<li><a href={entry.explore.href} tabindex="-1">{entry.explore.label}</a></li>
-					{/if}
-					{#each entry.sources as source (source.href)}
-						<li>
-							<a
-								href={source.href}
-								tabindex="-1"
-								target={source.href.startsWith("/") ? undefined : "_blank"}
-								rel={source.href.startsWith("/") ? undefined : "noopener"}
-							>{source.label}</a>
-						</li>
-					{/each}
-				</ul>
-				{#if entry.videos?.length}
-					<ul class="record-videos">
-						{#each entry.videos as video (video.id)}
-							<li>
-								{video.title}, {video.creator}{video.year
-									? `, ${video.year}`
-									: ""}. {video.note}
-							</li>
-						{/each}
-					</ul>
-				{/if}
+			<!-- No id anchor here: selection is applied from the hash in onMount.
+			     A native anchor jump would scroll the overflow-hidden room and
+			     strand the layout partly off-screen on deep-link loads. -->
+			<section
+				class="selected-record"
+				aria-label={`Selected record: ${activeEntry.title}`}
+			>
+				<header class="record-toolbar">
+					<p aria-live="polite">
+						<span>Selected record</span>
+						<strong>{activeEntry.dateLabel} · {lane.label} · {activeIndex + 1} of {ARCHIVE_ENTRIES.length}</strong>
+					</p>
+					<nav aria-label="Previous and next archive records">
+						<PanelButton
+							variant="secondary"
+							disabled={!previousEntry}
+							ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
+							onclick={() => selectNeighbor(previousEntry)}
+						>
+							<span aria-hidden="true">←</span>
+							<span class="neighbor-label">{previousEntry?.shortTitle ?? "Previous"}</span>
+						</PanelButton>
+						<PanelButton
+							variant="secondary"
+							disabled={!nextEntry}
+							ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
+							onclick={() => selectNeighbor(nextEntry)}
+						>
+							<span class="neighbor-label">{nextEntry?.shortTitle ?? "Next"}</span>
+							<span aria-hidden="true">→</span>
+						</PanelButton>
+					</nav>
+				</header>
+
+				<div class="record-body">
+					<section
+						class="artifact-stage"
+						aria-label={`${activeEntry.title} artifact`}
+						use:tilt={{ maxDegrees: 1.6 }}
+						use:cursorGlow
+					>
+						<div class="artifact-viewport">
+							<ArchiveRecordVisual entry={activeEntry} active />
+						</div>
+						<div class="artifact-actions">
+							{#if activeEntry.catalogEntry?.explore}
+								<a
+									class="artifact-action primary"
+									href={activeEntry.catalogEntry.explore.href}
+									use:magnetic={!reduceMotion.current}
+									use:pressSpring
+								>
+									{activeEntry.catalogEntry.explore.label}
+									<span aria-hidden="true">→</span>
+								</a>
+							{:else if activeEntry.citations[0]}
+								<a
+									class="artifact-action"
+									href={activeEntry.citations[0].href}
+									target={activeEntry.citations[0].href.startsWith("/") ? undefined : "_blank"}
+									rel={activeEntry.citations[0].href.startsWith("/") ? undefined : "noopener"}
+									use:pressSpring
+								>
+									Open primary source <span aria-hidden="true">↗</span>
+								</a>
+							{/if}
+						</div>
+					</section>
+
+					<div class="record-detail" tabindex="0" aria-label={`${activeEntry.title} record and sources`}>
+						<ArchiveEntryDetail
+							entry={activeEntry}
+							index={activeIndex}
+							count={ARCHIVE_ENTRIES.length}
+						/>
+					</div>
+				</div>
 			</section>
 		</div>
-	{/snippet}
-
-	<!-- ROW 2: the artifact rail. The keydown here is the roving-tabindex
-	     pattern: focus lives on the artifact buttons; the container routes
-	     arrow keys so navigation works from any of them.
-
-	     Above the 1680 seam every artifact fits on screen at once, so nothing
-	     scrolls: the row is a focus-and-context accordion. All eight objects
-	     visible and pickable, the selected one expands in place. Below the
-	     seam the Embla carousel takes over and scrolling earns its keep. -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div
-		class="rail"
-		role="group"
-		aria-roledescription={wideRail.current ? undefined : "carousel"}
-		aria-label="Notation systems in chronological order"
-		bind:this={railRegion}
-		onkeydown={onRailKeydown}
-	>
-		{#if wideRail.current}
-			<div class="gallery-row">
-				{#each entries as entry, i (entry.id)}
-					<div
-						class="g-slide"
-						class:is-active={i === activeIndex}
-						class:visited={archive.visited.has(i)}
-						style:view-transition-name={soloMorph
-							? undefined
-							: `tile-${entry.id}`}
-					>
-						{@render slideCard(entry, i)}
-					</div>
-				{/each}
-				<aside class="context-card" aria-labelledby="context-title">
-					<p class="context-kicker">Outside the archive</p>
-					<h2 id="context-title">Two neighboring ideas</h2>
-					<p>
-						<a
-							href="https://jugglinglab.org/html/ssnotation.html"
-							target="_blank"
-							rel="noopener">Siteswap</a
-						>
-						is a notation for juggling patterns. Music notation records a performance
-						as a score. Neither is counted among these {count} flow arts systems.
-					</p>
-				</aside>
-			</div>
-		{:else}
-			<div
-				class="rail-viewport"
-				use:emblaCarouselSvelte={{
-					options: { align: "center", skipSnaps: false, containScroll: false },
-					plugins: [],
-				}}
-				onemblaInit={onEmblaInit}
-			>
-				<ol class="rail-track">
-					{#each entries as entry, i (entry.id)}
-						<li
-							class="slide"
-							class:is-active={i === activeIndex}
-							class:visited={archive.visited.has(i)}
-						>
-							{@render slideCard(entry, i)}
-						</li>
-					{/each}
-				</ol>
-			</div>
-		{/if}
-	</div>
-
-	<!-- ROW 3: actions for the active artifact (reserved boxes, no shift) -->
-	<div class="stage-meta">
-		<p class="stage-people">{activeEntry.people}</p>
-		<div class="stage-actions">
-			<button
-				type="button"
-				class="action primary"
-				use:magnetic={!reduceMotion.current}
-				use:pressSpring
-				onclick={openDetailView}
-			>
-				Inspect
-			</button>
-			{#if activeEntry.explore}
-				<a class="action primary-link" href={activeEntry.explore.href}>
-					{activeEntry.explore.label}
-					<span class="action-arrow" aria-hidden="true">&rarr;</span>
-				</a>
-			{/if}
-			{#if primarySource && !activeEntry.explore}
-				<a
-					class="action"
-					href={primarySource.href}
-					target={primarySource.href.startsWith("/") ? undefined : "_blank"}
-					rel={primarySource.href.startsWith("/") ? undefined : "noopener"}
-				>
-					Read the source <span class="action-arrow" aria-hidden="true">&nearr;</span>
-				</a>
-			{/if}
-			{#if activeEntry.videos?.length}
-				<button type="button" class="action" onclick={openDetailView}>
-					Watch the series
-				</button>
-			{/if}
-		</div>
-	</div>
-
-	<!-- ROW 4: the timeline -->
-	<nav class="timeline" aria-label="Timeline, 2009 to 2022">
-		<span class="timeline-year">2009</span>
-		<div class="stops" role="group">
-			{#each entries as entry, i (entry.id)}
-				<button
-					type="button"
-					class="stop"
-					class:on={i === activeIndex}
-					class:seen={archive.visited.has(i)}
-					class:span={entry.id === "vtg"}
-					aria-label={entry.id === "vtg"
-						? `${entry.system}, 2010 to 2011, five chapters`
-						: `${entry.system}, ${entry.year}`}
-					aria-current={i === activeIndex ? "true" : undefined}
-					onclick={() => applySelect(i)}
-				>
-					<span class="stop-dot" aria-hidden="true"></span>
-				</button>
-			{/each}
-		</div>
-		<span class="timeline-year">2022</span>
-		<div class="steppers">
-			<button
-				type="button"
-				class="stepper"
-				aria-label="Previous system"
-				disabled={activeIndex === 0}
-				onclick={() => applySelect(activeIndex - 1)}
-			>
-				<i class="fas fa-arrow-left" aria-hidden="true"></i>
-			</button>
-			<button
-				type="button"
-				class="stepper"
-				aria-label="Next system"
-				disabled={activeIndex === count - 1}
-				onclick={() => applySelect(activeIndex + 1)}
-			>
-				<i class="fas fa-arrow-right" aria-hidden="true"></i>
-			</button>
-		</div>
-	</nav>
+	{/if}
 
 	<p class="sr-only" aria-live="polite">{announcement}</p>
-
-	<!-- Desktop focused detail -->
-	{#if desktopDetailOpen}
-		<div
-			bind:this={detailDialog}
-			class="detail-overlay"
-			role="dialog"
-			aria-modal="true"
-			aria-label={`${activeEntry.system}, detail`}
-			tabindex="-1"
-			onkeydown={onDetailKeydown}
-		>
-			<button class="overlay-backdrop" aria-label="Close detail" onclick={closeDetailView}
-			></button>
-			<!-- The PANEL does not carry the stage name. Naming it meant the whole
-			     wide panel — chrome, prose and all — morphed out of the tile's
-			     small square, stretching text across the flight. The name lives
-			     on the detail's own visual stage (ArtifactDetail), so the
-			     artifact travels tile → panel while the panel itself just
-			     arrives. -->
-			<div class="detail-panel">
-				<button
-					bind:this={detailCloseButton}
-					type="button"
-					class="close-btn"
-					onclick={closeDetailView}
-					use:pressSpring
-				>
-					<span class="close-mark" aria-hidden="true">&times;</span>
-					Close
-				</button>
-				<ArtifactDetail entry={activeEntry} index={activeIndex} {count} />
-			</div>
-		</div>
-	{/if}
 </section>
 
-<!-- Mobile focused detail: the existing bottom drawer, stage stays mounted behind -->
 <Drawer
-	bind:isOpen={drawerOpen}
-	placement="bottom"
-	ariaLabel={`${activeEntry.system}, detail`}
-	onclose={() => (archive = closeDetail(archive))}
+	bind:isOpen={mobileRecordOpen}
+	placement={isShortWide.current ? "right" : "bottom"}
+	ariaLabel={`${activeEntry.title}, artifact, record, and sources`}
+	showHandle={!isShortWide.current}
 >
-	<div class="drawer-body">
-		<ArtifactDetail entry={activeEntry} index={activeIndex} {count} showVisual={false} />
+	<div class="record-drawer" style:--artifact-accent={accent}>
+		<header>
+			<p><span>{activeEntry.dateLabel}</span>{lane.label}</p>
+			<PanelButton variant="secondary" onclick={() => (mobileRecordOpen = false)}>
+				Close
+			</PanelButton>
+		</header>
+		<section class="drawer-artifact" aria-label={`${activeEntry.title} artifact`}>
+			<ArchiveRecordVisual entry={activeEntry} active />
+		</section>
+		<nav class="drawer-neighbors" aria-label="Previous and next archive records">
+			<PanelButton
+				variant="secondary"
+				disabled={!previousEntry}
+				ariaLabel={previousEntry ? `Previous record: ${previousEntry.title}` : "No previous record"}
+				onclick={() => selectNeighbor(previousEntry)}
+			>
+				<span aria-hidden="true">←</span> {previousEntry?.shortTitle ?? "Previous"}
+			</PanelButton>
+			<PanelButton
+				variant="secondary"
+				disabled={!nextEntry}
+				ariaLabel={nextEntry ? `Next record: ${nextEntry.title}` : "No next record"}
+				onclick={() => selectNeighbor(nextEntry)}
+			>
+				{nextEntry?.shortTitle ?? "Next"} <span aria-hidden="true">→</span>
+			</PanelButton>
+		</nav>
+		<div class="drawer-detail">
+			<ArchiveEntryDetail
+				entry={activeEntry}
+				index={activeIndex}
+				count={ARCHIVE_ENTRIES.length}
+			/>
+		</div>
 	</div>
 </Drawer>
 
+{#if !isCompact.current}
+	<BaseModal
+		bind:open={submissionOpen}
+		size="lg"
+		labelledBy="archive-contribute-title"
+	>
+		{#snippet header()}
+			<div class="submission-header">
+				<h2 id="archive-contribute-title">Add to the research</h2>
+				<PanelButton variant="secondary" onclick={() => (submissionOpen = false)}>
+					Close
+				</PanelButton>
+			</div>
+		{/snippet}
+		<div class="submission-body"><ResearchSubmissionGuide /></div>
+	</BaseModal>
+{:else}
+	<Drawer
+		bind:isOpen={submissionOpen}
+		placement={isShortWide.current ? "right" : "bottom"}
+		ariaLabel="Contribute an archive record"
+		showHandle={!isShortWide.current}
+	>
+		<div class="submission-drawer"><ResearchSubmissionGuide /></div>
+	</Drawer>
+{/if}
+
 <style>
-	.room {
+	.archive-room {
 		display: grid;
-		grid-template-rows: auto minmax(0, 1fr) auto auto;
-		gap: clamp(0.4rem, 1.2vh, 1rem);
+		grid-template-rows: auto minmax(0, 1fr);
+		gap: clamp(0.65rem, 1.2vh, 1rem);
 		height: 100%;
 		max-width: var(--shell-w, min(1720px, 92vw));
 		margin-inline: auto;
-		padding: clamp(0.6rem, 1.6vh, 1.4rem) clamp(0.8rem, 2vw, 2rem);
+		padding: clamp(0.65rem, 1.4vh, 1.2rem) clamp(0.8rem, 2vw, 2rem);
 		box-sizing: border-box;
 		overflow: hidden;
 	}
 
-	/* Grid children default to min-width auto, so the embla track's intrinsic
-	   width (eight slides wide) would inflate the whole column and push the
-	   room off-canvas. Every row clamps to the grid. */
-	.room > * {
-		min-width: 0;
-		max-width: 100%;
-	}
-
-	/* VIEW-TRANSITION TIMING — declared in CSS so it drives the morph from
-	   frame one. Scoped by view-transition-class to this archive's groups
-	   only; the pseudo-elements live on :root, hence :global. */
-	.g-slide,
-	.artifact-stage,
-	.detail-panel {
-		view-transition-class: notation-archive;
-	}
-
-	:global(::view-transition-group(.notation-archive)) {
-		animation-duration: 0.45s;
-		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	:global(::view-transition-old(.notation-archive)),
-	:global(::view-transition-new(.notation-archive)) {
-		animation-duration: 0.45s;
-	}
-
-	/* The modal's chrome — panel, backdrop, prose, close — rides the ROOT
-	   snapshot, which defaults to 250ms. Against a 450ms artifact morph the
-	   modal was fully present a fifth of a second before the object landed in
-	   it, which is what read as the animation not belonging to the modal.
-	   Same duration, same curve: they arrive together. */
-	:global(::view-transition-group(root)),
-	:global(::view-transition-old(root)),
-	:global(::view-transition-new(root)) {
-		animation-duration: 0.45s;
-		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-	}
-
-	/* HEADER */
-	.room-header {
+	.archive-header {
 		display: flex;
-		align-items: flex-end;
+		align-items: end;
 		justify-content: space-between;
 		gap: 1rem;
 	}
 
-	.masthead {
-		display: grid;
-		gap: 0.15rem;
+	.archive-header p,
+	.archive-header h1,
+	.record-toolbar p {
+		margin: 0;
 	}
 
-	.kicker {
-		margin: 0;
-		font-size: clamp(0.62rem, 0.55rem + 0.2vw, 0.8rem);
-		font-weight: 650;
-		letter-spacing: 0.22em;
+	.archive-header p {
+		color: var(--theme-accent, oklch(0.76 0.13 290));
+		font-size: var(--font-size-min, 0.875rem);
+		font-weight: 750;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: oklch(0.58 0.03 270);
 	}
 
-	.room-title {
-		margin: 0;
-		font-family: "Fraunces", Georgia, serif;
-		font-style: italic;
-		font-weight: 700;
-		font-size: clamp(1.5rem, 1.1rem + 1.6vw, 3.2rem);
-		line-height: 1.05;
-		letter-spacing: -0.015em;
-		color: oklch(0.95 0.015 270);
+	.archive-header .premise {
+		margin-top: 0.35rem;
+		color: var(--theme-text-dim, oklch(0.74 0.02 270));
+		font-size: var(--font-size-min, 0.875rem);
+		font-weight: 400;
+		letter-spacing: normal;
+		line-height: 1.45;
+		text-transform: none;
 	}
 
-	.room-header-side {
-		display: flex;
-		align-items: center;
-		gap: clamp(0.7rem, 1.5vw, 1.4rem);
+	.archive-header h1 {
+		margin-top: 0.15rem;
+		font: italic 700 clamp(1.75rem, 2.4vw, 3rem) / 1 "Fraunces", Georgia, serif;
+		letter-spacing: -0.025em;
+		color: var(--theme-text, oklch(0.96 0.01 270));
 	}
 
-	:global(.loans-trigger) {
-		min-height: 44px;
-		padding: 0 1rem;
-		border-radius: 11px;
-		border: 1px solid oklch(0.5 0.05 270 / 0.4);
-		background: oklch(0.3 0.04 270 / 0.25);
-		color: oklch(0.85 0.02 270);
-		font: inherit;
-		font-size: 0.9rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: background 160ms ease;
-	}
-
-	:global(.loans-trigger:hover) {
-		background: oklch(0.34 0.05 270 / 0.4);
-	}
-
-	:global(.loans-popover) {
-		z-index: 60;
-		max-width: 26rem;
-		padding: 1rem 1.2rem;
-		border-radius: 14px;
-		border: 1px solid oklch(0.5 0.05 270 / 0.4);
-		background: oklch(0.17 0.02 270 / 0.97);
-		color: oklch(0.85 0.02 270);
-		font-size: 0.92rem;
-		line-height: 1.6;
-		box-shadow: 0 18px 44px oklch(0 0 0 / 0.5);
-	}
-
-	:global(.loans-popover p) {
-		margin: 0;
-	}
-
-	:global(.loans-popover a) {
-		color: oklch(0.8 0.1 230);
-	}
-
-	.discovered {
-		font-size: 0.9rem;
-		color: oklch(0.68 0.03 270);
+	.archive-header :global(.panel-btn) {
+		border-radius: 999px;
 		white-space: nowrap;
 	}
 
-	.discovered-count {
-		font-variant-numeric: tabular-nums;
-		font-weight: 700;
-		color: oklch(0.88 0.05 270);
-	}
-
-	/* RAIL */
-	.rail {
-		min-height: 0;
-	}
-
-	/* WIDE MODE: the bento. A 6×2 grid fills the canvas. The active entry is
-	   a 2×2 hero tile, the other seven are full tiles, and one context card
-	   names the neighboring ideas without pretending they are systems. Selecting
-	   re-tiles the grid through a native View
-	   Transition; every tile morphs to its new cell under its own name. */
-	.gallery-row {
+	.large-archive {
 		display: grid;
-		grid-template-columns: repeat(6, minmax(0, 1fr));
-		grid-template-rows: repeat(2, minmax(0, 1fr));
-		grid-auto-flow: dense;
-		gap: clamp(0.7rem, 0.9vw, 1.3rem);
-		height: 100%;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.g-slide {
+		grid-template-columns: minmax(0, 1.35fr) minmax(26rem, 0.65fr);
+		grid-template-rows: minmax(0, 1fr);
+		gap: clamp(0.55rem, 1vh, 0.85rem);
 		min-width: 0;
 		min-height: 0;
+	}
+
+	.selected-record {
 		display: grid;
-	}
-
-	/* The hero anchors top-left (visual order only; DOM stays chronological
-	   for reading and tab order). Four hero cells, seven entry cells, and the
-	   context card fill the twelve-cell board exactly. */
-	.g-slide.is-active {
-		grid-column: span 2;
-		grid-row: span 2;
-		order: -1;
-	}
-
-	.context-card {
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		gap: clamp(0.35rem, 0.55vw, 0.7rem);
+		grid-template-rows: auto minmax(0, 1fr);
 		min-width: 0;
 		min-height: 0;
-		padding: clamp(0.8rem, 1.2vw, 1.35rem);
-		border: 1px solid oklch(1 0 0 / 0.07);
-		border-radius: 18px;
-		background:
-			radial-gradient(110% 80% at 100% 0%, oklch(0.7 0.08 230 / 0.08), transparent 58%),
-			oklch(0.13 0.01 270);
-		container-type: inline-size;
 		overflow: hidden;
+		border: 1px solid color-mix(in oklch, var(--artifact-accent) 35%, var(--theme-stroke, oklch(1 0 0 / 0.12)));
+		border-radius: var(--radius-2026-xl, 24px);
+		background: var(--theme-card-bg, oklch(0.145 0.012 270));
+		box-shadow: 0 1.5rem 4rem oklch(0 0 0 / 0.22);
+		container: selected-record / inline-size;
 	}
 
-	.context-kicker {
-		margin: 0;
-		font-size: clamp(0.56rem, 3cqi, 0.72rem);
-		font-weight: 700;
-		letter-spacing: 0.16em;
+	.record-toolbar {
+		display: flex;
+		min-height: 3.4rem;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.45rem 0.6rem 0.45rem 1rem;
+		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
+	}
+
+	.record-toolbar p {
+		display: grid;
+		min-width: 0;
+		gap: 0.08rem;
+	}
+
+	.record-toolbar p span {
+		color: var(--artifact-accent);
+		font-size: var(--font-size-compact, 0.75rem);
+		font-weight: 750;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
-		color: oklch(0.62 0.05 230);
 	}
 
-	.context-card h2 {
-		margin: 0;
-		font-family: "Fraunces", Georgia, serif;
-		font-style: italic;
-		font-size: clamp(1rem, 7cqi, 1.55rem);
-		line-height: 1.05;
-		color: oklch(0.9 0.02 270);
-	}
-
-	.context-card p:last-child {
-		margin: 0;
-		font-size: clamp(0.68rem, 3.8cqi, 0.9rem);
-		line-height: 1.45;
-		color: oklch(0.7 0.025 270);
-	}
-
-	.context-card a {
-		color: oklch(0.8 0.1 230);
-		text-decoration-thickness: 1px;
-		text-underline-offset: 0.18em;
-	}
-
-	/* Bento tiles: flat ink specimens. A faint accent breath at the plaque
-	   edge; the rule brightens on hover; the hero earns one deep shadow. */
-	.g-slide .artifact {
-		opacity: 1;
-		scale: 1;
+	.record-toolbar p strong {
 		overflow: hidden;
-		background:
-			radial-gradient(
-				130% 70% at 50% 112%,
-				color-mix(in oklch, var(--slide-accent, oklch(0.5 0.06 270)) 8%, transparent),
-				transparent 55%
-			),
-			oklch(0.145 0.012 270);
-		transition: border-color 240ms ease, box-shadow 240ms ease, translate 240ms ease;
+		color: var(--theme-text, oklch(0.95 0.01 270));
+		font-size: var(--font-size-min, 0.875rem);
+		font-variant-numeric: tabular-nums;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
-	.g-slide .artifact:hover {
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 55%, transparent);
-		translate: 0 -3px;
-	}
-
-	.g-slide.is-active .artifact {
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 28%, oklch(1 0 0 / 0.08));
-		box-shadow: 0 30px 70px oklch(0 0 0 / 0.5);
-	}
-
-	/* Small tiles: label pinned to the bottom edge like a plaque. */
-	.g-slide:not(.is-active) .artifact-name {
-		font-size: clamp(0.78rem, 0.6rem + 0.28vw, 1.05rem);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.g-slide .artifact {
-			transition: none;
-		}
-		.g-slide .artifact:hover {
-			translate: none;
-		}
-	}
-
-	.rail-viewport {
-		overflow: hidden;
-		height: 100%;
-	}
-
-	.rail-track {
+	.record-toolbar nav,
+	.drawer-neighbors {
 		display: flex;
-		align-items: stretch;
-		height: 100%;
-		margin: 0;
-		padding: 0;
-		list-style: none;
+		gap: 0.45rem;
 	}
 
-	.slide {
-		flex: 0 0 var(--slide-w, min(64rem, 48vw));
+	.record-toolbar :global(.panel-btn) {
+		max-width: 12rem;
+		border-radius: 999px;
+	}
+
+	.neighbor-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.record-body {
+		display: grid;
+		grid-template-rows: minmax(18rem, 0.9fr) minmax(0, 1.1fr);
 		min-width: 0;
-		padding-inline: clamp(0.4rem, 1vw, 1.1rem);
-		display: grid;
-	}
-
-	/* Flat ink, hairline rule, no glass. The accent stays scarce: the ghost
-	   numeral, the plaque year, and the hover rule carry it. */
-	.artifact {
-		position: relative;
-		display: grid;
-		grid-template-rows: minmax(0, 1fr) auto;
-		gap: 0.55rem;
-		width: 100%;
-		height: 100%;
-		padding: clamp(0.6rem, 1.4vh, 1.1rem);
-		border-radius: 18px;
-		border: 1px solid oklch(1 0 0 / 0.07);
-		background: oklch(0.145 0.012 270);
-		cursor: pointer;
-		font: inherit;
-		color: inherit;
-		text-align: center;
-		box-sizing: border-box;
-		container-type: inline-size;
-		opacity: 0.42;
-		scale: 0.88;
-		transition:
-			opacity 380ms ease,
-			scale 380ms cubic-bezier(0.3, 1.1, 0.4, 1),
-			border-color 380ms ease,
-			box-shadow 380ms ease;
-	}
-
-	/* The year as a graphic: oversized Fraunces numeral bleeding from the
-	   tile's top corner. Data as ornament — nothing invented. */
-	.ghost-year {
-		position: absolute;
-		top: -0.12em;
-		left: 0.06em;
-		z-index: 0;
-		font-family: "Fraunces", Georgia, serif;
-		font-style: italic;
-		font-weight: 700;
-		font-size: clamp(2.6rem, 26cqi, 7rem);
-		line-height: 1;
-		letter-spacing: -0.04em;
-		color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 55%, transparent);
-		opacity: 0.16;
-		pointer-events: none;
-		user-select: none;
-	}
-
-	.g-slide.is-active .ghost-year {
-		font-size: clamp(4rem, 18cqi, 10rem);
-		opacity: 0.13;
-	}
-
-	.slide.is-active .artifact {
-		opacity: 1;
-		scale: 1;
-		border-color: color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 65%, transparent);
-		box-shadow:
-			0 22px 60px oklch(0 0 0 / 0.45),
-			0 0 44px color-mix(in oklch, var(--slide-accent, oklch(0.6 0.05 270)) 22%, transparent);
-	}
-
-	.artifact:focus-visible {
-		outline: 3px solid var(--slide-accent, oklch(0.7 0.1 270));
-		outline-offset: 3px;
+		min-height: 0;
 	}
 
 	.artifact-stage {
-		position: relative;
-		z-index: 1;
-		display: block;
-		min-height: 0;
-		container-type: size;
-		/* Safety net: at short viewports a content-sized visual could grow past
-		   its row and paint over the tile's own label. Visuals size themselves
-		   with cqh (this element is a size container, so cqh is valid here);
-		   this guarantees nothing ever escapes the stage even if one doesn't. */
-		overflow: hidden;
-	}
-
-	/* The plaque: left-set like a specimen label, year carrying the accent. */
-	.artifact-label {
-		position: relative;
-		z-index: 1;
-		display: flex;
-		justify-content: flex-start;
-		gap: 0.6rem;
-		/* Inactive carousel tiles render at 88%. Fifty CSS pixels preserves the
-		   44px touch target after that transform. */
-		min-height: 50px;
-		align-items: center;
-		padding: 0 0.45rem;
-		border: 0;
-		background: transparent;
-		font: inherit;
-		color: inherit;
-		cursor: pointer;
-		border-radius: 10px;
-		text-align: left;
-	}
-
-	.artifact-label:focus-visible {
-		outline: 2px solid var(--slide-accent, oklch(0.7 0.1 270));
-		outline-offset: 2px;
-	}
-
-	.artifact-year {
-		font-variant-numeric: tabular-nums;
-		font-weight: 700;
-		font-size: clamp(0.85rem, 0.8rem + 0.3vw, 1.1rem);
-		color: var(--slide-accent, oklch(0.75 0.05 270));
-	}
-
-	.artifact-name {
-		font-size: clamp(0.85rem, 0.8rem + 0.3vw, 1.1rem);
-		font-weight: 600;
-		color: oklch(0.88 0.02 270);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.slide.visited .artifact-year {
-		text-shadow: 0 0 12px color-mix(in oklch, var(--slide-accent) 60%, transparent);
-	}
-
-	/* STAGE META */
-	.stage-meta {
 		display: grid;
-		gap: 0.5rem;
-		justify-items: center;
+		grid-template-rows: minmax(0, 1fr) auto;
+		min-width: 0;
+		min-height: 0;
+		padding: clamp(0.7rem, 1.4vw, 1.2rem);
+		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
+		box-sizing: border-box;
+		background: color-mix(in oklch, var(--artifact-accent) 4%, var(--theme-card-bg, oklch(0.145 0.012 270)));
 	}
 
-	/* Reserved single line; the longest people string ellipsizes, nothing shifts. */
-	.stage-people {
-		margin: 0;
-		max-width: min(60ch, 92%);
-		height: 1.5em;
+	.artifact-viewport {
+		display: grid;
+		min-width: 0;
+		min-height: 0;
+		place-items: center;
+		container-type: size;
 		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		font-size: clamp(0.82rem, 0.78rem + 0.2vw, 1rem);
-		color: oklch(0.7 0.03 270);
 	}
 
-	.stage-actions {
+	.artifact-actions {
 		display: flex;
-		flex-wrap: wrap;
 		justify-content: center;
-		gap: 0.7rem;
+		padding-top: 0.45rem;
 	}
 
-	.action {
+	.artifact-action {
 		display: inline-flex;
+		min-height: 2.75rem;
 		align-items: center;
 		gap: 0.45rem;
-		min-height: 44px;
-		padding: 0 1.35rem;
+		padding-inline: 1rem;
+		border: 1px solid color-mix(in oklch, var(--artifact-accent) 62%, transparent);
 		border-radius: 999px;
-		border: 1px solid oklch(1 0 0 / 0.14);
-		background: transparent;
-		color: oklch(0.88 0.02 270);
-		font: inherit;
-		font-size: 0.85rem;
-		font-weight: 650;
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
+		color: var(--theme-text, oklch(0.95 0.01 270));
+		font-size: var(--font-size-min, 0.875rem);
+		font-weight: 700;
 		text-decoration: none;
-		cursor: pointer;
 		translate: var(--mag-x, 0px) var(--mag-y, 0px);
-		transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 	}
 
-	.action:hover {
-		border-color: oklch(1 0 0 / 0.32);
+	.artifact-action:hover,
+	.artifact-action:focus-visible {
+		border-color: var(--artifact-accent);
+		background: color-mix(in oklch, var(--artifact-accent) 15%, transparent);
+		outline: none;
 	}
 
-	.action-arrow {
-		font-size: 1.05em;
-		translate: 0 -1px;
-	}
-
-	/* The one filled control on the page: the active entry's accent, solid. */
-	.action.primary {
-		border-color: transparent;
+	.artifact-action.primary {
 		background: var(--artifact-accent);
 		color: oklch(0.13 0.01 270);
 	}
 
-	.action.primary:hover {
-		background: color-mix(in oklch, var(--artifact-accent) 86%, white);
+	.record-detail {
+		min-width: 0;
+		min-height: 0;
+		overflow: auto;
+		padding: clamp(0.9rem, 1.6vw, 1.4rem);
+		scrollbar-gutter: stable;
 	}
 
-	.action.primary-link {
-		border-color: color-mix(in oklch, var(--artifact-accent) 72%, transparent);
-		color: var(--artifact-accent);
-	}
-
-	.action.primary-link:hover {
-		border-color: var(--artifact-accent);
-	}
-
-	/* TIMELINE */
-	.timeline {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: clamp(0.6rem, 1.5vw, 1.2rem);
-	}
-
-	.timeline-year {
-		font-family: "Fraunces", Georgia, serif;
-		font-style: italic;
-		font-variant-numeric: tabular-nums;
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: oklch(0.62 0.03 270);
-	}
-
-	.stops {
-		display: flex;
-		align-items: center;
-		overflow-x: auto;
-		scrollbar-width: none;
-	}
-
-	.stop {
-		display: grid;
-		place-items: center;
-		width: 44px;
-		height: 44px;
-		flex: 0 0 44px;
-		padding: 0;
-		border: 0;
-		background: transparent;
-		cursor: pointer;
-	}
-
-	/* Timeline stops as ticks: hairline marks that grow when chosen. */
-	.stop-dot {
-		width: 2px;
-		height: 0.85rem;
-		border-radius: 2px;
-		background: oklch(0.42 0.02 270);
-		transition: background 260ms ease, height 260ms ease, width 260ms ease;
-	}
-
-	/* VTG is the one entry on this rail that is not a moment. It was written
-	   across 2010 and released through 2011 in five chapters and four dated
-	   drops, so it gets a span rather than a tick — and the tile's own chapter
-	   rail is this span magnified. Every other entry stays a tick, which is
-	   what makes the difference legible.
-
-	   Kept to a hairline BAR, not a wide block: the rail's whole vocabulary is
-	   2px marks, and a heavy span would read as the selected state. */
-	.stop.span .stop-dot {
-		width: 14px;
-		border-radius: 2px;
-	}
-
-	.stop.span.on .stop-dot {
-		width: 16px;
-	}
-
-	.stop.seen .stop-dot {
-		background: color-mix(in oklch, var(--artifact-accent) 70%, oklch(0.6 0.03 270));
-	}
-
-	.stop.on .stop-dot {
-		width: 3px;
-		height: 1.5rem;
-		background: var(--artifact-accent);
-		box-shadow: 0 0 12px color-mix(in oklch, var(--artifact-accent) 60%, transparent);
-	}
-
-	.stop:focus-visible {
+	.record-detail:focus-visible {
 		outline: 2px solid var(--artifact-accent);
-		outline-offset: -4px;
-		border-radius: 10px;
+		outline-offset: -3px;
 	}
 
-	.room.flourish .stop-dot {
-		animation: stop-flourish 1.4s ease;
+	.compact-archive {
+		min-width: 0;
 	}
 
-	@keyframes stop-flourish {
-		0%,
-		100% {
-			filter: brightness(1);
-		}
-		40% {
-			filter: brightness(2.1);
-		}
+	.record-drawer {
+		display: grid;
+		gap: 1rem;
+		padding: 0.5rem clamp(1rem, 4vw, 1.5rem) 2rem;
 	}
 
-	.steppers {
+	.record-drawer > header {
 		display: flex;
-		gap: 0.45rem;
-		margin-left: clamp(0.4rem, 1.4vw, 1.4rem);
-	}
-
-	.stepper {
-		display: grid;
-		place-items: center;
-		width: 44px;
-		height: 44px;
-		border-radius: 12px;
-		border: 1px solid oklch(0.5 0.05 270 / 0.4);
-		background: oklch(0.3 0.04 270 / 0.25);
-		color: oklch(0.88 0.02 270);
-		cursor: pointer;
-		transition: background 160ms ease;
-	}
-
-	.stepper:hover:not(:disabled) {
-		background: oklch(0.34 0.05 270 / 0.4);
-	}
-
-	.stepper:disabled {
-		opacity: 0.35;
-		cursor: default;
-	}
-
-	/* DETAIL OVERLAY (desktop) */
-	.detail-overlay {
-		position: fixed;
-		inset: 0;
-		z-index: 50;
-		display: grid;
-		place-items: center;
-		padding: clamp(1rem, 4vh, 3.5rem) clamp(1rem, 5vw, 5rem);
-		box-sizing: border-box;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	.overlay-backdrop {
-		position: absolute;
-		inset: 0;
-		border: 0;
-		background: oklch(0.05 0.005 270 / 0.82);
-		cursor: pointer;
-	}
-
-	/* Same surface language as the tiles: flat ink, hairline rule, accent
-	   only as a whisper in the border — the panel is a bigger tile, not a
-	   different material. */
-	.detail-panel {
-		position: relative;
-		width: min(100%, 92rem);
-		height: 100%;
-		max-height: 100%;
-		min-height: 0;
-		padding: clamp(1.1rem, 2.4vh, 2.2rem);
-		box-sizing: border-box;
-		border-radius: 18px;
-		border: 1px solid color-mix(in oklch, var(--artifact-accent) 28%, oklch(1 0 0 / 0.08));
-		background: oklch(0.145 0.012 270);
-		box-shadow: 0 30px 90px oklch(0 0 0 / 0.6);
-		display: grid;
-		grid-template-rows: auto minmax(0, 1fr);
-		gap: 0.8rem;
-		overflow: hidden;
-	}
-
-	.close-btn {
-		justify-self: start;
-		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		min-height: 44px;
-		padding: 0 1.35rem;
+		justify-content: space-between;
+		gap: 1rem;
+		position: sticky;
+		top: 0;
+		z-index: 2;
+		padding-block: 0.5rem;
+		background: var(--sheet-bg, rgb(15, 15, 20));
+	}
+
+	.record-drawer > header p {
+		display: grid;
+		margin: 0;
+		color: var(--theme-text, oklch(0.95 0.01 270));
+		font-size: var(--font-size-min, 0.875rem);
+		font-weight: 700;
+	}
+
+	.record-drawer > header p span {
+		color: var(--artifact-accent);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.record-drawer :global(.panel-btn) {
 		border-radius: 999px;
-		border: 1px solid oklch(1 0 0 / 0.14);
-		background: transparent;
-		color: oklch(0.88 0.02 270);
-		font: inherit;
-		font-size: 0.85rem;
-		font-weight: 650;
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		cursor: pointer;
-		transition: border-color 160ms ease;
 	}
 
-	.close-btn:hover {
-		border-color: oklch(1 0 0 / 0.32);
+	.drawer-artifact {
+		display: grid;
+		height: clamp(17rem, 46vh, 34rem);
+		min-height: 0;
+		place-items: center;
+		padding: 0.8rem;
+		border: 1px solid color-mix(in oklch, var(--artifact-accent) 35%, var(--theme-stroke, oklch(1 0 0 / 0.12)));
+		border-radius: var(--radius-2026-xl, 24px);
+		background: color-mix(in oklch, var(--artifact-accent) 5%, var(--theme-card-bg, oklch(0.145 0.012 270)));
+		container-type: size;
+		overflow: hidden;
 	}
 
-	.close-mark {
-		font-size: 1.2em;
-		line-height: 1;
-		translate: 0 -1px;
+	.drawer-neighbors {
+		justify-content: space-between;
 	}
 
-	.drawer-body {
-		padding: 1.1rem 1.2rem 2rem;
+	.drawer-detail {
+		padding-top: 0.5rem;
+	}
+
+	.submission-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.8rem 1rem;
+		border-bottom: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.13));
+	}
+
+	.submission-header h2 {
+		margin: 0;
+		font: italic 650 clamp(1.25rem, 2vw, 1.8rem) / 1.1 "Fraunces", Georgia, serif;
+	}
+
+	.submission-body,
+	.submission-drawer {
+		padding: clamp(1rem, 2vw, 1.5rem);
 	}
 
 	.sr-only {
@@ -1276,215 +607,140 @@
 		white-space: nowrap;
 	}
 
-	/* Clipped, not removed: real content in the DOM for crawlers and screen
-	   readers. The links keep tabindex="-1" in markup so the visual room's
-	   focus order stays the rail's roving pattern. */
-	.tile-record {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		margin: -1px;
-		padding: 0;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
-		border: 0;
+	@media (max-width: 980px) and (min-height: 561px) {
+		.large-archive {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: auto minmax(20rem, 1fr);
+		}
+
+		.record-toolbar :global(.panel-btn) {
+			padding-inline: 0.7rem;
+		}
 	}
 
-	/* RESPONSIVE COMPOSITION */
+	/* No stacked wide tier: stacking put the selected record below the fold of
+	   the 100dvh room, where page scroll only reaches the site footer. The map
+	   and the selected record stay side by side at every desktop size so a
+	   selection is always answered on-screen. */
 
-	/* 4K at 100%: five objects in frame, and scale steps up — nothing else
-	   is scaling for us at 3840 (4k-native-layout.md). */
+	@media (max-width: 760px), (max-height: 560px) {
+		.archive-room {
+			display: block;
+			height: auto;
+			min-height: 100%;
+			overflow: visible;
+			padding: 0.8rem;
+		}
+
+		.archive-header {
+			align-items: center;
+			margin-bottom: 1rem;
+		}
+
+		.archive-header h1 {
+			font-size: clamp(1.55rem, 7vw, 2.25rem);
+		}
+
+		.archive-header p {
+			font-size: var(--font-size-compact, 0.75rem);
+			letter-spacing: 0.09em;
+		}
+
+		.archive-header :global(.panel-btn) {
+			padding-inline: 0.75rem;
+		}
+	}
+
+	@media (max-width: 520px) {
+		.archive-header {
+			flex-direction: column;
+			align-items: start;
+			gap: 0.55rem;
+		}
+
+		.archive-header :global(.panel-btn) {
+			max-width: 8.5rem;
+			white-space: normal;
+		}
+	}
+
+	@media (min-width: 700px) and (max-height: 560px) {
+		.archive-room {
+			display: grid;
+			grid-template-columns: minmax(14rem, 0.34fr) minmax(0, 1.66fr);
+			grid-template-rows: minmax(0, 1fr);
+			gap: clamp(1rem, 3vw, 2rem);
+			height: 100dvh;
+			padding: 0.8rem 1rem;
+			overflow: hidden;
+		}
+
+		.archive-header {
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: flex-start;
+			gap: 0.75rem;
+			margin: 0;
+		}
+
+		.archive-header h1 {
+			font-size: clamp(1.8rem, 4vw, 2.6rem);
+		}
+
+		.compact-archive {
+			min-height: 0;
+			overflow: hidden;
+		}
+	}
+
 	@media (min-width: 2600px) {
-		/* 28vw: the active object plus two full neighbors plus real outer hints.
-		   Wider cards also mean square visuals fill the vertical instead of
-		   floating in a portrait void. */
-		.slide {
-			--slide-w: 28vw;
+		.archive-room {
+			padding-inline: 2.5rem;
 		}
-		.room-title {
-			font-size: 3.8rem;
-		}
-		.kicker {
+
+		.archive-header p {
 			font-size: 1rem;
 		}
-		.artifact-year,
-		.artifact-name {
-			font-size: 1.5rem;
+
+		.archive-header .premise {
+			font-size: 1.05rem;
 		}
-		.stage-people {
-			font-size: 1.3rem;
-			/* Room to spare at 4K: show the full credit line, no ellipsis.
-			   Two reserved lines so long credits (VTG) never truncate or shift. */
-			white-space: normal;
-			height: auto;
-			min-height: 1.5em;
-			max-height: 3.1em;
-			text-align: center;
+
+		.archive-header h1 {
+			font-size: 3.8rem;
 		}
-		.action {
-			min-height: 56px;
-			padding: 0 1.7rem;
-			font-size: 1.2rem;
+
+		.record-toolbar p span {
+			font-size: 0.9rem;
 		}
-		:global(.loans-trigger) {
-			min-height: 56px;
-			font-size: 1.15rem;
+
+		.record-toolbar p strong,
+		.artifact-action {
+			font-size: 1rem;
 		}
-		.discovered {
-			font-size: 1.15rem;
-		}
-		.timeline-year {
-			font-size: 1.1rem;
-		}
-		.stop-dot {
-			width: 1.1rem;
-			height: 1.1rem;
-		}
-		/* This tier turns the ticks into squares, so the VTG span has to be
-		   restated against THAT shape. Left at its base 14px it came out
-		   narrower than a normal stop here — the span reading as smaller than
-		   the moments it contains. */
-		.stop.span .stop-dot {
-			width: 2.6rem;
-		}
-		.stop.span.on .stop-dot {
-			width: 2.9rem;
-		}
-		.stop.span {
-			width: 72px;
-			flex-basis: 72px;
-		}
-		.stop {
-			width: 56px;
-			height: 56px;
-			flex-basis: 56px;
-		}
-		.stepper {
-			width: 56px;
-			height: 56px;
+
+		.archive-header :global(.panel-btn),
+		.record-toolbar :global(.panel-btn) {
+			min-height: 3.25rem;
+			font-size: 1rem;
 		}
 	}
 
-	/* 1440 and down: center dominates, peeks remain */
-	@media (max-width: 1500px) {
-		.slide {
-			--slide-w: min(44rem, 62vw);
+	@container selected-record (min-width: 70rem) {
+		.record-body {
+			grid-template-columns: minmax(0, 1.1fr) minmax(28rem, 0.9fr);
+			grid-template-rows: minmax(0, 1fr);
 		}
-	}
 
-	/* Tablet portrait */
-	@media (max-width: 900px) {
-		.slide {
-			--slide-w: 72vw;
-		}
-	}
-
-	/* Phone: one object + neighbor peek */
-	@media (max-width: 560px) {
-		.slide {
-			--slide-w: 84vw;
-		}
-		.room-title {
-			font-size: 1.35rem;
-			line-height: 1.05;
-		}
-		/* Stacked: side by side, the title wrapped to three lines against a
-		   three-line pill. The masthead gets the full width and the meta row
-		   sits under it. */
-		.room-header {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.4rem;
-		}
-		.room-header-side {
-			width: 100%;
-			justify-content: space-between;
-		}
-		:global(.loans-trigger) {
-			padding: 0 0.7rem;
-			font-size: 0.8rem;
-			white-space: nowrap;
-		}
-		.stage-people {
-			display: none;
-		}
-		.stage-actions .action {
-			padding: 0 0.9rem;
-			font-size: 0.85rem;
-		}
-		.steppers {
-			display: none;
-		}
-	}
-
-	/* Short landscape (Fold 960×412): stage left, meta right, rail below.
-	   Designed directly, not shrunk-portrait. */
-	@media (max-height: 520px) and (min-width: 700px) {
-		.room {
-			grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-			grid-template-rows: auto minmax(0, 1fr) auto;
-			grid-template-areas:
-				"rail head"
-				"rail meta"
-				"timeline timeline";
-			column-gap: 1rem;
-		}
-		/* The masthead moves into the right column rather than disappearing:
-		   hiding it took the page's only h1 out of the render tree and left
-		   the reader with no idea what they were looking at. It also fills
-		   the dead space that sat above the credit line. */
-		.room-header {
-			grid-area: head;
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.4rem;
-		}
-		.room-title {
-			font-size: 1.45rem;
-		}
-		.room-header-side {
-			gap: 0.6rem;
-		}
-		.rail {
-			grid-area: rail;
-		}
-		.stage-meta {
-			grid-area: meta;
-			align-content: center;
-			justify-items: start;
-		}
-		.stage-people {
-			white-space: normal;
-			height: auto;
-			max-height: 3.2em;
-			text-align: left;
-		}
-		.stage-actions {
-			justify-content: flex-start;
-		}
-		.timeline {
-			grid-area: timeline;
-		}
-		.slide {
-			--slide-w: 52vw;
-		}
-		/* Compact, not hidden — the object still has to say what it is. */
-		.artifact-label {
-			padding: 0.3rem 0.55rem;
-			font-size: 0.8rem;
+		.artifact-stage {
+			border-right: 1px solid var(--theme-stroke, oklch(1 0 0 / 0.12));
+			border-bottom: 0;
 		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.artifact,
-		.stop-dot,
-		.action,
-		.stepper {
+		.artifact-action {
 			transition: none;
-		}
-		.room.flourish .stop-dot {
-			animation: none;
 		}
 	}
 </style>

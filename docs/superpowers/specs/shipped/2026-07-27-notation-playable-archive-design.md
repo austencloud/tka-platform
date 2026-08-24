@@ -1,12 +1,427 @@
 # /notation as a Playable Archive
 
 **Date:** 2026-07-27  
-**Status:** Ready for a Fable prototype  
+**Status:** Living-evidence model authoritative per the 2026-08-23 amendment;
+four-lane chronology implemented; production review pending
+
 **Supersedes:** the interaction and layout direction in
 `2026-07-26-notation-catalog-design.md`  
 **Preserves:** the catalog entries, sourcing rules, chronology, creator
 attribution, and outbound links in
 `src/lib/shared/notation/notation-catalog.ts`
+
+## 2026-08-23 amendment: a living index of documented traces
+
+This amendment is the archive's editorial authority. Where it conflicts with
+any later section, including the 2026-08-22 amendment, this one wins. The
+2026-08-22 presentation contract (proportional chronology, four lanes, the
+2009–2011 cluster, persistent selected record, compact chronological index)
+remains in force except where this amendment changes what a record may claim.
+
+### The premise
+
+The archive presents **documented traces**, not the definitive history of flow
+arts notation. Documentation in this community is sparse and biased toward
+whatever medium was fashionable when the work happened; the move from forums
+and articles to Instagram means "most documented" and "most important" are
+different things, and an archive that ranks entries appoints its curator sole
+teller of the story. Austen declined that role explicitly on 2026-08-23.
+
+Public premise copy (final wording, checked against the AI-writing rules):
+
+> Documented traces, not a definitive history. Each entry says exactly what
+> its sources support, and better evidence changes the record.
+
+The archive documents traces, attributes claims, shows uncertainty, invites
+corrections, and never confuses inclusion with importance.
+
+### Neutral inclusion
+
+Inclusion means exactly one thing: the archive can point to an identifiable
+artifact, a dated public trace, or named testimony. It does not imply
+influence, invention, priority, endorsement, or importance, and no interface
+element may rank records by any of those. Copy that frames the collection as
+"the history," "the most important records," or a canon is a defect.
+
+Social posts are valid primary evidence for narrow statements only. A dated
+Instagram post can support "this account publicly showed or named this by this
+date." A creator caption can support the creator's own account. Independent
+posts can demonstrate circulation. None of these alone proves invention,
+priority, or broad significance.
+
+### Evidence bases (replaces the coarse three-status taxonomy)
+
+The record-level statuses `source-audited`, `creator-source`, and `open` are
+retired. Evidence is described per claim with five bases:
+
+| Basis | Means |
+| --- | --- |
+| **Directly observed** | The artifact is publicly reachable now and was opened during review (a live document, repository, or running system). |
+| **Creator's account** | The claim rests on the creator's or organization's own statement about their own work. |
+| **Community attested** | Dated public traces from people other than the creator show the thing in use or under discussion. |
+| **Independently corroborated** | Two or more unrelated sources support the same claim. |
+| **Unresolved** | The sources reviewed do not settle the claim. Stays visible; never silently dropped. |
+
+Every citation states which claim it supports and on which basis. A record
+carries one headline basis for its core claim, and that badge must not
+overstate the record's weakest sentence; where a specific claim (attribution,
+a date, adoption) is weaker than the headline, the record says so in its
+evidence note or marks that claim's citation `unresolved`. This refines the
+2026-08-21 citation contract's item 4; the source-type note it required is now
+carried by the per-claim basis.
+
+### Activity is two verified endpoints, not a lifespan
+
+The `startYear` / `endYear` / `ongoing` model is retired because it lied in
+both directions: PLAYPOI, Flow Arts Institute, and DrexFactor were marked
+ongoing in data but rendered as a single dot at their first year, reading as
+short-lived. The replacement models separate facts:
+
+- **`firstDocumentedYear`** — the earliest dated public trace the sources
+  support. Owns horizontal position, as before.
+- **`activity`** (optional) — a claim about the practice behind the record,
+  present only when evidence supports it: `lastVerifiedYear` (the most recent
+  dated public trace confirmed during review) and `status` (`active` when the
+  trace is from the current review cycle; `unknown` when the latest trace is
+  older and the archive makes no claim past it). A record with no `activity`
+  claims nothing beyond its documented trace.
+- Detail copy renders the honest form: "Active · verified 2026," "Last public
+  trace 2024," never "2004–present."
+
+The chronology may connect the two verified endpoints with a **dotted
+observation connector**. A solid duration bar is forbidden unless the evidence
+supports uninterrupted activity, which no current entry's evidence does.
+Activity evidence found 2026-08-22 and carried as claim-specific citations:
+PLAYPOI's Leviathan flow camp listing, DrexFactor's 2026 event calendar, and
+Flow Arts Institute's 2026 festival listings. Each supports "active, verified
+2026" and nothing more.
+
+### Corrections are part of the contract
+
+The contribution flow accepts counter-evidence, not just new records: name the
+record, name the sentence it gets wrong, send the contradicting source.
+Counter-evidence goes through the same review as a new submission, and a
+confirmed correction changes the page. The premise copy commits to this
+publicly.
+
+### What does not change
+
+The one-screen artifact experience, shared primitives, theme tokens, AAA
+contrast work, proportional 2004–2026 chronology, four named lanes, the
+2009–2011 density cluster, persistent selected record, compact chronological
+index, hash deep links, and the full source ledger all stay. The ledger is not
+split into a privileged canon and a lesser dump.
+
+## 2026-08-22 amendment: overview first, record detail second
+
+This is the current presentation contract. It supersedes every later section
+in this document that calls for a carousel, lane tabs, a draggable timeline,
+discovery state, or a modal as the primary desktop reading surface. Those
+sections remain below as design history and as a record of rejected work.
+
+The archive is chronological, not a narrative sequence. Calendar distance must
+therefore remain visible and proportional. The main screen uses Shneiderman's
+overview-and-detail structure: show the collection's shape first, let a person
+select a record through ordinary controls, and keep the selected artifact and
+its evidence together. This decision is also grounded in:
+
+- Mitchell Whitelaw's [Generous Interfaces for Digital Cultural
+  Collections](https://www.digitalhumanities.org/dhq/vol/9/1/000205/000205.html),
+  which argues that collection interfaces should reveal their scale and
+  structure instead of withholding most records behind a query or serial
+  interaction;
+- Olivia Vane's [Timeline design for visualising cultural heritage
+  data](https://www.oliviavane.co.uk/phd), which treats timeline design as a
+  dataset-, audience-, and use-case-specific problem rather than a generic
+  widget choice;
+- Cooper Hewitt's [Dive into Color development
+  record](https://labs.cooperhewitt.org/2018/making-dive-into-color/), which
+  documents the need to manage density without making collection items too
+  small to recognize;
+- W3C's [carousel guidance](https://www.w3.org/WAI/tutorials/carousels/), which
+  notes that carousel content can be hard to discover, and its [reflow
+  guidance](https://www.w3.org/WAI/WCAG21/Understanding/reflow), which supports
+  a one-direction mobile reading model.
+
+### Current information architecture
+
+Desktop and tablet show four named lanes at once:
+
+1. Notation Systems
+2. Movement Languages
+3. Teaching & Transmission
+4. Current Research
+
+The horizontal position of every marker is calculated from its first
+documented year on the shared 2004–2026 scale. Near records move to another
+vertical track when their labels would collide; their calendar position never
+changes. The axis explicitly says that marker position is proportional and
+marks the first documented year.
+
+The 2009–2011 movement-language period is one named density cluster in the
+overview. Its tray lists CAPs, the trochoid model, 9-Square Theory, and Vulcan
+Tech Gospel as separate records. Clustering is a legibility device, not a new
+historical claim and not a reason to omit any record.
+
+One selected record stays visible below the overview. Its artifact and primary
+action occupy the left side. Attribution, summary, evidence status, and source
+claims occupy a persistent, independently scrollable detail pane on the right.
+Previous and next controls name their destinations. There is no discovery
+counter, completion reward, instruction paragraph, or duplicate event index.
+
+### Interaction contract
+
+- Every record marker is a native link with a clear button surface, visible
+  date, meaningful name, hover state, focus state, and 44px target.
+- The cluster is a native disclosure button with `aria-expanded` and
+  `aria-controls`. The tray's reserved slot prevents layout shift.
+- Tab and Shift+Tab follow document order. Enter activates links and Space or
+  Enter activates the disclosure. Archive-specific arrow-key handling is not
+  invented; previous and next are named buttons.
+- Selection writes `#archive-record-<id>` with browser history. Back and
+  Forward restore the selected record.
+- VTG chapter selection remains a nested shared `SegmentedControl` with its own
+  visible chapter label. It does not reuse the archive marker language.
+- Existing artifact renderers, tilt, cursor glow, press feedback, magnetic
+  primary actions, haptics, Drawer, modal, and theme tokens remain their
+  capability owners.
+
+### Compact-screen treatment
+
+At 760px wide and below, and at 560px tall and below, the two-dimensional map
+recomposes into a vertical chronological index. All fifteen records remain in
+the document in year order, with lane, evidence-bearing source count, title,
+and attribution visible. Selecting a row opens the artifact and full record in
+the shared bottom Drawer. The 960×412 treatment uses the same index and a right
+Drawer so the short viewport is not consumed by a bottom sheet. The page scrolls
+in one direction and never requires horizontal chronology scrolling.
+
+### Balance and type
+
+The overview contains only the information needed to choose: lane, date, title,
+and the explicit dense-period cluster. The selected record owns the larger
+artifact, attribution, explanation, evidence note, and citations. Essential
+text and controls use at least `--font-size-min`; only supplementary dates and
+source counts may use `--font-size-compact`. Neutral copy consumes the dynamic
+theme text tokens. Record accents identify selection and source material; they
+do not tint paragraphs or fabricate archival imagery.
+
+### Verification target
+
+The current contract must be checked at 1440×900, 1920×1080, 2560×1440,
+3840×2160, 820×1180, 960×412, and 375×667. Verification includes pointer
+selection, Tab order, cluster disclosure, previous/next context, browser
+Back/Forward restoration, direct record hashes, Drawer close/focus behavior,
+horizontal overflow, computed font floors, and console output.
+
+## Earlier direction and failure ledger
+
+The rest of this document records the route by which the current contract was
+reached. It is not implementation authority where it conflicts with the
+2026-08-22 amendment above.
+
+### 2026-08-21 amendment: a sourced archive of structured knowledge
+
+This amendment is authoritative where it conflicts with the original
+single-rail brief below. The artifact interaction, one-screen composition,
+keyboard contract, source neutrality, active-only renderer budget, and viewport
+requirements remain in force.
+
+The archive is no longer limited to things that can defensibly be called
+notation systems. That boundary excludes major parts of the historical record,
+then pressures the interface to mislabel teaching projects and movement
+vocabularies as notation. The archive's subject is now:
+
+> How flow artists learned to name, organize, record, teach, and transmit
+> movement.
+
+### Four lanes
+
+Every entry belongs to exactly one lane. Lane membership describes what the
+entry contributes; it does not rank importance or claim influence.
+
+| Lane                        | Includes                                                                                              | Excludes                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| **Notation Systems**        | Explicit visual, textual, or computational ways to record movement                                    | A tutorial library with no recording system                        |
+| **Movement Languages**      | Shared geometries, relations, taxonomies, and vocabularies used to discuss movement                   | A publisher whose contribution is distributing other people's work |
+| **Teaching & Transmission** | People and institutions that made structured knowledge easier to learn, preserve, and share           | Automatic promotion to system creator                              |
+| **Current Research**        | Developing systems, named experiments, and public technique research whose language is still changing | A claim that the experiment is complete or standardized            |
+
+The lane selector is a single-select tab group built with the shared
+`SegmentedControl`, including its indicator motion, roving focus, arrow keys,
+touch-target floor, and theme tokens. It changes the chronological lens over
+one archive. It must not render four dense rows at once.
+
+Initial classification for the prototype:
+
+- **Notation Systems:** QFT Notation, Lorq Nichols' catalogs, PoiNotation, and
+  the Kinetic Alphabet.
+- **Movement Languages:** Continuous Assembly Patterns, the trochoid model,
+  Vulcan Tech Gospel, 9-Square Theory, and Fan Alphabet.
+- **Teaching & Transmission:** PLAYPOI, Flow Arts Institute, and DrexFactor /
+  Weird Science.
+- **Current Research:** Staff Science, Charlie Nayler's Visual Notes 01, and
+  Alex Hatt's public contact-staff pathway research.
+
+PoiNotation stays in the record as a public repository artifact. Its entry must
+not imply broad adoption or historical influence without evidence. Fan Alphabet
+stays explicitly attribution-open until a source supports a stronger origin
+claim.
+
+### Citation and fact-check contract
+
+The archive must never use generated prose as its own authority. AI-assisted
+search may surface a lead; it may not be the citation, the corroboration, or the
+reason a claim is published.
+
+Every published entry requires all of the following:
+
+1. At least one named, reachable source.
+2. A statement of exactly what each source supports.
+3. An evidence label visible before opening detail.
+4. A note that distinguishes a creator's account, an organization
+   retrospective, a contemporary record, a repository artifact, and
+   independently corroborated evidence.
+5. An honest date label. `documented 2007–`, `c. 2010`, and `current, checked
+2026` are valid when the evidence does not support a founding date or exact
+   origin.
+6. Visible uncertainty when attribution, date, adoption, or scope is unresolved.
+
+Forbidden:
+
+- a blanket `fact checked` badge that conceals what kind of evidence exists;
+- converting an organization's retrospective into an independently verified
+  founding date;
+- calling an early documented teacher the inventor without an origin source;
+- treating follower count, search ranking, or repeated reposting as historical
+  importance;
+- publishing a creator relationship inferred from visual similarity;
+- silently strengthening words such as `experiment`, `vocabulary`, or
+  `developing system` into `notation system`;
+- allowing an entry with zero citations into the archive collection.
+
+The prototype enforces the structural portion of this contract in
+`tests/unit/notation-archive-ledger.test.ts`. Editorial review still has to read
+the sources. A passing test proves the evidence fields exist, not that the claim
+is true.
+
+### Chronology and navigation
+
+Each lane remains chronological. Dates are placed on a shared 2004 to 2026
+calendar scale, so distance communicates elapsed time. The artifact rail is a
+focus-and-context carousel ordered by those dates. Equal slide widths are
+navigation geometry, not elapsed time.
+
+The dated scale and artifact rail therefore have separate jobs and must be
+named separately on screen:
+
+- the **timeline** communicates time with proportional spacing, labeled years,
+  duration spans, and open-ended ranges;
+- the **browse rail** provides drag, swipe, previous/current/next context, and
+  direct artifact selection inside the selected lane.
+
+The interface must always name both the current entry and the previous/next
+entry. Pointer controls, the dated markers, Left/Right, Home/End, and the lane
+tabs provide equivalent routes. The rail receives keyboard focus; its arrow-key
+behavior must not depend on hover or a hidden drag gesture. A visible first-use
+cue says that the artifacts can be dragged and the dated rail can be scrubbed.
+
+### 2026-08-22 failed-prototype postmortem
+
+The first four-lane presentation was rejected. This section is a permanent
+failure ledger, not a description of the target.
+
+1. It created a parallel archive presentation instead of extending
+   `PlayableArchive`, the existing behavior and visual owner.
+2. It removed Embla drag/swipe, neighbor peeks, tilt, cursor glow, press spring,
+   magnetic actions, haptics, discovery state, completion feedback, and the
+   native artifact-to-detail morph.
+3. It hand-built lane tabs, buttons, and a second chronology control instead of
+   using `SegmentedControl`, the established action surfaces, and the existing
+   archive timeline owner.
+4. It changed 18px specimen tiles and pill actions into rigid 2px rectangles.
+5. It locally redefined theme-looking variables and used low-contrast brown
+   text instead of consuming the app's contrast-aware text tokens.
+6. It assigned compact 12px type to controls and navigation that carry the
+   experience. Viewport fit was mistaken for readable typography.
+7. It divided the main stage into a large empty media box and a narrow text
+   column, then placed tiny actions far from the record they controlled.
+8. It removed the original editorial voice, per-artifact accent system, and
+   distinct sourced artifact silhouettes, leaving one generic record grammar.
+9. It exposed too much prose in the first frame while making that prose too
+   small to read.
+10. It presented a proportional ruler and an equal-width event index together
+    without explaining their different meanings. The result was two competing
+    navigation systems.
+11. It did not solve the 2009–2011 cluster. It merely compressed those events
+    into a small part of the ruler and repeated them below.
+12. It repeated the same unlabeled hairline-tick language inside VTG. The
+    archive and chapter controls looked identical, while the nested keyboard
+    scope remained invisible.
+13. It provided no useful first-use guide for lanes, dragging, keys, sources,
+    or the difference between archive navigation and VTG chapter navigation.
+14. It made phone chronology a horizontally scrolling 42rem surface without a
+    visible scroll cue, then called the absence of page overflow a mobile pass.
+15. It hid context on smaller screens instead of recomposing the hierarchy.
+16. It manufactured a cream document treatment for entries with no archival
+    image. Although labeled, it still looked like invented archive art.
+17. It gave `Contribute`, source actions, lane controls, and previous/next
+    controls unrelated weights, so button importance could not be read.
+18. Its structural citation test proved that evidence strings were non-empty,
+    not that a source supported the generic claim attached to it.
+19. Its visual verification checked dimensions and overflow but did not compare
+    the result to the existing app, inspect computed contrast and font size, or
+    reject obvious dead space.
+20. It reported the work as successful after the screenshots already showed
+    these failures.
+
+### Corrective presentation contract
+
+The production archive is the starting point. The four-lane work reuses its
+Fraunces editorial voice, rounded specimen tiles, per-artifact accents,
+focus-and-context rail, responsive compositions, active-only render budget,
+shared Drawer, and native shared-element transitions. Existing interactions
+may be extended; they are not silently removed.
+
+The first frame prioritizes a large active artifact, visible neighbors, its
+name and attribution, a clear source/inspect action, the shared lane selector,
+and a labeled chronological scrubber. Supporting prose remains in detail.
+Every essential control uses at least `--font-size-min`; supplementary dates and
+counters may use `--font-size-compact`. All click targets preserve the 44px
+floor. Neutral text uses the dynamic theme tokens. Artifact accents identify
+selection and provenance; they do not tint paragraphs.
+
+The overall chronology and the VTG chapter selector must not share a visual
+vocabulary. VTG uses the shared single-select control with a visible “Chapter N
+of 5” label and chapter title. Its keys stop at the nested control as before,
+but the screen now explains which level is active.
+
+Existing archival imagery may be shown through the production artifact
+renderer. A record without an attached source image uses an explicit source-led
+placeholder inside the same specimen-tile language. The interface must never
+manufacture archival-looking artwork for a person, institution, or research
+project.
+
+On phones, the lane control uses its short labels, the centered artifact keeps
+neighbor peeks, and the timeline shows the selected date/name without requiring
+horizontal scrolling. Short landscape viewports recompose into a stage and
+control column. Large displays widen and scale the composition rather than
+enlarging empty margins.
+
+### Growing the archive
+
+`Contribute` opens the archive intake contract before a write-capable form
+is introduced. The required review path is:
+
+```text
+submitted lead -> source check -> attribution check -> lane/date review -> published entry
+```
+
+A submission must provide the person or project, proposed lane, approximate
+date, primary source, claimed contribution, and any known uncertainty. New
+entries remain unpublished until the source and attribution review is complete.
+The first prototype explains this contract without sending data, so an
+unreviewed lead cannot be mistaken for archive history.
 
 ## The brief
 

@@ -49,10 +49,12 @@
 	// "Large" is the 144-cell preset — twelve against twelve, the size Lorq's
 	// own sub-work names.
 	const rowAxis = $derived<Flower[]>(
-		data ? applyFilter(data.axis, matrixFiltersForSize("large").blue, false) : [],
+		data
+			? applyFilter(data.axis, matrixFiltersForSize("large").blue, false)
+			: []
 	);
 	const colAxis = $derived<Flower[]>(
-		data ? applyFilter(data.axis, matrixFiltersForSize("large").red, false) : [],
+		data ? applyFilter(data.axis, matrixFiltersForSize("large").red, false) : []
 	);
 
 	// Cells paint once into data URLs and are cached; CSS scales them to the
@@ -67,7 +69,7 @@
 				data!.blue.get(flowerKey(blue))!,
 				data!.red.get(flowerKey(red))!,
 				CELL_PX,
-				data!.clubTipDx,
+				data!.clubTipDx
 			);
 			cache.set(key, url);
 		}
@@ -134,7 +136,7 @@
 		display: inline-flex;
 		align-items: baseline;
 		gap: 0.5rem;
-		font-size: clamp(0.65rem, 2cqi, 0.9rem);
+		font-size: clamp(var(--font-size-compact, 0.75rem), 2cqi, 0.9rem);
 		font-style: italic;
 		color: oklch(0.66 0.04 80);
 	}
@@ -160,7 +162,9 @@
 		background: oklch(0.16 0.02 80 / 0.55);
 		border: 1px solid oklch(0.75 0.12 80 / 0.28);
 		box-shadow: 0 0 40px oklch(0.75 0.14 80 / 0.1);
-		transition: border-color 400ms ease, box-shadow 400ms ease;
+		transition:
+			border-color 400ms ease,
+			box-shadow 400ms ease;
 	}
 
 	.sheet.lit {
@@ -183,7 +187,9 @@
 		display: block;
 		opacity: 0.9;
 		filter: brightness(1.45) saturate(1.15);
-		transition: opacity 400ms ease, filter 400ms ease;
+		transition:
+			opacity 400ms ease,
+			filter 400ms ease;
 	}
 
 	.sheet.lit .cell {

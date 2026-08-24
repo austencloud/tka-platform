@@ -34,7 +34,12 @@
 			aria-label={`The mandala traced by the sequence ${posterWord}`}
 		>
 			<div class="mandala-frame">
-				<SequenceMandala sequence={demoSequence} size={520} darkMode={true} show="both" />
+				<SequenceMandala
+					sequence={demoSequence}
+					size={520}
+					darkMode={true}
+					show="both"
+				/>
 			</div>
 			<span class="poster-sub">
 				<span class="tka-font poster-word">{posterWord}</span>
@@ -115,7 +120,7 @@
 		display: inline-flex;
 		align-items: baseline;
 		gap: 0.4rem;
-		font-size: clamp(0.7rem, 2.2cqi, 0.95rem);
+		font-size: clamp(0.75rem, 2.2cqi, 0.95rem);
 		font-style: italic;
 		color: oklch(0.66 0.03 270);
 	}

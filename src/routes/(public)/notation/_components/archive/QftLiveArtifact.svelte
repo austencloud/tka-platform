@@ -37,7 +37,9 @@
 </script>
 
 <div class="qft-artifact">
-	<QftStage {knobs} {increments} {cursor} />
+	<!-- This is one fixed, named pattern, so fit its all-frames reach once.
+	     The shared stage keeps that scale stable through the animation. -->
+	<QftStage {knobs} {increments} {cursor} fit />
 </div>
 
 <style>

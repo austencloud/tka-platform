@@ -27,9 +27,6 @@ const softwarePage = readSource(
 const softwareCopy = softwarePage.replace(/\s+/g, " ");
 const domains = readSource("src/config/domains.ts");
 const rootLayout = readSource("src/routes/+layout.svelte");
-const landingPreview = readSource(
-  "src/lib/features/landing-preview/LandingPreviewModule.svelte"
-);
 const screenshotOrchestrator = readSource(
   "src/lib/features/lab/services/screenshot-orchestrator.ts"
 );
@@ -206,7 +203,7 @@ describe("notation catalog", () => {
       "unit-circle"
     );
     for (const entry of NOTATION_CATALOG.filter((item) => item.explore)) {
-      expect(notationCatalogView).toContain("activeEntry.explore");
+      expect(notationCatalogView).toContain("activeEntry.catalogEntry.explore");
       expect(entry.explore?.href).toMatch(/^\/notation\//);
     }
   });
@@ -233,13 +230,7 @@ describe("roots-to-notation route migration", () => {
     expect(rootLayout).toMatch(/MARKETING_EXACT[\s\S]*?"\/roots\/software"/);
   });
 
-  it("replaces Roots with Notation in preview and capture registries", () => {
-    expect(landingPreview).toContain(
-      '{ id: "notation", label: "Notation", icon: "fa-language" }'
-    );
-    expect(landingPreview).toContain(
-      'notation: () => import("../../../routes/(public)/notation/+page.svelte")'
-    );
+  it("keeps Notation in capture registries", () => {
     expect(screenshotOrchestrator).toContain(
       '{ label: "notation", moduleId: "public", requiresAuth: false }'
     );
