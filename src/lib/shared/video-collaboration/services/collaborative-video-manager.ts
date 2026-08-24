@@ -34,6 +34,7 @@ import {
   normalizeMediaAssociations,
 } from "../domain/collaborative-video";
 import type { UserVideoLibrary } from "./types";
+import { isArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
 
 const VIDEOS_COLLECTION = "videos";
 
@@ -187,6 +188,10 @@ function docToVideo(
           ...(typeof item.sourceSequenceId === "string"
             ? { sourceSequenceId: item.sourceSequenceId }
             : {}),
+          ...(isArtifactRevisionRef(item.revision) &&
+          item.revision.artifactId === subjectId
+            ? { revision: item.revision }
+            : {}),
         } as MediaAssociation,
       ];
     }),
@@ -267,6 +272,7 @@ function videoToDoc(video: CollaborativeVideo): Record<string, unknown> {
       relationship: association.relationship,
       subjectLabel: association.subjectLabel ?? null,
       sourceSequenceId: association.sourceSequenceId ?? null,
+      revision: association.revision ?? null,
     })),
     associationKeys: [...new Set(video.associations.map(mediaAssociationKey))],
     performers: video.performers.map((performer) => ({
@@ -744,7 +750,8 @@ export async function getVideosForSequence(
 }
 
 export async function getVideosForTunnel(
-  tunnelId: string
+  tunnelId: string,
+  revisionId?: string
 ): Promise<CollaborativeVideo[]> {
   try {
     const firestore = await readFirestore();
@@ -782,7 +789,9 @@ export async function getVideosForTunnel(
         const video = docToVideo(videoDoc.data(), videoDoc.id);
         if (
           video.associations.some(
-            (association) => mediaAssociationKey(association) === associationKey
+            (association) =>
+              mediaAssociationKey(association) === associationKey &&
+              (!revisionId || association.revision?.revisionId === revisionId)
           )
         ) {
           byId.set(video.id, video);

@@ -8,12 +8,14 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
   createCollaborativeVideo,
+  createSequencePerformanceAssociation,
   createTunnelRealizationAssociation,
   type CollaborativeVideo,
   type VideoVisibility,
 } from "../domain/collaborative-video";
 import type { VideoUploadResult } from "../../share/services/types";
 import { DEFAULT_VIDEO_VISIBILITY } from "../domain/video-visibility";
+import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
 
 export interface CreateVideoFromUploadOptions {
   /** The upload result from R2VideoUploader */
@@ -38,6 +40,8 @@ export interface CreateVideoFromUploadOptions {
   description?: string;
   /** Optional thumbnail URL */
   thumbnailUrl?: string;
+  /** Exact retained public-sequence subject when one exists. */
+  revision?: ArtifactRevisionRef;
 }
 
 /**
@@ -84,6 +88,7 @@ export function createVideoFromUpload(
     visibility = DEFAULT_VIDEO_VISIBILITY,
     description,
     thumbnailUrl,
+    revision,
   } = options;
 
   return createCollaborativeVideo(
@@ -97,6 +102,13 @@ export function createVideoFromUpload(
       sequenceId: sequence.id,
       sequenceName: sequence.name || sequence.word,
       sequenceOwnerId: sequence.ownerId,
+      associations: [
+        createSequencePerformanceAssociation(
+          sequence.id,
+          sequence.name || sequence.word,
+          revision
+        ),
+      ],
       creatorId,
       visibility,
       description,
@@ -112,6 +124,7 @@ export interface CreateTunnelRealizationFromUploadOptions {
     id: string;
     name: string;
     sourceSequenceId?: string;
+    revision?: ArtifactRevisionRef;
   };
   duration: number;
   fileSize: number;
@@ -156,7 +169,8 @@ export function createTunnelRealizationFromUpload(
         createTunnelRealizationAssociation(
           tunnel.id,
           tunnel.name,
-          tunnel.sourceSequenceId
+          tunnel.sourceSequenceId,
+          tunnel.revision
         ),
       ],
       creatorId,

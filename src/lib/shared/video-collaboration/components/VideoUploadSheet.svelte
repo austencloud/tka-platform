@@ -20,6 +20,8 @@
     getVideoFileMetadata,
   } from "../helpers/create-video-from-upload";
   import type { VideoVisibility } from "../domain/collaborative-video";
+  import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
+  import { getCurrentSequenceRevisionRef } from "$lib/shared/library/services/sequence-revision-reader";
   import {
     DEFAULT_VIDEO_VISIBILITY,
     VIDEO_VISIBILITY_OPTIONS,
@@ -43,6 +45,7 @@
       id: string;
       name: string;
       sourceSequenceId?: string;
+      revision?: ArtifactRevisionRef;
     };
     onClose?: () => void;
     onUploaded?: () => void;
@@ -161,6 +164,25 @@
       return;
     }
 
+    let sequenceRevision: ArtifactRevisionRef | null = null;
+    if (sequence) {
+      try {
+        sequenceRevision = await getCurrentSequenceRevisionRef(sequence.id);
+      } catch (error) {
+        console.warn("Could not resolve the sequence revision:", error);
+      }
+      if (visibility === "public" && !sequenceRevision) {
+        uploadError =
+          "Publish this sequence before sharing a public performance of it.";
+        return;
+      }
+    }
+    if (tunnel && !tunnel.revision) {
+      uploadError =
+        "This tunnel needs an immutable revision before footage can be attached. Reopen it and try again.";
+      return;
+    }
+
     isUploading = true;
     uploadProgress = 0;
     uploadError = null;
@@ -216,7 +238,11 @@
         thumbnailUrl,
       };
       const video = sequence
-        ? createVideoFromUpload({ ...common, sequence })
+        ? createVideoFromUpload({
+            ...common,
+            sequence,
+            ...(sequenceRevision ? { revision: sequenceRevision } : {}),
+          })
         : createTunnelRealizationFromUpload({ ...common, tunnel: tunnel! });
 
       // 5. Save to Firestore

@@ -51,7 +51,8 @@ vi.mock("firebase/firestore", () => ({
       fn({
         get: (ref: unknown) => mocks.getDoc(ref),
         set: (ref: unknown, data: unknown) => void mocks.setDoc(ref, data),
-        update: (ref: unknown, data: unknown) => void mocks.updateDoc(ref, data),
+        update: (ref: unknown, data: unknown) =>
+          void mocks.updateDoc(ref, data),
         delete: (ref: unknown) => void mocks.deleteDoc(ref),
       })
   ),
@@ -184,7 +185,10 @@ function primeGetDoc(options: {
     if (ref.path.startsWith("users/")) {
       return {
         exists: () => true,
-        data: () => ({ displayName: "Austen", photoURL: "https://a.test/p.png" }),
+        data: () => ({
+          displayName: "Austen",
+          photoURL: "https://a.test/p.png",
+        }),
       };
     }
     // loop-labels and anything else: absent.
@@ -215,6 +219,21 @@ function publicWrite(): Record<string, unknown> {
 function claimWrite(): { path: string; data: Record<string, unknown> } | null {
   const call = mocks.setDoc.mock.calls.find(([ref]) =>
     (ref as { path: string }).path.startsWith("publicSequenceHashes/")
+  );
+  return call
+    ? {
+        path: (call[0] as { path: string }).path,
+        data: call[1] as Record<string, unknown>,
+      }
+    : null;
+}
+
+function revisionWrite(): {
+  path: string;
+  data: Record<string, unknown>;
+} | null {
+  const call = mocks.setDoc.mock.calls.find(([ref]) =>
+    (ref as { path: string }).path.startsWith("sequenceRevisions/")
   );
   return call
     ? {
@@ -261,6 +280,11 @@ describe("syncToPublicIndex — first publication", () => {
     expect(written["redSoloProp"]).toBeTruthy();
     expect(written["stepPairings"]).toHaveLength(4);
     expect(written["startPosition"]).toBeTruthy();
+    const retained = revisionWrite();
+    expect(retained).not.toBeNull();
+    expect(retained!.path).toMatch(/^sequenceRevisions\/v1_[a-f0-9]{64}$/);
+    expect(retained!.data["sequenceId"]).toBe("seq-1");
+    expect(retained!.data["contentHash"]).toBe(written["contentHash"]);
   });
 
   it("claims the content hash and stamps the owner document in the same transaction", async () => {
@@ -366,9 +390,7 @@ describe("syncToPublicIndex — resync over an existing document", () => {
 describe("syncToPublicIndex — refusals fire before Firestore", () => {
   it("rejects an incomplete word without any read or write", async () => {
     const sequence = makeSequence("ABCD", {
-      steps: "ABCD"
-        .split("")
-        .map((l, i) => makeStep(i, i === 2 ? null : l)),
+      steps: "ABCD".split("").map((l, i) => makeStep(i, i === 2 ? null : l)),
     } as Partial<LibrarySequence>);
 
     await expect(

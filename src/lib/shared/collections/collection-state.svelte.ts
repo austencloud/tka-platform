@@ -2,6 +2,13 @@ import type { CollectionEntry } from "./collection-entry";
 import type { FirebaseCollectionRepository } from "./firebase-collection-repository";
 import type { LocalCollectionRepository } from "./local-collection-repository";
 
+export interface CollectionEntryLifecycle<T extends CollectionEntry> {
+  /** Enrich a newly allocated entry before either reactive state or persistence sees it. */
+  prepareAdd?(entry: T): Promise<T>;
+  /** Enrich a content edit while the previous immutable state is still available. */
+  prepareUpdate?(previous: T, next: T): Promise<T>;
+}
+
 /**
  * Reactive store for one saved-artifact collection (tunnels, mandalas,
  * 3D scenes). One behavior for all of them:
@@ -26,7 +33,8 @@ export class CollectionState<T extends CollectionEntry> {
 
   constructor(
     private readonly repo: FirebaseCollectionRepository<T>,
-    private readonly localRepo: LocalCollectionRepository<T>
+    private readonly localRepo: LocalCollectionRepository<T>,
+    private readonly lifecycle?: CollectionEntryLifecycle<T>
   ) {}
 
   get collection(): T[] {
@@ -148,11 +156,14 @@ export class CollectionState<T extends CollectionEntry> {
   async add(entry: Omit<T, "id" | "createdAt">): Promise<T> {
     this.assertWritable();
     this.ensureLocalLoaded();
-    const full = {
+    let full = {
       ...entry,
       id: crypto.randomUUID(),
       createdAt: Date.now(),
     } as T;
+    if (this.lifecycle?.prepareAdd) {
+      full = await this.lifecycle.prepareAdd(full);
+    }
     this.ownedCollection.unshift(full);
 
     if (this.userId) {
@@ -226,12 +237,15 @@ export class CollectionState<T extends CollectionEntry> {
     if (idx === -1) return null;
 
     const previous = this.ownedCollection[idx]!;
-    const next = {
+    let next = {
       ...previous,
       ...patch,
       id,
       createdAt: previous.createdAt,
     } as T;
+    if (this.lifecycle?.prepareUpdate) {
+      next = await this.lifecycle.prepareUpdate(previous, next);
+    }
     this.ownedCollection[idx] = next;
 
     if (this.userId) {

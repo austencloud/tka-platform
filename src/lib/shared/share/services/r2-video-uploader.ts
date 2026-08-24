@@ -2,10 +2,21 @@ import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
 import { isWeb } from "$lib/shared/platform/services/platform-detector";
 import { dev } from "$app/environment";
-import { getUploadUrl, startMultipart, getPartUrl, completeMultipart, listParts, deleteByPrefix } from "./r2-presigner";
+import {
+  getUploadUrl,
+  startMultipart,
+  getPartUrl,
+  completeMultipart,
+  listParts,
+  deleteByPrefix,
+} from "./r2-presigner";
 import { getAuthSync } from "$lib/shared/auth/firebase";
-import type { ErrorHandler } from '$lib/shared/application/services/error-handler'
-import type { VideoUploadResult, UploadOptions, MultipartUploadState } from "./types";
+import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
+import type {
+  VideoUploadResult,
+  UploadOptions,
+  MultipartUploadState,
+} from "./types";
 
 const MULTIPART_THRESHOLD = 100 * 1024 * 1024;
 const PART_SIZE = 10 * 1024 * 1024;
@@ -39,7 +50,14 @@ async function computeFileFingerprint(file: File | Blob): Promise<string> {
   );
 }
 
-function loadMultipartState(): Record<string, MultipartUploadState & { startedAt: number; fileName: string; fileSize: number }> {
+function loadMultipartState(): Record<
+  string,
+  MultipartUploadState & {
+    startedAt: number;
+    fileName: string;
+    fileSize: number;
+  }
+> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -51,7 +69,11 @@ function loadMultipartState(): Record<string, MultipartUploadState & { startedAt
 
 function saveMultipartState(
   fingerprint: string,
-  state: MultipartUploadState & { startedAt: number; fileName: string; fileSize: number }
+  state: MultipartUploadState & {
+    startedAt: number;
+    fileName: string;
+    fileSize: number;
+  }
 ): void {
   const all = loadMultipartState();
   all[fingerprint] = state;
@@ -398,7 +420,11 @@ export class R2VideoUploader {
     return user.uid;
   }
 
-  private handleError(error: unknown, action: string, additionalData?: Record<string, unknown>): never {
+  private handleError(
+    error: unknown,
+    action: string,
+    additionalData?: Record<string, unknown>
+  ): never {
     console.error(`R2VideoUploader: Failed to ${action}:`, error);
     const errorHandler = getErrorHandler() as ErrorHandler;
     errorHandler.showUserError({
@@ -453,9 +479,17 @@ export class R2VideoUploader {
     options?: UploadOptions
   ): Promise<VideoUploadResult> {
     const totalParts = Math.ceil(file.size / PART_SIZE);
-    const fingerprint = await computeFileFingerprint(file instanceof File ? file : new File([file], "blob"));
+    const fingerprint = await computeFileFingerprint(
+      file instanceof File ? file : new File([file], "blob")
+    );
 
-    let savedState = loadMultipartState()[fingerprint] as (MultipartUploadState & { startedAt: number; fileName: string; fileSize: number }) | undefined;
+    let savedState = loadMultipartState()[fingerprint] as
+      | (MultipartUploadState & {
+          startedAt: number;
+          fileName: string;
+          fileSize: number;
+        })
+      | undefined;
     let uploadId: string;
     let key: string;
     let completedParts: Array<{ ETag: string; PartNumber: number }> = [];
@@ -473,7 +507,13 @@ export class R2VideoUploader {
 
       if (expired) {
         removeMultipartState(fingerprint);
-        const startResult = await startMultipart({ fileName, contentType, userId, category, sequenceId });
+        const startResult = await startMultipart({
+          fileName,
+          contentType,
+          userId,
+          category,
+          sequenceId,
+        });
         uploadId = startResult.uploadId;
         key = startResult.key;
       } else {
@@ -496,7 +536,9 @@ export class R2VideoUploader {
       key = startResult.key;
     }
 
-    const completedPartNumbers = new Set(completedParts.map((p) => p.PartNumber));
+    const completedPartNumbers = new Set(
+      completedParts.map((p) => p.PartNumber)
+    );
     const missingParts: number[] = [];
     for (let i = 1; i <= totalParts; i++) {
       if (!completedPartNumbers.has(i)) {
@@ -592,6 +634,17 @@ export class R2VideoUploader {
     videoFile: File | Blob,
     options?: UploadOptions
   ): Promise<VideoUploadResult> {
+    return this.uploadAssociatedVideo(sequenceId, videoFile, options);
+  }
+
+  /** Upload footage associated with a sequence or a saved artwork. The caller
+   * supplies a namespaced key such as `tunnel:<id>` so unrelated subjects can
+   * never collide in the user's recordings folder. */
+  async uploadAssociatedVideo(
+    subjectKey: string,
+    videoFile: File | Blob,
+    options?: UploadOptions
+  ): Promise<VideoUploadResult> {
     try {
       const userId = this.getUserId();
       const timestamp = Date.now();
@@ -604,15 +657,27 @@ export class R2VideoUploader {
 
       if (videoFile.size >= MULTIPART_THRESHOLD) {
         return await this.uploadMultipart(
-          fileName, contentType, videoFile, userId, "recordings", sequenceId, options
+          fileName,
+          contentType,
+          videoFile,
+          userId,
+          "recordings",
+          subjectKey,
+          options
         );
       }
       return await this.uploadSingle(
-        fileName, contentType, videoFile, userId, "recordings", sequenceId, options
+        fileName,
+        contentType,
+        videoFile,
+        userId,
+        "recordings",
+        subjectKey,
+        options
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      return this.handleError(error, "upload-video", { sequenceId });
+      return this.handleError(error, "upload-video", { subjectKey });
     }
   }
 
@@ -628,11 +693,20 @@ export class R2VideoUploader {
       const contentType = format === "webp" ? "image/webp" : "image/gif";
 
       return await this.uploadSingle(
-        fileName, contentType, animationBlob, userId, "animations", sequenceId, options
+        fileName,
+        contentType,
+        animationBlob,
+        userId,
+        "animations",
+        sequenceId,
+        options
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
-      return this.handleError(error, "upload-animation", { sequenceId, format });
+      return this.handleError(error, "upload-animation", {
+        sequenceId,
+        format,
+      });
     }
   }
 
@@ -664,11 +738,23 @@ export class R2VideoUploader {
 
       if (blob.size >= MULTIPART_THRESHOLD) {
         return await this.uploadMultipart(
-          fileName, contentType, blob, userId, category, sequenceId, options
+          fileName,
+          contentType,
+          blob,
+          userId,
+          category,
+          sequenceId,
+          options
         );
       }
       return await this.uploadSingle(
-        fileName, contentType, blob, userId, category, sequenceId, options
+        fileName,
+        contentType,
+        blob,
+        userId,
+        category,
+        sequenceId,
+        options
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
@@ -687,9 +773,7 @@ export class R2VideoUploader {
         `users/${userId}/animations/${sequenceId}/`,
         `users/${userId}/thumbnails/${sequenceId}/`,
       ];
-      await Promise.all(
-        prefixes.map((prefix) => deleteByPrefix(prefix))
-      );
+      await Promise.all(prefixes.map((prefix) => deleteByPrefix(prefix)));
     } catch (error) {
       return this.handleError(error, "delete-assets", { sequenceId });
     }
@@ -712,7 +796,13 @@ export class R2VideoUploader {
       const contentType = "image/jpeg";
 
       return await this.uploadSingle(
-        fileName, contentType, thumbnailBlob, userId, "thumbnails", sequenceId, options
+        fileName,
+        contentType,
+        thumbnailBlob,
+        userId,
+        "thumbnails",
+        sequenceId,
+        options
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;
@@ -750,7 +840,13 @@ export class R2VideoUploader {
       }
 
       return await this.uploadSingle(
-        fileName, contentType, thumbnailBlob, userId, "thumbnails", sequenceId, options
+        fileName,
+        contentType,
+        thumbnailBlob,
+        userId,
+        "thumbnails",
+        sequenceId,
+        options
       );
     } catch (error) {
       if ((error as Error).name === "AbortError") throw error;

@@ -65,9 +65,12 @@ import { PUBLIC_PROJECTION_SCHEMA_VERSION } from "$lib/shared/foundation/domain/
 import type { NormalizedSequenceWrite } from "$lib/shared/library/services/sequence-persistence-normalizer";
 import {
   getPublicSequencePath,
+  getSequenceRevisionPath,
   getUserCollectionPath,
   getUserSequencePath,
 } from "$lib/shared/library/data/firestore-paths";
+import { buildSequenceRevisionRecord } from "$lib/shared/library/services/sequence-revision";
+import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
 
 // ---------------------------------------------------------------------------
 // Claims
@@ -180,6 +183,7 @@ export interface PublishPublicSequenceResult {
   readonly revision: number;
   readonly digest: string;
   readonly firstPublication: boolean;
+  readonly subjectRevision: ArtifactRevisionRef;
 }
 
 /**
@@ -285,9 +289,39 @@ export async function publishPublicSequence(
       revision,
       prior
     );
+    const retainedRevision = await buildSequenceRevisionRecord(
+      projection,
+      serverTimestamp()
+    );
+    const retainedRevisionRef = doc(
+      firestore,
+      getSequenceRevisionPath(retainedRevision.revisionId)
+    );
+    const retainedRevisionSnap = await tx.get(retainedRevisionRef);
+    if (retainedRevisionSnap.exists()) {
+      const existingRevision = retainedRevisionSnap.data() as Record<
+        string,
+        unknown
+      >;
+      if (
+        existingRevision["sequenceId"] !== sequenceId ||
+        existingRevision["contentDigest"] !== retainedRevision.contentDigest
+      ) {
+        throw new Error(
+          "Sequence revision id is already bound to another payload"
+        );
+      }
+    }
 
     // --- writes (no reads past this point) ---------------------------------
     tx.set(publicRef, projection as unknown as Record<string, unknown>);
+
+    if (!retainedRevisionSnap.exists()) {
+      tx.set(
+        retainedRevisionRef,
+        retainedRevision as unknown as Record<string, unknown>
+      );
+    }
 
     if (!claimSnap.exists()) {
       const claim: PublicSequenceHashClaim = {
@@ -320,6 +354,13 @@ export async function publishPublicSequence(
       revision: projection.publicProjectionRevision,
       digest: projection.publicProjectionDigest,
       firstPublication: prior.kind === "first-publication",
+      subjectRevision: {
+        artifactId: retainedRevision.artifactId,
+        revisionId: retainedRevision.revisionId,
+        contentDigest: retainedRevision.contentDigest,
+        digestAlgorithm: retainedRevision.digestAlgorithm,
+        digestVersion: retainedRevision.digestVersion,
+      },
     };
   });
 }

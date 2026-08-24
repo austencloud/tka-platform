@@ -6,6 +6,8 @@ import {
   mediaAssociationKey,
   normalizeMediaAssociations,
 } from "$lib/shared/video-collaboration/domain/collaborative-video";
+import { createArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
+import { auditMediaAssociationRevision } from "$lib/shared/video-collaboration/domain/media-revision-audit";
 
 const base = {
   id: "video-1",
@@ -34,10 +36,12 @@ describe("video media associations", () => {
   });
 
   it("keeps a tunnel realization distinct from source-sequence lineage", () => {
+    const revision = createArtifactRevisionRef("tunnel-1", "a".repeat(64));
     const association = createTunnelRealizationAssociation(
       "tunnel-1",
       "Prism tunnel",
-      "sequence-1"
+      "sequence-1",
+      revision
     );
     const video = createCollaborativeVideo({
       ...base,
@@ -47,6 +51,30 @@ describe("video media associations", () => {
     expect(video.sequenceId).toBeUndefined();
     expect(video.associations).toEqual([association]);
     expect(mediaAssociationKey(video.associations[0]!)).toBe("tunnel:tunnel-1");
+    expect(video.associations[0]?.revision).toEqual(revision);
+  });
+
+  it("refuses a revision borrowed from another subject", () => {
+    const wrongRevision = createArtifactRevisionRef("tunnel-2", "b".repeat(64));
+    expect(() =>
+      createTunnelRealizationAssociation(
+        "tunnel-1",
+        "Prism tunnel",
+        undefined,
+        wrongRevision
+      )
+    ).toThrow("does not belong");
+  });
+
+  it("reports an unpinned legacy association as ambiguous instead of guessing", () => {
+    const legacy = createTunnelRealizationAssociation(
+      "tunnel-1",
+      "Prism tunnel"
+    );
+    expect(auditMediaAssociationRevision(legacy)).toEqual({
+      status: "ambiguous",
+      reason: "missing-revision",
+    });
   });
 
   it("deduplicates legacy and typed references to the same performance", () => {

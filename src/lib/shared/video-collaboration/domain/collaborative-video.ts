@@ -2,6 +2,7 @@ import {
   DEFAULT_VIDEO_VISIBILITY,
   type VideoVisibility,
 } from "./video-visibility";
+import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
 
 export type { VideoVisibility } from "./video-visibility";
 
@@ -15,6 +16,9 @@ export interface MediaAssociation {
   readonly subjectId: string;
   readonly relationship: MediaRelationship;
   readonly subjectLabel?: string;
+  /** Exact immutable subject payload. Legacy associations may lack this and
+   * stay unresolved until a curator proves the historical match. */
+  readonly revision?: ArtifactRevisionRef;
   /** A tunnel can explain where its motion came from without claiming that
    * its real-world footage is a direct performance of that notation. */
   readonly sourceSequenceId?: string;
@@ -35,27 +39,37 @@ export function mediaAssociationKey(
 
 export function createSequencePerformanceAssociation(
   sequenceId: string,
-  subjectLabel?: string
+  subjectLabel?: string,
+  revision?: ArtifactRevisionRef
 ): MediaAssociation {
+  if (revision && revision.artifactId !== sequenceId) {
+    throw new Error("Sequence revision does not belong to this sequence");
+  }
   return {
     subjectType: "sequence",
     subjectId: sequenceId,
     relationship: "performance",
     ...(subjectLabel ? { subjectLabel } : {}),
+    ...(revision ? { revision } : {}),
   };
 }
 
 export function createTunnelRealizationAssociation(
   tunnelId: string,
   subjectLabel?: string,
-  sourceSequenceId?: string
+  sourceSequenceId?: string,
+  revision?: ArtifactRevisionRef
 ): MediaAssociation {
+  if (revision && revision.artifactId !== tunnelId) {
+    throw new Error("Tunnel revision does not belong to this tunnel");
+  }
   return {
     subjectType: "tunnel",
     subjectId: tunnelId,
     relationship: "realization",
     ...(subjectLabel ? { subjectLabel } : {}),
     ...(sourceSequenceId ? { sourceSequenceId } : {}),
+    ...(revision ? { revision } : {}),
   };
 }
 

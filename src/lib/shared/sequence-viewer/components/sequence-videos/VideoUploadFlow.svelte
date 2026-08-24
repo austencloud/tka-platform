@@ -26,6 +26,8 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { CollaborativeVideo } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import { getCurrentSequenceRevisionRef } from "$lib/shared/library/services/sequence-revision-reader";
+  import type { ArtifactRevisionRef } from "$lib/shared/artifact-revisions/domain/artifact-revision";
   import {
     DEFAULT_VIDEO_VISIBILITY,
     VIDEO_VISIBILITY_OPTIONS,
@@ -149,6 +151,18 @@
   async function handleUpload() {
     if (!selectedFile || !currentUser) return;
 
+    let sequenceRevision: ArtifactRevisionRef | null = null;
+    try {
+      sequenceRevision = await getCurrentSequenceRevisionRef(sequence.id);
+    } catch (error) {
+      console.warn("Could not resolve the sequence revision:", error);
+    }
+    if (visibility === "public" && !sequenceRevision) {
+      uploadError =
+        "Publish this sequence before sharing a public performance of it.";
+      return;
+    }
+
     flowState = "uploading";
     uploadProgress = 0;
     uploadError = null;
@@ -198,6 +212,7 @@
         creatorAvatarUrl: currentUser.photoURL ?? undefined,
         visibility,
         thumbnailUrl,
+        ...(sequenceRevision ? { revision: sequenceRevision } : {}),
       });
 
       await saveSequenceVideo(video);

@@ -123,6 +123,11 @@ export function getPublicSequencePath(sequenceId: string): string {
   return `publicSequences/${sequenceId}`;
 }
 
+/** Immutable media-eligible snapshots of published sequences. */
+export function getSequenceRevisionPath(revisionId: string): string {
+  return `sequenceRevisions/${revisionId}`;
+}
+
 // ============================================================================
 // PERSONAL MUSEUM PATHS
 // ============================================================================
@@ -247,6 +252,8 @@ export const LIBRARY_COLLECTIONS = {
   TAGS: "tags",
   /** Global public sequences index */
   PUBLIC_SEQUENCES: "publicSequences",
+  /** Immutable retained subjects for exact performance associations. */
+  SEQUENCE_REVISIONS: "sequenceRevisions",
   /** Global sequence metadata (fork lineage) */
   SEQUENCE_METADATA: "sequenceMetadata",
 } as const;

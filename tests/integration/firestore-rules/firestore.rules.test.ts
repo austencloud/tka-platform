@@ -196,6 +196,98 @@ describe("saved Art admin preview", () => {
       );
     }
   });
+
+  it("keeps tunnel revisions owner-private and immutable", async () => {
+    const digest = "a".repeat(64);
+    const revisionId = `v1_${digest}`;
+    const path = `users/${FULL_UID}/tunnel-collection/tunnel-1/revisions/${revisionId}`;
+    const revision = {
+      artifactType: "tunnel",
+      artifactId: "tunnel-1",
+      revisionId,
+      contentDigest: digest,
+      digestAlgorithm: "SHA-256",
+      digestVersion: 1,
+      payload: { poster: "data:image/webp;base64,AA" },
+      createdAt: 1,
+    };
+    const owner = fullCtx().firestore(SDK_SETTINGS);
+    const outsider = testEnv
+      .authenticatedContext("other-user", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+
+    await assertSucceeds(setDoc(doc(owner, path), revision));
+    await assertSucceeds(setDoc(doc(owner, path), revision));
+    await assertSucceeds(getDoc(doc(owner, path)));
+    await assertFails(getDoc(doc(outsider, path)));
+    await assertFails(
+      updateDoc(doc(owner, path), { payload: { poster: "changed" } })
+    );
+    await assertFails(deleteDoc(doc(owner, path)));
+  });
+});
+
+describe("sequence subject revisions", () => {
+  it("retains a public subject immutably and rejects unrelated writers", async () => {
+    const digest = "b".repeat(64);
+    const revisionId = `v1_${digest}`;
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(SDK_SETTINGS), "publicSequences/seq-1"),
+        {
+          ownerId: FULL_UID,
+          contentHash: "c".repeat(64),
+          contentHashVersion: 2,
+        }
+      );
+    });
+    const revision = {
+      subjectType: "sequence",
+      sequenceId: "seq-1",
+      artifactId: "seq-1",
+      ownerId: FULL_UID,
+      revisionId,
+      contentDigest: digest,
+      digestAlgorithm: "SHA-256",
+      digestVersion: 1,
+      contentHash: "c".repeat(64),
+      contentHashVersion: 2,
+      publicationState: "public",
+      projectionSchemaVersion: 2,
+      payload: { word: "ABCD" },
+      createdAt: new Date(),
+    };
+    const owner = fullCtx().firestore(SDK_SETTINGS);
+    const outsider = testEnv
+      .authenticatedContext("other-user", {
+        firebase: { sign_in_provider: "password" },
+      })
+      .firestore(SDK_SETTINGS);
+    const ref = doc(owner, `sequenceRevisions/${revisionId}`);
+
+    await assertSucceeds(setDoc(ref, revision));
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(
+      getDoc(
+        doc(
+          testEnv.unauthenticatedContext().firestore(SDK_SETTINGS),
+          `sequenceRevisions/${revisionId}`
+        )
+      )
+    );
+    await assertFails(
+      setDoc(doc(outsider, `sequenceRevisions/v1_${"d".repeat(64)}`), {
+        ...revision,
+        revisionId: `v1_${"d".repeat(64)}`,
+        contentDigest: "d".repeat(64),
+        ownerId: "other-user",
+      })
+    );
+    await assertFails(updateDoc(ref, { payload: { word: "WXYZ" } }));
+    await assertFails(deleteDoc(ref));
+  });
 });
 
 describe("user profile privilege boundaries", () => {
@@ -765,21 +857,14 @@ describe("video visibility boundaries", () => {
     );
     await assertSucceeds(
       getDocs(
-        query(
-          collection(owner, "videos"),
-          where("creatorId", "==", OWNER_UID)
-        )
+        query(collection(owner, "videos"), where("creatorId", "==", OWNER_UID))
       )
     );
     await assertSucceeds(
       getDocs(
         query(
           collection(collaborator, "videos"),
-          where(
-            "pendingInviteUserIds",
-            "array-contains",
-            COLLABORATOR_UID
-          )
+          where("pendingInviteUserIds", "array-contains", COLLABORATOR_UID)
         )
       )
     );
