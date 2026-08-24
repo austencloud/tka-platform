@@ -10,6 +10,7 @@ import type {
 import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
 import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
 import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 import type { DirectorCameraFrame } from "./director-camera-track";
@@ -19,6 +20,13 @@ import { resolveDirectorPerformerPoolSize } from "./film-director-performance-po
 interface ApplyDirectorShotOptions {
   /** Keep a stable rig pool so a cut never destroys and rebuilds half the cast. */
   reservedPerformerCount?: number;
+  /**
+   * Performer id → the sequence that performer spins in this shot, from
+   * `director-sequence-library`. A performer with no entry — or a shot applied
+   * before the library has finished generating — falls back to the film's
+   * shared sequence.
+   */
+  sequences?: ReadonlyMap<string, SequenceData>;
 }
 
 export function buildDirectorViewerSeed(
@@ -123,6 +131,18 @@ export function applyDirectorShotToViewer(
       performer.setEffect(directed.effect);
       performer.setEffort(directed.effort);
       performer.setStaffLengthCm(directed.staffLengthCm);
+
+      // Before the planes, not after: `loadSequence` rebuilds this performer's
+      // step configs from whatever plane assignment is current and wipes their
+      // per-step overrides, so a load that lands after `setHandPlane` would
+      // discard both. Identity-compared because the library hands back the
+      // same cached object every shot — reloading would reset playback.
+      const directedSequence =
+        options.sequences?.get(directed.id) ?? sequenceData;
+      if (directedSequence && performer.loadedSequence !== directedSequence) {
+        performer.loadSequence(directedSequence);
+      }
+
       performer.setHandPlane("blue", directed.bluePlane);
       performer.setHandPlane("red", directed.redPlane);
       for (const entry of directed.stepPlanes) {

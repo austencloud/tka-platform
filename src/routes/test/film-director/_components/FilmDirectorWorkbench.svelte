@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
+  import { replaceState } from "$app/navigation";
+  import { page } from "$app/state";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
   import {
     DEFAULT_FILM_KEY,
     FILM_LIBRARY,
     getLibraryFilm,
+    isLibraryFilmKey,
   } from "../_films/index";
   import { setFilmDirectorContext } from "../_lib/film-director-context";
   import { createFilmDirectorState } from "../_lib/film-director-state.svelte";
@@ -13,16 +16,27 @@
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
   import FilmDirectorTransport from "./FilmDirectorTransport.svelte";
 
-  const director = createFilmDirectorState(getLibraryFilm(DEFAULT_FILM_KEY));
+  // `?film=<key>` boots straight into one film, so a film is a link rather
+  // than a click - shareable, bookmarkable, and drivable from a script or a
+  // screenshot pass. Read once at construction: the workbench owns the
+  // selection from here on and writes the URL back to match.
+  const requestedFilmKey = page.url.searchParams.get("film");
+  const initialFilmKey =
+    requestedFilmKey && isLibraryFilmKey(requestedFilmKey)
+      ? requestedFilmKey
+      : DEFAULT_FILM_KEY;
+
+  const director = createFilmDirectorState(getLibraryFilm(initialFilmKey));
   setFilmDirectorContext(director);
 
-  let selectedFilmKey = $state(DEFAULT_FILM_KEY);
+  let selectedFilmKey = $state(initialFilmKey);
 
   const FILM_SHORT_LABELS: Record<string, string> = {
     sky: "Sky",
     planes: "Planes",
-    understudy: "Understudy",
+    understudy: "Night",
     chance: "Chance",
+    star: "Star",
   };
 
   const filmOptions = FILM_LIBRARY.map((entry) => ({
@@ -33,12 +47,24 @@
 
   function selectFilm(key: string): void {
     if (key === selectedFilmKey) return;
-    if (director.loadFilm(getLibraryFilm(key))) {
-      selectedFilmKey = key;
-    }
+    if (!director.loadFilm(getLibraryFilm(key))) return;
+    selectedFilmKey = key;
+    syncFilmToUrl(key);
   }
 
-  onMount(() => director.start());
+  function syncFilmToUrl(key: string): void {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("film", key);
+    replaceState(url, {});
+  }
+
+  onMount(() => {
+    // Stamp the resolved key even when the URL arrived bare or with a key the
+    // library no longer has, so the address bar always names what is on screen.
+    if (requestedFilmKey !== selectedFilmKey) syncFilmToUrl(selectedFilmKey);
+    return director.start();
+  });
   onDestroy(() => director.destroy());
 </script>
 
@@ -77,15 +103,17 @@
         {director.frame.shot.performance.bpm} BPM
       </p>
     </div>
-    <div class="film-picker">
-      <SegmentedControl
-        options={filmOptions}
-        value={selectedFilmKey}
-        onchange={selectFilm}
-        size="sm"
-        color="accent"
-        ariaLabel="Film"
-      />
+    <div class="film-picker themed-scrollbar">
+      <div class="film-picker-track">
+        <SegmentedControl
+          options={filmOptions}
+          value={selectedFilmKey}
+          onchange={selectFilm}
+          size="sm"
+          color="accent"
+          ariaLabel="Film"
+        />
+      </div>
     </div>
   </div>
 
@@ -201,6 +229,8 @@
   }
 
   .film-picker {
+    max-width: 100%;
+    overflow-x: auto;
     padding: 0.3rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: 999px;
@@ -210,6 +240,15 @@
       transparent
     );
     box-shadow: 0 0.8rem 2.5rem rgba(0, 0, 0, 0.3);
+  }
+
+  .film-picker-track {
+    /* SegmentedControl divides its width into equal segments, so the control
+       needs room for its widest label times the option count or the longest
+       word clips. Sized to the one-word short labels; in rem so it tracks the
+       root ramp instead of freezing at 1080p proportions. Below that width the
+       parent scrolls rather than the labels shrinking into nothing. */
+    min-width: 24rem;
   }
 
   .titleplate {

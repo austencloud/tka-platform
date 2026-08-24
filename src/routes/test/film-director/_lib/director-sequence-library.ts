@@ -1,0 +1,152 @@
+/**
+ * Resolves each performer's directed sequence into real SequenceData.
+ *
+ * The film schema lets a performer say what they spin — the shared demo, a
+ * spelled word, or another performer's sequence mirrored. Turning a word into
+ * motion means running the generator, which is async, so this sits between the
+ * synchronous spec resolver and the scene: the scene asks for a shot's
+ * sequences, gets whatever has resolved so far, and re-applies once the rest
+ * land.
+ *
+ * Everything is cached by what it is rather than by who asked for it, so two
+ * performers spelling the same word share one generated sequence, and the
+ * mirror of a word is generated once no matter how many performers reflect it.
+ */
+
+import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
+import { mirrorSequence } from "$lib/shared/create/services/sequence-transformer";
+import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+import type {
+  DirectorPerformerSequence,
+  ResolvedDirectorShot,
+  ResolvedFilmDirectorSpec,
+} from "./film-director-schema";
+
+export interface DirectorSequenceLibrary {
+  /**
+   * Resolve every sequence the film names. Calling it again with the same
+   * film returns the first call's promise rather than regenerating.
+   */
+  prepare(film: ResolvedFilmDirectorSpec): Promise<void>;
+  /** Performer id → sequence, for a shot that has finished resolving. */
+  forShot(shotId: string): ReadonlyMap<string, SequenceData>;
+  /** Human-readable reasons a directed sequence fell back to the demo. */
+  readonly failures: readonly string[];
+}
+
+const EMPTY: ReadonlyMap<string, SequenceData> = new Map();
+
+/** A word spells the same motion no matter which performer asked for it. */
+function sourceKey(sequence: DirectorPerformerSequence): string {
+  return "word" in sequence ? `word:${sequence.word}` : "demo";
+}
+
+export function createDirectorSequenceLibrary(
+  demoSequence: SequenceData
+): DirectorSequenceLibrary {
+  const sources = new Map<string, Promise<SequenceData>>();
+  const mirrors = new Map<string, Promise<SequenceData>>();
+  const byShot = new Map<string, Map<string, SequenceData>>();
+  const failures: string[] = [];
+  let preparedFilmId: string | null = null;
+  let preparing: Promise<void> | null = null;
+
+  function resolveSource(
+    sequence: DirectorPerformerSequence
+  ): Promise<SequenceData> {
+    const key = sourceKey(sequence);
+    const existing = sources.get(key);
+    if (existing) return existing;
+
+    const created =
+      "word" in sequence
+        ? generationOrchestrator.generateSequence({
+            word: sequence.word,
+            // `word` wins over `length` inside the orchestrator; the field is
+            // required by GenerationOptions, so it echoes the spelled length.
+            length: sequence.word.length,
+            gridMode: GridMode.DIAMOND,
+            // The generation prop only shapes constraint checks — the rendered
+            // prop is whatever the performer was cast with.
+            propType: PropType.STAFF,
+            difficulty: DifficultyLevel.INTERMEDIATE,
+            constraintPreset: "smooth",
+          })
+        : Promise.resolve(demoSequence);
+
+    sources.set(key, created);
+    return created;
+  }
+
+  function resolveMirror(
+    sequence: DirectorPerformerSequence
+  ): Promise<SequenceData> {
+    const key = `mirror:${sourceKey(sequence)}`;
+    const existing = mirrors.get(key);
+    if (existing) return existing;
+
+    const created = resolveSource(sequence).then((source) =>
+      mirrorSequence(source, "both")
+    );
+    mirrors.set(key, created);
+    return created;
+  }
+
+  async function resolveShot(shot: ResolvedDirectorShot): Promise<void> {
+    const performers = shot.performance.performers;
+    const byId = new Map(
+      performers.map((performer) => [performer.id, performer.sequence])
+    );
+    const resolved = new Map<string, SequenceData>();
+
+    await Promise.all(
+      performers.map(async (performer) => {
+        const directed = performer.sequence;
+        try {
+          if ("mirrorOf" in directed) {
+            // The spec resolver already proved this names a non-mirror
+            // performer in this same shot.
+            const source = byId.get(directed.mirrorOf)!;
+            resolved.set(performer.id, await resolveMirror(source));
+            return;
+          }
+          resolved.set(performer.id, await resolveSource(directed));
+        } catch (error: unknown) {
+          const reason = error instanceof Error ? error.message : String(error);
+          failures.push(
+            `Shot "${shot.id}", performer "${performer.id}": ${reason}`
+          );
+          console.error(
+            `[FilmDirector] Could not build the directed sequence for "${performer.id}" in shot "${shot.id}". Falling back to the film's demo sequence.`,
+            error
+          );
+          resolved.set(performer.id, demoSequence);
+        }
+      })
+    );
+
+    byShot.set(shot.id, resolved);
+  }
+
+  function prepare(film: ResolvedFilmDirectorSpec): Promise<void> {
+    if (preparedFilmId === film.id && preparing) return preparing;
+
+    preparedFilmId = film.id;
+    byShot.clear();
+    failures.length = 0;
+    preparing = Promise.all(film.shots.map(resolveShot)).then(() => undefined);
+    return preparing;
+  }
+
+  return {
+    prepare,
+    forShot: (shotId) => byShot.get(shotId) ?? EMPTY,
+    get failures() {
+      return failures;
+    },
+  };
+}

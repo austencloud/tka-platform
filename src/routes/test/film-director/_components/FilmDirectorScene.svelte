@@ -20,6 +20,7 @@
     buildDirectorViewerSeed,
   } from "../_lib/director-viewer-adapter";
   import { getPreviewCameraFov } from "../_lib/director-camera-track";
+  import { createDirectorSequenceLibrary } from "../_lib/director-sequence-library";
   import { createFilmDirectorTransitionProfiler } from "../_lib/film-director-transition-profiler.svelte";
   import { createFilmDirectorWarmupPlan } from "../_lib/film-director-warmup-plan";
   import { getSceneEnvironmentRendererKey } from "$lib/shared/3d/environments/domain/scene-environment";
@@ -50,6 +51,7 @@
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   const viewer = createViewer3DState(buildDirectorViewerSeed(firstShot));
   const transitionProfiler = createFilmDirectorTransitionProfiler();
+  const sequenceLibrary = createDirectorSequenceLibrary(sequence);
   if (typeof window !== "undefined") {
     // Test-route debug hook: lets an agent or a DevTools session inspect the
     // live viewer (camera pose, performer world positions) without UI.
@@ -176,7 +178,10 @@
       if (sceneFeatures.isEnabled(feature) !== enabled)
         sceneFeatures.toggle(feature);
     }
-    applyDirectorShotToViewer(viewer, shot, { reservedPerformerCount });
+    applyDirectorShotToViewer(viewer, shot, {
+      reservedPerformerCount,
+      sequences: sequenceLibrary.forShot(shot.id),
+    });
     applyDirectorEffectPresets(effectsConfig, shot);
   }
 
@@ -321,6 +326,33 @@
     }
 
     void beginShotTransition(shot);
+  });
+
+  // Spelled and mirrored sequences have to be generated, so they arrive after
+  // the opening shot is already on screen with the film's shared sequence.
+  //
+  // The re-application lives in the promise callback rather than in a second
+  // effect on purpose. `applyShot` both reads and writes viewer state, so an
+  // effect that calls it tracks everything it wrote and re-runs forever; the
+  // microtask runs outside any tracking scope. A shot that has not been
+  // applied yet needs nothing here — whenever it is applied it reads the
+  // library, which by then holds the finished sequences.
+  $effect(() => {
+    const film = director.film;
+    let active = true;
+    void sequenceLibrary.prepare(film).then(() => {
+      if (!active) return;
+      const shot = film.shots.find(
+        (candidate) => candidate.id === appliedShotId
+      );
+      // Full re-application, not a bare loadSequence sweep: loading a sequence
+      // resets that performer's per-step plane overrides, so the shot's plane
+      // direction has to go back on afterwards.
+      if (shot) applyShot(shot);
+    });
+    return () => {
+      active = false;
+    };
   });
 
   $effect(() => {

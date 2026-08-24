@@ -203,10 +203,27 @@ const cameraKeyframeSchema = z
   })
   .strict();
 
+/**
+ * What one performer spins. `demo` is the film's shared sequence, `word`
+ * spells a new one through the same generator the Create module uses, and
+ * `mirrorOf` reflects another performer's sequence across the north-south
+ * axis — the transform that makes a pair read as mirrored rather than merely
+ * synchronized. Deliberately not a directive axis: "mirror her" names one
+ * specific performer, so a random pick would have nothing to mean.
+ */
+const performerSequenceSchema = z.union([
+  z.object({ source: z.literal("demo") }).strict(),
+  z.object({ word: z.string().min(1).max(24) }).strict(),
+  z.object({ mirrorOf: z.string().min(1) }).strict(),
+]);
+
+export type DirectorPerformerSequence = z.infer<typeof performerSequenceSchema>;
+
 const performerSchema = z
   .object({
     id: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
+    sequence: performerSequenceSchema.optional(),
     avatarId: directiveSchema(avatarIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
@@ -223,6 +240,7 @@ const performerSchema = z
 
 const castDefaultsSchema = z
   .object({
+    sequence: performerSequenceSchema.optional(),
     avatarId: directiveSchema(avatarIdSchema).optional(),
     prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
@@ -411,6 +429,7 @@ export interface ResolvedDirectorPerformer {
   prop: PropType;
   effect: EffectType;
   effort: EffortId;
+  sequence: DirectorPerformerSequence;
   position: { x: number; z: number };
   facingAngle: number;
   beatOffset: number;

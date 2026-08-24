@@ -36,6 +36,7 @@ import {
   DIRECTOR_FORMATIONS,
   FilmDirectorInputSchema,
   type DirectorCastInput,
+  type DirectorPerformerSequence,
   type DirectorShotInput,
   type FilmDirectorInput,
   type ResolvedDirectorPerformer,
@@ -76,6 +77,7 @@ interface ResolvedPerformerFields {
   prop: PropType;
   effect: EffectType;
   effort: EffortId;
+  sequence: DirectorPerformerSequence;
   position?: { x: number; z: number };
   facingDegrees?: number;
   beatOffset?: number;
@@ -346,6 +348,7 @@ function buildResolvedPerformers(
       prop: input.prop,
       effect: input.effect,
       effort: input.effort,
+      sequence: input.sequence,
       position: { ...position },
       facingAngle,
       beatOffset: input.beatOffset ?? 0,
@@ -520,6 +523,35 @@ function resolveShot(
     }
   );
 
+  // Sequences resolve as literals, not through resolveCastAxis: the mirror
+  // form names one specific performer, so there is no catalog to pick from.
+  // The mirror graph is validated exactly one level deep — a mirror of a
+  // mirror has no original of its own to reflect, and letting it resolve
+  // would silently hand both performers the same reflection.
+  const resolvedSequences: DirectorPerformerSequence[] = rawInputs.map(
+    (input) => input.sequence ?? cast?.defaults?.sequence ?? { source: "demo" }
+  );
+  resolvedSequences.forEach((sequence, index) => {
+    if (!("mirrorOf" in sequence)) return;
+    const self = performerIds[index]!;
+    const targetIndex = performerIds.indexOf(sequence.mirrorOf);
+    if (sequence.mirrorOf === self) {
+      throw new Error(
+        `Shot "${shot.id}": performer "${self}" cannot mirror themselves.`
+      );
+    }
+    if (targetIndex < 0) {
+      throw new Error(
+        `Shot "${shot.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is not in this shot.`
+      );
+    }
+    if ("mirrorOf" in resolvedSequences[targetIndex]!) {
+      throw new Error(
+        `Shot "${shot.id}": performer "${self}" mirrors "${sequence.mirrorOf}", who is already a mirror. Mirror the original instead.`
+      );
+    }
+  });
+
   const resolvedFields: ResolvedPerformerFields[] = rawInputs.map(
     (input, index) => ({
       id: performerIds[index]!,
@@ -528,6 +560,7 @@ function resolveShot(
       prop: resolvedProps[index]!,
       effect: resolvedEffects[index]! as EffectType,
       effort: resolvedEfforts[index]!,
+      sequence: resolvedSequences[index]!,
       position: input.position,
       facingDegrees: input.facingDegrees,
       beatOffset: input.beatOffset,
