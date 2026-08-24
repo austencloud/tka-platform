@@ -81,11 +81,16 @@
     -18, 0, 22, 0,
   ];
   const WEAVE_DWELL_DEFAULT_DEG = 22;
-  const TORSO_ASSIST_DEFAULT_DEG = 45;
+  // Full quarter-turn allowed: with the chest perpendicular to the wall the
+  // body is out of the reel's way entirely and a W-point reel becomes an
+  // E-point reel in the body frame. 45 was the previous default and is
+  // migrated on load.
+  const TORSO_ASSIST_DEFAULT_DEG = 90;
+  const TORSO_ASSIST_PREVIOUS_DEFAULT_DEG = 45;
   const TORSO_ASSIST_SIGN = 1;
   const STAFF_HALF_LEN_M = 0.457;
   const AVOID_MARGIN_M = 0.05;
-  const AVOID_MAX_PUSH_M = 0.35;
+  const AVOID_MAX_PUSH_M = 0.5;
   // Previous defaults are recognized in storage and migrated to the current set.
   const WEAVE_STATION_PREVIOUS_DEFAULTS = [
     [-45, 0, 45, 0],
@@ -209,8 +214,9 @@
             ? Math.max(0, Math.min(28, parsed.weaveDwellDeg))
             : fallback.weaveDwellDeg,
         torsoAssistDeg:
-          typeof parsed.torsoAssistDeg === "number"
-            ? Math.max(0, Math.min(60, parsed.torsoAssistDeg))
+          typeof parsed.torsoAssistDeg === "number" &&
+          parsed.torsoAssistDeg !== TORSO_ASSIST_PREVIOUS_DEFAULT_DEG
+            ? Math.max(0, Math.min(TORSO_ASSIST_DEFAULT_DEG, parsed.torsoAssistDeg))
             : fallback.torsoAssistDeg,
       };
     } catch {
@@ -544,6 +550,10 @@
           gripTargetZ: gripZRigM,
           autoYawDeg,
           avoidPushM,
+          avoidTiltDeg: (avoidTiltRad * 180) / Math.PI,
+          clearedGrip: clearedGripTarget
+            ? [clearedGripTarget.x, clearedGripTarget.y, clearedGripTarget.z]
+            : null,
           staff: {
             staffPos: asTuple(staff.getWorldPosition(new Vector3())),
             endA: asTuple(staff.localToWorld(localEndA)),
@@ -814,25 +824,44 @@
     return dirs;
   })();
 
-  // Direction hysteresis: keep last frame's escape while it stays within
-  // 30% of the best, so the push doesn't flip sides frame to frame. Plain
-  // variable on purpose — it is solver memory, not reactive state.
+  // Target-direction hysteresis: keep last frame's chosen destination while
+  // it stays within 30% of the best, so the plan doesn't flip sides frame to
+  // frame. Plain variable on purpose — it is solver memory, not reactive
+  // state.
   let avoidPrevDir: Point3 | null = null;
+  // The displacement the grip is CURRENTLY carrying, as a vector. The
+  // discrete search only picks the destination; the applied offset moves
+  // toward it at a bounded speed, and a minimal per-frame feasibility
+  // correction keeps it clear of the body along the way. The correction is
+  // inherently small — the staff turns about a degree per frame — so the
+  // grip's speed is capped by construction and a pop is impossible.
+  let avoidApplied: {
+    off: Point3;
+    tiltRad: number;
+    t: number;
+  } | null = null;
+  const AVOID_ATTRACT_RATE_M_S = 0.7;
+  // Out-of-plane bend during a transit: the staff pitches its head toward
+  // the side the plane is transferring to, so the head leads the sweep the
+  // way a real reel bends slightly out of wall plane at the bottom.
+  const AVOID_TILT_MAX_RAD = (25 * Math.PI) / 180;
+  const AVOID_TILT_RATE_RAD_S = 3;
 
   function clearGripFromBody(
     candidate: Point3,
     shaftDirs: Point3[],
+    baseShaftDirs: Point3[],
     capsules: BodyCapsule[]
-  ): { grip: Point3; pushM: number } {
-    if (worstViolation(candidate, shaftDirs, capsules) <= 0) {
-      avoidPrevDir = null;
-      return { grip: candidate, pushM: 0 };
-    }
-    const minPushAlong = (dir: Point3): number => {
+  ): { grip: Point3; pushM: number; tiltRad: number } {
+    const now = performance.now();
+    const dt = avoidApplied
+      ? Math.min(0.05, Math.max(0, (now - avoidApplied.t) / 1000))
+      : 0;
+    const minPushFrom = (origin: Point3, dir: Point3): number => {
       const at = (m: number): Point3 => ({
-        x: candidate.x + dir.x * m,
-        y: candidate.y + dir.y * m,
-        z: candidate.z + dir.z * m,
+        x: origin.x + dir.x * m,
+        y: origin.y + dir.y * m,
+        z: origin.z + dir.z * m,
       });
       if (worstViolation(at(AVOID_MAX_PUSH_M), shaftDirs, capsules) > 0) {
         return Infinity;
@@ -846,63 +875,219 @@
       }
       return hi;
     };
-    let bestDir: Point3 | null = null;
-    let bestM = Infinity;
-    for (const dir of AVOID_ESCAPE_DIRS) {
-      const m = minPushAlong(dir);
-      if (m < bestM) {
-        bestM = m;
-        bestDir = dir;
-      }
-    }
-    if (avoidPrevDir && bestDir && avoidPrevDir !== bestDir) {
-      const prevM = minPushAlong(avoidPrevDir);
-      if (prevM <= bestM * 1.3 + 0.02) {
-        bestDir = avoidPrevDir;
-        bestM = prevM;
-      }
-    }
-    if (!bestDir || !Number.isFinite(bestM)) {
-      // Boxed in on every axis: hold the candidate rather than teleporting.
-      avoidPrevDir = null;
-      return { grip: candidate, pushM: 0 };
-    }
-    avoidPrevDir = bestDir;
-    return {
+    const result = (off: Point3, tiltRad: number) => ({
       grip: {
-        x: candidate.x + bestDir.x * bestM,
-        y: candidate.y + bestDir.y * bestM,
-        z: candidate.z + bestDir.z * bestM,
+        x: candidate.x + off.x,
+        y: candidate.y + off.y,
+        z: candidate.z + off.z,
       },
-      pushM: bestM,
+      pushM: Math.hypot(off.x, off.y, off.z),
+      tiltRad,
+    });
+
+    // Destination: the minimal clearing displacement from the natural grip,
+    // by discrete search (a gradient walk gets trapped between the thighs).
+    const candidateClear =
+      worstViolation(candidate, shaftDirs, capsules) <= 0;
+    let targetOff: Point3 = { x: 0, y: 0, z: 0 };
+    if (candidateClear) {
+      avoidPrevDir = null;
+    } else {
+      let bestDir: Point3 | null = null;
+      let bestM = Infinity;
+      for (const dir of AVOID_ESCAPE_DIRS) {
+        const m = minPushFrom(candidate, dir);
+        if (m < bestM) {
+          bestM = m;
+          bestDir = dir;
+        }
+      }
+      if (avoidPrevDir && bestDir && avoidPrevDir !== bestDir) {
+        const prevM = minPushFrom(candidate, avoidPrevDir);
+        if (prevM <= bestM * 1.3 + 0.02) {
+          bestDir = avoidPrevDir;
+          bestM = prevM;
+        }
+      }
+      if (bestDir && Number.isFinite(bestM)) {
+        avoidPrevDir = bestDir;
+        targetOff = {
+          x: bestDir.x * bestM,
+          y: bestDir.y * bestM,
+          z: bestDir.z * bestM,
+        };
+      } else {
+        // Boxed in on every axis: aim at wherever the offset already is.
+        avoidPrevDir = null;
+        targetOff = avoidApplied
+          ? { ...avoidApplied.off }
+          : { x: 0, y: 0, z: 0 };
+      }
+    }
+
+    if (!avoidApplied) {
+      if (candidateClear) return result({ x: 0, y: 0, z: 0 }, 0);
+      // Onset: the violation just crossed zero, so the minimal push is
+      // small — engaging at it directly is continuous.
+      avoidApplied = { off: targetOff, tiltRad: 0, t: now };
+      return result(avoidApplied.off, 0);
+    }
+
+    // Bounded attraction toward the destination. This is the only term
+    // allowed to move the grip farther than the geometry moved this frame,
+    // and it is speed-capped — a back-to-front plane transfer glides
+    // around instead of teleporting through the body. Release back to the
+    // natural grip is the same motion with a zero target.
+    const off: Point3 = { ...avoidApplied.off };
+    const dx = targetOff.x - off.x;
+    const dy = targetOff.y - off.y;
+    const dz = targetOff.z - off.z;
+    const dist = Math.hypot(dx, dy, dz);
+    const maxStep = AVOID_ATTRACT_RATE_M_S * dt;
+    if (dist > 1e-9) {
+      const s = Math.min(1, maxStep / dist);
+      off.x += dx * s;
+      off.y += dy * s;
+      off.z += dz * s;
+    }
+
+    // Feasibility correction: if the attracted point violates, push it out
+    // by the smallest clearing move FROM WHERE IT IS. The staff only turns
+    // about a degree per frame, so this stays millimetric — the safety
+    // term can never itself become a pop.
+    const p: Point3 = {
+      x: candidate.x + off.x,
+      y: candidate.y + off.y,
+      z: candidate.z + off.z,
     };
+    if (worstViolation(p, shaftDirs, capsules) > 0) {
+      let fixDir: Point3 | null = null;
+      let fixM = Infinity;
+      for (const d of AVOID_ESCAPE_DIRS) {
+        const m = minPushFrom(p, d);
+        if (m < fixM) {
+          fixM = m;
+          fixDir = d;
+        }
+      }
+      if (!fixDir || !Number.isFinite(fixM)) {
+        // Nothing fully clears within the cap. The correction may never
+        // silently give up — that is how penetrations happen. Walk a
+        // bounded step in whichever direction reduces the violation most;
+        // the 5cm plan margin buys the frames this takes to catch up.
+        const step = Math.max(0.02, 2 * AVOID_ATTRACT_RATE_M_S * dt);
+        let least = Infinity;
+        for (const d of AVOID_ESCAPE_DIRS) {
+          const far: Point3 = {
+            x: p.x + d.x * step,
+            y: p.y + d.y * step,
+            z: p.z + d.z * step,
+          };
+          const v = worstViolation(far, shaftDirs, capsules);
+          if (v < least) {
+            least = v;
+            fixDir = d;
+            fixM = step;
+          }
+        }
+      }
+      if (fixDir && Number.isFinite(fixM)) {
+        off.x += fixDir.x * fixM;
+        off.y += fixDir.y * fixM;
+        off.z += fixDir.z * fixM;
+      }
+    }
+
+    // Transit bend: only while the PLAIN wall-plane move is in trouble and
+    // the destination is on the other side fore/aft — pitch the staff head
+    // toward the side of the transfer (+z when the plane is moving to the
+    // front). Gating on the untilted wedge matters: the tilted wedge's own
+    // violations would otherwise keep the tilt locked on through release,
+    // and a bent staff sweeping back to the natural grip mows the legs.
+    const baseClear =
+      candidateClear || worstViolation(candidate, baseShaftDirs, capsules) <= 0;
+    const remZ = targetOff.z - off.z;
+    // A transfer means the destination sits on the OPPOSITE fore/aft side
+    // of where the offset currently is, both meaningfully so. A large
+    // offset merely draining toward a small same-side target is release,
+    // not a transfer — bending there mows the legs.
+    const transferring =
+      targetOff.z * off.z < 0 &&
+      Math.abs(targetOff.z) > 0.02 &&
+      Math.abs(off.z) > 0.02;
+    const tiltTarget =
+      !baseClear && transferring && Math.abs(remZ) > 0.12
+        ? AVOID_TILT_MAX_RAD * Math.min(1, Math.abs(remZ) / 0.4) * Math.sign(remZ)
+        : 0;
+    const tiltStep = AVOID_TILT_RATE_RAD_S * dt;
+    const tiltRad =
+      Math.abs(tiltTarget - avoidApplied.tiltRad) <= tiltStep
+        ? tiltTarget
+        : avoidApplied.tiltRad +
+          Math.sign(tiltTarget - avoidApplied.tiltRad) * tiltStep;
+
+    if (
+      candidateClear &&
+      Math.hypot(off.x, off.y, off.z) < 0.004 &&
+      tiltRad === 0
+    ) {
+      avoidApplied = null;
+      return result({ x: 0, y: 0, z: 0 }, 0);
+    }
+    avoidApplied = { off, tiltRad, t: now };
+    return result(off, tiltRad);
   }
 
-  const commandedPropRotation = $derived.by(() => {
-    const staffRad = (staffAngleDeg * Math.PI) / 180;
-    const sweepQuat = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), sweepYRad);
-    return sweepQuat.multiply(calculatePropQuaternion(Plane.WALL, staffRad));
-  });
+  // Solver tilt (positive = the low end of the shaft leads toward +z) maps
+  // to a world-x rotation of -tilt: rotating theta about +x moves the low
+  // end's z by about -|shaft.y| * theta.
+  const tiltQuatFor = (tiltRad: number) =>
+    new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -tiltRad);
   // The rendered staff follows the commanded grip through IK smoothing and
   // the weld, so it lags the command by a beat. Solving for a wedge of
   // shaft orientations around the current one keeps the plan clear of the
   // body for the orientations the rendered staff is actually sweeping.
   const AVOID_WEDGE_RAD = (15 * Math.PI) / 180;
   const gripClearance = $derived.by(() => {
-    if (!gripTarget || !bodyCapsules) return { grip: gripTarget, pushM: 0 };
+    if (!gripTarget || !bodyCapsules)
+      return { grip: gripTarget, pushM: 0, tiltRad: 0 };
     const staffRad = (staffAngleDeg * Math.PI) / 180;
     const sweepQuat = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), sweepYRad);
-    const shaftDirs = [0, -AVOID_WEDGE_RAD, AVOID_WEDGE_RAD].map((offset) => {
-      const quat = sweepQuat
-        .clone()
-        .multiply(calculatePropQuaternion(Plane.WALL, staffRad + offset));
-      const v = new Vector3(0, 1, 0).applyQuaternion(quat);
-      return { x: v.x, y: v.y, z: v.z };
-    });
-    return clearGripFromBody(gripTarget, shaftDirs, bodyCapsules);
+    // The wedge is checked with LAST frame's transit tilt applied — the
+    // rendered staff carries it, so the plan must clear with it.
+    const prevTilt = avoidApplied?.tiltRad ?? 0;
+    const wedgeOffsets = [0, -AVOID_WEDGE_RAD, AVOID_WEDGE_RAD];
+    const wedgeDirs = (tilt: number): Point3[] =>
+      wedgeOffsets.map((offset) => {
+        const quat = sweepQuat
+          .clone()
+          .multiply(calculatePropQuaternion(Plane.WALL, staffRad + offset));
+        if (tilt !== 0) quat.premultiply(tiltQuatFor(tilt));
+        const v = new Vector3(0, 1, 0).applyQuaternion(quat);
+        return { x: v.x, y: v.y, z: v.z };
+      });
+    const tiltedDirs = wedgeDirs(prevTilt);
+    // The untilted wedge gates the transit bend: tilt is justified only
+    // while the PLAIN wall-plane move is in trouble. Gating on the tilted
+    // wedge feeds back — the tilt's own violations would keep it engaged.
+    const baseShaftDirs = prevTilt === 0 ? tiltedDirs : wedgeDirs(0);
+    // While a tilt is in play the RENDERED staff lags the commanded tilt
+    // (IK smoothing), sweeping every orientation between untilted and
+    // fully tilted — so the plan must clear BOTH endpoints, not just the
+    // current command.
+    const shaftDirs =
+      prevTilt === 0 ? tiltedDirs : [...tiltedDirs, ...baseShaftDirs];
+    return clearGripFromBody(gripTarget, shaftDirs, baseShaftDirs, bodyCapsules);
   });
   const clearedGripTarget = $derived(gripClearance.grip);
   const avoidPushM = $derived(gripClearance.pushM);
+  const avoidTiltRad = $derived(gripClearance.tiltRad);
+  const commandedPropRotation = $derived.by(() => {
+    const staffRad = (staffAngleDeg * Math.PI) / 180;
+    const sweepQuat = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), sweepYRad);
+    const base = sweepQuat.multiply(calculatePropQuaternion(Plane.WALL, staffRad));
+    return avoidTiltRad === 0 ? base : tiltQuatFor(avoidTiltRad).multiply(base);
+  });
 
   const autoYawDeg = $derived.by(() => {
     if (!naturalReach || !clearedGripTarget) return 0;
@@ -920,8 +1105,11 @@
     const violation = alpha < -15 ? alpha + 15 : alpha > 105 ? alpha - 105 : 0;
     const weightT = Math.max(0, Math.min(1, (horizontalReach - 0.06) / 0.12));
     const weight = weightT * weightT * (3 - 2 * weightT);
+    // Full gain: the torso absorbs the entire cone violation (up to the
+    // Assist cap), so the reach always lands inside the comfort cone in the
+    // body frame — the body accommodates the reel, not the other way round.
     return TORSO_ASSIST_SIGN *
-      Math.max(-torsoAssistDeg, Math.min(torsoAssistDeg, violation * 0.8)) *
+      Math.max(-torsoAssistDeg, Math.min(torsoAssistDeg, violation)) *
       weight *
       sideSign;
   });
@@ -1273,7 +1461,7 @@
             id="grip-lab-assist"
             type="range"
             min="0"
-            max="60"
+            max="90"
             step="1"
             bind:value={torsoAssistDeg}
             ondblclick={() => (torsoAssistDeg = TORSO_ASSIST_DEFAULT_DEG)}
