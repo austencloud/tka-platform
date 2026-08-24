@@ -388,6 +388,21 @@ function resolveShot(
     .map((value, index) => (value !== undefined ? index : -1))
     .filter((index) => index >= 0);
   const resolvedStaffLengths: (number | null)[] = rawInputs.map(() => null);
+  const staffStatingIds = new Set(
+    staffIndices.map((index) => performerIds[index]!)
+  );
+  for (const index of staffIndices) {
+    const value = staffLengthStates[index];
+    if (typeof value !== "object" || value === null || !("sameAs" in value)) {
+      continue;
+    }
+    const target = (value as { sameAs: string }).sameAs;
+    if (performerIds.includes(target) && !staffStatingIds.has(target)) {
+      throw new Error(
+        `Shot "${shot.id}", axis "staffLengthCm": sameAs references "${target}", which has no staff length to copy.`
+      );
+    }
+  }
   if (staffIndices.length > 0) {
     const resolved = resolveCastAxis<number>({
       axis: "staffLengthCm",

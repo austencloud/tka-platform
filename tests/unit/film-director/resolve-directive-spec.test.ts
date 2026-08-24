@@ -97,6 +97,53 @@ describe("resolveFilmDirectorSpec with directives", () => {
     ).toThrow(/8 performers.*5/s);
   });
 
+  it("rejects staff sameAs to a performer with no staff length", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          cast: {
+            count: 2,
+            performers: [
+              { id: "performer-1", staffLengthCm: { sameAs: "performer-2" } },
+            ],
+          },
+        })
+      )
+    ).toThrow(/has no staff length to copy/);
+  });
+
+  it("resolves staff sameAs to a performer that states a staff length", () => {
+    const spec = resolveFilmDirectorSpec(
+      film({
+        cast: {
+          count: 2,
+          performers: [
+            { id: "performer-1", staffLengthCm: 120 },
+            { id: "performer-2", staffLengthCm: { sameAs: "performer-1" } },
+          ],
+        },
+      })
+    );
+    const performers = spec.shots[0]!.performance.performers;
+    expect(performers[0]!.staffLengthCm).toBe(120);
+    expect(performers[1]!.staffLengthCm).toBe(120);
+  });
+
+  it("rejects staff sameAs to a genuinely unknown performer id", () => {
+    expect(() =>
+      resolveFilmDirectorSpec(
+        film({
+          cast: {
+            count: 2,
+            performers: [
+              { id: "performer-1", staffLengthCm: { sameAs: "performer-9" } },
+            ],
+          },
+        })
+      )
+    ).toThrow(/not in this cast/);
+  });
+
   it("v1 documents resolve exactly as before", () => {
     const spec = resolveFilmDirectorSpec({
       version: 1,
