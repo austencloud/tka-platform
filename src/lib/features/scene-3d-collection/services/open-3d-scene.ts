@@ -2,6 +2,7 @@ import type { Collected3DScene } from "../domain/scene-3d-collection-types";
 import { isGroupSaved } from "../domain/scene-3d-collection-types";
 import { buildScene3DPersistConfig } from "../domain/scene-3d-look";
 import {
+  clearViewer3DPresetIntent,
   markViewer3DPresetIntent,
   writeViewer3DConfig,
   type Viewer3DState,
@@ -88,6 +89,15 @@ export function applyScene3DLook(scene: Collected3DScene): void {
  * the live viewer state, which no checkpoint knows about. The collection
  * module's own "Apply look" action keeps its call-site toast — that path has
  * no mounted viewer to restore.
+ *
+ * KNOWN LIMITATION — scene-feature toggles do not apply live. `createSceneFeatureState`
+ * reads `tka-scene-features` exactly once at construct, and `Viewer3DCanvas`
+ * builds it once per mount (`const`, not derived), so the seed
+ * `applyScene3DLook` writes only takes effect on the next mount. Its public
+ * surface offers no setter that could bridge the gap: `toggle` flips a single
+ * key and rewrites the whole stored map, which would corrupt the seed just
+ * written. So a live apply swaps the environment immediately while its saved
+ * feature toggles (ocean flora, torches, …) stay as they are until reload.
  */
 export function applyScene3DLookLive(
   scene: Collected3DScene,
@@ -105,11 +115,16 @@ export function applyScene3DLookLive(
     action: {
       label: "Undo",
       onClick: () => {
-        // Storage first, live state second: `applyPersistConfig` re-persists
-        // what it touches, so restoring the keys afterward would be clobbered.
         revertSettingsCheckpoint();
+        // Carries the two things the checkpoint restore can't: it forces
+        // STORAGE_KEY_MODE back to "3d", and it is the whole undo when the
+        // viewer is already gone (the live half below is skipped then).
         writeViewer3DConfig(before);
-        viewer.applyPersistConfig(before);
+        clearViewer3DPresetIntent();
+        // The toast outlives a viewer the user exits during its six seconds;
+        // pushing config into a torn-down cast would touch dead performers.
+        // Storage is already restored, so the next mount picks it up.
+        if (viewer.renderMode === "3d") viewer.applyPersistConfig(before);
       },
     },
   });

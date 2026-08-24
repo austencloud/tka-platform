@@ -1456,10 +1456,20 @@ function buildViewer3DState(
   function applyPersistConfig(config: Partial<Viewer3DPersistConfig>): void {
     sceneUndo.withoutUndo(() => {
       if (config.performers) {
-        while (performerManager.performers.length < config.performers.length) {
+        // `addPerformer` returns null once the cast is at `maxPerformers`, and
+        // `removePerformer` returns null at a cast of one — so a config whose
+        // count sits outside that range (a hand-edited or future-versioned
+        // Firestore doc) would spin these loops forever. Clamp to what the
+        // manager can actually hold; an empty array floors at one performer,
+        // and the forEach below skips any index the cast doesn't reach.
+        const targetCount = Math.min(
+          Math.max(config.performers.length, 1),
+          performerManager.maxPerformers
+        );
+        while (performerManager.performers.length < targetCount) {
           performerManager.addPerformer();
         }
-        while (performerManager.performers.length > config.performers.length) {
+        while (performerManager.performers.length > targetCount) {
           performerManager.removePerformer();
         }
         performerManager.cancelFormationTransition();
@@ -1506,11 +1516,10 @@ function buildViewer3DState(
       if (config.selectedPerformerIndex !== undefined)
         selectedPerformerIndex = config.selectedPerformerIndex;
 
+      // `setDefaultProp` is the owner; its undo capture is already suppressed
+      // by the enclosing `withoutUndo`, so this is exactly the inline write.
       const nextDefaultProp = asPropType(config.defaultProp);
-      if (nextDefaultProp) {
-        _defaultSettings.prop = nextDefaultProp;
-        persistDefaultProp(nextDefaultProp);
-      }
+      if (nextDefaultProp) setDefaultProp(nextDefaultProp);
 
       if (config.effectToggles) {
         for (const key of Object.keys(effectToggles)) delete effectToggles[key];
@@ -1552,15 +1561,10 @@ function buildViewer3DState(
       }
 
       if (config.camera) {
-        snapCameraTo(
-          config.camera.position,
-          config.camera.target,
-          undefined,
-          true
-        );
+        snapCameraTo(config.camera.position, config.camera.target);
       } else if (config.performers) {
         // No saved camera in this preset — reframe to fit the new cast.
-        frameAllPerformers(undefined, true);
+        frameAllPerformers();
       }
     });
   }
@@ -1944,6 +1948,19 @@ export function markViewer3DPresetIntent(): void {
     sessionStorage.setItem(VIEWER3D_PRESET_INTENT_KEY, "1");
   } catch {
     // Quota/unavailable — worst case the next open follows the app prop.
+  }
+}
+
+/**
+ * Drop a pending marker without consuming it as a signal — for undoing an
+ * apply, where the preset that wrote it no longer holds.
+ */
+export function clearViewer3DPresetIntent(): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(VIEWER3D_PRESET_INTENT_KEY);
+  } catch {
+    // Unavailable storage means there was no marker to leave behind anyway.
   }
 }
 
