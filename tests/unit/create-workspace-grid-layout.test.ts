@@ -251,7 +251,8 @@ describe("Create workspace action rail contract", () => {
     );
     expect(sequenceDisplaySource).not.toContain("<UndoButton");
     expect(sequenceDisplaySource).not.toContain("<SequenceActionsButton");
-    expect(sequenceDisplaySource).toContain("<SaveToLibraryButton");
+    expect(sequenceDisplaySource).not.toContain("<SaveToLibraryButton");
+    expect(standardWorkspaceSource).toContain("<SaveToLibraryButton");
   });
 
   it("keeps layout, icon, and tutorial maps in lockstep", () => {
