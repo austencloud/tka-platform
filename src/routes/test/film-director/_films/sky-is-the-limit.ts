@@ -2,7 +2,7 @@ import type { FilmDirectorInput } from "../_lib/film-director-schema";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export const skyIsTheLimitFilm: FilmDirectorInput = {
-  version: 1,
+  version: 2,
   id: "sky-is-the-limit-r1",
   title: "Sky Is the Limit",
   brief:
