@@ -1,9 +1,9 @@
 # Words: Alpha/Beta Copy Review
 
 **Concept ID:** `words-alpha-beta`  
-**Review state:** REJECTED COPY / REDESIGN IN REVIEW
-**Implementation gate:** CLOSED  
-**Last reviewed:** 2026-08-22
+**Review state:** GUIDE-VERBATIM COPY APPROVED / STEP LESSON IN REVIEW
+**Implementation gate:** OPEN for guide-verbatim prose only  
+**Last reviewed:** 2026-08-23
 
 ## Current Implementation Boundary
 
@@ -11,15 +11,24 @@ On 2026-08-22 Austen corrected the example source: “Look at the TKA 1:
 Learning Letters deck. Those are the 19 words.” He then authorized the data and
 interaction correction with “fix it.”
 
-The lesson may therefore load and present the deck's canonical 19 sequence
-objects. This does not approve new explanatory TKA copy. The replacement
-workspace uses only routine interface labels, the verified deck/family names,
-card counts, and canonical glyphs. The explanatory-copy gate remains closed.
+On 2026-08-23 Austen rejected the single-screen deck-browser presentation as a
+first-encounter lesson (“this does not seem like the proper way to show this
+information to people that they've never encountered before … you'd probably
+want to see what's presented to you in the actual guide”) and approved the
+replacement direction with “Yes. Do that.”: a hand-held step-by-step lesson
+that follows the guide's Alpha/Beta Words page (`lt1-abc-ghi`) — one word at a
+time in guide order (AAAA, BBBB, CCCC, then GGGG, HHHH, IIII), with the guide's
+own sentences quoted verbatim as the only connective prose, ending with the
+full 19-card deck as the summary/exploration capstone.
 
-The rejected quiz and completion summary have been removed. The lesson now
-presents each active family's real cards before selection and keeps the chosen
-card beside its live motion. This interaction is awaiting Austen's review and
-is not recorded as approved.
+The lesson may load and present the deck's canonical 19 sequence objects and
+the guide's verbatim prose recorded under Approved Text below. No other
+explanatory TKA copy is approved. Routine interface labels, the verified
+deck/family names, card counts, and canonical glyphs remain exempt.
+
+The rejected quiz and completion summary have been removed. The step lesson's
+interaction is awaiting Austen's hands-on review and is not recorded as
+CONFIRMED.
 
 The old generated `AABB` / `GGGG` / `CCCC` exercise and the proposed
 three-card AABB replacement below are both superseded as the primary lesson
@@ -150,8 +159,27 @@ No replacement explanation is approved. Before editing the lesson copy:
 
 ## Approved Text
 
-None.
+Both passages are quoted verbatim (including emphasis and typographic
+apostrophes) from the guide's Alpha/Beta Words page, authored by Austen:
+`src/routes/(public)/guide/level-1/_pages/AlphaBetaWordsPage.svelte` (`PARAS`),
+matching proof p22 / `static/guides/level-1.pdf`.
+
+Intro step:
+
+> The first words we will learn correspond to VTG’s 1:1 motions.
+> To execute these, **_you’ll need to use body turns and/or negative space_**.
+
+Deck capstone step:
+
+> **Practice each word once in both directions, then again starting with
+> thumbs out.**
+
+No paraphrase, extension, or reordering of these sentences is approved. Any
+other explanatory prose still requires a new approval entry here.
 
 ## Approval Record
 
-No approval has been granted.
+- 2026-08-23 — Austen approved the guide-faithful step-by-step redesign,
+  including “guide sentences as the connective copy (verbatim),” with
+  “Yes. Do that.” The approved sentences are his own guide copy quoted
+  unchanged; no newly authored explanatory copy is in the lesson.

@@ -71,7 +71,10 @@
     background: var(--theme-panel-bg);
   }
 
-  @media (max-width: 760px) {
+  /* Portrait tablets and phones: stack the animation over the card. A split
+     at these widths squeezes the card into a cramped two-column layout while
+     the tall viewport goes unused. */
+  @media (max-width: 900px) {
     .sequence-pair {
       grid-template-columns: 1fr;
       grid-template-rows: 18rem 24rem;
@@ -84,15 +87,23 @@
     }
   }
 
-  @media (max-height: 620px) and (min-width: 761px) {
+  @media (max-height: 620px) and (min-width: 901px) {
     .sequence-pair {
       height: 26rem;
     }
   }
 
-  @media (min-width: 2200px) {
+  /* Same big-screen seams as the lesson shell (4k-native-layout.md):
+     1680 for 4K@200% / 1440p, 2600 for 4K@100% and TVs. */
+  @media (min-width: 1680px) {
     .sequence-pair {
-      height: clamp(38rem, 48dvh, 52rem);
+      height: clamp(32rem, 52dvh, 48rem);
+    }
+  }
+
+  @media (min-width: 2600px) {
+    .sequence-pair {
+      height: clamp(40rem, 56dvh, 60rem);
     }
   }
 </style>

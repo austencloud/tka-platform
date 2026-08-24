@@ -92,6 +92,36 @@ describe("canonical concept lesson composition", () => {
     expect(type1).not.toContain("Type1ProspinPage");
   });
 
+  it("walks the guide's six words step by step before the deck capstone", () => {
+    const words = readSource(
+      "src/lib/features/learn/components/interactive/words/WordsConceptExperience.svelte"
+    );
+    const progress = readSource(
+      "src/lib/features/learn/components/interactive/words/learning-letters-progress.ts"
+    );
+
+    // Step machinery: hand-held one-word-at-a-time flow (grid-lesson pattern),
+    // in the guide's Alpha/Beta Words order.
+    expect(words).toContain("ExperienceProgressIndicator");
+    expect(words).toContain("LEARNING_LETTERS_TOTAL_STEPS");
+    expect(words).toContain("capstoneStepIndex");
+    expect(progress).toContain(
+      '"AAAA",\n  "BBBB",\n  "CCCC",\n  "GGGG",\n  "HHHH",\n  "IIII",'
+    );
+
+    // Connective copy is the guide's own prose, verbatim (lt1-abc-ghi) —
+    // approved via docs/learn/copy-reviews/words-alpha-beta.md.
+    expect(words).toContain(
+      "The first words we will learn correspond to VTG’s 1:1 motions."
+    );
+    expect(words).toContain(
+      "you’ll need to use body turns and/or negative space"
+    );
+    expect(words).toContain(
+      "Practice each word once in both directions, then again starting\n              with thumbs out."
+    );
+  });
+
   it("loads the founding Learning Letters deck and keeps every card inspectable", () => {
     const stage = readSource(
       "src/lib/features/learn/components/interactive/words/WordSequencePair.svelte"
@@ -112,6 +142,13 @@ describe("canonical concept lesson composition", () => {
     expect(stage).toContain(
       "grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)"
     );
+
+    // Composition guards: track count follows the active family (no phantom
+    // 4th column), and big-screen tiers use the 1680/2600 seams — a 2200
+    // seam is dead on 4K@200% (4k-native-layout.md).
+    expect(words).toContain("--family-cols");
+    expect(words).not.toContain("min-width: 2200px");
+    expect(stage).not.toContain("min-width: 2200px");
 
     expect(words).not.toContain("getWordSequenceGenerator");
     expect(words).not.toContain("WORD_LESSON_EXAMPLES");
