@@ -1,0 +1,655 @@
+diff --git a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
+index 440cfe7..8e1746e 100644
+--- a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
++++ b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.d.ts
+@@ -16,9 +16,14 @@ export declare class AutumnSceneryRenderer {
+     private artwork;
+     private activeAspect;
+     private loadGeneration;
++    private artworkRetryTimers;
++    private artworkRetryAttempts;
+     constructor(quality?: QualityLevel);
+     initialize(dimensions: Dimensions, quality: QualityLevel): void;
+     private loadArtwork;
++    private loadArtworkSource;
++    private clearArtworkRetry;
++    private clearArtworkRetries;
+     update(frameMultiplier: number): void;
+     draw(ctx: CanvasRenderingContext2D, dimensions: Dimensions, layers: AutumnSceneryLayers): void;
+     private usesMultiplaneArtwork;
+@@ -39,4 +44,4 @@ export declare class AutumnSceneryRenderer {
+     getLoadedMatteCount(): number;
+     cleanup(): void;
+ }
+-//# sourceMappingURL=AutumnSceneryRenderer.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=AutumnSceneryRenderer.d.ts.map
+diff --git a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
+index 1786fd1..3c43b68 100644
+--- a/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
++++ b/dist/backgrounds/autumn/services/AutumnSceneryRenderer.js
+@@ -3,6 +3,7 @@ import { getAutumnComposition, } from "../domain/autumn-composition.js";
+ import { getAutumnFlatPath, getAutumnImagePlacement, getAutumnPlateAspect, getAutumnPlateSet, } from "../domain/autumn-plates.js";
+ const FAR_ARTWORK_FILTER = "saturate(0.8) brightness(0.98) contrast(1.03)";
+ const MIDDLE_ARTWORK_FILTER = "saturate(0.9)";
++const ARTWORK_RETRY_DELAYS_MS = [250, 1000, 3000];
+ export class AutumnSceneryRenderer {
+     dimensions = { width: 0, height: 0 };
+     composition = getAutumnComposition(this.dimensions);
+@@ -20,6 +21,8 @@ export class AutumnSceneryRenderer {
+     artwork = {};
+     activeAspect = null;
+     loadGeneration = 0;
++    artworkRetryTimers = new Map();
++    artworkRetryAttempts = new Map();
+     constructor(quality = "medium") {
+         this.quality = quality;
+     }
+@@ -38,7 +41,10 @@ export class AutumnSceneryRenderer {
+             return;
+         const generation = ++this.loadGeneration;
+         this.activeAspect = aspect;
+-        this.artwork = {};
++        // Keep the previous frame's plates visible while a new aspect loads.
++        // Clearing them first turns one transient request failure into a
++        // permanent orange gradient until the entire controller remounts.
++        this.clearArtworkRetries();
+         const sources = [
+             { key: "flat", path: getAutumnFlatPath(this.dimensions) },
+             ...getAutumnPlateSet(this.dimensions).map((plate) => ({
+@@ -47,20 +53,53 @@ export class AutumnSceneryRenderer {
+             })),
+         ];
+         for (const source of sources) {
+-            const image = new Image();
+-            image.decoding = "async";
+-            image.onload = () => {
+-                if (generation === this.loadGeneration) {
+-                    this.artwork[source.key] = image;
+-                }
+-            };
+-            image.onerror = () => {
++            this.loadArtworkSource(source, generation);
++        }
++    }
++    loadArtworkSource(source, generation) {
++        const image = new Image();
++        image.decoding = "async";
++        image.onload = () => {
++            if (generation !== this.loadGeneration)
++                return;
++            this.artwork[source.key] = image;
++            this.clearArtworkRetry(source.key);
++        };
++        image.onerror = () => {
++            if (generation !== this.loadGeneration)
++                return;
++            const attempt = this.artworkRetryAttempts.get(source.key) ?? 0;
++            const delay = ARTWORK_RETRY_DELAYS_MS[attempt];
++            if (delay === undefined) {
++                this.clearArtworkRetry(source.key);
++                console.warn(`[AutumnSceneryRenderer] Failed to load ${source.path} after ${ARTWORK_RETRY_DELAYS_MS.length + 1} attempts.`);
++                return;
++            }
++            this.artworkRetryAttempts.set(source.key, attempt + 1);
++            const timer = setTimeout(() => {
++                this.artworkRetryTimers.delete(source.key);
+                 if (generation === this.loadGeneration) {
+-                    delete this.artwork[source.key];
++                    this.loadArtworkSource(source, generation);
+                 }
+-            };
+-            image.src = source.path;
++            }, delay);
++            this.artworkRetryTimers.set(source.key, timer);
++        };
++        image.src = source.path;
++    }
++    clearArtworkRetry(key) {
++        const timer = this.artworkRetryTimers.get(key);
++        if (timer !== undefined) {
++            clearTimeout(timer);
++            this.artworkRetryTimers.delete(key);
++        }
++        this.artworkRetryAttempts.delete(key);
++    }
++    clearArtworkRetries() {
++        for (const timer of this.artworkRetryTimers.values()) {
++            clearTimeout(timer);
+         }
++        this.artworkRetryTimers.clear();
++        this.artworkRetryAttempts.clear();
+     }
+     update(frameMultiplier) {
+         if (!this.reducedMotion)
+@@ -254,9 +293,10 @@ export class AutumnSceneryRenderer {
+     }
+     cleanup() {
+         this.loadGeneration += 1;
++        this.clearArtworkRetries();
+         this.artwork = {};
+         this.activeAspect = null;
+         this.parallax.initialize();
+     }
+ }
+-//# sourceMappingURL=AutumnSceneryRenderer.js.map
+\ No newline at end of file
++//# sourceMappingURL=AutumnSceneryRenderer.js.map
+diff --git a/dist/core/contracts/IBackgroundController.d.ts b/dist/core/contracts/IBackgroundController.d.ts
+index d8d0dc1..869d68b 100644
+--- a/dist/core/contracts/IBackgroundController.d.ts
++++ b/dist/core/contracts/IBackgroundController.d.ts
+@@ -76,6 +76,10 @@ export interface IBackgroundController {
+      * Only unmount when the app is truly shutting down.
+      */
+     unmount(): void;
++    /** Freeze the current painted frame without disposing canvases or systems. */
++    freeze(): void;
++    /** Resume every live canvas after a freeze. */
++    unfreeze(): void;
+     /**
+      * Set the background type with optional customization.
+      *
+@@ -131,4 +135,4 @@ export interface IBackgroundController {
+      */
+     onEvent(callback: (event: BackgroundEvent) => void): void;
+ }
+-//# sourceMappingURL=IBackgroundController.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=IBackgroundController.d.ts.map
+diff --git a/dist/core/services/BackgroundController.d.ts b/dist/core/services/BackgroundController.d.ts
+index 6f9952d..0b62896 100644
+--- a/dist/core/services/BackgroundController.d.ts
++++ b/dist/core/services/BackgroundController.d.ts
+@@ -28,6 +28,11 @@ export declare class BackgroundController implements IBackgroundController {
+     private mounted;
+     private initialized;
+     private initializationInProgress;
++    private lifecycleGeneration;
++    private frozen;
++    private initializationRetryTimer;
++    private initializationRetryCount;
++    private initializationRetryType;
+     private resizeObserver;
+     private adaptiveQualityManager;
+     private onEventCallback;
+@@ -41,6 +46,14 @@ export declare class BackgroundController implements IBackgroundController {
+      * Stops animations, cleans up systems, removes canvases.
+      */
+     unmount(): void;
++    /**
++     * Freeze the current painted frame without disposing canvases or systems.
++     */
++    freeze(): void;
++    /**
++     * Resume every live canvas after a freeze.
++     */
++    unfreeze(): void;
+     /**
+      * Set the background type.
+      */
+@@ -79,6 +92,7 @@ export declare class BackgroundController implements IBackgroundController {
+     onEvent(callback: (event: import("../domain/types.js").BackgroundEvent) => void): void;
+     private createCanvases;
+     private verifyCanvases;
++    private attachCanvasRecovery;
+     private setupResizeObserver;
+     private updateCanvasDimensions;
+     private handleResize;
+@@ -88,6 +102,9 @@ export declare class BackgroundController implements IBackgroundController {
+     private performCrossfade;
+     private startAnimation;
+     private stopAnimation;
++    private isCurrentGeneration;
++    private scheduleInitializationRetry;
++    private clearInitializationRetry;
+     private waitForFrame;
+     private delay;
+ }
+@@ -98,4 +115,4 @@ export declare class BackgroundController implements IBackgroundController {
+  * This ensures the canvas state survives code changes during development.
+  */
+ export declare function getBackgroundController(): BackgroundController;
+-//# sourceMappingURL=BackgroundController.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=BackgroundController.d.ts.map
+diff --git a/dist/core/services/BackgroundController.js b/dist/core/services/BackgroundController.js
+index 70fed35..ae10e8d 100644
+--- a/dist/core/services/BackgroundController.js
++++ b/dist/core/services/BackgroundController.js
+@@ -12,6 +12,8 @@ const CROSSFADE_DURATION_MS = 800;
+ /** Cap internal canvas resolution — decorative background doesn't need full resolution. */
+ const MAX_CANVAS_WIDTH = 960;
+ const MAX_CANVAS_HEIGHT = 540;
++/** Retry transient chunk/context failures without leaving the fallback gradient forever. */
++const INITIALIZATION_RETRY_DELAYS_MS = [250, 1000, 3000];
+ /**
+  * BackgroundController implementation
+  */
+@@ -40,6 +42,16 @@ export class BackgroundController {
+     mounted = false;
+     initialized = false;
+     initializationInProgress = false;
++    // A mount generation makes every async completion prove it still belongs to
++    // the canvases it started against. Without it, a delayed lazy import or
++    // crossfade can finish after unmount() and overwrite a newer mount.
++    lifecycleGeneration = 0;
++    // Playback and short tab switches freeze the last painted frame. They must
++    // not dispose artwork, canvases, or systems just to save the frame budget.
++    frozen = false;
++    initializationRetryTimer = null;
++    initializationRetryCount = 0;
++    initializationRetryType = null;
+     // Resize observer
+     resizeObserver = null;
+     // Adaptive quality
+@@ -59,6 +71,7 @@ export class BackgroundController {
+         if (this.mounted && this.container !== container) {
+             this.unmount();
+         }
++        this.lifecycleGeneration += 1;
+         this.container = container;
+         this.createCanvases();
+         this.setupResizeObserver();
+@@ -74,6 +87,10 @@ export class BackgroundController {
+      * Stops animations, cleans up systems, removes canvases.
+      */
+     unmount() {
++        // Invalidate lazy imports, crossfades, and retry callbacks that started
++        // for the outgoing canvases before any of their cleanup can run.
++        this.lifecycleGeneration += 1;
++        this.clearInitializationRetry();
+         // Stop all animations
+         this.stopAnimation('A');
+         this.stopAnimation('B');
+@@ -98,6 +115,43 @@ export class BackgroundController {
+         // Reset flags (but keep currentType for potential remount)
+         this.mounted = false;
+         this.initialized = false;
++        this.initializationInProgress = false;
++        this.isTransitioning = false;
++        this.pendingType = null;
++        this.pendingOptions = null;
++    }
++    /**
++     * Freeze the current painted frame without disposing any background state.
++     */
++    freeze() {
++        if (this.frozen)
++            return;
++        this.frozen = true;
++        this.stopAnimation('A');
++        this.stopAnimation('B');
++    }
++    /**
++     * Resume every live canvas exactly once after a freeze.
++     */
++    unfreeze() {
++        if (!this.frozen)
++            return;
++        this.frozen = false;
++        if (!this.mounted)
++            return;
++        if (this.systemA && this.animationIdA === null) {
++            this.startAnimation('A');
++        }
++        if (this.systemB && this.animationIdB === null) {
++            this.startAnimation('B');
++        }
++        if (this.pendingType) {
++            const pending = this.pendingType;
++            const pendingOptions = this.pendingOptions || this.currentOptions;
++            this.pendingType = null;
++            this.pendingOptions = null;
++            void this.setBackground(pending, pendingOptions);
++        }
+     }
+     /**
+      * Set the background type.
+@@ -112,6 +166,14 @@ export class BackgroundController {
+             this.currentType = type;
+             return;
+         }
++        // A theme change during playback should happen after the held frame is
++        // released. Starting a second loop while frozen defeats the frame-budget
++        // guarantee and can crossfade to a canvas that has not painted yet.
++        if (this.frozen) {
++            this.pendingType = type;
++            this.pendingOptions = options || null;
++            return;
++        }
+         // If same type and already initialized → no-op
+         // Note: We no longer pixel-read the canvas here. The isActiveCanvasBlank()
+         // check was racy: the animation loop calls clearRect() before draw(), and
+@@ -172,6 +234,14 @@ export class BackgroundController {
+      */
+     forceRefresh() {
+         if (this.currentType && this.mounted) {
++            // A restored canvas needs a fresh system. Advancing the generation
++            // also prevents an older transition from committing afterward.
++            this.lifecycleGeneration += 1;
++            this.clearInitializationRetry();
++            this.stopAnimation('A');
++            this.stopAnimation('B');
++            this.isTransitioning = false;
++            this.initializationInProgress = false;
+             this.initialized = false;
+             void this.initializeBackground(this.currentType, this.currentOptions);
+         }
+@@ -200,10 +270,12 @@ export class BackgroundController {
+         this.canvasA = document.createElement('canvas');
+         this.canvasA.className = 'background-canvas canvas-a';
+         this.canvasA.setAttribute('aria-hidden', 'true');
++        this.attachCanvasRecovery(this.canvasA, 'A');
+         // Create canvas B
+         this.canvasB = document.createElement('canvas');
+         this.canvasB.className = 'background-canvas canvas-b';
+         this.canvasB.setAttribute('aria-hidden', 'true');
++        this.attachCanvasRecovery(this.canvasB, 'B');
+         // Set initial active state
+         this.updateActiveCanvasClass();
+         // Append to container
+@@ -229,6 +301,18 @@ export class BackgroundController {
+             }
+         }
+     }
++    attachCanvasRecovery(canvas, which) {
++        canvas.addEventListener('contextlost', () => {
++            if (canvas !== this.canvasA && canvas !== this.canvasB)
++                return;
++            this.stopAnimation(which);
++        });
++        canvas.addEventListener('contextrestored', () => {
++            if (!this.mounted || (canvas !== this.canvasA && canvas !== this.canvasB))
++                return;
++            this.forceRefresh();
++        });
++    }
+     setupResizeObserver() {
+         if (!this.container || typeof ResizeObserver === 'undefined')
+             return;
+@@ -305,9 +389,10 @@ export class BackgroundController {
+     // PRIVATE METHODS - Background Initialization & Transitions
+     // ═══════════════════════════════════════════════════════════════════════════
+     async initializeBackground(type, options) {
+-        if (!this.canvasA) {
++        if (!this.canvasA || !this.mounted) {
+             return;
+         }
++        const generation = this.lifecycleGeneration;
+         this.initializationInProgress = true;
+         try {
+             // Clean up any existing systems
+@@ -318,24 +403,17 @@ export class BackgroundController {
+             this.systemA = null;
+             this.systemB = null;
+             // Create the background system
+-            let system;
+-            try {
+-                system = await BackgroundFactory.createBackgroundSystem({
+-                    type,
+-                    quality: this.quality,
+-                    initialQuality: this.quality,
+-                    thumbnailMode: options.thumbnailMode,
+-                    backgroundColor: options.backgroundColor,
+-                    gradientColors: options.gradientColors,
+-                    gradientDirection: options.gradientDirection
+-                });
+-            }
+-            catch (factoryError) {
+-                this.initializationInProgress = false;
+-                return;
+-            }
+-            if (!system) {
+-                this.initializationInProgress = false;
++            const system = await BackgroundFactory.createBackgroundSystem({
++                type,
++                quality: this.quality,
++                initialQuality: this.quality,
++                thumbnailMode: options.thumbnailMode,
++                backgroundColor: options.backgroundColor,
++                gradientColors: options.gradientColors,
++                gradientDirection: options.gradientDirection
++            });
++            if (!this.isCurrentGeneration(generation) || !this.canvasA) {
++                system?.cleanup();
+                 return;
+             }
+             // Store and activate on canvas A
+@@ -349,14 +427,25 @@ export class BackgroundController {
+             };
+             system.initialize(dimensions, this.quality);
+             // Start the animation loop
+-            this.startAnimation('A', type);
++            this.startAnimation('A');
+             // Update state
+             this.currentType = type;
+             this.initialized = true;
++            this.clearInitializationRetry();
++        }
++        catch (error) {
++            if (this.isCurrentGeneration(generation)) {
++                this.initialized = false;
++                this.scheduleInitializationRetry(type, options, generation, error);
++            }
+         }
+         finally {
+-            this.initializationInProgress = false;
++            if (this.isCurrentGeneration(generation)) {
++                this.initializationInProgress = false;
++            }
+         }
++        if (!this.isCurrentGeneration(generation))
++            return;
+         // Process any pending request
+         if (this.pendingType && this.pendingType !== type) {
+             const pending = this.pendingType;
+@@ -371,6 +460,7 @@ export class BackgroundController {
+         }
+     }
+     async performCrossfade(newType, options) {
++        const generation = this.lifecycleGeneration;
+         this.isTransitioning = true;
+         const incomingCanvas = this.activeCanvas === 'A' ? 'B' : 'A';
+         const canvas = incomingCanvas === 'A' ? this.canvasA : this.canvasB;
+@@ -379,72 +469,99 @@ export class BackgroundController {
+             return;
+         }
+         // Create the new background system
+-        const newSystem = await BackgroundFactory.createBackgroundSystem({
+-            type: newType,
+-            quality: this.quality,
+-            initialQuality: this.quality,
+-            thumbnailMode: options.thumbnailMode,
+-            backgroundColor: options.backgroundColor,
+-            gradientColors: options.gradientColors,
+-            gradientDirection: options.gradientDirection
+-        });
++        let newSystem = null;
++        try {
++            newSystem = await BackgroundFactory.createBackgroundSystem({
++                type: newType,
++                quality: this.quality,
++                initialQuality: this.quality,
++                thumbnailMode: options.thumbnailMode,
++                backgroundColor: options.backgroundColor,
++                gradientColors: options.gradientColors,
++                gradientDirection: options.gradientDirection
++            });
++            if (!this.isCurrentGeneration(generation)) {
++                newSystem.cleanup();
++                return;
++            }
+         // Store the new system
+-        if (incomingCanvas === 'A') {
+-            this.systemA = newSystem;
+-        }
+-        else {
+-            this.systemB = newSystem;
+-        }
++            if (incomingCanvas === 'A') {
++                this.systemA = newSystem;
++            }
++            else {
++                this.systemB = newSystem;
++            }
+         // Initialize with current dimensions
+-        const dimensions = { width: canvas.width, height: canvas.height };
+-        newSystem.initialize(dimensions, this.quality);
++            const dimensions = { width: canvas.width, height: canvas.height };
++            newSystem.initialize(dimensions, this.quality);
+         // Start animation on the new canvas
+-        this.startAnimation(incomingCanvas, newType);
++            this.startAnimation(incomingCanvas);
+         // Wait for at least one frame to render
+-        await this.waitForFrame();
+-        await this.waitForFrame();
++            await this.waitForFrame();
++            await this.waitForFrame();
++            if (!this.isCurrentGeneration(generation)) {
++                newSystem.cleanup();
++                return;
++            }
+         // Trigger the CSS crossfade
+-        this.activeCanvas = incomingCanvas;
+-        this.updateActiveCanvasClass();
++            this.activeCanvas = incomingCanvas;
++            this.updateActiveCanvasClass();
+         // Wait for CSS transition to complete
+-        await this.delay(CROSSFADE_DURATION_MS);
++            await this.delay(CROSSFADE_DURATION_MS);
++            if (!this.isCurrentGeneration(generation)) {
++                newSystem.cleanup();
++                return;
++            }
+         // Cleanup the old system
+-        const oldCanvas = incomingCanvas === 'A' ? 'B' : 'A';
+-        this.stopAnimation(oldCanvas);
+-        const oldSystem = oldCanvas === 'A' ? this.systemA : this.systemB;
+-        oldSystem?.cleanup();
+-        if (oldCanvas === 'A') {
+-            this.systemA = null;
+-        }
+-        else {
+-            this.systemB = null;
+-        }
++            const oldCanvas = incomingCanvas === 'A' ? 'B' : 'A';
++            this.stopAnimation(oldCanvas);
++            const oldSystem = oldCanvas === 'A' ? this.systemA : this.systemB;
++            oldSystem?.cleanup();
++            if (oldCanvas === 'A') {
++                this.systemA = null;
++            }
++            else {
++                this.systemB = null;
++            }
+         // Update state
+-        this.currentType = newType;
+-        this.isTransitioning = false;
++            this.currentType = newType;
++            this.isTransitioning = false;
++            this.clearInitializationRetry();
+         // Reset adaptive quality tracking so stale FPS data from the old
+         // background doesn't trigger adjustments for the new one
+-        this.adaptiveQualityManager?.reset();
++            this.adaptiveQualityManager?.reset();
+         // Process any pending request
+-        if (this.pendingType && this.pendingType !== newType) {
+-            const pending = this.pendingType;
+-            const pendingOpts = this.pendingOptions || options;
+-            this.pendingType = null;
+-            this.pendingOptions = null;
+-            await this.performCrossfade(pending, pendingOpts);
++            if (this.pendingType && this.pendingType !== newType) {
++                const pending = this.pendingType;
++                const pendingOpts = this.pendingOptions || options;
++                this.pendingType = null;
++                this.pendingOptions = null;
++                await this.performCrossfade(pending, pendingOpts);
++            }
++            else {
++                this.pendingType = null;
++                this.pendingOptions = null;
++            }
+         }
+-        else {
+-            this.pendingType = null;
+-            this.pendingOptions = null;
++        catch (error) {
++            newSystem?.cleanup();
++            if (this.isCurrentGeneration(generation)) {
++                if (incomingCanvas === 'A' && this.systemA === newSystem)
++                    this.systemA = null;
++                if (incomingCanvas === 'B' && this.systemB === newSystem)
++                    this.systemB = null;
++                this.isTransitioning = false;
++                this.scheduleInitializationRetry(newType, options, generation, error);
++            }
+         }
+     }
+     // ═══════════════════════════════════════════════════════════════════════════
+     // PRIVATE METHODS - Animation Loop
+     // ═══════════════════════════════════════════════════════════════════════════
+-    startAnimation(which, type) {
++    startAnimation(which) {
+         const canvas = which === 'A' ? this.canvasA : this.canvasB;
+         const system = which === 'A' ? this.systemA : this.systemB;
+-        if (!canvas || !system)
++        if (!canvas || !system || this.frozen)
+             return;
+         const ctx = canvas.getContext('2d', { willReadFrequently: false });
+         if (!ctx)
+@@ -492,6 +609,46 @@ export class BackgroundController {
+             this.animationIdB = null;
+         }
+     }
++    isCurrentGeneration(generation) {
++        return this.mounted && generation === this.lifecycleGeneration;
++    }
++    scheduleInitializationRetry(type, options, generation, error) {
++        if (!this.isCurrentGeneration(generation))
++            return;
++        if (this.initializationRetryType !== type) {
++            this.initializationRetryType = type;
++            this.initializationRetryCount = 0;
++        }
++        const delay = INITIALIZATION_RETRY_DELAYS_MS[this.initializationRetryCount];
++        if (delay === undefined) {
++            console.error(`[BackgroundController] Failed to initialize "${String(type)}" after ${INITIALIZATION_RETRY_DELAYS_MS.length + 1} attempts.`, error);
++            return;
++        }
++        this.initializationRetryCount += 1;
++        if (this.initializationRetryTimer !== null) {
++            clearTimeout(this.initializationRetryTimer);
++        }
++        console.warn(`[BackgroundController] Retrying "${String(type)}" in ${delay}ms after initialization failed.`, error);
++        this.initializationRetryTimer = setTimeout(() => {
++            this.initializationRetryTimer = null;
++            if (!this.isCurrentGeneration(generation))
++                return;
++            if (this.frozen) {
++                this.pendingType = type;
++                this.pendingOptions = options;
++                return;
++            }
++            void this.setBackground(type, options);
++        }, delay);
++    }
++    clearInitializationRetry() {
++        if (this.initializationRetryTimer !== null) {
++            clearTimeout(this.initializationRetryTimer);
++            this.initializationRetryTimer = null;
++        }
++        this.initializationRetryCount = 0;
++        this.initializationRetryType = null;
++    }
+     // ═══════════════════════════════════════════════════════════════════════════
+     // PRIVATE METHODS - Utilities
+     // ═══════════════════════════════════════════════════════════════════════════
+@@ -526,4 +683,4 @@ export function getBackgroundController() {
+     }
+     return controllerInstance;
+ }
+-//# sourceMappingURL=BackgroundController.js.map
+\ No newline at end of file
++//# sourceMappingURL=BackgroundController.js.map
