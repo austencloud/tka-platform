@@ -18,6 +18,7 @@ import {
   getClientEmptiedRoutePaths,
   getDisabledFeatureModulePaths,
   getSsrEmptiedRoutePaths,
+  getSsrRenderedFeatureComponentPaths,
   getSsrStubbedModulePaths,
   getSsrStubbedPackages,
 } from "./feature-flags";
@@ -32,6 +33,7 @@ function normalize(p: string): string {
 export function featureGatePlugin(): Plugin {
   let isProductionBuild = false;
   let disabledModulePaths: string[] = [];
+  let ssrRenderedComponentPaths: string[] = [];
   let stubbedPackages: string[] = [];
   let emptiedRoutePaths: string[] = [];
 
@@ -51,6 +53,9 @@ export function featureGatePlugin(): Plugin {
       disabledModulePaths = isSsrBuild
         ? getSsrStubbedModulePaths()
         : getDisabledFeatureModulePaths();
+      ssrRenderedComponentPaths = isSsrBuild
+        ? getSsrRenderedFeatureComponentPaths()
+        : [];
       stubbedPackages = isSsrBuild ? getSsrStubbedPackages() : [];
       emptiedRoutePaths = isSsrBuild
         ? getSsrEmptiedRoutePaths()
@@ -76,6 +81,17 @@ export function featureGatePlugin(): Plugin {
 
       const normalizedSource = normalize(source);
       if (!normalizedSource.endsWith(".svelte")) return null;
+
+      // Public SSR shells stay real even when their feature directory is
+      // broadly stubbed. Imports beneath the shell are resolved independently
+      // and still hit the normal gate, preserving the server bundle boundary.
+      if (
+        ssrRenderedComponentPaths.some((path) =>
+          normalizedSource.includes(path)
+        )
+      ) {
+        return null;
+      }
 
       let matched = false;
       for (const prefix of disabledModulePaths) {

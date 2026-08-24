@@ -366,6 +366,16 @@ const SSR_STUBBED_SHARED_RENDER_PATHS: string[] = [
 ];
 
 /**
+ * Lightweight feature-owned components that genuinely render on public SSR
+ * routes. Their browser-only descendants still match the broader feature path
+ * and remain stubbed, so these exceptions do not pull an app module into the
+ * Cloudflare Worker.
+ */
+const SSR_RENDERED_FEATURE_COMPONENT_PATHS: string[] = [
+  "features/learn/components/PublicConceptCourse.svelte",
+];
+
+/**
  * Module path prefixes to stub in the SSR / server (Cloudflare Pages Functions)
  * build.
  *
@@ -389,6 +399,11 @@ export function getSsrStubbedModulePaths(): string[] {
     ...FEATURES.filter((f) => f.tier !== "core").flatMap((f) => f.modulePaths),
     ...SSR_STUBBED_SHARED_RENDER_PATHS,
   ];
+}
+
+/** Exact feature-owned component paths that must remain callable during SSR. */
+export function getSsrRenderedFeatureComponentPaths(): string[] {
+  return [...SSR_RENDERED_FEATURE_COMPONENT_PATHS];
 }
 
 /**

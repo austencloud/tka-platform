@@ -122,4 +122,47 @@ describe("production release feature gate", () => {
       load("E:/tka-platform/src/routes/browse/gallery/+page.svelte")
     ).toBeNull();
   });
+
+  it("keeps the public Concepts SSR shell while stubbing its app child", async () => {
+    const flags = await loadProductionFeatureFlags();
+    expect(flags.getSsrRenderedFeatureComponentPaths()).toEqual([
+      "features/learn/components/PublicConceptCourse.svelte",
+    ]);
+
+    const { featureGatePlugin } =
+      await import("../../src/config/vite-plugin-feature-gate");
+    const plugin = featureGatePlugin();
+    const configure = plugin.configResolved as (config: {
+      command: string;
+      build: { ssr: boolean };
+    }) => void;
+    configure({ command: "build", build: { ssr: true } });
+
+    const resolve = vi.fn(async (source: string) => ({
+      id: `E:/tka-platform/src/lib/${source.replace("$lib/", "")}`,
+    }));
+    const resolveId = plugin.resolveId as (
+      this: { resolve: typeof resolve },
+      source: string,
+      importer: string,
+      options: { ssr: boolean }
+    ) => Promise<string | null>;
+
+    await expect(
+      resolveId.call(
+        { resolve },
+        "$lib/features/learn/components/PublicConceptCourse.svelte",
+        "E:/tka-platform/src/routes/(public)/learn/concepts/+page.svelte",
+        { ssr: true }
+      )
+    ).resolves.toBeNull();
+    await expect(
+      resolveId.call(
+        { resolve },
+        "$lib/features/learn/LearnTab.svelte",
+        "E:/tka-platform/src/lib/features/learn/components/PublicConceptCourse.svelte",
+        { ssr: true }
+      )
+    ).resolves.toBe("\0feature-gate-stub.js");
+  });
 });
