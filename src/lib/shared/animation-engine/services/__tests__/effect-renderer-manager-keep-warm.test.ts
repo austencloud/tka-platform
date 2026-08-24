@@ -10,9 +10,14 @@ function makeFakeRenderer() {
   let inited = false;
   return {
     canvas,
-    initialize: vi.fn(() => { inited = true; return true; }),
+    initialize: vi.fn(() => {
+      inited = true;
+      return true;
+    }),
     isInitialized: () => inited,
-    dispose: vi.fn(() => { inited = false; }),
+    dispose: vi.fn(() => {
+      inited = false;
+    }),
     getCanvas: () => canvas,
     resize: vi.fn(),
     setCanvasZIndex: vi.fn(),
@@ -27,9 +32,14 @@ function makeFakeLed() {
   let inited = false;
   return {
     canvas,
-    initialize: vi.fn(() => { inited = true; return true; }),
+    initialize: vi.fn(() => {
+      inited = true;
+      return true;
+    }),
     isInitialized: () => inited,
-    dispose: vi.fn(() => { inited = false; }),
+    dispose: vi.fn(() => {
+      inited = false;
+    }),
     getCanvas: () => canvas,
     clearSimulation: vi.fn(),
     resize: vi.fn(),
@@ -66,8 +76,17 @@ const h = vi.hoisted(() => {
   // object). beforeEach swaps in a fresh fake. mockReturnValue is unreliable
   // under `new`, so use an explicit returning implementation.
   const ledHolder: { current: unknown } = { current: null };
-  const LedCtor = vi.fn(function () { return ledHolder.current; });
-  return { createRenderer, onDisable, firePlugin, ledPlugin, LedCtor, ledHolder };
+  const LedCtor = vi.fn(function () {
+    return ledHolder.current;
+  });
+  return {
+    createRenderer,
+    onDisable,
+    firePlugin,
+    ledPlugin,
+    LedCtor,
+    ledHolder,
+  };
 });
 const { createRenderer, onDisable, LedCtor, ledHolder } = h;
 
@@ -88,7 +107,24 @@ vi.mock("../led/web-gl-led-renderer", () => ({
 import { EffectRendererManager } from "../effect-renderer-manager";
 
 function wiredManager() {
-  const manager = new EffectRendererManager();
+  const manager = new EffectRendererManager({
+    keepInactiveWebglRenderersWarm: true,
+  });
+  const renderLoopService = { updateConfig: vi.fn(), triggerRender: vi.fn() };
+  manager.wire({
+    containerElement: {} as HTMLDivElement,
+    canvasSize: 500,
+    renderLoopService: renderLoopService as never,
+    getFrameParams: () => ({}) as never,
+    getVM: () => ({}) as never,
+  });
+  return { manager, renderLoopService };
+}
+
+function wiredMobileManager() {
+  const manager = new EffectRendererManager({
+    keepInactiveWebglRenderersWarm: false,
+  });
   const renderLoopService = { updateConfig: vi.fn(), triggerRender: vi.fn() };
   manager.wire({
     containerElement: {} as HTMLDivElement,
@@ -107,7 +143,10 @@ describe("EffectRendererManager — prewarm + keep-warm", () => {
     createRenderer.mockReturnValue(fakeRenderer);
     onDisable.mockClear();
     // Run the deferred init rAF synchronously so the test is linear.
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -180,6 +219,37 @@ describe("EffectRendererManager — prewarm + keep-warm", () => {
     expect(fakeRenderer.dispose).toHaveBeenCalled();
     expect(manager.getRenderer("fire")).toBeNull();
   });
+
+  it("does not prewarm or retain inactive WebGL renderers on touch devices", () => {
+    const { manager } = wiredMobileManager();
+    manager.prewarmRenderer("fire");
+    expect(createRenderer).not.toHaveBeenCalled();
+
+    manager.setWasEnabled("fire", true);
+    manager.syncEffectOverlay("fire");
+    manager.setWasEnabled("fire", false);
+    manager.syncEffectOverlay("fire");
+
+    expect(fakeRenderer.dispose).toHaveBeenCalledTimes(1);
+    expect(manager.getRenderer("fire")).toBeNull();
+    expect(onDisable).toHaveBeenCalledTimes(1);
+  });
+
+  it("selects the mobile release policy from touch capability by default", () => {
+    vi.stubGlobal("navigator", { maxTouchPoints: 5 });
+    const manager = new EffectRendererManager();
+    manager.wire({
+      containerElement: {} as HTMLDivElement,
+      canvasSize: 500,
+      renderLoopService: null,
+      getFrameParams: () => ({}) as never,
+      getVM: () => ({}) as never,
+    });
+
+    manager.prewarmRenderer("fire");
+
+    expect(createRenderer).not.toHaveBeenCalled();
+  });
 });
 
 describe("EffectRendererManager — LED prewarm + keep-warm", () => {
@@ -187,7 +257,10 @@ describe("EffectRendererManager — LED prewarm + keep-warm", () => {
     fakeLed = makeFakeLed();
     ledHolder.current = fakeLed;
     LedCtor.mockClear(); // clears call records, KEEPS the returning impl
-    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { cb(0); return 1; });
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 1;
+    });
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -253,6 +326,18 @@ describe("EffectRendererManager — LED prewarm + keep-warm", () => {
     manager.dispose();
 
     expect(fakeLed.dispose).toHaveBeenCalled();
+    expect(manager.getRenderer("led")).toBeNull();
+  });
+
+  it("does not prewarm or retain inactive LED WebGL on touch devices", () => {
+    const { manager } = wiredMobileManager();
+    manager.prewarmRenderer("led");
+    expect(LedCtor).not.toHaveBeenCalled();
+
+    manager.setLedConfig({ enabled: true });
+    manager.setLedConfig({ enabled: false });
+
+    expect(fakeLed.dispose).toHaveBeenCalledTimes(1);
     expect(manager.getRenderer("led")).toBeNull();
   });
 });

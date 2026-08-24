@@ -34,6 +34,39 @@ function makeLocalStorageStub() {
 }
 
 describe("EffectsConfigState", () => {
+  describe("saved config migration", () => {
+    const incompleteSavedConfig = {
+      ...DEFAULT_EFFECTS_CONFIG,
+      led: { cycleDuration: 1.4 },
+    } as unknown as typeof DEFAULT_EFFECTS_CONFIG;
+
+    it("heals incomplete effect snapshots used by isolated previews", () => {
+      const state = createEffectsConfigState(incompleteSavedConfig, {
+        persist: false,
+      });
+
+      expect(state.led.device).toEqual(DEFAULT_EFFECTS_CONFIG.led.device);
+      expect(state.led.pattern).toEqual(DEFAULT_EFFECTS_CONFIG.led.pattern);
+      expect(state.led.look).toEqual(DEFAULT_EFFECTS_CONFIG.led.look);
+      expect(state.led.cycleDuration).toBe(
+        DEFAULT_EFFECTS_CONFIG.led.cycleDuration
+      );
+    });
+
+    it("heals incomplete effect snapshots restored after creation", () => {
+      const state = createEffectsConfigState(undefined, { persist: false });
+
+      state.replace(incompleteSavedConfig);
+
+      expect(state.led.device).toEqual(DEFAULT_EFFECTS_CONFIG.led.device);
+      expect(state.led.pattern).toEqual(DEFAULT_EFFECTS_CONFIG.led.pattern);
+      expect(state.led.look).toEqual(DEFAULT_EFFECTS_CONFIG.led.look);
+      expect(state.led.cycleDuration).toBe(
+        DEFAULT_EFFECTS_CONFIG.led.cycleDuration
+      );
+    });
+  });
+
   describe("updateEffect", () => {
     it("updates a specific effect by id", () => {
       const state = createEffectsConfigState();

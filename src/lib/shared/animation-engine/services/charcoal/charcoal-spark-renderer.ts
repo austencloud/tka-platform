@@ -1298,6 +1298,8 @@ export class CharcoalSparkRenderer {
 			// Delete programs
 			if (this.sparkProgram) gl.deleteProgram(this.sparkProgram.program);
 			if (this.emberProgram) gl.deleteProgram(this.emberProgram.program);
+
+			gl.getExtension("WEBGL_lose_context")?.loseContext();
 		}
 
 		this.sparkVAO = null;

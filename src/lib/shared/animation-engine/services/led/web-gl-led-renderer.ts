@@ -1320,6 +1320,8 @@ export class WebGLLedRenderer {
 			// Delete buffers
 			if (this.quadBuffer) gl.deleteBuffer(this.quadBuffer);
 			if (this.instanceBuffer) gl.deleteBuffer(this.instanceBuffer);
+
+			gl.getExtension("WEBGL_lose_context")?.loseContext();
 		}
 
 		this.streakProgram = null;

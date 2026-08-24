@@ -29,7 +29,9 @@ import type { LedShutter } from "../domain/led-photometry";
 
 /** The one numeric parameter a shutter carries, whichever mode it is in. */
 function shutterParam(shutter: LedShutter): number {
-  return shutter.mode === "camera" ? shutter.exposureSeconds : shutter.timeConstantSeconds;
+  return shutter.mode === "camera"
+    ? shutter.exposureSeconds
+    : shutter.timeConstantSeconds;
 }
 
 import {
@@ -79,6 +81,20 @@ const OVERLAY_PLUGINS = EFFECT_PLUGINS.filter(
  */
 function cloneLedData<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+export interface EffectRendererManagerOptions {
+  /**
+   * Retaining an inactive WebGL renderer makes effect switches instant, but
+   * each renderer keeps its context, programs, textures, and framebuffers.
+   * Mobile Safari has a much tighter graphics-memory budget, so touch devices
+   * release the inactive renderer by default instead of accumulating contexts.
+   */
+  keepInactiveWebglRenderersWarm?: boolean;
+}
+
+function shouldKeepInactiveWebglRenderersWarm(): boolean {
+  return typeof navigator === "undefined" || navigator.maxTouchPoints === 0;
 }
 
 export class EffectRendererManager {
@@ -192,6 +208,14 @@ export class EffectRendererManager {
   private getVM: (() => AnimationVisibilityStateManager) | null = null;
   effectsConfigState: EffectsConfigState | null = null;
 
+  private readonly keepInactiveWebglRenderersWarm: boolean;
+
+  constructor(options: EffectRendererManagerOptions = {}) {
+    this.keepInactiveWebglRenderersWarm =
+      options.keepInactiveWebglRenderersWarm ??
+      shouldKeepInactiveWebglRenderersWarm();
+  }
+
   // ── Public registry accessor ────────────────────────────────────────
 
   /** Get a renderer by effect id. Returns null if not initialized. */
@@ -229,8 +253,15 @@ export class EffectRendererManager {
   /** Expose charcoal params from EffectsConfigState for the registry onInit hook. */
   getCharcoalParamsFromConfig(): CharcoalSparkParams | undefined {
     if (!this.effectsConfigState) return undefined;
-    const { intensity, spread, glow, emissionStyle, coreColor, midColor, coolColor } =
-      this.effectsConfigState.charcoal;
+    const {
+      intensity,
+      spread,
+      glow,
+      emissionStyle,
+      coreColor,
+      midColor,
+      coolColor,
+    } = this.effectsConfigState.charcoal;
     return semanticToCharcoalParams(
       { intensity, spread, glow, emissionStyle },
       { coreColor, midColor, coolColor }
@@ -286,7 +317,7 @@ export class EffectRendererManager {
       // delete+return guard. Root-caused 2026-06-23.
       if (this.warmHidden.has(id)) return;
       if (current?.isInitialized()) {
-        if (plugin.kind === "webgl") {
+        if (plugin.kind === "webgl" && this.keepInactiveWebglRenderersWarm) {
           // Keep-warm: park the webgl renderer instead of disposing. Hide its
           // canvas (preserveDrawingBuffer would otherwise leave a stale frame)
           // and deregister it from the render loop so the loop can idle-stop —
@@ -294,7 +325,9 @@ export class EffectRendererManager {
           this.parkWarm(id);
           plugin.onDisable?.(this);
         } else {
-          // canvas2d: cheap to recreate — dispose on the enabled→disabled transition.
+          // Canvas2D renderers are cheap to recreate. WebGL renderers take this
+          // same disposal path on touch devices so an effect tour cannot leave
+          // several heavyweight contexts resident in Mobile Safari.
           current.dispose();
           this.renderers.delete(id);
           this.renderLoopService?.updateConfig({
@@ -382,6 +415,8 @@ export class EffectRendererManager {
    * in flight. The init runs in a rAF so the call site itself never blocks.
    */
   prewarmRenderer(id: EffectType): void {
+    if (!this.keepInactiveWebglRenderersWarm) return;
+
     // LED has its own deferred kind:"led" lifecycle (separate from the generic
     // webgl overlays) but is just as heavy to init — route it to its dedicated
     // warm path so startup/hover prewarm covers it too.
@@ -545,7 +580,14 @@ export class EffectRendererManager {
       // Mirrors the warmHidden guard for the generic webgl overlays.
       if (this.ledWarmHidden) return;
       if (currentLed?.isInitialized()) {
-        this.parkLedWarm();
+        if (this.keepInactiveWebglRenderersWarm) {
+          this.parkLedWarm();
+        } else {
+          currentLed.dispose();
+          this.renderers.delete("led");
+          this.renderLoopService?.updateConfig({ renderers: { led: null } });
+          this.ledSampler?.reset();
+        }
       }
     }
   }

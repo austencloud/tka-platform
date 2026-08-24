@@ -2503,6 +2503,11 @@ export class WebGLFireRenderer {
         gl.deleteTexture(texture);
       }
       this.propVisibilityTextures.clear();
+
+      // Deleting individual objects does not require the browser to release the
+      // context itself promptly. Mobile Safari's graphics budget is tight, so
+      // an explicitly disposed effect gives the context back immediately.
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     }
 
     this.pendingPrograms = [];

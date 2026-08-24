@@ -322,7 +322,10 @@ export function createEffectsConfigState(
   const stored = persist ? loadStoredConfig() : null;
   let config = $state<EffectsConfig>(
     normalizeEffectsConfig(
-      stored ?? migrateFromVmStorageOnce(structuredClone(initial))
+      stored ??
+        migrateFromVmStorageOnce(
+          migrateEffectsConfig(structuredClone(initial))
+        )
     )
   );
   let version = $state(0);
@@ -618,9 +621,13 @@ export function createEffectsConfigState(
 
   function replace(next: EffectsConfig) {
     try {
-      config = normalizeEffectsConfig(structuredClone(next));
+      config = normalizeEffectsConfig(
+        migrateEffectsConfig(structuredClone(next))
+      );
     } catch {
-      config = normalizeEffectsConfig(JSON.parse(JSON.stringify(next)));
+      config = normalizeEffectsConfig(
+        migrateEffectsConfig(JSON.parse(JSON.stringify(next)))
+      );
     }
     scheduleSave();
   }
