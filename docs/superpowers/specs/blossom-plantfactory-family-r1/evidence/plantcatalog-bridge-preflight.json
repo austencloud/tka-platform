@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "bridgeId": "blossom-plantfactory-family-r1",
+  "phase": "preflight",
+  "installedPlantFactoryVersion": "4.8.0.0",
+  "executable": "C:/Program Files/e-on software/PlantFactory/Application/PlantFactory.exe",
+  "pythonApi": "C:/Program Files/e-on software/PlantFactory/Python/PythonLib/eon.py",
+  "activeExportSet": "proofR1",
+  "activeJobs": [
+    "open-crown-s19",
+    "open-crown-s71",
+    "weeping-s23",
+    "weeping-s83",
+    "young-airy-s31",
+    "young-airy-s97"
+  ],
+  "sourceResults": [
+    {
+      "id": "open-crown-s19",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/English Oak.tpf",
+      "bytes": 39384160,
+      "sha256": "db8b341f87d3f550e907281897f46ffa270872defaf285baee675e6f4f87044d"
+    },
+    {
+      "id": "open-crown-s71",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/English Oak.tpf",
+      "bytes": 39384160,
+      "sha256": "db8b341f87d3f550e907281897f46ffa270872defaf285baee675e6f4f87044d"
+    },
+    {
+      "id": "weeping-s23",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/Crack Willow.tpf",
+      "bytes": 37601296,
+      "sha256": "ce62b3e964b4393be32300a355d0c7ac5ca38a926ae19d6c93aa858494043935"
+    },
+    {
+      "id": "weeping-s83",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/Crack Willow.tpf",
+      "bytes": 37601296,
+      "sha256": "ce62b3e964b4393be32300a355d0c7ac5ca38a926ae19d6c93aa858494043935"
+    },
+    {
+      "id": "young-airy-s31",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/Acer_Saccharum_tpf_170.tpf",
+      "bytes": 10997857,
+      "sha256": "c1b6bdf728faa37fdd23af0a35d25f7dc498b21fdfe66b1b4bd9dfd727166e04"
+    },
+    {
+      "id": "young-airy-s97",
+      "sourcePath": "C:/ProgramData/e-onsoftware/PlantFactory/Species/Trees/Acer_Saccharum_tpf_170.tpf",
+      "bytes": 10997857,
+      "sha256": "c1b6bdf728faa37fdd23af0a35d25f7dc498b21fdfe66b1b4bd9dfd727166e04"
+    }
+  ],
+  "auxiliaryResults": [
+    {
+      "role": "bark",
+      "path": "C:/ProgramData/e-onsoftware/PlantFactory/Materials/Bark/Cherry_Bark.mat",
+      "bytes": 6111533,
+      "sha256": "4aa60afee80dc2580159c684ea9608a6138a9f78bebed8618dcb2f0ffd64cdf8"
+    },
+    {
+      "role": "leaf",
+      "path": "C:/ProgramData/e-onsoftware/PlantFactory/Materials/Leaves/Cherry_Leaf.mat",
+      "bytes": 381913,
+      "sha256": "517d5d164095b1cb3f7f7f62f824e5f50e119abbf6b4457e45e8e1329c47489a"
+    },
+    {
+      "role": "flower",
+      "path": "C:/ProgramData/e-onsoftware/PlantFactory/Materials/Flowers/Cherry_Flower.mat",
+      "bytes": 476548,
+      "sha256": "c46cac99662df7830827453c1f3effabf34ce391e55bdc8561cb12883629538e"
+    },
+    {
+      "role": "branch-reference",
+      "path": "C:/ProgramData/e-onsoftware/PlantFactory/Bitmaps/Branches/Cherry Branch.png",
+      "bytes": 270667,
+      "sha256": "bee9b02fdb10b3b5593aa6788d09653dbdb0da892e0d3cd9881f03e500579e90"
+    }
+  ],
+  "apiSignaturesVerified": true,
+  "plantFactoryProofComplete": true
+}

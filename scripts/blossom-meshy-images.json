@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "imageRoot": "assets/meshy-refs/blossom",
+  "outputDirectory": "static/models/blossom/assets",
+  "statePath": "blender/blossom-meshy-image-tasks.json",
+  "aiModel": "meshy-6",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 120,
+  "assets": [
+    {
+      "id": "hero-sakura",
+      "label": "Mature Vase-Form Sakura",
+      "targetHeightMetres": 13.5,
+      "roles": ["hero-canopy", "garden-rim"],
+      "polycount": 60000,
+      "textureResolution": "2k",
+      "textureSize": 2048,
+      "maximumOptimizedTriangles": 70000,
+      "texturePrompt": "Photoreal mature Prunus serrulata at peak spring bloom. Deeply textured dark gray-brown cherry bark with horizontal lenticels and subtle moss. Fine visible branching. Thousands of layered five-petal blossoms from nearly white to shell pink with deeper rose centers, a few copper-green leaves, and translucent petals. Neutral diffuse albedo, physically plausible PBR roughness, no baked directional lighting, no fantasy glow."
+    },
+    {
+      "id": "weeping-sakura",
+      "label": "Old Weeping Sakura",
+      "targetHeightMetres": 10.5,
+      "roles": ["stream-bank", "framing-canopy"],
+      "polycount": 52000,
+      "textureResolution": "2k",
+      "textureSize": 2048,
+      "maximumOptimizedTriangles": 62000,
+      "texturePrompt": "Photoreal old shidare-zakura with dark weathered cherry bark, horizontal lenticels, pale lichen and moss in the trunk creases. Long fine cascading branchlets carry loose sprays of white and blush-pink five-petal blossoms with rose centers and sparse bronze-green spring leaves. Neutral diffuse albedo, physically plausible PBR roughness, no baked directional lighting, no fantasy glow."
+    },
+    {
+      "id": "garden-ecology",
+      "label": "Japanese Spring Garden Ecology Island",
+      "targetHeightMetres": 1.4,
+      "roles": ["foreground-ecology", "stream-bank"],
+      "polycount": 42000,
+      "textureResolution": "2k",
+      "textureSize": 1536,
+      "maximumOptimizedTriangles": 50000,
+      "texturePrompt": "Photoreal connected Japanese spring garden ecology island: velvety emerald moss, dark damp soil, exposed weathered roots, coral-pink satsuki azalea blossoms, maidenhair ferns, young bamboo grass, liverworts, scattered pale cherry petals, and one damp porous fieldstone. Clear botanical separation, neutral diffuse albedo, physically plausible PBR roughness, no baked directional lighting, no fantasy glow."
+    },
+    {
+      "id": "kasuga-lantern",
+      "label": "Weathered Kasuga Stone Lantern",
+      "targetHeightMetres": 2.3,
+      "roles": ["architectural-detail", "path-marker"],
+      "polycount": 32000,
+      "textureResolution": "2k",
+      "textureSize": 1536,
+      "maximumOptimizedTriangles": 38000,
+      "texturePrompt": "Photoreal antique Japanese kasuga-doro lantern carved from coarse aged granite. Chipped edges, porous stone, pale mineral staining, moss and lichen in joints, dark damp seams, and a few fallen cherry petals on ledges. The fire-box openings remain dark and physically open. Neutral diffuse albedo, physically plausible PBR roughness, no baked directional lighting, no flame, no glow."
+    }
+  ]
+}

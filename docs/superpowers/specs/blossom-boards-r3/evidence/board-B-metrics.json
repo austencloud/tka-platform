@@ -1,0 +1,35 @@
+{
+  "board": "B",
+  "title": "Riverside Diagonal",
+  "thesis": "The river runs NW-SE past the stage; the garden walk follows the bank, crosses the bridge, and finds the torii three-quarter across the water. Asymmetric, discovered in orbit.",
+  "stage": {
+    "center": [
+      2.5,
+      0.0
+    ],
+    "size": [
+      10.0,
+      7.0
+    ]
+  },
+  "riverWidthMetres": 5.8,
+  "stageToRiverMetres": 12.7,
+  "stageToToriiMetres": 25.8,
+  "stageToBridgeMetres": 15.6,
+  "heroTrees": 4,
+  "midTrees": 11,
+  "horizonTrees": 30,
+  "treeVariantsUsed": [
+    "open-crown-s19",
+    "open-crown-s71"
+  ],
+  "lanterns": 8,
+  "audienceLawnDepthMetres": [
+    8.5,
+    15.5
+  ],
+  "hero_nearest_to_stage": 11.3,
+  "proposedOrbitCapMetres": 30,
+  "clearingRadiusMetres": 38.0,
+  "worldRadiusMetres": 92.0
+}

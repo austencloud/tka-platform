@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Blossom R3 — Composition Boards</title>
+<style>
+  :root {
+    --bg: #0d1018;
+    --panel: #151a26;
+    --ink: #e8e4dc;
+    --dim: #9aa0ae;
+    --accent: #e88ca8;
+    --line: #262d3d;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+    padding: 2.5rem clamp(1rem, 4vw, 4rem) 6rem;
+  }
+  header { max-width: 70rem; margin: 0 auto 1rem; }
+  h1 { font-size: 1.9rem; letter-spacing: 0.01em; }
+  h1 span { color: var(--accent); }
+  .standfirst { color: var(--dim); margin-top: 0.6rem; max-width: 60rem; }
+  .standfirst strong { color: var(--ink); }
+  .board {
+    max-width: 110rem;
+    margin: 3.2rem auto 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.6rem clamp(1rem, 2.5vw, 2.4rem) 2rem;
+  }
+  .board h2 { font-size: 1.45rem; }
+  .board h2 em { color: var(--accent); font-style: normal; margin-right: 0.55rem; }
+  .thesis { color: var(--dim); margin: 0.4rem 0 1.1rem; max-width: 62rem; }
+  .frames {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1.44fr;
+    grid-template-areas: "front audience top" "tq tq top";
+    gap: 0.8rem;
+  }
+  .frame { position: relative; border-radius: 8px; overflow: hidden; background: #000; }
+  .frame img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .frame figcaption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.8rem; color: #d8dbe2;
+    background: linear-gradient(transparent, rgba(5, 7, 12, 0.85));
+  }
+  .f-front { grid-area: front; }
+  .f-audience { grid-area: audience; }
+  .f-top { grid-area: top; }
+  .f-tq { grid-area: tq; }
+  .metrics {
+    display: flex; flex-wrap: wrap; gap: 0.45rem 0.5rem;
+    margin-top: 1rem;
+  }
+  .metric {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.22rem 0.8rem;
+    font-size: 0.82rem;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+  .metric b { color: var(--ink); font-weight: 600; }
+  .notes { margin-top: 1rem; color: var(--dim); font-size: 0.92rem; max-width: 66rem; }
+  .notes li { margin: 0.25rem 0 0.25rem 1.2rem; }
+  .honesty {
+    max-width: 70rem; margin: 3rem auto 0;
+    border: 1px solid var(--line); border-left: none; border-right: none;
+    padding: 1.2rem 0.2rem; color: var(--dim); font-size: 0.92rem;
+  }
+  .honesty b { color: var(--ink); }
+  @media (max-width: 1100px) {
+    .frames { grid-template-columns: 1fr 1fr; grid-template-areas: "front audience" "tq tq" "top top"; }
+  }
+  @media (max-width: 700px) {
+    .frames { grid-template-columns: 1fr; grid-template-areas: "front" "audience" "tq" "top"; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Blossom Rebuild <span>R3</span> — three composition boards</h1>
+  <p class="standfirst">
+    Same brief, three spatial answers. Every canopy in every frame is one of the two
+    <strong>approved PlantFactory cherries</strong> (open-crown-s19 hero, open-crown-s71) placed as real
+    geometry — no diagram circles. Stage, torii, bridge, river, paths, and lanterns are proportioned
+    graybox proxies. All three boards share the intimate footprint: playable clearing ~38&nbsp;m radius,
+    wooded berm closing the horizon by ~78&nbsp;m, proposed camera orbit cap 30&nbsp;m (baselines cap at 25&nbsp;m;
+    R2.1 allowed 82&nbsp;m). The 1.75&nbsp;m figure on stage and the seated-height figures on the lawn are scale checks.
+  </p>
+</header>
+
+<!-- BOARD A -->
+<section class="board">
+  <h2><em>Board A</em> Amphitheater Axis</h2>
+  <p class="thesis">One ceremonial axis, south to north: arrival walk → audience crescent → stage → river →
+  torii threshold climbing into the grove. The bridge sits off-axis west so the axis stays a sightline, not a
+  walkway. This is the R2 idea kept — but at Forest/Autumn scale, with the grove actually present.</p>
+  <div class="frames">
+    <figure class="frame f-front"><img src="blossom-boards-r3/board-A-front.png" alt="Board A front view" />
+      <figcaption>Front — performer's eye height. Torii 26 m behind stage on axis; grove closes every gap.</figcaption></figure>
+    <figure class="frame f-audience"><img src="blossom-boards-r3/board-A-audience.png" alt="Board A audience view" />
+      <figcaption>Audience — from the back of the lawn crescent, 20 m out. Stage, performer, torii stack on one line.</figcaption></figure>
+    <figure class="frame f-top"><img src="blossom-boards-r3/board-A-top.png" alt="Board A plan view" />
+      <figcaption>Plan — arrival SE, crescent south, river band north, bridge west, service spur east.</figcaption></figure>
+    <figure class="frame f-tq"><img src="blossom-boards-r3/board-A-threequarter.png" alt="Board A three-quarter view" />
+      <figcaption>Three-quarter — the bowl: heroes frame the stage at 13 m, mid-ring at 21–33 m, berm silhouettes behind.</figcaption></figure>
+  </div>
+  <div class="metrics">
+    <span class="metric">stage <b>10 × 7 m</b></span>
+    <span class="metric">stage → river <b>15.7 m</b></span>
+    <span class="metric">stage → torii <b>26 m</b></span>
+    <span class="metric">stage → bridge <b>18 m</b></span>
+    <span class="metric">river width <b>5.2 m</b></span>
+    <span class="metric">audience lawn <b>8.5–16.5 m</b> from stage</span>
+    <span class="metric">nearest hero canopy <b>13.3 m</b></span>
+    <span class="metric">trees <b>4 hero + 11 mid + 30 horizon</b></span>
+  </div>
+  <ul class="notes">
+    <li><b>Strength:</b> the clearest ceremonial read — every camera orbit angle eventually lands on the axis.</li>
+    <li><b>Risk:</b> the most symmetric of the three; needs asymmetric planting detail to avoid feeling formal.</li>
+  </ul>
+</section>
+
+<!-- BOARD B -->
+<section class="board">
+  <h2><em>Board B</em> Riverside Diagonal</h2>
+  <p class="thesis">The river runs NW–SE straight through the garden and the stage sits on its bank. The garden
+  walk follows the water, crosses the bridge, and finds the torii three-quarter across the river — you discover
+  it while orbiting, it never lines up square. The most asymmetric and most "landscape" of the three.</p>
+  <div class="frames">
+    <figure class="frame f-front"><img src="blossom-boards-r3/board-B-front.png" alt="Board B front view" />
+      <figcaption>Front — stage angled 12° toward the lawn; river glints behind stage-left.</figcaption></figure>
+    <figure class="frame f-audience"><img src="blossom-boards-r3/board-B-audience.png" alt="Board B audience view" />
+      <figcaption>Audience — the torii reads across the water at left; heroes overhang the bank.</figcaption></figure>
+    <figure class="frame f-top"><img src="blossom-boards-r3/board-B-top.png" alt="Board B plan view" />
+      <figcaption>Plan — river diagonal, bank walk, bridge SW, shrine walk on the far bank, garden loop east.</figcaption></figure>
+    <figure class="frame f-tq"><img src="blossom-boards-r3/board-B-threequarter.png" alt="Board B three-quarter view" />
+      <figcaption>Three-quarter — stage on the bank, bridge and torii upstream, audience pads in the foreground.</figcaption></figure>
+  </div>
+  <div class="metrics">
+    <span class="metric">stage <b>10 × 7 m</b></span>
+    <span class="metric">stage → river <b>12.7 m</b></span>
+    <span class="metric">stage → torii <b>25.8 m</b></span>
+    <span class="metric">stage → bridge <b>15.6 m</b></span>
+    <span class="metric">river width <b>5.8 m</b></span>
+    <span class="metric">audience lawn <b>8.5–15.5 m</b> from stage</span>
+    <span class="metric">nearest hero canopy <b>11.3 m</b></span>
+    <span class="metric">trees <b>4 hero + 11 mid + 30 horizon</b></span>
+  </div>
+  <ul class="notes">
+    <li><b>Strength:</b> water is a first-class citizen — reflections, the bank walk, and the far-bank shrine give the orbit real variety.</li>
+    <li><b>Risk:</b> the river divides the garden; the west half is only reachable over one bridge, so it must stay scenery-first.</li>
+  </ul>
+</section>
+
+<!-- BOARD C -->
+<section class="board">
+  <h2><em>Board C</em> Grove Room</h2>
+  <p class="thesis">The stage sits inside a grove pocket with hero canopies leaning over its edges — the audience
+  looks INTO a room made of blossom. The stream wraps behind the room; crossing the bridge delivers you at the
+  torii gate. Smallest clearing, highest canopy density, most intimate of the three.</p>
+  <div class="frames">
+    <figure class="frame f-front"><img src="blossom-boards-r3/board-C-front.png" alt="Board C front view" />
+      <figcaption>Front — canopy over both stage shoulders; the nearest hero trunk is 8.7 m from center stage.</figcaption></figure>
+    <figure class="frame f-audience"><img src="blossom-boards-r3/board-C-audience.png" alt="Board C audience view" />
+      <figcaption>Audience — the room reads as walls of blossom; torii and bridge glimpsed through the gap.</figcaption></figure>
+    <figure class="frame f-top"><img src="blossom-boards-r3/board-C-top.png" alt="Board C plan view" />
+      <figcaption>Plan — stream wraps the room north; bridge at the NE gap; the torii waits across the water.</figcaption></figure>
+    <figure class="frame f-tq"><img src="blossom-boards-r3/board-C-threequarter.png" alt="Board C three-quarter view" />
+      <figcaption>Three-quarter — from the south opening: the only view that sees the whole room at once.</figcaption></figure>
+  </div>
+  <div class="metrics">
+    <span class="metric">stage <b>9 × 6.5 m</b></span>
+    <span class="metric">stage → river <b>18 m</b></span>
+    <span class="metric">stage → torii <b>27.9 m</b></span>
+    <span class="metric">stage → bridge <b>19.6 m</b></span>
+    <span class="metric">river width <b>4.4 m</b></span>
+    <span class="metric">audience lawn <b>7.5–14 m</b> from stage</span>
+    <span class="metric">nearest hero canopy <b>8.7 m</b></span>
+    <span class="metric">trees <b>5 hero + 13 mid + 32 horizon</b></span>
+  </div>
+  <ul class="notes">
+    <li><b>Strength:</b> the strongest hanami feeling — blossom is overhead, not just background. Petal fall from the overhanging heroes lands ON the stage (per the "petals from nearby canopies" decision).</li>
+    <li><b>Risk:</b> heaviest per-frame canopy cost; the orbit spends the most time near foliage, so LOD and draw-call budgets matter most here.</li>
+  </ul>
+</section>
+
+<div class="honesty">
+  <b>What these boards are and aren't.</b> These are moonlit EEVEE graybox renders from a parametric Blender
+  script (<code>scripts/render-blossom-boards-r3.py</code>) — the point is composition, scale, and sightlines,
+  not final art. Real in all frames: the two approved cherry GLBs, all distances, terrain relief, the carved
+  river channel, and the berm horizon. Proxy: stage deck, torii, bridge, lanterns, path ribbons, figures.
+  Not yet designed anywhere: bark/ground materials, water shading, petal fall, fireflies, koi, god rays — those
+  come after ONE board is approved. Only two cherry variants exist today; a wider family (weeping bank cherry,
+  young accents) would need a new PlantFactory authoring pass and would slot into whichever board wins.
+</div>
+</body>
+</html>

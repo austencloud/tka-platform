@@ -1,0 +1,104 @@
+[
+  {
+    "id": "open-crown-s19",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/open-crown-s19-proof.glb",
+    "dimensionsMetres": [
+      7.7195892333984375,
+      7.945694446563721,
+      9.799999237060547
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "open-crown-s71",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/open-crown-s71-proof.glb",
+    "dimensionsMetres": [
+      8.670669555664062,
+      7.746440410614014,
+      10.600000381469727
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "weeping-s23",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/weeping-s23-proof.glb",
+    "dimensionsMetres": [
+      9.209467887878418,
+      9.786497116088867,
+      8.900047302246094
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "weeping-s83",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/weeping-s83-proof.glb",
+    "dimensionsMetres": [
+      11.405243873596191,
+      11.561910629272461,
+      9.700262069702148
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "young-airy-s31",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/young-airy-s31-proof.glb",
+    "dimensionsMetres": [
+      2.1897826194763184,
+      2.4281930923461914,
+      6.200000286102295
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  },
+  {
+    "id": "young-airy-s97",
+    "candidate": "static/models/blossom/candidates/plantfactory-family-r1/young-airy-s97-proof.glb",
+    "dimensionsMetres": [
+      2.5969269275665283,
+      3.2088351249694824,
+      7.099999904632568
+    ],
+    "views": [
+      "front",
+      "three-quarter",
+      "silhouette",
+      "human-height",
+      "bark-close",
+      "canopy"
+    ]
+  }
+]

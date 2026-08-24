@@ -1,0 +1,35 @@
+{
+  "board": "A",
+  "title": "Amphitheater Axis",
+  "thesis": "South-to-north axis: arrival, audience crescent, stage, river, bridge, torii threshold. The R2 idea at intimate Forest/Autumn scale.",
+  "stage": {
+    "center": [
+      0.0,
+      0.0
+    ],
+    "size": [
+      10.0,
+      7.0
+    ]
+  },
+  "riverWidthMetres": 5.2,
+  "stageToRiverMetres": 15.7,
+  "stageToToriiMetres": 26.0,
+  "stageToBridgeMetres": 18.0,
+  "heroTrees": 4,
+  "midTrees": 11,
+  "horizonTrees": 30,
+  "treeVariantsUsed": [
+    "open-crown-s19",
+    "open-crown-s71"
+  ],
+  "lanterns": 8,
+  "audienceLawnDepthMetres": [
+    8.5,
+    16.5
+  ],
+  "hero_nearest_to_stage": 13.3,
+  "proposedOrbitCapMetres": 30,
+  "clearingRadiusMetres": 38.0,
+  "worldRadiusMetres": 92.0
+}

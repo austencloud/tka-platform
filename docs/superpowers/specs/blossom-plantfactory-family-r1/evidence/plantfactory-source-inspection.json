@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "bridgeId": "blossom-plantfactory-family-r1",
+  "createdAt": "2026-08-20T21:09:13.143194+00:00",
+  "sources": [
+    {
+      "sourceRelativePath": "Species/Trees/English Oak.tpf",
+      "sourceSha256": "db8b341f87d3f550e907281897f46ffa270872defaf285baee675e6f4f87044d",
+      "inspectionSeed": 19,
+      "materials": [
+        {
+          "index": 0,
+          "name": "Ground"
+        },
+        {
+          "index": 1,
+          "name": "Default"
+        },
+        {
+          "index": 2,
+          "name": "English Oak Leaf 1"
+        },
+        {
+          "index": 3,
+          "name": "English Oak Trunk"
+        },
+        {
+          "index": 4,
+          "name": "English Oak Leaf 2"
+        }
+      ],
+      "graphInspection": {
+        "status": "not-enumerable-through-eon-child",
+        "availableMutationMethods": [
+          "GetSpecialNode",
+          "GetNodeAt",
+          "NodeSetParam",
+          "NodeResetParentFilter",
+          "NodeResetProfileFilter"
+        ]
+      },
+      "plantMetrics": {
+        "height": 5.674550634049159,
+        "polygons": 219134,
+        "leafCount": 51486
+      }
+    },
+    {
+      "sourceRelativePath": "Species/Trees/Crack Willow.tpf",
+      "sourceSha256": "ce62b3e964b4393be32300a355d0c7ac5ca38a926ae19d6c93aa858494043935",
+      "inspectionSeed": 23,
+      "materials": [
+        {
+          "index": 0,
+          "name": "Ground"
+        },
+        {
+          "index": 1,
+          "name": "Default"
+        },
+        {
+          "index": 2,
+          "name": "Crack Willow Trunk"
+        },
+        {
+          "index": 3,
+          "name": "Crack Willow Leaf 1"
+        },
+        {
+          "index": 4,
+          "name": "Crack Willow Leaf 2"
+        },
+        {
+          "index": 5,
+          "name": "Crack Willow Twigs"
+        }
+      ],
+      "graphInspection": {
+        "status": "not-enumerable-through-eon-child",
+        "availableMutationMethods": [
+          "GetSpecialNode",
+          "GetNodeAt",
+          "NodeSetParam",
+          "NodeResetParentFilter",
+          "NodeResetProfileFilter"
+        ]
+      },
+      "plantMetrics": {
+        "height": 4.384439597622032,
+        "polygons": 1135462,
+        "leafCount": 97139
+      }
+    },
+    {
+      "sourceRelativePath": "Species/Trees/Acer_Saccharum_tpf_170.tpf",
+      "sourceSha256": "c1b6bdf728faa37fdd23af0a35d25f7dc498b21fdfe66b1b4bd9dfd727166e04",
+      "inspectionSeed": 31,
+      "materials": [
+        {
+          "index": 0,
+          "name": "Ground"
+        },
+        {
+          "index": 1,
+          "name": "Acer Trunk"
+        },
+        {
+          "index": 2,
+          "name": "Acer Leaf 1"
+        },
+        {
+          "index": 3,
+          "name": "Acer Leaf 2"
+        },
+        {
+          "index": 4,
+          "name": "Acer Leaf 3"
+        },
+        {
+          "index": 5,
+          "name": "Acer Leaf 4"
+        }
+      ],
+      "graphInspection": {
+        "status": "not-enumerable-through-eon-child",
+        "availableMutationMethods": [
+          "GetSpecialNode",
+          "GetNodeAt",
+          "NodeSetParam",
+          "NodeResetParentFilter",
+          "NodeResetProfileFilter"
+        ]
+      },
+      "plantMetrics": {
+        "height": 16.8450583647296,
+        "polygons": 7810,
+        "leafCount": 268
+      }
+    }
+  ]
+}

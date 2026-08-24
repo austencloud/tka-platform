@@ -1,0 +1,35 @@
+{
+  "board": "C",
+  "title": "Grove Room",
+  "thesis": "The stage sits inside a grove pocket with hero canopies leaning over its edges. The stream wraps behind; the torii is off-axis, found during orbit. The most intimate and most canopied of the three.",
+  "stage": {
+    "center": [
+      0.0,
+      -1.0
+    ],
+    "size": [
+      9.0,
+      6.5
+    ]
+  },
+  "riverWidthMetres": 4.4,
+  "stageToRiverMetres": 18.0,
+  "stageToToriiMetres": 27.9,
+  "stageToBridgeMetres": 19.6,
+  "heroTrees": 5,
+  "midTrees": 13,
+  "horizonTrees": 32,
+  "treeVariantsUsed": [
+    "open-crown-s19",
+    "open-crown-s71"
+  ],
+  "lanterns": 8,
+  "audienceLawnDepthMetres": [
+    7.5,
+    14.0
+  ],
+  "hero_nearest_to_stage": 8.7,
+  "proposedOrbitCapMetres": 30,
+  "clearingRadiusMetres": 38.0,
+  "worldRadiusMetres": 92.0
+}

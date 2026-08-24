@@ -1,0 +1,380 @@
+[
+  {
+    "id": "open-crown-s19",
+    "species": "Open-crown cherry A",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\open-crown-s19\\open-crown-s19.fbx",
+    "sourceFbxSha256": "a5cf2ee6aaba4869d1830654be394925c6303fa8253933d475d7c85b82c02041",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/open-crown-s19-review.glb",
+    "reviewGlbSha256": "1f69142ea18ae7c5e2378915e76b2e1099c2831dde5dabf4c546d77d47000a75",
+    "reviewGlbBytes": 41977532,
+    "meshObjects": 1,
+    "vertices": 601591,
+    "triangles": 541240,
+    "materials": [
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_open_crown_s19_Foliage_Cutout_01",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_open_crown_s19_Foliage_Cutout_01_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_open_crown_s19_Foliage_Cutout_01_BaseColor"
+      },
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_open_crown_s19_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_open_crown_s19_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      }
+    ],
+    "minimumMetres": [
+      -3.859780788421631,
+      -3.9729928970336914,
+      0.0
+    ],
+    "maximumMetres": [
+      3.859780788421631,
+      3.9729926586151123,
+      9.799999237060547
+    ],
+    "dimensionsMetres": [
+      7.719561576843262,
+      7.945985794067383,
+      9.799999237060547
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 411888,
+      "totalVertices": 601591
+    },
+    "reduction": {
+      "trianglesBefore": 541240,
+      "trianglesAfter": 541240,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 205944
+    }
+  },
+  {
+    "id": "open-crown-s71",
+    "species": "Open-crown cherry B",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\open-crown-s71\\open-crown-s71.fbx",
+    "sourceFbxSha256": "ecde53b95122f9b14d8f3709c2c28b62a6831ed2b69d865f36247eaa3feabfab",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/open-crown-s71-review.glb",
+    "reviewGlbSha256": "6417becf7f167c38c0abf126079cb6981bf846b02345d7846fa472c734ba9fe5",
+    "reviewGlbBytes": 55765332,
+    "meshObjects": 1,
+    "vertices": 840440,
+    "triangles": 749324,
+    "materials": [
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_open_crown_s71_Foliage_Cutout_01",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_open_crown_s71_Foliage_Cutout_01_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_open_crown_s71_Foliage_Cutout_01_BaseColor"
+      },
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_open_crown_s71_Wood_Opaque_02",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_open_crown_s71_Wood_Opaque_02_BaseColor",
+        "alphaTexture": null
+      }
+    ],
+    "minimumMetres": [
+      -4.335240364074707,
+      -3.8734290599823,
+      9.706496939543285e-09
+    ],
+    "maximumMetres": [
+      4.335240364074707,
+      3.8734290599823,
+      10.600000381469727
+    ],
+    "dimensionsMetres": [
+      8.670480728149414,
+      7.7468581199646,
+      10.600000381469727
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 580600,
+      "totalVertices": 840440
+    },
+    "reduction": {
+      "trianglesBefore": 749324,
+      "trianglesAfter": 749324,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 290300
+    }
+  },
+  {
+    "id": "weeping-s23",
+    "species": "Weeping cherry A",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\weeping-s23\\weeping-s23.fbx",
+    "sourceFbxSha256": "2ab20612d40dc3d5954baff07913644836b64f9c0ea409a6a84078232f70326f",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/weeping-s23-review.glb",
+    "reviewGlbSha256": "9cafe66d6a762d7646ded881b07d765a2e82830177c3d8c3671533c04a8ee361",
+    "reviewGlbBytes": 131541296,
+    "meshObjects": 1,
+    "vertices": 1954855,
+    "triangles": 2465202,
+    "materials": [
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_weeping_s23_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_weeping_s23_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_weeping_s23_Foliage_Cutout_02",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_weeping_s23_Foliage_Cutout_02_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_weeping_s23_Foliage_Cutout_02_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -4.6046552658081055,
+      -4.893249034881592,
+      0.0
+    ],
+    "maximumMetres": [
+      4.6046552658081055,
+      4.893249034881592,
+      8.90000057220459
+    ],
+    "dimensionsMetres": [
+      9.209310531616211,
+      9.786498069763184,
+      8.90000057220459
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 777112,
+      "totalVertices": 1954855
+    },
+    "reduction": {
+      "trianglesBefore": 2465202,
+      "trianglesAfter": 2465202,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 388556
+    }
+  },
+  {
+    "id": "weeping-s83",
+    "species": "Weeping cherry B",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\weeping-s83\\weeping-s83.fbx",
+    "sourceFbxSha256": "688e8331fa5aca982f7fead615216d32487528b09a978ddd1f8de5575161e4c0",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/weeping-s83-review.glb",
+    "reviewGlbSha256": "379c31defac66cf3d79929d45a1ac6694e113f6f54ae1391f4e6e8b9433193b1",
+    "reviewGlbBytes": 161025004,
+    "meshObjects": 1,
+    "vertices": 2438130,
+    "triangles": 2948920,
+    "materials": [
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_weeping_s83_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_weeping_s83_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_weeping_s83_Foliage_Cutout_02",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_weeping_s83_Foliage_Cutout_02_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_weeping_s83_Foliage_Cutout_02_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -5.702761650085449,
+      -5.7809553146362305,
+      0.0
+    ],
+    "maximumMetres": [
+      5.702761650085449,
+      5.7809553146362305,
+      9.700000762939453
+    ],
+    "dimensionsMetres": [
+      11.405523300170898,
+      11.561910629272461,
+      9.700000762939453
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 1042608,
+      "totalVertices": 2438130
+    },
+    "reduction": {
+      "trianglesBefore": 2948920,
+      "trianglesAfter": 2948920,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 521304
+    }
+  },
+  {
+    "id": "young-airy-s31",
+    "species": "Young airy cherry A",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\young-airy-s31\\young-airy-s31.fbx",
+    "sourceFbxSha256": "c9eff3fbb64756a901b9e6b490d62faff4aff44faeb088fdb056419b35584849",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/young-airy-s31-review.glb",
+    "reviewGlbSha256": "a5db395f0890367267e85dd2efdb848d883aeef7d9773ab4fb0159dfd9b6da38",
+    "reviewGlbBytes": 7246352,
+    "meshObjects": 1,
+    "vertices": 6162,
+    "triangles": 8346,
+    "materials": [
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_young_airy_s31_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_young_airy_s31_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_young_airy_s31_Foliage_Cutout_02",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_young_airy_s31_Foliage_Cutout_02_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_young_airy_s31_Foliage_Cutout_02_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -1.0948556661605835,
+      -1.2141156196594238,
+      3.552713678800501e-15
+    ],
+    "maximumMetres": [
+      1.0948556661605835,
+      1.2141156196594238,
+      6.200000286102295
+    ],
+    "dimensionsMetres": [
+      2.189711332321167,
+      2.4282312393188477,
+      6.200000286102295
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 2144,
+      "totalVertices": 6162
+    },
+    "reduction": {
+      "trianglesBefore": 8346,
+      "trianglesAfter": 8346,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 1072
+    }
+  },
+  {
+    "id": "young-airy-s97",
+    "species": "Young airy cherry B",
+    "sourceFbx": "E:\\tka-platform\\blender\\blossom-plantfactory-family-r1\\raw\\young-airy-s97\\young-airy-s97.fbx",
+    "sourceFbxSha256": "da8c5751580653ff438445e10b52b2f89e7de14c515af9e8810c2f16d8615445",
+    "reviewGlb": "blender/blossom-plantfactory-family-r1/conditioned/young-airy-s97-review.glb",
+    "reviewGlbSha256": "ba54504f27b4f682fceb274166eab3e19cbe46dcccf267b87c29238c84bdf9f8",
+    "reviewGlbBytes": 7310644,
+    "meshObjects": 1,
+    "vertices": 7142,
+    "triangles": 9778,
+    "materials": [
+      {
+        "originalName": "Cherry_Bark",
+        "name": "BlossomPlantFactory_young_airy_s97_Wood_Opaque_01",
+        "family": "wood",
+        "familyClassification": "name-or-texture-token",
+        "surface": "opaque",
+        "surfaceClassification": "opaque-alpha-channel",
+        "baseColorTexture": "BlossomPlantFactory_young_airy_s97_Wood_Opaque_01_BaseColor",
+        "alphaTexture": null
+      },
+      {
+        "originalName": "Cherry_Flower",
+        "name": "BlossomPlantFactory_young_airy_s97_Foliage_Cutout_02",
+        "family": "foliage",
+        "familyClassification": "name-or-texture-token",
+        "surface": "cutout",
+        "surfaceClassification": "sampled-cutout-alpha",
+        "baseColorTexture": "BlossomPlantFactory_young_airy_s97_Foliage_Cutout_02_BaseColor",
+        "alphaTexture": "BlossomPlantFactory_young_airy_s97_Foliage_Cutout_02_BaseColor"
+      }
+    ],
+    "minimumMetres": [
+      -1.2982630729675293,
+      -1.6096208095550537,
+      -7.105427357601002e-15
+    ],
+    "maximumMetres": [
+      1.2982630729675293,
+      1.6096208095550537,
+      7.099999904632568
+    ],
+    "dimensionsMetres": [
+      2.5965261459350586,
+      3.2192416191101074,
+      7.099999904632568
+    ],
+    "windMask": {
+      "attribute": "COLOR_0",
+      "rootedChannel": "R",
+      "phaseChannel": "G",
+      "leafFlutterChannel": "B",
+      "foliageVertices": 2384,
+      "totalVertices": 7142
+    },
+    "reduction": {
+      "trianglesBefore": 9778,
+      "trianglesAfter": 9778,
+      "epiphyteTrianglesDropped": 0,
+      "foliageTrianglesConditioned": 1192
+    }
+  }
+]
