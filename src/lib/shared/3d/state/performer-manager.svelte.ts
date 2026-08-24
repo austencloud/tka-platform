@@ -66,6 +66,14 @@ export interface PerformerManagerDeps {
    * When omitted, performers use standalone defaults.
    */
   getDefaults?: () => DefaultPerformerSettings;
+  /**
+   * Threaded through to every `createAvatarInstanceState` call as
+   * `AvatarInstanceConfig.persistent`. Defaults to `true` (unchanged
+   * behavior) when omitted. Pass `false` for a seeded/ephemeral viewer so
+   * its avatar instances never read or write the persisted plane-mode /
+   * rotation-variant localStorage keys.
+   */
+  persistent?: boolean;
 }
 
 /**
@@ -75,6 +83,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
   const { initialAvatarId } = deps;
   const maxPerformers = deps.maxPerformers ?? MAX_PERFORMERS;
   const getDefaults = deps.getDefaults;
+  const persistent = deps.persistent;
 
   // Performer states (1-4 performers)
   let performerStates = $state<AvatarInstanceState[]>([]);
@@ -109,6 +118,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
         positionX: pos.x,
         positionZ: pos.z,
         avatarModelId: initialAvatarId,
+        persistent,
       },
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );
@@ -125,6 +135,7 @@ function buildPerformerManager(deps: PerformerManagerDeps) {
         positionX: initialPosition.x,
         positionZ: initialPosition.z,
         avatarModelId: initialAvatarId,
+        persistent,
       },
       getDefaults ? { getDefaults } : makeStandaloneDeps()
     );

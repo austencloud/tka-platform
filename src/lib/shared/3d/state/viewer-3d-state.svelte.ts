@@ -622,6 +622,7 @@ function buildViewer3DState(
     initialAvatarId: DEFAULT_AVATAR_ID,
     maxPerformers: STAGE.MAX_VIEWER_PERFORMERS,
     getDefaults: () => _defaultSettings,
+    persistent,
   });
 
   // Viewer-specific selection scope. Lives on top of PerformerManager so

@@ -117,6 +117,14 @@ export interface AvatarInstanceConfig {
   avatarModelId?: AvatarId;
   /** User-assigned display name; null = fall back to the avatar model's name. */
   name?: string | null;
+  /**
+   * Whether this instance reads/writes its persisted plane-mode and
+   * rotation-variant localStorage keys. Defaults to `true` (the real
+   * viewer's behavior, unchanged). Seeded/ephemeral viewers pass `false`
+   * so a preview never reads the user's saved planes at creation and never
+   * clobbers them when the film/preview changes hand planes.
+   */
+  persistent?: boolean;
 }
 
 /**
@@ -151,6 +159,12 @@ export function createAvatarInstanceState(
 
   // Avatar identity
   const id = config.id;
+  // Seeded/ephemeral viewers (preview tiles, film-director shots) pass
+  // `persistent: false` so this instance never touches the user's saved
+  // plane-mode / rotation-variant localStorage keys - neither reading them
+  // at creation nor writing on every plane change. Default true = the real
+  // viewer's unchanged behavior.
+  const persistToStorage = config.persistent !== false;
   let avatarModelId = $state<AvatarId>(
     config.avatarModelId ?? DEFAULT_AVATAR_ID
   );
@@ -227,6 +241,7 @@ export function createAvatarInstanceState(
   const ROT_VARIANT_KEY = `tka-3d-rotVariant-${id}`;
 
   function loadPersistedPlaneMode(): PlaneMode | null {
+    if (!persistToStorage) return null;
     try {
       const v = localStorage.getItem(PLANE_MODE_KEY);
       if (v === PlaneMode.DUAL_WHEEL) return PlaneMode.DUAL_WHEEL;
@@ -237,6 +252,7 @@ export function createAvatarInstanceState(
   }
 
   function loadPersistedRotVariant(): number {
+    if (!persistToStorage) return 1;
     try {
       const v = localStorage.getItem(ROT_VARIANT_KEY);
       if (v !== null) return Math.max(0, Math.min(2, parseInt(v, 10) || 0));
@@ -490,7 +506,9 @@ export function createAvatarInstanceState(
 
   function setPlaneMode(mode: PlaneMode) {
     planeMode = mode;
-    try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch { /* ignore */ }
+    if (persistToStorage) {
+      try { localStorage.setItem(PLANE_MODE_KEY, mode); } catch { /* ignore */ }
+    }
 
     // Sync custom plane trackers to the preset's planes when switching away from CUSTOM
     if (mode !== PlaneMode.CUSTOM) {
@@ -524,7 +542,9 @@ export function createAvatarInstanceState(
       customBluePlane ?? getDefaults().customBluePlane,
       customRedPlane ?? getDefaults().customRedPlane
     );
-    try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch { /* ignore */ }
+    if (persistToStorage) {
+      try { localStorage.setItem(PLANE_MODE_KEY, planeMode); } catch { /* ignore */ }
+    }
 
     reconvertWithConfig(getEffectiveModeConfig(planeMode));
     const afterSnapshot = capturePerformerSnapshot();
@@ -634,7 +654,9 @@ export function createAvatarInstanceState(
    */
   function cycleRotationVariant(): string {
     rotationVariantIndex = (rotationVariantIndex + 1) % ROTATION_VARIANTS.length;
-    try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch { /* ignore */ }
+    if (persistToStorage) {
+      try { localStorage.setItem(ROT_VARIANT_KEY, String(rotationVariantIndex)); } catch { /* ignore */ }
+    }
     const modeConfig = getEffectiveModeConfig(effectivePlaneMode);
     reconvertWithConfig(modeConfig);
     return ROTATION_LABELS[rotationVariantIndex] ?? "Unknown";
