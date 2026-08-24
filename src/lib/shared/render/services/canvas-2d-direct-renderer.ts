@@ -12,7 +12,7 @@ import { getSvgAssetLoader } from "./svg-asset-loader";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import type { Letter } from "../../foundation/domain/models/letter";
 import type { PictographPreparer } from "../../pictograph/shared/services/pictograph-preparer";
-import type { TurnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
+import { turnsTupleGenerator } from "../../pictograph/arrow/positioning/placement/services/turns-tuple-generator";
 import {
   drawTKAGlyph,
   drawTurnsColumn,
@@ -30,6 +30,7 @@ import {
 } from "./canvas-2d-transform-helper";
 import { createRenderCanvas } from "./create-render-canvas";
 import type { RenderCanvas } from "./types";
+import { captureException } from "$lib/shared/analytics/services/posthog";
 
 const VIEWBOX_SIZE = 950;
 
@@ -45,6 +46,12 @@ const BASE_GRID_POINTS = {
 
 const GRID_POINT_COLOR_LIGHT = "#000000";
 const GRID_POINT_COLOR_DARK = "#ffffff";
+const getTurnsTupleGenerator = () => turnsTupleGenerator;
+
+// One broken asset can be requested by every visible cell. Report each unique
+// prop/browser failure once so PostHog gets the cause without a grid-sized
+// burst of duplicate exceptions.
+const reportedPropDrawFailures = new Set<string>();
 
 export class Canvas2DDirectRenderer implements IDirectRenderer {
   private initialized = false;
@@ -53,7 +60,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
   // Global preparer function that can be set at app initialization
   private static globalPreparerGetter?: () => PictographPreparer | undefined;
-  private static globalTurnsTupleGeneratorGetter?: () => TurnsTupleGenerator | undefined;
 
   /**
    * Set a global preparer getter function
@@ -61,14 +67,6 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
    */
   static setGlobalPreparerGetter(getter: () => PictographPreparer | undefined) {
     Canvas2DDirectRenderer.globalPreparerGetter = getter;
-  }
-
-  /**
-   * Set a global turns tuple generator getter function
-   * Called once at app initialization to wire up DI container
-   */
-  static setGlobalTurnsTupleGeneratorGetter(getter: () => TurnsTupleGenerator | undefined) {
-    Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter = getter;
   }
 
   constructor(preparer?: PictographPreparer) {
@@ -254,12 +252,12 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     // 6. Draw turn numbers (TurnsColumn - to the RIGHT of letter)
     if (visibility.showTKA && preparedPictograph.motions) {
-      await drawTurnsColumn(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter, visibility);
+      await drawTurnsColumn(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, getTurnsTupleGenerator, visibility);
     }
 
     // 7. Draw direction dot (same/opp indicator)
     if (visibility.showTKA && preparedPictograph.letter && preparedPictograph.motions) {
-      drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, Canvas2DDirectRenderer.globalTurnsTupleGeneratorGetter);
+      drawDirectionDot(ctx, preparedPictograph, letterDimensions, scale, isDarkMode, getTurnsTupleGenerator);
     }
 
     // 9. Draw fused Elemental+TnD glyph (bottom-right corner)
@@ -461,7 +459,34 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
           shouldMirror: mirror,
         });
       } catch (error) {
-        console.warn(`[Canvas2D] Failed to draw ${color} prop:`, error);
+        const normalizedError =
+          error instanceof Error ? error : new Error(String(error));
+        const propType = assets.propType ?? "unknown";
+        const failureKey = [
+          color,
+          propType,
+          normalizedError.name,
+          normalizedError.message,
+        ].join(":");
+
+        if (!reportedPropDrawFailures.has(failureKey)) {
+          reportedPropDrawFailures.add(failureKey);
+          const details = {
+            renderer: "canvas2d",
+            render_surface: "pictograph",
+            prop_color: color,
+            prop_type: propType,
+            prop_view_box: assets.viewBox,
+            error_name: normalizedError.name,
+            error_message: normalizedError.message,
+          };
+          console.warn(
+            "[Canvas2D] Failed to draw prop",
+            details,
+            normalizedError
+          );
+          captureException(normalizedError, details);
+        }
       }
     }
   }

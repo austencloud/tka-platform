@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { buildChoreoCardRenderKeys, type ChoreoCardRenderKeyInputs } from "../choreo-card-render-keys";
+import {
+  buildChoreoCardRenderKeys,
+  type ChoreoCardRenderKeyInputs,
+} from "../choreo-card-render-keys";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -53,7 +56,7 @@ function baseInputs(): ChoreoCardRenderKeyInputs {
 /** Mirrors ChoreoCard's grid-stable-image mode decision. */
 function routeMode(
   prev: ChoreoCardRenderKeyInputs,
-  next: ChoreoCardRenderKeyInputs,
+  next: ChoreoCardRenderKeyInputs
 ): "swap" | "crossfade" | "no-change" {
   const a = buildChoreoCardRenderKeys(prev);
   const b = buildChoreoCardRenderKeys(next);
@@ -98,11 +101,48 @@ describe("buildChoreoCardRenderKeys — overlay vs structural routing", () => {
       { catDogModeEnabled: true },
       { showBlueMotion: false }, // motion visibility changes which arrows show
       { showRedMotion: false },
-      { sequence: { id: "seq-2", steps: [{ letter: "C", duration: 1 }, { letter: "D", duration: 1 }] } as unknown as SequenceData },
+      {
+        sequence: {
+          id: "seq-2",
+          steps: [
+            { letter: "C", duration: 1 },
+            { letter: "D", duration: 1 },
+          ],
+        } as unknown as SequenceData,
+      },
     ];
     for (const patch of structural) {
       expect(routeMode(before, { ...before, ...patch })).toBe("swap");
     }
+  });
+
+  it("same-id transforms with unchanged letters invalidate rendered geometry", () => {
+    const before = baseInputs();
+    const sequence = before.sequence;
+    if (!sequence) throw new Error("The render-key fixture needs a sequence");
+    const transformed = {
+      ...before,
+      sequence: {
+        ...sequence,
+        steps: sequence.steps.map((step, index) => ({
+          ...step,
+          motions: {
+            ...step.motions,
+            blue: {
+              motionType: "pro",
+              rotationDirection: "cw",
+              startLocation: index === 0 ? "n" : "e",
+              endLocation: index === 0 ? "e" : "s",
+              turns: 0,
+              startOrientation: "in",
+              endOrientation: "in",
+            },
+          },
+        })),
+      } as unknown as SequenceData,
+    };
+
+    expect(routeMode(before, transformed)).toBe("swap");
   });
 
   it("structuralKey excludes every overlay-visibility flag", () => {

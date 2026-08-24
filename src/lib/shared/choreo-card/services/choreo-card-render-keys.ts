@@ -1,4 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export interface ChoreoCardRenderKeyInputs {
@@ -62,13 +63,16 @@ export interface ChoreoCardRenderKeys {
  * - contentKey: imageKey + layout (columns, start toggle).
  * - renderKey: contentKey + darkMode (dark mode isn't folded into content/image).
  */
-export function buildChoreoCardRenderKeys(i: ChoreoCardRenderKeyInputs): ChoreoCardRenderKeys {
-  const stepLetters = i.sequence?.steps?.map((s) => s.letter ?? "?").join("") ?? "";
+export function buildChoreoCardRenderKeys(
+  i: ChoreoCardRenderKeyInputs
+): ChoreoCardRenderKeys {
+  const sequenceContentKey = i.sequence ? hashSequenceContent(i.sequence) : "";
   const stepCount = i.sequence?.steps?.length ?? 0;
-  const durationKey = i.sequence?.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
+  const durationKey =
+    i.sequence?.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
 
   const gv = `${i.showTnD ? "1" : "0"}${i.showElemental ? "1" : "0"}${i.showPositions ? "1" : "0"}${i.showGrid ? "1" : "0"}`;
-  const imageKey = `${i.sequence?.id ?? ""}-${stepLetters}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-gv:${gv}`;
+  const imageKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-gv:${gv}`;
   // startPositionLayout (row vs column) changes where the start cell sits and
   // therefore where every step cell AND the QR cell land. It's in the CONTENT
   // (layout) key but NOT imageKey/gridStableKey/structuralKey: a pure row↔column
@@ -82,7 +86,7 @@ export function buildChoreoCardRenderKeys(i: ChoreoCardRenderKeyInputs): ChoreoC
   // Geometry-only subset (see interface docs). Deliberately excludes every
   // overlay-visibility flag so a non-radial / glyph / grid / points toggle
   // leaves it unchanged → crossfade, not swap.
-  const structuralKey = `${i.sequence?.id ?? ""}-${stepLetters}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}`;
+  const structuralKey = `${i.sequence?.id ?? ""}-${sequenceContentKey}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}`;
   const renderKey = `${contentKey}-${i.darkMode}`;
 
   return { imageKey, contentKey, gridStableKey, structuralKey, renderKey };

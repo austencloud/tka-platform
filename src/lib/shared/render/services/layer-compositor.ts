@@ -16,8 +16,11 @@ import {
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { calculateReversalPositions } from "../core";
-import type { DrawableImage } from "./svg-image-cache";
 import type { Canvas2DDirectRenderer } from './canvas-2d-direct-renderer';
+import {
+  drawMonochromeImage,
+  drawTintedImage,
+} from "@tka/render-composition";
 
 const VIEWBOX_SIZE = 950;
 const TKA_GLYPH_X = 50;
@@ -654,12 +657,15 @@ export class LayerCompositor {
         const drawWidth = letterDimensions.width * scale;
         const drawHeight = letterDimensions.height * scale;
 
-        ctx.save();
-        if (darkMode) {
-          ctx.filter = "invert(0.9)";
-        }
-        ctx.drawImage(letterImg, x, y, drawWidth, drawHeight);
-        ctx.restore();
+        drawMonochromeImage(
+          ctx,
+          letterImg,
+          x,
+          y,
+          drawWidth,
+          drawHeight,
+          darkMode
+        );
 
         return letterDimensions;
       }
@@ -760,7 +766,7 @@ export class LayerCompositor {
             const drawWidth = topNaturalWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-            this.drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
+            drawTintedImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
           }
         } catch (error) {
           console.warn("[LayerCompositor] Failed to load top turn number:", error);
@@ -781,7 +787,7 @@ export class LayerCompositor {
             const drawWidth = bottomNaturalWidth * scale;
             const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-            this.drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
+            drawTintedImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
           }
         } catch (error) {
           console.warn("[LayerCompositor] Failed to load bottom turn number:", error);
@@ -823,32 +829,6 @@ export class LayerCompositor {
     ctx.beginPath();
     ctx.arc(drawX + radius, drawY + radius, radius, 0, Math.PI * 2);
     ctx.fill();
-  }
-
-  private drawColoredImage(
-    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    img: DrawableImage,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    color: string
-  ): void {
-    const offscreen = new OffscreenCanvas(Math.ceil(width), Math.ceil(height));
-    const offCtx = offscreen.getContext("2d");
-
-    if (!offCtx) {
-      ctx.drawImage(img, x, y, width, height);
-      return;
-    }
-
-    offCtx.drawImage(img, 0, 0, width, height);
-
-    offCtx.globalCompositeOperation = "source-in";
-    offCtx.fillStyle = color;
-    offCtx.fillRect(0, 0, width, height);
-
-    ctx.drawImage(offscreen, x, y);
   }
 
   private getTurnsTuple(pictograph: PreparedPictographData): string {

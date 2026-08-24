@@ -6,12 +6,13 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { hashSequenceContent } from "$lib/shared/foundation/services/content-hasher";
 import type { PreviewCellRenderOptions } from "$lib/shared/sequence-viewer/services/preview-cell-renderer";
 import type { TimelineRow } from "$lib/shared/create/utils/grid-calculations";
 import type { MandalaLayoutOverride } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
-import type { PropType } from '$lib/shared/pictograph/prop/domain/enums/prop-type';
-import type { BrowseViewMode } from '$lib/shared/browse/domain/browse-view-mode';
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 
 // ============================================================================
 // GLOBAL CELL URL CACHE
@@ -20,7 +21,14 @@ import type { BrowseViewMode } from '$lib/shared/browse/domain/browse-view-mode'
 // ============================================================================
 
 export interface CachedPreview {
-  cells: { index: number; label: string; imageUrl: string; gridColumn: number; gridRow: number; duration: number }[];
+  cells: {
+    index: number;
+    label: string;
+    imageUrl: string;
+    gridColumn: number;
+    gridRow: number;
+    duration: number;
+  }[];
   columns: number;
   rows: number;
   durationRows?: TimelineRow[];
@@ -42,18 +50,11 @@ export function getPreviewCacheKey(
   colCount: number | null,
   isDark: boolean,
   spl: "row" | "column" = "column",
-  includeStartPosition: boolean = true,
+  includeStartPosition: boolean = true
 ): string {
-  const stepLetters = seq.steps?.map(s => s.letter ?? "?").join("") ?? "";
-  const durationFingerprint = seq.steps?.map(s => s.duration ?? 1).join(",") ?? "";
-  // Motion fingerprint captures orientation + rotation data that affects rendering.
-  // Without this, two sequences with identical letters but different orientations
-  // would collide in the cache.
-  const motionFingerprint = seq.steps?.map(s => {
-    const b = s.motions?.blue;
-    const r = s.motions?.red;
-    return `${!b || b.isVisible === false ? "b0" : "b1"}${b?.startOrientation ?? ""}${b?.endOrientation ?? ""}${b?.rotationDirection ?? ""}${!r || r.isVisible === false ? "r0" : "r1"}${r?.startOrientation ?? ""}${r?.endOrientation ?? ""}${r?.rotationDirection ?? ""}`;
-  }).join("") ?? "";
+  const sequenceContentKey = hashSequenceContent(seq);
+  const durationFingerprint =
+    seq.steps?.map((s) => s.duration ?? 1).join(",") ?? "";
   const vm = opts.browseViewMode;
   const vmKey = vm ? `${vm.subject}-${vm.granularity}-${vm.color}` : "default";
   // Resolve prop types to actual values (fall back to global settings) so the
@@ -72,7 +73,7 @@ export function getPreviewCacheKey(
   // probe adopts the other mode's cells while the frame sizes for this mode,
   // reserving a phantom start row that spreads the step rows apart.
   const sp = includeStartPosition ? "sp1" : "sp0";
-  return `${seq.id ?? seq.word ?? "?"}-${stepLetters}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-m:${motionFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
+  return `${seq.id ?? seq.word ?? "?"}-${sequenceContentKey}-${seq.steps?.length ?? 0}-${opts.size}-${opts.showStepNumbers}-${opts.showNonRadialPoints}-${opts.showTKA}-${opts.showReversals}-${opts.handPathMode ?? false}-${resolvedBlue}-${resolvedRed}-${colCount ?? "auto"}-${isDark ? "dark" : "light"}-spl:${spl}-${sp}-d:${durationFingerprint}-vm:${vmKey}-mv:${mv}-gv:${gv}`;
 }
 
 /**
@@ -82,9 +83,12 @@ export function getPreviewCacheKey(
 export function storePreviewInCache(
   key: string,
   data: CachedPreview,
-  activeCells: { imageUrl: string; fadeOutUrl?: string }[],
+  activeCells: { imageUrl: string; fadeOutUrl?: string }[]
 ): void {
-  if (globalPreviewCache.size >= MAX_PREVIEW_CACHE && !globalPreviewCache.has(key)) {
+  if (
+    globalPreviewCache.size >= MAX_PREVIEW_CACHE &&
+    !globalPreviewCache.has(key)
+  ) {
     const oldest = globalPreviewCache.keys().next().value;
     if (oldest !== undefined) {
       const evicted = globalPreviewCache.get(oldest);
@@ -95,7 +99,10 @@ export function storePreviewInCache(
           if (c.fadeOutUrl?.startsWith("blob:")) activeUrls.add(c.fadeOutUrl);
         }
         for (const cell of evicted.cells) {
-          if (cell.imageUrl.startsWith("blob:") && !activeUrls.has(cell.imageUrl)) {
+          if (
+            cell.imageUrl.startsWith("blob:") &&
+            !activeUrls.has(cell.imageUrl)
+          ) {
             URL.revokeObjectURL(cell.imageUrl);
           }
         }
@@ -117,12 +124,15 @@ export function calculateGridPosition(
   cols: number,
   includeStartPosition: boolean,
   startPositionLayout: "row" | "column",
-  mandalaLayoutOverride: MandalaLayoutOverride | null,
+  mandalaLayoutOverride: MandalaLayoutOverride | null
 ): { gridColumn: number; gridRow: number } {
   // 4-count horizontal mandala override: start/step positions come from the override spec.
   if (mandalaLayoutOverride) {
     if (stepIndex === -1) {
-      return { gridColumn: mandalaLayoutOverride.startPos.col, gridRow: mandalaLayoutOverride.startPos.row };
+      return {
+        gridColumn: mandalaLayoutOverride.startPos.col,
+        gridRow: mandalaLayoutOverride.startPos.row,
+      };
     }
     const pos = mandalaLayoutOverride.stepPositions[stepIndex];
     if (pos) return { gridColumn: pos.col, gridRow: pos.row };

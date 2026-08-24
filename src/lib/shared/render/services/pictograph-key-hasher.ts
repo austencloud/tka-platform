@@ -37,6 +37,7 @@ interface PictographKeyInput {
   // Present only when a narrowly-scoped render algorithm revision changes
   // this pictograph's pixels. Unaffected cells keep their established key.
   propGeometryRevision?: string;
+  turnGlyphRevision?: string;
   visibility: {
     showTKA: boolean;
     showTnD: boolean;
@@ -57,6 +58,7 @@ interface PictographKeyInput {
 }
 
 const BETA_SHIFT_MAP_REVISION = "beta-shift-map-v2";
+const QUARTER_TURN_GLYPH_REVISION = "quarter-turn-glyph-v1";
 const NON_RADIAL_ORIENTATIONS = new Set(["clock", "counter"]);
 const SHIFT_MOTION_TYPES = new Set(["pro", "anti", "float"]);
 const REVISED_NON_RADIAL_SHIFT_TRANSITIONS = new Set([
@@ -129,6 +131,25 @@ export function getPictographGeometryRevision(
   return usesRevisedTransition ? BETA_SHIFT_MAP_REVISION : undefined;
 }
 
+/**
+ * Rekeys only pictographs whose rasterized TKA tuple changed when the 0.25
+ * number asset was introduced. Older lsp11/lsp12 blobs were rendered before
+ * that glyph existed and otherwise remain valid cache hits forever.
+ */
+export function getTurnGlyphRevision(
+  data: StepData | PictographData,
+  showTKA: boolean
+): string | undefined {
+  if (!showTKA) return undefined;
+
+  const usesQuarterTurn = Object.values(data.motions ?? {}).some((motion) => {
+    if (!motion || motion.isVisible === false) return false;
+    return Number(motion.turns) === 0.25;
+  });
+
+  return usesQuarterTurn ? QUARTER_TURN_GLYPH_REVISION : undefined;
+}
+
 export class PictographKeyHasher {
   deriveKey(
     data: StepData | PictographData,
@@ -159,6 +180,10 @@ export class PictographKeyHasher {
     const reversalsVisible = visibility.showReversals ?? true;
     const step = data as Partial<StepData>;
     const propGeometryRevision = getPictographGeometryRevision(data);
+    const turnGlyphRevision = getTurnGlyphRevision(
+      data,
+      visibility.showTKA ?? true
+    );
 
     return {
       letter: data.letter ?? undefined,
@@ -168,6 +193,7 @@ export class PictographKeyHasher {
       redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
       betaSwapped: data.betaSwapped ?? false,
       ...(propGeometryRevision && { propGeometryRevision }),
+      ...(turnGlyphRevision && { turnGlyphRevision }),
       visibility: {
         showTKA: visibility.showTKA ?? true,
         showTnD: visibility.showTnD ?? false,

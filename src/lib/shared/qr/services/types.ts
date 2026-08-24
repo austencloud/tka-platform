@@ -117,6 +117,11 @@ export interface QRCodeOptions {
    * QRs whose destination is not a player (e.g. the festival signup card).
    */
   centerIcon?: "play" | "none";
+  /** Cancel nonessential preparation when the requesting surface unmounts or
+   * its render deadline expires. */
+  signal?: AbortSignal;
+  /** Internal rendering heartbeat used by long-running thumbnail work. */
+  onActivity?: () => void;
 }
 
 /**

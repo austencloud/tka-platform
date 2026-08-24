@@ -11,7 +11,12 @@
 import QRCodeStyling from "qr-code-styling";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ShortCodeManager } from "./short-code-manager";
-import type { QRCodeOptions, QRCodeResult, QRCodeStyle, QRStylePreset } from "./types";
+import type {
+  QRCodeOptions,
+  QRCodeResult,
+  QRCodeStyle,
+  QRStylePreset,
+} from "./types";
 import {
   getQrImageCache,
   QR_IMAGE_CACHE_SCHEMA,
@@ -28,6 +33,12 @@ type CellWarmer = (
   sequence: SequenceData,
   options: WarmOptions
 ) => Promise<WarmSequenceCellsResult>;
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new DOMException("Aborted", "AbortError");
+}
 
 /**
  * Style presets for quick styling
@@ -89,7 +100,10 @@ function isLightColor(hex: string): boolean {
  * stay recoverable. `moduleColor` is the QR module color; the badge is derived
  * as its card-matching contrast.
  */
-export function playIconDataUrl(moduleColor: string, triangleColor: string = PLAY_GREEN): string {
+export function playIconDataUrl(
+  moduleColor: string,
+  triangleColor: string = PLAY_GREEN
+): string {
   // Badge matches the card background: light card (dark modules) -> white badge;
   // dark card (white modules) -> dark badge.
   const badge = isLightColor(moduleColor) ? "#1a1a2e" : "#ffffff";
@@ -130,9 +144,7 @@ export class QRCodeGenerator {
   /**
    * Resolve style from preset name or object
    */
-  private resolveStyle(
-    styleInput?: QRCodeStyle | QRStylePreset
-  ): QRCodeStyle {
+  private resolveStyle(styleInput?: QRCodeStyle | QRStylePreset): QRCodeStyle {
     if (!styleInput) {
       return STYLE_PRESETS.modern;
     }
@@ -270,6 +282,7 @@ export class QRCodeGenerator {
     sequence: SequenceData,
     options?: QRCodeOptions
   ): Promise<QRCodeResult> {
+    throwIfAborted(options?.signal);
     const explicitCatDogMode =
       options?.bluePropType && options.redPropType
         ? options.bluePropType !== options.redPropType
@@ -292,17 +305,19 @@ export class QRCodeGenerator {
     // exact prop pair in both supported card themes before minting or returning
     // the code; scanners should download these cells, never discover that the
     // publisher's background warm silently failed and rasterize on a phone.
-    await Promise.all(
-      [true, false].map((isDark) =>
-        this.cellWarmer(sequence, {
-          isDark,
-          bluePropType: propConfig.bluePropType,
-          redPropType: propConfig.redPropType,
-          catDogMode: propConfig.catDogMode,
-          requireComplete: true,
-        })
-      )
-    );
+    for (const isDark of [true, false]) {
+      await this.cellWarmer(sequence, {
+        isDark,
+        bluePropType: propConfig.bluePropType,
+        redPropType: propConfig.redPropType,
+        catDogMode: propConfig.catDogMode,
+        requireComplete: true,
+        signal: options?.signal,
+        onActivity: options?.onActivity,
+      });
+      options?.onActivity?.();
+      throwIfAborted(options?.signal);
+    }
 
     // Every QR is the Firebase short code (tka.run/<code>). The dense "offline"
     // s~ path that baked the whole sequence into the URL is gone — those QRs
@@ -313,8 +328,12 @@ export class QRCodeGenerator {
         "QRCodeGenerator: sequence QRs require a ShortCodeManager; this instance was constructed URL-only"
       );
     }
-    const { code, url: shortUrl } =
-      await this.shortCodeManager.createShortCode(sequence, propOptions);
+    const { code, url: shortUrl } = await this.shortCodeManager.createShortCode(
+      sequence,
+      propOptions
+    );
+    options?.onActivity?.();
+    throwIfAborted(options?.signal);
 
     // Generate QR code
     const { svg, dataUrl } = await this.generateQR(shortUrl, options);

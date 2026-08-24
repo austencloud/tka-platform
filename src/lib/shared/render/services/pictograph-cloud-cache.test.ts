@@ -6,7 +6,12 @@ vi.mock("firebase/storage", () => ({
   uploadBytes: vi.fn(() => Promise.resolve()),
   getDownloadURL: vi.fn(() => Promise.resolve("https://dl/url")),
 }));
+const authMocks = vi.hoisted(() => ({
+  authStateReady: vi.fn(() => Promise.resolve()),
+  currentUser: {} as object | null,
+}));
 vi.mock("$lib/shared/auth/firebase", () => ({
+  getAuthInstance: vi.fn(() => Promise.resolve(authMocks)),
   getStorageInstance: vi.fn(() => Promise.resolve({})),
 }));
 
@@ -19,7 +24,11 @@ import {
 } from "./pictograph-cloud-cache";
 
 describe("pictograph-cloud-cache", () => {
-  beforeEach(() => _resetForTest());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    _resetForTest();
+    authMocks.currentUser = {};
+  });
   afterEach(() => vi.restoreAllMocks());
 
   it("builds a deterministic public URL for a hash", () => {
@@ -64,6 +73,19 @@ describe("pictograph-cloud-cache", () => {
     expect(a).toBe("https://dl/url");
     expect(b).toBe("https://dl/url");
     expect(isCellKnownAvailable("h")).toBe(true);
+    expect(authMocks.authStateReady).toHaveBeenCalledOnce();
+  });
+
+  it("does not attempt a canonical upload until Firebase auth is restored", async () => {
+    authMocks.currentUser = null;
+
+    await expect(
+      upload("signed-out", new Blob(["w"], { type: "image/webp" }))
+    ).resolves.toBeNull();
+
+    const { uploadBytes } = await import("firebase/storage");
+    expect(authMocks.authStateReady).toHaveBeenCalledOnce();
+    expect(uploadBytes).not.toHaveBeenCalled();
   });
 
   it("exposes positive availability without downloading the object", async () => {

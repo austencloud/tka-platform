@@ -76,9 +76,7 @@ describe("warmSequenceCells", () => {
     vi.clearAllMocks();
     knownCloudHashes.clear();
     renderMakesCellAvailable = true;
-    cloudDownload.mockResolvedValue(
-      new Blob(["ready"], { type: "image/webp" })
-    );
+    cloudDownload.mockResolvedValue(null);
   });
 
   it("verifies start and every step under the exact canonical prop pair", async () => {
@@ -92,7 +90,7 @@ describe("warmSequenceCells", () => {
 
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).not.toHaveBeenCalled();
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
       bluePropType: PropType;
@@ -120,6 +118,20 @@ describe("warmSequenceCells", () => {
 
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(cloudDownload).not.toHaveBeenCalled();
+    expect(renderCell).not.toHaveBeenCalled();
+  });
+
+  it("verifies an existing cloud object before rebuilding it on a new browser", async () => {
+    cloudDownload.mockResolvedValue(
+      new Blob(["ready"], { type: "image/webp" })
+    );
+
+    const result = await warmSequenceCells(sequence, {
+      requireComplete: true,
+    });
+
+    expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
     expect(renderCell).not.toHaveBeenCalled();
   });
 
@@ -171,12 +183,34 @@ describe("warmSequenceCells", () => {
     ]);
 
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).not.toHaveBeenCalled();
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
 
     await warmSequenceCells(sequence, { requireComplete: true });
 
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).not.toHaveBeenCalled();
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
+  });
+
+  it("stops a cancelled strict warm without converting it to an incomplete result", async () => {
+    const controller = new AbortController();
+    let resolveProbe!: (blob: Blob | null) => void;
+    cloudDownload.mockImplementationOnce(
+      () =>
+        new Promise<Blob | null>((resolve) => {
+          resolveProbe = resolve;
+        })
+    );
+    const warming = warmSequenceCells(sequence, {
+      requireComplete: true,
+      signal: controller.signal,
+    });
+
+    await vi.waitFor(() => expect(cloudDownload).toHaveBeenCalledOnce());
+    controller.abort();
+    resolveProbe(new Blob(["ready"], { type: "image/webp" }));
+
+    await expect(warming).rejects.toMatchObject({ name: "AbortError" });
+    expect(renderCell).not.toHaveBeenCalled();
   });
 
   it("retries a hash after strict verification fails", async () => {
@@ -199,6 +233,6 @@ describe("warmSequenceCells", () => {
     // The two hashes that became available remain reusable; only the failed
     // hash renders again after its transient upload failure.
     expect(renderCell).toHaveBeenCalledTimes(4);
-    expect(cloudDownload).not.toHaveBeenCalled();
+    expect(cloudDownload).toHaveBeenCalledTimes(4);
   });
 });

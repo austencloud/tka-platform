@@ -104,6 +104,35 @@ describe("QRCodeGenerator canonical cell readiness", () => {
     expect(createShortCode).not.toHaveBeenCalled();
     expect(getRawData).not.toHaveBeenCalled();
   });
+
+  it("finishes one theme before starting the next and stops after cancellation", async () => {
+    let finishDark!: () => void;
+    const darkWarm = new Promise<void>((resolve) => {
+      finishDark = resolve;
+    });
+    const warm = vi.fn(async (_sequence, options) => {
+      if (options.isDark) await darkWarm;
+      return { total: 2, ready: 2, hashes: [], failures: [] };
+    });
+    const createShortCode = vi.fn();
+    const generator = new QRCodeGenerator(
+      { createShortCode } as never,
+      imageCache as never,
+      warm
+    );
+    const controller = new AbortController();
+    const generating = generator.generateForSequence(sequence, {
+      signal: controller.signal,
+    });
+
+    await vi.waitFor(() => expect(warm).toHaveBeenCalledOnce());
+    controller.abort();
+    finishDark();
+
+    await expect(generating).rejects.toMatchObject({ name: "AbortError" });
+    expect(warm).toHaveBeenCalledOnce();
+    expect(createShortCode).not.toHaveBeenCalled();
+  });
 });
 
 describe("festival signup card relay", () => {

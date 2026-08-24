@@ -75,4 +75,21 @@ describe("getPreviewCacheKey — includeStartPosition", () => {
       getPreviewCacheKey(hidden, makeOptions(), null, false)
     );
   });
+
+  it("separates same-id transforms that only move motion locations", () => {
+    const base = makeSequence();
+    const transformed = makeSequence();
+    Object.assign(base.steps[0]!.motions.blue!, {
+      startLocation: "s",
+      endLocation: "w",
+    });
+    Object.assign(transformed.steps[0]!.motions.blue!, {
+      startLocation: "e",
+      endLocation: "s",
+    });
+
+    expect(getPreviewCacheKey(base, makeOptions(), null, false)).not.toBe(
+      getPreviewCacheKey(transformed, makeOptions(), null, false)
+    );
+  });
 });

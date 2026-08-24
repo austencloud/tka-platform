@@ -20,7 +20,7 @@ if (import.meta.hot) {
   });
 }
 
-type TurnNumberValue = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | "float";
+type TurnNumberValue = 0.25 | 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | "float";
 
 type ElementType = "air" | "earth" | "fire" | "water" | "moon" | "sun";
 
@@ -35,22 +35,93 @@ export class GlyphCache {
   private failedCount = 0;
 
   private readonly LETTERS_TO_CACHE: Letter[] = [
-    Letter.A, Letter.B, Letter.C, Letter.D, Letter.E, Letter.F, Letter.G,
-    Letter.H, Letter.I, Letter.J, Letter.K, Letter.L, Letter.M, Letter.N,
-    Letter.O, Letter.P, Letter.Q, Letter.R, Letter.S, Letter.T, Letter.U,
-    Letter.V, Letter.W, Letter.X, Letter.Y, Letter.Z,
-    Letter.SIGMA, Letter.DELTA, Letter.THETA, Letter.OMEGA, Letter.MU, Letter.NU,
-    Letter.W_DASH, Letter.X_DASH, Letter.Y_DASH, Letter.Z_DASH,
-    Letter.SIGMA_DASH, Letter.DELTA_DASH, Letter.THETA_DASH, Letter.OMEGA_DASH,
-    Letter.PHI, Letter.PSI, Letter.LAMBDA,
-    Letter.PHI_DASH, Letter.PSI_DASH, Letter.LAMBDA_DASH,
-    Letter.ALPHA, Letter.BETA, Letter.GAMMA, Letter.ZETA, Letter.ETA, Letter.TAU, Letter.TERRA,
+    Letter.A,
+    Letter.B,
+    Letter.C,
+    Letter.D,
+    Letter.E,
+    Letter.F,
+    Letter.G,
+    Letter.H,
+    Letter.I,
+    Letter.J,
+    Letter.K,
+    Letter.L,
+    Letter.M,
+    Letter.N,
+    Letter.O,
+    Letter.P,
+    Letter.Q,
+    Letter.R,
+    Letter.S,
+    Letter.T,
+    Letter.U,
+    Letter.V,
+    Letter.W,
+    Letter.X,
+    Letter.Y,
+    Letter.Z,
+    Letter.SIGMA,
+    Letter.DELTA,
+    Letter.THETA,
+    Letter.OMEGA,
+    Letter.MU,
+    Letter.NU,
+    Letter.W_DASH,
+    Letter.X_DASH,
+    Letter.Y_DASH,
+    Letter.Z_DASH,
+    Letter.SIGMA_DASH,
+    Letter.DELTA_DASH,
+    Letter.THETA_DASH,
+    Letter.OMEGA_DASH,
+    Letter.PHI,
+    Letter.PSI,
+    Letter.LAMBDA,
+    Letter.PHI_DASH,
+    Letter.PSI_DASH,
+    Letter.LAMBDA_DASH,
+    Letter.ALPHA,
+    Letter.BETA,
+    Letter.GAMMA,
+    Letter.ZETA,
+    Letter.ETA,
+    Letter.TAU,
+    Letter.TERRA,
   ];
 
-  private readonly TURN_NUMBERS_TO_CACHE: TurnNumberValue[] = [0.5, 1, 1.5, 2, 2.5, 3, "float"];
-  private readonly ELEMENTS_TO_CACHE: ElementType[] = ["air", "earth", "fire", "water", "moon", "sun"];
-  private readonly TND_GLYPHS_TO_CACHE: TnDType[] = ["QO", "QS", "SO", "SS", "TO", "TS"];
-  private readonly ADDITIONAL_IMAGES_TO_CACHE: AdditionalImageType[] = ["arrow", "blank", "dash", "same_opp_dot"];
+  private readonly TURN_NUMBERS_TO_CACHE: TurnNumberValue[] = [
+    0.25,
+    0.5,
+    1,
+    1.5,
+    2,
+    2.5,
+    3,
+    "float",
+  ];
+  private readonly ELEMENTS_TO_CACHE: ElementType[] = [
+    "air",
+    "earth",
+    "fire",
+    "water",
+    "moon",
+    "sun",
+  ];
+  private readonly TND_GLYPHS_TO_CACHE: TnDType[] = [
+    "QO",
+    "QS",
+    "SO",
+    "SS",
+    "TO",
+    "TS",
+  ];
+  private readonly ADDITIONAL_IMAGES_TO_CACHE: AdditionalImageType[] = [
+    "arrow",
+    "blank",
+    "dash",
+    "same_opp_dot",
+  ];
 
   async initialize(): Promise<void> {
     if (this.ready) return;
@@ -77,7 +148,11 @@ export class GlyphCache {
       await Promise.all(batch.map((v) => this.loadTnDGlyph(v)));
     }
 
-    for (let i = 0; i < this.ADDITIONAL_IMAGES_TO_CACHE.length; i += BATCH_SIZE) {
+    for (
+      let i = 0;
+      i < this.ADDITIONAL_IMAGES_TO_CACHE.length;
+      i += BATCH_SIZE
+    ) {
       const batch = this.ADDITIONAL_IMAGES_TO_CACHE.slice(i, i + BATCH_SIZE);
       await Promise.all(batch.map((img) => this.loadAdditionalImage(img)));
     }
@@ -101,11 +176,18 @@ export class GlyphCache {
     try {
       const path = getLetterImagePath(letter);
       const response = await fetch(path);
-      if (!response.ok) { this.failedCount++; return; }
+      if (!response.ok) {
+        this.failedCount++;
+        return;
+      }
 
       const svgContent = await response.text();
       const trimmed = svgContent.trimStart();
-      if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml") && !trimmed.startsWith("<!DOCTYPE svg")) {
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
         this.failedCount++;
         return;
       }
@@ -115,9 +197,14 @@ export class GlyphCache {
       this.cache.set(path, dataUrl);
 
       try {
-        const encodedPath = path.split("/").map((s, i, a) => i === a.length - 1 ? encodeURIComponent(s) : s).join("/");
+        const encodedPath = path
+          .split("/")
+          .map((s, i, a) => (i === a.length - 1 ? encodeURIComponent(s) : s))
+          .join("/");
         if (encodedPath !== path) this.cache.set(encodedPath, dataUrl);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       this.loadedCount++;
     } catch {
@@ -130,11 +217,18 @@ export class GlyphCache {
       const filename = value === "float" ? "float" : value.toString();
       const path = `/images/numbers/${filename}.svg`;
       const response = await fetch(path);
-      if (!response.ok) { this.failedCount++; return; }
+      if (!response.ok) {
+        this.failedCount++;
+        return;
+      }
 
       const svgContent = await response.text();
       const trimmed = svgContent.trimStart();
-      if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml") && !trimmed.startsWith("<!DOCTYPE svg")) {
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
         this.failedCount++;
         return;
       }
@@ -151,7 +245,10 @@ export class GlyphCache {
     try {
       const path = getElementImagePath(element);
       const response = await fetch(path);
-      if (!response.ok) { this.failedCount++; return; }
+      if (!response.ok) {
+        this.failedCount++;
+        return;
+      }
 
       const blob = await response.blob();
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -172,11 +269,18 @@ export class GlyphCache {
     try {
       const path = `/images/vtg_glyphs/${tndCode}.svg`;
       const response = await fetch(path);
-      if (!response.ok) { this.failedCount++; return; }
+      if (!response.ok) {
+        this.failedCount++;
+        return;
+      }
 
       const svgContent = await response.text();
       const trimmed = svgContent.trimStart();
-      if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml") && !trimmed.startsWith("<!DOCTYPE svg")) {
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
         this.failedCount++;
         return;
       }
@@ -193,11 +297,18 @@ export class GlyphCache {
     try {
       const path = `/images/${image}.svg`;
       const response = await fetch(path);
-      if (!response.ok) { this.failedCount++; return; }
+      if (!response.ok) {
+        this.failedCount++;
+        return;
+      }
 
       const svgContent = await response.text();
       const trimmed = svgContent.trimStart();
-      if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml") && !trimmed.startsWith("<!DOCTYPE svg")) {
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
         this.failedCount++;
         return;
       }
@@ -218,13 +329,17 @@ export class GlyphCache {
       const decoded = decodeURIComponent(letter);
       result = this.cache.get(decoded);
       if (result) return result;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     try {
       const encoded = encodeURIComponent(letter);
       result = this.cache.get(encoded);
       if (result) return result;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     return null;
   }
@@ -234,10 +349,15 @@ export class GlyphCache {
     if (cached) return cached;
 
     try {
-      const encodedPath = path.split("/").map((s, i, a) => i === a.length - 1 ? encodeURIComponent(s) : s).join("/");
+      const encodedPath = path
+        .split("/")
+        .map((s, i, a) => (i === a.length - 1 ? encodeURIComponent(s) : s))
+        .join("/");
       const encodedCached = this.cache.get(encodedPath);
       if (encodedCached) return encodedCached;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     try {
       const response = await fetch(path);
@@ -245,7 +365,11 @@ export class GlyphCache {
 
       const svgContent = await response.text();
       const trimmed = svgContent.trimStart();
-      if (!trimmed.startsWith("<svg") && !trimmed.startsWith("<?xml") && !trimmed.startsWith("<!DOCTYPE svg")) {
+      if (
+        !trimmed.startsWith("<svg") &&
+        !trimmed.startsWith("<?xml") &&
+        !trimmed.startsWith("<!DOCTYPE svg")
+      ) {
         return null;
       }
 
@@ -253,9 +377,14 @@ export class GlyphCache {
       this.cache.set(path, dataUrl);
 
       try {
-        const encodedPath = path.split("/").map((s, i, a) => i === a.length - 1 ? encodeURIComponent(s) : s).join("/");
+        const encodedPath = path
+          .split("/")
+          .map((s, i, a) => (i === a.length - 1 ? encodeURIComponent(s) : s))
+          .join("/");
         if (encodedPath !== path) this.cache.set(encodedPath, dataUrl);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
 
       this.loadedCount++;
       return dataUrl;
@@ -267,7 +396,9 @@ export class GlyphCache {
 
   private utf8ToBase64(str: string): string {
     const bytes = new TextEncoder().encode(str);
-    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join(
+      ""
+    );
     return btoa(binary);
   }
 

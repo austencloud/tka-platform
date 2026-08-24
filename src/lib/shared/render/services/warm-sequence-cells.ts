@@ -30,6 +30,10 @@ export interface WarmOptions {
   showRedMotion?: boolean;
   /** Throw unless every canonical object already exists or uploads successfully. */
   requireComplete?: boolean;
+  /** Stop starting more cell work when the requesting render is obsolete. */
+  signal?: AbortSignal;
+  /** Reports completed cloud checks/renders to an outer inactivity deadline. */
+  onActivity?: () => void;
 }
 
 export interface WarmCellFailure {
@@ -61,19 +65,35 @@ export class IncompleteCellWarmError extends Error {
 const verifiedCloudHashes = new Set<string>();
 const pendingVerifiedWarms = new Map<string, Promise<void>>();
 
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new DOMException("Aborted", "AbortError");
+}
+
 async function renderCanonicalCell(
   data: PictographData,
   cell: "start" | number,
   isDark: boolean,
   renderOptions: PreviewCellRenderOptions,
   hash: string,
-  verifyUpload: boolean
+  verifyUpload: boolean,
+  signal?: AbortSignal
 ): Promise<void> {
   // Most cards collapse onto pictographs that a previous card already
   // uploaded. Successful uploads and reads both register positive existence in
   // the cloud-cache owner. That proof lets QR preparation skip an entire image
   // download before rendering and another after upload.
   if (verifyUpload && pictographCloudCache.isCellKnownAvailable(hash)) return;
+
+  // A new browser does not have the persisted positive set yet. Verify the
+  // deterministic object before spending CPU and upload bandwidth rebuilding
+  // a canonical cell that already exists.
+  if (verifyUpload) {
+    const stored = await pictographCloudCache.download(hash, { signal });
+    throwIfAborted(signal);
+    if (stored) return;
+  }
 
   let url: string | null = null;
   try {
@@ -97,7 +117,8 @@ async function ensureVerifiedCanonicalCell(
   cell: "start" | number,
   isDark: boolean,
   renderOptions: PreviewCellRenderOptions,
-  hash: string
+  hash: string,
+  signal?: AbortSignal
 ): Promise<void> {
   if (verifiedCloudHashes.has(hash)) return;
 
@@ -126,12 +147,17 @@ async function ensureVerifiedCanonicalCell(
   }
 
   await pending;
+  // Shared same-hash work belongs to every current caller, so one thumbnail's
+  // cancellation must not abort the core promise for the others. Stop this
+  // consumer after the shared result settles instead.
+  throwIfAborted(signal);
 }
 
 export async function warmSequenceCells(
   sequence: SequenceData,
   opts: WarmOptions = {}
 ): Promise<WarmSequenceCellsResult> {
+  throwIfAborted(opts.signal);
   const blueProp = opts.bluePropType;
   const motionVisibility = getSequenceMotionVisibility(sequence);
   const renderOptions: PreviewCellRenderOptions = {
@@ -170,50 +196,50 @@ export async function warmSequenceCells(
     entries.push({ cell: index + 1, data: step, options });
   });
 
-  const outcomes = await Promise.all(
-    entries.map(async ({ cell, data, options }) => {
-      try {
-        const hash = await deriveCloudCellHash(
-          data,
-          opts.isDark ?? true,
-          options
-        );
-        if (opts.requireComplete) {
-          await ensureVerifiedCanonicalCell(
-            data,
-            cell,
-            opts.isDark ?? true,
-            options,
-            hash
-          );
-        } else {
-          await renderCanonicalCell(
-            data,
-            cell,
-            opts.isDark ?? true,
-            options,
-            hash,
-            false
-          );
-        }
-
-        return { hash } as const;
-      } catch (error) {
-        return {
-          failure: {
-            cell,
-            reason: error instanceof Error ? error.message : String(error),
-          },
-        } as const;
-      }
-    })
-  );
-
   const hashes: string[] = [];
   const failures: WarmCellFailure[] = [];
-  for (const outcome of outcomes) {
-    if ("hash" in outcome && outcome.hash) hashes.push(outcome.hash);
-    if ("failure" in outcome && outcome.failure) failures.push(outcome.failure);
+  // Canonical warming sits inside thumbnail rendering and can run for several
+  // visible cards at once. Process one cell per warm so those cards share the
+  // renderer fairly instead of each dumping an entire light+dark sequence into
+  // the worker pool at the same time.
+  for (const { cell, data, options } of entries) {
+    throwIfAborted(opts.signal);
+    try {
+      const hash = await deriveCloudCellHash(
+        data,
+        opts.isDark ?? true,
+        options
+      );
+      if (opts.requireComplete) {
+        await ensureVerifiedCanonicalCell(
+          data,
+          cell,
+          opts.isDark ?? true,
+          options,
+          hash,
+          opts.signal
+        );
+      } else {
+        await renderCanonicalCell(
+          data,
+          cell,
+          opts.isDark ?? true,
+          options,
+          hash,
+          false,
+          opts.signal
+        );
+      }
+      hashes.push(hash);
+    } catch (error) {
+      if (opts.signal?.aborted) throwIfAborted(opts.signal);
+      failures.push({
+        cell,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      opts.onActivity?.();
+    }
   }
   const result: WarmSequenceCellsResult = {
     total: entries.length,

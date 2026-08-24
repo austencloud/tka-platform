@@ -24,6 +24,13 @@ export type DrawableImage = ImageBitmap | HTMLImageElement;
 export class SvgImageCache {
   private cache = new Map<string, DrawableImage>();
   private pendingLoads = new Map<string, Promise<DrawableImage>>();
+  /**
+   * Safari can discard an SVG image's decoded backing store under memory
+   * pressure and decode it again the next time Canvas2D draws it. Keep the
+   * source blob alive for exactly as long as the cached image is reusable;
+   * revoking it in `onload` leaves Safari with nothing to decode from later.
+   */
+  private sourceUrls = new Map<DrawableImage, string>();
 
   /**
    * Get or create an image from an SVG string
@@ -142,9 +149,16 @@ export class SvgImageCache {
       const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
       const url = URL.createObjectURL(blob);
 
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        createImageBitmap(img).then(resolve, reject);
+      img.onload = async () => {
+        try {
+          await img.decode();
+          const bitmap = await createImageBitmap(img);
+          URL.revokeObjectURL(url);
+          resolve(bitmap);
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          reject(error);
+        }
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
@@ -167,20 +181,28 @@ export class SvgImageCache {
     const sanitized = sanitizeSvgForBitmap(svgString);
     return new Promise((resolve, reject) => {
       const img = new Image();
+      const blob = new Blob([sanitized], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
 
-      img.onload = () => {
-        URL.revokeObjectURL(img.src);
-        resolve(img);
+      img.onload = async () => {
+        try {
+          // `load` means the resource arrived. `decode` is the browser's
+          // explicit guarantee that Canvas2D can use the pixels immediately.
+          await img.decode();
+          this.sourceUrls.set(img, url);
+          resolve(img);
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          reject(error);
+        }
       };
 
       img.onerror = () => {
-        URL.revokeObjectURL(img.src);
+        URL.revokeObjectURL(url);
         reject(new Error("Failed to load SVG as image"));
       };
 
-      // Create blob URL from sanitized SVG string
-      const blob = new Blob([sanitized], { type: "image/svg+xml;charset=utf-8" });
-      img.src = URL.createObjectURL(blob);
+      img.src = url;
     });
   }
 
@@ -368,10 +390,14 @@ export class SvgImageCache {
   clear() {
     // Close ImageBitmaps to free GPU memory
     for (const img of this.cache.values()) {
-      if (img instanceof ImageBitmap) {
+      if (typeof ImageBitmap !== "undefined" && img instanceof ImageBitmap) {
         img.close();
       }
     }
+    for (const url of this.sourceUrls.values()) {
+      URL.revokeObjectURL(url);
+    }
+    this.sourceUrls.clear();
     this.cache.clear();
     this.pendingLoads.clear();
   }

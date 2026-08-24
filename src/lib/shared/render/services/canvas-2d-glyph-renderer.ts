@@ -29,6 +29,10 @@ import {
   getElementalGlyphBox,
 } from "../../pictograph/shared/domain/constants/elemental-glyph-layout";
 import { getMotionColor } from "../../utils/svg-color-utils";
+import {
+  drawMonochromeImage,
+  drawTintedImage,
+} from "@tka/render-composition";
 
 const VIEWBOX_SIZE = 950;
 
@@ -144,31 +148,7 @@ export function drawDirectionDot(
   ctx.fill();
 }
 
-export function drawColoredImage(
-  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  img: DrawableImage,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  color: string
-): void {
-  const offscreen = new OffscreenCanvas(Math.ceil(width), Math.ceil(height));
-  const offCtx = offscreen.getContext("2d");
-
-  if (!offCtx) {
-    ctx.drawImage(img, x, y, width, height);
-    return;
-  }
-
-  offCtx.drawImage(img, 0, 0, width, height);
-
-  offCtx.globalCompositeOperation = "source-in";
-  offCtx.fillStyle = color;
-  offCtx.fillRect(0, 0, width, height);
-
-  ctx.drawImage(offscreen, x, y);
-}
+export const drawColoredImage = drawTintedImage;
 
 export async function drawTKAGlyph(
   ctx: CanvasRenderingContext2D,
@@ -192,15 +172,15 @@ export async function drawTKAGlyph(
       const drawWidth = letterDimensions.width * TKA_GLYPH_SCALE * scale;
       const drawHeight = letterDimensions.height * TKA_GLYPH_SCALE * scale;
 
-      ctx.save();
-
-      if (isDarkMode) {
-        ctx.filter = "invert(0.9)";
-      }
-
-      ctx.drawImage(letterImg, x, y, drawWidth, drawHeight);
-
-      ctx.restore();
+      drawMonochromeImage(
+        ctx,
+        letterImg,
+        x,
+        y,
+        drawWidth,
+        drawHeight,
+        isDarkMode
+      );
 
       return letterDimensions;
     }
@@ -505,12 +485,6 @@ export async function drawPositionGlyph(
 
     if (!startImg || !arrowImg || !endImg) return;
 
-    ctx.save();
-
-    if (isDarkMode) {
-      ctx.filter = "invert(0.9)";
-    }
-
     const drawX = groupX * scale;
     const drawY = POSITION_GLYPH_Y * scale;
 
@@ -519,32 +493,36 @@ export async function drawPositionGlyph(
     const endX = arrowX + scaledArrowWidth + POSITION_SPACING * POSITION_SCALE_FACTOR;
 
     const startYOffset = startDims.yOffset * POSITION_SCALE_FACTOR;
-    ctx.drawImage(
+    drawMonochromeImage(
+      ctx,
       startImg,
       drawX + startX * scale,
       drawY + (centerLine - scaledStartHeight / 2 + startYOffset) * scale,
       scaledStartWidth * scale,
-      scaledStartHeight * scale
+      scaledStartHeight * scale,
+      isDarkMode
     );
 
-    ctx.drawImage(
+    drawMonochromeImage(
+      ctx,
       arrowImg,
       drawX + arrowX * scale,
       drawY + (centerLine - scaledArrowHeight / 2) * scale,
       scaledArrowWidth * scale,
-      scaledArrowHeight * scale
+      scaledArrowHeight * scale,
+      isDarkMode
     );
 
     const endYOffset = endDims.yOffset * POSITION_SCALE_FACTOR;
-    ctx.drawImage(
+    drawMonochromeImage(
+      ctx,
       endImg,
       drawX + endX * scale,
       drawY + (centerLine - scaledEndHeight / 2 + endYOffset) * scale,
       scaledEndWidth * scale,
-      scaledEndHeight * scale
+      scaledEndHeight * scale,
+      isDarkMode
     );
-
-    ctx.restore();
   } catch (error) {
     console.warn(`[Canvas2D] Failed to draw Position glyph:`, error);
   }

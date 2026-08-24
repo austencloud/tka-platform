@@ -39,6 +39,8 @@ export interface CellDownloadOptions {
   /** Send a request for a hash this browser has never seen before. Scanner
    * reads enable this; render-and-upload writers leave it disabled. */
   probeUnknown?: boolean;
+  /** Cancel a verification fetch when its parent render is obsolete. */
+  signal?: AbortSignal;
 }
 
 function getKnownExists(): Set<string> {
@@ -150,7 +152,7 @@ export async function download(
     return null;
   }
   try {
-    const res = await fetch(cellPublicUrl(hash));
+    const res = await fetch(cellPublicUrl(hash), { signal: options.signal });
     if (!res.ok) {
       if (res.status === 404) registerMissing(hash);
       return null;
@@ -176,7 +178,15 @@ export async function upload(hash: string, blob: Blob): Promise<string | null> {
     try {
       const { ref, uploadBytes, getDownloadURL } =
         await import("firebase/storage");
-      const { getStorageInstance } = await import("$lib/shared/auth/firebase");
+      const { getAuthInstance, getStorageInstance } =
+        await import("$lib/shared/auth/firebase");
+      // The reactive app state can know about the restored user a moment before
+      // Firebase Storage has installed that user's token. Use the SDK's own
+      // readiness boundary so a valid signed-in QR warm is not sent as an
+      // unauthenticated write and reported as 0/N ready.
+      const auth = await getAuthInstance();
+      await auth.authStateReady();
+      if (!auth.currentUser) return null;
       const storage = await getStorageInstance();
       const storageRef = ref(storage, `pictograph-cells/${hash}.webp`);
       await uploadBytes(storageRef, blob, {
