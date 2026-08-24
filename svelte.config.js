@@ -107,6 +107,10 @@ const config = {
         // Guide nav renders section anchor links for the active chapter,
         // but placeholder pages don't have those section elements yet
         if (path.startsWith("/guide/level-1/")) return;
+        // Archive record hashes are client-managed selection state. Rendering
+        // matching DOM ids would trigger a native jump before hydration and
+        // leave the viewport stranded inside the overflow-hidden archive.
+        if (path === "/notation" && id.startsWith("archive-record-")) return;
         throw new Error(`Missing id "#${id}" on ${path}`);
       },
     },

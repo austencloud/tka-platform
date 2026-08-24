@@ -35,6 +35,7 @@ const detailSource = read(
 const submissionSource = read(
   "src/routes/(public)/notation/_components/archive/ResearchSubmissionGuide.svelte"
 );
+const svelteConfigSource = read("svelte.config.js");
 
 describe("playable archive: chronological overview", () => {
   it("keeps all four lanes visible on one proportional calendar", () => {
@@ -95,6 +96,10 @@ describe("playable archive: selection context", () => {
 		expect(archiveSource).toContain("pushState(nextHash");
     expect(archiveSource).toContain('window.addEventListener("popstate"');
     expect(timeMapSource).toContain("#archive-record-${entry.id}");
+    expect(svelteConfigSource).toContain('path === "/notation"');
+    expect(svelteConfigSource).toContain(
+      'id.startsWith("archive-record-")'
+    );
   });
 
   it("uses native links and buttons for pointer and keyboard behavior", () => {
