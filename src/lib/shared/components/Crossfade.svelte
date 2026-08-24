@@ -112,6 +112,7 @@
   let liveLayer: HTMLElement | null = null;
   let heightAnimation: Animation | null = null;
   let observer: ResizeObserver | null = null;
+  let measureFrame: number | null = null;
   /** Set for exactly one measurement after a key change: the swap animates,
    *  a content reflow at rest (a panel resize, a wrapped row gained) does not. */
   let animateNextMeasure = false;
@@ -122,6 +123,9 @@
     if (!box) return;
     const shouldAnimate = animateNextMeasure && effDuration > 0;
     animateNextMeasure = false;
+
+    const expected = Number.parseFloat(box.style.height);
+    if (Number.isFinite(expected) && Math.abs(expected - target) < 0.5) return;
 
     const from = box.getBoundingClientRect().height;
     box.style.height = `${target}px`;
@@ -150,6 +154,24 @@
     applyHeight(liveLayer.getBoundingClientRect().height);
   }
 
+  function cancelScheduledMeasure(): void {
+    if (measureFrame === null) return;
+    cancelAnimationFrame(measureFrame);
+    measureFrame = null;
+  }
+
+  function scheduleMeasure(): void {
+    if (measureFrame !== null) return;
+    // ResizeObserver runs inside the browser's layout delivery loop. Writing a
+    // parent height from that same callback can resize this layer again before
+    // paint, which Safari reports as an undelivered-notification loop. Move the
+    // write to the next frame and collapse repeated notifications into one.
+    measureFrame = requestAnimationFrame(() => {
+      measureFrame = null;
+      measure();
+    });
+  }
+
   /**
    * Claims the currently-mounted layer. `bind:this` cannot be used here: the
    * outgoing block's binding tears down AFTER its outro, which would null out
@@ -159,8 +181,9 @@
   function trackLayer(node: HTMLElement) {
     liveLayer = node;
     if (heightEnabled) {
+      cancelScheduledMeasure();
       observer?.disconnect();
-      observer = new ResizeObserver(measure);
+      observer = new ResizeObserver(scheduleMeasure);
       observer.observe(node);
       measure();
     }
@@ -168,6 +191,7 @@
       destroy() {
         if (liveLayer !== node) return;
         liveLayer = null;
+        cancelScheduledMeasure();
         observer?.disconnect();
         observer = null;
       },
@@ -189,6 +213,7 @@
       // stays frozen at whatever pixel height the last measurement wrote.
       heightAnimation?.cancel();
       heightAnimation = null;
+      cancelScheduledMeasure();
       observer?.disconnect();
       observer = null;
       if (box) box.style.height = "";
@@ -198,6 +223,7 @@
     return () => {
       heightAnimation?.cancel();
       heightAnimation = null;
+      cancelScheduledMeasure();
       observer?.disconnect();
       observer = null;
     };

@@ -13,6 +13,8 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import StartPositionPicker from "$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import type { SimplifiedStartPositionState } from "$lib/shared/create/state/start-position-state.svelte";
   import ConstructTutorialGuide from "../../construct/tutorial/components/ConstructTutorialGuide.svelte";
   import ConstructGuideEntry from "../../construct/tutorial/components/ConstructGuideEntry.svelte";
@@ -74,30 +76,43 @@
   <ConstructTutorialGuide />
   <div class="content-container">
     <div class="construct-scroll-area transparent-scroll">
-      <!-- Instant swap - workspace expansion is the visual transition -->
+      <!-- Start position → option picker is one continuous construct flow, so
+           it transitions in place rather than cutting (crossfade-primitive.md).
+           SWAP, not overlap: these two pickers share no chrome — a true
+           crossfade superimposes the letter-type tabs, the α/β/γ cards and the
+           guide banner on top of each other for the whole overlap, which reads
+           as a broken frame rather than a transition. Sequential fade keeps one
+           coherent picture on screen at every instant. -->
       <div class="picker-wrapper">
-        {#if shouldShowStartPositionPicker}
-          <StartPositionPicker
-            {startPositionState}
-            {initialStartPosition}
-            lockedGridMode={lockStartGridMode ? currentGridMode : undefined}
-            validationMessage={startPositionValidationMessage}
-            onNavigateToAdvanced={onStartPositionNavigateToAdvanced}
-            onNavigateToDefault={onStartPositionNavigateToDefault}
-            {isSideBySideLayout}
-            onPositionSubmitted={onStartPositionSubmitted}
-            heading={startPositionHeading}
-          />
-        {:else}
-          <OptionPicker
-            {onOptionSelected}
-            {currentSequence}
-            {currentGridMode}
-            {isSideBySideLayout}
-            {isContinuousOnly}
-            {onToggleContinuous}
-          />
-        {/if}
+        <Crossfade
+          key={shouldShowStartPositionPicker ? "start-position" : "options"}
+          duration={DURATION.normal}
+          mode="swap"
+          fill
+        >
+          {#if shouldShowStartPositionPicker}
+            <StartPositionPicker
+              {startPositionState}
+              {initialStartPosition}
+              lockedGridMode={lockStartGridMode ? currentGridMode : undefined}
+              validationMessage={startPositionValidationMessage}
+              onNavigateToAdvanced={onStartPositionNavigateToAdvanced}
+              onNavigateToDefault={onStartPositionNavigateToDefault}
+              {isSideBySideLayout}
+              onPositionSubmitted={onStartPositionSubmitted}
+              heading={startPositionHeading}
+            />
+          {:else}
+            <OptionPicker
+              {onOptionSelected}
+              {currentSequence}
+              {currentGridMode}
+              {isSideBySideLayout}
+              {isContinuousOnly}
+              {onToggleContinuous}
+            />
+          {/if}
+        </Crossfade>
       </div>
     </div>
   </div>
@@ -136,8 +151,7 @@
 
   .picker-wrapper {
     flex: 1;
-    display: flex;
-    flex-direction: column;
+    position: relative;
     overflow: hidden;
     min-height: 0;
   }

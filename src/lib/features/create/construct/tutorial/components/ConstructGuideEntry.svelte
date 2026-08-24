@@ -5,20 +5,60 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { appEntryState } from "$lib/shared/onboarding/state/app-entry-state.svelte";
+  import {
+    logOnboardingTutorialIgnored,
+    logOnboardingTutorialPromptViewed,
+  } from "$lib/shared/analytics/services/onboarding-events";
 
   let {
     offerVisible,
     onShowGuide,
     onDismiss,
+    onOfferViewed = () =>
+      logOnboardingTutorialPromptViewed({ source: "app_entry" }),
+    onOfferIgnored = (visibleMs) =>
+      logOnboardingTutorialIgnored({
+        source: "app_entry",
+        reason: "offer_unmounted",
+        visible_ms: visibleMs,
+      }),
   }: {
     /** Explicit values support admin previews and isolated visual proofs. */
     offerVisible?: boolean;
     onShowGuide?: () => void;
     onDismiss?: () => void;
+    /** Test/preview seams; production records through onboarding-events. */
+    onOfferViewed?: () => void;
+    onOfferIgnored?: (visibleMs: number) => void;
   } = $props();
 
   let haptics = $state<ReturnType<typeof getHapticFeedback> | null>(null);
   const showOffer = $derived(offerVisible ?? appEntryState.isTutorialPrompt());
+  let offerResolved = false;
+  let ignoredRecorded = false;
+  let offerViewedAt: number | null = null;
+
+  function recordIgnoredOffer(): void {
+    if (offerResolved || ignoredRecorded || offerViewedAt === null) return;
+    ignoredRecorded = true;
+    onOfferIgnored(Math.max(0, Date.now() - offerViewedAt));
+  }
+
+  // State eligibility is not proof that a person saw the offer. This effect
+  // records the real rendered interval, then calls it ignored only when the
+  // offer leaves the page without either button resolving it.
+  $effect(() => {
+    if (!showOffer) return;
+    offerViewedAt = Date.now();
+    offerResolved = false;
+    ignoredRecorded = false;
+    onOfferViewed();
+
+    return () => {
+      recordIgnoredOffer();
+      offerViewedAt = null;
+    };
+  });
 
   onMount(() => {
     try {
@@ -30,6 +70,7 @@
 
   function showGuide() {
     haptics?.trigger("selection");
+    offerResolved = true;
     if (onShowGuide) {
       onShowGuide();
     } else {
@@ -39,6 +80,7 @@
 
   function dismissOffer() {
     haptics?.trigger("selection");
+    offerResolved = true;
     if (onDismiss) {
       onDismiss();
     } else {
@@ -46,6 +88,10 @@
     }
   }
 </script>
+
+<!-- pagehide covers a hard navigation/tab close where component teardown is
+     not guaranteed to finish before the browser freezes the document. -->
+<svelte:window onpagehide={recordIgnoredOffer} />
 
 <div class="guide-entry">
   <Crossfade key={showOffer} duration={DURATION.emphasis}>

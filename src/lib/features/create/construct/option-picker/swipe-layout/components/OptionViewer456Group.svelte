@@ -261,6 +261,7 @@ import { getAnimator } from "$lib/shared/application/get-animator";
 
   // Calculate per-row height to prevent overflow when multiple rows exist
   const ROW_GAP = 12;
+  const MIN_PICTOGRAPH_SIZE = 40;
   const perRowHeight = $derived(() => {
     const rows = layoutSections();
     const rowCount = rows.length;
@@ -283,7 +284,10 @@ import { getAnimator } from "$lib/shared/application/get-animator";
     const pictographsByType = currentPictographsByType();
     const gap = parseInt(gridGap.replace("px", "")) || 8;
     const headerHeight = shouldShowHeaders() ? 50 : 0;
-    const availableHeight = Math.max(perRowHeight() - headerHeight, 100);
+    // Short phone workspaces can leave each 4–6 row with less than 100px.
+    // Treating 100px as available space made every tile overflow its assigned
+    // row, which clipped the letter glyph along the tile's bottom edge.
+    const availableHeight = Math.max(perRowHeight() - headerHeight, 1);
 
     let minSize = effectivePictographSize();
 
@@ -312,7 +316,7 @@ import { getAnimator } from "$lib/shared/application/get-animator";
           availableHeight,
           gridGap: gap,
           maxSize: targetSize,
-          minSize: 40,
+          minSize: Math.min(MIN_PICTOGRAPH_SIZE, availableHeight),
         });
 
         // Track the minimum (most constrained) size
@@ -374,7 +378,7 @@ import { getAnimator } from "$lib/shared/application/get-animator";
 
     // Account for section header height only when headers are shown
     const headerHeight = showHeader ? 50 : 0;
-    const availableHeight = Math.max(containerHeight - headerHeight, 100);
+    const availableHeight = Math.max(containerHeight - headerHeight, 1);
 
     // Calculate columns based on target size
     const columnsAtTargetSize = Math.max(
@@ -389,7 +393,7 @@ import { getAnimator } from "$lib/shared/application/get-animator";
       availableHeight,
       gridGap: gap,
       maxSize: targetSize,
-      minSize: 40,
+      minSize: Math.min(MIN_PICTOGRAPH_SIZE, availableHeight),
     });
 
     return {
@@ -410,9 +414,10 @@ import { getAnimator } from "$lib/shared/application/get-animator";
   style:--content-area-width={contentAreaWidth()
     ? `${contentAreaWidth()}px`
     : null}
+  style:--row-gap={`${ROW_GAP}px`}
 >
   {#each layoutSections() as row, rowIndex (rowIndex)}
-    <div class="layout-row">
+    <div class="layout-row" style:--row-height={`${perRowHeight()}px`}>
       {#each row.types as letterType (letterType)}
         {@const sectionWidth = getSectionWidth(
           row.types,
@@ -471,6 +476,7 @@ import { getAnimator } from "$lib/shared/application/get-animator";
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: var(--row-gap);
   }
 
   .layout-row {
@@ -478,6 +484,9 @@ import { getAnimator } from "$lib/shared/application/get-animator";
     align-items: flex-start;
     justify-content: center;
     width: 100%;
+    height: var(--row-height);
+    min-height: 0;
+    flex: 0 0 var(--row-height);
     /* Clip content to prevent spilling */
     overflow: hidden;
     /* FLIP-inspired smooth layout transitions */
@@ -487,16 +496,6 @@ import { getAnimator } from "$lib/shared/application/get-animator";
   /* Horizontal layout: side-by-side with aesthetic spacing */
   .layout-row:has(.section-container:nth-child(2)) {
     gap: 8px; /* Aesthetic spacing between sections */
-    margin-bottom: 12px; /* Space between rows */
-  }
-
-  /* Vertical layout: stacked with optimal spacing for portrait */
-  .layout-row:has(.section-container:only-child) {
-    margin-bottom: 16px; /* More space for vertical stacking visibility */
-  }
-
-  .layout-row:last-child {
-    margin-bottom: 0;
   }
 
   .section-container {
@@ -506,8 +505,14 @@ import { getAnimator } from "$lib/shared/application/get-animator";
     /* Ensure sections don't exceed their allocated width */
     min-width: 0;
     max-width: 100%; /* Prevent overflow */
+    height: 100%;
+    min-height: 0;
     overflow: hidden; /* Clip content to prevent spilling */
     box-sizing: border-box; /* Include padding in width calculations */
+  }
+
+  .section-container :global(.option-viewer-section) {
+    height: 100%;
   }
 
   /* Removed media query that was forcing column layout - aspect ratio logic now handles all layout decisions */

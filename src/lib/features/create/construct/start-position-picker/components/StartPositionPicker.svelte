@@ -10,8 +10,8 @@ Controls moved below the grid for better UX
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onDestroy, onMount, type Snippet } from "svelte";
-  import { scale } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import {
     createSimplifiedStartPositionState,
     type SimplifiedStartPositionState,
@@ -375,12 +375,12 @@ Controls moved below the grid for better UX
 
   <!-- Path/view changes crossfade; grid mode still updates in place. -->
   <div class="picker-view">
-    {#key `${pickerPath}-${showAdvancedPicker}`}
-      <div
-        class="picker-content"
-        in:scale={{ start: 0.92, duration: 250, delay: 200, easing: cubicOut }}
-        out:scale={{ start: 0.92, duration: 200, easing: cubicOut }}
-      >
+    <Crossfade
+      key={`${pickerPath}-${showAdvancedPicker}`}
+      duration={DURATION.normal}
+      fill
+    >
+      <div class="picker-content">
         {#if pickerPath === "build"}
           <BuildStartPosition
             gridMode={pickerState.currentGridMode}
@@ -421,7 +421,7 @@ Controls moved below the grid for better UX
           </div>
         {/if}
       </div>
-    {/key}
+    </Crossfade>
   </div>
 
   <!-- Controls Footer - below grid (hidden when embedded, e.g. the create tutorial) -->
@@ -611,10 +611,7 @@ Controls moved below the grid for better UX
 
   .path-selector {
     flex-shrink: 0;
-    width: min(
-      calc(100% - 24px - var(--picker-leading-action-offset, 0px)),
-      360px
-    );
+    width: min(calc(100% - 24px), 360px);
     margin: 10px auto 4px;
   }
 
@@ -648,10 +645,9 @@ Controls moved below the grid for better UX
     overflow: hidden;
   }
 
-  /* Absolute positioning allows smooth crossfade without layout overlap */
   .picker-content {
-    position: absolute;
-    inset: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
   }
@@ -861,7 +857,7 @@ Controls moved below the grid for better UX
   @container (max-width: 500px) {
     .path-selector {
       margin-right: 12px;
-      margin-left: calc(12px + var(--picker-leading-action-offset, 0px));
+      margin-left: 12px;
     }
 
     .control-button {
