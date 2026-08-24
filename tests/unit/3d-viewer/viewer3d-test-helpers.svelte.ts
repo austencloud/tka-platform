@@ -1,4 +1,5 @@
 import { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import type { SceneEnvironmentId } from "$lib/shared/3d/environments/domain/scene-environment";
 import { Viewer3DUndoManager } from "@austencloud/scene-3d";
 
 export type ViewerState = ReturnType<typeof createViewer3DState>;
@@ -15,11 +16,25 @@ export type ViewerState = ReturnType<typeof createViewer3DState>;
  */
 export function createViewer3DStateForTest(deps: {
   viewer3DUndoManager?: Viewer3DUndoManager;
+  renderMode?: "2d" | "3d";
+  backgroundType?: string;
+  environmentId?: SceneEnvironmentId;
+  firstUseEnvironment?: SceneEnvironmentId;
+  persistent?: boolean;
 }): { state: ViewerState; dispose: () => void } {
   let state!: ViewerState;
   const stop = $effect.root(() => {
-    state = createViewer3DState({
-      viewer3DUndoManager: deps.viewer3DUndoManager ?? new Viewer3DUndoManager(),
+    const seed = deps.persistent
+      ? undefined
+      : {
+          viewer3DUndoManager:
+            deps.viewer3DUndoManager ?? new Viewer3DUndoManager(),
+          renderMode: deps.renderMode,
+          backgroundType: deps.backgroundType,
+          environmentId: deps.environmentId,
+        };
+    state = createViewer3DState(seed, {
+      firstUseEnvironment: deps.firstUseEnvironment,
     });
   });
   return { state, dispose: stop };

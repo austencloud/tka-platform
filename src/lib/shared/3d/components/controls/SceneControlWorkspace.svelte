@@ -12,6 +12,7 @@
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import { createSheetDismiss } from "./BottomSheet.svelte";
+  import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import SceneControlInspector from "./SceneControlInspector.svelte";
   import SceneControlRail from "./SceneControlRail.svelte";
 
@@ -46,7 +47,13 @@
   let workspaceHeight = $state(0);
   let activeTool = $state<SceneControlTool | null>(null);
   let panelEl = $state<HTMLElement | null>(null);
+  let saveSceneOpen = $state(false);
   const viewer = getViewer3DContext();
+
+  function openSaveScene(): void {
+    activeTool = null;
+    saveSceneOpen = true;
+  }
   const inspectorUsesDock = $derived(
     activeTool === "performer" || activeTool === "dev"
   );
@@ -148,11 +155,10 @@
     <SceneControlRail
       renderMode="3d"
       {activeTool}
-      {bpm}
       {onSettingChange}
-      {onAction}
       {topOffset}
       onToolSelect={(tool) => (activeTool = tool)}
+      onOpenSaveScene={openSaveScene}
     />
 
     {#if activeTool}
@@ -166,11 +172,14 @@
           tool={activeTool}
           onClose={closeInspector}
           {onSettingChange}
+          onOpenSaveScene={openSaveScene}
         />
       </div>
     {/if}
   {/if}
 </div>
+
+<SaveSceneModal bind:open={saveSceneOpen} {bpm} {onSettingChange} {onAction} />
 
 <style>
   .scene-control-workspace {

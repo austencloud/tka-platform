@@ -3,6 +3,7 @@
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import CascadeBadge from "./controls/CascadeBadge.svelte";
   import PlanesDiagram from "./PlanesDiagram.svelte";
+  import SettingToggleButton from "$lib/shared/settings/components/SettingToggleButton.svelte";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
@@ -203,8 +204,8 @@
   <div class="planes-header">
     <p class="planes-hint">
       Each hand spins in one plane. Tap <strong>Blue</strong> or
-      <strong>Red</strong> to move that hand; the eye shows or hides a plane's
-      guide ring.
+      <strong>Red</strong> to move that hand; the eye shows or hides a plane's guide
+      ring.
     </p>
     <button
       class="reset-btn"
@@ -241,7 +242,11 @@
   </div>
 
   <div class="planes-body">
-    <PlanesDiagram {bluePlane} {redPlane} visiblePlanes={viewer.visiblePlanes} />
+    <PlanesDiagram
+      {bluePlane}
+      {redPlane}
+      visiblePlanes={viewer.visiblePlanes}
+    />
 
     <div class="plane-matrix">
       {#each PLANES as { plane, label }}
@@ -299,21 +304,13 @@
     </div>
   </div>
 
-  <button
-    class="setting-toggle"
-    class:active={viewer.showGridLabels}
-    onclick={toggleGridLabels}
-    aria-pressed={viewer.showGridLabels}
-  >
-    <i
-      class="toggle-glyph {viewer.showGridLabels
-        ? 'fas fa-check-circle'
-        : 'far fa-circle'}"
-      aria-hidden="true"
-    ></i>
-    <span class="setting-label">Location labels</span>
-    <span class="state-word">{viewer.showGridLabels ? "On" : "Off"}</span>
-  </button>
+  <SettingToggleButton
+    label="Location labels"
+    checked={viewer.showGridLabels}
+    onToggle={toggleGridLabels}
+    surface="inset"
+    density="compact"
+  />
 </div>
 
 <style>
@@ -544,11 +541,19 @@
     flex-shrink: 0;
   }
   .hand-chip.blue {
-    border-color: color-mix(in srgb, var(--prop-blue) 45%, var(--theme-text-dim));
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue) 45%,
+      var(--theme-text-dim)
+    );
     color: color-mix(in srgb, var(--prop-blue) 55%, var(--theme-text));
   }
   .hand-chip.red {
-    border-color: color-mix(in srgb, var(--prop-red) 45%, var(--theme-text-dim));
+    border-color: color-mix(
+      in srgb,
+      var(--prop-red) 45%,
+      var(--theme-text-dim)
+    );
     color: color-mix(in srgb, var(--prop-red) 55%, var(--theme-text));
   }
   .hand-chip:hover:not(.filled).blue {
@@ -570,50 +575,6 @@
     border-color: color-mix(in srgb, var(--prop-red) 85%, black);
     color: white;
     box-shadow: 0 0 12px color-mix(in srgb, var(--prop-red) 50%, transparent);
-  }
-  .setting-toggle {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    width: 100%;
-    min-height: 44px;
-    padding: 0 12px;
-    border-radius: 10px;
-    background: var(--surface-inset);
-    border: 1px solid var(--theme-stroke);
-    color: var(--theme-text-dim);
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition:
-      background 140ms ease,
-      border-color 140ms ease,
-      color 140ms ease;
-  }
-  .setting-toggle:hover {
-    background: var(--theme-card-hover-bg);
-    border-color: var(--theme-stroke-strong);
-    color: var(--theme-text);
-  }
-  .setting-toggle.active {
-    color: var(--theme-text);
-    border-color: color-mix(in srgb, var(--theme-accent) 45%, var(--theme-stroke));
-  }
-  .setting-toggle.active .toggle-glyph {
-    color: var(--theme-accent);
-  }
-  .setting-label {
-    flex: 1;
-    text-align: left;
-  }
-  .state-word {
-    min-width: 2.2rem;
-    text-align: right;
-    color: var(--theme-text-tertiary);
-    font-weight: 700;
-  }
-  .setting-toggle.active .state-word {
-    color: var(--theme-text);
   }
   @container planes-popover (max-width: 460px) {
     .planes-body {

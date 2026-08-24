@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   Collected3DSceneSchema,
   Scene3DSnapshotSchema,
+  getScene3DEnvironmentId,
   isGroupSaved,
   type Scene3DSnapshot,
 } from "../scene-3d-collection-types";
@@ -46,8 +47,19 @@ describe("Scene3DSnapshotSchema", () => {
   });
 
   it("rejects a wrong version", () => {
-    const bad = { ...snapshot, version: 3 };
+    const bad = { ...snapshot, version: 4 };
     expect(Scene3DSnapshotSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("accepts v3 environment identity without a 2D background field", () => {
+    const v3: Scene3DSnapshot = {
+      ...snapshot,
+      version: 3,
+      scene: { environmentId: "ocean", oceanVariant: "abyss" },
+    };
+    expect(Scene3DSnapshotSchema.safeParse(v3).success).toBe(true);
+    expect(getScene3DEnvironmentId(v3)).toBe("ocean");
+    expect(getScene3DEnvironmentId(snapshot)).toBe("forest");
   });
 
   it("accepts a v2 snapshot with bpm, groups, and per-performer settings", () => {

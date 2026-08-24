@@ -3,6 +3,7 @@ export type SceneControlTool =
   | "formation"
   | "camera"
   | "scene"
+  | "presets"
   | "dev";
 
 export type SceneControlPresentation = "compact" | "overlay" | "docked";

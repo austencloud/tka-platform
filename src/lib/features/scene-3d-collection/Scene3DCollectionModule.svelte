@@ -3,7 +3,7 @@
 
   A gallery of saved 3D viewer configurations ("Save scene" in the 3D side
   panel). Selecting one opens a detail view (poster still + meta chips + inline
-  rename + two-tap delete). Two reproduce paths: "Open in Viewer" reproduces the
+  rename + two-tap delete). Two reproduce paths: "Open in 3D Studio" reproduces the
   exact performance when steps were captured; "Apply look" seeds the scene/camera
   globals for any sequence.
 
@@ -15,8 +15,12 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import { scene3dCollectionState } from "./state/scene-3d-collection-state.svelte";
-  import type { Collected3DScene } from "./domain/scene-3d-collection-types";
-  import { openScene3DInViewer, applyScene3DLook, scene3DHasSteps } from "./services/open-3d-scene";
+  import {
+    getScene3DEnvironmentId,
+    type Collected3DScene,
+  } from "./domain/scene-3d-collection-types";
+  import { getSceneEnvironmentDefinition } from "$lib/shared/3d/environments/domain/scene-environment";
+  import { openScene3DInStudio, applyScene3DLook, scene3DHasSteps } from "./services/open-3d-scene";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
@@ -60,7 +64,9 @@
     if (!selected) return [];
     const snap = selected.snapshot;
     const performers = snap.performers.length || 1;
-    const scene = cap(snap.scene.backgroundType || "scene");
+    const scene = getSceneEnvironmentDefinition(
+      getScene3DEnvironmentId(snap)
+    ).label;
     const activeEffects = Object.entries(snap.effectToggles)
       .filter(([, on]) => on)
       .map(([k]) => cap(k));
@@ -132,7 +138,7 @@
     if (!selected) return;
     // applyScene3DLook captures its own settings checkpoint before writing
     // anything, so the Undo here just replays it — no overlay to close since
-    // "Apply look" (unlike "Open in Viewer") never opens one.
+    // "Apply look" (unlike "Open in 3D Studio") never opens one.
     const name = selected.name;
     applyScene3DLook(selected);
     showToast({
@@ -219,8 +225,8 @@
             <i class="fas fa-cube empty-icon" aria-hidden="true"></i>
             <p class="empty-title">No scenes yet</p>
             <p class="empty-hint">
-              Open a sequence in the 3D viewer, set up the scene, and press
-              “Save scene” in the Environment panel.
+              Open a sequence in 3D Studio, set up the shot, and press
+              “Save scene” in the scene controls.
             </p>
           </div>
         {:else}
@@ -334,10 +340,10 @@
               <button
                 type="button"
                 class="action-btn open-btn"
-                onclick={() => openScene3DInViewer(selected!)}
+                onclick={() => openScene3DInStudio(selected!)}
               >
                 <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
-                <span>Open in Viewer</span>
+                <span>Open in 3D Studio</span>
               </button>
             {/if}
             <button

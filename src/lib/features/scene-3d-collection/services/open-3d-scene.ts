@@ -108,6 +108,11 @@ export function applyScene3DLookLive(
 
   applyScene3DLook(scene); // checkpoints settings, writes seeds, marks intent
   viewer.applyPersistConfig(buildScene3DPersistConfig(scene));
+  // The undo stack predates this applied config, so an in-viewer Ctrl+Z right
+  // after a live apply would try to "undo" state that no longer describes
+  // what's on screen. Clearing it here keeps the stack honest going forward;
+  // the toast's own Undo action (below) is the correct way back to before.
+  viewer.sceneUndo.clear();
 
   showToast({
     message: `Applied "${scene.name}"`,

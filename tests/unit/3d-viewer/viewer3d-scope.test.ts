@@ -11,8 +11,12 @@ import { tick } from "svelte";
 // getContext returns null so the capability probe reports "not supported",
 // which is fine — these scope tests never actually enter 3D mode.
 beforeAll(() => {
-  const originalCreateElement = document.createElement as unknown as (tag: string) => unknown;
-  (document as unknown as { createElement: (tag: string) => unknown }).createElement = (tag: string) => {
+  const originalCreateElement = document.createElement as unknown as (
+    tag: string
+  ) => unknown;
+  (
+    document as unknown as { createElement: (tag: string) => unknown }
+  ).createElement = (tag: string) => {
     const base = originalCreateElement(tag) as Record<string, unknown>;
     if (tag === "canvas") {
       base.getContext = () => null;
@@ -33,6 +37,12 @@ function stubDeps() {
 const cleanups: Array<() => void> = [];
 function makeState() {
   const { state, dispose } = createViewer3DStateForTest(stubDeps());
+  cleanups.push(dispose);
+  return state;
+}
+
+function makeSeeded3DState() {
+  const { state, dispose } = createViewer3DStateForTest({ renderMode: "3d" });
   cleanups.push(dispose);
   return state;
 }
@@ -60,7 +70,9 @@ describe("viewer-3d-state: selection scope", () => {
     state.performerManager.addPerformer();
     state.selectPerformerScope(1);
     expect(state.scopedPerformers().length).toBe(1);
-    expect(state.scopedPerformers()[0]).toBe(state.performerManager.performers[1]);
+    expect(state.scopedPerformers()[0]).toBe(
+      state.performerManager.performers[1]
+    );
   });
 
   it("scopedPerformers returns empty array when selection is out of bounds", () => {
@@ -78,6 +90,18 @@ describe("viewer-3d-state: selection scope", () => {
     expect(state.selectedPerformerIndex).toBe(0);
     state.selectPerformerScope(null);
     expect(state.selectedPerformerIndex).toBeNull();
+  });
+
+  it("selecting a performer keeps the current camera view", () => {
+    const state = makeSeeded3DState();
+    state.performerManager.initialize();
+    const moveCamera = vi.fn();
+    state.registerSnapTo(moveCamera);
+
+    state.selectPerformerScope(0);
+
+    expect(state.selectedPerformerIndex).toBe(0);
+    expect(moveCamera).not.toHaveBeenCalled();
   });
 
   it("setHandPlaneScoped updates every performer when All is selected", () => {

@@ -1,23 +1,20 @@
 <script lang="ts">
   import { getViewer3DContext } from "$lib/shared/3d/context/viewer-3d-context";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
   import EditHistoryShortcutBridge from "$lib/shared/keyboard/components/EditHistoryShortcutBridge.svelte";
   import type { SceneControlTool } from "$lib/shared/3d/domain/scene-control-layout";
   import SceneChromeButton from "./SceneChromeButton.svelte";
   import {
     reportViewerControlChange,
-    type ViewerActionSink,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     renderMode: "2d" | "3d";
     activeTool?: SceneControlTool | null;
-    bpm?: number;
     onSettingChange?: ViewerControlSink;
-    onAction?: ViewerActionSink;
     onToolSelect?: (tool: SceneControlTool | null) => void;
+    onOpenSaveScene: () => void;
     /** Leaves room for host-owned close/fullscreen controls above the rail. */
     topOffset?: string;
   }
@@ -25,15 +22,13 @@
   let {
     renderMode,
     activeTool = null,
-    bpm,
     onSettingChange,
-    onAction,
     onToolSelect,
+    onOpenSaveScene,
     topOffset = "12px",
   }: Props = $props();
 
   const viewer = getViewer3DContext();
-  let saveSceneOpen = $state(false);
 
   type RailTool = {
     id: Exclude<SceneControlTool, "dev">;
@@ -70,15 +65,14 @@
 
   function openSaveScene(): void {
     onToolSelect?.(null);
-    const previous = saveSceneOpen;
-    saveSceneOpen = true;
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_rail",
       "save_scene_open",
-      previous,
+      false,
       true
     );
+    onOpenSaveScene();
   }
 </script>
 
@@ -128,6 +122,15 @@
 
     <div class="utility-group" role="group" aria-label="Scene utilities">
       <SceneChromeButton
+        icon="fa-swatchbook"
+        label="Presets"
+        active={activeTool === "presets"}
+        aria-pressed={activeTool === "presets"}
+        data-scene-tool="presets"
+        onclick={() => chooseTool("presets")}
+      />
+
+      <SceneChromeButton
         icon="fa-bookmark"
         label="Save scene"
         data-save-shortcut
@@ -147,13 +150,6 @@
       {/if}
     </div>
   </div>
-
-  <SaveSceneModal
-    bind:open={saveSceneOpen}
-    {bpm}
-    {onSettingChange}
-    {onAction}
-  />
 {/if}
 
 <style>

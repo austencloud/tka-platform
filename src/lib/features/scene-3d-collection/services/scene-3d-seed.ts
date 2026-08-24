@@ -1,5 +1,8 @@
 import type { Collected3DScene, StoredPerformerSettings } from "../domain/scene-3d-collection-types";
-import { isGroupSaved } from "../domain/scene-3d-collection-types";
+import {
+  getScene3DEnvironmentId,
+  isGroupSaved,
+} from "../domain/scene-3d-collection-types";
 import type {
   Viewer3DStateSeed,
   ViewerNavMode,
@@ -9,12 +12,9 @@ import type {
  * Build a self-contained construction seed from a saved 3D scene.
  *
  * This is the non-destructive twin of `applyScene3DLook`. Both read the same
- * snapshot through the same packing-list group mask; the difference is where the
- * config lands. `applyScene3DLook` writes the user's localStorage and the global
- * background so a fresh viewer picks it up — which is correct for "make my whole
- * app look like this", and wrong for everything else: it overwrites settings the
- * user chose (hence the Undo toast every caller pairs with it) and it cannot
- * describe two scenes at once, because localStorage is one global slot.
+ * snapshot through the same packing-list group mask; the difference is where
+ * the config lands. A preview remains isolated while an applied scene writes
+ * the persistent viewer draft. Neither path touches the application theme.
  *
  * A seed goes straight into `createViewer3DState(seed)` instead. Nothing global
  * is read or written, so N previews can render N different scenes side by side.
@@ -63,7 +63,7 @@ export function buildScene3DSeed(
     seed.oceanVariant = snap.scene.oceanVariant;
     // The whole point of seeding rather than applying: the environment lives
     // inside this viewer instead of repainting the entire page.
-    seed.backgroundType = snap.scene.backgroundType;
+    seed.environmentId = getScene3DEnvironmentId(snap);
     seed.sceneFeatures = snap.sceneFeatures;
   }
   if (saved("camera")) {

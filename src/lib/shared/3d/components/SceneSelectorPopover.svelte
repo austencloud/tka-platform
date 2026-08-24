@@ -1,48 +1,57 @@
 <script lang="ts">
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+  import {
+    DEFAULT_SCENE_ENVIRONMENT_ID,
+    SCENE_ENVIRONMENTS,
+    type SceneEnvironmentId,
+  } from "../environments/domain/scene-environment";
   import {
     reportViewerControlChange,
     type ViewerControlSink,
   } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
+    value?: SceneEnvironmentId;
+    onchange?: (environmentId: SceneEnvironmentId) => void;
     onSettingChange?: ViewerControlSink;
   }
-  let { onSettingChange }: Props = $props();
+  let { value, onchange, onSettingChange }: Props = $props();
 
-  const currentBg = $derived(settingsService.settings.backgroundType);
+  const viewer = tryGetViewer3DContext();
+  const currentEnvironment = $derived(
+    value ?? viewer?.environmentId ?? DEFAULT_SCENE_ENVIRONMENT_ID
+  );
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
 
-  function selectScene(e: MouseEvent, type: BackgroundType) {
+  function selectScene(e: MouseEvent, environmentId: SceneEnvironmentId) {
     e.stopPropagation();
-    const previous = currentBg;
-    settingsService.updateSetting("backgroundType", type);
+    const previous = currentEnvironment;
+    if (onchange) onchange(environmentId);
+    else viewer?.setEnvironmentId(environmentId);
     reportViewerControlChange(
       onSettingChange,
       "viewer_3d_scene",
-      "background",
+      "environment",
       previous ?? null,
-      type
+      environmentId
     );
   }
 </script>
 
 <div class="scene-grid">
-  {#each ANIMATED_BACKGROUNDS as bg}
+  {#each SCENE_ENVIRONMENTS as environment}
     <button
       class="scene-tile"
-      class:active={currentBg === bg.type}
-      onclick={(e) => selectScene(e, bg.type)}
-      aria-pressed={currentBg === bg.type}
-      aria-label={bg.label}
-      title={bg.label}
+      class:active={currentEnvironment === environment.id}
+      onclick={(e) => selectScene(e, environment.id)}
+      aria-pressed={currentEnvironment === environment.id}
+      aria-label={environment.label}
+      title={environment.label}
     >
-      <i class="fas {bg.icon}" aria-hidden="true"></i>
-      <span class="tile-label">{bg.label}</span>
+      <i class="fas {environment.icon}" aria-hidden="true"></i>
+      <span class="tile-label">{environment.label}</span>
     </button>
   {/each}
 </div>
@@ -55,8 +64,14 @@
 <style>
   .scene-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  @container (min-width: 24rem) {
+    .scene-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
 
   .scene-tile {

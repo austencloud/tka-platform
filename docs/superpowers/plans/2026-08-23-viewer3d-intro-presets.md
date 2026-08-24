@@ -16,10 +16,10 @@
 
 ## Ledger
 
-- [ ] Task 1: Plain-open policy pure helpers (TDD)
-- [ ] Task 2: Wire prop-follow into viewer-3d-state + preset intent
-- [ ] Task 3: Extract `buildScene3DPersistConfig` (TDD) and refactor `applyScene3DLook`
-- [ ] Task 4: Live preset apply (`applyPersistConfig` + `applyScene3DLookLive`)
+- [x] Task 1: Plain-open policy pure helpers (TDD) — `72c3f60391`
+- [x] Task 2: Wire prop-follow into viewer-3d-state + preset intent — `7d127b554e`, `cfbd01e91a`
+- [x] Task 3: Extract `buildScene3DPersistConfig` (TDD) and refactor `applyScene3DLook` — `2c32393a40`
+- [x] Task 4: Live preset apply (`applyPersistConfig` + `applyScene3DLookLive`) — `20930914da`, `6320054254`, `79b6782724`
 - [ ] Task 5: Presets tool in the 3D rail
 - [ ] Task 6: Intro flag + persistence
 - [ ] Task 7: `Viewer3DIntro` component, mount, test route

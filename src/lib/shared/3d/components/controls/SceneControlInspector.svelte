@@ -4,6 +4,7 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import FormationPopover from "./FormationPopover.svelte";
   import PerformerInspectorContent from "./PerformerInspectorContent.svelte";
+  import PresetsPanel from "./PresetsPanel.svelte";
   import type { SceneControlTool } from "../../domain/scene-control-layout";
   import type { ViewerControlSink } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
@@ -11,9 +12,10 @@
     tool: SceneControlTool;
     onClose: () => void;
     onSettingChange?: ViewerControlSink;
+    onOpenSaveScene?: () => void;
   }
 
-  let { tool, onClose, onSettingChange }: Props = $props();
+  let { tool, onClose, onSettingChange, onOpenSaveScene }: Props = $props();
 
   const loadDevTools = () => import("./DevToolsPopover.svelte");
 
@@ -22,6 +24,7 @@
     formation: "Formation",
     camera: "Camera",
     scene: "Scene",
+    presets: "Presets",
     dev: "Developer tools",
   };
 
@@ -30,6 +33,7 @@
     formation: "fa-people-arrows-left-right",
     camera: "fa-video",
     scene: "fa-mountain-sun",
+    presets: "fa-swatchbook",
     dev: "fa-terminal",
   };
 </script>
@@ -63,6 +67,8 @@
       <CameraPopover {onSettingChange} />
     {:else if tool === "scene"}
       <SceneSelectorPopover {onSettingChange} />
+    {:else if tool === "presets"}
+      <PresetsPanel {onOpenSaveScene} />
     {:else}
       <LazyMount
         loader={loadDevTools}
