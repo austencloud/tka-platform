@@ -984,11 +984,9 @@ function buildViewer3DState(
     persistPlanes(visiblePlanes);
   }
 
-  function spawnPerformerFromUI(): void {
-    if (performerManager.performers.length >= STAGE.MAX_VIEWER_PERFORMERS)
-      return;
-
-    sceneUndo.captureState("spawn-performer", "Add performer");
+  function spawnPerformerWithoutUndo(frameAfter = true): boolean {
+    if (performerManager.performers.length >= performerManager.maxPerformers)
+      return false;
 
     const sourceIndex = selectedPerformerIndex ?? 0;
     const source = performerManager.performers[sourceIndex];
@@ -1008,15 +1006,21 @@ function buildViewer3DState(
     });
 
     selectedPerformerIndex = newIndex;
-    sceneUndo.commitState();
-    if (layoutTargets) framePerformerGroup(layoutTargets);
+    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
+    return true;
   }
 
-  function removePerformerFromUI(): void {
-    if (performerManager.performers.length <= 1) return;
+  function spawnPerformerFromUI(): void {
+    if (performerManager.performers.length >= performerManager.maxPerformers)
+      return;
 
-    sceneUndo.captureState("remove-performer", "Remove performer");
+    sceneUndo.captureState("spawn-performer", "Add performer");
+    spawnPerformerWithoutUndo();
+    sceneUndo.commitState();
+  }
 
+  function removePerformerWithoutUndo(frameAfter = true): boolean {
+    if (performerManager.performers.length <= 1) return false;
     const removedIndex =
       selectedPerformerIndex ?? performerManager.performers.length - 1;
     const layoutTargets = performerManager.removePerformer(removedIndex);
@@ -1025,8 +1029,44 @@ function buildViewer3DState(
       performerManager.performers.length - 1
     );
 
+    if (frameAfter && layoutTargets) framePerformerGroup(layoutTargets);
+    return true;
+  }
+
+  function removePerformerFromUI(): void {
+    if (performerManager.performers.length <= 1) return;
+
+    sceneUndo.captureState("remove-performer", "Remove performer");
+    removePerformerWithoutUndo();
     sceneUndo.commitState();
-    if (layoutTargets) framePerformerGroup(layoutTargets);
+  }
+
+  function setPerformerCountFromUI(target: number): void {
+    const current = performerManager.performers.length;
+    const finiteTarget = Number.isFinite(target) ? Math.trunc(target) : current;
+    const boundedTarget = Math.min(
+      Math.max(finiteTarget, 1),
+      performerManager.maxPerformers
+    );
+    if (boundedTarget === current) return;
+
+    const operation =
+      boundedTarget > current ? "spawn-performer" : "remove-performer";
+    sceneUndo.captureState(
+      operation,
+      `Set performer count to ${boundedTarget}`
+    );
+    sceneUndo.withoutUndo(() => {
+      const iterationLimit = Math.abs(boundedTarget - current);
+      for (let iteration = 0; iteration < iterationLimit; iteration += 1) {
+        const before = performerManager.performers.length;
+        if (before < boundedTarget) spawnPerformerWithoutUndo(false);
+        else if (before > boundedTarget) removePerformerWithoutUndo(false);
+        if (performerManager.performers.length === before) break;
+      }
+    });
+    sceneUndo.commitState();
+    framePerformerGroup(performerManager.performers);
   }
 
   function applyFormationFromUI(preset: FormationPreset): void {
@@ -1738,6 +1778,7 @@ function buildViewer3DState(
     },
     spawnPerformerFromUI,
     removePerformerFromUI,
+    setPerformerCountFromUI,
     applyFormationFromUI,
     beginSpatialEdit,
     endSpatialEdit,

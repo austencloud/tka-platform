@@ -17,6 +17,7 @@
   import type { Collected3DScene } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { resolveSceneControlLayout } from "$lib/shared/3d/domain/scene-control-layout";
 
   interface Props {
     onSettingChange?: ViewerControlSink;
@@ -60,6 +61,10 @@
   );
   const currentStepIndex = $derived(reachableSteps.indexOf(currentStepId));
   const scenes = $derived(scene3dCollectionState.collection);
+  const presentation = $derived(
+    resolveSceneControlLayout(workspaceWidth, workspaceHeight, false)
+      .presentation
+  );
 
   $effect(() => {
     const uid = authState.user?.uid;
@@ -74,6 +79,7 @@
   });
 
   $effect(() => {
+    if (presentation === "compact" || viewer.disposed) return;
     if (workspaceWidth <= 0 || workspaceHeight <= 0 || cardWidth <= 0) return;
     viewer.frameAllPerformers(
       Math.max(1, workspaceWidth - cardWidth) / workspaceHeight,
@@ -97,7 +103,7 @@
   }
 
   function restoreFullFrame(): void {
-    if (restoredFrame) return;
+    if (restoredFrame || presentation === "compact" || viewer.disposed) return;
     restoredFrame = true;
     if (workspaceWidth > 0 && workspaceHeight > 0) {
       viewer.frameAllPerformers(workspaceWidth / workspaceHeight, true);
@@ -121,13 +127,7 @@
   }
 
   function setPerformerCount(value: PerformerCount): void {
-    const target = Number(value);
-    while (viewer.performerManager.performers.length < target) {
-      viewer.spawnPerformerFromUI();
-    }
-    while (viewer.performerManager.performers.length > target) {
-      viewer.removePerformerFromUI();
-    }
+    viewer.setPerformerCountFromUI(Number(value));
   }
 
   function applyScene(scene: Collected3DScene): void {
@@ -156,92 +156,104 @@
   bind:clientWidth={workspaceWidth}
   bind:clientHeight={workspaceHeight}
 >
-  <section
-    class="intro-card"
-    bind:clientWidth={cardWidth}
-    aria-labelledby="viewer-3d-intro-heading"
-  >
-    <header class="intro-header">
-      <div class="step-dots" aria-label="Setup progress">
-        {#each reachableSteps as step, index (step)}
-          <span
-            class:active={step === currentStepId}
-            class="step-dot"
-            aria-label="Step {index + 1} of {reachableSteps.length}"
-            aria-current={step === currentStepId ? "step" : undefined}
-          ></span>
-        {/each}
+  <!-- Compact viewports skip the guided setup; the mobile treatment is a follow-up. -->
+  {#if workspaceWidth > 0 && workspaceHeight > 0 && presentation !== "compact"}
+    <section
+      class="intro-card"
+      bind:clientWidth={cardWidth}
+      aria-labelledby="viewer-3d-intro-heading"
+    >
+      <header class="intro-header">
+        <div class="step-dots" aria-label="Setup progress">
+          {#each reachableSteps as step, index (step)}
+            <span
+              class:active={step === currentStepId}
+              class="step-dot"
+              aria-label="Step {index + 1} of {reachableSteps.length}"
+              aria-current={step === currentStepId ? "step" : undefined}
+            ></span>
+          {/each}
+        </div>
+        <button
+          class="skip-button"
+          type="button"
+          onclick={() => dismiss("skip")}>Skip</button
+        >
+      </header>
+
+      <h2 id="viewer-3d-intro-heading">{headings[currentStepId]}</h2>
+
+      <div class="intro-body">
+        <Crossfade key={currentStepId} fill duration={DURATION.normal}>
+          <div class="step-content">
+            {#if currentStepId === "scene"}
+              <SceneSelectorPopover {onSettingChange} />
+            {:else if currentStepId === "performers"}
+              <SegmentedControl
+                options={performerOptions}
+                value={selectedPerformerCount}
+                onchange={setPerformerCount}
+                color="accent"
+                semantics="radiogroup"
+                ariaLabel="Number of performers"
+              />
+              <p>Everyone performs this sequence.</p>
+            {:else if currentStepId === "formation"}
+              <FormationPopover {onSettingChange} />
+            {:else if scene3dCollectionState.loading && scenes.length === 0}
+              <div class="preset-strip" aria-label="Loading saved setups">
+                {#each Array(3) as _}
+                  <div class="preset-poster preset-skeleton"></div>
+                {/each}
+              </div>
+            {:else if scenes.length > 0}
+              <!-- Compact presentation of the presets capability; behavior owner is scene3dCollectionState + applyScene3DLookLive, full presentation is PresetsPanel.svelte -->
+              <div class="preset-strip" aria-label="Saved setups">
+                {#each scenes as scene (scene.id)}
+                  <button
+                    type="button"
+                    class="preset-poster"
+                    onclick={() => applyScene(scene)}
+                    aria-label="Apply {scene.name}"
+                    title={scene.name}
+                  >
+                    {#if scene.poster}
+                      <img src={scene.poster} alt="" loading="lazy" />
+                    {:else}
+                      <i class="fas fa-cube" aria-hidden="true"></i>
+                    {/if}
+                  </button>
+                {/each}
+              </div>
+            {:else}
+              <p class="preset-empty">
+                Build something you like, then tap the bookmark in the rail to
+                save it. Your saved setups will appear here and in the Presets
+                panel.
+              </p>
+            {/if}
+          </div>
+        </Crossfade>
       </div>
-      <button class="skip-button" type="button" onclick={() => dismiss("skip")}
-        >Skip</button
-      >
-    </header>
 
-    <h2 id="viewer-3d-intro-heading">{headings[currentStepId]}</h2>
-
-    <div class="intro-body">
-      <Crossfade key={currentStepId} fill duration={DURATION.normal}>
-        <div class="step-content">
-          {#if currentStepId === "scene"}
-            <SceneSelectorPopover {onSettingChange} />
-          {:else if currentStepId === "performers"}
-            <SegmentedControl
-              options={performerOptions}
-              value={selectedPerformerCount}
-              onchange={setPerformerCount}
-              color="accent"
-              semantics="radiogroup"
-              ariaLabel="Number of performers"
-            />
-            <p>Everyone performs this sequence.</p>
-          {:else if currentStepId === "formation"}
-            <FormationPopover {onSettingChange} />
-          {:else if scenes.length > 0}
-            <div class="preset-strip" aria-label="Saved setups">
-              {#each scenes as scene (scene.id)}
-                <button
-                  type="button"
-                  class="preset-poster"
-                  onclick={() => applyScene(scene)}
-                  aria-label="Apply {scene.name}"
-                  title={scene.name}
-                >
-                  {#if scene.poster}
-                    <img src={scene.poster} alt="" loading="lazy" />
-                  {:else}
-                    <i class="fas fa-cube" aria-hidden="true"></i>
-                  {/if}
-                </button>
-              {/each}
-            </div>
-          {:else}
-            <p class="preset-empty">
-              Build something you like, then tap the bookmark in the rail to
-              save it. Your saved setups will appear here and in the Presets
-              panel.
-            </p>
+      <footer class="intro-footer">
+        <div class="back-slot">
+          {#if currentStepIndex > 0}
+            <PanelButton onclick={() => moveStep(-1)}>Back</PanelButton>
           {/if}
         </div>
-      </Crossfade>
-    </div>
-
-    <footer class="intro-footer">
-      <div class="back-slot">
-        {#if currentStepIndex > 0}
-          <PanelButton onclick={() => moveStep(-1)}>Back</PanelButton>
+        {#if currentStepIndex === reachableSteps.length - 1}
+          <PanelButton variant="primary" onclick={() => dismiss("done")}
+            >Done</PanelButton
+          >
+        {:else}
+          <PanelButton variant="primary" onclick={() => moveStep(1)}
+            >Next</PanelButton
+          >
         {/if}
-      </div>
-      {#if currentStepIndex === reachableSteps.length - 1}
-        <PanelButton variant="primary" onclick={() => dismiss("done")}
-          >Done</PanelButton
-        >
-      {:else}
-        <PanelButton variant="primary" onclick={() => moveStep(1)}
-          >Next</PanelButton
-        >
-      {/if}
-    </footer>
-  </section>
+      </footer>
+    </section>
+  {/if}
 </div>
 
 <style>
@@ -256,6 +268,7 @@
   }
 
   .intro-card {
+    container-type: inline-size;
     position: absolute;
     left: clamp(0.75rem, 2cqw, 1.5rem);
     bottom: clamp(0.75rem, 2cqh, 1.5rem);
@@ -383,6 +396,21 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .preset-skeleton {
+    cursor: default;
+    background: var(--theme-card-hover-bg);
+    animation: preset-pulse 1.4s ease-in-out infinite alternate;
+  }
+
+  @keyframes preset-pulse {
+    from {
+      opacity: 0.45;
+    }
+    to {
+      opacity: 0.85;
+    }
   }
 
   .intro-footer {
