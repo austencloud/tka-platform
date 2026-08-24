@@ -6,12 +6,17 @@ import { mkdir, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const manifest = JSON.parse(
-  await readFile(resolve("scripts/forest-plantcatalog-bridge.json"), "utf8")
+const manifestPath = resolve(
+  process.env.TKA_PLANT_BRIDGE_MANIFEST ??
+    "scripts/forest-plantcatalog-bridge.json"
 );
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const conditioning = JSON.parse(
   await readFile(
-    resolve(manifest.paths.evidenceRoot, "plantcatalog-conditioning-metrics.json"),
+    resolve(
+      manifest.paths.evidenceRoot,
+      "plantcatalog-conditioning-metrics.json"
+    ),
     "utf8"
   )
 );
@@ -51,9 +56,12 @@ const io = new NodeIO()
     "meshopt.decoder": meshopt.MeshoptDecoder,
   });
 
-for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.id))) {
+for (const entry of conditioning.filter((candidate) =>
+  activeIds.has(candidate.id)
+)) {
   const job = manifest.jobs.find((candidate) => candidate.id === entry.id);
-  if (!job) throw new Error(`Conditioning metrics reference unknown job: ${entry.id}`);
+  if (!job)
+    throw new Error(`Conditioning metrics reference unknown job: ${entry.id}`);
   const input = resolve(entry.reviewGlb);
   const output = resolve(manifest.paths.candidateRoot, job.candidateFilename);
   await mkdir(dirname(output), { recursive: true });
@@ -68,10 +76,14 @@ for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.i
     const foliage = name.includes("_Foliage_");
     const cutout = name.includes("_Cutout_");
     if (!foliage && !name.includes("_Wood_")) {
-      throw new Error(`${entry.id} has an unclassified material family: ${name}`);
+      throw new Error(
+        `${entry.id} has an unclassified material family: ${name}`
+      );
     }
     if (!cutout && !name.includes("_Opaque_")) {
-      throw new Error(`${entry.id} has an unclassified material surface: ${name}`);
+      throw new Error(
+        `${entry.id} has an unclassified material surface: ${name}`
+      );
     }
     material.setMetallicFactor(0);
     material.setRoughnessFactor(
@@ -212,7 +224,11 @@ for (const entry of conditioning.filter((candidate) => activeIds.has(candidate.i
   document
     .createExtension(EXTMeshoptCompression)
     .setRequired(true)
-    .setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.QUANTIZE });
+    .setEncoderOptions({
+      method: EXTMeshoptCompression.EncoderMethod.QUANTIZE,
+    });
   await io.write(output, document);
-  console.log(`${entry.id}: ${(statSync(output).size / 1024 / 1024).toFixed(2)} MiB -> ${output}`);
+  console.log(
+    `${entry.id}: ${(statSync(output).size / 1024 / 1024).toFixed(2)} MiB -> ${output}`
+  );
 }

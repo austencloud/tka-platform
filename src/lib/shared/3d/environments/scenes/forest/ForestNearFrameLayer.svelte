@@ -50,7 +50,7 @@
 </script>
 
 {#if $nearFrame}
-  <T is={$nearFrame.scene} position.y={groundY} />
+  <T is={$nearFrame.scene} position.y={groundY} dispose={false} />
   {#if materialResponse}
     <ForestAtmosphereMaterials
       scene={$nearFrame.scene}

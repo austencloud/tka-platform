@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import sharp from "sharp";
 
-const manifest = JSON.parse(
-  await readFile(resolve("scripts/forest-plantcatalog-bridge.json"), "utf8")
+const manifestPath = resolve(
+  process.env.TKA_PLANT_BRIDGE_MANIFEST ??
+    "scripts/forest-plantcatalog-bridge.json"
 );
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 const requestedJobs = process.argv
   .filter((argument) => argument.startsWith("--job="))
   .map((argument) => argument.slice("--job=".length));
@@ -17,7 +19,7 @@ const selectedIds =
 const jobsById = new Map(manifest.jobs.map((job) => [job.id, job]));
 const jobs = selectedIds.map((id) => {
   const job = jobsById.get(id);
-  if (!job) throw new Error(`Unknown PlantCatalog job: ${id}`);
+  if (!job) throw new Error(`Unknown plant bridge job: ${id}`);
   return job;
 });
 const evidence = resolve(manifest.paths.evidenceRoot);
@@ -43,7 +45,11 @@ for (let row = 0; row < jobs.length; row += 1) {
       .resize(panel, panel, { fit: "cover" })
       .png()
       .toBuffer();
-    composites.push({ input: image, left: rail + column * panel, top: header + row * panel });
+    composites.push({
+      input: image,
+      left: rail + column * panel,
+      top: header + row * panel,
+    });
   }
 }
 const viewLabels = views
@@ -53,15 +59,21 @@ const viewLabels = views
   )
   .join("\n");
 const speciesLabels = jobs
-  .map(
-    (job, index) =>
-      `<text x="${rail / 2}" y="${header + index * panel + panel / 2}" text-anchor="middle" fill="#f3eadc" font-family="system-ui, sans-serif" font-size="24" font-weight="700" transform="rotate(-90 ${rail / 2} ${header + index * panel + panel / 2})">${job.species} · seed ${job.seed}</text>`
-  )
+  .map((job, index) => {
+    const disposition = job.proofDisposition?.toUpperCase();
+    const label = `${job.label ?? job.species}${disposition ? ` · ${disposition}` : ""}`;
+    const fill = job.proofDisposition === "rejected" ? "#ff8a82" : "#f3eadc";
+    return `<text x="${rail / 2}" y="${header + index * panel + panel / 2}" text-anchor="middle" fill="${fill}" font-family="system-ui, sans-serif" font-size="18" font-weight="700" transform="rotate(-90 ${rail / 2} ${header + index * panel + panel / 2})">${label}</text>`;
+  })
   .join("\n");
 const overlay = Buffer.from(
-  `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" fill="#101817"/><text x="28" y="40" fill="#f3eadc" font-family="system-ui, sans-serif" font-size="30" font-weight="700">PlantCatalog Bridge R1 · deterministic proof</text>${viewLabels}${speciesLabels}</svg>`
+  `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" fill="#101817"/><text x="28" y="40" fill="#f3eadc" font-family="system-ui, sans-serif" font-size="30" font-weight="700">${manifest.proofTitle ?? "PlantCatalog Bridge R1 · deterministic proof"}</text>${viewLabels}${speciesLabels}</svg>`
 );
-const output = resolve(evidence, "plantcatalog-bridge-contact-sheet.png");
+const output = resolve(
+  evidence,
+  manifest.proofArtifacts?.contactSheetFilename ??
+    "plantcatalog-bridge-contact-sheet.png"
+);
 await sharp({ create: { width, height, channels: 4, background: "#101817" } })
   .composite([{ input: overlay, left: 0, top: 0 }, ...composites])
   .png()

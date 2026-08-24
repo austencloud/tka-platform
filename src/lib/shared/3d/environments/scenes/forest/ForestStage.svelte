@@ -62,7 +62,7 @@
     position={[0, groundY, zOffset]}
     scale={[width / BASE_WIDTH, 1, depth / BASE_DEPTH]}
   >
-    <T is={$forestStage.scene} />
+    <T is={$forestStage.scene} dispose={false} />
     {#if materialResponse}
       <ForestAtmosphereMaterials
         scene={$forestStage.scene}

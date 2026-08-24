@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
@@ -20,7 +21,9 @@ from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MANIFEST_PATH = ROOT / "scripts" / "forest-plantcatalog-bridge.json"
+MANIFEST_PATH = ROOT / os.environ.get(
+    "TKA_PLANT_BRIDGE_MANIFEST", "scripts/forest-plantcatalog-bridge.json"
+)
 MANIFEST = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 STATE_PATH = ROOT / MANIFEST["paths"]["statePath"]
 EVIDENCE_ROOT = ROOT / MANIFEST["paths"]["evidenceRoot"]
@@ -44,6 +47,9 @@ FOLIAGE_TOKENS = (
     "leaf",
     "leaves",
     "foliage",
+    "flower",
+    "petal",
+    "blossom",
     "needle",
     "frond",
     "blade",
@@ -289,7 +295,11 @@ def configure_material(material: bpy.types.Material, job_id: str, index: int) ->
 
     # Both axes go in the name because both are read downstream by name: the wind
     # mask keys on _Foliage_, and the optimizer and verifier key on _Cutout_.
-    material.name = "ForestPlantCatalog_{}_{}_{}_{}".format(
+    material_prefix = MANIFEST["conditioning"].get(
+        "materialPrefix", "ForestPlantCatalog"
+    )
+    material.name = "{}_{}_{}_{}_{}".format(
+        material_prefix,
         re.sub(r"[^a-zA-Z0-9]+", "_", job_id).strip("_"),
         "Foliage" if family == "foliage" else "Wood",
         "Cutout" if surface == "cutout" else "Opaque",
@@ -613,10 +623,17 @@ def condition_job(job: dict, export_state: dict) -> dict:
     )
     imported = [obj for obj in bpy.data.objects if obj not in before]
     tree = join_meshes(imported)
-    tree.name = "ForestPlantCatalog_{}".format(job["id"])
+    object_prefix = MANIFEST["conditioning"].get(
+        "objectPrefix", "ForestPlantCatalog"
+    )
+    tree.name = "{}_{}".format(object_prefix, job["id"])
     tree.data.name = tree.name + "_Mesh"
-    tree["tka_role"] = "forest-tree-candidate"
-    tree["tka_source_family"] = "PlantCatalog"
+    tree["tka_role"] = MANIFEST["conditioning"].get(
+        "assetRole", "forest-tree-candidate"
+    )
+    tree["tka_source_family"] = MANIFEST["source"].get(
+        "assetFamily", "PlantCatalog"
+    )
     tree["tka_species"] = job["species"]
     tree["tka_seed"] = int(job["seed"])
     tree["tka_source_sha256"] = job["sourceSha256"]

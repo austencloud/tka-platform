@@ -67,7 +67,7 @@
 
 {#if $campsite}
   <T.Group position.y={groundY}>
-    <T is={$campsite.scene} />
+    <T is={$campsite.scene} dispose={false} />
     {#if materialResponse}
       <ForestAtmosphereMaterials
         scene={$campsite.scene}

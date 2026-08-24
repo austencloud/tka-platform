@@ -13,6 +13,11 @@
     "commercialProjectEmbeddingAllowed": true,
     "standaloneAssetRedistributionAllowed": false
   },
+  "verification": {
+    "requiredDecisionId": "YmJWyFZKDT6sCFn6Htrt",
+    "requireCatalogSpeciesName": true,
+    "rejectCatalogPlaceholders": true
+  },
   "paths": {
     "rawRoot": "blender/plantcatalog-bridge-r1/raw",
     "conditionedRoot": "blender/plantcatalog-bridge-r1/conditioned",
@@ -61,16 +66,9 @@
     "optimizedTextureSize": 1024
   },
   "exportSets": {
-    "proof": [
-      "quercus-robur-forest-hd-s41"
-    ],
-    "lod": [
-      "quercus-robur-forest-hd-s41",
-      "quercus-robur-forest-ld-s41"
-    ],
-    "ldSource": [
-      "quercus-robur-forest-ld-s41"
-    ],
+    "proof": ["quercus-robur-forest-hd-s41"],
+    "lod": ["quercus-robur-forest-hd-s41", "quercus-robur-forest-ld-s41"],
+    "ldSource": ["quercus-robur-forest-ld-s41"],
     "productionWaveR1": [
       "quercus-robur-forest-ld-s89",
       "quercus-robur-urban-ld-s13",
@@ -79,9 +77,7 @@
       "quercus-robur-colonised-ld-s29",
       "salix-alba-ld-s11"
     ],
-    "productionWaveR1Backfill": [
-      "quercus-robur-forest-ld-s89"
-    ]
+    "productionWaveR1Backfill": ["quercus-robur-forest-ld-s89"]
   },
   "jobs": [
     {

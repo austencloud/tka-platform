@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
@@ -12,8 +13,11 @@ from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parent.parent
+MANIFEST_PATH = ROOT / os.environ.get(
+    "TKA_PLANT_BRIDGE_MANIFEST", "scripts/forest-plantcatalog-bridge.json"
+)
 MANIFEST = json.loads(
-    (ROOT / "scripts" / "forest-plantcatalog-bridge.json").read_text(encoding="utf-8")
+    MANIFEST_PATH.read_text(encoding="utf-8")
 )
 EVIDENCE_ROOT = ROOT / MANIFEST["paths"]["evidenceRoot"]
 

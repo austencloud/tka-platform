@@ -24,7 +24,6 @@
     createDefaultForestFireflyConfig,
   } from "../domain/models/scene-configs";
   import { shouldShowForestNearFrame } from "../domain/models/scene-configs/forest-scene-config";
-  import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import Stage3D from "../../components/Stage3D.svelte";
   import VolumetricFireComponent from "../../effects/volumetric-fire/VolumetricFireComponent.svelte";
@@ -52,6 +51,8 @@
     showStage?: boolean;
     /** Override the clearing radius so the hub can widen it for N stations. */
     clearingRadius?: number;
+    /** Retained film worlds load while hidden but only the active one owns globals. */
+    active?: boolean;
   }
 
   let {
@@ -62,6 +63,7 @@
     stageZOffset = 0,
     showStage = true,
     clearingRadius,
+    active = true,
   }: Props = $props();
 
   const activeConfig = $derived(config ?? createDefaultForestFireflyConfig());
@@ -119,7 +121,7 @@
     });
   });
 
-  const { scene, renderer, camera } = useThrelte();
+  const { scene } = useThrelte();
 
   // ========================================
   // All positions and scales in METERS (1 unit = 1 meter)
@@ -163,6 +165,7 @@
   // Apply fog reactively — reuse instance, mutate instead of reallocating
   let fogInstance: FogExp2 | null = null;
   $effect(() => {
+    if (!active) return;
     if (!scene.current) return;
     const fog = activeConfig.fog;
     if (!fogInstance) {
@@ -173,7 +176,7 @@
       fogInstance.density = fog.density;
     }
     return () => {
-      if (scene.current) scene.current.fog = null;
+      if (scene.current?.fog === fogInstance) scene.current.fog = null;
       fogInstance = null;
     };
   });
@@ -181,6 +184,7 @@
   // Report per-GLB progress so the loading curtain fills smoothly
   // instead of jumping 0% → 100%.
   $effect(() => {
+    if (!active) return;
     if (!sceneFeatures) return;
     const glbs = [$forestEnvironment];
     const requiredAssets = [
@@ -192,16 +196,14 @@
     const loaded = requiredAssets.filter(Boolean).length;
     sceneFeatures.reportProgress("environment", loaded / requiredAssets.length);
     if (loaded === requiredAssets.length) {
-      if (renderer.current && camera.current && scene.current) {
-        renderer.current.compile(scene.current, camera.current);
-      }
       sceneFeatures.reportReady("environment");
     }
   });
 
   // Safety valve: if GLBs stall (CDN timeout, CORS failure), lift the
   // curtain after 15 s so the user isn't stuck on a permanent loading screen.
-  onMount(() => {
+  $effect(() => {
+    if (!active) return;
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
         console.warn("[ForestScene] GLB loading timed out - lifting curtain");
@@ -241,7 +243,7 @@
 {/if}
 
 {#if $forestEnvironment}
-  <T is={$forestEnvironment.scene} position.y={groundY} />
+  <T is={$forestEnvironment.scene} position.y={groundY} dispose={false} />
   <ForestGroundDetail
     scene={$forestEnvironment.scene}
     strength={isNightMaster ? 0.18 : 0.9}

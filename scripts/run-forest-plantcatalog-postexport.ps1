@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string[]] $Job = @()
+    [string[]] $Job = @(),
+    [string] $Manifest = 'scripts/forest-plantcatalog-bridge.json'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,6 +16,8 @@ foreach ($jobId in $Job) {
 }
 
 Push-Location $projectRoot
+$previousManifest = $env:TKA_PLANT_BRIDGE_MANIFEST
+$env:TKA_PLANT_BRIDGE_MANIFEST = $Manifest
 try {
     & $blender --background --python scripts/condition-forest-plantcatalog-bridge.py -- @jobArguments
     if ($LASTEXITCODE -ne 0) { throw "PlantCatalog conditioning failed with exit code $LASTEXITCODE" }
@@ -28,5 +31,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "PlantCatalog proof verification failed with exit code $LASTEXITCODE" }
 }
 finally {
+    $env:TKA_PLANT_BRIDGE_MANIFEST = $previousManifest
     Pop-Location
 }
