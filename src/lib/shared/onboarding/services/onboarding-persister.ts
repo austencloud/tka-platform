@@ -33,6 +33,7 @@ import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
+  VIEWER3D_INTRO_SEEN_KEY,
 } from "../config/storage-keys";
 import {
   createDefaultAccountSetupProgress,
@@ -76,6 +77,7 @@ export class OnboardingPersister {
       appSkipped: false,
       appCompletedAt: null,
       lastSeenVersion: null,
+      viewer3DIntroSeen: false,
       accountSetup: createDefaultAccountSetupProgress(),
     };
   }
@@ -96,6 +98,8 @@ export class OnboardingPersister {
 
     // Last seen version
     const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY) || null;
+    const viewer3DIntroSeen =
+      localStorage.getItem(VIEWER3D_INTRO_SEEN_KEY) === "true";
 
     let accountSetup = createDefaultAccountSetupProgress();
     const storedAccountSetup = localStorage.getItem(ACCOUNT_SETUP_PROGRESS_KEY);
@@ -114,6 +118,7 @@ export class OnboardingPersister {
       appSkipped,
       appCompletedAt,
       lastSeenVersion,
+      viewer3DIntroSeen,
       accountSetup,
     };
   }
@@ -157,6 +162,12 @@ export class OnboardingPersister {
       removeLocalStorageItem(LAST_SEEN_VERSION_KEY);
     }
 
+    if (status.viewer3DIntroSeen) {
+      safeLocalStorageSetItem(VIEWER3D_INTRO_SEEN_KEY, "true");
+    } else {
+      removeLocalStorageItem(VIEWER3D_INTRO_SEEN_KEY);
+    }
+
     safeLocalStorageSetItem(
       ACCOUNT_SETUP_PROGRESS_KEY,
       JSON.stringify(normalizeAccountSetupProgress(status.accountSetup))
@@ -186,6 +197,7 @@ export class OnboardingPersister {
         status.appCompletedAt = data.appCompletedAt ?? null;
         // Last seen version
         status.lastSeenVersion = data.lastSeenVersion ?? null;
+        status.viewer3DIntroSeen = data.viewer3DIntroSeen ?? false;
         status.accountSetup = normalizeAccountSetupProgress(data.accountSetup);
 
         this.cachedStatus = status;
@@ -336,6 +348,7 @@ export class OnboardingPersister {
           status.appCompletedAt = data.appCompletedAt ?? null;
           // Last seen version
           status.lastSeenVersion = data.lastSeenVersion ?? null;
+          status.viewer3DIntroSeen = data.viewer3DIntroSeen ?? false;
           status.accountSetup = normalizeAccountSetupProgress(
             data.accountSetup
           );
@@ -379,6 +392,8 @@ export class OnboardingPersister {
           localStatus.appSkipped || cloudStatus.appSkipped;
         mergedStatus.appCompletedAt =
           localStatus.appCompletedAt || cloudStatus.appCompletedAt || null;
+        mergedStatus.viewer3DIntroSeen =
+          localStatus.viewer3DIntroSeen || cloudStatus.viewer3DIntroSeen;
 
         // Last seen version: keep the higher one (numeric semver compare, so
         // "0.10.0" correctly beats "0.9.0" — a plain string compare gets this

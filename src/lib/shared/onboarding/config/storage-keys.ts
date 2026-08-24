@@ -51,6 +51,9 @@ export const ONBOARDING_SKIPPED_KEY = "tka-onboarding-skipped";
 /** Local fallback for profile-completion choices and reminder policy. */
 export const ACCOUNT_SETUP_PROGRESS_KEY = "tka-account-setup-progress";
 
+/** localStorage key for the first-ever 3D viewer guided setup */
+export const VIEWER3D_INTRO_SEEN_KEY = "tka-viewer3d-intro-seen";
+
 // ============================================================================
 // CLOUD SYNC
 // ============================================================================

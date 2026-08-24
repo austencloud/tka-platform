@@ -24,6 +24,8 @@ export interface OnboardingStatus {
   appCompletedAt: string | null;
   /** Last version user has seen in What's New modal */
   lastSeenVersion: string | null;
+  /** Whether the first-ever 3D viewer guided setup has been shown */
+  viewer3DIntroSeen: boolean;
   /** Durable profile-completion choices and reminder policy. */
   accountSetup: AccountSetupProgress;
 }

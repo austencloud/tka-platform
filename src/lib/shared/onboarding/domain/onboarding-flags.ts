@@ -28,3 +28,11 @@ export const AUTO_TOURS_ENABLED = false;
  * + Settings replay), independent of the other two tours.
  */
 export const CREATE_TUTORIAL_ENABLED = true;
+
+/**
+ * First-ever 3D-viewer open guided setup (scene → formation → presets).
+ * Spec: docs/superpowers/specs/2026-08-23-viewer3d-intro-presets-design.md.
+ * Independent of AUTO_TOURS_ENABLED — this is a one-shot overlay on the 3D
+ * pane, not an auto-popping coach mark.
+ */
+export const VIEWER3D_INTRO_ENABLED = true;
