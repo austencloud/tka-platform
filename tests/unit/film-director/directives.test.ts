@@ -4,11 +4,21 @@ import { z } from "zod";
 
 import {
   directiveSchema,
+  isDirectiveExpression,
   normalizeDirective,
+  type DirectiveValue,
 } from "../../../src/routes/test/film-director/_lib/directives";
 
 const propValue = z.enum(["staff", "fan", "club"]);
 const schema = directiveSchema(propValue);
+
+// Compile-time guard: the schema's inferred type must stay assignable to
+// DirectiveValue<T>. If this fails to compile, the schema and the directive
+// grammar have drifted apart — fix the drift rather than loosening types.
+type _SchemaMatchesDirectiveValue =
+  z.infer<typeof schema> extends DirectiveValue<"staff" | "fan" | "club"> ? true : never;
+const _schemaMatchesDirectiveValue: _SchemaMatchesDirectiveValue = true;
+void _schemaMatchesDirectiveValue;
 
 describe("directiveSchema", () => {
   it("accepts a literal", () => {
@@ -34,6 +44,64 @@ describe("directiveSchema", () => {
     expect(() => schema.parse("chainsaw")).toThrow();
     expect(() => schema.parse({ pick: "any", extra: true })).toThrow();
     expect(() => schema.parse({ oneOf: [] })).toThrow();
+  });
+
+  it("rejects a malformed directive object with a readable union error", () => {
+    const result = schema.safeParse({ pik: "any" });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    const flattened = result.error.flatten();
+    expect(JSON.stringify(flattened)).toContain(
+      "Expected a literal value or a directive object ({pick}, {oneOf}, {not}, {sameAs})"
+    );
+  });
+
+  it("rejects an empty object", () => {
+    expect(schema.safeParse({}).success).toBe(false);
+  });
+
+  it("rejects an empty not array", () => {
+    expect(schema.safeParse({ not: [] }).success).toBe(false);
+  });
+
+  it("rejects an empty sameAs id", () => {
+    expect(schema.safeParse({ sameAs: "" }).success).toBe(false);
+  });
+
+  it("rejects an empty pick pool", () => {
+    expect(schema.safeParse({ pick: "distinct", from: [] }).success).toBe(false);
+  });
+
+  it("rejects a multi-key directive object", () => {
+    expect(schema.safeParse({ oneOf: ["fan"], not: "staff" }).success).toBe(false);
+  });
+});
+
+describe("isDirectiveExpression", () => {
+  it("rejects null and undefined", () => {
+    expect(isDirectiveExpression(null as unknown as DirectiveValue<"staff">)).toBe(false);
+    expect(isDirectiveExpression(undefined as unknown as DirectiveValue<"staff">)).toBe(
+      false
+    );
+  });
+
+  it("rejects arrays", () => {
+    expect(isDirectiveExpression(["staff"] as unknown as DirectiveValue<"staff">)).toBe(
+      false
+    );
+  });
+
+  it("rejects a plain object with no grammar keys", () => {
+    expect(
+      isDirectiveExpression({ from: ["fan"] } as unknown as DirectiveValue<"staff" | "fan">)
+    ).toBe(false);
+  });
+
+  it("accepts an object carrying a grammar key", () => {
+    expect(isDirectiveExpression({ pick: "any" })).toBe(true);
+    expect(isDirectiveExpression({ oneOf: ["fan"] })).toBe(true);
+    expect(isDirectiveExpression({ not: "staff" })).toBe(true);
+    expect(isDirectiveExpression({ sameAs: "performer-1" })).toBe(true);
   });
 });
 
@@ -66,6 +134,15 @@ describe("normalizeDirective", () => {
     });
   });
 
+  it("normalizes not with a multi-element exclusion array", () => {
+    expect(normalizeDirective({ not: ["staff", "fan"] })).toEqual({
+      kind: "pick",
+      distinct: false,
+      pool: null,
+      exclude: ["staff", "fan"],
+    });
+  });
+
   it("normalizes pick any/distinct and sameAs", () => {
     expect(normalizeDirective({ pick: "distinct" })).toEqual({
       kind: "pick",
@@ -76,6 +153,24 @@ describe("normalizeDirective", () => {
     expect(normalizeDirective({ sameAs: "performer-1" })).toEqual({
       kind: "sameAs",
       sameAs: "performer-1",
+    });
+  });
+
+  it("normalizes pick any with a pool, preserving it without distinct", () => {
+    expect(normalizeDirective({ pick: "any", from: ["staff", "fan"] })).toEqual({
+      kind: "pick",
+      distinct: false,
+      pool: ["staff", "fan"],
+      exclude: [],
+    });
+  });
+
+  it("normalizes bare pick any with no pool", () => {
+    expect(normalizeDirective({ pick: "any" })).toEqual({
+      kind: "pick",
+      distinct: false,
+      pool: null,
+      exclude: [],
     });
   });
 });

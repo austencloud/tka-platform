@@ -7,45 +7,57 @@ import { z } from "zod";
  * constraint intent — "different prop each", "anything but LED" — so the
  * document, not the translating agent, carries the meaning.
  */
-export type DirectiveExpression<T> =
+export type DirectiveExpression<T extends string | number> =
   | { pick: "any" | "distinct"; from?: readonly T[] }
   | { oneOf: readonly T[] }
   | { not: T | readonly T[]; from?: readonly T[] }
   | { sameAs: string };
 
-export type DirectiveValue<T> = T | DirectiveExpression<T>;
+export type DirectiveValue<T extends string | number> = T | DirectiveExpression<T>;
 
-export interface NormalizedDirective<T> {
-  kind: "literal" | "pick" | "sameAs";
-  literal?: T;
-  distinct?: boolean;
-  /** Allowed candidates; null means "the axis's full catalog". */
-  pool?: readonly T[] | null;
-  exclude?: readonly T[];
-  sameAs?: string;
+/**
+ * The resolved shape of a directive, keyed by `kind` so illegal
+ * combinations (e.g. a `pool` on a `sameAs`) are unrepresentable.
+ *
+ * `pool: null` on the `pick` variant means "the axis's full catalog".
+ */
+export type NormalizedDirective<T extends string | number> =
+  | { kind: "literal"; literal: T }
+  | { kind: "pick"; distinct: boolean; pool: readonly T[] | null; exclude: readonly T[] }
+  /**
+   * `sameAs` copies the value from another performer's resolved value on
+   * the same axis. The string is that other performer's id, not a value
+   * on this axis.
+   */
+  | { kind: "sameAs"; sameAs: string };
+
+export function directiveSchema<S extends z.ZodType>(value: S) {
+  return z.union(
+    [
+      value,
+      z
+        .object({
+          pick: z.enum(["any", "distinct"]),
+          from: z.array(value).min(1).optional(),
+        })
+        .strict(),
+      z.object({ oneOf: z.array(value).min(1) }).strict(),
+      z
+        .object({
+          not: z.union([value, z.array(value).min(1)]),
+          from: z.array(value).min(1).optional(),
+        })
+        .strict(),
+      z.object({ sameAs: z.string().min(1) }).strict(),
+    ],
+    {
+      error:
+        "Expected a literal value or a directive object ({pick}, {oneOf}, {not}, {sameAs})",
+    }
+  );
 }
 
-export function directiveSchema<S extends z.ZodTypeAny>(value: S) {
-  return z.union([
-    value,
-    z
-      .object({
-        pick: z.enum(["any", "distinct"]),
-        from: z.array(value).min(1).optional(),
-      })
-      .strict(),
-    z.object({ oneOf: z.array(value).min(1) }).strict(),
-    z
-      .object({
-        not: z.union([value, z.array(value).min(1)]),
-        from: z.array(value).min(1).optional(),
-      })
-      .strict(),
-    z.object({ sameAs: z.string().min(1) }).strict(),
-  ]);
-}
-
-export function isDirectiveExpression<T>(
+export function isDirectiveExpression<T extends string | number>(
   value: DirectiveValue<T>
 ): value is DirectiveExpression<T> {
   return (
@@ -56,7 +68,15 @@ export function isDirectiveExpression<T>(
   );
 }
 
-export function normalizeDirective<T>(
+/**
+ * Normalizes a directive value into its resolved shape.
+ *
+ * Input is expected to already be schema-validated (`directiveSchema`),
+ * which rejects any object carrying more than one grammar key. Given
+ * unvalidated multi-key input, this function normalizes by precedence:
+ * sameAs > oneOf > not > pick.
+ */
+export function normalizeDirective<T extends string | number>(
   value: DirectiveValue<T>
 ): NormalizedDirective<T> {
   if (!isDirectiveExpression(value)) {
