@@ -27,6 +27,10 @@
   } from "$lib/shared/3d/physics/types";
   import GltfAsset from "$lib/shared/3d/environments/primitives/GltfAsset.svelte";
   import PedestalMesh from "$lib/features/museum/components/graybox/PedestalMesh.svelte";
+  import MuseumPerformerStation3D from "$lib/features/museum/components/game/MuseumPerformerStation3D.svelte";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ConsoleMesh from "$lib/features/museum/components/graybox/ConsoleMesh.svelte";
   import { pedestalFaceDataUri } from "$lib/features/museum/services/pedestal-face";
   import {
@@ -241,6 +245,22 @@
     )
   );
 
+  /**
+   * The steps each performer is actually working from, after the console.
+   *
+   * ONE resolution, two consumers. The figure on the pedestal and the person
+   * standing on it are the same choreography seen two ways, so they read the
+   * same array. Resolving it twice is how the drawing and the dance would
+   * quietly stop agreeing.
+   */
+  const caseSteps = $state<Record<string, readonly StepData[]>>(
+    Object.fromEntries(
+      pedestalSpecs
+        .filter((spec) => spec.caseWord && spec.sequenceId && !spec.opener)
+        .map((spec) => [spec.caseWord!, boundSteps(spec.sequenceId!)])
+    )
+  );
+
   $effect(() => {
     let cancelled = false;
     for (const spec of pedestalSpecs) {
@@ -249,9 +269,11 @@
       if (!settings) continue;
       const { propType, reversed, handsSwapped } = settings;
       const sequenceId = spec.sequenceId;
+      const caseWord = spec.caseWord;
       void effectiveSteps(sequenceId, settings)
         .then((steps) => {
           if (cancelled) return;
+          if (!spec.opener) caseSteps[caseWord] = steps;
           pedestalFaces[spec.id] = faceUriFor(
             sequenceId,
             propType,
@@ -288,7 +310,11 @@
 
   const fixtureMeshes = layout.exhibitFixtures
     .filter(
-      (fixture) => !isPedestal(fixture.kind) && fixture.kind !== "case-console"
+      (fixture) =>
+        !isPedestal(fixture.kind) &&
+        fixture.kind !== "case-console" &&
+        // The showcase is no longer massing. It is a person.
+        fixture.kind !== "case-showcase"
     )
     .map((fixture) => ({
     id: fixture.id,
@@ -391,6 +417,87 @@
         awake,
         engaged,
         modified: settings ? isModified(settings, PEDESTAL_PROP) : false,
+      };
+    })
+  );
+
+  // ── The performers ────────────────────────────────────────────────────────
+
+  /**
+   * Which real prop the console's word puts in the performer's hands.
+   *
+   * The console cycles one bilateral prop and one unilateral one, because the
+   * whole lesson of that button is that the figure belongs to the hand and the
+   * copy count belongs to the prop. An unknown word falls back to the staff
+   * rather than leaving a performer empty-handed.
+   */
+  function scenePropType(word: string): PropType {
+    return word.toLowerCase() === "fan" ? PropType.FAN : PropType.STAFF;
+  }
+
+  /**
+   * A performer stands where the massing box used to.
+   *
+   * The showcase fixture keeps owning the position, the facing, and the height
+   * the plan was proved against — the sightline work behind this room measured
+   * a 1.75 m figure standing on the pedestal's top face, and swapping in a real
+   * avatar must not quietly move that. Its `baseY` is that top face, so the
+   * station stands on it with no standing surface of its own.
+   */
+  const performerSpecs = layout.exhibitFixtures
+    .filter((fixture) => fixture.kind === "case-showcase")
+    .map((fixture) => {
+      const caseWord = fixture.caseWord!;
+      const pedestal = pedestalSpecs.find(
+        (spec) => spec.caseWord === caseWord && !spec.opener
+      )!;
+      return {
+        id: fixture.id,
+        caseWord,
+        sequenceId: pedestal.sequenceId!,
+        worldX: fixture.centre.x - origin.x,
+        worldY: fixture.baseY,
+        worldZ: fixture.centre.z - origin.z,
+        facing: fixture.facing,
+      };
+    });
+
+  /**
+   * How far away a performer stops moving.
+   *
+   * Generous, because these three ARE the room: a visitor arriving down the
+   * causeway should already see them working. It exists only so the dark
+   * approach and the tunnel out do not pay for three animated rigs.
+   */
+  const PERFORMER_ACTIVE_M = 30;
+
+  const performers = $derived(
+    performerSpecs.map((spec) => {
+      const settings = performerSettings[spec.caseWord];
+      const steps = caseSteps[spec.caseWord] ?? [];
+      const propType = scenePropType(settings?.propType ?? PEDESTAL_PROP);
+      const distance = Math.hypot(
+        spec.worldX - viewPoint.x,
+        spec.worldZ - viewPoint.z
+      );
+      return {
+        ...spec,
+        active: distance < PERFORMER_ACTIVE_M,
+        // Rebuilt whenever the console changes the steps or the prop, which is
+        // what makes a press visible in the performer's hands and not only in
+        // the drawing under their feet.
+        sequenceData: createSequenceData({
+          id: `drowned-gallery-${spec.caseWord}`,
+          name: spec.caseWord,
+          word: spec.caseWord,
+          steps,
+          isCircular: true,
+          intendedProp: {
+            bluePropType: propType,
+            redPropType: propType,
+            catDogMode: false,
+          },
+        }) satisfies SequenceData,
       };
     })
   );
@@ -1054,6 +1161,22 @@
     faceUri={pedestal.faceUri}
     tint={WATER_TINT}
     animated={pedestal.animated}
+  />
+{/each}
+
+{#each performers as performer (performer.id)}
+  <MuseumPerformerStation3D
+    stationId={performer.id}
+    worldX={performer.worldX}
+    worldY={performer.worldY}
+    worldZ={performer.worldZ}
+    facingAngle={performer.facing}
+    sequenceData={performer.sequenceData}
+    autoPlay={true}
+    active={performer.active}
+    showGrid={false}
+    showPlatform={false}
+    standingSurfaceHeight={0}
   />
 {/each}
 

@@ -55,6 +55,16 @@
      */
     userSequenceDataMap?: Map<string, SequenceData>;
     /**
+     * A ready-made sequence to perform, taking precedence over `sequenceId`.
+     *
+     * An exhibit console hands its performer a TRANSFORM of the case's bound
+     * sequence — reversed, hands swapped, a different prop in hand. That is a
+     * new object, not a new id, so resolution by id cannot see the change.
+     * This is the seam a room uses to drive its performer directly, and it
+     * reloads whenever the object identity changes.
+     */
+    sequenceData?: SequenceData | null;
+    /**
      * Registry effect id for this performer's props (charcoal, fire, zap, ...).
      * Omitted or null renders the rig with no effect layer, which is the
      * museum's existing behaviour.
@@ -125,9 +135,27 @@
   // exhibits first, then falls back to loading from Firestore.
   // Mutations (loadSequence, play) are wrapped in untrack so the effect
   // only re-runs when sequenceId changes, not when internal state updates.
+  /**
+   * Room-driven sequence. Reloads on every new object, which is what makes a
+   * console press visible in the performer's hands rather than only on the
+   * pedestal underneath them.
+   */
+  $effect(() => {
+    const data = props.sequenceData;
+    untrack(() => {
+      if (!data || !performerState) return;
+      resolvedSequence = data;
+      performerState.loadSequence(data);
+      performerState.loop = true;
+      if (autoPlay && props.active !== false) performerState.play();
+    });
+  });
+
   $effect(() => {
     const id = props.sequenceId; // subscribe to sequenceId reactively via props object
+    const driven = props.sequenceData;
     untrack(() => {
+      if (driven) return; // the room owns this performer's sequence
       if (!id || !performerState) return;
 
       // Injected branch: resolve from a user's private library map first.
