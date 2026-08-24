@@ -376,6 +376,7 @@
   snapPoints={["100%"]}
   onclose={handleDrawerClose}
   showHandle={false}
+  focusContainerOnOpen
   dismissible={nativeLoadingCode === null}
   closeOnBackdrop={nativeLoadingCode === null}
   closeOnEscape={nativeLoadingCode === null}
@@ -405,6 +406,8 @@
               isMobile={isMobileWidth}
               onClose={handleDismiss}
               shareOnOpen={overlay.shareOnOpen}
+              tunnelComposition={overlay.tunnelComposition}
+              tunnelSaveTarget={overlay.tunnelSaveTarget}
             />
           {/snippet}
         </SequenceViewerOrchestrator>

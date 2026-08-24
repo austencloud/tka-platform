@@ -1,6 +1,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { ViewMode } from "$lib/shared/sequence-viewer/domain/viewer-orchestrator-context";
 import type { ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
+import type {
+  TunnelComposition,
+  TunnelSaveTarget,
+} from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
 import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
@@ -20,6 +24,8 @@ let _initialBpm = $state(60);
 let _initialStep = $state(0);
 let _initialViewMode = $state<ViewMode | undefined>();
 let _initialViewerMode = $state<ViewerMode | undefined>();
+let _tunnelComposition = $state<TunnelComposition | null>(null);
+let _tunnelSaveTarget = $state<TunnelSaveTarget | null>(null);
 let _dismissPath = $state<string | null>(null);
 let _handPathMode = $state(false);
 let _playOnOpen = $state(false);
@@ -45,6 +51,8 @@ export function openSequenceOverlay(
     shareOnOpen?: boolean;
     fromUrl?: boolean;
     shortCode?: string;
+    tunnelComposition?: TunnelComposition;
+    tunnelSaveTarget?: TunnelSaveTarget;
   }
 ): void {
   _sequence = sequence;
@@ -56,6 +64,8 @@ export function openSequenceOverlay(
   _initialStep = options?.initialStep || 0;
   _initialViewMode = options?.initialViewMode;
   _initialViewerMode = options?.initialViewerMode;
+  _tunnelComposition = options?.tunnelComposition ?? null;
+  _tunnelSaveTarget = options?.tunnelSaveTarget ?? null;
   _dismissPath = options?.dismissPath || null;
   _handPathMode = options?.handPathMode ?? false;
   _playOnOpen = options?.playOnOpen ?? false;
@@ -167,6 +177,8 @@ export function closeSequenceOverlay(): void {
   _initialStep = 0;
   _initialViewMode = undefined;
   _initialViewerMode = undefined;
+  _tunnelComposition = null;
+  _tunnelSaveTarget = null;
   _dismissPath = null;
   _handPathMode = false;
   _playOnOpen = false;
@@ -215,6 +227,12 @@ export function getSequenceOverlayState() {
     },
     get initialViewerMode() {
       return _initialViewerMode;
+    },
+    get tunnelComposition() {
+      return _tunnelComposition;
+    },
+    get tunnelSaveTarget() {
+      return _tunnelSaveTarget;
     },
     get dismissPath() {
       return _dismissPath;

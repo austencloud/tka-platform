@@ -122,7 +122,7 @@ describe("SequenceViewerShell host contract", () => {
       /<AnimatorCanvas[\s\S]*?\bfillContainer\b[\s\S]*?\/>/
     );
     expect(viewerMotionSurfaceSource).toContain("<LazyMount");
-    expect(viewerMotionSurfaceSource).toContain("<RightRail");
+    expect(viewerMotionSurfaceSource).toContain("<SceneControlWorkspace");
     expect(viewerCompanionSurfaceSource).toContain("createPaneKeepAlive");
     expect(viewerCompanionSurfaceSource).toContain("<ChoreoCard");
     expect(viewerCompanionSurfaceSource).toContain("<ArtPane");

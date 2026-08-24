@@ -3,7 +3,7 @@
    * RenderModeToggle
    *
    * Single rail-chip button showing the CURRENT render mode ("2D"/"3D").
-   * Clicking toggles. Lives as chip #1 inside RightRail in both 2D and 3D;
+   * Clicking toggles. Lives as chip #1 inside SceneControlRail in both 2D and 3D;
    * the rail animates its position between modes so this chip glides from
    * the 2D canvas top-right corner to the top of the 3D control column.
    *

@@ -556,7 +556,7 @@ Supports letter highlighting during animation playback.
     width: 100%;
     padding: 0;
     font-size: min(
-      clamp(12px, 11cqw, 28px),
+      clamp(18px, 40cqw, 28px),
       calc(98cqw / max(var(--word-em, 1), 1))
     );
   }

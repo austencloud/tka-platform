@@ -65,10 +65,6 @@
     visibility 0s linear 0s;
 }
 
-.split-view .persistent-rail > * {
-  pointer-events: auto;
-}
-
 .split-view .persistent-rail-hidden {
   opacity: 0;
   visibility: hidden;
@@ -153,8 +149,12 @@
 .split-view .canvas-3d-layer {
   position: absolute;
   inset: 0;
+  right: var(--scene-control-reserved-width, 0px);
   z-index: 2;
-  transition: opacity 250ms ease;
+  transition:
+    opacity 250ms ease,
+    right var(--duration-emphasis, 280ms)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .split-view .canvas-2d-layer {
@@ -420,5 +420,9 @@
 
   .split-view .pane-close-btn {
     animation: none !important;
+  }
+
+  .split-view .canvas-3d-layer {
+    transition: none !important;
   }
 }

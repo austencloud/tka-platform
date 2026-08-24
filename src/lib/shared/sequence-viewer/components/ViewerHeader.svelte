@@ -877,10 +877,6 @@
       padding-inline: 8px;
     }
 
-    .header-side {
-      gap: 4px;
-    }
-
     .account-entry-slot {
       width: var(--min-touch-target, 44px);
       flex-basis: var(--min-touch-target, 44px);
@@ -905,10 +901,6 @@
   }
 
   @media (max-width: 420px) {
-    .header-side {
-      gap: 2px;
-    }
-
     .header-word-slot {
       width: 72px;
     }

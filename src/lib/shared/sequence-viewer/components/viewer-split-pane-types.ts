@@ -16,6 +16,10 @@ import type {
   ViewerControlSink,
 } from "../domain/viewer-control-analytics";
 import type { SplitConfig } from "../services/viewer-state-persistence";
+import type {
+  TunnelComposition,
+  TunnelSaveTarget,
+} from "../tunnel/tunnel-composition";
 
 export type ViewerPaneSide = "left" | "right";
 
@@ -28,6 +32,7 @@ export interface ViewerSplitPaneProps {
   renderMode?: "2d" | "3d";
   bpm?: number;
   onBpmChange?: (bpm: number) => void;
+  onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onFocusPane: (pane: "animation" | "image") => void;
@@ -90,6 +95,8 @@ export interface ViewerSplitPaneProps {
   practiceRunning?: boolean;
   practiceCountdown?: number;
   practiceMirrorEnabled?: boolean;
+  tunnelComposition?: TunnelComposition | null;
+  tunnelSaveTarget?: TunnelSaveTarget | null;
 }
 
 export interface ViewerMotionSurfaceProps {
@@ -102,6 +109,7 @@ export interface ViewerMotionSurfaceProps {
   trailSettings: TrailSettings;
   bpm: number;
   onBpmChange: (bpm: number) => void;
+  onSaveToLibrary?: () => void | Promise<void>;
   onUnfocusPane: () => void;
   onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
   onPlaybackToggle?: () => void;
@@ -130,6 +138,7 @@ export interface ViewerCompanionSurfaceProps {
   splitConfig: SplitConfig;
   bpm: number;
   onBpmChange: (bpm: number) => void;
+  onSaveToLibrary?: () => void | Promise<void>;
   onPropChange?: (propType: PropType) => void;
   onRenderProgress?: (loaded: number, total: number) => void;
   onUnfocusPane: () => void;
@@ -149,4 +158,6 @@ export interface ViewerCompanionSurfaceProps {
   onArtExportEvent?: ArtExportEventSink;
   onArtSettingChange?: ViewerSplitPaneProps["onArtSettingChange"];
   onArtAction?: ViewerActionSink;
+  tunnelComposition?: TunnelComposition | null;
+  tunnelSaveTarget?: TunnelSaveTarget | null;
 }

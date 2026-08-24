@@ -271,8 +271,12 @@
           {/snippet}
         </DropdownMenu.Trigger>
 
-        <DropdownMenu.Portal>
+        <!-- The sequence viewer drawer already owns scroll locking. Keep this
+             menu inside that boundary and opt out of Bits UI's nested body
+             lock, which would disable pointer events on the trigger itself. -->
+        <DropdownMenu.Portal disabled>
           <DropdownMenu.Content
+            preventScroll={false}
             side={dropDown ? "bottom" : "top"}
             align={menuAlign}
             sideOffset={8}

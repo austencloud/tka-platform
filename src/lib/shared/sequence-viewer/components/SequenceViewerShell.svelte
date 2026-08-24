@@ -84,6 +84,10 @@
     type ViewerShellExportOverrides,
     type ViewerShellGuideAction,
   } from "../state/viewer-shell-interaction-state.svelte";
+  import type {
+    TunnelComposition,
+    TunnelSaveTarget,
+  } from "../tunnel/tunnel-composition";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
@@ -142,6 +146,8 @@
     embedded?: boolean;
     /** Route hosts can replace the drawer's Close control with a Back control. */
     navigation?: { label: string };
+    tunnelComposition?: TunnelComposition | null;
+    tunnelSaveTarget?: TunnelSaveTarget | null;
     /** Route-owned context placed between the canonical header and viewer body. */
     contextContent?: Snippet;
     /** The full-page sequence route keeps its immersive transport overlay. */
@@ -167,6 +173,8 @@
     contextContent,
     showFullscreenControls = false,
     shareOnOpen = false,
+    tunnelComposition = null,
+    tunnelSaveTarget = null,
   }: Props = $props();
 
   const scanInstrumentationEnabled = isScanVisit();
@@ -269,7 +277,10 @@
   const artShareVideo = $derived.by(() => {
     const target = share.artShare;
 
-    if (postStudioVideoUrl && !target) {
+    // Not for a scene share: that session is ABOUT a live 3D take, and a post
+    // render left behind by the studio would both stand in for the take and
+    // no-op the request that records it.
+    if (postStudioVideoUrl && !target && !share.sceneShare) {
       return {
         blobUrl: postStudioVideoUrl,
         exporting: false,
@@ -580,6 +591,7 @@
               sequence={ctx.effectiveSequence}
               resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
               onExported={adoptPostStudioRender}
+              onSharePost={() => share.sharePost()}
             />
           {:else if layout.showVideoGallery}
             <SequenceVideos
@@ -590,15 +602,19 @@
               canUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED}
               uploadRequested={layout.isVideoUploadActive}
               onSaveFirst={interactions.handleVideoUploadSaveFirst}
+              onSaveToLibrary={interactions.handleSave}
               onUploadOpenChange={interactions.handleVideoWorkOpenChange}
             />
           {:else}
             <ViewerSplitPane
               sequence={ctx.effectiveSequence}
+              {tunnelComposition}
+              {tunnelSaveTarget}
               renderMode={ctx.renderMode}
               isExporting={interactions.videoBusy}
               bpm={ctx.bpmLocal}
               onBpmChange={(bpm) => interactions.handleBpmChange(bpm, "viewer")}
+              onSaveToLibrary={interactions.handleSave}
               onPropChange={(prop) =>
                 interactions.handlePropChange(prop, "viewer")}
               playback={ctx.splitPanePlayback}
@@ -713,6 +729,8 @@
           {/if}
           <ChoreoCardContextMenuHost
             bind:this={choreoCardMenuHost}
+            sequence={ctx.effectiveSequence ?? sequence}
+            onSaveToLibrary={interactions.handleSave}
             onRerender={() => {
               rerenderTrigger++;
             }}
@@ -925,7 +943,11 @@
     exportProgress={artShareVideo.progress}
     onRequestVideo={artShareVideo.request}
     videoLabel={artShareVideo.label}
-    initialArtifact={share.artShare || share.sceneShare ? "video" : "card"}
+    initialArtifact={share.artShare ||
+    share.sceneShare ||
+    (share.postShare && !!postStudioVideoUrl)
+      ? "video"
+      : "card"}
     resolvedCardAutoLayout={ctx.resolvedCardAutoLayout}
     onSendInTka={() => share.sendToInbox()}
     onOpenPostStudio={canAccessPostStudio()

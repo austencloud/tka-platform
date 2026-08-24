@@ -230,15 +230,19 @@
   ]);
 
   /**
-   * Fit the grid to the box's shape rather than to its width.
+   * Fit the grid to the box's shape, at a size the box does not get to dictate.
    *
-   * Eight tiles divide evenly into 2, 4 and 8 columns, so all three keep the
-   * four square-field layers and the four edge marks on whole rows. For each
-   * candidate the picture is bound by whichever axis is tighter — the column's
-   * width or the row's height — and the winner is the one whose two bounds are
-   * closest to each other. That is the layout with the least dead space in
-   * either direction: maximising the picture alone cannot tell a 241x143 tile
-   * apart from a 116x286 one when both happen to fit the same 98px square.
+   * Two decisions, in this order. First how big a tile should be: a fraction of
+   * the box's SHORT side, floored and ceilinged, so the control looks like the
+   * same control on a phone tray and on a 4K rail. Then how to arrange eight of
+   * them: 2, 4 and 8 columns all keep the four square-field layers and the four
+   * edge marks on whole rows, and the winner is whichever fits the biggest tile
+   * — or, once the ceiling has settled that, whichever arrangement's own
+   * proportions come closest to the box's, since that is the one that centres
+   * without a lopsided margin down one axis.
+   *
+   * Filling the box was the first attempt and it was wrong: a 831x2186 rail
+   * bought 390px toggles. The grid sits in the middle of the room it has.
    *
    * Every measurement comes off the rendered chip, so the padding, gap and
    * label metrics are whatever the host's own CSS resolved to and this file
@@ -252,6 +256,7 @@
   // 0 means "not measured" — the CSS ladder applies and nothing is overridden.
   let fitCols = $state(0);
   let fitArt = $state(0);
+  let fitTile = $state(0);
   const fitted = $derived(fitCols > 0);
 
   function measureFit(): void {
@@ -264,18 +269,29 @@
     const chipStyle = getComputedStyle(chip);
     const padX =
       parseFloat(chipStyle.paddingLeft) + parseFloat(chipStyle.paddingRight);
-    const padY =
-      parseFloat(chipStyle.paddingTop) + parseFloat(chipStyle.paddingBottom);
-    const chipGap = parseFloat(chipStyle.rowGap) || 0;
     const labelH =
       (chip.querySelector(".chip-label") as HTMLElement | null)?.offsetHeight ??
       0;
+    const chromeY =
+      parseFloat(chipStyle.paddingTop) +
+      parseFloat(chipStyle.paddingBottom) +
+      (parseFloat(chipStyle.rowGap) || 0) +
+      labelH;
     const gridStyle = getComputedStyle(gridEl);
     const gapX = parseFloat(gridStyle.columnGap) || 0;
     const gapY = parseFloat(gridStyle.rowGap) || 0;
 
+    // What the picture is ALLOWED to be, before the question of how much room
+    // is going spare. Tied to the box's short side so a phone tray and a 4K
+    // rail read as the same control at different sizes, and bounded at both
+    // ends — a panel does not get to spend 2186px of rail on eight toggles.
+    const cap = Math.min(
+      176,
+      Math.max(72, Math.round(Math.min(width, height) * 0.2))
+    );
+    const boxAspect = width / height;
     const count = chips.length;
-    let best = { cols: 0, art: 0, balance: Number.POSITIVE_INFINITY };
+    let best = { cols: 0, art: 0, skew: Number.POSITIVE_INFINITY };
 
     for (const cols of COLUMN_CHOICES) {
       if (cols > count) continue;
@@ -286,22 +302,28 @@
         (width - gapX * (cols - 1) - (rows === 1 ? GROUP_GAP : 0)) / cols - padX;
       const artH =
         (height - gapY * (rows - 1) - (rows > 1 ? GROUP_GAP : 0)) / rows -
-        padY -
-        chipGap -
-        labelH;
-      if (artW <= 0 || artH <= 0) continue;
-      const balance = Math.max(artW, artH) / Math.min(artW, artH);
-      if (balance < best.balance) {
-        best = { cols, art: Math.min(artW, artH), balance };
+        chromeY;
+      const art = Math.min(cap, artW, artH);
+      if (art <= 0) continue;
+      const tile = art + Math.max(padX, chromeY);
+      const gridW = cols * tile + gapX * (cols - 1);
+      const gridH = rows * tile + gapY * (rows - 1);
+      const skew = Math.abs(Math.log(gridW / gridH / boxAspect));
+      // Biggest picture wins. Where the cap has already settled that, the shape
+      // decides: the arrangement whose proportions match the box's is the one
+      // that centres without a lopsided margin on one axis.
+      if (
+        art > best.art + 0.5 ||
+        (Math.abs(art - best.art) <= 0.5 && skew < best.skew)
+      ) {
+        best = { cols, art, skew };
       }
     }
 
     if (!best.cols) return;
     fitCols = best.cols;
-    // The bounds are guards against a pathological box, not a design cap: the
-    // 3840 rail is 831 x 2186, and a 300px ceiling left 195px of empty tile
-    // under every picture there.
-    fitArt = Math.max(36, Math.min(420, Math.floor(best.art)));
+    fitArt = Math.floor(best.art);
+    fitTile = Math.floor(best.art + Math.max(padX, chromeY));
   }
 
   onMount(() => {
@@ -341,7 +363,7 @@
     class="vis-grid"
     bind:this={gridEl}
     style={fitted
-      ? `--vis-cols: ${fitCols}; --tile-art: ${fitArt}px;`
+      ? `--vis-cols: ${fitCols}; --vis-tile: ${fitTile}px; --tile-art: ${fitArt}px;`
       : undefined}
   >
     {#each chips as chip, index (chip.id)}
@@ -432,8 +454,16 @@
     flex: 1 1 0;
     min-width: 0;
     min-height: 0;
-    grid-template-columns: repeat(var(--vis-cols), minmax(0, 1fr));
-    grid-auto-rows: minmax(0, 1fr);
+    grid-template-columns: repeat(var(--vis-cols), var(--vis-tile));
+    grid-auto-rows: auto;
+    place-content: center;
+  }
+
+  /* Square, at the size the fit chose. Stretching the tiles to swallow the box
+     is what made a 4K rail carry 390px toggles; the grid sits in the middle of
+     whatever room is left instead. */
+  .vis-grid.fitted .rt-chip {
+    aspect-ratio: 1;
   }
 
   /* Same breath between the two groups, placed on whichever axis the boundary

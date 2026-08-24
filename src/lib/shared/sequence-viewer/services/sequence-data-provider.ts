@@ -180,6 +180,23 @@ async function hydrateSequenceInternal(
   return prepareForViewer(sequence);
 }
 
+/**
+ * The spellings a sequence id may have been handed out under.
+ *
+ * Theta is always uppercase Θ in TKA canon, and /admin/migrate-theta rewrote
+ * every stored word and name to say so. It could not touch document ids, which
+ * Firestore will not rename in place - so 70 sequences still answer to a
+ * lowercase θ in their id while their word reads Θ. Both spellings are live in
+ * URLs and shortcode records, and they will stay live through any migration of
+ * those ids. A lookup that misses tries the other case before giving up.
+ */
+function thetaSpellings(identifier: string): readonly string[] {
+  const swapped = identifier.includes("θ")
+    ? identifier.replace(/θ/g, "Θ")
+    : identifier.replace(/Θ/g, "θ");
+  return swapped === identifier ? [identifier] : [identifier, swapped];
+}
+
 export async function loadByIdentifier(
   identifier: string
 ): Promise<SequenceData | null> {
@@ -208,9 +225,12 @@ export async function loadByIdentifier(
   // word rather than an id.
   try {
     const loader = getBrowseLoader();
-    const publicSequence =
-      (await loader.loadFullSequenceData(identifier, identifier)) ??
-      (await loader.loadFullSequenceData(identifier));
+    let publicSequence: SequenceData | null = null;
+    for (const candidate of thetaSpellings(identifier)) {
+      publicSequence = await loader.loadFullSequenceData(identifier, candidate);
+      if (publicSequence) break;
+    }
+    publicSequence ??= await loader.loadFullSequenceData(identifier);
     if (publicSequence) {
       return prepareForViewer(publicSequence);
     }

@@ -15,7 +15,7 @@ import type { ImageCompositionSyncState } from "../components/image-composition-
 import type { ViewerInteractiveServicesState } from "./viewer-interactive-services-state.svelte";
 import type { ViewerPlaybackPresentationState } from "./viewer-playback-presentation-state.svelte";
 import type { ViewerLanSyncState } from "./viewer-lan-sync-state.svelte";
-import type { createFullscreenController } from "./fullscreen-controller.svelte";
+import type { createFullscreenController } from "$lib/shared/fullscreen/state/fullscreen-controller.svelte";
 import type { createLibraryActionHandler } from "./library-action-handler.svelte";
 import type { createPracticeViewPrefs } from "./practice-view-prefs.svelte";
 import type { createViewerState } from "./viewer-state.svelte";

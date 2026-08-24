@@ -47,6 +47,7 @@ export interface ArtSettingsPanelProps {
    */
   showTitle?: boolean;
   onSaveTunnel?: () => void;
+  saveTunnelLabel?: string;
   bpm?: number;
   playbackMode?: PlaybackMode;
   stepSize?: StepPlaybackStepSize;

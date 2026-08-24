@@ -15,6 +15,7 @@
     splitConfig,
     bpm,
     onBpmChange,
+    onSaveToLibrary,
     onPropChange,
     onRenderProgress,
     onUnfocusPane,
@@ -34,6 +35,8 @@
     onArtExportEvent,
     onArtSettingChange,
     onArtAction,
+    tunnelComposition = null,
+    tunnelSaveTarget = null,
   }: ViewerCompanionSurfaceProps = $props();
 
   const selectedPane = $derived(
@@ -119,6 +122,7 @@
       {sequence}
       isOwned={false}
       {isLoggedIn}
+      {onSaveToLibrary}
       canUpload={!!onVideoUpload}
       onUploadOpenChange={(open) => {
         if (open) onVideoUpload?.();
@@ -157,6 +161,7 @@
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}
+      {tunnelSaveTarget}
     />
   </div>
 {/if}
@@ -191,6 +196,8 @@
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}
+      {tunnelComposition}
+      {tunnelSaveTarget}
     />
   </div>
 {/if}

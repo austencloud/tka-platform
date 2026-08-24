@@ -117,12 +117,7 @@
         />
       </div>
     {:else}
-      <FilterWorkspace
-        {engine}
-        onEject={openResults}
-        onClose={() => (showResults = true)}
-        {resultsPane}
-      />
+      <FilterWorkspace {engine} onEject={openResults} {resultsPane} />
     {/if}
 
     {#if isSelectingSequence}
@@ -231,11 +226,12 @@
   }
 
   @media (max-width: 520px) {
-    /* The unfiltered landing already offers Show all. Hiding its duplicate
-     * shortcut leaves the drill heading readable; filtered screens keep their
-     * own Done action in the rule strip. */
-    .picker-body :global(.workspace-close) {
-      display: none;
+    /* XL modals are full-screen at the phone seam. The body must consume the
+     * space BaseModal leaves beneath its header; a viewport-relative height
+     * stranded roughly 40% of an iPhone SE as an empty black band. */
+    .picker-body {
+      height: 100%;
+      min-height: 0;
     }
   }
 

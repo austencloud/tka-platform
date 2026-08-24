@@ -33,6 +33,7 @@
     layout,
     bpm = 60,
     onBpmChange = () => {},
+    onSaveToLibrary,
     onPropChange,
     onRenderProgress,
     onUnfocusPane,
@@ -68,6 +69,8 @@
     practiceRunning = false,
     practiceCountdown = 0,
     practiceMirrorEnabled = false,
+    tunnelComposition = null,
+    tunnelSaveTarget = null,
   }: ViewerSplitPaneProps = $props();
 
   // Both canvas renderers share one effects state. The orchestrator normally
@@ -184,6 +187,7 @@
       {trailSettings}
       {bpm}
       {onBpmChange}
+      {onSaveToLibrary}
       {onUnfocusPane}
       {onCanvasReady}
       {onPlaybackToggle}
@@ -211,6 +215,7 @@
       {splitConfig}
       {bpm}
       {onBpmChange}
+      {onSaveToLibrary}
       {onPropChange}
       {onRenderProgress}
       {onUnfocusPane}
@@ -230,6 +235,8 @@
       {onArtExportEvent}
       {onArtSettingChange}
       {onArtAction}
+      {tunnelComposition}
+      {tunnelSaveTarget}
     />
     <PracticeCountInOverlay count={practiceCountdown} />
   </div>
@@ -253,6 +260,7 @@
         {trailSettings}
         {bpm}
         {onBpmChange}
+        {onSaveToLibrary}
         {onUnfocusPane}
         {onCanvasReady}
         {onPlaybackToggle}
@@ -280,6 +288,7 @@
         {splitConfig}
         {bpm}
         {onBpmChange}
+        {onSaveToLibrary}
         {onPropChange}
         {onRenderProgress}
         {onUnfocusPane}
@@ -299,6 +308,8 @@
         {onArtExportEvent}
         {onArtSettingChange}
         {onArtAction}
+        {tunnelComposition}
+        {tunnelSaveTarget}
       />
       {#if practiceActive}
         <ViewerPracticeLane
