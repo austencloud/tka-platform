@@ -77,7 +77,7 @@ export class DeepLinker {
     if (spotlightId) {
       // User is viewing a sequence in Browse - ensure we're in the browse module
       navigationState.setCurrentModule("browse");
-      navigationState.setActiveTab("gallery");
+      navigationState.setActiveTab("explore");
       return;
     }
 

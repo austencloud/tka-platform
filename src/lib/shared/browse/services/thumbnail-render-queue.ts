@@ -25,7 +25,7 @@ export interface QueueStats {
 
 interface QueuedTask<T> {
   id: string;
-  execute: (signal: AbortSignal) => Promise<T>;
+  execute: (signal: AbortSignal, reportActivity: () => void) => Promise<T>;
   resolve: (value: T) => void;
   reject: (error: Error) => void;
   priority: number;
@@ -36,7 +36,9 @@ interface QueuedTask<T> {
 // contention cliff while queued cards remain priority ordered.
 const DEFAULT_MAX_CONCURRENT = 3;
 
-// If a render hangs (stalled fetch, infinite loop), reclaim the slot after this timeout
+// If a render stops making progress (stalled fetch, wedged worker), reclaim the
+// slot after this much inactivity. A phone may need longer overall for a real
+// render, so productive work refreshes the deadline instead of being aborted.
 const RENDER_TIMEOUT_MS = 15_000;
 
 export class ThumbnailRenderTimeoutError extends Error {
@@ -80,7 +82,7 @@ export class ThumbnailRenderQueue {
 
   enqueue<T>(
     id: string,
-    execute: (signal: AbortSignal) => Promise<T>,
+    execute: (signal: AbortSignal, reportActivity: () => void) => Promise<T>,
     priority: number = Infinity,
     consumerSignal?: AbortSignal
   ): Promise<T> {
@@ -227,30 +229,39 @@ export class ThumbnailRenderQueue {
     const controller = new AbortController();
     this.activeControllers.set(task.id, controller);
 
-    // Hold the timer id so we can clear it once the render settles. Without the
-    // clear, a render that wins the race leaves the timeout pending; it fires
-    // later and rejects an orphaned promise → "UNHANDLED PROMISE REJECTION".
+    // Hold the timer id so progress can refresh the inactivity deadline and a
+    // completed render cannot leave an orphaned rejection behind.
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let deadlineClosed = false;
     try {
-      // Race the render against a timeout to reclaim the slot if it hangs
+      let rejectTimeout: ((error: ThumbnailRenderTimeoutError) => void) | null =
+        null;
+      const timeout = new Promise<never>((_, reject) => {
+        rejectTimeout = reject;
+      });
+      const reportActivity = (): void => {
+        if (deadlineClosed) return;
+        if (timeoutId !== undefined) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          // Settle the race as a typed deadline before aborting the work.
+          // Abort listeners run synchronously and may reject `execute` with
+          // AbortError; aborting first would mask the timeout that caused it.
+          rejectTimeout?.(new ThumbnailRenderTimeoutError(RENDER_TIMEOUT_MS));
+          controller.abort();
+        }, RENDER_TIMEOUT_MS);
+      };
+      reportActivity();
+
+      // Race the render against an inactivity timeout to reclaim a wedged slot.
       const result = await Promise.race([
-        task.execute(controller.signal),
-        new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            // Settle the race as a typed deadline before aborting the work.
-            // Abort listeners run synchronously and may reject `execute` with
-            // AbortError; aborting first would let that cancellation mask the
-            // timeout that caused it. The signal is still aborted in this same
-            // callback, before control returns to the event loop.
-            reject(new ThumbnailRenderTimeoutError(RENDER_TIMEOUT_MS));
-            controller.abort();
-          }, RENDER_TIMEOUT_MS);
-        }),
+        task.execute(controller.signal, reportActivity),
+        timeout,
       ]);
       task.resolve(result);
     } catch (error) {
       task.reject(normalizeQueueError(error));
     } finally {
+      deadlineClosed = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       this.activeCount--;
       this.activeIds.delete(task.id);

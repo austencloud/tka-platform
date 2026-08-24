@@ -41,6 +41,7 @@ Variation support:
   import { galleryStepCount } from "$lib/shared/browse/services/gallery-render-input";
   import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
   import { claimViewTransitionName } from "$lib/shared/transitions/view-transition-name-registry";
+  import { ignoreViewTransitionSkip } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
   import PreviewPlayChip from "./PreviewPlayChip.svelte";
@@ -380,6 +381,7 @@ Variation support:
         cardHoverPreview.dismiss(seq.id);
         await tick();
       });
+      ignoreViewTransitionSkip(vt);
       try {
         await vt.finished;
       } catch {
@@ -401,6 +403,7 @@ Variation support:
         await Promise.race([ready, delay(1500)]);
         await tick();
       });
+      ignoreViewTransitionSkip(vt);
       try {
         await vt.finished;
       } catch {
@@ -503,6 +506,7 @@ Variation support:
     // pictograph section here: thumbnails are static cached images that don't
     // re-render on visibility toggles.
     const items: ContextMenuEntry[] = buildCardMenuSection({
+      sequenceForLibrarySave: seq,
       onRerender: previewReadOnly
         ? undefined
         : () => {
@@ -740,7 +744,12 @@ Variation support:
     {@render cardContents()}
   </button>
 {:else}
-  <div class="choreo-card static" class:light-mode={lightMode}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="choreo-card static"
+    class:light-mode={lightMode}
+    oncontextmenu={handleContextMenu}
+  >
     {@render cardContents()}
   </div>
 {/if}

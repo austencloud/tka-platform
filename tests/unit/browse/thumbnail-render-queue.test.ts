@@ -72,6 +72,31 @@ describe("ThumbnailRenderQueue", () => {
     });
   });
 
+  it("measures inactivity instead of aborting productive slow work", async () => {
+    vi.useFakeTimers();
+    const queue = new ThumbnailRenderQueue();
+    const render = queue.enqueue(
+      "slow-progressing-thumbnail",
+      (_signal, reportActivity) =>
+        new Promise<never>(() => {
+          setTimeout(reportActivity, 10_000);
+        })
+    );
+    const handledRejection = render.catch((error) => error);
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(queue.getStats()).toMatchObject({ active: 1, queued: 0 });
+
+    await vi.advanceTimersByTimeAsync(9_999);
+    expect(queue.getStats()).toMatchObject({ active: 1, queued: 0 });
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(handledRejection).resolves.toBeInstanceOf(
+      ThumbnailRenderTimeoutError
+    );
+    expect(queue.getStats()).toMatchObject({ active: 0, queued: 0 });
+  });
+
   it("clears the deadline when rendering succeeds", async () => {
     vi.useFakeTimers();
     const queue = new ThumbnailRenderQueue();

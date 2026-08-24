@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "sdk": "admin",
+  "mode": "read-only",
+  "asOf": "2026-08-22T23:59:59.999Z",
+  "recentWindowDays": 90,
+  "publicDiscovery": {
+    "sequences": 564,
+    "sequenceCreators": 11,
+    "collections": 6,
+    "collectionCreators": 3
+  },
+  "privateVisualArtifacts": {
+    "tunnels": 9,
+    "tunnelOwners": 2,
+    "mandalas": 47,
+    "mandalaOwners": 1,
+    "scenes": 2,
+    "sceneOwners": 2
+  },
+  "canonicalMedia": {
+    "records": 7,
+    "publicRecords": 7,
+    "recordsWithSubjects": 7,
+    "subjectLinks": 7,
+    "creators": 1,
+    "recordsWithRecognizedTimestamp": 7,
+    "recentRecords": 2
+  },
+  "showcaseMedia": {
+    "records": 142,
+    "approvedRecords": 16,
+    "featuredRecords": 15,
+    "recordsWithSubjects": 17,
+    "subjectLinks": 17,
+    "performerIdentities": 8,
+    "recordsWithRecognizedTimestamp": 142,
+    "recentRecords": 0
+  }
+}

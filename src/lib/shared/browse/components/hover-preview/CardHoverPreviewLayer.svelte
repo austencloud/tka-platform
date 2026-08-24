@@ -24,6 +24,7 @@
     type LoopDisplay,
   } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -122,7 +123,10 @@
     if (token !== loadToken) return;
     if (!hydrated?.steps?.length) return;
 
-    const orchestrator = new SequenceAnimationOrchestrator(new AnimationStateManager());
+    const orchestrator = new SequenceAnimationOrchestrator(
+      new AnimationStateManager(),
+      getViewerAnimationPropConfig
+    );
     const animState = createAnimationPanelState();
 
     orchestrator.initializeWithDomainData(hydrated);

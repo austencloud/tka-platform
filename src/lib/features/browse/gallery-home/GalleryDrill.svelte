@@ -28,7 +28,7 @@
     getDrillSection,
     setDrillSection,
   } from "$lib/features/browse/shared/services/gallery-view-persister";
-  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+  import { getBrowseNavigationContext } from "$lib/shared/browse/context/browse-navigation-context";
   import type { FilterConnective } from "$lib/shared/browse/services/multi-filter";
   import GalleryLanding from "./GalleryLanding.svelte";
   import GalleryWorkspace from "./GalleryWorkspace.svelte";
@@ -111,7 +111,10 @@
     /** Hosts whose chrome must track the active screen listen here. */
     onSectionChange?: (section: Section) => void;
     /** Builder hosts: report whether a filter value is already part of the rule. */
-    isValueApplied?: (type: BrowseFilterType, value: string | number) => boolean;
+    isValueApplied?: (
+      type: BrowseFilterType,
+      value: string | number
+    ) => boolean;
     /** Builder hosts: every category stacks — tapping a value toggles it in
      * the rule and the editor stays open. */
     onToggleValue?: (
@@ -179,13 +182,18 @@
     showAllPane = $bindable(false),
   }: Props = $props();
 
+  const browseNavigation = getBrowseNavigationContext();
+
   const shouldPersistSection = persistSection ?? variant === "page";
   const shouldShowCollections = showCollections ?? variant === "page";
 
   /** Persistent hosts restore their sub-screen across reload/HMR
    * (sessionStorage); a stale/unknown value degrades to the chooser. */
   function restoreSection(): Section {
-    if (initialSection && (SECTIONS as readonly string[]).includes(initialSection)) {
+    if (
+      initialSection &&
+      (SECTIONS as readonly string[]).includes(initialSection)
+    ) {
       return initialSection;
     }
     if (!shouldPersistSection) return "chooser";
@@ -264,7 +272,9 @@
     // The incoming crossfade layer mounts this frame; the outgoing one is
     // still present, so target the new screen's class specifically.
     requestAnimationFrame(() => {
-      drillEl?.querySelector<HTMLElement>(`.${SCREEN_CLASS[current]} h2`)?.focus();
+      drillEl
+        ?.querySelector<HTMLElement>(`.${SCREEN_CLASS[current]} h2`)
+        ?.focus();
     });
   });
 
@@ -283,7 +293,9 @@
    * catalog on the left, the whole live grid on the right. Without this flag
    * the pane is keyed to an open value editor and Show all had nowhere to go
    * but the old full-page grid tab. Cleared on any return to the landing. */
-  const splitCapable = $derived(Boolean(resultsPane) && drillWidth >= SPLIT_SEAM);
+  const splitCapable = $derived(
+    Boolean(resultsPane) && drillWidth >= SPLIT_SEAM
+  );
   const splitPane = $derived(splitCapable && (!showLanding || showAllPane));
 
   $effect(() => {
@@ -315,9 +327,11 @@
       morphing = false;
       return;
     }
-    void transition.finished.catch(() => {}).finally(() => {
-      morphing = false;
-    });
+    void transition.finished
+      .catch(() => {})
+      .finally(() => {
+        morphing = false;
+      });
   }
 
   /** Enter a value editor. Morphs when it crosses the landing boundary.
@@ -480,7 +494,7 @@
     } else if (entry.apply) {
       onApply(entry.apply.type, entry.apply.value, entry.apply.label);
     } else if (entry.navigate === "collections") {
-      navigationState.setActiveTab("collections");
+      browseNavigation.viewExploreCollections();
     }
   }
 
@@ -510,7 +524,9 @@
     {activeLoopValues}
     {onToggleLoop}
     {loopConnective}
-    onLoopConnectiveChange={onLoopConnectiveChange ? changeLoopConnective : undefined}
+    onLoopConnectiveChange={onLoopConnectiveChange
+      ? changeLoopConnective
+      : undefined}
     {activeFamilyValues}
     {onToggleFamily}
     {familyConnective}
@@ -595,11 +611,7 @@
              grid-stack would resize (and shove neighbors) at every section
              change. The stage is the sized box; layers fill it and each
              screen scrolls itself. -->
-        <Crossfade
-          key={section}
-          duration={morphing ? 0 : DURATION.normal}
-          fill
-        >
+        <Crossfade key={section} duration={morphing ? 0 : DURATION.normal} fill>
           {#if showLanding}
             <GalleryLanding
               {catalog}

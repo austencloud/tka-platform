@@ -7,7 +7,13 @@ const startsWith = (prefix: string) => (pathname: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 const ROUTE_SCOPED_PARAMETERS: readonly RouteScopedParameter[] = [
-  { name: "scan", isValidForPath: startsWith("/browse/library") },
+  {
+    name: "scan",
+    isValidForPath: (pathname) =>
+      startsWith("/browse/you/collections")(pathname) ||
+      startsWith("/browse/library")(pathname) ||
+      startsWith("/browse/collections")(pathname),
+  },
   { name: "handoff", isValidForPath: startsWith("/compose") },
   { name: "feedback", isValidForPath: startsWith("/feedback") },
   { name: "openFeedback", isValidForPath: startsWith("/feedback") },

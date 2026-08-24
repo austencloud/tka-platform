@@ -454,8 +454,9 @@ export class ThumbnailRenderOrchestrator {
     try {
       const result = await this.queue.enqueue(
         key.hash,
-        async (signal) => {
+        async (signal, reportActivity) => {
           executedThisRequest = true;
+          reportActivity();
           queueWaitTime = performance.now() - queueStartTime;
           renderStartTime = performance.now();
 
@@ -469,6 +470,7 @@ export class ThumbnailRenderOrchestrator {
             undefined, // use default render options
             (progress) => {
               if (signal.aborted || request.signal?.aborted) return;
+              reportActivity();
               this.metrics?.recordProgress(requestId, progress);
               // Forward progress updates to status callback
               request.onStatusChange?.({
@@ -482,8 +484,10 @@ export class ThumbnailRenderOrchestrator {
             },
             signal,
             (stage, details) => {
+              reportActivity();
               this.metrics?.startStage(requestId, stage, details);
-            }
+            },
+            reportActivity
           );
 
           // The queue deadline may have won while a non-cooperative renderer was

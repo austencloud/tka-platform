@@ -353,10 +353,10 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     id: "stage",
     labelKey: "module_stage",
     descKey: "module_desc_stage",
-    label: "Stage",
-    icon: '<i class="fas fa-people-group" style="color: #06b6d4;" aria-hidden="true"></i>',
+    label: "3D Studio",
+    icon: '<i class="fas fa-cubes" style="color: #06b6d4;" aria-hidden="true"></i>',
     color: "#06b6d4",
-    description: "Choreograph multi-performer formations on stage",
+    description: "Build, choreograph, save, and export in 3D",
     isMain: true,
     sections: STAGE_TABS,
   },
@@ -390,7 +390,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
   // - infinite-worlds → Now accessible via Realm destination picker
   // - museum → Now accessible via Realm destination picker (Gallery destination)
   // - gallery3d → Retired, merged into Gallery destination
-  // - 3d-viewer → Retired, merged into Stage destination
+  // - 3d-viewer → Retired, merged into 3D Studio
 ];
 
 const FEATURE_ENABLED: Record<string, boolean> = {

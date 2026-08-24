@@ -31,7 +31,10 @@ describe("Watch retirement", () => {
 
   it("permanently redirects former Watch routes to Browse Gallery", () => {
     expect(() => redirectWatch()).toThrowError(
-      expect.objectContaining({ status: 308, location: "/browse/gallery" })
+      expect.objectContaining({
+        status: 308,
+        location: "/browse/explore/sequences",
+      })
     );
   });
 
@@ -45,6 +48,8 @@ describe("Watch retirement", () => {
     );
 
     expect(libraryPanel).toContain("UserVideoLibraryView");
-    expect(libraryPanel).toContain('PERFORMANCES_SHELF_ID = "video_performances"');
+    expect(libraryPanel).toContain(
+      'PERFORMANCES_SHELF_ID = "video_performances"'
+    );
   });
 });

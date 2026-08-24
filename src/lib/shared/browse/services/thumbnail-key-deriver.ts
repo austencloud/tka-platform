@@ -15,7 +15,7 @@ export type ThumbnailVariant = "gallery" | "wordcard";
  * This token belongs in every cache identity, including the cloud filename.
  * Otherwise a corrected renderer can keep receiving an older image forever.
  */
-export const THUMBNAIL_RENDERER_VERSION = 5;
+export const THUMBNAIL_RENDERER_VERSION = 6;
 
 export interface ThumbnailVisibilitySettings {
   showTKA?: boolean;

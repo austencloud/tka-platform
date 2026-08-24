@@ -61,6 +61,17 @@ export const CREATE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
     metadata: { isCreationMethod: true },
   },
+  {
+    id: "tunnel",
+    labelKey: "tab_create_tunnel",
+    descKey: "tab_desc_create_tunnel",
+    label: "Tunnel",
+    icon: '<i class="fas fa-people-arrows-left-right" aria-hidden="true"></i>',
+    description: "Compose complete sequences into a multi-performer tunnel",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #a78bfa 100%)",
+    metadata: { isCreationMethod: true },
+  },
   // REMOVED: Spell tab unified into Generate tab as "Spell" mode (Feb 2026)
   // Spell functionality accessible via Generate tab's Freeform/Spell mode toggle
 ];
@@ -72,9 +83,9 @@ export const LEARN_TABS: Section[] = [
     id: "concepts",
     labelKey: "tab_learn_concepts",
     descKey: "tab_desc_learn_concepts",
-    label: "Concepts",
+    label: "Lessons",
     icon: '<i class="fas fa-lightbulb" aria-hidden="true"></i>',
-    description: "Lessons that build on each other",
+    description: "Interactive lessons that build on each other",
     color: "#60a5fa",
     gradient: "linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)",
   },
@@ -92,61 +103,36 @@ export const LEARN_TABS: Section[] = [
     id: "guide",
     labelKey: "tab_learn_guide",
     descKey: "tab_desc_learn_guide",
-    label: "Guide",
+    label: "Read",
     icon: '<i class="fas fa-book" aria-hidden="true"></i>',
-    description: "Level 1 interactive textbook",
+    description: "The written Guide and printable pages",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
   },
 ];
 
-// Browse tabs configuration (sequences, saved work, and shared collections)
-// Gallery = pure community discovery. Your saved work lives in Library.
-// Tab ids renamed 2026-07-10 so URLs match labels: "library" (label Library,
-// was id "collections") and "collections" (label Collections, was id
-// "discover"). labelKeys kept as-is to avoid translation churn; legacy URLs
-// and persisted nav state migrate in navigation-coordinator.svelte.ts and
-// browse-navigation-state.svelte.ts.
+// Browse has two stable jobs. Its inner route owner handles content types,
+// details, and all compatibility vocabulary beneath these primary tabs.
 export const BROWSE_TABS: Section[] = [
   {
-    id: "gallery",
-    labelKey: "tab_browse_gallery",
-    descKey: "tab_desc_browse_gallery",
-    label: "Gallery",
-    icon: '<i class="fas fa-layer-group" aria-hidden="true"></i>',
-    description: "Browse community sequences",
+    id: "explore",
+    labelKey: "tab_browse_explore",
+    descKey: "tab_desc_browse_explore",
+    label: "Explore",
+    icon: '<i class="fas fa-compass" aria-hidden="true"></i>',
+    description: "Discover sequences and public collections",
     color: "#a855f7",
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
   {
-    id: "library",
-    labelKey: "tab_browse_collections",
-    descKey: "tab_desc_browse_collections",
-    label: "Library",
-    icon: '<i class="fas fa-book" aria-hidden="true"></i>',
-    description: "Your saved sequences and collections",
+    id: "you",
+    labelKey: "tab_browse_you",
+    descKey: "tab_desc_browse_you",
+    label: "You",
+    icon: '<i class="fas fa-user" aria-hidden="true"></i>',
+    description: "Your sequences, visuals, videos, and collections",
     color: "#c084fc",
     gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
-  },
-  {
-    id: "collections",
-    labelKey: "tab_browse_discover",
-    descKey: "tab_desc_browse_discover",
-    label: "Collections",
-    icon: '<i class="fas fa-folder-open" aria-hidden="true"></i>',
-    description: "Browse collections shared by the community",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
-  {
-    id: "hall-of-shame",
-    labelKey: "tab_browse_hall_of_shame",
-    descKey: "tab_desc_browse_hall_of_shame",
-    label: "Hall of Shame",
-    icon: '<i class="fas fa-skull" aria-hidden="true"></i>',
-    description: "Naughty words and crude humor",
-    color: "#ef4444",
-    gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
   },
 ];
 
@@ -406,6 +392,16 @@ export const ADMIN_TABS: Section[] = [
     description: "Review and manage user reports",
     color: "#ef4444",
     gradient: "linear-gradient(135deg, #f87171 0%, #ef4444 100%)",
+  },
+  {
+    id: "publications",
+    labelKey: "tab_admin_publications",
+    descKey: "tab_desc_admin_publications",
+    label: "Publications",
+    icon: '<i class="fas fa-globe" aria-hidden="true"></i>',
+    description: "Review visual artifacts submitted to Explore",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
   {
     id: "seo",
@@ -828,8 +824,7 @@ export const VIDEO_TABS: Section[] = [
     descKey: "tab_desc_video_curator",
     label: "Curator",
     icon: '<i class="fas fa-tags" aria-hidden="true"></i>',
-    description:
-      "Review the video catalog and link videos to TKA sequences",
+    description: "Review the video catalog and link videos to TKA sequences",
     color: "#f59e0b",
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
@@ -957,31 +952,9 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
   },
   // community graduated to Social module (Mar 2026)
-  {
-    id: "composition",
-    groupId: "choreography",
-    labelKey: "tab_lab_composition",
-    descKey: "tab_desc_lab_composition",
-    label: "Composition",
-    icon: '<i class="fas fa-vector-square" aria-hidden="true"></i>',
-    description: "Composition layout engine experiment",
-    color: "#6366f1",
-    gradient: "linear-gradient(135deg, #818cf8 0%, #6366f1 100%)",
-  },
   // connect graduated to Social module (Mar 2026)
   // contact-ball removed (Mar 2026)
   // disassemble removed (Jun 2026) — 16-line stub, overlapped graduated Hand Paths module
-  {
-    id: "duration",
-    groupId: "choreography",
-    labelKey: "tab_lab_duration",
-    descKey: "tab_desc_lab_duration",
-    label: "Duration",
-    icon: '<i class="fas fa-wave-square" aria-hidden="true"></i>',
-    description: "Visual duration template experimenter",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
-  },
   {
     id: "effects",
     groupId: "choreography",
@@ -995,34 +968,12 @@ export const LAB_TABS: Section[] = [
   },
   // hand-path-builder graduated to Hand Paths module (Mar 2026)
   // hand-pose removed (Jun 2026) — authoring dead-ended (sessionStorage only, no downstream); finger posing is a Blender/baked-content job
-  {
-    id: "landing",
-    groupId: "presentation",
-    labelKey: "tab_lab_landing",
-    descKey: "tab_desc_lab_landing",
-    label: "Landing",
-    icon: '<i class="fas fa-rocket" aria-hidden="true"></i>',
-    description: "Landing page preview and iteration",
-    color: "#f472b6",
-    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
   // level4, level5, level6, level7 graduated to Levels module (Mar 2026)
   // mandala + mandala-collection graduated to Mandala module (May 2026)
   // mandala-drawing removed (Apr 2026) - was just a placeholder notes tab
   // ml-training removed (Mar 2026)
   // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
   // hand-path-explorer graduated to Hand Paths module (Mar 2026)
-  {
-    id: "path-mandalas",
-    groupId: "notation",
-    labelKey: "tab_lab_path_mandalas",
-    descKey: "tab_desc_lab_path_mandalas",
-    label: "Path Mandalas",
-    icon: '<i class="fas fa-atom" style="color: #a78bfa;" aria-hidden="true"></i>',
-    description: "Tune tip-path mandala overlap rendering with live sliders",
-    color: "#a78bfa",
-    gradient: "linear-gradient(135deg, #c084fc 0%, #a78bfa 100%)",
-  },
   {
     id: "phrase-effort",
     groupId: "choreography",
@@ -1180,37 +1131,34 @@ export const LAB_TABS: Section[] = [
     descKey: "tab_desc_lab_stickers",
     label: "Stickers",
     icon: '<i class="fas fa-circle" aria-hidden="true"></i>',
-    description: "Turn LOOP mandalas into printable stickers",
+    description:
+      "Browse solo and combined mandala shapes, then build printable sheets",
     color: "#ec4899",
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
-  },
-  {
-    id: "viewer-3d",
-    groupId: "physical",
-    labelKey: "tab_lab_viewer_3d",
-    descKey: "tab_desc_lab_viewer_3d",
-    label: "3D Viewer",
-    icon: '<i class="fas fa-cube" style="color: #6a6aff;" aria-hidden="true"></i>',
-    description:
-      "Mobile 3D scene controls: performer + scene menus, playback, immersive",
-    color: "#6a6aff",
-    gradient: "linear-gradient(135deg, #8888ff 0%, #6a6aff 100%)",
   },
   // coral-lab removed (Jun 2026) — EZ-Tree procedural approach abandoned for Smithsonian CC0 coral models
 ];
 
-// REMOVED: LANDING_PAGE_TABS - LandingPreviewModule now handles its own internal tabs
-// since it's embedded in Lab module (Jan 2026)
+// REMOVED: LANDING_PAGE_TABS - public pages are routed directly.
 
 // Stage module tabs configuration
 export const STAGE_TABS: Section[] = [
   {
+    id: "scene",
+    labelKey: "tab_stage_scene",
+    descKey: "tab_desc_stage_scene",
+    label: "Scene",
+    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
+    description: "Build and export a 3D scene around one sequence",
+    color: "#22d3ee",
+  },
+  {
     id: "editor",
     labelKey: "tab_stage_editor",
     descKey: "tab_desc_stage_editor",
-    label: "Editor",
-    icon: '<i class="fas fa-map" aria-hidden="true"></i>',
-    description: "Formation editor and timeline",
+    label: "Stage",
+    icon: '<i class="fas fa-people-group" aria-hidden="true"></i>',
+    description: "Choreograph multiple performers on a shared timeline",
     color: "#06b6d4",
   },
 ];

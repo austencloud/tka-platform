@@ -58,6 +58,10 @@ import { isStandaloneAppSurface } from "../navigation/services/app-shell-route";
 import { writeUrl } from "../navigation/services/url-state";
 import { buildNavigationDestinationId } from "../navigation/domain/navigation-visit";
 import { getNavigationVisitPersister } from "../navigation/get-navigation-visit-persister";
+import {
+  normalizeBrowsePrimary,
+  resolveBrowsePathname,
+} from "../browse/navigation/browse-route-resolver";
 
 // Session storage key for persisting navigation history across HMR
 const PREVIOUS_MODULE_KEY = "tka-previous-module-before-settings";
@@ -244,6 +248,7 @@ export function moduleSections() {
 // Settings is included for transition support but accessed via footer gear icon
 const MODULE_ORDER = [
   "create",
+  "stage",
   "browse",
   "creators",
   "learn",
@@ -267,6 +272,10 @@ export async function handleModuleChange(
   }
 ) {
   markNavigationIntent();
+
+  if (moduleId === "browse") {
+    targetTab = normalizeBrowsePrimary(targetTab);
+  }
 
   const currentMod = currentModule();
   const shouldSkipHistory = options?.skipHistory === true;
@@ -389,7 +398,7 @@ const TAB_ORDERS: Record<string, string[]> = {
     "editor",
     "export",
   ],
-  browse: ["gallery", "library", "collections", "hall-of-shame"],
+  browse: ["explore", "you"],
   social: ["community", "connect"],
   learn: ["concepts", "play"],
   compose: ["arrange", "browse"],
@@ -424,6 +433,9 @@ export function handleSectionChange(
   options?: { skipHistory?: boolean; initiatedByHistory?: boolean }
 ) {
   const module = currentModule();
+  if (module === "browse") {
+    sectionId = normalizeBrowsePrimary(sectionId);
+  }
   const currentSectionId = currentSection();
   const shouldSkipHistory = options?.skipHistory === true;
 
@@ -605,6 +617,16 @@ const RETIRED_DEFAULT_SECTIONS: ReadonlyMap<string, string> = new Map([
 ]);
 
 function buildPath(moduleId: ModuleId, sectionId?: string) {
+  // Browse's outer navigation only knows Explore and You, but those buttons
+  // still need to land on a complete inner route. Writing the alias here races
+  // Browse's own resolver at the end of the View Transition and used to leave
+  // the address bar at /browse/you after the content had already changed.
+  if (moduleId === "browse") {
+    return normalizeBrowsePrimary(sectionId) === "you"
+      ? "/browse/you/sequences"
+      : "/browse/explore/sequences";
+  }
+
   // For clean-URL modules, omit the default section from the path
   if (CLEAN_URL_MODULES.has(moduleId)) {
     const moduleDef = getModuleDefinitions().find((m) => m.id === moduleId);
@@ -633,7 +655,13 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   // module reads the URL, so flattening to the canonical path here would
   // eat those segments and strand the deep link on the tab's list view.
   // Keep the longer pathname whenever it sits under the canonical path.
-  if (!url.pathname.startsWith(`${canonical}/`)) {
+  const browsePrimary =
+    moduleId === "browse" ? normalizeBrowsePrimary(sectionId) : null;
+  const preservesBrowseInnerRoute =
+    browsePrimary !== null &&
+    (url.pathname === `/browse/${browsePrimary}` ||
+      url.pathname.startsWith(`/browse/${browsePrimary}/`));
+  if (!preservesBrowseInnerRoute && !url.pathname.startsWith(`${canonical}/`)) {
     url.pathname = canonical;
   }
   url.hash = "";
@@ -685,6 +713,7 @@ function parsePathNavigation(): {
     // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
     let sectionId = parts[1] || searchParams.get("section") || undefined;
     const creatorPath = parseCreatorPathname(`/${parts.join("/")}`);
+    const browseRoute = resolveBrowsePathname(`/${parts.join("/")}`);
 
     // Redirect legacy module URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
@@ -697,46 +726,24 @@ function parsePathNavigation(): {
         url.pathname = creatorPath.canonicalPath;
         writeUrl(url, { state: { moduleId: "creators" } });
       }
-    } else if (moduleId === ("library" as unknown)) {
-      // Your library lives in Browse > Library (Collections module)
+    } else if (browseRoute) {
+      if (browseRoute.externalRedirect) {
+        window.location.replace(browseRoute.externalRedirect);
+        return null;
+      }
+
       moduleId = "browse" as ModuleId;
+      sectionId = browseRoute.location.primary;
+      if (browseRoute.isLegacy) {
+        const url = new URL(window.location.href);
+        url.pathname = browseRoute.canonicalPath;
+        writeUrl(url, {
+          state: { moduleId: "browse", sectionId },
+        });
+      }
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
-    } else if (
-      moduleId === ("browse" as ModuleId) &&
-      (parts[1] === "discover" || parts[1] === "community")
-    ) {
-      // Browse's community-collections tab (label "Collections") had id
-      // "discover", then briefly "community"; since 2026-07-10 its id matches
-      // its label: "collections" (/browse/collections). Old bookmarks/deep
-      // links land on the same tab under the new id. Scoped to the browse
-      // module only — Festivals also has an unrelated "discover" tab id and
-      // must not be redirected here.
-      sectionId = "collections";
-      const url = new URL(window.location.href);
-      url.pathname = "/browse/collections";
-      writeUrl(url, {
-        state: { moduleId: "browse", sectionId: "collections" },
-      });
-    } else if (
-      moduleId === ("browse" as ModuleId) &&
-      parts[1] === "collections" &&
-      parts[2]
-    ) {
-      // Legacy scan-handoff deep link /browse/collections/{id}[?scan=1] —
-      // printed QR sheets carry these. The Library tab's id renamed
-      // collections -> library (2026-07-10), so rewrite to
-      // /browse/library/{id} preserving the query. The extra {id} segment
-      // distinguishes this from the bare /browse/collections community tab
-      // URL. The longer pathname survives replaceHistoryState's
-      // canonical-path flattening because it sits under /browse/library/.
-      sectionId = "library";
-      const url = new URL(window.location.href);
-      url.pathname = `/browse/library/${parts[2]}`;
-      writeUrl(url, {
-        state: { moduleId: "browse", sectionId: "library" },
-      });
     }
 
     // Validate module exists
@@ -865,23 +872,25 @@ export function initializeNavigationHistory() {
     let targetSection = state.sectionId;
     let needsHistoryUpdate = false;
 
-    if (targetModule === ("library" as unknown)) {
+    const browseHistoryRoute = resolveBrowsePathname(window.location.pathname);
+    if (browseHistoryRoute) {
+      if (browseHistoryRoute.externalRedirect) {
+        window.location.replace(browseHistoryRoute.externalRedirect);
+        return;
+      }
       targetModule = "browse" as ModuleId;
-      targetSection = undefined;
-      needsHistoryUpdate = true;
+      targetSection = browseHistoryRoute.location.primary;
+      if (browseHistoryRoute.isLegacy) {
+        const url = new URL(window.location.href);
+        url.pathname = browseHistoryRoute.canonicalPath;
+        writeUrl(url, {
+          state: { moduleId: targetModule, sectionId: targetSection },
+        });
+      }
     } else if (targetModule === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       targetModule = "create" as ModuleId;
       targetSection = undefined;
-      needsHistoryUpdate = true;
-    } else if (
-      targetModule === ("browse" as ModuleId) &&
-      (targetSection === "discover" || targetSection === "community")
-    ) {
-      // Browse's community-collections tab id: discover -> (briefly
-      // community) -> collections (2026-07-10, ids aligned with labels).
-      // History entries pushed before the rename still carry the old ids.
-      targetSection = "collections";
       needsHistoryUpdate = true;
     }
 

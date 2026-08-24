@@ -92,7 +92,8 @@ export class ThumbnailRenderer {
     options?: RenderOptions,
     onProgress?: RenderProgressCallback,
     signal?: AbortSignal,
-    onStage?: RenderStageCallback
+    onStage?: RenderStageCallback,
+    onActivity?: () => void
   ): Promise<ThumbnailRenderResult> {
     // Load full sequence data if needed (fetches from user's source doc)
     onStage?.("sequence_load");
@@ -100,6 +101,7 @@ export class ThumbnailRenderer {
       sequence,
       input.sequenceName
     );
+    onActivity?.();
 
     // Resolve loopType: loaded doc -> index fallback -> runtime detection
     onStage?.("loop_and_start");
@@ -147,8 +149,11 @@ export class ThumbnailRenderer {
               darkMode: !input.lightMode,
               bluePropType: input.bluePropType,
               redPropType: input.redPropType,
+              signal,
+              onActivity,
             }
           );
+          onActivity?.();
           qrBitmap = await createImageBitmap(qrImage);
         }
       } catch (err) {
@@ -183,6 +188,7 @@ export class ThumbnailRenderer {
       signal,
       qrBitmap
     );
+    onActivity?.();
 
     // QR-consistent unless a QR was wanted but its bitmap couldn't be produced.
     return { blob, qrConsistent: !wantsQR || qrBitmap !== null };
