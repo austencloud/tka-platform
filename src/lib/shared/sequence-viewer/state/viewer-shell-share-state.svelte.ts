@@ -53,6 +53,12 @@ export function createViewerShellShareState(
   /** This share came from the 3D pane, so the sheet opens on Video. */
   let sceneShare = $state(false);
   /**
+   * This share is OF a Post Studio render. The shell holds the blob (the state
+   * never sees it); the flag is what lets the sheet open on Video instead of
+   * Card, and what keeps a later plain share from being mistaken for this one.
+   */
+  let postShare = $state(false);
+  /**
    * The sheet is hidden for a live 3D take, not dismissed. Hiding it closes the
    * native <dialog>, which fires `close`, which calls back through
    * `setPostSheetOpen(false)` — so without this flag the take's own step-aside
@@ -97,6 +103,22 @@ export function createViewerShellShareState(
     dependencies.captureScanAction("share");
     artShare = null;
     sceneShare = false;
+    postShare = false;
+    sceneTakeSuspended = false;
+    postSheetOpen = true;
+  }
+
+  /**
+   * Share the post the studio just rendered. The render itself already reached
+   * the shell through `onExported`; this only opens the sheet as a session
+   * about that file, so it lands on Video with the composed post in the slot
+   * rather than on Card as if the studio never happened.
+   */
+  function sharePost(): void {
+    dependencies.captureScanAction("share", { source: "post_studio" });
+    artShare = null;
+    sceneShare = false;
+    postShare = true;
     sceneTakeSuspended = false;
     postSheetOpen = true;
   }
@@ -110,6 +132,7 @@ export function createViewerShellShareState(
   function endShareSession(): void {
     const hadRender = sceneShare || !!artShare;
     sceneShare = false;
+    postShare = false;
     sceneTakeSuspended = false;
     // Retire the render along with the session that asked for it. The viewer
     // suppresses its own result overlay only while the sheet owns the render, so
@@ -140,6 +163,7 @@ export function createViewerShellShareState(
     target.mandalaController.clearExportBlob();
     artShare = target;
     sceneShare = false;
+    postShare = false;
     sceneTakeSuspended = false;
     postSheetOpen = true;
   }
@@ -157,6 +181,7 @@ export function createViewerShellShareState(
     inputs.getContext().dismissPreview();
     artShare = null;
     sceneShare = true;
+    postShare = false;
     sceneTakeSuspended = false;
     postSheetOpen = true;
   }
@@ -189,8 +214,16 @@ export function createViewerShellShareState(
    * two places" — the button consolidated, the payload did not.
    */
   function shareCurrentView(): void {
-    if (inputs.getContext().viewerState.viewerMode === "animation-3d") {
+    const viewerMode = inputs.getContext().viewerState.viewerMode;
+    if (viewerMode === "animation-3d") {
       shareScene();
+      return;
+    }
+    // In the studio, Share means "share the post". If nothing has been
+    // rendered yet the shell falls back to the plain card/video sheet, but the
+    // session still records where it came from.
+    if (viewerMode === "post-studio") {
+      sharePost();
       return;
     }
     if (registeredArtTarget) {
@@ -235,6 +268,9 @@ export function createViewerShellShareState(
     get sceneShare() {
       return sceneShare;
     },
+    get postShare() {
+      return postShare;
+    },
     /** The user opening or dismissing the sheet. Dismissing ends the session. */
     setPostSheetOpen(open: boolean) {
       postSheetOpen = open;
@@ -268,6 +304,7 @@ export function createViewerShellShareState(
     selectAction,
     sendToStickerLab,
     shareScene,
+    sharePost,
     destroy,
   };
 }

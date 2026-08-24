@@ -1,5 +1,6 @@
 import { getContext, setContext } from "svelte";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
 import { TunnelViewController } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-controller.svelte";
 
@@ -28,6 +29,7 @@ export class PostStudioArtControllers {
     getSequence: () => SequenceData;
     getBluePropType: () => string | undefined;
     getRedPropType: () => string | undefined;
+    pathPolicy: AnimationVisibilityStateManager;
   }) {
     this.tunnel = new TunnelViewController({
       getSequence: sources.getSequence,
@@ -36,6 +38,7 @@ export class PostStudioArtControllers {
       getSequence: sources.getSequence,
       getBluePropType: sources.getBluePropType,
       getRedPropType: sources.getRedPropType,
+      pathPolicy: sources.pathPolicy,
     });
   }
 

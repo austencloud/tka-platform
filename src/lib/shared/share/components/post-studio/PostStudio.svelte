@@ -71,6 +71,11 @@
     isPreparingAnimation?: boolean;
     onRequestAnimation: () => void;
     onExported?: (blob: Blob) => void;
+    /**
+     * Opens the host's share sheet on the finished render. Only hosts with a
+     * sheet pass it (the viewer shell); without it the bar ends at Download.
+     */
+    onSharePost?: () => void;
   }
 
   let {
@@ -86,6 +91,7 @@
     isPreparingAnimation = false,
     onRequestAnimation,
     onExported,
+    onSharePost,
   }: Props = $props();
 
   const exportOptions = getExportOptionsState();
@@ -409,6 +415,7 @@
     getSequence: () => displaySequence,
     getBluePropType: () => synchronizedCardRenderOptions?.bluePropTypeOverride,
     getRedPropType: () => synchronizedCardRenderOptions?.redPropTypeOverride,
+    pathPolicy: animationVisibility,
   });
   setPostStudioArtContext(artControllers);
 
@@ -675,6 +682,7 @@
     onFixMissing={fixFirstMissingSource}
     onRender={renderPost}
     onCancelExport={cancelExport}
+    {onSharePost}
   />
 
   {#snippet transport(showAdvancedToggle: boolean)}

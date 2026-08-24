@@ -39,6 +39,12 @@
     onFixMissing: () => void;
     onRender: () => void;
     onCancelExport: () => void;
+    /**
+     * When present, the finished render leads with a Share CTA that opens the
+     * host's share sheet — captions, phone handoff, direct posting. Absent on
+     * hosts without a sheet, where Download stays the terminal action.
+     */
+    onSharePost?: () => void;
   }
 
   let {
@@ -60,6 +66,7 @@
     onFixMissing,
     onRender,
     onCancelExport,
+    onSharePost,
   }: Props = $props();
 
   const composition = getMediaCompositionContext();
@@ -268,6 +275,14 @@
         Cancel
       </button>
     {:else if exportedUrl}
+      {#if onSharePost}
+        <!-- The render is a means; the post is the point. Share leads, and the
+             file stays one click away for anyone who wants the MP4 itself. -->
+        <button type="button" class="render-button" onclick={onSharePost}>
+          <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
+          Share post
+        </button>
+      {/if}
       <a class="download-button" href={exportedUrl} download={exportFilename}>
         <i class="fa-solid fa-download" aria-hidden="true"></i>
         Download MP4

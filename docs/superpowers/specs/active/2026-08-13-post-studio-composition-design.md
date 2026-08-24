@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-13
 
-**Status:** Gates 1 through 3 are implemented. Gate 4 has synchronized original-audio export, tempo-driven sequence playback, and an explicit Instagram-music path. Gate 5 has deterministic MP4 export, durable presets, and the preset-first Post Studio surface; rights-cleared track mixing and whole-Compose serialization remain.
+**Status:** Gates 1 through 3 are implemented. Gate 4 has synchronized original-audio export, tempo-driven sequence playback, and an explicit Instagram-music path. Gate 5 has deterministic MP4 export; the preset-first surface was replaced by two picked slots (`fb6e64c945`, per the 2026-08-15 slots design), which left `media-composition-preset-repository.ts` (the durable Dexie+Firestore preset store) with no callers — re-point it at slot arrangements or retire it before claiming persistence. Rights-cleared track mixing, whole-Compose serialization, and any persistence of the studio's editing state remain. The rendered post now flows into the share sheet (2026-08-23); before that the studio ended at a Download link.
 
 **Capability owner:** Shared media composition
 

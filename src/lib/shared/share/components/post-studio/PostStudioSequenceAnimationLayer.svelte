@@ -2,6 +2,7 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -26,7 +27,10 @@
   } = $props();
 
   const stateManager = new AnimationStateManager();
-  const orchestrator = new SequenceAnimationOrchestrator(stateManager);
+  const orchestrator = new SequenceAnimationOrchestrator(
+    stateManager,
+    getViewerAnimationPropConfig
+  );
   // Create hands Post Studio a reactive sequence proxy. Ordinary `$state`
   // wraps that value again, so an identity check against the prop never
   // matches and the canvas stays at its empty grid. This value is only a

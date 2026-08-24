@@ -19,9 +19,12 @@
     resolvedCardAutoLayout: ResolvedAutoLayout | null;
     /** Hands the rendered post to the shell's share-video seam. */
     onExported: (blob: Blob) => void;
+    /** Opens the shell's share sheet on the render just handed over. */
+    onSharePost: () => void;
   }
 
-  let { sequence, resolvedCardAutoLayout, onExported }: Props = $props();
+  let { sequence, resolvedCardAutoLayout, onExported, onSharePost }: Props =
+    $props();
 
   const exportOptions = getExportOptionsState();
 
@@ -46,6 +49,7 @@
     isPreparingAnimation={false}
     onRequestAnimation={() => undefined}
     {onExported}
+    {onSharePost}
   />
 </div>
 

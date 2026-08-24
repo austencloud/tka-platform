@@ -233,6 +233,18 @@ that changes that.
 - Scheduled posting.
 - Multi-image carousel (`media-bundler.ts` already models this).
 
+### Post Studio hands off through this sheet (added 2026-08-23)
+
+Post Studio's render used to terminate at "Download MP4" — the studio composed
+the post, then abandoned it one step short of the sheet built to deliver it.
+Now the finished render leads with **Share post**, which opens this sheet as a
+session about that file (`sharePost()` in `viewer-shell-share-state`), landing
+on Video with the composed post in the slot, captions and destinations exactly
+as specced above. The header's Share does the same while the studio is the
+active pane. Download and Render again remain as secondary actions. A post
+render left behind by the studio no longer stands in for a 3D scene share —
+scene sessions record their own take.
+
 ---
 
 ## Verification
