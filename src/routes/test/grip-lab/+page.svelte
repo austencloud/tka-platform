@@ -17,7 +17,7 @@
    */
   import { onDestroy, onMount } from "svelte";
   import { Canvas, T } from "@threlte/core";
-  import { Quaternion, Vector3 } from "three";
+  import { Box3, Quaternion, Vector3 } from "three";
   import type { Group, Object3D } from "three";
   import {
     PerformerRig,
@@ -78,10 +78,14 @@
   // in favor of verbal adjustment.)
   const WEAVE_STATION_THETAS = [0, 90, 180, 270] as const;
   const WEAVE_STATION_DEFAULTS: readonly [number, number, number, number] = [
-    -16, 0, 16, 0,
+    -18, 0, 22, 0,
   ];
-  // The pre-minimization defaults — recognized in storage and migrated.
-  const WEAVE_STATION_LEGACY_DEFAULTS = [-45, 0, 45, 0] as const;
+  const WEAVE_DWELL_DEFAULT_DEG = 22;
+  // Previous defaults are recognized in storage and migrated to the current set.
+  const WEAVE_STATION_PREVIOUS_DEFAULTS = [
+    [-45, 0, 45, 0],
+    [-16, 0, 16, 0],
+  ] as const;
   type WeaveStations = [number, number, number, number];
 
   // The arm stays FULLY EXTENDED through the move, so the grip travels on
@@ -105,9 +109,12 @@
       const clamped = value.map((deg) =>
         Math.max(-60, Math.min(60, deg))
       ) as WeaveStations;
-      // Stored state predating the minimized-clearance defaults: anyone still
-      // on the untouched ±45° defaults follows them to the new values.
-      if (clamped.every((deg, i) => deg === WEAVE_STATION_LEGACY_DEFAULTS[i])) {
+      // Stored state on any untouched previous default follows the current values.
+      if (
+        WEAVE_STATION_PREVIOUS_DEFAULTS.some((defaults) =>
+          clamped.every((deg, i) => deg === defaults[i])
+        )
+      ) {
         return [...WEAVE_STATION_DEFAULTS] as WeaveStations;
       }
       return clamped;
@@ -127,6 +134,7 @@
     weaveDepthDeg: number;
     weaveStationsDeg: WeaveStations;
     weavePhaseDeg: number;
+    weaveDwellDeg: number;
   }
 
   function loadPersisted(): PersistedState {
@@ -142,6 +150,7 @@
       weaveDepthDeg: 0,
       weaveStationsDeg: [...WEAVE_STATION_DEFAULTS] as WeaveStations,
       weavePhaseDeg: 0,
+      weaveDwellDeg: WEAVE_DWELL_DEFAULT_DEG,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -188,6 +197,10 @@
           typeof parsed.weavePhaseDeg === "number"
             ? Math.max(-180, Math.min(180, parsed.weavePhaseDeg))
             : fallback.weavePhaseDeg,
+        weaveDwellDeg:
+          typeof parsed.weaveDwellDeg === "number"
+            ? Math.max(0, Math.min(28, parsed.weaveDwellDeg))
+            : fallback.weaveDwellDeg,
       };
     } catch {
       return fallback;
@@ -206,6 +219,7 @@
   let weaveDepthDeg = $state(initial.weaveDepthDeg);
   let weaveStationsDeg = $state<WeaveStations>(initial.weaveStationsDeg);
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
+  let weaveDwellDeg = $state(initial.weaveDwellDeg);
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -220,6 +234,7 @@
       weaveDepthDeg,
       weaveStationsDeg: [...weaveStationsDeg] as WeaveStations,
       weavePhaseDeg,
+      weaveDwellDeg,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -342,6 +357,11 @@
   const weaveThetaDeg = $derived(
     staffAngleDeg - (centerPathAngle * 180) / Math.PI - weavePhaseDeg
   );
+  const warpedWeaveThetaDeg = $derived.by(() => {
+    const k = (weaveDwellDeg * Math.PI) / 180;
+    const thetaRad = (weaveThetaDeg * Math.PI) / 180;
+    return weaveThetaDeg - (k * Math.sin(2 * thetaRad) * 180) / Math.PI;
+  });
   const weaveDeltaRad = $derived((weaveThetaDeg * Math.PI) / 180);
   const effSweepDeg = $derived(
     weaveAuto
@@ -349,7 +369,7 @@
       : planeSweepDeg
   );
 
-  const effArmDeg = $derived(weaveAuto ? trackArmDeg(weaveThetaDeg) : 0);
+  const effArmDeg = $derived(weaveAuto ? trackArmDeg(warpedWeaveThetaDeg) : 0);
   const effArmRad = $derived((effArmDeg * Math.PI) / 180);
 
   // ── Natural-reach measurement ──
@@ -378,6 +398,149 @@
     });
     return found;
   }
+
+  $effect(() => {
+    if (!import.meta.env.DEV || !rigRootRef) return;
+
+    const root = rigRootRef;
+    const landmarkBones = [
+      ["Head", ["head"]],
+      ["Neck", ["neck"]],
+      ["Spine2", ["spine2", "spine1"]],
+      ["Hips", ["hips"]],
+      ["LeftShoulder", ["leftshoulder"]],
+      ["RightShoulder", ["rightshoulder"]],
+      ["LeftArm", ["leftarm"]],
+      ["RightArm", ["rightarm"]],
+      ["RightHand", ["righthand"]],
+      ["LeftUpLeg", ["leftupleg"]],
+      ["RightUpLeg", ["rightupleg"]],
+      ["LeftLeg", ["leftleg"]],
+      ["RightLeg", ["rightleg"]],
+      ["LeftFoot", ["leftfoot"]],
+      ["RightFoot", ["rightfoot"]],
+    ] as const;
+    let staffRef: Object3D | null = null;
+    let shaftAxis: "x" | "y" | "z" | null = null;
+    let halfLen: number | null = null;
+
+    const asTuple = (position: Vector3): [number, number, number] =>
+      position.toArray() as [number, number, number];
+
+    function getLandmarks(): Record<string, [number, number, number]> {
+      const landmarks: Record<string, [number, number, number]> = {};
+      for (const [key, names] of landmarkBones) {
+        const bone = names.map((name) => findBone(root, name)).find(Boolean);
+        if (bone) landmarks[key] = asTuple(bone.getWorldPosition(new Vector3()));
+      }
+      let headTop: Object3D | null = null;
+      root.traverse((node) => {
+        if (!headTop && /HeadTop|Head_End/i.test(node.name)) headTop = node;
+      });
+      if (headTop) {
+        landmarks.HeadTop = asTuple(
+          (headTop as Object3D).getWorldPosition(new Vector3())
+        );
+      }
+      return landmarks;
+    }
+
+    function isRedStaffGroup(node: Object3D): boolean {
+      if (!node.children.length) return false;
+      const namedAsStaff = [node, ...node.children].some((part) =>
+        /staff/i.test(part.name)
+      );
+      const shaft = node.children.find((part) => {
+        const mesh = part as Object3D & {
+          geometry?: { type?: string };
+          material?: { color?: { getHexString?: () => string } };
+        };
+        return (
+          mesh.geometry?.type === "CylinderGeometry" &&
+          mesh.material?.color?.getHexString?.() === "ef4444"
+        );
+      });
+      // Staff3D currently leaves every object unnamed. Its source-defined
+      // signature is the red Y-axis shaft plus the T-bar, end cap, and grip.
+      return Boolean(shaft && (namedAsStaff || node.children.length >= 4));
+    }
+
+    function findStaff(): Object3D | null {
+      if (staffRef?.parent) return staffRef;
+      const knownBone = findBone(root, "head") ?? findBone(root, "hips");
+      if (!knownBone) return null;
+      let scene: Object3D = knownBone;
+      while (scene.parent) scene = scene.parent;
+      scene.traverse((node) => {
+        if (!staffRef && isRedStaffGroup(node)) staffRef = node;
+      });
+      return staffRef;
+    }
+
+    function measureStaff(staff: Object3D): void {
+      if (shaftAxis && halfLen !== null) return;
+      staff.updateWorldMatrix(true, true);
+      const localBounds = new Box3();
+      staff.traverse((node) => {
+        const mesh = node as Object3D & {
+          geometry?: { boundingBox: Box3 | null; computeBoundingBox(): void };
+        };
+        if (!mesh.geometry) return;
+        if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+        const bounds = mesh.geometry.boundingBox;
+        if (!bounds) return;
+        for (const x of [bounds.min.x, bounds.max.x]) {
+          for (const y of [bounds.min.y, bounds.max.y]) {
+            for (const z of [bounds.min.z, bounds.max.z]) {
+              localBounds.expandByPoint(
+                staff.worldToLocal(node.localToWorld(new Vector3(x, y, z)))
+              );
+            }
+          }
+        }
+      });
+      const size = localBounds.getSize(new Vector3());
+      shaftAxis = size.x > size.y && size.x > size.z ? "x" : size.z > size.y ? "z" : "y";
+      halfLen = size[shaftAxis] / 2;
+    }
+
+    const probe = {
+      getLandmarks,
+      getFrame() {
+        const staff = findStaff();
+        if (!staff) return { error: "staff-not-found" };
+        measureStaff(staff);
+        if (!shaftAxis || halfLen === null) return { error: "staff-not-found" };
+        staff.updateWorldMatrix(true, true);
+        const localEndA = new Vector3();
+        const localEndB = new Vector3();
+        localEndA[shaftAxis] = -halfLen;
+        localEndB[shaftAxis] = halfLen;
+        const landmarks = getLandmarks();
+        return {
+          point,
+          staffAngleDeg,
+          effArmDeg,
+          gripTargetZ: gripZRigM,
+          staff: {
+            staffPos: asTuple(staff.getWorldPosition(new Vector3())),
+            endA: asTuple(staff.localToWorld(localEndA)),
+            endB: asTuple(staff.localToWorld(localEndB)),
+            shaftAxis,
+            halfLen,
+          },
+          head: landmarks.Head,
+        };
+      },
+    };
+    const probeWindow = window as typeof window & {
+      __gripLabProbe?: typeof probe;
+    };
+    probeWindow.__gripLabProbe = probe;
+    return () => {
+      if (probeWindow.__gripLabProbe === probe) delete probeWindow.__gripLabProbe;
+    };
+  });
 
   $effect(() => {
     const root = rigRootRef;
@@ -556,9 +719,9 @@
   }
 
   // ── Pose sharing ──
-  // The tuning sliders are gone (2026-08-23, Austen: maximum stage space,
-  // adjustments happen verbally) — the underlying state remains programmatic
-  // so a described change is a code edit, not a rebuilt control.
+  // The station tuning sliders are gone (2026-08-23, Austen: maximum stage
+  // space). Dwell remains exposed because it shapes the timing of the whole
+  // track rather than tuning a single pose.
   let poseCopied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -572,7 +735,7 @@
       `shift ${Math.round(weaveAuto ? weaveZBodyM * 100 : effTravelCm)}cm · ` +
       `stance ${stanceYawDeg}°` +
       (weaveAuto
-        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}°)`
+        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}° · dwell ${weaveDwellDeg}°)`
         : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
@@ -700,6 +863,7 @@
           enableFootPlanting={true}
           stanceYaw={stanceYawRad}
           weldGrip={true}
+          headDodge={true}
         >
           {#snippet gridSlot()}
             <!-- Identity group at the slot origin: the reference frame the
@@ -785,6 +949,26 @@
         onclick={() => (weaveAuto = !weaveAuto)}
       />
       {#if weaveAuto}
+        <div class="slider-control">
+          <label for="grip-lab-dwell">Dwell</label>
+          <input
+            id="grip-lab-dwell"
+            type="range"
+            min="0"
+            max="28"
+            step="1"
+            bind:value={weaveDwellDeg}
+            ondblclick={() => (weaveDwellDeg = WEAVE_DWELL_DEFAULT_DEG)}
+          />
+          <output for="grip-lab-dwell">{weaveDwellDeg}°</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset weave dwell"
+            disabled={weaveDwellDeg === WEAVE_DWELL_DEFAULT_DEG}
+            onclick={() => (weaveDwellDeg = WEAVE_DWELL_DEFAULT_DEG)}
+          >↺</button>
+        </div>
         <span class="weave-readout">
           arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)} cm
         </span>
@@ -885,6 +1069,58 @@
     min-width: 22ch;
   }
 
+  .slider-control {
+    display: grid;
+    grid-template-columns: auto minmax(5rem, 8rem) auto auto;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .slider-control label {
+    font-size: 0.875rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .slider-control output {
+    min-width: 2.6rem;
+    color: #ff9e94;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .slider-control input[type="range"] {
+    width: 100%;
+    accent-color: #ef5350;
+    cursor: pointer;
+  }
+
+  .mini-reset {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--lab-stroke);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--lab-text);
+    cursor: pointer;
+  }
+
+  .mini-reset::after {
+    content: "";
+    position: absolute;
+    inset: -0.55rem;
+  }
+
+  .mini-reset:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
   .transport {
     width: 3.25rem;
     min-width: 3.25rem;
@@ -914,7 +1150,8 @@
     }
   }
 
-  button:focus-visible {
+  button:focus-visible,
+  input:focus-visible {
     outline: 0.18rem solid #ffffff;
     outline-offset: 0.18rem;
   }
