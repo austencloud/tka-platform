@@ -9,10 +9,10 @@ import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enu
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
   MotionColor,
-  MotionType,
   RotationDirection,
   Orientation,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { ArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/arrow-placement-data";
 import type { PropPlacementData } from "$lib/shared/pictograph/prop/domain/models/prop-placement-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -103,6 +103,9 @@ const PROP_TYPE_ENCODE: Record<PropType, string> = {
   [PropType.TRIQUETRA]: "Q",
   [PropType.TRIQUETRA2]: "q",
   [PropType.SWORD]: "W",
+  // A new code is permanent once it reaches a printed card. Y was the last
+  // unclaimed uppercase letter and keeps existing prop bytes unchanged.
+  [PropType.SICKLES]: "Y",
   // Energy pair. Digits, because every letter that reads as "energy", "saber",
   // or "staff" is already spoken for and a short code has one character to give.
   [PropType.ENERGY_SABER]: "3",
@@ -666,7 +669,11 @@ export function parseSequenceRouteId(id: string): SequenceRouteIdParseResult {
 
   const decoded = decodeURIComponent(id);
 
-  if (decoded.startsWith("z:")) {
+  if (
+    decoded.startsWith("d1:") ||
+    decoded.startsWith("raw:") ||
+    decoded.startsWith("z:")
+  ) {
     return { encoded: decoded, legacyId: null };
   }
 

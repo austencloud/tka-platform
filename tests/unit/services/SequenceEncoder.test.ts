@@ -639,6 +639,15 @@ describe("SequenceEncoder", () => {
   });
 
   describe("parseSequenceRouteId", () => {
+    it.each(["d1:CoCkBEjA2oBh", "raw:nosoiic0sS:sonoiic0sS"])(
+      "detects current encoded sequence prefix: %s",
+      (id) => {
+        const result = parseSequenceRouteId(id);
+        expect(result.encoded).toBe(id);
+        expect(result.legacyId).toBeNull();
+      }
+    );
+
     it("detects compressed encoded sequences (z: prefix)", () => {
       const result = parseSequenceRouteId("z:CoCkBEjA2oBh");
       expect(result.encoded).toBe("z:CoCkBEjA2oBh");
@@ -762,14 +771,14 @@ describe("SequenceEncoder", () => {
 
       const path = generateSequenceRoutePath(seq);
 
-      // The path is URL-encoded; extract and decode it
+      // The path is URL-encoded; route parsing owns decoding it before the
+      // sequence codec takes over.
       const id = path.replace("/sequence/", "");
-      const decodedId = decodeURIComponent(id);
+      const parsed = parseSequenceRouteId(id);
+      expect(parsed.encoded).not.toBeNull();
+      expect(parsed.legacyId).toBeNull();
 
-      // generateSequenceRoutePath uses compressForURL which produces d1: or raw: prefixes.
-      // parseSequenceRouteId currently only recognizes z: and pipe-delimited formats,
-      // so we verify the round-trip via decodeSequenceWithCompression directly.
-      const decoded = decodeSequenceWithCompression(decodedId);
+      const decoded = decodeSequenceWithCompression(parsed.encoded!);
       expect(decoded.steps).toHaveLength(1);
       expect(decoded.steps[0].motions.blue!.motionType).toBe(MotionType.PRO);
       expect(decoded.steps[0].motions.blue!.startLocation).toBe(
