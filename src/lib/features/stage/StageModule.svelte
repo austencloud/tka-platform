@@ -69,11 +69,6 @@
       </div>
     {/if}
 
-    <div class="stage-identity" aria-hidden="true">
-      <strong>Stage</strong>
-      <span>{stageState.choreography.performers.length} performers</span>
-    </div>
-
     <div class="scene-rail" role="toolbar" aria-label="Stage workspace tools">
       <button
         type="button"
@@ -231,28 +226,6 @@
     background: var(--theme-panel-bg, #12121c);
   }
 
-  .stage-identity {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 999px;
-    background: rgba(12, 14, 22, 0.76);
-    backdrop-filter: blur(18px) saturate(140%);
-    color: var(--theme-text, white);
-    pointer-events: none;
-  }
-
-  .stage-identity span {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
-    font-size: var(--font-size-compact, 0.75rem);
-  }
-
   .scene-rail {
     position: absolute;
     top: 0.75rem;
@@ -402,10 +375,6 @@
   }
 
   @media (max-width: 700px) {
-    .stage-identity span {
-      display: none;
-    }
-
     .stage-inspector {
       position: fixed;
       top: max(0.75rem, env(safe-area-inset-top));

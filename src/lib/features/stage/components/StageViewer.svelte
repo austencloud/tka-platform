@@ -312,13 +312,6 @@
       <span>{sequenceLoadError ?? "The catalog entry is unavailable."}</span>
       <button type="button" onclick={retrySequenceLoad}>Try again</button>
     </div>
-  {:else if sequenceLoadState === "ready"}
-    <div class="performance-readout" aria-live="polite">
-      <span class="sequence-name">{choreography.performers.length} lanes</span>
-      <span
-        >Beat {stageState.currentBeat.toFixed(1)} / {stageState.maxTotalBeats}</span
-      >
-    </div>
   {/if}
 </div>
 
@@ -405,32 +398,6 @@
   .load-notice button:focus-visible {
     outline: 3px solid var(--theme-accent, #f59e0b);
     outline-offset: 3px;
-  }
-
-  .performance-readout {
-    position: absolute;
-    bottom: 0.75rem;
-    right: 0.75rem;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.55rem 0.75rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: 999px;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, #191923) 88%,
-      transparent
-    );
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.74));
-    font-size: var(--font-size-compact, 0.75rem);
-    pointer-events: none;
-  }
-
-  .sequence-name {
-    color: var(--theme-text, #fff);
-    font-weight: 750;
   }
 
   @container (max-height: 28rem) {

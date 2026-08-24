@@ -35,17 +35,6 @@
     disabled?: boolean;
   } = $props();
 
-  /** Show step buttons only when at least one step handler is provided */
-  const hasStepControls = $derived(
-    !!(
-      onStepHalfBeatBackward ||
-      onStepHalfBeatForward ||
-      onStepFullBeatBackward ||
-      onStepFullBeatForward ||
-      onRestartToStart
-    )
-  );
-
   // Step glow state
   let glowingBtn = $state<string | null>(null);
   let glowTimer: ReturnType<typeof setTimeout> | null = null;
@@ -66,7 +55,9 @@
 </script>
 
 <div class="transport-controls">
-  {#if hasStepControls}
+  <!-- Each button renders only when its handler is provided, so consumers
+       can compose any subset without dead controls. -->
+  {#if onStepHalfBeatBackward}
     <!-- Half Beat Back (secondary - outer position) -->
     <button
       class="step-btn step-half"
@@ -81,37 +72,37 @@
     >
       <i class="fas fa-chevron-left" aria-hidden="true"></i>
     </button>
+  {/if}
 
-    <!-- Full Step Back / Restart (primary - adjacent to play) -->
-    {#if onRestartToStart}
-      <button
-        class="step-btn step-full"
-        class:stepping={glowingBtn === "fb"}
-        onclick={() => {
-          glow("fb");
-          onRestartToStart();
-        }}
-        type="button"
-        aria-label="Restart from beginning"
-        {disabled}
-      >
-        <i class="fas fa-backward-fast" aria-hidden="true"></i>
-      </button>
-    {:else}
-      <button
-        class="step-btn step-full"
-        class:stepping={glowingBtn === "fb"}
-        onclick={() => {
-          glow("fb");
-          onStepFullBeatBackward?.();
-        }}
-        type="button"
-        aria-label="Previous full step"
-        {disabled}
-      >
-        <i class="fas fa-angles-left" aria-hidden="true"></i>
-      </button>
-    {/if}
+  <!-- Full Step Back / Restart (primary - adjacent to play) -->
+  {#if onRestartToStart}
+    <button
+      class="step-btn step-full"
+      class:stepping={glowingBtn === "fb"}
+      onclick={() => {
+        glow("fb");
+        onRestartToStart();
+      }}
+      type="button"
+      aria-label="Restart from beginning"
+      {disabled}
+    >
+      <i class="fas fa-backward-fast" aria-hidden="true"></i>
+    </button>
+  {:else if onStepFullBeatBackward}
+    <button
+      class="step-btn step-full"
+      class:stepping={glowingBtn === "fb"}
+      onclick={() => {
+        glow("fb");
+        onStepFullBeatBackward?.();
+      }}
+      type="button"
+      aria-label="Previous full step"
+      {disabled}
+    >
+      <i class="fas fa-angles-left" aria-hidden="true"></i>
+    </button>
   {/if}
 
   <!-- Play/Pause -->
@@ -126,7 +117,7 @@
     <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
   </button>
 
-  {#if hasStepControls}
+  {#if onStepFullBeatForward}
     <!-- Full Step Forward (primary - adjacent to play) -->
     <button
       class="step-btn step-full"
@@ -141,7 +132,9 @@
     >
       <i class="fas fa-angles-right" aria-hidden="true"></i>
     </button>
+  {/if}
 
+  {#if onStepHalfBeatForward}
     <!-- Half Step Forward (secondary - outer position) -->
     <button
       class="step-btn step-half"
