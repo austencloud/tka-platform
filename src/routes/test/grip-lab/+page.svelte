@@ -81,6 +81,11 @@
     -18, 0, 22, 0,
   ];
   const WEAVE_DWELL_DEFAULT_DEG = 22;
+  const TORSO_ASSIST_DEFAULT_DEG = 45;
+  const TORSO_ASSIST_SIGN = 1;
+  const STAFF_HALF_LEN_M = 0.457;
+  const AVOID_MARGIN_M = 0.05;
+  const AVOID_MAX_PUSH_M = 0.35;
   // Previous defaults are recognized in storage and migrated to the current set.
   const WEAVE_STATION_PREVIOUS_DEFAULTS = [
     [-45, 0, 45, 0],
@@ -135,6 +140,7 @@
     weaveStationsDeg: WeaveStations;
     weavePhaseDeg: number;
     weaveDwellDeg: number;
+    torsoAssistDeg: number;
   }
 
   function loadPersisted(): PersistedState {
@@ -151,6 +157,7 @@
       weaveStationsDeg: [...WEAVE_STATION_DEFAULTS] as WeaveStations,
       weavePhaseDeg: 0,
       weaveDwellDeg: WEAVE_DWELL_DEFAULT_DEG,
+      torsoAssistDeg: TORSO_ASSIST_DEFAULT_DEG,
     };
     if (typeof localStorage === "undefined") return fallback;
     try {
@@ -201,6 +208,10 @@
           typeof parsed.weaveDwellDeg === "number"
             ? Math.max(0, Math.min(28, parsed.weaveDwellDeg))
             : fallback.weaveDwellDeg,
+        torsoAssistDeg:
+          typeof parsed.torsoAssistDeg === "number"
+            ? Math.max(0, Math.min(60, parsed.torsoAssistDeg))
+            : fallback.torsoAssistDeg,
       };
     } catch {
       return fallback;
@@ -220,6 +231,7 @@
   let weaveStationsDeg = $state<WeaveStations>(initial.weaveStationsDeg);
   let weavePhaseDeg = $state(initial.weavePhaseDeg);
   let weaveDwellDeg = $state(initial.weaveDwellDeg);
+  let torsoAssistDeg = $state(initial.torsoAssistDeg);
 
   $effect(() => {
     const snapshot: PersistedState = {
@@ -235,6 +247,7 @@
       weaveStationsDeg: [...weaveStationsDeg] as WeaveStations,
       weavePhaseDeg,
       weaveDwellDeg,
+      torsoAssistDeg,
     };
     if (typeof localStorage !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
@@ -384,9 +397,16 @@
     shoulder: { x: number; y: number; z: number };
     reachM: number;
   }
+  interface BodyCapsule {
+    name: string;
+    a: { x: number; y: number; z: number };
+    b: { x: number; y: number; z: number };
+    r: number;
+  }
   let rigRootRef = $state<Group | undefined>();
   let gridFrameRef = $state<Group | undefined>();
   let naturalReach = $state<NaturalReach | null>(null);
+  let bodyCapsules = $state<BodyCapsule[] | null>(null);
 
   function findBone(root: Object3D, name: string): Object3D | null {
     let found: Object3D | null = null;
@@ -522,6 +542,8 @@
           staffAngleDeg,
           effArmDeg,
           gripTargetZ: gripZRigM,
+          autoYawDeg,
+          avoidPushM,
           staff: {
             staffPos: asTuple(staff.getWorldPosition(new Vector3())),
             endA: asTuple(staff.localToWorld(localEndA)),
@@ -545,7 +567,7 @@
   $effect(() => {
     const root = rigRootRef;
     const frame = gridFrameRef;
-    if (!root || !frame || naturalReach) return;
+    if (!root || !frame || (naturalReach && bodyCapsules)) return;
     const interval = setInterval(() => {
       const shoulder = findBone(root, "rightarm");
       const elbow = findBone(root, "rightforearm");
@@ -565,11 +587,56 @@
       if (reach < 0.2) return;
       frame.updateWorldMatrix(true, false);
       const shoulderLocal = frame.worldToLocal(shoulderW.clone());
-      naturalReach = {
-        shoulder: { x: shoulderLocal.x, y: shoulderLocal.y, z: shoulderLocal.z },
-        reachM: reach,
-      };
-      clearInterval(interval);
+      if (!naturalReach) {
+        naturalReach = {
+          shoulder: { x: shoulderLocal.x, y: shoulderLocal.y, z: shoulderLocal.z },
+          reachM: reach,
+        };
+      }
+      if (!bodyCapsules) {
+        const capsuleSpecs = [
+          ["hips", "leftupleg", "rightupleg", 0.13],
+          ["thighL", "leftupleg", "leftleg", 0.09],
+          ["thighR", "rightupleg", "rightleg", 0.09],
+          ["shinL", "leftleg", "leftfoot", 0.07],
+          ["shinR", "rightleg", "rightfoot", 0.07],
+          ["torso", "hips", "neck", 0.15],
+        ] as const;
+        bodyCapsules = capsuleSpecs.flatMap(([name, aName, bName, r]) => {
+          const aBone = findBone(root, aName);
+          const bBone = findBone(root, bName);
+          if (!aBone || !bBone) return [];
+          const a = frame.worldToLocal(aBone.getWorldPosition(new Vector3()));
+          const b = frame.worldToLocal(bBone.getWorldPosition(new Vector3()));
+          return [{
+            name,
+            a: { x: a.x, y: a.y, z: a.z },
+            b: { x: b.x, y: b.y, z: b.z },
+            r,
+          }];
+        });
+        // Skull capsule: the Head bone origin sits at the skull BASE, so
+        // extend past it toward the crown. Measured at rest on purpose —
+        // the dodge only ever moves the head AWAY from this volume, so the
+        // rest pose is the conservative planning shape.
+        const neckBone = findBone(root, "neck");
+        const headBone = findBone(root, "head");
+        if (neckBone && headBone) {
+          const neck = frame.worldToLocal(neckBone.getWorldPosition(new Vector3()));
+          const head = frame.worldToLocal(headBone.getWorldPosition(new Vector3()));
+          bodyCapsules.push({
+            name: "head",
+            a: { x: neck.x, y: neck.y, z: neck.z },
+            b: {
+              x: head.x + (head.x - neck.x) * 0.8,
+              y: head.y + (head.y - neck.y) * 0.8,
+              z: head.z + (head.z - neck.z) * 0.8,
+            },
+            r: 0.11,
+          });
+        }
+      }
+      if (naturalReach && bodyCapsules) clearInterval(interval);
     }, 250);
     return () => clearInterval(interval);
   });
@@ -618,13 +685,253 @@
   const gripTarget = $derived.by(() =>
     gripAt(swingBiasRad + (weaveAuto ? effArmRad : 0))
   );
+  const sweepYRad = $derived((-effSweepDeg * Math.PI) / 180);
+
+  interface Point3 {
+    x: number;
+    y: number;
+    z: number;
+  }
+
+  function closestPointOnSegment(point: Point3, a: Point3, b: Point3): Point3 {
+    const abx = b.x - a.x;
+    const aby = b.y - a.y;
+    const abz = b.z - a.z;
+    const denominator = abx * abx + aby * aby + abz * abz;
+    const t = denominator > 1e-12
+      ? Math.max(0, Math.min(1, ((point.x - a.x) * abx + (point.y - a.y) * aby + (point.z - a.z) * abz) / denominator))
+      : 0;
+    return { x: a.x + abx * t, y: a.y + aby * t, z: a.z + abz * t };
+  }
+
+  function closestPointsOnSegments(
+    p1: Point3,
+    q1: Point3,
+    p2: Point3,
+    q2: Point3
+  ): { staff: Point3; capsule: Point3 } {
+    const d1 = { x: q1.x - p1.x, y: q1.y - p1.y, z: q1.z - p1.z };
+    const d2 = { x: q2.x - p2.x, y: q2.y - p2.y, z: q2.z - p2.z };
+    const r = { x: p1.x - p2.x, y: p1.y - p2.y, z: p1.z - p2.z };
+    const a = d1.x * d1.x + d1.y * d1.y + d1.z * d1.z;
+    const e = d2.x * d2.x + d2.y * d2.y + d2.z * d2.z;
+    const f = d2.x * r.x + d2.y * r.y + d2.z * r.z;
+    let s = 0;
+    let t = 0;
+    if (a <= 1e-12) {
+      t = e > 1e-12 ? Math.max(0, Math.min(1, f / e)) : 0;
+    } else {
+      const c = d1.x * r.x + d1.y * r.y + d1.z * r.z;
+      if (e <= 1e-12) {
+        s = Math.max(0, Math.min(1, -c / a));
+      } else {
+        const b = d1.x * d2.x + d1.y * d2.y + d1.z * d2.z;
+        const denominator = a * e - b * b;
+        if (denominator !== 0) s = Math.max(0, Math.min(1, (b * f - c * e) / denominator));
+        t = (b * s + f) / e;
+        if (t < 0) {
+          t = 0;
+          s = Math.max(0, Math.min(1, -c / a));
+        } else if (t > 1) {
+          t = 1;
+          s = Math.max(0, Math.min(1, (b - c) / a));
+        }
+      }
+    }
+    return {
+      staff: { x: p1.x + d1.x * s, y: p1.y + d1.y * s, z: p1.z + d1.z * s },
+      capsule: { x: p2.x + d2.x * t, y: p2.y + d2.y * t, z: p2.z + d2.z * t },
+    };
+  }
+
+  // Worst clearance violation for a grip position, checked against every
+  // capsule for every shaft direction in the wedge, plus the grip point
+  // itself (the hand must not sit inside a thigh or the hip any more than
+  // the staff may pass through one).
+  function worstViolation(
+    grip: Point3,
+    shaftDirs: Point3[],
+    capsules: BodyCapsule[]
+  ): number {
+    let worst = -Infinity;
+    for (const capsule of capsules) {
+      const clearance = capsule.r + AVOID_MARGIN_M;
+      const capsulePoint = closestPointOnSegment(grip, capsule.a, capsule.b);
+      const pointDistance = Math.hypot(
+        grip.x - capsulePoint.x,
+        grip.y - capsulePoint.y,
+        grip.z - capsulePoint.z
+      );
+      if (clearance - pointDistance > worst) worst = clearance - pointDistance;
+      for (const dir of shaftDirs) {
+        const endA = {
+          x: grip.x - dir.x * STAFF_HALF_LEN_M,
+          y: grip.y - dir.y * STAFF_HALF_LEN_M,
+          z: grip.z - dir.z * STAFF_HALF_LEN_M,
+        };
+        const endB = {
+          x: grip.x + dir.x * STAFF_HALF_LEN_M,
+          y: grip.y + dir.y * STAFF_HALF_LEN_M,
+          z: grip.z + dir.z * STAFF_HALF_LEN_M,
+        };
+        const pair = closestPointsOnSegments(endA, endB, capsule.a, capsule.b);
+        const distance = Math.hypot(
+          pair.staff.x - pair.capsule.x,
+          pair.staff.y - pair.capsule.y,
+          pair.staff.z - pair.capsule.z
+        );
+        if (clearance - distance > worst) worst = clearance - distance;
+      }
+    }
+    return worst;
+  }
+
+  // Escape directions the solver may push the grip along. A gradient walk
+  // gets trapped in the valley between the two thighs; a discrete search
+  // over these directions with a minimal-magnitude pick finds the way a
+  // human actually clears the bottom point — fore, aft, out beside the hip,
+  // or up and around it. Never down: the floor is not an escape.
+  const AVOID_ESCAPE_DIRS: Point3[] = (() => {
+    const dirs: Point3[] = [];
+    for (const [x, z] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [Math.SQRT1_2, Math.SQRT1_2],
+      [Math.SQRT1_2, -Math.SQRT1_2],
+      [-Math.SQRT1_2, Math.SQRT1_2],
+      [-Math.SQRT1_2, -Math.SQRT1_2],
+    ]) {
+      dirs.push({ x, y: 0, z });
+      dirs.push({
+        x: x * Math.SQRT1_2,
+        y: Math.SQRT1_2,
+        z: z * Math.SQRT1_2,
+      });
+    }
+    dirs.push({ x: 0, y: 1, z: 0 });
+    return dirs;
+  })();
+
+  // Direction hysteresis: keep last frame's escape while it stays within
+  // 30% of the best, so the push doesn't flip sides frame to frame. Plain
+  // variable on purpose — it is solver memory, not reactive state.
+  let avoidPrevDir: Point3 | null = null;
+
+  function clearGripFromBody(
+    candidate: Point3,
+    shaftDirs: Point3[],
+    capsules: BodyCapsule[]
+  ): { grip: Point3; pushM: number } {
+    if (worstViolation(candidate, shaftDirs, capsules) <= 0) {
+      avoidPrevDir = null;
+      return { grip: candidate, pushM: 0 };
+    }
+    const minPushAlong = (dir: Point3): number => {
+      const at = (m: number): Point3 => ({
+        x: candidate.x + dir.x * m,
+        y: candidate.y + dir.y * m,
+        z: candidate.z + dir.z * m,
+      });
+      if (worstViolation(at(AVOID_MAX_PUSH_M), shaftDirs, capsules) > 0) {
+        return Infinity;
+      }
+      let lo = 0;
+      let hi = AVOID_MAX_PUSH_M;
+      for (let i = 0; i < 8; i += 1) {
+        const mid = (lo + hi) / 2;
+        if (worstViolation(at(mid), shaftDirs, capsules) > 0) lo = mid;
+        else hi = mid;
+      }
+      return hi;
+    };
+    let bestDir: Point3 | null = null;
+    let bestM = Infinity;
+    for (const dir of AVOID_ESCAPE_DIRS) {
+      const m = minPushAlong(dir);
+      if (m < bestM) {
+        bestM = m;
+        bestDir = dir;
+      }
+    }
+    if (avoidPrevDir && bestDir && avoidPrevDir !== bestDir) {
+      const prevM = minPushAlong(avoidPrevDir);
+      if (prevM <= bestM * 1.3 + 0.02) {
+        bestDir = avoidPrevDir;
+        bestM = prevM;
+      }
+    }
+    if (!bestDir || !Number.isFinite(bestM)) {
+      // Boxed in on every axis: hold the candidate rather than teleporting.
+      avoidPrevDir = null;
+      return { grip: candidate, pushM: 0 };
+    }
+    avoidPrevDir = bestDir;
+    return {
+      grip: {
+        x: candidate.x + bestDir.x * bestM,
+        y: candidate.y + bestDir.y * bestM,
+        z: candidate.z + bestDir.z * bestM,
+      },
+      pushM: bestM,
+    };
+  }
+
+  const commandedPropRotation = $derived.by(() => {
+    const staffRad = (staffAngleDeg * Math.PI) / 180;
+    const sweepQuat = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), sweepYRad);
+    return sweepQuat.multiply(calculatePropQuaternion(Plane.WALL, staffRad));
+  });
+  // The rendered staff follows the commanded grip through IK smoothing and
+  // the weld, so it lags the command by a beat. Solving for a wedge of
+  // shaft orientations around the current one keeps the plan clear of the
+  // body for the orientations the rendered staff is actually sweeping.
+  const AVOID_WEDGE_RAD = (15 * Math.PI) / 180;
+  const gripClearance = $derived.by(() => {
+    if (!gripTarget || !bodyCapsules) return { grip: gripTarget, pushM: 0 };
+    const staffRad = (staffAngleDeg * Math.PI) / 180;
+    const sweepQuat = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), sweepYRad);
+    const shaftDirs = [0, -AVOID_WEDGE_RAD, AVOID_WEDGE_RAD].map((offset) => {
+      const quat = sweepQuat
+        .clone()
+        .multiply(calculatePropQuaternion(Plane.WALL, staffRad + offset));
+      const v = new Vector3(0, 1, 0).applyQuaternion(quat);
+      return { x: v.x, y: v.y, z: v.z };
+    });
+    return clearGripFromBody(gripTarget, shaftDirs, bodyCapsules);
+  });
+  const clearedGripTarget = $derived(gripClearance.grip);
+  const avoidPushM = $derived(gripClearance.pushM);
+
+  const autoYawDeg = $derived.by(() => {
+    if (!naturalReach || !clearedGripTarget) return 0;
+    const tx = clearedGripTarget.x;
+    const tz = clearedGripTarget.z - naturalReach.shoulder.z;
+    const horizontalReach = Math.hypot(tx, tz);
+    const sideSign = Math.sign(naturalReach.shoulder.x) || 1;
+    // Unwrap seam at -135: the exact middle of the cross-behind quadrant,
+    // equidistant from both cone edges. A behind-reach on the cross side
+    // keeps turning cross-body (back-pocket reach); only past the diagonal
+    // does it become an open-via-natural-side reach. A seam any nearer the
+    // cone flips the torso mid-weave at W.
+    let alpha = (Math.atan2(tx * sideSign, tz) * 180) / Math.PI;
+    if (alpha < -135) alpha += 360;
+    const violation = alpha < -15 ? alpha + 15 : alpha > 105 ? alpha - 105 : 0;
+    const weightT = Math.max(0, Math.min(1, (horizontalReach - 0.06) / 0.12));
+    const weight = weightT * weightT * (3 - 2 * weightT);
+    return TORSO_ASSIST_SIGN *
+      Math.max(-torsoAssistDeg, Math.min(torsoAssistDeg, violation * 0.8)) *
+      weight *
+      sideSign;
+  });
 
   // Where the grip actually sits along z in the grid-slot frame: the weave
   // swing owns it in auto mode; the manual travel slider slides it from the
   // natural home plane otherwise.
   const gripZRigM = $derived.by(() => {
-    if (!gripTarget) return null;
-    return gripTarget.z + (weaveAuto ? 0 : handTravelCm / 100);
+    if (!clearedGripTarget) return null;
+    return clearedGripTarget.z + (weaveAuto ? 0 : handTravelCm / 100);
   });
 
   // ── Grid adherence ──
@@ -650,7 +957,7 @@
   // Weave z readout relative to the bisecting plane; falls back to the
   // grid-radius arc until the skeleton is measured.
   const weaveZBodyM = $derived(
-    gripTarget ? gripTarget.z : Math.sin(effArmRad) * armLateralM
+    clearedGripTarget ? clearedGripTarget.z : Math.sin(effArmRad) * armLateralM
   );
 
   // Legacy park (pre-measurement fallback only). Consumers measure z from
@@ -662,20 +969,17 @@
       : handTravelCm
   );
 
-  const sweepYRad = $derived((-effSweepDeg * Math.PI) / 180);
-
   // The one prop state under study: hand point + swept plane + scrubbed
   // staff angle. Built exactly like sequence playback builds its frames.
   const redPropState = $derived.by<PropState3D>(() => {
-    const staffRad = (staffAngleDeg * Math.PI) / 180;
     // The rig's prop frame sits AVATAR_GRID_OFFSET downstage of the
     // grid-slot frame, so the measured grip subtracts it here and the rig
     // adds it back. Pre-measurement fallback: the legacy grid-radius park.
     const worldPosition =
-      gripTarget && gripZRigM !== null
+      clearedGripTarget && gripZRigM !== null
         ? new Vector3(
-            gripTarget.x,
-            gripTarget.y,
+            clearedGripTarget.x,
+            clearedGripTarget.y,
             gripZRigM - STAGE.AVATAR_GRID_OFFSET
           )
         : new Vector3(
@@ -683,18 +987,12 @@
             basePosition.y,
             basePosition.z + effTravelCm / 100
           );
-    const sweepQuat = new Quaternion().setFromAxisAngle(
-      new Vector3(0, 1, 0),
-      sweepYRad
-    );
     return {
       plane: Plane.WALL,
       centerPathAngle,
-      staffRotationAngle: staffRad,
+      staffRotationAngle: (staffAngleDeg * Math.PI) / 180,
       worldPosition,
-      worldRotation: sweepQuat.multiply(
-        calculatePropQuaternion(Plane.WALL, staffRad)
-      ),
+      worldRotation: commandedPropRotation,
     };
   });
 
@@ -735,7 +1033,7 @@
       `shift ${Math.round(weaveAuto ? weaveZBodyM * 100 : effTravelCm)}cm · ` +
       `stance ${stanceYawDeg}°` +
       (weaveAuto
-        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}° · dwell ${weaveDwellDeg}°)`
+        ? ` · weave auto (stations ${stationDump} · depth ${weaveDepthDeg}° · phase ${weavePhaseDeg}° · dwell ${weaveDwellDeg}° · assist ${torsoAssistDeg}°)`
         : "") +
       (playing ? ` · playing ${speedDegPerSec}°/s` : " · frozen");
     try {
@@ -861,7 +1159,7 @@
           {groundOffset}
           enableLocomotion={true}
           enableFootPlanting={true}
-          stanceYaw={stanceYawRad}
+          stanceYaw={stanceYawRad + (autoYawDeg * Math.PI) / 180}
           weldGrip={true}
           headDodge={true}
         >
@@ -969,8 +1267,30 @@
             onclick={() => (weaveDwellDeg = WEAVE_DWELL_DEFAULT_DEG)}
           >↺</button>
         </div>
+        <div class="slider-control">
+          <label for="grip-lab-assist">Assist</label>
+          <input
+            id="grip-lab-assist"
+            type="range"
+            min="0"
+            max="60"
+            step="1"
+            bind:value={torsoAssistDeg}
+            ondblclick={() => (torsoAssistDeg = TORSO_ASSIST_DEFAULT_DEG)}
+          />
+          <output for="grip-lab-assist">{torsoAssistDeg}°</output>
+          <button
+            type="button"
+            class="mini-reset"
+            aria-label="Reset torso assist"
+            disabled={torsoAssistDeg === TORSO_ASSIST_DEFAULT_DEG}
+            onclick={() => (torsoAssistDeg = TORSO_ASSIST_DEFAULT_DEG)}
+          >↺</button>
+        </div>
         <span class="weave-readout">
-          arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)} cm
+          arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)} cm · assist {Math.round(autoYawDeg)}°<span
+            class:inactive-avoid={avoidPushM <= 0.005}
+          > · avoid {Math.round(avoidPushM * 100)} cm</span>
         </span>
       {/if}
 
@@ -1065,8 +1385,12 @@
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    /* Worst case: "arm −60° · shift −45 cm" — reserve it. */
-    min-width: 22ch;
+    /* The avoidance slot stays reserved when no push is active. */
+    min-width: 50ch;
+  }
+
+  .inactive-avoid {
+    visibility: hidden;
   }
 
   .slider-control {
