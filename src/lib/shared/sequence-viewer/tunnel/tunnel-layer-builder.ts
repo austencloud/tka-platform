@@ -6,8 +6,18 @@ import {
   invertSequence,
   rewindSequence,
 } from "$lib/shared/create/services/sequence-transforms";
+import { normalizeSequenceDerived } from "$lib/shared/create/services/sequence-derived-fields";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import { generateCopyOps, type CopyOp, type TunnelConfig } from "./tunnel-config";
+import {
+  generateCopyOps,
+  type CopyOp,
+  type TunnelConfig,
+} from "./tunnel-config";
+import {
+  resolveTunnelLayerPlans,
+  type TunnelComposition,
+  type TunnelLayerPlan,
+} from "./tunnel-composition";
 
 /** Apply one transform op to a sequence, dispatching to the canonical
  *  `sequence-transforms` function. No new transform math lives here. */
@@ -28,10 +38,41 @@ async function applyOp(seq: SequenceData, op: CopyOp): Promise<SequenceData> {
 
 /** Fold an ordered op chain onto the base to produce one overlaid copy. Ops
  *  compose left-to-right (order matters: rotate-then-mirror ≠ mirror-then-rotate). */
-async function applyOps(base: SequenceData, ops: CopyOp[]): Promise<SequenceData> {
-  let out = base;
-  for (const op of ops) out = await applyOp(out, op);
+async function applyOps(
+  base: SequenceData,
+  ops: CopyOp[]
+): Promise<SequenceData> {
+  let out = normalizeSequenceDerived(base);
+  for (const op of ops) {
+    out = normalizeSequenceDerived(await applyOp(out, op));
+  }
   return out;
+}
+
+export interface BuiltTunnelLayer extends TunnelLayerPlan {
+  /** The authored performer's resolved choreography, before formation placement. */
+  performerSequence: SequenceData;
+  sequence: SequenceData;
+}
+
+/** Build every resolved performer in an authored tunnel. The plan decides
+ *  which choreography belongs to each formation arm; this module only applies
+ *  the canonical sequence transforms that place it there. */
+export async function buildTunnelCompositionLayers(
+  composition: TunnelComposition,
+  cfg: TunnelConfig
+): Promise<BuiltTunnelLayer[]> {
+  const plans = resolveTunnelLayerPlans(composition, cfg);
+  return Promise.all(
+    plans.map(async (plan) => {
+      const performerSequence = await applyOps(plan.sequence, plan.sourceOps);
+      return {
+        ...plan,
+        performerSequence,
+        sequence: await applyOps(performerSequence, plan.formationOps),
+      };
+    })
+  );
 }
 
 /**
@@ -44,7 +85,7 @@ async function applyOps(base: SequenceData, ops: CopyOp[]): Promise<SequenceData
  */
 export async function buildTunnelLayers(
   base: SequenceData,
-  cfg: TunnelConfig,
+  cfg: TunnelConfig
 ): Promise<SequenceData[]> {
   return Promise.all(generateCopyOps(cfg).map((ops) => applyOps(base, ops)));
 }

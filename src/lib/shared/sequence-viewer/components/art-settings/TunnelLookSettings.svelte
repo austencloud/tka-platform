@@ -9,10 +9,17 @@
     controller: TunnelViewController;
     dense: boolean;
     onSaveTunnel?: () => void;
+    saveTunnelLabel?: string;
     onArtSettingChange?: ArtSettingChangeHandler;
   }
 
-  let { controller, dense, onSaveTunnel, onArtSettingChange }: Props = $props();
+  let {
+    controller,
+    dense,
+    onSaveTunnel,
+    saveTunnelLabel = "Save tunnel",
+    onArtSettingChange,
+  }: Props = $props();
 
   let tuneOpen = $state(false);
 
@@ -55,6 +62,7 @@
       {controller}
       {dense}
       {onSaveTunnel}
+      {saveTunnelLabel}
       onCustomize={openTuner}
       {onArtSettingChange}
     />

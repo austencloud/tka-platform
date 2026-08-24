@@ -3,7 +3,10 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
-import { buildTunnelLayers } from "./tunnel-layer-builder";
+import {
+  buildTunnelCompositionLayers,
+  type BuiltTunnelLayer,
+} from "./tunnel-layer-builder";
 import { sampleTunnelProps } from "./tunnel-prop-sampling";
 import {
   DEFAULT_CONFIG,
@@ -24,16 +27,29 @@ import {
 import { performerRing } from "./performer-ring-model";
 import { tunnelPropColor } from "./tunnel-prop-colors";
 import {
+  createIndependentTunnelPerformer,
+  createTunnelComposition,
+  tunnelLayerCycleSteps,
+  type TunnelComposition,
+} from "./tunnel-composition";
+import {
   loadTunnelViewState,
   saveTunnelViewState,
   type TunnelViewState,
 } from "./tunnel-view-state";
 
-const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
+const DEFAULT_PROP_STATE: PropState = {
+  centerPathAngle: 0,
+  staffRotationAngle: 0,
+};
 
 export interface TunnelControllerSources {
   /** The viewer's currently open sequence. */
   getSequence: () => SequenceData | null | undefined;
+  /** An authored cast. Absent keeps the classic one-sequence tunnel path. */
+  getComposition?: () => TunnelComposition | null | undefined;
+  /** Receives the exact baked layer objects used by the animation canvas. */
+  onLayersChange?: (layers: readonly BuiltTunnelLayer[]) => void;
 }
 
 /** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
@@ -69,7 +85,9 @@ export class TunnelViewController {
   staggerSteps = $state<number>(DEFAULT_CONFIG.staggerSteps);
   /** Per-performer speed overrides (arm 1..n → multiplier); absent arm = 1×. The
    *  single source of truth for speed (fills just populate it). */
-  speedOverrides = $state<Record<number, number>>({ ...DEFAULT_CONFIG.speedOverrides });
+  speedOverrides = $state<Record<number, number>>({
+    ...DEFAULT_CONFIG.speedOverrides,
+  });
   /** The performer selected in the Speed drawer (0 = you, 1..n = copies), or null.
    *  Transient UI focus — NOT part of the config/persistence; drives the sidebar
    *  highlight + the render spotlight-dim. */
@@ -90,8 +108,9 @@ export class TunnelViewController {
   section = $state<TunnelViewState["section"]>("tunnel");
 
   #sources: TunnelControllerSources;
-  #layers = $state<SequenceData[]>([]);
+  #layers = $state<BuiltTunnelLayer[]>([]);
   #buildToken = 0;
+  buildError = $state<string | null>(null);
 
   constructor(sources: TunnelControllerSources) {
     this.#sources = sources;
@@ -99,7 +118,9 @@ export class TunnelViewController {
     // Restore the last-left config before any effect wires up, clamped to the
     // live budget (a persisted dense ring shrinks under reduced motion).
     const view = loadTunnelViewState();
-    const cfg = clampConfig(view.config, this.#maxImages());
+    const requestedConfig =
+      sources.getComposition?.()?.formation ?? view.config;
+    const cfg = clampConfig(requestedConfig, this.#maxImages());
     this.fold = cfg.fold;
     this.mirror = cfg.mirror;
     this.flip = cfg.flip;
@@ -136,6 +157,7 @@ export class TunnelViewController {
     // never re-runs the transforms. Transport changes never rebuild either.
     $effect(() => {
       const seq = this.#sources.getSequence();
+      const authored = this.#sources.getComposition?.() ?? null;
       const spatial: TunnelConfig = {
         fold: this.fold,
         mirror: this.mirror,
@@ -148,12 +170,37 @@ export class TunnelViewController {
       const on = this.active;
       if (!on || !seq) {
         this.#layers = [];
+        this.#sources.onLayersChange?.([]);
+        this.buildError = null;
         return;
       }
+      const composition =
+        authored ??
+        createTunnelComposition(
+          [createIndependentTunnelPerformer(seq, 0, "You")],
+          {
+            id: `viewer-${seq.id}`,
+            name: seq.name || seq.word || "Untitled sequence",
+            formation: spatial,
+          }
+        );
       const token = ++this.#buildToken;
-      void buildTunnelLayers(seq, spatial).then((layers) => {
-        if (token === this.#buildToken) this.#layers = layers;
-      });
+      void buildTunnelCompositionLayers(composition, spatial)
+        .then((layers) => {
+          if (token !== this.#buildToken) return;
+          this.#layers = layers;
+          this.#sources.onLayersChange?.(layers);
+          this.buildError = null;
+        })
+        .catch((error) => {
+          if (token !== this.#buildToken) return;
+          this.#layers = [];
+          this.#sources.onLayersChange?.([]);
+          this.buildError =
+            error instanceof Error
+              ? error.message
+              : "The tunnel could not be built.";
+        });
     });
   }
 
@@ -177,6 +224,11 @@ export class TunnelViewController {
    *  has two hands, so `propCount === performerCount * 2`. */
   performerCount = $derived(imageCount(this.config));
 
+  /** Number of authored performers that must fit into the current formation. */
+  get authoredPerformerCount(): number {
+    return this.#sources.getComposition?.()?.performers.length ?? 1;
+  }
+
   /** Stable signature (export filename suffix + build dedup). */
   configKey = $derived(configKey(this.config));
 
@@ -192,7 +244,11 @@ export class TunnelViewController {
    *  it doesn't touch `#sources` during field initialization; still reactive when
    *  read in a template/derived because it reads the reactive sequence. */
   get staggerMax(): number {
-    return Math.max(0, (this.#sources.getSequence()?.steps?.length ?? 1) - 1);
+    const longest = this.#layers.reduce(
+      (max, layer) => Math.max(max, layer.sequence.steps.length),
+      this.#sources.getSequence()?.steps?.length ?? 1
+    );
+    return Math.max(0, longest - 1);
   }
 
   /** Image budget for the live dock (reduced motion tightens it). */
@@ -207,6 +263,7 @@ export class TunnelViewController {
   /** Set the whole config (clamped to the live budget). */
   #setConfig(cfg: TunnelConfig): void {
     const c = clampConfig(cfg, this.#maxImages());
+    if (imageCount(c) < this.authoredPerformerCount) return;
     this.fold = c.fold;
     this.mirror = c.mirror;
     this.flip = c.flip;
@@ -230,8 +287,11 @@ export class TunnelViewController {
   /** Apply a generator change (fold/mirror/flip) clamped to the live budget so a
    *  dense combo can't exceed the perf ceiling. The prop-count readout makes any
    *  clamp visible — no silent lie. */
-  #applyGenerators(next: Partial<Pick<TunnelConfig, "fold" | "mirror" | "flip">>): void {
+  #applyGenerators(
+    next: Partial<Pick<TunnelConfig, "fold" | "mirror" | "flip">>
+  ): void {
     const clamped = clampConfig({ ...this.config, ...next }, this.#maxImages());
+    if (imageCount(clamped) < this.authoredPerformerCount) return;
     this.fold = clamped.fold;
     this.mirror = clamped.mirror;
     this.flip = clamped.flip;
@@ -276,18 +336,36 @@ export class TunnelViewController {
   }
   /** True when any performer runs at a non-1× rate (drives the Reset affordance). */
   hasSpeedOverrides = $derived(Object.keys(this.speedOverrides).length > 0);
-  /** Base loops the shared playhead must span before every performer returns to
-   *  its home phase together. A ¼× arm needs 4 base loops, a ½× arm 2; with no
-   *  sub-1× arm it's 1 (the classic single loop). The live clock wraps at
-   *  `stepCount × loopCycles` so slow arms DRIFT through the base loop — the ring
-   *  keeps evolving into fresh kaleidoscopes and only re-homes at this boundary,
-   *  instead of every arm snapping back to the start each base cycle. */
-  loopCycles = $derived.by(() => {
-    const slowest = Object.values(this.speedOverrides).reduce(
-      (m, r) => Math.min(m, r),
-      1,
+  /** Steps on the shared clock before every independently looping performer
+   *  returns to its starting phase. */
+  loopSteps = $derived.by(() => {
+    if (this.#layers.length === 0) {
+      return Math.max(1, this.#sources.getSequence()?.steps.length ?? 1);
+    }
+    const mods = copyModulators(this.config);
+    return tunnelLayerCycleSteps(
+      this.#layers.map((layer, arm) => ({
+        sequence: layer.sequence,
+        speed:
+          layer.speed *
+          (arm === 0
+            ? effectiveSpeed(this.config, 0)
+            : (mods[arm - 1]?.speed ?? 1)),
+      }))
     );
-    return slowest >= 1 ? 1 : Math.round(1 / slowest);
+  });
+
+  /** Base loops the shared playhead must span before every performer returns to
+   *  its home phase together. Retained for the settings and export consumers
+   *  that describe duration in base-sequence loops. */
+  loopCycles = $derived.by(() => {
+    const baseSteps = Math.max(
+      1,
+      this.#layers[0]?.sequence.steps.length ??
+        this.#sources.getSequence()?.steps.length ??
+        1
+    );
+    return Math.max(1, Math.ceil(this.loopSteps / baseSteps));
   });
   /** Toggle the spotlight selection for a performer (click again to clear). */
   selectPerformer(arm: number): void {
@@ -303,7 +381,7 @@ export class TunnelViewController {
     const layerCount = Math.max(0, imageCount(cfg) - 1);
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
-      label: i === 0 ? "You" : `Copy ${i}`,
+      label: this.#layers[i]?.performerLabel ?? (i === 0 ? "You" : `Copy ${i}`),
       rate: effectiveSpeed(cfg, i),
       blueHex: tunnelPropColor(i * 2, layerCount).hex,
       redHex: tunnelPropColor(i * 2 + 1, layerCount).hex,
@@ -317,7 +395,8 @@ export class TunnelViewController {
   /** True when the live config is a large stack — advisory (a heavy effect may
    *  drop frames on weaker devices); not a hard cap. */
   heavyLoad = $derived(
-    this.active && propCount(this.config) >= TunnelViewController.LARGE_STACK_PROPS,
+    this.active &&
+      propCount(this.config) >= TunnelViewController.LARGE_STACK_PROPS
   );
 
   /** Honor the global Effort preset so the sidebar's Effort section shapes the
@@ -328,12 +407,21 @@ export class TunnelViewController {
   /** Base (un-transformed) sequence prop states at the playhead — the center
    *  pair of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */
   basePropsAt(currentStep: number): { blue: PropState; red: PropState } {
-    const seq = this.#sources.getSequence();
-    if (!seq) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    // The base ("you", arm 0) honors its own speed override so the whole mandala
-    // can be speed-symmetric — no pair stuck at 1×.
-    const baseSpeed = this.speedOverrides[0] ?? 1;
-    return sampleTunnelProps(seq, currentStep, this.#ease, 0, baseSpeed);
+    const layer = this.#layers[0];
+    const seq = layer?.sequence ?? this.#sources.getSequence();
+    if (!seq)
+      return {
+        blue: { ...DEFAULT_PROP_STATE },
+        red: { ...DEFAULT_PROP_STATE },
+      };
+    const baseSpeed = (layer?.speed ?? 1) * (this.speedOverrides[0] ?? 1);
+    return sampleTunnelProps(
+      seq,
+      currentStep,
+      this.#ease,
+      layer?.stepOffset ?? 0,
+      baseSpeed
+    );
   }
 
   /** Per-copy prop states at the live playhead, each shifted by its Stagger +
@@ -342,15 +430,24 @@ export class TunnelViewController {
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
     const mods = copyModulators(this.config);
-    return this.#layers.map((seq, i) => {
+    return this.#layers.slice(1).map((layer, i) => {
       const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
-      const p = sampleTunnelProps(seq, currentStep, this.#ease, m.staggerSteps, m.speed);
+      const p = sampleTunnelProps(
+        layer.sequence,
+        currentStep,
+        this.#ease,
+        layer.stepOffset + m.staggerSteps,
+        layer.speed * m.speed
+      );
       // Every copy inherits the viewer's global prop — a layer carries no explicit
       // per-hand prop type, so the engine falls back to the global prop (the same
       // rule the center pair uses). The `AdditionalLayerProps` per-layer prop-type
       // fields stay optional/unused: the shared additional-layers plumbing keeps
       // them for other callers, but the tunnel never sets them.
-      return { blueProp: p.blue, redProp: p.red } satisfies AdditionalLayerProps;
+      return {
+        blueProp: p.blue,
+        redProp: p.red,
+      } satisfies AdditionalLayerProps;
     });
   }
 }

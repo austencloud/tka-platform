@@ -13,6 +13,7 @@
     controller: TunnelViewController;
     dense: boolean;
     onSaveTunnel?: () => void;
+    saveTunnelLabel?: string;
     onCustomize: (source: "custom_card" | "customize_button") => void;
     onArtSettingChange?: ArtSettingChangeHandler;
   }
@@ -21,6 +22,7 @@
     controller,
     dense,
     onSaveTunnel,
+    saveTunnelLabel = "Save tunnel",
     onCustomize,
     onArtSettingChange,
   }: Props = $props();
@@ -192,7 +194,8 @@
     type="button"
     onclick={() => onSaveTunnel?.()}
   >
-    <i class="fas fa-bookmark" aria-hidden="true"></i> Save tunnel
+    <i class="fas fa-bookmark" aria-hidden="true"></i>
+    {saveTunnelLabel}
   </button>
 {/if}
 

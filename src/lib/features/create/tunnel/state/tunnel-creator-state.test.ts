@@ -1,0 +1,242 @@
+import { describe, expect, it, vi } from "vitest";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { TunnelComposition } from "$lib/shared/sequence-viewer/tunnel/tunnel-composition";
+import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+import {
+  TUNNEL_CREATOR_DRAFT_VERSION,
+  type TunnelCreatorDraft,
+} from "../domain/tunnel-creator-draft";
+import { createTunnelCreatorState } from "./tunnel-creator-state.svelte";
+
+const sequence = {
+  id: "sequence-lead",
+  name: "Lead sequence",
+  word: "LEAD",
+  steps: [{ id: "step-1" }],
+} as unknown as SequenceData;
+
+function composition(): TunnelComposition {
+  return {
+    version: 1,
+    id: "composition-1",
+    name: "Saved choreography",
+    performers: [
+      {
+        id: "lead",
+        label: "Lead",
+        source: {
+          kind: "independent",
+          sequence,
+          sourceSequenceId: sequence.id,
+        },
+        timing: { stepOffset: 0, speed: 1 },
+      },
+      {
+        id: "partner",
+        label: "Partner",
+        source: {
+          kind: "derived",
+          performerId: "lead",
+          transforms: [{ kind: "rotate", amount: 3 }, { kind: "mirror" }],
+        },
+        timing: { stepOffset: 2, speed: 0.75 },
+      },
+      {
+        id: "third",
+        label: "Performer 3",
+        source: { kind: "derived", performerId: "lead", transforms: [] },
+        timing: { stepOffset: 0, speed: 1 },
+      },
+    ],
+    formation: { ...DEFAULT_CONFIG, fold: 3, speedOverrides: {} },
+    createdAt: 100,
+    updatedAt: 200,
+  };
+}
+
+describe("tunnel creator edit state", () => {
+  it("reopens the exact cast, relationship, identity, and formation", async () => {
+    const openComposition = vi.fn();
+    const initial = composition();
+    const state = createTunnelCreatorState({
+      openComposition,
+      initialComposition: initial,
+      editingTunnel: { id: "tunnel-1", name: "My tunnel" },
+      now: () => 300,
+    });
+
+    expect(state.ready).toBe(true);
+    expect(state.mode).toBe("linked");
+    expect(state.relationship).toMatchObject({
+      rotationSteps: 3,
+      reflect: "mirror",
+    });
+    expect(state.initialFormation.fold).toBe(3);
+
+    await state.openInViewer(initial.formation);
+
+    const reopened = openComposition.mock.calls[0]?.[0] as TunnelComposition;
+    expect(reopened.id).toBe("composition-1");
+    expect(reopened.createdAt).toBe(100);
+    expect(reopened.name).toBe("Saved choreography");
+    expect(reopened.performers.map((performer) => performer.id)).toEqual([
+      "lead",
+      "partner",
+      "third",
+    ]);
+  });
+
+  it("restores and snapshots an in-progress tunnel across HMR", () => {
+    const performerOne = composition().performers[0];
+    const draft: TunnelCreatorDraft = {
+      version: TUNNEL_CREATOR_DRAFT_VERSION,
+      mode: "separate",
+      composition: {
+        ...composition(),
+        performers: performerOne ? [performerOne] : [],
+        formation: { ...DEFAULT_CONFIG, fold: 4, speedOverrides: {} },
+      },
+      relationship: {
+        rotationSteps: 5,
+        reflect: "flip",
+        invert: false,
+        rewind: true,
+      },
+      sourceStates: [],
+      workspace: {
+        activePanel: "generation",
+        generationTargetId: "lead",
+      },
+      editingTunnel: { id: "tunnel-1", name: "My tunnel" },
+    };
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      initialDraft: draft,
+      now: () => 400,
+    });
+
+    expect(state.mode).toBe("separate");
+    expect(state.lead?.label).toBe("Performer 1");
+    expect(state.partner).toBeNull();
+    expect(state.relationship).toEqual(draft.relationship);
+    expect(state.initialFormation.fold).toBe(4);
+    expect(state.editingTunnel).toEqual(draft.editingTunnel);
+    expect(state.activePanel).toBe("generation");
+    expect(state.generationTargetId).toBe("lead");
+
+    state.setFormation({ ...DEFAULT_CONFIG, fold: 6, speedOverrides: {} });
+    const snapshot = state.draftSnapshot();
+
+    expect(snapshot.composition?.formation.fold).toBe(6);
+    expect(snapshot.composition?.performers).toHaveLength(1);
+    expect(snapshot.composition?.performers[0]?.label).toBe("Performer 1");
+    expect(snapshot.workspace).toEqual(draft.workspace);
+    expect(snapshot.editingTunnel).toEqual(draft.editingTunnel);
+  });
+
+  it("keeps independent sources and Previous history while modes change", () => {
+    const first = { ...sequence, id: "first", name: "First" };
+    const second = { ...sequence, id: "second", name: "Second" };
+    const third = { ...sequence, id: "third", name: "Third" };
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      createId: (() => {
+        let id = 0;
+        return () => `id-${++id}`;
+      })(),
+    });
+    const performerOneId = state.performerIdAt(0);
+    const performerTwoId = state.performerIdAt(1);
+
+    expect(performerOneId).not.toBeNull();
+    expect(performerTwoId).not.toBeNull();
+    if (!performerOneId || !performerTwoId) return;
+
+    state.setPerformerSequence(performerOneId, first, "generated");
+    state.setPerformerSequence(performerOneId, second, "generated");
+    state.setPerformerSequence(performerTwoId, third, "picked");
+    state.setMode("linked");
+
+    expect(state.partner?.source.kind).toBe("derived");
+
+    state.setMode("separate");
+
+    expect(state.partnerSequence?.id).toBe("third");
+    expect(state.previousCount(performerOneId)).toBe(1);
+    expect(state.restorePreviousSequence(performerOneId)).toBe(true);
+    expect(state.leadSequence?.id).toBe("first");
+  });
+
+  it("persists generated source history across an HMR draft round trip", () => {
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      createId: (() => {
+        let id = 0;
+        return () => `id-${++id}`;
+      })(),
+    });
+    const performerId = state.performerIdAt(0);
+    if (!performerId) return;
+
+    state.setPerformerSequence(
+      performerId,
+      { ...sequence, id: "generated-1" },
+      "generated"
+    );
+    state.setPerformerSequence(
+      performerId,
+      { ...sequence, id: "generated-2" },
+      "generated"
+    );
+
+    const restored = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      initialDraft: state.draftSnapshot(),
+    });
+    const restoredId = restored.performerIdAt(0);
+
+    expect(restoredId).toBe(performerId);
+    expect(restoredId && restored.previousCount(restoredId)).toBe(1);
+    expect(restoredId && restored.sourceOrigin(restoredId)).toBe("generated");
+    expect(restoredId && restored.restorePreviousSequence(restoredId)).toBe(
+      true
+    );
+    expect(restored.leadSequence?.id).toBe("generated-1");
+  });
+
+  it("persists the active generation workspace and its performer target", () => {
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      createId: (() => {
+        let id = 0;
+        return () => `id-${++id}`;
+      })(),
+    });
+    const performerId = state.performerIdAt(1);
+    if (!performerId) return;
+
+    expect(state.openGenerationPanel(performerId)).toBe(true);
+
+    const restored = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      initialDraft: state.draftSnapshot(),
+    });
+
+    expect(restored.activePanel).toBe("generation");
+    expect(restored.generationTargetId).toBe(performerId);
+  });
+
+  it("targets direct generation without opening the generation workspace", () => {
+    const state = createTunnelCreatorState({
+      openComposition: vi.fn(),
+      createId: () => "direct-generate",
+    });
+    const performerId = state.performerIdAt(0);
+    if (!performerId) return;
+
+    expect(state.selectGenerationTarget(performerId)).toBe(true);
+    expect(state.generationTargetId).toBe(performerId);
+    expect(state.activePanel).toBeNull();
+    expect(state.selectGenerationTarget("missing-performer")).toBe(false);
+  });
+});

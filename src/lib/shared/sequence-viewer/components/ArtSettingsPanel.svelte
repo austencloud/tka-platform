@@ -16,6 +16,7 @@
     showExport = true,
     showTitle = true,
     onSaveTunnel,
+    saveTunnelLabel = "Save tunnel",
     bpm = $bindable(60),
     playbackMode = "continuous",
     isPlaying = false,
@@ -47,6 +48,7 @@
     {showExport}
     {showTitle}
     {onSaveTunnel}
+    {saveTunnelLabel}
     {bpm}
     {playbackMode}
     {isPlaying}

@@ -51,6 +51,18 @@
   } from "../domain/tunnel-playback";
   import { ExportAttemptGuard } from "../domain/export-attempt-guard";
   import type { ViewerActionSink } from "../domain/viewer-control-analytics";
+  import {
+    beginTunnelSaveAttempt,
+    createTunnelSaveDedupeState,
+    createTunnelSaveFingerprint,
+    finishTunnelSaveAttempt,
+  } from "../domain/tunnel-save-deduplication";
+  import { reportPostHogLifecycleEvent } from "$lib/shared/analytics/services/posthog-lifecycle-reporter";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import type {
+    TunnelComposition,
+    TunnelSaveTarget,
+  } from "../tunnel/tunnel-composition";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
   // viewer's mode rail picks one — this pane renders the chosen view, fixed.
@@ -77,6 +89,8 @@
     onArtExportEvent,
     onArtSettingChange,
     onArtAction,
+    tunnelComposition = null,
+    tunnelSaveTarget = null,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -146,6 +160,8 @@
       source?: string
     ) => void;
     onArtAction?: ViewerActionSink;
+    tunnelComposition?: TunnelComposition | null;
+    tunnelSaveTarget?: TunnelSaveTarget | null;
   } = $props();
 
   // The tunnel controller is owned HERE and shared with both the rendering view
@@ -154,7 +170,11 @@
   // export entry can derive per-beat layers from it.
   const controller = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
+    getComposition: () => tunnelComposition,
   });
+  const saveTunnelLabel = $derived(
+    tunnelSaveTarget ? "Save changes" : "Save tunnel"
+  );
   // Only build/animate the kaleidoscope layers when this pane is the tunnel —
   // a mandala pane keeps a (cheap) controller but doesn't drive the layer build.
   $effect(() => {
@@ -170,6 +190,7 @@
     getSequence: () => playback.animationState.sequenceData ?? sequence,
     getBluePropType: () => bluePropType,
     getRedPropType: () => redPropType,
+    pathPolicy: getAnimationVisibilityManager(),
   });
 
   // Effects config (grabbed at init — getContext must run during setup) + a ref
@@ -194,7 +215,7 @@
   const mandalaExportAttempt = new ExportAttemptGuard();
   let exportAttemptBusy = $state(false);
   let tunnelPlaying = $state(true);
-  let tunnelSaveBusy = false;
+  let tunnelSaveDedupeState = createTunnelSaveDedupeState();
 
   function handleTunnelPlaybackToggle(source: TunnelPlaybackSource): void {
     tunnelPlaying = toggleTunnelPlayback(
@@ -530,9 +551,6 @@
   async function handleSaveTunnel(
     source: "settings_panel" | "canvas_context_menu"
   ) {
-    if (tunnelSaveBusy) return;
-    tunnelSaveBusy = true;
-    onArtAction?.("tunnel_save", { stage: "requested", source });
     const seq = effectiveSeq;
     if (!seq || !effectsForSave) {
       onArtAction?.(
@@ -540,7 +558,6 @@
         { stage: "failed", source, reason: "not_ready" },
         { count: false }
       );
-      tunnelSaveBusy = false;
       return;
     }
     // Capture-only deps: real handles for everything captureTunnelSnapshot READS;
@@ -564,33 +581,98 @@
       getBpm: () => bpm,
     };
     const snapshot = captureTunnelSnapshot(deps);
+    const fingerprint = createTunnelSaveFingerprint(
+      seq,
+      snapshot,
+      tunnelComposition
+    );
+    const attempt = beginTunnelSaveAttempt(
+      tunnelSaveDedupeState,
+      fingerprint,
+      Date.now()
+    );
+    tunnelSaveDedupeState = attempt.state;
+    if (!attempt.accepted) return;
+
+    onArtAction?.("tunnel_save", { stage: "requested", source });
     // Composite ALL stage layers (props + trails + effect overlays), not just the
     // first canvas, so the saved thumbnail matches the live look.
     const poster = capturePosterFromContainer(artBodyEl);
     const simplifiedWord = simplifyRepeatedWord(seq.word || "");
-    const name = simplifiedWord || `Tunnel #${tunnelCollectionState.count + 1}`;
+    const name =
+      tunnelSaveTarget?.name ||
+      simplifiedWord ||
+      `Tunnel #${tunnelCollectionState.count + 1}`;
     try {
-      await tunnelCollectionState.add({
+      const tunnelData = {
         name,
         steps: [...seq.steps],
         snapshot,
         poster,
+        ...(tunnelComposition
+          ? {
+              composition: {
+                ...tunnelComposition,
+                formation: controller.config,
+                updatedAt: Date.now(),
+              },
+            }
+          : {}),
         source: "viewer",
         // Lineage stamp: link back to the raw source sequence (spec:
         // 2026-07-12-art-in-library-design.md Unit 3).
         ...(simplifiedWord
           ? { sourceWord: simplifiedWord, sourceSequenceId: seq.id }
           : {}),
-      });
-      toast.success("Tunnel saved to your collection");
+      };
+      const savedTunnel = tunnelSaveTarget
+        ? await tunnelCollectionState.update(tunnelSaveTarget.id, tunnelData)
+        : await tunnelCollectionState.add(tunnelData);
+      if (!savedTunnel) {
+        throw new Error(`Tunnel ${tunnelSaveTarget?.id ?? ""} was not found.`);
+      }
+      tunnelSaveDedupeState = finishTunnelSaveAttempt(
+        tunnelSaveDedupeState,
+        fingerprint,
+        "succeeded",
+        Date.now()
+      );
+      try {
+        await reportPostHogLifecycleEvent({
+          event: "tunnel_save",
+          properties: {
+            tunnelId: savedTunnel.id,
+            source,
+            stepCount: seq.steps.length,
+            durability: authState.isFullAccount ? "cloud" : "local",
+            ...(seq.id ? { sourceSequenceId: seq.id } : {}),
+          },
+        });
+      } catch (error) {
+        console.warn(
+          "[ArtPane] Could not deliver tunnel lifecycle event:",
+          error
+        );
+      }
+      toast.success(
+        tunnelSaveTarget
+          ? "Tunnel choreography updated"
+          : "Tunnel saved to your collection"
+      );
       onArtAction?.(
         "tunnel_save",
         { stage: "completed", source },
         { count: false }
       );
     } catch (error) {
-      // add() unshifts locally before the Firestore write, so the entry shows in
-      // this session either way — be honest that it didn't sync.
+      tunnelSaveDedupeState = finishTunnelSaveAttempt(
+        tunnelSaveDedupeState,
+        fingerprint,
+        "failed",
+        Date.now()
+      );
+      // A failed account sync rolls the optimistic entry back. Keep this exact
+      // content retryable and tell the user it did not reach their collection.
       console.warn("[ArtPane] Tunnel save failed to sync:", error);
       toast.error("Couldn't sync the tunnel to your account");
       onArtAction?.(
@@ -598,8 +680,6 @@
         { stage: "failed", source, reason: "sync_error" },
         { count: false }
       );
-    } finally {
-      tunnelSaveBusy = false;
     }
   }
 </script>
@@ -628,6 +708,7 @@
         {bluePropType}
         {redPropType}
         onSaveTunnel={() => void handleSaveTunnel("canvas_context_menu")}
+        {saveTunnelLabel}
         playing={tunnelPlaying}
         onPlayingChange={() => handleTunnelPlaybackToggle("canvas")}
       />
@@ -668,6 +749,7 @@
     {layout}
     onExport={handleExport}
     onSaveTunnel={() => void handleSaveTunnel("settings_panel")}
+    {saveTunnelLabel}
     {bpm}
     {playbackMode}
     {stepSize}

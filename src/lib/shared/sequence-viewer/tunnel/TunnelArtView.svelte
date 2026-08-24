@@ -22,12 +22,13 @@
     bluePropType,
     redPropType,
     onSaveTunnel,
+    saveTunnelLabel = "Save tunnel",
     onPlayingChange,
     playing = $bindable(true),
     stageFit = "cover",
   }: {
     sequence: SequenceData;
-    playback: ViewerPlaybackState;
+    playback?: ViewerPlaybackState;
     /** Shared controller owned by ArtPane — its controls live in ArtSettingsPanel. */
     controller: TunnelViewController;
     /** Global tempo from the sidebar's Playback section. Drives the playhead so
@@ -38,6 +39,7 @@
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
+    saveTunnelLabel?: string;
     /** Controlled hosts own the clock; standalone hosts keep the bindable fallback. */
     onPlayingChange?: (playing: boolean, source: TunnelPlaybackSource) => void;
     /** Pause the self-clock (the playhead holds its frame). Bindable so a tap
@@ -62,7 +64,7 @@
       ? [
           {
             id: "save-tunnel",
-            label: "Save tunnel",
+            label: saveTunnelLabel,
             icon: "fa-bookmark",
             action: onSaveTunnel,
           },
@@ -77,7 +79,7 @@
   // (driven through the shared controller from ArtSettingsPanel).
   const effectsConfig = getEffectsConfigContext();
 
-  const seq = $derived(playback.animationState.sequenceData ?? sequence);
+  const seq = $derived(playback?.animationState.sequenceData ?? sequence);
   const gridMode = $derived(seq?.gridMode);
   const stepCount = $derived(seq?.steps?.length ?? 0);
 
@@ -92,7 +94,7 @@
   const speed = $derived(Math.max(0, bpm) / 60);
   // One base loop = stepCount; slow arms need more loops to return home, so the
   // shared clock spans `controller.loopCycles` of them (¼× → 4, ½× → 2, else 1).
-  const loopSteps = $derived(Math.max(1, stepCount) * controller.loopCycles);
+  const loopSteps = $derived(controller.loopSteps);
 
   // Honor the OS motion preference on the self-clock itself (the controller
   // already caps copy DENSITY under reduced motion; this damps the MOTION —
@@ -159,7 +161,13 @@
 
 <div class="tunnel-art" class:contained={stageFit === "contain"}>
   <div class="stage">
-    {#if seq}
+    {#if controller.buildError}
+      <div class="tunnel-error" role="alert">
+        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+        <strong>The tunnel could not be built</strong>
+        <span>{controller.buildError}</span>
+      </div>
+    {:else if seq}
       <AnimatorCanvas
         blueProp={base.blue}
         redProp={base.red}
@@ -221,5 +229,23 @@
   .stage :global(canvas) {
     max-width: 100%;
     max-height: 100%;
+  }
+  .tunnel-error {
+    display: grid;
+    justify-items: center;
+    gap: 0.6rem;
+    max-width: 28rem;
+    padding: 1.25rem;
+    color: var(--theme-text, #fff);
+    text-align: center;
+  }
+  .tunnel-error i {
+    color: var(--semantic-error, #ef4444);
+    font-size: 1.5rem;
+  }
+  .tunnel-error span {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.45;
   }
 </style>

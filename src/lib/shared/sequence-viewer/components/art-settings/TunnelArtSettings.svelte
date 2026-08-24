@@ -38,6 +38,7 @@
     showExport: boolean;
     showTitle?: boolean;
     onSaveTunnel?: () => void;
+    saveTunnelLabel?: string;
     bpm: number;
     playbackMode: PlaybackMode;
     isPlaying: boolean;
@@ -58,6 +59,7 @@
     showExport,
     showTitle = true,
     onSaveTunnel,
+    saveTunnelLabel = "Save tunnel",
     bpm,
     playbackMode,
     isPlaying,
@@ -171,6 +173,7 @@
       {controller}
       {dense}
       {onSaveTunnel}
+      {saveTunnelLabel}
       {onArtSettingChange}
     />
   {:else if id === "props"}
