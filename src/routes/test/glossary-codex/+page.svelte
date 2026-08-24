@@ -2,13 +2,15 @@
   /test/glossary-codex — direction-A harness for the glossary Letter Codex.
 
   Approved direction (2026-08-23): one canonical Guide sheet page at a time on
-  the left, rendered by the PROVEN owners (CodexSheet + codex-groups), with a
-  compact, four-column-capped variations rail on the right. Narrow screens get
-  a dedicated variation view instead of two crammed panes.
+  the left, with a compact variations panel on the right. Narrow screens get a
+  dedicated variation view instead of two crammed panes.
 
-  This page creates nothing new in the domain: the sheet is the same component
-  the /guide/codex print route and the Level 1 reader render, and variations
-  come from the same letterQueryHandler dataframe the app uses everywhere.
+  Guide-native by construction: the sheet is the SAME non-embed CodexSheet the
+  /guide/codex print route renders (its own white letter-paper artboard, Georgia
+  italic titles), sitting on the same #4a4f57 desk. The variations panel is a
+  second sheet of the same paper. Variations render through GuidePictograph in
+  printMode — the exact pipeline behind every sheet cell — so there is one
+  rendering path and one look.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -22,10 +24,11 @@
     SequenceSelection,
     setSequenceSelection,
   } from "$lib/shared/selection/sequence-selection.svelte";
+  import "$lib/shared/selection/selection.css";
   import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import GuidePictograph from "../../(public)/guide/level-1/_components/GuidePictograph.svelte";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
 
   const SHEETS: { def: CodexSheetDef; label: string }[] = [
@@ -39,21 +42,16 @@
       def.types.flatMap((t) => t.boxes.flatMap((b) => b.cells.map((c) => [c.id, c.label] as const)))
     )
   );
-  const CELL_BY_LETTER = new Map<string, string>(
-    [...LETTER_BY_CELL].map(([id, letter]) => [letter, id])
-  );
 
   // Selection ring on sheet cells — the shared primitive CodexCell already
-  // consumes; providing the context is all it takes.
+  // consumes; providing the context (plus selection.css above, which overlays
+  // the hit target on the cell) is all it takes.
   const selection = new SequenceSelection();
   setSequenceSelection(selection);
 
   let sheetIndex = $state(0);
   let selectedLetter = $state("A");
   selection.select("A-0");
-
-  const EXTENSION_LETTER = "τ-";
-  const extensionSelected = $derived(selectedLetter === EXTENSION_LETTER);
 
   let allPictographs = $state<PictographData[]>([]);
   let isLoading = $state(true);
@@ -85,6 +83,17 @@
   let scale = $state(1);
   const shiftPx = $derived(-408 * Math.max(0, scale - 1));
 
+  // The variations paper is 816-native too and gets the SAME transform
+  // treatment, so both papers grow in lockstep on wide screens instead of the
+  // right one freezing at 1080p proportions. Its height varies with content
+  // (8- vs 16-variation letters), so the reserved footprint comes from the
+  // paper's measured untransformed layout height.
+  let varPaneEl = $state<HTMLDivElement>();
+  let varPaperEl = $state<HTMLElement>();
+  let varScale = $state(1);
+  let varPaperH = $state(0);
+  const varShiftPx = $derived(-408 * Math.max(0, varScale - 1));
+
   function selectCell(id: string): void {
     const letter = LETTER_BY_CELL.get(id);
     if (!letter) return;
@@ -93,30 +102,38 @@
     if (stacked) mobileView = "variations";
   }
 
-  function selectExtension(): void {
-    selectedLetter = EXTENSION_LETTER;
-    selection.clear();
-    if (stacked) mobileView = "variations";
-  }
-
   function backToSheet(): void {
     mobileView = "sheet";
   }
 
+  function fit(): void {
+    if (rootEl) stacked = rootEl.clientWidth < 980;
+    if (sheetPaneEl) {
+      // 32px of pane padding stays out of the artboard budget.
+      scale = Math.min(Math.max(sheetPaneEl.clientWidth - 32, 240) / 816, 1.9);
+    }
+    if (varPaneEl) {
+      // Upscale-only (floor 1): below native width the paper reflows fluidly
+      // (2-column grid) instead of transform-shrinking its type unreadably.
+      varScale = Math.min(Math.max((varPaneEl.clientWidth - 32) / 816, 1), 1.9);
+    }
+    if (varPaperEl) varPaperH = varPaperEl.offsetHeight;
+  }
+
   onMount(() => {
     void load();
+  });
 
-    const fit = () => {
-      if (rootEl) stacked = rootEl.clientWidth < 980;
-      if (sheetPaneEl) {
-        // 32px of pane padding stays out of the artboard budget.
-        scale = Math.min(Math.max(sheetPaneEl.clientWidth - 32, 240) / 816, 1.9);
-      }
-    };
+  // Panes mount and unmount with the stacked-view swap, so the observer set is
+  // rebuilt whenever any bound element changes — a mount-time-only observer
+  // would miss panes that appear later.
+  $effect(() => {
+    const els = [rootEl, sheetPaneEl, varPaneEl, varPaperEl].filter(
+      (el): el is HTMLElement => !!el
+    );
     fit();
     const ro = new ResizeObserver(fit);
-    if (rootEl) ro.observe(rootEl);
-    if (sheetPaneEl) ro.observe(sheetPaneEl);
+    els.forEach((el) => ro.observe(el));
     return () => ro.disconnect();
   });
 </script>
@@ -125,13 +142,9 @@
   <title>Glossary Letter Codex — harness</title>
 </svelte:head>
 
-<div class="harness" bind:this={rootEl}>
-  <header class="bar">
-    <div class="bar-lead">
-      <h1>Letter Codex</h1>
-      <span class="bar-note">direction-A harness · canonical sheet + variations</span>
-    </div>
-    <div class="bar-controls">
+<div class="codex-desk" bind:this={rootEl}>
+  <div class="toolbar">
+    <div class="toolbar-switch">
       <SegmentedControl
         options={SHEETS.map((s, i) => ({ value: i, label: s.label }))}
         value={sheetIndex}
@@ -139,172 +152,120 @@
         color="accent"
         size="sm"
       />
-      <button
-        type="button"
-        class="extension-chip"
-        class:active={extensionSelected}
-        aria-pressed={extensionSelected}
-        onclick={selectExtension}
-      >
-        <span class="tka-font ext-glyph">τ-</span>
-        <span>extension</span>
-      </button>
     </div>
-  </header>
+  </div>
 
   <div class="panes" class:stacked>
     {#if !stacked || mobileView === "sheet"}
       <div class="sheet-pane" bind:this={sheetPaneEl}>
         <div class="sheet-wrap" style="height: {1056 * scale}px">
           <div class="sheet-scale" style="transform: translateX({shiftPx}px) scale({scale})">
-            <div class="sheet-paper">
-              <CodexSheet sheet={SHEETS[sheetIndex]!.def} embed onCellSelect={selectCell} />
-            </div>
+            <CodexSheet sheet={SHEETS[sheetIndex]!.def} onCellSelect={selectCell} />
           </div>
         </div>
       </div>
     {/if}
 
     {#if !stacked || mobileView === "variations"}
-      <div class="var-pane" aria-busy={isLoading}>
-        <div class="var-head">
-          {#if stacked}
-            <button type="button" class="back-btn" onclick={backToSheet}>
-              <i class="fas fa-arrow-left" aria-hidden="true"></i>
-              Codex
-            </button>
-          {/if}
-          <span class="var-letter tka-font">{selectedLetter}</span>
-          <span class="var-count">
-            {#if extensionSelected}
-              Registered Type 4 extension
-            {:else if !isLoading && !loadError}
-              {variations.length} variation{variations.length === 1 ? "" : "s"}
+      <div class="var-pane" aria-busy={isLoading} bind:this={varPaneEl}>
+        <div class="var-wrap" style="height: {varPaperH * varScale}px">
+          <div
+            class="var-scale"
+            style="transform: translateX({varShiftPx}px) scale({varScale})"
+          >
+            <section class="var-paper" bind:this={varPaperEl}>
+          <header class="var-head">
+            {#if stacked}
+              <button type="button" class="back-btn" onclick={backToSheet}>
+                <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                Codex
+              </button>
             {/if}
-          </span>
-        </div>
+            <span class="var-letter tka-font">{selectedLetter}</span>
+            <h2 class="var-title">
+              {#if !isLoading && !loadError}
+                {variations.length} variation{variations.length === 1 ? "" : "s"}
+              {:else}
+                Variations
+              {/if}
+            </h2>
+          </header>
 
-        {#if extensionSelected}
-          <div class="state-message">
-            <p>
-              <span class="tka-font ext-glyph">τ-</span> is a registered Level 4 extension of Type 4.
-              It has no dataframe variations yet.
-            </p>
-          </div>
-        {:else if isLoading}
-          <div class="state-message">
-            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
-            Loading variations…
-          </div>
-        {:else if loadError}
-          <div class="state-message">
-            <span>The variations did not load.</span>
-            <button type="button" class="retry-btn" onclick={load}>Try again</button>
-          </div>
-        {:else if variations.length === 0}
-          <div class="state-message">No variations for “{selectedLetter}”.</div>
-        {:else}
-          <div class="var-grid">
-            {#each variations as pictograph, index (pictograph.id ?? index)}
-              <figure class="var-card">
-                <div class="var-picto">
-                  <PictographContainer
-                    pictographData={pictograph}
-                    darkMode={false}
+          {#if isLoading}
+            <div class="state-message">
+              <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+              Loading variations…
+            </div>
+          {:else if loadError}
+            <div class="state-message">
+              <span>The variations did not load.</span>
+              <button type="button" class="retry-btn" onclick={load}>Try again</button>
+            </div>
+          {:else if variations.length === 0}
+            <div class="state-message">No variations for “{selectedLetter}”.</div>
+          {:else}
+            <div class="var-grid">
+              {#each variations as pictograph, index (pictograph.id ?? index)}
+                <figure class="var-cell">
+                  <GuidePictograph
+                    data={pictograph}
+                    size="sm"
                     showGrid={true}
-                    showHandPoints={true}
+                    showArrows={true}
                     showTKA={true}
                     showTnD={false}
                     showElemental={false}
                     showPositions={false}
                     showReversals={false}
                     showNonRadialPoints={false}
+                    printMode={true}
+                    darkMode={false}
+                    eager={true}
                   />
-                </div>
-                <figcaption class="visually-hidden">
-                  {selectedLetter} variation {index + 1}
-                </figcaption>
-              </figure>
-            {/each}
+                  <figcaption class="visually-hidden">
+                    {selectedLetter} variation {index + 1}
+                  </figcaption>
+                </figure>
+              {/each}
+            </div>
+          {/if}
+            </section>
           </div>
-        {/if}
+        </div>
       </div>
     {/if}
   </div>
 </div>
 
 <style>
-  .harness {
+  /* Same desk the /guide/codex print route paints behind its sheets. */
+  .codex-desk {
     min-height: 100vh;
-    background: var(--theme-panel-bg, oklch(0.15 0.02 270));
-    color: var(--theme-text, #f0f0f5);
+    background: #4a4f57;
     display: flex;
     flex-direction: column;
+    padding-bottom: 3rem;
   }
 
-  .bar {
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    padding: 0.85rem 1.25rem;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    justify-content: center;
+    padding: 1.25rem 1rem;
   }
-  .bar-lead {
-    display: flex;
-    align-items: baseline;
-    gap: 0.75rem;
-  }
-  .bar-lead h1 {
-    margin: 0;
-    font-size: 1.15rem;
-    font-weight: 700;
-  }
-  .bar-note {
-    font-size: var(--font-size-compact, 0.8rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
-  }
-  .bar-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  /* Deliberately quieter than the sheet switcher: τ- is subordinate to the 47
-     base letters, never a seventh group. */
-  .extension-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 44px;
-    padding: 0.35rem 0.9rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
-    border-radius: 999px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-    font-size: var(--font-size-compact, 0.8rem);
-    cursor: pointer;
-    transition:
-      border-color 150ms ease,
-      background 150ms ease;
-  }
-  .extension-chip:hover {
-    border-color: var(--theme-accent, #7d75ff);
-  }
-  .extension-chip.active {
-    border-color: var(--theme-accent, #7d75ff);
-    background: color-mix(in oklab, var(--theme-accent, #7d75ff) 16%, transparent);
-    color: var(--theme-text, #f0f0f5);
-  }
-  .ext-glyph {
-    font-size: 1.05rem;
+  /* SegmentedControl fills its container (width: 100%); size the container to
+     the two short labels, not the viewport. */
+  .toolbar-switch {
+    width: min(100%, 22rem);
   }
 
   .panes {
     flex: 1;
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: start;
     min-height: 0;
   }
   .panes.stacked {
@@ -312,11 +273,10 @@
   }
 
   .sheet-pane {
-    padding: 1rem;
+    padding: 0 1rem;
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    overflow-y: auto;
   }
   .sheet-wrap {
     width: 816px;
@@ -324,84 +284,118 @@
   }
   .sheet-scale {
     width: 816px;
+    height: 1056px;
     transform-origin: top left;
-  }
-  /* The embedded sheet has no chrome of its own; this frame restores the
-     white-paper artboard the print route paints. */
-  .sheet-paper {
-    background: #fff;
-    color: #111;
-    padding: 0.4in 0.5in;
-    box-sizing: border-box;
-    width: 816px;
-    min-height: 1056px;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
   }
 
   .var-pane {
-    padding: 1rem 1.25rem 2rem;
-    overflow-y: auto;
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    padding: 0 1rem;
+    display: flex;
+    justify-content: center;
     container-type: inline-size;
   }
-  .panes.stacked .var-pane {
-    border-left: none;
+
+  .var-wrap {
+    width: 816px;
+    max-width: 100%;
+  }
+  .var-scale {
+    width: 100%;
+    transform-origin: top left;
+  }
+
+  /* The variations panel is another sheet of the same paper — white, shadowed,
+     Georgia-serif headed — so the two panes read as one guide spread. */
+  .var-paper {
+    width: 100%;
+    max-width: 816px;
+    box-sizing: border-box;
+    background: #fff;
+    color: #111;
+    padding: 0.4in 0.45in 0.5in;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
   }
 
   .var-head {
     display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    border-bottom: 2px solid #111;
+    padding-bottom: 0.4rem;
     margin-bottom: 0.9rem;
   }
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 44px;
-    padding: 0.35rem 0.9rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.16));
-    border-radius: 999px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #f0f0f5);
-    font-size: var(--font-size-compact, 0.8rem);
-    cursor: pointer;
-    align-self: center;
-  }
+  /* Reserved letter slot ("A" vs "Σ-" differ in width) so the heading text
+     never shifts when the selection changes. */
   .var-letter {
-    font-size: 1.9rem;
+    min-width: 2.4em;
+    font-size: 2.2rem;
     line-height: 1;
+    color: #1a1a1a;
   }
-  .var-count {
-    font-size: var(--font-size-min, 0.875rem);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+  .var-title {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 1.4rem;
+    color: #1a1a1a;
     font-variant-numeric: tabular-nums;
   }
 
-  /* 2 or 4 columns only: every dataframe letter has 8 or 16 variations, so
-     both counts divide evenly — no orphan rows at any width (3 would orphan). */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0.35rem 1rem;
+    border: none;
+    border-radius: 999px;
+    background: #111;
+    color: #fff;
+    font: 600 0.85rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .back-btn:hover {
+    background: #000;
+  }
+
+  /* 2 or 4 columns only: dataframe letters carry 8 or 16 variations, so both
+     counts divide evenly — no orphan rows at any width (3 would orphan). Cells
+     match the sheet's table look: flush 1px borders, white paper, no fills. */
   .var-grid {
     display: grid;
-    gap: 0.8rem;
-    grid-template-columns: repeat(2, minmax(0, 15rem));
+    grid-template-columns: repeat(2, minmax(0, 160px));
     justify-content: center;
+    gap: 0;
   }
-  @container (min-width: 46rem) {
+  @container (min-width: 44rem) {
     .var-grid {
-      grid-template-columns: repeat(4, minmax(0, 15rem));
+      grid-template-columns: repeat(4, minmax(0, 160px));
     }
   }
 
-  .var-card {
+  .var-cell {
     margin: 0;
-    padding: 0.4rem;
-    border-radius: 0.7rem;
-    background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.25);
-  }
-  .var-picto {
     aspect-ratio: 1;
+    box-sizing: border-box;
+    border: 1px solid #2b2b2b;
+    margin-inline-end: -1px;
+    margin-block-end: -1px;
+    overflow: hidden;
+    --pictograph-border: none;
+  }
+  .var-cell :global(.guide-pictograph) {
     width: 100%;
+    height: 100%;
+    gap: 0;
+  }
+  .var-cell :global(.pictograph-wrapper) {
+    width: 100%;
+    height: 100%;
+    max-width: none;
   }
 
   .state-message {
@@ -410,23 +404,25 @@
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
-    min-height: 16rem;
+    min-height: 14rem;
     padding: 2rem 1rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    color: #555;
+    font-family: Georgia, "Times New Roman", serif;
+    font-style: italic;
     text-align: center;
-  }
-  .state-message p {
-    margin: 0;
-    max-width: 34rem;
   }
   .retry-btn {
     min-height: 44px;
-    padding: 0.6rem 1.1rem;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
+    padding: 0.6rem 1.2rem;
+    border: none;
     border-radius: 999px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #f0f0f5);
+    background: #111;
+    color: #fff;
+    font: 600 0.85rem/1 system-ui, sans-serif;
     cursor: pointer;
+  }
+  .retry-btn:hover {
+    background: #000;
   }
 
   .visually-hidden {
