@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   shouldShowViewer3DIntro,
   markViewer3DIntroSeenLocal,
-} from "../../src/lib/shared/onboarding/state/viewer3d-intro-state.svelte";
+} from "../../src/lib/shared/onboarding/state/viewer3d-intro-state";
 
 describe("viewer3d intro state", () => {
   beforeEach(() => localStorage.clear());

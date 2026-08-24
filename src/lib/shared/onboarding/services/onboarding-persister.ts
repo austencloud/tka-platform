@@ -289,6 +289,15 @@ export class OnboardingPersister {
   }
 
   /**
+   * Mark the first-open 3D viewer introduction as seen.
+   */
+  async markViewer3DIntroSeen(): Promise<void> {
+    const status = this.cachedStatus || (await this.loadStatus());
+    status.viewer3DIntroSeen = true;
+    await this.saveStatus(status);
+  }
+
+  /**
    * Stage app-entry's terminal marker and the app-wide status in the caller's
    * batch. The explicit user ID prevents an auth or admin-preview change from
    * splitting the two documents across accounts.

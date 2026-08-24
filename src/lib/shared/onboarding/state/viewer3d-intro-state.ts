@@ -15,6 +15,7 @@ export function shouldShowViewer3DIntro(): boolean {
 
 /** Local mark only — used by tests and as the synchronous half. */
 export function markViewer3DIntroSeenLocal(): void {
+  if (typeof localStorage === "undefined") return;
   try {
     localStorage.setItem(VIEWER3D_INTRO_SEEN_KEY, "true");
   } catch {
@@ -27,13 +28,7 @@ export function markViewer3DIntroSeen(): void {
   markViewer3DIntroSeenLocal();
   try {
     const persister = getOnboardingPersister();
-    void persister
-      .loadStatus()
-      .then((status) => {
-        status.viewer3DIntroSeen = true;
-        return persister.saveStatus(status);
-      })
-      .catch(() => {});
+    void persister.markViewer3DIntroSeen().catch(() => {});
   } catch {
     // Unauthenticated/persister unavailable — local flag stands.
   }
