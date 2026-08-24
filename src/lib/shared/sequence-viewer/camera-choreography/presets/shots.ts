@@ -8,7 +8,6 @@
  */
 
 import { Vector3 } from "three";
-import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
 
 export type Plane3 = "wall" | "wheel" | "floor";
 
@@ -22,7 +21,7 @@ export const TARGET_Y = 0;
 const AUTO_ORBIT_SAFETY_METERS = 1.2;
 const PLANE_PADDING_MULT = 1.1;
 /** Vertical half-FOV in radians, mirroring Viewer3DCamera's FOV_DEG=50. */
-const HALF_FOV_RAD = (50 / 2) * Math.PI / 180;
+const HALF_FOV_RAD = ((50 / 2) * Math.PI) / 180;
 /** Min distance camera-controls allows (Viewer3DCamera enforces 1m). */
 const MIN_DIST = 1.05;
 
@@ -42,7 +41,7 @@ export interface PerformerShotSubject {
  * covers head height + arm span so props don't poke outside the shot.
  */
 export function computeGroupBounds(
-  performers: readonly PerformerShotSubject[],
+  performers: readonly PerformerShotSubject[]
 ): PerformerGroupBounds {
   if (performers.length === 0) {
     return { center: new Vector3(0, TARGET_Y, 0), radius: 1.2 };
@@ -50,7 +49,8 @@ export function computeGroupBounds(
 
   // Center = mean XZ position (Y fixed at shoulder height).
   const sum = new Vector3();
-  for (const p of performers) sum.add(new Vector3(p.position.x, 0, p.position.z));
+  for (const p of performers)
+    sum.add(new Vector3(p.position.x, 0, p.position.z));
   const center = sum.divideScalar(performers.length);
   center.y = TARGET_Y;
 
@@ -91,7 +91,7 @@ export interface Shot {
  */
 export function computePlaneShot(
   plane: Plane3,
-  performers: readonly PerformerShotSubject[],
+  performers: readonly PerformerShotSubject[]
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
   const padded = radius * PLANE_PADDING_MULT;
@@ -123,7 +123,7 @@ export function computePlaneShot(
  */
 export function computeAutoOrbitShot(
   performers: readonly PerformerShotSubject[],
-  initialAzimuth: number,
+  initialAzimuth: number
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
   const padded = radius + AUTO_ORBIT_SAFETY_METERS;
@@ -134,7 +134,7 @@ export function computeAutoOrbitShot(
   const eye = new Vector3(
     center.x + dist * Math.sin(polar) * Math.sin(initialAzimuth),
     center.y + dist * Math.cos(polar),
-    center.z + dist * Math.sin(polar) * Math.cos(initialAzimuth),
+    center.z + dist * Math.sin(polar) * Math.cos(initialAzimuth)
   );
   return { eye, target: center };
 }
@@ -142,7 +142,7 @@ export function computeAutoOrbitShot(
 // ── Choreographer Camera Shots ────────────────────────────────────
 
 /** Elevation angle from horizontal — 36° matches the ideal choreographer sightline. */
-const CHOREO_POLAR_RAD = 36 * Math.PI / 180;
+const CHOREO_POLAR_RAD = (36 * Math.PI) / 180;
 /** Extra padding keeps the nearest row clear of the viewer's transport bar. */
 const CHOREO_FRAMING_PADDING = 1.35;
 /** Floor for solo performer — close intimate view. */
@@ -153,10 +153,6 @@ const CHOREO_TARGET_HEIGHT = 0.55;
 const REVEAL_DISTANCE_MULT = 1.4;
 /** Reveal start target sits at this Y above stage ground (chest height). */
 const REVEAL_TARGET_HEIGHT = 1.5;
-
-const PERFORMER_BEHIND_DIST = 6.5;
-const PERFORMER_EYE_HEIGHT = 2.0;
-const GRID_FORWARD_OFFSET = 0.3;
 
 /**
  * Choreographer POV: behind and above the performer group, looking
@@ -170,14 +166,14 @@ const GRID_FORWARD_OFFSET = 0.3;
 export function computeChoreographerShot(
   performers: readonly PerformerShotSubject[],
   stageGroundOffset: number,
-  viewportAspect = 1,
+  viewportAspect = 1
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
 
   const paddedRadius = radius * CHOREO_FRAMING_PADDING;
   const dist = Math.max(
     CHOREO_MIN_DIST,
-    distanceForSphere(paddedRadius, viewportAspect),
+    distanceForSphere(paddedRadius, viewportAspect)
   );
 
   const behindDist = dist * Math.cos(CHOREO_POLAR_RAD);
@@ -186,12 +182,12 @@ export function computeChoreographerShot(
   const eye = new Vector3(
     center.x,
     stageGroundOffset + height,
-    center.z - behindDist,
+    center.z - behindDist
   );
   const target = new Vector3(
     center.x,
     stageGroundOffset + CHOREO_TARGET_HEIGHT,
-    center.z,
+    center.z
   );
   return { eye, target };
 }
@@ -205,13 +201,13 @@ export function computeChoreographerShot(
 export function computeRevealStartShot(
   performers: readonly PerformerShotSubject[],
   stageGroundOffset: number,
-  viewportAspect = 1,
+  viewportAspect = 1
 ): Shot {
   const { center, radius } = computeGroupBounds(performers);
   const paddedRadius = radius * CHOREO_FRAMING_PADDING;
   const baseDist = Math.max(
     CHOREO_MIN_DIST,
-    distanceForSphere(paddedRadius, viewportAspect),
+    distanceForSphere(paddedRadius, viewportAspect)
   );
   const dist = baseDist * REVEAL_DISTANCE_MULT;
 
@@ -221,38 +217,12 @@ export function computeRevealStartShot(
   const eye = new Vector3(
     center.x,
     stageGroundOffset + height,
-    center.z - behindDist,
+    center.z - behindDist
   );
   const target = new Vector3(
     center.x,
     stageGroundOffset + REVEAL_TARGET_HEIGHT,
-    center.z,
-  );
-  return { eye, target };
-}
-
-/**
- * Behind-performer POV: camera behind one performer's head, looking
- * where they look. Used when selecting a performer from the rail.
- */
-export function computeBehindPerformerShot(
-  performer: AvatarInstanceState,
-  stageGroundOffset: number,
-): Shot {
-  const fa = performer.facingAngle;
-  const px = performer.position.x;
-  const pz = performer.position.z;
-  const sinFa = Math.sin(fa);
-  const cosFa = Math.cos(fa);
-
-  const gridCenterX = px + sinFa * GRID_FORWARD_OFFSET;
-  const gridCenterZ = pz + cosFa * GRID_FORWARD_OFFSET;
-
-  const target = new Vector3(gridCenterX, stageGroundOffset, gridCenterZ);
-  const eye = new Vector3(
-    gridCenterX - sinFa * PERFORMER_BEHIND_DIST,
-    stageGroundOffset + PERFORMER_EYE_HEIGHT,
-    gridCenterZ - cosFa * PERFORMER_BEHIND_DIST,
+    center.z
   );
   return { eye, target };
 }

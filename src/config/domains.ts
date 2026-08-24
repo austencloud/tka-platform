@@ -47,6 +47,9 @@ const PUBLIC_PATH_PREFIXES = [
   "/test/sequence-actions",
   "/test/prop-size-audit",
   "/test/environment-transition",
+  "/test/film-director",
+  "/test/prop-3d-studio",
+  "/test/viewer-3d",
   // Museum floor-plan and 3D review surfaces also own their page chrome. Keep
   // them out of module persistence so direct review links are not rewritten to
   // the Create module after authentication initializes.
@@ -61,6 +64,8 @@ const PUBLIC_PATH_PREFIXES = [
   // users see guest chips and popup sign-in completes with no UI reaction.
   // Any future (public)/learn/* pillar page gets its own exact entry here.
   "/learn/staff-spinning-choreography",
+  // Canonical public course, including stable deep links to each lesson.
+  "/learn/concepts",
   "/notation",
   "/composer",
   "/glossary",
@@ -80,22 +85,29 @@ const PUBLIC_PATH_PREFIXES = [
 
 export function detectSiteMode(): SiteMode {
   if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    const isStandaloneDevHarness =
+      import.meta.env.DEV &&
+      pathname.startsWith("/test/") &&
+      PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
     // Native (Capacitor) apps always run in app mode — no landing page
     if (Capacitor.isNativePlatform()) return "app";
 
     // The Tauri desktop shell is native too. App mode is what runs
     // DesktopInitializer (boot into /create, reload-link interception, service
     // worker teardown, data seeding) — in landing mode the shell would sit on
-    // the static landing page forever.
-    if ("__TAURI_INTERNALS__" in window) return "app";
+    // the static landing page forever. Explicit dev harnesses are the exception:
+    // they intentionally own their bootstrap, including when reviewed inside a
+    // Tauri-hosted browser such as Codex's in-app browser.
+    if ("__TAURI_INTERNALS__" in window && !isStandaloneDevHarness)
+      return "app";
 
     const params = new URLSearchParams(window.location.search);
     const modeOverride = params.get("mode") as SiteMode | null;
     if (modeOverride && ["app", "landing"].includes(modeOverride)) {
       return modeOverride;
     }
-    const pathname = window.location.pathname;
-
     // Exact landing paths
     if (LANDING_PATHS.has(pathname)) {
       return "landing";

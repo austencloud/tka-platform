@@ -1,0 +1,156 @@
+import { Plane } from "@austencloud/scene-3d";
+import type { PerspectiveCamera } from "three";
+
+import { getRegistration } from "$lib/shared/animation-engine/components/effects-panel/effect-registry";
+import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager";
+import type {
+  Viewer3DState,
+  Viewer3DStateSeed,
+} from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
+import type { EffectsConfig } from "$lib/shared/effects/domain/effects-config";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+import type { DirectorCameraFrame } from "./director-camera-track";
+import type { ResolvedDirectorShot } from "./film-director-schema";
+import { resolveDirectorPerformerPoolSize } from "./film-director-performance-policy";
+
+interface ApplyDirectorShotOptions {
+  /** Keep a stable rig pool so a cut never destroys and rebuilds half the cast. */
+  reservedPerformerCount?: number;
+}
+
+export function buildDirectorViewerSeed(
+  shot: ResolvedDirectorShot
+): Viewer3DStateSeed {
+  const camera = shot.camera.keyframes[0]!;
+  return {
+    renderMode: "3d",
+    environmentId: shot.scene.environmentId,
+    camera: {
+      position: {
+        x: camera.position[0],
+        y: camera.position[1],
+        z: camera.position[2],
+      },
+      target: {
+        x: camera.target[0],
+        y: camera.target[1],
+        z: camera.target[2],
+      },
+      rotation: { x: 0, y: 0, z: 0 },
+      fov: camera.fovDeg,
+      timestamp: 0,
+    },
+    performers: shot.performance.performers.map((performer) => ({
+      position: { ...performer.position },
+      facingAngle: performer.facingAngle,
+      customBluePlane: Plane.WALL,
+      customRedPlane: Plane.WALL,
+      name: performer.name,
+      settings: {
+        prop: performer.prop,
+        effortId: performer.effort,
+        effect: performer.effect,
+        staffLengthCm: performer.staffLengthCm,
+      },
+    })),
+    selectedPerformerIndex: null,
+    activeFormation: shot.performance.formation,
+    defaultProp: PropType.STAFF,
+    oceanVariant: "abyss",
+    navMode: "orbit",
+    activePreset: null,
+    activeCameraPreset: "director",
+    showGridLabels: false,
+    visiblePlanes: [],
+    effectToggles: {},
+  };
+}
+
+export function applyDirectorShotToViewer(
+  viewer: Viewer3DState,
+  shot: ResolvedDirectorShot,
+  options: ApplyDirectorShotOptions = {}
+): void {
+  const manager = viewer.performerManager;
+  const performerPoolSize = resolveDirectorPerformerPoolSize(
+    shot.performance.performers.length,
+    options.reservedPerformerCount
+  );
+  viewer.setEnvironmentId(shot.scene.environmentId);
+
+  getSceneUndoManager().withoutUndo(() => {
+    manager.ensurePerformerCount(performerPoolSize);
+    while (manager.performers.length > performerPoolSize) {
+      manager.removePerformer(manager.performers.length - 1);
+    }
+    manager.cancelFormationTransition();
+
+    shot.performance.performers.forEach((directed, index) => {
+      const performer = manager.performers[index];
+      if (!performer) return;
+      performer.position.x = directed.position.x;
+      performer.position.z = directed.position.z;
+      performer.snapFacingAngle(directed.facingAngle);
+      performer.setDisplayName(directed.name);
+      performer.setAvatarModel(directed.avatarId);
+      performer.setProp(directed.prop);
+      performer.setEffect(directed.effect);
+      performer.setEffort(directed.effort);
+      performer.setStaffLengthCm(directed.staffLengthCm);
+    });
+  });
+}
+
+export function applyDirectorEffectPresets(
+  state: EffectsConfigState,
+  shot: ResolvedDirectorShot
+): void {
+  const config = structuredClone(DEFAULT_EFFECTS_CONFIG) as EffectsConfig;
+  const mutable = config as unknown as Record<string, unknown>;
+
+  for (const [effectId, presetId] of Object.entries(shot.effectPresets)) {
+    const registration = getRegistration(effectId);
+    const preset = registration?.presetGroup.presets.find(
+      (candidate) => candidate.id === presetId
+    );
+    if (!registration || !preset?.patch) continue;
+
+    mutable[effectId] = {
+      ...(mutable[effectId] as Record<string, unknown>),
+      ...preset.patch,
+    };
+    config.activePresets[
+      registration.presetGroup.effectType as keyof typeof config.activePresets
+    ] = presetId;
+  }
+
+  for (const [effectId, patch] of Object.entries(shot.effectOverrides)) {
+    mutable[effectId] = {
+      ...(mutable[effectId] as Record<string, unknown>),
+      ...patch,
+    };
+  }
+
+  state.replace(config);
+}
+
+export function applyDirectorCameraFrame(
+  viewer: Viewer3DState,
+  frame: DirectorCameraFrame,
+  previewFovDeg = frame.fovDeg
+): void {
+  viewer.snapCameraTo(
+    { x: frame.position[0], y: frame.position[1], z: frame.position[2] },
+    { x: frame.target[0], y: frame.target[1], z: frame.target[2] },
+    undefined,
+    false
+  );
+
+  const camera = viewer.threlteCamera as PerspectiveCamera | null;
+  if (!camera || Math.abs(camera.fov - previewFovDeg) < 0.001) return;
+  camera.fov = previewFovDeg;
+  camera.updateProjectionMatrix();
+}
