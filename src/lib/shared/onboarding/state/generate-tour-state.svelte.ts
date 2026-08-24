@@ -144,8 +144,14 @@ function createGenerateTourState() {
     /** Keep the tour on the exact controls the current panel renders. */
     setStops(stops: readonly GenerateTourStop[]) {
       if (stops.length === 0) return;
+      const nextStops = [...new Set(stops)];
+      const isUnchanged =
+        nextStops.length === data.stops.length &&
+        nextStops.every((stop, index) => stop === data.stops[index]);
+      if (isUnchanged) return;
+
       const currentStop = this.currentStop;
-      data.stops = [...new Set(stops)];
+      data.stops = nextStops;
       const currentIndex = data.stops.indexOf(currentStop);
       data.currentStopIndex =
         currentIndex >= 0

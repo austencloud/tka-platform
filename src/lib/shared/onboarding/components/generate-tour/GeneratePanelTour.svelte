@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { untrack } from "svelte";
   import { fly, fade } from "svelte/transition";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import ModalFooter from "$lib/shared/foundation/ui/modal/ModalFooter.svelte";
@@ -51,7 +52,11 @@
   );
 
   $effect(() => {
-    generateTourState.setStops(miniCards.map((card) => card.id));
+    const stops = miniCards.map((card) => card.id);
+    // Changing Level refreshes the tour's card list. The state also checks
+    // which card the user was viewing; keep that preservation step from
+    // turning one refresh into a repeating update.
+    untrack(() => generateTourState.setStops(stops));
   });
 
   let hapticService: HapticFeedback | null = null;
