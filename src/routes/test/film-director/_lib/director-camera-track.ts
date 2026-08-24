@@ -1,5 +1,6 @@
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
+import { compileCameraMoves, computeCameraFraming } from "./camera-language";
 import type {
   DirectorCameraInput,
   DirectorCameraTargetInput,
@@ -106,6 +107,23 @@ export function resolveDirectorCameraTrack(
   input: DirectorCameraInput | undefined,
   context: CameraTrackContext
 ): ResolvedDirectorCameraKeyframe[] {
+  const usesGrammar = Boolean(
+    input &&
+      (input.shotSize ||
+        input.angle ||
+        input.position ||
+        input.moves ||
+        input.subject)
+  );
+  if (usesGrammar && input?.keyframes?.length) {
+    throw new Error(
+      "Raw keyframes and framing grammar are exclusive — use one."
+    );
+  }
+  if (usesGrammar && input?.preset && input.preset !== "custom") {
+    throw new Error("A preset and framing grammar are exclusive — use one.");
+  }
+
   const { durationSeconds, aspectRatio, groundOffset, performers } = context;
   const baseShot = computeFramingShot({
     performers: performers.map((performer) => performer.position),
@@ -145,6 +163,19 @@ export function resolveDirectorCameraTrack(
       }
     }
     return resolved;
+  }
+
+  if (usesGrammar) {
+    const framing = computeCameraFraming(
+      {
+        subject: input!.subject,
+        shotSize: input!.shotSize,
+        angle: input!.angle,
+        position: input!.position,
+      },
+      context
+    );
+    return compileCameraMoves(input!.moves ?? [{ move: "hold" }], framing, context);
   }
 
   const baseEye = vec3(baseShot.eye);

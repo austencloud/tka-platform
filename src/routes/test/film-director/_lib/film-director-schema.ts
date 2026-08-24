@@ -183,6 +183,35 @@ const cameraSchema = z
     target: cameraTargetSchema.optional(),
     orbitDegrees: finiteNumber.min(-720).max(720).optional(),
     keyframes: z.array(cameraKeyframeSchema).min(1).max(32).optional(),
+    subject: cameraTargetSchema.optional(),
+    shotSize: z.enum(["close-up", "medium", "wide", "extreme-wide"]).optional(),
+    angle: z.enum(["low", "eye", "high", "top"]).optional(),
+    position: z
+      .union([
+        z.enum(["front", "left", "right", "behind"]),
+        z.object({ degrees: finiteNumber.min(-360).max(360) }).strict(),
+      ])
+      .optional(),
+    moves: z
+      .array(
+        z
+          .object({
+            move: z.enum(["hold", "push-in", "pull-back", "orbit", "crane", "pan"]),
+            direction: z.enum(["cw", "ccw", "up", "down", "left", "right"]).optional(),
+            amount: z
+              .union([
+                z.object({ degrees: finiteNumber }).strict(),
+                z.object({ meters: finiteNumber.positive() }).strict(),
+              ])
+              .optional(),
+            durationSeconds: finiteNumber.positive().optional(),
+            easing: z.enum(DIRECTOR_EASINGS).optional(),
+          })
+          .strict()
+      )
+      .min(1)
+      .max(16)
+      .optional(),
   })
   .strict()
   .refine(
@@ -191,7 +220,24 @@ const cameraSchema = z
       message: "A custom camera needs at least one keyframe",
       path: ["keyframes"],
     }
-  );
+  )
+  .refine(
+    (camera) =>
+      !camera.keyframes ||
+      !(camera.shotSize || camera.angle || camera.position || camera.moves || camera.subject),
+    { message: "Raw keyframes and framing grammar are exclusive — use one.", path: ["keyframes"] }
+  )
+  .refine(
+    (camera) =>
+      !camera.preset ||
+      camera.preset === "custom" ||
+      !(camera.shotSize || camera.angle || camera.position || camera.moves),
+    { message: "A preset and framing grammar are exclusive — use one.", path: ["preset"] }
+  )
+  .refine((camera) => !(camera.subject && camera.target), {
+    message: 'Use "subject" with framing grammar, "target" with presets/keyframes.',
+    path: ["subject"],
+  });
 
 const transitionSchema = z
   .object({
