@@ -88,4 +88,51 @@ describe("resolveCastAxis", () => {
   it("rejects open picks on axes with no catalog", () => {
     expect(() => axis([{ pick: "any" }], { catalog: null })).toThrow(/from/i);
   });
+
+  it("resolves full-coverage distinct across the whole catalog", () => {
+    const resolved = axis([
+      { pick: "distinct" },
+      { pick: "distinct" },
+      { pick: "distinct" },
+      { pick: "distinct" },
+      { pick: "distinct" },
+      { pick: "distinct" },
+    ]);
+    expect(new Set(resolved).size).toBe(6);
+  });
+
+  it("keeps distinct picks unique alongside literal pins", () => {
+    const resolved = axis(
+      ["a", "b", "c", { pick: "distinct" }, { pick: "distinct" }],
+      { catalog: ["a", "b", "c", "d", "e", "f"] }
+    );
+    expect(new Set(resolved).size).toBe(5);
+    expect(resolved.slice(0, 3)).toEqual(["a", "b", "c"]);
+  });
+
+  it("reports an accurate distinct-performer count in the failure message", () => {
+    let error: unknown;
+    try {
+      axis(
+        [
+          "a",
+          "b",
+          "c",
+          "d",
+          "e",
+          "f",
+          { pick: "distinct", from: ["a"] },
+          { pick: "distinct", from: ["a"] },
+        ],
+        { catalog: ["a", "b", "c", "d", "e", "f"] }
+      );
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(Error);
+    const message = (error as Error).message;
+    expect(message).toContain("2 performers");
+    expect(message).not.toContain("8 performers");
+    expect(message.toLowerCase()).toContain("distinct");
+  });
 });

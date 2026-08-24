@@ -57,6 +57,10 @@ export function resolveCastAxis<T extends string | number>(
     return shuffled.find((candidate) => !exclude.has(candidate));
   };
 
+  const distinctCount = normalized.filter(
+    (candidate) => candidate.kind === "pick" && candidate.distinct
+  ).length;
+
   normalized.forEach((directive, index) => {
     if (directive.kind !== "pick") return;
     const pool = resolvePool(directive, catalog, where);
@@ -69,7 +73,7 @@ export function resolveCastAxis<T extends string | number>(
     if (candidates.length === 0) {
       if (directive.distinct) {
         throw new Error(
-          `${where}: distinct values were requested for ${performerIds.length} performers but the allowed pool has only ${pool.length} (${pool.join(", ")}).`
+          `${where}: distinct values were requested for ${distinctCount} performers but the allowed pool has only ${pool.length} (${pool.join(", ")}).`
         );
       }
       throw new Error(
@@ -80,7 +84,7 @@ export function resolveCastAxis<T extends string | number>(
       pool === catalog ? draw(pool, exclude) : seededShuffle(candidates, random)[0];
     if (pick === undefined) {
       throw new Error(
-        `${where}: distinct values were requested for ${performerIds.length} performers but the catalog has only ${catalog?.length ?? 0}.`
+        `${where}: internal error — no value drawn despite non-empty candidates.`
       );
     }
     resolved[index] = pick;
