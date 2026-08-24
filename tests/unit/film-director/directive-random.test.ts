@@ -21,6 +21,22 @@ describe("resolveFilmSeed", () => {
     expect(seed.base).toBe(7);
     expect(seed.axes.prop).toBe(2);
   });
+
+  it("copies the caller's axes object instead of aliasing it", () => {
+    const axes: Record<string, number> = { prop: 3 };
+    const seed = resolveFilmSeed("my-film", { axes });
+    axes.prop = 999;
+    axes.newKey = 1;
+    expect(seed.axes).toEqual({ prop: 3 });
+  });
+
+  // Golden vector: this literal IS the determinism contract. If a refactor
+  // to hashString/mulberry32/resolveFilmSeed changes this value, every
+  // authored film's random draws reroll. Do not update it casually — only
+  // when a reroll is an intentional, communicated decision.
+  it("freezes the derived base for a known film id (golden vector)", () => {
+    expect(resolveFilmSeed("my-film").base).toBe(1462482181);
+  });
 });
 
 describe("createAxisStream", () => {
@@ -50,6 +66,35 @@ describe("createAxisStream", () => {
       seededShuffle(items, createAxisStream(seed, "shot-1", "prop"))
     ).not.toEqual(seededShuffle(items, createAxisStream(seed, "shot-2", "prop")));
   });
+
+  it("different axes on the same shot draw different streams by default", () => {
+    const seed = resolveFilmSeed("my-film");
+    expect(
+      seededShuffle(items, createAxisStream(seed, "shot-1", "prop"))
+    ).not.toEqual(
+      seededShuffle(items, createAxisStream(seed, "shot-1", "avatarId"))
+    );
+  });
+
+  it("a stream advances across draws instead of repeating the same value", () => {
+    const seed = resolveFilmSeed("my-film");
+    const hundred = Array.from({ length: 100 }, (_, index) => index);
+    const stream = createAxisStream(seed, "shot-1", "prop");
+    const first = seededPick(hundred, stream);
+    const second = seededPick(hundred, stream);
+    expect(first).not.toBe(second);
+  });
+
+  // Golden vector: this permutation IS the determinism contract for
+  // (my-film, shot-1, prop). If a refactor to the key encoding or the PRNG
+  // changes it, every authored film's shuffles reroll. Do not update this
+  // literal casually — only when a reroll is an intentional, communicated
+  // decision.
+  it("freezes the shuffle for a known (seed, shot, axis) triple (golden vector)", () => {
+    expect(
+      seededShuffle(items, createAxisStream(resolveFilmSeed("my-film"), "shot-1", "prop"))
+    ).toEqual(["e", "g", "d", "f", "a", "c", "h", "b"]);
+  });
 });
 
 describe("seededShuffle / seededPick", () => {
@@ -64,5 +109,10 @@ describe("seededShuffle / seededPick", () => {
   it("pick returns a member", () => {
     const stream = createAxisStream(resolveFilmSeed("f"), "s", "prop");
     expect(["x", "y", "z"]).toContain(seededPick(["x", "y", "z"], stream));
+  });
+
+  it("pick returns undefined for an empty array instead of lying with a cast", () => {
+    const stream = createAxisStream(resolveFilmSeed("f"), "s", "prop");
+    expect(seededPick([], stream)).toBeUndefined();
   });
 });
