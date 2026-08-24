@@ -11,6 +11,7 @@
     PostHogSessionEvent,
     PostHogSessionSummary,
     PostHogReplayAccessState,
+    UserActivitySessionSummary,
   } from "../services/types";
 
   interface Props {
@@ -19,7 +20,7 @@
     userUsername?: string | null;
     userEmail?: string | null;
     targetSessionId?: string | null;
-    sessions: PostHogSessionSummary[];
+    sessions: UserActivitySessionSummary[];
   }
 
   let {
@@ -76,8 +77,9 @@
 
   $effect(() => {
     const sessionId = selectedSessionId;
+    const session = selectedSession;
     replayRetryGeneration;
-    if (!sessionId) return;
+    if (!sessionId || session?.source === "composer") return;
 
     const generation = ++replayRequestGeneration;
     const controller = new AbortController();
@@ -104,8 +106,9 @@
   $effect(() => {
     const uid = userId;
     const sessionId = selectedSessionId;
+    const session = selectedSession;
     retryGeneration;
-    if (!uid || !sessionId) return;
+    if (!uid || !sessionId || session?.source === "composer") return;
 
     const generation = ++requestGeneration;
     const controller = new AbortController();
@@ -167,8 +170,11 @@
     }
   }
 
-  function inspectSession(session: PostHogSessionSummary) {
-    eventFilter = session.exceptionCount > 0 ? "exceptions" : "all";
+  function inspectSession(session: UserActivitySessionSummary) {
+    eventFilter =
+      session.source === "posthog" && session.exceptionCount > 0
+        ? "exceptions"
+        : "all";
     selectedSessionId = session.sessionId;
   }
 
@@ -199,12 +205,14 @@
   }
 
   function openPostHog() {
-    if (!selectedSession?.postHogUrl) return;
+    if (selectedSession?.source !== "posthog" || !selectedSession.postHogUrl) {
+      return;
+    }
     window.open(selectedSession.postHogUrl, "_blank", "noopener,noreferrer");
   }
 
   function getExceptionReport(): string {
-    if (!selectedSession) {
+    if (!selectedSession || selectedSession.source !== "posthog") {
       throw new Error("No session is selected");
     }
     return buildSessionExceptionReport({
@@ -260,7 +268,10 @@
     return path.replace(/^\//, "").replace(/[-_]/g, " ");
   }
 
-  function routeSummary(session: PostHogSessionSummary): string {
+  function routeSummary(session: UserActivitySessionSummary): string {
+    if (session.source === "composer") {
+      return session.name || "Create session";
+    }
     if (session.entryPath || session.exitPath) {
       const entry = routeLabel(session.entryPath);
       const exit = routeLabel(session.exitPath);
@@ -275,6 +286,11 @@
     return [session.deviceType, session.browser, session.operatingSystem]
       .filter(Boolean)
       .join(" · ");
+  }
+
+  function composerStatus(session: UserActivitySessionSummary): string {
+    if (session.source !== "composer") return "";
+    return session.status ? titleCase(session.status) : "Unknown status";
   }
 
   function eventLabel(event: PostHogSessionEvent): string {
@@ -324,7 +340,7 @@
         Sessions
       </AdminActionButton>
       <div class="detail-actions">
-        {#if selectedSession && selectedSession.exceptionCount > 0}
+        {#if selectedSession?.source === "posthog" && selectedSession.exceptionCount > 0}
           <CopyForAIButton
             getData={getExceptionReport}
             ariaLabel="Copy session exceptions as a report for AI"
@@ -344,7 +360,7 @@
             useToast={true}
           />
         {/if}
-        {#if selectedSession?.postHogUrl}
+        {#if selectedSession?.source === "posthog" && selectedSession.postHogUrl}
           <AdminActionButton
             variant="info"
             icon="fa-arrow-up-right-from-square"
@@ -359,10 +375,19 @@
     {#if selectedSession}
       <div class="detail-heading">
         <div>
-          <span class="detail-kicker">Session inspection</span>
+          <span class="detail-kicker"
+            >{selectedSession.source === "composer"
+              ? "Composer session record"
+              : "Session inspection"}</span
+          >
           <h4>{sessionDate(selectedSession.startedAt)}</h4>
         </div>
-        {#if selectedSession.exceptionCount > 0}
+        {#if selectedSession.source === "composer"}
+          <span class="record-badge">
+            <i class="fas fa-database" aria-hidden="true"></i>
+            {composerStatus(selectedSession)}
+          </span>
+        {:else if selectedSession.exceptionCount > 0}
           <span class="exception-badge">
             <i class="fas fa-bug" aria-hidden="true"></i>
             {selectedSession.exceptionCount}
@@ -375,37 +400,77 @@
         {/if}
       </div>
 
-      <div class="session-stats" aria-label="Session summary">
-        <div>
-          <strong>{duration(selectedSession.duration)}</strong><span
-            >Duration</span
-          >
+      {#if selectedSession.source === "composer"}
+        <div class="session-stats" aria-label="Composer session summary">
+          <div>
+            <strong>{duration(selectedSession.duration)}</strong><span
+              >Recorded time</span
+            >
+          </div>
+          <div>
+            <strong>{selectedSession.stepCount ?? "—"}</strong><span>Steps</span
+            >
+          </div>
+          <div>
+            <strong
+              >{selectedSession.isSaved === null
+                ? "—"
+                : selectedSession.isSaved
+                  ? "Yes"
+                  : "No"}</strong
+            ><span>Saved</span>
+          </div>
+          <div>
+            <strong
+              >{selectedSession.lastAutosaveAt
+                ? sessionDate(selectedSession.lastAutosaveAt)
+                : "None"}</strong
+            ><span>Last autosave</span>
+          </div>
         </div>
-        <div>
-          <strong>{selectedSession.eventCount}</strong><span>Events</span>
+        <div class="session-context">
+          <div>
+            <span>Draft</span>
+            <strong>{routeSummary(selectedSession)}</strong>
+          </div>
+          <div>
+            <span>Last recorded</span>
+            <strong>{absoluteDate(selectedSession.endedAt)}</strong>
+          </div>
         </div>
-        <div>
-          <strong>{selectedSession.contentActionCount}</strong><span
-            >Content actions</span
-          >
+      {:else}
+        <div class="session-stats" aria-label="Session summary">
+          <div>
+            <strong>{duration(selectedSession.duration)}</strong><span
+              >Duration</span
+            >
+          </div>
+          <div>
+            <strong>{selectedSession.eventCount}</strong><span>Events</span>
+          </div>
+          <div>
+            <strong>{selectedSession.contentActionCount}</strong><span
+              >Content actions</span
+            >
+          </div>
+          <div class:has-exceptions={selectedSession.exceptionCount > 0}>
+            <strong>{selectedSession.exceptionCount}</strong><span
+              >Exceptions</span
+            >
+          </div>
         </div>
-        <div class:has-exceptions={selectedSession.exceptionCount > 0}>
-          <strong>{selectedSession.exceptionCount}</strong><span
-            >Exceptions</span
-          >
-        </div>
-      </div>
 
-      <div class="session-context">
-        <div>
-          <span>Route</span>
-          <strong>{routeSummary(selectedSession)}</strong>
+        <div class="session-context">
+          <div>
+            <span>Route</span>
+            <strong>{routeSummary(selectedSession)}</strong>
+          </div>
+          <div>
+            <span>Client</span>
+            <strong>{deviceSummary(selectedSession) || "Not captured"}</strong>
+          </div>
         </div>
-        <div>
-          <span>Client</span>
-          <strong>{deviceSummary(selectedSession) || "Not captured"}</strong>
-        </div>
-      </div>
+      {/if}
     {:else}
       <div class="detail-heading pending-heading">
         <div>
@@ -423,87 +488,100 @@
       </p>
     {/if}
 
-    <SessionReplayPanel
-      state={replayState}
-      embedUrl={replayUrl}
-      message={replayMessage}
-      onretry={retryReplay}
-    />
-
-    <div class="timeline-heading">
-      <div>
-        <h5>Event trail</h5>
-        <span>{visibleEvents.length} shown · {events.length} loaded</span>
-      </div>
-      {#if selectedSession && selectedSession.exceptionCount > 0}
-        <div class="event-filter">
-          <SegmentedControl
-            options={eventFilterOptions}
-            value={eventFilter}
-            onchange={(filter) => (eventFilter = filter)}
-            semantics="radiogroup"
-            color="accent"
-            size="sm"
-            density="compact"
-            ariaLabel="Session event filter"
-          />
+    {#if selectedSession?.source === "composer"}
+      <div class="composer-source-note">
+        <i class="fas fa-database" aria-hidden="true"></i>
+        <div>
+          <strong>Recovered from Composer storage</strong>
+          <span
+            >PostHog did not capture this visit, so replay, routes, events, and
+            exceptions are unavailable.</span
+          >
         </div>
-      {/if}
-    </div>
-
-    {#if loadingEvents}
-      <div class="detail-state" aria-live="polite">
-        <ProgressRing percent={-1} size={28} strokeWidth={3} />
-        <span>Loading event trail</span>
-      </div>
-    {:else if eventError}
-      <div class="detail-state error" role="alert">
-        <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
-        <span>{eventError}</span>
-        <AdminActionButton
-          variant="secondary"
-          icon="fa-rotate-right"
-          onclick={retryEvents}
-        >
-          Retry
-        </AdminActionButton>
-      </div>
-    {:else if events.length === 0}
-      <div class="detail-state">
-        <i class="fas fa-timeline" aria-hidden="true"></i>
-        <span>No events were returned for this session</span>
-      </div>
-    {:else if visibleEvents.length === 0}
-      <div class="detail-state">
-        <i class="fas fa-circle-check" aria-hidden="true"></i>
-        <span>No exception events were returned</span>
       </div>
     {:else}
-      <ol class="event-timeline themed-scrollbar">
-        {#each visibleEvents as event (event.eventId)}
-          <li class:exception={!!event.exception}>
-            <span class="event-marker" aria-hidden="true">
-              <i class="fas {eventIcon(event)}"></i>
-            </span>
-            <div class="event-copy">
-              <div class="event-title-row">
-                <strong>{eventLabel(event)}</strong>
-                <time
-                  datetime={event.timestamp.toISOString()}
-                  title={absoluteDate(event.timestamp)}
-                  >{eventOffset(event)}</time
-                >
+      <SessionReplayPanel
+        state={replayState}
+        embedUrl={replayUrl}
+        message={replayMessage}
+        onretry={retryReplay}
+      />
+
+      <div class="timeline-heading">
+        <div>
+          <h5>Event trail</h5>
+          <span>{visibleEvents.length} shown · {events.length} loaded</span>
+        </div>
+        {#if selectedSession?.source === "posthog" && selectedSession.exceptionCount > 0}
+          <div class="event-filter">
+            <SegmentedControl
+              options={eventFilterOptions}
+              value={eventFilter}
+              onchange={(filter) => (eventFilter = filter)}
+              semantics="radiogroup"
+              color="accent"
+              size="sm"
+              density="compact"
+              ariaLabel="Session event filter"
+            />
+          </div>
+        {/if}
+      </div>
+
+      {#if loadingEvents}
+        <div class="detail-state" aria-live="polite">
+          <ProgressRing percent={-1} size={28} strokeWidth={3} />
+          <span>Loading event trail</span>
+        </div>
+      {:else if eventError}
+        <div class="detail-state error" role="alert">
+          <i class="fas fa-circle-exclamation" aria-hidden="true"></i>
+          <span>{eventError}</span>
+          <AdminActionButton
+            variant="secondary"
+            icon="fa-rotate-right"
+            onclick={retryEvents}
+          >
+            Retry
+          </AdminActionButton>
+        </div>
+      {:else if events.length === 0}
+        <div class="detail-state">
+          <i class="fas fa-timeline" aria-hidden="true"></i>
+          <span>No events were returned for this session</span>
+        </div>
+      {:else if visibleEvents.length === 0}
+        <div class="detail-state">
+          <i class="fas fa-circle-check" aria-hidden="true"></i>
+          <span>No exception events were returned</span>
+        </div>
+      {:else}
+        <ol class="event-timeline themed-scrollbar">
+          {#each visibleEvents as event (event.eventId)}
+            <li class:exception={!!event.exception}>
+              <span class="event-marker" aria-hidden="true">
+                <i class="fas {eventIcon(event)}"></i>
+              </span>
+              <div class="event-copy">
+                <div class="event-title-row">
+                  <strong>{eventLabel(event)}</strong>
+                  <time
+                    datetime={event.timestamp.toISOString()}
+                    title={absoluteDate(event.timestamp)}
+                    >{eventOffset(event)}</time
+                  >
+                </div>
+                {#if event.path}
+                  <span class="event-path">{routeLabel(event.path)}</span>
+                {/if}
+                {#if event.exception?.message}
+                  <p>{event.exception.message}</p>
+                {/if}
               </div>
-              {#if event.path}
-                <span class="event-path">{routeLabel(event.path)}</span>
-              {/if}
-              {#if event.exception?.message}
-                <p>{event.exception.message}</p>
-              {/if}
-            </div>
-          </li>
-        {/each}
-      </ol>
+            </li>
+          {/each}
+        </ol>
+      {/if}
     {/if}
   </div>
 {:else}
@@ -511,7 +589,8 @@
     {#each sessions as session (session.sessionId)}
       <button
         class="session-row"
-        class:has-exceptions={session.exceptionCount > 0}
+        class:has-exceptions={session.source === "posthog" &&
+          session.exceptionCount > 0}
         onclick={() => inspectSession(session)}
         aria-label="Inspect session from {absoluteDate(session.startedAt)}"
       >
@@ -522,7 +601,12 @@
             >{sessionDate(session.startedAt)}</time
           >
           <span class="duration-badge">{duration(session.duration)}</span>
-          {#if session.exceptionCount > 0}
+          {#if session.source === "composer"}
+            <span class="record-badge">
+              <i class="fas fa-database" aria-hidden="true"></i>
+              {composerStatus(session)}
+            </span>
+          {:else if session.exceptionCount > 0}
             <span class="exception-badge">
               <i class="fas fa-bug" aria-hidden="true"></i>
               {session.exceptionCount}
@@ -531,11 +615,17 @@
         </div>
         <strong class="session-route">{routeSummary(session)}</strong>
         <div class="session-meta">
-          <span>{session.eventCount} events</span>
-          {#if session.contentActionCount > 0}
-            <span>{session.contentActionCount} content actions</span>
+          {#if session.source === "composer"}
+            <span>{session.stepCount ?? "Unknown"} steps</span>
+            <span>Composer autosave record</span>
+          {:else}
+            <span>{session.eventCount} events</span>
+            {#if session.contentActionCount > 0}
+              <span>{session.contentActionCount} content actions</span>
+            {/if}
+            {#if deviceSummary(session)}<span>{deviceSummary(session)}</span
+              >{/if}
           {/if}
-          {#if deviceSummary(session)}<span>{deviceSummary(session)}</span>{/if}
         </div>
         <i class="fas fa-chevron-right row-chevron" aria-hidden="true"></i>
       </button>
@@ -635,7 +725,8 @@
   .duration-badge,
   .exception-badge,
   .clean-badge,
-  .pending-badge {
+  .pending-badge,
+  .record-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
@@ -665,6 +756,11 @@
   .pending-badge {
     background: color-mix(in srgb, var(--semantic-warning) 14%, transparent);
     color: var(--semantic-warning);
+  }
+
+  .record-badge {
+    background: color-mix(in srgb, var(--theme-accent) 13%, transparent);
+    color: var(--theme-accent);
   }
 
   .row-chevron {
@@ -787,6 +883,37 @@
     color: var(--theme-text-dim);
     font-size: var(--font-size-sm);
     line-height: 1.5;
+  }
+
+  .composer-source-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border: 1px solid var(--theme-stroke);
+    border-radius: 0.75rem;
+    background: var(--theme-panel-bg);
+    color: var(--theme-text-dim);
+  }
+
+  .composer-source-note > i {
+    margin-top: 0.15rem;
+    color: var(--theme-accent);
+  }
+
+  .composer-source-note div {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .composer-source-note strong {
+    color: var(--theme-text);
+    font-size: var(--font-size-sm);
+  }
+
+  .composer-source-note span {
+    font-size: var(--font-size-compact);
+    line-height: 1.45;
   }
 
   .detail-state {

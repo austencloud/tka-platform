@@ -7,8 +7,8 @@
   import type {
     ContentMetrics,
     ModuleActivityBreakdown,
-    PostHogSessionSummary,
     TimePeriod,
+    UserActivitySessionSummary,
     UserEngagementSummary,
   } from "../services/types";
   import UserSessionInspector from "./UserSessionInspector.svelte";
@@ -44,7 +44,7 @@
   let engagement = $state<UserEngagementSummary | null>(null);
   let activityBreakdown = $state<ModuleActivityBreakdown[]>([]);
   let contentMetrics = $state<ContentMetrics | null>(null);
-  let recentSessions = $state<PostHogSessionSummary[]>([]);
+  let recentSessions = $state<UserActivitySessionSummary[]>([]);
   let syncedUserId = "";
 
   let loading = $state<Record<Section, boolean>>({
@@ -83,6 +83,9 @@
       recentSessions.length > 0
   );
   const isRefreshing = $derived(Object.values(loading).some(Boolean));
+  const hasComposerSessions = $derived(
+    recentSessions.some((session) => session.source === "composer")
+  );
 
   $effect(() => {
     const uid = userId;
@@ -323,7 +326,11 @@
             <i class="fas fa-chart-line" aria-hidden="true"></i>
             Engagement
           </h3>
-          <p>Frequency and time spent</p>
+          <p>
+            {engagement?.source === "composer"
+              ? "From Composer session records"
+              : "Frequency and time spent"}
+          </p>
         </div>
       </div>
       {#if loading.engagement && !engagement}
@@ -518,7 +525,11 @@
             <i class="fas fa-clock-rotate-left" aria-hidden="true"></i>
             Sessions
           </h3>
-          <p>Open one to inspect routes, events, and exceptions.</p>
+          <p>
+            {hasComposerSessions
+              ? "Recovered from Composer autosave records."
+              : "Open one to inspect routes, events, and exceptions."}
+          </p>
         </div>
         {#if recentSessions.length > 0}<span class="result-count"
             >{recentSessions.length} loaded</span

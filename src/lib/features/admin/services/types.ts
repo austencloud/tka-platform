@@ -165,6 +165,8 @@ export interface PostHogDashboardLinks {
 // === From IPostHogUserAnalytics ===
 
 export interface UserEngagementSummary {
+  /** Evidence source used for this window */
+  source: "posthog" | "composer";
   /** ISO timestamp of last activity */
   lastActiveAt: string | null;
   /** ISO timestamp of account creation (from PostHog person properties) */
@@ -200,6 +202,7 @@ export interface ContentMetrics {
 }
 
 export interface PostHogSessionSummary {
+  source: "posthog";
   /** PostHog session ID */
   sessionId: string;
   /** Session start time */
@@ -226,6 +229,27 @@ export interface PostHogSessionSummary {
   /** Direct handoff to the session in PostHog */
   postHogUrl: string | null;
 }
+
+export interface ComposerSessionSummary {
+  source: "composer";
+  /** Composer session document ID */
+  sessionId: string;
+  /** First and last persisted activity in this Composer session */
+  startedAt: Date;
+  endedAt: Date;
+  /** Persisted activity window in milliseconds */
+  duration: number;
+  /** Sequence draft metadata captured by the Composer */
+  name: string | null;
+  status: "active" | "completed" | "abandoned" | null;
+  stepCount: number | null;
+  isSaved: boolean | null;
+  lastAutosaveAt: Date | null;
+}
+
+export type UserActivitySessionSummary =
+  | PostHogSessionSummary
+  | ComposerSessionSummary;
 
 export interface PostHogSessionEvent {
   eventId: string;

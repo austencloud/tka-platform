@@ -15,7 +15,7 @@ import { env } from "$env/dynamic/private";
 import { RATE_LIMITS } from "$lib/server/security/rate-limiter";
 import { withRateLimit } from "$lib/server/security/withRateLimit";
 import { logAdminAction } from "$lib/server/security/audit-logger";
-import { getAdminAuth } from "$lib/server/firebaseAdmin";
+import { getAdminAuth, getAdminDb } from "$lib/server/firebaseAdmin";
 import {
   escapeHogQL,
   personIdentityFilter,
@@ -44,6 +44,7 @@ type AnalyticsStage =
   | "read_request"
   | "build_query"
   | "posthog"
+  | "firestore"
   | "audit";
 
 /** Global pulse queries are site-wide; per-user queries require a userId. */
@@ -88,6 +89,97 @@ function periodFilter(period: TimePeriod): string {
   return period === "all"
     ? ""
     : `AND timestamp > now() - interval ${getPeriodInterval(period)}`;
+}
+
+function periodStart(period: TimePeriod): Date | null {
+  if (period === "all") return null;
+  const days = period === "today" ? 1 : period === "week" ? 7 : 30;
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
+
+function firestoreDate(value: unknown): Date | null {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value;
+  if (!value || typeof value !== "object" || !("toDate" in value)) return null;
+  const toDate = (value as { toDate?: unknown }).toDate;
+  if (typeof toDate !== "function") return null;
+  const date = toDate.call(value) as unknown;
+  return date instanceof Date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function composerSessionFromDoc(
+  id: string,
+  data: Record<string, unknown>
+): Record<string, unknown> | null {
+  const startedAt = firestoreDate(data.createdAt);
+  const endedAt = firestoreDate(data.lastModified);
+  if (!startedAt || !endedAt) {
+    console.warn("[analytics] Ignoring an incomplete Composer session:", id);
+    return null;
+  }
+
+  const status = ["active", "completed", "abandoned"].includes(
+    String(data.status)
+  )
+    ? String(data.status)
+    : null;
+  const stepCount =
+    typeof data.stepCount === "number" &&
+    Number.isFinite(data.stepCount) &&
+    data.stepCount >= 0
+      ? data.stepCount
+      : null;
+
+  return {
+    source: "composer",
+    sessionId: id,
+    startedAt: startedAt.toISOString(),
+    endedAt: endedAt.toISOString(),
+    duration: Math.max(0, endedAt.getTime() - startedAt.getTime()),
+    name: typeof data.name === "string" && data.name ? data.name : null,
+    status,
+    stepCount,
+    isSaved: typeof data.isSaved === "boolean" ? data.isSaved : null,
+    lastAutosaveAt: firestoreDate(data.lastAutosave)?.toISOString() ?? null,
+  };
+}
+
+async function loadComposerSessions(
+  userId: string,
+  period: TimePeriod,
+  limit?: number
+): Promise<Array<Record<string, unknown>>> {
+  const collection = getAdminDb()
+    .collection("users")
+    .doc(userId)
+    .collection("sessions");
+  const start = periodStart(period);
+  const periodQuery = start
+    ? collection.where("lastModified", ">=", start)
+    : collection;
+  let query = periodQuery.orderBy("lastModified", "desc");
+  if (limit !== undefined) query = query.limit(limit);
+
+  const snapshot = await query.get();
+  return snapshot.docs.flatMap((document) => {
+    const session = composerSessionFromDoc(document.id, document.data());
+    return session ? [session] : [];
+  });
+}
+
+function composerEngagement(
+  sessions: Array<Record<string, unknown>>
+): Record<string, unknown> | null {
+  if (sessions.length === 0) return null;
+  const durations = sessions.map((session) => session.duration as number);
+  const totalTimeSpent = durations.reduce((sum, duration) => sum + duration, 0);
+  return {
+    source: "composer",
+    lastActiveAt: sessions[0]!.endedAt,
+    memberSince: null,
+    sessionsCount: sessions.length,
+    avgSessionDuration: totalTimeSpent / sessions.length,
+    totalTimeSpent,
+  };
 }
 
 /**
@@ -162,10 +254,10 @@ async function executeHogQLQuery(
 function buildEngagementQuery(userId: string, period: TimePeriod): string {
   return `
     SELECT
-      max(ended_at) as last_active,
+      if(count() = 0, null, max(ended_at)) as last_active,
       count() as sessions_count,
-      coalesce(avg(duration_ms), 0) as avg_duration_ms,
-      coalesce(sum(duration_ms), 0) as total_duration_ms
+      if(count() = 0, 0, avg(duration_ms)) as avg_duration_ms,
+      if(count() = 0, 0, sum(duration_ms)) as total_duration_ms
     FROM (
       SELECT
         min(timestamp) as started_at,
@@ -386,6 +478,7 @@ export function _perUserResult(
     const row = rows[0]!;
     requireRowWidth(row, 4, "engagement row");
     return {
+      source: "posthog",
       lastActiveAt: asNullableIso(row[0], "last activity"),
       memberSince: null,
       sessionsCount: asFiniteNumber(row[1], "session count"),
@@ -440,6 +533,7 @@ export function _perUserResult(
         throw error(502, "PostHog returned invalid session modules");
       }
       return {
+        source: "posthog",
         sessionId: row[0],
         startedAt,
         endedAt: asNullableIso(row[2], "session end"),
@@ -755,13 +849,30 @@ export const POST: RequestHandler = async (event) => {
     const result = await executeHogQLQuery(query);
 
     const rows = result.results;
-    let data = isGlobal
-      ? rows
-      : _perUserResult(
-          type,
-          rows,
-          type === "sessions" ? getProjectId() : undefined
-        );
+    let data: unknown;
+    if (!isGlobal && type === "sessions" && rows.length === 0) {
+      stage = "firestore";
+      data = await loadComposerSessions(userId!, period ?? "week", limit ?? 10);
+    } else {
+      data = isGlobal
+        ? rows
+        : _perUserResult(
+            type,
+            rows,
+            type === "sessions" ? getProjectId() : undefined
+          );
+    }
+    if (
+      type === "engagement" &&
+      userId &&
+      (data as { sessionsCount?: unknown }).sessionsCount === 0
+    ) {
+      stage = "firestore";
+      data =
+        composerEngagement(
+          await loadComposerSessions(userId, period ?? "week")
+        ) ?? data;
+    }
     if (type === "engagement" && userId) {
       const userRecord = await getAdminAuth().getUser(userId);
       data = {

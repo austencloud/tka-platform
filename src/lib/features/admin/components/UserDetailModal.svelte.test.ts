@@ -75,6 +75,7 @@ describe("UserDetailModal async identity loading", () => {
   beforeEach(() => {
     mocks.getUserProfile.mockReset();
     mocks.getEngagementSummary.mockReset().mockResolvedValue({
+      source: "posthog",
       lastActiveAt: null,
       memberSince: null,
       sessionsCount: 0,

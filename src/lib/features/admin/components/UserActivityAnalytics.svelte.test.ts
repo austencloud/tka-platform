@@ -16,6 +16,7 @@ vi.mock("$lib/features/admin/get-post-hog-user-analytics", () => ({
 }));
 
 const emptyEngagement = {
+  source: "posthog" as const,
   lastActiveAt: null,
   memberSince: null,
   sessionsCount: 0,
@@ -139,6 +140,7 @@ describe("UserActivityAnalytics transitions", () => {
     });
     service.getRecentSessions.mockResolvedValue([
       {
+        source: "posthog",
         sessionId: "session-1",
         startedAt: new Date("2026-07-31T12:00:00.000Z"),
         endedAt: new Date("2026-07-31T12:04:00.000Z"),
@@ -198,9 +200,48 @@ describe("UserActivityAnalytics transitions", () => {
     );
   });
 
+  it("shows recovered Composer evidence without requesting PostHog detail", async () => {
+    service.getEngagementSummary.mockResolvedValue({
+      source: "composer",
+      lastActiveAt: "2026-08-19T22:21:17.007Z",
+      memberSince: "2026-08-19T21:09:06.000Z",
+      sessionsCount: 1,
+      avgSessionDuration: 1_200_000,
+      totalTimeSpent: 1_200_000,
+    });
+    service.getRecentSessions.mockResolvedValue([
+      {
+        source: "composer",
+        sessionId: "composer-1",
+        startedAt: new Date("2026-08-19T22:01:16.456Z"),
+        endedAt: new Date("2026-08-19T22:21:17.007Z"),
+        duration: 1_200_551,
+        name: "Sequence 4:52:11 PM",
+        status: "active",
+        stepCount: 31,
+        isSaved: false,
+        lastAutosaveAt: new Date("2026-08-19T22:21:17.007Z"),
+      },
+    ]);
+
+    render(UserActivityAnalytics, { userId: "uid" });
+
+    await expect.element(page.getByText("31 steps")).toBeVisible();
+    await expect
+      .element(page.getByText("Composer autosave record"))
+      .toBeVisible();
+    await page.getByRole("button", { name: /Inspect session from/ }).click();
+    await expect
+      .element(page.getByText("Recovered from Composer storage"))
+      .toBeVisible();
+    expect(service.getSessionEvents).not.toHaveBeenCalled();
+    expect(service.getSessionReplayAccess).not.toHaveBeenCalled();
+  });
+
   it("opens a notification target once and leaves the session list usable", async () => {
     service.getRecentSessions.mockResolvedValue([
       {
+        source: "posthog",
         sessionId: "target-session",
         startedAt: new Date("2026-08-09T12:00:00.000Z"),
         endedAt: null,

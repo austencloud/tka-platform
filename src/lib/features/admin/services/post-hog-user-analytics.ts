@@ -6,8 +6,8 @@ import type {
   PostHogSessionEvent,
   PostHogReplayAccess,
   PostHogReplayAccessState,
-  PostHogSessionSummary,
   TimePeriod,
+  UserActivitySessionSummary,
   UserEngagementSummary,
 } from "./types";
 
@@ -102,7 +102,7 @@ export class PostHogUserAnalytics {
     period: TimePeriod,
     limit = 10,
     signal?: AbortSignal
-  ): Promise<PostHogSessionSummary[]> {
+  ): Promise<UserActivitySessionSummary[]> {
     const data = await this.query(
       "sessions",
       userId,
@@ -205,7 +205,9 @@ function requiredDate(value: unknown, label: string): string {
 
 function parseEngagement(value: unknown): UserEngagementSummary {
   const item = record(value, "engagement data");
+  const source = analyticsSource(item.source, "engagement source");
   return {
+    source,
     lastActiveAt: nullableDate(item.lastActiveAt, "last activity"),
     memberSince: nullableDate(item.memberSince, "membership date"),
     sessionsCount: number(item.sessionsCount, "session count"),
@@ -236,10 +238,40 @@ function parseContent(value: unknown): ContentMetrics {
   };
 }
 
-function parseSession(value: unknown): PostHogSessionSummary {
+function parseSession(value: unknown): UserActivitySessionSummary {
   const item = record(value, "session");
   if (typeof item.sessionId !== "string" || !item.sessionId)
     throw new AnalyticsResponseError("Analytics returned invalid session ID");
+  const source = analyticsSource(item.source, "session source");
+  if (source === "composer") {
+    const status = item.status;
+    if (
+      status !== null &&
+      !["active", "completed", "abandoned"].includes(String(status))
+    ) {
+      throw new AnalyticsResponseError(
+        "Analytics returned invalid Composer session status"
+      );
+    }
+    return {
+      source,
+      sessionId: item.sessionId,
+      startedAt: new Date(requiredDate(item.startedAt, "session start")),
+      endedAt: new Date(requiredDate(item.endedAt, "session end")),
+      duration: number(item.duration, "session duration"),
+      name: nullableString(item.name, "session name"),
+      status: status as "active" | "completed" | "abandoned" | null,
+      stepCount: nullableNumber(item.stepCount, "session step count"),
+      isSaved: nullableBoolean(item.isSaved, "session saved state"),
+      lastAutosaveAt:
+        item.lastAutosaveAt === null
+          ? null
+          : new Date(
+              nullableDate(item.lastAutosaveAt, "session autosave time")!
+            ),
+    };
+  }
+
   if (
     !Array.isArray(item.modules) ||
     item.modules.some((module) => typeof module !== "string")
@@ -248,6 +280,7 @@ function parseSession(value: unknown): PostHogSessionSummary {
       "Analytics returned invalid session modules"
     );
   return {
+    source,
     sessionId: item.sessionId,
     startedAt: new Date(requiredDate(item.startedAt, "session start")),
     endedAt:
@@ -272,6 +305,29 @@ function parseSession(value: unknown): PostHogSessionSummary {
     deviceType: nullableString(item.deviceType, "session device type"),
     postHogUrl: nullableString(item.postHogUrl, "PostHog session URL"),
   };
+}
+
+function analyticsSource(
+  value: unknown,
+  label: string
+): "posthog" | "composer" {
+  if (value !== "posthog" && value !== "composer") {
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  }
+  return value;
+}
+
+function nullableNumber(value: unknown, label: string): number | null {
+  if (value === null) return null;
+  return number(value, label);
+}
+
+function nullableBoolean(value: unknown, label: string): boolean | null {
+  if (value === null) return null;
+  if (typeof value !== "boolean") {
+    throw new AnalyticsResponseError(`Analytics returned invalid ${label}`);
+  }
+  return value;
 }
 
 function nullableString(value: unknown, label: string): string | null {

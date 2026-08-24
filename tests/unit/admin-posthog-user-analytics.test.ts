@@ -36,6 +36,7 @@ describe("PostHogUserAnalytics", () => {
       vi.fn().mockResolvedValue(
         response([
           {
+            source: "posthog",
             sessionId: "session",
             startedAt: "2026-07-31T12:00:00.000Z",
             endedAt: null,
@@ -65,6 +66,7 @@ describe("PostHogUserAnalytics", () => {
       vi.fn().mockResolvedValue(
         response([
           {
+            source: "posthog",
             sessionId: "session",
             startedAt: null,
             endedAt: null,
@@ -92,6 +94,7 @@ describe("PostHogUserAnalytics", () => {
     const fetchMock = vi.fn().mockResolvedValue(
       response([
         {
+          source: "posthog",
           sessionId: "session-1",
           startedAt: "2026-07-31T12:00:00.000Z",
           endedAt: "2026-07-31T12:04:00.000Z",
@@ -127,6 +130,40 @@ describe("PostHogUserAnalytics", () => {
       period: "month",
       limit: 8,
     });
+  });
+
+  it("parses recovered Composer session evidence without PostHog fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        response([
+          {
+            source: "composer",
+            sessionId: "composer-1",
+            startedAt: "2026-08-19T21:10:34.228Z",
+            endedAt: "2026-08-19T21:30:02.316Z",
+            duration: 1_168_088,
+            name: "Sequence 4:10:02 PM",
+            status: "abandoned",
+            stepCount: 20,
+            isSaved: false,
+            lastAutosaveAt: "2026-08-19T21:29:33.383Z",
+          },
+        ])
+      )
+    );
+
+    await expect(
+      new PostHogUserAnalytics().getRecentSessions("uid", "week")
+    ).resolves.toEqual([
+      expect.objectContaining({
+        source: "composer",
+        sessionId: "composer-1",
+        status: "abandoned",
+        stepCount: 20,
+        lastAutosaveAt: new Date("2026-08-19T21:29:33.383Z"),
+      }),
+    ]);
   });
 
   it("parses exception details from a session event trail", async () => {

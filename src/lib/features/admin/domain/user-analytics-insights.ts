@@ -1,7 +1,7 @@
 import type {
   ContentMetrics,
   ModuleActivityBreakdown,
-  PostHogSessionSummary,
+  UserActivitySessionSummary,
   UserEngagementSummary,
 } from "../services/types";
 
@@ -24,7 +24,7 @@ interface AnalyticsSnapshot {
   engagement: UserEngagementSummary | null;
   activity: ModuleActivityBreakdown[];
   content: ContentMetrics | null;
-  sessions: PostHogSessionSummary[];
+  sessions: UserActivitySessionSummary[];
 }
 
 export function buildUserAnalyticsSignals({
@@ -33,14 +33,20 @@ export function buildUserAnalyticsSignals({
   content,
   sessions,
 }: AnalyticsSnapshot): AnalyticsSignal[] {
-  const exceptionCount = sessions.reduce(
+  const postHogSessions = sessions.filter(
+    (session) => session.source === "posthog"
+  );
+  const composerSessions = sessions.filter(
+    (session) => session.source === "composer"
+  );
+  const exceptionCount = postHogSessions.reduce(
     (sum, session) => sum + session.exceptionCount,
     0
   );
-  const affectedSessions = sessions.filter(
+  const affectedSessions = postHogSessions.filter(
     (session) => session.exceptionCount > 0
   ).length;
-  const singleEventSessions = sessions.filter(
+  const singleEventSessions = postHogSessions.filter(
     (session) => session.eventCount <= 1
   ).length;
   const dominantModule = [...activity].sort(
@@ -56,21 +62,29 @@ export function buildUserAnalyticsSignals({
           title: `${exceptionCount} ${plural(exceptionCount, "exception")}`,
           detail: `${affectedSessions} of ${sessions.length} loaded ${plural(sessions.length, "session")}`,
         }
-      : sessions.length > 0
+      : postHogSessions.length > 0
         ? {
             id: "exceptions",
             tone: "success",
             icon: "fa-circle-check",
             title: "No exceptions detected",
-            detail: `Checked ${sessions.length} recent ${plural(sessions.length, "session")}`,
+            detail: `Checked ${postHogSessions.length} recent ${plural(postHogSessions.length, "session")}`,
           }
-        : {
-            id: "exceptions",
-            tone: "neutral",
-            icon: "fa-shield",
-            title: "No sessions to inspect",
-            detail: "Try a wider activity window",
-          };
+        : composerSessions.length > 0
+          ? {
+              id: "exceptions",
+              tone: "info",
+              icon: "fa-database",
+              title: "Composer records recovered",
+              detail: "PostHog exceptions were not captured for these sessions",
+            }
+          : {
+              id: "exceptions",
+              tone: "neutral",
+              icon: "fa-shield",
+              title: "No sessions to inspect",
+              detail: "Try a wider activity window",
+            };
 
   const sessionSignal: AnalyticsSignal =
     singleEventSessions > 0

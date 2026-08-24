@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   withRateLimit: vi.fn(),
   logAdminAction: vi.fn(),
   getUser: vi.fn(),
+  getAdminDb: vi.fn(),
+  getComposerSessions: vi.fn(),
   posthogEnv: {
     POSTHOG_PERSONAL_API_KEY: "secret",
     POSTHOG_PROJECT_ID: "project",
@@ -31,6 +33,7 @@ vi.mock("$lib/server/security/audit-logger", () => ({
 }));
 vi.mock("$lib/server/firebaseAdmin", () => ({
   getAdminAuth: () => ({ getUser: mocks.getUser }),
+  getAdminDb: mocks.getAdminDb,
 }));
 
 import {
@@ -68,6 +71,21 @@ describe("admin analytics endpoint", () => {
     mocks.withRateLimit.mockResolvedValue(null);
     mocks.getUser.mockResolvedValue({
       metadata: { creationTime: "2025-01-01T00:00:00Z" },
+    });
+    const composerQuery = {
+      where: vi.fn(),
+      orderBy: vi.fn(),
+      limit: vi.fn(),
+      get: mocks.getComposerSessions,
+    };
+    composerQuery.where.mockReturnValue(composerQuery);
+    composerQuery.orderBy.mockReturnValue(composerQuery);
+    composerQuery.limit.mockReturnValue(composerQuery);
+    mocks.getComposerSessions.mockResolvedValue({ docs: [] });
+    mocks.getAdminDb.mockReturnValue({
+      collection: () => ({
+        doc: () => ({ collection: () => composerQuery }),
+      }),
     });
     vi.unstubAllGlobals();
   });
@@ -157,6 +175,108 @@ describe("admin analytics endpoint", () => {
         "timestamp > now() - interval 30 day"
       );
     }
+  });
+
+  it("returns a truthful empty engagement summary when PostHog has no sessions", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(upstream([[null, 0, 0, 0]]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      event({ type: "engagement", userId: "uid", period: "week" }) as never
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: {
+        lastActiveAt: null,
+        sessionsCount: 0,
+        avgSessionDuration: 0,
+        totalTimeSpent: 0,
+      },
+    });
+
+    const requestBody = JSON.parse(
+      String((fetchMock.mock.calls[0]?.[1] as RequestInit).body)
+    ) as { query: { query: string } };
+    expect(requestBody.query.query).toContain(
+      "if(count() = 0, null, max(ended_at))"
+    );
+    expect(requestBody.query.query).toContain(
+      "if(count() = 0, 0, avg(duration_ms))"
+    );
+  });
+
+  it("recovers Composer sessions when PostHog captured no user activity", async () => {
+    mocks.getComposerSessions.mockResolvedValue({
+      docs: [
+        {
+          id: "composer-2",
+          data: () => ({
+            createdAt: new Date("2026-08-19T22:00:00Z"),
+            lastModified: new Date("2026-08-19T22:20:00Z"),
+            lastAutosave: new Date("2026-08-19T22:19:30Z"),
+            status: "active",
+            stepCount: 31,
+            isSaved: false,
+            name: "Sequence 2",
+          }),
+        },
+        {
+          id: "composer-1",
+          data: () => ({
+            createdAt: new Date("2026-08-19T21:30:00Z"),
+            lastModified: new Date("2026-08-19T21:45:00Z"),
+            lastAutosave: new Date("2026-08-19T21:44:30Z"),
+            status: "abandoned",
+            stepCount: 18,
+            isSaved: false,
+            name: "Sequence 1",
+          }),
+        },
+      ],
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(upstream([[null, 0, 0, 0]]))
+      .mockResolvedValueOnce(upstream([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const engagementResponse = await POST(
+      event({ type: "engagement", userId: "uid", period: "week" }) as never
+    );
+    const sessionsResponse = await POST(
+      event({ type: "sessions", userId: "uid", period: "week" }) as never
+    );
+
+    await expect(engagementResponse.json()).resolves.toMatchObject({
+      data: {
+        source: "composer",
+        lastActiveAt: "2026-08-19T22:20:00.000Z",
+        sessionsCount: 2,
+        avgSessionDuration: 1_050_000,
+        totalTimeSpent: 2_100_000,
+      },
+    });
+    await expect(sessionsResponse.json()).resolves.toMatchObject({
+      data: [
+        {
+          source: "composer",
+          sessionId: "composer-2",
+          duration: 1_200_000,
+          status: "active",
+          stepCount: 31,
+          isSaved: false,
+        },
+        {
+          source: "composer",
+          sessionId: "composer-1",
+          duration: 900_000,
+          status: "abandoned",
+          stepCount: 18,
+        },
+      ],
+    });
   });
 
   it("rejects invalid periods and limits before contacting PostHog", async () => {
@@ -378,6 +498,7 @@ describe("admin analytics row transformations", () => {
       )
     ).toEqual([
       {
+        source: "posthog",
         sessionId: "session-1",
         startedAt: "2026-07-31T12:00:00Z",
         endedAt: "2026-07-31T12:04:00Z",
