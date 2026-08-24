@@ -22,6 +22,7 @@
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
@@ -162,7 +163,10 @@
 
   onMount(() => {
     controller = new AnimationPlaybackController(
-      new SequenceAnimationOrchestrator(new AnimationStateManager()),
+      new SequenceAnimationOrchestrator(
+        new AnimationStateManager(),
+        getViewerAnimationPropConfig
+      ),
       new AnimationLoop()
     );
 

@@ -28,6 +28,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
   import { getVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
@@ -109,7 +110,10 @@
   onMount(() => {
     const stateManager = new AnimationStateManager();
     const loop = new AnimationLoop();
-    const orchestrator = new SequenceAnimationOrchestrator(stateManager);
+    const orchestrator = new SequenceAnimationOrchestrator(
+      stateManager,
+      getViewerAnimationPropConfig
+    );
     playbackController = new AnimationPlaybackController(orchestrator, loop);
   });
 
