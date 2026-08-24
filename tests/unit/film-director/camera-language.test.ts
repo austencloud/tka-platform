@@ -1,8 +1,10 @@
+import { userProportionsState } from "@austencloud/scene-3d";
 import { describe, expect, it } from "vitest";
 
 import {
   compileCameraMoves,
   computeCameraFraming,
+  directorFloorY,
 } from "../../../src/routes/test/film-director/_lib/camera-language";
 
 const CONTEXT = {
@@ -65,6 +67,39 @@ describe("computeCameraFraming", () => {
     );
     expect(Math.sign(left.position[0] - left.target[0])).not.toBe(
       Math.sign(right.position[0] - right.target[0])
+    );
+  });
+
+  it("close-up performer targets sit near head height, not above it", () => {
+    // Regression: the target was once computed as groundOffset + 1.45, but
+    // groundOffset is the rig ORIGIN (shoulder height) — feet sit
+    // userProportionsState.groundY below it. That aimed close-ups ~1.5m over
+    // every head and framed empty air (Understudy Night shot 1).
+    const framing = computeCameraFraming(
+      {
+        subject: { kind: "performer", performerId: "performer-1" },
+        shotSize: "close-up",
+      },
+      CONTEXT
+    );
+    const floorY = directorFloorY(CONTEXT.groundOffset);
+    expect(framing.target[1]).toBeCloseTo(floorY + 1.45, 5);
+    // Sanity: the floor really is below the rig origin, so an absolute-height
+    // reading would have produced a strictly higher target.
+    expect(userProportionsState.groundY).toBeLessThan(0);
+    expect(framing.target[1]).toBeLessThan(CONTEXT.groundOffset + 1.45);
+  });
+
+  it("an explicit subject height is measured from the performer's floor", () => {
+    const framing = computeCameraFraming(
+      {
+        subject: { kind: "performer", performerId: "performer-2", height: 1.35 },
+      },
+      CONTEXT
+    );
+    expect(framing.target[1]).toBeCloseTo(
+      directorFloorY(CONTEXT.groundOffset) + 1.35,
+      5
     );
   });
 

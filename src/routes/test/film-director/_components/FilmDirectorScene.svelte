@@ -50,6 +50,12 @@
   const effectsConfig = createEffectsConfigState(undefined, { persist: false });
   const viewer = createViewer3DState(buildDirectorViewerSeed(firstShot));
   const transitionProfiler = createFilmDirectorTransitionProfiler();
+  if (typeof window !== "undefined") {
+    // Test-route debug hook: lets an agent or a DevTools session inspect the
+    // live viewer (camera pose, performer world positions) without UI.
+    (window as unknown as Record<string, unknown>).__filmDirectorViewer =
+      viewer;
+  }
 
   setSceneFeatureContext(sceneFeatures);
   setEffectsConfigContext(effectsConfig);
@@ -345,8 +351,8 @@
     isPlaying={director.isPlaying}
     bpm={presentedShot.performance.bpm}
     hideOverlays={true}
-    hideSceneMarkers={true}
     hidePerformerBadges={true}
+    hideOrientationHelpers={true}
     fullScreen={true}
     enableEffects={true}
     enablePerformerLocomotion={false}

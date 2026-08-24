@@ -175,6 +175,25 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     validationError = null;
   }
 
+  function loadFilm(input: FilmDirectorInput): boolean {
+    try {
+      const cloned = structuredClone(input);
+      const nextFilm = resolveFilmDirectorSpec(cloned);
+      sourceInput = cloned;
+      film = nextFilm;
+      draft = JSON.stringify(cloned, null, 2);
+      playheadSeconds = 0;
+      wantsToPlay = nextFilm.playback.autoplay;
+      isPlaying = sceneReady && wantsToPlay && !transitionHolding;
+      validationError = null;
+      resetPreparation();
+      return true;
+    } catch (error: unknown) {
+      validationError = explainValidationError(error);
+      return false;
+    }
+  }
+
   function toggleEditor(): void {
     editorOpen = !editorOpen;
   }
@@ -266,6 +285,7 @@ export function createFilmDirectorState(initialInput: FilmDirectorInput) {
     setDraft,
     applyDraft,
     resetDraft,
+    loadFilm,
     toggleEditor,
     start,
     destroy,

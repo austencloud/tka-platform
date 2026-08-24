@@ -151,7 +151,24 @@
         (sceneFeatures.isReady("environment") &&
           (transitionVisual?.rendererReady ?? true)))
   );
-  const retainedEnvironments = $derived(new Set(retainedEnvironmentTypes));
+  // Only worlds with a dedicated always-mounted block below can honor a
+  // retention request. A retained type WITHOUT such a block must fall back to
+  // the ordinary single-scene path — treating it as retained would gate off
+  // the fallback renderer too, so nothing mounts, "environment" never reports
+  // ready, and a film host's warmup waits on a settle signal that cannot come.
+  const RETAINABLE_ENVIRONMENT_TYPES = new Set<BackgroundType>([
+    BackgroundType.AUTUMN,
+    BackgroundType.FOREST,
+    BackgroundType.OCEAN,
+    BackgroundType.CELESTIAL,
+  ]);
+  const retainedEnvironments = $derived(
+    new Set(
+      retainedEnvironmentTypes.filter((type) =>
+        RETAINABLE_ENVIRONMENT_TYPES.has(type)
+      )
+    )
+  );
   const mountedEnvironmentIsRetained = $derived(
     mountedBackgroundType !== null &&
       retainedEnvironments.has(mountedBackgroundType)

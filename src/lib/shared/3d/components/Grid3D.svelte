@@ -23,6 +23,7 @@
   } from "@austencloud/scene-3d";
   import type { GridMode } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import { PLANE_NORMALS } from "../domain/constants/plane-transforms";
   import {
     getGridMarkerGeometry,
     getGridMaterial,
@@ -47,6 +48,11 @@
     planeMode?: PlaneMode;
     /** Optional label for this grid (e.g., "Avatar 1") */
     label?: string;
+    /**
+     * Center sphere + axis arrows. Film-style surfaces show dictated plane
+     * grids as scenery and want these editor helpers off.
+     */
+    showOrientationHelpers?: boolean;
   }
 
   let {
@@ -59,6 +65,7 @@
     gridMode = "diamond",
     planeMode = PlaneMode.WALL,
     label,
+    showOrientationHelpers = true,
   }: Props = $props();
 
   const effectiveSize = $derived(size ?? userProportionsState.gridSize);
@@ -72,11 +79,10 @@
   const centerPointGeometry = getGridMarkerGeometry(0.04, 32);
   const centerPointMaterial = getGridMaterial(0xf59e0b);
 
-  const PLANE_NORMALS: Partial<Record<Plane, Vector3>> = {
-    [Plane.WALL]: new Vector3(0, 0, 1),
-    [Plane.WHEEL]: new Vector3(1, 0, 0),
-    [Plane.FLOOR]: new Vector3(0, 1, 0),
-  };
+  // Stable render order so the {#each} keys don't churn as planes toggle.
+  const visiblePlaneList = $derived(
+    (Object.values(Plane) as Plane[]).filter((p) => visiblePlanes.has(p))
+  );
 
   const _viewDir = new Vector3();
   let labelPlane = $state<Plane | null>(null);
@@ -93,8 +99,7 @@
     let bestPlane: Plane | null = null;
     let bestDot = -1;
 
-    for (const p of [Plane.WALL, Plane.WHEEL, Plane.FLOOR]) {
-      if (!visiblePlanes.has(p)) continue;
+    for (const p of visiblePlaneList) {
       const normal = PLANE_NORMALS[p];
       if (!normal) continue;
       const dot = Math.abs(_viewDir.dot(normal));
@@ -108,72 +113,60 @@
   });
 </script>
 
-<!-- Wall plane (purple) -->
-{#if visiblePlanes.has(Plane.WALL)}
-  <GridPlane
-    plane={Plane.WALL}
-    color={PLANE_COLORS[Plane.WALL]}
-    opacity={planeOpacity}
-    showLabels={labelPlane === Plane.WALL}
-    size={effectiveSize}
-    handRadius={handPointRadius}
-    outerRadius={outerPointRadius}
-    {gridMode}
+<!-- All nine planes render through the same generic path; the wheel plane
+   additionally splits into two laterally offset copies in DUAL_WHEEL mode. -->
+{#each visiblePlaneList as plane (plane)}
+  {#if plane === Plane.WHEEL}
+    {#each wheelPlaneOffsets as lateralOffset, index (index)}
+      <T.Group position.x={lateralOffset}>
+        <GridPlane
+          {plane}
+          color={PLANE_COLORS[plane]}
+          opacity={planeOpacity}
+          showLabels={labelPlane === plane && index === 0}
+          size={effectiveSize}
+          handRadius={handPointRadius}
+          outerRadius={outerPointRadius}
+          {gridMode}
+        />
+      </T.Group>
+    {/each}
+  {:else}
+    <GridPlane
+      {plane}
+      color={PLANE_COLORS[plane]}
+      opacity={planeOpacity}
+      showLabels={labelPlane === plane}
+      size={effectiveSize}
+      handRadius={handPointRadius}
+      outerRadius={outerPointRadius}
+      {gridMode}
+    />
+  {/if}
+{/each}
+
+{#if showOrientationHelpers}
+  <!-- Center point indicator - 4cm sphere -->
+  <T.Mesh
+    geometry={centerPointGeometry}
+    material={centerPointMaterial}
+    position={[0, 0, 0]}
+    dispose={false}
   />
+
+  <!-- Axis helpers for orientation reference -->
+  <T.Group>
+    <!-- X axis (red) - performer's right -->
+    <T.ArrowHelper
+      args={[[1, 0, 0], [0, 0, 0], effectiveSize * 1.2, 0xff4444, 0.06, 0.03]}
+    />
+    <!-- Y axis (green) - up/sky -->
+    <T.ArrowHelper
+      args={[[0, 1, 0], [0, 0, 0], effectiveSize * 1.2, 0x44ff44, 0.06, 0.03]}
+    />
+    <!-- Z axis (blue) - toward audience -->
+    <T.ArrowHelper
+      args={[[0, 0, 1], [0, 0, 0], effectiveSize * 1.2, 0x4444ff, 0.06, 0.03]}
+    />
+  </T.Group>
 {/if}
-
-<!-- Wheel plane (blue) -->
-{#if visiblePlanes.has(Plane.WHEEL)}
-  {#each wheelPlaneOffsets as lateralOffset, index}
-    <T.Group position.x={lateralOffset}>
-      <GridPlane
-        plane={Plane.WHEEL}
-        color={PLANE_COLORS[Plane.WHEEL]}
-        opacity={planeOpacity}
-        showLabels={labelPlane === Plane.WHEEL && index === 0}
-        size={effectiveSize}
-        handRadius={handPointRadius}
-        outerRadius={outerPointRadius}
-        {gridMode}
-      />
-    </T.Group>
-  {/each}
-{/if}
-
-<!-- Floor plane (green) -->
-{#if visiblePlanes.has(Plane.FLOOR)}
-  <GridPlane
-    plane={Plane.FLOOR}
-    color={PLANE_COLORS[Plane.FLOOR]}
-    opacity={planeOpacity}
-    showLabels={labelPlane === Plane.FLOOR}
-    size={effectiveSize}
-    handRadius={handPointRadius}
-    outerRadius={outerPointRadius}
-    {gridMode}
-  />
-{/if}
-
-<!-- Center point indicator (always visible) - 4cm sphere -->
-<T.Mesh
-  geometry={centerPointGeometry}
-  material={centerPointMaterial}
-  position={[0, 0, 0]}
-  dispose={false}
-/>
-
-<!-- Axis helpers for orientation reference -->
-<T.Group>
-  <!-- X axis (red) - performer's right -->
-  <T.ArrowHelper
-    args={[[1, 0, 0], [0, 0, 0], effectiveSize * 1.2, 0xff4444, 0.06, 0.03]}
-  />
-  <!-- Y axis (green) - up/sky -->
-  <T.ArrowHelper
-    args={[[0, 1, 0], [0, 0, 0], effectiveSize * 1.2, 0x44ff44, 0.06, 0.03]}
-  />
-  <!-- Z axis (blue) - toward audience -->
-  <T.ArrowHelper
-    args={[[0, 0, 1], [0, 0, 0], effectiveSize * 1.2, 0x4444ff, 0.06, 0.03]}
-  />
-</T.Group>

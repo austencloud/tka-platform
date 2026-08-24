@@ -72,6 +72,9 @@
     hideSceneMarkers?: boolean;
     /** Hide performer numbers while leaving grid references available. */
     hidePerformerBadges?: boolean;
+    /** Keep dictated plane grids but drop the center sphere and axis arrows,
+     *  for film surfaces where planes are scenery, not editor reference. */
+    hideOrientationHelpers?: boolean;
     /** Skip the effects runtime entirely in prop/model inspection surfaces. */
     enableEffects?: boolean;
     /** Stationary stage casts can skip walk, jump, and foot-planting setup. */
@@ -104,6 +107,7 @@
     redPropTypeOverride = null,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
+    hideOrientationHelpers = false,
     enableEffects = true,
     enablePerformerLocomotion = true,
     effectQualityTier,
@@ -712,6 +716,7 @@
                     gridMode={performerGridMode}
                     planeMode={performer.planeMode}
                     showLabels={viewer3DState.showGridLabels}
+                    showOrientationHelpers={!hideOrientationHelpers}
                   />
                 </T.Group>
               {/if}

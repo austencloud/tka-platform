@@ -61,6 +61,8 @@
     hideSceneMarkers?: boolean;
     /** Hide performer numbers without suppressing plane grids. */
     hidePerformerBadges?: boolean;
+    /** Show dictated plane grids without the center sphere and axis arrows. */
+    hideOrientationHelpers?: boolean;
     fullScreen?: boolean;
     onExitFullScreen?: () => void;
     onRendererReady?: (renderer: WebGLRenderer | null) => void;
@@ -121,6 +123,7 @@
     hideOverlays = false,
     hideSceneMarkers = false,
     hidePerformerBadges = false,
+    hideOrientationHelpers = false,
     fullScreen = false,
     onExitFullScreen,
     onRendererReady,
@@ -452,6 +455,7 @@
                 redPropTypeOverride={redPropType}
                 {hideSceneMarkers}
                 {hidePerformerBadges}
+                {hideOrientationHelpers}
                 {enableEffects}
                 {enablePerformerLocomotion}
                 {effectQualityTier}

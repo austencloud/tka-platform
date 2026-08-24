@@ -1,6 +1,10 @@
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
-import { compileCameraMoves, computeCameraFraming } from "./camera-language";
+import {
+  compileCameraMoves,
+  computeCameraFraming,
+  directorFloorY,
+} from "./camera-language";
 import type {
   DirectorCameraInput,
   DirectorCameraTargetInput,
@@ -60,7 +64,8 @@ function vec3(value: {
 function resolveTarget(
   input: DirectorCameraTargetInput | undefined,
   performers: readonly ResolvedDirectorPerformer[],
-  groupTarget: [number, number, number]
+  groupTarget: [number, number, number],
+  groundOffset: number
 ): [number, number, number] {
   if (!input || input.kind === "group") return [...groupTarget];
   if (input.kind === "point") return [...input.position];
@@ -75,7 +80,9 @@ function resolveTarget(
   }
   return [
     performer.position.x,
-    input.height ?? groupTarget[1],
+    input.height !== undefined
+      ? directorFloorY(groundOffset) + input.height
+      : groupTarget[1],
     performer.position.z,
   ];
 }
@@ -135,7 +142,12 @@ export function resolveDirectorCameraTrack(
     elevationDeg: 12,
   });
   const groupTarget = vec3(baseShot.target);
-  const target = resolveTarget(input?.target, performers, groupTarget);
+  const target = resolveTarget(
+    input?.target,
+    performers,
+    groupTarget,
+    groundOffset
+  );
 
   if (input?.keyframes?.length) {
     const resolved = input.keyframes
@@ -143,7 +155,12 @@ export function resolveDirectorCameraTrack(
         keyframe(
           frame.atSeconds,
           [...frame.position],
-          resolveTarget(frame.target ?? input.target, performers, groupTarget),
+          resolveTarget(
+            frame.target ?? input.target,
+            performers,
+            groupTarget,
+            groundOffset
+          ),
           frame.fovDeg ?? 50,
           frame.interpolation ?? "smooth",
           frame.easing ?? "ease-in-out"

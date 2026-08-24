@@ -1,15 +1,42 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
-  import { skyIsTheLimitFilm } from "../_films/sky-is-the-limit";
+  import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import {
+    DEFAULT_FILM_KEY,
+    FILM_LIBRARY,
+    getLibraryFilm,
+  } from "../_films/index";
   import { setFilmDirectorContext } from "../_lib/film-director-context";
   import { createFilmDirectorState } from "../_lib/film-director-state.svelte";
   import FilmDirectorJsonEditor from "./FilmDirectorJsonEditor.svelte";
   import FilmDirectorScene from "./FilmDirectorScene.svelte";
   import FilmDirectorTransport from "./FilmDirectorTransport.svelte";
 
-  const director = createFilmDirectorState(skyIsTheLimitFilm);
+  const director = createFilmDirectorState(getLibraryFilm(DEFAULT_FILM_KEY));
   setFilmDirectorContext(director);
+
+  let selectedFilmKey = $state(DEFAULT_FILM_KEY);
+
+  const FILM_SHORT_LABELS: Record<string, string> = {
+    sky: "Sky",
+    planes: "Planes",
+    understudy: "Understudy",
+    chance: "Chance",
+  };
+
+  const filmOptions = FILM_LIBRARY.map((entry) => ({
+    value: entry.key,
+    label: entry.label,
+    shortLabel: FILM_SHORT_LABELS[entry.key] ?? entry.label,
+  }));
+
+  function selectFilm(key: string): void {
+    if (key === selectedFilmKey) return;
+    if (director.loadFilm(getLibraryFilm(key))) {
+      selectedFilmKey = key;
+    }
+  }
 
   onMount(() => director.start());
   onDestroy(() => director.destroy());
@@ -36,18 +63,30 @@
     </div>
   {/if}
 
-  <div class="titleplate">
-    <span class="film-name">{director.film.title}</span>
-    <h1>{director.frame.shot.title}</h1>
-    <p>
-      Shot {director.frame.shotIndex + 1} of {director.film.shots.length}
-      <span aria-hidden="true">·</span>
-      {director.frame.shot.scene.environmentId}
-      <span aria-hidden="true">·</span>
-      {director.frame.shot.performance.performers.length} performers
-      <span aria-hidden="true">·</span>
-      {director.frame.shot.performance.bpm} BPM
-    </p>
+  <div class="top-left">
+    <div class="titleplate">
+      <span class="film-name">{director.film.title}</span>
+      <h1>{director.frame.shot.title}</h1>
+      <p>
+        Shot {director.frame.shotIndex + 1} of {director.film.shots.length}
+        <span aria-hidden="true">·</span>
+        {director.frame.shot.scene.environmentId}
+        <span aria-hidden="true">·</span>
+        {director.frame.shot.performance.performers.length} performers
+        <span aria-hidden="true">·</span>
+        {director.frame.shot.performance.bpm} BPM
+      </p>
+    </div>
+    <div class="film-picker">
+      <SegmentedControl
+        options={filmOptions}
+        value={selectedFilmKey}
+        onchange={selectFilm}
+        size="sm"
+        color="accent"
+        ariaLabel="Film"
+      />
+    </div>
   </div>
 
   <div class="readiness" class:ready={director.sceneReady} role="status">
@@ -150,12 +189,31 @@
     }
   }
 
-  .titleplate {
+  .top-left {
     position: absolute;
     top: max(0.85rem, env(safe-area-inset-top));
     left: max(0.85rem, env(safe-area-inset-left));
     z-index: 65;
+    display: grid;
+    justify-items: start;
+    gap: 0.55rem;
     max-width: min(38rem, calc(100% - 12rem));
+  }
+
+  .film-picker {
+    padding: 0.3rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, #10111b) 88%,
+      transparent
+    );
+    box-shadow: 0 0.8rem 2.5rem rgba(0, 0, 0, 0.3);
+  }
+
+  .titleplate {
+    max-width: 100%;
     padding: 0.8rem 1rem;
     border-left: 0.18rem solid var(--theme-accent, #9d8cff);
     border-radius: 0 0.85rem 0.85rem 0;
@@ -233,10 +291,14 @@
   }
 
   @container (max-width: 42rem) {
-    .titleplate {
+    .top-left {
       top: max(0.55rem, env(safe-area-inset-top));
       left: max(0.55rem, env(safe-area-inset-left));
+      gap: 0.4rem;
       max-width: calc(100% - 4.3rem);
+    }
+
+    .titleplate {
       padding: 0.62rem 0.75rem;
     }
 
@@ -262,8 +324,11 @@
   }
 
   @container (min-width: 1680px) {
-    .titleplate {
+    .top-left {
       max-width: 46rem;
+    }
+
+    .titleplate {
       padding: 1rem 1.25rem;
     }
   }

@@ -1,3 +1,5 @@
+import { userProportionsState } from "@austencloud/scene-3d";
+
 import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
 import type {
@@ -59,6 +61,17 @@ const VANTAGE_AZIMUTH_DEG: Record<Exclude<DirectorCameraVantage, { degrees: numb
 const MIN_DISTANCE_METERS = 1.2;
 const CLOSE_UP_TARGET_HEIGHT = 1.45;
 
+/**
+ * World Y of the floor performers stand on. `groundOffset` is the rig ORIGIN
+ * (shoulder height, per computeFramingShot); the feet sit
+ * `userProportionsState.groundY` (negative) below it. Directive heights are
+ * spoken relative to this floor — "frame her at 1.35 meters" means 1.35m
+ * above her feet, never 1.35m of absolute world Y.
+ */
+export function directorFloorY(groundOffset: number): number {
+  return groundOffset + userProportionsState.groundY;
+}
+
 export function computeCameraFraming(
   input: DirectorFramingInput,
   context: CameraLanguageContext
@@ -81,7 +94,7 @@ export function computeCameraFraming(
 
   const target = resolveSubject(input.subject, context, groupTarget);
   if (input.shotSize === "close-up" && input.subject?.kind === "performer") {
-    target[1] = context.groundOffset + CLOSE_UP_TARGET_HEIGHT;
+    target[1] = directorFloorY(context.groundOffset) + CLOSE_UP_TARGET_HEIGHT;
   }
 
   const baseDistance = Math.hypot(
@@ -135,7 +148,9 @@ function resolveSubject(
   }
   return [
     performer.position.x,
-    subject.height ?? groupTarget[1],
+    subject.height !== undefined
+      ? directorFloorY(context.groundOffset) + subject.height
+      : groupTarget[1],
     performer.position.z,
   ];
 }

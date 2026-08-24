@@ -4,7 +4,10 @@
   import { Plane } from "@austencloud/scene-3d";
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
-  import { planeAngleToWorldPosition } from "../domain/constants/plane-transforms";
+  import {
+    getPlaneRotation,
+    planeAngleToWorldPosition,
+  } from "../domain/constants/plane-transforms";
   import {
     CENTER_POINT_SIZE,
     HAND_POINT_SIZE,
@@ -89,18 +92,12 @@
     return [pos.x, pos.y, pos.z];
   }
 
-  function getPlaneRotation(): [number, number, number] {
-    switch (plane) {
-      case Plane.WALL:
-        return [0, 0, 0];
-      case Plane.WHEEL:
-        return [0, Math.PI / 2, 0];
-      case Plane.FLOOR:
-        return [-Math.PI / 2, 0, 0];
-      default:
-        return [0, 0, 0];
-    }
-  }
+  // The domain owns plane orientation for the full nine-plane catalog; the
+  // fusion planes (shields, ramps, wings) have no hardcoded case here.
+  const planeRotation = $derived.by((): [number, number, number] => {
+    const euler = getPlaneRotation(plane);
+    return [euler.x, euler.y, euler.z];
+  });
 
   const locationLabels: Record<GridLocation, string> = {
     [GridLocation.NORTH]: "N",
@@ -116,7 +113,7 @@
 </script>
 
 <!-- Plane group with rotation -->
-<T.Group rotation={getPlaneRotation()}>
+<T.Group rotation={planeRotation}>
   <!-- Semi-transparent plane surface -->
   <T.Mesh geometry={planeGeometry} material={planeMaterial} dispose={false} />
 

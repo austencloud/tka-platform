@@ -323,12 +323,21 @@ function buildResolvedPerformers(
       );
     }
     const position = input.position ?? slot!.position;
+    // Two conventions collide here. The formation library's "same-direction"
+    // default faces +Z, but every director camera fronts the group from -Z
+    // (computeFramingShot's wall-plane eye). A film's default cast must face
+    // its audience, so same-direction (and slot-less custom rosters) face -Z.
+    // Slots with their own facingAngle (circle, back-to-back, ...) and
+    // explicit facingDegrees keep their meaning.
     const facingAngle =
       input.facingDegrees !== undefined
         ? (input.facingDegrees * Math.PI) / 180
         : slot
-          ? calculateFacingAngle(slot, formation)
-          : 0;
+          ? slot.facingAngle === undefined &&
+            formation.facingMode === "same-direction"
+            ? Math.PI
+            : calculateFacingAngle(slot, formation)
+          : Math.PI;
 
     return {
       id,
