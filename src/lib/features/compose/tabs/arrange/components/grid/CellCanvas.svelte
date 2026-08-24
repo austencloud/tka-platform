@@ -14,6 +14,7 @@
   import { onMount, onDestroy } from "svelte";
   import type { GridCell } from "../../state/arrange-grid-state.svelte";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
@@ -194,14 +195,16 @@
       // Each orchestrator gets its own AnimationStateManager so they don't
       // overwrite each other's prop state through the shared singleton.
       primaryOrchestrator = new SequenceAnimationOrchestrator(
-        new AnimationStateManager()
+        new AnimationStateManager(),
+        getViewerAnimationPropConfig
       );
 
       // Create orchestrators for up to 3 additional layers
       for (let i = 0; i < 3; i++) {
         additionalOrchestrators.push(
           new SequenceAnimationOrchestrator(
-            new AnimationStateManager()
+            new AnimationStateManager(),
+            getViewerAnimationPropConfig
           )
         );
         additionalAnimationStates.push(createAnimationPanelState());
