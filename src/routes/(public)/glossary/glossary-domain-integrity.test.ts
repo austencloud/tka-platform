@@ -43,7 +43,7 @@ describe("glossary domain integrity", () => {
     expect(GLOSSARY["negative-space"]?.definition).toContain("body turns");
   });
 
-  it("keeps Tau-Dash as a letter and exactly six numbered letter types", () => {
+  it("keeps individual letters out of the glossary taxonomy", () => {
     const letterTypes = Object.keys(GLOSSARY).filter(
       (term) => GLOSSARY[term]?.category === "letterType"
     );
@@ -59,7 +59,8 @@ describe("glossary domain integrity", () => {
       "type-5",
       "type-6",
     ]);
-    expect(dataframeLetterEntries).toHaveLength(47);
+    expect(dataframeLetterEntries).toHaveLength(0);
+    expect(GLOSSARY["tau-dash"]).toBeDefined();
     expect(GLOSSARY["tau-dash"]?.category).not.toBe("letterType");
   });
 });

@@ -43,36 +43,72 @@
   // Canonical codex arrangement.
   const CODEX: TypeDef[] = [
     {
-      n: 1, label: "Type 1", word: "Dual-Shift", color: "#36c3ff",
+      n: 1,
+      label: "Type 1",
+      word: "Dual-Shift",
+      color: "#36c3ff",
       boxes: [
-        { letters: ["A", "B", "C"] }, { letters: ["D", "E", "F"] },
-        { letters: ["G", "H", "I"] }, { letters: ["J", "K", "L"] },
-        { letters: ["M", "N", "O"] }, { letters: ["P", "Q", "R"] },
+        { letters: ["A", "B", "C"] },
+        { letters: ["D", "E", "F"] },
+        { letters: ["G", "H", "I"] },
+        { letters: ["J", "K", "L"] },
+        { letters: ["M", "N", "O"] },
+        { letters: ["P", "Q", "R"] },
         { letters: ["S", "T", "U", "V"], full: true },
       ],
     },
     {
-      n: 2, label: "Type 2", word: "Shift", color: "#6F2DA8",
+      n: 2,
+      label: "Type 2",
+      word: "Shift",
+      color: "#6F2DA8",
       boxes: [
-        { letters: ["W", "X"], mode: "OPEN" }, { letters: ["Y", "Z"], mode: "CLOSE" },
-        { letters: ["Σ", "Δ"], mode: "CLOSE" }, { letters: ["Θ", "Ω"], mode: "OPEN" },
+        { letters: ["W", "X"], mode: "OPEN" },
+        { letters: ["Y", "Z"], mode: "CLOSE" },
+        { letters: ["Σ", "Δ"], mode: "CLOSE" },
+        { letters: ["Θ", "Ω"], mode: "OPEN" },
       ],
     },
     {
-      n: 3, label: "Type 3", word: "Cross-Shift", color: "#26e600",
+      n: 3,
+      label: "Type 3",
+      word: "Cross-Shift",
+      color: "#26e600",
       boxes: [
-        { letters: ["W-", "X-"] }, { letters: ["Y-", "Z-"] },
-        { letters: ["Θ-", "Ω-"] }, { letters: ["Σ-", "Δ-"] },
+        { letters: ["W-", "X-"] },
+        { letters: ["Y-", "Z-"] },
+        { letters: ["Θ-", "Ω-"] },
+        { letters: ["Σ-", "Δ-"] },
       ],
     },
-    { n: 4, label: "Type 4", word: "Dash", color: "#26e600", boxes: [{ letters: ["Φ", "Ψ", "Λ"], full: true }] },
-    { n: 5, label: "Type 5", word: "Dual-Dash", color: "#00b3ff", boxes: [{ letters: ["Φ-", "Ψ-", "Λ-"], full: true }] },
-    { n: 6, label: "Type 6", word: "Static", color: "#eb7d00", boxes: [{ letters: ["α", "β", "γ"], full: true }] },
+    {
+      n: 4,
+      label: "Type 4",
+      word: "Dash",
+      color: "#26e600",
+      boxes: [{ letters: ["Φ", "Ψ", "Λ"], full: true }],
+    },
+    {
+      n: 5,
+      label: "Type 5",
+      word: "Dual-Dash",
+      color: "#00b3ff",
+      boxes: [{ letters: ["Φ-", "Ψ-", "Λ-"], full: true }],
+    },
+    {
+      n: 6,
+      label: "Type 6",
+      word: "Static",
+      color: "#eb7d00",
+      boxes: [{ letters: ["α", "β", "γ"], full: true }],
+    },
   ];
 
   const POS: Record<string, string> = { alpha: "α", beta: "β", gamma: "γ" };
   function posGlyph(p: unknown): string {
-    const s = String(p ?? "").toLowerCase().replace(/[0-9]/g, "");
+    const s = String(p ?? "")
+      .toLowerCase()
+      .replace(/[0-9]/g, "");
     return POS[s] ?? "";
   }
 
@@ -154,11 +190,13 @@
 
 <style>
   .sheet {
-    --cell: 96px;
+    --cell: min(27cqw, 6rem);
     display: flex;
     flex-direction: column;
     gap: 16px;
     align-items: center;
+    width: 100%;
+    container-type: inline-size;
   }
 
   .type-block {
@@ -178,14 +216,20 @@
     font-style: italic;
     font-size: 1rem;
   }
-  .type-n { color: var(--theme-text, #fff); font-weight: 600; }
-  .type-word { font-weight: 600; }
+  .type-n {
+    color: var(--theme-text, #fff);
+    font-weight: 600;
+  }
+  .type-word {
+    font-weight: 600;
+  }
 
-  /* Two boxes per row (ABC | DEF), content-sized, centered, gap between the
-     pair. Full boxes (STUV, dash, static) span both columns and center. */
+  /* Narrow hosts stack boxes so the pictographs keep a useful touch size.
+     Once the component has enough room, the familiar ABC | DEF arrangement
+     returns without relying on the page viewport. */
   .boxes {
     display: grid;
-    grid-template-columns: repeat(2, auto);
+    grid-template-columns: auto;
     justify-content: center;
     justify-items: center;
     align-items: start;
@@ -197,7 +241,21 @@
     align-items: center;
     gap: 3px;
   }
-  .box.full { grid-column: 1 / -1; }
+  .box.full {
+    grid-column: 1;
+  }
+
+  @container (min-width: 42rem) {
+    .sheet {
+      --cell: min(13cqw, 6rem);
+    }
+    .boxes {
+      grid-template-columns: repeat(2, auto);
+    }
+    .box.full {
+      grid-column: 1 / -1;
+    }
+  }
 
   /* Label centered over each box; reserved height keeps paired boxes aligned
      even when a box's label is blank (deduped). */
@@ -208,10 +266,14 @@
     gap: 6px;
     min-height: 1.1em;
   }
-  .box-trans { font-size: 0.78rem; font-weight: 700; color: var(--theme-text, #fff); }
+  .box-trans {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--theme-text, #fff);
+  }
   .box-mode {
     font-style: italic;
-    font-size: 0.56rem;
+    font-size: var(--font-size-compact, 0.75rem);
     letter-spacing: 0.1em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
   }
@@ -235,17 +297,26 @@
     border-radius: 8px;
     background: transparent;
     cursor: pointer;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 140ms ease;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 140ms ease;
   }
-  .cell:hover { transform: translateY(-1px); }
+  .cell:hover {
+    transform: translateY(-1px);
+  }
   .cell.active {
     border-color: var(--theme-accent, #50c878);
     box-shadow: 0 0 0 1px var(--theme-accent, #50c878);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cell { transition: none; }
-    .cell:hover { transform: none; }
+    .cell {
+      transition: none;
+    }
+    .cell:hover {
+      transform: none;
+    }
   }
 
   .picto {
@@ -256,7 +327,10 @@
     justify-content: center;
   }
   .picto :global(.pictograph),
-  .picto :global(svg) { width: 100%; height: 100%; }
+  .picto :global(svg) {
+    width: 100%;
+    height: 100%;
+  }
 
   .missing {
     font-size: 0.8rem;

@@ -54,7 +54,7 @@ describe("glossary search normalization", () => {
     ).toBe(true);
   });
 
-  it("treats one-character queries as letter-symbol lookups", () => {
+  it("does not match one-character queries against definition prose", () => {
     const query = normalizeGlossarySearchText("A");
 
     expect(

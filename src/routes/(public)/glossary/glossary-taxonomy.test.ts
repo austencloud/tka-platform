@@ -12,6 +12,13 @@ interface GlossaryData {
     }>;
   }>;
   total: number;
+  codex: {
+    key: string;
+    label: string;
+    sectionSlug: string;
+    letters: string[];
+    extensions: string[];
+  };
 }
 
 async function getGlossaryData(): Promise<GlossaryData> {
@@ -33,46 +40,22 @@ describe("public glossary taxonomy", () => {
     ]);
   });
 
-  it("publishes the complete registered alphabet as the Letter Codex", async () => {
-    const { groups } = await getGlossaryData();
-    const letterCodex = groups.find((group) => group.key === "letter");
+  it("keeps the alphabet in the visual Codex instead of DefinedTerms", async () => {
+    const { codex, groups } = await getGlossaryData();
     const letterTypes = groups.find((group) => group.key === "letterType");
+    const publicTerms = groups.flatMap((group) => group.terms);
 
-    expect(letterCodex?.label).toBe("Letter Codex");
-    expect(new Set(letterCodex?.terms.map(({ term }) => term))).toEqual(
-      new Set([
-        ...Array.from("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
-        "Sigma (Σ)",
-        "Delta (Δ)",
-        "Theta (Θ)",
-        "Omega (Ω)",
-        "W-Dash (W-)",
-        "X-Dash (X-)",
-        "Y-Dash (Y-)",
-        "Z-Dash (Z-)",
-        "Sigma-Dash (Σ-)",
-        "Delta-Dash (Δ-)",
-        "Theta-Dash (Θ-)",
-        "Omega-Dash (Ω-)",
-        "Phi (Φ)",
-        "Psi (Ψ)",
-        "Lambda (Λ)",
-        "Phi-Dash (Φ-)",
-        "Psi-Dash (Ψ-)",
-        "Lambda-Dash (Λ-)",
-        "Alpha (α)",
-        "Beta (β)",
-        "Gamma (γ)",
-        "Tau-Dash (τ-)",
-      ])
-    );
-    expect(letterCodex?.terms).toHaveLength(48);
+    expect(groups.find((group) => group.key === "letter")).toBeUndefined();
+    expect(codex.label).toBe("Letter Codex");
+    expect(codex.letters).toHaveLength(47);
+    expect(codex.extensions).toEqual(["τ-"]);
+    expect(publicTerms.map(({ term }) => term)).not.toContain("Tau-Dash (τ-)");
     expect(letterTypes?.terms.map(({ term }) => term)).not.toContain(
       "Tau-Dash (τ-)"
     );
   });
 
-  it("places every glossary entry exactly once", async () => {
+  it("places every public glossary term exactly once", async () => {
     const { groups, total } = await getGlossaryData();
     const terms = groups.flatMap((group) => group.terms);
 

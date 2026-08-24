@@ -43,9 +43,9 @@ export function matchesGlossaryTerm(
   term: GlossarySearchableTerm,
   normalizedQuery: string
 ): boolean {
-  // Once individual letters are searchable, a one-character query needs to
-  // behave like a symbol lookup. Searching for A should find the letter A,
-  // not every definition that happens to contain the article "a."
+  // A one-character query behaves like a name or symbol lookup. Codex search
+  // resolves registered letters separately; glossary search must not match
+  // every definition that happens to contain the article "a."
   if ([...normalizedQuery].length === 1) {
     return [term.term, ...term.aliases].some((name) =>
       normalizeGlossarySearchText(name).split(" ").includes(normalizedQuery)

@@ -1,4 +1,10 @@
-import { GLOSSARY, TERM_ALIASES, resolveTermAlias } from "@tka/domain";
+import {
+  BASE_ALPHABET_LETTERS,
+  EXTENDED_ALPHABET_LETTERS,
+  GLOSSARY,
+  TERM_ALIASES,
+  resolveTermAlias,
+} from "@tka/domain";
 import type { GlossaryCategory } from "@tka/domain";
 import type { PageServerLoad } from "./$types";
 
@@ -7,26 +13,15 @@ import type { PageServerLoad } from "./$types";
 // serialized view-model of the glossary entries it displays.
 export const prerender = true;
 
-type PublicGlossaryCategory = GlossaryCategory | "letter";
-
-const LETTER_ENTRY_PATTERN =
+const INDIVIDUAL_LETTER_ENTRY_PATTERN =
   /^letter-(?:[a-z](?:-dash)?|(?:alpha|beta|gamma|delta|lambda|omega|phi|psi|sigma|theta)(?:-dash)?)$/;
 
-function publicCategory(
-  entryKey: string,
-  category: GlossaryCategory
-): PublicGlossaryCategory {
-  return LETTER_ENTRY_PATTERN.test(entryKey) || entryKey === "tau-dash"
-    ? "letter"
-    : category;
-}
-
-// Display order + human labels for every public category. Core concepts first,
-// then the vocabulary that builds on them. A missing row is guarded below.
-const CATEGORY_ORDER: { key: PublicGlossaryCategory; label: string }[] = [
+// Display order + human labels for every public glossary category. The visual
+// Letter Codex is returned separately below because pictographs are not
+// DefinedTerms and must not inflate the glossary's term count or JSON-LD.
+const CATEGORY_ORDER: { key: GlossaryCategory; label: string }[] = [
   { key: "general", label: "Core Concepts" },
   { key: "position", label: "Positions" },
-  { key: "letter", label: "Letter Codex" },
   { key: "letterType", label: "Letter Types" },
   { key: "motion", label: "Motions" },
   { key: "rotation", label: "Rotations" },
@@ -45,7 +40,6 @@ const DISPLAY_OVERRIDES: Record<string, string> = {
   caps: "CAPs",
   pads: "PADS",
   "rubiks-cube": "Rubik's Cube",
-  "tau-dash": "Tau-Dash (τ-)",
   "type-1": "Type 1: Dual-Shift",
   "type-2": "Type 2: Shift",
   "type-3": "Type 3: Cross-Shift",
@@ -56,38 +50,7 @@ const DISPLAY_OVERRIDES: Record<string, string> = {
   "quarter-same": "Quarter-Same",
 };
 
-const GREEK_LETTER_DISPLAY: Record<string, string> = {
-  alpha: "Alpha (α)",
-  beta: "Beta (β)",
-  gamma: "Gamma (γ)",
-  delta: "Delta (Δ)",
-  lambda: "Lambda (Λ)",
-  omega: "Omega (Ω)",
-  phi: "Phi (Φ)",
-  psi: "Psi (Ψ)",
-  sigma: "Sigma (Σ)",
-  theta: "Theta (Θ)",
-};
-
-function letterDisplayName(key: string): string | null {
-  if (!LETTER_ENTRY_PATTERN.test(key)) return null;
-
-  const rawName = key.slice("letter-".length);
-  const dashed = rawName.endsWith("-dash");
-  const baseName = dashed ? rawName.slice(0, -"-dash".length) : rawName;
-  const latinLetter = baseName.length === 1 ? baseName.toUpperCase() : null;
-  const baseDisplay = latinLetter ?? GREEK_LETTER_DISPLAY[baseName];
-  if (!baseDisplay) return null;
-
-  if (!dashed) return baseDisplay;
-  const symbol = latinLetter ?? baseDisplay.match(/\((.+)\)/)?.[1];
-  const spokenName = latinLetter ?? baseDisplay.split(" ")[0];
-  return `${spokenName}-Dash (${symbol}-)`;
-}
-
 function displayName(key: string): string {
-  const letterName = letterDisplayName(key);
-  if (letterName) return letterName;
   const override = DISPLAY_OVERRIDES[key];
   if (override) return override;
   return key
@@ -106,18 +69,23 @@ function slugify(key: string, i: number): string {
 }
 
 export const load: PageServerLoad = () => {
+  // Tau-Dash remains in the domain glossary for MCP and alias resolution, but
+  // the public glossary presents it through the visual Codex extension state.
+  // This is the boundary that prevents one individual letter from masquerading
+  // as either a glossary category or a seventh letter type.
+  const entries = Object.entries(GLOSSARY).filter(
+    ([key]) => key !== "tau-dash" && !INDIVIDUAL_LETTER_ENTRY_PATTERN.test(key)
+  );
+
   // Slugs derive from the raw KEY (not the display name) so existing #anchors
   // and JSON-LD @ids stay stable across display-name changes.
-  const sortedKeys = Object.keys(GLOSSARY).sort();
+  const sortedKeys = entries.map(([key]) => key).sort();
   const slugOf = new Map<string, string>();
   sortedKeys.forEach((k, i) => slugOf.set(k, slugify(k, i)));
 
-  // Object.entries types the value as GlossaryEntry (not `| undefined`), so this
-  // avoids the noUncheckedIndexedAccess flags that GLOSSARY[key] would raise.
-  const entries = Object.entries(GLOSSARY);
   const aliasesByTerm = new Map<string, string[]>();
   for (const [alias, target] of Object.entries(TERM_ALIASES)) {
-    if (!(target in GLOSSARY)) continue;
+    if (!slugOf.has(target)) continue;
     const aliases = aliasesByTerm.get(target) ?? [];
     aliases.push(alias);
     aliasesByTerm.set(target, aliases);
@@ -131,7 +99,7 @@ export const load: PageServerLoad = () => {
 
   const groups = CATEGORY_ORDER.map(({ key, label }) => {
     const terms = entries
-      .filter(([entryKey, e]) => publicCategory(entryKey, e.category) === key)
+      .filter(([, e]) => e.category === key)
       .map(([k, e]) => ({
         term: displayName(k),
         slug: slugOf.get(k)!,
@@ -159,5 +127,15 @@ export const load: PageServerLoad = () => {
     );
   }
 
-  return { groups, total: placed };
+  return {
+    groups,
+    total: placed,
+    codex: {
+      key: "letter",
+      label: "Letter Codex",
+      sectionSlug: "cat-letter",
+      letters: [...BASE_ALPHABET_LETTERS],
+      extensions: [...EXTENDED_ALPHABET_LETTERS],
+    },
+  };
 };

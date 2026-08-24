@@ -19,6 +19,8 @@
     label: string;
     sectionSlug: string;
     terms: NavTerm[];
+    /** Non-term surfaces, such as the visual Codex, report their own unit. */
+    countLabel?: string;
   };
 
   let {
@@ -99,7 +101,7 @@
           onclick={(e) => onNavigate?.(g.sectionSlug, e)}
         >
           <span class="gnav-label">{g.label}</span>
-          <span class="gnav-n">{g.terms.length}</span>
+          <span class="gnav-n">{g.countLabel ?? g.terms.length}</span>
         </a>
       {/each}
       {#if !groups.length}
@@ -143,7 +145,9 @@
     border: 1px solid oklch(0.45 0.04 270 / 0.25);
     border-radius: 12px;
     outline: none;
-    transition: border-color 160ms ease, background 160ms ease;
+    transition:
+      border-color 160ms ease,
+      background 160ms ease;
   }
   .gnav-search input::placeholder {
     color: oklch(0.55 0.02 270);
@@ -220,7 +224,10 @@
     text-decoration: none;
     border-left: 2px solid oklch(0.45 0.04 270 / 0.18);
     border-radius: 0 10px 10px 0;
-    transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+    transition:
+      color 140ms ease,
+      background 140ms ease,
+      border-color 140ms ease;
   }
   .gnav-cat:hover {
     color: oklch(0.94 0.01 270);

@@ -5,11 +5,13 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
   import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
+  import CodexExplorer from "$lib/features/learn/codex/components/CodexExplorer.svelte";
   import { mutateCurrentUrl } from "$lib/shared/navigation/services/url-state";
   import {
     matchesGlossaryTerm,
     normalizeGlossarySearchText,
   } from "./glossary-search";
+  import { resolveCodexLetterQuery } from "./codex-letter-search";
 
   let { data } = $props();
 
@@ -105,11 +107,40 @@
   let query = $state("");
   let view = $state("landing");
   let selected = $state("");
+  let codexInitialLetter = $state<string>(data.codex.letters[0] ?? "A");
   let drawerOpen = $state(false);
   let showBackTop = $state(false);
   let drawerCloseBtn: HTMLButtonElement | undefined = $state();
 
   type GlossaryTerm = (typeof data.groups)[number]["terms"][number];
+  type GlossaryGroup = (typeof data.groups)[number];
+  type NavigationGroup = {
+    key: string;
+    label: string;
+    sectionSlug: string;
+    terms: GlossaryTerm[];
+    countLabel?: string;
+  };
+
+  const codexGroup: NavigationGroup = {
+    key: data.codex.key,
+    label: data.codex.label,
+    sectionSlug: data.codex.sectionSlug,
+    terms: [],
+    countLabel: `${data.codex.letters.length}+${data.codex.extensions.length}`,
+  };
+
+  function insertCodexGroup(groups: GlossaryGroup[]): NavigationGroup[] {
+    const positionIndex = groups.findIndex((group) => group.key === "position");
+    const insertionIndex = positionIndex >= 0 ? positionIndex + 1 : 0;
+    return [
+      ...groups.slice(0, insertionIndex),
+      codexGroup,
+      ...groups.slice(insertionIndex),
+    ];
+  }
+
+  const landingGroups = insertCodexGroup(data.groups);
 
   // Static lookups (the lexicon never changes at runtime).
   const slugToCat = new Map<string, string>(
@@ -118,12 +149,16 @@
   const slugToEntry = new Map<string, GlossaryTerm>(
     data.groups.flatMap((g) => g.terms.map((t) => [t.slug, t] as const))
   );
-  const sectionSlugToKey = new Map<string, string>(
-    data.groups.map((g) => [g.sectionSlug, g.key] as const)
-  );
+  const sectionSlugToKey = new Map<string, string>([
+    ...data.groups.map((g) => [g.sectionSlug, g.key] as const),
+    [data.codex.sectionSlug, data.codex.key] as const,
+  ]);
 
   const normalizedQuery = $derived(normalizeGlossarySearchText(query));
   const filtering = $derived(normalizedQuery.length > 0);
+  const codexSearchLetter = $derived(
+    resolveCodexLetterQuery(query, data.codex.letters, data.codex.extensions)
+  );
 
   // Search always looks everywhere, regardless of the current drill.
   const searchGroups = $derived(
@@ -151,6 +186,9 @@
   const matchedSections = $derived(
     filtering ? new Set<string>(searchGroups.map((g) => g.key)) : null
   );
+  const codexOnlySearch = $derived(
+    filtering && codexSearchLetter !== null && matchCount === 0
+  );
 
   const landingShown = $derived(!filtering && view === "landing");
   // The category rail (left sidebar) only earns its column once a drill-down
@@ -162,14 +200,20 @@
     selected ? (slugToEntry.get(selected) ?? null) : null
   );
   const viewTitle = $derived(
-    view === "all"
-      ? "All terms"
-      : (data.groups.find((g) => g.key === view)?.label ?? "")
+    view === data.codex.key
+      ? data.codex.label
+      : view === "all"
+        ? "All terms"
+        : (data.groups.find((g) => g.key === view)?.label ?? "")
   );
-  const viewCount = $derived(
-    view === "all"
-      ? data.total
-      : (data.groups.find((g) => g.key === view)?.terms.length ?? 0)
+  const viewCountLabel = $derived(
+    view === data.codex.key
+      ? `${data.codex.letters.length} pictographs + ${data.codex.extensions.length} extension${data.codex.extensions.length === 1 ? "" : "s"}`
+      : `${
+          view === "all"
+            ? data.total
+            : (data.groups.find((g) => g.key === view)?.terms.length ?? 0)
+        } terms`
   );
 
   function sectionShown(key: string): boolean {
@@ -180,7 +224,13 @@
   // The sidebar rail is a CATEGORY nav (terms live in the master list only,
   // never twice on screen); under an active search its counts become
   // per-category match counts.
-  const sidebarGroups = $derived(filtering ? searchGroups : data.groups);
+  const sidebarGroups = $derived(
+    filtering
+      ? codexSearchLetter
+        ? insertCodexGroup(searchGroups)
+        : searchGroups
+      : landingGroups
+  );
 
   const isDesktop = () =>
     typeof window !== "undefined" &&
@@ -190,9 +240,20 @@
     return data.groups.find((g) => g.key === key)?.terms[0]?.slug ?? "";
   }
 
+  function enterCodex(letter: string = data.codex.letters[0] ?? "A"): void {
+    codexInitialLetter = letter;
+    query = "";
+    view = data.codex.key;
+    selected = "";
+  }
+
   /** Drill into a category (or "all"). Desktop auto-selects the first term so
    *  the detail panel is never empty; mobile waits for a tap. */
   function enterView(v: string) {
+    if (v === data.codex.key) {
+      enterCodex();
+      return;
+    }
     view = v;
     selected = isDesktop()
       ? v === "all"
@@ -446,7 +507,8 @@
 
     {#if filtering}
       <p class="filter-status" aria-live="polite">
-        {matchCount} of {data.total} terms match "{query.trim()}".
+        {matchCount} of {data.total} terms match "{query.trim()}".{#if codexSearchLetter}
+          Letter Codex also matches {codexSearchLetter}.{/if}
       </p>
     {:else if view !== "landing"}
       <div class="view-head">
@@ -462,13 +524,13 @@
           Categories
         </button>
         <h2 class="view-title">{viewTitle}</h2>
-        <span class="view-count">{viewCount} terms</span>
+        <span class="view-count">{viewCountLabel}</span>
       </div>
     {/if}
 
     {#if landingShown}
       <nav class="cat-cards" aria-label="Browse by category">
-        {#each data.groups as g (g.key)}
+        {#each landingGroups as g (g.key)}
           <button
             type="button"
             class="cat-card"
@@ -476,7 +538,7 @@
           >
             <span class="cc-top">
               <span class="cc-label">{g.label}</span>
-              <span class="cc-count">{g.terms.length}</span>
+              <span class="cc-count">{g.countLabel ?? g.terms.length}</span>
             </span>
             <!-- Sample terms, clamped by CSS — one line on mobile, two on
                  desktop. Fed generously (14) rather than trimmed to a count:
@@ -485,10 +547,12 @@
                  and left the reserved second line empty in every card. Let the
                  clamp do the trimming so the space carries terms instead. -->
             <span class="cc-sample">
-              {g.terms
-                .slice(0, 14)
-                .map((t) => t.term)
-                .join(" · ")}
+              {g.key === data.codex.key
+                ? "Pictographs · variations · six letter types"
+                : g.terms
+                    .slice(0, 14)
+                    .map((t) => t.term)
+                    .join(" · ")}
             </span>
             <i class="fa-solid fa-arrow-right cc-arrow" aria-hidden="true"></i>
           </button>
@@ -505,10 +569,36 @@
       </div>
     {/if}
 
+    {#if view === data.codex.key && !filtering}
+      <div class="codex-host">
+        {#key codexInitialLetter}
+          <CodexExplorer initialLetter={codexInitialLetter} />
+        {/key}
+      </div>
+    {/if}
+
     <!-- master-detail: always in the DOM (SEO); hidden on the landing view -->
     {#key view}
-      <div class="split" class:sec-hidden={landingShown}>
+      <div
+        class="split"
+        class:single-column={codexOnlySearch}
+        class:sec-hidden={landingShown ||
+          (view === data.codex.key && !filtering)}
+      >
         <div class="term-index">
+          {#if filtering && codexSearchLetter}
+            <button
+              type="button"
+              class="codex-search-result"
+              onclick={() => enterCodex(codexSearchLetter)}
+            >
+              <span class="codex-result-kicker">Letter Codex</span>
+              <strong>{codexSearchLetter}</strong>
+              <span>Open its pictographs and variations</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+          {/if}
+
           {#each data.groups as g (g.key)}
             <section
               class="index-section"
@@ -559,7 +649,7 @@
             </section>
           {/each}
 
-          {#if filtering && matchCount === 0}
+          {#if filtering && matchCount === 0 && !codexSearchLetter}
             <div class="no-results">
               <p>No terms match "{query.trim()}".</p>
               <button
@@ -573,7 +663,11 @@
           {/if}
         </div>
 
-        <aside class="detail-panel" aria-label="Term details">
+        <aside
+          class="detail-panel"
+          class:sec-hidden={codexOnlySearch}
+          aria-label="Term details"
+        >
           <Crossfade key={selected || "none"} duration={DURATION.normal}>
             {#if selectedEntry}
               <GlossaryTermDetail
@@ -1153,6 +1247,72 @@
     color: oklch(0.72 0.015 270);
   }
 
+  /* The Codex is a reference tool, not a term-detail card. It gets the full
+     article column and supplies its own two-pane layout inside this host. */
+  .codex-host {
+    min-width: 0;
+    margin: 0 0 3rem;
+    overflow: clip;
+    background: var(--theme-panel-bg, oklch(0.14 0.02 270));
+    border: 1px solid var(--theme-stroke, oklch(0.42 0.04 270 / 0.22));
+    border-radius: 1.25rem;
+  }
+  @media (min-width: 1440px) {
+    .codex-host {
+      height: clamp(48rem, 76vh, 76rem);
+    }
+  }
+
+  .codex-search-result {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "letter kicker arrow"
+      "letter detail arrow";
+    align-items: center;
+    gap: 0.15rem 1rem;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 1rem;
+    padding: 1rem 1.1rem;
+    color: oklch(0.94 0.015 270);
+    text-align: left;
+    background: oklch(0.2 0.035 274 / 0.62);
+    border: 1px solid oklch(0.58 0.11 275 / 0.45);
+    border-radius: 0.9rem;
+    cursor: pointer;
+    transition:
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+  .codex-search-result:hover {
+    background: oklch(0.24 0.05 275 / 0.7);
+    border-color: oklch(0.7 0.14 275 / 0.7);
+  }
+  .codex-search-result:focus-visible {
+    outline: 2px solid oklch(0.7 0.14 275);
+    outline-offset: 2px;
+  }
+  .codex-search-result strong {
+    grid-area: letter;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.65rem;
+  }
+  .codex-result-kicker {
+    grid-area: kicker;
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+  }
+  .codex-search-result > span:last-of-type {
+    grid-area: detail;
+    font-size: var(--font-size-compact, 0.75rem);
+    color: oklch(0.68 0.025 272);
+  }
+  .codex-search-result > i {
+    grid-area: arrow;
+    color: oklch(0.72 0.09 275);
+  }
+
   /* ── master-detail split ── */
   .split {
     display: grid;
@@ -1164,6 +1324,9 @@
       grid-template-columns: minmax(20rem, 30rem) minmax(0, 1fr);
       column-gap: 1.75rem;
       align-items: start;
+    }
+    .split.single-column {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   @media (min-width: 1680px) {
@@ -1492,6 +1655,7 @@
     .cc-arrow,
     .back-btn,
     .browse-all,
+    .codex-search-result,
     .term-row,
     .row-chev,
     .row-body,

@@ -178,8 +178,12 @@ export const SHEET2: CodexSheetDef = {
       boxes: [
         gbox([c("W--0", "W-"), c("X--0", "X-")]),
         gbox([c("Y--0", "Y-"), c("Z--0", "Z-")]),
-        gbox([c("Θ--0", "Θ-"), c("Ω--0", "Ω-")]),
+        // The printed guide put Σ-/Δ- left under an α→γ caption, which the
+        // dataframe contradicts (Σ-/Δ- are β→γ; Θ-/Ω- are α→γ). Decision
+        // 2026-08-23: keep the guide's FAMILY placement (Σ-/Δ- left, Θ-/Ω-
+        // right) and let the derived captions carry the data-true transitions.
         gbox([c("Σ--0", "Σ-"), c("Δ--0", "Δ-")]),
+        gbox([c("Θ--0", "Θ-"), c("Ω--0", "Ω-")]),
       ],
     },
     {
