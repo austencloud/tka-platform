@@ -10,6 +10,8 @@
   import ContactViewerRequired from "$lib/shared/3d/components/ContactViewerRequired.svelte";
   import { sceneNeedsContactViewer } from "$lib/shared/3d/domain/prop-motion-discipline";
   import VisualSequenceSaveContextMenuHost from "$lib/shared/library/components/VisualSequenceSaveContextMenuHost.svelte";
+  import Viewer3DIntro from "$lib/shared/3d/components/onboarding/Viewer3DIntro.svelte";
+  import { shouldShowViewer3DIntro } from "$lib/shared/onboarding/state/viewer3d-intro-state";
 
   let {
     side,
@@ -65,6 +67,7 @@
   const loadViewer3DCanvas = () =>
     import("$lib/shared/3d/components/Viewer3DCanvas.svelte");
   let scene3DReady = $state(false);
+  let showViewer3DIntro = $state(shouldShowViewer3DIntro());
   let pane2D: HTMLDivElement | undefined = $state();
   let pane3D: HTMLDivElement | undefined = $state();
   let rail2D: HTMLDivElement | undefined = $state();
@@ -354,5 +357,11 @@
       onAction={onViewer3DAction}
       onLayoutChange={(next) => (sceneControlLayout = next)}
     />
+    {#if is3DActive && scene3DReady && showViewer3DIntro}
+      <Viewer3DIntro
+        onSettingChange={onViewer3DSettingChange}
+        onDismiss={() => (showViewer3DIntro = false)}
+      />
+    {/if}
   </div>
 {/if}
