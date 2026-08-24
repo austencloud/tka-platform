@@ -8,6 +8,7 @@ import { entries as nonexistent } from "./nonexistent";
 import { entries as camera } from "./camera";
 import { entries as boundary } from "./boundary";
 import { entries as unknownAxis } from "./unknown-axis";
+import { entries as planeDirectives } from "./plane-directives";
 import type { CorpusEntry } from "./_types";
 
 const CATEGORIES: Record<string, CorpusEntry[]> = {
@@ -18,6 +19,7 @@ const CATEGORIES: Record<string, CorpusEntry[]> = {
   camera,
   boundary,
   "unknown-axis": unknownAxis,
+  "plane-directives": planeDirectives,
 };
 
 describe("adversarial directive corpus", () => {

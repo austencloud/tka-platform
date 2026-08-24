@@ -23,6 +23,16 @@ Resolution: `src/routes/test/film-director/_lib/resolve-film-director-spec.ts`,
 | staffLengthCm | performer | literal, directives require an explicit `from` (no finite catalog) | schema bounds 40–300 in `film-director-schema.ts` | open pick with no `from`: `this axis has no finite catalog — provide "from" with explicit values.`; `sameAs` to a performer with no staff length: `has no staff length to copy` |
 | environmentId | shot | literal, pick any, oneOf, not | `src/lib/shared/3d/environments/domain/scene-environment.ts` (`SceneEnvironmentId`) | `distinct`/`sameAs` at shot scope: `supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; unknown value: catalog message above |
 | formation | shot | literal, pick any, oneOf, not | `DIRECTOR_FORMATIONS` in `film-director-schema.ts`, filtered per shot by `@austencloud/scene-3d` `PRESET_VALID_COUNTS[preset]` for that shot's performer count; open picks never select `"custom"` (needs per-performer positions) | count mismatch: `Formation "<preset>" does not support <n> performers.`; shot-scope `distinct`/`sameAs`: same message as environmentId |
+| bluePlane | performer | literal, pick any/distinct, oneOf, not, sameAs | `Plane` enum, `@austencloud/scene-3d` `dist/lib/domain/enums/Plane.d.ts` — nine values: `wall`, `wheel`, `floor`, `right-shield`, `left-shield`, `forward-ramp`, `backward-ramp`, `right-wing`, `left-wing`. Precedence: `performer.bluePlane ?? cast?.defaults?.bluePlane ?? "wall"`. Reroll knob: `seed.axes.bluePlane`. | unknown value: `Unknown plane "<value>". Planes: wall, wheel, floor, right-shield, left-shield, forward-ramp, backward-ramp, right-wing, left-wing.` (lists the full catalog — there's no "closest" plane the way there's an obvious closest prop) |
+| redPlane | performer | literal, pick any/distinct, oneOf, not, sameAs | Same `Plane` catalog and precedence as bluePlane, resolved as its own independent axis (a `sameAs` on redPlane copies the OTHER performer's redPlane, never their bluePlane). Reroll knob: `seed.axes.redPlane`. | same catalog message as bluePlane |
+| stepPlanes | performer, array of per-step entries | shot-scoped directive per entry: literal, pick any, oneOf, not (distinct/sameAs rejected — pinned to a single (performer, step, hand) triple, same reasoning as environmentId/formation) | Each entry is `{step: int ≥ 0, hand: "blue" \| "red", plane: <Plane directive>}`. Effective list: `performer.stepPlanes ?? cast?.defaults?.stepPlanes ?? []` — a performer's own list REPLACES the cast-default list, it does not merge with it. Reroll knob: `seed.axes.stepPlane` (shared across every stepPlanes entry in the film; each (performer, step, hand) triple still draws its own stream via a distinguishing key, so bumping this salt doesn't collapse every entry to the same value). | unknown plane: same catalog message as bluePlane; `distinct`/`sameAs` on an entry: `Shot "<id>": "stepPlane" supports literals, pick:any, oneOf, and not — distinct/sameAs are performer-scoped.`; bad `hand`: zod enum rejection; negative `step`: zod bounds rejection |
+
+`stepPlanes` is the first speakable axis that addresses an individual step
+rather than a whole performer or a whole shot. Every other axis in this table
+resolves once per (shot, performer) or once per shot; `stepPlanes` resolves
+once per (shot, performer, step, hand). Before 2026-08-24, director shots had
+no way to address individual beats at all — the setter existed
+(`performer.setStepHandPlane`) but nothing in the schema could reach it.
 
 ## Literal-only axes (not directive-capable)
 
@@ -42,6 +52,7 @@ the pick/oneOf/not vocabulary.
 | durationSeconds | shot | literal number, 1–60 | `shotSchema` | Defaults to 8. |
 | transition | shot | literal `{kind, durationSeconds}` | `transitionSchema` | `kind` ∈ `cut` / `environment-dissolve` / `fade-through-black`. First shot defaults to `cut` (0s); later shots default to `environment-dissolve` (0.8s). |
 | showStage / showAudience | shot (`scene`) | literal booleans | `sceneSchema` | Both default `false`. Applied through the scene-feature context in `FilmDirectorScene.svelte`, not through `director-viewer-adapter.ts`. |
+| scene.visiblePlanes | shot (`scene`) | literal `Plane[]`, default `[]` | `sceneSchema`, `Plane` enum (`@austencloud/scene-3d`) | Not directive-capable — a director names an exact set of grid planes to show, not a pick. Duplicate rejected: `scene.visiblePlanes lists "<value>" twice.`; unknown value: same catalog message as bluePlane. |
 | sceneFeatures | shot (`scene`) | literal `Record<string, boolean>` | `sceneSchema` | Merges onto the built-in defaults (`environment: true`, `campfire`/`tent`: false, `stage`/`audience` from `showStage`/`showAudience`). Feature keys are whatever the active environment's `scene-feature-registry.ts` recognizes; unknown keys are silently inert (no rejection). |
 | seed | film | literal `{base?: int, axes?: Record<string, int>}` | `directive-random.ts` (`resolveFilmSeed`) | `base` defaults to a stable hash of the film `id` (`hashString(filmId)`). Every directive draw is seeded from `${base}\0salt\0shotId\0axis`, where `salt = seed.axes[axis] ?? 0`. Bumping one axis's salt rerolls only that axis, everywhere it's drawn, without disturbing any other axis's picks. Effect-preset `{pick:"any"}` draws use the axis name `effectPreset:<effectId>`, so each configurable effect's preset reroll has its own independent salt. |
 | format | film | literal `{width?, height?, fps?}` | `FilmDirectorInputSchema` | Bounds: width 640–7680, height 360–4320, fps 24–120. |
@@ -73,14 +84,19 @@ is a real, callable setter the director adapter has access to but never calls
 with a directed value — it either hardwires a constant into
 `buildDirectorViewerSeed` or never touches the field at all.
 
-| Setter / field | Real owner | Adapter's current behavior | Status |
+Per-performer hand plane (`performer.setHandPlane`), per-step hand plane
+(`performer.setStepHandPlane`), and plane visibility
+(`viewer.togglePlane`/`showAllPlanes`/`hideAllPlanes`/`visiblePlanes`) were in
+this table until 2026-08-24 — they are now speakable as `bluePlane`/
+`redPlane`/`stepPlanes` and `scene.visiblePlanes` in the directive-capable and
+literal-axes tables above. The remaining rows below were reviewed the same day
+and each got an explicit ruling, not a "maybe later":
+
+| Setter / field | Real owner | Adapter's current behavior | Status (2026-08-24 ruling) |
 |---|---|---|---|
-| `performer.setHandPlane("blue" \| "red", plane)` (per-performer hand-to-plane assignment; drives `customBluePlane`/`customRedPlane`) | `avatar-instance-state.svelte.ts` | `buildDirectorViewerSeed` hardwires both `customBluePlane` and `customRedPlane` to `Plane.WALL` for every performer, every shot. | Real, not speakable. No schema axis for per-performer plane. |
-| `performer.setStepHandPlane(step, hand, plane)` (per-beat plane override, forces `PlaneMode.CUSTOM`) | `avatar-instance-state.svelte.ts` | Never called by the director path at all. | Real, not speakable. Lower priority — director shots don't currently address individual beats. |
-| `viewer.setOceanVariant(v: OceanVariant)` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `oceanVariant: "abyss"` regardless of which environment the shot resolves to. | Real, not speakable. Only observable when `environmentId` resolves to `"ocean"`. |
-| `viewer.setNavMode(value: ViewerNavMode)` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `navMode: "orbit"`. | Real, not speakable. Low practical impact — the director camera is snapped explicitly every frame via `applyDirectorCameraFrame`, so nav mode does not currently drive what's on screen during playback. |
-| `viewer.toggleGridLabels()` / `showGridLabels` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `showGridLabels: false`. | Real, not speakable. |
-| `viewer.togglePlane(plane)` / `showAllPlanes()` / `hideAllPlanes()` / `visiblePlanes` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `visiblePlanes: []`. | Real, not speakable. |
+| `viewer.setOceanVariant(v: OceanVariant)` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `oceanVariant: "abyss"` regardless of which environment the shot resolves to. | **SHELVED.** "There's only one ocean" — stays hardwired to `abyss`. No schema axis; not a candidate for one. |
+| `viewer.setNavMode(value: ViewerNavMode)` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `navMode: "orbit"`. | **DROPPED.** Nav mode is a viewer navigation control; the director camera overrides it every frame (`applyDirectorCameraFrame`), so it cannot affect what's on screen during a rendered film. Not a candidate for a schema axis. |
+| `viewer.toggleGridLabels()` / `showGridLabels` | `viewer-3d-state.svelte.ts` | `buildDirectorViewerSeed` hardwires `showGridLabels: false`. | **Hardwired off BY DECISION.** Default-off confirmed 2026-08-24, not a gap. Not a candidate for a schema axis. |
 
 ## Grammar gaps (speakable someday)
 
