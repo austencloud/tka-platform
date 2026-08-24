@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte } from "@threlte/core";
+  import { T } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { onDestroy } from "svelte";
@@ -33,6 +33,7 @@
     interactionPulse?: number;
     view?: CloudbreakAssemblyView;
     groundY?: number;
+    stageRadius?: number;
     onReady?: () => void;
     onAssetReady?: (id: string) => void;
   }
@@ -48,6 +49,7 @@
     interactionPulse = 0,
     view = "runtime",
     groundY = userProportionsState.groundY,
+    stageRadius = 3,
     onReady,
     onAssetReady,
   }: Props = $props();
@@ -63,7 +65,6 @@
       ktx2Loader: useKtx2("/basis/"),
     }
   );
-  const { scene, renderer, camera } = useThrelte();
   const shellMaterials = new Set<Material>();
   let shell = $state<Group | null>(null);
   let shellLimestone = $state<MeshStandardMaterial | null>(null);
@@ -249,9 +250,6 @@
     if (!shell) return;
     const requiredIds = placements.map(({ asset }) => asset.id);
     if (!requiredIds.every((id) => readyAssetIds.includes(id))) return;
-    if (renderer.current && camera.current && scene.current) {
-      renderer.current.compile(scene.current, camera.current);
-    }
     if (!reportedReady) {
       reportedReady = true;
       onReady?.();
@@ -267,12 +265,12 @@
 <T.Group position.y={groundY}>
   {#if shell}
     <T.Group scale.x={-1} scale.z={-1}>
-      <T is={shell} />
+      <T is={shell} dispose={false} />
     </T.Group>
   {/if}
 
   {#if fullAssembly}
-    <CloudbreakSpatialStudy planMode={view === "plan"} />
+    <CloudbreakSpatialStudy planMode={view === "plan"} {stageRadius} />
     <CloudbreakLagoonEdge
       outline={CLOUDBREAK_LAGOON.outline}
       surfaceY={CLOUDBREAK_LAYOUT.lagoon.surfaceY + 0.035}

@@ -1,7 +1,5 @@
 <script lang="ts">
-  import PerformerHub from "$lib/shared/3d/components/controls/PerformerHub.svelte";
-  import MobileSceneControls from "$lib/shared/3d/components/MobileSceneControls.svelte";
-  import RightRail from "$lib/shared/sequence-viewer/components/RightRail.svelte";
+  import SceneControlWorkspace from "$lib/shared/3d/components/controls/SceneControlWorkspace.svelte";
 
   let {
     isPlaying,
@@ -26,19 +24,16 @@
   <small>Drag to orbit. Scroll to zoom.</small>
 </div>
 
-{#if compactControls}
-  <div class="mobile-controls">
-    <MobileSceneControls
-      {isPlaying}
-      {onPlaybackToggle}
-      {onStepForward}
-      {onStepBackward}
-    />
-  </div>
-{:else}
-  <RightRail renderMode="3d" {bpm} />
-  <PerformerHub />
-{/if}
+<div class="experience-controls">
+  <SceneControlWorkspace
+    {bpm}
+    showCompactPlayback={compactControls}
+    {isPlaying}
+    {onPlaybackToggle}
+    {onStepForward}
+    {onStepBackward}
+  />
+</div>
 
 <style>
   .experience-label {
@@ -79,20 +74,17 @@
     left: max(1rem, env(safe-area-inset-left));
   }
 
-  .mobile-controls {
+  .experience-controls {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     z-index: 30;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem max(1rem, env(safe-area-inset-right))
-      max(1rem, env(safe-area-inset-bottom))
-      max(1rem, env(safe-area-inset-left));
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.58), transparent);
+    pointer-events: none;
+  }
+
+  .experience-controls :global(button),
+  .experience-controls :global([role="button"]),
+  .experience-controls :global([role="dialog"]) {
+    pointer-events: auto;
   }
 
   @media (max-width: 520px) {

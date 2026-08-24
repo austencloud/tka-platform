@@ -11,7 +11,6 @@
   import { T, useThrelte } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { FogExp2, Color } from "three";
-  import { onMount } from "svelte";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getAutumnQualityConfig } from "./autumn/quality/autumn-quality";
   import { autumnQualityOverride } from "./autumn/quality/autumn-quality-override.svelte";
@@ -36,9 +35,16 @@
     stageWidth?: number;
     stageDepth?: number;
     stageZOffset?: number;
+    /** Retained film worlds load while hidden but only the active one owns globals. */
+    active?: boolean;
   }
 
-  let { stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+  let {
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
+    active = true,
+  }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
 
@@ -102,16 +108,12 @@
 
   // ── Readiness: gate on the complete authored environment ──────────────
 
-  let readyReported = false;
-
   $effect(() => {
+    if (!active) return;
     const loaded = Boolean($autumnEnvironmentGlb);
     const failed = Boolean($autumnEnvironmentError);
     sceneFeatures?.reportProgress("environment", loaded ? 1 : 0);
-    if ((loaded || failed) && !readyReported) {
-      readyReported = true;
-      sceneFeatures?.reportReady("environment");
-    }
+    if (loaded || failed) sceneFeatures?.reportReady("environment");
   });
 
   $effect(() => {
@@ -128,7 +130,8 @@
 
   // Safety valve: if the GLB stalls without ever rejecting, lift the curtain
   // after 15s so the user is never stuck on a permanent loading screen.
-  onMount(() => {
+  $effect(() => {
+    if (!active) return;
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
         console.warn("[AutumnScene] loading timed out - lifting curtain");
@@ -171,7 +174,9 @@
   // ── Fog + background (dusk violet) ─────────────────────────────────────
 
   $effect(() => {
-    const s = scene;
+    if (!active) return;
+    const s = scene.current;
+    if (!s) return;
     // Fog and background are deliberately DIFFERENT colours now. The fog is a
     // lighter, warmer violet than the sky, so distant geometry fades toward a
     // haze that separates it from the near-black upper sky instead of
@@ -189,13 +194,12 @@
     // that its authored surface vanished halfway to the shack. 0.016 keeps
     // atmospheric separation across the tree belts while preserving the full
     // lived-in sightline from the stage clearing to the cabin door.
-    s.fog = new FogExp2(fogColor.getHex(), 0.016);
+    const fog = new FogExp2(fogColor.getHex(), 0.016);
+    s.fog = fog;
     s.background = backgroundColor;
     return () => {
-      if (s) {
-        s.fog = null;
-        s.background = null;
-      }
+      if (s.fog === fog) s.fog = null;
+      if (s.background === backgroundColor) s.background = null;
     };
   });
 </script>
@@ -211,7 +215,7 @@
 <Starfield config={starfieldConfig} />
 
 {#if $autumnEnvironmentGlb}
-  <T is={$autumnEnvironmentGlb.scene} position.y={groundY} />
+  <T is={$autumnEnvironmentGlb.scene} position.y={groundY} dispose={false} />
 {/if}
 
 <!-- The same canonical stage used by the forest scene anchors the performer,

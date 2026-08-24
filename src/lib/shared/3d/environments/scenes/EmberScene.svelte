@@ -24,26 +24,22 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import ObsidianPlatform from "./ember/ObsidianPlatform.svelte";
+  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
 
   interface Props {
     config?: EmberSceneConfig;
-    stageWidth?: number;
-    stageDepth?: number;
-    stageZOffset?: number;
+    stageRadius?: number;
   }
 
-  let {
-    config,
-    stageWidth = 6,
-    stageDepth = 6,
-    stageZOffset = 0,
-  }: Props = $props();
+  let { config, stageRadius = 3 }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultEmberConfig());
 
   const activeConfig = $derived.by(() => {
-    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
-    const r = Math.max(baseConfig.platform.radius, neededRadius);
+    const r = resolveCircularStageRadius(
+      stageRadius,
+      baseConfig.platform.radius
+    );
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {
       ...baseConfig,

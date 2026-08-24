@@ -10,12 +10,14 @@
   } from "three";
 
   import { CLOUDBREAK_LAYOUT } from "./cloudbreak-layout";
+  import { resolveCircularStageRadius } from "../../domain/performer-stage-bounds";
 
   interface Props {
     planMode?: boolean;
+    stageRadius?: number;
   }
 
-  let { planMode = false }: Props = $props();
+  let { planMode = false, stageRadius = 3 }: Props = $props();
 
   const threshold = CLOUDBREAK_LAYOUT.rearThreshold;
   const approach = CLOUDBREAK_LAYOUT.approach;
@@ -24,6 +26,13 @@
   const innerPierX = threshold.openingWidth / 2 + innerPierWidth / 2;
   const lintelHeight = threshold.outerHeight - threshold.openingHeight;
   const thresholdZ = threshold.centerXZ[1];
+  const terraceCenter = CLOUDBREAK_LAYOUT.performanceTerrace.centerXZ;
+  const terraceSurfaceRadius = $derived(
+    resolveCircularStageRadius(stageRadius, 6.08, {
+      x: terraceCenter[0],
+      z: terraceCenter[1],
+    })
+  );
 
   const limestone = new MeshStandardMaterial({
     color: "#c9ad82",
@@ -181,24 +190,33 @@
 
 <!-- The visible rim sits below the performers' feet. Material, not elevation,
      separates the terrace so every roster stays grounded. -->
-<T.Mesh position={[0, 0.11, -1]} material={stageEdge} castShadow receiveShadow>
-  <T.CylinderGeometry args={[6.18, 6.48, 0.22, 64]} />
+<T.Mesh
+  position={[terraceCenter[0], 0.11, terraceCenter[1]]}
+  material={stageEdge}
+  castShadow
+  receiveShadow
+>
+  <T.CylinderGeometry
+    args={[terraceSurfaceRadius + 0.1, terraceSurfaceRadius + 0.4, 0.22, 64]}
+  />
 </T.Mesh>
 <T.Mesh
-  position={[0, 0.225, -1]}
+  position={[terraceCenter[0], 0.225, terraceCenter[1]]}
   rotation.x={-Math.PI / 2}
   material={stageSurface}
   receiveShadow
 >
-  <T.CircleGeometry args={[6.08, 64]} />
+  <T.CircleGeometry args={[terraceSurfaceRadius, 64]} />
 </T.Mesh>
 <T.Mesh
-  position={[0, 0.232, -1]}
+  position={[terraceCenter[0], 0.232, terraceCenter[1]]}
   rotation.x={-Math.PI / 2}
   material={stageWear}
   receiveShadow
 >
-  <T.RingGeometry args={[5.45, 5.96, 64]} />
+  <T.RingGeometry
+    args={[terraceSurfaceRadius - 0.63, terraceSurfaceRadius - 0.12, 64]}
+  />
 </T.Mesh>
 
 <T.Mesh

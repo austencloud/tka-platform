@@ -60,6 +60,30 @@ describe("createSceneFeatureState", () => {
     expect(state.allEnabledReady).toBe(true);
   });
 
+  it("reveals the usable scene while a deferred environment keeps loading", () => {
+    const state = createSceneFeatureState(undefined, {
+      initialRevealDeferredFeatures: ["environment"],
+    });
+
+    expect(state.isEnabled("environment")).toBe(true);
+    expect(state.isReady("environment")).toBe(false);
+    expect(state.allEnabledReady).toBe(false);
+    expect(state.allInitialRevealFeaturesReady).toBe(true);
+    expect(state.allInitialRevealFeaturesSettled).toBe(true);
+    expect(state.initialRevealSettledProgress).toBe(1);
+  });
+
+  it("still waits for non-deferred async features", () => {
+    const state = createSceneFeatureState(
+      { audience: true },
+      { initialRevealDeferredFeatures: ["environment"] }
+    );
+
+    expect(state.allInitialRevealFeaturesReady).toBe(false);
+    state.reportReady("audience");
+    expect(state.allInitialRevealFeaturesReady).toBe(true);
+  });
+
   it("settles a failed feature without pretending it loaded", () => {
     const state = createSceneFeatureState();
     state.reportFailed("environment", "Environment couldn't load.");

@@ -37,29 +37,28 @@
     detectWinterQuality,
     getWinterQualityConfig,
   } from "./winter/quality/winter-quality";
+  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
 
   interface Props {
     config?: WinterSceneConfig;
-    stageWidth?: number;
-    stageDepth?: number;
+    stageRadius?: number;
     stageZOffset?: number;
     platformVisible?: boolean;
   }
 
   let {
     config,
-    stageWidth = 6,
-    stageDepth = 6,
+    stageRadius = 3,
     stageZOffset = 0,
     platformVisible = true,
   }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultWinterConfig());
   const activeConfig = $derived.by(() => {
-    // Bounding-diagonal clearance: a performer pushed to a rectangle corner
-    // sits hypot(w, d) / 2 from center, farther than max(w, d) / 2.
-    const neededRadius = Math.hypot(stageWidth, stageDepth) / 2;
-    const radius = Math.max(baseConfig.platform.radius, neededRadius);
+    const radius = resolveCircularStageRadius(
+      stageRadius,
+      baseConfig.platform.radius
+    );
     if (radius === baseConfig.platform.radius) return baseConfig;
     return {
       ...baseConfig,

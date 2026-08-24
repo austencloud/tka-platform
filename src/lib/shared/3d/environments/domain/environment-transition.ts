@@ -77,6 +77,31 @@ export function requestEnvironment<Key extends string>(
   };
 }
 
+/**
+ * Switch a retained world without exposing the ordinary empty-frame gap.
+ * The caller must already own an opaque visual cover and keep it in place
+ * until the returned waiting state settles.
+ */
+export function switchEnvironmentBehindHost<Key extends string>(
+  state: EnvironmentTransitionState<Key>,
+  requestedKey: Key
+): EnvironmentTransitionState<Key> {
+  if (
+    requestedKey === state.mountedKey &&
+    requestedKey === state.requestedKey
+  ) {
+    return state;
+  }
+
+  return {
+    mountedKey: requestedKey,
+    requestedKey,
+    phase: "waiting",
+    visibility: 1,
+    gapFramesRemaining: 0,
+  };
+}
+
 export function advanceEnvironmentTransition<Key extends string>(
   state: EnvironmentTransitionState<Key>,
   deltaMs: number,

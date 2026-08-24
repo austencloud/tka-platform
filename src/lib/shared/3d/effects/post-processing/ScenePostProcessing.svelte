@@ -20,9 +20,9 @@
     ChromaticAberrationEffect,
     VignetteEffect,
   } from "postprocessing";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { getSceneEnvironmentRendererKey } from "../../environments/domain/scene-environment";
   import { WaterAbsorptionEffect } from "./ocean/water-absorption-effect";
   import { UnderwaterDistortionEffect } from "./ocean/underwater-distortion-effect";
   import { oceanDebugToggles } from "$lib/shared/3d/environments/scenes/ocean/quality/ocean-debug-toggles.svelte";
@@ -39,7 +39,7 @@
   } from "./scene-color-snapshot-3d";
 
   interface Props {
-    children: Snippet;
+    children?: Snippet;
     bloomResolutionScale?: number;
     bloomLevels?: number;
     enableBloom?: boolean;
@@ -68,13 +68,10 @@
   const transitionVisual = tryGetEnvironmentTransitionVisualContext();
   const transitionCompositor = new EnvironmentTransitionCompositor();
 
-  const isOcean = $derived.by(() => {
-    try {
-      return settingsService.settings?.backgroundType === BackgroundType.OCEAN;
-    } catch {
-      return false;
-    }
-  });
+  const isOcean = $derived(
+    getSceneEnvironmentRendererKey(viewer3DState.environmentId) ===
+      BackgroundType.OCEAN
+  );
 
   // Hardware-gated glow: on HIGH/MEDIUM the detected visual tier enables bloom, so
   // the consolidated 3D trail (HDR-emissive ribbon) blooms in ANY scene, not
@@ -364,4 +361,6 @@
   });
 </script>
 
-{@render children()}
+{#if children}
+  {@render children()}
+{/if}

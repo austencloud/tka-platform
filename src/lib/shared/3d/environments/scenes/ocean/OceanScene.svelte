@@ -1,16 +1,36 @@
+<script module lang="ts">
+  import {
+    PMREMGenerator,
+    type Texture,
+    type WebGLRenderer as OceanWebGLRenderer,
+  } from "three";
+  import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+
+  const oceanEnvironmentTextures = new WeakMap<OceanWebGLRenderer, Texture>();
+
+  function getOceanEnvironmentTexture(renderer: OceanWebGLRenderer): Texture {
+    const existing = oceanEnvironmentTextures.get(renderer);
+    if (existing) return existing;
+
+    const pmrem = new PMREMGenerator(renderer);
+    const texture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    oceanEnvironmentTextures.set(renderer, texture);
+    return texture;
+  }
+</script>
+
 <script lang="ts">
   import { T, useThrelte, useTask } from "@threlte/core";
   import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import {
     FogExp2,
     Color,
-    PMREMGenerator,
     Mesh,
     MeshStandardMaterial,
     type Scene,
     type WebGLRenderer,
   } from "three";
-  import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
   import { userProportionsState } from "@austencloud/scene-3d";
   import {
     detectOceanQuality,
@@ -52,6 +72,8 @@
     stageZOffset?: number;
     /** Translation applied by the shared environment coordinate frame. */
     worldYOffset?: number;
+    /** Retained film worlds load while hidden but only the active one owns globals. */
+    active?: boolean;
   }
 
   let {
@@ -60,6 +82,7 @@
     stageDepth = 6,
     stageZOffset = 0,
     worldYOffset = 0,
+    active = true,
   }: Props = $props();
 
   // ── Quality detection ─────────────────────────────────────────────────
@@ -128,6 +151,7 @@
   }
 
   $effect(() => {
+    if (!active) return;
     const seabed = $environmentGlb ? 1 : 0;
     const combined = seabed * SEABED_WEIGHT + floraFraction * FLORA_WEIGHT;
     sceneFeatures?.reportProgress("environment", combined);
@@ -139,20 +163,22 @@
   // ── Fog ───────────────────────────────────────────────────────────────
 
   $effect(() => {
+    if (!active) return;
     const s = scene;
     // Deep blue-teal so distance dissolves into water, not a dead-black void
     // (was #0d0d10). Pairs with the absorption depth-grade in ScenePostProcessing.
     const fogColor = new Color("#0a2438");
     // Keep the backdrop colour always; the dev `fog` toggle only removes the
     // distance haze veil so a reviewer can see how much of the washout it owns.
-    s.background = fogColor;
-    s.fog = oceanDebugToggles.fog
+    const fog = oceanDebugToggles.fog
       ? new FogExp2(fogColor.getHex(), OCEAN_FOG_DENSITY)
       : null;
+    s.background = fogColor;
+    s.fog = fog;
     return () => {
       if (s) {
-        s.fog = null;
-        s.background = null;
+        if (s.fog === fog) s.fog = null;
+        if (s.background === fogColor) s.background = null;
       }
     };
   });
@@ -161,6 +187,7 @@
   // Keep one scene-level intensity so the seabed and authored reef receive the
   // same low-energy wet/specular fill. Per-material values stay neutral (1.0).
   $effect(() => {
+    if (!active) return;
     const r = renderer;
     const s = scene;
     const previousIntensity = s.environmentIntensity;
@@ -173,15 +200,12 @@
         s.environmentIntensity = previousIntensity;
       };
     }
-    const pmrem = new PMREMGenerator(r);
-    const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const envTex = getOceanEnvironmentTexture(r);
     s.environment = envTex;
     s.environmentIntensity = OCEAN_ENVIRONMENT_INTENSITY;
-    pmrem.dispose();
     return () => {
       if (s.environment === envTex) s.environment = null;
       s.environmentIntensity = previousIntensity;
-      envTex.dispose();
     };
   });
 
@@ -232,7 +256,7 @@
   // resolution. Cap it here and restore the prior ratio on teardown so other
   // scenes are unaffected. Re-runs when the tier (and thus maxPixelRatio) changes.
   $effect(() => {
-    if (adaptiveQuality) return;
+    if (!active || adaptiveQuality) return;
     const r = renderer;
     const prev = r.getPixelRatio();
     r.setPixelRatio(Math.min(window.devicePixelRatio, quality.maxPixelRatio));
@@ -243,7 +267,7 @@
 </script>
 
 {#if $environmentGlb}
-  <T is={$environmentGlb.scene} />
+  <T is={$environmentGlb.scene} dispose={false} />
 {/if}
 
 {#if floraRequired}

@@ -1,3 +1,28 @@
+<script module lang="ts">
+  import type { Object3D as CachedObject3D } from "three";
+  import type { GLTFLoader as CachedGLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+  const sharedFloraScenes = new Map<string, Promise<CachedObject3D>>();
+
+  function loadSharedFloraScene(
+    url: string,
+    loader: CachedGLTFLoader,
+    onProgress?: (event: ProgressEvent) => void
+  ): Promise<CachedObject3D> {
+    const existing = sharedFloraScenes.get(url);
+    if (existing) return existing;
+
+    const pending = new Promise<CachedObject3D>((resolve, reject) => {
+      loader.load(url, (gltf) => resolve(gltf.scene), onProgress, reject);
+    }).catch((error) => {
+      if (sharedFloraScenes.get(url) === pending) sharedFloraScenes.delete(url);
+      throw error;
+    });
+    sharedFloraScenes.set(url, pending);
+    return pending;
+  }
+</script>
+
 <script lang="ts">
   import { T, useTask, useThrelte } from "@threlte/core";
   import { useDraco, useKtx2, useMeshopt } from "@threlte/extras";
@@ -10,8 +35,6 @@
     Vector3,
     type InstancedMesh,
     type Object3D,
-    type Material,
-    type Texture,
     type WebGLProgramParametersWithUniforms,
   } from "three";
   import { userProportionsState } from "@austencloud/scene-3d";
@@ -39,7 +62,8 @@
     composed: "ocean_composed_scene.glb",
   };
   const floraFile = $derived(
-    (import.meta.env.DEV && FLORA_VARIANTS[page.url.searchParams.get("flora") ?? ""]) ||
+    (import.meta.env.DEV &&
+      FLORA_VARIANTS[page.url.searchParams.get("flora") ?? ""]) ||
       FLORA_VARIANTS.authored
   );
   const FLORA_GLB_URL = $derived(
@@ -55,12 +79,7 @@
     onReady?: () => void;
   }
 
-  let {
-    quality,
-    worldYOffset = 0,
-    onProgress,
-    onReady,
-  }: Props = $props();
+  let { quality, worldYOffset = 0, onProgress, onReady }: Props = $props();
 
   // Shared decoder instances (cached per-path by the threlte hooks); detectSupport
   // for KTX2 is wired automatically against the active renderer by useKtx2.
@@ -102,7 +121,7 @@
   // Primary current heading on the XZ plane (normalized): a slow diagonal drift.
   const CURRENT_DIR = new Vector2(0.8, 0.6).normalize();
 
-  const swayUniforms = {
+  let swayUniforms = {
     uTime: { value: 0 },
     uGroundY: { value: userProportionsState.groundY + worldYOffset },
     uTallRef: { value: TALL_REF },
@@ -111,8 +130,12 @@
   };
 
   function patchSwayMaterial(mat: MeshStandardMaterial): void {
-    if (mat.userData.swayPatched) return;
+    if (mat.userData.swayPatched) {
+      swayUniforms = mat.userData.swayUniforms as typeof swayUniforms;
+      return;
+    }
     mat.userData.swayPatched = true;
+    mat.userData.swayUniforms = swayUniforms;
 
     mat.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
       shader.uniforms.uTime = swayUniforms.uTime;
@@ -248,81 +271,47 @@
   let hasLoggedCullingSample = false;
   const { camera } = useThrelte();
 
-  function disposeFloraScene(scene: Object3D): void {
-    const geometries = new Set<InstancedMesh["geometry"]>();
-    const materials = new Set<Material>();
-    const textures = new Set<Texture>();
-    scene.traverse((child) => {
-      const mesh = child as Mesh;
-      if (!mesh.isMesh) return;
-      if (mesh.geometry) geometries.add(mesh.geometry);
-      const meshMaterials = Array.isArray(mesh.material)
-        ? mesh.material
-        : [mesh.material];
-      meshMaterials.forEach((material: Material) => {
-        materials.add(material);
-        Object.values(material).forEach((value) => {
-          const texture = value as Texture | null;
-          if (texture?.isTexture) textures.add(texture);
-        });
-      });
-    });
-    geometries.forEach((geometry) => geometry.dispose());
-    materials.forEach((material) => material.dispose());
-    textures.forEach((texture) => texture.dispose());
-  }
-
   $effect(() => {
     let cancelled = false;
 
-    gltfLoader.load(
-      FLORA_GLB_URL,
-      (gltf) => {
-        if (cancelled) {
-          disposeFloraScene(gltf.scene);
-          return;
-        }
-        enhanceMaterials(gltf.scene);
-        floraCuller = createAuthoredFloraCuller(gltf.scene);
+    void loadSharedFloraScene(FLORA_GLB_URL, gltfLoader, (progress) => {
+      if (cancelled || !progress.total) return;
+      onProgress?.(progress.loaded / progress.total);
+    })
+      .then((scene) => {
+        if (cancelled) return;
+        enhanceMaterials(scene);
+        floraCuller = createAuthoredFloraCuller(scene);
         if (import.meta.env.DEV) {
           const stats = floraCuller.stats;
           console.debug(
             `[FloraInstances] per-instance culling ready: ${stats.culledBatches}/${stats.sourceBatches} batches, ${stats.instances} instances, ${(stats.estimatedVerticesCovered / 1_000_000).toFixed(1)}M covered vertices`
           );
         }
-        floraScene = gltf.scene;
+        floraScene = scene;
         onProgress?.(1.0);
         onReady?.();
-      },
-      (progress) => {
-        if (cancelled || !progress.total) return;
-        onProgress?.(progress.loaded / progress.total);
-      },
-      (err) => {
+      })
+      .catch((err) => {
         if (cancelled) return;
         console.error(
           "[FloraInstances] Failed to load ocean flora scene:",
           err
         );
         onReady?.();
-      }
-    );
+      });
 
     return () => {
       cancelled = true;
-      if (floraScene) {
-        floraCuller?.restore();
-        floraCuller = null;
-        disposeFloraScene(floraScene);
-        floraScene = null;
-      }
+      floraCuller?.restore();
+      floraCuller = null;
+      floraScene = null;
     };
   });
 
   // Keep the sway mask anchored to the live seabed height.
   $effect(() => {
-    swayUniforms.uGroundY.value =
-      userProportionsState.groundY + worldYOffset;
+    swayUniforms.uGroundY.value = userProportionsState.groundY + worldYOffset;
   });
 
   // Dev A/B toggle: zero the amplitude when sway is off (no shader recompile —
@@ -351,5 +340,5 @@
      (ocean-environment.glb, rendered at identity in OceanScene). Offsetting only
      the flora by groundY sank every object below the sand. -->
 {#if floraScene}
-  <T is={floraScene} />
+  <T is={floraScene} dispose={false} />
 {/if}

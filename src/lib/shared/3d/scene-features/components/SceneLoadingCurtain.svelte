@@ -11,9 +11,34 @@
   import { getSceneFeatureContext } from "../context/scene-feature-context";
   import { fade } from "svelte/transition";
 
+  interface Props {
+    additionalRevealReady?: boolean;
+    additionalRevealProgress?: number | null;
+    additionalRevealLabel?: string;
+  }
+
+  let {
+    additionalRevealReady = true,
+    additionalRevealProgress = null,
+    additionalRevealLabel = "Finishing the scene",
+  }: Props = $props();
+
   const sceneFeatures = getSceneFeatureContext();
 
-  const progress = $derived(sceneFeatures.settledProgress);
+  const sceneProgress = $derived(sceneFeatures.initialRevealSettledProgress);
+  const progress = $derived(
+    additionalRevealProgress === null
+      ? sceneProgress
+      : (sceneProgress + Math.max(0, Math.min(additionalRevealProgress, 1))) / 2
+  );
+  const revealSettled = $derived(
+    sceneFeatures.allInitialRevealFeaturesSettled && additionalRevealReady
+  );
+  const statusText = $derived(
+    sceneFeatures.allInitialRevealFeaturesSettled
+      ? additionalRevealLabel
+      : "Setting the stage"
+  );
 
   // Track whether the initial load has completed. Once it has,
   // the curtain never comes back - even if the user toggles on
@@ -21,7 +46,7 @@
   let initialLoadComplete = $state(false);
 
   $effect(() => {
-    if (sceneFeatures.allEnabledSettled && !initialLoadComplete) {
+    if (revealSettled && !initialLoadComplete) {
       initialLoadComplete = true;
     }
   });
@@ -31,7 +56,10 @@
   $effect(() => {
     if (!showCurtain) return;
     const enabled = sceneFeatures.features.filter(
-      (f) => f.requiresAsyncLoad && sceneFeatures.isEnabled(f.key)
+      (f) =>
+        f.requiresAsyncLoad &&
+        sceneFeatures.isEnabled(f.key) &&
+        sceneFeatures.blocksInitialReveal(f.key)
     );
     const pending = enabled.filter(
       (feature) =>
@@ -69,7 +97,7 @@
     <div class="progress-area" role="status" aria-live="polite">
       <div class="status-row">
         <span class="spinner" aria-hidden="true"></span>
-        <p class="status-text">Setting the stage</p>
+        <p class="status-text">{statusText}</p>
       </div>
       <div class="progress-track" aria-label="Scene loading progress">
         <div class="progress-fill" style="width: {progress * 100}%"></div>
@@ -105,7 +133,8 @@
   }
 
   @keyframes drift {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0;
       transform: translate(0, 0);
     }
@@ -150,7 +179,9 @@
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .status-text {
@@ -172,16 +203,31 @@
   }
 
   @keyframes ellipsis {
-    0%   { content: ""; }
-    25%  { content: "."; }
-    50%  { content: ".."; }
-    75%  { content: "..."; }
-    100% { content: ""; }
+    0% {
+      content: "";
+    }
+    25% {
+      content: ".";
+    }
+    50% {
+      content: "..";
+    }
+    75% {
+      content: "...";
+    }
+    100% {
+      content: "";
+    }
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 0.85; }
-    50%      { opacity: 1; }
+    0%,
+    100% {
+      opacity: 0.85;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .progress-track {

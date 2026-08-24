@@ -5,6 +5,7 @@ import {
   createEnvironmentTransitionState,
   getEnvironmentVeilOpacity,
   requestEnvironment,
+  switchEnvironmentBehindHost,
 } from "$lib/shared/3d/environments/domain/environment-transition";
 
 const FAST = { coverDurationMs: 100, revealDurationMs: 100 };
@@ -15,6 +16,19 @@ function createTestTransition(initial: TestEnvironment = "forest") {
 }
 
 describe("environment transition", () => {
+  it("switches a retained world behind a host cover without an empty-frame gap", () => {
+    const autumn = createEnvironmentTransitionState("autumn");
+    const forest = switchEnvironmentBehindHost(autumn, "forest");
+
+    expect(forest).toEqual({
+      mountedKey: "forest",
+      requestedKey: "forest",
+      phase: "waiting",
+      visibility: 1,
+      gapFramesRemaining: 0,
+    });
+  });
+
   it("covers, leaves a clean gap, waits for readiness, and reveals", () => {
     let state = requestEnvironment(createTestTransition(), "ocean");
 

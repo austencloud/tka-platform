@@ -80,6 +80,10 @@
     stageWidth?: number;
     /** Depth of the stage platform along Z in meters. Default 4.5m. */
     stageDepth?: number;
+    /** Number of performers the environment stage must support. */
+    performerCount?: number;
+    /** Z offset for environment-owned stages that expand asymmetrically. */
+    stageZOffset?: number;
     /**
      * Whether to render a seated audience arc on the downstage side
      * of the stage. Off by default because the character + animation
@@ -156,6 +160,8 @@
     showStage = true,
     stageWidth = 6.0,
     stageDepth = 4.5,
+    performerCount = 1,
+    stageZOffset = 0,
     showAudience = false,
     audienceCount = 6,
     gridMode = "diamond",
@@ -340,7 +346,13 @@
     <StageTerrain {physicsState} cameraPosition={terrainCameraPosition} />
   {:else}
     <!-- 3D Environment (sky, ground, particles - matches 2D theme) -->
-    <Environment3D {backgroundType} />
+    <Environment3D
+      {backgroundType}
+      {performerCount}
+      {stageWidth}
+      {stageDepth}
+      {stageZOffset}
+    />
   {/if}
 
   <!--

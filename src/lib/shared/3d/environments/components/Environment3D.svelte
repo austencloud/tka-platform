@@ -10,16 +10,6 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { onDestroy, untrack } from "svelte";
-  import ForestScene from "../scenes/ForestScene.svelte";
-  import AutumnScene from "../scenes/AutumnScene.svelte";
-  import CosmicScene from "../scenes/CosmicScene.svelte";
-  import WinterScene from "../scenes/WinterScene.svelte";
-  import OceanScene from "../scenes/ocean/OceanScene.svelte";
-  import EmberScene from "../scenes/EmberScene.svelte";
-  import BlossomScene from "../scenes/BlossomScene.svelte";
-  import RainbowScene from "../scenes/RainbowScene.svelte";
-  import CelestialScene from "../scenes/CelestialScene.svelte";
-  import VoidScene from "../scenes/VoidScene.svelte";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import { getStageCoordinateFrame } from "../domain/stage-coordinate-frame";
   import { tryGetEnvironmentTransitionVisualContext } from "../context/environment-transition-visual-context";
@@ -30,6 +20,7 @@
     createEnvironmentTransitionState,
     getEnvironmentVeilOpacity,
     requestEnvironment,
+    switchEnvironmentBehindHost,
     type EnvironmentTransitionObservation,
   } from "../domain/environment-transition";
 
@@ -42,7 +33,9 @@
     stageWidth?: number;
     /** Computed stage depth from performer bounding box. */
     stageDepth?: number;
-    /** Z offset for stage expansion (keeps front edge fixed). */
+    /** Exact circular clearance from the scene origin. */
+    stageRadius?: number;
+    /** Legacy stage offset. Morphing stages stay centered at zero. */
     stageZOffset?: number;
     /** Forest-only authored atmosphere override. Other scenes ignore it. */
     forestConfig?: ForestSceneConfig;
@@ -52,6 +45,13 @@
     onTransitionChange?: (
       observation: EnvironmentTransitionObservation<BackgroundType>
     ) => void;
+    /** Worlds that stay mounted after their first film preparation pass. */
+    retainedEnvironmentTypes?: readonly BackgroundType[];
+    /**
+     * A film host can own the visible edit while this component performs an
+     * atomic retained-world switch behind that host's opaque frame.
+     */
+    transitionVisualMode?: "internal" | "host-controlled";
   }
 
   let {
@@ -59,10 +59,13 @@
     performerCount = 1,
     stageWidth = 6,
     stageDepth = 6,
+    stageRadius = 3,
     stageZOffset = 0,
     forestConfig,
     winterPlatformVisible = true,
     onTransitionChange,
+    retainedEnvironmentTypes = [],
+    transitionVisualMode = "internal",
   }: Props = $props();
 
   const { scene, renderer } = useThrelte();
@@ -136,7 +139,9 @@
   );
   const environmentYOffset = $derived(coordinateFrame?.environmentYOffset ?? 0);
   const transitionTiming = $derived(
-    prefersReducedMotion || !transitionVisual
+    transitionVisualMode === "host-controlled" ||
+      prefersReducedMotion ||
+      !transitionVisual
       ? { coverDurationMs: 0, revealDurationMs: 0 }
       : DEFAULT_ENVIRONMENT_TRANSITION_TIMING
   );
@@ -145,6 +150,11 @@
       (sceneFeatures.getError("environment") !== null ||
         (sceneFeatures.isReady("environment") &&
           (transitionVisual?.rendererReady ?? true)))
+  );
+  const retainedEnvironments = $derived(new Set(retainedEnvironmentTypes));
+  const mountedEnvironmentIsRetained = $derived(
+    mountedBackgroundType !== null &&
+      retainedEnvironments.has(mountedBackgroundType)
   );
 
   // Threlte's scene can be a CurrentWritable ({current: Scene}) or the Scene directly
@@ -174,6 +184,28 @@
     // same-scene write before the renderer could paint another frame.
     untrack(() => {
       const currentTransition = transition;
+
+      if (transitionVisualMode === "host-controlled") {
+        if (
+          requestedBackground === currentTransition.mountedKey &&
+          requestedBackground === currentTransition.requestedKey
+        ) {
+          return;
+        }
+
+        // The host has already covered the WebGL canvas with a complete frame.
+        // Never pass through the ordinary empty-world gap here: retained film
+        // worlds can switch in one update, report readiness, and render behind
+        // the host before it reveals the incoming shot.
+        transitionVisual?.setRendererReady(false);
+        sceneFeatures.resetReady("environment");
+        transition = switchEnvironmentBehindHost(
+          currentTransition,
+          requestedBackground
+        );
+        return;
+      }
+
       const nextTransition = requestEnvironment(
         currentTransition,
         requestedBackground
@@ -212,10 +244,14 @@
   });
 
   $effect(() => {
-    transitionVisual?.setFrame(
-      getEnvironmentVeilOpacity(transition),
-      transition.phase
-    );
+    if (transitionVisualMode === "host-controlled") {
+      transitionVisual?.setFrame(0, "idle");
+    } else {
+      transitionVisual?.setFrame(
+        getEnvironmentVeilOpacity(transition),
+        transition.phase
+      );
+    }
   });
 
   $effect(() => {
@@ -243,50 +279,154 @@
   });
 </script>
 
-{#if coordinateFrame}
-  <T.Group position.y={environmentYOffset}>
-    {#if config.scene === "forest"}
+{#if retainedEnvironments.has(BackgroundType.AUTUMN)}
+  {@const frame = getStageCoordinateFrame(
+    BackgroundType.AUTUMN,
+    sceneFeatures.isEnabled("stage")
+  )}
+  <T.Group
+    position.y={frame.environmentYOffset}
+    visible={mountedBackgroundType === BackgroundType.AUTUMN}
+  >
+    {#await import("../scenes/AutumnScene.svelte") then { default: AutumnScene }}
+      <AutumnScene
+        active={mountedBackgroundType === BackgroundType.AUTUMN}
+        {stageWidth}
+        {stageDepth}
+        {stageZOffset}
+      />
+    {/await}
+  </T.Group>
+{/if}
+
+{#if retainedEnvironments.has(BackgroundType.FOREST)}
+  {@const frame = getStageCoordinateFrame(
+    BackgroundType.FOREST,
+    sceneFeatures.isEnabled("stage")
+  )}
+  <T.Group
+    position.y={frame.environmentYOffset}
+    visible={mountedBackgroundType === BackgroundType.FOREST}
+  >
+    {#await import("../scenes/ForestScene.svelte") then { default: ForestScene }}
       <ForestScene
-        variant={config.variant}
+        active={mountedBackgroundType === BackgroundType.FOREST}
+        variant="firefly"
         config={forestConfig}
         {stageWidth}
         {stageDepth}
         {stageZOffset}
       />
-    {:else if config.scene === "autumn"}
-      <AutumnScene {stageWidth} {stageDepth} {stageZOffset} />
-    {:else if config.scene === "cosmic"}
-      <CosmicScene
-        variant={config.variant}
-        {performerCount}
-        {stageWidth}
-        {stageDepth}
-      />
-    {:else if config.scene === "winter"}
-      <WinterScene
-        {stageWidth}
-        {stageDepth}
-        {stageZOffset}
-        platformVisible={winterPlatformVisible}
-      />
-    {:else if config.scene === "ocean"}
+    {/await}
+  </T.Group>
+{/if}
+
+{#if retainedEnvironments.has(BackgroundType.OCEAN)}
+  {@const frame = getStageCoordinateFrame(
+    BackgroundType.OCEAN,
+    sceneFeatures.isEnabled("stage")
+  )}
+  <T.Group
+    position.y={frame.environmentYOffset}
+    visible={mountedBackgroundType === BackgroundType.OCEAN}
+  >
+    {#await import("../scenes/ocean/OceanScene.svelte") then { default: OceanScene }}
       <OceanScene
+        active={mountedBackgroundType === BackgroundType.OCEAN}
         {performerCount}
         {stageWidth}
         {stageDepth}
         {stageZOffset}
-        worldYOffset={environmentYOffset}
+        worldYOffset={frame.environmentYOffset}
       />
+    {/await}
+  </T.Group>
+{/if}
+
+{#if retainedEnvironments.has(BackgroundType.CELESTIAL)}
+  {@const frame = getStageCoordinateFrame(
+    BackgroundType.CELESTIAL,
+    sceneFeatures.isEnabled("stage")
+  )}
+  <T.Group
+    position.y={frame.environmentYOffset}
+    visible={mountedBackgroundType === BackgroundType.CELESTIAL}
+  >
+    {#await import("../scenes/CelestialScene.svelte") then { default: CelestialScene }}
+      <CelestialScene
+        active={mountedBackgroundType === BackgroundType.CELESTIAL}
+        {stageWidth}
+        {stageDepth}
+        {stageRadius}
+        {stageZOffset}
+      />
+    {/await}
+  </T.Group>
+{/if}
+
+{#if coordinateFrame && !mountedEnvironmentIsRetained}
+  <T.Group position.y={environmentYOffset}>
+    {#if config.scene === "forest"}
+      {#await import("../scenes/ForestScene.svelte") then { default: ForestScene }}
+        <ForestScene
+          variant={config.variant}
+          config={forestConfig}
+          {stageWidth}
+          {stageDepth}
+          {stageZOffset}
+        />
+      {/await}
+    {:else if config.scene === "autumn"}
+      {#await import("../scenes/AutumnScene.svelte") then { default: AutumnScene }}
+        <AutumnScene {stageWidth} {stageDepth} {stageZOffset} />
+      {/await}
+    {:else if config.scene === "cosmic"}
+      {#await import("../scenes/CosmicScene.svelte") then { default: CosmicScene }}
+        <CosmicScene variant={config.variant} {performerCount} {stageRadius} />
+      {/await}
+    {:else if config.scene === "winter"}
+      {#await import("../scenes/WinterScene.svelte") then { default: WinterScene }}
+        <WinterScene
+          {stageRadius}
+          {stageZOffset}
+          platformVisible={winterPlatformVisible}
+        />
+      {/await}
+    {:else if config.scene === "ocean"}
+      {#await import("../scenes/ocean/OceanScene.svelte") then { default: OceanScene }}
+        <OceanScene
+          {performerCount}
+          {stageWidth}
+          {stageDepth}
+          {stageZOffset}
+          worldYOffset={environmentYOffset}
+        />
+      {/await}
     {:else if config.scene === "ember"}
-      <EmberScene {stageWidth} {stageDepth} {stageZOffset} />
+      {#await import("../scenes/EmberScene.svelte") then { default: EmberScene }}
+        <EmberScene {stageRadius} />
+      {/await}
     {:else if config.scene === "blossom"}
-      <BlossomScene {stageWidth} {stageDepth} {stageZOffset} />
+      {#await import("../scenes/BlossomScene.svelte") then { default: BlossomScene }}
+        <BlossomScene {stageWidth} {stageDepth} {stageZOffset} />
+      {/await}
     {:else if config.scene === "rainbow"}
-      <RainbowScene {stageWidth} {stageDepth} {stageZOffset} />
+      {#await import("../scenes/RainbowScene.svelte") then { default: RainbowScene }}
+        <RainbowScene {stageRadius} />
+      {/await}
     {:else if config.scene === "celestial"}
-      <CelestialScene {stageWidth} {stageDepth} {stageZOffset} />
+      {#await import("../scenes/CelestialScene.svelte") then { default: CelestialScene }}
+        <CelestialScene
+          {stageWidth}
+          {stageDepth}
+          {stageRadius}
+          {stageZOffset}
+        />
+      {/await}
     {:else if config.scene === "void"}
-      <VoidScene {stageWidth} {stageDepth} {stageZOffset} />
+      {#await import("../scenes/VoidScene.svelte") then { default: VoidScene }}
+        <VoidScene {stageRadius} />
+      {/await}
     {/if}
   </T.Group>
 {/if}

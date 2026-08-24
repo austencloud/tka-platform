@@ -8,9 +8,9 @@
     type SceneAudioVariant,
   } from "../audio/ocean-audio-tracks";
   import type { OceanVariant } from "../environments/domain/enums/environment-enums";
-  import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { tryGetViewer3DContext } from "../context/viewer-3d-context";
+  import { getSceneEnvironmentRendererKey } from "../environments/domain/scene-environment";
 
   interface Props {
     backgroundType?: BackgroundType;
@@ -22,11 +22,9 @@
 
   const activeBackgroundType = $derived.by(() => {
     if (backgroundType !== undefined) return backgroundType;
-    try {
-      return settingsService.settings?.backgroundType;
-    } catch {
-      return undefined;
-    }
+    return viewer3DState
+      ? getSceneEnvironmentRendererKey(viewer3DState.environmentId)
+      : undefined;
   });
 
   const isOcean = $derived.by(() => {

@@ -21,6 +21,10 @@ interface CloudbreakLayout {
     outlineXZ: Array<[number, number]>;
     overflowXZ: [number, number];
   };
+  performanceTerrace: {
+    centerXZ: [number, number];
+    clearRadius: number;
+  };
   sun: {
     position: [number, number, number];
     lightPosition: [number, number, number];

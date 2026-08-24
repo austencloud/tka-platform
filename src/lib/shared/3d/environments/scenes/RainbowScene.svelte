@@ -3,6 +3,7 @@
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import { T, useTask, useThrelte } from "@threlte/core";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
   import {
     SphereGeometry,
     CircleGeometry,
@@ -29,18 +30,18 @@
 
   interface Props {
     config?: RainbowSceneConfig;
-    stageWidth?: number;
-    stageDepth?: number;
-    stageZOffset?: number;
+    stageRadius?: number;
   }
 
-  let { config, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+  let { config, stageRadius = 3 }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultRainbowConfig());
 
   const activeConfig = $derived.by(() => {
-    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
-    const r = Math.max(baseConfig.platform.radius, neededRadius);
+    const r = resolveCircularStageRadius(
+      stageRadius,
+      baseConfig.platform.radius
+    );
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {
       ...baseConfig,
@@ -333,8 +334,13 @@
   // ── Accent ring dot lights ───────────────────────────────────────────
 
   const RING_COLORS = [
-    "#ff1744", "#ff9100", "#ffea00", "#00e676",
-    "#2979ff", "#651fff", "#d500f9",
+    "#ff1744",
+    "#ff9100",
+    "#ffea00",
+    "#00e676",
+    "#2979ff",
+    "#651fff",
+    "#d500f9",
   ];
 
   const RING_RADIUS = 5.05;
@@ -368,7 +374,7 @@
     { color: "#ff4466", angle: 0.3, radius: 6, height: 2.8, scale: 0.18 },
     { color: "#ffaa22", angle: 1.1, radius: 7.5, height: 3.5, scale: 0.22 },
     { color: "#44ff66", angle: 2.0, radius: 5.5, height: 1.8, scale: 0.15 },
-    { color: "#4488ff", angle: 2.9, radius: 8, height: 4.2, scale: 0.20 },
+    { color: "#4488ff", angle: 2.9, radius: 8, height: 4.2, scale: 0.2 },
     { color: "#aa44ff", angle: 3.7, radius: 6.5, height: 2.2, scale: 0.16 },
     { color: "#ff44aa", angle: 4.5, radius: 7, height: 3.0, scale: 0.19 },
     { color: "#ffee44", angle: 5.3, radius: 5.8, height: 3.8, scale: 0.14 },
@@ -447,7 +453,9 @@
   ];
 
   const shaftGeometries = untrack(() =>
-    lightShafts.map((s) => new CylinderGeometry(s.topRadius, s.radius, s.height, 12, 1, true))
+    lightShafts.map(
+      (s) => new CylinderGeometry(s.topRadius, s.radius, s.height, 12, 1, true)
+    )
   );
 
   const shaftMaterials = untrack(() =>
@@ -530,7 +538,7 @@
       orb.group.position.set(
         orb.baseX + Math.sin(t * 0.7) * orb.driftRadius,
         orb.baseY + Math.sin(t) * orb.bobAmplitude,
-        orb.baseZ + Math.cos(t * 0.5) * orb.driftRadius,
+        orb.baseZ + Math.cos(t * 0.5) * orb.driftRadius
       );
       orb.group.rotation.y = t * 0.3;
     }
@@ -629,12 +637,7 @@
     position.y={orb.baseY}
     position.z={orb.baseZ}
   >
-    <T.PointLight
-      color={orb.color}
-      intensity={12}
-      distance={8}
-      decay={2}
-    />
+    <T.PointLight color={orb.color} intensity={12} distance={8} decay={2} />
   </T>
 {/each}
 
@@ -644,7 +647,7 @@
     geometry={shaftGeometries[i]}
     material={shaftMaterials[i]}
     position.x={shaftPositions[i]?.x ?? 0}
-    position.y={groundY + (shaft.height / 2)}
+    position.y={groundY + shaft.height / 2}
     position.z={shaftPositions[i]?.z ?? 0}
   />
 {/each}
@@ -690,7 +693,7 @@
   area={{ width: 10, height: 5, depth: 10 }}
   speed={0.005}
   colors={["#ff4466", "#ffaa22", "#44ff66", "#4488ff"]}
-  sizeRange={[0.10, 0.26]}
+  sizeRange={[0.1, 0.26]}
   spin={false}
 />
 

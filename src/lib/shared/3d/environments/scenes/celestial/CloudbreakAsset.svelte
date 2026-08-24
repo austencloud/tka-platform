@@ -119,6 +119,6 @@
 
 {#if prepared}
   <T.Group {position} rotation.y={rotationY}>
-    <T is={prepared} />
+    <T is={prepared} dispose={false} />
   </T.Group>
 {/if}

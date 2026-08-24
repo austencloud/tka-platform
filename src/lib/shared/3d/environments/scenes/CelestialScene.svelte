@@ -1,6 +1,5 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { onMount } from "svelte";
   import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
   import FallingParticles from "../primitives/FallingParticles.svelte";
@@ -23,14 +22,19 @@
     config?: CelestialSceneConfig;
     stageWidth?: number;
     stageDepth?: number;
+    stageRadius?: number;
     stageZOffset?: number;
+    /** Retained film worlds load while hidden but only the active one owns globals. */
+    active?: boolean;
   }
 
   let {
     config,
     stageWidth = 6,
     stageDepth = 6,
+    stageRadius = 3,
     stageZOffset = 0,
+    active = true,
   }: Props = $props();
 
   const baseConfig = $derived(config ?? createDefaultCelestialConfig());
@@ -58,15 +62,18 @@
   }
 
   $effect(() => {
+    if (!active) return;
     if (!scene.current) return;
     const fog = activeConfig.fog;
     const fogInstance = new FogExp2(fog.color, fog.density);
     scene.current.fog = fogInstance;
-    scene.current.background = new Color(activeConfig.sky.topColor);
+    const background = new Color(activeConfig.sky.topColor);
+    scene.current.background = background;
     return () => {
       if (!scene.current) return;
-      scene.current.fog = null;
-      scene.current.background = null;
+      if (scene.current.fog === fogInstance) scene.current.fog = null;
+      if (scene.current.background === background)
+        scene.current.background = null;
     };
   });
 
@@ -75,13 +82,15 @@
   }
 
   $effect(() => {
+    if (!active) return;
     sceneFeatures?.reportProgress("environment", cloudbreakLoaded ? 1 : 0);
     if (cloudbreakLoaded) {
       sceneFeatures?.reportReady("environment");
     }
   });
 
-  onMount(() => {
+  $effect(() => {
+    if (!active) return;
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
         console.warn("[CelestialScene] loading timed out - lifting curtain");
@@ -104,7 +113,11 @@
 <!-- Volumetric cloud dome -->
 <CloudSkyDome config={activeConfig.cloudDome} />
 
-<OliveCloudbreakSlice {interactionPulse} onReady={handleCloudbreakReady} />
+<OliveCloudbreakSlice
+  {interactionPulse}
+  {stageRadius}
+  onReady={handleCloudbreakReady}
+/>
 
 <CelestialSun
   direction={CLOUDBREAK_SKY_SUN.direction}

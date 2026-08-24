@@ -20,16 +20,21 @@
   } from "../domain/models/scene-configs";
   import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
+  import { resolveCircularStageRadius } from "../domain/performer-stage-bounds";
 
   interface Props {
     variant?: CosmicVariant;
     config?: CosmicSceneConfig;
     performerCount?: number;
-    stageWidth?: number;
-    stageDepth?: number;
+    stageRadius?: number;
   }
 
-  let { variant = "night", config, performerCount = 1, stageWidth = 6, stageDepth = 6 }: Props = $props();
+  let {
+    variant = "night",
+    config,
+    performerCount = 1,
+    stageRadius = 3,
+  }: Props = $props();
 
   const defaultConfigs = {
     night: createDefaultCosmicNightConfig,
@@ -39,8 +44,10 @@
   const baseConfig = $derived(config ?? defaultConfigs[variant]());
 
   const activeConfig = $derived.by(() => {
-    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
-    const r = Math.max(baseConfig.platform.radius, neededRadius);
+    const r = resolveCircularStageRadius(
+      stageRadius,
+      baseConfig.platform.radius
+    );
     if (r <= baseConfig.platform.radius) return baseConfig;
     return {
       ...baseConfig,
@@ -48,14 +55,24 @@
     };
   });
 
-  // The authored reliquary owns the physical platform mechanism. This live
-  // surface only expands when a multi-performer layout needs more floor area.
+  const platformExpanded = $derived(
+    activeConfig.platform.radius > baseConfig.platform.radius
+  );
+
+  // The authored reliquary owns the solo mechanism. Once the cast outgrows it,
+  // the live deck becomes the complete mechanism instead of leaving a small
+  // metal ring stranded in the middle of a larger safety surface.
   const performanceDeckConfig = $derived({
     ...activeConfig.platform,
+    shape: "circle" as const,
     baseColor: "#070b12",
-    emissiveIntensity: 0.08,
-    gridIntensity: 0,
-    accentLightCount: 0,
+    emissiveIntensity: platformExpanded
+      ? activeConfig.platform.emissiveIntensity
+      : 0.08,
+    gridIntensity: platformExpanded ? activeConfig.platform.gridIntensity : 0,
+    accentLightCount: platformExpanded
+      ? activeConfig.platform.accentLightCount
+      : 0,
   });
 
   const { scene, renderer, camera } = useThrelte();
@@ -63,6 +80,20 @@
   const environmentGlb = useGltf("/models/cosmic/cosmic-reliquary.glb", {
     meshoptDecoder: useMeshopt(),
     ktx2Loader: useKtx2("/basis/"),
+  });
+
+  $effect(() => {
+    const authoredScene = $environmentGlb?.scene;
+    if (!authoredScene) return;
+
+    const authoredPlatform = authoredScene.children.filter(
+      (child) => child.name !== "AR_Terrain"
+    );
+    for (const child of authoredPlatform) child.visible = !platformExpanded;
+
+    return () => {
+      for (const child of authoredPlatform) child.visible = true;
+    };
   });
 
   $effect(() => {
@@ -83,7 +114,7 @@
     const planetReady = earthReady || !activeConfig.earth.enabled;
     sceneFeatures.reportProgress(
       "environment",
-      (authoredReady ? 0.7 : 0) + (planetReady ? 0.3 : 0),
+      (authoredReady ? 0.7 : 0) + (planetReady ? 0.3 : 0)
     );
     if (authoredReady && planetReady) {
       if (renderer.current && camera.current && scene.current) {
@@ -96,13 +127,14 @@
   onMount(() => {
     const timer = setTimeout(() => {
       if (sceneFeatures && !sceneFeatures.isReady("environment")) {
-        console.warn("[CosmicScene] texture loading timed out — lifting curtain");
+        console.warn(
+          "[CosmicScene] texture loading timed out — lifting curtain"
+        );
         sceneFeatures.reportReady("environment");
       }
     }, 15_000);
     return () => clearTimeout(timer);
   });
-
 </script>
 
 <SkyGradient
@@ -121,10 +153,7 @@
 
 <StationPlatform config={performanceDeckConfig} />
 
-<EarthSphere
-  config={activeConfig.earth}
-  onReady={() => (earthReady = true)}
-/>
+<EarthSphere config={activeConfig.earth} onReady={() => (earthReady = true)} />
 
 {#if activeConfig.lighting.warmStation.enabled}
   <T.PointLight

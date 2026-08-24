@@ -1,4 +1,7 @@
-import { SCENE_FEATURES, type SceneFeature } from "../domain/scene-feature-registry";
+import {
+  SCENE_FEATURES,
+  type SceneFeature,
+} from "../domain/scene-feature-registry";
 
 const STORAGE_KEY = "tka-scene-features";
 
@@ -25,6 +28,13 @@ export interface SceneFeatureStateOptions {
    * must not write its choices back over them.
    */
   isolated?: boolean;
+  /**
+   * Features that may finish after the first usable frame is revealed. They
+   * remain enabled, keep reporting progress, and still participate in their
+   * own transitions; they simply stop decorative assets from holding the
+   * performer and controls behind the loading curtain.
+   */
+  initialRevealDeferredFeatures?: readonly string[];
 }
 
 export function createSceneFeatureState(
@@ -32,6 +42,9 @@ export function createSceneFeatureState(
   options?: SceneFeatureStateOptions
 ) {
   const isolated = options?.isolated ?? false;
+  const initialRevealDeferredFeatures = new Set(
+    options?.initialRevealDeferredFeatures ?? []
+  );
   const persisted = isolated ? {} : loadPersistedToggles();
 
   // Three-tier precedence: localStorage > overrides > registry default
@@ -54,7 +67,19 @@ export function createSceneFeatureState(
   let retryRequestMap = $state<Record<string, number>>({});
 
   function getEnabledAsyncFeatures(): SceneFeature[] {
-    return SCENE_FEATURES.filter((f) => f.requiresAsyncLoad && enabledMap[f.key]);
+    return SCENE_FEATURES.filter(
+      (f) => f.requiresAsyncLoad && enabledMap[f.key]
+    );
+  }
+
+  function getInitialRevealAsyncFeatures(): SceneFeature[] {
+    return getEnabledAsyncFeatures().filter(
+      (feature) => !initialRevealDeferredFeatures.has(feature.key)
+    );
+  }
+
+  function blocksInitialReveal(key: string): boolean {
+    return !initialRevealDeferredFeatures.has(key);
   }
 
   function isEnabled(key: string): boolean {
@@ -91,7 +116,9 @@ export function createSceneFeatureState(
     // key, so a genuine reload starts fresh from 0.
     const current = progressMap[key] ?? 0;
     if (clamped <= current) return;
-    console.debug(`[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`);
+    console.debug(
+      `[SceneFeature] ${key} progress: ${(clamped * 100).toFixed(0)}%`
+    );
     progressMap = { ...progressMap, [key]: clamped };
   }
 
@@ -160,6 +187,7 @@ export function createSceneFeatureState(
       return SCENE_FEATURES;
     },
     isEnabled,
+    blocksInitialReveal,
     isReady,
     getError,
     getRetryRequest,
@@ -186,6 +214,23 @@ export function createSceneFeatureState(
         )
       );
     },
+    get allInitialRevealFeaturesReady(): boolean {
+      const asyncFeatures = getInitialRevealAsyncFeatures();
+      return (
+        asyncFeatures.length === 0 ||
+        asyncFeatures.every((feature) => readySet.has(feature.key))
+      );
+    },
+    get allInitialRevealFeaturesSettled(): boolean {
+      const asyncFeatures = getInitialRevealAsyncFeatures();
+      return (
+        asyncFeatures.length === 0 ||
+        asyncFeatures.every(
+          (feature) =>
+            readySet.has(feature.key) || errorMap[feature.key] !== undefined
+        )
+      );
+    },
     get readyProgress(): number {
       const asyncFeatures = getEnabledAsyncFeatures();
       if (asyncFeatures.length === 0) return 1;
@@ -201,6 +246,19 @@ export function createSceneFeatureState(
     },
     get settledProgress(): number {
       const asyncFeatures = getEnabledAsyncFeatures();
+      if (asyncFeatures.length === 0) return 1;
+      let sum = 0;
+      for (const feature of asyncFeatures) {
+        if (readySet.has(feature.key) || errorMap[feature.key] !== undefined) {
+          sum += 1;
+        } else {
+          sum += progressMap[feature.key] ?? 0;
+        }
+      }
+      return sum / asyncFeatures.length;
+    },
+    get initialRevealSettledProgress(): number {
+      const asyncFeatures = getInitialRevealAsyncFeatures();
       if (asyncFeatures.length === 0) return 1;
       let sum = 0;
       for (const feature of asyncFeatures) {

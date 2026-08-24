@@ -18,6 +18,7 @@
     type EnvironmentReviewBounds,
     type EnvironmentReviewCameraPreset,
   } from "./environment-review-camera";
+  import { setCameraUrlPose } from "$lib/shared/3d/domain/camera-url-pose";
 
   interface Props {
     destinationId: string;
@@ -69,14 +70,12 @@
     poseSyncTimer = null;
     controls.getPosition(scratchPosition);
     controls.getTarget(scratchTarget);
-    const format = (vector: Vector3) =>
-      [vector.x, vector.y, vector.z].map((value) => value.toFixed(2)).join(",");
     const url = new URL(window.location.href);
-    url.searchParams.set("cam", format(scratchPosition));
-    url.searchParams.set("look", format(scratchTarget));
-    if (!url.searchParams.has("fov")) {
-      url.searchParams.set("fov", String(preset.fov));
-    }
+    setCameraUrlPose(url, {
+      position: scratchPosition,
+      target: scratchTarget,
+      fov: preset.fov,
+    });
     window.history.replaceState(window.history.state, "", url);
   }
 
