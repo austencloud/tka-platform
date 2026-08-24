@@ -17,6 +17,7 @@ export type BuildModeId =
   | "assemble" // Click grid points to build sequences visually
   | "construct" // Manual builder (one pictograph at a time)
   | "fuse" // Combine two sequences into one
+  | "tunnel" // Compose complete sequences into a multi-performer tunnel
   | "one-handed"
   | "guided" // Guided mode
   | "generate" // Automatic sequence generation
@@ -76,4 +77,3 @@ export interface ExportResult {
     totalErrors?: number;
   };
 }
-

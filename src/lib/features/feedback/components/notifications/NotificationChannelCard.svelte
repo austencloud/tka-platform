@@ -4,7 +4,10 @@
     description: string;
     status: string;
     icon: string;
+    statusIcon?: string;
+    statusTone?: "on" | "off" | "action" | "warning";
     enabled?: boolean;
+    switchChecked?: boolean;
     busy?: boolean;
     disabled?: boolean;
     ariaLabel: string;
@@ -16,22 +19,39 @@
     description,
     status,
     icon,
+    statusIcon,
+    statusTone = "off",
     enabled = false,
+    switchChecked,
     busy = false,
     disabled = false,
     ariaLabel,
     onToggle,
   }: Props = $props();
+
+  const resolvedStatusIcon = $derived(
+    statusIcon ??
+      (statusTone === "on"
+        ? "fa-circle-check"
+        : statusTone === "warning"
+          ? "fa-triangle-exclamation"
+          : statusTone === "action"
+            ? "fa-arrow-right"
+            : "fa-circle")
+  );
 </script>
 
 <button
   type="button"
   class="channel-card"
   class:enabled
+  class:action-state={statusTone === "action"}
+  class:warning-state={statusTone === "warning"}
+  role={switchChecked === undefined ? undefined : "switch"}
+  aria-checked={switchChecked}
   onclick={onToggle}
   {disabled}
   aria-label={ariaLabel}
-  aria-pressed={enabled}
   aria-busy={busy}
 >
   <span class="channel-icon" aria-hidden="true">
@@ -39,18 +59,15 @@
   </span>
 
   <span class="channel-copy">
-    <span class="channel-title-row">
-      <span class="channel-label">{label}</span>
-      <span class="channel-status">
-        <span class="status-dot" aria-hidden="true"></span>
-        {status}
-      </span>
-    </span>
+    <span class="channel-label">{label}</span>
     <span class="channel-description">{description}</span>
   </span>
 
-  <span class="toggle-switch" aria-hidden="true">
-    <span class="toggle-knob"></span>
+  <span class="channel-state" aria-hidden="true">
+    <i
+      class={busy ? "fas fa-circle-notch fa-spin" : `fas ${resolvedStatusIcon}`}
+    ></i>
+    <span>{status}</span>
   </span>
 </button>
 
@@ -94,23 +111,23 @@
 
   .channel-card:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.58;
   }
 
   .channel-card[aria-busy="true"] {
     cursor: wait;
-    opacity: 0.68;
+    opacity: 0.7;
   }
 
   .channel-card.enabled {
     border-color: color-mix(
       in srgb,
-      var(--theme-accent) 58%,
+      var(--theme-accent) 64%,
       var(--theme-stroke)
     );
     background: color-mix(
       in srgb,
-      var(--theme-accent) 8%,
+      var(--theme-accent) 11%,
       var(--theme-card-bg)
     );
   }
@@ -126,10 +143,17 @@
     background: color-mix(in srgb, var(--theme-text) 5%, transparent);
   }
 
-  .channel-card.enabled .channel-icon {
+  .channel-card.enabled .channel-icon,
+  .channel-card.action-state .channel-icon {
     border-color: color-mix(in srgb, var(--theme-accent) 24%, transparent);
     color: var(--theme-accent-text, var(--theme-accent));
     background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+  }
+
+  .channel-card.warning-state .channel-icon {
+    border-color: color-mix(in srgb, var(--semantic-warning) 32%, transparent);
+    color: var(--semantic-warning);
+    background: color-mix(in srgb, var(--semantic-warning) 10%, transparent);
   }
 
   .channel-copy {
@@ -139,135 +163,71 @@
     gap: 0.25em;
   }
 
-  .channel-title-row {
-    display: flex;
-    min-width: 0;
-    align-items: center;
-    gap: 0.65em;
-  }
-
   .channel-label {
-    overflow: hidden;
     color: var(--theme-text);
     font-size: max(0.9375rem, var(--font-size-base));
     font-weight: 725;
     line-height: 1.25;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .channel-status {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 0.35em;
-    color: var(--theme-text-dim);
-    font-size: max(0.75rem, var(--font-size-compact));
-    font-weight: 650;
-    line-height: 1;
-  }
-
-  .status-dot {
-    width: 0.45em;
-    height: 0.45em;
-    border-radius: 50%;
-    background: var(--theme-text-dim);
-  }
-
-  .channel-card.enabled .channel-status {
-    color: var(--theme-accent-text, var(--theme-accent));
-  }
-
-  .channel-card.enabled .status-dot {
-    background: var(--theme-accent);
-    box-shadow: 0 0 0 0.2em
-      color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
   .channel-description {
+    overflow-wrap: anywhere;
     color: var(--theme-text-dim);
     font-size: max(0.75rem, var(--font-size-compact));
     line-height: 1.35;
   }
 
-  .toggle-switch {
-    box-sizing: border-box;
+  .channel-state {
     display: flex;
-    width: 3em;
-    height: 1.8em;
-    flex: 0 0 auto;
+    min-width: 4.25em;
     align-items: center;
-    padding: 0.2em;
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--theme-text) 10%, transparent);
-    transition:
-      background var(--duration-normal) ease,
-      border-color var(--duration-normal) ease;
+    justify-content: flex-end;
+    gap: 0.42em;
+    color: var(--theme-text-dim);
+    font-size: max(0.875rem, var(--font-size-sm));
+    font-weight: 750;
+    line-height: 1;
+    text-align: right;
   }
 
-  .toggle-knob {
-    width: 1.3em;
-    height: 1.3em;
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-text) 72%, transparent);
-    box-shadow: 0 0.12em 0.3em rgba(0, 0, 0, 0.28);
-    transition:
-      transform var(--duration-normal) ease,
-      background var(--duration-normal) ease;
+  .channel-card.enabled .channel-state,
+  .channel-card.action-state .channel-state {
+    color: var(--theme-accent-text, var(--theme-accent));
   }
 
-  .channel-card.enabled .toggle-switch {
-    border-color: var(--theme-accent);
-    background: var(--theme-accent);
-  }
-
-  .channel-card.enabled .toggle-knob {
-    transform: translateX(1.2em);
-    background: var(--theme-text-on-accent, #fff);
+  .channel-card.warning-state .channel-state {
+    color: var(--semantic-warning);
   }
 
   @container notification-preferences (max-width: 32rem) {
     .channel-card {
-      grid-template-columns: auto minmax(0, 1fr);
-      min-height: 9rem;
+      gap: 0.65rem;
+      min-height: 5.5rem;
+      padding: 0.75rem;
     }
 
-    .channel-title-row {
-      align-items: flex-start;
+    .channel-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    .channel-state {
+      min-width: 3.5rem;
       flex-direction: column;
       gap: 0.2rem;
-      min-height: 3.4em;
-    }
-
-    .channel-label {
-      white-space: normal;
-    }
-
-    .toggle-switch {
-      grid-column: 1 / -1;
-      justify-self: end;
-      margin-top: -2.25rem;
-    }
-
-    .channel-copy {
-      padding-right: 3.4rem;
-    }
-
-    .channel-description {
-      display: -webkit-box;
-      min-height: 2.7em;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
+      font-size: 0.75rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .channel-card,
-    .toggle-switch,
-    .toggle-knob {
+    .channel-card {
       transition: none;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .channel-card {
+      border-width: 2px;
     }
   }
 </style>

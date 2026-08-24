@@ -13,7 +13,7 @@
     /** Content to render */
     children: Snippet;
     /** Click handler */
-    onclick?: () => void;
+    onclick?: (event: MouseEvent) => void;
     /** Disabled state */
     disabled?: boolean;
     /** Button type */

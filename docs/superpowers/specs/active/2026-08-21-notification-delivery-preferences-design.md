@@ -12,16 +12,23 @@ Email is off until the user enables it. Existing in-app notifications and push
 preferences keep their current defaults.
 
 The page uses the same workspace language as the account settings surface: one
-opaque, bordered workspace over the animated app background; icon-led section
-headers; descriptive toggle rows; and fixed responsive compositions instead of
-an auto-filling card wall.
+bordered workspace over the animated app background, icon-led section headers,
+descriptive toggle rows, and fixed responsive compositions instead of an
+auto-filling card wall.
+
+The interaction stays binary where the setting is genuinely on or off, but the
+visual control is not an iOS track and thumb. TKA settings use a whole-row
+button with a circle/check state mark, a visible **On/Off** word, and a restrained
+active surface. This keeps the familiar behavior without importing a platform
+specific visual dialect. The shared settings toggle owns the role, checked
+state, focus treatment, busy state, and reduced-motion behavior.
 
 ## Page composition
 
 The settings tab has three levels of hierarchy:
 
 1. A compact page header names the surface and explains the single job.
-2. The workspace separates **Delivery** from **In-app alerts**. Delivery owns
+2. The workspace separates **Delivery** from **Alert types**. Delivery owns
    push readiness, email opt-in, and subordinate email topics. In-app alerts
    owns event preferences and its local bulk actions.
 3. Alert topics are grouped by meaning. Messages, feedback, and community
@@ -29,9 +36,12 @@ The settings tab has three levels of hierarchy:
    screens. Admin alerts are a separate role-gated section and never appear to
    ordinary users.
 
-At narrow widths, every region becomes one column without changing the
-reading order. At wide widths, delivery and alerts sit side by side. The
-workspace consumes `--shell-w`, uses container queries for internal
+At narrow widths, every region becomes one column without changing the reading
+order. At wide widths, the two channel cards sit side by side, email topics use
+a compact three-column row, and alert groups use a balanced two-column
+composition. Delivery comes before alert types instead of occupying a permanent
+left rail, which avoids a large empty field below the shorter delivery content.
+The workspace consumes `--shell-w`, uses container queries for internal
 recomposition, and follows the settings font ramp at the 1680 and 2600 seams.
 
 Bulk actions change event alerts only. Push and email remain explicit channel
@@ -85,6 +95,12 @@ registration returns a token. If the account preference is already on but this
 device is not registered, the action sets up this device instead of turning the
 account preference off.
 
+Push readiness is not presented as a binary switch because it has more than two
+states. The channel card exposes the current state as **Off**, **Set up**,
+**Checking**, **On**, **Blocked**, **Unavailable**, or **Retry**. States that the
+app cannot change directly are informative rather than pretending to be an off
+position on a switch.
+
 ## Email delivery contract
 
 Cloud Functions check the requested email category and the email master switch
@@ -111,6 +127,11 @@ scanning every account.
 
 - Push registration failure leaves the device in a visible setup-failed state
   and does not claim that push is active.
+- A preference-load failure never renders defaults as though they came from the
+  account. The page shows a retryable error state and reports the failure through
+  the shared error-feedback boundary.
+- Push-state lookup and bulk preference failures produce visible feedback and a
+  retry path instead of ending at `console.error`.
 - Missing or unverified email skips email delivery without exposing an address
   in logs.
 - A mail queue write failure rejects its retryable email-only trigger so

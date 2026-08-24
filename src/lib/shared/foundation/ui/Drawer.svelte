@@ -60,6 +60,7 @@
     springAnimation = false,
     scaleBackground = false,
     preventScroll = true,
+    keepMounted = false,
     // Focus behavior
     autoFocus = true,
     onclose,
@@ -109,6 +110,8 @@
     scaleBackground?: boolean;
     /** Prevent body scrolling when drawer is open. Default: true */
     preventScroll?: boolean;
+    /** Keep drawer children mounted while closed. Use for stateful tools whose commands remain available outside the drawer. */
+    keepMounted?: boolean;
     /** Auto-focus the drawer when it opens. Set to false to keep focus on triggering element. Default: true */
     autoFocus?: boolean;
     onclose?: (event: CustomEvent<{ reason: CloseReason }>) => void;
@@ -332,6 +335,7 @@
   // Initialize layout service if responsive layout is enabled
   onMount(() => {
     mounted = true;
+    if (keepMounted) shouldRender = true;
     if (respectLayoutMode && layoutService) {
       isSideBySideLayout = layoutService.shouldUseSideBySideLayout();
 
@@ -434,7 +438,7 @@
         // Helper to complete the close sequence
         const completeClose = () => {
           drawerElement?.close();
-          shouldRender = false;
+          if (!keepMounted) shouldRender = false;
         };
 
         // Skip animation delay for users who prefer reduced motion - close instantly

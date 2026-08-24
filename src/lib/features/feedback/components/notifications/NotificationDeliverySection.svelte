@@ -11,7 +11,10 @@
     pushDeviceState: PushDeviceRegistrationState;
     pushDescription: string;
     pushStatus: string;
+    pushAriaLabel: string;
     emailDescription: string;
+    emailStatus: string;
+    emailAriaLabel: string;
     emailPreferenceItems: PreferenceItem[];
     pushBusy?: boolean;
     emailBusy?: boolean;
@@ -27,7 +30,10 @@
     pushDeviceState,
     pushDescription,
     pushStatus,
+    pushAriaLabel,
     emailDescription,
+    emailStatus,
+    emailAriaLabel,
     emailPreferenceItems,
     pushBusy = false,
     emailBusy = false,
@@ -40,6 +46,39 @@
 
   const pushReady = $derived(
     preferences.pushEnabled && pushDeviceState === "ready"
+  );
+  const pushUnavailable = $derived(
+    pushDeviceState === "checking" ||
+      (!preferences.pushEnabled &&
+        (pushDeviceState === "blocked" || pushDeviceState === "unsupported"))
+  );
+  const pushStatusTone = $derived<"on" | "off" | "action" | "warning">(
+    pushDeviceState === "blocked" || pushDeviceState === "unsupported"
+      ? "warning"
+      : pushDeviceState === "failed"
+        ? "action"
+        : !preferences.pushEnabled
+          ? "off"
+          : pushReady
+            ? "on"
+            : pushDeviceState === "setup-required"
+              ? "action"
+              : "off"
+  );
+  const pushStatusIcon = $derived(
+    pushDeviceState === "blocked"
+      ? "fa-lock"
+      : pushDeviceState === "unsupported"
+        ? "fa-ban"
+        : pushDeviceState === "failed"
+          ? "fa-rotate-right"
+          : !preferences.pushEnabled
+            ? "fa-circle"
+            : pushReady
+              ? "fa-circle-check"
+              : pushDeviceState === "setup-required"
+                ? "fa-arrow-right"
+                : "fa-circle"
   );
 </script>
 
@@ -61,23 +100,35 @@
         description={pushDescription}
         status={pushStatus}
         icon={pushReady ? "fa-bell" : "fa-bell-slash"}
+        statusIcon={pushStatusIcon}
+        statusTone={pushStatusTone}
         enabled={pushReady}
         busy={pushBusy}
-        ariaLabel={t("feedback_toggle_push")}
+        disabled={pushUnavailable}
+        ariaLabel={pushAriaLabel}
         onToggle={onTogglePush}
       />
 
       <NotificationChannelCard
         label={t("feedback_email_notifications")}
         description={emailDescription}
-        status={preferences.emailEnabled
-          ? t("feedback_email_on")
-          : t("feedback_email_off")}
+        status={emailStatus}
         icon={preferences.emailEnabled ? "fa-envelope" : "fa-envelope-open"}
+        statusIcon={emailUnavailable
+          ? "fa-triangle-exclamation"
+          : preferences.emailEnabled
+            ? "fa-circle-check"
+            : "fa-circle"}
+        statusTone={emailUnavailable
+          ? "warning"
+          : preferences.emailEnabled
+            ? "on"
+            : "off"}
         enabled={preferences.emailEnabled}
+        switchChecked={preferences.emailEnabled}
         busy={emailBusy}
         disabled={emailUnavailable}
-        ariaLabel={t("feedback_toggle_email")}
+        ariaLabel={emailAriaLabel}
         onToggle={onToggleEmail}
       />
     </div>
@@ -92,6 +143,7 @@
         {isBusyKey}
         onToggle={onTogglePreference}
         disabled={!preferences.emailEnabled}
+        layout="grid-3"
       />
     </div>
   </div>
@@ -99,6 +151,7 @@
 
 <style>
   .delivery-region {
+    container: delivery-region / inline-size;
     display: flex;
     min-width: 0;
     height: 100%;
@@ -160,8 +213,8 @@
   }
 
   .channel-stack {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.65em;
   }
 
@@ -170,7 +223,15 @@
   }
 
   .email-topics.topics-disabled {
-    opacity: 0.72;
+    opacity: 0.62;
+  }
+
+  /* Two across only when each card can hold its status line without wrapping —
+     the email card carries a full address, so a 44rem split left it in ribbons. */
+  @container delivery-region (min-width: 54rem) {
+    .channel-stack {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

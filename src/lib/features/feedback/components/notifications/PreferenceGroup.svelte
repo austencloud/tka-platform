@@ -13,7 +13,7 @@
     isBusyKey: (key: keyof NotificationPreferences) => boolean;
     onToggle: (key: keyof NotificationPreferences) => void;
     disabled?: boolean;
-    layout?: "stack" | "grid";
+    layout?: "stack" | "grid-2" | "grid-3";
   }
 
   let {
@@ -29,7 +29,12 @@
   }: Props = $props();
 </script>
 
-<section class="preference-group" class:grid-layout={layout === "grid"}>
+<section
+  class="preference-group"
+  class:grid-layout={layout !== "stack"}
+  class:grid-two={layout === "grid-2"}
+  class:grid-three={layout === "grid-3"}
+>
   <header class="group-header">
     <span class="group-icon" aria-hidden="true">
       <i class={`fas ${icon}`}></i>
@@ -48,6 +53,7 @@
         enabled={preferences[item.key]}
         isBusy={isBusyKey(item.key)}
         {disabled}
+        surface={layout === "stack" ? "plain" : "card"}
         onToggle={() => onToggle(item.key)}
       />
     {/each}
@@ -56,6 +62,7 @@
 
 <style>
   .preference-group {
+    container: preference-group / inline-size;
     min-width: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke);
@@ -114,26 +121,33 @@
     flex-direction: column;
   }
 
-  .preference-items :global(.preference-item + .preference-item) {
+  .preference-group:not(.grid-layout)
+    .preference-items
+    :global(.setting-toggle + .setting-toggle) {
     border-top: 1px solid var(--theme-stroke);
   }
 
-  @container alerts-region (min-width: 48rem) {
-    .preference-group.grid-layout .preference-items {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.6em;
-      padding: 0.6em;
-    }
+  .grid-layout .preference-items {
+    display: grid;
+    gap: 0.6em;
+    padding: 0.6em;
+  }
 
-    .preference-group.grid-layout .preference-items :global(.preference-item) {
-      border: 1px solid var(--theme-stroke);
-      border-radius: 0.7em;
-      background: color-mix(in srgb, var(--theme-text) 2%, transparent);
+  @container preference-group (min-width: 38rem) {
+    .grid-two .preference-items {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  @media (prefers-contrast: high) {
+  /* Three-across only when each column gets real room; a 3-item group can't
+     drop to two columns without orphaning the last card, so it stacks below. */
+  @container preference-group (min-width: 54rem) {
+    .grid-three .preference-items {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (prefers-contrast: more) {
     .preference-group {
       border-width: 2px;
     }

@@ -7,9 +7,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   import type { PushDeviceRegistrationState } from "$lib/shared/push/services/fcm-token-manager";
   import {
@@ -50,17 +52,20 @@
   let pushToggleBusy = $state(false);
   let emailToggleBusy = $state(false);
   let pushDeviceState = $state<PushDeviceRegistrationState>("checking");
+  let loadError = $state(false);
 
   const isPreviewMode = $derived(userPreviewState.isActive);
+  // effectiveRole, not authState.isAdmin: the admin toolbar's role chips set a
+  // debug override, and an admin viewing as Tester or Free User must see the
+  // page that role sees. The service clears the override for non-admins.
   const showAdminPreferences = $derived(
     isPreviewMode
       ? userPreviewState.data.profile?.role === "admin"
-      : Boolean(authState.isAdmin)
+      : featureFlagService.effectiveRole === "admin"
   );
 
-  onMount(async () => {
-    await loadPreferences();
-    await loadPushDeviceState();
+  onMount(() => {
+    void initializePreferences();
   });
 
   $effect(() => {
@@ -70,23 +75,65 @@
     if (previewPrefs) {
       preferences = previewPrefs;
       isLoading = false;
+      loadError = false;
     }
   });
 
-  async function loadPreferences() {
+  function asError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+
+  function reportSettingsFailure(
+    error: unknown,
+    message: string,
+    action: string,
+    severity: "warning" | "error" = "warning",
+    additionalData?: Record<string, unknown>
+  ): void {
+    const resolvedError = asError(error);
+    getErrorHandler().showUserError({
+      message,
+      technicalDetails: resolvedError.message,
+      error: resolvedError,
+      severity,
+      context: {
+        module: "settings",
+        tab: "notifications",
+        action,
+        additionalData,
+      },
+    });
+  }
+
+  async function initializePreferences(): Promise<void> {
+    const loaded = await loadPreferences();
+    if (loaded) await loadPushDeviceState();
+  }
+
+  async function loadPreferences(): Promise<boolean> {
     const user = authState.user;
     if (!user) {
       isLoading = false;
-      return;
+      loadError = false;
+      return false;
     }
 
     try {
       isLoading = true;
+      loadError = false;
       preferences = await notificationPreferencesManager.getPreferences(
         user.uid
       );
+      return true;
     } catch (error) {
-      console.error("Failed to load preferences:", error);
+      loadError = true;
+      reportSettingsFailure(
+        error,
+        t("feedback_preferences_load_failed"),
+        "load-notification-preferences",
+        "error"
+      );
+      return false;
     } finally {
       isLoading = false;
     }
@@ -96,15 +143,24 @@
     preferences = await notificationPreferencesManager.getPreferences(userId);
   }
 
-  async function loadPushDeviceState() {
+  async function loadPushDeviceState(): Promise<void> {
     const user = authState.user;
     if (!user) return;
 
     const fcmTokenManager = getFCMTokenManager();
-    pushDeviceState = "checking";
-    pushDeviceState = preferences.pushEnabled
-      ? await fcmTokenManager.getRegistrationState(user.uid)
-      : await fcmTokenManager.getSetupState();
+    try {
+      pushDeviceState = "checking";
+      pushDeviceState = preferences.pushEnabled
+        ? await fcmTokenManager.getRegistrationState(user.uid)
+        : await fcmTokenManager.getSetupState();
+    } catch (error) {
+      pushDeviceState = "failed";
+      reportSettingsFailure(
+        error,
+        t("feedback_push_check_failed"),
+        "check-push-registration"
+      );
+    }
   }
 
   async function togglePreference(key: keyof NotificationPreferences) {
@@ -113,13 +169,20 @@
     const user = authState.user;
     if (!user || pendingKeys.has(key)) return;
 
+    const previousPreferences = preferences;
     try {
       pendingKeys.add(key);
       preferences = { ...preferences, [key]: !preferences[key] };
       await notificationPreferencesManager.togglePreference(user.uid, key);
     } catch (error) {
-      console.error("Failed to toggle preference:", error);
-      await refreshPreferences(user.uid);
+      preferences = previousPreferences;
+      reportSettingsFailure(
+        error,
+        t("feedback_preference_update_failed"),
+        "toggle-notification-preference",
+        "warning",
+        { preference: key }
+      );
     } finally {
       pendingKeys.delete(key);
     }
@@ -139,7 +202,11 @@
       );
       await refreshPreferences(user.uid);
     } catch (error) {
-      console.error("Failed to update all alert preferences:", error);
+      reportSettingsFailure(
+        error,
+        t("feedback_bulk_update_failed"),
+        enabled ? "enable-all-alerts" : "disable-all-alerts"
+      );
     } finally {
       bulkBusy = null;
     }
@@ -152,6 +219,8 @@
     if (!user || pushToggleBusy) return;
 
     const fcmTokenManager = getFCMTokenManager();
+    const previousPreferences = preferences;
+    const previousDeviceState = pushDeviceState;
     try {
       pushToggleBusy = true;
 
@@ -168,7 +237,7 @@
 
       if (
         preferences.pushEnabled &&
-        ["unsupported", "blocked", "failed"].includes(pushDeviceState)
+        ["unsupported", "blocked"].includes(pushDeviceState)
       ) {
         preferences = { ...preferences, pushEnabled: false };
         await notificationPreferencesManager.savePreferences(
@@ -194,8 +263,13 @@
         showToast(t("feedback_push_failed_desc"), "error", 5000);
       }
     } catch (error) {
-      console.error("Failed to toggle push notifications:", error);
-      await refreshPreferences(user.uid);
+      preferences = previousPreferences;
+      pushDeviceState = previousDeviceState;
+      reportSettingsFailure(
+        error,
+        t("feedback_push_update_failed"),
+        "update-push-notifications"
+      );
     } finally {
       pushToggleBusy = false;
     }
@@ -213,6 +287,7 @@
       !preferences.emailFeedback &&
       !preferences.emailPlatformUpdates;
 
+    const previousPreferences = preferences;
     try {
       emailToggleBusy = true;
       preferences = {
@@ -231,16 +306,18 @@
         preferences
       );
     } catch (error) {
-      console.error("Failed to toggle email notifications:", error);
-      await refreshPreferences(user.uid);
+      preferences = previousPreferences;
+      reportSettingsFailure(
+        error,
+        t("feedback_email_update_failed"),
+        "update-email-notifications"
+      );
     } finally {
       emailToggleBusy = false;
     }
   }
 
   function getPushDescription(): string {
-    if (!preferences.pushEnabled) return t("feedback_push_account_off_desc");
-
     const descriptions: Record<PushDeviceRegistrationState, string> = {
       checking: t("feedback_push_checking_desc"),
       unsupported: t("feedback_push_unsupported_desc"),
@@ -249,21 +326,66 @@
       ready: t("feedback_push_ready_desc"),
       failed: t("feedback_push_failed_desc"),
     };
+
+    if (
+      pushDeviceState === "checking" ||
+      pushDeviceState === "unsupported" ||
+      pushDeviceState === "blocked" ||
+      pushDeviceState === "failed"
+    ) {
+      return descriptions[pushDeviceState];
+    }
+
+    if (!preferences.pushEnabled) return t("feedback_push_account_off_desc");
     return descriptions[pushDeviceState];
   }
 
   function getPushStatus(): string {
-    if (!preferences.pushEnabled) return t("feedback_push_off");
-
     const statuses: Record<PushDeviceRegistrationState, string> = {
       checking: t("feedback_push_checking"),
       unsupported: t("feedback_push_unavailable"),
       blocked: t("feedback_push_blocked"),
       "setup-required": t("feedback_push_setup"),
-      ready: t("feedback_push_on"),
+      ready: t("feedback_state_on"),
       failed: t("feedback_push_retry"),
     };
+
+    if (
+      pushDeviceState === "checking" ||
+      pushDeviceState === "unsupported" ||
+      pushDeviceState === "blocked" ||
+      pushDeviceState === "failed"
+    ) {
+      return statuses[pushDeviceState];
+    }
+
+    if (!preferences.pushEnabled) return t("feedback_state_off");
     return statuses[pushDeviceState];
+  }
+
+  function getPushAriaLabel(): string {
+    if (
+      preferences.pushEnabled &&
+      ["ready", "blocked", "unsupported"].includes(pushDeviceState)
+    ) {
+      return t("feedback_turn_push_off");
+    }
+
+    if (pushDeviceState === "checking") {
+      return t("feedback_push_checking_desc");
+    }
+
+    if (pushDeviceState === "blocked") {
+      return t("feedback_push_blocked_desc");
+    }
+
+    if (pushDeviceState === "unsupported") {
+      return t("feedback_push_unsupported_desc");
+    }
+
+    if (pushDeviceState === "failed") return t("feedback_retry_push");
+    if (pushDeviceState === "setup-required") return t("feedback_setup_push");
+    return t("feedback_turn_push_on");
   }
 
   function getEmailDescription(): string {
@@ -272,6 +394,24 @@
     if (!user.emailVerified) return t("feedback_email_unverified_desc");
     if (!preferences.emailEnabled) return t("feedback_email_off_desc");
     return t("feedback_email_on_desc", { email: user.email });
+  }
+
+  function getEmailStatus(): string {
+    const user = authState.user;
+    if (!user?.email) return t("feedback_email_unavailable");
+    if (!user.emailVerified) return t("feedback_email_verify");
+    return preferences.emailEnabled
+      ? t("feedback_state_on")
+      : t("feedback_state_off");
+  }
+
+  function getEmailAriaLabel(): string {
+    const user = authState.user;
+    if (!user?.email) return t("feedback_email_missing_desc");
+    if (!user.emailVerified) return t("feedback_email_unverified_desc");
+    return preferences.emailEnabled
+      ? t("feedback_turn_email_off")
+      : t("feedback_turn_email_on");
   }
 
   function generatePreferenceGroups(): PreferenceGroupData[] {
@@ -359,13 +499,10 @@
   }
 
   const preferenceGroups = $derived(generatePreferenceGroups());
-  const standardPreferenceGroups = $derived(
-    preferenceGroups.filter((group) => group.id !== "admin")
-  );
-  const adminPreferenceGroup = $derived(
-    showAdminPreferences
-      ? (preferenceGroups.find((group) => group.id === "admin") ?? null)
-      : null
+  const visiblePreferenceGroups = $derived(
+    preferenceGroups.filter(
+      (group) => group.id !== "admin" || showAdminPreferences
+    )
   );
   const emailPreferenceItems = $derived<PreferenceItem[]>([
     {
@@ -412,6 +549,16 @@
       <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
       <p>{t("feedback_loading_prefs")}</p>
     </div>
+  {:else if loadError}
+    <div class="state-surface error-state" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <h2>{t("feedback_preferences_load_failed")}</h2>
+      <p>{t("feedback_preferences_load_failed_desc")}</p>
+      <PanelButton variant="secondary" onclick={initializePreferences}>
+        <i class="fas fa-rotate-right" aria-hidden="true"></i>
+        <span>{t("common_retry")}</span>
+      </PanelButton>
+    </div>
   {:else if !authState.isAuthenticated}
     <div class="state-surface">
       <i class="fas fa-user-slash" aria-hidden="true"></i>
@@ -426,7 +573,10 @@
             {pushDeviceState}
             pushDescription={getPushDescription()}
             pushStatus={getPushStatus()}
+            pushAriaLabel={getPushAriaLabel()}
             emailDescription={getEmailDescription()}
+            emailStatus={getEmailStatus()}
+            emailAriaLabel={getEmailAriaLabel()}
             {emailPreferenceItems}
             pushBusy={pushToggleBusy}
             emailBusy={emailToggleBusy}
@@ -477,13 +627,14 @@
         </header>
 
         <div class="alerts-body">
-          <div class="standard-groups">
-            {#each standardPreferenceGroups as group (group.id)}
+          <div class="alert-groups">
+            {#each visiblePreferenceGroups as group (group.id)}
               <div
                 class="group-slot"
                 class:group-messages={group.id === "messages"}
                 class:group-feedback={group.id === "feedback"}
                 class:group-activity={group.id === "activity"}
+                class:group-admin={group.id === "admin"}
               >
                 <PreferenceGroup
                   title={group.title}
@@ -494,26 +645,11 @@
                   isBusyKey={(key) => pendingKeys.has(key)}
                   onToggle={togglePreference}
                   disabled={isPreviewMode}
+                  layout={group.id === "admin" ? "grid-2" : "stack"}
                 />
               </div>
             {/each}
           </div>
-
-          {#if adminPreferenceGroup}
-            <div class="admin-group">
-              <PreferenceGroup
-                title={adminPreferenceGroup.title}
-                description={adminPreferenceGroup.description}
-                icon={adminPreferenceGroup.icon}
-                items={adminPreferenceGroup.items}
-                {preferences}
-                isBusyKey={(key) => pendingKeys.has(key)}
-                onToggle={togglePreference}
-                disabled={isPreviewMode}
-                layout="grid"
-              />
-            </div>
-          {/if}
         </div>
       </section>
 
@@ -530,7 +666,7 @@
     container: notification-preferences / inline-size;
     display: grid;
     flex: 0 0 auto;
-    align-content: safe center;
+    align-content: start;
     gap: 0.9em;
     width: 100%;
     max-width: var(--shell-w, min(108rem, 92vw));
@@ -552,6 +688,12 @@
       --font-size-xl: 1.25em;
       --font-size-2xl: 1.5em;
       --font-size-3xl: 1.875em;
+    }
+  }
+
+  @media (min-width: 2600px) and (min-height: 70rem) {
+    .notification-preferences-panel {
+      padding-block-start: clamp(4rem, 8dvh, 11rem);
     }
   }
 
@@ -639,6 +781,21 @@
     font-size: var(--font-size-sm);
   }
 
+  .state-surface h2 {
+    margin: 0;
+    color: var(--theme-text);
+    font-size: var(--font-size-xl);
+  }
+
+  .state-surface.error-state i {
+    color: var(--semantic-error);
+  }
+
+  .state-surface :global(.panel-btn) {
+    width: auto;
+    margin-top: 0.35em;
+  }
+
   .notification-workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -646,26 +803,34 @@
     overflow: hidden;
     border: 1px solid var(--theme-stroke-strong, var(--theme-stroke));
     border-radius: 1.25em;
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(0, 0, 0, 0.88)) 14%,
-      #070b10 86%
-    );
+    background: var(--theme-panel-bg);
     box-shadow: var(--theme-panel-shadow, 0 1rem 3rem rgba(0, 0, 0, 0.35));
     isolation: isolate;
-  }
-
-  :global(html[data-theme-luminance="bright"]) .notification-workspace {
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(255, 255, 255, 0.88)) 14%,
-      #f6f7f9 86%
-    );
   }
 
   .delivery-pane {
     min-width: 0;
     border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  /* A wide canvas that is not also tall enough for the stacked regions sets
+     delivery beside alerts, so the whole page lands on one screen. Past ~1500px
+     of viewport height the stack fits on its own and fills the page better. */
+  @media (max-height: 1500px) {
+    @container notification-preferences (min-width: 76rem) {
+      .notification-workspace:has(.delivery-pane) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.85fr);
+      }
+
+      .notification-workspace:has(.delivery-pane) .delivery-pane {
+        border-right: 1px solid var(--theme-stroke);
+        border-bottom: 0;
+      }
+
+      .notification-workspace:has(.delivery-pane) .system-notice {
+        grid-column: 1 / -1;
+      }
+    }
   }
 
   .alerts-region {
@@ -741,14 +906,13 @@
     padding: 1em;
   }
 
-  .standard-groups {
+  .alert-groups {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 0.75em;
   }
 
-  .group-slot,
-  .admin-group {
+  .group-slot {
     min-width: 0;
   }
 
@@ -775,12 +939,21 @@
   }
 
   @container alerts-region (min-width: 48rem) {
-    .standard-groups {
+    .alert-groups {
       grid-template-areas:
         "feedback messages"
         "feedback activity";
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
+    }
+
+    /* Non-admins get no third row at all — a named-but-empty area still collects
+       a row gap, which reads as a stray notch under the last group. */
+    .alert-groups:has(.group-admin) {
+      grid-template-areas:
+        "feedback messages"
+        "feedback activity"
+        "admin    admin";
     }
 
     .group-messages {
@@ -794,24 +967,9 @@
     .group-activity {
       grid-area: activity;
     }
-  }
 
-  @container notification-preferences (min-width: 70rem) {
-    .notification-workspace {
-      grid-template-columns: minmax(22rem, 0.82fr) minmax(36rem, 1.38fr);
-    }
-
-    .delivery-pane {
-      border-right: 1px solid var(--theme-stroke);
-      border-bottom: 0;
-    }
-
-    .preview-mode .alerts-region {
-      grid-column: 1 / -1;
-    }
-
-    .system-notice {
-      grid-column: 1 / -1;
+    .group-admin {
+      grid-area: admin;
     }
   }
 
@@ -881,7 +1039,7 @@
     }
   }
 
-  @media (prefers-contrast: high) {
+  @media (prefers-contrast: more) {
     .notification-workspace,
     .preview-banner {
       border-width: 2px;
