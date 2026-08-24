@@ -22,7 +22,8 @@ import type { Orientation } from "$lib/shared/render/core/types";
  *
  *   Fractional turns use the 8-point radial cycle (each quarter = 1 step / 45 deg):
  *     in -> clockIn -> clock -> clockOut -> out -> counterOut -> counter -> counterIn
- *     Anti/Dash step SAME direction as rotation; Pro/Static step OPPOSITE.
+ *     Anti/Dash retain their zero-turn reverse, then every motion adds the
+ *     prop's physical quarter-turn rotation.
  */
 
 const RADIAL_ORIENTATIONS: Orientation[] = [
@@ -125,9 +126,9 @@ describe("calculateEndOrientation — whole-turn parity", () => {
 });
 
 describe("calculateEndOrientation — fractional radial cycle", () => {
-  // Hand-derived from the MCP rule (NOT the implementation):
-  //   cycle = [in, clockIn, clock, clockOut, out, counterOut, counter, counterIn]
-  //   quarter turn = 1 step; Anti/Dash step same dir as rotation, Pro/Static opposite.
+  // Hand-derived by combining both MCP rules (NOT the implementation):
+  //   Anti/Dash have a four-step zero-turn reverse; Pro/Static preserve.
+  //   Each quarter turn then adds one 45deg physical prop-rotation step.
   const expectations: Array<{
     type: string;
     dir: string;
@@ -139,12 +140,12 @@ describe("calculateEndOrientation — fractional radial cycle", () => {
     { type: "pro", dir: "cw", turns: 0.25, start: "in", end: "counterIn" },
     { type: "pro", dir: "cw", turns: 0.5, start: "in", end: "counter" },
     { type: "pro", dir: "ccw", turns: 0.25, start: "in", end: "clockIn" },
-    // Anti = same as rotation. cw => step forward.
-    { type: "anti", dir: "cw", turns: 0.25, start: "in", end: "clockIn" },
+    // Anti starts reversed at out, then cw steps toward clockOut.
+    { type: "anti", dir: "cw", turns: 0.25, start: "in", end: "clockOut" },
     { type: "anti", dir: "cw", turns: 0.5, start: "in", end: "clock" },
-    { type: "anti", dir: "ccw", turns: 0.25, start: "in", end: "counterIn" },
-    // Dash follows the anti rule.
-    { type: "dash", dir: "cw", turns: 0.25, start: "in", end: "clockIn" },
+    { type: "anti", dir: "ccw", turns: 0.25, start: "in", end: "counterOut" },
+    // Dash carries the same zero-turn reverse.
+    { type: "dash", dir: "cw", turns: 0.25, start: "in", end: "clockOut" },
   ];
 
   for (const { type, dir, turns, start, end } of expectations) {
@@ -175,6 +176,31 @@ describe("calculateEndOrientation — fractional radial cycle", () => {
         });
         expect(RADIAL_ORIENTATIONS).toContain(end);
       }
+    }
+  });
+
+  it("approaches whole-turn parity continuously for anti/dash motions", () => {
+    for (const type of ["anti", "dash"]) {
+      expect(
+        calculateEndOrientation({
+          motionType: type,
+          turns: 0.75,
+          rotationDirection: "cw",
+          startLocation: "n",
+          endLocation: "e",
+          startOrientation: "in",
+        })
+      ).toBe("clockIn");
+      expect(
+        calculateEndOrientation({
+          motionType: type,
+          turns: 1,
+          rotationDirection: "cw",
+          startLocation: "n",
+          endLocation: "e",
+          startOrientation: "in",
+        })
+      ).toBe("in");
     }
   });
 

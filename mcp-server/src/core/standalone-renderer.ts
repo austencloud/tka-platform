@@ -37,10 +37,20 @@ import {
   BLUE_COLOR_LIGHT,
   RED_COLOR_DARK,
   RED_COLOR_LIGHT,
+  resolveFullArrowAssetPath,
+  type MotionType as RenderMotionType,
+  type Orientation as RenderOrientation,
 } from "@tka/render-core";
 // Arrow calculations still use local files (they have MCP-specific logic)
-import { calculateArrowPlacement, calculateArrowRotation } from "./arrow-placement.js";
-import { calculateArrowAdjustment, type PictographAdjustmentInput, type MotionAdjustmentInput } from "./arrow-adjustment.js";
+import {
+  calculateArrowPlacement,
+  calculateArrowRotation,
+} from "./arrow-placement.js";
+import {
+  calculateArrowAdjustment,
+  type PictographAdjustmentInput,
+  type MotionAdjustmentInput,
+} from "./arrow-adjustment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,8 +64,8 @@ const CENTER = VIEWBOX_SIZE / 2; // 475
 
 // Colors imported from shared core
 // Use the shared constants for consistency
-const BLUE_COLOR = BLUE_COLOR_DARK;  // Dark mode blue - bright on dark backgrounds
-const RED_COLOR = RED_COLOR_DARK;    // Dark mode red - standard red works well
+const BLUE_COLOR = BLUE_COLOR_DARK; // Dark mode blue - bright on dark backgrounds
+const RED_COLOR = RED_COLOR_DARK; // Dark mode red - standard red works well
 
 // Glyph positioning (matching real renderer)
 const TKA_GLYPH_X = 50;
@@ -72,7 +82,10 @@ const POSITION_ARROW_WIDTH = 88.9;
 const POSITION_ARROW_HEIGHT = 34.8;
 
 // Position letter dimensions (from actual SVG viewBoxes)
-const POSITION_LETTER_DIMENSIONS: Record<string, { width: number; height: number; yOffset: number }> = {
+const POSITION_LETTER_DIMENSIONS: Record<
+  string,
+  { width: number; height: number; yOffset: number }
+> = {
   alpha: { width: 92.22, height: 100, yOffset: 10.0 },
   beta: { width: 66.05, height: 100, yOffset: 0.0 },
   gamma: { width: 79, height: 100.11, yOffset: 0.0 },
@@ -89,22 +102,43 @@ const TURN_NUMBER_WIDTHS: Record<string, number> = {
   "2": 30,
   "2.5": 83.67,
   "3": 30,
-  "fl": 42.4,
+  fl: 42.4,
 };
 
 // VTG mode lookup tables
 type VTGMode = "SS" | "SO" | "TS" | "TO" | "QS" | "QO";
-const DIAMOND_VTG_MAP: Record<string, VTGMode | ((startPos: string) => VTGMode)> = {
-  A: "SS", B: "SS", C: "SS",
-  D: (startPos) => ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  E: (startPos) => ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  F: (startPos) => ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  G: "TS", H: "TS", I: "TS",
-  J: (startPos) => ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  K: (startPos) => ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  L: (startPos) => ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
-  M: "QO", N: "QO", O: "QO", P: "QO", Q: "QO", R: "QO",
-  S: "QS", T: "QS", U: "QS", V: "QS",
+const DIAMOND_VTG_MAP: Record<
+  string,
+  VTGMode | ((startPos: string) => VTGMode)
+> = {
+  A: "SS",
+  B: "SS",
+  C: "SS",
+  D: (startPos) =>
+    ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  E: (startPos) =>
+    ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  F: (startPos) =>
+    ["beta3", "beta7"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  G: "TS",
+  H: "TS",
+  I: "TS",
+  J: (startPos) =>
+    ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  K: (startPos) =>
+    ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  L: (startPos) =>
+    ["alpha1", "alpha5"].includes(startPos.toLowerCase()) ? "SO" : "TO",
+  M: "QO",
+  N: "QO",
+  O: "QO",
+  P: "QO",
+  Q: "QO",
+  R: "QO",
+  S: "QS",
+  T: "QS",
+  U: "QS",
+  V: "QS",
 };
 
 // Elemental glyph constants
@@ -113,38 +147,103 @@ const ELEMENTAL_GLYPH_HEIGHT = 125;
 const ELEMENTAL_OFFSET_PERCENTAGE = 0.04;
 
 // Type1 letters (A-V) - only these show elemental glyphs
-const TYPE1_LETTERS = new Set(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"]);
+const TYPE1_LETTERS = new Set([
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+]);
 
 // Letter to type folder mapping for loading correct SVG glyphs
 const LETTER_TYPE_FOLDER: Record<string, string> = {
   // Type 1: Dual-Shift (A-V)
-  "A": "Type1", "B": "Type1", "C": "Type1", "D": "Type1", "E": "Type1", "F": "Type1",
-  "G": "Type1", "H": "Type1", "I": "Type1", "J": "Type1", "K": "Type1", "L": "Type1",
-  "M": "Type1", "N": "Type1", "O": "Type1", "P": "Type1", "Q": "Type1", "R": "Type1",
-  "S": "Type1", "T": "Type1", "U": "Type1", "V": "Type1",
+  A: "Type1",
+  B: "Type1",
+  C: "Type1",
+  D: "Type1",
+  E: "Type1",
+  F: "Type1",
+  G: "Type1",
+  H: "Type1",
+  I: "Type1",
+  J: "Type1",
+  K: "Type1",
+  L: "Type1",
+  M: "Type1",
+  N: "Type1",
+  O: "Type1",
+  P: "Type1",
+  Q: "Type1",
+  R: "Type1",
+  S: "Type1",
+  T: "Type1",
+  U: "Type1",
+  V: "Type1",
   // Type 2: Shift (one hand shifts, one static)
-  "W": "Type2", "X": "Type2", "Y": "Type2", "Z": "Type2",
-  "Σ": "Type2", "Δ": "Type2", "Θ": "Type2", "Ω": "Type2", "μ": "Type2", "ν": "Type2",
+  W: "Type2",
+  X: "Type2",
+  Y: "Type2",
+  Z: "Type2",
+  Σ: "Type2",
+  Δ: "Type2",
+  Θ: "Type2",
+  Ω: "Type2",
+  μ: "Type2",
+  ν: "Type2",
   // Type 3: Cross-Shift (Shift + Dash combination)
-  "W-": "Type3", "X-": "Type3", "Y-": "Type3", "Z-": "Type3",
-  "Σ-": "Type3", "Δ-": "Type3", "Θ-": "Type3", "Ω-": "Type3",
+  "W-": "Type3",
+  "X-": "Type3",
+  "Y-": "Type3",
+  "Z-": "Type3",
+  "Σ-": "Type3",
+  "Δ-": "Type3",
+  "Θ-": "Type3",
+  "Ω-": "Type3",
   // Type 4: Dash (one hand dashes, one static)
-  "Φ": "Type4", "Ψ": "Type4", "Λ": "Type4",
+  Φ: "Type4",
+  Ψ: "Type4",
+  Λ: "Type4",
   // Type 5: Dual-Dash (both hands dash)
-  "Φ-": "Type5", "Ψ-": "Type5", "Λ-": "Type5",
+  "Φ-": "Type5",
+  "Ψ-": "Type5",
+  "Λ-": "Type5",
   // Type 6: Static (no motion)
-  "α": "Type6", "β": "Type6", "γ": "Type6", "ζ": "Type6", "η": "Type6", "τ": "Type6", "⊕": "Type6",
+  α: "Type6",
+  β: "Type6",
+  γ: "Type6",
+  ζ: "Type6",
+  η: "Type6",
+  τ: "Type6",
+  "⊕": "Type6",
 };
 
 // VTG mode to elemental type mapping
 type ElementalType = "water" | "fire" | "earth" | "air" | "sun" | "moon";
 const VTG_TO_ELEMENTAL: Record<VTGMode, ElementalType> = {
-  SS: "water",  // Split Same
-  SO: "fire",   // Split Opp
-  TS: "earth",  // Tog Same
-  TO: "air",    // Tog Opp
-  QS: "sun",    // Quarter Same
-  QO: "moon",   // Quarter Opp
+  SS: "water", // Split Same
+  SO: "fire", // Split Opp
+  TS: "earth", // Tog Same
+  TO: "air", // Tog Opp
+  QS: "sun", // Quarter Same
+  QO: "moon", // Quarter Opp
 };
 
 // ============================================================================
@@ -159,7 +258,7 @@ export interface MotionInput {
   startOrientation?: string;
   endOrientation?: string;
   color: string;
-  turns?: number | "fl";  // 0, 0.5, 1, 1.5, 2, 2.5, 3, or "fl" (float)
+  turns?: number | "fl"; // Includes Level 6 quarter turns such as 0.25, plus "fl" (float)
 }
 
 export interface PictographInput {
@@ -209,8 +308,8 @@ export class StandaloneRenderer {
     // Check if we're in dist (compiled) or src (dev with tsx)
     const inDist = __dirname.includes("dist");
     this.projectRoot = inDist
-      ? join(__dirname, "../../../..")  // dist/src/core -> project root
-      : join(__dirname, "../../..");    // src/core -> project root
+      ? join(__dirname, "../../../..") // dist/src/core -> project root
+      : join(__dirname, "../../.."); // src/core -> project root
   }
 
   /**
@@ -249,15 +348,25 @@ export class StandaloneRenderer {
   /**
    * Render a pictograph to PNG buffer
    */
-  async renderToPng(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<Buffer> {
-    const svg = await this.renderToSvg(input, { ...options, themeable: false, inline: false });
+  async renderToPng(
+    input: PictographInput,
+    options: RenderVisibilityOptions = {}
+  ): Promise<Buffer> {
+    const svg = await this.renderToSvg(input, {
+      ...options,
+      themeable: false,
+      inline: false,
+    });
     return this.svgToPng(svg, options.size || 400);
   }
 
   /**
    * Render to base64-encoded PNG
    */
-  async renderToBase64(input: PictographInput, options: RenderVisibilityOptions = {}): Promise<string> {
+  async renderToBase64(
+    input: PictographInput,
+    options: RenderVisibilityOptions = {}
+  ): Promise<string> {
     const png = await this.renderToPng(input, options);
     return png.toString("base64");
   }
@@ -265,7 +374,10 @@ export class StandaloneRenderer {
   /**
    * Render a pictograph to SVG string
    */
-  async renderToSvg(rawInput: PictographInput, options: RenderVisibilityOptions = {}): Promise<string> {
+  async renderToSvg(
+    rawInput: PictographInput,
+    options: RenderVisibilityOptions = {}
+  ): Promise<string> {
     // Preprocess input to ensure orientations are calculated
     const input = this.preprocessInput(rawInput);
 
@@ -289,8 +401,16 @@ export class StandaloneRenderer {
     const svgParts: string[] = [];
 
     // 1. Background
-    const bgColor = this.resolveColor("--dm-bg", "#0a0a0f", "#ffffff", darkMode, themeable);
-    svgParts.push(`<g class="svg-bg"><rect width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" fill="${bgColor}"/></g>`);
+    const bgColor = this.resolveColor(
+      "--dm-bg",
+      "#0a0a0f",
+      "#ffffff",
+      darkMode,
+      themeable
+    );
+    svgParts.push(
+      `<g class="svg-bg"><rect width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" fill="${bgColor}"/></g>`
+    );
 
     // 2. Grid
     if (showGrid) {
@@ -301,34 +421,82 @@ export class StandaloneRenderer {
     // 3. Props (using CORRECT placement logic with beta offset)
     // Pass BOTH propTypes to each renderProp call so beta offset can detect when both are hands
     if (showBlueMotion) {
-      const blueProp = this.renderProp(input, input.blueMotion, gridMode, darkMode, bluePropType, redPropType, themeable);
-      if (blueProp) svgParts.push(`<g class="svg-prop svg-prop-blue">${blueProp}</g>`);
+      const blueProp = this.renderProp(
+        input,
+        input.blueMotion,
+        gridMode,
+        darkMode,
+        bluePropType,
+        redPropType,
+        themeable
+      );
+      if (blueProp)
+        svgParts.push(`<g class="svg-prop svg-prop-blue">${blueProp}</g>`);
     }
     if (showRedMotion) {
-      const redProp = this.renderProp(input, input.redMotion, gridMode, darkMode, bluePropType, redPropType, themeable);
-      if (redProp) svgParts.push(`<g class="svg-prop svg-prop-red">${redProp}</g>`);
+      const redProp = this.renderProp(
+        input,
+        input.redMotion,
+        gridMode,
+        darkMode,
+        bluePropType,
+        redPropType,
+        themeable
+      );
+      if (redProp)
+        svgParts.push(`<g class="svg-prop svg-prop-red">${redProp}</g>`);
     }
 
     // 4. Arrows (using CORRECT placement logic WITH adjustments)
     if (showBlueMotion) {
-      const blueArrow = this.renderArrow(input, input.blueMotion, gridMode, darkMode, themeable);
-      if (blueArrow) svgParts.push(`<g class="svg-arrow svg-arrow-blue">${blueArrow}</g>`);
+      const blueArrow = this.renderArrow(
+        input,
+        input.blueMotion,
+        gridMode,
+        darkMode,
+        themeable
+      );
+      if (blueArrow)
+        svgParts.push(`<g class="svg-arrow svg-arrow-blue">${blueArrow}</g>`);
     }
     if (showRedMotion) {
-      const redArrow = this.renderArrow(input, input.redMotion, gridMode, darkMode, themeable);
-      if (redArrow) svgParts.push(`<g class="svg-arrow svg-arrow-red">${redArrow}</g>`);
+      const redArrow = this.renderArrow(
+        input,
+        input.redMotion,
+        gridMode,
+        darkMode,
+        themeable
+      );
+      if (redArrow)
+        svgParts.push(`<g class="svg-arrow svg-arrow-red">${redArrow}</g>`);
     }
 
     // 5. Position glyph (top center)
     if (showPositions && input.startPosition && input.endPosition) {
-      const positionSvg = this.renderPositionGlyph(input.startPosition, input.endPosition, darkMode, themeable);
-      if (positionSvg) svgParts.push(`<g class="svg-glyph svg-glyph-position">${positionSvg}</g>`);
+      const positionSvg = this.renderPositionGlyph(
+        input.startPosition,
+        input.endPosition,
+        darkMode,
+        themeable
+      );
+      if (positionSvg)
+        svgParts.push(
+          `<g class="svg-glyph svg-glyph-position">${positionSvg}</g>`
+        );
     }
 
     // 6. Elemental glyph (top right) - only for Type1 letters
     if (showElemental && input.letter && input.startPosition) {
-      const elementalSvg = this.renderElementalGlyph(input.letter, input.startPosition, darkMode, themeable);
-      if (elementalSvg) svgParts.push(`<g class="svg-glyph svg-glyph-elemental">${elementalSvg}</g>`);
+      const elementalSvg = this.renderElementalGlyph(
+        input.letter,
+        input.startPosition,
+        darkMode,
+        themeable
+      );
+      if (elementalSvg)
+        svgParts.push(
+          `<g class="svg-glyph svg-glyph-elemental">${elementalSvg}</g>`
+        );
     }
 
     // 7. TKA Letter glyph with turn numbers (bottom left)
@@ -340,13 +508,20 @@ export class StandaloneRenderer {
         darkMode,
         themeable
       );
-      if (letterSvg) svgParts.push(`<g class="svg-glyph svg-glyph-letter">${letterSvg}</g>`);
+      if (letterSvg)
+        svgParts.push(`<g class="svg-glyph svg-glyph-letter">${letterSvg}</g>`);
     }
 
     // 8. TnD glyph (bottom right)
     if (showTND && input.letter && input.startPosition) {
-      const vtgSvg = this.renderVTGGlyph(input.letter, input.startPosition, darkMode, themeable);
-      if (vtgSvg) svgParts.push(`<g class="svg-glyph svg-glyph-vtg">${vtgSvg}</g>`);
+      const vtgSvg = this.renderVTGGlyph(
+        input.letter,
+        input.startPosition,
+        darkMode,
+        themeable
+      );
+      if (vtgSvg)
+        svgParts.push(`<g class="svg-glyph svg-glyph-vtg">${vtgSvg}</g>`);
     }
 
     // 9. Reversal indicators (left edge)
@@ -357,11 +532,14 @@ export class StandaloneRenderer {
         darkMode,
         themeable
       );
-      if (reversalSvg) svgParts.push(`<g class="svg-glyph svg-glyph-reversal">${reversalSvg}</g>`);
+      if (reversalSvg)
+        svgParts.push(
+          `<g class="svg-glyph svg-glyph-reversal">${reversalSvg}</g>`
+        );
     }
 
     const xmlDecl = inline ? "" : `<?xml version="1.0" encoding="UTF-8"?>\n`;
-    return `${xmlDecl}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}" width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" role="img" aria-label="Pictograph${input.letter ? ` for letter ${input.letter}` : ''}">
+    return `${xmlDecl}<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}" width="${VIEWBOX_SIZE}" height="${VIEWBOX_SIZE}" role="img" aria-label="Pictograph${input.letter ? ` for letter ${input.letter}` : ""}">
 ${svgParts.join("\n")}
 </svg>`;
   }
@@ -370,7 +548,13 @@ ${svgParts.join("\n")}
   // COLOR RESOLUTION
   // ==========================================================================
 
-  private resolveColor(cssVar: string, darkValue: string, lightValue: string, darkMode: boolean, themeable: boolean): string {
+  private resolveColor(
+    cssVar: string,
+    darkValue: string,
+    lightValue: string,
+    darkMode: boolean,
+    themeable: boolean
+  ): string {
     if (themeable) {
       return `var(${cssVar}, ${darkValue})`;
     }
@@ -381,8 +565,17 @@ ${svgParts.join("\n")}
   // GRID RENDERING
   // ==========================================================================
 
-  private renderGrid(gridMode: GridMode, darkMode: boolean, themeable: boolean = false): string {
-    const gridFileName = gridMode === GridMode.BOX ? "box_grid.svg" : gridMode === GridMode.SKEWED ? "skewed_grid.svg" : "diamond_grid.svg";
+  private renderGrid(
+    gridMode: GridMode,
+    darkMode: boolean,
+    themeable: boolean = false
+  ): string {
+    const gridFileName =
+      gridMode === GridMode.BOX
+        ? "box_grid.svg"
+        : gridMode === GridMode.SKEWED
+          ? "skewed_grid.svg"
+          : "diamond_grid.svg";
     const gridPath = join(this.projectRoot, "static/images/grid", gridFileName);
 
     if (!existsSync(gridPath)) {
@@ -403,12 +596,21 @@ ${svgParts.join("\n")}
       // 3. Layer 2 points use fill:none (not visible in normal mode)
       //
       // Solution: Add explicit fill to circles without fill attribute
-      const gridColor = this.resolveColor("--dm-grid-point", "#d0d0d0", "#000000", darkMode, themeable);
+      const gridColor = this.resolveColor(
+        "--dm-grid-point",
+        "#d0d0d0",
+        "#000000",
+        darkMode,
+        themeable
+      );
       const opacity = darkMode ? "0.85" : "1.0"; // Solid black in light mode
 
       // Add fill attribute to circles that don't have one
       // The regex matches <circle that is NOT followed by fill= before the >
-      innerContent = innerContent.replace(/<circle(?![^>]*fill=)/g, `<circle fill="${gridColor}"`);
+      innerContent = innerContent.replace(
+        /<circle(?![^>]*fill=)/g,
+        `<circle fill="${gridColor}"`
+      );
 
       // Box mode outer points use <circle> elements with stroke-only rendering.
       // Update stroke color so the rings are visible on dark backgrounds.
@@ -497,22 +699,41 @@ ${svgParts.join("\n")}
   ): string {
     // Get the end location and orientation
     const endLocation = motion.endLocation.toLowerCase() as GridLocation;
-    const endOrientation = (motion.endOrientation || Orientation.IN).toLowerCase() as Orientation;
+    const endOrientation = (
+      motion.endOrientation || Orientation.IN
+    ).toLowerCase() as Orientation;
 
     // Use the CORRECTLY PORTED placement calculation
-    const placement = calculatePropPlacement(endLocation, endOrientation, gridMode);
+    const placement = calculatePropPlacement(
+      endLocation,
+      endOrientation,
+      gridMode
+    );
 
     // Apply beta offset if both props end at the same location
     // Pass BOTH propTypes so hand props get the special "right on right, left on left" logic
-    const betaOffset = this.calculateBetaOffsetForProp(pictograph, motion, gridMode, bluePropType, redPropType);
+    const betaOffset = this.calculateBetaOffsetForProp(
+      pictograph,
+      motion,
+      gridMode,
+      bluePropType,
+      redPropType
+    );
     const finalX = placement.x + betaOffset.x;
     const finalY = placement.y + betaOffset.y;
 
     // Determine prop file name - use provided prop type or default to staff
     // Use the current motion's prop type
-    const currentPropType = motion.color === "blue" ? bluePropType : redPropType;
-    const propFileName = currentPropType ? `${currentPropType}.svg` : "staff.svg";
-    const propPath = join(this.projectRoot, "static/images/props", propFileName);
+    const currentPropType =
+      motion.color === "blue" ? bluePropType : redPropType;
+    const propFileName = currentPropType
+      ? `${currentPropType}.svg`
+      : "staff.svg";
+    const propPath = join(
+      this.projectRoot,
+      "static/images/props",
+      propFileName
+    );
     if (!existsSync(propPath)) {
       console.error("[Renderer] Prop file not found:", propPath);
       return "";
@@ -530,21 +751,35 @@ ${svgParts.join("\n")}
 
       // Get viewBox dimensions
       const viewBoxMatch = propSvg.match(/viewBox\s*=\s*"([^"]+)"/i);
-      let width = 100, height = 100;
+      let width = 100,
+        height = 100;
       if (viewBoxMatch) {
         const parts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
         width = parts[2] || 100;
         height = parts[3] || 100;
       }
 
-      const color = motion.color === "blue"
-        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
-        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
+      const color =
+        motion.color === "blue"
+          ? this.resolveColor(
+              "--dm-motion-blue",
+              BLUE_COLOR_DARK,
+              BLUE_COLOR_LIGHT,
+              darkMode,
+              themeable
+            )
+          : this.resolveColor(
+              "--dm-motion-red",
+              RED_COLOR_DARK,
+              RED_COLOR_LIGHT,
+              darkMode,
+              themeable
+            );
       const colorSuffix = motion.color === "blue" ? "blue" : "red";
       const selectiveColorMode =
         !!currentPropType &&
         (SELECTIVE_COLOR_PROP_TYPES as readonly string[]).includes(
-          currentPropType.toLowerCase(),
+          currentPropType.toLowerCase()
         );
 
       // Use the same color transform as the browser renderer. Its class/ID
@@ -579,7 +814,13 @@ ${svgParts.join("\n")}
   // ARROW RENDERING (USING CORRECT PLACEMENT + ADJUSTMENTS)
   // ==========================================================================
 
-  private renderArrow(pictograph: PictographInput, motion: MotionInput, gridMode: GridMode, darkMode: boolean, themeable: boolean = false): string {
+  private renderArrow(
+    pictograph: PictographInput,
+    motion: MotionInput,
+    gridMode: GridMode,
+    darkMode: boolean,
+    themeable: boolean = false
+  ): string {
     const motionType = motion.motionType.toLowerCase();
 
     // A zero-turn static prop stays still, so its canonical arrow is empty.
@@ -590,17 +831,22 @@ ${svgParts.join("\n")}
 
     const startLocation = motion.startLocation.toLowerCase() as GridLocation;
     const endLocation = motion.endLocation.toLowerCase() as GridLocation;
-    const startOrientation = motion.startOrientation?.toLowerCase() as Orientation | undefined;
+    const startOrientation = motion.startOrientation?.toLowerCase() as
+      | Orientation
+      | undefined;
 
     // Check if orientation is radial (IN/OUT vs CLOCK/COUNTER)
-    const isRadialOrientation = startOrientation === Orientation.IN || startOrientation === Orientation.OUT;
+    const isRadialOrientation =
+      startOrientation === Orientation.IN ||
+      startOrientation === Orientation.OUT;
 
     let placement;
 
     // For DASH motions, use the dash location calculator
     if (motionType === "dash") {
       // Get the "other" motion for dash location calculation
-      const otherMotion = motion.color === "blue" ? pictograph.redMotion : pictograph.blueMotion;
+      const otherMotion =
+        motion.color === "blue" ? pictograph.redMotion : pictograph.blueMotion;
 
       const dashLocationInput: DashLocationInput = {
         letter: pictograph.letter,
@@ -663,7 +909,9 @@ ${svgParts.join("\n")}
         endLocation: pictograph.blueMotion.endLocation,
         color: "blue",
         turns: pictograph.blueMotion.turns,
-        endOrientation: pictograph.blueMotion.endOrientation as string | undefined,
+        endOrientation: pictograph.blueMotion.endOrientation as
+          | string
+          | undefined,
       },
       redMotion: {
         letter: pictograph.letter,
@@ -673,7 +921,9 @@ ${svgParts.join("\n")}
         endLocation: pictograph.redMotion.endLocation,
         color: "red",
         turns: pictograph.redMotion.turns,
-        endOrientation: pictograph.redMotion.endOrientation as string | undefined,
+        endOrientation: pictograph.redMotion.endOrientation as
+          | string
+          | undefined,
       },
     };
 
@@ -699,7 +949,11 @@ ${svgParts.join("\n")}
     const finalY = placement.y + adjustY;
 
     // Determine arrow file path based on motion type and start orientation
-    const arrowPath = this.getArrowPath(motionType, startOrientation, motion.turns);
+    const arrowPath = this.getArrowPath(
+      motionType,
+      startOrientation,
+      motion.turns
+    );
     if (!arrowPath || !existsSync(arrowPath)) {
       console.error("[Renderer] Arrow file not found:", arrowPath);
       return "";
@@ -710,7 +964,8 @@ ${svgParts.join("\n")}
 
       // Get viewBox dimensions
       const viewBoxMatch = arrowSvg.match(/viewBox\s*=\s*"([^"]+)"/i);
-      let width = 100, height = 100;
+      let width = 100,
+        height = 100;
       if (viewBoxMatch) {
         const parts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
         width = Math.abs(parts[2]) || 100;
@@ -723,9 +978,22 @@ ${svgParts.join("\n")}
 
       // Apply color - replace any existing fill colors with the arrow color
       // Arrow SVGs use #2e3192 as their base color
-      const color = motion.color === "blue"
-        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
-        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
+      const color =
+        motion.color === "blue"
+          ? this.resolveColor(
+              "--dm-motion-blue",
+              BLUE_COLOR_DARK,
+              BLUE_COLOR_LIGHT,
+              darkMode,
+              themeable
+            )
+          : this.resolveColor(
+              "--dm-motion-red",
+              RED_COLOR_DARK,
+              RED_COLOR_LIGHT,
+              darkMode,
+              themeable
+            );
 
       innerContent = innerContent.replace(/#000000/gi, color);
       innerContent = innerContent.replace(/black/gi, color);
@@ -741,9 +1009,16 @@ ${svgParts.join("\n")}
       // Pro + ccw → Mirror = True
       // No rotation → Mirror = False (no-rotation dashes are symmetric)
       const rotDir = motion.rotationDirection.toLowerCase();
-      const isNoRotation = rotDir === "no_rot" || rotDir === "no_rotation" || rotDir === "norotation";
+      const isNoRotation =
+        rotDir === "no_rot" ||
+        rotDir === "no_rotation" ||
+        rotDir === "norotation";
       const isCW = rotDir === "cw" || rotDir === "clockwise";
-      const shouldMirror = isNoRotation ? false : (motionType === "anti" ? isCW : !isCW);
+      const shouldMirror = isNoRotation
+        ? false
+        : motionType === "anti"
+          ? isCW
+          : !isCW;
 
       // Canvas2D renderer transform order:
       // translate to position → rotate → mirror (if needed) → translate by -center
@@ -757,35 +1032,25 @@ ${svgParts.join("\n")}
     }
   }
 
-  private getArrowPath(motionType: string, startOrientation: Orientation | undefined, turns: number | "fl" | undefined): string {
+  private getArrowPath(
+    motionType: string,
+    startOrientation: Orientation | undefined,
+    turns: number | "fl" | undefined
+  ): string {
     // Float turns use a special arrow that's the same regardless of motion type
     // Located at static/images/arrows/float.svg
     if (turns === "fl") {
       return join(this.projectRoot, "static/images/arrows/float.svg");
     }
 
-    // Arrow files are organized by START orientation, not location
-    // "from_radial" = starts from radial orientation (IN/OUT)
-    // "from_nonradial" = starts from non-radial orientation (CLOCK/COUNTER)
-    const isNonRadial = startOrientation === Orientation.CLOCK || startOrientation === Orientation.COUNTER;
-    const startType = isNonRadial ? "from_nonradial" : "from_radial";
-
-    // Format turns for filename (0, 0.5, 1, 1.5, 2, 2.5, 3)
-    const turnsNum = turns ?? 0;
-    // Arrow files use .0 suffix for whole numbers (e.g., pro_1.0.svg, pro_3.0.svg)
-    const turnsStr = Number.isInteger(turnsNum) ? `${turnsNum}.0` : turnsNum.toString();
-
-    if (motionType === "dash") {
-      return join(this.projectRoot, "static/images/arrows/dash", startType, `dash_${turnsStr}.svg`);
-    }
-
-    // For pro/anti/static, use the from_radial/from_nonradial structure
     return join(
       this.projectRoot,
-      "static/images/arrows",
-      motionType,
-      startType,
-      `${motionType}_${turnsStr}.svg`
+      "static",
+      resolveFullArrowAssetPath({
+        motionType: motionType as RenderMotionType,
+        startOrientation: startOrientation as RenderOrientation | undefined,
+        turns,
+      })
     );
   }
 
@@ -817,13 +1082,27 @@ ${svgParts.join("\n")}
 
     // Render top turn number (blue motion)
     if (blueTurns !== undefined && blueTurns !== 0) {
-      const topTurnSvg = this.renderSingleTurnNumber(blueTurns, baseX, topY, "blue", darkMode, themeable);
+      const topTurnSvg = this.renderSingleTurnNumber(
+        blueTurns,
+        baseX,
+        topY,
+        "blue",
+        darkMode,
+        themeable
+      );
       if (topTurnSvg) parts.push(topTurnSvg);
     }
 
     // Render bottom turn number (red motion)
     if (redTurns !== undefined && redTurns !== 0) {
-      const bottomTurnSvg = this.renderSingleTurnNumber(redTurns, baseX, bottomY, "red", darkMode, themeable);
+      const bottomTurnSvg = this.renderSingleTurnNumber(
+        redTurns,
+        baseX,
+        bottomY,
+        "red",
+        darkMode,
+        themeable
+      );
       if (bottomTurnSvg) parts.push(bottomTurnSvg);
     }
 
@@ -856,7 +1135,8 @@ ${svgParts.join("\n")}
       // Get viewBox dimensions
       const viewBoxMatch = turnSvg.match(/viewBox\s*=\s*"([^"]+)"/i);
       let viewBox = "0 0 30 45";
-      let width = 30, height = 45;
+      let width = 30,
+        height = 45;
       if (viewBoxMatch) {
         viewBox = viewBoxMatch[1];
         const parts = viewBox.split(/\s+/).map(parseFloat);
@@ -871,24 +1151,55 @@ ${svgParts.join("\n")}
       // Apply color - turn numbers use CSS class with fill: #010101
       // IMPORTANT: We must convert CSS class fills to inline fills because multiple
       // embedded SVGs with the same class names (.cls-1) will conflict in the document
-      const fillColor = color === "blue"
-        ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
-        : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable);
+      const fillColor =
+        color === "blue"
+          ? this.resolveColor(
+              "--dm-motion-blue",
+              BLUE_COLOR_DARK,
+              BLUE_COLOR_LIGHT,
+              darkMode,
+              themeable
+            )
+          : this.resolveColor(
+              "--dm-motion-red",
+              RED_COLOR_DARK,
+              RED_COLOR_LIGHT,
+              darkMode,
+              themeable
+            );
 
       // Remove the entire <defs><style>...</style></defs> block to avoid CSS conflicts
       innerContent = innerContent.replace(/<defs>[\s\S]*?<\/defs>/gi, "");
       // Also remove standalone <style> blocks (float.svg has style without defs wrapper)
-      innerContent = innerContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+      innerContent = innerContent.replace(
+        /<style[^>]*>[\s\S]*?<\/style>/gi,
+        ""
+      );
 
       // Add inline fill to paths that use CSS classes (cls-1 or st0 depending on SVG source)
       // cls-1 is used by most number SVGs, st0 is used by float.svg
-      innerContent = innerContent.replace(/class="cls-1"/gi, `fill="${fillColor}"`);
-      innerContent = innerContent.replace(/class="st0"/gi, `fill="${fillColor}"`);
+      innerContent = innerContent.replace(
+        /class="cls-1"/gi,
+        `fill="${fillColor}"`
+      );
+      innerContent = innerContent.replace(
+        /class="st0"/gi,
+        `fill="${fillColor}"`
+      );
 
       // Also replace any existing fill colors just in case
-      innerContent = innerContent.replace(/fill="#010101"/gi, `fill="${fillColor}"`);
-      innerContent = innerContent.replace(/fill="#000000"/gi, `fill="${fillColor}"`);
-      innerContent = innerContent.replace(/fill="black"/gi, `fill="${fillColor}"`);
+      innerContent = innerContent.replace(
+        /fill="#010101"/gi,
+        `fill="${fillColor}"`
+      );
+      innerContent = innerContent.replace(
+        /fill="#000000"/gi,
+        `fill="${fillColor}"`
+      );
+      innerContent = innerContent.replace(
+        /fill="black"/gi,
+        `fill="${fillColor}"`
+      );
 
       return `<svg x="${x}" y="${y}" width="${width}" height="${height}" viewBox="${viewBox}">
   ${innerContent}
@@ -911,10 +1222,21 @@ ${svgParts.join("\n")}
   ): string {
     // Determine the correct type folder for this letter
     const typeFolder = LETTER_TYPE_FOLDER[letter] || "Type1";
-    const letterPath = join(this.projectRoot, "static/images/letters_trimmed", typeFolder, `${letter}.svg`);
+    const letterPath = join(
+      this.projectRoot,
+      "static/images/letters_trimmed",
+      typeFolder,
+      `${letter}.svg`
+    );
 
     if (!existsSync(letterPath)) {
-      const textColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      const textColor = this.resolveColor(
+        "--dm-glyph-fill",
+        "#e6e6e6",
+        "#000000",
+        darkMode,
+        themeable
+      );
       return `<text x="${TKA_GLYPH_X}" y="${TKA_GLYPH_Y + 80}" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="${textColor}">${letter}</text>`;
     }
 
@@ -924,7 +1246,8 @@ ${svgParts.join("\n")}
       // Get the FULL viewBox - including any offset (critical for trimmed letters)
       const viewBoxMatch = letterSvg.match(/viewBox\s*=\s*"([^"]+)"/i);
       let viewBox = "0 0 100 100";
-      let width = 100, height = 100;
+      let width = 100,
+        height = 100;
       if (viewBoxMatch) {
         viewBox = viewBoxMatch[1];
         const parts = viewBox.split(/\s+/).map(parseFloat);
@@ -938,16 +1261,32 @@ ${svgParts.join("\n")}
 
       // Apply dark mode / themeable color
       // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
-      const glyphFill = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      const glyphFill = this.resolveColor(
+        "--dm-glyph-fill",
+        "#e6e6e6",
+        "#000000",
+        darkMode,
+        themeable
+      );
       if (darkMode || themeable) {
         innerContent = innerContent.replace(/#000000/gi, glyphFill);
         innerContent = innerContent.replace(/black/gi, glyphFill);
         // For paths without explicit fill, add one (handles SVGs that rely on default black)
-        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, `<path fill="${glyphFill}" `);
+        innerContent = innerContent.replace(
+          /<path(?![^>]*fill=)/gi,
+          `<path fill="${glyphFill}" `
+        );
       }
 
       // Render turn numbers (positioned relative to letter)
-      const turnNumbersSvg = this.renderTurnNumbers(blueTurns, redTurns, width, height, darkMode, themeable);
+      const turnNumbersSvg = this.renderTurnNumbers(
+        blueTurns,
+        redTurns,
+        width,
+        height,
+        darkMode,
+        themeable
+      );
 
       // Combine letter and turn numbers in a group
       return `<g transform="translate(${TKA_GLYPH_X}, ${TKA_GLYPH_Y})">
@@ -958,16 +1297,31 @@ ${turnNumbersSvg}
 </g>`;
     } catch (error) {
       console.error("[Renderer] Failed to load letter:", error);
-      const textColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      const textColor = this.resolveColor(
+        "--dm-glyph-fill",
+        "#e6e6e6",
+        "#000000",
+        darkMode,
+        themeable
+      );
       return `<text x="${TKA_GLYPH_X}" y="${TKA_GLYPH_Y + 80}" font-family="Georgia, serif" font-size="100" font-weight="bold" fill="${textColor}">${letter}</text>`;
     }
   }
 
-  private renderVTGGlyph(letter: string, startPosition: string, darkMode: boolean, themeable: boolean = false): string {
+  private renderVTGGlyph(
+    letter: string,
+    startPosition: string,
+    darkMode: boolean,
+    themeable: boolean = false
+  ): string {
     const vtgMode = this.calculateVTGMode(letter, startPosition);
     if (!vtgMode) return "";
 
-    const vtgPath = join(this.projectRoot, "static/images/vtg_glyphs", `${vtgMode}.svg`);
+    const vtgPath = join(
+      this.projectRoot,
+      "static/images/vtg_glyphs",
+      `${vtgMode}.svg`
+    );
     if (!existsSync(vtgPath)) {
       console.error("[Renderer] TnD glyph not found:", vtgPath);
       return "";
@@ -982,12 +1336,21 @@ ${turnNumbersSvg}
 
       // Apply dark mode / themeable color
       // Many SVGs don't specify fill color (defaulting to black) - we need to add explicit fill
-      const glyphFill = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#000000", darkMode, themeable);
+      const glyphFill = this.resolveColor(
+        "--dm-glyph-fill",
+        "#e6e6e6",
+        "#000000",
+        darkMode,
+        themeable
+      );
       if (darkMode || themeable) {
         innerContent = innerContent.replace(/#000000/gi, glyphFill);
         innerContent = innerContent.replace(/black/gi, glyphFill);
         // For paths without explicit fill, add one (handles SVGs that rely on default black)
-        innerContent = innerContent.replace(/<path(?![^>]*fill=)/gi, `<path fill="${glyphFill}" `);
+        innerContent = innerContent.replace(
+          /<path(?![^>]*fill=)/gi,
+          `<path fill="${glyphFill}" `
+        );
       }
 
       // Position in bottom-right corner
@@ -1011,7 +1374,12 @@ ${turnNumbersSvg}
    * Render elemental glyph (top-right corner)
    * Only shows for Type1 letters (A-V)
    */
-  private renderElementalGlyph(letter: string, startPosition: string, darkMode: boolean, themeable: boolean = false): string {
+  private renderElementalGlyph(
+    letter: string,
+    startPosition: string,
+    darkMode: boolean,
+    themeable: boolean = false
+  ): string {
     const letterUpper = letter.toUpperCase();
 
     // Only show for Type1 letters
@@ -1026,7 +1394,11 @@ ${turnNumbersSvg}
     const elementalType = VTG_TO_ELEMENTAL[vtgMode];
     if (!elementalType) return "";
 
-    const elementalPath = join(this.projectRoot, "static/images/elements", `${elementalType}.svg`);
+    const elementalPath = join(
+      this.projectRoot,
+      "static/images/elements",
+      `${elementalType}.svg`
+    );
     if (!existsSync(elementalPath)) {
       console.error("[Renderer] Elemental glyph not found:", elementalPath);
       return "";
@@ -1050,7 +1422,9 @@ ${turnNumbersSvg}
       if (styleMatch) {
         const styleContent = styleMatch[1];
         // Match patterns like ".cls-1 { fill: #63b7cd; }" or ".cls-3 { fill: url(#Sky_4); }"
-        const classMatches = styleContent.matchAll(/\.(cls-\d+|st\d+)\s*\{[^}]*fill:\s*([^;}\s]+)/gi);
+        const classMatches = styleContent.matchAll(
+          /\.(cls-\d+|st\d+)\s*\{[^}]*fill:\s*([^;}\s]+)/gi
+        );
         for (const match of classMatches) {
           classToFill[match[1]] = match[2];
         }
@@ -1062,12 +1436,18 @@ ${turnNumbersSvg}
       if (defsMatch) {
         // Extract only gradient definitions, not the style block
         const defsContent = defsMatch[1];
-        const gradientMatches = defsContent.match(/<linearGradient[\s\S]*?<\/linearGradient>|<radialGradient[\s\S]*?<\/radialGradient>/gi);
+        const gradientMatches = defsContent.match(
+          /<linearGradient[\s\S]*?<\/linearGradient>|<radialGradient[\s\S]*?<\/radialGradient>/gi
+        );
         if (gradientMatches) {
           // Make gradient IDs unique by prefixing with element type
-          gradientDefs = gradientMatches.join("\n")
+          gradientDefs = gradientMatches
+            .join("\n")
             .replace(/id="([^"]+)"/g, `id="${elementalType}_$1"`)
-            .replace(/xlink:href="#([^"]+)"/g, `xlink:href="#${elementalType}_$1"`);
+            .replace(
+              /xlink:href="#([^"]+)"/g,
+              `xlink:href="#${elementalType}_$1"`
+            );
         }
       }
 
@@ -1079,7 +1459,10 @@ ${turnNumbersSvg}
         // Update gradient references to use unique IDs
         let actualFill = fillValue;
         if (fillValue.startsWith("url(#")) {
-          actualFill = fillValue.replace(/url\(#([^)]+)\)/, `url(#${elementalType}_$1)`);
+          actualFill = fillValue.replace(
+            /url\(#([^)]+)\)/,
+            `url(#${elementalType}_$1)`
+          );
         }
         const classRegex = new RegExp(`class="${className}"`, "gi");
         innerContent = innerContent.replace(classRegex, `fill="${actualFill}"`);
@@ -1089,7 +1472,10 @@ ${turnNumbersSvg}
       innerContent = innerContent.replace(/fill-rule:\s*evenodd;?/gi, "");
       // Add fill-rule as attribute where needed (check if cls-1 or cls-2 had fill-rule)
       if (styleMatch && styleMatch[1].includes("fill-rule: evenodd")) {
-        innerContent = innerContent.replace(/<path /g, '<path fill-rule="evenodd" ');
+        innerContent = innerContent.replace(
+          /<path /g,
+          '<path fill-rule="evenodd" '
+        );
       }
 
       // Position in top-right corner (matching ElementalGlyph.svelte)
@@ -1113,7 +1499,12 @@ ${turnNumbersSvg}
     }
   }
 
-  private renderPositionGlyph(startPosition: string, endPosition: string, darkMode: boolean, themeable: boolean = false): string {
+  private renderPositionGlyph(
+    startPosition: string,
+    endPosition: string,
+    darkMode: boolean,
+    themeable: boolean = false
+  ): string {
     const startGroup = this.extractPositionGroup(startPosition);
     const endGroup = this.extractPositionGroup(endPosition);
 
@@ -1130,18 +1521,33 @@ ${turnNumbersSvg}
 
     if (!startFileName || !endFileName) return "";
 
-    const startPath = join(this.projectRoot, "static/images/letters_trimmed/Type6", startFileName);
-    const endPath = join(this.projectRoot, "static/images/letters_trimmed/Type6", endFileName);
+    const startPath = join(
+      this.projectRoot,
+      "static/images/letters_trimmed/Type6",
+      startFileName
+    );
+    const endPath = join(
+      this.projectRoot,
+      "static/images/letters_trimmed/Type6",
+      endFileName
+    );
     const arrowPath = join(this.projectRoot, "static/images/arrow.svg");
 
-    if (!existsSync(startPath) || !existsSync(endPath) || !existsSync(arrowPath)) {
+    if (
+      !existsSync(startPath) ||
+      !existsSync(endPath) ||
+      !existsSync(arrowPath)
+    ) {
       console.error("[Renderer] Position glyph files not found");
       return "";
     }
 
     try {
       // Load SVG and extract both content and viewBox
-      const loadAndProcess = (filePath: string, isArrow: boolean = false): { content: string; viewBox: string } => {
+      const loadAndProcess = (
+        filePath: string,
+        isArrow: boolean = false
+      ): { content: string; viewBox: string } => {
         const svg = readFileSync(filePath, "utf-8");
 
         // Extract viewBox from original SVG
@@ -1155,15 +1561,27 @@ ${turnNumbersSvg}
         // Remove CSS style blocks (resvg doesn't handle CSS in nested SVGs)
         content = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
 
-        const fillColor = this.resolveColor("--dm-glyph-fill", "#e6e6e6", "#231F20", darkMode, themeable);
+        const fillColor = this.resolveColor(
+          "--dm-glyph-fill",
+          "#e6e6e6",
+          "#231F20",
+          darkMode,
+          themeable
+        );
 
         if (isArrow) {
           // Arrow SVG uses .st0 for stroke line, .st1 for fill polygon
-          content = content.replace(/class="st0"/gi, `fill="none" stroke="${fillColor}" stroke-width="4" stroke-miterlimit="10"`);
+          content = content.replace(
+            /class="st0"/gi,
+            `fill="none" stroke="${fillColor}" stroke-width="4" stroke-miterlimit="10"`
+          );
           content = content.replace(/class="st1"/gi, `fill="${fillColor}"`);
         } else {
           // Position letters (α, β, γ) - add fill to paths without one
-          content = content.replace(/<path(?![^>]*fill)/g, `<path fill="${fillColor}"`);
+          content = content.replace(
+            /<path(?![^>]*fill)/g,
+            `<path fill="${fillColor}"`
+          );
         }
 
         // Replace any remaining color references
@@ -1193,13 +1611,18 @@ ${turnNumbersSvg}
       const centerLine = scaledLetterHeight / 2;
       const startX = 0;
       const startY = centerLine - scaledLetterHeight / 2;
-      const arrowX = scaledLetterWidth + POSITION_SPACING * POSITION_SCALE_FACTOR;
+      const arrowX =
+        scaledLetterWidth + POSITION_SPACING * POSITION_SCALE_FACTOR;
       const arrowY = centerLine - scaledArrowHeight / 2;
       const endX = scaledLetterWidth + scaledArrowWidth + POSITION_SPACING;
       const endY = centerLine - scaledLetterHeight / 2;
 
       // Total width for centering (browser uses: scaledLetterWidth + scaledArrowWidth + scaledLetterWidth + SPACING)
-      const totalWidth = scaledLetterWidth + scaledArrowWidth + scaledLetterWidth + POSITION_SPACING;
+      const totalWidth =
+        scaledLetterWidth +
+        scaledArrowWidth +
+        scaledLetterWidth +
+        POSITION_SPACING;
       const groupX = VIEWBOX_SIZE / 2 - totalWidth / 2;
 
       // Use the actual viewBox from each SVG file, preserving aspect ratio with preserveAspectRatio="xMidYMid meet"
@@ -1241,15 +1664,31 @@ ${turnNumbersSvg}
     themeable: boolean = false
   ): string {
     // Use shared core calculation for positioning
-    const { dots } = calculateReversalPositions(blueReversal, redReversal, darkMode);
+    const { dots } = calculateReversalPositions(
+      blueReversal,
+      redReversal,
+      darkMode
+    );
 
     if (dots.length === 0) return "";
 
-    const circles = dots.map(dot => {
+    const circles = dots.map((dot) => {
       const fill = themeable
-        ? (dot.color === BLUE_COLOR_DARK || dot.color === BLUE_COLOR_LIGHT
-          ? this.resolveColor("--dm-motion-blue", BLUE_COLOR_DARK, BLUE_COLOR_LIGHT, darkMode, themeable)
-          : this.resolveColor("--dm-motion-red", RED_COLOR_DARK, RED_COLOR_LIGHT, darkMode, themeable))
+        ? dot.color === BLUE_COLOR_DARK || dot.color === BLUE_COLOR_LIGHT
+          ? this.resolveColor(
+              "--dm-motion-blue",
+              BLUE_COLOR_DARK,
+              BLUE_COLOR_LIGHT,
+              darkMode,
+              themeable
+            )
+          : this.resolveColor(
+              "--dm-motion-red",
+              RED_COLOR_DARK,
+              RED_COLOR_LIGHT,
+              darkMode,
+              themeable
+            )
         : dot.color;
       return `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${fill}"/>`;
     });
@@ -1269,7 +1708,10 @@ ${turnNumbersSvg}
     return GridMode.DIAMOND;
   }
 
-  private calculateVTGMode(letter: string, startPosition: string): VTGMode | null {
+  private calculateVTGMode(
+    letter: string,
+    startPosition: string
+  ): VTGMode | null {
     const letterUpper = letter.toUpperCase();
     if (letterUpper.length !== 1 || letterUpper < "A" || letterUpper > "V") {
       return null;

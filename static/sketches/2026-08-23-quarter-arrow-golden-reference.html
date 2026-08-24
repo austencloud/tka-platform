@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quarter-Turn Arrow Golden Reference</title>
+<style>
+  :root {
+    --bg: #101318;
+    --panel: #181d26;
+    --card: #f2f3f7;
+    --ink: #e8eaf0;
+    --muted: #9aa3b5;
+    --accent: #6ea8fe;
+    --bad: #ff7676;
+    --good: #7fd8a5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 "Segoe UI", system-ui, sans-serif;
+    padding: 3rem clamp(1.5rem, 4vw, 5rem) 6rem;
+  }
+  main { max-width: 110rem; margin: 0 auto; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.3rem; margin: 3rem 0 .75rem; color: var(--accent); }
+  p.lede { color: var(--muted); max-width: 62rem; margin-top: .25rem; }
+  .contract { display: grid; grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr)); gap: 1rem; }
+  .prop {
+    background: var(--panel); border: 1px solid #242b38; border-radius: .6rem; padding: 1rem 1.15rem;
+  }
+  .prop h3 { margin: 0 0 .35rem; font-size: 1rem; }
+  .prop p { margin: 0; font-size: .92rem; color: var(--muted); }
+  .prop .ev { display: block; margin-top: .5rem; font-size: .85rem; color: var(--good); }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 1rem; }
+  .cell {
+    background: var(--panel); border: 1px solid #242b38; border-radius: .6rem; overflow: hidden;
+  }
+  .cell .art {
+    background: var(--card); display: grid; place-items: center; height: 13rem; padding: 1.25rem;
+  }
+  .cell img { max-width: 100%; max-height: 100%; }
+  .cell figcaption { padding: .5rem .75rem .65rem; font-size: .82rem; color: var(--muted); }
+  .cell figcaption b { color: var(--ink); font-weight: 600; display: block; }
+  .cell.rejected { border-color: #59303a; }
+  .cell.rejected figcaption b { color: var(--bad); }
+  figure { margin: 0; }
+  .contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
+  table { border-collapse: collapse; font-size: .9rem; margin-top: .5rem; }
+  td, th { border: 1px solid #2a3140; padding: .4rem .7rem; text-align: left; }
+  th { color: var(--muted); font-weight: 600; }
+  .tag { display: inline-block; padding: .1rem .5rem; border-radius: 1rem; font-size: .78rem; margin-right: .35rem; }
+  .tag.good { background: #143526; color: var(--good); }
+  .tag.bad { background: #3a1a20; color: var(--bad); }
+  .checklist li { margin: .4rem 0; }
+  .src { color: var(--muted); font-size: .8rem; }
+  code { background: #1f2532; padding: .1rem .35rem; border-radius: .25rem; font-size: .85em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Quarter-Turn Arrow Golden Reference</h1>
+  <p class="lede">
+    The 32 generated <code>*_0.25.svg</code> arrows were rejected on 2026-08-23. This board defines
+    what "correct" means before any regeneration: the visual contract expressed by the hand-authored
+    legacy corpus (70 assets, measured by <code>scripts/quarter-arrows/measure-legacy.mjs</code>),
+    the exemplars that carry it, and the exact grammar break in the rejected art.
+    <b>Approving this board approves the visual language, not any individual quarter-turn case.</b>
+  </p>
+
+  <h2>1 &middot; The visual contract (what every generated arrow must express)</h2>
+  <div class="contract">
+    <div class="prop"><h3>C1 &mdash; Filled silhouette, never strokes</h3>
+      <p>One closed filled path. The arrow's varying width is drawn into the outline itself.</p>
+      <span class="ev">Measured: 70/70 legacy assets fill-based, 0 stroke-based. Rejected art: 32/32 stroke-based.</span></div>
+    <div class="prop"><h3>C2 &mdash; Tapered organic body</h3>
+      <p>The shaft is not constant-width: a slim tail, a gently swelling body, tapering into the head. Hand-drawn calligraphic weight, not a geometric polyline.</p>
+      <span class="ev">pro_0.5 (cleanest fit): tail 19.2 &rarr; shaft 19.3 &rarr; head barb 82.4 viewBox units.</span></div>
+    <div class="prop"><h3>C3 &mdash; Barbed arrowhead grown from the fill</h3>
+      <p>The head is two swept barbs that flow out of the shaft outline &mdash; not a detached V or triangle cap. Barb span roughly 3&ndash;5.5&times; shaft width (median &asymp;4.3 on clean fits).</p>
+      <span class="ev">pro_0.5 head/shaft 4.26 &middot; dash_1.0 4.99 &middot; dash_1.5 4.04.</span></div>
+    <div class="prop"><h3>C4 &mdash; Arc family continuity</h3>
+      <p>Turns values ornament one arc grammar. A 0.25 arrow must read as the sibling <em>between</em> its 0.0 and 0.5 neighbors &mdash; same curvature language, same head, slightly different sweep/ornament.</p>
+      <span class="ev">Legacy sweeps: pro 0.0 &asymp;144&deg;, pro 0.5 &asymp;129&deg;, dash 1.0 &asymp;96&deg; (fitted circle, rmse/R &le; 0.16).</span></div>
+    <div class="prop"><h3>C5 &mdash; Weight at pictograph scale</h3>
+      <p>Arrows are read at grid-cell size next to props, dots, and the turn tuple. Shaft weight must match the legacy corpus at render scale so quarter arrows don't read lighter or heavier than their neighbors.</p></div>
+    <div class="prop"><h3>C6 &mdash; Canonical anchor and bounds</h3>
+      <p>Each asset ships a deliberate anchor and tight bounds the placement tiers build on. The current quarter art's <code>{0,&thinsp;0}</code> anchor fallback is a placeholder, not a convention.</p></div>
+    <div class="prop"><h3>C7 &mdash; Clearance envelope</h3>
+      <p>The silhouette plus its placement must clear grid dots, both props, the other hand's arrow, and the TKA turn tuple at defined tolerances. Enforced by collision oracles in the review lab, not by eye.</p></div>
+  </div>
+
+  <h2>2 &middot; Legacy exemplars (the grammar to match)</h2>
+  <div class="gallery">
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.0.svg" alt=""></div>
+      <figcaption><b>pro 0.0 &middot; from_radial</b>sweep &asymp;144&deg; &middot; head/shaft 4.1</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.5.svg" alt=""></div>
+      <figcaption><b>pro 0.5 &middot; from_radial</b>sweep &asymp;129&deg; &middot; head/shaft 4.26 &middot; cleanest circle fit in corpus</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_1.0.svg" alt=""></div>
+      <figcaption><b>pro 1.0 &middot; from_radial</b>sweep &asymp;207&deg; &middot; coil begins</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/anti/from_radial/anti_0.0.svg" alt=""></div>
+      <figcaption><b>anti 0.0 &middot; from_radial</b>same grammar, opposite chirality</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/anti/from_radial/anti_0.5.svg" alt=""></div>
+      <figcaption><b>anti 0.5 &middot; from_radial</b>the 0.25 neighbor above the quarter</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/static/from_radial/static_1.0.svg" alt=""></div>
+      <figcaption><b>static 1.0 &middot; from_radial</b>in-place spin, sweep &asymp;150&deg;</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/dash/from_radial/dash_1.0.svg" alt=""></div>
+      <figcaption><b>dash 1.0 &middot; from_radial</b>sweep &asymp;96&deg; &middot; head/shaft 4.99</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/dash/from_radial/dash_0.0.svg" alt=""></div>
+      <figcaption><b>dash 0.0 &middot; from_radial</b>pure translation &mdash; straight grammar</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.0_skew+.svg" alt=""></div>
+      <figcaption><b>pro 0.0 skew+ &middot; from_radial</b>skew variant, same silhouette language</figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/float.svg" alt=""></div>
+      <figcaption><b>float</b>turn-invariant; the lightest weight in the family</figcaption></figure>
+  </div>
+
+  <h2>3 &middot; The grammar break (why the 32 were rejected)</h2>
+  <p class="lede">Left and right: approved neighbors. Center: the rejected quarter. The break is structural
+    &mdash; constant-width strokes with a detached V-cap head instead of a tapered filled silhouette with grown barbs.</p>
+  <div class="contrast">
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.0.svg" alt=""></div>
+      <figcaption><b>pro 0.0 &mdash; legacy</b><span class="tag good">filled</span><span class="tag good">tapered</span><span class="tag good">barbed head</span></figcaption></figure>
+    <figure class="cell rejected"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.25.svg" alt=""></div>
+      <figcaption><b>pro 0.25 &mdash; rejected</b><span class="tag bad">stroked</span><span class="tag bad">constant width</span><span class="tag bad">V-cap head</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/pro/from_radial/pro_0.5.svg" alt=""></div>
+      <figcaption><b>pro 0.5 &mdash; legacy</b><span class="tag good">filled</span><span class="tag good">tapered</span><span class="tag good">barbed head</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/anti/from_radial/anti_0.0.svg" alt=""></div>
+      <figcaption><b>anti 0.0 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+    <figure class="cell rejected"><div class="art"><img src="/images/arrows/anti/from_radial/anti_0.25.svg" alt=""></div>
+      <figcaption><b>anti 0.25 &mdash; rejected</b><span class="tag bad">stroked</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/anti/from_radial/anti_0.5.svg" alt=""></div>
+      <figcaption><b>anti 0.5 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/static/from_radial/static_0.5.svg" alt=""></div>
+      <figcaption><b>static 0.5 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+    <figure class="cell rejected"><div class="art"><img src="/images/arrows/static/from_radial/static_0.25.svg" alt=""></div>
+      <figcaption><b>static 0.25 &mdash; rejected</b><span class="tag bad">stroked</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/static/from_radial/static_1.0.svg" alt=""></div>
+      <figcaption><b>static 1.0 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/dash/from_radial/dash_0.5.svg" alt=""></div>
+      <figcaption><b>dash 0.5 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+    <figure class="cell rejected"><div class="art"><img src="/images/arrows/dash/from_radial/dash_0.25.svg" alt=""></div>
+      <figcaption><b>dash 0.25 &mdash; rejected</b><span class="tag bad">stroked</span></figcaption></figure>
+    <figure class="cell"><div class="art"><img src="/images/arrows/dash/from_radial/dash_1.0.svg" alt=""></div>
+      <figcaption><b>dash 1.0 &mdash; legacy</b><span class="tag good">filled</span></figcaption></figure>
+  </div>
+
+  <h2>4 &middot; State space (machine-enumerated, algebra-verified)</h2>
+  <table>
+    <tr><th>Fact</th><th>Result</th></tr>
+    <tr><td>Valid quarter-turn semantic states</td><td><b>112</b> (pro 16, anti 16, static 16+16 center, dash 16+16 hash-in+16 hash-out)</td></tr>
+    <tr><td>Asset identities they collapse onto</td><td><b>32</b> &mdash; matches the shipped resolver matrix exactly</td></tr>
+    <tr><td>Canon physics vs shipped orientation algebra</td><td><b>80/80 agree, 0 disagree</b> (all states with well-defined canon)</td></tr>
+    <tr><td>SpiroAnim 24-step Club fixture</td><td><b>48/48 motions</b> chain cleanly through the shipped algebra</td></tr>
+    <tr><td>Open question</td><td>hash-in / hash-out end-orientation representation crosses the relative&harr;absolute boundary (32 states flagged; does not block art &mdash; assets key on start orientation)</td></tr>
+    <tr><td>Proof obligations per class</td><td>mirror flips chirality exactly (cw&harr;ccw share art) &middot; 180&deg;-rotation identity (in&harr;out, clockIn&harr;counterOut share art) &middot; per-location placement</td></tr>
+  </table>
+  <p class="src">Source: <code>docs/research/quarter-arrows/quarter-turn-state-space.json</code> &middot;
+    <code>docs/research/quarter-arrows/legacy-corpus-measurements.json</code></p>
+
+  <h2>5 &middot; What approving this board means</h2>
+  <ul class="checklist">
+    <li>The seven contract properties (C1&ndash;C7) define "visually correct" for all regenerated quarter arrows.</li>
+    <li>The parametric generator in <code>@tka/render-core</code> will be fitted to this grammar; the 32 current SVGs are discarded scaffolding.</li>
+    <li>Quarter arrows must sit between their 0.0 and 0.5 neighbors in the arc family (C4), per motion type and orientation family.</li>
+    <li>Placement calibration happens after art, through the existing tier system, with collision oracles &mdash; not hand-nudging.</li>
+    <li>You will review one canonical representative per proven equivalence class (32) plus machine-detected outliers &mdash; not all 112 states.</li>
+  </ul>
+</main>
+</body>
+</html>

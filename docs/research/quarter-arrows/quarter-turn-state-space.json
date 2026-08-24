@@ -1,0 +1,1740 @@
+{
+  "generated": "scripts/quarter-arrows/enumerate-states.mjs",
+  "canonSource": "MCP get_term_definition('turns') + get_term_definition('orientation'), 2026-08-23",
+  "stateCount": 112,
+  "algebraAgreement": {
+    "agreements": 80,
+    "disagreements": []
+  },
+  "openQuestions": [
+    "q065 dash hashIn from in: end orientation crosses the relative/absolute boundary",
+    "q066 dash hashIn from clockIn: end orientation crosses the relative/absolute boundary",
+    "q067 dash hashIn from clock: end orientation crosses the relative/absolute boundary",
+    "q068 dash hashIn from clockOut: end orientation crosses the relative/absolute boundary",
+    "q069 dash hashIn from out: end orientation crosses the relative/absolute boundary",
+    "q070 dash hashIn from counterOut: end orientation crosses the relative/absolute boundary",
+    "q071 dash hashIn from counter: end orientation crosses the relative/absolute boundary",
+    "q072 dash hashIn from counterIn: end orientation crosses the relative/absolute boundary",
+    "q073 dash hashIn from in: end orientation crosses the relative/absolute boundary",
+    "q074 dash hashIn from clockIn: end orientation crosses the relative/absolute boundary",
+    "q075 dash hashIn from clock: end orientation crosses the relative/absolute boundary",
+    "q076 dash hashIn from clockOut: end orientation crosses the relative/absolute boundary",
+    "q077 dash hashIn from out: end orientation crosses the relative/absolute boundary",
+    "q078 dash hashIn from counterOut: end orientation crosses the relative/absolute boundary",
+    "q079 dash hashIn from counter: end orientation crosses the relative/absolute boundary",
+    "q080 dash hashIn from counterIn: end orientation crosses the relative/absolute boundary",
+    "q081 dash hashOut from centerN: end orientation crosses the relative/absolute boundary",
+    "q082 dash hashOut from centerNE: end orientation crosses the relative/absolute boundary",
+    "q083 dash hashOut from centerE: end orientation crosses the relative/absolute boundary",
+    "q084 dash hashOut from centerSE: end orientation crosses the relative/absolute boundary",
+    "q085 dash hashOut from centerS: end orientation crosses the relative/absolute boundary",
+    "q086 dash hashOut from centerSW: end orientation crosses the relative/absolute boundary",
+    "q087 dash hashOut from centerW: end orientation crosses the relative/absolute boundary",
+    "q088 dash hashOut from centerNW: end orientation crosses the relative/absolute boundary",
+    "q089 dash hashOut from centerN: end orientation crosses the relative/absolute boundary",
+    "q090 dash hashOut from centerNE: end orientation crosses the relative/absolute boundary",
+    "q091 dash hashOut from centerE: end orientation crosses the relative/absolute boundary",
+    "q092 dash hashOut from centerSE: end orientation crosses the relative/absolute boundary",
+    "q093 dash hashOut from centerS: end orientation crosses the relative/absolute boundary",
+    "q094 dash hashOut from centerSW: end orientation crosses the relative/absolute boundary",
+    "q095 dash hashOut from centerW: end orientation crosses the relative/absolute boundary",
+    "q096 dash hashOut from centerNW: end orientation crosses the relative/absolute boundary"
+  ],
+  "invalidByConstruction": [
+    "pro or anti at center (shift requires a perimeter arc)",
+    "turns 0.25 with rotationDirection noRotation",
+    "float with numeric 0.25 (float is turns: 'fl')",
+    "traveling static / self-path dash",
+    "center-orientation tokens away from center",
+    "end orientations that disagree with the orientation algebra"
+  ],
+  "classes": [
+    {
+      "assetPath": "images/arrows/pro/from_radial/pro_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q001",
+        "q005",
+        "q009",
+        "q013"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: in, out)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/pro/from_interradial_clock_in/pro_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q002",
+        "q006",
+        "q010",
+        "q014"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockIn, counterOut)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/pro/from_nonradial/pro_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q003",
+        "q007",
+        "q011",
+        "q015"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clock, counter)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/pro/from_interradial_clock_out/pro_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q004",
+        "q008",
+        "q012",
+        "q016"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockOut, counterIn)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/anti/from_radial/anti_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q017",
+        "q021",
+        "q025",
+        "q029"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: in, out)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/anti/from_interradial_clock_in/anti_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q018",
+        "q022",
+        "q026",
+        "q030"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockIn, counterOut)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/anti/from_nonradial/anti_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q019",
+        "q023",
+        "q027",
+        "q031"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clock, counter)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/anti/from_interradial_clock_out/anti_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q020",
+        "q024",
+        "q028",
+        "q032"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockOut, counterIn)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_radial/static_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q033",
+        "q037",
+        "q041",
+        "q045"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: in, out)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_interradial_clock_in/static_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q034",
+        "q038",
+        "q042",
+        "q046"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockIn, counterOut)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_nonradial/static_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q035",
+        "q039",
+        "q043",
+        "q047"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clock, counter)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_interradial_clock_out/static_0.25.svg",
+      "memberCount": 4,
+      "members": [
+        "q036",
+        "q040",
+        "q044",
+        "q048"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockOut, counterIn)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg",
+      "memberCount": 8,
+      "members": [
+        "q049",
+        "q053",
+        "q057",
+        "q061",
+        "q065",
+        "q069",
+        "q073",
+        "q077"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: in, out)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg",
+      "memberCount": 8,
+      "members": [
+        "q050",
+        "q054",
+        "q058",
+        "q062",
+        "q066",
+        "q070",
+        "q074",
+        "q078"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockIn, counterOut)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg",
+      "memberCount": 8,
+      "members": [
+        "q051",
+        "q055",
+        "q059",
+        "q063",
+        "q067",
+        "q071",
+        "q075",
+        "q079"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clock, counter)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg",
+      "memberCount": 8,
+      "members": [
+        "q052",
+        "q056",
+        "q060",
+        "q064",
+        "q068",
+        "q072",
+        "q076",
+        "q080"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "180deg-rotation identity must hold (opposite start orientations share this art: clockOut, counterIn)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_n/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q081",
+        "q089"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_ne/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q082",
+        "q090"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_e/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q083",
+        "q091"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_se/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q084",
+        "q092"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_s/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q085",
+        "q093"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_sw/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q086",
+        "q094"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_w/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q087",
+        "q095"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/dash/from_center_nw/dash_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q088",
+        "q096"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_n/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q097",
+        "q105"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_ne/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q098",
+        "q106"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_e/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q099",
+        "q107"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_se/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q100",
+        "q108"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_s/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q101",
+        "q109"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_sw/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q102",
+        "q110"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_w/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q103",
+        "q111"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    },
+    {
+      "assetPath": "images/arrows/static/from_center_nw/static_0.25.svg",
+      "memberCount": 2,
+      "members": [
+        "q104",
+        "q112"
+      ],
+      "obligations": [
+        "mirror transform must flip chirality exactly (cw vs ccw members share this art)",
+        "rotation placement per grid location handled by placement frame (verify per location in lab)"
+      ]
+    }
+  ],
+  "states": [
+    {
+      "id": "q001",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "in",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/pro/from_radial/pro_0.25.svg"
+    },
+    {
+      "id": "q002",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "clockIn",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/pro/from_interradial_clock_in/pro_0.25.svg"
+    },
+    {
+      "id": "q003",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "clock",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/pro/from_nonradial/pro_0.25.svg"
+    },
+    {
+      "id": "q004",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "clockOut",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/pro/from_interradial_clock_out/pro_0.25.svg"
+    },
+    {
+      "id": "q005",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "out",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/pro/from_radial/pro_0.25.svg"
+    },
+    {
+      "id": "q006",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "counterOut",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/pro/from_interradial_clock_in/pro_0.25.svg"
+    },
+    {
+      "id": "q007",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "counter",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/pro/from_nonradial/pro_0.25.svg"
+    },
+    {
+      "id": "q008",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "cw",
+      "startOrientation": "counterIn",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/pro/from_interradial_clock_out/pro_0.25.svg"
+    },
+    {
+      "id": "q009",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "in",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/pro/from_radial/pro_0.25.svg"
+    },
+    {
+      "id": "q010",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockIn",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/pro/from_interradial_clock_in/pro_0.25.svg"
+    },
+    {
+      "id": "q011",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "clock",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/pro/from_nonradial/pro_0.25.svg"
+    },
+    {
+      "id": "q012",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockOut",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/pro/from_interradial_clock_out/pro_0.25.svg"
+    },
+    {
+      "id": "q013",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "out",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/pro/from_radial/pro_0.25.svg"
+    },
+    {
+      "id": "q014",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterOut",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/pro/from_interradial_clock_in/pro_0.25.svg"
+    },
+    {
+      "id": "q015",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "counter",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/pro/from_nonradial/pro_0.25.svg"
+    },
+    {
+      "id": "q016",
+      "turns": 0.25,
+      "motionType": "pro",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterIn",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/pro/from_interradial_clock_out/pro_0.25.svg"
+    },
+    {
+      "id": "q017",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "in",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/anti/from_radial/anti_0.25.svg"
+    },
+    {
+      "id": "q018",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "clockIn",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/anti/from_interradial_clock_in/anti_0.25.svg"
+    },
+    {
+      "id": "q019",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "clock",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/anti/from_nonradial/anti_0.25.svg"
+    },
+    {
+      "id": "q020",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "clockOut",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/anti/from_interradial_clock_out/anti_0.25.svg"
+    },
+    {
+      "id": "q021",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "out",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/anti/from_radial/anti_0.25.svg"
+    },
+    {
+      "id": "q022",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "counterOut",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/anti/from_interradial_clock_in/anti_0.25.svg"
+    },
+    {
+      "id": "q023",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "counter",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/anti/from_nonradial/anti_0.25.svg"
+    },
+    {
+      "id": "q024",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "cw",
+      "startOrientation": "counterIn",
+      "handpath": "shiftCcw",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/anti/from_interradial_clock_out/anti_0.25.svg"
+    },
+    {
+      "id": "q025",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "in",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/anti/from_radial/anti_0.25.svg"
+    },
+    {
+      "id": "q026",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockIn",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/anti/from_interradial_clock_in/anti_0.25.svg"
+    },
+    {
+      "id": "q027",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "clock",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/anti/from_nonradial/anti_0.25.svg"
+    },
+    {
+      "id": "q028",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockOut",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/anti/from_interradial_clock_out/anti_0.25.svg"
+    },
+    {
+      "id": "q029",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "out",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/anti/from_radial/anti_0.25.svg"
+    },
+    {
+      "id": "q030",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterOut",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/anti/from_interradial_clock_in/anti_0.25.svg"
+    },
+    {
+      "id": "q031",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "counter",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/anti/from_nonradial/anti_0.25.svg"
+    },
+    {
+      "id": "q032",
+      "turns": 0.25,
+      "motionType": "anti",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterIn",
+      "handpath": "shiftCw",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/anti/from_interradial_clock_out/anti_0.25.svg"
+    },
+    {
+      "id": "q033",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "in",
+      "handpath": "self",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/static/from_radial/static_0.25.svg"
+    },
+    {
+      "id": "q034",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "clockIn",
+      "handpath": "self",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/static/from_interradial_clock_in/static_0.25.svg"
+    },
+    {
+      "id": "q035",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "clock",
+      "handpath": "self",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/static/from_nonradial/static_0.25.svg"
+    },
+    {
+      "id": "q036",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "clockOut",
+      "handpath": "self",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/static/from_interradial_clock_out/static_0.25.svg"
+    },
+    {
+      "id": "q037",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "out",
+      "handpath": "self",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/static/from_radial/static_0.25.svg"
+    },
+    {
+      "id": "q038",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "counterOut",
+      "handpath": "self",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/static/from_interradial_clock_in/static_0.25.svg"
+    },
+    {
+      "id": "q039",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "counter",
+      "handpath": "self",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/static/from_nonradial/static_0.25.svg"
+    },
+    {
+      "id": "q040",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "counterIn",
+      "handpath": "self",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/static/from_interradial_clock_out/static_0.25.svg"
+    },
+    {
+      "id": "q041",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "in",
+      "handpath": "self",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/static/from_radial/static_0.25.svg"
+    },
+    {
+      "id": "q042",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockIn",
+      "handpath": "self",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/static/from_interradial_clock_in/static_0.25.svg"
+    },
+    {
+      "id": "q043",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "clock",
+      "handpath": "self",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/static/from_nonradial/static_0.25.svg"
+    },
+    {
+      "id": "q044",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockOut",
+      "handpath": "self",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/static/from_interradial_clock_out/static_0.25.svg"
+    },
+    {
+      "id": "q045",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "out",
+      "handpath": "self",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/static/from_radial/static_0.25.svg"
+    },
+    {
+      "id": "q046",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterOut",
+      "handpath": "self",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/static/from_interradial_clock_in/static_0.25.svg"
+    },
+    {
+      "id": "q047",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "counter",
+      "handpath": "self",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/static/from_nonradial/static_0.25.svg"
+    },
+    {
+      "id": "q048",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterIn",
+      "handpath": "self",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/static/from_interradial_clock_out/static_0.25.svg"
+    },
+    {
+      "id": "q049",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "in",
+      "handpath": "opposite",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q050",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clockIn",
+      "handpath": "opposite",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q051",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clock",
+      "handpath": "opposite",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q052",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clockOut",
+      "handpath": "opposite",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q053",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "out",
+      "handpath": "opposite",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q054",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counterOut",
+      "handpath": "opposite",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q055",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counter",
+      "handpath": "opposite",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q056",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counterIn",
+      "handpath": "opposite",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q057",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "in",
+      "handpath": "opposite",
+      "endOrientationCanon": "counterOut",
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q058",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockIn",
+      "handpath": "opposite",
+      "endOrientationCanon": "counter",
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q059",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clock",
+      "handpath": "opposite",
+      "endOrientationCanon": "counterIn",
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q060",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockOut",
+      "handpath": "opposite",
+      "endOrientationCanon": "in",
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q061",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "out",
+      "handpath": "opposite",
+      "endOrientationCanon": "clockIn",
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q062",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterOut",
+      "handpath": "opposite",
+      "endOrientationCanon": "clock",
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q063",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counter",
+      "handpath": "opposite",
+      "endOrientationCanon": "clockOut",
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q064",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterIn",
+      "handpath": "opposite",
+      "endOrientationCanon": "out",
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q065",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "in",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q066",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clockIn",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q067",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clock",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q068",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "clockOut",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q069",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "out",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q070",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counterOut",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q071",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counter",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q072",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "counterIn",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q073",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "in",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counterOut",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q074",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockIn",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counter",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q075",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clock",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "counterIn",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q076",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "clockOut",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "in",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q077",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "out",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clockIn",
+      "assetPath": "images/arrows/dash/from_radial/dash_0.25.svg"
+    },
+    {
+      "id": "q078",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterOut",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clock",
+      "assetPath": "images/arrows/dash/from_interradial_clock_in/dash_0.25.svg"
+    },
+    {
+      "id": "q079",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counter",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "clockOut",
+      "assetPath": "images/arrows/dash/from_nonradial/dash_0.25.svg"
+    },
+    {
+      "id": "q080",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "counterIn",
+      "handpath": "hashIn",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "out",
+      "assetPath": "images/arrows/dash/from_interradial_clock_out/dash_0.25.svg"
+    },
+    {
+      "id": "q081",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerN",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerNW",
+      "assetPath": "images/arrows/dash/from_center_n/dash_0.25.svg"
+    },
+    {
+      "id": "q082",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerNE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerN",
+      "assetPath": "images/arrows/dash/from_center_ne/dash_0.25.svg"
+    },
+    {
+      "id": "q083",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerNE",
+      "assetPath": "images/arrows/dash/from_center_e/dash_0.25.svg"
+    },
+    {
+      "id": "q084",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerSE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerE",
+      "assetPath": "images/arrows/dash/from_center_se/dash_0.25.svg"
+    },
+    {
+      "id": "q085",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerS",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerSE",
+      "assetPath": "images/arrows/dash/from_center_s/dash_0.25.svg"
+    },
+    {
+      "id": "q086",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerSW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerS",
+      "assetPath": "images/arrows/dash/from_center_sw/dash_0.25.svg"
+    },
+    {
+      "id": "q087",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerSW",
+      "assetPath": "images/arrows/dash/from_center_w/dash_0.25.svg"
+    },
+    {
+      "id": "q088",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "cw",
+      "startOrientation": "centerNW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerW",
+      "assetPath": "images/arrows/dash/from_center_nw/dash_0.25.svg"
+    },
+    {
+      "id": "q089",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerN",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerNE",
+      "assetPath": "images/arrows/dash/from_center_n/dash_0.25.svg"
+    },
+    {
+      "id": "q090",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerNE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerE",
+      "assetPath": "images/arrows/dash/from_center_ne/dash_0.25.svg"
+    },
+    {
+      "id": "q091",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerSE",
+      "assetPath": "images/arrows/dash/from_center_e/dash_0.25.svg"
+    },
+    {
+      "id": "q092",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerSE",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerS",
+      "assetPath": "images/arrows/dash/from_center_se/dash_0.25.svg"
+    },
+    {
+      "id": "q093",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerS",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerSW",
+      "assetPath": "images/arrows/dash/from_center_s/dash_0.25.svg"
+    },
+    {
+      "id": "q094",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerSW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerW",
+      "assetPath": "images/arrows/dash/from_center_sw/dash_0.25.svg"
+    },
+    {
+      "id": "q095",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerNW",
+      "assetPath": "images/arrows/dash/from_center_w/dash_0.25.svg"
+    },
+    {
+      "id": "q096",
+      "turns": 0.25,
+      "motionType": "dash",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerNW",
+      "handpath": "hashOut",
+      "endOrientationCanon": null,
+      "endOrientationShipped": "centerN",
+      "assetPath": "images/arrows/dash/from_center_nw/dash_0.25.svg"
+    },
+    {
+      "id": "q097",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerN",
+      "handpath": "self",
+      "endOrientationCanon": "centerNE",
+      "endOrientationShipped": "centerNE",
+      "assetPath": "images/arrows/static/from_center_n/static_0.25.svg"
+    },
+    {
+      "id": "q098",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerNE",
+      "handpath": "self",
+      "endOrientationCanon": "centerE",
+      "endOrientationShipped": "centerE",
+      "assetPath": "images/arrows/static/from_center_ne/static_0.25.svg"
+    },
+    {
+      "id": "q099",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerE",
+      "handpath": "self",
+      "endOrientationCanon": "centerSE",
+      "endOrientationShipped": "centerSE",
+      "assetPath": "images/arrows/static/from_center_e/static_0.25.svg"
+    },
+    {
+      "id": "q100",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerSE",
+      "handpath": "self",
+      "endOrientationCanon": "centerS",
+      "endOrientationShipped": "centerS",
+      "assetPath": "images/arrows/static/from_center_se/static_0.25.svg"
+    },
+    {
+      "id": "q101",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerS",
+      "handpath": "self",
+      "endOrientationCanon": "centerSW",
+      "endOrientationShipped": "centerSW",
+      "assetPath": "images/arrows/static/from_center_s/static_0.25.svg"
+    },
+    {
+      "id": "q102",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerSW",
+      "handpath": "self",
+      "endOrientationCanon": "centerW",
+      "endOrientationShipped": "centerW",
+      "assetPath": "images/arrows/static/from_center_sw/static_0.25.svg"
+    },
+    {
+      "id": "q103",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerW",
+      "handpath": "self",
+      "endOrientationCanon": "centerNW",
+      "endOrientationShipped": "centerNW",
+      "assetPath": "images/arrows/static/from_center_w/static_0.25.svg"
+    },
+    {
+      "id": "q104",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "cw",
+      "startOrientation": "centerNW",
+      "handpath": "self",
+      "endOrientationCanon": "centerN",
+      "endOrientationShipped": "centerN",
+      "assetPath": "images/arrows/static/from_center_nw/static_0.25.svg"
+    },
+    {
+      "id": "q105",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerN",
+      "handpath": "self",
+      "endOrientationCanon": "centerNW",
+      "endOrientationShipped": "centerNW",
+      "assetPath": "images/arrows/static/from_center_n/static_0.25.svg"
+    },
+    {
+      "id": "q106",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerNE",
+      "handpath": "self",
+      "endOrientationCanon": "centerN",
+      "endOrientationShipped": "centerN",
+      "assetPath": "images/arrows/static/from_center_ne/static_0.25.svg"
+    },
+    {
+      "id": "q107",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerE",
+      "handpath": "self",
+      "endOrientationCanon": "centerNE",
+      "endOrientationShipped": "centerNE",
+      "assetPath": "images/arrows/static/from_center_e/static_0.25.svg"
+    },
+    {
+      "id": "q108",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerSE",
+      "handpath": "self",
+      "endOrientationCanon": "centerE",
+      "endOrientationShipped": "centerE",
+      "assetPath": "images/arrows/static/from_center_se/static_0.25.svg"
+    },
+    {
+      "id": "q109",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerS",
+      "handpath": "self",
+      "endOrientationCanon": "centerSE",
+      "endOrientationShipped": "centerSE",
+      "assetPath": "images/arrows/static/from_center_s/static_0.25.svg"
+    },
+    {
+      "id": "q110",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerSW",
+      "handpath": "self",
+      "endOrientationCanon": "centerS",
+      "endOrientationShipped": "centerS",
+      "assetPath": "images/arrows/static/from_center_sw/static_0.25.svg"
+    },
+    {
+      "id": "q111",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerW",
+      "handpath": "self",
+      "endOrientationCanon": "centerSW",
+      "endOrientationShipped": "centerSW",
+      "assetPath": "images/arrows/static/from_center_w/static_0.25.svg"
+    },
+    {
+      "id": "q112",
+      "turns": 0.25,
+      "motionType": "static",
+      "rotationDirection": "ccw",
+      "startOrientation": "centerNW",
+      "handpath": "self",
+      "endOrientationCanon": "centerW",
+      "endOrientationShipped": "centerW",
+      "assetPath": "images/arrows/static/from_center_nw/static_0.25.svg"
+    }
+  ],
+  "fixture": {
+    "motions": 48,
+    "agree": 48,
+    "disagreements": []
+  }
+}

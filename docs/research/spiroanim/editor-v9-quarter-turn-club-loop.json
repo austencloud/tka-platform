@@ -1,0 +1,733 @@
+{
+  "word": "HHHFLFAAALFLHHHFLFAAALFL",
+  "gridMode": "diamond",
+  "metadata": {
+    "source": "spiroanim-play-edit",
+    "attribution": "SpiroAnim v9 editor artifact supplied by Austen",
+    "spiroanimUrl": "https://spiroanim.com/play-edit?r=Ew48Yk11Y&p0=Q__.blEQYq____q_.5JEQzP............_ZEQUV............_ZEQzP............_ZEQUV...........&m0=_1__Vqv__&p1=.blEQYq____q_.5JEQzP......_ZEQUV............_ZEQzP............_ZEQUV............_ZEQzP.....&c=_gLyFq.&v=9"
+  },
+  "startPosition": {
+    "letter": null,
+    "gridPosition": "beta3",
+    "motions": {
+      "blue": {
+        "color": "blue",
+        "motionType": "static",
+        "rotationDirection": "no_rot",
+        "startLocation": "e",
+        "endLocation": "e",
+        "turns": 0,
+        "startOrientation": "counterOut",
+        "endOrientation": "counterOut"
+      },
+      "red": {
+        "color": "red",
+        "motionType": "static",
+        "rotationDirection": "no_rot",
+        "startLocation": "e",
+        "endLocation": "e",
+        "turns": 0,
+        "startOrientation": "counterOut",
+        "endOrientation": "counterOut"
+      }
+    }
+  },
+  "steps": [
+    {
+      "stepNumber": 1,
+      "letter": "H",
+      "startPosition": "beta3",
+      "endPosition": "beta5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "clock"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "clock"
+        }
+      }
+    },
+    {
+      "stepNumber": 2,
+      "letter": "H",
+      "startPosition": "beta5",
+      "endPosition": "beta7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "counterIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "counterIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 3,
+      "letter": "H",
+      "startPosition": "beta7",
+      "endPosition": "beta1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "out"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "out"
+        }
+      }
+    },
+    {
+      "stepNumber": 4,
+      "letter": "F",
+      "startPosition": "beta1",
+      "endPosition": "alpha7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "clockIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "counterOut"
+        }
+      }
+    },
+    {
+      "stepNumber": 5,
+      "letter": "L",
+      "startPosition": "alpha7",
+      "endPosition": "beta5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "counter"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "counter"
+        }
+      }
+    },
+    {
+      "stepNumber": 6,
+      "letter": "F",
+      "startPosition": "beta5",
+      "endPosition": "alpha3",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "clockOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "counterIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 7,
+      "letter": "A",
+      "startPosition": "alpha3",
+      "endPosition": "alpha1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "out"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "in"
+        }
+      }
+    },
+    {
+      "stepNumber": 8,
+      "letter": "A",
+      "startPosition": "alpha1",
+      "endPosition": "alpha7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "counterOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "clockIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 9,
+      "letter": "A",
+      "startPosition": "alpha7",
+      "endPosition": "alpha5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "counter"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "clock"
+        }
+      }
+    },
+    {
+      "stepNumber": 10,
+      "letter": "L",
+      "startPosition": "alpha5",
+      "endPosition": "beta7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "counterIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "counterIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 11,
+      "letter": "F",
+      "startPosition": "beta7",
+      "endPosition": "alpha1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "in"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "out"
+        }
+      }
+    },
+    {
+      "stepNumber": 12,
+      "letter": "L",
+      "startPosition": "alpha1",
+      "endPosition": "beta3",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "clockIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "clockIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 13,
+      "letter": "H",
+      "startPosition": "beta3",
+      "endPosition": "beta5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "counter"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "counter"
+        }
+      }
+    },
+    {
+      "stepNumber": 14,
+      "letter": "H",
+      "startPosition": "beta5",
+      "endPosition": "beta7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "clockOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "clockOut"
+        }
+      }
+    },
+    {
+      "stepNumber": 15,
+      "letter": "H",
+      "startPosition": "beta7",
+      "endPosition": "beta1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "in"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "in"
+        }
+      }
+    },
+    {
+      "stepNumber": 16,
+      "letter": "F",
+      "startPosition": "beta1",
+      "endPosition": "alpha7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "counterOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "clockIn"
+        }
+      }
+    },
+    {
+      "stepNumber": 17,
+      "letter": "L",
+      "startPosition": "alpha7",
+      "endPosition": "beta5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "clock"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "clock"
+        }
+      }
+    },
+    {
+      "stepNumber": 18,
+      "letter": "F",
+      "startPosition": "beta5",
+      "endPosition": "alpha3",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "counterIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "clockOut"
+        }
+      }
+    },
+    {
+      "stepNumber": 19,
+      "letter": "A",
+      "startPosition": "alpha3",
+      "endPosition": "alpha1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterIn",
+          "endOrientation": "in"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "out"
+        }
+      }
+    },
+    {
+      "stepNumber": 20,
+      "letter": "A",
+      "startPosition": "alpha1",
+      "endPosition": "alpha7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "clockIn"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "counterOut"
+        }
+      }
+    },
+    {
+      "stepNumber": 21,
+      "letter": "A",
+      "startPosition": "alpha7",
+      "endPosition": "alpha5",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "e",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "clockIn",
+          "endOrientation": "clock"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "counterOut",
+          "endOrientation": "counter"
+        }
+      }
+    },
+    {
+      "stepNumber": 22,
+      "letter": "L",
+      "startPosition": "alpha5",
+      "endPosition": "beta7",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "clock",
+          "endOrientation": "clockOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "w",
+          "turns": 0.25,
+          "startOrientation": "counter",
+          "endOrientation": "clockOut"
+        }
+      }
+    },
+    {
+      "stepNumber": 23,
+      "letter": "F",
+      "startPosition": "beta7",
+      "endPosition": "alpha1",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "s",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "out"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "w",
+          "endLocation": "n",
+          "turns": 0.25,
+          "startOrientation": "clockOut",
+          "endOrientation": "in"
+        }
+      }
+    },
+    {
+      "stepNumber": 24,
+      "letter": "L",
+      "startPosition": "alpha1",
+      "endPosition": "beta3",
+      "duration": 1,
+      "motions": {
+        "blue": {
+          "color": "blue",
+          "motionType": "pro",
+          "rotationDirection": "ccw",
+          "startLocation": "s",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "out",
+          "endOrientation": "counterOut"
+        },
+        "red": {
+          "color": "red",
+          "motionType": "anti",
+          "rotationDirection": "ccw",
+          "startLocation": "n",
+          "endLocation": "e",
+          "turns": 0.25,
+          "startOrientation": "in",
+          "endOrientation": "counterOut"
+        }
+      }
+    }
+  ]
+}

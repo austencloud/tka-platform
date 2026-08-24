@@ -244,12 +244,15 @@ function calculateRadialFractionalTurnOrientation(
   const rotDir = rotationDirection.toLowerCase();
   const isCW = rotDir === "cw" || rotDir === "clockwise";
   const type = motionType.toLowerCase();
-
   const isAntiLike = type === "anti" || type === "dash";
-  const effectiveCW = isAntiLike ? isCW : !isCW;
 
-  const direction = effectiveCW ? 1 : -1;
-  const newIdx = ((startIdx + direction * steps) % 8 + 8) % 8;
+  // Fractional turns retain the whole-turn base: ANTI/DASH first reverse,
+  // then every motion applies the prop's physical quarter-turn rotation. The
+  // radial cycle runs opposite the SVG angle convention, so clockwise
+  // rotation subtracts steps.
+  const baseSteps = isAntiLike ? 4 : 0;
+  const turnSteps = isCW ? -steps : steps;
+  const newIdx = ((startIdx + baseSteps + turnSteps) % 8 + 8) % 8;
   return RADIAL_CW_CYCLE[newIdx]!;
 }
 

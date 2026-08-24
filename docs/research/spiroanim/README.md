@@ -9,6 +9,13 @@ specifically to source **poi-legal** content, since
 `docs/reference/poi-legality.md` records the transition layer as having no data
 at all.
 
+An additional 2026-08-23 artifact covers a hand-authored v9 editor link rather
+than a concept-builder cell. Its 45-degree frame arcs pair into 24 TKA
+dual-shifts, each carrying 0.25 turns. The position cycle closes after 12 steps;
+the repeated second pass closes the eight-state orientation cycle. See
+`editor-v9-quarter-turn-club-loop.json` for the complete motion record and the
+original SpiroAnim URL.
+
 ## Attribution
 
 The Eight Step handpaths are **Gage's source data**, re-paginated by Mentive
@@ -83,6 +90,9 @@ shared start frame, the column sets the continuation.
   position, per-hand turns, colour-swap flag.
 - `cell-catalogue.json` — 288 rows, the canonical reading of each cell
   (diamond, non-anti, Qtr #1), with its TKA word and start position.
+- `editor-v9-quarter-turn-club-loop.json`: the 24-step TKA transcription of
+  the supplied SpiroAnim v9 editor artifact, including all 48 explicit
+  interradial start/end orientations and 0.25-turn values.
 
 ## What he has that TKA does not
 

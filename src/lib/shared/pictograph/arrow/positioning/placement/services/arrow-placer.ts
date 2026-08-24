@@ -249,6 +249,11 @@ export class ArrowPlacer {
       this.allPlacements[placementFrame]?.[prop]?.[motionType]?.[
         placementKey
       ]?.[turnsStr];
+    // Quarter-turn glyphs are authored around their canonical arrow-location
+    // anchor. A midpoint between the 0-turn and half-turn placement tables is
+    // not geometrically meaningful: those legacy assets have different bounds
+    // and collision envelopes. An exact authored 0.25 entry (or a higher
+    // placement tier) still wins above; otherwise keep the canonical anchor.
     if (!adjustment) return { x: 0, y: 0 };
     return { x: adjustment[0], y: adjustment[1] };
   }

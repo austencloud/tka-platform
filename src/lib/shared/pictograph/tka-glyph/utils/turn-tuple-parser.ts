@@ -44,7 +44,7 @@ export interface ParsedTurnsTuple {
 
 const VALID_DIRECTIONS = ["s", "o", "cw", "ccw"] as const;
 const VALID_OPEN_CLOSE = ["op", "cl"] as const;
-const VALID_TURN_NUMBERS = [0, 0.5, 1, 1.5, 2, 2.5, 3] as const;
+const VALID_TURN_NUMBERS = [0, 0.25, 0.5, 1, 1.5, 2, 2.5, 3] as const;
 
 function parseOpenClose(value: string | undefined): OpenCloseValue {
   if (!value) return null;
@@ -215,6 +215,7 @@ export function getTurnNumberImagePath(value: TurnValue): string {
  * ViewBox dimensions:
  * - 1, 2, 3: viewBox="0 0 30 45" (single digits)
  * - float: viewBox="0 0 42.4 45"
+ * - 0.25: viewBox="0 0 120 45" (quarter-turn number)
  * - 0.5, 1.5: viewBox="0 0 80 45" (decimal numbers)
  * - 2.5: viewBox="0 0 83.67 45" (widest decimal)
  */
@@ -224,6 +225,9 @@ export function getTurnNumberWidth(value: TurnValue): number {
   }
 
   if (typeof value === "number") {
+    if (value === 0.25) {
+      return 120;
+    }
     // Decimal numbers (0.5, 1.5, 2.5) are wider
     if (value === 0.5 || value === 1.5) {
       return 80;

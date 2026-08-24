@@ -64,7 +64,11 @@ function findChangedPixelBounds(
     }
   }
 
-  assert.notEqual(right, -1, "expected the rendered header to contain word pixels");
+  assert.notEqual(
+    right,
+    -1,
+    "expected the rendered header to contain word pixels"
+  );
   return { left, right };
 }
 
@@ -79,9 +83,7 @@ function protectedWordBounds(
   const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
   const stripWidth = computeLoopIconStripWidth(loopComponents, iconSize);
   const rightIconZone =
-    badgePadding +
-    iconSize * LOOP_ICON_STRIP_OFFSET_SCALE +
-    stripWidth;
+    badgePadding + iconSize * LOOP_ICON_STRIP_OFFSET_SCALE + stripWidth;
 
   return {
     left: badgePadding + badgeSize + breathingGap,
@@ -138,7 +140,9 @@ async function renderRasterHeader(options: {
 
   const withoutWord = createCanvas(canvasWidth, headerHeight);
   renderHeader(
-    withoutWord.getContext("2d") as unknown as globalThis.CanvasRenderingContext2D,
+    withoutWord.getContext(
+      "2d"
+    ) as unknown as globalThis.CanvasRenderingContext2D,
     { ...sharedOptions, word: "" }
   );
 
@@ -433,6 +437,57 @@ describe("MCP rendering boundaries", () => {
     assert.doesNotMatch(zeroTurnSvg, /class="svg-arrow svg-arrow-blue"/);
   });
 
+  it("renders an interradial quarter-turn arrow through the shared asset resolver", async () => {
+    const renderer = getStandaloneRenderer();
+    const svg = await renderer.renderToSvg(
+      {
+        letter: "H",
+        startPosition: "beta3",
+        endPosition: "beta5",
+        gridMode: "diamond",
+        blueMotion: {
+          motionType: "pro",
+          rotationDirection: "cw",
+          startLocation: "n",
+          endLocation: "e",
+          startOrientation: "clockIn",
+          endOrientation: "in",
+          color: "blue",
+          turns: 0.25,
+        },
+        redMotion: {
+          motionType: "anti",
+          rotationDirection: "ccw",
+          startLocation: "s",
+          endLocation: "w",
+          startOrientation: "counterIn",
+          endOrientation: "out",
+          color: "red",
+          turns: 0.25,
+        },
+      },
+      {
+        darkMode: true,
+        showGrid: false,
+        showTKA: true,
+      }
+    );
+
+    assert.match(svg, /class="svg-arrow svg-arrow-blue"/);
+    assert.match(svg, /class="svg-arrow svg-arrow-red"/);
+    assert.match(svg, /stroke:#3575E2/);
+    assert.match(svg, /stroke:#ED1C24/);
+    // MCP normalizes orientation inputs to lowercase before resolving assets.
+    // This path prefix belongs to pro/from_interradial_clock_in/pro_0.25.svg;
+    // the generic nonradial quarter asset begins at M 51.8 instead.
+    assert.match(svg, /M 76\.5 14\.0 C/);
+    assert.doesNotMatch(svg, /M 51\.8 14\.0 C/);
+    assert.equal(
+      svg.match(/width="120" height="45" viewBox="0 0 120 45"/g)?.length,
+      2
+    );
+  });
+
   it("loads canonical glyph assets, including Greek, bridge, and dash letters", async () => {
     const glyphs = await loadTkaGlyphImages("ΣWΘQVY-", true);
 
@@ -476,7 +531,9 @@ describe("MCP rendering boundaries", () => {
 
     const rendered = createCanvas(canvasWidth, headerHeight);
     renderHeader(
-      rendered.getContext("2d") as unknown as globalThis.CanvasRenderingContext2D,
+      rendered.getContext(
+        "2d"
+      ) as unknown as globalThis.CanvasRenderingContext2D,
       {
         canvasWidth,
         headerHeight,

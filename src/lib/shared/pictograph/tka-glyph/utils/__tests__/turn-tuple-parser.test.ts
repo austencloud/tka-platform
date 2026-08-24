@@ -1,12 +1,28 @@
 import { describe, it, expect } from "vitest";
 import {
   parseTurnsTuple,
+  getTurnNumberImagePath,
+  getTurnNumberWidth,
   getHalfMarkWidth,
   HALF_MARK_IMAGE_PATH,
   MARK_GAP,
   getSlotUnitWidth,
   getSlotOffsetX,
 } from "../turn-tuple-parser";
+
+describe("quarter-turn number", () => {
+  it("preserves 0.25 in both turn slots", () => {
+    const result = parseTurnsTuple("(0.25, 0.25)");
+
+    expect(result.top).toBe(0.25);
+    expect(result.bottom).toBe(0.25);
+  });
+
+  it("resolves the dedicated glyph and its natural width", () => {
+    expect(getTurnNumberImagePath(0.25)).toBe("/images/numbers/0.25.svg");
+    expect(getTurnNumberWidth(0.25)).toBe(120);
+  });
+});
 
 // Coverage for the halved-motion token ("/" suffix) added in
 // docs/superpowers/specs/2026-07-16-half-notation-canon-design.md. The

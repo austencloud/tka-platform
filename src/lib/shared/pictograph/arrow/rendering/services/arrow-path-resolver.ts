@@ -5,13 +5,10 @@
  */
 
 import type { MotionData } from "../../../shared/domain/models/motion-data";
-import {
-  MotionType,
-  Orientation,
-  SkewDirection,
-} from "../../../shared/domain/enums/pictograph-enums";
+import { MotionType } from "../../../shared/domain/enums/pictograph-enums";
 import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
 import { HALF_ASSET_TURNS } from "./half-asset-manifest";
+import { resolveFullArrowAssetPath } from "@tka/render-core";
 
 /**
  * Halved-motion glyphs are TURNS-SPECIFIC, like the regular per-turn arrow
@@ -33,6 +30,22 @@ function halfArrowPath(motionData: MotionData): string {
   return `/images/arrows/${mt}_half/from_radial/${mt}_half${suffix}.svg`;
 }
 
+function fullArrowPath(motionData: MotionData): string {
+  const skewDirection =
+    motionData.skewDir === "+"
+      ? "+"
+      : motionData.skewDir === "-"
+        ? "-"
+        : undefined;
+  return `/${resolveFullArrowAssetPath({
+    motionType: motionData.motionType,
+    startOrientation: motionData.startOrientation,
+    turns: motionData.turns,
+    skewSteps: motionData.skewSteps ?? undefined,
+    skewDirection,
+  })}`;
+}
+
 /**
  * Get arrow SVG path based on motion type and properties (extracted from Arrow.svelte)
  */
@@ -40,7 +53,7 @@ export function getArrowPath(
   arrowData: ArrowPlacementData,
   motionData: MotionData
 ): string | null {
-  const { motionType, turns } = motionData;
+  const { motionType } = motionData;
 
   // Half-motion arrows live in a dedicated asset dir, one file per halvable
   // turns value (see halfArrowPath). No skew variant.
@@ -56,24 +69,7 @@ export function getArrowPath(
     motionType === MotionType.STATIC ||
     motionType === MotionType.DASH
   ) {
-    const isNonRadial =
-      motionData.startOrientation === Orientation.CLOCK ||
-      motionData.startOrientation === Orientation.COUNTER;
-
-    const subDir = isNonRadial ? "from_nonradial" : "from_radial";
-    const turnValue = typeof turns === "number" ? turns.toFixed(1) : "0.0";
-
-    let skewSuffix = "";
-    if (
-      motionData.skewSteps &&
-      motionData.skewSteps > 0 &&
-      motionData.skewDir &&
-      (motionType === MotionType.PRO || motionType === MotionType.ANTI)
-    ) {
-      skewSuffix = motionData.skewDir === SkewDirection.PLUS ? "_skew+" : "_skew-";
-    }
-
-    return `${baseDir}/${subDir}/${motionType}_${turnValue}${skewSuffix}.svg`;
+    return fullArrowPath(motionData);
   }
 
   return `${baseDir}.svg`;
@@ -92,9 +88,6 @@ export function getArrowSvgPath(motionData: MotionData | undefined): string {
   }
 
   const motionType = motionData.motionType;
-  const turnsVal = motionData.turns;
-  const startOrientation = motionData.startOrientation;
-
   if (motionType === MotionType.FLOAT) {
     return "/images/arrows/float.svg";
   }
@@ -103,29 +96,5 @@ export function getArrowSvgPath(motionData: MotionData | undefined): string {
     return halfArrowPath(motionData);
   }
 
-  const radialPath =
-    startOrientation === Orientation.IN || startOrientation === Orientation.OUT
-      ? "from_radial"
-      : "from_nonradial";
-
-  let turnsStr: string;
-  if (turnsVal === "fl") {
-    turnsStr = "fl";
-  } else if (typeof turnsVal === "number") {
-    turnsStr = turnsVal % 1 === 0 ? `${turnsVal}.0` : turnsVal.toString();
-  } else {
-    turnsStr = "0.0";
-  }
-
-  let skewSuffix = "";
-  if (
-    motionData.skewSteps &&
-    motionData.skewSteps > 0 &&
-    motionData.skewDir &&
-    (motionType === MotionType.PRO || motionType === MotionType.ANTI)
-  ) {
-    skewSuffix = motionData.skewDir === SkewDirection.PLUS ? "_skew+" : "_skew-";
-  }
-
-  return `/images/arrows/${motionType}/${radialPath}/${motionType}_${turnsStr}${skewSuffix}.svg`;
+  return fullArrowPath(motionData);
 }

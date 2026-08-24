@@ -45,12 +45,23 @@ export function applyColorToSvg(
     /fill:\s*#[0-9A-Fa-f]{6}/g,
     `fill:${targetColor}`
   );
+  coloredSvg = coloredSvg.replace(
+    /stroke="#[0-9A-Fa-f]{6}"/g,
+    `stroke="${targetColor}"`
+  );
+  coloredSvg = coloredSvg.replace(
+    /stroke:\s*#[0-9A-Fa-f]{6}/g,
+    `stroke:${targetColor}`
+  );
 
   coloredSvg = coloredSvg.replace(
     /<(path|polygon|circle|rect|ellipse)([^>]*?)class="st\d+"([^>]*?)>/g,
     (match, tag, before, after) => {
       if (before.includes('style="') || after.includes('style="')) {
-        return match.replace(/style="([^"]*)"/, `style="$1;fill:${targetColor}"`);
+        return match.replace(
+          /style="([^"]*)"/,
+          `style="$1;fill:${targetColor}"`
+        );
       }
       return `<${tag}${before}class="st0"${after} style="fill:${targetColor}">`;
     }
@@ -63,10 +74,7 @@ export function applyColorToSvg(
     `class="st$1-${colorSuffix}"`
   );
 
-  coloredSvg = coloredSvg.replace(
-    /<circle[^>]*id="centerPoint"[^>]*\/?>/,
-    ""
-  );
+  coloredSvg = coloredSvg.replace(/<circle[^>]*id="centerPoint"[^>]*\/?>/, "");
 
   return coloredSvg;
 }

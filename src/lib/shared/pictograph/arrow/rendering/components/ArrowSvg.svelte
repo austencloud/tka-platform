@@ -39,6 +39,10 @@ even when Svelte recreates the component instance.
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
   import { buildArrowHaloFilter } from "../arrow-halo";
+  import {
+    getArrowOrientationTransitionDirection,
+    type ArrowRotationAnimationDirection,
+  } from "../services/arrow-orientation-transition";
 
   let {
     motionData,
@@ -145,14 +149,7 @@ even when Svelte recreates the component instance.
     rotationDirection?: RotationDirection;
   };
 
-  type RotationAnimationDirection = "cw" | "ccw" | "auto";
-
-  const ORIENTATION_CYCLE: Orientation[] = [
-    Orientation.IN,
-    Orientation.COUNTER,
-    Orientation.OUT,
-    Orientation.CLOCK,
-  ];
+  type RotationAnimationDirection = ArrowRotationAnimationDirection;
 
   const EPSILON = 0.0001;
 
@@ -323,30 +320,11 @@ even when Svelte recreates the component instance.
     nextOrientation: Orientation,
     rotationDirection?: RotationDirection
   ): RotationAnimationDirection {
-    const previousIndex = ORIENTATION_CYCLE.indexOf(previousOrientation);
-    const nextIndex = ORIENTATION_CYCLE.indexOf(nextOrientation);
-
-    if (previousIndex === -1 || nextIndex === -1) {
-      return mapRotationDirection(rotationDirection) ?? "cw";
-    }
-
-    const cycleLength = ORIENTATION_CYCLE.length;
-    const forwardSteps =
-      (nextIndex - previousIndex + cycleLength) % cycleLength;
-    const backwardSteps =
-      (previousIndex - nextIndex + cycleLength) % cycleLength;
-
-    if (forwardSteps === 0) {
-      return "auto";
-    }
-
-    if (forwardSteps === backwardSteps) {
-      // 180° opposite - use explicit rotation direction
-      return mapRotationDirection(rotationDirection) ?? "cw";
-    }
-
-    // Choose shortest path
-    return forwardSteps < backwardSteps ? "cw" : "ccw";
+    return getArrowOrientationTransitionDirection(
+      previousOrientation,
+      nextOrientation,
+      mapRotationDirection(rotationDirection) ?? "cw"
+    );
   }
 
   /**

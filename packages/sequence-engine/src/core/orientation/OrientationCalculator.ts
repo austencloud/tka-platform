@@ -213,7 +213,9 @@ function calculateWholeTurnOrientation(
  * Handles 0.25, 0.5, 0.75, 1.25, 1.5, 1.75, 2.25, 2.5, etc.
  * Uses the 8-point radial cycle: in → clockIn → clock → clockOut → out → counterOut → counter → counterIn
  *
- * Radial rule: ANTI/DASH step SAME direction as rotation, PRO/STATIC step OPPOSITE.
+ * Fractional turns keep the same whole-turn base as integer turns, then add
+ * the prop's physical quarter-turn rotation. ANTI/DASH therefore begin from
+ * the reversed orientation; PRO/STATIC begin from the supplied orientation.
  */
 function calculateRadialFractionalTurnOrientation(
   motionType: string,
@@ -229,13 +231,15 @@ function calculateRadialFractionalTurnOrientation(
   const rotDir = rotationDirection.toLowerCase();
   const isCW = rotDir === "cw" || rotDir === "clockwise";
   const type = motionType.toLowerCase();
-
-  // Radial rule: ANTI/DASH step same direction, PRO/STATIC step opposite
   const isAntiLike = type === "anti" || type === "dash";
-  const effectiveCW = isAntiLike ? isCW : !isCW;
 
-  const direction = effectiveCW ? 1 : -1;
-  const newIdx = ((startIdx + direction * steps) % 8 + 8) % 8;
+  // A zero-turn ANTI/DASH motion reverses orientation. Fractional turns must
+  // retain that four-step base or the result jumps discontinuously when, for
+  // example, 0.75 becomes 1 turn. The radial cycle runs opposite the SVG
+  // angle convention, so a physical clockwise prop rotation subtracts steps.
+  const baseSteps = isAntiLike ? 4 : 0;
+  const turnSteps = isCW ? -steps : steps;
+  const newIdx = ((startIdx + baseSteps + turnSteps) % 8 + 8) % 8;
   return RADIAL_CW_CYCLE[newIdx]!;
 }
 

@@ -8,7 +8,6 @@
  * Just pure functions that can run in any JavaScript environment.
  */
 
-
 export type {
   GridLocation,
   GridMode,
@@ -23,7 +22,11 @@ export type {
   VectorDirection,
 } from "./types.js";
 
-export { CARDINAL_LOCATIONS, INTERCARDINAL_LOCATIONS, isCardinal } from "./types.js";
+export {
+  CARDINAL_LOCATIONS,
+  INTERCARDINAL_LOCATIONS,
+  isCardinal,
+} from "./types.js";
 
 // SVG color transforms
 export {
@@ -41,7 +44,6 @@ export type {
   SvgColorOptions,
   MotionSvgColorOptions,
 } from "./svg-color.js";
-
 
 // Viewbox constants
 export {
@@ -139,9 +141,11 @@ export {
   OPPOSITE_LOCATION_MAP,
 } from "./constants/dash-location-maps.js";
 
-
 // Grid position
-export { getHandPointCoordinates, getLayer2PointCoordinates } from "./calculations/grid-position.js";
+export {
+  getHandPointCoordinates,
+  getLayer2PointCoordinates,
+} from "./calculations/grid-position.js";
 
 // Prop placement
 export {
@@ -160,18 +164,34 @@ export {
 // Arrow rotation
 export { calculateArrowRotation } from "./calculations/arrow-rotation.js";
 
+// Arrow asset paths
+export { resolveFullArrowAssetPath } from "./calculations/arrow-asset-path.js";
+export type { FullArrowAssetPathInput } from "./calculations/arrow-asset-path.js";
+
 // Dash location
 export { calculateDashLocation } from "./calculations/dash-location.js";
 export type { DashLocationInput } from "./calculations/dash-location.js";
 
 // Beta offset
 export { calculateBetaOffset } from "./calculations/beta-offset.js";
-export type { BetaMotionInput, BetaOffsetInput } from "./calculations/beta-offset.js";
+export type {
+  BetaMotionInput,
+  BetaOffsetInput,
+} from "./calculations/beta-offset.js";
 
 // Orientation
-export { calculateEndOrientation, calculateOrientations } from "./calculations/orientation.js";
+export {
+  calculateEndOrientation,
+  calculateOrientations,
+} from "./calculations/orientation.js";
 export type { OrientationInput } from "./calculations/orientation.js";
 
 // Reversal positions
-export { calculateReversalPositions, getReversalColors } from "./calculations/reversal-positions.js";
-export type { ReversalDotPosition, ReversalPositions } from "./calculations/reversal-positions.js";
+export {
+  calculateReversalPositions,
+  getReversalColors,
+} from "./calculations/reversal-positions.js";
+export type {
+  ReversalDotPosition,
+  ReversalPositions,
+} from "./calculations/reversal-positions.js";
