@@ -894,14 +894,16 @@ Delegates ALL logic to services (SRP compliant)
     }
 
     .card-grid {
-      --compact-level-row: clamp(60px, 10cqh, 68px);
+      --compact-level-row: clamp(56px, 10cqh, 64px);
     }
 
     .card-settings-container:not([data-desktop-layout="true"])
       .card-grid[data-level="1"] {
       grid-template-rows:
         var(--compact-level-row)
-        repeat(3, minmax(0, 1fr));
+        minmax(var(--min-touch-target), 0.9fr)
+        minmax(var(--min-touch-target), 0.9fr)
+        minmax(64px, 1.2fr);
       grid-auto-rows: unset;
     }
 
@@ -911,7 +913,10 @@ Delegates ALL logic to services (SRP compliant)
       .card-grid[data-level="3"] {
       grid-template-rows:
         var(--compact-level-row)
-        repeat(4, minmax(0, 1fr));
+        minmax(var(--min-touch-target), 0.8fr)
+        minmax(var(--min-touch-target), 0.95fr)
+        minmax(var(--min-touch-target), 0.8fr)
+        minmax(64px, 1.15fr);
       grid-auto-rows: unset;
     }
 
@@ -993,8 +998,9 @@ Delegates ALL logic to services (SRP compliant)
        instead, which eases the whole box between the two measured layouts. */
   }
 
-  /* Level 2 and 3 add a fourth row. When the panel is shallow, the Grid /
-     Turn Intensity row needs more room than the single-action Generate row. */
+  /* Level 2 and 3 add a fourth row. Generate is the primary action, so it stays
+     at least as tall as the compact Level control instead of becoming the
+     shallowest row when the panel is tight. */
   @container settings-grid (width >= 630px) and (height < 560px) {
     .card-grid[data-level="2"],
     .card-grid[data-level="3"] {
@@ -1002,7 +1008,7 @@ Delegates ALL logic to services (SRP compliant)
         minmax(0, 1fr)
         minmax(0, 1.15fr)
         minmax(0, 0.95fr)
-        minmax(48px, 0.72fr);
+        minmax(64px, 1fr);
       grid-auto-rows: unset;
     }
   }
@@ -1014,10 +1020,10 @@ Delegates ALL logic to services (SRP compliant)
       .card-grid[data-level="3"] {
       grid-template-rows:
         var(--compact-level-row)
-        minmax(0, 1fr)
-        minmax(0, 1.15fr)
-        minmax(0, 0.95fr)
-        minmax(48px, 0.72fr);
+        minmax(var(--min-touch-target), 0.8fr)
+        minmax(var(--min-touch-target), 0.95fr)
+        minmax(var(--min-touch-target), 0.8fr)
+        minmax(64px, 1.15fr);
       grid-auto-rows: unset;
     }
 
@@ -1029,7 +1035,7 @@ Delegates ALL logic to services (SRP compliant)
         minmax(0, 1fr)
         minmax(0, 1.15fr)
         minmax(0, 0.95fr)
-        minmax(48px, 0.72fr);
+        minmax(64px, 1fr);
       grid-auto-rows: unset;
     }
   }
