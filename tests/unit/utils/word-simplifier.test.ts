@@ -23,6 +23,7 @@ describe("Word Simplifier", () => {
     it("should simplify repeated patterns", () => {
       expect(simplifyRepeatedWord("ABCABCABC")).toBe("ABC");
       expect(simplifyRepeatedWord("TESTTEST")).toBe("TEST");
+      expect(simplifyRepeatedWord("JΦJΦJΦJΦ")).toBe("JΦ");
       expect(simplifyRepeatedWord("AAAA")).toBe("A");
       expect(simplifyRepeatedWord("ABAB")).toBe("AB");
     });
@@ -180,12 +181,16 @@ describe("Word Simplifier", () => {
     it("should not compress single-char repeats below threshold", () => {
       // LL is only 2 repeats of a single char — not worth bracket overhead
       const segments = compressWord("HELLO");
-      expect(segments).toEqual([{ tokens: ["H", "E", "L", "L", "O"], repeat: 1 }]);
+      expect(segments).toEqual([
+        { tokens: ["H", "E", "L", "L", "O"], repeat: 1 },
+      ]);
     });
 
     it("should return single segment for truly non-repeating word", () => {
       const segments = compressWord("ABCDE");
-      expect(segments).toEqual([{ tokens: ["A", "B", "C", "D", "E"], repeat: 1 }]);
+      expect(segments).toEqual([
+        { tokens: ["A", "B", "C", "D", "E"], repeat: 1 },
+      ]);
     });
 
     it("should handle dash letters as single tokens", () => {

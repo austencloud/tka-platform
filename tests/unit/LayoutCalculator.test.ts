@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculateLayout, calculateGalleryAspectRatio } from "../../src/lib/shared/render/services/layout-calculator";
+import {
+  calculateLayout,
+  calculateGalleryAspectRatio,
+} from "../../src/lib/shared/render/services/layout-calculator";
 
 describe("LayoutCalculator", () => {
   describe("calculateLayout with start row", () => {
@@ -16,6 +19,11 @@ describe("LayoutCalculator", () => {
     it("returns WITHOUT_START columns + 1 extra row for 12 steps", () => {
       const layout = calculateLayout(12, true);
       expect(layout).toEqual([3, 5]);
+    });
+
+    it("gives a 10-step sequence five columns and two step rows below Start", () => {
+      const layout = calculateLayout(10, true, "row");
+      expect(layout).toEqual([5, 3]);
     });
 
     it("returns WITHOUT_START layout unchanged when no start position", () => {
