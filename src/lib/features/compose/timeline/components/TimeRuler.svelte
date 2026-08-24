@@ -11,12 +11,16 @@
   interface Props {
     duration: TimeSeconds;
     pixelsPerSecond: number;
+    formatLabel?: (value: number) => string;
+    tickInterval?: number;
   }
 
-  let { duration, pixelsPerSecond }: Props = $props();
+  let { duration, pixelsPerSecond, formatLabel, tickInterval }: Props =
+    $props();
 
   // Calculate appropriate tick interval based on zoom
-  const tickInterval = $derived.by(() => {
+  const resolvedTickInterval = $derived.by(() => {
+    if (tickInterval !== undefined) return tickInterval;
     if (pixelsPerSecond > 200) return 0.5; // Every 0.5s at high zoom
     if (pixelsPerSecond > 100) return 1; // Every 1s
     if (pixelsPerSecond > 50) return 2; // Every 2s
@@ -26,7 +30,7 @@
   });
 
   // Major tick is every 5th minor tick
-  const majorInterval = $derived(tickInterval * 5);
+  const majorInterval = $derived(resolvedTickInterval * 5);
 
   // Generate tick marks
   const ticks = $derived.by(() => {
@@ -36,7 +40,7 @@
       major: boolean;
       x: number;
     }> = [];
-    const interval = tickInterval;
+    const interval = resolvedTickInterval;
     const major = majorInterval;
 
     let index = 0;
@@ -54,6 +58,7 @@
 
   // Format time as MM:SS or MM:SS.ms depending on zoom
   function formatTime(seconds: number): string {
+    if (formatLabel) return formatLabel(seconds);
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
 

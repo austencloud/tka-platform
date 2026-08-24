@@ -10,10 +10,12 @@ last_triaged: 2026-08-02
 ---
 # Stage Locomotion System — Design Spec
 
-> **DRIFT WARNING — 2026-08-02.** Full Stage module shipped with **motion matching** (beyond spec's blend tree); own ledger 0/17 checked; prop-overlay unverified
+> **SUPERSEDED — 2026-08-20.** The Stage editor shell shipped, but its 3D
+> preview remained a placeholder and motion matching remained lab-only. The
+> production integration is governed by
+> `active/2026-08-20-stage-performance-runtime-design.md`.
 >
-> Status lines below predate this check and are left intact deliberately.
-> This banner is the current state. Source: `docs/superpowers/handoffs/2026-07-25-spec-triage-ledger.md`.
+> Status lines below are retained as historical design input.
 
 
 > Beat-synchronized multi-performer stage choreography with formation keyframing, root-motion locomotion, and overlay prop patterns.

@@ -20,6 +20,8 @@ export interface FramingOptions {
   plane: FramingPlane;
   groundOffset: number;
   fovDeg?: number;
+  /** Width divided by height for the actual canvas viewport. */
+  aspectRatio?: number;
   paddingMult?: number;
   elevationDeg?: number;
 }
@@ -41,11 +43,16 @@ export function computeFramingShot(opts: FramingOptions): FramingShot {
     plane,
     groundOffset,
     fovDeg = DEFAULT_FOV_DEG,
+    aspectRatio = 1,
     paddingMult = DEFAULT_PADDING,
     elevationDeg = DEFAULT_ELEVATION_DEG,
   } = opts;
 
   const halfFovRad = ((fovDeg / 2) * Math.PI) / 180;
+  const safeAspectRatio = Math.max(0.1, aspectRatio);
+  const horizontalHalfFovRad = Math.atan(
+    Math.tan(halfFovRad) * safeAspectRatio
+  );
 
   // Rig origin sits at y = groundOffset (shoulder height).
   // Feet are absGroundY below that; props extend above.
@@ -77,11 +84,14 @@ export function computeFramingShot(opts: FramingOptions): FramingShot {
   }
   const horizontalRadius = maxDist + PER_PERFORMER_EXTENT;
 
-  // Fit the larger dimension with padding
-  const fitRadius = Math.max(performerHalfHeight, horizontalRadius) * paddingMult;
-
-  // Distance for flat bounding box: halfExtent / tan(halfFov)
-  const dist = Math.max(MIN_DIST, fitRadius / Math.tan(halfFovRad));
+  // Fit both axes against their actual frustum. Portrait canvases have a much
+  // narrower horizontal FOV than their vertical FOV; treating them as square
+  // silently pushes the outer performers off-screen.
+  const verticalDistance =
+    (performerHalfHeight * paddingMult) / Math.tan(halfFovRad);
+  const horizontalDistance =
+    (horizontalRadius * paddingMult) / Math.tan(horizontalHalfFovRad);
+  const dist = Math.max(MIN_DIST, verticalDistance, horizontalDistance);
 
   const elevationRad = (elevationDeg * Math.PI) / 180;
   const horizDist = dist * Math.cos(elevationRad);

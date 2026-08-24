@@ -1,5 +1,10 @@
 # Stage Choreography System — Design Spec v2
 
+> **RUNTIME CORRECTION — 2026-08-20.** The 2D editor and timeline described
+> here shipped, but `StageViewer` remained a placeholder and never became the
+> proposed `Viewer3DScene` wrapper. The current runtime contract is
+> `../active/2026-08-20-stage-performance-runtime-design.md`.
+
 > Multi-performer formation choreography built on top of the existing Scene3D/Viewer3DScene system. Beat-synced transitions, top-down SVG formation editor, walk style controls.
 
 **Supersedes:** `2026-05-25-stage-locomotion-design.md` (rejected — hand-rolled module instead of reusing existing 3D viewer)

@@ -51,6 +51,7 @@
   } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import {
     TIER_CONFIGS,
+    type QualityTier,
     type QualityTierConfig,
     type TipPositionData3D,
   } from "./types";
@@ -83,6 +84,7 @@
   import { getPixel } from "$lib/shared/poi/domain/strip-pattern";
   import { ledBrightnessToFloat } from "$lib/shared/animation-engine/domain/types/led-types";
   import { getSceneEffectsContext } from "./scene-effects/scene-effects-context";
+  import type { SceneEffectsManager3D } from "./scene-effects/scene-effects-manager-3d";
   import type {
     SceneEffectRigFrame3D,
     SceneEffectTipSource3D,
@@ -129,6 +131,10 @@
     redHandPos?: { x: number; z: number };
     /** Parent Object3D to add imperative meshes to (rig group). Falls back to scene root. */
     effectsParentRef?: Object3D;
+    /** Explicit manager for viewers that lazy-load the effects runtime. */
+    sceneEffectsManagerOverride?: SceneEffectsManager3D | null;
+    /** A host may cap the existing effect budget for a large directed cast. */
+    qualityTierOverride?: QualityTier;
     /**
      * @deprecated Ignored - trail parameters now come from EffectsConfigState
      * via context. Left in place so parent components don't break; removed
@@ -158,6 +164,8 @@
     blueHandPos = { x: 0, z: 0 },
     redHandPos = { x: 0, z: 0 },
     effectsParentRef,
+    sceneEffectsManagerOverride = null,
+    qualityTierOverride,
     trailConfig = {},
   }: Props = $props();
 
@@ -165,7 +173,9 @@
   const qualityTierDetector = getQualityTierDetector();
   const adaptiveQuality = tryGetAdaptiveQualityContext();
   const qualityTier = $derived(
-    adaptiveQuality?.tier ?? qualityTierDetector.currentTier
+    qualityTierOverride ??
+      adaptiveQuality?.tier ??
+      qualityTierDetector.currentTier
   );
   const tipBridge = new TipPositionBridge3D();
 
@@ -215,7 +225,8 @@
   // local state as a fallback so this component still works when mounted
   // outside a viewer that sets the context explicitly.
   const effectsState = getEffectsConfigContext() ?? createEffectsConfigState();
-  const sceneEffectsManager = getSceneEffectsContext();
+  const sceneEffectsManager =
+    sceneEffectsManagerOverride ?? getSceneEffectsContext();
 
   // Resolved intent objects only change when their config does. Keeping them
   // derived avoids allocating ten spread objects per rig on every frame.
@@ -654,7 +665,7 @@
       ? patternFrameIndex(
           ledElapsedMs,
           resolvedLed.cycleDuration,
-          ledStrip.frameCount,
+          ledStrip.frameCount
         )
       : 0;
     /** Strip color for one shaft end, normalized to 0-1. Black while an
@@ -975,7 +986,9 @@
         // The look carries a shutter, not a sprite size: emitter footprint is a
         // photometric quantity the 3D path does not yet derive, so the material
         // keeps its own falloff defaults and only persistence comes from the look.
-        const povPersistence = shutterToPovPersistence(resolvedLed.look.shutter);
+        const povPersistence = shutterToPovPersistence(
+          resolvedLed.look.shutter
+        );
 
         if (ledStrip && blueLedAssigned && blueRigCenter) {
           if (!bluePovRenderer) {
