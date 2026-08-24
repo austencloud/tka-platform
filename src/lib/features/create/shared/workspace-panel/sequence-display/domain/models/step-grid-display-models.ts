@@ -45,8 +45,6 @@ export interface DisplayAnimationState {
   isPreparingFullAnimation: boolean;
   /** Flag for sequential mode waiting state (steps hidden until their turn) */
   isWaitingForSequentialAnimation: boolean;
-  /** Flag for fade-out animation before sequence generation */
-  isClearingForGeneration: boolean;
 }
 
 /**
@@ -110,8 +108,6 @@ export interface AnimationTiming {
   entranceDuration: number;
   /** Duration of beat exit animation (ms) */
   exitDuration: number;
-  /** Duration of clear sequence fade-out (ms) */
-  clearDuration: number;
   /** Cleanup delay after animation completes (ms) */
   cleanupDelay: number;
 }
@@ -123,6 +119,5 @@ export const DEFAULT_ANIMATION_TIMING: AnimationTiming = {
   waveBandDelay: 55,
   entranceDuration: 380,
   exitDuration: 500,
-  clearDuration: 300,
   cleanupDelay: 600,
 };

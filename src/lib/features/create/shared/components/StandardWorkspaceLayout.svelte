@@ -106,12 +106,15 @@
         "complete"
   );
 
-  // Fuse tab: hides workspace entirely (Fuse owns its own full-width layout)
-  const isFuseTab = $derived(navigationState.activeTab === "fuse");
+  // Fuse and Tunnel own complete workspaces inside their tool-panel surface.
+  const ownsFullWorkspace = $derived(
+    navigationState.activeTab === "fuse" ||
+      navigationState.activeTab === "tunnel"
+  );
 
   // Workspace visible only when there's actual content to show
   const shouldShowWorkspace = $derived(
-    !isInputMode && !isFuseTab && (hasWorkspaceContent || isAssembleTab)
+    !isInputMode && !ownsFullWorkspace && (hasWorkspaceContent || isAssembleTab)
   );
   const showClearRecovery = $derived(
     !hasWorkspaceContent &&

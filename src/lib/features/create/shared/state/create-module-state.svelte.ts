@@ -151,6 +151,7 @@ export function createCreateModuleState(
     "assemble",
     "generate",
     "fuse",
+    "tunnel",
   ];
   const urlTab = navigationState.activeTab as BuildModeId;
   if (urlTab && VALID_CREATE_TABS.includes(urlTab)) {

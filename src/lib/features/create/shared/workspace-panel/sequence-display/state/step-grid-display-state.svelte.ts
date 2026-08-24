@@ -71,7 +71,6 @@ export function createStepGridDisplayState() {
   let stepsToAnimate = $state<Set<number>>(new Set());
   let isPreparingFullAnimation = $state<boolean>(false);
   let isWaitingForSequentialAnimation = $state<boolean>(false);
-  let isClearingForGeneration = $state<boolean>(false);
 
   // Construct gives one committed step the workspace stage, then hands the
   // finished pictograph to its grid cell. Keeping both owners in one request
@@ -323,19 +322,6 @@ export function createStepGridDisplayState() {
   }
 
   /**
-   * Handle sequence clearing animation
-   */
-  function handleClearSequence() {
-    arrivalRequest = null;
-    isClearingForGeneration = true;
-
-    // Reset after animation completes
-    setTimeout(() => {
-      isClearingForGeneration = false;
-    }, animationTiming.clearDuration);
-  }
-
-  /**
    * Clean up animation state
    */
   function cleanupAnimation() {
@@ -407,9 +393,6 @@ export function createStepGridDisplayState() {
     get isCascadeReveal() {
       return isWaitingForSequentialAnimation;
     },
-    get isClearingForGeneration() {
-      return isClearingForGeneration;
-    },
     get animationTiming() {
       return animationTiming;
     },
@@ -439,7 +422,6 @@ export function createStepGridDisplayState() {
     beginArrivalHandoff,
     completeArrival,
     cancelArrival,
-    handleClearSequence,
     cleanupAnimation,
     shouldBeatAnimate,
     shouldBeatBeHidden,

@@ -153,6 +153,34 @@ describe("calculateGridLayout workspace column selection", () => {
     expect(layout.columns).toBe(2);
     expect(layout.rows).toBe(4);
   });
+
+  it("fills a narrow Tunnel card with three readable step columns", () => {
+    const defaultLayout = calculateGridLayout(8, 585, 402, null);
+    const tunnelLayout = calculateGridLayout(8, 585, 402, null, {
+      narrowMaxColumns: 3,
+      preferWidthSizingOnNarrow: true,
+    });
+
+    expect(tunnelLayout.columns).toBe(3);
+    expect(tunnelLayout.rows).toBe(3);
+    expect(tunnelLayout.cellSize).toBeGreaterThan(defaultLayout.cellSize);
+    expect(tunnelLayout.cellSize * tunnelLayout.rows).toBeGreaterThanOrEqual(
+      400
+    );
+  });
+
+  it("keeps long Tunnel sequences readable instead of flattening them into eight columns", () => {
+    const defaultLayout = calculateGridLayout(40, 950, 349, null);
+    const tunnelLayout = calculateGridLayout(40, 950, 349, null, {
+      stableColumnCount: 4,
+      narrowMaxColumns: 3,
+      preferWidthSizingOnNarrow: true,
+    });
+
+    expect(defaultLayout.columns).toBe(8);
+    expect(tunnelLayout.columns).toBe(4);
+    expect(tunnelLayout.cellSize).toBeGreaterThan(defaultLayout.cellSize * 2);
+  });
 });
 
 describe("workspace grid vertical centering", () => {

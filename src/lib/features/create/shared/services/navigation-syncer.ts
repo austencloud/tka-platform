@@ -56,7 +56,14 @@ export class NavigationSyncer {
     });
 
     // Skip if navigation is to a non-Create tab (e.g., "browse", "library")
-    const validCreateTabs = ["construct", "generate", "spell", "assemble", "fuse"];
+    const validCreateTabs = [
+      "construct",
+      "generate",
+      "spell",
+      "assemble",
+      "fuse",
+      "tunnel",
+    ];
     if (!validCreateTabs.includes(currentMode)) {
       return;
     }

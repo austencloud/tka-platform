@@ -33,6 +33,7 @@
     focusTrap = false,
     autoFocus = true,
     lockScroll = false,
+    keepMounted = false,
     labelledBy,
     ariaLabel,
     placement: placementOverride, // Override context-derived placement (for standalone use)
@@ -49,6 +50,7 @@
     focusTrap?: boolean;
     autoFocus?: boolean;
     lockScroll?: boolean;
+    keepMounted?: boolean;
     labelledBy?: string;
     ariaLabel?: string;
     placement?: "bottom" | "right"; // Override for standalone use outside Create module
@@ -164,9 +166,12 @@
       styles.push(`--measured-panel-width: ${toolPanelWidth}px`);
     }
 
-    // When fullHeightOnMobile is active, set CSS variable to force full viewport height
+    // Fill the visible Create workspace without laying controls beneath mobile navigation.
     if (fullHeightOnMobile && !isSideBySideLayout) {
-      styles.push(`--panel-full-height: 100dvh`);
+      styles.push(
+        `--panel-full-height: calc(100dvh - var(--primary-nav-height, 0px))`,
+        `--panel-bottom-offset: var(--primary-nav-height, 0px)`
+      );
     }
 
     return styles.join("; ");
@@ -230,6 +235,7 @@
         trapFocus={focusTrap}
         {autoFocus}
         preventScroll={lockScroll}
+        {keepMounted}
       >
         <div class="create-drawer-body" style={panelHeightStyle}>
           {@render children()}
@@ -253,6 +259,7 @@
       trapFocus={focusTrap}
       {autoFocus}
       preventScroll={lockScroll}
+      {keepMounted}
     >
       <div class="create-drawer-body" style={panelHeightStyle}>
         {@render children()}
@@ -343,8 +350,9 @@
   :global(.drawer-content[class*="-panel-container"][data-placement="bottom"]) {
     /* Override the default 100dvh max-height cap from base Drawer */
     --sheet-max-height: 100dvh;
-    /* When --panel-full-height is set, force full viewport height */
+    /* When --panel-full-height is set, fill the visible workspace above navigation. */
     height: var(--panel-full-height, auto);
+    bottom: var(--panel-bottom-offset, 0);
     display: flex;
     flex-direction: column;
     /* Height will be determined by .create-drawer-body child */

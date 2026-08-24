@@ -68,7 +68,9 @@ describe("SwipeToDismiss tap slop", () => {
     button.dispatchEvent(touchEvent("touchstart", 100, 100));
     button.dispatchEvent(touchEvent("touchmove", 100 + dx, 100 + dy));
     button.dispatchEvent(touchEvent("touchend", 100 + dx, 100 + dy));
-    button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    button.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true })
+    );
   }
 
   it("keeps the click when a tap drifts a few px off the dismiss axis", () => {
@@ -97,5 +99,19 @@ describe("SwipeToDismiss tap slop", () => {
     button.dispatchEvent(touchEvent("touchmove", 260, 100));
     button.dispatchEvent(touchEvent("touchend", 260, 100));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves selection drags inside a swipe-blocked form to the form", () => {
+    const form = createReal("main");
+    form.setAttribute("data-swipe-block", "");
+    const textarea = createReal("textarea");
+    form.appendChild(textarea);
+    drawer.appendChild(form);
+
+    textarea.dispatchEvent(touchEvent("touchstart", 100, 100));
+    textarea.dispatchEvent(touchEvent("touchmove", 100, 250));
+    textarea.dispatchEvent(touchEvent("touchend", 100, 250));
+
+    expect(onDismiss).not.toHaveBeenCalled();
   });
 });

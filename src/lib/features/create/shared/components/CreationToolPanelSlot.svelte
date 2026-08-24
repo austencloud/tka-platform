@@ -1,6 +1,8 @@
 <script lang="ts">
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { flyFade } from "$lib/shared/transitions/motion";
   /**
    * Creation Tool Panel Slot
    *
@@ -49,6 +51,12 @@
   const isPersistenceFullyInitialized = $derived(
     createModuleState.isPersistenceInitialized &&
       constructTabState?.isPersistenceInitialized !== false
+  );
+  const isGeneratePanelActive = $derived(
+    isPersistenceFullyInitialized && activeToolPanel === "generate"
+  );
+  let generateLoadStatus = $state<"idle" | "loading" | "loaded" | "error">(
+    "idle"
   );
 
   const activeSequenceState = $derived.by(() => {
@@ -174,14 +182,68 @@
   });
 </script>
 
+{#snippet generateLoading()}
+  <div
+    class="generate-load-state"
+    role="status"
+    aria-atomic="true"
+    aria-busy="true"
+    out:flyFade={{ y: 0 }}
+  >
+    <ProgressRing percent={-1} size={32} strokeWidth={3} />
+    <p>Loading generator…</p>
+  </div>
+{/snippet}
+
+{#snippet generateError(_error: unknown, retry: () => void)}
+  <div class="generate-load-state generate-load-error" role="alert">
+    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    <p>The generator couldn’t load.</p>
+    <PanelButton variant="secondary" onclick={retry}>
+      <i class="fas fa-rotate-right" aria-hidden="true"></i>
+      <span>Try again</span>
+    </PanelButton>
+  </div>
+{/snippet}
+
 <div class="tool-panel-wrapper">
+  <!-- Generate is a primary Create mode, so warm its deferred chunk after
+       Create paints instead of making the user pay that cost on the tab click.
+       Keeping this LazyMount alive also remembers the loaded module, while
+       keepAlive=false still tears down Generate's active effects whenever the
+       user works in another mode. -->
+  <div
+    class="creation-tool-content generate-tool-content"
+    class:is-active={isGeneratePanelActive}
+    aria-hidden={!isGeneratePanelActive}
+    aria-busy={isGeneratePanelActive && generateLoadStatus === "loading"}
+    inert={!isGeneratePanelActive}
+  >
+    <div class="sub-tab-content" data-tab="generate">
+      <LazyMount
+        loader={() => import("../../generate/components/GeneratePanel.svelte")}
+        active={isGeneratePanelActive}
+        keepAlive={false}
+        prefetch
+        placeholder={isGeneratePanelActive ? generateLoading : undefined}
+        error={generateError}
+        debugName="Generate settings panel"
+        onStatusChange={(status) => (generateLoadStatus = status)}
+        props={{
+          sequenceState: createModuleState.getActiveTabSequenceState(),
+          isDesktop: isSideBySideLayout(),
+        }}
+      />
+    </div>
+  </div>
+
   {#if !isPersistenceFullyInitialized}
     <!-- Loading state while persistence is being restored -->
     <div class="persistence-loading">
       <ProgressRing percent={-1} size={32} strokeWidth={3} />
       <p>Restoring sequence...</p>
     </div>
-  {:else if activeToolPanel}
+  {:else if activeToolPanel && activeToolPanel !== "generate"}
     <!-- Render the appropriate tool panel based on active tab -->
     <div class="creation-tool-content" data-active-tab={activeToolPanel}>
       {#key activeToolPanel}
@@ -216,17 +278,6 @@
                 onStartPositionSubmitted={handleStartPositionSubmitted}
               />
             {/if}
-          {:else if activeToolPanel === "generate"}
-            <!-- Generator Mode - Automatic sequence generation (deferred chunk) -->
-            <LazyMount
-              loader={() =>
-                import("../../generate/components/GeneratePanel.svelte")}
-              active
-              props={{
-                sequenceState: createModuleState.getActiveTabSequenceState(),
-                isDesktop: isSideBySideLayout(),
-              }}
-            />
           {:else if activeToolPanel === "assemble"}
             <!-- Assemble Mode - Click grid points to build sequences (deferred chunk) -->
             {@const assembleTabState = createModuleState.assembleTabState}
@@ -248,11 +299,16 @@
               loader={() => import("$lib/features/fuse/FuseTab.svelte")}
               active
             />
+          {:else if activeToolPanel === "tunnel"}
+            <LazyMount
+              loader={() => import("../../tunnel/TunnelTab.svelte")}
+              active
+            />
           {/if}
         </div>
       {/key}
     </div>
-  {:else}
+  {:else if !activeToolPanel}
     <!-- Fallback case -->
     <div class="no-tab-selected">
       <p>No tab selected</p>
@@ -275,6 +331,10 @@
     min-height: 0;
     position: relative;
     overflow: hidden;
+  }
+
+  .generate-tool-content:not(.is-active) {
+    display: none;
   }
 
   .sub-tab-content {
@@ -312,5 +372,33 @@
   .no-tab-selected p {
     font-size: var(--font-size-sm);
     margin: 0;
+  }
+
+  .generate-load-state {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md, 16px);
+    width: 100%;
+    height: 100%;
+    padding: var(--spacing-lg, 24px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    text-align: center;
+  }
+
+  .generate-load-state p {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+    line-height: 1.4;
+  }
+
+  .generate-load-error > i {
+    color: var(--semantic-error, #ef4444);
+    font-size: 1.5rem;
   }
 </style>

@@ -70,6 +70,9 @@
     manualColumnCount = null,
     highlightedSteps = null,
     heightSizingRowThreshold = undefined,
+    stableColumnCount = null,
+    narrowMaxColumns = null,
+    preferWidthSizingOnNarrow = false,
     selectedStepNumbers = new Set<number>(),
     isMultiSelectMode = false,
     onStartLongPress,
@@ -108,6 +111,9 @@
     manualColumnCount?: number | null;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
     heightSizingRowThreshold?: number;
+    stableColumnCount?: number | null;
+    narrowMaxColumns?: number | null;
+    preferWidthSizingOnNarrow?: boolean;
     selectedStepNumbers?: Set<number>;
     isMultiSelectMode?: boolean;
     onStartLongPress?: () => void;
@@ -196,11 +202,13 @@
   function calculateResponsiveGridLayout(stepCount: number) {
     const isNarrowAssemble =
       activeMode === "assemble" && containerWidth > 0 && containerWidth < 650;
-    const narrowMaxColumns = isNarrowAssemble
+    const responsiveNarrowMaxColumns = isNarrowAssemble
       ? containerWidth <= 360
         ? 2
         : 3
-      : null;
+      : preferWidthSizingOnNarrow && containerWidth <= 400
+        ? Math.min(narrowMaxColumns ?? 2, 2)
+        : narrowMaxColumns;
     return calculateGridLayout(
       stepCount,
       Math.max(0, containerWidth - 2 * POP_RESERVE),
@@ -211,9 +219,10 @@
         heightSizingRowThreshold,
         manualColumnCount,
         stableColumnCount:
-          activeMode === "construct" && !isTimelineMode ? 4 : null,
-        narrowMaxColumns,
-        preferWidthSizingOnNarrow: isNarrowAssemble,
+          activeMode === "construct" && !isTimelineMode ? 4 : stableColumnCount,
+        narrowMaxColumns: responsiveNarrowMaxColumns,
+        preferWidthSizingOnNarrow:
+          isNarrowAssemble || preferWidthSizingOnNarrow,
       }
     );
   }
@@ -411,6 +420,12 @@
     }
   }
 
+  /** Prepare this grid instance for the same cascading reveal used by Generate.
+   *  Instance-scoped so embedded workbenches do not animate their neighbors. */
+  export function prepareGenerationAnimation(stepCount: number): void {
+    displayState.prepareSequenceAnimation(stepCount, "sequential");
+  }
+
   // Helper to trigger cycle extension animation (only new beats)
   async function triggerCycleExtensionAnimation(startFromIndex: number) {
     if (!containerRef) return;
@@ -539,10 +554,6 @@
     );
   };
 
-  const handleClearSequenceAnimation = () => {
-    displayState.handleClearSequence();
-  };
-
   const handlePrepareSequenceAnimation = (event: Event) => {
     const customEvent = event as CustomEvent;
     displayState.prepareSequenceAnimation(
@@ -562,10 +573,6 @@
   onMount(() => {
     window.addEventListener("animation-mode-change", handleAnimationModeChange);
     window.addEventListener(
-      "clear-sequence-animation",
-      handleClearSequenceAnimation
-    );
-    window.addEventListener(
       "prepare-sequence-animation",
       handlePrepareSequenceAnimation
     );
@@ -578,10 +585,6 @@
       window.removeEventListener(
         "animation-mode-change",
         handleAnimationModeChange
-      );
-      window.removeEventListener(
-        "clear-sequence-animation",
-        handleClearSequenceAnimation
       );
       window.removeEventListener(
         "prepare-sequence-animation",
