@@ -1580,10 +1580,21 @@ function buildViewer3DState(
   }
 
   /**
+   * Liveness, tracked separately from `renderMode`. `renderMode` is a user
+   * preference the viewer persists; it survives `dispose()` untouched, so it
+   * cannot answer "are these performers still real?". A deferred caller (an
+   * Undo toast outliving the mount that spawned it) needs that answer, because
+   * `performerManager.destroy()` destroys each performer without emptying the
+   * array — the cast looks intact and is not.
+   */
+  let _disposed = false;
+
+  /**
    * Release all resources held by the avatar instance.
    * Call when the viewer component is unmounted.
    */
   function dispose() {
+    _disposed = true;
     performerManager.destroy();
   }
 
@@ -1640,6 +1651,10 @@ function buildViewer3DState(
     },
     get renderMode() {
       return renderMode;
+    },
+    /** False until `dispose()`; a disposed viewer must not be written to. */
+    get disposed() {
+      return _disposed;
     },
     get oceanVariant() {
       return oceanVariant;

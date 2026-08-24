@@ -94,10 +94,11 @@ export function applyScene3DLook(scene: Collected3DScene): void {
  * reads `tka-scene-features` exactly once at construct, and `Viewer3DCanvas`
  * builds it once per mount (`const`, not derived), so the seed
  * `applyScene3DLook` writes only takes effect on the next mount. Its public
- * surface offers no setter that could bridge the gap: `toggle` flips a single
- * key and rewrites the whole stored map, which would corrupt the seed just
- * written. So a live apply swaps the environment immediately while its saved
- * feature toggles (ocean flora, torches, …) stay as they are until reload.
+ * surface offers no setter that could bridge the gap: `toggle` inverts the
+ * live (already stale) value rather than driving to an absolute target, so it
+ * cannot express "make this key match the preset". A live apply therefore
+ * swaps the environment immediately while its saved feature toggles (ocean
+ * flora, torches, …) stay as they are until reload.
  */
 export function applyScene3DLookLive(
   scene: Collected3DScene,
@@ -121,10 +122,14 @@ export function applyScene3DLookLive(
         // viewer is already gone (the live half below is skipped then).
         writeViewer3DConfig(before);
         clearViewer3DPresetIntent();
-        // The toast outlives a viewer the user exits during its six seconds;
-        // pushing config into a torn-down cast would touch dead performers.
-        // Storage is already restored, so the next mount picks it up.
-        if (viewer.renderMode === "3d") viewer.applyPersistConfig(before);
+        // The toast outlives a viewer the user leaves during its six seconds,
+        // by either exit: toggling back to 2D, or closing it outright (which
+        // disposes the state and destroys the cast without emptying it —
+        // `renderMode` alone still reads "3d" there). Storage is already
+        // restored, so the next mount picks the undo up regardless.
+        if (!viewer.disposed && viewer.renderMode === "3d") {
+          viewer.applyPersistConfig(before);
+        }
       },
     },
   });
