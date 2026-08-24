@@ -19,6 +19,7 @@
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
+	import { holdBackground, releaseBackground } from '../state/background-hold.svelte';
 	import { sharedAnimationState } from '$lib/shared/animation-engine/state/shared-animation-state.svelte';
 	import { shouldReduceBackgroundResolution } from '$lib/shared/platform/network-conditions';
 
@@ -61,12 +62,12 @@
 	let pendingLayoutRaf: number | null = null;
 	const MAX_LAYOUT_RETRIES = 60; // ~1s at 60fps before we give up and mount anyway
 
-	// True while the tab is hidden (switched away, minimized, screen off). The
-	// @austencloud/backgrounds controller runs its rAF regardless of visibility,
-	// so without this it keeps burning CPU and battery painting a canvas nobody
-	// can see. We pause it via the same unmount/mount lever the fullscreen-scene
-	// suppression uses, and resume when the tab comes back.
+	// True while the tab is hidden (switched away, minimized, screen off). Short
+	// pauses freeze the controller in place so its systems and last painted frame
+	// survive. Fullscreen suppression still owns destructive unmounting below.
 	let pageHidden = $state(false);
+	const PAGE_HIDDEN_HOLD_KEY = 'background-host:page-hidden';
+	const PLAYBACK_HOLD_KEY = 'background-host:playback';
 
 	// The @austencloud/backgrounds package caps canvas at 960×540 for perf,
 	// but that makes 2D backgrounds look zoomed/blurry on modern displays.
@@ -258,8 +259,8 @@
 		};
 		window.addEventListener('pointerdown', onPointerDown);
 
-		// Pause the background's animation loop while the tab is hidden, resume on
-		// return. The lifecycle $effect below reacts to pageHidden.
+		// Freeze the background's animation loop while the tab is hidden, then
+		// resume the same live systems when the tab returns.
 		const onVisibilityChange = () => {
 			pageHidden = document.hidden;
 		};
@@ -282,6 +283,29 @@
 		// truly closing, which SvelteKit handles via navigation.
 	});
 
+	// Hidden tabs and foreground playback need the frame budget, but neither is a
+	// reason to destroy an initialized background. Keyed holds compose with panel
+	// transitions and each other, so one caller cannot resume the loop early.
+	$effect(() => {
+		const shouldHold = mounted && pageHidden;
+		if (shouldHold) holdBackground(PAGE_HIDDEN_HOLD_KEY);
+		else releaseBackground(PAGE_HIDDEN_HOLD_KEY);
+
+		return () => {
+			if (shouldHold) releaseBackground(PAGE_HIDDEN_HOLD_KEY);
+		};
+	});
+
+	$effect(() => {
+		const shouldHold = mounted && pauseDuringPlayback && sharedAnimationState.isPlaying;
+		if (shouldHold) holdBackground(PLAYBACK_HOLD_KEY);
+		else releaseBackground(PLAYBACK_HOLD_KEY);
+
+		return () => {
+			if (shouldHold) releaseBackground(PLAYBACK_HOLD_KEY);
+		};
+	});
+
 	// Single owner of the controller's mount/unmount/background lifecycle.
 	// Re-runs on: initial mount, background prop changes, and suppression toggles.
 	//
@@ -293,16 +317,10 @@
 	$effect(() => {
 		if (!mounted || !controller || !containerRef) return;
 
-		// Pause when a fullscreen-opaque scene is occluding us, when the tab is
-		// hidden, or (opt-in) while an animation player is playing — in all three
-		// cases the rAF would otherwise burn main-thread time the user either
-		// can't see or actively needs for smooth playback. unmount() stops the
-		// loop; the branch below remounts it.
-		if (
-			isBackgroundSuppressed.current ||
-			pageHidden ||
-			(pauseDuringPlayback && sharedAnimationState.isPlaying)
-		) {
+		// A fullscreen-opaque scene can remain open for minutes, so suppression is
+		// the one lifecycle that should free canvases and systems. Short pauses are
+		// handled by the non-destructive holds above.
+		if (isBackgroundSuppressed.current) {
 			if (controller.isReady()) controller.unmount();
 			return;
 		}
