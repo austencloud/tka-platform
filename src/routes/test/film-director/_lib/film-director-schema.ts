@@ -57,6 +57,29 @@ export const DIRECTOR_FORMATIONS = [
   "custom",
 ] as const satisfies readonly FormationPreset[];
 
+// Named so an unknown literal names the offending value in its rejection
+// message. Built as string+refine, not z.enum/z.nativeEnum: these schemas
+// are always used inside directiveSchema()'s union (literal | pick | oneOf |
+// not | sameAs). An enum's invalid_value check fails at the same shallow
+// "wrong shape" tier as the object-shaped branches, so zod's union can't
+// tell which branch the director meant and falls back to the generic
+// "Expected a literal value or a directive object" message — hiding the
+// offending value entirely. A string schema passes trivially, so the
+// refine's failure is the one branch that went deeper, and zod surfaces
+// that refine's own message directly. Matches effectIdSchema/
+// environmentIdSchema below, which already use this shape for the same
+// reason.
+const effortIdSchema = z.string().refine(
+  (value): value is (typeof DIRECTOR_EFFORT_IDS)[number] =>
+    (DIRECTOR_EFFORT_IDS as readonly string[]).includes(value),
+  { error: (issue) => `Unknown effort "${String(issue.input)}"` }
+);
+const formationIdSchema = z.string().refine(
+  (value): value is (typeof DIRECTOR_FORMATIONS)[number] =>
+    (DIRECTOR_FORMATIONS as readonly string[]).includes(value),
+  { error: (issue) => `Unknown formation "${String(issue.input)}"` }
+);
+
 export const DIRECTOR_CAMERA_PRESETS = [
   "front-lockoff",
   "hero-dolly-in",
@@ -79,20 +102,33 @@ const position2Schema = z.object({ x: finiteNumber, z: finiteNumber }).strict();
 
 const environmentIdSchema = z
   .string()
-  .refine(isSceneEnvironmentId, "Unknown 3D environment");
+  .refine(isSceneEnvironmentId, {
+    error: (issue) => `Unknown 3D environment "${String(issue.input)}"`,
+  });
 const avatarIdSchema = z.string().min(1);
+const PROP_TYPE_VALUES = new Set<string>(Object.values(PropType));
+// string+refine, not z.nativeEnum — see the comment above effortIdSchema for
+// why: it lets the refine's own message surface through directiveSchema()'s
+// union instead of the generic "expected literal or directive object" text.
+const propTypeSchema = z.string().refine(
+  (value): value is PropType => PROP_TYPE_VALUES.has(value),
+  { error: (issue) => `Unknown prop "${String(issue.input)}"` }
+);
 const effectIdSchema = z
   .string()
   .refine(
     (value) =>
       value === "none" || EFFECTS.some((effect) => effect.id === value),
-    "Unknown effect"
+    { error: (issue) => `Unknown effect "${String(issue.input)}"` }
   );
 const configurableEffectIdSchema = z
   .string()
   .refine(
     (value) => EFFECTS.some((effect) => effect.id === value),
-    "Unknown configurable effect"
+    {
+      error: (issue) =>
+        `Unknown configurable effect "${String(issue.input)}"`,
+    }
   );
 
 const cameraTargetSchema = z.discriminatedUnion("kind", [
@@ -123,9 +159,9 @@ const performerSchema = z
     id: z.string().min(1).optional(),
     name: z.string().min(1).optional(),
     avatarId: directiveSchema(avatarIdSchema).optional(),
-    prop: directiveSchema(z.nativeEnum(PropType)).optional(),
+    prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
-    effort: directiveSchema(z.enum(DIRECTOR_EFFORT_IDS)).optional(),
+    effort: directiveSchema(effortIdSchema).optional(),
     position: position2Schema.optional(),
     facingDegrees: finiteNumber.optional(),
     beatOffset: finiteNumber.optional(),
@@ -136,9 +172,9 @@ const performerSchema = z
 const castDefaultsSchema = z
   .object({
     avatarId: directiveSchema(avatarIdSchema).optional(),
-    prop: directiveSchema(z.nativeEnum(PropType)).optional(),
+    prop: directiveSchema(propTypeSchema).optional(),
     effect: directiveSchema(effectIdSchema).optional(),
-    effort: directiveSchema(z.enum(DIRECTOR_EFFORT_IDS)).optional(),
+    effort: directiveSchema(effortIdSchema).optional(),
     staffLengthCm: directiveSchema(finiteNumber.min(40).max(300)).optional(),
   })
   .strict();
@@ -158,7 +194,7 @@ const performanceSchema = z
       .object({ source: z.literal("demo"), loop: z.boolean().optional() })
       .strict()
       .optional(),
-    formation: directiveSchema(z.enum(DIRECTOR_FORMATIONS)).optional(),
+    formation: directiveSchema(formationIdSchema).optional(),
     cast: castSchema.optional(),
     performers: z.array(performerSchema).min(1).max(8).optional(),
   })
