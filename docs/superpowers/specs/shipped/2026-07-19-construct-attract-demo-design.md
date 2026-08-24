@@ -6,6 +6,23 @@
 (`src/routes/test/composer-wings/_sections/ConstructSection.svelte`), destined
 for the real `/composer` page after harness sign-off.
 
+## 2026-08-22 guided-build presentation amendment
+
+The focused `/composer/mockup` story reuses this section through its
+`guided-build` presentation mode. The full five-wings presentation remains the
+default and keeps the controls documented below.
+
+The guided build deliberately narrows the act to one readable sequence: choose
+a starting position, add four valid beats, and play the result. It hides the
+prop, turn, and option-filter diversions, pauses and parks on the visitor's
+first interaction, and emits each growing sequence to the demonstrations below.
+
+This mode uses the production `StepGrid` with `activeMode="construct"` and an
+`arrivalSequence`. `StepGrid` and `PictographArrivalStage` therefore remain the
+owners of the option-to-grid preview, landing, and handoff animation. The older
+direct `WorkspaceGrid` composition remains only in the default full mode so the
+currently public `/composer` page does not change before mockup promotion.
+
 ## Problem
 
 The current Construct section is a single phase-swapped pane (start picker →
@@ -89,7 +106,7 @@ before that the Play button flips the section into the play phase.
   setting is poi. The chosen demo prop flows as
   `bluePropTypeOverride`/`redPropTypeOverride` through the whole chain —
   `WorkspaceGrid → StartTile → StepCell`, `StartPositionPicker →
-  PictographGrid → PictographContainer`, and `OptionPicker` (prepare + the
+PictographGrid → PictographContainer`, and `OptionPicker` (prepare + the
   poi-legality gate via `applyPoiLegalComposerFilter`'s new optional
   `propTypes` param). Root cause this fixed: with global settings poi/poi the
   poi-legal filter emptied the Type-1 option set and the demo stalled at
@@ -186,6 +203,7 @@ must model that. Replaced with:
   `showStandaloneFilter()`).
 
 ### Ghost personality (fifth pass — Austen 2026-07-19: "Are we really going
+
 ### to program an entire personality for a fake mouse? yes yes we are")
 
 The play phase is a character beat, not a timer. After pressing Play the ghost:

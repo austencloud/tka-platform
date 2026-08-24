@@ -29,6 +29,7 @@
   import WorkspaceGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import { createStepGridDisplayState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
+  import { retargetPositionCacheIdentities } from "$lib/features/create/shared/services/step-position-cache-retarget";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import { createPanelCoordinationState } from "$lib/shared/create/state/panel-coordination-state.svelte";
   import BackButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/BackButton.svelte";
@@ -250,8 +251,14 @@
     playingStepNumber = currentStep > 0 ? Math.floor(currentStep) : null;
   }
 
-  function delay(ms: number) {
-    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+  // Mirrors the template's getStepKey so cache retargeting on regeneration
+  // works with the exact identities the cells render with.
+  function demoStepKey(
+    sequence: SequenceData,
+    step: SequenceData["steps"][number],
+    index: number
+  ): string {
+    return step.id ?? `${sequence.id ?? "generated"}-${index}`;
   }
 
   async function generate(revealResult = false) {
@@ -307,26 +314,37 @@
 
       try {
         if (current) {
-          workspaceDisplayState.handleClearSequence();
-          await delay(workspaceDisplayState.animationTiming.clearDuration);
+          // Regeneration glides in place, Fuse-Regenerate style: each slot's
+          // cached prop/arrow positions are re-filed under the incoming step
+          // identities so the props slide to their new homes instead of the
+          // grid clearing out and re-revealing.
+          const previous = current;
+          retargetPositionCacheIdentities(
+            previous.steps.map((step, index) =>
+              demoStepKey(previous, step, index)
+            ),
+            next.steps.map((step, index) => demoStepKey(next, step, index))
+          );
+          current = next;
+          generationError = null;
+          if (revealResult && isCompactDemo) compactView = "result";
+        } else {
+          workspaceDisplayState.prepareSequenceAnimation(
+            next.steps.length,
+            "sequential"
+          );
+          current = next;
+          generationError = null;
+          revealing = true;
+          if (revealResult && isCompactDemo) compactView = "result";
+
+          await tick();
           if (!isCurrentRun()) return;
+          await workspaceDisplayState.triggerSequentialAnimation(
+            next.steps,
+            dispatchWorkspaceEvent
+          );
         }
-
-        workspaceDisplayState.prepareSequenceAnimation(
-          next.steps.length,
-          "sequential"
-        );
-        current = next;
-        generationError = null;
-        revealing = true;
-        if (revealResult && isCompactDemo) compactView = "result";
-
-        await tick();
-        if (!isCurrentRun()) return;
-        await workspaceDisplayState.triggerSequentialAnimation(
-          next.steps,
-          dispatchWorkspaceEvent
-        );
       } catch (error) {
         if (isCurrentRun()) {
           generationError =
@@ -642,7 +660,9 @@
                       displayState={workspaceDisplayState}
                       scrollState={workspaceScrollState}
                       getStepKey={(step, index) =>
-                        step.id ?? `${current?.id ?? "generated"}-${index}`}
+                        current
+                          ? demoStepKey(current, step, index)
+                          : `generated-${index}`}
                       getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
                       bluePropTypeOverride={PropType.STAFF}
                       redPropTypeOverride={PropType.STAFF}

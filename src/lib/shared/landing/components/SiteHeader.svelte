@@ -60,7 +60,15 @@
   const MORPH_DEST_PATHS = new Set(
     LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href)
   );
-  const showBack = $derived(MORPH_DEST_PATHS.has(page.url?.pathname ?? ""));
+  // The review route is the future /composer page at a temporary noindex URL.
+  // Give it the same Back affordance and active navigation state so Austen is
+  // reviewing the real public composition, not a page inside test chrome.
+  const presentationPath = $derived(
+    page.url?.pathname === "/composer/mockup"
+      ? "/composer"
+      : (page.url?.pathname ?? "")
+  );
+  const showBack = $derived(MORPH_DEST_PATHS.has(presentationPath));
 
   // Cheap, SDK-free check: does Firebase's auth-persistence IndexedDB exist?
   // Its presence means this browser has signed in at least once.
@@ -208,10 +216,16 @@
       icon: "fa-book-open",
       items: [
         {
-          label: "Guide",
+          label: "Interactive lessons",
+          href: "/learn/concepts",
+          icon: "fa-graduation-cap",
+          desc: "Learn TKA one idea at a time",
+        },
+        {
+          label: "Read the Guide",
           href: "/guide",
           icon: "fa-book-open",
-          desc: "Level 1, free on the web",
+          desc: "Written reference, Codex, and PDFs",
         },
         {
           label: "Glossary",
@@ -261,8 +275,9 @@
   );
 
   function isActive(href: string): boolean {
-    const path = page.url?.pathname ?? "";
-    return path === href || path.startsWith(href + "/");
+    return (
+      presentationPath === href || presentationPath.startsWith(href + "/")
+    );
   }
 
   // Some dropdown destinations live under another destination. On /notation/caps,

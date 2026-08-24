@@ -58,6 +58,8 @@
     externalBpm,
     showNotationStrip = false,
     showWordHeader = false,
+    autoPlay = true,
+    cornerToggle = false,
     loadPriority = "idle",
     connectionAware = false,
     serverReducedData = false,
@@ -110,6 +112,10 @@
     /** Shows the shared animated word header while preserving the square
         canvas beneath it. The header is isolated from persisted app settings. */
     showWordHeader?: boolean;
+    /** Forwarded to the inline player so a host can start with a still frame. */
+    autoPlay?: boolean;
+    /** Exposes the inline player's keyboard-accessible play/pause button. */
+    cornerToggle?: boolean;
     /** Above-the-fold hosts can skip the idle wait once the stage is near.
         Below-the-fold embeds keep the default so they do not contend with the
         page's first paint. */
@@ -177,11 +183,7 @@
   let notationLoadStatus = $state<LoadStatus>("idle");
 
   $effect(() => {
-    if (
-      connectionAware &&
-      prefersReducedData() &&
-      !manualActivationRequested
-    ) {
+    if (connectionAware && prefersReducedData() && !manualActivationRequested) {
       manualActivationAvailable = true;
     }
   });
@@ -317,9 +319,10 @@
             }}
             props={{
               sequence,
-              autoPlay: true,
+              autoPlay,
               chrome: "minimal",
               fill: true,
+              cornerToggle,
               bluePropType,
               redPropType,
               onLoopComplete,
@@ -336,7 +339,7 @@
                 : undefined,
             }}
           >
-            {#snippet error(_error, retry)}
+            {#snippet error(_error: unknown, retry: () => void)}
               <div class="demo-load-error" role="alert">
                 <span>The live preview could not load.</span>
                 <button type="button" onclick={retry}>Try again</button>
@@ -385,7 +388,7 @@
               redPropType: redPropType ?? null,
             }}
           >
-            {#snippet error(_error, retry)}
+            {#snippet error(_error: unknown, retry: () => void)}
               <div class="notation-load-error" role="alert">
                 <span>Pictographs did not load.</span>
                 <button type="button" onclick={retry}>Try again</button>

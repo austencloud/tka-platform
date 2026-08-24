@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
   import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import Seo from "$lib/shared/components/Seo.svelte";
@@ -11,7 +12,11 @@
   import ComposerGenerateDemo from "../_components/ComposerGenerateDemo.svelte";
 
   let sequence = $state<SequenceData>(FALLBACK_DEMO);
+  const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
+  let constructActive = $state(false);
   let outputsActive = $state(false);
+  let shelfActive = $state(false);
+  let composed = $state(false);
   let webglChecked = $state(false);
   let webglAvailable = $state(false);
 
@@ -26,6 +31,15 @@
 
   function carrySequence(next: SequenceData): void {
     sequence = next;
+    composed = true;
+  }
+
+  function activateConstruct(node: HTMLElement) {
+    return activateWhenNear(node, {
+      activate: () => (constructActive = true),
+      rootMargin: "420px",
+      deferUntilIdle: true,
+    });
   }
 
   function activateOutputs(node: HTMLElement) {
@@ -35,11 +49,19 @@
       deferUntilIdle: true,
     });
   }
+
+  function activateShelf(node: HTMLElement) {
+    return activateWhenNear(node, {
+      activate: () => (shelfActive = true),
+      rootMargin: "420px",
+      deferUntilIdle: true,
+    });
+  }
 </script>
 
 <Seo
-  title="Composer presentation mockup"
-  description="An unlisted working mockup for the Composer presentation page."
+  title="Flow Arts Composer | Free Flow Arts Software for Choreography"
+  description="Flow Arts Composer is free flow arts software for building, animating, saving, and sharing choreography in your browser with The Kinetic Alphabet."
   canonical="https://tkaflowarts.com/composer"
   noindex
 />
@@ -51,24 +73,65 @@
   </div>
 {/snippet}
 
+{#snippet constructPlaceholder()}
+  <div class="construct-placeholder" aria-hidden="true">
+    <div class="placeholder-pane"></div>
+    <div class="placeholder-pane"></div>
+  </div>
+{/snippet}
+
+{#snippet constructLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-load-error construct-error" role="alert">
+    <p>The step-by-step demonstration did not load.</p>
+    <button type="button" onclick={retry}>Try the builder again</button>
+  </div>
+{/snippet}
+
 {#snippet viewerPlaceholder()}
-  <div class="viewer-placeholder" aria-hidden="true">
-    <div class="placeholder-wide"></div>
-    <div class="placeholder-control"></div>
-    <div class="placeholder-control short"></div>
+  <div class="viewer-placeholder">
+    {#if outputsActive}
+      <span class="sr-only" role="status">Loading the live 3D performance.</span
+      >
+    {/if}
+    <div aria-hidden="true">
+      <div class="placeholder-wide"></div>
+      <div class="placeholder-control"></div>
+      <div class="placeholder-control short"></div>
+      <div class="placeholder-control short"></div>
+    </div>
   </div>
 {/snippet}
 
-{#snippet demoLoadError(_error: unknown, retry: () => void)}
+{#snippet tunnelLoadError(_error: unknown, retry: () => void)}
   <div class="demo-load-error" role="alert">
-    <p>This demonstration did not load.</p>
-    <button type="button" onclick={retry}>Try again</button>
+    <p>The tunnel demonstration did not load.</p>
+    <button type="button" onclick={retry}>Try the tunnel again</button>
   </div>
 {/snippet}
 
-<main class="mockup-shell">
-  <p class="review-note">Working layout study. This route is unlisted.</p>
+{#snippet viewerLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-load-error" role="alert">
+    <p>The 3D demonstration did not load.</p>
+    <button type="button" onclick={retry}>Try the 3D viewer again</button>
+  </div>
+{/snippet}
 
+{#snippet shelfPlaceholder()}
+  <div class="shelf-placeholder" aria-hidden="true">
+    {#each Array.from({ length: 8 }, (_, i) => i) as i (i)}
+      <div class="placeholder-card"></div>
+    {/each}
+  </div>
+{/snippet}
+
+{#snippet shelfLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-load-error" role="alert">
+    <p>The gallery shelf did not load.</p>
+    <button type="button" onclick={retry}>Try the shelf again</button>
+  </div>
+{/snippet}
+
+<main class="composer-page">
   <section class="opening" aria-labelledby="composer-title">
     <div class="opening-copy">
       <p class="opening-line">Write flow arts choreography. See it move.</p>
@@ -97,6 +160,8 @@
         note="a real sequence playing in Composer"
         showNotationStrip={true}
         showWordHeader={true}
+        autoPlay={!reduceMotion.current}
+        cornerToggle={true}
         loadPriority="immediate"
       />
     </div>
@@ -104,27 +169,50 @@
 
   <section class="making" aria-labelledby="making-title">
     <div class="making-intro">
-      <h2 id="making-title">Make a sequence.</h2>
+      <h2 id="making-title">Write it beat by beat.</h2>
       <p>
-        Choose each beat in the full Composer, or ask the generator for a
-        starting point. Try the generator here. Its result continues down the
-        page.
+        Choose a starting position, then add one valid beat at a time. The
+        sequence you build continues into every demonstration below.
       </p>
 
-      <div class="making-paths" aria-label="Ways to begin a sequence">
-        <div>
+      <div
+        class="making-paths"
+        role="list"
+        aria-label="Ways to begin a sequence"
+      >
+        <div role="listitem">
           <strong>Build</strong>
-          <span>Pick the starting position and add each move.</span>
+          <span>Pick a start and add the next move. Take over at any time.</span
+          >
         </div>
-        <div>
+        <div role="listitem">
           <strong>Generate</strong>
-          <span>Set a few movement choices and draw a sequence.</span>
+          <span>Draw another sequence from one prepared recipe.</span>
         </div>
       </div>
     </div>
 
-    <div class="generator-surface">
-      <ComposerGenerateDemo {sequence} onGenerated={carrySequence} />
+    <div class="making-demos" use:activateConstruct>
+      <div class="construct-surface">
+        <LazyMount
+          loader={() => import("../_sections/ConstructSection.svelte")}
+          active={constructActive}
+          props={{
+            presentationMode: "guided-build",
+            onComposed: carrySequence,
+          }}
+          error={constructLoadError}
+          debugName="composer guided construct"
+        >
+          {#snippet placeholder()}
+            {@render constructPlaceholder()}
+          {/snippet}
+        </LazyMount>
+      </div>
+      <div class="demo-divider"><span>or draw another</span></div>
+      <div class="generator-surface">
+        <ComposerGenerateDemo {sequence} onGenerated={carrySequence} />
+      </div>
     </div>
   </section>
 
@@ -134,7 +222,7 @@
     use:activateOutputs
   >
     <div class="changing-intro">
-      <h2 id="changing-title">Keep the sequence. Change the view.</h2>
+      <h2 id="changing-title">One sequence, new views.</h2>
       <p>
         The mandala beside the generator traces the movement. The same beats can
         multiply into a tunnel or play in the 3D viewer on supported larger
@@ -150,8 +238,8 @@
               loader={() => import("../_components/ComposerTunnelDemo.svelte")}
               active={outputsActive}
               props={{ sequence }}
-              error={demoLoadError}
-              debugName="composer mockup tunnel"
+              error={tunnelLoadError}
+              debugName="composer tunnel"
             >
               {#snippet placeholder()}
                 {@render tunnelPlaceholder()}
@@ -168,7 +256,7 @@
       <figure class="viewer-output">
         <div class="product-frame wide-frame">
           {#if webglChecked && !webglAvailable}
-            <div class="viewer-unavailable">
+            <div class="viewer-unavailable" role="status">
               <i class="fas fa-cube" aria-hidden="true"></i>
               <p>3D is unavailable in this browser.</p>
             </div>
@@ -179,8 +267,8 @@
                   import("../_components/Composer3DViewerDemo.svelte")}
                 active={outputsActive && canShow3D}
                 props={{ sequence }}
-                error={demoLoadError}
-                debugName="composer mockup 3D viewer"
+                error={viewerLoadError}
+                debugName="composer 3D viewer"
               >
                 {#snippet placeholder()}
                   {@render viewerPlaceholder()}
@@ -191,7 +279,7 @@
         </div>
         <figcaption>
           <strong>3D viewer</strong>
-          <span>Drag the stage, change the scene, or add performers.</span>
+          <span>Change the scene, performer count, or props.</span>
         </figcaption>
       </figure>
     </div>
@@ -201,40 +289,35 @@
     </p>
   </section>
 
-  <section class="keeping" aria-labelledby="keeping-title">
-    <div class="keeping-copy">
-      <h2 id="keeping-title">Keep what you make.</h2>
+  <section class="keeping" aria-labelledby="keeping-title" use:activateShelf>
+    <div class="keeping-intro">
+      <h2 id="keeping-title">Your sequence, next to theirs.</h2>
       <p>
-        Save sequences to the Library, collect public work from the Gallery, or
-        send a sequence link. Downloads and publishing open with a full account.
+        The sequence carried through this page renders as a gallery card below,
+        shelved with real public work from the community. Guests save up to
+        three sequences on this device. A full account adds downloads,
+        publishing, and creators to follow.
       </p>
-      <div class="keeping-actions">
-        <a href="/browse" class="secondary-action">Open the Gallery</a>
-        <a href="/browse/library" class="secondary-action">Open the Library</a>
-      </div>
     </div>
 
-    <dl class="truth-ledger">
-      <div>
-        <dt>Guest</dt>
-        <dd>Save up to three sequences on this device.</dd>
-      </div>
-      <div>
-        <dt>Full account</dt>
-        <dd>Download images or videos, publish work, and follow creators.</dd>
-      </div>
-      <div>
-        <dt>Collections</dt>
-        <dd>Organize saved sequences. Smart Collections build from a rule.</dd>
-      </div>
-      <div>
-        <dt>QR</dt>
-        <dd>
-          Optional on eligible image exports. It does not appear on every
-          export.
-        </dd>
-      </div>
-    </dl>
+    <div class="keeping-shelf">
+      <LazyMount
+        loader={() => import("../_components/ComposerGalleryShelf.svelte")}
+        active={shelfActive}
+        props={{ sequence, composed }}
+        error={shelfLoadError}
+        debugName="composer gallery shelf"
+      >
+        {#snippet placeholder()}
+          {@render shelfPlaceholder()}
+        {/snippet}
+      </LazyMount>
+    </div>
+
+    <div class="keeping-actions">
+      <a href="/browse" class="secondary-action">Open the Gallery</a>
+      <a href="/browse/library" class="secondary-action">Open the Library</a>
+    </div>
   </section>
 
   <section class="foundation" aria-label="Relationship to The Kinetic Alphabet">
@@ -253,36 +336,20 @@
       >
     </div>
   </section>
-
-  <div class="closing">
-    <p>Make the next sequence.</p>
-    <a href="/create" class="primary-action" data-sveltekit-reload>
-      Start composing
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </a>
-  </div>
 </main>
 
 <style>
-  :global(html:has(.mockup-shell)) {
+  :global(html:has(.composer-page)) {
     scroll-behavior: smooth;
   }
 
-  .mockup-shell {
+  .composer-page {
     position: relative;
     width: min(100%, var(--shell-w, min(1720px, 92vw)));
     margin-inline: auto;
     padding: 5.25rem 1rem 5rem;
     color: var(--theme-text, #fff);
     font-family: "Inter", system-ui, sans-serif;
-  }
-
-  .review-note {
-    margin: 0 0 1.15rem;
-    color: var(--theme-text-dim, oklch(0.62 0.02 270));
-    font-size: var(--font-size-compact, 0.75rem);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
   .opening {
@@ -309,8 +376,7 @@
 
   h1,
   h2,
-  .foundation-statement,
-  .closing p {
+  .foundation-statement {
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
     font-variation-settings:
@@ -354,7 +420,7 @@
   .primary-action,
   .secondary-action,
   .demo-load-error button {
-    min-height: var(--min-touch-target, 48px);
+    min-height: max(var(--min-touch-target, 48px), 48px);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -412,7 +478,7 @@
 
   .opening-note {
     margin: 0.9rem 0 0;
-    color: var(--theme-text-dim, oklch(0.62 0.02 270));
+    color: oklch(0.74 0.018 270);
     font-size: var(--font-size-min, 0.875rem);
   }
 
@@ -436,17 +502,43 @@
     filter: blur(1.5rem);
   }
 
-  .making,
   .keeping {
-    display: grid;
-    grid-template-columns: minmax(0, 0.74fr) minmax(0, 1.26fr);
-    gap: clamp(2rem, 5vw, 6rem);
-    align-items: center;
     padding-block: clamp(4.5rem, 9vw, 9rem);
   }
 
+  .keeping-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+    gap: clamp(2rem, 7vw, 8rem);
+    align-items: end;
+    margin-bottom: clamp(2.5rem, 5vw, 5rem);
+  }
+
+  .keeping-intro > p {
+    margin: 0;
+  }
+
+  .keeping-shelf {
+    container-type: inline-size;
+    min-width: 0;
+  }
+
   .making {
+    padding-block: clamp(4.5rem, 9vw, 9rem);
     border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+  }
+
+  .making-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(20rem, 1.22fr);
+    grid-template-rows: auto auto;
+    gap: 1rem clamp(2rem, 6vw, 7rem);
+    align-items: end;
+  }
+
+  .making-intro h2 {
+    grid-row: 1 / 3;
+    align-self: center;
   }
 
   h2 {
@@ -458,7 +550,7 @@
 
   .making-intro > p,
   .changing-intro > p,
-  .keeping-copy > p,
+  .keeping-intro > p,
   .foundation-detail p {
     margin: 1.25rem 0 0;
     color: oklch(0.76 0.014 270);
@@ -467,7 +559,7 @@
   }
 
   .making-paths {
-    margin-top: 2rem;
+    margin-top: 0;
     border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
@@ -498,6 +590,59 @@
     border-radius: clamp(1.1rem, 2vw, 1.8rem);
     background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.92));
     box-shadow: 0 2rem 5rem oklch(0.04 0.03 270 / 0.35);
+  }
+
+  .making-demos {
+    min-width: 0;
+    margin-top: clamp(2rem, 4vw, 4rem);
+  }
+
+  .construct-surface {
+    min-width: 0;
+  }
+
+  .construct-placeholder {
+    min-height: clamp(36rem, 52vw, 46rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+    padding: clamp(1rem, 2.2vw, 1.75rem);
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+    border-radius: 1.5rem;
+    background: var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.92));
+  }
+
+  .placeholder-pane {
+    min-width: 0;
+    border: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.16));
+    border-radius: 1.1rem;
+    background: radial-gradient(
+      circle at 50% 42%,
+      oklch(0.22 0.04 278),
+      oklch(0.1 0.02 270) 72%
+    );
+  }
+
+  .construct-error {
+    min-height: clamp(36rem, 52vw, 46rem);
+  }
+
+  .demo-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin-block: 1rem;
+    color: oklch(0.74 0.018 270);
+    font-size: var(--font-size-compact, 0.75rem);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .demo-divider::before,
+  .demo-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
   .changing {
@@ -551,7 +696,7 @@
   }
 
   figcaption span {
-    color: var(--theme-text-dim, oklch(0.62 0.02 270));
+    color: oklch(0.74 0.018 270);
     font-size: var(--font-size-compact, 0.75rem);
     text-align: right;
   }
@@ -615,7 +760,7 @@
   .small-screen-3d-note {
     display: none;
     margin: 1.4rem 0 0;
-    color: var(--theme-text-dim, oklch(0.62 0.02 270));
+    color: oklch(0.74 0.018 270);
     font-size: var(--font-size-min, 0.875rem);
     line-height: 1.55;
   }
@@ -625,30 +770,40 @@
     border-bottom: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
   }
 
-  .truth-ledger {
-    margin: 0;
-    border-top: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
-  }
-
-  .truth-ledger > div {
+  /* Same tracks the shelf renders into, so the LazyMount swap cannot shift
+     layout. Keep the breakpoints in step with ComposerGalleryShelf. */
+  .shelf-placeholder {
     display: grid;
-    grid-template-columns: minmax(7.5rem, 0.32fr) minmax(0, 1fr);
-    gap: 1rem;
-    padding: 1.15rem 0;
-    border-bottom: 1px solid var(--theme-stroke, oklch(0.45 0.03 270 / 0.2));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.8rem, 1.4vw, 1.4rem);
   }
 
-  .truth-ledger dt {
-    color: oklch(0.84 0.09 278);
-    font-size: var(--font-size-min, 0.875rem);
-    font-weight: 680;
+  @container (min-width: 800px) {
+    .shelf-placeholder {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
-  .truth-ledger dd {
-    margin: 0;
-    color: oklch(0.7 0.016 270);
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.55;
+  @container (min-width: 1200px) {
+    .shelf-placeholder {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  @container (min-width: 1600px) {
+    .shelf-placeholder {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+
+  .placeholder-card {
+    aspect-ratio: 2.07;
+    border-radius: 0.9rem;
+    background: radial-gradient(
+      circle at 50% 42%,
+      oklch(0.22 0.04 278),
+      oklch(0.1 0.02 270) 72%
+    );
   }
 
   .foundation {
@@ -676,37 +831,16 @@
     margin-top: 1.5rem;
   }
 
-  .closing {
-    min-height: 18rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
-    padding: clamp(2.25rem, 4vw, 4rem);
-    border-radius: clamp(1.25rem, 2vw, 2rem);
-    background:
-      radial-gradient(
-        circle at 80% 40%,
-        oklch(0.56 0.17 278 / 0.25),
-        transparent 42%
-      ),
-      var(--theme-panel-bg, oklch(0.13 0.025 270 / 0.96));
-    border: 1px solid oklch(0.6 0.09 278 / 0.26);
-  }
-
-  .closing p {
-    margin: 0;
-    color: oklch(0.96 0.012 270);
-    font-size: clamp(2.2rem, 1.7rem + 2vw, 4.5rem);
-    line-height: 1;
-  }
-
   @media (max-width: 70rem) {
     .opening,
     .making,
-    .keeping,
     .foundation {
       grid-template-columns: 1fr;
+    }
+
+    .keeping-intro {
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
     }
 
     .opening {
@@ -733,7 +867,22 @@
     }
 
     .making-intro {
-      max-width: 48rem;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      gap: 1.25rem;
+    }
+
+    .making-intro h2 {
+      grid-row: auto;
+    }
+
+    .construct-placeholder {
+      min-height: 38rem;
+      grid-template-columns: 1fr;
+    }
+
+    .placeholder-pane:last-child {
+      display: none;
     }
 
     .changing-intro {
@@ -747,20 +896,13 @@
   }
 
   @media (max-width: 50rem) {
-    .mockup-shell {
+    .composer-page {
       padding-inline: 0.9rem;
     }
 
     .output-composition {
       grid-template-columns: 1fr;
       gap: 3rem;
-    }
-
-    .closing {
-      min-height: 16rem;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
     }
   }
 
@@ -775,12 +917,8 @@
   }
 
   @media (min-width: 48rem) and (max-height: 35rem) {
-    .mockup-shell {
+    .composer-page {
       padding-top: 4.55rem;
-    }
-
-    .review-note {
-      margin-bottom: 0.35rem;
     }
 
     .opening {
@@ -827,7 +965,7 @@
   }
 
   @media (min-width: 105rem) {
-    .mockup-shell {
+    .composer-page {
       padding-inline: 1.5rem;
     }
 
@@ -838,18 +976,10 @@
     .opening-player {
       width: min(100%, 52rem);
     }
-
-    .making {
-      grid-template-columns: minmax(22rem, 0.62fr) minmax(0, 1.38fr);
-    }
-
-    .keeping {
-      grid-template-columns: minmax(24rem, 0.82fr) minmax(0, 1.18fr);
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(html:has(.mockup-shell)) {
+    :global(html:has(.composer-page)) {
       scroll-behavior: auto;
     }
 

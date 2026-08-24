@@ -27,7 +27,9 @@ const routeSourceByPath: Record<string, string[]> = {
   "/shop": [
     "src/lib/features/store/components/front-door/ShopFrontDoorHero.svelte",
   ],
-  "/guide": ["src/routes/(public)/guide/+page.svelte"],
+  "/learn/concepts": [
+    "src/lib/features/learn/components/ConceptPathView.svelte",
+  ],
   "/notation": [
     "src/routes/(public)/notation/+page.svelte",
     "src/routes/(public)/notation/_components/archive/PlayableArchive.svelte",
@@ -103,7 +105,10 @@ describe("landing route morph allowlist", () => {
     ).toBe(true);
     // /shop/success carries no product art, so it stays out of the pair.
     expect(
-      navigationMorphs(shop, location("/shop/success", "/(public)/shop/success"))
+      navigationMorphs(
+        shop,
+        location("/shop/success", "/(public)/shop/success")
+      )
     ).toBe(false);
   });
 
@@ -241,12 +246,9 @@ describe("landing shared-element contract", () => {
       'const ownsStandaloneChrome = $derived(page.url.pathname !== "/guide")'
     );
     expect(guideShell).toContain("{#if ownsStandaloneChrome}");
-    expect(guidePage).not.toContain(
-      'import { joinWaitlist } from "$lib/features/store/services/waitlist"'
-    );
-    expect(guidePage).toContain(
-      'await import("$lib/features/store/services/waitlist")'
-    );
+    expect(guidePage).not.toContain("joinWaitlist");
+    expect(guidePage).toContain('href="/learn/concepts"');
+    expect(guidePage).toContain("Start learning");
     expect(guideCss).toContain("html:has(.guide-layout):not(:has(.mkt-shell))");
   });
 
@@ -389,14 +391,14 @@ describe("landing shared-element contract", () => {
     for (const source of [construct, generate]) {
       expect(source).toContain('new MediaQuery("(max-width: 74.99rem)")');
       expect(source).toContain('semantics="tabs"');
-      expect(source).toContain('role={isCompactDemo ? "tabpanel" : undefined}');
+      expect(source).toMatch(/role=\{isCompactDemo[\s\S]*?"tabpanel"/);
     }
 
     expect(construct).toContain(
-      'hidden={isCompactDemo && compactPane !== "sequence"}'
+      'hidden={isCompactDemo && !isGuidedBuild && compactPane !== "sequence"}'
     );
     expect(construct).toContain(
-      'hidden={isCompactDemo && compactPane !== "build"}'
+      'hidden={isCompactDemo && !isGuidedBuild && compactPane !== "build"}'
     );
     expect(generate).toContain(
       'hidden={isCompactDemo && compactView !== "result"}'

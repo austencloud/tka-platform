@@ -77,6 +77,11 @@ export function createConstructAttractAct(opts: {
   togglePlayback: () => void;
   /** Steps per cycle — matches the section's MAX_STEPS. */
   stepsPerCycle: number;
+  /**
+   * The focused public story teaches one path: start, add beats, play. The
+   * older full presentation keeps its prop, turn, filter, and seeking beats.
+   */
+  focused?: boolean;
   stepMs?: number;
   doneMs?: number;
 }): ConstructAttractAct {
@@ -191,9 +196,11 @@ export function createConstructAttractAct(opts: {
     // One mid-build moment (most cycles) where it reconsiders the turns, and
     // sometimes one where it plays with the All/Continuous filter.
     const turnMoment =
-      Math.random() < 0.7 ? 1 + Math.floor(Math.random() * 2) : -1;
+      !opts.focused && Math.random() < 0.7
+        ? 1 + Math.floor(Math.random() * 2)
+        : -1;
     const filterMoment =
-      Math.random() < 0.35
+      !opts.focused && Math.random() < 0.35
         ? Math.floor(Math.random() * opts.stepsPerCycle)
         : -1;
 
@@ -209,12 +216,16 @@ export function createConstructAttractAct(opts: {
       if (i === turnMoment) await fiddleTurns();
       if (i === filterMoment) await fiddleFilter();
       // Sometimes flip to another letter-family page before choosing.
-      if (Math.random() < 0.3) await pageSections();
+      if (!opts.focused && Math.random() < 0.3) await pageSections();
       const options = await g.waitFor(OPTION_SEL);
       if (!options.length || g.halted()) return;
       await g.browseAndPick(options);
-      // Sometimes turn and watch the new step land in the workspace.
-      if (Math.random() < 0.35 && i < opts.stepsPerCycle - 1) {
+      // The focused story always follows the pictograph into the workspace.
+      // The full act keeps the more occasional, curious glance.
+      if (
+        i < opts.stepsPerCycle - 1 &&
+        (opts.focused || Math.random() < 0.35)
+      ) {
         await glanceAtWorkspace();
       }
     }
@@ -249,30 +260,32 @@ export function createConstructAttractAct(opts: {
     await g.dwell(g.jitter(1400, 1000)); // watch a little more
 
     // Curiosity: browse the props, decide, try one (sometimes two).
-    const props = await g.waitFor(PROP_SEL, 2000);
-    if (props.length && !g.halted()) {
-      const tries = Math.random() < 0.5 ? 2 : 1;
-      for (let i = 0; i < tries && !g.halted(); i++) {
-        const fresh = await g.waitFor(PROP_SEL, 2000);
-        if (!fresh.length) break;
-        await g.browseAndPick(fresh);
-        await g.dwell(g.jitter(1400, 900)); // admire the new prop
+    if (!opts.focused) {
+      const props = await g.waitFor(PROP_SEL, 2000);
+      if (props.length && !g.halted()) {
+        const tries = Math.random() < 0.5 ? 2 : 1;
+        for (let i = 0; i < tries && !g.halted(); i++) {
+          const fresh = await g.waitFor(PROP_SEL, 2000);
+          if (!fresh.length) break;
+          await g.browseAndPick(fresh);
+          await g.dwell(g.jitter(1400, 900)); // admire the new prop
+        }
+        if (g.halted()) return;
+        await g.restBeside(stage[0]!);
+        await g.dwell(g.jitter(1000, 800));
       }
-      if (g.halted()) return;
-      await g.restBeside(stage[0]!);
-      await g.dwell(g.jitter(1000, 800));
-    }
 
-    // "Wait, do that bit again": click an earlier workspace cell — the player
-    // snaps to that step (the viewer-parity seek), demonstrating that the left
-    // rail is a scrubber, not just a readout.
-    if (Math.random() < 0.6 && !g.halted()) {
-      const cells = await g.waitFor(CELL_SEL, 1500);
-      if (cells.length >= 2 && !g.halted()) {
-        await g.moveAndPress(g.pick(cells.slice(0, -1)));
-        if (!g.halted()) {
-          await g.restBeside(stage[0]!);
-          await g.dwell(g.jitter(1400, 1000)); // watch the replay land
+      // "Wait, do that bit again": click an earlier workspace cell — the player
+      // snaps to that step (the viewer-parity seek), demonstrating that the left
+      // rail is a scrubber, not just a readout.
+      if (Math.random() < 0.6 && !g.halted()) {
+        const cells = await g.waitFor(CELL_SEL, 1500);
+        if (cells.length >= 2 && !g.halted()) {
+          await g.moveAndPress(g.pick(cells.slice(0, -1)));
+          if (!g.halted()) {
+            await g.restBeside(stage[0]!);
+            await g.dwell(g.jitter(1400, 1000)); // watch the replay land
+          }
         }
       }
     }

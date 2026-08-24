@@ -136,6 +136,54 @@ describe("createConstructAttractAct", () => {
     ).toBe(false);
   });
 
+  it("keeps the focused story on start, four beats, and playback", async () => {
+    let progress: ConstructBoardProgress = {
+      phase: "pick-start",
+      stepCount: 0,
+    };
+    const target = (kind: "start" | "option" | "control") => {
+      const button = document.createElement("button");
+      button.setAttribute("data-kind", kind);
+      return button;
+    };
+
+    createConstructAttractAct({
+      getRoot: () => document.body,
+      resetBoard: vi.fn(),
+      getBoardProgress: () => progress,
+      togglePlayback: vi.fn(),
+      stepsPerCycle: 4,
+      focused: true,
+    });
+
+    ghostHarness.waitFor.mockImplementation(async (selector: string) => {
+      ghostHarness.events.push(`wait:${selector}`);
+      if (selector.includes("start-position-picker")) return [target("start")];
+      if (selector.includes("option-card")) return [target("option")];
+      return [target("control")];
+    });
+    let pickCount = 0;
+    ghostHarness.browseAndPick.mockImplementation(async () => {
+      pickCount += 1;
+      if (pickCount === 1) {
+        progress = { phase: "add-step", stepCount: 0 };
+      } else {
+        progress = {
+          phase: "add-step",
+          stepCount: progress.stepCount + 1,
+        };
+      }
+    });
+
+    await ghostHarness.cycle!();
+
+    expect(progress.stepCount).toBe(4);
+    expect(ghostHarness.browseAndPick).toHaveBeenCalledTimes(5);
+    expect(ghostHarness.events.join("\n")).not.toMatch(
+      /turns-group|filter-toggle|embla__button|prop-option/
+    );
+  });
+
   it("settles the resume activation before accepting a later takeover", async () => {
     const { createAttractGhost } = await vi.importActual<{
       createAttractGhost: typeof createActualAttractGhost;

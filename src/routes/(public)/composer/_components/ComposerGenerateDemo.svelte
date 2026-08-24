@@ -13,10 +13,16 @@
   so nothing shifts.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    classifyComposerGenerationFailure,
+    shouldSyncComposerSequence,
+    type ComposerGenerationResult,
+  } from "./composer-generation-failure";
 
   /** The page's per-visit demo sequence seeds the stages; null while it is
       still generating (the fixed-aspect stages hold the footprint). */
@@ -30,37 +36,45 @@
 
   let current = $state<SequenceData | null>(null);
   let generating = $state(false);
-  let failedOnce = $state(false);
+  let result = $state<ComposerGenerationResult>("idle");
   let active = $state(false);
+  const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
 
   $effect(() => {
-    if (!current && sequence) current = sequence;
+    if (shouldSyncComposerSequence(current, sequence)) current = sequence;
   });
 
-  const word = $derived(current ? simplifyRepeatedWord(current.word ?? "") : "");
+  const word = $derived(
+    current ? simplifyRepeatedWord(current.word ?? "") : ""
+  );
 
-  onMount(() => {
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => (active = true), { timeout: 3000 });
-    } else {
-      setTimeout(() => (active = true), 400);
-    }
-  });
+  function activatePreview(node: HTMLElement) {
+    return activateWhenNear(node, {
+      activate: () => (active = true),
+      rootMargin: "360px",
+      deferUntilIdle: true,
+      idleTimeout: 2200,
+      fallbackDelay: 180,
+    });
+  }
 
   async function generate() {
     if (generating) return;
+    active = true;
     generating = true;
+    result = "idle";
     try {
-      const [{ generationOrchestrator }, models, circular, grid, prop] = await Promise.all([
-        import("$lib/shared/create/services/generation-orchestrator"),
-        import("$lib/shared/foundation/domain/models/generation/generate-models"),
-        import("$lib/shared/foundation/domain/models/generation/circular-models"),
-        import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
-        import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
-      ]);
-      // Same favorite preset as the per-visit demo: 16-count, level two, max
-      // turn intensity, rotated, QUARTERED — a 4-glyph title every tap, never an
-      // overwhelming one. Only the letters change from one draw to the next.
+      const [{ generationOrchestrator }, models, circular, grid, prop] =
+        await Promise.all([
+          import("$lib/shared/create/services/generation-orchestrator"),
+          import("$lib/shared/foundation/domain/models/generation/generate-models"),
+          import("$lib/shared/foundation/domain/models/generation/circular-models"),
+          import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
+          import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
+        ]);
+      // This button intentionally exposes one prepared recipe, not the full
+      // generator: 16 beats, intermediate difficulty, smooth constraints, and
+      // a rotated quarter-period LOOP. Each draw may change the whole sequence.
       const seq = await generationOrchestrator.generateSequence({
         mode: models.GenerationMode.CIRCULAR,
         loopType: circular.LOOPType.ROTATED,
@@ -75,34 +89,44 @@
       // Plain-ify reactive proxies before handing to the player/mandala.
       current = JSON.parse(JSON.stringify(seq)) as SequenceData;
       onGenerated?.(current);
-      failedOnce = false;
-    } catch {
-      // Beam search found no path — rare; invite another tap instead of erroring.
-      failedOnce = true;
+      result = "success";
+    } catch (error) {
+      result = classifyComposerGenerationFailure(error);
+      if (result === "error") {
+        console.error("[composer presentation] generation failed", error);
+      }
     } finally {
       generating = false;
     }
   }
 </script>
 
-<div class="generate-demo">
+<div class="generate-demo" use:activatePreview>
+  <p class="recipe-note">
+    Each click draws a fresh 16-beat sequence from the same prepared recipe.
+  </p>
   <div class="stages">
     <div class="stage">
       {#key current?.id}
         <LazyMount
           loader={() =>
-            import(
-              "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-            )}
+            import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
           active={active && !!current}
-          props={{ sequence: current, autoPlay: true, chrome: "minimal", fill: true }}
+          props={{
+            sequence: current,
+            autoPlay: !reduceMotion.current,
+            chrome: "minimal",
+            fill: true,
+            cornerToggle: true,
+          }}
         />
       {/key}
     </div>
     <div class="stage">
       {#key current?.id}
         <LazyMount
-          loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
+          loader={() =>
+            import("$lib/shared/mandala/components/SequenceMandala.svelte")}
           active={active && !!current}
           props={{
             sequence: current,
@@ -111,7 +135,7 @@
             redPropType: "staff",
             pathShape: "arc",
             strokeWidth: 2.5,
-            animate: true,
+            animate: !reduceMotion.current,
             animateEasing: "breathe",
             animateRotation: 30,
             animatePeriod: 6,
@@ -130,20 +154,42 @@
   </div>
 
   <div class="action-row">
-    <button type="button" class="generate-button" onclick={generate} disabled={generating}>
-      <i class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}" aria-hidden="true"></i>
+    <button
+      type="button"
+      class="generate-button"
+      onclick={generate}
+      disabled={generating}
+    >
+      <i
+        class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}"
+        aria-hidden="true"
+      ></i>
       <span>{generating ? "Generating..." : "Generate a new one"}</span>
     </button>
-    <!-- Line is always reserved; only visibility toggles, so the rare empty
-         draw doesn't nudge the section (no-layout-shift). -->
-    <span class="retry-note" class:shown={failedOnce} aria-live="polite">
-      That draw came up empty. Hit it again.
+    <!-- The line is always reserved so either failure state can arrive without
+         moving the controls or demonstrations around it. -->
+    <span class="retry-note" class:shown={result !== "idle"} aria-live="polite">
+      {result === "no-result"
+        ? "That recipe found no valid sequence. Draw again."
+        : result === "error"
+          ? "The generator couldn't run. Try again."
+          : result === "success"
+            ? "Sequence ready. The examples below now use it."
+            : "Sequence ready."}
     </span>
   </div>
 </div>
 
 <style>
   /* Spacing to the prose above is owned by the host's duo grid gap. */
+  .recipe-note {
+    margin: 0 0 0.85rem;
+    color: oklch(0.74 0.018 270);
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.5;
+    text-align: center;
+  }
+
   .stages {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -169,7 +215,7 @@
     gap: 0.55rem;
     margin-top: 0.8rem;
     font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
-    color: oklch(0.6 0.02 270);
+    color: oklch(0.74 0.018 270);
   }
   .caption-word {
     font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
@@ -221,7 +267,7 @@
 
   .retry-note {
     font-size: clamp(0.82rem, 0.78rem + 0.1vw, 0.95rem);
-    color: oklch(0.65 0.02 270);
+    color: oklch(0.74 0.018 270);
     font-style: italic;
     visibility: hidden;
   }

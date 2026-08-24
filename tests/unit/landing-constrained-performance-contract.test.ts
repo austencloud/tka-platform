@@ -204,8 +204,16 @@ describe("homepage constrained enhancement boundaries", () => {
       "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
     );
 
-    expect(layout).toContain("if (!isConstrainedConnection())");
-    expect(landingEvents).toContain("if (isConstrainedConnection()) return;");
+    // Measurement starts after first paint on every connection. Heavy media
+    // still respects the constrained-link boundary below, but silently
+    // excluding those visitors made first-session funnels unknowable.
+    expect(layout).toMatch(
+      /const analyticsFrame = isDevelopmentHarness[\s\S]*?\? null[\s\S]*?: requestAnimationFrame/
+    );
+    expect(landingEvents).toContain("captureWhenReady(eventName, properties)");
+    expect(landingEvents).not.toContain(
+      "if (isConstrainedConnection()) return;"
+    );
     expect(marketingChrome).toContain("if (isConstrainedConnection()) return;");
     expect(homeHero).toContain("if (isConstrainedConnection()) return;");
     expect(homeHero).toContain("connectionAware={true}");
@@ -232,7 +240,9 @@ describe("homepage constrained enhancement boundaries", () => {
     // predicate's bandwidth estimate reports '3g' under 1 Mbps on gigabit
     // desktops, which stranded the hero behind "Play live preview" for
     // everyone instead of only genuine data-saver users.
-    expect(sequenceHero).toMatch(/connectionAware\s*&&\s*prefersReducedData\(\)/);
+    expect(sequenceHero).toMatch(
+      /connectionAware\s*&&\s*prefersReducedData\(\)/
+    );
     expect(sequenceHero).toContain("manualActivationAvailable = true;");
     // The seed is the SERVER's Save-Data reading, never `connectionAware`
     // alone. Seeding it from connectionAware shipped the degraded hero to

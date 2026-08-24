@@ -35,10 +35,12 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import { calculateGridLayout } from "$lib/shared/create/utils/grid-calculations";
   import WorkspaceGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte";
+  import StepGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/StepGrid.svelte";
   import { createStepGridDisplayState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
@@ -65,6 +67,18 @@
     createConstructAttractAct,
     type ConstructAttractAct,
   } from "./construct-attract-act.svelte";
+
+  type ConstructPresentationMode = "full" | "guided-build";
+
+  let {
+    presentationMode = "full",
+    onComposed,
+  }: {
+    presentationMode?: ConstructPresentationMode;
+    onComposed?: (sequence: SequenceData) => void;
+  } = $props();
+
+  const isGuidedBuild = $derived(presentationMode === "guided-build");
 
   // Visitors can click up to 8 steps (a full 8-count); the attract act builds
   // a quicker 4 so cycles stay snappy. Steps flow 4 per row beside the start
@@ -157,6 +171,7 @@
         getBoardProgress: () => ({ phase, stepCount: steps.length }),
         togglePlayback: () => playerToggle?.(),
         stepsPerCycle: ATTRACT_STEPS,
+        focused: isGuidedBuild,
       });
       io = new IntersectionObserver(
         (entries) => {
@@ -281,6 +296,31 @@
     }))
   );
 
+  // The public story carries exactly what the visitor has built into the
+  // demonstrations below it. Keeping this sequence live also gives StepGrid
+  // the complete frame it needs to animate a picked pictograph into place.
+  const composedSequence = $derived<SequenceData | null>(
+    startStepData && stepData.length > 0
+      ? createSequenceData({
+          id: `construct-demo-${rawWord}-${stepData.length}`,
+          name: displayWord,
+          word: rawWord,
+          steps: stepData,
+          startPosition: startStepData as unknown as StartPositionData,
+          thumbnails: [],
+          gridMode,
+        })
+      : null
+  );
+
+  let lastComposedSequenceId = "";
+  $effect(() => {
+    if (!composedSequence || composedSequence.id === lastComposedSequenceId)
+      return;
+    lastComposedSequenceId = composedSequence.id;
+    onComposed?.(composedSequence);
+  });
+
   let wsW = $state(0);
   let wsH = $state(0);
   // The calculator's narrow few-steps branch sizes cells by width only (mobile
@@ -310,17 +350,7 @@
   // Steps carry full motion data (the option pipeline bakes it in), so the
   // player runs standalone with no gallery lookup.
   const playSequence = $derived<SequenceData | null>(
-    phase === "play" && startStepData && stepData.length > 0
-      ? ({
-          id: `construct-demo-${rawWord}`,
-          name: displayWord,
-          word: rawWord,
-          steps: stepData,
-          startPosition: startStepData as unknown as StartPositionData,
-          thumbnails: [],
-          gridMode,
-        } as unknown as SequenceData)
-      : null
+    phase === "play" ? composedSequence : null
   );
 
   // The player reports the playing step (0-indexed; null = start position) and
@@ -421,12 +451,13 @@
   class="construct-demo"
   class:compact-demo={isCompactDemo}
   class:play-phase={phase === "play"}
+  class:guided-build={isGuidedBuild}
   bind:this={bandEl}
   onpointerdowncapture={takeover}
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
-    {#if isCompactDemo}
+    {#if isCompactDemo && !isGuidedBuild}
       <div class="compact-view-switch">
         <SegmentedControl
           options={compactPaneOptions}
@@ -449,12 +480,16 @@
     <div class="demo-columns" class:compact-layout={isCompactDemo}>
       <div
         class="demo-col sequence-column"
-        id={isCompactDemo ? "construct-sequence-panel" : undefined}
-        role={isCompactDemo ? "tabpanel" : undefined}
-        aria-labelledby={isCompactDemo ? "construct-sequence-tab" : undefined}
-        hidden={isCompactDemo && compactPane !== "sequence"}
+        id={isCompactDemo && !isGuidedBuild
+          ? "construct-sequence-panel"
+          : undefined}
+        role={isCompactDemo && !isGuidedBuild ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo && !isGuidedBuild
+          ? "construct-sequence-tab"
+          : undefined}
+        hidden={isCompactDemo && !isGuidedBuild && compactPane !== "sequence"}
       >
-        {#if !isCompactDemo}
+        {#if !isCompactDemo && !isGuidedBuild}
           {@render propControl()}
         {/if}
 
@@ -477,7 +512,7 @@
             {:else}
               <p class="hint">
                 {#if phase === "pick-start" && act && !tookOver}
-                  Watch it build — or tap anything to take over.
+                  Watch it build. Tap anything to take over.
                 {:else if phase === "pick-start"}
                   Pick a starting position to begin.
                 {:else}
@@ -489,25 +524,49 @@
 
           <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
             {#if startStepData}
-              <WorkspaceGrid
-                steps={stepData}
-                startPosition={startStepData}
-                {gridLayout}
-                displayState={workspaceDisplayState}
-                scrollState={workspaceScrollState}
-                selectedStepNumber={phase === "play" ? playingStepNumber : null}
-                onStepClick={phase === "play"
-                  ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
-                  : undefined}
-                onStartClick={phase === "play"
-                  ? handleWorkspaceStartClick
-                  : undefined}
-                getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
-                getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
-                bluePropTypeOverride={demoProp}
-                redPropTypeOverride={demoProp}
-                sequenceWord={rawWord}
-              />
+              {#if isGuidedBuild}
+                <StepGrid
+                  steps={stepData}
+                  startPosition={startStepData}
+                  selectedStepNumber={phase === "play"
+                    ? playingStepNumber
+                    : null}
+                  onStepClick={phase === "play"
+                    ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
+                    : undefined}
+                  onStartClick={phase === "play"
+                    ? handleWorkspaceStartClick
+                    : undefined}
+                  activeMode="construct"
+                  manualColumnCount={STEP_COLUMNS}
+                  arrivalSequence={composedSequence}
+                  bluePropTypeOverride={demoProp}
+                  redPropTypeOverride={demoProp}
+                  sequenceWord={rawWord}
+                />
+              {:else}
+                <WorkspaceGrid
+                  steps={stepData}
+                  startPosition={startStepData}
+                  {gridLayout}
+                  displayState={workspaceDisplayState}
+                  scrollState={workspaceScrollState}
+                  selectedStepNumber={phase === "play"
+                    ? playingStepNumber
+                    : null}
+                  onStepClick={phase === "play"
+                    ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
+                    : undefined}
+                  onStartClick={phase === "play"
+                    ? handleWorkspaceStartClick
+                    : undefined}
+                  getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
+                  getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
+                  bluePropTypeOverride={demoProp}
+                  redPropTypeOverride={demoProp}
+                  sequenceWord={rawWord}
+                />
+              {/if}
             {:else}
               <p class="ws-empty" aria-hidden="true">
                 The sequence appears here as it's built.
@@ -555,19 +614,23 @@
 
       <div
         class="demo-col build-column"
-        id={isCompactDemo ? "construct-build-panel" : undefined}
-        role={isCompactDemo ? "tabpanel" : undefined}
-        aria-labelledby={isCompactDemo ? "construct-build-tab" : undefined}
-        hidden={isCompactDemo && compactPane !== "build"}
+        id={isCompactDemo && !isGuidedBuild
+          ? "construct-build-panel"
+          : undefined}
+        role={isCompactDemo && !isGuidedBuild ? "tabpanel" : undefined}
+        aria-labelledby={isCompactDemo && !isGuidedBuild
+          ? "construct-build-tab"
+          : undefined}
+        hidden={isCompactDemo && !isGuidedBuild && compactPane !== "build"}
       >
-        {#if isCompactDemo && phase !== "play"}
+        {#if isCompactDemo && phase !== "play" && !isGuidedBuild}
           {@render propControl()}
         {/if}
 
         <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
-        {#if phase !== "play"}
+        {#if phase !== "play" && !isGuidedBuild}
           <div
             class="turns-pair"
             transition:slide={{ duration: motionDuration(DURATION.normal) }}
@@ -598,6 +661,28 @@
           </div>
         {/if}
 
+        {#if isGuidedBuild}
+          <div
+            class="guided-build-status"
+            aria-live={tookOver ? "polite" : "off"}
+          >
+            <span>
+              {phase === "pick-start"
+                ? "Start position"
+                : phase === "add-step"
+                  ? "Next beat"
+                  : "Sequence ready"}
+            </span>
+            <strong>
+              {phase === "pick-start"
+                ? "Choose where the props begin"
+                : phase === "add-step"
+                  ? `Choose beat ${steps.length + 1}`
+                  : `${steps.length} beats playing`}
+            </strong>
+          </div>
+        {/if}
+
         <!-- PICKER / PLAYER: the real primitives; phase swap lives HERE only. -->
         <div class="picker-pane">
           {#if phase === "pick-start"}
@@ -619,6 +704,7 @@
                 {currentSequence}
                 currentGridMode={gridMode}
                 onOptionSelected={handleOptionSelected}
+                hideFilters={isGuidedBuild}
                 bluePropTypeOverride={demoProp}
                 redPropTypeOverride={demoProp}
                 blueTurnsOverride={blueTurns}
@@ -789,6 +875,27 @@
     min-height: var(--compact-stage-height);
   }
 
+  /* The focused story has only two ideas left: the growing sequence and its
+     next choices. On a phone they stay stacked in one scroll instead of being
+     separated by tabs, so every pick still has a visible destination. */
+  .guided-build .demo-columns.compact-layout {
+    display: flex;
+    min-height: 0;
+  }
+
+  .guided-build .compact-layout .demo-col {
+    min-height: 0;
+  }
+
+  .guided-build .compact-layout .sequence-column .workspace {
+    min-height: clamp(13rem, 32svh, 18rem);
+  }
+
+  .guided-build .compact-layout .build-column .picker-pane,
+  .guided-build.compact-demo.play-phase .build-column .picker-pane {
+    min-height: clamp(18rem, 46svh, 22rem);
+  }
+
   .compact-play-actions {
     min-height: 52px;
     display: grid;
@@ -829,6 +936,31 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .guided-build-status {
+    min-height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-inline: 0.25rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .guided-build-status span {
+    color: oklch(0.72 0.1 278);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .guided-build-status strong {
+    color: var(--theme-text, #fff);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
 
   .hand-dot {
