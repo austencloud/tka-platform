@@ -657,6 +657,7 @@
       {
         header: "Card",
         entries: buildCardMenuSection({
+          sequenceForLibrarySave: sequence,
           onRerender: () => void renderEngine.forceRerenderAllCells(),
           isAdmin: featureFlagService.isAdmin,
           sequenceForImageActions: sequence,

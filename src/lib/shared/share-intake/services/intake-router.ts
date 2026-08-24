@@ -89,7 +89,10 @@ export async function routeIntake(
     // Each of these is a network read, and getShortCodeManager() itself throws
     // when DI has not run. One failure must not abandon the remaining codes.
     try {
-      const resolution = await getShortCodeManager().resolveForImport(code, userId);
+      const resolution = await getShortCodeManager().resolveForImport(
+        code,
+        userId
+      );
       if (!resolution) {
         unresolved.push(code);
         // ONE problem per unresolved code, authored here. The runner adds none.
@@ -120,7 +123,8 @@ export async function routeIntake(
   // present a disambiguation UI. The inversion needs somewhere to send TO, so
   // it only applies when the share actually carries a photo - a card-only share
   // still opens the viewer.
-  const cardsSuppressed = Boolean(context.targetConversationId) && images.length > 0;
+  const cardsSuppressed =
+    Boolean(context.targetConversationId) && images.length > 0;
 
   if (first && !cardsSuppressed) {
     // Trace 1.13. Throws on a hydration failure; the runner catches it and
@@ -258,13 +262,18 @@ async function fileCard(
   // No referenceable doc behind this card (printed deck cards): save it to My
   // Library under the normal public default, then file it. Exactly the branch
   // ScanCardSheet.svelte:172-227 takes.
-  const name = resolution.sequence.word || resolution.sequence.name || "Sequence";
-  const saved = await getLibrarySaveService().saveSequence(resolution.sequence, {
-    name,
-    visibility: "public",
-    tags: [],
-    notes: "",
-  });
+  const name =
+    resolution.sequence.word || resolution.sequence.name || "Sequence";
+  const saved = await getLibrarySaveService().saveSequence(
+    resolution.sequence,
+    {
+      name,
+      visibility: "public",
+      tags: [],
+      notes: "",
+      analyticsSource: "share_intake",
+    }
+  );
 
   return {
     code,

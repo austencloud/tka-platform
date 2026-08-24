@@ -107,6 +107,7 @@
         visibility: metadata.visibility ?? "public",
         tags: metadata.tags ?? [],
         notes: metadata.notes ?? "",
+        analyticsSource: "video_record",
       };
       const saved = await getLibrarySaveService().saveSequence(
         currentSequence,

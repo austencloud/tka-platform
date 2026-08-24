@@ -122,9 +122,8 @@
     shown ? computeFrontRegions(shown.stepCount) : null
   );
 
-  // Admin-only right-click → copy the shown card's sequence data (and the rest
-  // of the canonical card admin actions). Non-admins get the native menu. Reuses
-  // the shared ContextMenu primitive + buildCardMenuSection — no bespoke menu.
+  // Every shown card can be saved to the current library. Admin-only image/data
+  // actions join that same canonical card menu when the flag is present.
   let menuState = $state<ContextMenuState>({ open: false });
   const menuItems = $derived<ContextMenuEntry[]>(
     shown
@@ -132,6 +131,7 @@
           {
             header: "Card",
             entries: buildCardMenuSection({
+              sequenceForLibrarySave: shown.sequence,
               isAdmin: featureFlagService.isAdmin,
               sequenceForImageActions: shown.sequence,
             }),
@@ -141,9 +141,7 @@
   );
 
   function openCardMenu(e: MouseEvent): void {
-    // Only hijack right-click for admins with a card in view; otherwise leave the
-    // browser's native context menu alone.
-    if (!featureFlagService.isAdmin || !shown) return;
+    if (!shown) return;
     e.preventDefault();
     menuState = { open: true, x: e.clientX, y: e.clientY };
   }

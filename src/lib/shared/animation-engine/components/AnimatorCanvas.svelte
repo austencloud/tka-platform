@@ -39,7 +39,10 @@ Last audit: 2025-12-27
   import { createAnimatorPlaybackAdapter } from "$lib/shared/timeline/adapters/animator-playback-adapter.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { AnimationEngine } from "../services/animation-engine.svelte";
-  import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
+  import {
+    getAnimationVisibilityManager,
+    type AnimationVisibilityStateManager,
+  } from "../state/animation-visibility-state.svelte";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import {
     tryGetLoopDisplayResolver,
@@ -48,7 +51,11 @@ Last audit: 2025-12-27
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { FireOverlayConfig } from "../domain/types/fire-types";
   import type { LedOverlayConfig } from "../domain/types/led-types";
-  import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
+  import type {
+    TipEffectMap,
+    TipEffortMap,
+    EffectType,
+  } from "../domain/types/tip-effect-types";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
   import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import SplitCanvasView from "./SplitCanvasView.svelte";
@@ -118,6 +125,7 @@ Last audit: 2025-12-27
     onBpmChange = undefined,
     playbackMode = undefined,
     onPlaybackModeChange = undefined,
+    onSaveToLibrary = undefined,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -151,7 +159,14 @@ Last audit: 2025-12-27
     /** Hide the WordHeader slot (portrait-mobile reclaims this vertical space). */
     hideHeader?: boolean;
     isSeamlesslyLoopable?: boolean;
-    progressBarVariant?: "minimal" | "raised" | "rounded" | "neon" | "gradient" | "labeled" | "gradient-labeled";
+    progressBarVariant?:
+      | "minimal"
+      | "raised"
+      | "rounded"
+      | "neon"
+      | "gradient"
+      | "labeled"
+      | "gradient-labeled";
     onProgressBarSeek?: ((targetStep: number) => void) | null;
     onProgressBarScrubStart?: (() => void) | null;
     onProgressBarScrubEnd?: (() => void) | null;
@@ -241,9 +256,12 @@ Last audit: 2025-12-27
     onBpmChange?: (bpm: number) => void;
     playbackMode?: "continuous" | "step";
     onPlaybackModeChange?: (mode: "continuous" | "step") => void;
+    /** Overrides the universal visual save action when a host tracks save state. */
+    onSaveToLibrary?: () => void | Promise<void>;
   } = $props();
 
-  const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
+  const resolvedContextId =
+    contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
 
   const playbackAdapter = createAnimatorPlaybackAdapter({
     getCurrentStep: () => currentStep,
@@ -262,14 +280,20 @@ Last audit: 2025-12-27
   // Disassemble mode state machine
   // assembled → disassembling → disassembled → reassembling → assembled
   // All transitions happen via CSS on the SAME DOM tree. No overlay swaps.
-  type ViewState = "assembled" | "disassembling" | "disassembled" | "reassembling";
+  type ViewState =
+    | "assembled"
+    | "disassembling"
+    | "disassembled"
+    | "reassembling";
   let viewState = $state<ViewState>("assembled");
   let contentWrapperEl: HTMLDivElement | undefined = $state();
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
   let longPressFired = false;
   let pointerStart: { x: number; y: number; t: number } | null = null;
   let tapFeedbackSeq = 0;
-  let tapFeedback = $state<{ icon: "play" | "pause"; key: number } | null>(null);
+  let tapFeedback = $state<{ icon: "play" | "pause"; key: number } | null>(
+    null
+  );
   let tapFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   const isDisassembledView = $derived(viewState !== "assembled");
@@ -278,7 +302,9 @@ Last audit: 2025-12-27
   // Ask the split view to be expanded while disassembling/disassembled; collapse
   // while reassembling. The split view gates the actual expand on its own
   // engines being ready first.
-  const splitExpandRequested = $derived(viewState === "disassembling" || viewState === "disassembled");
+  const splitExpandRequested = $derived(
+    viewState === "disassembling" || viewState === "disassembled"
+  );
   // Pause split canvas resize during transitions - only allow resize in the
   // settled "disassembled" state.
   const splitResizePaused = $derived(viewState !== "disassembled");
@@ -322,7 +348,7 @@ Last audit: 2025-12-27
   function handlePointerDown(e: PointerEvent) {
     pointerStart = { x: e.clientX, y: e.clientY, t: e.timeStamp };
     longPressFired = false;
-    if (e.button !== 0 || e.pointerType === "mouse" || disableContextMenu) return;
+    if (e.button !== 0 || e.pointerType === "mouse" || !hasContextMenu) return;
     const x = e.clientX;
     const y = e.clientY;
     longPressTimer = setTimeout(() => {
@@ -355,7 +381,7 @@ Last audit: 2025-12-27
     const target = e.target as HTMLElement | null;
     if (
       target?.closest(
-        'button, a, [role="slider"], [role="menu"], [role="menuitem"], .unified-timeline, input',
+        'button, a, [role="slider"], [role="menu"], [role="menuitem"], .unified-timeline, input'
       )
     )
       return;
@@ -374,7 +400,8 @@ Last audit: 2025-12-27
     // On a mouse/pen the hover hint already shows the play/pause state, so the
     // centered flash would collide with it (two icons mid-transition). Skip the
     // flash there and let the hint be the feedback; keep it for touch (no hover).
-    const pointerHasHover = e.pointerType === "mouse" || e.pointerType === "pen";
+    const pointerHasHover =
+      e.pointerType === "mouse" || e.pointerType === "pen";
     if (!(pointerHasHover && hoverHint !== "none")) {
       showTapFeedback(!wasPlaying);
     }
@@ -418,13 +445,23 @@ Last audit: 2025-12-27
 
   let contextMenuHost: CanvasContextMenuHost | undefined = $state();
 
+  // Locked embeds still expose the universal library action. The lock only
+  // removes mutable display and playback settings from their menu.
+  const hasContextMenu = $derived(
+    !disableContextMenu ||
+      !!sequenceData?.steps?.length ||
+      extraContextMenuItems.length > 0
+  );
+
   // Engine instance - created and owned by the CanvasSurface leaf, bound back
   // here so the disassemble transition can drive pauseResize/resumeResize and
   // the context menu can read effect diagnostics. Undefined until the leaf mounts.
   let engine = $state<AnimationEngine>();
 
   // Use $derived to read visibilityManagerOverride reactively (avoids state_referenced_locally)
-  const visibilityManager = $derived(visibilityManagerOverride ?? getAnimationVisibilityManager());
+  const visibilityManager = $derived(
+    visibilityManagerOverride ?? getAnimationVisibilityManager()
+  );
 
   // Initialize visibility state via $effect.pre to avoid state_referenced_locally on visibilityManager
   let tkaGlyphVisible = $state(false);
@@ -457,9 +494,15 @@ Last audit: 2025-12-27
   const effectiveElementalGlyphVisible = $derived(
     elementalGlyphVisible && additionalLayers.length === 0
   );
-  const effectiveBeatNumbersVisible = $derived(stepNumbersVisible && !hideStepNumbers);
-  const effectiveBluePathLinesVisible = $derived(bluePathLinesVisible && !hidePathLines);
-  const effectiveRedPathLinesVisible = $derived(redPathLinesVisible && !hidePathLines);
+  const effectiveBeatNumbersVisible = $derived(
+    stepNumbersVisible && !hideStepNumbers
+  );
+  const effectiveBluePathLinesVisible = $derived(
+    bluePathLinesVisible && !hidePathLines
+  );
+  const effectiveRedPathLinesVisible = $derived(
+    redPathLinesVisible && !hidePathLines
+  );
 
   function handleVisibilityChange() {
     tkaGlyphVisible = visibilityManager.getVisibility("tkaGlyph");
@@ -524,7 +567,11 @@ Last audit: 2025-12-27
     if (stepData) {
       const idx = steps.indexOf(stepData as (typeof steps)[number]);
       if (idx >= 0) return idx + 1;
-      if (sequenceData?.startPosition && stepData === sequenceData.startPosition) return null;
+      if (
+        sequenceData?.startPosition &&
+        stepData === sequenceData.startPosition
+      )
+        return null;
     }
     return currentStep >= 1 && currentStep < steps.length + 0.99
       ? Math.floor(currentStep)
@@ -532,6 +579,7 @@ Last audit: 2025-12-27
   });
 
   function handleContextMenu(e: MouseEvent) {
+    if (!hasContextMenu) return;
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
   }
@@ -577,7 +625,11 @@ Last audit: 2025-12-27
   onpointerup={handlePointerUp}
   onpointercancel={cancelLongPress}
 >
-  <div class="content-wrapper" bind:this={contentWrapperEl} data-dark-mode={darkModeEnabled ? "true" : "false"}>
+  <div
+    class="content-wrapper"
+    bind:this={contentWrapperEl}
+    data-dark-mode={darkModeEnabled ? "true" : "false"}
+  >
     <!-- Always mounted so 3D→2D flips don't re-mount the header. -->
     <div class="header-slot">
       <WordHeader
@@ -631,7 +683,7 @@ Last audit: 2025-12-27
       redPathLinesVisible={effectiveRedPathLinesVisible}
       {suppress2DOverlays}
       {resizePaused}
-      visibilityManagerOverride={visibilityManagerOverride}
+      {visibilityManagerOverride}
       {effectsConfigState}
       {prewarmEffects}
       {beatIndicators}
@@ -673,7 +725,9 @@ Last audit: 2025-12-27
           totalSteps={sequenceData?.steps?.length ?? 0}
           visible={progressBarVisible && !hideProgressBar}
           darkMode={darkModeEnabled}
-          onSeek={onProgressBarSeek ? (ratio) => playbackAdapter.seek(ratio) : null}
+          onSeek={onProgressBarSeek
+            ? (ratio) => playbackAdapter.seek(ratio)
+            : null}
           onScrubStart={onProgressBarScrubStart}
           onScrubEnd={onProgressBarScrubEnd}
         />
@@ -724,15 +778,23 @@ Last audit: 2025-12-27
   {#if tapFeedback}
     {#key tapFeedback.key}
       <div class="tap-feedback" aria-hidden="true">
-        <i class="fas {tapFeedback.icon === 'play' ? 'fa-play' : 'fa-pause'}"></i>
+        <i class="fas {tapFeedback.icon === 'play' ? 'fa-play' : 'fa-pause'}"
+        ></i>
       </div>
     {/key}
   {/if}
 
-  {#if !disableContextMenu}
+  {#if hasContextMenu}
     <CanvasContextMenuHost
       bind:this={contextMenuHost}
-      disassembled={externalToggleDisassemble ? externalDisassembled : isDisassembledView}
+      sequence={sequenceData}
+      {bluePropType}
+      {redPropType}
+      showSettings={!disableContextMenu}
+      {onSaveToLibrary}
+      disassembled={externalToggleDisassemble
+        ? externalDisassembled
+        : isDisassembledView}
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
@@ -951,8 +1013,8 @@ Last audit: 2025-12-27
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px; /* touch-target floor (design system) */
-    min-height: 44px;
+    min-width: 48px;
+    min-height: 48px;
     margin: 0;
     padding: 0;
     border: 0;
@@ -1051,7 +1113,8 @@ Last audit: 2025-12-27
       cursor: pointer;
     }
 
-    .animation-container[data-corner-toggle] :global(.canvas-wrapper:hover .corner-toggle) {
+    .animation-container[data-corner-toggle]
+      :global(.canvas-wrapper:hover .corner-toggle) {
       opacity: 1;
       transform: scale(1) translateY(0);
       pointer-events: auto;
@@ -1068,7 +1131,8 @@ Last audit: 2025-12-27
     /* No pop under reduced motion — reveal is a plain fade, no scale/translate. */
     .corner-toggle,
     .corner-toggle:focus-visible,
-    .animation-container[data-corner-toggle] :global(.canvas-wrapper:hover .corner-toggle) {
+    .animation-container[data-corner-toggle]
+      :global(.canvas-wrapper:hover .corner-toggle) {
       transform: none;
       transition: opacity 140ms ease;
     }
@@ -1138,8 +1202,9 @@ Last audit: 2025-12-27
   .animation-container[data-view="disassembled"] .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 7rem) * 2 / 3));
     max-width: calc((100cqh - 7rem) * 2 / 3);
-    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Progress slot: in portrait, takes natural height at bottom. The transport
@@ -1152,8 +1217,9 @@ Last audit: 2025-12-27
     overflow: hidden;
     max-height: 100px;
     opacity: 1;
-    transition: max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 0.2s ease-out;
+    transition:
+      max-height 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 0.2s ease-out;
   }
 
   /* ===========================================
@@ -1226,7 +1292,8 @@ Last audit: 2025-12-27
 
   /* Header hidden AND transport relocated: let the square canvas claim almost
      the whole pane height. */
-  .animation-container[data-focused][data-hide-header][data-no-progress] .content-wrapper {
+  .animation-container[data-focused][data-hide-header][data-no-progress]
+    .content-wrapper {
     width: min(calc(100cqw - 12px), calc(100cqh - 1rem));
     max-width: calc(100cqh - 1rem);
     max-height: calc(100cqh - 4px);
@@ -1259,12 +1326,15 @@ Last audit: 2025-12-27
   }
 
   /* Focused + disassembled: content-wrapper narrows for the split row */
-  .animation-container[data-focused][data-view="disassembling"] .content-wrapper,
-  .animation-container[data-focused][data-view="disassembled"] .content-wrapper {
+  .animation-container[data-focused][data-view="disassembling"]
+    .content-wrapper,
+  .animation-container[data-focused][data-view="disassembled"]
+    .content-wrapper {
     width: min(calc(100cqw - 12px), calc((100cqh - 8.5rem) * 2 / 3));
     max-width: calc((100cqh - 8.5rem) * 2 / 3);
-    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-                max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+      width 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      max-width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* ===========================================

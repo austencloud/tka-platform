@@ -77,6 +77,7 @@
     void menuVersion;
     const seq = activeCardSequence;
     return buildCardMenuSection({
+      sequenceForLibrarySave: seq,
       onRerender: activeCardRerender,
       stepCount: seq?.steps?.length ?? 0,
       onColumnCountChange: () => {
