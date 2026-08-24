@@ -132,16 +132,18 @@ export function hydrate(sequence: SequenceData): SequenceData {
 			const legacyEffort = sequence.effortTimeline;
 
 			if (legacyPropConfig || legacyEffort) {
+				// No recorded prop intent means propConfig stays absent. A staff/staff
+				// default here would persist as an indistinguishable fake recording.
 				sequence = {
 					...sequence,
 					creatorIntent: {
-						propConfig: legacyPropConfig
-							? {
-									bluePropType: legacyPropConfig.bluePropType,
-									redPropType: legacyPropConfig.redPropType,
-									catDogMode: legacyPropConfig.catDogMode,
-								}
-							: { bluePropType: PropType.STAFF, redPropType: PropType.STAFF, catDogMode: false },
+						...(legacyPropConfig && {
+							propConfig: {
+								bluePropType: legacyPropConfig.bluePropType,
+								redPropType: legacyPropConfig.redPropType,
+								catDogMode: legacyPropConfig.catDogMode,
+							},
+						}),
 						...(legacyEffort && { effortTimeline: legacyEffort }),
 					},
 				};

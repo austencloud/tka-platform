@@ -1,42 +1,16 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { parsePropTypeFromURLValue } from "$lib/shared/navigation/services/sequence-encoder";
+import {
+  catDogFromCandidates,
+  propFromCandidates,
+  sequenceIntentCandidates,
+  type PropConfigCandidate,
+  type ResolvedPropConfig,
+} from "$lib/shared/foundation/services/recorded-prop-intent";
 
-export interface ScanPropCandidate {
-  bluePropType?: unknown;
-  redPropType?: unknown;
-  catDogMode?: unknown;
-}
+export type ScanPropCandidate = PropConfigCandidate;
 
-export interface ScanPropConfig {
-  bluePropType: PropType;
-  redPropType: PropType;
-  catDogMode: boolean;
-}
-
-function propFromCandidates(
-  color: "bluePropType" | "redPropType",
-  candidates: readonly (ScanPropCandidate | null | undefined)[]
-): PropType | undefined {
-  for (const candidate of candidates) {
-    const raw = candidate?.[color];
-    if (typeof raw !== "string") continue;
-    const propType = parsePropTypeFromURLValue(raw);
-    if (propType) return propType;
-  }
-  return undefined;
-}
-
-function catDogFromCandidates(
-  candidates: readonly (ScanPropCandidate | null | undefined)[]
-): boolean | undefined {
-  for (const candidate of candidates) {
-    if (typeof candidate?.catDogMode === "boolean") {
-      return candidate.catDogMode;
-    }
-  }
-  return undefined;
-}
+export type ScanPropConfig = ResolvedPropConfig;
 
 function motionProps(
   sequence: SequenceData | null | undefined
@@ -63,8 +37,7 @@ export function resolveScanPropConfig(
   ...scanCandidates: readonly (ScanPropCandidate | null | undefined)[]
 ): ScanPropConfig {
   const sequenceCandidates: (ScanPropCandidate | null | undefined)[] = [
-    sequence?.creatorIntent?.propConfig,
-    sequence?.intendedProp,
+    ...sequenceIntentCandidates(sequence),
     motionProps(sequence),
   ];
   const candidates = [...scanCandidates, ...sequenceCandidates];

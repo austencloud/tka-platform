@@ -5,6 +5,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { resolveRecordedPropConfig } from "$lib/shared/foundation/services/recorded-prop-intent";
   import { createAnimationScope } from "$lib/shared/animation-engine/state/animation-scope.svelte";
 
   interface Props {
@@ -55,6 +56,12 @@
   let playerRuntimeError = $state(false);
   let playbackStep = $state(1);
   let resolutionPromise: Promise<SequenceData | null> | null = null;
+
+  // Creator-recorded presentation, resolved ONCE and handed to the player,
+  // the step strip, and the Choreo Card together so all three render the same
+  // prop pair. Null = no recorded intent; every layer then keeps its default
+  // visitor-context behavior. Never written back to global Settings.
+  const recordedPropConfig = $derived(resolveRecordedPropConfig(sequence));
 
   const playerRequested = $derived(
     manualPlayerRequested || (activation === "ambient" && !prefersReducedMotion)
@@ -228,6 +235,8 @@
           onStatusChange={(status) => (playerLoadState = status)}
           props={{
             sequence,
+            bluePropType: recordedPropConfig?.bluePropType ?? null,
+            redPropType: recordedPropConfig?.redPropType ?? null,
             autoPlay: true,
             showControls: false,
             chrome: "minimal",
@@ -273,6 +282,8 @@
         debugName="sequence showcase step carousel"
         props={{
           sequence,
+          bluePropType: recordedPropConfig?.bluePropType ?? null,
+          redPropType: recordedPropConfig?.redPropType ?? null,
           currentStep: playbackStep,
           bpm: 60,
           density: "compact",
@@ -293,7 +304,14 @@
   >
     <div class="card-art">
       {#if sequence}
-        <PropAwareThumbnail {sequence} eager {allowQR} />
+        <PropAwareThumbnail
+          {sequence}
+          bluePropType={recordedPropConfig?.bluePropType}
+          redPropType={recordedPropConfig?.redPropType}
+          catDogModeEnabled={recordedPropConfig?.catDogMode ?? false}
+          eager
+          {allowQR}
+        />
       {:else if posterUrl && !posterFailed}
         <img
           class="legacy-poster"

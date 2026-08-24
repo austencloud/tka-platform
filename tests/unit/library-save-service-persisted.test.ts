@@ -5,6 +5,7 @@ const dbGetMock = vi.fn().mockResolvedValue(undefined);
 const dbCountMock = vi.fn().mockResolvedValue(0);
 const dbUpdateMock = vi.fn().mockResolvedValue(1);
 const clearDeletionIntentMock = vi.fn();
+const reportLifecycleMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("$lib/shared/persistence/database/tka-database", () => ({
   db: {
@@ -59,10 +60,19 @@ vi.mock(
       clearDeletionIntentMock(...args),
   })
 );
+vi.mock("$lib/shared/analytics/services/posthog-lifecycle-reporter", () => ({
+  reportPostHogLifecycleEvent: (...args: unknown[]) =>
+    reportLifecycleMock(...args),
+}));
 // Keep the real, Firestore-touching library-state module out of the test: the
 // service's refreshLibraryState() dynamic-imports it after a successful save.
 vi.mock("$lib/features/library/state/library-state.svelte", () => ({
   libraryState: { loadSequences: vi.fn().mockResolvedValue(undefined) },
+}));
+vi.mock("$lib/shared/settings/state/settings-state.svelte", () => ({
+  settingsService: {
+    settings: { bluePropType: "club", redPropType: "club", catDogMode: false },
+  },
 }));
 
 const { LibrarySaveService } =
@@ -122,6 +132,16 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
     expect(result.sequenceId).toBe("seq-1");
     expect(clearDeletionIntentMock).toHaveBeenCalledOnce();
     expect(clearDeletionIntentMock).toHaveBeenCalledWith("seq-1");
+    expect(reportLifecycleMock).toHaveBeenCalledWith({
+      event: "sequence_save",
+      properties: {
+        sequenceId: "seq-1",
+        stepCount: 1,
+        visibility: "private",
+        durability: "cloud",
+        source: "unspecified",
+      },
+    });
   });
 
   it("writes the sequence to Dexie (db.sequences.put) so a guest library can read it back", async () => {
@@ -254,5 +274,81 @@ describe("LibrarySaveService.saveSequence - durable-save contract", () => {
       "seq-1",
       thumbnailUrl
     );
+  });
+});
+
+describe("LibrarySaveService.saveSequence - publication-moment intent capture", () => {
+  const publicSteps = [
+    { letter: "A" },
+    { letter: "B" },
+    { letter: "C" },
+    { letter: "D" },
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    dbPutMock.mockResolvedValue(undefined);
+    dbGetMock.mockResolvedValue(undefined);
+    dbCountMock.mockResolvedValue(0);
+    (authState as any).isAuthenticated = true;
+    (authState as any).isAnonymous = false;
+  });
+
+  it("stamps the creator's active props on a public save with no recorded intent", async () => {
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+    await service.saveSequence(makeSequence({ steps: publicSteps }), {
+      ...makeOptions(),
+      visibility: "public",
+    });
+    const expected = {
+      bluePropType: "club",
+      redPropType: "club",
+      catDogMode: false,
+    };
+    expect(dbPutMock.mock.calls[0]?.[0]).toMatchObject({
+      creatorIntent: { propConfig: expected },
+      intendedProp: expected,
+    });
+  });
+
+  it("never restamps an existing recording on a public re-save", async () => {
+    const recorded = {
+      bluePropType: "buugeng",
+      redPropType: "buugeng",
+      catDogMode: false,
+    };
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+    await service.saveSequence(
+      makeSequence({
+        steps: publicSteps,
+        creatorIntent: { propConfig: recorded },
+      }),
+      { ...makeOptions(), visibility: "public" }
+    );
+    expect(dbPutMock.mock.calls[0]?.[0]).toMatchObject({
+      creatorIntent: { propConfig: recorded },
+    });
+  });
+
+  it("does not stamp intent on a private save", async () => {
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+    await service.saveSequence(
+      makeSequence({ steps: publicSteps }),
+      makeOptions()
+    );
+    const written = dbPutMock.mock.calls[0]?.[0];
+    expect(written.creatorIntent).toBeUndefined();
+    expect(written.intendedProp).toBeUndefined();
+  });
+
+  it("does not stamp intent when the community gate downgrades the save to private", async () => {
+    const service = new LibrarySaveService(null, null, makeRepository(), null);
+    await service.saveSequence(makeSequence({ steps: [{ letter: "A" }] }), {
+      ...makeOptions(),
+      visibility: "public",
+    });
+    const written = dbPutMock.mock.calls[0]?.[0];
+    expect(written.creatorIntent).toBeUndefined();
+    expect(written.intendedProp).toBeUndefined();
   });
 });

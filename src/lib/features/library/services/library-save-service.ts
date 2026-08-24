@@ -44,6 +44,12 @@ import { markSequenceSyncStatus } from "./library-sync-retry";
 import { computeHash } from "$lib/shared/library/services/sequence-content-hasher";
 import { recordSavedSequenceId } from "$lib/shared/library/services/saved-sequence-ledger";
 import { clearSequenceDeletionIntent } from "$lib/shared/library/services/sequence-persistence-coordinator";
+import { reportPostHogLifecycleEvent } from "$lib/shared/analytics/services/posthog-lifecycle-reporter";
+import {
+  captureActivePropConfig,
+  resolveRecordedPropConfig,
+} from "$lib/shared/foundation/services/recorded-prop-intent";
+import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
@@ -194,8 +200,25 @@ export class LibrarySaveService {
     // user's work is safe immediately even when image rendering, R2, or the
     // network stalls.
     emitProgress(1);
+    // Publication-moment intent capture: a public save that carries no valid
+    // recorded prop pair stamps the creator's active props as its presentation
+    // intent, so public previews render what the creator was looking at.
+    // Private saves are working saves, not presentation statements, and a
+    // sequence that already has a recording (visual-save coordinator, Fuse)
+    // keeps it — a re-save never silently restamps it from Settings.
+    const capturedIntent =
+      visibility === "public" && !resolveRecordedPropConfig(resolvedSequence)
+        ? captureActivePropConfig(settingsService.settings)
+        : null;
     const sequenceToSave = withCanonicalStepCount({
       ...resolvedSequence,
+      ...(capturedIntent && {
+        creatorIntent: {
+          ...resolvedSequence.creatorIntent,
+          propConfig: capturedIntent,
+        },
+        intendedProp: capturedIntent,
+      }),
       name,
       displayName: displayName || undefined,
       tags: [...tags],
@@ -337,6 +360,27 @@ export class LibrarySaveService {
 
     // Step 5: Complete
     emitProgress(5);
+
+    // This is the canonical completion boundary shared by every save entry.
+    // The event is server-captured under the verified Firebase uid; delivery
+    // failure is observable but cannot undo work already durable in the library.
+    try {
+      await reportPostHogLifecycleEvent({
+        event: "sequence_save",
+        properties: {
+          sequenceId,
+          stepCount: sequenceToSave.sequenceLength ?? 0,
+          visibility,
+          durability: isFullAccount ? "cloud" : "local",
+          source: options.analyticsSource ?? "unspecified",
+        },
+      });
+    } catch (error) {
+      console.warn(
+        "[LibrarySaveService] Could not deliver save lifecycle event:",
+        error
+      );
+    }
 
     // Value-moment nudge: a guest just saved successfully. Encourage account
     // creation once per device. Members (full accounts) never see this.

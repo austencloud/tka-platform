@@ -469,6 +469,9 @@ export class PublicSequencesLoader {
       ownerAvatarUrl: data.ownerAvatarUrl,
       publicPerformanceCount: data.publicPerformanceCount ?? 0,
       latestPublicPerformanceAt: this.toDate(data.latestPublicPerformanceAt),
+      // Creator-recorded presentation intent. Dropping it here is what forced
+      // every public preview into the visitor's prop context.
+      ...(data.creatorIntent != null && { creatorIntent: data.creatorIntent }),
       // Compositional fields (if present in the public index)
       blueSoloProp: data.blueSoloProp,
       redSoloProp: data.redSoloProp,
