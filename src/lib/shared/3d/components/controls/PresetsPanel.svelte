@@ -19,6 +19,7 @@
 
   const viewer = getViewer3DContext();
   const scenes = $derived(scene3dCollectionState.collection);
+  let selectedSceneId = $state<string | null>(null);
 
   $effect(() => {
     const uid = authState.user?.uid;
@@ -28,6 +29,7 @@
 
   function applyScene(scene: (typeof scenes)[number]): void {
     applyScene3DLookLive(scene, viewer);
+    selectedSceneId = scene.id;
   }
 </script>
 
@@ -60,6 +62,8 @@
         <button
           type="button"
           class="preset-row"
+          class:preset-row--selected={selectedSceneId === scene.id}
+          aria-pressed={selectedSceneId === scene.id}
           onclick={() => applyScene(scene)}
           title={scene.name}
         >
@@ -121,6 +125,15 @@
   .preset-row:not(.preset-row--skeleton):focus-visible {
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+  }
+
+  .preset-row--selected {
+    border-color: var(--theme-accent, #4a9eff);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 14%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.03))
+    );
   }
 
   .preset-row:not(.preset-row--skeleton):active {
