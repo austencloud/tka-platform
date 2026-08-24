@@ -1,0 +1,91 @@
+// tests/unit/film-director/resolve-directives.test.ts
+import { describe, expect, it } from "vitest";
+
+import {
+  createAxisStream,
+  resolveFilmSeed,
+} from "../../../src/routes/test/film-director/_lib/directive-random";
+import { resolveCastAxis } from "../../../src/routes/test/film-director/_lib/resolve-directives";
+
+const CATALOG = ["staff", "fan", "club", "sword", "torch", "buugeng"] as const;
+
+function axis(
+  values: Parameters<typeof resolveCastAxis<string>>[0]["values"],
+  overrides: Partial<Parameters<typeof resolveCastAxis<string>>[0]> = {}
+) {
+  const ids = values.map((_, index) => `performer-${index + 1}`);
+  return resolveCastAxis<string>({
+    axis: "prop",
+    shotId: "shot-1",
+    performerIds: ids,
+    values,
+    catalog: [...CATALOG],
+    random: createAxisStream(resolveFilmSeed("test-film"), "shot-1", "prop"),
+    ...overrides,
+  });
+}
+
+describe("resolveCastAxis", () => {
+  it("passes literals through untouched", () => {
+    expect(axis(["staff", "fan"])).toEqual(["staff", "fan"]);
+  });
+
+  it("resolves pick:any from the catalog deterministically", () => {
+    const first = axis([{ pick: "any" }, { pick: "any" }]);
+    const second = axis([{ pick: "any" }, { pick: "any" }]);
+    expect(first).toEqual(second);
+    for (const value of first) expect(CATALOG).toContain(value);
+  });
+
+  it("distinct yields pairwise different values and routes around pins", () => {
+    const resolved = axis([
+      "staff",
+      { pick: "distinct" },
+      { pick: "distinct" },
+      { pick: "distinct" },
+    ]);
+    expect(new Set(resolved).size).toBe(4);
+    expect(resolved[0]).toBe("staff");
+    expect(resolved.slice(1)).not.toContain("staff");
+  });
+
+  it("not excludes; oneOf restricts", () => {
+    const resolved = axis([{ not: "staff" }, { oneOf: ["fan", "club"] }]);
+    expect(resolved[0]).not.toBe("staff");
+    expect(["fan", "club"]).toContain(resolved[1]);
+  });
+
+  it("sameAs copies a resolved pick, even from a directive", () => {
+    const resolved = axis([{ pick: "any" }, { sameAs: "performer-1" }]);
+    expect(resolved[1]).toBe(resolved[0]);
+  });
+
+  it("rejects distinct demands larger than the pool, with counts", () => {
+    expect(() =>
+      axis([
+        { pick: "distinct", from: ["staff", "fan"] },
+        { pick: "distinct", from: ["staff", "fan"] },
+        { pick: "distinct", from: ["staff", "fan"] },
+      ])
+    ).toThrow(/distinct/i);
+  });
+
+  it("rejects excluding everything", () => {
+    expect(() => axis([{ not: [...CATALOG] }])).toThrow(/exclud/i);
+  });
+
+  it("rejects sameAs cycles and missing references", () => {
+    expect(() =>
+      axis([{ sameAs: "performer-2" }, { sameAs: "performer-1" }])
+    ).toThrow(/cycle/i);
+    expect(() => axis([{ sameAs: "performer-9" }])).toThrow(/performer-9/);
+  });
+
+  it("rejects pool values outside the catalog", () => {
+    expect(() => axis([{ oneOf: ["chainsaw"] }])).toThrow(/chainsaw/);
+  });
+
+  it("rejects open picks on axes with no catalog", () => {
+    expect(() => axis([{ pick: "any" }], { catalog: null })).toThrow(/from/i);
+  });
+});
