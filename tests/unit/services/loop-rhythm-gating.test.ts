@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { gateRhythm } from "$lib/shared/create/services/loop-rhythm-gating";
+import {
+  fitLoopRhythmToLength,
+  gateRhythm,
+} from "$lib/shared/create/services/loop-rhythm-gating";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 
 const C = LOOPComponent;
@@ -57,5 +60,42 @@ describe("gateRhythm", () => {
       ok: false,
       reason: "No LOOP type matches this exact combination",
     });
+  });
+});
+
+describe("fitLoopRhythmToLength", () => {
+  it("fits a 10-step rotated LOOP by changing quartered to halved", () => {
+    const result = fitLoopRhythmToLength(
+      new Set([C.ROTATED]),
+      { rotationInterval: 4, inversionInterval: 2 },
+      10
+    );
+
+    expect(result).toEqual({
+      rhythm: { rotationInterval: 2, inversionInterval: 2 },
+      gate: { ok: true, seedLength: 5, multiplier: 2 },
+      changed: true,
+    });
+  });
+
+  it("keeps an already buildable rhythm unchanged", () => {
+    const result = fitLoopRhythmToLength(
+      new Set([C.ROTATED]),
+      { rotationInterval: 4, inversionInterval: 2 },
+      8
+    );
+
+    expect(result?.rhythm.rotationInterval).toBe(4);
+    expect(result?.changed).toBe(false);
+  });
+
+  it("returns null when the component expansion cannot fit the length", () => {
+    expect(
+      fitLoopRhythmToLength(
+        new Set([C.MIRRORED, C.INVERTED, C.ROTATED]),
+        { rotationInterval: 4, inversionInterval: 4, inversionMode: "expand" },
+        10
+      )
+    ).toBeNull();
   });
 });

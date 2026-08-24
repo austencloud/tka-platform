@@ -9,6 +9,10 @@ import type {
   CardDescriptor,
   CardHandlers,
 } from "$lib/shared/create/domain/generator-contract-types";
+import {
+  getGeneratorCardSpan,
+  getGeneratorPanelCards,
+} from "$lib/shared/create/domain/card-registry";
 
 /**
  * Derive minimum sequence length for a LOOP configuration via the engine's
@@ -146,9 +150,6 @@ export function buildCardDescriptors(
   }
 
   // ─── Row 2: GridMode [+ TurnIntensity] ───
-  // Level 1 has exactly three remaining settings, so they share one balanced
-  // row. Levels 2 and 3 reserve this row for Grid + Turn Intensity.
-  const row2Span = isBeginnerLevel ? 2 : 3;
 
   cardList.push({
     id: "grid-mode",
@@ -157,7 +158,7 @@ export function buildCardDescriptors(
       onModeChange: handlers.handleGridModeChange,
       cardIndex: cardIndex++,
     },
-    gridColumnSpan: row2Span,
+    gridColumnSpan: 3,
   });
 
   if (shouldShowTurnIntensity) {
@@ -176,8 +177,6 @@ export function buildCardDescriptors(
   // ─── Customize + LOOP row ───
   // Rotation owns its Halved/Quartered choice inside the LOOP drawer. A separate
   // Period card here exposed the same config field through a second control.
-  const customizeLoopSpan = isBeginnerLevel ? 2 : 3;
-
   // Customize card (absorbs Style + Start/End; Rhythm removed pending design)
   const hasStartEnd = handlers.handleStartEndChange && handlers.startEndOptions;
   if (handlers.handleConstraintPresetChange) {
@@ -198,7 +197,7 @@ export function buildCardDescriptors(
         onResetAll: handlers.handleResetAll ?? null,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: customizeLoopSpan,
+      gridColumnSpan: 3,
     });
   }
 
@@ -219,7 +218,7 @@ export function buildCardDescriptors(
         onLOOPTypeChange: handlers.handleLOOPTypeChange,
         cardIndex: cardIndex++,
       },
-      gridColumnSpan: customizeLoopSpan,
+      gridColumnSpan: 3,
     });
   }
 
@@ -239,5 +238,28 @@ export function buildCardDescriptors(
     });
   }
 
-  return cardList;
+  const panelCards = getGeneratorPanelCards({
+    includeLevel: false,
+    isBeginner: isBeginnerLevel,
+    capabilities: {
+      preset: Boolean(handlers.handleOpenPresetDrawer),
+      customize: Boolean(handlers.handleConstraintPresetChange),
+      loop: Boolean(handlers.handleLoopToggle),
+      generate: Boolean(handlers.handleGenerateClick),
+    },
+  }).filter((entry) => entry.slot === "grid");
+
+  // The registry owns both order and layout. If a card is added there without
+  // a real descriptor, fail loudly instead of letting the explanation screen
+  // advertise a control that the panel cannot render.
+  return panelCards.map((entry) => {
+    const descriptor = cardList.find((card) => card.id === entry.id);
+    if (!descriptor) {
+      throw new Error(`Missing generator card descriptor: ${entry.id}`);
+    }
+    return {
+      ...descriptor,
+      gridColumnSpan: getGeneratorCardSpan(entry, isBeginnerLevel),
+    };
+  });
 }

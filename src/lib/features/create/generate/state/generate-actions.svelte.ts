@@ -10,12 +10,16 @@ import type { SequenceState } from "$lib/features/create/shared/state/sequence-s
 import { setPendingGenerationAnimation } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
 import { clearArrowPositionCache } from "$lib/shared/pictograph/arrow/rendering/arrow-position-cache";
 import { clearPropPositionCache } from "$lib/shared/pictograph/prop/prop-position-cache";
+import { retargetStepPositionCaches } from "$lib/features/create/shared/services/step-position-cache-retarget";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { GenerationOptions } from "../shared/domain/models/generate-models";
 import { GenerationMode } from "../shared/domain/models/generate-models";
 import type { GenerationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
 import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
-import { levelToDifficulty, type UIGenerationConfig } from "../shared/utils/config-mapper";
+import {
+  levelToDifficulty,
+  type UIGenerationConfig,
+} from "../shared/utils/config-mapper";
 import {
   getTemplateById,
   templateToPattern,
@@ -39,7 +43,10 @@ import {
   type GuestLoopLockKind,
 } from "$lib/shared/create/services/loop-guest-gate";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import { resolveAccessTier, getMaxSteps } from "$lib/shared/auth/domain/access-tier";
+import {
+  resolveAccessTier,
+  getMaxSteps,
+} from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -51,11 +58,26 @@ import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/serv
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 
+export interface GenerationAnimationTarget {
+  prepare(stepCount: number, isSequential: boolean): void;
+}
+
 // Letters with dash motions (Type 3, 4, and 5)
 const DASH_LETTERS: Set<string> = new Set([
-  "W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-",
-  "Φ", "Ψ", "Λ",
-  "Φ-", "Ψ-", "Λ-",
+  "W-",
+  "X-",
+  "Y-",
+  "Z-",
+  "Σ-",
+  "Δ-",
+  "Θ-",
+  "Ω-",
+  "Φ",
+  "Ψ",
+  "Λ",
+  "Φ-",
+  "Ψ-",
+  "Λ-",
 ]);
 
 export function createGenerationActionsState(
@@ -64,7 +86,8 @@ export function createGenerationActionsState(
   getConfig?: () => UIGenerationConfig | undefined,
   getSpellState?: () => SpellModeState | undefined,
   pushUndoSnapshot?: (type: UndoOperationType, metadata?: UndoMetadata) => void,
-  onGuestLoopLocked?: (kind: GuestLoopLockKind) => void
+  onGuestLoopLocked?: (kind: GuestLoopLockKind) => void,
+  getAnimationTarget?: () => GenerationAnimationTarget | null | undefined
 ) {
   let isGenerating = $state(false);
   let lastGeneratedSequence = $state<SequenceData | null>(null);
@@ -161,7 +184,10 @@ export function createGenerationActionsState(
             if (result.success && result.sequence) {
               generatedSequence = result.sequence;
             } else {
-              console.warn("Duration template application failed:", result.error);
+              console.warn(
+                "Duration template application failed:",
+                result.error
+              );
             }
           } catch (err) {
             console.warn("Duration template application error:", err);
@@ -171,7 +197,11 @@ export function createGenerationActionsState(
 
       // Enforce tier step cap post-generation - handles words with bridge letters
       // that push the sequence beyond what the user's tier allows.
-      const tier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
+      const tier = resolveAccessTier(
+        authState.isAuthenticated,
+        authState.isAnonymous,
+        isPremiumOrAbove(authState.role)
+      );
       const maxSteps = getMaxSteps(tier);
       if (generatedSequence.steps.length > maxSteps) {
         generatedSequence = {
@@ -273,24 +303,28 @@ export function createGenerationActionsState(
     try {
       // Lazy-resolve services
       if (!spellOrchestrator) {
-        spellOrchestrator = getVariationExplorationOrchestrator() as VariationExplorationOrchestrator;
+        spellOrchestrator =
+          getVariationExplorationOrchestrator() as VariationExplorationOrchestrator;
       }
 
       const config = getConfig?.();
 
       // Parse word with bridge letters
-      const parseResult = await spellOrchestrator.parseWord(spellState.inputWord, {
-        preferences: {
-          constraintPreset: config?.constraintPreset ?? "smooth",
-          handPathMode: config?.handPathMode ?? "mixed",
-          motionTypeFilter: config?.motionTypeFilter ?? null,
-          highContinuity: config?.constraintPreset === "smooth",
-          makeCircular: false,
-          selectedLOOPType: null,
-          targetStepCount: null,
-          maxReversals: null,
-        },
-      });
+      const parseResult = await spellOrchestrator.parseWord(
+        spellState.inputWord,
+        {
+          preferences: {
+            constraintPreset: config?.constraintPreset ?? "smooth",
+            handPathMode: config?.handPathMode ?? "mixed",
+            motionTypeFilter: config?.motionTypeFilter ?? null,
+            highContinuity: config?.constraintPreset === "smooth",
+            makeCircular: false,
+            selectedLOOPType: null,
+            targetStepCount: null,
+            maxReversals: null,
+          },
+        }
+      );
 
       if (!parseResult.success || !parseResult.expandedLetters) {
         spellState.setError(parseResult.error || "Could not parse word");
@@ -303,7 +337,10 @@ export function createGenerationActionsState(
       // If user requested a longer sequence, append extra bridge letters at the end
       const spellTarget = config?.spellTargetLength;
       if (spellTarget !== null && spellTarget !== undefined && config) {
-        const extraBridgesNeeded = Math.max(0, spellTarget - finalLetters.length);
+        const extraBridgesNeeded = Math.max(
+          0,
+          spellTarget - finalLetters.length
+        );
 
         if (extraBridgesNeeded > 0) {
           const graph = await spellServiceLoaderModule.getTransitionGraph();
@@ -322,15 +359,18 @@ export function createGenerationActionsState(
 
             let bridgeLetter: Letter;
             if (preferDash) {
-              const dashOpts = successors.filter(b => DASH_LETTERS.has(b));
+              const dashOpts = successors.filter((b) => DASH_LETTERS.has(b));
               const pool = dashOpts.length > 0 ? dashOpts : successors;
               bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
             } else if (avoidDash) {
-              const nonDashOpts = successors.filter(b => !DASH_LETTERS.has(b));
+              const nonDashOpts = successors.filter(
+                (b) => !DASH_LETTERS.has(b)
+              );
               const pool = nonDashOpts.length > 0 ? nonDashOpts : successors;
               bridgeLetter = pool[Math.floor(Math.random() * pool.length)]!;
             } else {
-              bridgeLetter = successors[Math.floor(Math.random() * successors.length)]!;
+              bridgeLetter =
+                successors[Math.floor(Math.random() * successors.length)]!;
             }
 
             extendedLetters.push(bridgeLetter);
@@ -363,7 +403,8 @@ export function createGenerationActionsState(
       const expandedWord = finalLetters.join("") || spellState.inputWord;
       const isLoop = !!config?.loopEnabled;
 
-      const loopType = (config?.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
+      const loopType =
+        (config?.loopType as LOOPType) || LOOPType.STRICT_REWOUND;
       const period = (config?.period as Period) || Period.HALVED;
 
       // Generate the word sequence WITHOUT engine-level LOOP. Word-based
@@ -385,7 +426,8 @@ export function createGenerationActionsState(
         motionTypeFilter: config?.motionTypeFilter ?? null,
       };
 
-      let generatedSequence = await generationOrchestrator.generateSequence(generationOptions);
+      let generatedSequence =
+        await generationOrchestrator.generateSequence(generationOptions);
 
       // If LOOP is requested, apply it post-hoc via the bridge-aware extender.
       // This path can add a single bridge letter to make the sequence land at
@@ -395,7 +437,7 @@ export function createGenerationActionsState(
           generatedSequence,
           loopType,
           period,
-          finalLetterSources,
+          finalLetterSources
         );
       }
 
@@ -419,7 +461,11 @@ export function createGenerationActionsState(
         const template = getTemplateById(config.durationTemplateId);
         if (template) {
           try {
-            const pattern = templateToPattern(template, "system", loopedSequence.steps.length);
+            const pattern = templateToPattern(
+              template,
+              "system",
+              loopedSequence.steps.length
+            );
             const result = dpApplyPattern(pattern, loopedSequence);
             if (result.success && result.sequence) {
               Object.assign(loopedSequence, result.sequence);
@@ -432,7 +478,11 @@ export function createGenerationActionsState(
 
       // Enforce tier step cap post-generation - spell sequences with bridge letters
       // can exceed the user's allowed length.
-      const spellTier = resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role));
+      const spellTier = resolveAccessTier(
+        authState.isAuthenticated,
+        authState.isAnonymous,
+        isPremiumOrAbove(authState.role)
+      );
       const spellMaxSteps = getMaxSteps(spellTier);
       if (loopedSequence.steps.length > spellMaxSteps) {
         loopedSequence = {
@@ -474,7 +524,8 @@ export function createGenerationActionsState(
         // Silently fail - activity logging is non-critical
       }
     } catch (error) {
-      generationError = error instanceof Error ? error.message : "Spell generation failed";
+      generationError =
+        error instanceof Error ? error.message : "Spell generation failed";
       spellState.setError(generationError);
 
       const errorService = getErrorHandler();
@@ -526,14 +577,21 @@ export function createGenerationActionsState(
     sequence: SequenceData,
     loopType: LOOPType,
     period: Period,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
+    letterSources?: Array<{
+      letter: Letter;
+      isOriginal: boolean;
+      stepIndex: number;
+    }>
   ): Promise<SequenceData> {
     try {
       // Path A: Try direct extension (sequence already ends at LOOP-compatible position)
       const analysis = sequenceExtender.analyzeSequence(sequence);
       if (analysis.canExtend) {
         try {
-          const extended = await sequenceExtender.extendSequence(sequence, { loopType, period });
+          const extended = await sequenceExtender.extendSequence(sequence, {
+            loopType,
+            period,
+          });
           if (extended) {
             return updateLoopMetadata(extended, sequence, letterSources);
           }
@@ -543,18 +601,24 @@ export function createGenerationActionsState(
       }
 
       // Path B: Not directly extendable - find a bridge letter to make it LOOP-compatible
-      const circularizationOptions = await sequenceExtender.getCircularizationOptions(sequence);
-      const extensionOptions = await sequenceExtender.getAllExtensionOptions(sequence);
+      const circularizationOptions =
+        await sequenceExtender.getCircularizationOptions(sequence);
+      const extensionOptions =
+        await sequenceExtender.getAllExtensionOptions(sequence);
       const allBridgeOptions = [...circularizationOptions, ...extensionOptions];
 
       if (allBridgeOptions.length === 0) {
-        console.warn("[SpellGenerate] No bridge options found for LOOP extension");
+        console.warn(
+          "[SpellGenerate] No bridge options found for LOOP extension"
+        );
         return sequence;
       }
 
       const expectedRotation = period === Period.QUARTERED ? "quarter" : "half";
       const compatibleBridges = allBridgeOptions.filter((opt) => {
-        const hasLoopType = opt.availableLOOPs.some((l) => l.loopType === loopType);
+        const hasLoopType = opt.availableLOOPs.some(
+          (l) => l.loopType === loopType
+        );
         if (!hasLoopType) return false;
         if (opt.rotationRelation) {
           return opt.rotationRelation === expectedRotation;
@@ -563,7 +627,11 @@ export function createGenerationActionsState(
       });
 
       if (compatibleBridges.length === 0) {
-        console.warn("[SpellGenerate] No bridge options compatible with", loopType, period);
+        console.warn(
+          "[SpellGenerate] No bridge options compatible with",
+          loopType,
+          period
+        );
         return sequence;
       }
 
@@ -576,7 +644,7 @@ export function createGenerationActionsState(
         bridgeLetter,
         loopType,
         bestBridge.pictographData,
-        period,
+        period
       );
 
       if (!extended) return sequence;
@@ -600,25 +668,33 @@ export function createGenerationActionsState(
   function updateLoopMetadata(
     extended: SequenceData,
     original: SequenceData,
-    letterSources?: Array<{ letter: Letter; isOriginal: boolean; stepIndex: number }>,
+    letterSources?: Array<{
+      letter: Letter;
+      isOriginal: boolean;
+      stepIndex: number;
+    }>
   ): SequenceData {
     const originalStepCount = original.steps?.length ?? 0;
-    const extendedSources = extended.steps?.map((step, index) => {
-      if (index < originalStepCount && letterSources?.[index]) {
+    const extendedSources =
+      extended.steps?.map((step, index) => {
+        if (index < originalStepCount && letterSources?.[index]) {
+          return {
+            letter: (step.letter || "") as Letter,
+            isOriginal: letterSources[index]!.isOriginal,
+            stepIndex: index + 1,
+          };
+        }
         return {
           letter: (step.letter || "") as Letter,
-          isOriginal: letterSources[index]!.isOriginal,
+          isOriginal: false,
           stepIndex: index + 1,
         };
-      }
-      return {
-        letter: (step.letter || "") as Letter,
-        isOriginal: false,
-        stepIndex: index + 1,
-      };
-    }) ?? [];
+      }) ?? [];
 
-    const extendedWord = extended.word || extended.steps?.map((s) => s.letter || "").join("") || "";
+    const extendedWord =
+      extended.word ||
+      extended.steps?.map((s) => s.letter || "").join("") ||
+      "";
 
     return {
       ...extended,
@@ -639,33 +715,42 @@ export function createGenerationActionsState(
       const sequenceState = getSequenceState?.();
       if (!sequenceState) return;
 
-      const hasExistingSequence = sequenceState.getCurrentSteps().length > 0;
+      const existingSteps = sequenceState.getCurrentSteps();
+      const animationTarget = getAnimationTarget?.();
 
-      if (hasExistingSequence) {
-        window.dispatchEvent(new CustomEvent("clear-sequence-animation"));
-        await new Promise((resolve) => setTimeout(resolve, 300));
+      if (existingSteps.length > 0) {
+        // Regeneration swaps the sequence in place, Fuse-Regenerate style: the
+        // position caches are re-filed under the incoming step identities so
+        // each remounted pictograph starts at its slot's previous prop/arrow
+        // positions and glides to the new ones. No clear-out, no hidden cells,
+        // no reveal wave — those belong to the empty-grid first generation.
+        retargetStepPositionCaches(existingSteps, sequence.steps);
+        sequenceState.setCurrentSequence(sequence);
+        return;
       }
 
-      // Flush stale positions so incoming steps render at their correct
-      // locations immediately rather than animating from the old sequence's spots.
+      // First generation into an empty grid has nothing on screen to glide
+      // from. Flush stale positions so the incoming steps render at their
+      // correct locations, then run the cascading reveal.
       clearArrowPositionCache();
       clearPropPositionCache();
 
       const isSequential = getIsSequential?.() ?? false;
 
-      // Set global flag BEFORE dispatching event - this flag persists even if StepGrid
-      // isn't mounted yet (e.g., workspace is transitioning from empty to visible)
-      setPendingGenerationAnimation(true);
-
-      // Dispatch BEFORE updating sequence to prepare StepGrid for animation
-      window.dispatchEvent(
-        new CustomEvent("prepare-sequence-animation", {
-          detail: {
-            isSequential,
-            stepCount: sequence.steps.length,
-          },
-        })
-      );
+      if (animationTarget) {
+        animationTarget.prepare(sequence.steps.length, isSequential);
+      } else {
+        // The module workbench may not be mounted yet on a first generation.
+        setPendingGenerationAnimation(true);
+        window.dispatchEvent(
+          new CustomEvent("prepare-sequence-animation", {
+            detail: {
+              isSequential,
+              stepCount: sequence.steps.length,
+            },
+          })
+        );
+      }
 
       // Small delay to ensure the prepare event is processed before updating sequence
       // This allows the StepGrid to set up animation state before receiving new steps

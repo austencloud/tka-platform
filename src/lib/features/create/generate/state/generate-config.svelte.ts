@@ -19,6 +19,9 @@ import { resolveAccessTier } from "$lib/shared/auth/domain/access-tier";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import type { ReflectionAxis } from "@tka/sequence-engine/loop";
 import type { TurnLanes } from "@tka/sequence-engine/generation";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { fitLoopRhythmToLength } from "$lib/shared/create/services/loop-rhythm-gating";
+import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 
 // Re-export for convenience
 export type { UIGenerationConfig };
@@ -113,7 +116,10 @@ function loadConfig(): UIGenerationConfig | null {
     // Migrate legacy "spell" mode → freeform (spell is now implicit from word presence)
     const isLegacySpell = data.mode === GenerationMode.SPELL;
     const result: Partial<UIGenerationConfig> = {
-      mode: isLegacyCircular || isLegacySpell ? GenerationMode.FREEFORM : (data.mode as GenerationMode),
+      mode:
+        isLegacyCircular || isLegacySpell
+          ? GenerationMode.FREEFORM
+          : (data.mode as GenerationMode),
       loopEnabled: data.loopEnabled ?? isLegacyCircular,
       length: data.length,
       level: data.level,
@@ -156,15 +162,15 @@ function loadConfig(): UIGenerationConfig | null {
     }
     if (data.constraintPreset !== undefined) {
       // Migrate legacy "high-reversal" → "choppy"
-      result.constraintPreset = data.constraintPreset === "high-reversal" as string
-        ? "choppy"
-        : data.constraintPreset;
+      result.constraintPreset =
+        data.constraintPreset === ("high-reversal" as string)
+          ? "choppy"
+          : data.constraintPreset;
     }
     if (data.handPathMode !== undefined) {
       // Migrate legacy "high" → "choppy"
-      result.handPathMode = data.handPathMode === "high" as string
-        ? "choppy"
-        : data.handPathMode;
+      result.handPathMode =
+        data.handPathMode === ("high" as string) ? "choppy" : data.handPathMode;
     }
     if (data.motionTypeFilter !== undefined) {
       result.motionTypeFilter = data.motionTypeFilter;
@@ -223,7 +229,42 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
  * across sessions by design — this is the way out when a saved combination
  * (e.g. Choppy props) quietly narrows what the generator can produce.
  */
-export const GENERATE_DEFAULT_CONFIG: Readonly<UIGenerationConfig> = DEFAULT_CONFIG;
+export const GENERATE_DEFAULT_CONFIG: Readonly<UIGenerationConfig> =
+  DEFAULT_CONFIG;
+
+function reconcileLoopLength(config: UIGenerationConfig): UIGenerationConfig {
+  if (!config.loopEnabled) return config;
+
+  const components = parseLoopComponents(config.loopType);
+  const fitted = fitLoopRhythmToLength(
+    components,
+    {
+      rotationInterval: config.period === Period.QUARTERED ? 4 : 2,
+      inversionInterval: config.inversionInterval ?? 2,
+      inversionMode: config.inversionMode ?? "expand",
+      reflectionAxis: config.reflectionAxis,
+    },
+    config.length
+  );
+
+  if (!fitted) return { ...config, loopEnabled: false };
+
+  const period = components.has(LOOPComponent.ROTATED)
+    ? fitted.rhythm.rotationInterval === 4
+      ? Period.QUARTERED
+      : Period.HALVED
+    : config.period;
+  const inversionInterval = components.has(LOOPComponent.INVERTED)
+    ? (fitted.rhythm.inversionInterval ?? config.inversionInterval)
+    : config.inversionInterval;
+  if (
+    period === config.period &&
+    inversionInterval === config.inversionInterval
+  )
+    return config;
+
+  return { ...config, period, inversionInterval };
+}
 
 // Signed-out visitors additionally start at level 1 (beginner). The loop
 // settings now come from DEFAULT_CONFIG, so only the level delta lives here.
@@ -253,16 +294,17 @@ export function createGenerationConfigState(
       authState.isAnonymous,
       isPremiumOrAbove(authState.role)
     ) === "guest";
-  const guestOverrides =
-    !savedConfig && isGuest ? GUEST_DEFAULT_OVERRIDES : {};
+  const guestOverrides = !savedConfig && isGuest ? GUEST_DEFAULT_OVERRIDES : {};
 
   // Initialize config with priority: initialConfig > savedConfig > guestOverrides > DEFAULT_CONFIG
-  let config = $state<UIGenerationConfig>({
-    ...DEFAULT_CONFIG,
-    ...guestOverrides,
-    ...(savedConfig || {}),
-    ...initialConfig,
-  });
+  let config = $state<UIGenerationConfig>(
+    reconcileLoopLength({
+      ...DEFAULT_CONFIG,
+      ...guestOverrides,
+      ...(savedConfig || {}),
+      ...initialConfig,
+    })
+  );
 
   // Derived values
   const isFreeformMode = $derived(config.mode === GenerationMode.FREEFORM);
@@ -286,7 +328,10 @@ export function createGenerationConfigState(
     for (const [k, v] of Object.entries(updates)) {
       if (v !== undefined) cleaned[k] = v;
     }
-    if (typeof cleaned.loopType === "string" && cleaned.loopType in STRICT_LOOP_MIGRATION) {
+    if (
+      typeof cleaned.loopType === "string" &&
+      cleaned.loopType in STRICT_LOOP_MIGRATION
+    ) {
       cleaned.loopType = STRICT_LOOP_MIGRATION[cleaned.loopType];
     }
 
@@ -301,7 +346,7 @@ export function createGenerationConfigState(
     );
     if (!changed) return;
 
-    config = { ...config, ...cleaned };
+    config = reconcileLoopLength({ ...config, ...cleaned });
 
     // Auto-clear duration template if it's no longer valid for the current length
     if (config.durationTemplateId) {
@@ -350,7 +395,10 @@ export function createGenerationConfigState(
     if (allowed.length > 0 && !allowed.includes(config.turnIntensity)) {
       // Snap to the nearest valid value (or the minimum if current is below range)
       const nearest = allowed.reduce((best, v) =>
-        Math.abs(v - config.turnIntensity) < Math.abs(best - config.turnIntensity) ? v : best
+        Math.abs(v - config.turnIntensity) <
+        Math.abs(best - config.turnIntensity)
+          ? v
+          : best
       );
       updates.turnIntensity = nearest;
     }

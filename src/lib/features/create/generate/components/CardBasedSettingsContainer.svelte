@@ -16,6 +16,7 @@ Delegates ALL logic to services (SRP compliant)
   import { quintOut } from "svelte/easing";
 
   import type { CardDescriptor } from "$lib/shared/create/domain/generator-contract-types";
+  import { getGeneratorPanelCards } from "$lib/shared/create/domain/card-registry";
   import type { LOOPParameterProvider } from "$lib/features/create/generate/shared/services/loop-parameter-provider";
   import { calculateResponsiveFontSize } from "../shared/services/responsive-typographer";
   import {
@@ -52,6 +53,8 @@ Delegates ALL logic to services (SRP compliant)
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
   import { clampLanesToLevel } from "$lib/shared/create/domain/turn-pattern-data";
   import type { TurnLanes } from "@tka/sequence-engine/generation";
+  import { fitLoopRhythmToLength } from "$lib/shared/create/services/loop-rhythm-gating";
+  import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   // Card components
   import LevelCard from "./cards/LevelCard.svelte";
   import GridModeCard from "./cards/GridModeCard.svelte";
@@ -67,6 +70,11 @@ Delegates ALL logic to services (SRP compliant)
     CommunityFavorite,
     SavedGeneratorSetup,
   } from "../domain/models/favorite-config";
+
+  const levelCardEntry = getGeneratorPanelCards().find(
+    (entry) => entry.slot === "level"
+  );
+
   // Props
   let {
     config,
@@ -416,6 +424,32 @@ Delegates ALL logic to services (SRP compliant)
   }
 
   function handleLengthChange(length: number) {
+    if (config.loopEnabled) {
+      const fitted = fitLoopRhythmToLength(
+        parseLoopComponents(config.loopType),
+        {
+          rotationInterval: config.period === Period.QUARTERED ? 4 : 2,
+          inversionInterval: config.inversionInterval ?? 2,
+          inversionMode: config.inversionMode ?? "expand",
+          reflectionAxis: config.reflectionAxis,
+        },
+        length
+      );
+
+      if (fitted?.changed) {
+        showToast({
+          message: `LOOP rhythm changed to fit ${length} steps.`,
+          type: "info",
+          duration: 4000,
+        });
+      } else if (!fitted) {
+        showToast({
+          message: `LOOP turned off so this can be exactly ${length} steps.`,
+          type: "info",
+          duration: 5000,
+        });
+      }
+    }
     updateConfig({ length });
   }
 
@@ -642,14 +676,16 @@ Delegates ALL logic to services (SRP compliant)
 
   <div class="card-grid-stage">
     <div class="card-grid" data-level={selectedLevel}>
-      <div class="compact-level-card" data-card-id="level">
-        <LevelCard
-          currentLevel={levelCardLevel}
-          onLevelChange={handleLevelCardChange}
-          gridColumnSpan={6}
-          {headerFontSize}
-        />
-      </div>
+      {#if levelCardEntry}
+        <div class="compact-level-card" data-card-id={levelCardEntry.id}>
+          <LevelCard
+            currentLevel={levelCardLevel}
+            onLevelChange={handleLevelCardChange}
+            gridColumnSpan={levelCardEntry.tourSpan}
+            {headerFontSize}
+          />
+        </div>
+      {/if}
 
       <!-- Three things move whenever the level changes, and each one owns a
            piece of the animation:
@@ -741,7 +777,6 @@ Delegates ALL logic to services (SRP compliant)
       {/each}
     </div>
   </div>
-
 </div>
 
 <style>

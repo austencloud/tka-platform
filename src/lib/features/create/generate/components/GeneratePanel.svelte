@@ -19,7 +19,10 @@ Card-based architecture with integrated Generate button:
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
   import { createDeviceState } from "../state/generate-device.svelte";
-  import { createGenerationActionsState } from "../state/generate-actions.svelte";
+  import {
+    createGenerationActionsState,
+    type GenerationAnimationTarget,
+  } from "../state/generate-actions.svelte";
   import { createGenerationConfigState } from "../state/generate-config.svelte";
   import { createStartEndOptionsState } from "../state/start-end-options-state.svelte";
   import { createSpellModeState } from "../state/spell-mode-state.svelte";
@@ -64,9 +67,15 @@ Card-based architecture with integrated Generate button:
   let {
     sequenceState,
     isDesktop = false,
+    generateCurrent = $bindable(null),
+    generationAnimationTarget = null,
   }: {
     sequenceState: SequenceState;
     isDesktop?: boolean;
+    /** Programmatic access to the exact recipe used by the Generate card. */
+    generateCurrent?: (() => Promise<void>) | null;
+    /** Optional embedded workbench that owns this generation's reveal. */
+    generationAnimationTarget?: GenerationAnimationTarget | null;
   } = $props();
 
   // Animation is always sequential with gentle bloom
@@ -84,7 +93,8 @@ Card-based architecture with integrated Generate button:
       context?.CreateModuleState.pushUndoSnapshot(type, metadata),
     // Generate-time guest LOOP lock (e.g. a locked loopType persisted from a
     // signed-in session) opens the same auth screen as the selector gate.
-    openLoopGateAuth
+    openLoopGateAuth,
+    () => generationAnimationTarget
   );
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState(
@@ -190,6 +200,27 @@ Card-based architecture with integrated Generate button:
       await actionsState.onGenerateClicked(options);
     }
   }
+
+  async function generateCurrentRecipe(): Promise<void> {
+    if (hasWord) {
+      await handleGenerate(null);
+      return;
+    }
+    await handleGenerate(
+      uiConfigToGenerationOptions(
+        configState.config,
+        PropTypeEnum.FAN,
+        startEndState.options
+      )
+    );
+  }
+
+  $effect(() => {
+    generateCurrent = generateCurrentRecipe;
+    return () => {
+      generateCurrent = null;
+    };
+  });
 
   // ===== Dirty-State Detection =====
   const hasSettingsChanged = $derived.by(() => {
@@ -368,7 +399,7 @@ Card-based architecture with integrated Generate button:
   />
 {/if}
 
-<GeneratePanelTour />
+<GeneratePanelTour level={configState.config.level} />
 
 <style>
   .generate-panel {

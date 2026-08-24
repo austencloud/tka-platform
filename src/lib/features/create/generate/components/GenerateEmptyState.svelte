@@ -30,6 +30,11 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import {
+    logGenerateTourAccepted,
+    logGenerateTourDeclined,
+    logGenerateTourOfferViewed,
+  } from "$lib/shared/analytics/services/onboarding-events";
 
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
 
@@ -47,14 +52,23 @@
     }
   });
 
+  let offerViewRecorded = false;
+  $effect(() => {
+    if (!showOffer || offerViewRecorded) return;
+    offerViewRecorded = true;
+    logGenerateTourOfferViewed();
+  });
+
   function acceptTour() {
     hapticService?.trigger("selection");
+    logGenerateTourAccepted();
     generateTourState.markOffered();
-    generateTourState.start();
+    generateTourState.start("first_run_offer");
   }
 
   function declineTour() {
     hapticService?.trigger("selection");
+    logGenerateTourDeclined();
     generateTourState.markOffered();
   }
 </script>

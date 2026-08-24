@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { createGenerationConfigState } from "../generate-config.svelte";
+import { LOOPType, Period } from "../../circular/domain/models/circular-models";
 
 /**
  * `updateConfig` used to reassign `config` on every call, so a write that
@@ -51,5 +52,20 @@ describe("updateConfig identity", () => {
     expect(state.config).not.toBe(before);
     expect(state.config.level).toBe(3);
     expect(state.config.length).toBe(16);
+  });
+
+  it("keeps an exact 10-step request by fitting a quartered rotated LOOP", () => {
+    const state = createGenerationConfigState({
+      length: 8,
+      loopEnabled: true,
+      loopType: LOOPType.ROTATED,
+      period: Period.QUARTERED,
+    });
+
+    state.updateConfig({ length: 10 });
+
+    expect(state.config.length).toBe(10);
+    expect(state.config.loopEnabled).toBe(true);
+    expect(state.config.period).toBe(Period.HALVED);
   });
 });
