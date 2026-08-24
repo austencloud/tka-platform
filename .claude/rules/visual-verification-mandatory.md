@@ -9,10 +9,10 @@ those was visible in the FIRST screenshot of the page. No screenshot was taken.
 `svelte-check` was green and 46/46 tests passed, and that was reported as
 progress.
 
-Austen (2026-07-26): *"If you had simply taken one screenshot you would have
+Austen (2026-07-26): _"If you had simply taken one screenshot you would have
 immediately noticed the buttons being absolutely massively wide ... I have spent
 the last three weeks telling every single agent OK great good job you did the
-thing now make it work on 4K. I don't want to do that anymore."*
+thing now make it work on 4K. I don't want to do that anymore."_
 
 Two failures made it possible, and both are closed here:
 
@@ -21,7 +21,7 @@ Two failures made it possible, and both are closed here:
    the browser" and shipped blind. Verifying your own visual diff now has
    standing permission — it is part of the edit, not a favor to ask for.
 2. **A wrong definition of done.** "Compiles + tests pass" was treated as done
-   for a *visual* change. Types and unit tests cannot see a 1765px button.
+   for a _visual_ change. Types and unit tests cannot see a 1765px button.
 
 ## The Rule
 
@@ -33,17 +33,25 @@ required viewport, screenshot, and READ the screenshot for defects. Then iterate
 — fix, reload, screenshot again — until you would put your name on the frame.
 The loop ends when the picture is right, not when the code compiles.
 
+For a redesign of an existing surface, "right" includes comparison to the
+pre-change baseline and the surrounding product. Before editing, capture or
+inspect the existing surface and list the visual/interaction owners that must
+survive. After editing, the verification report must say which were preserved,
+extended, replaced, or deliberately removed. A frame that fits the viewport but
+looks unrelated to the app is a failed frame.
+
 "I can't verify this visually" is only true if the browser genuinely will not
 start. It is never true because you didn't ask.
 
 ## When It Fires (and when it does not)
 
 This is a proportionality rule, not a ritual. Booting Chrome to confirm a
-one-word copy change is its own kind of failure — Austen (2026-07-26): *"it's
+one-word copy change is its own kind of failure — Austen (2026-07-26): _"it's
 probably going to make the teensiest tiniest changes and insist that it has to
-open up the Chrome browser to look at it which maybe I don't want."*
+open up the Chrome browser to look at it which maybe I don't want."_
 
 **Fires — screenshot required:**
+
 - A new surface, page, panel, or component you built
 - Anything that changes SIZE, POSITION, COUNT, or STRUCTURE: layout, grid or
   column math, flex/grid properties, width/height/padding/gap, breakpoints,
@@ -53,6 +61,7 @@ open up the Chrome browser to look at it which maybe I don't want."*
 - Any change you are reporting as a fix for a visual defect
 
 **Does not fire — say what you changed and move on:**
+
 - Copy and label text (unless the new string is much longer — that is a size
   change, see the ghost-sizer half of `no-layout-shift.md`)
 - Swapping one design token for another of the same kind (color, radius token)
@@ -66,15 +75,15 @@ instruction like every other.
 
 ## The Required Viewports (all of them, every visual change)
 
-| Name | Size | Why it is on the list |
-|---|---|---|
-| 4K @ 200% | **1920 × 1080** | The most common real 4K setup. Windows' default. |
-| 4K @ 150% | **2560 × 1440** | The middle tier a single `min-width` seam always misses. |
-| 4K @ 100% / TV | **3840 × 2160** | Nothing scales for you here. Type and elements must step. |
-| Laptop | **1440 × 900** | The base design must still be the base design. |
-| Tablet | **820 × 1180** | Portrait, two-ish columns. |
-| Z Fold 7 folded, landscape | **960 × 412** | Wide AND short. Kills stacked layouts + tall chrome. |
-| iPhone SE | **375 × 667** | The floor. If it fits here it fits anywhere. |
+| Name                       | Size            | Why it is on the list                                     |
+| -------------------------- | --------------- | --------------------------------------------------------- |
+| 4K @ 200%                  | **1920 × 1080** | The most common real 4K setup. Windows' default.          |
+| 4K @ 150%                  | **2560 × 1440** | The middle tier a single `min-width` seam always misses.  |
+| 4K @ 100% / TV             | **3840 × 2160** | Nothing scales for you here. Type and elements must step. |
+| Laptop                     | **1440 × 900**  | The base design must still be the base design.            |
+| Tablet                     | **820 × 1180**  | Portrait, two-ish columns.                                |
+| Z Fold 7 folded, landscape | **960 × 412**   | Wide AND short. Kills stacked layouts + tall chrome.      |
+| iPhone SE                  | **375 × 667**   | The floor. If it fits here it fits anywhere.              |
 
 Skipping a viewport is allowed only when the change provably cannot reach it
 (e.g. a desktop-only pane), and you say which you skipped and why.
@@ -92,15 +101,15 @@ the viewport emulation after the verification pass.
 (`mcp__claude-in-chrome__*`) is not the tool for this job, and the difference is
 in the tool schemas, not in taste:
 
-| | Chrome DevTools MCP | Claude in Chrome |
-|---|---|---|
-| Screenshot cost | `format: "webp", quality: 70` — ~4x cheaper than PNG | `computer` screenshot takes **no format/quality params**. Full fidelity, every frame. |
-| Viewport | `emulate(viewport: "<w>x<h>x1")` sets per-page device metrics, including a real 3840×2160 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
-| Cheap measurement | `evaluate_script` returns JSON — ten element widths for a rounding error, no image | built around visual coordinates |
-| Session | dedicated persistent instance from `scripts/launch-chrome-debug.ps1`; manual sign-in survives restarts | drives Austen's everyday Chrome |
-| Scoping | `uid` screenshots one element; `filePath` writes the image to disk instead of into context | full-viewport frames only |
+|                   | Chrome DevTools MCP                                                                                    | Claude in Chrome                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Screenshot cost   | `format: "webp", quality: 70` — ~4x cheaper than PNG                                                   | `computer` screenshot takes **no format/quality params**. Full fidelity, every frame.                                      |
+| Viewport          | `emulate(viewport: "<w>x<h>x1")` sets per-page device metrics, including a real 3840×2160 CSS viewport | `resize_window(w, h)` sizes the **OS window**; tab strip and URL bar eat the top, and it cannot exceed the physical screen |
+| Cheap measurement | `evaluate_script` returns JSON — ten element widths for a rounding error, no image                     | built around visual coordinates                                                                                            |
+| Session           | dedicated persistent instance from `scripts/launch-chrome-debug.ps1`; manual sign-in survives restarts | drives Austen's everyday Chrome                                                                                            |
+| Scoping           | `uid` screenshots one element; `filePath` writes the image to disk instead of into context             | full-viewport frames only                                                                                                  |
 
-Claude in Chrome is for *acting* in Austen's live browser — external dashboards
+Claude in Chrome is for _acting_ in Austen's live browser — external dashboards
 (Cloudflare, Firebase, Stripe, PayPal) where his signed-in session is the whole
 point, per global `CLAUDE.md` → Web Browsing. It stays there.
 
@@ -147,6 +156,33 @@ Every frame, check:
 6. **Are small glyphs legible** at this size, or do they read as punctuation?
 7. **Does it look like a product, or like output?** If the honest answer is
    "output," keep going. That is the whole bar.
+8. **Can the text be read, not merely measured?** Query computed font sizes for
+   every visible control and text role. Essential text is at least 14px;
+   supplementary metadata is at least 12px. Then inspect the frame at its real
+   viewing scale. A numeric minimum does not excuse weak weight, low contrast,
+   excessive tracking, or too much copy in too little space.
+9. **Did the component consume the theme or paint over it?** Query representative
+   foreground/background pairs and verify contrast. Components consume the
+   app's contrast-aware text tokens; locally redefining theme-looking variables
+   to force an aesthetic is a failure.
+10. **Are nested interaction scopes visible?** If a page has an outer carousel
+    and an inner chapter/tab/slider control, each level needs a distinct visual
+    language and a visible label. Keyboard correctness alone does not teach the
+    user which arrows will move what.
+11. **Did responsive design recompose or merely hide?** Check what information
+    disappears at every breakpoint. Hiding the guide, context, or action that
+    explains the page is not a mobile treatment.
+
+## False Positives That Do Not Count As A Pass
+
+- `scrollWidth === clientWidth` while the content is tiny, sparse, or confusing;
+- every target is 44px while its visible affordance is a 1–2px hairline;
+- no console errors while the page ignores the design system;
+- a 12px token used for primary navigation or body copy;
+- a screenshot taken but not compared with the old surface or sibling modules;
+- a citation/source test that checks only for non-empty strings;
+- a 4K frame that technically fills a shell while its meaningful content sits
+  in a small island surrounded by dead space.
 
 ## Cost Is Not The Objection
 

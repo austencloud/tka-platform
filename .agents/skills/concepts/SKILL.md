@@ -14,6 +14,7 @@ Build and track the 28 interactive concept lessons in the Learn tab.
 ## Philosophy & Patterns
 
 See `interaction-reference.md` in this directory for:
+
 - The 8 interaction principles (non-negotiable)
 - The Fire Jam Test for lesson copy
 - Ranked interaction patterns table
@@ -22,6 +23,15 @@ See `interaction-reference.md` in this directory for:
 - Science behind the philosophy
 
 **Read interaction-reference.md before designing any lesson.**
+
+Before changing lesson layout, styling, selection, or any visual TKA artifact,
+also read `visual-grounding-gate.md`. Its component-ownership ledger and visual
+contract are mandatory before implementation. A nearby Learn lesson is not
+automatically a canonical style reference.
+
+When a task writes, rewrites, reviews, or explains lesson copy, also read
+`copy-grounding-gate.md`. Its evidence and Austen-approval gate is mandatory
+before editing user-facing explanatory text.
 
 ---
 
@@ -47,6 +57,11 @@ See `interaction-reference.md` in this directory for:
 1. Read `docs/learn/concept-status.md` for current status of all concepts
 2. Read the relevant concept definition from `src/lib/features/learn/domain/concepts.ts`
 3. If working on a specific concept, read its experience component
+4. If visuals or interaction presentation are in scope, complete the evidence
+   ledger in `visual-grounding-gate.md` before proposing or editing the UI
+5. If explanatory copy is in scope, read the concept's file under
+   `docs/learn/copy-reviews/` or create it from the schema in
+   `copy-grounding-gate.md`
 
 ### For no arguments or "status":
 

@@ -8,12 +8,12 @@ Loaded on demand when doing CSS work. Not needed every session.
 
 Svelte scopes styles for good reasons. "Duplicated" layout CSS across components isn't a problem -- it's encapsulation.
 
-| SHARE (via CSS variables) | DON'T SHARE (keep scoped) |
-|---------------------------|---------------------------|
-| Colors: `var(--theme-card-bg)` | Layout: `.container { max-width }` |
-| Spacing tokens: `var(--spacing-md)` | Typography: `h2 { font-size }` |
-| Border radii: `var(--radius-lg)` | Section padding |
-| Semantic colors: `var(--semantic-error)` | Grid definitions |
+| SHARE (via CSS variables)                | DON'T SHARE (keep scoped)          |
+| ---------------------------------------- | ---------------------------------- |
+| Colors: `var(--theme-card-bg)`           | Layout: `.container { max-width }` |
+| Spacing tokens: `var(--spacing-md)`      | Typography: `h2 { font-size }`     |
+| Border radii: `var(--radius-lg)`         | Section padding                    |
+| Semantic colors: `var(--semantic-error)` | Grid definitions                   |
 
 **The rule:** Share design tokens (values), not layout classes (rules).
 
@@ -49,8 +49,23 @@ See `src/lib/shared/settings/utils/background-theme-calculator.ts` for implement
   border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   color: var(--theme-text, #ffffff);
 }
-.error { color: var(--semantic-error); }
+.error {
+  color: var(--semantic-error);
+}
 ```
+
+### Theme Variable Ownership
+
+Components consume `--theme-*` variables; they do not redefine theme-looking
+variables locally to impose a palette. A feature may define semantic local
+tokens such as `--artifact-accent` or `--timeline-progress`, then derive them
+from the active theme or sourced artifact identity. It must not set a local
+`--theme-text-*`, `--theme-panel-*`, or `--theme-card-*` value and thereby opt
+out of the contrast-aware theme calculator.
+
+When a new foreground color is necessary, verify its computed contrast against
+every background it appears on. Do not infer contrast from an OKLCH lightness
+value or from the fact that the text is technically visible.
 
 **Legacy (`--*-current`)**: Still used by 30+ components. Migration ongoing.
 
@@ -85,6 +100,11 @@ Defined in `src/app.css`. Two-tier minimum font size system:
 - **Tier 2 (12px min):** `var(--font-size-compact)` or `var(--font-size-xs)` -- nav labels under icons, badges, timestamps, metadata
 - NEVER go below 12px for any user-visible text
 - Always use semantic tokens, not raw pixel values
+- Navigation, buttons, help text, and explanatory prose are Tier 1. Tier 2 is
+  reserved for dates, counters, timestamps, and genuinely supplementary labels.
+- Verification checks computed size, weight, contrast, and the amount of text
+  competing for the available space. Satisfying the numeric floor alone is not
+  a readability pass.
 
 ---
 
@@ -92,18 +112,18 @@ Defined in `src/app.css`. Two-tier minimum font size system:
 
 Add `themed-scrollbar` class to any scrollable container. Adapts to background luminance automatically.
 
-| Class | Purpose |
-|-------|---------|
-| `themed-scrollbar` | Neutral colors, adapts to light/dark |
-| `themed-scrollbar-accent` | Uses theme accent color |
+| Class                     | Purpose                              |
+| ------------------------- | ------------------------------------ |
+| `themed-scrollbar`        | Neutral colors, adapts to light/dark |
+| `themed-scrollbar-accent` | Uses theme accent color              |
 
 ### CSS Variables
 
-| Variable | Purpose |
-|----------|---------|
-| `--scrollbar-thumb` | Thumb color |
-| `--scrollbar-thumb-hover` | Thumb hover state |
-| `--scrollbar-track` | Track background |
+| Variable                                          | Purpose                 |
+| ------------------------------------------------- | ----------------------- |
+| `--scrollbar-thumb`                               | Thumb color             |
+| `--scrollbar-thumb-hover`                         | Thumb hover state       |
+| `--scrollbar-track`                               | Track background        |
 | `--scrollbar-accent` / `--scrollbar-accent-hover` | Accent-colored variants |
 
 On mobile (< 768px), scrollbars expand to 16px width for touch accessibility.
