@@ -73,8 +73,9 @@
   // the audience), negative = upstage, 0 = the plane intersecting the body.
   //
   // The angle is MINIMIZED, not fixed: just enough for the inboard staff end
-  // to clear the elbow and inner arm, which Austen estimates at 12–20°. The
-  // per-station sliders exist to dial that clearance in on the real avatar.
+  // to clear the elbow and inner arm, which Austen estimates at 12–20°.
+  // (Station values persist and stay programmatic; the tuning UI was removed
+  // in favor of verbal adjustment.)
   const WEAVE_STATION_THETAS = [0, 90, 180, 270] as const;
   const WEAVE_STATION_DEFAULTS: readonly [number, number, number, number] = [
     -16, 0, 16, 0,
@@ -137,7 +138,7 @@
       playing: true,
       planeSweepDeg: 0,
       handTravelCm: 0,
-      weaveAuto: false,
+      weaveAuto: true,
       weaveDepthDeg: 0,
       weaveStationsDeg: [...WEAVE_STATION_DEFAULTS] as WeaveStations,
       weavePhaseDeg: 0,
@@ -528,28 +529,10 @@
     staffAngleDeg = angleDeg;
   }
 
-  // ── Reset + pose sharing ──
-  const SLIDER_DEFAULTS = {
-    staffAngleDeg: 0,
-    speedDegPerSec: 45,
-    stanceYawDeg: 0,
-    planeSweepDeg: 0,
-    handTravelCm: 0,
-    weaveDepthDeg: 0,
-    weavePhaseDeg: 0,
-  } as const;
-
-  function resetAll() {
-    staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg;
-    speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec;
-    stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg;
-    planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg;
-    handTravelCm = SLIDER_DEFAULTS.handTravelCm;
-    weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg;
-    weaveStationsDeg = [...WEAVE_STATION_DEFAULTS] as WeaveStations;
-    weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg;
-  }
-
+  // ── Pose sharing ──
+  // The tuning sliders are gone (2026-08-23, Austen: maximum stage space,
+  // adjustments happen verbally) — the underlying state remains programmatic
+  // so a described change is a code edit, not a rebuilt control.
   let poseCopied = $state(false);
   let copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -730,18 +713,18 @@
       {/if}
     </Canvas>
 
-    <header class="lab-copy">
-      <p class="eyebrow">Grip Lab</p>
-      <h1>One hand, one axis</h1>
-      <p class="lede">
-        The staff rotates around its middle axis at a fixed hand point. Watch
-        what the wrist does — especially where it flips.
-      </p>
-    </header>
-
     <aside class="control-deck" aria-label="Grip lab controls">
-      <div class="control-row point-row">
-        <span class="row-label" id="grip-lab-point-label">Hand point</span>
+      <button
+        type="button"
+        class="transport"
+        aria-label={playing ? "Pause staff rotation" : "Play staff rotation"}
+        aria-pressed={playing}
+        onclick={() => (playing = !playing)}
+      >
+        <span aria-hidden="true">{playing ? "Ⅱ" : "▶"}</span>
+      </button>
+
+      <div class="point-control">
         <SegmentedControl
           options={POINT_OPTIONS}
           value={point}
@@ -750,289 +733,47 @@
           ariaLabelledby="grip-lab-point-label"
         />
       </div>
+      <span class="visually-hidden" id="grip-lab-point-label">Hand point</span>
 
-      <div class="control-row phase-row">
-        <span class="row-label">Freeze phase</span>
-        <div class="phase-chips" role="group" aria-label="Freeze staff at quarter phase">
-          {#each PHASE_ANGLES as phaseAngle (phaseAngle)}
-            <FilterChipBase
-              label={`${phaseAngle}°`}
-              mode="action"
-              size="sm"
-              chipColor="#ef5350"
-              active={frozenPhase === phaseAngle}
-              ariaLabel={`Freeze staff at ${phaseAngle} degrees`}
-              onclick={() => freezeAtPhase(phaseAngle)}
-            />
-          {/each}
-        </div>
-        <span class="key-hint" aria-hidden="true">keys 1–4 · space plays</span>
-        <div class="deck-actions">
+      <div class="phase-chips" role="group" aria-label="Freeze staff at quarter phase">
+        {#each PHASE_ANGLES as phaseAngle (phaseAngle)}
           <FilterChipBase
-            label="Reset all"
-            mode="action"
-            size="sm"
-            ariaLabel="Reset all sliders to defaults"
-            onclick={resetAll}
-          />
-          <FilterChipBase
-            label="Copy pose"
+            label={`${phaseAngle}°`}
             mode="action"
             size="sm"
             chipColor="#ef5350"
-            active={poseCopied}
-            ariaLabel="Copy the current pose to the clipboard"
-            onclick={copyPose}
+            active={frozenPhase === phaseAngle}
+            ariaLabel={`Freeze staff at ${phaseAngle} degrees`}
+            onclick={() => freezeAtPhase(phaseAngle)}
           />
-        </div>
+        {/each}
       </div>
 
-      <div class="control-row transport-row">
-        <button
-          type="button"
-          class="transport"
-          aria-label={playing ? "Pause staff rotation" : "Play staff rotation"}
-          aria-pressed={playing}
-          onclick={() => (playing = !playing)}
-        >
-          <span aria-hidden="true">{playing ? "Ⅱ" : "▶"}</span>
-        </button>
+      <FilterChipBase
+        label="Weave auto"
+        mode="toggle"
+        size="sm"
+        chipColor="#ef5350"
+        active={weaveAuto}
+        ariaLabel="Toggle weave autopilot"
+        onclick={() => (weaveAuto = !weaveAuto)}
+      />
+      {#if weaveAuto}
+        <span class="weave-readout">
+          arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)} cm
+        </span>
+      {/if}
 
-        <div class="slider-control">
-          <label for="grip-lab-angle">Staff angle</label>
-          <input
-            id="grip-lab-angle"
-            type="range"
-            min="0"
-            max="360"
-            step="1"
-            list="grip-lab-angle-ticks"
-            bind:value={staffAngleDeg}
-            ondblclick={() => (staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg)}
-          />
-          <output for="grip-lab-angle">{Math.round(staffAngleDeg)}°</output>
-          <button
-            type="button"
-            class="mini-reset"
-            aria-label="Reset staff angle"
-            disabled={staffAngleDeg === SLIDER_DEFAULTS.staffAngleDeg}
-            onclick={() => (staffAngleDeg = SLIDER_DEFAULTS.staffAngleDeg)}
-          >↺</button>
-          <datalist id="grip-lab-angle-ticks">
-            {#each [0, 90, 180, 270, 360] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-        </div>
-
-        <div class="slider-control">
-          <label for="grip-lab-speed">Speed</label>
-          <input
-            id="grip-lab-speed"
-            type="range"
-            min="-180"
-            max="180"
-            step="5"
-            list="grip-lab-speed-ticks"
-            bind:value={speedDegPerSec}
-            ondblclick={() => (speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec)}
-          />
-          <output for="grip-lab-speed">{speedDegPerSec}°/s</output>
-          <button
-            type="button"
-            class="mini-reset"
-            aria-label="Reset speed"
-            disabled={speedDegPerSec === SLIDER_DEFAULTS.speedDegPerSec}
-            onclick={() => (speedDegPerSec = SLIDER_DEFAULTS.speedDegPerSec)}
-          >↺</button>
-          <datalist id="grip-lab-speed-ticks">
-            {#each [-180, -90, -45, 0, 45, 90, 180] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-        </div>
-
-        <div class="slider-control">
-          <label for="grip-lab-stance">Stance yaw</label>
-          <input
-            id="grip-lab-stance"
-            type="range"
-            min="-60"
-            max="60"
-            step="1"
-            list="grip-lab-stance-ticks"
-            bind:value={stanceYawDeg}
-            ondblclick={() => (stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg)}
-          />
-          <output for="grip-lab-stance">{stanceYawDeg}°</output>
-          <button
-            type="button"
-            class="mini-reset"
-            aria-label="Reset stance yaw"
-            disabled={stanceYawDeg === SLIDER_DEFAULTS.stanceYawDeg}
-            onclick={() => (stanceYawDeg = SLIDER_DEFAULTS.stanceYawDeg)}
-          >↺</button>
-          <datalist id="grip-lab-stance-ticks">
-            {#each [-60, -45, 0, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-        </div>
-      </div>
-
-      <div class="control-row weave-row" class:auto={weaveAuto}>
-        <div class="weave-head">
-          <FilterChipBase
-            label="Weave auto"
-            mode="toggle"
-            size="sm"
-            chipColor="#ef5350"
-            active={weaveAuto}
-            ariaLabel="Toggle weave autopilot"
-            onclick={() => (weaveAuto = !weaveAuto)}
-          />
-          {#if weaveAuto}
-            <span class="weave-readout">
-              arm {Math.round(effArmDeg)}° · shift {Math.round(weaveZBodyM * 100)}
-              cm · sweep {Math.round(effSweepDeg)}°
-            </span>
-          {/if}
-        </div>
-
-        {#if weaveAuto}
-          <div class="slider-control">
-            <label for="grip-lab-depth">Sweep depth</label>
-            <input
-              id="grip-lab-depth"
-              type="range"
-              min="0"
-              max="180"
-              step="5"
-              list="grip-lab-depth-ticks"
-              bind:value={weaveDepthDeg}
-              ondblclick={() => (weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg)}
-            />
-            <output for="grip-lab-depth">{weaveDepthDeg}°</output>
-            <button
-              type="button"
-              class="mini-reset"
-              aria-label="Reset sweep depth"
-              disabled={weaveDepthDeg === SLIDER_DEFAULTS.weaveDepthDeg}
-              onclick={() => (weaveDepthDeg = SLIDER_DEFAULTS.weaveDepthDeg)}
-            >↺</button>
-            <datalist id="grip-lab-depth-ticks">
-              {#each [0, 45, 90, 135, 180] as tick (tick)}<option value={tick}></option>{/each}
-            </datalist>
-          </div>
-
-          <!-- One keyframe station per quarter phase: the arm's fore/aft
-               angle when the staff is at that θ. + = downstage, − = upstage. -->
-          {#each WEAVE_STATION_THETAS as stationTheta, stationIndex (stationTheta)}
-            <div class="slider-control">
-              <label for={`grip-lab-arm-${stationTheta}`}>
-                Arm @ {stationTheta}°
-              </label>
-              <input
-                id={`grip-lab-arm-${stationTheta}`}
-                type="range"
-                min="-60"
-                max="60"
-                step="1"
-                list="grip-lab-arm-ticks"
-                bind:value={weaveStationsDeg[stationIndex]}
-                ondblclick={() =>
-                  (weaveStationsDeg[stationIndex] =
-                    WEAVE_STATION_DEFAULTS[stationIndex])}
-              />
-              <output for={`grip-lab-arm-${stationTheta}`}>
-                {weaveStationsDeg[stationIndex]}°
-              </output>
-              <button
-                type="button"
-                class="mini-reset"
-                aria-label={`Reset arm angle at ${stationTheta} degrees`}
-                disabled={weaveStationsDeg[stationIndex] ===
-                  WEAVE_STATION_DEFAULTS[stationIndex]}
-                onclick={() =>
-                  (weaveStationsDeg[stationIndex] =
-                    WEAVE_STATION_DEFAULTS[stationIndex])}
-              >↺</button>
-            </div>
-          {/each}
-          <datalist id="grip-lab-arm-ticks">
-            {#each [-60, -45, -16, 0, 16, 45, 60] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-
-          <div class="slider-control">
-            <label for="grip-lab-phase">Phase</label>
-            <input
-              id="grip-lab-phase"
-              type="range"
-              min="-180"
-              max="180"
-              step="5"
-              list="grip-lab-phase-ticks"
-              bind:value={weavePhaseDeg}
-              ondblclick={() => (weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg)}
-            />
-            <output for="grip-lab-phase">{weavePhaseDeg}°</output>
-            <button
-              type="button"
-              class="mini-reset"
-              aria-label="Reset weave phase"
-              disabled={weavePhaseDeg === SLIDER_DEFAULTS.weavePhaseDeg}
-              onclick={() => (weavePhaseDeg = SLIDER_DEFAULTS.weavePhaseDeg)}
-            >↺</button>
-            <datalist id="grip-lab-phase-ticks">
-              {#each [-180, -90, 0, 90, 180] as tick (tick)}<option value={tick}></option>{/each}
-            </datalist>
-          </div>
-        {:else}
-        <div class="slider-control">
-          <label for="grip-lab-sweep">Plane sweep</label>
-          <input
-            id="grip-lab-sweep"
-            type="range"
-            min="-90"
-            max="90"
-            step="1"
-            list="grip-lab-sweep-ticks"
-            bind:value={planeSweepDeg}
-            ondblclick={() => (planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg)}
-          />
-          <output for="grip-lab-sweep">{planeSweepDeg}°</output>
-          <button
-            type="button"
-            class="mini-reset"
-            aria-label="Reset plane sweep"
-            disabled={planeSweepDeg === SLIDER_DEFAULTS.planeSweepDeg}
-            onclick={() => (planeSweepDeg = SLIDER_DEFAULTS.planeSweepDeg)}
-          >↺</button>
-          <datalist id="grip-lab-sweep-ticks">
-            {#each [-90, -45, 0, 45, 90] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-        </div>
-
-        <div class="slider-control">
-          <label for="grip-lab-travel">Hand travel</label>
-          <input
-            id="grip-lab-travel"
-            type="range"
-            min="-40"
-            max="40"
-            step="1"
-            list="grip-lab-travel-ticks"
-            bind:value={handTravelCm}
-            ondblclick={() => (handTravelCm = SLIDER_DEFAULTS.handTravelCm)}
-          />
-          <output for="grip-lab-travel">{handTravelCm} cm</output>
-          <button
-            type="button"
-            class="mini-reset"
-            aria-label="Reset hand travel"
-            disabled={handTravelCm === SLIDER_DEFAULTS.handTravelCm}
-            onclick={() => (handTravelCm = SLIDER_DEFAULTS.handTravelCm)}
-          >↺</button>
-          <datalist id="grip-lab-travel-ticks">
-            {#each [-40, -20, 0, 20, 40] as tick (tick)}<option value={tick}></option>{/each}
-          </datalist>
-        </div>
-        {/if}
-      </div>
+      <span class="key-hint" aria-hidden="true">keys 1–4 · space plays</span>
+      <FilterChipBase
+        label="Copy pose"
+        mode="action"
+        size="sm"
+        chipColor="#ef5350"
+        active={poseCopied}
+        ariaLabel="Copy the current pose to the clipboard"
+        onclick={copyPose}
+      />
     </aside>
   </section>
 </main>
@@ -1069,50 +810,20 @@
     height: 100% !important;
   }
 
-  .lab-copy {
-    position: absolute;
-    top: clamp(1rem, 2.5vw, 2.5rem);
-    left: clamp(1rem, 3vw, 3rem);
-    z-index: 2;
-    max-width: min(26rem, 70vw);
-    pointer-events: none;
-    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.85);
-  }
-
-  .eyebrow {
-    margin: 0 0 0.5rem;
-    color: #c5c8cf;
-    font-size: clamp(0.8125rem, 0.75rem + 0.15vw, 0.9375rem);
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    font-family: var(--font-family-display, Inter, system-ui, sans-serif);
-    font-size: clamp(1.9rem, 1.3rem + 2.2vw, 4rem);
-    font-weight: 750;
-    letter-spacing: -0.045em;
-    line-height: 0.98;
-  }
-
-  .lede {
-    margin: 0.7rem 0 0;
-    color: var(--lab-muted);
-    font-size: clamp(0.9rem, 0.82rem + 0.25vw, 1.125rem);
-    line-height: 1.45;
-  }
-
+  /* One slim bar, centered at the bottom: the stage is the page. */
   .control-deck {
     position: absolute;
-    right: clamp(0.75rem, 2.5vw, 2.5rem);
-    bottom: clamp(0.75rem, 2.5vw, 2rem);
-    left: clamp(0.75rem, 2.5vw, 2.5rem);
+    bottom: clamp(0.75rem, 2vw, 1.5rem);
+    left: 50%;
+    translate: -50% 0;
     z-index: 4;
-    display: grid;
-    gap: 0.85rem;
-    padding: clamp(0.8rem, 1.4vw, 1.15rem);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1rem;
+    max-width: calc(100vw - 1.5rem);
+    padding: 0.6rem 1rem;
     border: 1px solid var(--lab-stroke);
     border-radius: 1.1rem;
     background: var(--lab-panel);
@@ -1120,28 +831,10 @@
     backdrop-filter: blur(20px) saturate(120%);
   }
 
-  .control-row {
-    display: grid;
-    align-items: center;
-    gap: 0.9rem;
-  }
-
-  .point-row {
-    /* The control sizes to its four labels; never let it stretch across
-       the whole deck (a row of short labels must not become a progress bar). */
-    grid-template-columns: auto minmax(0, 30rem);
-    justify-content: start;
-  }
-
-  .row-label {
-    color: var(--lab-muted);
-    font-size: 0.875rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .phase-row {
-    grid-template-columns: auto auto 1fr auto;
+  /* The segmented control sizes to its four labels; never let it stretch
+     the bar (a row of short labels must not become a progress bar). */
+  .point-control {
+    inline-size: clamp(16rem, 26vw, 22rem);
   }
 
   .phase-chips {
@@ -1154,53 +847,16 @@
     color: var(--lab-muted);
     font-size: 0.75rem;
     white-space: nowrap;
-    justify-self: end;
     opacity: 0.75;
-  }
-
-  .deck-actions {
-    display: flex;
-    gap: 0.45rem;
-    justify-self: end;
-  }
-
-  .transport-row {
-    grid-template-columns: auto repeat(3, minmax(10rem, 1fr));
-    padding-top: 0.85rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .weave-row {
-    grid-template-columns: repeat(2, minmax(10rem, 1fr));
-  }
-
-  /* Six autopilot knobs (4 stations + depth + phase) = two full rows of
-     three; two manual sliders. Pinned per mode so neither ever strands an
-     orphan in its row. */
-  .weave-row.auto {
-    grid-template-columns: repeat(3, minmax(9rem, 1fr));
-  }
-
-  .weave-head {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.9rem;
   }
 
   .weave-readout {
     color: var(--lab-muted);
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    /* Worst case: "arm −60° · shift −45 cm · sweep 180°" — reserve it. */
-    min-width: 30ch;
-  }
-
-  /* "-40 cm" is wider than the degree outputs; reserve its worst case so the
-     slider track never resizes as the value changes. */
-  .weave-row .slider-control output {
-    min-width: 4.5rem;
+    white-space: nowrap;
+    /* Worst case: "arm −60° · shift −45 cm" — reserve it. */
+    min-width: 22ch;
   }
 
   .transport {
@@ -1217,127 +873,29 @@
     cursor: pointer;
   }
 
-  .slider-control {
-    display: grid;
-    grid-template-columns: auto minmax(5rem, 1fr) auto auto;
-    align-items: center;
-    gap: 0.6rem;
-  }
-
-  .mini-reset {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: 1px solid var(--lab-stroke);
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--lab-muted);
-    font-size: 0.9rem;
-    line-height: 1;
-    cursor: pointer;
-  }
-
-  /* Compact glyph, full 44px touch floor. */
-  .mini-reset::after {
-    content: "";
+  .visually-hidden {
     position: absolute;
-    inset: -0.55rem;
-  }
-
-  .mini-reset:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-
-  .slider-control label {
-    font-size: 0.875rem;
-    font-weight: 700;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
     white-space: nowrap;
-  }
-
-  .slider-control output {
-    min-width: 3.6rem;
-    color: #ff9e94;
-    font-size: 0.875rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
-  input[type="range"] {
-    width: 100%;
-    accent-color: #ef5350;
-    cursor: pointer;
   }
 
   @media (hover: hover) {
     .transport:hover {
       filter: brightness(1.12);
     }
-
-    .mini-reset:not(:disabled):hover {
-      background: rgba(255, 255, 255, 0.14);
-      color: var(--lab-text);
-    }
   }
 
-  button:focus-visible,
-  input:focus-visible {
+  button:focus-visible {
     outline: 0.18rem solid #ffffff;
     outline-offset: 0.18rem;
   }
 
-  @container (max-width: 56rem) {
-    .transport-row {
-      grid-template-columns: auto 1fr;
-    }
-
-    /* Keep every slider in the wide column; otherwise auto-placement drops
-       the second row's first slider into the narrow button column. */
-    .transport-row .slider-control {
-      grid-column: 2;
-    }
-
-    .weave-row,
-    .weave-row.auto {
-      grid-template-columns: 1fr;
-    }
-
-    .phase-row {
-      grid-template-columns: auto auto;
-    }
-
-    /* Keyboard hint is meaningless on touch-first narrow layouts. */
+  @container (max-width: 34rem) {
     .key-hint {
       display: none;
-    }
-
-    .deck-actions {
-      grid-column: 1 / -1;
-      justify-self: start;
-    }
-  }
-
-  @container (max-width: 34rem) {
-    .lab-copy {
-      max-width: calc(100vw - 2rem);
-    }
-
-    .point-row {
-      grid-template-columns: 1fr;
-      gap: 0.45rem;
-    }
-
-    .slider-control {
-      grid-template-columns: 1fr auto auto;
-      gap: 0.3rem 0.6rem;
-    }
-
-    .slider-control input {
-      grid-column: 1 / -1;
-      grid-row: 2;
     }
   }
 </style>
