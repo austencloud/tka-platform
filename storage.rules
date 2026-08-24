@@ -124,6 +124,22 @@ service firebase.storage {
       allow read: if true;
     }
 
+    // Public visual-artifact discovery posters (Browse Phase 3). Uploaded by
+    // the owner at publication-request time; the filename is the
+    // content-addressed public revision id, so a URL only exists for content
+    // the owner actually submitted. Discovery is gated by the Firestore
+    // envelope, not by Storage ACLs.
+    match /public-artifacts/{ownerId}/{artifactId}/{fileName} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == ownerId
+        && request.resource.contentType == 'image/webp'
+        && request.resource.size < 200 * 1024;
+      allow delete: if request.auth != null
+        && (request.auth.uid == ownerId
+          || request.auth.token.admin == true
+          || request.auth.token.role == 'admin');
+    }
+
     // Thumbnail manifest - public read for instant cache hits
     // Contains list of all existing thumbnails for pre-populating cache
     match /thumbnails/manifest.json {

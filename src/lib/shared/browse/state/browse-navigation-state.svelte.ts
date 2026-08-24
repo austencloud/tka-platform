@@ -1,111 +1,82 @@
-/**
- * Browse Navigation State
- *
- * Unified, persistent navigation state for the Browse module.
- * Handles navigation within the Gallery and Collections tabs with full
- * back/forward support and localStorage persistence.
- *
- * Creators relocated Browse -> Social (2026-07-08); its list<->profile routing
- * now lives in features/creators/state/creators-routing.svelte.ts, so
- * this state no longer knows about creator profiles.
- */
+import {
+  BROWSE_NAV_SCHEMA_VERSION,
+  browseLocationsEqual,
+  buildBrowsePath,
+  defaultBrowseLocation,
+  migratePersistedBrowseNavigation,
+  resolveBrowsePathname,
+  type BrowseLocation,
+  type BrowsePrimary,
+  type BrowseVisualType,
+  type PersistedBrowseNavigation,
+} from "$lib/shared/browse/navigation/browse-route-resolver";
+import {
+  pruneParamsForNavigation,
+  pruneRouteScopedParams,
+} from "$lib/shared/navigation/services/url-parameter-policy";
+import { writeUrl } from "$lib/shared/navigation/services/url-state";
 
-// Tab types matching the Browse module structure.
-// Tab ids renamed 2026-07-10 so URLs match labels: "library" = your saved
-// work (label Library, was id "collections"); "collections" = community
-// collection discovery (label Collections, was id "discover", briefly
-// "community"). Legacy persisted values migrate in restoreState below.
-export type BrowseTab = "gallery" | "library" | "collections";
-export type BrowseView = "list" | "detail";
-
-/**
- * Represents a location within the Browse module
- */
-export interface BrowseLocation {
-  tab: BrowseTab;
-  view: BrowseView;
-  contextId?: string; // userId, collectionId, sequenceId
-  filter?: {
-    // For filtered views (e.g., creator's sequences)
-    type: string;
-    value: string;
-    displayName?: string; // For UI display
-  };
-}
+export type { BrowseLocation } from "$lib/shared/browse/navigation/browse-route-resolver";
 
 interface BrowseNavigationStateData {
   history: BrowseLocation[];
   currentIndex: number;
 }
 
+interface NavigateOptions {
+  replace?: boolean;
+  syncUrl?: boolean;
+}
+
 const STORAGE_KEY = "tka-browse-nav-state";
 const MAX_HISTORY_SIZE = 50;
 
-// ============================================================================
-// URL Sync Helpers
-// ============================================================================
-
-/**
- * A collection deep link: /browse/library/[collectionId], optionally with
- * ?scan=1. This is the URL a phone lands on after scanning the desktop scan
- * sheet's handoff QR — it opens that collection, and the scan flag asks the
- * detail view to open the card scanner immediately.
- */
 export interface CollectionScanTarget {
   collectionId: string;
   scan: boolean;
 }
 
-/**
- * Read a collection deep link from the current URL. Returns null on any other
- * path. Safe to call anywhere (returns null during SSR).
- */
 export function getCollectionScanTargetFromURL(): CollectionScanTarget | null {
   if (typeof window === "undefined") return null;
-  const parts = window.location.pathname
-    .replace(/^\/+/, "")
-    .split("/")
-    .filter(Boolean);
-  // Expect: browse / library / [collectionId]. Legacy segment "collections"
-  // (the Library tab's pre-2026-07-10 id) is still accepted so already-printed
-  // scan-sheet QR codes keep working — the extra [collectionId] segment
-  // disambiguates it from the bare /browse/collections community tab URL.
+  const route = resolveBrowsePathname(window.location.pathname);
   if (
-    parts[0] === "browse" &&
-    (parts[1] === "library" || parts[1] === "collections") &&
-    parts[2]
+    !route ||
+    route.location.primary !== "you" ||
+    route.location.section !== "collections" ||
+    route.location.view !== "detail" ||
+    !route.location.contextId
   ) {
-    const scan =
-      new URLSearchParams(window.location.search).get("scan") === "1";
-    return { collectionId: decodeURIComponent(parts[2]), scan };
+    return null;
   }
-  return null;
+
+  return {
+    collectionId: route.location.contextId,
+    scan: new URLSearchParams(window.location.search).get("scan") === "1",
+  };
 }
 
-/**
- * Check if two locations are equivalent (to prevent duplicate entries)
- */
-function locationsEqual(a: BrowseLocation, b: BrowseLocation): boolean {
-  return (
-    a.tab === b.tab &&
-    a.view === b.view &&
-    a.contextId === b.contextId &&
-    a.filter?.type === b.filter?.type &&
-    a.filter?.value === b.filter?.value
-  );
+function browserHistoryState(
+  location: BrowseLocation
+): Record<string, unknown> {
+  const existing =
+    typeof window !== "undefined" && window.history.state
+      ? (window.history.state as Record<string, unknown>)
+      : {};
+  return {
+    ...existing,
+    moduleId: "browse",
+    sectionId: location.primary,
+  };
 }
 
-function createBrowseNavigationState() {
-  // Initialize with default state
+export function createBrowseNavigationState() {
   const state = $state<BrowseNavigationStateData>({
     history: [],
     currentIndex: -1,
   });
-
-  // Flag to prevent pushing during restore or programmatic navigation
   let isNavigating = $state(false);
+  let started = false;
 
-  // Derived values
   const canGoBack = $derived(state.currentIndex > 0);
   const canGoForward = $derived(state.currentIndex < state.history.length - 1);
   const currentLocation = $derived<BrowseLocation | null>(
@@ -114,64 +85,113 @@ function createBrowseNavigationState() {
       : null
   );
 
-  /**
-   * Persist state to localStorage
-   */
-  function persistState() {
+  function persistedData(): PersistedBrowseNavigation {
+    return {
+      schemaVersion: BROWSE_NAV_SCHEMA_VERSION,
+      history: state.history,
+      currentIndex: state.currentIndex,
+    };
+  }
+
+  function persistState(): void {
+    if (typeof localStorage === "undefined") return;
     try {
-      const data: BrowseNavigationStateData = {
-        history: state.history,
-        currentIndex: state.currentIndex,
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(persistedData()));
     } catch (error) {
       console.warn("[BrowseNav] Failed to persist state:", error);
     }
   }
 
-  /**
-   * Restore state from localStorage
-   */
   function restoreState(): boolean {
+    if (typeof localStorage === "undefined") return false;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return false;
-
-      const data = JSON.parse(stored) as BrowseNavigationStateData;
-      if (
-        data.history &&
-        Array.isArray(data.history) &&
-        data.history.length > 0
-      ) {
-        // Migrate legacy persisted tab ids (renames of 2026-07-10, when tab
-        // ids were aligned with their labels). Old localStorage entries
-        // otherwise carry tab values no component matches, silently landing
-        // on no panel.
-        //   "collections" (old Library id)            -> "library"
-        //   "discover" / transient "community"        -> "collections"
-        for (const loc of data.history) {
-          const legacy = loc.tab as string;
-          if (legacy === "collections") {
-            loc.tab = "library";
-          } else if (legacy === "discover" || legacy === "community") {
-            loc.tab = "collections";
-          }
-        }
-        state.history = data.history;
-        state.currentIndex = Math.min(
-          data.currentIndex,
-          data.history.length - 1
-        );
-        return true;
-      }
+      const migrated = migratePersistedBrowseNavigation(JSON.parse(stored));
+      if (!migrated) return false;
+      state.history = migrated.history;
+      state.currentIndex = migrated.currentIndex;
+      persistState();
+      return true;
     } catch (error) {
       console.warn("[BrowseNav] Failed to restore state:", error);
+      return false;
     }
-    return false;
+  }
+
+  function writeLocation(location: BrowseLocation, replace: boolean): void {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.pathname = buildBrowsePath(location);
+    url.hash = "";
+    if (replace) {
+      pruneRouteScopedParams(url, url.pathname);
+    } else {
+      pruneParamsForNavigation(url, url.pathname);
+    }
+    writeUrl(url, {
+      mode: replace ? "replace" : "push",
+      state: browserHistoryState(location),
+    });
+  }
+
+  function applyLocation(
+    location: BrowseLocation,
+    { replace = false, syncUrl = true }: NavigateOptions = {}
+  ): void {
+    const current = state.history[state.currentIndex];
+    if (current && browseLocationsEqual(current, location)) {
+      if (replace && syncUrl) writeLocation(location, true);
+      return;
+    }
+
+    if (replace && state.currentIndex >= 0) {
+      state.history[state.currentIndex] = location;
+    } else {
+      const nextHistory = state.history.slice(0, state.currentIndex + 1);
+      nextHistory.push(location);
+      if (nextHistory.length > MAX_HISTORY_SIZE) nextHistory.shift();
+      state.history = nextHistory;
+      state.currentIndex = nextHistory.length - 1;
+    }
+
+    persistState();
+    if (syncUrl) writeLocation(location, replace);
+  }
+
+  function syncFromBrowser(): void {
+    if (typeof window === "undefined") return;
+    const route = resolveBrowsePathname(window.location.pathname);
+    if (!route || route.externalRedirect) return;
+    isNavigating = true;
+    applyLocation(route.location, { replace: true, syncUrl: false });
+    queueMicrotask(() => {
+      isNavigating = false;
+    });
+  }
+
+  function initialize(): void {
+    if (started || typeof window === "undefined") return;
+    started = true;
+    restoreState();
+
+    const route = resolveBrowsePathname(window.location.pathname);
+    if (route && !route.externalRedirect) {
+      applyLocation(route.location, { replace: true, syncUrl: true });
+    } else if (state.currentIndex < 0) {
+      applyLocation(defaultBrowseLocation(), { replace: true, syncUrl: true });
+    }
+
+    window.addEventListener("popstate", syncFromBrowser);
+  }
+
+  function destroy(): void {
+    if (!started || typeof window === "undefined") return;
+    window.removeEventListener("popstate", syncFromBrowser);
+    started = false;
   }
 
   return {
-    // Getters
     get canGoBack() {
       return canGoBack;
     },
@@ -188,98 +208,44 @@ function createBrowseNavigationState() {
       return isNavigating;
     },
 
-    /**
-     * Navigate to a new location (pushes to history)
-     */
-    navigateTo(location: BrowseLocation) {
-      // Don't push duplicate consecutive entries
-      const current = state.history[state.currentIndex];
-      if (current && locationsEqual(current, location)) {
-        return;
-      }
-
-      // Clear forward history when navigating to new location
-      const newHistory = state.history.slice(0, state.currentIndex + 1);
-      newHistory.push(location);
-
-      // Trim if exceeded max size
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.shift();
-        state.history = newHistory;
-        state.currentIndex = newHistory.length - 1;
-      } else {
-        state.history = newHistory;
-        state.currentIndex = newHistory.length - 1;
-      }
-
-      persistState();
+    navigateTo(location: BrowseLocation, options?: NavigateOptions) {
+      applyLocation(location, options);
     },
 
-    /**
-     * Go back in history.
-     * Returns the location navigated to, or null if can't go back.
-     * Also updates the browser URL to reflect the destination view.
-     */
-    goBack(): BrowseLocation | null {
-      if (state.currentIndex <= 0) return null;
-
-      isNavigating = true;
-      state.currentIndex--;
-      const location = state.history[state.currentIndex];
-      persistState();
-
-      // Reset flag after a tick
-      setTimeout(() => {
-        isNavigating = false;
-      }, 0);
-
-      return location ?? null;
-    },
-
-    /**
-     * Go forward in history
-     * Returns the location navigated to, or null if can't go forward
-     */
-    goForward(): BrowseLocation | null {
-      if (state.currentIndex >= state.history.length - 1) return null;
-
-      isNavigating = true;
-      state.currentIndex++;
-      const location = state.history[state.currentIndex];
-      persistState();
-
-      // Reset flag after a tick
-      setTimeout(() => {
-        isNavigating = false;
-      }, 0);
-
-      return location ?? null;
-    },
-
-    /**
-     * Replace current location without adding to history
-     * Useful for updating view state without creating new history entry
-     */
     replace(location: BrowseLocation) {
-      if (state.currentIndex >= 0) {
-        state.history[state.currentIndex] = location;
-        persistState();
-      } else {
-        this.navigateTo(location);
-      }
+      applyLocation(location, { replace: true });
     },
 
-    // ========================================================================
-    // Convenience Navigation Methods
-    // ========================================================================
+    selectPrimary(primary: BrowsePrimary, replace = false) {
+      if (currentLocation?.primary === primary) return;
+      applyLocation(
+        { primary, section: "sequences", view: "list" },
+        { replace }
+      );
+    },
 
-    /**
-     * Navigate to collection detail view
-     */
-    viewCollectionDetail(collectionId: string, collectionName?: string) {
-      this.navigateTo({
-        tab: "library",
+    viewExploreSequences() {
+      applyLocation({ primary: "explore", section: "sequences", view: "list" });
+    },
+
+    viewExploreCollections() {
+      applyLocation({
+        primary: "explore",
+        section: "collections",
+        view: "list",
+      });
+    },
+
+    viewPublicCollectionDetail(
+      ownerId: string,
+      collectionId: string,
+      collectionName?: string
+    ) {
+      applyLocation({
+        primary: "explore",
+        section: "collections",
         view: "detail",
+        ownerId,
         contextId: collectionId,
         filter: collectionName
           ? { type: "collectionName", value: collectionName }
@@ -287,88 +253,103 @@ function createBrowseNavigationState() {
       });
     },
 
-    /**
-     * Navigate to sequence detail view
-     */
     viewSequenceDetail(sequenceId: string) {
-      this.navigateTo({
-        tab: "gallery",
+      applyLocation({
+        primary: "explore",
+        section: "sequences",
         view: "detail",
         contextId: sequenceId,
       });
     },
 
-    /**
-     * Navigate to gallery filtered by creator's sequences
-     */
     viewCreatorSequences(userId: string, displayName?: string) {
-      this.navigateTo({
-        tab: "gallery",
+      applyLocation({
+        primary: "explore",
+        section: "sequences",
         view: "list",
-        filter: {
-          type: "creator",
-          value: userId,
-          displayName: displayName,
-        },
+        filter: { type: "creator", value: userId, displayName },
       });
     },
 
-    /**
-     * Navigate to gallery list view (default)
-     */
-    viewGallery() {
-      this.navigateTo({
-        tab: "gallery",
-        view: "list",
-      });
-    },
-
-    /**
-     * Navigate to the Library (your saved collections) list view
-     */
-    viewCollections() {
-      this.navigateTo({
-        tab: "library",
-        view: "list",
-      });
-    },
-
-    // ========================================================================
-    // Lifecycle Methods
-    // ========================================================================
-
-    /**
-     * Initialize state - call on module mount
-     * Restores from localStorage or initializes with default location
-     */
-    initialize(defaultTab: BrowseTab = "gallery") {
-      const restored = restoreState();
-      if (!restored) {
-        // Initialize with default location
-        this.navigateTo({
-          tab: defaultTab,
-          view: "list",
-        });
+    viewCollectionDetail(collectionId: string, collectionName?: string) {
+      if (collectionId === "all") {
+        applyLocation({ primary: "you", section: "sequences", view: "list" });
+        return;
       }
+
+      const visualTypeByShelf: Record<string, BrowseVisualType> = {
+        art_tunnels: "tunnels",
+        art_mandala: "mandalas",
+        art_scenes: "scenes",
+      };
+      const visualType = visualTypeByShelf[collectionId];
+      if (visualType) {
+        applyLocation({
+          primary: "you",
+          section: "visuals",
+          view: "list",
+          visualType,
+          contextId: collectionId,
+          filter: collectionName
+            ? { type: "collectionName", value: collectionName }
+            : undefined,
+        });
+        return;
+      }
+
+      if (collectionId === "video_performances") {
+        applyLocation({ primary: "you", section: "videos", view: "list" });
+        return;
+      }
+
+      const separator = collectionId.indexOf(":");
+      const ownerId =
+        separator > 0 ? collectionId.slice(0, separator) : undefined;
+      const contextId =
+        separator > 0 ? collectionId.slice(separator + 1) : collectionId;
+      applyLocation({
+        primary: "you",
+        section: "collections",
+        view: "detail",
+        ownerId,
+        contextId,
+        filter: collectionName
+          ? { type: "collectionName", value: collectionName }
+          : undefined,
+      });
     },
 
-    /**
-     * Clear all history
-     */
+    viewCollections() {
+      applyLocation({ primary: "you", section: "collections", view: "list" });
+    },
+
+    goBack(): BrowseLocation | null {
+      if (!canGoBack || typeof window === "undefined") return null;
+      window.history.back();
+      return currentLocation;
+    },
+
+    goForward(): BrowseLocation | null {
+      if (!canGoForward || typeof window === "undefined") return null;
+      window.history.forward();
+      return currentLocation;
+    },
+
+    initialize,
+    destroy,
+
     clearHistory() {
       state.history = [];
       state.currentIndex = -1;
       localStorage.removeItem(STORAGE_KEY);
     },
 
-    /**
-     * Set navigating flag (for external coordination)
-     */
     setNavigating(value: boolean) {
       isNavigating = value;
     },
   };
 }
 
-// Export singleton instance
-export const browseNavigationState = createBrowseNavigationState();
+export type BrowseNavigationState = ReturnType<
+  typeof createBrowseNavigationState
+>;

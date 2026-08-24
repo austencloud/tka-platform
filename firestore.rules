@@ -740,6 +740,25 @@ service cloud.firestore {
         allow read: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId);
         allow delete: if isOwner(userId) || isAdmin();
+
+        // Content-addressed private history. Owner clients may create a
+        // revision and may retry the exact same batch, but can never change an
+        // existing payload in place. Administrative retention cleanup remains
+        // possible without granting mutable history to the authoring client.
+        match /revisions/{revisionId} {
+          allow read: if isOwner(userId) || isAdmin();
+          allow create: if isOwner(userId)
+            && request.resource.data.artifactType == 'tunnel'
+            && request.resource.data.artifactId == tunnelId
+            && request.resource.data.revisionId == revisionId
+            && revisionId == 'v1_' + request.resource.data.contentDigest
+            && request.resource.data.contentDigest.matches('^[a-f0-9]{64}$')
+            && request.resource.data.digestAlgorithm == 'SHA-256'
+            && request.resource.data.digestVersion == 1;
+          allow update: if isOwner(userId)
+            && request.resource.data == resource.data;
+          allow delete: if isAdmin();
+        }
       }
 
       // -------------------------------------------------------------------------
@@ -1572,6 +1591,39 @@ service cloud.firestore {
         && publicClaimReleasedAfterDelete(sequenceId);
     }
 
+    // Immutable, media-eligible snapshots of public sequence subjects. The
+    // client publication transaction may create the retained snapshot only
+    // when the matching public projection exists after that same transaction.
+    // Once written, a revision is never edited or deleted by clients.
+    match /sequenceRevisions/{revisionId} {
+      allow get: if isAuthenticated() || (
+        resource.data.get('sequenceId', '') is string
+        && exists(/databases/$(database)/documents/publicSequences/$(resource.data.sequenceId))
+      );
+      allow list: if isAdmin();
+
+      allow create: if isFullUser()
+        && request.resource.data.get('subjectType', '') == 'sequence'
+        && request.resource.data.get('sequenceId', '') is string
+        && request.resource.data.get('sequenceId', '').size() > 0
+        && request.resource.data.get('artifactId', '') == request.resource.data.sequenceId
+        && request.resource.data.get('ownerId', '') == request.auth.uid
+        && request.resource.data.get('revisionId', '') == revisionId
+        && revisionId == 'v1_' + request.resource.data.contentDigest
+        && revisionId.matches('^v1_[a-f0-9]{64}$')
+        && request.resource.data.get('contentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('digestAlgorithm', '') == 'SHA-256'
+        && request.resource.data.get('digestVersion', 0) == 1
+        && request.resource.data.get('publicationState', '') == 'public'
+        && request.resource.data.get('contentHash', '').size() == 64
+        && existsAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId))
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('ownerId', '') == request.auth.uid
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('contentHash', '') == request.resource.data.contentHash
+        && getAfter(/databases/$(database)/documents/publicSequences/$(request.resource.data.sequenceId)).data.get('contentHashVersion', -1) == request.resource.data.contentHashVersion;
+
+      allow update, delete: if false;
+    }
+
     // Content-addressed public-sequence identity claims: ONE claim per
     // distinct movement, keyed {contentHashVersion}_{contentHash} so hash
     // bases can never mix. Written atomically with the public projection
@@ -1624,6 +1676,183 @@ service cloud.firestore {
           || getAfter(/databases/$(database)/documents/publicSequences/$(resource.data.get('sequenceId', ''))).data.get('contentHash', '') != resource.data.get('contentHash', '')
           || getAfter(/databases/$(database)/documents/publicSequences/$(resource.data.get('sequenceId', ''))).data.get('contentHashVersion', -1) != resource.data.get('contentHashVersion', -1)
         );
+    }
+
+    // ============================================================================
+    // VISUAL ARTIFACT PUBLICATION (Browse Phase 3 — tunnels first)
+    //
+    // PUBLISH-FIRST model (docs/superpowers/specs/active/
+    // 2026-08-23-phase3-tunnel-publication-plan.md): sharing goes live the
+    // moment the owner publishes; moderation is a retroactive takedown, not a
+    // gate. Four-resource boundary:
+    //   - the private mutable work stays under users/{uid}/... (rules above);
+    //   - artifactPublicationRequests/{artifactId}_{revisionId} is the
+    //     append-only publication ledger (owner/admin only);
+    //   - publicArtifacts/{artifactId} is the guest envelope, which exists ONLY
+    //     while live — created by the owner's publish batch, deleted by owner
+    //     withdrawal or admin takedown;
+    //   - publicArtifacts/{artifactId}/revisions/{revisionId} are immutable
+    //     content-addressed sanitized payloads; guests may read them only while
+    //     the envelope exists, so delisting cascades without deleting history.
+    // Saving is never publishing; publishing is an explicit owner batch whose
+    // shape the rules verify field by field. Content taken down by moderation
+    // (`removed`) can never be republished by its owner as-is.
+    // ============================================================================
+
+    match /publicArtifacts/{artifactId} {
+      // ANYONE can read: the envelope exists only in live state.
+      allow read: if true;
+
+      // Created by the owner's publish batch (or an admin repair), and only in
+      // the live shape: content-addressed current revision that exists after
+      // this same transaction, with the matching ledger entry published after
+      // this same transaction and owned by the envelope's owner. Non-admins
+      // must stamp publishedAt with the server time (no backdating the
+      // newest-first Explore sort).
+      allow create: if (isAdmin()
+          || (isFullUser()
+            && request.resource.data.get('ownerId', '') == request.auth.uid
+            && request.resource.data.get('publishedAt', 0) == request.time))
+        && request.resource.data.keys().hasOnly(['artifactId', 'artifactType', 'ownerId', 'ownerDisplayName', 'title', 'posterUrl', 'currentRevisionId', 'currentContentDigest', 'publishedAt', 'updatedAt', 'schemaVersion'])
+        && request.resource.data.get('artifactId', '') == artifactId
+        && request.resource.data.get('artifactType', '') in ['tunnel', 'mandala', 'scene']
+        && request.resource.data.get('ownerId', '').size() > 0
+        && request.resource.data.get('schemaVersion', 0) == 1
+        && request.resource.data.get('currentContentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('currentRevisionId', '') == 'v1_' + request.resource.data.currentContentDigest
+        && existsAfter(/databases/$(database)/documents/publicArtifacts/$(artifactId)/revisions/$(request.resource.data.currentRevisionId))
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + request.resource.data.currentRevisionId)).data.get('status', '') == 'published'
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + request.resource.data.currentRevisionId)).data.get('ownerId', '') == request.resource.data.ownerId;
+
+      // Publishing a NEW revision of an already-live artifact: same shape and
+      // same-transaction proofs, plus frozen identity (owner, type, original
+      // publishedAt survive across revisions).
+      allow update: if (isAdmin()
+          || (isFullUser() && resource.data.get('ownerId', '') == request.auth.uid))
+        && request.resource.data.keys().hasOnly(['artifactId', 'artifactType', 'ownerId', 'ownerDisplayName', 'title', 'posterUrl', 'currentRevisionId', 'currentContentDigest', 'publishedAt', 'updatedAt', 'schemaVersion'])
+        && request.resource.data.get('artifactId', '') == artifactId
+        && request.resource.data.get('artifactType', '') == resource.data.get('artifactType', '')
+        && request.resource.data.get('ownerId', '') == resource.data.get('ownerId', '')
+        && request.resource.data.get('publishedAt', 0) == resource.data.get('publishedAt', 1)
+        && request.resource.data.get('schemaVersion', 0) == 1
+        && request.resource.data.get('currentContentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('currentRevisionId', '') == 'v1_' + request.resource.data.currentContentDigest
+        && existsAfter(/databases/$(database)/documents/publicArtifacts/$(artifactId)/revisions/$(request.resource.data.currentRevisionId))
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + request.resource.data.currentRevisionId)).data.get('status', '') == 'published'
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + request.resource.data.currentRevisionId)).data.get('ownerId', '') == request.resource.data.ownerId;
+
+      // Withdrawal (owner) or removal (admin) deletes the envelope, delisting
+      // the artifact. Owner check FIRST: `||` error-absorbs, so a profile-less
+      // user's isAdmin() error still denies instead of erroring the rule.
+      allow delete: if (isAuthenticated()
+          && resource.data.get('ownerId', '') == request.auth.uid)
+        || isAdmin();
+    }
+
+    match /publicArtifacts/{artifactId}/revisions/{revisionId} {
+      // Guests read a revision only while the parent envelope exists (approved
+      // state). The owner and admins can always resolve history — media that
+      // pinned a revision must stay explainable after a withdrawal.
+      allow get: if isAdmin()
+        || (isAuthenticated() && resource.data.get('ownerId', '') == request.auth.uid)
+        || exists(/databases/$(database)/documents/publicArtifacts/$(artifactId));
+      allow list: if isAdmin()
+        || (isAuthenticated() && resource.data.get('ownerId', '') == request.auth.uid);
+
+      // Created inside the owner's publish batch (or by an admin repair),
+      // content-addressed over the sanitized public payload, with parity
+      // against the ledger entry being published in the same transaction.
+      allow create: if (isAdmin()
+          || (isFullUser()
+            && request.resource.data.get('ownerId', '') == request.auth.uid))
+        && request.resource.data.keys().hasOnly(['artifactId', 'revisionId', 'contentDigest', 'digestAlgorithm', 'digestVersion', 'artifactType', 'ownerId', 'payload', 'createdAt', 'schemaVersion'])
+        && request.resource.data.get('artifactId', '') == artifactId
+        && request.resource.data.get('revisionId', '') == revisionId
+        && revisionId == 'v1_' + request.resource.data.get('contentDigest', '')
+        && revisionId.matches('^v1_[a-f0-9]{64}$')
+        && request.resource.data.get('contentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('digestAlgorithm', '') == 'SHA-256'
+        && request.resource.data.get('digestVersion', 0) == 1
+        && request.resource.data.get('artifactType', '') in ['tunnel', 'mandala', 'scene']
+        && request.resource.data.get('ownerId', '').size() > 0
+        && request.resource.data.get('schemaVersion', 0) == 1
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + revisionId)).data.get('status', '') == 'published'
+        && getAfter(/databases/$(database)/documents/artifactPublicationRequests/$(artifactId + '_' + revisionId)).data.get('ownerId', '') == request.resource.data.ownerId;
+
+      // Immutable. Admin delete only (moderation purge of removed content).
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /artifactPublicationRequests/{requestId} {
+      // The ledger is owner/moderator territory — never guest-readable.
+      allow get, list: if isAdmin()
+        || (isAuthenticated() && resource.data.get('ownerId', '') == request.auth.uid);
+
+      // Owner publishes: the ledger entry is created directly in `published`
+      // status, id content-addressed to the (artifact, sanitized-payload)
+      // pair, with private-revision provenance — and the live projection
+      // (envelope + revision) must land in the same transaction, so a ledger
+      // entry can never claim "published" without the artifact being live.
+      allow create: if isFullUser()
+        && request.resource.data.keys().hasOnly(['requestId', 'artifactId', 'artifactType', 'ownerId', 'ownerDisplayName', 'title', 'revisionId', 'contentDigest', 'digestAlgorithm', 'digestVersion', 'payload', 'posterUrl', 'sourceRevision', 'status', 'requestedAt', 'schemaVersion'])
+        && request.resource.data.get('ownerId', '') == request.auth.uid
+        && request.resource.data.get('status', '') == 'published'
+        && existsAfter(/databases/$(database)/documents/publicArtifacts/$(request.resource.data.get('artifactId', '')))
+        && getAfter(/databases/$(database)/documents/publicArtifacts/$(request.resource.data.get('artifactId', ''))).data.get('currentRevisionId', '') == request.resource.data.get('revisionId', '')
+        && getAfter(/databases/$(database)/documents/publicArtifacts/$(request.resource.data.get('artifactId', ''))).data.get('ownerId', '') == request.auth.uid
+        && existsAfter(/databases/$(database)/documents/publicArtifacts/$(request.resource.data.get('artifactId', ''))/revisions/$(request.resource.data.get('revisionId', '')))
+        && request.resource.data.get('requestId', '') == requestId
+        && request.resource.data.get('artifactId', '').size() > 0
+        && requestId == request.resource.data.artifactId + '_' + request.resource.data.get('revisionId', '')
+        && request.resource.data.get('revisionId', '') == 'v1_' + request.resource.data.get('contentDigest', '')
+        && request.resource.data.get('contentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('digestAlgorithm', '') == 'SHA-256'
+        && request.resource.data.get('digestVersion', 0) == 1
+        && request.resource.data.get('artifactType', '') in ['tunnel', 'mandala', 'scene']
+        && request.resource.data.get('schemaVersion', 0) == 1
+        && request.resource.data.get('sourceRevision', {}).get('artifactId', '') == request.resource.data.artifactId
+        && request.resource.data.get('sourceRevision', {}).get('contentDigest', '').matches('^[a-f0-9]{64}$')
+        && request.resource.data.get('sourceRevision', {}).get('revisionId', '') == 'v1_' + request.resource.data.get('sourceRevision', {}).get('contentDigest', '');
+
+      // Status machine. Owner: withdraw published content (delisting in the
+      // same transaction) and republish withdrawn content (relisting in the
+      // same transaction). Admin: take down published content. `removed` is
+      // terminal — no transition leaves it. Everything else about the ledger
+      // entry is frozen after create.
+      allow update: if (
+          isAuthenticated()
+          && resource.data.get('ownerId', '') == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'requestedAt'])
+          && (
+            (resource.data.get('status', '') == 'published'
+              && request.resource.data.get('status', '') == 'withdrawn'
+              && (
+                !existsAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', '')))
+                || getAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', ''))).data.get('currentRevisionId', '') != resource.data.get('revisionId', '')
+              ))
+            // Republish must relist this exact revision in this transaction.
+            || (resource.data.get('status', '') == 'withdrawn'
+              && request.resource.data.get('status', '') == 'published'
+              && existsAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', '')))
+              && getAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', ''))).data.get('currentRevisionId', '') == resource.data.get('revisionId', '')
+              && getAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', ''))).data.get('ownerId', '') == resource.data.get('ownerId', '')
+              && existsAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', ''))/revisions/$(resource.data.get('revisionId', ''))))
+          )
+        )
+        || (
+          isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'reviewedAt', 'reviewedBy', 'reviewNote'])
+          && request.resource.data.get('reviewedBy', '') == request.auth.uid
+          && resource.data.get('status', '') == 'published'
+          && request.resource.data.get('status', '') == 'removed'
+          // Takedown must delist in this same transaction.
+          && (!existsAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', '')))
+            || getAfter(/databases/$(database)/documents/publicArtifacts/$(resource.data.get('artifactId', ''))).data.get('currentRevisionId', '') != resource.data.get('revisionId', ''))
+        );
+
+      // Append-only audit ledger: no client deletes, ever.
+      allow delete: if false;
     }
 
     // ============================================================================

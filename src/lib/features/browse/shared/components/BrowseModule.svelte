@@ -8,8 +8,6 @@
   import { getThumbnailRenderOrchestrator } from "$lib/shared/browse/get-thumbnail-render-orchestrator";
   import type { ResponsiveSettings } from "$lib/shared/device/domain/models/device-models";
   import { onMount, onDestroy, setContext } from "svelte";
-  import { fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ErrorBanner from "../../../create/shared/components/ErrorBanner.svelte";
 
@@ -60,20 +58,25 @@
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import { trackBrowseDestinationEntered } from "$lib/shared/analytics/browse-events";
   import SegmentedControl from "$lib/shared/ui/components/SegmentedControl.svelte";
+  import { exploreVisualsVisible } from "$lib/shared/browse/navigation/visuals-promotion";
+  import ExploreVisualsPanel from "$lib/features/browse/visuals/components/ExploreVisualsPanel.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
-  type ExploreSection = "sequences" | "collections";
-  const PRIMARY_ORDER: BrowsePrimary[] = ["explore", "you"];
+  type ExploreSection = "sequences" | "collections" | "visuals";
   const EXPLORE_OPTIONS: Array<{
     value: ExploreSection;
     label: string;
   }> = [
     { value: "sequences", label: "Sequences" },
     { value: "collections", label: "Collections" },
+    // Visuals is promotion-gated (Browse Phase 3): the publication pipeline
+    // ships unconditionally, but the public destination appears only once the
+    // gate opens. Unpromoted deep links fall back to Sequences below.
+    ...(exploreVisualsVisible()
+      ? [{ value: "visuals" as const, label: "Visuals" }]
+      : []),
   ];
-
-  // Transition configuration
-  const SLIDE_DISTANCE = 30; // pixels
-  const SLIDE_DURATION = 200; // ms
 
   // ============================================================================
   // STATE MANAGEMENT (Shared Coordination)
@@ -144,12 +147,11 @@
     browseNavigationState.currentLocation?.primary === "explore" &&
       browseNavigationState.currentLocation.section === "collections"
       ? "collections"
-      : "sequences"
-  );
-  const activePanelKey = $derived(
-    activePrimary === "explore"
-      ? `${activePrimary}:${exploreSection}`
-      : activePrimary
+      : browseNavigationState.currentLocation?.primary === "explore" &&
+          browseNavigationState.currentLocation.section === "visuals" &&
+          exploreVisualsVisible()
+        ? "visuals"
+        : "sequences"
   );
   let lastTrackedDestination: "gallery" | "library" | "collections" | null =
     null;
@@ -244,6 +246,17 @@
       requestAnimationFrame(() =>
         browseNavigationState.viewCollectionDetail(shelfId, label)
       );
+    } else if (intent.kind === "explore-visual-detail") {
+      const { visualType, artifactId } = intent;
+      requestAnimationFrame(() =>
+        browseNavigationState.navigateTo({
+          primary: "explore",
+          section: "visuals",
+          view: "detail",
+          visualType,
+          contextId: artifactId,
+        })
+      );
     } else if (intent.kind === "collection-detail") {
       const contextId = intent.foreignOwnerId
         ? `${intent.foreignOwnerId}:${intent.collectionId}`
@@ -274,10 +287,6 @@
     isAnimationModalOpen = false;
     sequenceToAnimate = null;
   }
-
-  // Slide direction for tab transitions (1 = right, -1 = left)
-  let slideDirection = $state<1 | -1>(1);
-  let previousPrimary = $state<BrowsePrimary | null>(null);
 
   // Services
   let deviceDetector: DeviceDetector | null = null;
@@ -317,13 +326,6 @@
       // entry with the explicit inner route instead of adding a second click.
       browseNavigationState.selectPrimary(newPrimary, true);
     }
-
-    if (previousPrimary !== null && newPrimary !== previousPrimary) {
-      const oldIndex = PRIMARY_ORDER.indexOf(previousPrimary);
-      const newIndex = PRIMARY_ORDER.indexOf(newPrimary);
-      slideDirection = newIndex > oldIndex ? 1 : -1;
-    }
-    previousPrimary = newPrimary;
   });
 
   // Browser back/forward and direct deep links update the global primary tab
@@ -568,22 +570,12 @@
 
 <!-- Main layout - shows immediately with skeletons while data loads -->
 <div class="browse-content">
-  <!-- Tab Content - uses {#key} with directional slide transitions (like Learn module) -->
+  <!-- Explore and You are two answers to the same question, so they replace
+       one another in place. The shared primitive overlaps the old and new
+       surfaces without either one pushing the other around. -->
   <div class="browse-tab-content">
-    {#key activePanelKey}
-      <div
-        class="tab-panel"
-        in:fly={{
-          x: slideDirection * SLIDE_DISTANCE,
-          duration: SLIDE_DURATION,
-          easing: cubicOut,
-        }}
-        out:fly={{
-          x: -slideDirection * SLIDE_DISTANCE,
-          duration: SLIDE_DURATION,
-          easing: cubicOut,
-        }}
-      >
+    <Crossfade key={activePrimary} duration={DURATION.normal} fill>
+      <div class="tab-panel">
         {#if activePrimary === "explore"}
           <div class="explore-shell">
             <header class="explore-header">
@@ -592,7 +584,9 @@
                 <h1>
                   {exploreSection === "sequences"
                     ? "Find a sequence"
-                    : "Community collections"}
+                    : exploreSection === "collections"
+                      ? "Community collections"
+                      : "Community visuals"}
                 </h1>
               </div>
               <div class="explore-switcher">
@@ -602,6 +596,13 @@
                   onchange={(section) => {
                     if (section === "collections") {
                       browseNavigationState.viewExploreCollections();
+                    } else if (section === "visuals") {
+                      browseNavigationState.navigateTo({
+                        primary: "explore",
+                        section: "visuals",
+                        view: "list",
+                        visualType: "tunnels",
+                      });
                     } else {
                       browseNavigationState.viewExploreSequences();
                     }
@@ -651,8 +652,10 @@
                     onSaveSmart={() => (smartSaveOpen = true)}
                   />
                 {/if}
-              {:else}
+              {:else if exploreSection === "collections"}
                 <CommunityCollectionsPanel />
+              {:else}
+                <ExploreVisualsPanel />
               {/if}
             </div>
           </div>
@@ -660,7 +663,7 @@
           <MyCollectionsPanel />
         {/if}
       </div>
-    {/key}
+    </Crossfade>
   </div>
 </div>
 
@@ -762,12 +765,6 @@
     .explore-switcher {
       width: 100%;
       min-width: 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .tab-panel {
-      transition: none;
     }
   }
 </style>

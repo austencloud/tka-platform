@@ -17,19 +17,39 @@
   import type { CollectedTunnel } from "./domain/tunnel-collection-types";
   import { openTunnelInViewer } from "./services/open-tunnel-in-viewer";
   import TunnelDetailPreview from "./components/TunnelDetailPreview.svelte";
+  import TunnelPublicationControls from "./components/TunnelPublicationControls.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
+  import {
+    openLineageSource,
+    hasLineageSource,
+  } from "$lib/shared/collections/open-lineage-source";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import VideoUploadSheet from "$lib/shared/video-collaboration/components/VideoUploadSheet.svelte";
+  import { getVideosForTunnel } from "$lib/shared/video-collaboration/services/collaborative-video-manager";
+  import {
+    getCreatorDisplayName,
+    type CollaborativeVideo,
+  } from "$lib/shared/video-collaboration/domain/collaborative-video";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { saveTunnelCreatorHandoff } from "$lib/features/create/tunnel/services/tunnel-creator-handoff";
+  import {
+    trackTunnelEditStarted,
+    type TunnelEditEntry,
+  } from "$lib/shared/analytics/browse-events";
+  import { currentTunnelRevisionRef } from "./domain/tunnel-revision";
 
   type Phase = "gallery" | "detail";
   let phase = $state<Phase>("gallery");
   let selected = $state<CollectedTunnel | null>(null);
 
   const items = $derived(tunnelCollectionState.collection);
+  const selectedRevision = $derived(
+    selected ? currentTunnelRevisionRef(selected) : null
+  );
 
   // ── Focus management + SR announcements for the SPA phase swap ──
   let rootEl = $state<HTMLDivElement | null>(null);
@@ -46,6 +66,15 @@
   let renameValue = $state("");
   let renameInputEl = $state<HTMLInputElement | null>(null);
 
+  // Real-world footage belongs to this exact saved snapshot. It loads only
+  // after someone opens a tunnel, so a gallery of posters never fans out into
+  // one Firestore query per card.
+  let tunnelVideos = $state<CollaborativeVideo[]>([]);
+  let videosLoading = $state(false);
+  let videosError = $state("");
+  let uploadOpen = $state(false);
+  let videoRequest = 0;
+
   const dateLabel = $derived(
     selected
       ? new Date(selected.createdAt).toLocaleDateString(undefined, {
@@ -53,7 +82,7 @@
           day: "numeric",
           year: "numeric",
         })
-      : "",
+      : ""
   );
 
   // What the tunnel IS, at a glance — all derivable from the snapshot.
@@ -64,11 +93,19 @@
     const effect = snap.effects?.activeEffect ?? "none";
     const { bluePropType, redPropType } = snap.props;
     const prop =
-      bluePropType === redPropType ? bluePropType : `${bluePropType} · ${redPropType}`;
+      bluePropType === redPropType
+        ? bluePropType
+        : `${bluePropType} · ${redPropType}`;
     const chips: { icon: string; label: string }[] = [
-      { icon: "fa-users", label: `${performers} performer${performers === 1 ? "" : "s"}` },
+      {
+        icon: "fa-users",
+        label: `${performers} performer${performers === 1 ? "" : "s"}`,
+      },
       { icon: "fa-gauge-high", label: `${snap.playback.bpm} BPM` },
-      { icon: "fa-wand-magic-sparkles", label: cap(effect === "none" ? "No effect" : effect) },
+      {
+        icon: "fa-wand-magic-sparkles",
+        label: cap(effect === "none" ? "No effect" : effect),
+      },
       { icon: "fa-hand", label: cap(prop) },
     ];
     return chips;
@@ -84,6 +121,7 @@
     confirmingDelete = null;
     renaming = false;
     phase = "detail";
+    void loadVideos(t);
     announce = `Opened ${t.name}`;
     await tick();
     backBtnEl?.focus();
@@ -94,6 +132,10 @@
     selected = null;
     confirmingDelete = null;
     renaming = false;
+    uploadOpen = false;
+    tunnelVideos = [];
+    videosError = "";
+    videoRequest += 1;
     clearTimeout(deleteTimer);
     announce = "Back to tunnel gallery";
     await tick();
@@ -101,6 +143,33 @@
     rootEl
       ?.querySelector<HTMLButtonElement>(`[data-card-id="${lastCardId}"]`)
       ?.focus();
+  }
+
+  async function loadVideos(tunnel: CollectedTunnel) {
+    const request = ++videoRequest;
+    videosLoading = true;
+    videosError = "";
+    try {
+      const loaded = await getVideosForTunnel(
+        tunnel.id,
+        tunnel.currentRevisionId
+      );
+      if (request === videoRequest) tunnelVideos = loaded;
+    } catch (error) {
+      console.warn("[TunnelCollection] Video load failed:", error);
+      if (request === videoRequest) {
+        videosError = "Real-world footage could not be loaded.";
+      }
+    } finally {
+      if (request === videoRequest) videosLoading = false;
+    }
+  }
+
+  function performerLabel(video: CollaborativeVideo): string {
+    const names = video.performers.map((performer) => performer.displayName);
+    return names.length > 0
+      ? names.join(" & ")
+      : (getCreatorDisplayName(video) ?? "Unknown performer");
   }
 
   async function del(id: string) {
@@ -163,6 +232,15 @@
     }
   }
 
+  async function editChoreography(
+    tunnel: CollectedTunnel,
+    entry: TunnelEditEntry
+  ): Promise<void> {
+    trackTunnelEditStarted(entry);
+    saveTunnelCreatorHandoff(tunnel);
+    await handleModuleChange("create", "tunnel");
+  }
+
   onMount(() => {
     // Guest sessions hydrate from localStorage (signed-in boot goes through
     // auth-boot-orchestrator's init(uid) instead — initLocal no-ops then).
@@ -186,32 +264,32 @@
   />
 
   {#snippet galleryView()}
-      <div class="gallery-view">
-        {#if tunnelCollectionState.loading && items.length === 0}
-          <div class="loading-state">
-            <PanelSpinner size={12} />
-            <p class="loading-label">Loading your tunnels…</p>
-          </div>
-        {:else if items.length === 0}
-          <div class="empty-state">
-            <i class="fas fa-fan empty-icon" aria-hidden="true"></i>
-            <p class="empty-title">No tunnels yet</p>
-            <p class="empty-hint">
-              Open a sequence, switch to the Tunnel art view, and press
-              “Save tunnel” — or right-click the tunnel itself.
-            </p>
-          </div>
-        {:else}
-          <header class="gallery-head">
-            <h2 class="gallery-title">Saved tunnels</h2>
-            <span class="gallery-count">{items.length}</span>
-          </header>
-          <div class="gallery-grid">
-            {#each items as item, i (item.id)}
+    <div class="gallery-view">
+      {#if tunnelCollectionState.loading && items.length === 0}
+        <div class="loading-state">
+          <PanelSpinner size={12} />
+          <p class="loading-label">Loading your tunnels…</p>
+        </div>
+      {:else if items.length === 0}
+        <div class="empty-state">
+          <i class="fas fa-fan empty-icon" aria-hidden="true"></i>
+          <p class="empty-title">No tunnels yet</p>
+          <p class="empty-hint">
+            Open a sequence, switch to the Tunnel art view, and press “Save
+            tunnel” — or right-click the tunnel itself.
+          </p>
+        </div>
+      {:else}
+        <header class="gallery-head">
+          <h2 class="gallery-title">Saved tunnels</h2>
+          <span class="gallery-count">{items.length}</span>
+        </header>
+        <div class="gallery-grid">
+          {#each items as item, i (item.id)}
+            <article class="gallery-card" data-card-id={item.id}>
               <button
                 type="button"
-                class="gallery-card"
-                data-card-id={item.id}
+                class="gallery-card-open"
                 onclick={() => open(item)}
                 aria-label="View {item.name}, {i + 1} of {items.length}"
                 title={item.name}
@@ -225,10 +303,23 @@
                 </div>
                 <span class="card-label">{item.name}</span>
               </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
+              {#if !tunnelCollectionState.isReadOnlyPreview}
+                <button
+                  type="button"
+                  class="gallery-card-edit"
+                  onclick={() => void editChoreography(item, "gallery-card")}
+                  aria-label="Edit choreography for {item.name}"
+                >
+                  <i class="fas fa-people-arrows-left-right" aria-hidden="true"
+                  ></i>
+                  <span>Edit choreography</span>
+                </button>
+              {/if}
+            </article>
+          {/each}
+        </div>
+      {/if}
+    </div>
   {/snippet}
 
   {#snippet detailView({ inDrawer }: { inDrawer: boolean })}
@@ -268,7 +359,9 @@
                   aria-label="Tunnel name"
                 />
               {:else}
-                <h2 class="detail-name" title={selected.name}>{selected.name}</h2>
+                <h2 class="detail-name" title={selected.name}>
+                  {selected.name}
+                </h2>
                 {#if !tunnelCollectionState.isReadOnlyPreview}
                   <button
                     type="button"
@@ -304,23 +397,112 @@
           </div>
 
           <div class="detail-actions">
+            {#if !tunnelCollectionState.isReadOnlyPreview}
+              <button
+                type="button"
+                class="action-btn open-btn"
+                onclick={() => void editChoreography(selected!, "detail")}
+              >
+                <i class="fas fa-people-arrows-left-right" aria-hidden="true"
+                ></i>
+                <span>Edit choreography</span>
+              </button>
+            {/if}
             <button
               type="button"
               class="action-btn export-btn"
-              onclick={() => openTunnelInViewer(selected!, { autoExport: true })}
+              onclick={() =>
+                openTunnelInViewer(selected!, { autoExport: true })}
             >
               <i class="fas fa-video" aria-hidden="true"></i>
               <span>Create video</span>
             </button>
             <button
               type="button"
-              class="action-btn open-btn"
+              class="action-btn export-btn"
               onclick={() => openTunnelInViewer(selected!)}
             >
               <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
-              <span>Customize tunnel</span>
+              <span>Customize appearance</span>
             </button>
           </div>
+
+          {#if !tunnelCollectionState.isReadOnlyPreview}
+            {#key selected.id}
+              <TunnelPublicationControls tunnel={selected} />
+            {/key}
+          {/if}
+
+          <section
+            class="realization-section"
+            aria-labelledby="realization-title"
+          >
+            <div class="realization-head">
+              <div>
+                <h3 id="realization-title">Real-world footage</h3>
+                <p>Videos connected to this exact saved tunnel.</p>
+              </div>
+              {#if !tunnelCollectionState.isReadOnlyPreview}
+                <button
+                  type="button"
+                  class="add-footage-btn"
+                  onclick={() => (uploadOpen = true)}
+                >
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                  Add
+                </button>
+              {/if}
+            </div>
+
+            {#if videosLoading}
+              <div class="video-status">
+                <PanelSpinner size={8} />
+                <span>Loading footage…</span>
+              </div>
+            {:else if videosError}
+              <div class="video-status error">
+                <span>{videosError}</span>
+                <button type="button" onclick={() => void loadVideos(selected!)}
+                  >Retry</button
+                >
+              </div>
+            {:else if tunnelVideos.length === 0}
+              <p class="video-empty">No real-world footage is connected yet.</p>
+            {:else}
+              <div class="realization-list">
+                {#each tunnelVideos as video (video.id)}
+                  <article class="realization-video">
+                    <video
+                      src={video.videoUrl}
+                      poster={video.thumbnailUrl}
+                      controls
+                      playsinline
+                      preload="metadata"
+                      aria-label={`Tunnel realization by ${performerLabel(video)}`}
+                    >
+                      <track kind="captions" />
+                    </video>
+                    <div class="realization-meta">
+                      <span>{performerLabel(video)}</span>
+                      {#if video.visibility !== "public"}
+                        <i
+                          class="fas {video.visibility === 'private'
+                            ? 'fa-lock'
+                            : 'fa-user-group'}"
+                          title={video.visibility === "private"
+                            ? "Private"
+                            : "Collaborators only"}
+                          aria-label={video.visibility === "private"
+                            ? "Private"
+                            : "Collaborators only"}
+                        ></i>
+                      {/if}
+                    </div>
+                  </article>
+                {/each}
+              </div>
+            {/if}
+          </section>
 
           {#if !tunnelCollectionState.isReadOnlyPreview}
             <div class="detail-footer">
@@ -345,6 +527,22 @@
       </div>
     {/if}
   {/snippet}
+
+  {#if selected}
+    <VideoUploadSheet
+      show={uploadOpen}
+      tunnel={{
+        id: selected.id,
+        name: selected.name,
+        ...(selected.sourceSequenceId
+          ? { sourceSequenceId: selected.sourceSequenceId }
+          : {}),
+        ...(selectedRevision ? { revision: selectedRevision } : {}),
+      }}
+      onClose={() => (uploadOpen = false)}
+      onUploaded={() => void loadVideos(selected!)}
+    />
+  {/if}
 </div>
 
 <style>
@@ -408,17 +606,46 @@
   }
 
   .gallery-card {
+    overflow: hidden;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 14px;
+    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+
+  .gallery-card-open {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
+    width: 100%;
     padding: 16px 12px 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    border-radius: 14px;
+    border: 0;
+    background: transparent;
+    color: inherit;
     cursor: pointer;
-    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
     min-height: var(--min-touch-target, 44px);
+  }
+
+  .gallery-card-edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 12px;
+    border: 0;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 10%,
+      transparent
+    );
+    color: var(--theme-accent-text, var(--theme-accent, #22d3ee));
+    font-size: var(--font-size-compact, 13px);
+    font-weight: 650;
+    cursor: pointer;
   }
 
   .card-thumb img {
@@ -432,22 +659,35 @@
   @media (hover: hover) {
     .gallery-card:hover {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
-      border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #22d3ee) 40%,
+        transparent
+      );
       transform: translateY(-2px);
     }
     .gallery-card:hover .card-thumb img {
       transform: scale(1.06);
     }
+    .gallery-card-edit:hover {
+      background: color-mix(
+        in srgb,
+        var(--theme-accent, #22d3ee) 18%,
+        transparent
+      );
+    }
   }
 
-  .gallery-card:active {
+  .gallery-card-open:active,
+  .gallery-card-edit:active {
     transform: scale(0.97);
     transition-duration: 50ms;
   }
 
-  .gallery-card:focus-visible {
+  .gallery-card-open:focus-visible,
+  .gallery-card-edit:focus-visible {
     outline: 2px solid var(--theme-accent, #22d3ee);
-    outline-offset: 2px;
+    outline-offset: -3px;
   }
 
   /* Fixed square box so the async poster can't relayout the grid on load. */
@@ -563,7 +803,11 @@
     gap: 8px;
     min-height: 48px;
     padding: 8px 18px;
-    background: color-mix(in srgb, var(--theme-panel-bg, rgba(10, 10, 20, 0.85)) 80%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(10, 10, 20, 0.85)) 80%,
+      transparent
+    );
     backdrop-filter: blur(8px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 999px;
@@ -698,6 +942,116 @@
     width: 100%;
   }
 
+  .realization-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 20px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .realization-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .realization-head h3,
+  .realization-head p {
+    margin: 0;
+  }
+
+  .realization-head h3 {
+    color: var(--theme-text, white);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 650;
+  }
+
+  .realization-head p,
+  .video-empty,
+  .video-status {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.45;
+  }
+
+  .realization-head p {
+    margin-top: 4px;
+  }
+
+  .add-footage-btn,
+  .video-status button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 45%, transparent);
+    border-radius: 10px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #22d3ee) 10%,
+      transparent
+    );
+    color: var(--theme-accent-text, var(--theme-accent, #22d3ee));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .video-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+  }
+
+  .video-status.error {
+    justify-content: space-between;
+    color: var(--semantic-error, #ef4444);
+  }
+
+  .video-empty {
+    margin: 0;
+    padding: 14px;
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .realization-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .realization-video {
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .realization-video video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    background: #000;
+  }
+
+  .realization-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 11px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 12px);
+  }
+
   .action-btn {
     display: flex;
     align-items: center;
@@ -726,12 +1080,14 @@
     );
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: white;
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
   }
 
   .export-btn {
     background: transparent;
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 45%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #22d3ee) 45%, transparent);
     color: var(--theme-accent-text, var(--theme-accent, #22d3ee));
   }
 
@@ -749,16 +1105,29 @@
 
   @media (hover: hover) {
     .export-btn:hover {
-      background: color-mix(in srgb, var(--theme-accent, #22d3ee) 12%, transparent);
-      border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 70%, transparent);
+      background: color-mix(
+        in srgb,
+        var(--theme-accent, #22d3ee) 12%,
+        transparent
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #22d3ee) 70%,
+        transparent
+      );
     }
     .open-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
+      box-shadow: 0 6px 16px
+        color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
     }
     .delete-btn:hover {
       color: var(--semantic-error, #ef4444);
-      border-color: color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+      border-color: color-mix(
+        in srgb,
+        var(--semantic-error, #ef4444) 30%,
+        transparent
+      );
     }
     .delete-btn.confirming:hover {
       background: color-mix(in srgb, var(--semantic-error, #ef4444) 80%, black);

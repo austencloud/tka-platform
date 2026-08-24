@@ -47,11 +47,22 @@ export type CollectionDetailIntent = {
   foreignOwnerId?: string;
 };
 
+/** One published visual in Explore > Visuals — e.g. a creator-profile tile
+ *  opening the public detail view. Callers gate on `exploreVisualsVisible()`;
+ *  Browse resolves the location either way (unpromoted deep links fall back
+ *  per the route resolver). */
+export type ExploreVisualDetailIntent = {
+  kind: "explore-visual-detail";
+  visualType: "tunnels" | "mandalas" | "scenes";
+  artifactId: string;
+};
+
 export type BrowseIntent =
   | CreatorGalleryIntent
   | OwnLibraryIntent
   | ArtShelfIntent
-  | CollectionDetailIntent;
+  | CollectionDetailIntent
+  | ExploreVisualDetailIntent;
 
 export function createCollectionDetailIntent(input: {
   collectionId: string;

@@ -9,6 +9,7 @@
   import FeatureFlagManagement from "./FeatureFlagManagement.svelte";
   import AnnouncementManagement from "./AnnouncementManagement.svelte";
   import ShameQueuePanel from "./ShameQueuePanel.svelte";
+  import ArtifactPublicationQueuePanel from "./ArtifactPublicationQueuePanel.svelte";
   import ModerationModule from "$lib/features/moderation/ModerationModule.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
@@ -147,6 +148,14 @@
           aria-labelledby="moderation-tab"
         >
           <ModerationModule />
+        </div>
+      {:else if activeSection === "publications"}
+        <div
+          id="publications-panel"
+          role="tabpanel"
+          aria-labelledby="publications-tab"
+        >
+          <ArtifactPublicationQueuePanel />
         </div>
       {:else if activeSection === "analytics"}
         <div

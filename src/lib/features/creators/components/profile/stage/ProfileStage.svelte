@@ -32,6 +32,9 @@
   import { LiveSlots, type Medium } from "./live-slots.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setPendingBrowseIntent } from "$lib/features/browse/state/pending-browse-intent.svelte";
+  import { exploreVisualsVisible } from "$lib/shared/browse/navigation/visuals-promotion";
+  import { listPublicArtifactsByOwner } from "$lib/shared/artifact-revisions/services/public-artifact-loader";
+  import type { PublicArtifactEnvelope } from "$lib/shared/artifact-revisions/domain/public-artifact";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -427,6 +430,42 @@
     void handleModuleChange("browse", "library");
   }
 
+  /**
+   * Published visuals — the creator's APPROVED public artifacts (Browse
+   * Phase 3). Unlike the private Collections band, this reads the guest
+   * projection, so it works on anyone's profile. Shown only while the Explore
+   * Visuals destination is promoted: the tiles open that destination, and a
+   * band whose doorway leads nowhere would be worse than no band.
+   */
+  let publishedVisuals = $state<PublicArtifactEnvelope[]>([]);
+  let publishedToken = 0;
+  $effect(() => {
+    const id = userId;
+    const token = ++publishedToken;
+    if (!id || !exploreVisualsVisible()) {
+      publishedVisuals = [];
+      return;
+    }
+    listPublicArtifactsByOwner("tunnel", id)
+      .then((result) => {
+        if (token === publishedToken) publishedVisuals = result;
+      })
+      .catch(() => {
+        // Public band is decorative on the profile — a failed read hides it
+        // rather than erroring the whole stage.
+        if (token === publishedToken) publishedVisuals = [];
+      });
+  });
+
+  function openPublishedVisual(envelope: PublicArtifactEnvelope): void {
+    setPendingBrowseIntent({
+      kind: "explore-visual-detail",
+      visualType: "tunnels",
+      artifactId: envelope.artifactId,
+    });
+    void handleModuleChange("browse", "gallery");
+  }
+
   /*
     Emptiness is NOT reported outward from here.
 
@@ -477,6 +516,37 @@
         </div>
       {/if}
     </section>
+
+    <!-- Approved public artifacts — visible on anyone's profile because the
+         data itself is the guest projection. Omitted when empty (same rule as
+         the collection strips) and while Explore Visuals is unpromoted. -->
+    {#if publishedVisuals.length > 0}
+      <section class="band" aria-labelledby="band-published">
+        <header class="band-head">
+          <h2 id="band-published">Published visuals</h2>
+          <span class="rule" aria-hidden="true"></span>
+          <span class="band-count">{publishedVisuals.length}</span>
+        </header>
+        <div
+          class="grid showcase-grid"
+          style:--cols={Math.min(
+            publishedVisuals.length,
+            fitColumns(publishedVisuals.length, capFor("collection"))
+          )}
+          style:--cap={capFor("collection")}
+        >
+          {#each publishedVisuals as envelope (envelope.artifactId)}
+            <ArtifactTile
+              {slots}
+              medium="tunnel"
+              title={envelope.title}
+              poster={envelope.posterUrl ?? null}
+              onopen={() => openPublishedVisual(envelope)}
+            />
+          {/each}
+        </div>
+      </section>
+    {/if}
 
     <!-- Own profile only. Saved scenes, tunnels and mandalas are owner-only by
          Firestore rule, so on someone else's profile there is nothing to read —

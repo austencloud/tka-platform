@@ -54,7 +54,7 @@ export const TUNNEL_AUTO_EXPORT_INTENT_KEY = "tka_tunnel_auto_export";
 
 export function openTunnelInViewer(
   tunnel: CollectedTunnel,
-  options: { autoExport?: boolean } = {},
+  options: { autoExport?: boolean } = {}
 ): void {
   const snap = tunnel.snapshot;
 
@@ -107,7 +107,10 @@ export function openTunnelInViewer(
   //    already-current config on next mount.
   if (typeof localStorage !== "undefined") {
     try {
-      localStorage.setItem(EFFECTS_CONFIG_STORAGE_KEY, JSON.stringify(snap.effects));
+      localStorage.setItem(
+        EFFECTS_CONFIG_STORAGE_KEY,
+        JSON.stringify(snap.effects)
+      );
     } catch {
       // quota exceeded / private browsing — the viewer still opens; it just
       // boots with the user's existing effects config instead of the saved one.
@@ -132,7 +135,10 @@ export function openTunnelInViewer(
     gridMode: tunnel.steps.find((s) => s.gridMode)?.gridMode,
   });
 
-  openSequenceOverlay(sequence, { initialBpm: snap.playback.bpm });
+  openSequenceOverlay(sequence, {
+    initialBpm: snap.playback.bpm,
+    tunnelComposition: tunnel.composition,
+  });
 
   showToast({
     message: options.autoExport
