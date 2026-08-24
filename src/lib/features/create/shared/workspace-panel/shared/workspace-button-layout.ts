@@ -3,8 +3,8 @@
  * action buttons exist, which zone they live in, and their order.
  *
  * Consumed by:
- *  - `ButtonPanel.svelte` and `SequenceDisplay.svelte` — render the real
- *    buttons in the bottom rail and workspace header.
+ *  - `ButtonPanel.svelte` and `StandardWorkspaceLayout.svelte` — render the
+ *    real buttons in the bottom rail and workspace header.
  *  - the create tutorial's `ReadyStep.svelte` — renders a labelled diagram of
  *    the workspace.
  *
@@ -24,9 +24,10 @@ export type WorkspaceButtonId =
 
 /**
  * Zones map to the real workspace layout. Undo and Redo occupy the familiar
- * leading navigation position, while `header-trailing` holds Save beside the
- * centered word. `grid` is NOT a real button — the user taps a step in the grid
- * to edit it; it exists only so the tutorial can label that affordance.
+ * leading navigation position, while `header-trailing` holds Save at the
+ * workspace's top-right edge. `grid` is NOT a real button — the user taps a
+ * step in the grid to edit it; it exists only so the tutorial can label that
+ * affordance.
  */
 export type WorkspaceButtonZone =
   | "header-leading"
@@ -128,7 +129,7 @@ export const WORKSPACE_BUTTON_ICON: Record<
     icon: "fa-bookmark",
     iconType: "fa",
     actionLabel: "Save to library",
-    visibleLabel: "Save to library",
+    visibleLabel: "Save",
   },
   "step-editor": {
     icon: "fa-hand-pointer",

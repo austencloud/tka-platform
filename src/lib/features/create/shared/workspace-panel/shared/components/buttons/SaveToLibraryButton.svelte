@@ -1,9 +1,8 @@
 <!--
   SaveToLibraryButton.svelte
 
-  Compact save-to-library button for the sequence workspace top bar.
-  Matches UndoButton styling - circular, 48px, professional glass effect.
-  Opens SaveToLibraryDialog when clicked.
+  Save-to-library control for the sequence workspace header.
+  The workspace decides whether it is an icon button or a labeled pill.
 -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -48,6 +47,7 @@
 </script>
 
 <button
+  type="button"
   data-save-shortcut
   class="save-button"
   class:disabled={isDisabled}
@@ -182,7 +182,7 @@
   /* Mobile responsive - 48px minimum per iOS/Android guidelines */
   @media (max-width: 768px) {
     .save-button {
-      width: var(--min-touch-target);
+      width: var(--workspace-action-width, var(--min-touch-target));
       height: var(--min-touch-target);
       font-size: var(--font-size-base);
     }
@@ -190,7 +190,7 @@
 
   @media (max-width: 480px) {
     .save-button {
-      width: var(--min-touch-target); /* Maintain 48px minimum */
+      width: var(--workspace-action-width, var(--min-touch-target));
       height: var(--min-touch-target);
       font-size: var(--font-size-base);
     }
@@ -198,7 +198,7 @@
 
   @media (max-width: 320px) {
     .save-button {
-      width: var(--min-touch-target); /* NEVER below 48px for accessibility */
+      width: var(--workspace-action-width, var(--min-touch-target));
       height: var(--min-touch-target);
       font-size: var(--font-size-sm);
     }
@@ -207,9 +207,7 @@
   /* LANDSLOOPE MOBILE: Maintain 48px minimum for accessibility */
   @media (min-aspect-ratio: 17/10) and (max-height: 500px) {
     .save-button {
-      width: var(
-        --min-touch-target
-      ); /* Maintain 48px minimum for accessibility */
+      width: var(--workspace-action-width, var(--min-touch-target));
       height: var(--min-touch-target);
       font-size: var(--font-size-sm);
     }

@@ -93,13 +93,15 @@
   function checkOverflow() {
     if (!labelElement) return;
 
-    // Find the word-label-area (grandparent) which defines available space
-    const wordLabelArea = labelElement.closest(
-      ".word-label-area"
-    ) as HTMLElement | null;
-    if (!wordLabelArea) return;
+    // Measure the word's actual center slot so a long label never borrows space
+    // reserved for workspace actions or the adjacent metadata tile.
+    const labelHost =
+      (labelElement.closest(".word-label-slot") as HTMLElement | null) ??
+      (labelElement.closest(".word-label-area") as HTMLElement | null) ??
+      labelElement.parentElement;
+    if (!labelHost) return;
 
-    const availableWidth = wordLabelArea.clientWidth;
+    const availableWidth = labelHost.clientWidth;
     if (availableWidth <= 0) return;
 
     // Temporarily remove scale to measure true content width
@@ -139,16 +141,17 @@
   $effect(() => {
     if (!labelElement) return;
 
-    const wordLabelArea = labelElement.closest(
-      ".word-label-area"
-    ) as HTMLElement | null;
+    const labelHost =
+      (labelElement.closest(".word-label-slot") as HTMLElement | null) ??
+      (labelElement.closest(".word-label-area") as HTMLElement | null) ??
+      labelElement.parentElement;
 
     const resizeObserver = new ResizeObserver(() => {
       checkOverflow();
     });
 
-    if (wordLabelArea) {
-      resizeObserver.observe(wordLabelArea);
+    if (labelHost) {
+      resizeObserver.observe(labelHost);
     }
 
     return () => resizeObserver.disconnect();
@@ -666,7 +669,6 @@
 
   .letter.bridge {
     opacity: 0.4;
-    font-size: 0.7em;
   }
 
   /* When has letter sources, no extra spacing between letter spans */

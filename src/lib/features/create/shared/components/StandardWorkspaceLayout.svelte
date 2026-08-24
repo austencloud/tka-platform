@@ -11,6 +11,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import ButtonPanel from "../workspace-panel/shared/components/ButtonPanel.svelte";
   import UndoButton from "../workspace-panel/shared/components/buttons/UndoButton.svelte";
+  import SaveToLibraryButton from "../workspace-panel/shared/components/buttons/SaveToLibraryButton.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   // CreationWorkspaceArea (85-file subtree) only renders once a sequence exists,
   // so its chunk is deferred via LazyMount — empty/first-paint Create loads skip it.
@@ -98,6 +99,10 @@
 
   const isGeneratorTab = $derived(navigationState.activeTab === "generate");
   const isAssembleTab = $derived(navigationState.activeTab === "assemble");
+  const currentSequence = $derived(
+    CreateModuleState.sequenceState.currentSequence
+  );
+  const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
 
   // Assemble tab: collapse tool panel when sequence is complete
   const isAssembleComplete = $derived(
@@ -213,6 +218,15 @@
       <div class="workspace-history-actions">
         <UndoButton {CreateModuleState} onAction={handleWorkspaceUndo} />
         <UndoButton {CreateModuleState} direction="redo" />
+      </div>
+    {/if}
+
+    {#if shouldShowWorkspace && canSaveToLibrary}
+      <div class="workspace-save-action">
+        <SaveToLibraryButton
+          sequence={currentSequence}
+          onclick={() => panelState.openSaveToLibraryPanel()}
+        />
       </div>
     {/if}
 
@@ -361,6 +375,20 @@
     z-index: 161;
     display: flex;
     gap: var(--settings-spacing-sm, 8px);
+    pointer-events: auto;
+  }
+
+  .workspace-save-action {
+    --workspace-action-label-display: inline;
+    --workspace-action-width: auto;
+    --workspace-action-gap: 8px;
+    --workspace-action-padding-inline: 16px;
+    --workspace-action-radius: 999px;
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    z-index: 161;
+    display: flex;
     pointer-events: auto;
   }
 
