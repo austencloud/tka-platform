@@ -66,6 +66,10 @@ describe("buildScene3DPersistConfig", () => {
 
     expect(config.performers).toHaveLength(1);
     expect(config.performers?.[0]?.settings?.prop).toBe("buugeng");
+    // The plane fields cross an `as never` cast on the way in, and the live
+    // apply feeds them straight to setHandPlane — pin the passthrough.
+    expect(config.performers?.[0]?.customBluePlane).toBe("wall");
+    expect(config.performers?.[0]?.customRedPlane).toBe("wall");
     expect(config.selectedPerformerIndex).toBeNull();
     expect(config.activeFormation).toBe("circle");
     expect(config.defaultProp).toBe("buugeng");

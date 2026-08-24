@@ -1392,6 +1392,18 @@ function buildViewer3DState(
   }
 
   /**
+   * The one owner of "this viewer now renders that environment". The exported
+   * `setEnvironmentId` and the live preset apply below both route here so a
+   * preset repaints the scene through exactly the path a control does.
+   */
+  function applyEnvironmentId(value: SceneEnvironmentId | string): void {
+    const next = normalizeSceneEnvironmentId(value, environmentId);
+    if (next === environmentId) return;
+    environmentId = next;
+    persistSceneEnvironment(next);
+  }
+
+  /**
    * Snapshot every persistable knob of this viewer state as one typed config.
    * This is the single capture point for save-a-3D-scene (and any future
    * "reproduce this viewer" feature) — the inverse of writeViewer3DConfig.
@@ -1424,6 +1436,133 @@ function buildViewer3DState(
       visiblePlanes: [...visiblePlanes].map(String),
       effectToggles: { ...effectToggles },
     };
+  }
+
+  /**
+   * Apply a persist config to the LIVE state — the in-viewer "load preset"
+   * path, and the inverse of `serialize()` against a mounted viewer.
+   *
+   * `writeViewer3DConfig` only seeds the localStorage a FRESH mount reads, so
+   * on its own it does nothing visible while a viewer is already on screen.
+   * This walks the same fields through the live setters instead, so the scene
+   * repaints immediately. Only PROVIDED fields are touched — an omitted field
+   * (the packing-list group mask) leaves that part of the viewer alone.
+   *
+   * Render mode is deliberately not part of this: the caller is already
+   * mounted in 3D. The user-facing Undo is the settings checkpoint the apply
+   * service captures, so the whole apply lands as one non-undoable batch here
+   * rather than as a pile of per-performer entries in the scene undo stack.
+   */
+  function applyPersistConfig(config: Partial<Viewer3DPersistConfig>): void {
+    sceneUndo.withoutUndo(() => {
+      if (config.performers) {
+        while (performerManager.performers.length < config.performers.length) {
+          performerManager.addPerformer();
+        }
+        while (performerManager.performers.length > config.performers.length) {
+          performerManager.removePerformer();
+        }
+        performerManager.cancelFormationTransition();
+
+        config.performers.forEach((snap, i) => {
+          const p = performerManager.performers[i];
+          if (!p) return;
+          p.position.x = snap.position.x;
+          p.position.z = snap.position.z;
+          p.setFacingAngle(snap.facingAngle);
+          p.setHandPlane("blue", snap.customBluePlane);
+          p.setHandPlane("red", snap.customRedPlane);
+          p.setDisplayName(snap.name ?? null);
+          // Clear all four cascade overrides first. A preset that stores null
+          // for a field means "inherit the viewer default", and only a reset
+          // expresses that — writing nothing would leave the outgoing
+          // performer's override standing.
+          p.resetProp();
+          p.resetEffort();
+          p.resetEffects();
+          p.setStaffLengthCm(null);
+          if (snap.settings) {
+            if (snap.settings.prop !== null) {
+              const prop = asPropType(snap.settings.prop);
+              if (prop) p.setProp(prop);
+            }
+            if (snap.settings.effortId !== null)
+              p.setEffort(snap.settings.effortId as EffortId);
+            if (snap.settings.effect !== null)
+              p.setEffect(snap.settings.effect as EffectType);
+            if (snap.settings.staffLengthCm !== null)
+              p.setStaffLengthCm(snap.settings.staffLengthCm);
+          }
+          // A performer spawned to match the preset's cast size arrives with
+          // no choreography; give it the sequence the stage is already running.
+          if (_currentSequenceData && !p.totalSteps) {
+            p.loadSequence(_currentSequenceData);
+          }
+        });
+      }
+
+      if (config.activeFormation !== undefined)
+        activeFormation = config.activeFormation;
+      if (config.selectedPerformerIndex !== undefined)
+        selectedPerformerIndex = config.selectedPerformerIndex;
+
+      const nextDefaultProp = asPropType(config.defaultProp);
+      if (nextDefaultProp) {
+        _defaultSettings.prop = nextDefaultProp;
+        persistDefaultProp(nextDefaultProp);
+      }
+
+      if (config.effectToggles) {
+        for (const key of Object.keys(effectToggles)) delete effectToggles[key];
+        Object.assign(effectToggles, config.effectToggles);
+        persistEffectToggles({ ...effectToggles });
+      }
+
+      if (config.environmentId) applyEnvironmentId(config.environmentId);
+      if (config.oceanVariant !== undefined) {
+        oceanVariant = config.oceanVariant as OceanVariant;
+        writeKey(STORAGE_KEY_OCEAN_VARIANT, oceanVariant);
+      }
+
+      // Camera-group fields. A fresh mount reads every one of these at
+      // construct time, so a live apply that skipped them would diverge from
+      // the same preset opened cold.
+      if (config.navMode !== undefined) {
+        navMode = config.navMode;
+        persistNavMode(navMode);
+      }
+      if (config.activePreset !== undefined) {
+        activePreset = config.activePreset;
+        writeKey(STORAGE_KEY_PRESET, activePreset ?? "");
+      }
+      if (config.activeCameraPreset !== undefined) {
+        activeCameraPreset = config.activeCameraPreset;
+        writeKey(STORAGE_KEY_CAM_PRESET, activeCameraPreset);
+      }
+      if (config.showGridLabels !== undefined) {
+        showGridLabels = config.showGridLabels;
+        writeKey(STORAGE_KEY_GRID_LABELS, String(showGridLabels));
+      }
+      if (config.visiblePlanes) {
+        const known = new Set<string>(Object.values(Plane));
+        visiblePlanes = new Set(
+          config.visiblePlanes.filter((v) => known.has(v)) as Plane[]
+        );
+        persistPlanes(visiblePlanes);
+      }
+
+      if (config.camera) {
+        snapCameraTo(
+          config.camera.position,
+          config.camera.target,
+          undefined,
+          true
+        );
+      } else if (config.performers) {
+        // No saved camera in this preset — reframe to fit the new cast.
+        frameAllPerformers(undefined, true);
+      }
+    });
   }
 
   /**
@@ -1505,12 +1644,7 @@ function buildViewer3DState(
     get environmentId(): SceneEnvironmentId {
       return environmentId;
     },
-    setEnvironmentId(value: SceneEnvironmentId | string): void {
-      const next = normalizeSceneEnvironmentId(value, environmentId);
-      if (next === environmentId) return;
-      environmentId = next;
-      persistSceneEnvironment(next);
-    },
+    setEnvironmentId: applyEnvironmentId,
     /**
      * Compatibility for older preview harnesses. Production controls use
      * `environmentId` and `setEnvironmentId` for every viewer.
@@ -1776,6 +1910,7 @@ function buildViewer3DState(
       return _currentSequenceData;
     },
     serialize,
+    applyPersistConfig,
     enter3D,
     exit3D,
     toggleEffect,

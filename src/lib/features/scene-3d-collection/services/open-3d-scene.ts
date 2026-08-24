@@ -4,6 +4,7 @@ import { buildScene3DPersistConfig } from "../domain/scene-3d-look";
 import {
   markViewer3DPresetIntent,
   writeViewer3DConfig,
+  type Viewer3DState,
 } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
@@ -11,6 +12,7 @@ import { createSequenceData, type SequenceData } from "$lib/shared/foundation/do
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
   captureSettingsCheckpoint,
+  revertSettingsCheckpoint,
 } from "$lib/shared/collections/settings-checkpoint.svelte";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
@@ -71,6 +73,46 @@ export function applyScene3DLook(scene: Collected3DScene): void {
   // 5. Tell the next viewer mount this open was preset-sourced, so it restores
   //    prop identity verbatim instead of re-seeding it from the app prop.
   markViewer3DPresetIntent();
+}
+
+/**
+ * Apply a saved scene while a viewer is MOUNTED — the in-viewer preset picker.
+ *
+ * `applyScene3DLook` alone only seeds the localStorage a FRESH mount reads, so
+ * from inside a live viewer it would appear to do nothing until a reload. This
+ * pairs it with a push into the live state so the scene repaints now AND a
+ * refresh keeps it.
+ *
+ * The toast lives here rather than at the call site because the Undo has to
+ * reach both halves: the settings checkpoint `applyScene3DLook` captured, and
+ * the live viewer state, which no checkpoint knows about. The collection
+ * module's own "Apply look" action keeps its call-site toast — that path has
+ * no mounted viewer to restore.
+ */
+export function applyScene3DLookLive(
+  scene: Collected3DScene,
+  viewer: Viewer3DState
+): void {
+  const before = viewer.serialize();
+
+  applyScene3DLook(scene); // checkpoints settings, writes seeds, marks intent
+  viewer.applyPersistConfig(buildScene3DPersistConfig(scene));
+
+  showToast({
+    message: `Applied "${scene.name}"`,
+    type: "success",
+    duration: 6000,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        // Storage first, live state second: `applyPersistConfig` re-persists
+        // what it touches, so restoring the keys afterward would be clobbered.
+        revertSettingsCheckpoint();
+        writeViewer3DConfig(before);
+        viewer.applyPersistConfig(before);
+      },
+    },
+  });
 }
 
 /**
