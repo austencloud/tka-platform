@@ -12,7 +12,7 @@ import {
 
 // A spread across motion families: Type 1 (pro/anti), Type 4 (dash), Type 6 (static).
 const LETTERS = [Letter.A, Letter.B, Letter.G, Letter.J, Letter.PHI, Letter.ALPHA];
-const TURN_VALUES = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+const TURN_VALUES = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 // Cover cardinal (in/out) AND interradial (clockIn/counterOut) starts, so the
 // invariant genuinely exercises Task 3's interradial mapOrientationToAngle fix
 // end-to-end through the engine (real CSV rows only ever carry startOrientation

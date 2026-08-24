@@ -28,6 +28,7 @@
   // Per-instance playback stack imports (avoid shared singleton)
   import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+  import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
   import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
   import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 
@@ -421,7 +422,10 @@
       // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
       const loop = new AnimationLoop();
-      const orchestrator = new SequenceAnimationOrchestrator(stateManager);
+      const orchestrator = new SequenceAnimationOrchestrator(
+        stateManager,
+        getViewerAnimationPropConfig
+      );
       if (visibilityManagerOverride) {
         orchestrator.setVisibilityManager(visibilityManagerOverride);
       }

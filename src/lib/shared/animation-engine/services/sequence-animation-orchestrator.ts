@@ -15,7 +15,11 @@ import type {
   SequenceData,
   SequenceMetadata,
 } from "$lib/shared/foundation/domain/models/sequence-data";
-import { getSettings } from "$lib/shared/application/state/app-state.svelte";
+import {
+  DEFAULT_ANIMATION_PROP_CONFIG,
+  type AnimationPropConfig,
+  type AnimationPropConfigProvider,
+} from "$lib/shared/animation-engine/domain/animation-prop-config";
 import type {
   AnimationStateManager,
   InterpolationResult,
@@ -31,7 +35,10 @@ import {
   interpolatePropAngles,
   calculateInitialAngles,
 } from "$lib/shared/animation-engine/services/prop-interpolator";
-import { getAnimationVisibilityManager, type AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import {
+  getAnimationVisibilityManager,
+  type AnimationVisibilityStateManager,
+} from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { interpolatePhrase } from "$lib/shared/phrase-effort-lab/services/phrase-interpolator";
 import { findPhraseAtBeat } from "$lib/shared/effort/domain/effort-timeline-types";
@@ -60,14 +67,17 @@ export class SequenceAnimationOrchestrator {
   private missingMotionLogged = new Set<number>();
   private metadata: SequenceMetadata = { word: "", author: "", totalSteps: 0 };
   private effortTimeline: EffortTimeline | null = null;
-  private visibilityManagerOverride: AnimationVisibilityStateManager | null = null;
+  private visibilityManagerOverride: AnimationVisibilityStateManager | null =
+    null;
   private initialized = false;
   private currentStepIndex = 0;
   private currentStepProgress = 0; // Sub-beat progress (0.0 to 1.0)
   private atStartPosition = true; // Track if we're at start position
 
   constructor(
-    private readonly animationStateService: AnimationStateManager
+    private readonly animationStateService: AnimationStateManager,
+    private readonly propConfigProvider: AnimationPropConfigProvider = () =>
+      DEFAULT_ANIMATION_PROP_CONFIG
   ) {}
 
   setVisibilityManager(vm: AnimationVisibilityStateManager): void {
@@ -83,12 +93,8 @@ export class SequenceAnimationOrchestrator {
     return this.visibilityManagerOverride ?? getAnimationVisibilityManager();
   }
 
-  protected getDefaultPropConfig(): { bluePropType: PropType; redPropType: PropType } {
-    const settings = getSettings();
-    return {
-      bluePropType: settings.bluePropType || settings.propType || PropType.STAFF,
-      redPropType: settings.redPropType || settings.propType || PropType.STAFF,
-    };
+  protected getDefaultPropConfig(): AnimationPropConfig {
+    return this.propConfigProvider();
   }
 
   /**
@@ -118,7 +124,9 @@ export class SequenceAnimationOrchestrator {
       if (steps.length === 0) {
         // Don't throw - return false to indicate initialization failed
         // This is expected for sequences without motion data
-        console.warn("SequenceAnimationOrchestrator: No steps found in sequence data");
+        console.warn(
+          "SequenceAnimationOrchestrator: No steps found in sequence data"
+        );
         return false;
       }
 
@@ -131,7 +139,8 @@ export class SequenceAnimationOrchestrator {
       // Invisible placeholders = hand not really there (both-required Step shape).
       this.hasMotionData = steps.some(
         (step) =>
-          isVisibleMotion(step?.motions?.blue) || isVisibleMotion(step?.motions?.red)
+          isVisibleMotion(step?.motions?.blue) ||
+          isVisibleMotion(step?.motions?.red)
       );
 
       // Extract metadata from domain data
@@ -152,7 +161,10 @@ export class SequenceAnimationOrchestrator {
       // Store effort timeline for phrase-level easing (if present).
       // creatorIntent.effortTimeline is the canonical location going forward;
       // fall back to the top-level field for sequences saved before the migration.
-      this.effortTimeline = sequenceData.creatorIntent?.effortTimeline ?? sequenceData.effortTimeline ?? null;
+      this.effortTimeline =
+        sequenceData.creatorIntent?.effortTimeline ??
+        sequenceData.effortTimeline ??
+        null;
 
       // Store motion steps - beat 1 is at index 0, beat 2 at index 1, etc.
       this.steps = steps;
@@ -295,24 +307,31 @@ export class SequenceAnimationOrchestrator {
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
-      const currentStep = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const currentStep =
+        stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
       const phrase = findPhraseAtBeat(this.effortTimeline, currentStep);
 
       if (phrase) {
         // Use phrase-level interpolation
         const phraseResult = interpolatePhrase(
-          phrase, currentStep, this.steps.length,
+          phrase,
+          currentStep,
+          this.steps.length
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
           interpolationResult = interpolatePropAngles(
-            targetStep, phraseResult.localProgress, vm,
+            targetStep,
+            phraseResult.localProgress,
+            vm
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
         interpolationResult = interpolatePropAngles(
-          stepState.currentStepData, stepState.stepProgress, vm,
+          stepState.currentStepData,
+          stepState.stepProgress,
+          vm
         );
       }
     } else {
@@ -320,7 +339,9 @@ export class SequenceAnimationOrchestrator {
       const effortPreset = vm.getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = interpolatePropAngles(
-        stepState.currentStepData, easedProgress, vm,
+        stepState.currentStepData,
+        easedProgress,
+        vm
       );
     }
 
@@ -446,8 +467,7 @@ export class SequenceAnimationOrchestrator {
       return;
     }
 
-    const initialAngles =
-      calculateInitialAngles(firstStepWithMotion);
+    const initialAngles = calculateInitialAngles(firstStepWithMotion);
 
     if (initialAngles.isValid) {
       if (initialAngles.blueAngles) {
@@ -579,7 +599,9 @@ export class SequenceAnimationOrchestrator {
     );
 
     if (!stepState.isValid) {
-      console.error("SequenceAnimationOrchestrator: Invalid beat state from duration-aware calculation");
+      console.error(
+        "SequenceAnimationOrchestrator: Invalid beat state from duration-aware calculation"
+      );
       return 0;
     }
 
@@ -592,12 +614,16 @@ export class SequenceAnimationOrchestrator {
     const beatMotions = stepState.currentStepData?.motions;
     const hasStepMotions = beatMotions?.blue || beatMotions?.red;
     if (!hasStepMotions) {
-      const key = stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
+      const key =
+        stepState.currentStepData?.stepNumber ?? stepState.currentStepIndex;
       if (!this.missingMotionLogged.has(key)) {
         this.missingMotionLogged.add(key);
         console.warn(
           "SequenceAnimationOrchestrator: Skipping beat without motion data",
-          { stepNumber: stepState.currentStepData?.stepNumber, stepIndex: stepState.currentStepIndex }
+          {
+            stepNumber: stepState.currentStepData?.stepNumber,
+            stepIndex: stepState.currentStepIndex,
+          }
         );
       }
       return stepState.currentStepIndex + 1; // Return 1-based beat number
@@ -609,24 +635,31 @@ export class SequenceAnimationOrchestrator {
 
     if (this.effortTimeline?.phrases?.length) {
       // Phrase mode: check if current beat falls within a phrase
-      const currentStep = stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
+      const currentStep =
+        stepState.currentStepIndex + 1 + stepState.stepProgress; // 1-based
       const phrase = findPhraseAtBeat(this.effortTimeline, currentStep);
 
       if (phrase) {
         // Use phrase-level interpolation
         const phraseResult = interpolatePhrase(
-          phrase, currentStep, this.steps.length,
+          phrase,
+          currentStep,
+          this.steps.length
         );
         const targetStep = this.steps[phraseResult.stepIndex];
         if (targetStep) {
           interpolationResult = interpolatePropAngles(
-            targetStep, phraseResult.localProgress, vm,
+            targetStep,
+            phraseResult.localProgress,
+            vm
           );
         }
       } else {
         // Gap between phrases - use linear (no easing)
         interpolationResult = interpolatePropAngles(
-          stepState.currentStepData, stepState.stepProgress, vm,
+          stepState.currentStepData,
+          stepState.stepProgress,
+          vm
         );
       }
     } else {
@@ -634,7 +667,9 @@ export class SequenceAnimationOrchestrator {
       const effortPreset = vm.getEffortPreset();
       const easedProgress = applyEffort(effortPreset, stepState.stepProgress);
       interpolationResult = interpolatePropAngles(
-        stepState.currentStepData, easedProgress, vm,
+        stepState.currentStepData,
+        easedProgress,
+        vm
       );
     }
 
@@ -685,7 +720,10 @@ export class SequenceAnimationOrchestrator {
     if (!this.initialized || this.atStartPosition) {
       return null;
     }
-    const index = Math.max(0, Math.min(this.currentStepIndex, this.steps.length - 1));
+    const index = Math.max(
+      0,
+      Math.min(this.currentStepIndex, this.steps.length - 1)
+    );
     return this.steps[index] ?? null;
   }
 

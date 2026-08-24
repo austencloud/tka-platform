@@ -13,6 +13,7 @@
 import { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 import { AnimationStateManager } from "$lib/shared/animation-engine/services/animation-state-manager";
 import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
 import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -32,7 +33,8 @@ export function createAnimationPlaybackController(
   const animationLoop = new AnimationLoop();
 
   const orchestrator = new SequenceAnimationOrchestrator(
-    animationStateManager
+    animationStateManager,
+    getViewerAnimationPropConfig
   );
   if (visibilityManager) {
     orchestrator.setVisibilityManager(visibilityManager);

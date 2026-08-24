@@ -5,6 +5,7 @@
  */
 import { AnimationStateManager } from "./services/animation-state-manager";
 import { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import { getViewerAnimationPropConfig } from "$lib/shared/animation-engine/get-viewer-animation-prop-config";
 import { AnimationLoop } from "./services/animation-loop";
 import { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationVisibilityStateManager } from "./state/animation-visibility-state.svelte";
@@ -22,7 +23,8 @@ export function createPlaybackControllerFactory(
   const stateManager = new AnimationStateManager();
 
   const orchestrator = new SequenceAnimationOrchestrator(
-    stateManager
+    stateManager,
+    getViewerAnimationPropConfig
   );
   if (visibilityManager) {
     orchestrator.setVisibilityManager(visibilityManager);
