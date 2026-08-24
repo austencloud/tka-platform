@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
+  import {
+    Plane,
+    PLANE_COLORS,
+    PLANE_LABELS,
+    PRIMARY_PLANES,
+  } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import CascadeBadge from "./controls/CascadeBadge.svelte";
   import PlanesDiagram from "./PlanesDiagram.svelte";
@@ -24,11 +29,18 @@
   });
   const allPerformers = $derived(viewer.performerManager.performers);
 
-  const PLANES: { plane: Plane; label: string }[] = [
-    { plane: Plane.WALL, label: "Wall" },
-    { plane: Plane.WHEEL, label: "Wheel" },
-    { plane: Plane.FLOOR, label: "Floor" },
-  ];
+  // The full nine-plane catalog, derived from the enum so a new plane can
+  // never be missing here. Enum order already groups the fusion planes by
+  // subset (shields, ramps, wings).
+  const ALL_PLANES = Object.values(Plane) as Plane[];
+  const PRIMARY_ROWS = ALL_PLANES.filter((p) => PRIMARY_PLANES.has(p));
+  const FUSION_ROWS = ALL_PLANES.filter((p) => !PRIMARY_PLANES.has(p));
+
+  // Row labels stay short: "Wall Plane" → "Wall"; fusion labels ("Right
+  // Shield") carry no suffix in PLANE_LABELS.
+  function shortLabel(plane: Plane): string {
+    return PLANE_LABELS[plane].replace(/ Plane$/, "");
+  }
 
   function sharedPlane(hand: "blue" | "red"): Plane | null {
     const defaultPlane =
@@ -249,59 +261,75 @@
     />
 
     <div class="plane-matrix">
-      {#each PLANES as { plane, label }}
-        {@const visible = isVisible(plane)}
-        {@const handAssigned = hasHandOnPlane(plane)}
-        {@const color = PLANE_COLORS[plane]}
-        <div
-          class="plane-row"
-          class:with-hand={handAssigned}
-          class:hidden-row={!visible}
-        >
-          <button
-            class="plane-left"
-            onclick={(e) => handlePlaneToggleClick(e, plane)}
-            aria-pressed={visible}
-          >
-            <span
-              class="plane-toggle"
-              class:visible
-              class:hidden={!visible}
-              style="--dot-color: {color};"
-            >
-              <i
-                class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
-                aria-hidden="true"
-              ></i>
-            </span>
-            <span class="plane-name">
-              <span class="plane-label">{label}</span>
-              <span class="eye-state">{visible ? "Shown" : "Hidden"}</span>
-            </span>
-          </button>
-          <div class="plane-right">
-            <button
-              class="hand-chip blue"
-              class:filled={bluePlane === plane}
-              onclick={(e) => handleHandSlotClick(e, "blue", plane)}
-              aria-pressed={bluePlane === plane}
-              aria-label={`Blue hand on ${label}`}
-            >
-              Blue
-            </button>
-            <button
-              class="hand-chip red"
-              class:filled={redPlane === plane}
-              onclick={(e) => handleHandSlotClick(e, "red", plane)}
-              aria-pressed={redPlane === plane}
-              aria-label={`Red hand on ${label}`}
-            >
-              Red
-            </button>
-          </div>
-        </div>
-      {/each}
+      <div class="plane-group" role="group" aria-label="Primary planes">
+        <span class="group-label">Primary</span>
+        {#each PRIMARY_ROWS as plane (plane)}
+          {@render planeRow(plane)}
+        {/each}
+      </div>
+      <div class="plane-group" role="group" aria-label="Fusion planes">
+        <span class="group-label">
+          Fusion <span class="group-hint">45° between primaries</span>
+        </span>
+        {#each FUSION_ROWS as plane (plane)}
+          {@render planeRow(plane)}
+        {/each}
+      </div>
     </div>
+
+    {#snippet planeRow(plane: Plane)}
+      {@const label = shortLabel(plane)}
+      {@const visible = isVisible(plane)}
+      {@const handAssigned = hasHandOnPlane(plane)}
+      {@const color = PLANE_COLORS[plane]}
+      <div
+        class="plane-row"
+        class:with-hand={handAssigned}
+        class:hidden-row={!visible}
+      >
+        <button
+          class="plane-left"
+          onclick={(e) => handlePlaneToggleClick(e, plane)}
+          aria-pressed={visible}
+        >
+          <span
+            class="plane-toggle"
+            class:visible
+            class:hidden={!visible}
+            style="--dot-color: {color};"
+          >
+            <i
+              class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <span class="plane-name">
+            <span class="plane-label">{label}</span>
+            <span class="eye-state">{visible ? "Shown" : "Hidden"}</span>
+          </span>
+        </button>
+        <div class="plane-right">
+          <button
+            class="hand-chip blue"
+            class:filled={bluePlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "blue", plane)}
+            aria-pressed={bluePlane === plane}
+            aria-label={`Blue hand on ${label}`}
+          >
+            Blue
+          </button>
+          <button
+            class="hand-chip red"
+            class:filled={redPlane === plane}
+            onclick={(e) => handleHandSlotClick(e, "red", plane)}
+            aria-pressed={redPlane === plane}
+            aria-label={`Red hand on ${label}`}
+          >
+            Red
+          </button>
+        </div>
+      </div>
+    {/snippet}
   </div>
 
   <SettingToggleButton
@@ -507,10 +535,33 @@
   .plane-matrix {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 12px;
     flex: 1;
     min-width: 0;
     max-width: 34rem;
+  }
+  .plane-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .group-label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding-inline: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--theme-text-tertiary);
+  }
+  .group-hint {
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--theme-text-tertiary);
   }
   .plane-name {
     display: flex;

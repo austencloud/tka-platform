@@ -31,6 +31,32 @@
   const floorState = $derived(ringState(Plane.FLOOR));
   const wheelState = $derived(ringState(Plane.WHEEL));
   const wallState = $derived(ringState(Plane.WALL));
+
+  // Approximate projections of the six 45° fusion planes in this stylized
+  // legend, all centered on the chest like wall/wheel. Wings genuinely rotate
+  // in the screen plane (±45° around Z), so their tilt is geometrically
+  // honest; shield and ramp pairs are indistinguishable head-on, so each pair
+  // gets a small opposing tilt purely to keep simultaneous rings from
+  // coinciding — color carries the identity.
+  const FUSION_RINGS: { plane: Plane; rx: number; ry: number; tilt: number }[] =
+    [
+      { plane: Plane.RIGHT_SHIELD, rx: 32, ry: 46, tilt: 8 },
+      { plane: Plane.LEFT_SHIELD, rx: 32, ry: 46, tilt: -8 },
+      { plane: Plane.FORWARD_RAMP, rx: 46, ry: 30, tilt: -6 },
+      { plane: Plane.BACKWARD_RAMP, rx: 46, ry: 30, tilt: 6 },
+      { plane: Plane.RIGHT_WING, rx: 13, ry: 46, tilt: -45 },
+      { plane: Plane.LEFT_WING, rx: 13, ry: 46, tilt: 45 },
+    ];
+
+  // Fusion rings appear only while active (hand-assigned or shown). The
+  // resting legend stays the three primaries — nine dashed rings at once
+  // would be unreadable at this size.
+  const activeFusionRings = $derived(
+    FUSION_RINGS.filter(
+      ({ plane }) =>
+        bluePlane === plane || redPlane === plane || visiblePlanes.has(plane)
+    )
+  );
 </script>
 
 <!-- Isometric legend: wall faces the viewer, wheel is edge-on, floor lies flat.
@@ -75,6 +101,23 @@
     stroke-dasharray={wallState.dasharray}
     opacity={wallState.opacity}
   />
+  <!-- Fusion planes: drawn only while active, over the primary rings -->
+  {#each activeFusionRings as { plane, rx, ry, tilt } (plane)}
+    {@const state = ringState(plane)}
+    <ellipse
+      cx="100"
+      cy="66"
+      {rx}
+      {ry}
+      transform="rotate({tilt} 100 66)"
+      fill="none"
+      class="plane-ring"
+      style="--raw-color: {PLANE_COLORS[plane]};"
+      stroke-width={state.strokeWidth}
+      stroke-dasharray={state.dasharray}
+      opacity={state.opacity}
+    />
+  {/each}
   <!-- Performer: head + torso + legs, neutral color -->
   <g
     stroke="var(--theme-text-dim)"
