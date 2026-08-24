@@ -4,6 +4,8 @@
   import MandalaExportTakeover from "./MandalaExportTakeover.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
+  import { getAnimationVisibilityContext } from "$lib/shared/animation-engine/state/animation-visibility-context";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
   import type { ControlDockAction } from "./ControlDock.svelte";
 
@@ -53,12 +55,15 @@
   let containerSize: number = $state(400);
   let dockHeight = $state(76);
 
+  const pathPolicy =
+    getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
   const ctrl =
     providedCtrl ??
     new MandalaViewerController({
       getSequence: () => sequence,
       getBluePropType: () => bluePropType,
       getRedPropType: () => redPropType,
+      pathPolicy,
     });
 
   const takeoverSize = $derived(Math.max(160, containerSize - 32));

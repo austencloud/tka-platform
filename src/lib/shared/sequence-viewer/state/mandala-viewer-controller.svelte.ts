@@ -13,7 +13,12 @@ import {
   sampleGradient,
 } from "$lib/shared/mandala/domain/mandala-palette";
 import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
+import {
+  toAnimationPathPolicy,
+  toMandalaPathShape,
+} from "$lib/shared/mandala/services/mandala-path-policy";
 import type { MandalaExportDiag } from "$lib/shared/mandala/workers/mandala-export.worker";
+import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import {
   estimateExportTime,
   recordExportThroughput,
@@ -43,6 +48,7 @@ export interface MandalaControllerSources {
   getSequence: () => SequenceData;
   getBluePropType: () => string | undefined;
   getRedPropType: () => string | undefined;
+  pathPolicy: AnimationVisibilityStateManager;
 }
 
 const BASE_PERIOD = 5;
@@ -51,12 +57,11 @@ const DEFAULT_BG_COLOR = "#000000";
 const DEFAULT_FILL_ALPHA = 0.15;
 
 const EXPORT_STORAGE_KEY = "tka_mandala_export";
-// The mandala's *look* (shape/spin/speed/colors/weight/depth), persisted apart
+// The mandala's *look* (spin/speed/colors/weight/depth), persisted apart
 // from the export config so the viewer reopens in the look the user last set.
 const VIEW_STORAGE_KEY = "tka_mandala_view_state";
 
 export interface MandalaViewState {
-  pathShape: MandalaPathShape;
   rotation: number;
   speed: number;
   depth: number;
@@ -119,13 +124,13 @@ function loadViewState(): Partial<MandalaViewState> {
 
 /**
  * Shared animation + palette + export state for the mandala viewer.
- * Owns every tunable the controls expose so desktop (rail) and mobile
- * (bottom sheet) presentations render from one source of truth.
+ * Owns the mandala-only tunables and delegates path shape to the animation
+ * policy, so desktop, mobile, workspace, and canvas controls stay in sync.
  */
 export class MandalaViewerController {
   paused = $state(false);
   show = $state<MandalaRenderOptions["show"]>("both");
-  pathShape = $state<MandalaPathShape>("arc");
+  #pathShape = $state<MandalaPathShape>("arc");
   rotation = $state(90);
   speed = $state(1);
   depth = $state(100);
@@ -163,6 +168,7 @@ export class MandalaViewerController {
   );
 
   #sources: MandalaControllerSources;
+  #pathPolicy: AnimationVisibilityStateManager;
   #colorPhase = $state(0);
   #colorRafId = 0;
   #exportHandle: MandalaVideoExportHandle | null = null;
@@ -191,6 +197,8 @@ export class MandalaViewerController {
     options: MandalaControllerOptions = {}
   ) {
     this.#sources = sources;
+    this.#pathPolicy = sources.pathPolicy;
+    this.#pathShape = toMandalaPathShape(this.#pathPolicy.getPathPolicy());
 
     const cfg = loadExportConfig();
     this.exportReps = cfg.reps;
@@ -200,7 +208,6 @@ export class MandalaViewerController {
     // Restore the persisted look (each field guarded so a partial/old payload
     // falls back to the field default).
     const view = { ...loadViewState(), ...options.viewOverrides };
-    if (view.pathShape !== undefined) this.pathShape = view.pathShape;
     if (typeof view.rotation === "number") this.rotation = view.rotation;
     if (typeof view.speed === "number") this.speed = view.speed;
     if (typeof view.depth === "number") this.depth = view.depth;
@@ -214,7 +221,6 @@ export class MandalaViewerController {
     $effect(() => {
       if (options.persistViewState === false) return;
       const snapshot: MandalaViewState = {
-        pathShape: this.pathShape,
         rotation: this.rotation,
         speed: this.speed,
         depth: this.depth,
@@ -230,6 +236,19 @@ export class MandalaViewerController {
       } catch {
         // ignore storage failures
       }
+    });
+
+    // Every mandala surface follows the same motion-path choice as the live
+    // animation. The observer covers changes made on the canvas or workspace;
+    // the pathShape setter below sends mandala-control changes back the other
+    // way. The controller's old localStorage shape is deliberately ignored.
+    $effect(() => {
+      const sync = () => {
+        this.#pathShape = toMandalaPathShape(this.#pathPolicy.getPathPolicy());
+      };
+      sync();
+      this.#pathPolicy.registerObserver(sync);
+      return () => this.#pathPolicy.unregisterObserver(sync);
     });
 
     // Persist export config on change.
@@ -288,6 +307,17 @@ export class MandalaViewerController {
   }
   get redPropType(): string | undefined {
     return this.#sources.getRedPropType();
+  }
+
+  get pathShape(): MandalaPathShape {
+    return this.#pathShape;
+  }
+
+  set pathShape(shape: MandalaPathShape) {
+    this.#pathShape = shape;
+    this.#pathPolicy.setPathPolicy(
+      toAnimationPathPolicy(shape, this.#pathPolicy.getPathPolicy())
+    );
   }
 
   #getPresetPair(): [string, string] {

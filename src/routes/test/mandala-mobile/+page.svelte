@@ -12,6 +12,7 @@
   import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { forceFreshReload } from "$lib/shared/foundation/services/force-fresh";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
   // ── Sequence sourcing (same approach as /test/mandala-paths) ──────
   let catalogs: Catalog[] = $state([]);
@@ -41,6 +42,7 @@
     getSequence: () => currentSeq as SequenceData,
     getBluePropType: () => blueProp,
     getRedPropType: () => redProp,
+    pathPolicy: getAnimationVisibilityManager(),
   });
 
   // ── Shell state ───────────────────────────────────────────────────

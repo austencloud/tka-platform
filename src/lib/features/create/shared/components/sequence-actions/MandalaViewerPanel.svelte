@@ -13,6 +13,7 @@
   import MandalaPane from "$lib/shared/sequence-viewer/components/MandalaPane.svelte";
   import type { ControlDockAction } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { MandalaViewerController } from "$lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
@@ -42,6 +43,7 @@
       getSequence: () => sequence,
       getBluePropType: () => bluePropType,
       getRedPropType: () => redPropType,
+      pathPolicy: getAnimationVisibilityManager(),
     },
     {
       // This focused viewer always opens in the standard stroke colors.

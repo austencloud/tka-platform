@@ -51,6 +51,11 @@
     MandalaPathShape,
     MandalaRenderOptions,
   } from "$lib/shared/mandala/domain/mandala-types";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import {
+    toAnimationPathPolicy,
+    toMandalaPathShape,
+  } from "$lib/shared/mandala/services/mandala-path-policy";
   import type { HistoryTransitionPlan } from "$lib/features/create/shared/services/history-transition-planner";
 
   const MANDALA_CELL_SCALE = 0.78;
@@ -583,7 +588,7 @@
     const signature = layoutSignature;
     const epoch = historyTransitionEpoch;
     const plan = historyTransition;
-    const suspended = isClearing || displayState.isClearingForGeneration;
+    const suspended = isClearing;
 
     const previousSignature = lastLayoutSignature;
     const previousEpoch = lastHistoryEpoch;
@@ -694,7 +699,19 @@
   // --- Context menu ---
   let mandalaMenuState = $state<ContextMenuState>({ open: false });
   let mandalaMenuVariant = $state<MandalaShow>("both");
-  let mandalaPathShape = $state<MandalaPathShape>("arc");
+  const visibilityManager = getAnimationVisibilityManager();
+  let mandalaPathShape = $state(
+    toMandalaPathShape(visibilityManager.getPathPolicy())
+  );
+
+  $effect(() => {
+    const sync = () => {
+      mandalaPathShape = toMandalaPathShape(visibilityManager.getPathPolicy());
+    };
+    sync();
+    visibilityManager.registerObserver(sync);
+    return () => visibilityManager.unregisterObserver(sync);
+  });
 
   function handleMandalaContextMenu(event: MouseEvent, variant: MandalaShow) {
     event.preventDefault();
@@ -741,7 +758,9 @@
         icon: opt.icon,
         checked: mandalaPathShape === opt.id,
         action: () => {
-          mandalaPathShape = opt.id;
+          visibilityManager.setPathPolicy(
+            toAnimationPathPolicy(opt.id, visibilityManager.getPathPolicy())
+          );
         },
       })),
     },
@@ -773,7 +792,7 @@
     class:standard={!isTimelineMode}
     class:timeline={isTimelineMode}
     class:assemble-surface={activeMode === "assemble"}
-    class:clearing={isClearing || displayState.isClearingForGeneration}
+    class:clearing={isClearing}
     data-arrival-phase={arrivalRequest?.phase}
     style:--cell-size="{cellSize}px"
     style:--grid-center-offset="{standardGridCenterOffset}px"

@@ -30,6 +30,9 @@ const mandalaPane = source(
 const mandalaController = source(
   "src/lib/shared/sequence-viewer/state/mandala-viewer-controller.svelte.ts"
 );
+const displayTilePreview = source(
+  "src/lib/shared/animation-engine/components/settings-panels/DisplayTilePreview.svelte"
+);
 
 describe("Create workspace mandala viewer contract", () => {
   it("makes both workspace mandala layouts accessible click targets", () => {
@@ -52,6 +55,17 @@ describe("Create workspace mandala viewer contract", () => {
     expect(mandalaPanel).toContain("showDownload={false}");
     expect(mandalaPanel).toContain("dockAction={saveAction}");
     expect(mandalaPanel).toContain("saveMandalaToCollection");
+  });
+
+  it("shares one motion-path policy with the animation canvas", () => {
+    expect(workspaceGrid).toContain("getAnimationVisibilityManager");
+    expect(workspaceGrid).toContain(
+      "toMandalaPathShape(visibilityManager.getPathPolicy())"
+    );
+    expect(workspaceGrid).toContain("visibilityManager.registerObserver(sync)");
+    expect(workspaceGrid).toContain("visibilityManager.setPathPolicy(");
+    expect(workspaceGrid).not.toContain('$state<MandalaPathShape>("arc")');
+    expect(displayTilePreview).toContain("pathShape={mandalaPathShape}");
   });
 
   it("keeps motion and hand visibility inside the existing bottom controls", () => {

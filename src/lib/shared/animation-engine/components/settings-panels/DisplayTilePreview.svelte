@@ -9,6 +9,7 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { MandalaPathShape } from "$lib/shared/mandala/domain/mandala-types";
 
   /**
    * The picture inside a Display toggle: the layer the toggle governs, drawn
@@ -54,7 +55,7 @@
     kind: PreviewKind;
     gridMode?: string;
     propType?: string;
-    pathShape?: string;
+    pathShape?: Exclude<MandalaPathShape, "hybrid">;
     motionAware?: boolean;
     darkMode?: boolean;
     sequence?: PreviewSequence | null;
@@ -148,6 +149,9 @@
   const redPath = $derived(
     chord([84, 26], [26, 84], motionAware ? "concave" : pathShape)
   );
+  const mandalaPathShape = $derived<MandalaPathShape>(
+    motionAware ? "hybrid" : pathShape
+  );
 </script>
 
 {#if kind === "props"}
@@ -185,7 +189,13 @@
 {:else if kind === "mandala"}
   <div class="art embed">
     {#if sequence?.steps?.length}
-      <SequenceMandala {sequence} size={100} animate={false} {darkMode} />
+      <SequenceMandala
+        {sequence}
+        size={100}
+        animate={false}
+        {darkMode}
+        pathShape={mandalaPathShape}
+      />
     {:else}
       <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
         {#each [0, 45, 90, 135] as angle}
