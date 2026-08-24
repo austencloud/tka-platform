@@ -6,20 +6,29 @@
   (Scene3DCollectionModule.svelte) — this panel is deliberately thin.
 -->
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
   import { applyScene3DLookLive } from "$lib/features/scene-3d-collection/services/open-3d-scene";
+  import type { Collected3DScene } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
   import { getViewer3DContext } from "../../context/viewer-3d-context";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+  import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 
   interface Props {
     onOpenSaveScene?: () => void;
+    onSettingChange?: ViewerControlSink;
   }
-  let { onOpenSaveScene }: Props = $props();
+  let { onOpenSaveScene, onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const scenes = $derived(scene3dCollectionState.collection);
-  let selectedSceneId = $state<string | null>(null);
+  let appliedSceneId = $state<string | null>(null);
+  let appliedClearTimer: ReturnType<typeof setTimeout> | undefined;
 
   $effect(() => {
     const uid = authState.user?.uid;
@@ -27,15 +36,51 @@
     else scene3dCollectionState.initLocal();
   });
 
-  function applyScene(scene: (typeof scenes)[number]): void {
-    applyScene3DLookLive(scene, viewer);
-    selectedSceneId = scene.id;
+  function applyScene(scene: Collected3DScene): void {
+    if (viewer.disposed) return;
+
+    if (appliedClearTimer !== undefined) clearTimeout(appliedClearTimer);
+    appliedClearTimer = undefined;
+    appliedSceneId = null;
+
+    try {
+      applyScene3DLookLive(scene, viewer);
+    } catch {
+      showToast({
+        message: "Couldn't apply preset",
+        type: "error",
+      });
+      return;
+    }
+
+    appliedSceneId = scene.id;
+    appliedClearTimer = setTimeout(() => {
+      appliedSceneId = null;
+      appliedClearTimer = undefined;
+    }, 2500);
+
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_presets",
+      "preset_apply",
+      null,
+      scene.id,
+      { count: true }
+    );
   }
+
+  onDestroy(() => {
+    if (appliedClearTimer !== undefined) clearTimeout(appliedClearTimer);
+  });
 </script>
 
 <div class="presets-panel">
   <div class="pinned-action">
-    <PanelButton variant="primary" fullWidth onclick={() => onOpenSaveScene?.()}>
+    <PanelButton
+      variant="primary"
+      fullWidth
+      onclick={() => onOpenSaveScene?.()}
+    >
       <i class="fas fa-bookmark" aria-hidden="true"></i>
       <span>Save current setup</span>
     </PanelButton>
@@ -53,17 +98,14 @@
       <div class="empty-state">
         <i class="fas fa-swatchbook empty-icon" aria-hidden="true"></i>
         <p class="empty-title">Nothing saved yet</p>
-        <p class="empty-hint">
-          Build a setup you like, then save it.
-        </p>
+        <p class="empty-hint">Build a setup you like, then save it.</p>
       </div>
     {:else}
       {#each scenes as scene (scene.id)}
         <button
           type="button"
           class="preset-row"
-          class:preset-row--selected={selectedSceneId === scene.id}
-          aria-pressed={selectedSceneId === scene.id}
+          class:preset-row--applied={appliedSceneId === scene.id}
           onclick={() => applyScene(scene)}
           title={scene.name}
         >
@@ -75,6 +117,9 @@
             {/if}
           </span>
           <span class="preset-name">{scene.name}</span>
+          {#if appliedSceneId === scene.id}
+            <i class="fas fa-check applied-check" aria-hidden="true"></i>
+          {/if}
         </button>
       {/each}
     {/if}
@@ -127,7 +172,7 @@
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
   }
 
-  .preset-row--selected {
+  .preset-row--applied {
     border-color: var(--theme-accent, #4a9eff);
     background: color-mix(
       in srgb,
@@ -159,7 +204,7 @@
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: 0.5rem;
-    background: #000;
+    background: var(--theme-panel-bg, #000);
   }
 
   .preset-thumb img {
@@ -175,12 +220,19 @@
   }
 
   .preset-name {
+    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 500;
+  }
+
+  .applied-check {
+    flex: none;
+    color: var(--theme-accent, #4a9eff);
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .skeleton-block {

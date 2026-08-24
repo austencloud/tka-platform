@@ -68,7 +68,7 @@
     {:else if tool === "scene"}
       <SceneSelectorPopover {onSettingChange} />
     {:else if tool === "presets"}
-      <PresetsPanel {onOpenSaveScene} />
+      <PresetsPanel {onOpenSaveScene} {onSettingChange} />
     {:else}
       <LazyMount
         loader={loadDevTools}
