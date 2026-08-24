@@ -1214,7 +1214,13 @@ function buildViewer3DState(
   // visiblePlanes: which grid planes are currently shown. Empty set = grid hidden.
   // On first visit, default to null (no planes shown). When the user enables the
   // grid for the first time, we auto-select only the planes the sequence uses.
-  let visiblePlanes = $state<Set<Plane>>(loadPersistedPlanes() ?? new Set());
+  // A seeded viewer is self-contained: its seed value wins and the user's
+  // persisted planes are never read.
+  let visiblePlanes = $state<Set<Plane>>(
+    seed?.visiblePlanes !== undefined
+      ? new Set(seed.visiblePlanes as Plane[])
+      : (loadPersistedPlanes() ?? new Set())
+  );
   let showGridLabels = $state<boolean>(
     (() => {
       if (typeof localStorage === "undefined") return false;

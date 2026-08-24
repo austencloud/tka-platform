@@ -149,18 +149,20 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
 
       expect(performer.customBluePlane).toBe(Plane.WHEEL);
       expect(performer.customRedPlane).toBe(Plane.FLOOR);
+      // Un-overridden hands report the performer's effective whole-sequence
+      // plane (wheel/floor here), not a hardcoded WALL.
       expect(performer.getStepPlanes(1)).toEqual({
         blue: Plane.FLOOR,
-        red: Plane.WALL,
+        red: Plane.FLOOR,
       });
       expect(performer.getStepPlanes(3)).toEqual({
-        blue: Plane.WALL,
+        blue: Plane.WHEEL,
         red: Plane.WHEEL,
       });
-      // A step nobody touched stays at the un-overridden default.
+      // A step nobody touched reports the whole-sequence hand planes.
       expect(performer.getStepPlanes(0)).toEqual({
-        blue: Plane.WALL,
-        red: Plane.WALL,
+        blue: Plane.WHEEL,
+        red: Plane.FLOOR,
       });
 
       const shotB = resolveFilmDirectorSpec(
@@ -191,13 +193,14 @@ describe("applyDirectorShotToViewer wires planes onto real avatar instances", ()
       expect(performer.customRedPlane).toBe(Plane.WALL);
 
       // Proves (b): shot A's per-step overrides do not survive into shot B,
-      // which declares no stepPlanes of its own.
+      // which declares no stepPlanes of its own. Every step reports shot B's
+      // whole-sequence hand planes.
       expect(performer.getStepPlanes(1)).toEqual({
-        blue: Plane.WALL,
+        blue: Plane.RIGHT_SHIELD,
         red: Plane.WALL,
       });
       expect(performer.getStepPlanes(3)).toEqual({
-        blue: Plane.WALL,
+        blue: Plane.RIGHT_SHIELD,
         red: Plane.WALL,
       });
     } finally {

@@ -590,30 +590,37 @@ export function createAvatarInstanceState(
 
   /**
    * Get the plane assignments for a specific beat.
-   * Returns the override if one exists, otherwise Plane.WALL.
+   * Returns the override if one exists, otherwise the effective
+   * whole-sequence hand plane (which defaults to WALL).
    */
   function getStepPlanes(stepNumber: number): { blue: Plane; red: Plane } {
     const override = beatPlaneOverrides.get(stepNumber);
     return {
-      blue: override?.blue ?? Plane.WALL,
-      red: override?.red ?? Plane.WALL,
+      blue: override?.blue ?? effectiveBluePlane,
+      red: override?.red ?? effectiveRedPlane,
     };
   }
 
   /**
-   * Re-convert the entire sequence with WALL defaults, then patch in
-   * per-beat plane overrides for any beats that have them.
+   * Re-convert the entire sequence with the effective whole-sequence hand
+   * planes as the baseline, then patch in per-beat plane overrides for any
+   * beats that have them. The baseline must NOT be flat WALL: a performer
+   * whose hands live on wheel with one overridden beat keeps wheel on every
+   * other beat.
    */
   function applyBeatPlaneOverrides() {
     if (!loadedSequence) return;
 
+    const modeConfig = getEffectiveModeConfig(effectivePlaneMode);
     const motionConfigs = sequenceToMotionConfigs(
       loadedSequence,
-      Plane.WALL
+      Plane.WALL,
+      modeConfig
     );
     const startConfig = getStartPositionConfigs(
       loadedSequence,
-      Plane.WALL
+      Plane.WALL,
+      modeConfig
     );
     const allConfigs = startConfig ? [startConfig, ...motionConfigs] : motionConfigs;
 
