@@ -645,6 +645,21 @@ export function createAvatarInstanceState(
     }
   }
 
+  /**
+   * Clear all per-step plane overrides WITHOUT touching the current plane
+   * mode. Unlike `clearBeatPlaneOverrides`, this never resets `planeMode` to
+   * inherit - callers that manage the whole-sequence hand planes themselves
+   * (e.g. the film director, via `setHandPlane`) can be mid-way through
+   * deliberately establishing CUSTOM mode, and a reset here would undo that.
+   * Used to wipe a previous shot's per-step overrides before a new shot
+   * applies its own, without disturbing that shot's own `setHandPlane` calls.
+   */
+  function clearStepPlaneOverrides(): void {
+    if (beatPlaneOverrides.size === 0) return;
+    beatPlaneOverrides = new Map();
+    applyBeatPlaneOverrides();
+  }
+
   // Derived: planes for the currently selected beat
   const currentStepPlanes = $derived(getStepPlanes(currentStepIndex));
 
@@ -1023,6 +1038,8 @@ export function createAvatarInstanceState(
     setHandPlane,
     setStepHandPlane,
     clearBeatPlaneOverrides,
+    clearStepPlaneOverrides,
+    getStepPlanes,
     get customBluePlane() { return effectiveBluePlane; },
     get customRedPlane() { return effectiveRedPlane; },
     get rawBluePlane() { return customBluePlane; },

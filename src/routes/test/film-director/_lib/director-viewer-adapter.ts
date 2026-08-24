@@ -46,8 +46,8 @@ export function buildDirectorViewerSeed(
     performers: shot.performance.performers.map((performer) => ({
       position: { ...performer.position },
       facingAngle: performer.facingAngle,
-      customBluePlane: Plane.WALL,
-      customRedPlane: Plane.WALL,
+      customBluePlane: performer.bluePlane,
+      customRedPlane: performer.redPlane,
       name: performer.name,
       settings: {
         prop: performer.prop,
@@ -64,7 +64,7 @@ export function buildDirectorViewerSeed(
     activePreset: null,
     activeCameraPreset: "director",
     showGridLabels: false,
-    visiblePlanes: [],
+    visiblePlanes: shot.scene.visiblePlanes,
     effectToggles: {},
   };
 }
@@ -88,6 +88,29 @@ export function applyDirectorShotToViewer(
     }
     manager.cancelFormationTransition();
 
+    // `ensurePerformerCount` above can create pooled performers that were
+    // never part of the sequence load `enter3D` ran at mount (that call only
+    // reaches the performers that already existed at that moment - the first
+    // shot's cast). `performer-manager`'s `addPerformer` never calls
+    // `loadSequence` itself, so without this backfill any such performer's
+    // `setStepHandPlane` below would silently no-op forever:
+    // `applyBeatPlaneOverrides` bails out whenever `loadedSequence` is null.
+    // Load once, the first time each pooled performer is touched.
+    const sequenceData = viewer.currentSequenceData;
+    if (sequenceData) {
+      for (const performer of manager.performers) {
+        if (!performer.hasSequence) performer.loadSequence(sequenceData);
+      }
+    }
+
+    // Wipe every pooled performer's leftover per-step overrides before this
+    // shot's own `stepPlanes` go on below. A performer reused from an
+    // earlier shot - or a pool member that shot never cast - must never
+    // carry a stale per-step plane forward onto a cut that doesn't repeat it.
+    for (const performer of manager.performers) {
+      performer.clearStepPlaneOverrides();
+    }
+
     shot.performance.performers.forEach((directed, index) => {
       const performer = manager.performers[index];
       if (!performer) return;
@@ -100,7 +123,17 @@ export function applyDirectorShotToViewer(
       performer.setEffect(directed.effect);
       performer.setEffort(directed.effort);
       performer.setStaffLengthCm(directed.staffLengthCm);
+      performer.setHandPlane("blue", directed.bluePlane);
+      performer.setHandPlane("red", directed.redPlane);
+      for (const entry of directed.stepPlanes) {
+        performer.setStepHandPlane(entry.step, entry.hand, entry.plane);
+      }
     });
+
+    viewer.hideAllPlanes();
+    for (const plane of shot.scene.visiblePlanes) {
+      viewer.togglePlane(plane);
+    }
   });
 }
 
