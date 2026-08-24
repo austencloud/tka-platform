@@ -265,7 +265,10 @@
   // between stations, so the reach dwells only where the track turns around
   // (the extremes) and moves fastest through the body crossings, like a
   // pendulum. The anchoring follows which staff END is inboard
-  // (pointing at the torso), because that is what needs the clearance:
+  // (pointing at the torso), because that is what needs the clearance.
+  // θ here is the POINT-RELATIVE phase (staff angle minus the hand point's
+  // path angle — see weaveThetaDeg), so "inboard" means the same thing at
+  // every point:
   //   θ=0    T-bar outboard, PINKY end at the body → upstage extreme (−45°):
   //          the pinky end passes BEHIND the center of rotation.
   //   θ=90   staff vertical (T-bar down) → crossing, plane intersects the body.
@@ -320,15 +323,6 @@
   // swing the straight arm at the SHOULDER: a positive station carries the
   // grip (and the grid riding with it) downstage, a negative one upstage.
 
-  const weaveDeltaRad = $derived(
-    ((staffAngleDeg - weavePhaseDeg) * Math.PI) / 180
-  );
-  const effSweepDeg = $derived(
-    weaveAuto
-      ? (weaveDepthDeg / 2) * (1 - Math.cos(weaveDeltaRad))
-      : planeSweepDeg
-  );
-
   const centerPathAngle = $derived(LOCATION_ANGLES[POINT_TO_GRID[point]] ?? 0);
   const basePosition = $derived(
     planeAngleToWorldPosition(Plane.WALL, centerPathAngle)
@@ -337,9 +331,25 @@
     Math.max(0.15, Math.hypot(basePosition.x, basePosition.y))
   );
 
-  const effArmDeg = $derived(
-    weaveAuto ? trackArmDeg(staffAngleDeg - weavePhaseDeg) : 0
+  // The weave phase is which staff END is inboard, and "inboard" depends on
+  // the hand point: the thumb end points along path angle θ in the same
+  // convention that places the points, so thumb-inboard happens at
+  // θ = pointAngle + 180, not at a fixed global θ. Measuring the phase
+  // relative to the point's own angle keeps the stations anchored to the
+  // end that needs clearance at EVERY point — with the raw global θ the
+  // schedule was only correct at E, and at N the thumb reached the cranium
+  // exactly where the track commanded zero shift.
+  const weaveThetaDeg = $derived(
+    staffAngleDeg - (centerPathAngle * 180) / Math.PI - weavePhaseDeg
   );
+  const weaveDeltaRad = $derived((weaveThetaDeg * Math.PI) / 180);
+  const effSweepDeg = $derived(
+    weaveAuto
+      ? (weaveDepthDeg / 2) * (1 - Math.cos(weaveDeltaRad))
+      : planeSweepDeg
+  );
+
+  const effArmDeg = $derived(weaveAuto ? trackArmDeg(weaveThetaDeg) : 0);
   const effArmRad = $derived((effArmDeg * Math.PI) / 180);
 
   // ── Natural-reach measurement ──
@@ -427,8 +437,24 @@
       z: s.z + r * Math.sin(swingRad),
     };
   }
-  const gripHome = $derived.by(() => gripAt(0));
-  const gripTarget = $derived.by(() => gripAt(weaveAuto ? effArmRad : 0));
+  // Recenter the swing on the body's bisecting plane: the measured shoulder
+  // sits a few cm upstage of the slot origin, so an unbiased swing travels
+  // farther upstage than downstage (-24/+11cm on the production GLB) and the
+  // staff plane never gets far enough in front to clear the head at N. The
+  // bias is the swing at which the grip's z lands exactly on z=0, so the
+  // weave stations carry the plane equally in front of and behind the body.
+  const swingBiasRad = $derived.by(() => {
+    if (!naturalReach) return 0;
+    const s = Math.max(
+      -1,
+      Math.min(1, -naturalReach.shoulder.z / naturalReach.reachM)
+    );
+    return Math.asin(s);
+  });
+  const gripHome = $derived.by(() => gripAt(swingBiasRad));
+  const gripTarget = $derived.by(() =>
+    gripAt(swingBiasRad + (weaveAuto ? effArmRad : 0))
+  );
 
   // Where the grip actually sits along z in the grid-slot frame: the weave
   // swing owns it in auto mode; the manual travel slider slides it from the
