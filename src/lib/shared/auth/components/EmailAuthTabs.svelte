@@ -5,8 +5,6 @@
    * Tabbed interface for email authentication methods:
    * - Password (traditional)
    * - Magic Link (passwordless)
-   *
-   * 2026 best practice: offer passwordless as the primary/first option
    */
 
   import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
@@ -17,48 +15,20 @@
 
   interface Props {
     mode?: "signin" | "signup";
-    /**
-     * Force the opening tab, overriding this device's last-used method. The
-     * in-app-browser path passes "magic" because the magic link is the only
-     * method that actually completes inside a webview — landing a webview
-     * visitor on the password tab points them at a form most of them don't
-     * have credentials for. Omitted everywhere else, so the last-used
-     * default below is unchanged for normal browsers.
-     */
-    initialTab?: "magic" | "password";
   }
 
-  let { mode = $bindable("signin"), initialTab }: Props = $props();
+  let { mode = $bindable("signin") }: Props = $props();
 
   const lastMethod = getLastAuthMethod();
 
-  // Default to magic link (passwordless) as modern best practice — unless this
-  // device last signed in with a password, in which case landing on the magic
-  // tab just makes the user hunt for the form they actually want.
-  let activeTab = $state<"magic" | "password">(
-    initialTab ?? (lastMethod === "password" ? "password" : "magic")
-  );
+  // Email sign-in opens on the familiar credential form. Magic Link remains
+  // available as an alternative without making returning users hunt for the
+  // password field first.
+  let activeTab = $state<"magic" | "password">("password");
 </script>
 
 <div class="email-auth-tabs">
   <div class="tab-bar" role="tablist">
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeTab === "magic"}
-      class="tab"
-      class:active={activeTab === "magic"}
-      onclick={() => (activeTab = "magic")}
-      aria-label={lastMethod === "magic-link"
-        ? "Magic Link, last used on this device"
-        : undefined}
-    >
-      {#if lastMethod === "magic-link"}
-        <LastUsedBadge />
-      {/if}
-      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-      <span>Magic Link</span>
-    </button>
     <button
       type="button"
       role="tab"
@@ -75,6 +45,23 @@
       {/if}
       <i class="fas fa-key" aria-hidden="true"></i>
       <span>{t("auth_password")}</span>
+    </button>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={activeTab === "magic"}
+      class="tab"
+      class:active={activeTab === "magic"}
+      onclick={() => (activeTab = "magic")}
+      aria-label={lastMethod === "magic-link"
+        ? "Magic Link, last used on this device"
+        : undefined}
+    >
+      {#if lastMethod === "magic-link"}
+        <LastUsedBadge />
+      {/if}
+      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+      <span>Magic Link</span>
     </button>
   </div>
 

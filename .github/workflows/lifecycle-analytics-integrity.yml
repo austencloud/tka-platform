@@ -1,0 +1,41 @@
+name: Lifecycle Analytics Integrity
+
+on:
+  schedule:
+    - cron: "41 10 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: lifecycle-analytics-integrity
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Compare durable actions with PostHog
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+      POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+      GOOGLE_APPLICATION_CREDENTIALS: serviceAccountKey.json
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create Firebase credential file
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: printf '%s' "$SERVICE_ACCOUNT_KEY" > serviceAccountKey.json
+      - name: Compare persisted actions and lifecycle events
+        run: pnpm run analytics:lifecycle-integrity
+      - name: Remove Firebase credential file
+        if: always()
+        run: rm -f serviceAccountKey.json

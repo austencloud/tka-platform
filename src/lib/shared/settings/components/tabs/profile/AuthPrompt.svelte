@@ -1,7 +1,14 @@
 <!-- AuthPrompt.svelte - Sign-in/sign-up prompt for unauthenticated users -->
 <script lang="ts">
+  import { onDestroy, onMount } from "svelte";
   import SocialAuthCompact from "../../../../auth/components/SocialAuthCompact.svelte";
   import EmailAuthTabs from "../../../../auth/components/EmailAuthTabs.svelte";
+  import {
+    trackAuthModalAbandoned,
+    trackAuthSurfaceOpened,
+  } from "$lib/shared/analytics/auth-events";
+  import { clearAuthSubmissionBridge } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
   interface Props {
     onFacebookAuth: () => Promise<void>;
@@ -10,6 +17,21 @@
   let { onFacebookAuth }: Props = $props();
 
   let authMode = $state<"signin" | "signup">("signin");
+
+  onMount(() => {
+    trackAuthSurfaceOpened({
+      surface: "settings_profile",
+      origin: "signed_out_profile_tab",
+      auth_mode: authMode,
+    });
+  });
+
+  onDestroy(() => {
+    if (!authState.isFullAccount) {
+      trackAuthModalAbandoned("unmounted");
+    }
+    clearAuthSubmissionBridge();
+  });
 </script>
 
 <div class="auth-section">

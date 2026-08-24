@@ -16,7 +16,7 @@ export const GUEST_SAVE_CAP = 3;
 // could save but never see what they saved.
 const GUEST_MODULE_ACCESS: Record<string, string[]> = {
   create: ["assemble", "construct", "generate"],
-  browse: ["gallery", "library"],
+  browse: ["explore", "you"],
   creators: [],
 };
 

@@ -27,8 +27,6 @@
  */
 
 import { withRoute } from "$lib/shared/analytics/analytics-context";
-import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
-
 /**
  * Marketing chrome lives in the root layout, including on routes that never
  * render it. Keep its recorder behind the event boundary so importing a typed
@@ -38,10 +36,11 @@ function captureLandingEvent(
   eventName: string,
   properties?: Record<string, unknown>
 ): void {
-  if (isConstrainedConnection()) return;
-
   void import("$lib/shared/analytics/services/posthog")
-    .then(({ captureEvent }) => captureEvent(eventName, properties))
+    .then(async ({ captureWhenReady, initPostHog }) => {
+      captureWhenReady(eventName, properties);
+      await initPostHog();
+    })
     .catch((error) =>
       console.warn(`[landing analytics] ${eventName} failed:`, error)
     );

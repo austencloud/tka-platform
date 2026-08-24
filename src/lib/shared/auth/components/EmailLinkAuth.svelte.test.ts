@@ -15,7 +15,8 @@ type MagicLinkResponse = {
 const mocks = vi.hoisted(() => ({
   sendMagicLink: vi.fn(),
   recordAuthSubmission: vi.fn(),
-  captureEvent: vi.fn(),
+  captureWhenReady: vi.fn(),
+  trackAuthProviderResult: vi.fn(),
   toastError: vi.fn(),
 }));
 
@@ -61,14 +62,19 @@ vi.mock("$lib/shared/persistence/database/tka-database", () => ({
 }));
 
 vi.mock("$lib/shared/analytics/services/posthog", () => ({
-  captureEvent: mocks.captureEvent,
+  captureWhenReady: mocks.captureWhenReady,
+}));
+
+vi.mock("$lib/shared/analytics/auth-events", () => ({
+  trackAuthProviderResult: mocks.trackAuthProviderResult,
 }));
 
 describe("EmailLinkAuth delivery feedback", () => {
   beforeEach(() => {
     mocks.sendMagicLink.mockReset();
     mocks.recordAuthSubmission.mockReset();
-    mocks.captureEvent.mockReset();
+    mocks.captureWhenReady.mockReset();
+    mocks.trackAuthProviderResult.mockReset();
     mocks.toastError.mockReset();
     localStorage.clear();
   });

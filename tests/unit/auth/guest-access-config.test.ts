@@ -39,12 +39,12 @@ describe("isTabAccessible", () => {
     expect(isTabAccessible("create", "construct", "guest")).toBe(true);
   });
 
-  it("allows gallery tab in browse for guests", () => {
-    expect(isTabAccessible("browse", "gallery", "guest")).toBe(true);
+  it("allows Explore in Browse for guests", () => {
+    expect(isTabAccessible("browse", "explore", "guest")).toBe(true);
   });
 
-  it("blocks collections tab in browse for guests", () => {
-    expect(isTabAccessible("browse", "collections", "guest")).toBe(false);
+  it("allows You so guests can reach on-device saved work", () => {
+    expect(isTabAccessible("browse", "you", "guest")).toBe(true);
   });
 
   it("does not invent sub-tabs for the Creators module", () => {

@@ -66,7 +66,16 @@ export async function updateDisplayName(
   user: User,
   displayName: string
 ): Promise<{ success: true; message: string }> {
-  await updateProfile(user, { displayName: displayName.trim() || null });
+  const valueToStore = displayName.trim() || null;
+
+  await updateProfile(user, { displayName: valueToStore });
+
+  await retryAuthenticatedFirestoreOperation(user, async () => {
+    const firestore = await getFirestoreInstance();
+    const userDocRef = doc(firestore, "users", user.uid);
+    await setDoc(userDocRef, { displayName: valueToStore }, { merge: true });
+  });
+
   return { success: true, message: "Display name updated successfully." };
 }
 

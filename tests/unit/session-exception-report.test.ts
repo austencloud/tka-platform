@@ -9,6 +9,7 @@ import type {
 } from "$lib/features/admin/services/types";
 
 const session: PostHogSessionSummary = {
+  source: "posthog",
   sessionId: "session-1",
   startedAt: new Date("2026-07-31T12:00:00.000Z"),
   endedAt: new Date("2026-07-31T12:04:00.000Z"),

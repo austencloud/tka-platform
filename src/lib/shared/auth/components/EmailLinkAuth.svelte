@@ -19,10 +19,11 @@
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { db } from "$lib/shared/persistence/database/tka-database";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
 
   let email = $state("");
   let loading = $state(false);
@@ -111,7 +112,8 @@
     success = null;
     deliveryDetails = null;
 
-    captureEvent("magic_link_request_started", {
+    recordAuthSubmission("magic_link");
+    captureWhenReady("magic_link_request_started", {
       request_id: requestId,
       auth_host: window.location.hostname,
       route: page.url.pathname,
@@ -150,13 +152,13 @@
           subject: result.data.subject || DEFAULT_SUBJECT,
           senderEmail: result.data.senderEmail || DEFAULT_SENDER,
         };
-        captureEvent("magic_link_provider_accepted", {
+        captureWhenReady("magic_link_provider_accepted", {
           request_id: acceptedRequestId,
           auth_host: window.location.hostname,
           route: page.url.pathname,
           duration_ms: Math.round(performance.now() - startedAt),
         });
-        recordAuthSubmission("magic_link");
+        trackAuthProviderResult("magic_link", "accepted");
         if (inAppBrowser) {
           // Detached on purpose. This awaits an IndexedDB count, and in-app
           // webviews are exactly where IndexedDB stalls — awaiting it here
@@ -164,7 +166,7 @@
           // would sit spinning "Sending..." underneath a banner already saying
           // the mail was sent. Telemetry never gates UI state.
           void hasPendingGuestDrafts().then((pending) =>
-            captureEvent("inapp_auth_magic_link_requested", {
+            captureWhenReady("inapp_auth_magic_link_requested", {
               guest_drafts_pending: pending,
             })
           );
@@ -203,7 +205,8 @@
       }
 
       console.error("[email-link] Send failed", { code: failureCode });
-      captureEvent("magic_link_request_failed", {
+      trackAuthProviderResult("magic_link", "failed", failureCode);
+      captureWhenReady("magic_link_request_failed", {
         request_id: requestId,
         auth_host: window.location.hostname,
         route: page.url.pathname,

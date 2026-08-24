@@ -7,6 +7,7 @@
 
 import { browser } from "$app/environment";
 import { captureEvent } from "./posthog";
+import { consumeSwUpdateReloadMarker } from "$lib/shared/offline/services/sw-update-manager";
 import type { ActivityQueryOptions } from "./types";
 import type {
   ActivityEvent,
@@ -67,7 +68,25 @@ export async function logActivity(
 
 /** Log a session start event */
 export async function logSessionStart(): Promise<void> {
-  await logActivity("session_start", "session");
+  if (!browser) return;
+
+  const navigation = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  const swReload = consumeSwUpdateReloadMarker();
+  const wasDiscarded =
+    "wasDiscarded" in document
+      ? Boolean(
+          (document as Document & { wasDiscarded?: boolean }).wasDiscarded
+        )
+      : null;
+
+  await logActivity("session_start", "session", {
+    navigation_type: navigation?.type ?? "unknown",
+    sw_update_reload: swReload.occurred,
+    sw_update_reload_age_ms: swReload.ageMs,
+    document_was_discarded: wasDiscarded,
+  });
 }
 
 /** Log a module/page view */

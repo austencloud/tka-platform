@@ -49,13 +49,21 @@ describe("authedFetch", () => {
       .mockResolvedValueOnce(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await authedFetch("/api/admin/analytics");
+    const stableBody = JSON.stringify({
+      eventId: "6a0d8c75-cf65-4c53-a378-f6533d654c73",
+    });
+    const response = await authedFetch("/api/admin/analytics", {
+      method: "POST",
+      body: stableBody,
+    });
 
     expect(response.status).toBe(200);
     expect(mocks.currentUser!.getIdToken).toHaveBeenNthCalledWith(1, false);
     expect(mocks.currentUser!.getIdToken).toHaveBeenNthCalledWith(2, true);
     const retryHeaders = new Headers(fetchMock.mock.calls[1]?.[1]?.headers);
     expect(retryHeaders.get("Authorization")).toBe("Bearer fresh-token");
+    expect(fetchMock.mock.calls[0]?.[1]?.body).toBe(stableBody);
+    expect(fetchMock.mock.calls[1]?.[1]?.body).toBe(stableBody);
   });
 
   it.each([403, 503])(

@@ -178,6 +178,10 @@
     // here. Wants the cosmic chrome and the .mkt-shell root ramp for 4K.
     "/start",
     "/composer",
+    // The unlisted review URL renders inside the exact chrome it will inherit
+    // when this presentation replaces /composer. Only its URL and noindex
+    // metadata differ from the future public page.
+    "/composer/mockup",
     // The Guide hub participates in the homepage shared-element morph, so it
     // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
     // standalone header/footer and book canvas.
@@ -188,7 +192,7 @@
   ]);
   // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,
   // /notation/fans, ...) all render the same persistent chrome.
-  const MARKETING_SUBTREES = ["/shop", "/notation"];
+  const MARKETING_SUBTREES = ["/shop", "/notation", "/learn/concepts"];
   // Carve-outs inside those subtrees. The QfT app is an instrument, not a page
   // about one: it wants the whole viewport, owns its own bottom chrome, and
   // carries its own way back out to /notation. The persistent site header on
@@ -205,7 +209,11 @@
 
   $effect(() => {
     const geo = data?.geo;
-    if (!geo || typeof window === "undefined") return;
+    // Presence belongs to the authenticated application. Public pages and
+    // focused /test harnesses deliberately use the firebase-free landing
+    // bootstrap, so importing the tracker here would undo that boundary.
+    if (!geo || typeof window === "undefined" || detectSiteMode() !== "app")
+      return;
 
     let cancelled = false;
     void import("$lib/shared/presence/get-presence-tracker")
@@ -351,36 +359,27 @@
     }
     window.addEventListener("resize", updateViewportHeight);
 
-    let analyticsDelay: ReturnType<typeof setTimeout> | null = null;
-    let analyticsIdle: number | null = null;
-
-    // Session replay and Web Vitals observe the landing page; they are not part
-    // of making it usable. Healthy connections start them after first paint.
-    // Save-Data and slow links skip them so measurement cannot extend the delay
-    // it is trying to measure.
-    if (!isConstrainedConnection()) {
-      const startAnalytics = () => {
-        void import("$lib/shared/analytics/services/posthog")
-          .then(({ initPostHog }) => initPostHog())
-          .then(() =>
-            import("$lib/shared/analytics/web-vitals").then(
-              ({ initWebVitals }) => initWebVitals()
+    // Start after the browser has painted the usable page. Deferring this for
+    // several seconds used to drop the exact early clicks that explain a first
+    // visit, and skipping it on constrained links made those visitors entirely
+    // invisible. PostHog still loads asynchronously and never blocks the UI.
+    // Development harnesses measure and inspect product components. Their
+    // traffic is not useful analytics, and downloading PostHog beside a large
+    // 3D scene distorts the very startup behavior those pages exist to review.
+    const isDevelopmentHarness =
+      import.meta.env.DEV && window.location.pathname.startsWith("/test/");
+    const analyticsFrame = isDevelopmentHarness
+      ? null
+      : requestAnimationFrame(() => {
+          void import("$lib/shared/analytics/services/posthog")
+            .then(({ initPostHog }) => initPostHog())
+            .then(() =>
+              import("$lib/shared/analytics/web-vitals").then(
+                ({ initWebVitals }) => initWebVitals()
+              )
             )
-          )
-          .catch((error) => console.warn("Landing analytics failed:", error));
-      };
-
-      analyticsDelay = setTimeout(() => {
-        analyticsDelay = null;
-        if (typeof requestIdleCallback !== "undefined") {
-          analyticsIdle = requestIdleCallback(startAnalytics, {
-            timeout: 4000,
-          });
-        } else {
-          startAnalytics();
-        }
-      }, 2500);
-    }
+            .catch((error) => console.warn("Landing analytics failed:", error));
+        });
 
     // i18n is lightweight - safe for landing
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
@@ -390,10 +389,7 @@
     containerReady = true;
 
     return () => {
-      if (analyticsDelay !== null) clearTimeout(analyticsDelay);
-      if (analyticsIdle !== null && typeof cancelIdleCallback !== "undefined") {
-        cancelIdleCallback(analyticsIdle);
-      }
+      if (analyticsFrame !== null) cancelAnimationFrame(analyticsFrame);
       if (window.visualViewport) {
         window.visualViewport.removeEventListener(
           "resize",
@@ -538,6 +534,9 @@
     bootProfiler.mark("posthog");
     const { initPostHog } = await imports.posthog;
     await initPostHog();
+    const { initializePostHogLifecycleReporter } =
+      await import("$lib/shared/analytics/services/posthog-lifecycle-reporter");
+    initializePostHogLifecycleReporter();
     bootProfiler.end("posthog");
 
     // i18n

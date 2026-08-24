@@ -28,13 +28,13 @@ import { auth, configureAuthPersistence, getAuthInstance } from "../firebase";
 import {
   captureAnonymousDrafts,
   notifyUpgradeSignup,
+  reportGuestUpgradeLifecycle,
   upgradeAnonymousWithFacebook,
   upgradeAnonymousWithGoogleCredential,
 } from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
 import { recordLastAuthMethod } from "./last-auth-method.svelte";
-import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
 import {
   authenticateWithInstagram,
   disconnectInstagramAccount,
@@ -177,9 +177,7 @@ export async function signInWithInstagram(): Promise<void> {
   const drafts = await captureAnonymousDrafts(anonymousUser.uid);
   const result = await authenticateWithInstagram("signin");
   if (result.collision) {
-    captureWhenReady("guest_upgraded_to_account", {
-      status: "collision-signed-in",
-    });
+    await reportGuestUpgradeLifecycle("collision-signed-in");
     promptAnonymousImport(drafts);
   } else {
     await notifyUpgradeSignup(authInstance.currentUser ?? undefined);

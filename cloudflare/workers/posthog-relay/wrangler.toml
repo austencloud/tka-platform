@@ -1,0 +1,11 @@
+name = "tka-posthog-relay"
+main = "worker.js"
+compatibility_date = "2026-08-21"
+workers_dev = false
+
+[[routes]]
+pattern = "rune.tkaflowarts.com"
+custom_domain = true
+
+[observability]
+enabled = true

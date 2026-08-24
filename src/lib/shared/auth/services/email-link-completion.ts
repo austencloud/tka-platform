@@ -254,6 +254,9 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
     // the single point that covers every magic-link completion.
     const { recordLastAuthMethod } = await import("./last-auth-method.svelte");
     recordLastAuthMethod("magic-link");
+    const { trackAuthProviderResult } =
+      await import("$lib/shared/analytics/auth-events");
+    trackAuthProviderResult("magic_link", "completed");
 
     // A magic link already proved ownership of the email address. Do not put a
     // password or profile form between that proof and the workspace. Persist
@@ -290,6 +293,9 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
     return { completed: true };
   } catch (err: unknown) {
     const e = err as { code?: string; message?: string };
+    const { trackAuthProviderResult } =
+      await import("$lib/shared/analytics/auth-events");
+    trackAuthProviderResult("magic_link", "failed", e.code ?? "unknown");
     if (
       e?.code === "functions/failed-precondition" ||
       e?.code === "functions/not-found" ||

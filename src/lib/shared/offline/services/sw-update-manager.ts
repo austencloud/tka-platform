@@ -23,6 +23,8 @@ export interface SwUpdateManagerDeps {
   onUpdateReady: (apply: () => void) => void;
   /** Defaults to a full-page reload. Injectable for tests. */
   reload?: () => void;
+  /** Records that the next boot came from an accepted SW update. */
+  markReload?: () => void;
   /** A startup path already posted SKIP_WAITING and is awaiting takeover. */
   activationAlreadyRequested?: boolean;
 }
@@ -31,10 +33,45 @@ export interface StartupSwUpdateDeps {
   registration: ServiceWorkerRegistration;
   serviceWorker?: ServiceWorkerContainer;
   reload?: () => void;
+  markReload?: () => void;
   timeoutMs?: number;
 }
 
 export type StartupSwUpdateResult = "none" | "reloading" | "deferred";
+
+export const SW_UPDATE_RELOAD_MARKER_KEY = "tka-sw-update-reload";
+
+export function markSwUpdateReload(
+  storage: Storage | null = typeof sessionStorage === "undefined"
+    ? null
+    : sessionStorage
+): void {
+  try {
+    storage?.setItem(SW_UPDATE_RELOAD_MARKER_KEY, String(Date.now()));
+  } catch {
+    // A denied sessionStorage write must never prevent an accepted update.
+  }
+}
+
+export function consumeSwUpdateReloadMarker(
+  storage: Storage | null = typeof sessionStorage === "undefined"
+    ? null
+    : sessionStorage,
+  now = Date.now()
+): { occurred: boolean; ageMs: number | null } {
+  try {
+    const raw = storage?.getItem(SW_UPDATE_RELOAD_MARKER_KEY) ?? null;
+    storage?.removeItem(SW_UPDATE_RELOAD_MARKER_KEY);
+    if (raw === null) return { occurred: false, ageMs: null };
+    const recordedAt = Number(raw);
+    return {
+      occurred: true,
+      ageMs: Number.isFinite(recordedAt) ? Math.max(0, now - recordedAt) : null,
+    };
+  } catch {
+    return { occurred: false, ageMs: null };
+  }
+}
 
 /**
  * Activates a worker that was already waiting when this page began loading.
@@ -49,6 +86,7 @@ export async function applyWaitingSwUpdateBeforeStart(
   if (!waiting || !container.controller) return "none";
 
   const reload = deps.reload ?? (() => location.reload());
+  const markReload = deps.markReload ?? markSwUpdateReload;
   const timeoutMs = deps.timeoutMs ?? 2_500;
 
   return new Promise((resolve) => {
@@ -68,6 +106,7 @@ export async function applyWaitingSwUpdateBeforeStart(
 
     const onControllerChange = () => {
       finish("reloading");
+      markReload();
       reload();
     };
 
@@ -90,6 +129,7 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   const { registration, onUpdateReady } = deps;
   const container = deps.serviceWorker ?? navigator.serviceWorker;
   const reload = deps.reload ?? (() => location.reload());
+  const markReload = deps.markReload ?? markSwUpdateReload;
 
   let notified = false;
   let activationRequested = deps.activationAlreadyRequested ?? false;
@@ -144,6 +184,7 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   const onControllerChange = () => {
     if (!activationRequested || refreshing) return;
     refreshing = true;
+    markReload();
     reload();
   };
   container.addEventListener("controllerchange", onControllerChange);

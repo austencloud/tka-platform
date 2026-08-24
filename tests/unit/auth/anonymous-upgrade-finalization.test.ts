@@ -5,7 +5,7 @@ const h = vi.hoisted(() => {
   const order: string[] = [];
   return {
     order,
-    captureWhenReady: vi.fn((event: string) => {
+    reportLifecycle: vi.fn(async ({ event }: { event: string }) => {
       order.push(`event:${event}`);
     }),
     createOrUpdateUserDocument: vi.fn(async () => {
@@ -63,8 +63,8 @@ vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
   toast: { success: h.toastSuccess },
 }));
 
-vi.mock("$lib/shared/analytics/services/posthog", () => ({
-  captureWhenReady: h.captureWhenReady,
+vi.mock("$lib/shared/analytics/services/posthog-lifecycle-reporter", () => ({
+  reportPostHogLifecycleEvent: h.reportLifecycle,
 }));
 
 vi.mock("$lib/shared/persistence/services/dexie-persistence-service", () => ({
@@ -105,12 +105,12 @@ describe("notifyUpgradeSignup", () => {
     expect(h.getAuthInstance).not.toHaveBeenCalled();
     expect(h.getIdToken).toHaveBeenCalledWith(true);
     expect(h.createOrUpdateUserDocument).toHaveBeenCalledWith(linkedUser);
-    expect(h.captureWhenReady).toHaveBeenCalledWith(
-      "guest_upgraded_to_account",
-      {
+    expect(h.reportLifecycle).toHaveBeenCalledWith({
+      event: "guest_upgraded_to_account",
+      properties: {
         status: "linked",
-      }
-    );
+      },
+    });
     expect(h.order).toEqual([
       "token",
       "refresh",

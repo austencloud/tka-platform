@@ -22,12 +22,19 @@
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
   import type {
     AuthMode,
     AuthPromptContent,
   } from "$lib/shared/auth/domain/auth-nudge-trigger";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { onDestroy, onMount } from "svelte";
+  import {
+    trackAuthAlternativeSelected,
+    trackAuthModalAbandoned,
+    trackAuthSurfaceOpened,
+  } from "$lib/shared/analytics/auth-events";
+  import { clearAuthSubmissionBridge } from "$lib/shared/auth/services/auth-analytics-bridge";
 
   const signupContent: AuthPromptContent = {
     key: "festival-start",
@@ -48,10 +55,24 @@
     authState.isFullAccount ? "member" : guestEntered ? "guest" : "signup"
   );
 
+  onMount(() => {
+    trackAuthSurfaceOpened({
+      surface: "festival_start",
+      origin: "festival_qr_or_direct",
+      auth_mode: "signup",
+    });
+  });
+
+  onDestroy(() => {
+    if (mode === "signup") trackAuthModalAbandoned("unmounted");
+    clearAuthSubmissionBridge();
+  });
+
   async function enterAsGuest() {
     if (guestLoading) return;
     guestLoading = true;
-    captureEvent("start_page_guest_entered", {});
+    trackAuthAlternativeSelected("continue_as_guest");
+    captureWhenReady("start_page_guest_entered", {});
     try {
       // Swallows offline/provider failures internally; the guest continues
       // either way and the app provisions identity on first persistable action.
@@ -63,7 +84,7 @@
   }
 
   function openInstallGuide() {
-    captureEvent("start_page_install_opened", { mode });
+    captureWhenReady("start_page_install_opened", { mode });
     showInstallGuide = true;
   }
 </script>
@@ -294,7 +315,11 @@
     background: linear-gradient(
       100deg,
       var(--prop-blue, #4155d8),
-      color-mix(in srgb, var(--prop-blue, #4155d8) 55%, var(--prop-red, #ef3340))
+      color-mix(
+        in srgb,
+        var(--prop-blue, #4155d8) 55%,
+        var(--prop-red, #ef3340)
+      )
     );
     border: 1px solid transparent;
     box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.32);
@@ -326,8 +351,7 @@
   .guest-button:focus-visible,
   .install-button:focus-visible,
   .open-app-button:focus-visible {
-    outline: 3px solid
-      color-mix(in srgb, var(--prop-blue, #4155d8) 72%, white);
+    outline: 3px solid color-mix(in srgb, var(--prop-blue, #4155d8) 72%, white);
     outline-offset: 3px;
   }
 

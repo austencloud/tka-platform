@@ -10,6 +10,12 @@
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
   import {
+    logOnboardingTutorialSkipped,
+    logOnboardingTutorialStepCompleted,
+    logOnboardingTutorialStepViewed,
+    type OnboardingEventSource,
+  } from "$lib/shared/analytics/services/onboarding-events";
+  import {
     createTutorialState,
     type CreateTutorialStep,
   } from "../../state/create-tutorial-state.svelte";
@@ -23,9 +29,10 @@
   interface Props {
     onComplete: () => void;
     onSkip: () => void;
+    source?: OnboardingEventSource;
   }
 
-  const { onComplete, onSkip }: Props = $props();
+  const { onComplete, onSkip, source = "app_entry" }: Props = $props();
 
   let animateIn = $state(false);
   let hapticService: HapticFeedback | null = null;
@@ -83,6 +90,19 @@
     "play-sequence",
     "ready",
   ];
+  const viewedSteps = new Set<CreateTutorialStep>();
+
+  $effect(() => {
+    const step = createTutorialState.currentStep;
+    if (viewedSteps.has(step)) return;
+    viewedSteps.add(step);
+    logOnboardingTutorialStepViewed({
+      source,
+      step,
+      step_index: createTutorialState.currentStepIndex,
+      total_steps: STEPS.length,
+    });
+  });
 
   onMount(() => {
     try {
@@ -136,6 +156,12 @@
 
   function handleAdvance() {
     hapticService?.trigger("selection");
+    logOnboardingTutorialStepCompleted({
+      source,
+      step: createTutorialState.currentStep,
+      step_index: createTutorialState.currentStepIndex,
+      total_steps: STEPS.length,
+    });
 
     if (createTutorialState.currentStep === "ready") {
       // Last step - exit the card, then complete the tutorial.
@@ -176,6 +202,12 @@
 
   function handleSkip() {
     hapticService?.trigger("selection");
+    logOnboardingTutorialSkipped({
+      source,
+      step: createTutorialState.currentStep,
+      step_index: createTutorialState.currentStepIndex,
+      total_steps: STEPS.length,
+    });
     createTutorialState.reset();
     onSkip();
   }

@@ -5,6 +5,7 @@
     toastQueue,
   } from "$lib/shared/toast/state/toast-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
+  import { logAccountSetupReminder } from "$lib/shared/analytics/services/onboarding-events";
 
   const accountSetup = getAccountSetupContext();
 
@@ -24,17 +25,30 @@
         return;
       }
 
+      const progress = {
+        completed_count: accountSetup.completedCount,
+        total_count: accountSetup.totalCount,
+      };
+      let resolved = false;
+      logAccountSetupReminder("shown", progress);
+
       showToast({
         message: `Finish setup: ${accountSetup.completedCount} of ${accountSetup.totalCount} done`,
         type: "info",
         duration: 10_000,
         announcement: "polite",
         onDismiss: () => {
+          if (!resolved) {
+            resolved = true;
+            logAccountSetupReminder("dismissed", progress);
+          }
           void accountSetup.dismissReminder();
         },
         action: {
           label: "Open profile",
           onClick: () => {
+            resolved = true;
+            logAccountSetupReminder("opened", progress);
             void handleModuleChange("settings", "profile");
           },
         },

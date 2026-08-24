@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   applyWaitingSwUpdateBeforeStart,
+  consumeSwUpdateReloadMarker,
   createSwUpdateManager,
+  markSwUpdateReload,
+  SW_UPDATE_RELOAD_MARKER_KEY,
 } from "./sw-update-manager";
 
 class FakeWorker extends EventTarget {
@@ -194,6 +197,7 @@ describe("createSwUpdateManager", () => {
     const waiting = new FakeWorker();
     registration.waiting = waiting;
     const reload = vi.fn();
+    const markReload = vi.fn();
     let applyFn: (() => void) | null = null;
 
     createSwUpdateManager({
@@ -203,6 +207,7 @@ describe("createSwUpdateManager", () => {
         applyFn = apply;
       },
       reload,
+      markReload,
     });
 
     applyFn!();
@@ -210,6 +215,7 @@ describe("createSwUpdateManager", () => {
     container.triggerControllerChange();
 
     expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" });
+    expect(markReload).toHaveBeenCalledOnce();
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
@@ -348,11 +354,13 @@ describe("applyWaitingSwUpdateBeforeStart", () => {
     const waiting = new FakeWorker();
     registration.waiting = waiting;
     const reload = vi.fn();
+    const markReload = vi.fn();
 
     const result = applyWaitingSwUpdateBeforeStart({
       registration: asAny(registration),
       serviceWorker: asAny(container),
       reload,
+      markReload,
       timeoutMs: 100,
     });
 
@@ -360,6 +368,7 @@ describe("applyWaitingSwUpdateBeforeStart", () => {
     container.triggerControllerChange();
 
     await expect(result).resolves.toBe("reloading");
+    expect(markReload).toHaveBeenCalledOnce();
     expect(reload).toHaveBeenCalledOnce();
   });
 
@@ -383,5 +392,31 @@ describe("applyWaitingSwUpdateBeforeStart", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("service-worker reload marker", () => {
+  it("survives the reload boundary and is consumed exactly once", () => {
+    const storage = new Map<string, string>();
+    const fakeStorage = {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    } as unknown as Storage;
+
+    vi.spyOn(Date, "now").mockReturnValue(1_000);
+    markSwUpdateReload(fakeStorage);
+    expect(storage.get(SW_UPDATE_RELOAD_MARKER_KEY)).toBe("1000");
+
+    expect(consumeSwUpdateReloadMarker(fakeStorage, 1_125)).toEqual({
+      occurred: true,
+      ageMs: 125,
+    });
+    expect(consumeSwUpdateReloadMarker(fakeStorage, 1_200)).toEqual({
+      occurred: false,
+      ageMs: null,
+    });
+
+    vi.restoreAllMocks();
   });
 });

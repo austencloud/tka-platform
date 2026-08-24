@@ -116,7 +116,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const devEmulatorScriptSrc = dev
     ? " http://127.0.0.1:* http://localhost:*"
     : "";
-  const scriptSrc = `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net https://maps.googleapis.com https://static.cloudflareinsights.com${devEmulatorScriptSrc}`;
+  const scriptSrc = `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://accounts.google.com https://apis.google.com https://rune.tkaflowarts.com https://us-assets.i.posthog.com https://*.posthog.com https://*.firebaseio.com https://cdn.jsdelivr.net https://maps.googleapis.com https://static.cloudflareinsights.com${devEmulatorScriptSrc}`;
   const devEmulatorConnectSrc = dev
     ? " http://127.0.0.1:* http://localhost:* ws://127.0.0.1:*"
     : "";
@@ -127,7 +127,7 @@ export const handle: Handle = async ({ event, resolve }) => {
       scriptSrc,
       "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
-      `connect-src 'self' blob: data: https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.cloudfunctions.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://us.i.posthog.com https://*.posthog.com https://assets.tkaflowarts.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net https://cloudflareinsights.com wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*${devEmulatorConnectSrc}`,
+      `connect-src 'self' blob: data: https://*.firebaseio.com https://*.googleapis.com https://*.google.com https://*.cloudfunctions.net https://firestore.googleapis.com https://firebasestorage.googleapis.com https://rune.tkaflowarts.com https://us.i.posthog.com https://*.posthog.com https://assets.tkaflowarts.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com https://cdn.jsdelivr.net https://cloudflareinsights.com wss://*.firebaseio.com wss://*.peerjs.com ws://localhost:*${devEmulatorConnectSrc}`,
       "img-src 'self' data: blob: https: http:",
       "media-src 'self' blob: https://firebasestorage.googleapis.com https://storage.googleapis.com https://assets.tkaflowarts.com https://pub-f5505ed75927471cb198c54336317370.r2.dev https://*.r2.cloudflarestorage.com",
       "font-src 'self' https://fonts.gstatic.com",

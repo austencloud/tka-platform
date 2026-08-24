@@ -62,7 +62,7 @@ const { captureEventSpy } = vi.hoisted(() => ({
   captureEventSpy: vi.fn(),
 }));
 vi.mock("$lib/shared/analytics/services/posthog", () => ({
-  captureEvent: captureEventSpy,
+  captureWhenReady: captureEventSpy,
 }));
 
 const { markAppCompletedSpy, markAppSkippedSpy, stageAppTerminalStateSpy } =

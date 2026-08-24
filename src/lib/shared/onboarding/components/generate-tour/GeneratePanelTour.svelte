@@ -14,14 +14,18 @@
     generateTourState,
     type GenerateTourStop,
   } from "../../state/generate-tour-state.svelte";
+  import type { GeneratorHelpItem } from "$lib/shared/create/domain/generator-help-content";
   import {
-    generatorHelpContent,
-    type GeneratorHelpItem,
-  } from "$lib/shared/create/domain/generator-help-content";
-  import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
+    getGeneratorCardHelp,
+    getGeneratorCardSpan,
+    getGeneratorPanelCards,
+    type GeneratorCardId,
+  } from "$lib/shared/create/domain/card-registry";
   import { getCardColor } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+
+  let { level = 2 } = $props<{ level?: number }>();
 
   // Mini card definition - derived from the card registry
   interface MiniCard {
@@ -30,45 +34,25 @@
     value: string;
     gradient: string;
     span: number;
+    help: GeneratorHelpItem;
   }
 
   // Derive mini cards from the shared registry so they stay in sync
   // with the real generator panel automatically.
-  const MINI_CARDS: MiniCard[] = CARD_REGISTRY.map((entry) => ({
-    id: entry.id,
-    header: entry.tourHeader,
-    value: entry.tourDefaultValue,
-    gradient: getCardColor(entry.colorKey, BackgroundType.COSMIC),
-    span: entry.tourSpan,
-  }));
+  const miniCards = $derived.by((): MiniCard[] =>
+    getGeneratorPanelCards({ isBeginner: level === 1 }).map((entry) => ({
+      id: entry.id,
+      header: entry.tourHeader,
+      value: entry.tourDefaultValue,
+      gradient: getCardColor(entry.colorKey, BackgroundType.COSMIC),
+      span: getGeneratorCardSpan(entry, level === 1),
+      help: getGeneratorCardHelp(entry),
+    }))
+  );
 
-  // Help ID mapping also derived from registry
-  const stopToHelpId = Object.fromEntries(
-    CARD_REGISTRY.map((entry) => [entry.id, entry.helpId])
-  ) as Record<string, string>;
-
-  const tourOverrides: Partial<Record<string, Partial<GeneratorHelpItem>>> = {
-    "word-input": {
-      name: "Spell a Word",
-      shortDesc: "Type a word or go random",
-      fullDesc: "Type a word and the generator turns each letter into a move. Leave it blank for a random sequence.",
-      bullets: undefined,
-      images: undefined,
-    },
-    "customize": {
-      name: "Customize",
-      shortDesc: "Fine-tune your sequence",
-      fullDesc: "Tweak how your sequence feels. Prop continuity, rhythm templates, and start/end positions all live here.",
-      bullets: undefined,
-      images: undefined,
-    },
-    "loop": {
-      name: "LOOP",
-      fullDesc: "A LOOP sequence ends where it started, so you can repeat it forever. Four base types -- Rotated, Mirrored, Swapped, and Inverted -- can be combined for even more variety.",
-      bullets: undefined,
-      images: undefined,
-    },
-  };
+  $effect(() => {
+    generateTourState.setStops(miniCards.map((card) => card.id));
+  });
 
   let hapticService: HapticFeedback | null = null;
   try {
@@ -78,15 +62,8 @@
   }
 
   const currentContent = $derived.by((): GeneratorHelpItem | undefined => {
-    const stop = generateTourState.currentStop;
-    const helpId = stopToHelpId[stop];
-    const base = generatorHelpContent.find((c) => c.id === helpId);
-    if (!base) return undefined;
-
-    const override = tourOverrides[stop];
-    if (!override) return base;
-
-    return { ...base, ...override } as GeneratorHelpItem;
+    return miniCards.find((card) => card.id === generateTourState.currentStop)
+      ?.help;
   });
 
   let isOpen = $derived(generateTourState.isActive);
@@ -174,8 +151,12 @@
     </button>
 
     <!-- Mini card grid -->
-    <div class="card-grid" role="img" aria-label="Generator cards - {currentContent.name} highlighted">
-      {#each MINI_CARDS as card}
+    <div
+      class="card-grid"
+      role="img"
+      aria-label="Generator cards - {currentContent.name} highlighted"
+    >
+      {#each miniCards as card}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="mini-card"
@@ -189,12 +170,21 @@
           role="button"
           tabindex="0"
           aria-label="View {card.header || card.value} help"
-          onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardTap(card.id); } }}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleCardTap(card.id);
+            }
+          }}
         >
           {#if card.header}
             <span class="card-header">{card.header}</span>
           {/if}
-          <span class="card-value" class:generate-value={card.id === "generate-button"}>{card.value}</span>
+          <span
+            class="card-value"
+            class:generate-value={card.id === "generate-button"}
+            >{card.value}</span
+          >
         </div>
       {/each}
     </div>
@@ -205,17 +195,15 @@
          without focus moving, per the tours' announcement convention. -->
     <div class="tour-info" aria-live="polite">
       {#key generateTourState.currentStop}
-        <div
-          class="tour-info-content"
-          in:slideIn
-          out:slideOut
-        >
+        <div class="tour-info-content" in:slideIn out:slideOut>
           <div class="info-header">
             <div class="info-icon" style:background={currentContent.color}>
               <i class="fas {currentContent.icon}" aria-hidden="true"></i>
             </div>
             <div class="info-titles">
-              <h2 id="tour-modal-title" class="info-title">{currentContent.name}</h2>
+              <h2 id="tour-modal-title" class="info-title">
+                {currentContent.name}
+              </h2>
               <p class="info-subtitle">{currentContent.shortDesc}</p>
             </div>
           </div>
@@ -249,7 +237,11 @@
 
   {#snippet footer()}
     <ModalFooter align="between">
-      <div class="tour-dots" aria-label="Step {generateTourState.currentStopIndex + 1} of {generateTourState.totalStops}">
+      <div
+        class="tour-dots"
+        aria-label="Step {generateTourState.currentStopIndex +
+          1} of {generateTourState.totalStops}"
+      >
         {#each Array(generateTourState.totalStops) as _, i}
           <div
             class="dot"
@@ -269,7 +261,13 @@
           data-ghost-label="Skip"
           onclick={handleSkip}>Skip</button
         >
-        <button class="primary" onclick={handleNext} aria-label={generateTourState.isLastStop ? "Finish tour" : "Next step"}>
+        <button
+          class="primary"
+          onclick={handleNext}
+          aria-label={generateTourState.isLastStop
+            ? "Finish tour"
+            : "Next step"}
+        >
           {generateTourState.isLastStop ? "Got it" : "Next"}
           {#if !generateTourState.isLastStop}
             <i class="fas fa-arrow-right next-arrow" aria-hidden="true"></i>
@@ -319,7 +317,9 @@
     gap: 2px;
     padding: 10px 6px;
     border-radius: 10px;
-    transition: opacity 0.25s ease, box-shadow 0.25s ease;
+    transition:
+      opacity 0.25s ease,
+      box-shadow 0.25s ease;
     position: relative;
     min-height: 65px;
     cursor: pointer;
@@ -364,9 +364,15 @@
   }
 
   @keyframes cardPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-    100% { transform: scale(1); }
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.08);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .mini-card.pulse {
@@ -593,7 +599,9 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .dot, .mini-card, .close-btn {
+    .dot,
+    .mini-card,
+    .close-btn {
       transition: none;
     }
     .mini-card.pulse {

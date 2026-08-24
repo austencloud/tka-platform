@@ -38,6 +38,7 @@ import { browser } from "$app/environment";
 import { getPostHogInstance } from "$lib/shared/analytics/services/posthog";
 import {
   trackAuthModalSubmitted,
+  getAuthEncounterProperties,
   isAuthFunnelArmed,
   disarmAuthFunnel,
   type AuthMethod,
@@ -59,6 +60,7 @@ import {
  * client-side can bridge that - and that is a documented limit, not a bug.
  */
 const PENDING_METHOD_KEY = "tka:auth:pending-method";
+let submissionContext: Record<string, string> = {};
 
 /**
  * Fires `auth_modal_submitted` and registers the bridge properties in one
@@ -79,9 +81,11 @@ export function recordAuthSubmission(
   trackAuthModalSubmitted(method, authMode);
 
   const properties = {
+    ...getAuthEncounterProperties(),
     method,
     ...(authMode ? { auth_mode: authMode } : {}),
   };
+  submissionContext = properties;
 
   if (method === "magic_link" && browser) {
     // Survives the hop to whichever tab the mailed link opens in.
@@ -98,6 +102,11 @@ export function recordAuthSubmission(
   } catch (error) {
     console.warn("[auth-analytics] register_for_session failed", error);
   }
+}
+
+/** Stable surface/mode/origin properties for signup and lifecycle events. */
+export function getAuthSubmissionContext(): Record<string, string> {
+  return { ...submissionContext, ...getAuthEncounterProperties() };
 }
 
 /**
@@ -121,9 +130,13 @@ export function restorePendingAuthMethod(): void {
 
   try {
     const properties = JSON.parse(raw) as Record<string, string>;
+    submissionContext = properties;
     getPostHogInstance()?.register_for_session(properties);
   } catch (error) {
-    console.warn("[auth-analytics] could not restore pending auth method", error);
+    console.warn(
+      "[auth-analytics] could not restore pending auth method",
+      error
+    );
   }
 }
 
@@ -136,6 +149,7 @@ export function restorePendingAuthMethod(): void {
  * removed) by `restorePendingAuthMethod` there.
  */
 export function clearAuthSubmissionBridge(): void {
+  submissionContext = {};
   disarmAuthFunnel();
   const instance = getPostHogInstance();
   if (!instance) return;

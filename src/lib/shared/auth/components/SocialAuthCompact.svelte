@@ -33,6 +33,7 @@
   import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import LastUsedBadge from "./LastUsedBadge.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
   import { page } from "$app/state";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import {
@@ -44,7 +45,7 @@
   import { getInstagramAuthErrorMessage } from "$lib/shared/auth/services/instagram-auth";
   import InAppEscapeControls from "./InAppEscapeControls.svelte";
 
-  let { onFacebookAuth } = $props<{
+  let { mode = "signin", onFacebookAuth } = $props<{
     mode?: "signin" | "signup";
     onFacebookAuth?: () => void;
   }>();
@@ -142,6 +143,7 @@
 
     loadingProvider = "google";
     providerError = null;
+    recordAuthSubmission("google", mode);
 
     // Cancel any pending One Tap prompt to prevent race conditions
     window.google?.accounts?.id?.cancel();
@@ -171,7 +173,7 @@
       } else {
         await signInWithGoogle();
       }
-      recordAuthSubmission("google");
+      trackAuthProviderResult("google", "completed");
     } catch (error: unknown) {
       const errorCode = getAuthErrorCode(error);
 
@@ -191,12 +193,18 @@
         });
         revealEscapeNote();
       } else if (isExpectedAuthInterruption(error)) {
+        trackAuthProviderResult(
+          "google",
+          "interrupted",
+          errorCode ?? "unknown"
+        );
         providerError = mapAuthError(error);
         captureEvent("auth_provider_interrupted", {
           provider: "google",
           reason: errorCode ?? "unknown",
         });
       } else {
+        trackAuthProviderResult("google", "failed", errorCode ?? "unknown");
         console.warn(
           "[SocialAuthCompact] Unexpected Google sign-in failure",
           error
@@ -238,10 +246,16 @@
 
     loadingProvider = "instagram";
     providerError = null;
+    recordAuthSubmission("instagram", mode);
     try {
       await signInWithInstagram();
-      recordAuthSubmission("instagram");
+      trackAuthProviderResult("instagram", "completed");
     } catch (error: unknown) {
+      trackAuthProviderResult(
+        "instagram",
+        "failed",
+        (error as { code?: string })?.code ?? "unknown"
+      );
       console.error("[SocialAuthCompact] Instagram sign-in failed", {
         code: (error as { code?: string })?.code,
         message: error instanceof Error ? error.message : String(error),

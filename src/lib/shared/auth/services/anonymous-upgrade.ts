@@ -24,7 +24,8 @@ import { recordLastAuthMethod } from "$lib/shared/auth/services/last-auth-method
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
+import { reportPostHogLifecycleEvent } from "$lib/shared/analytics/services/posthog-lifecycle-reporter";
+import { getAuthSubmissionContext } from "$lib/shared/auth/services/auth-analytics-bridge";
 import * as dexiePersistence from "$lib/shared/persistence/services/dexie-persistence-service";
 import { getSavedSequenceIds } from "$lib/shared/library/services/saved-sequence-ledger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -59,6 +60,32 @@ function isCollision(error: unknown): error is AuthError {
     "code" in error &&
     CREDENTIAL_COLLISION.has((error as AuthError).code)
   );
+}
+
+/** Analytics must never turn a completed account transition into a failure. */
+export async function reportGuestUpgradeLifecycle(
+  status: UpgradeStatus
+): Promise<void> {
+  try {
+    const context = getAuthSubmissionContext();
+    await reportPostHogLifecycleEvent({
+      event: "guest_upgraded_to_account",
+      properties: {
+        status,
+        ...(context.surface ? { surface: context.surface as never } : {}),
+        ...(context.origin ? { origin: context.origin } : {}),
+        ...(context.method ? { method: context.method as never } : {}),
+        ...(context.auth_mode
+          ? { authMode: context.auth_mode as "signin" | "signup" }
+          : {}),
+      },
+    });
+  } catch (error) {
+    console.warn(
+      "[anonymous-upgrade] Could not deliver the upgrade lifecycle event:",
+      error
+    );
+  }
 }
 
 /**
@@ -170,7 +197,7 @@ export async function notifyUpgradeSignup(linkedUser?: User): Promise<void> {
     // Discrete guest→account conversion event, separate from identify() -
     // fires exactly once here since this is the single call site for every
     // in-place link path (Google/Facebook/Email + magic-link, native or web).
-    captureWhenReady("guest_upgraded_to_account", { status: "linked" });
+    await reportGuestUpgradeLifecycle("linked");
     // Admin upgrade notifications are handled server-side by the
     // pulseUserActivity cloud function (fires when isAnonymous flips false
     // on the user doc). The old client-side notify was rules-denied.
@@ -203,9 +230,7 @@ export async function upgradeAnonymousWithGoogleCredential(
   } catch (error) {
     if (isCollision(error)) {
       await signInWithCredential(auth, credential);
-      captureWhenReady("guest_upgraded_to_account", {
-        status: "collision-signed-in",
-      });
+      await reportGuestUpgradeLifecycle("collision-signed-in");
       recordLastAuthMethod("google");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -254,9 +279,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
       const cred = GoogleAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureWhenReady("guest_upgraded_to_account", {
-        status: "collision-signed-in",
-      });
+      await reportGuestUpgradeLifecycle("collision-signed-in");
       recordLastAuthMethod("google");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -282,9 +305,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
-      captureWhenReady("guest_upgraded_to_account", {
-        status: "collision-signed-in",
-      });
+      await reportGuestUpgradeLifecycle("collision-signed-in");
       recordLastAuthMethod("facebook");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -323,9 +344,7 @@ export async function upgradeAnonymousWithEmail(
   } catch (error) {
     if (isCollision(error)) {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      captureWhenReady("guest_upgraded_to_account", {
-        status: "collision-signed-in",
-      });
+      await reportGuestUpgradeLifecycle("collision-signed-in");
       recordLastAuthMethod("password");
       return { status: "collision-signed-in", importable: drafts };
     }
@@ -366,9 +385,7 @@ export async function upgradeMagicLinkCollision(
   const auth = await getAuthInstance();
   const drafts = await captureAnonymousDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);
-  captureWhenReady("guest_upgraded_to_account", {
-    status: "collision-signed-in",
-  });
+  await reportGuestUpgradeLifecycle("collision-signed-in");
   recordLastAuthMethod("magic-link");
   return drafts;
 }

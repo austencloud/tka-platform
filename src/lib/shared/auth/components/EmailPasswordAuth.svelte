@@ -20,6 +20,7 @@
   } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
 
   let { mode = $bindable("signin" as "signin" | "signup") } = $props();
 
@@ -90,6 +91,7 @@
     loading = true;
     error = null;
     success = null;
+    recordAuthSubmission("password", mode);
 
     try {
       await configureAuthPersistence(auth);
@@ -105,7 +107,6 @@
         if (auth.currentUser?.isAnonymous) {
           const upgrade = await upgradeAnonymousWithEmail(email, password);
           if (upgrade.status === "linked") {
-            recordAuthSubmission("password", mode);
             if (name.trim() && auth.currentUser) {
               await updateProfile(auth.currentUser, {
                 displayName: name.trim(),
@@ -117,7 +118,6 @@
           } else if (upgrade.status === "collision-signed-in") {
             // The email already had an account and they're now signed into it:
             // a sign-in outcome, not a new account.
-            recordAuthSubmission("password", "signin");
             promptAnonymousImport(upgrade.importable ?? []);
           }
         } else {
@@ -126,7 +126,6 @@
             email,
             password
           );
-          recordAuthSubmission("password", mode);
           if (name.trim()) {
             await updateProfile(result.user, { displayName: name.trim() });
           }
@@ -147,18 +146,20 @@
           : null;
         const drafts = anonUid ? await captureAnonymousDrafts(anonUid) : [];
         await signInWithEmailAndPassword(auth, email, password);
-        recordAuthSubmission("password", mode);
         resetAttempts();
         if (drafts.length > 0) {
           promptAnonymousImport(drafts);
         }
       }
 
+      trackAuthProviderResult("password", "completed");
+
       // Don't navigate on success. The wrapping AuthDrawer/AuthSheet closes
       // itself when `isAuthenticated` flips true, leaving the user on the app
       // page they opened it from. Routing to "/" used to dump them on the
       // marketing landing.
     } catch (err: any) {
+      trackAuthProviderResult("password", "failed", err?.code ?? "unknown");
       // Record failed attempt (only credential errors)
       if (
         mode === "signin" &&

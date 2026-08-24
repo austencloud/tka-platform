@@ -8,11 +8,22 @@
  * automatically includes any new cards added to the generator.
  */
 
-import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
+import {
+  TOUR_STOP_IDS,
+  type GeneratorCardId,
+} from "$lib/shared/create/domain/card-registry";
 import {
   safeLocalStorageSetItem,
   removeLocalStorageItem,
 } from "$lib/shared/foundation/services/storage-manager";
+import {
+  logGenerateTourCompleted,
+  logGenerateTourSkipped,
+  logGenerateTourStarted,
+  logGenerateTourStepViewed,
+  type GenerateTourSource,
+} from "$lib/shared/analytics/services/onboarding-events";
+import { captureExceptionWhenReady } from "$lib/shared/analytics/services/posthog";
 
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
 const TOUR_INDEX_KEY = "tka-generate-tour-index";
@@ -23,7 +34,7 @@ const TOUR_OFFERED_KEY = "tka-generate-tour-offered";
 
 export type GenerateTourStop = GeneratorCardId;
 
-const STOPS: GeneratorCardId[] = CARD_REGISTRY.map((c) => c.id) as GeneratorCardId[];
+const DEFAULT_STOPS: GeneratorCardId[] = [...TOUR_STOP_IDS];
 
 interface GenerateTourData {
   hasCompleted: boolean;
@@ -31,8 +42,11 @@ interface GenerateTourData {
   wasOffered: boolean;
   isActive: boolean;
   currentStopIndex: number;
+  /** Exact controls rendered by the panel configuration behind the tour. */
+  stops: GeneratorCardId[];
   /** True once the FROM-cloud pull has resolved (or is known unnecessary). */
   cloudSynced: boolean;
+  source: GenerateTourSource;
 }
 
 function createGenerateTourState() {
@@ -50,7 +64,9 @@ function createGenerateTourState() {
     wasOffered: offered,
     isActive: false,
     currentStopIndex: 0,
+    stops: [...DEFAULT_STOPS],
     cloudSynced: false,
+    source: "help_button",
   });
 
   /**
@@ -62,11 +78,12 @@ function createGenerateTourState() {
     if (!isBrowser) return;
 
     try {
-      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
-      const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
-      const { authState } = await import(
-        "$lib/shared/auth/state/auth-state.svelte"
-      );
+      const { getFirestoreInstance } =
+        await import("$lib/shared/auth/firebase");
+      const { doc, setDoc, serverTimestamp } =
+        await import("firebase/firestore");
+      const { authState } =
+        await import("$lib/shared/auth/state/auth-state.svelte");
 
       const userId = authState.effectiveUserId;
       if (!userId) return;
@@ -84,6 +101,9 @@ function createGenerateTourState() {
         { merge: true }
       );
     } catch (error) {
+      captureExceptionWhenReady(error, {
+        onboarding_action: "persist_generate_tour",
+      });
       console.warn("[generateTourState] Failed to sync to cloud:", error);
     }
   }
@@ -112,28 +132,58 @@ function createGenerateTourState() {
       return data.currentStopIndex;
     },
     get currentStop(): GenerateTourStop {
-      return STOPS[data.currentStopIndex] ?? "generate-button";
+      return data.stops[data.currentStopIndex] ?? "generate-button";
     },
     get totalStops() {
-      return STOPS.length;
+      return data.stops.length;
     },
     get isLastStop() {
-      return data.currentStopIndex >= STOPS.length - 1;
+      return data.currentStopIndex >= data.stops.length - 1;
+    },
+
+    /** Keep the tour on the exact controls the current panel renders. */
+    setStops(stops: readonly GenerateTourStop[]) {
+      if (stops.length === 0) return;
+      const currentStop = this.currentStop;
+      data.stops = [...new Set(stops)];
+      const currentIndex = data.stops.indexOf(currentStop);
+      data.currentStopIndex =
+        currentIndex >= 0
+          ? currentIndex
+          : Math.min(data.currentStopIndex, data.stops.length - 1);
     },
 
     /** Start the tour (from help button tap). Resumes from last position if closed mid-tour. */
-    start() {
+    start(source: GenerateTourSource = "help_button") {
       const saved = isBrowser
         ? parseInt(localStorage.getItem(TOUR_INDEX_KEY) ?? "0", 10)
         : 0;
+      data.source = source;
       data.isActive = true;
-      data.currentStopIndex = Math.min(saved, STOPS.length - 1);
+      data.currentStopIndex = Math.min(saved, data.stops.length - 1);
+      logGenerateTourStarted(data.source, this.currentStop);
+      logGenerateTourStepViewed({
+        source: data.source,
+        stop: this.currentStop,
+        step_index: data.currentStopIndex,
+        total_steps: data.stops.length,
+      });
     },
 
     advance() {
-      if (data.currentStopIndex < STOPS.length - 1) {
+      if (data.currentStopIndex < data.stops.length - 1) {
         data.currentStopIndex++;
-        if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
+        if (isBrowser)
+          safeLocalStorageSetItem(
+            TOUR_INDEX_KEY,
+            String(data.currentStopIndex)
+          );
+        logGenerateTourStepViewed({
+          source: data.source,
+          stop: this.currentStop,
+          step_index: data.currentStopIndex,
+          total_steps: data.stops.length,
+        });
       } else {
         this.complete();
       }
@@ -143,12 +193,20 @@ function createGenerateTourState() {
     retreat() {
       if (data.currentStopIndex > 0) {
         data.currentStopIndex--;
-        if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
+        if (isBrowser)
+          safeLocalStorageSetItem(
+            TOUR_INDEX_KEY,
+            String(data.currentStopIndex)
+          );
       }
     },
 
     complete() {
       if (!isBrowser) return;
+      logGenerateTourCompleted({
+        source: data.source,
+        step_count: data.stops.length,
+      });
       data.isActive = false;
       data.hasCompleted = true;
       // Guarded so a quota error never blocks the cloud sync below.
@@ -159,6 +217,12 @@ function createGenerateTourState() {
 
     skip() {
       if (!isBrowser) return;
+      logGenerateTourSkipped({
+        source: data.source,
+        stop: this.currentStop,
+        step_index: data.currentStopIndex,
+        total_steps: data.stops.length,
+      });
       data.isActive = false;
       data.hasCompleted = true;
       safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
@@ -182,7 +246,7 @@ function createGenerateTourState() {
 
     /** Jump directly to a specific stop (from clicking a mini card). */
     goToStop(stop: GenerateTourStop) {
-      const index = STOPS.indexOf(stop);
+      const index = data.stops.indexOf(stop);
       if (index >= 0) {
         data.currentStopIndex = index;
         if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(index));
@@ -191,9 +255,8 @@ function createGenerateTourState() {
 
     /** Replay the tour (from help button after first completion) */
     restart() {
-      data.isActive = true;
-      data.currentStopIndex = 0;
       if (isBrowser) removeLocalStorageItem(TOUR_INDEX_KEY);
+      this.start("help_button");
     },
 
     /**
@@ -206,13 +269,11 @@ function createGenerateTourState() {
       if (!isBrowser || data.cloudSynced) return;
 
       try {
-        const { getFirestoreInstance } = await import(
-          "$lib/shared/auth/firebase"
-        );
+        const { getFirestoreInstance } =
+          await import("$lib/shared/auth/firebase");
         const { doc, getDoc } = await import("firebase/firestore");
-        const { authState } = await import(
-          "$lib/shared/auth/state/auth-state.svelte"
-        );
+        const { authState } =
+          await import("$lib/shared/auth/state/auth-state.svelte");
 
         const userId = authState.effectiveUserId;
         if (!userId) {
@@ -223,7 +284,10 @@ function createGenerateTourState() {
         }
 
         const firestore = await getFirestoreInstance();
-        const docRef = doc(firestore, `users/${userId}/onboarding/generateTour`);
+        const docRef = doc(
+          firestore,
+          `users/${userId}/onboarding/generateTour`
+        );
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
@@ -248,6 +312,9 @@ function createGenerateTourState() {
 
         data.cloudSynced = true;
       } catch (error) {
+        captureExceptionWhenReady(error, {
+          onboarding_action: "load_generate_tour",
+        });
         console.warn("[generateTourState] Failed to sync from cloud:", error);
         // Don't strand the offer-gate on a network error — fall back to local.
         data.cloudSynced = true;
@@ -269,6 +336,8 @@ function createGenerateTourState() {
       data.wasOffered = false;
       data.isActive = false;
       data.currentStopIndex = 0;
+      data.stops = [...DEFAULT_STOPS];
+      data.source = "help_button";
       removeLocalStorageItem(TOUR_COMPLETED_KEY);
       removeLocalStorageItem(TOUR_OFFERED_KEY);
       removeLocalStorageItem(TOUR_INDEX_KEY);

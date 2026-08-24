@@ -1,67 +1,21 @@
 /**
- * Auth Events
+ * One auth funnel shared by every account entry surface.
  *
- * The sign-in funnel: opened -> submitted -> signed up, or opened -> abandoned.
- *
- * This one is genuinely uninstrumented and genuinely not derivable. The modal
- * opens without navigating, so there is no `$pageview` to count, and the auth
- * method the user picked is not reliably readable from autocaptured DOM text.
- *
- * Context is captured once, at `opened`, and never re-threaded. AuthModal is
- * mounted from three hosts with two different open mechanisms, and its child
- * forms have no access to `page` or to "which CTA opened me". Passing
- * `from_page` down four component layers to satisfy a property contract isn't
- * worth it — correlate `submitted`/`abandoned` back to `opened` through
- * PostHog's automatic session and distinct_id instead.
- *
- * Thin `captureEvent` wrappers, modeled on `services/onboarding-events.ts`. No
- * DI, no `logActivity` — these fire for anonymous visitors who have no activity
- * log to write to. Dev gating is inherited from `captureEvent`.
- *
- * Spec: docs/architecture/landing-analytics-taxonomy.md §4
+ * The provider forms are reused across the marketing modal, in-app guest
+ * nudges, the navigation sheet, Settings, and the festival start page. The
+ * current encounter lives here so those forms can attach the surface that
+ * opened them without threading analytics props through the component tree.
  */
 
-import { captureEvent } from "$lib/shared/analytics/services/posthog";
+import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
 
-/** Which entry point opened the modal. */
 export type AuthCta = "header_desktop_signin" | "header_mobile_signin";
-
-/**
- * Is a tracked sign-in flow currently in progress?
- *
- * This gate exists because the auth FORMS are shared and the funnel is not.
- * `SocialAuthCompact` and `EmailAuthTabs` (wrapping EmailPasswordAuth /
- * EmailLinkAuth) are mounted from three hosts, and `AuthModal` from two:
- *
- *   - SiteHeader          -> openSignIn(), fires `auth_modal_opened`  [tracked]
- *   - MainApplication     -> the anonymous-guest nudge modal          [untracked]
- *   - AuthSheet           -> the `?sheet=auth` deep link (footer link) [untracked]
- *   - AuthPrompt          -> Settings > Profile, signed-out state      [untracked]
- *
- * Only the first fires `opened`. Without this gate the other three would emit
- * `submitted`/`abandoned` with no matching `opened`, so the funnel's first step
- * would read smaller than its second — a funnel that is not merely incomplete
- * but actively wrong. Arming on `opened` and gating everything downstream on it
- * keeps the three steps describing one population, by construction, with no
- * prop threaded through four component layers and no edits to the untracked
- * hosts (which must stay free to mount these forms without opting into a
- * funnel they never entered).
- *
- * The taxonomy (§4) names the `?sheet=auth` path as explicitly out of scope and
- * says to trace it before adding it. This gate is what makes "out of scope"
- * true in code rather than in intent.
- */
-let funnelArmed = false;
-
-/** True while a SiteHeader-initiated sign-in flow is open. */
-export function isAuthFunnelArmed(): boolean {
-  return funnelArmed;
-}
-
-/** Ends the tracked flow, whatever its outcome. Idempotent. */
-export function disarmAuthFunnel(): void {
-  funnelArmed = false;
-}
+export type AuthSurface =
+  | "marketing_header_modal"
+  | "guest_nudge_modal"
+  | "auth_sheet"
+  | "settings_profile"
+  | "festival_start";
 
 export type AuthMethod =
   | "google"
@@ -70,37 +24,91 @@ export type AuthMethod =
   | "instagram"
   | "magic_link"
   | "password";
-
-/** Only the email/password form distinguishes these; social auth does not. */
 export type AuthMode = "signin" | "signup";
+export type AuthDismiss = "close_button" | "backdrop_or_escape" | "unmounted";
+export type AuthProviderOutcome =
+  | "accepted"
+  | "completed"
+  | "failed"
+  | "interrupted";
 
-export type AuthDismiss = "close_button" | "backdrop_or_escape";
-
-/**
- * The sign-in modal was opened. `page` is the route id the user opened it from.
- * This is the ONLY thing that arms the funnel — see `funnelArmed` above.
- */
-export function trackAuthModalOpened(page: string, cta: AuthCta): void {
-  funnelArmed = true;
-  captureEvent("auth_modal_opened", { page, cta });
+export interface AuthEncounter {
+  surface: AuthSurface;
+  origin: string;
+  page?: string;
+  auth_mode?: AuthMode;
+  cta?: AuthCta;
 }
 
-/** A credential was submitted — the last step before the provider takes over.
- *  Silent unless a tracked flow is open, so the shared forms can be mounted
- *  from the untracked hosts without polluting the funnel. */
+let encounter: AuthEncounter | null = null;
+
+export function isAuthFunnelArmed(): boolean {
+  return encounter !== null;
+}
+
+export function getAuthEncounterProperties(): Record<string, string> {
+  return encounter ? { ...encounter } : {};
+}
+
+export function disarmAuthFunnel(): void {
+  encounter = null;
+}
+
+export function trackAuthSurfaceOpened(next: AuthEncounter): void {
+  encounter = next;
+  captureWhenReady("auth_modal_opened", { ...next });
+}
+
+/** Preserve the established SiteHeader call shape and event trend. */
+export function trackAuthModalOpened(page: string, cta: AuthCta): void {
+  trackAuthSurfaceOpened({
+    surface: "marketing_header_modal",
+    origin: cta,
+    page,
+    cta,
+    auth_mode: "signin",
+  });
+}
+
 export function trackAuthModalSubmitted(
   method: AuthMethod,
   authMode?: AuthMode
 ): void {
-  if (!funnelArmed) return;
-  captureEvent("auth_modal_submitted", {
+  if (!encounter) return;
+  if (authMode) encounter = { ...encounter, auth_mode: authMode };
+  captureWhenReady("auth_modal_submitted", {
+    ...encounter,
     method,
-    ...(authMode ? { auth_mode: authMode } : {}),
   });
 }
 
-/** The modal closed without a submission. Gated for the same reason. */
+export function trackAuthProviderResult(
+  method: AuthMethod,
+  outcome: AuthProviderOutcome,
+  failureCode?: string
+): void {
+  if (!encounter) return;
+  const properties = {
+    ...encounter,
+    method,
+    outcome,
+    ...(failureCode ? { failure_code: failureCode.slice(0, 80) } : {}),
+  };
+  captureWhenReady("auth_provider_result", properties);
+  if (outcome === "completed") {
+    captureWhenReady("auth_modal_completed", properties);
+  }
+}
+
+export function trackAuthAlternativeSelected(alternative: string): void {
+  if (!encounter) return;
+  captureWhenReady("auth_alternative_selected", {
+    ...encounter,
+    alternative,
+  });
+}
+
 export function trackAuthModalAbandoned(dismiss: AuthDismiss): void {
-  if (!funnelArmed) return;
-  captureEvent("auth_modal_abandoned", { dismiss });
+  if (!encounter) return;
+  captureWhenReady("auth_modal_abandoned", { ...encounter, dismiss });
 }

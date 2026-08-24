@@ -8,6 +8,11 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import {
+    logAccountSetupNameSave,
+    logAccountSetupViewed,
+  } from "$lib/shared/analytics/services/onboarding-events";
+  import { reportErrorTelemetry } from "$lib/shared/error/services/error-telemetry-reporter";
 
   interface Props {
     /** Admin "preview" — render the card even for accounts that don't need it. */
@@ -34,7 +39,15 @@
 
   onMount(() => {
     // Accounts that already have a provider name need no setup screen.
-    if (!showName) onComplete();
+    if (!showName) {
+      onComplete();
+      return;
+    }
+    logAccountSetupViewed({
+      surface: "first_run_wizard",
+      completed_count: 0,
+      total_count: 1,
+    });
   });
 
   async function handleSubmit(e: Event) {
@@ -43,9 +56,25 @@
     submitting = true;
 
     if (showName) {
+      logAccountSetupNameSave("started");
       try {
         await settingsService.updateSetting("userName", nameValue);
+        logAccountSetupNameSave("succeeded");
       } catch (err) {
+        const failureCode =
+          typeof (err as { code?: unknown } | null)?.code === "string"
+            ? String((err as { code: string }).code).slice(0, 80)
+            : "unknown";
+        logAccountSetupNameSave("failed", { failure_code: failureCode });
+        void reportErrorTelemetry({
+          message: "Account setup display name could not be saved",
+          error: err instanceof Error ? err : new Error(String(err)),
+          severity: "warning",
+          context: {
+            module: "onboarding",
+            action: "save_display_name",
+          },
+        });
         console.error("Failed to save name:", err);
         toast.warning(
           "Couldn't save your name. You can set it later in Settings."

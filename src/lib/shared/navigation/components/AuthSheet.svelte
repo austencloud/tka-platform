@@ -7,8 +7,17 @@
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
+  import {
+    trackAuthModalAbandoned,
+    trackAuthProviderResult,
+    trackAuthSurfaceOpened,
+  } from "$lib/shared/analytics/auth-events";
+  import {
+    clearAuthSubmissionBridge,
+    recordAuthSubmission,
+  } from "$lib/shared/auth/services/auth-analytics-bridge";
   import Drawer from "../../foundation/ui/Drawer.svelte";
-import type { HapticFeedback } from "../../application/services/haptic-feedback";
+  import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import { onMount } from "svelte";
   import AuthFooter from "../../auth/components/AuthFooter.svelte";
   import AuthHeader from "../../auth/components/AuthHeader.svelte";
@@ -31,6 +40,20 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   // Facebook sign-in failure surfaced inline, mirroring the Google error
   // handling inside SocialAuthCompact.
   let facebookError = $state<string | null>(null);
+  let encounterOpen = false;
+
+  $effect(() => {
+    if (isOpen && !encounterOpen) {
+      encounterOpen = true;
+      trackAuthSurfaceOpened({
+        surface: "auth_sheet",
+        origin: "sheet_query_or_navigation",
+        auth_mode: authMode,
+      });
+    } else if (!isOpen) {
+      encounterOpen = false;
+    }
+  });
 
   onMount(async () => {
     try {
@@ -44,6 +67,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   $effect(() => {
     if (!authState.isAuthenticated || !isOpen) return;
     const closeTimer = setTimeout(() => {
+      clearAuthSubmissionBridge();
       onClose();
     }, 300);
     return () => clearTimeout(closeTimer);
@@ -51,19 +75,37 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   function handleClose() {
     hapticService?.trigger("selection");
+    trackAuthModalAbandoned("close_button");
+    clearAuthSubmissionBridge();
+    onClose();
+  }
+
+  function handleDismiss() {
+    trackAuthModalAbandoned("backdrop_or_escape");
+    clearAuthSubmissionBridge();
     onClose();
   }
 
   async function handleFacebookAuth() {
     hapticService?.trigger("selection");
     facebookError = null;
+    recordAuthSubmission("facebook", authMode);
     try {
       await signInWithFacebook();
+      trackAuthProviderResult("facebook", "completed");
     } catch (error: unknown) {
       console.error("❌ Facebook auth failed:", error);
       hapticService?.trigger("error");
 
       const errorCode = (error as { code?: string })?.code;
+      const interrupted =
+        errorCode === "auth/popup-closed-by-user" ||
+        errorCode === "auth/cancelled-popup-request";
+      trackAuthProviderResult(
+        "facebook",
+        interrupted ? "interrupted" : "failed",
+        errorCode ?? "unknown"
+      );
       if (errorCode === "auth/popup-blocked") {
         facebookError = "Popup was blocked. Please allow popups for this site.";
       } else if (errorCode === "auth/popup-closed-by-user") {
@@ -91,7 +133,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 <Drawer
   {isOpen}
   labelledBy="auth-sheet-title"
-  onclose={onClose}
+  onclose={handleDismiss}
   class="auth-sheet"
   backdropClass="auth-sheet__backdrop"
 >

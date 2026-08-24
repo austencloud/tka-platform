@@ -14,6 +14,8 @@
   import { getAccountManager } from "$lib/shared/auth/get-account-manager";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
+  import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
+  import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
   import {
     authState,
     refreshUser,
@@ -210,9 +212,16 @@
 
   async function handleFacebookAuth() {
     hapticService?.trigger("selection");
+    recordAuthSubmission("facebook");
     try {
       await signInWithFacebook();
+      trackAuthProviderResult("facebook", "completed");
     } catch (error) {
+      trackAuthProviderResult(
+        "facebook",
+        "failed",
+        (error as { code?: string })?.code ?? "unknown"
+      );
       console.error("Facebook sign-in failed:", error);
       hapticService?.trigger("error");
     }

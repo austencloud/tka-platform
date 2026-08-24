@@ -1,4 +1,8 @@
 <script lang="ts">
+  import {
+    logAccountSetupTaskSelected,
+    logAccountSetupViewed,
+  } from "$lib/shared/analytics/services/onboarding-events";
   import type {
     AccountSetupState,
     AccountSetupTask,
@@ -26,6 +30,27 @@
   const visibleTasks = $derived(
     variant === "prompt" ? remainingTasks : state.tasks
   );
+  let viewRecorded = false;
+
+  $effect(() => {
+    if (state.loading || !state.available || viewRecorded) return;
+    if (variant === "prompt" && state.isComplete) return;
+    viewRecorded = true;
+    logAccountSetupViewed({
+      surface: variant === "prompt" ? "reminder" : "settings_checklist",
+      completed_count: state.completedCount,
+      total_count: state.totalCount,
+    });
+  });
+
+  function handleTaskAction(task: AccountSetupTask): void {
+    logAccountSetupTaskSelected({
+      task: task.id,
+      was_complete: task.complete,
+      surface: variant === "prompt" ? "reminder" : "settings_checklist",
+    });
+    onTaskAction(task.id);
+  }
 </script>
 
 {#if !state.loading && state.available && (variant !== "prompt" || !state.isComplete)}
@@ -88,7 +113,7 @@
         <button
           class="task-row"
           class:complete={task.complete}
-          onclick={() => onTaskAction(task.id)}
+          onclick={() => handleTaskAction(task)}
           aria-label={`${task.actionLabel}: ${task.label}`}
         >
           <span class="task-status" aria-hidden="true">

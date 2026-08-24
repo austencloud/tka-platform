@@ -29,6 +29,29 @@ import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 // namespace also lets hosts omit optional PostHog values without failing the
 // build on a missing named export.
 const publicEnv = staticPublicEnv as Record<string, string | undefined>;
+const POSTHOG_US_INGESTION_HOST = "https://us.i.posthog.com";
+const POSTHOG_FIRST_PARTY_RELAY = "https://rune.tkaflowarts.com";
+
+/**
+ * Production traffic defaults to the neutral first-party relay. Treat the old
+ * direct US host as a legacy default so an unchanged Pages environment cannot
+ * silently opt the deployment back out of the relay; a genuinely custom host
+ * still wins. Development keeps its configured host for local SDK tests.
+ */
+export function resolvePostHogApiHost(
+  configuredHost: string | undefined,
+  isDevelopment: boolean
+): string {
+  const configured = configuredHost?.trim();
+  if (isDevelopment && configured) return configured;
+  if (
+    !configured ||
+    configured.replace(/\/$/, "") === POSTHOG_US_INGESTION_HOST
+  ) {
+    return POSTHOG_FIRST_PARTY_RELAY;
+  }
+  return configured;
+}
 
 let initialized = false;
 let initializationPromise: Promise<void> | null = null;
@@ -60,6 +83,7 @@ function notifyPostHogReady(instance: PostHogReadyClient): void {
 // reads it so an ungated call can't churn the identity of a visitor who was
 // never identified in the first place.
 let identified = false;
+let cancelPendingIdentification: (() => void) | null = null;
 
 /**
  * Has PostHog already restored an identified person from its own storage?
@@ -248,7 +272,13 @@ async function initializePostHog(): Promise<void> {
   const captureEnabled = !import.meta.env.DEV;
 
   posthog.init(env.PUBLIC_POSTHOG_KEY, {
-    api_host: env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
+    api_host: resolvePostHogApiHost(
+      env.PUBLIC_POSTHOG_HOST,
+      import.meta.env.DEV
+    ),
+    // api_host is first-party, but toolbar and replay links still belong to
+    // PostHog's real application host.
+    ui_host: "https://us.posthog.com",
 
     // Capture the initial load and SvelteKit history navigation (prod only).
     capture_pageview: captureEnabled ? "history_change" : false,
@@ -268,6 +298,11 @@ async function initializePostHog(): Promise<void> {
 
     // Autocapture clicks, form submissions, etc. (prod only)
     autocapture: captureEnabled,
+
+    // Keep ordinary autocapture and dead-click detection under the same
+    // production gate. Dead clicks are a separate PostHog extension and are
+    // not emitted merely because `autocapture` is enabled.
+    capture_dead_clicks: captureEnabled,
 
     // Error tracking: capture every uncaught error, unhandled rejection, and
     // console.error as $exception events, tied to the identified user.
@@ -344,20 +379,29 @@ export function identifyUser(
     isAdmin?: boolean;
   }
 ): void {
-  if (!browser || !initialized) return;
+  if (!browser) return;
 
-  posthog.identify(userId, {
-    email: properties?.email,
-    name: properties?.name,
-    username: properties?.username,
-    role: properties?.role,
-    created_at: properties?.createdAt?.toISOString(),
-    is_premium: properties?.isPremium,
-    is_tester: properties?.isTester,
-    is_admin: properties?.isAdmin,
-  });
+  cancelPendingIdentification?.();
+  cancelPendingIdentification = null;
 
-  identified = true;
+  const identify = (instance: PostHogReadyClient) => {
+    cancelPendingIdentification = null;
+    instance.identify(userId, {
+      email: properties?.email,
+      name: properties?.name,
+      username: properties?.username,
+      role: properties?.role,
+      created_at: properties?.createdAt?.toISOString(),
+      is_premium: properties?.isPremium,
+      is_tester: properties?.isTester,
+      is_admin: properties?.isAdmin,
+    });
+
+    identified = true;
+  };
+
+  if (initialized) identify(posthog);
+  else cancelPendingIdentification = onPostHogReady(identify);
 }
 
 /**
@@ -372,6 +416,8 @@ export function identifyUser(
  * a no-op instead of a regression.
  */
 export function resetUser(): void {
+  cancelPendingIdentification?.();
+  cancelPendingIdentification = null;
   if (!browser || !initialized) return;
   if (!identified) return;
 

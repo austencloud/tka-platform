@@ -7,8 +7,11 @@
 -->
 <script lang="ts">
   import { page } from "$app/state";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
-  import { trackAuthModalAbandoned } from "$lib/shared/analytics/auth-events";
+  import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
+  import {
+    trackAuthModalAbandoned,
+    trackAuthProviderResult,
+  } from "$lib/shared/analytics/auth-events";
   import type {
     AuthMode,
     AuthNudgeTrigger,
@@ -65,24 +68,34 @@
     }
     if (!inAppBrowser || promotedFired) return;
     promotedFired = true;
-    captureEvent("inapp_auth_magic_link_promoted", {
+    captureWhenReady("inapp_auth_magic_link_promoted", {
       route: page.url.pathname,
     });
   });
 
   function handleGoogleOneTapError(error: Error) {
+    trackAuthProviderResult("google_one_tap", "failed", "one_tap_error");
     console.error("[AuthModal] Google One Tap sign-in failed", error);
     toast.error("Google sign-in failed. Please try again.");
   }
 
   async function handleFacebookAuth() {
     facebookError = null;
+    recordAuthSubmission("facebook", authMode);
     try {
       await signInWithFacebook();
-      recordAuthSubmission("facebook");
+      trackAuthProviderResult("facebook", "completed");
     } catch (error: unknown) {
       console.error("[AuthModal] Facebook auth failed", error);
       const errorCode = (error as { code?: string })?.code;
+      const interrupted =
+        errorCode === "auth/popup-closed-by-user" ||
+        errorCode === "auth/cancelled-popup-request";
+      trackAuthProviderResult(
+        "facebook",
+        interrupted ? "interrupted" : "failed",
+        errorCode ?? "unknown"
+      );
 
       if (errorCode === "auth/popup-blocked") {
         facebookError = "Popup was blocked. Please allow popups for this site.";
@@ -131,7 +144,10 @@
 >
   <GoogleOneTap
     autoPrompt={open}
-    onSuccess={() => recordAuthSubmission("google_one_tap")}
+    onSuccess={() => {
+      recordAuthSubmission("google_one_tap", authMode);
+      trackAuthProviderResult("google_one_tap", "completed");
+    }}
     onError={handleGoogleOneTapError}
   />
 

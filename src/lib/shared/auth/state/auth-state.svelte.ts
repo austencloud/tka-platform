@@ -38,11 +38,7 @@ import { userPreviewState } from "../../debug/state/user-preview-state.svelte";
 import { featureFlagService } from "../services/post-hog-feature-flag-service.svelte";
 import type { UserRole } from "../domain/models/user-role";
 import { isFullAccountUser } from "../domain/access-tier";
-import {
-  identifyUser,
-  resetUser,
-  captureWhenReady,
-} from "../../analytics/services/posthog";
+import { resetUser, captureWhenReady } from "../../analytics/services/posthog";
 import { getScanSourceCode } from "../../analytics/scan-attribution";
 
 import { linkDeviceToUser } from "$lib/shared/auth/services/device-id-service";
@@ -58,6 +54,8 @@ import {
 import { initializeChildServices } from "../services/auth-boot-orchestrator";
 import { clearBootSnapshot } from "$lib/shared/application/services/boot-snapshot";
 import { isPermissionDeniedError } from "$lib/shared/auth/utils/is-permission-denied-error";
+import { identifyFirebaseUserToPostHog } from "$lib/shared/auth/services/posthog-user-identity";
+import { getAuthSubmissionContext } from "$lib/shared/auth/services/auth-analytics-bridge";
 
 interface AuthState {
   user: User | null;
@@ -641,17 +639,7 @@ async function doInitializeAuthListener(): Promise<void> {
 
       // 📊 PostHog user identification
       if (user) {
-        identifyUser(user.uid, {
-          email: user.email ?? undefined,
-          name: user.displayName ?? undefined,
-          role,
-          createdAt: user.metadata.creationTime
-            ? new Date(user.metadata.creationTime)
-            : undefined,
-          isPremium: role === "premium" || role === "admin",
-          isTester: role === "tester" || role === "admin",
-          isAdmin,
-        });
+        identifyFirebaseUserToPostHog(user, role, isAdmin);
         hasIdentifiedToPostHog = true;
 
         const creationTime = user.metadata.creationTime
@@ -667,6 +655,7 @@ async function doInitializeAuthListener(): Promise<void> {
         if (isNewSignup && !user.isAnonymous) {
           captureWhenReady("user_signed_up", {
             scan_source_code: getScanSourceCode() ?? null,
+            ...getAuthSubmissionContext(),
           });
         }
       } else if (hasIdentifiedToPostHog) {
@@ -874,6 +863,19 @@ export async function signOut(): Promise<void> {
       // Collection states may not be loaded - that's ok
     }
 
+    // Drafts and unsent attachment bytes are deliberately device-local. A
+    // different person signing into this browser must never inherit them.
+    try {
+      const outgoingUid = _state.user?.uid;
+      if (outgoingUid) {
+        const { getMessageDeliveryRepository } =
+          await import("$lib/shared/inbox/get-message-delivery-repository");
+        await getMessageDeliveryRepository().purgeUser(outgoingUid);
+      }
+    } catch (error) {
+      console.warn("⚠️ [authState] Failed to clear message drafts:", error);
+    }
+
     // Sign out from Firebase
     await firebaseSignOut(auth);
     // State will be updated automatically by onAuthStateChanged
@@ -917,6 +919,13 @@ export async function refreshUser(): Promise<void> {
         ..._state,
         user: refreshedUser,
       };
+
+      // Linking a credential onto an anonymous Firebase user keeps the same
+      // uid, so onAuthStateChanged does not run again. Re-identify here before
+      // notifyUpgradeSignup emits its conversion event; the normal listener
+      // and this convergence path deliberately share the exact mapping above.
+      identifyFirebaseUserToPostHog(refreshedUser, _state.role, _state.isAdmin);
+      hasIdentifiedToPostHog = true;
     }
   } catch (error) {
     console.error("❌ [authState] Failed to refresh user:", error);

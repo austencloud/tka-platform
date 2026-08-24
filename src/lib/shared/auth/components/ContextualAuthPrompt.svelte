@@ -89,7 +89,7 @@
     {#if inAppBrowser}
       <div class="email-flow">
         <div class="email-divider"><span>Continue by email</span></div>
-        <EmailAuthTabs bind:mode initialTab="magic" />
+        <EmailAuthTabs bind:mode />
       </div>
 
       <p class="provider-warning">
