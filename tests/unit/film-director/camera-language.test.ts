@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { computeCameraFraming } from "../../../src/routes/test/film-director/_lib/camera-language";
+import {
+  compileCameraMoves,
+  computeCameraFraming,
+} from "../../../src/routes/test/film-director/_lib/camera-language";
 
 const CONTEXT = {
   durationSeconds: 8,
@@ -72,5 +75,102 @@ describe("computeCameraFraming", () => {
         CONTEXT
       )
     ).toThrow(/ghost/);
+  });
+});
+
+describe("compileCameraMoves", () => {
+  const framing = computeCameraFraming({ shotSize: "wide" }, CONTEXT);
+
+  it("hold emits a step keyframe pair covering its window", () => {
+    const frames = compileCameraMoves([{ move: "hold" }], framing, CONTEXT);
+    expect(frames[0]!.atSeconds).toBe(0);
+    expect(frames.at(-1)!.atSeconds).toBeCloseTo(CONTEXT.durationSeconds, 5);
+  });
+
+  it("push-in ends closer to the target; pull-back ends farther", () => {
+    const push = compileCameraMoves(
+      [{ move: "push-in", amount: { meters: 2 } }],
+      framing,
+      CONTEXT
+    );
+    const pull = compileCameraMoves(
+      [{ move: "pull-back", amount: { meters: 2 } }],
+      framing,
+      CONTEXT
+    );
+    const dist = (frame: (typeof push)[number]) =>
+      Math.hypot(
+        frame.position[0] - frame.target[0],
+        frame.position[1] - frame.target[1],
+        frame.position[2] - frame.target[2]
+      );
+    expect(dist(push.at(-1)!)).toBeLessThan(dist(push[0]!));
+    expect(dist(pull.at(-1)!)).toBeGreaterThan(dist(pull[0]!));
+  });
+
+  it("orbit sweeps the requested angle around the target", () => {
+    const frames = compileCameraMoves(
+      [{ move: "orbit", direction: "ccw", amount: { degrees: 90 } }],
+      framing,
+      CONTEXT
+    );
+    const angle = (frame: (typeof frames)[number]) =>
+      Math.atan2(
+        frame.position[0] - frame.target[0],
+        frame.position[2] - frame.target[2]
+      );
+    const sweep = Math.abs(angle(frames.at(-1)!) - angle(frames[0]!));
+    expect(sweep).toBeCloseTo(Math.PI / 2, 1);
+  });
+
+  it("moves chain: explicit durations consume time, the rest split evenly", () => {
+    const frames = compileCameraMoves(
+      [
+        { move: "hold", durationSeconds: 2 },
+        { move: "push-in" },
+        { move: "orbit", direction: "cw", amount: { degrees: 45 } },
+      ],
+      framing,
+      CONTEXT
+    );
+    expect(frames.at(-1)!.atSeconds).toBeCloseTo(8, 5);
+  });
+
+  it("rejects contradictions", () => {
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "orbit", direction: "up", amount: { degrees: 90 } }],
+        framing,
+        CONTEXT
+      )
+    ).toThrow(/orbit/i);
+    expect(() =>
+      compileCameraMoves(
+        [{ move: "push-in", amount: { degrees: 30 } }],
+        framing,
+        CONTEXT
+      )
+    ).toThrow(/meters/i);
+    expect(() =>
+      compileCameraMoves(
+        [
+          { move: "hold", durationSeconds: 6 },
+          { move: "push-in", durationSeconds: 6 },
+        ],
+        framing,
+        CONTEXT
+      )
+    ).toThrow(/duration/i);
+  });
+
+  it("an empty moves array returns a two-frame hold spanning the shot", () => {
+    const frames = compileCameraMoves([], framing, CONTEXT);
+    expect(frames).toHaveLength(2);
+    expect(frames[0]!.atSeconds).toBe(0);
+    expect(frames[0]!.interpolation).toBe("step");
+    expect(frames[1]!.atSeconds).toBeCloseTo(CONTEXT.durationSeconds, 5);
+    expect(frames[1]!.interpolation).toBe("step");
+    expect(frames[0]!.position).toEqual(framing.position);
+    expect(frames[0]!.target).toEqual(framing.target);
   });
 });

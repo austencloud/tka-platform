@@ -2,6 +2,7 @@ import { computeFramingShot } from "$lib/shared/3d/camera/compute-framing-shot";
 
 import type {
   DirectorCameraTargetInput,
+  ResolvedDirectorCameraKeyframe,
   ResolvedDirectorPerformer,
 } from "./film-director-schema";
 
@@ -137,4 +138,208 @@ function resolveSubject(
     subject.height ?? groupTarget[1],
     performer.position.z,
   ];
+}
+
+export interface DirectorCameraMove {
+  move: "hold" | "push-in" | "pull-back" | "orbit" | "crane" | "pan";
+  direction?: "cw" | "ccw" | "up" | "down" | "left" | "right";
+  amount?: { degrees: number } | { meters: number };
+  durationSeconds?: number;
+  easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+const MOVE_RULES: Record<
+  DirectorCameraMove["move"],
+  { unit: "degrees" | "meters" | null; directions: readonly string[] | null }
+> = {
+  hold: { unit: null, directions: null },
+  "push-in": { unit: "meters", directions: null },
+  "pull-back": { unit: "meters", directions: null },
+  orbit: { unit: "degrees", directions: ["cw", "ccw"] },
+  crane: { unit: "meters", directions: ["up", "down"] },
+  pan: { unit: "degrees", directions: ["left", "right"] },
+};
+
+const ORBIT_SEGMENT_DEG = 30;
+
+export function compileCameraMoves(
+  moves: readonly DirectorCameraMove[],
+  framing: CameraFraming,
+  context: CameraLanguageContext
+): ResolvedDirectorCameraKeyframe[] {
+  if (moves.length === 0) {
+    // No moves to chain: an honest two-frame hold spanning the whole shot,
+    // rather than crashing on frames[0] below.
+    return [
+      {
+        atSeconds: 0,
+        position: [...framing.position],
+        target: [...framing.target],
+        fovDeg: framing.fovDeg,
+        interpolation: "step",
+        easing: "linear",
+      },
+      {
+        atSeconds: context.durationSeconds,
+        position: [...framing.position],
+        target: [...framing.target],
+        fovDeg: framing.fovDeg,
+        interpolation: "step",
+        easing: "linear",
+      },
+    ];
+  }
+
+  const windows = allocateWindows(moves, context.durationSeconds);
+  const frames: ResolvedDirectorCameraKeyframe[] = [];
+  let position: [number, number, number] = [...framing.position];
+  let target: [number, number, number] = [...framing.target];
+
+  moves.forEach((move, index) => {
+    validateMove(move);
+    const { start, end } = windows[index]!;
+    const easing = move.easing ?? "ease-in-out";
+    const push = (
+      atSeconds: number,
+      pos: [number, number, number],
+      tgt: [number, number, number],
+      interpolation: ResolvedDirectorCameraKeyframe["interpolation"] = "smooth"
+    ) => {
+      const last = frames.at(-1);
+      if (last && Math.abs(last.atSeconds - atSeconds) < 1e-6) frames.pop();
+      frames.push({ atSeconds, position: pos, target: tgt, fovDeg: framing.fovDeg, interpolation, easing });
+    };
+
+    if (move.move === "hold") {
+      push(start, [...position], [...target], "step");
+      push(end, [...position], [...target], "step");
+      return;
+    }
+
+    if (move.move === "push-in" || move.move === "pull-back") {
+      const currentDistance = Math.hypot(
+        position[0] - target[0], position[1] - target[1], position[2] - target[2]
+      );
+      const meters =
+        move.amount && "meters" in move.amount
+          ? move.amount.meters
+          : currentDistance * 0.3;
+      const sign = move.move === "push-in" ? -1 : 1;
+      const nextDistance = Math.max(0.8, currentDistance + sign * meters);
+      const next: [number, number, number] = [
+        target[0] + ((position[0] - target[0]) / currentDistance) * nextDistance,
+        target[1] + ((position[1] - target[1]) / currentDistance) * nextDistance,
+        target[2] + ((position[2] - target[2]) / currentDistance) * nextDistance,
+      ];
+      push(start, [...position], [...target]);
+      push(end, next, [...target]);
+      position = next;
+      return;
+    }
+
+    if (move.move === "orbit") {
+      // Azimuth here follows the same convention as computeCameraFraming's
+      // vantage math above: increasing azimuth rotates +z toward +x, which
+      // is clockwise viewed from above. So cw increases the angle, ccw
+      // decreases it.
+      const degrees =
+        (move.amount && "degrees" in move.amount ? move.amount.degrees : 90) *
+        (move.direction === "cw" ? 1 : -1);
+      const radius = Math.hypot(position[0] - target[0], position[2] - target[2]);
+      const height = position[1];
+      const startAngle = Math.atan2(position[0] - target[0], position[2] - target[2]);
+      const segments = Math.max(2, Math.ceil(Math.abs(degrees) / ORBIT_SEGMENT_DEG));
+      for (let seg = 0; seg <= segments; seg += 1) {
+        const progress = seg / segments;
+        const angle = startAngle + (degrees * Math.PI * progress) / 180;
+        const pos: [number, number, number] = [
+          target[0] + Math.sin(angle) * radius,
+          height,
+          target[2] + Math.cos(angle) * radius,
+        ];
+        push(start + (end - start) * progress, pos, [...target], "smooth");
+        if (seg === segments) position = pos;
+      }
+      return;
+    }
+
+    if (move.move === "crane") {
+      const meters =
+        (move.amount && "meters" in move.amount ? move.amount.meters : 2) *
+        (move.direction === "down" ? -1 : 1);
+      const next: [number, number, number] = [position[0], position[1] + meters, position[2]];
+      push(start, [...position], [...target]);
+      push(end, next, [...target]);
+      position = next;
+      return;
+    }
+
+    // pan: rotate the aim point around the camera.
+    const degrees =
+      (move.amount && "degrees" in move.amount ? move.amount.degrees : 30) *
+      (move.direction === "right" ? -1 : 1);
+    const dx = target[0] - position[0];
+    const dz = target[2] - position[2];
+    const angle = (degrees * Math.PI) / 180;
+    const next: [number, number, number] = [
+      position[0] + dx * Math.cos(angle) + dz * Math.sin(angle),
+      target[1],
+      position[2] - dx * Math.sin(angle) + dz * Math.cos(angle),
+    ];
+    push(start, [...position], [...target]);
+    push(end, [...position], next);
+    target = next;
+  });
+
+  if (frames[0]!.atSeconds !== 0) {
+    frames.unshift({ ...frames[0]!, atSeconds: 0 });
+  }
+  return frames;
+}
+
+function validateMove(move: DirectorCameraMove): void {
+  const rules = MOVE_RULES[move.move];
+  if (move.amount) {
+    const unit = "degrees" in move.amount ? "degrees" : "meters";
+    if (rules.unit === null) {
+      throw new Error(`"${move.move}" does not take an amount.`);
+    }
+    if (unit !== rules.unit) {
+      throw new Error(`"${move.move}" takes ${rules.unit}, not ${unit}.`);
+    }
+  }
+  if (move.direction) {
+    if (!rules.directions) {
+      throw new Error(`"${move.move}" does not take a direction.`);
+    }
+    if (!rules.directions.includes(move.direction)) {
+      throw new Error(
+        `"${move.move}" direction must be one of ${rules.directions.join("/")}, got "${move.direction}".`
+      );
+    }
+  }
+}
+
+function allocateWindows(
+  moves: readonly DirectorCameraMove[],
+  durationSeconds: number
+): { start: number; end: number }[] {
+  const explicit = moves.reduce(
+    (sum, move) => sum + (move.durationSeconds ?? 0),
+    0
+  );
+  if (explicit > durationSeconds + 1e-6) {
+    throw new Error(
+      `Camera moves total ${explicit}s but the shot's duration is ${durationSeconds}s.`
+    );
+  }
+  const openCount = moves.filter((move) => move.durationSeconds === undefined).length;
+  const openShare = openCount ? (durationSeconds - explicit) / openCount : 0;
+  let cursor = 0;
+  return moves.map((move) => {
+    const length = move.durationSeconds ?? openShare;
+    const window = { start: cursor, end: cursor + length };
+    cursor += length;
+    return window;
+  });
 }
