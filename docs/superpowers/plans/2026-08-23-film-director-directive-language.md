@@ -44,7 +44,7 @@
 - Create: `src/routes/test/film-director/_lib/directives.ts`
 - Test: `tests/unit/film-director/directives.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/film-director/directives.test.ts
@@ -130,12 +130,12 @@ describe("normalizeDirective", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run tests/unit/film-director/directives.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: FAIL — cannot resolve `../_lib/directives`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```ts
 // src/routes/test/film-director/_lib/directives.ts
@@ -224,12 +224,12 @@ export function normalizeDirective<T>(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm exec vitest run tests/unit/film-director/directives.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (3 + 4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/directives.ts tests/unit/film-director/directives.test.ts
@@ -244,7 +244,7 @@ git commit -m "feat(film-director): directive expression types and schema factor
 - Create: `src/routes/test/film-director/_lib/directive-random.ts`
 - Test: `tests/unit/film-director/directive-random.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/film-director/directive-random.test.ts
@@ -317,12 +317,12 @@ describe("seededShuffle / seededPick", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run tests/unit/film-director/directive-random.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```ts
 // src/routes/test/film-director/_lib/directive-random.ts
@@ -375,12 +375,12 @@ export function seededPick<T>(items: readonly T[], random: () => number): T {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm exec vitest run tests/unit/film-director/directive-random.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (7 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/directive-random.ts tests/unit/film-director/directive-random.test.ts
@@ -395,7 +395,7 @@ git commit -m "feat(film-director): seeded per-axis deterministic streams" -- sr
 - Create: `src/routes/test/film-director/_lib/resolve-directives.ts`
 - Test: `tests/unit/film-director/resolve-directives.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/film-director/resolve-directives.test.ts
@@ -491,12 +491,12 @@ describe("resolveCastAxis", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm exec vitest run tests/unit/film-director/resolve-directives.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```ts
 // src/routes/test/film-director/_lib/resolve-directives.ts
@@ -656,12 +656,12 @@ function resolveSameAs<T>(
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm exec vitest run tests/unit/film-director/resolve-directives.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (10 tests). If the distinct-around-pins test flakes on pool exhaustion semantics, the bug is in `draw`'s wraparound — fix there, not in the test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/resolve-directives.ts tests/unit/film-director/resolve-directives.test.ts
@@ -676,7 +676,7 @@ git commit -m "feat(film-director): cast-axis constraint resolver" -- src/routes
 - Modify: `src/routes/test/film-director/_lib/film-director-schema.ts`
 - Test: extend `tests/unit/film-director/film-director-schema.test.ts`
 
-- [ ] **Step 1: Write the failing tests** (append to the existing describe block in `film-director-schema.test.ts`)
+- [x] **Step 1: Write the failing tests** (append to the existing describe block in `film-director-schema.test.ts`)
 
 ```ts
 import { FILM_DIRECTOR_DIRECTIVE_AXES } from "../../../src/routes/test/film-director/_lib/film-director-schema";
@@ -754,12 +754,12 @@ it("rejects unknown directive keys and exports the axis list", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify the new tests fail**
+- [x] **Step 2: Run to verify the new tests fail**
 
 Run: `pnpm exec vitest run tests/unit/film-director/film-director-schema.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: the 4 new tests FAIL; the 4 existing ones still pass.
 
-- [ ] **Step 3: Modify the schema**
+- [x] **Step 3: Modify the schema**
 
 In `film-director-schema.ts`:
 
@@ -840,12 +840,12 @@ const performanceSchema = z
 
 Type exports: add `export type DirectorCastInput = z.infer<typeof castSchema>;`. The `ResolvedDirector*` interfaces are unchanged — resolution output stays fully concrete.
 
-- [ ] **Step 4: Run the schema tests**
+- [x] **Step 4: Run the schema tests**
 
 Run: `pnpm exec vitest run tests/unit/film-director/film-director-schema.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (8 tests). Then run the full film-director suite (see Ground rules) — Task 5 has not landed yet, so `resolve-film-director-spec` still treats these fields as literals; if any existing test breaks here, the schema change leaked a behavioral change — stop and fix before proceeding.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/film-director-schema.ts tests/unit/film-director/film-director-schema.test.ts
@@ -860,7 +860,7 @@ git commit -m "feat(film-director): schema v2 with cast block, seed, directive f
 - Modify: `src/routes/test/film-director/_lib/resolve-film-director-spec.ts`
 - Test: create `tests/unit/film-director/resolve-directive-spec.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/film-director/resolve-directive-spec.test.ts
@@ -974,12 +974,12 @@ describe("resolveFilmDirectorSpec with directives", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm exec vitest run tests/unit/film-director/resolve-directive-spec.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: FAIL — cast blocks and directives are not yet consumed by the resolver.
 
-- [ ] **Step 3: Implement resolution**
+- [x] **Step 3: Implement resolution**
 
 In `resolve-film-director-spec.ts`:
 
@@ -1064,13 +1064,13 @@ For `formation`, pass `catalogOverride` filtered to presets whose `PRESET_VALID_
 
 6. `effectPresets` `{ pick: "any" }` values: resolve in `validateEffectPresets` → rename it `resolveEffectPresets(effectPresets, shotId, seed)` returning a concrete `Record<string, string>`; an open pick draws with `seededPick(registration.presetGroup.presets.map(p => p.id), createAxisStream(seed, shotId, \`effectPreset:${effectId}\`))`.
 
-- [ ] **Step 4: Run the new test, then the full film-director suite**
+- [x] **Step 4: Run the new test, then the full film-director suite**
 
 Run: `pnpm exec vitest run tests/unit/film-director/resolve-directive-spec.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (6 tests).
 Then the full suite per Ground rules — all previously green tests must stay green (v1 path unchanged).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/resolve-film-director-spec.ts tests/unit/film-director/resolve-directive-spec.test.ts
@@ -1085,7 +1085,7 @@ git commit -m "feat(film-director): resolve cast directives and shot-scope picks
 - Create: `src/routes/test/film-director/_lib/camera-language.ts`
 - Test: `tests/unit/film-director/camera-language.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/film-director/camera-language.test.ts
@@ -1167,12 +1167,12 @@ describe("computeCameraFraming", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `pnpm exec vitest run tests/unit/film-director/camera-language.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement framing**
+- [x] **Step 3: Implement framing**
 
 ```ts
 // src/routes/test/film-director/_lib/camera-language.ts
@@ -1318,12 +1318,12 @@ function resolveSubject(
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `pnpm exec vitest run tests/unit/film-director/camera-language.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/camera-language.ts tests/unit/film-director/camera-language.test.ts
@@ -1338,7 +1338,7 @@ git commit -m "feat(film-director): camera framing grammar" -- src/routes/test/f
 - Modify: `src/routes/test/film-director/_lib/camera-language.ts`
 - Test: extend `tests/unit/film-director/camera-language.test.ts`
 
-- [ ] **Step 1: Write the failing tests** (append)
+- [x] **Step 1: Write the failing tests** (append)
 
 ```ts
 import { compileCameraMoves } from "../../../src/routes/test/film-director/_lib/camera-language";
@@ -1430,12 +1430,12 @@ describe("compileCameraMoves", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify the new tests fail**
+- [x] **Step 2: Run to verify the new tests fail**
 
 Run: `pnpm exec vitest run tests/unit/film-director/camera-language.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: 5 new FAIL (`compileCameraMoves` not exported), 5 existing PASS.
 
-- [ ] **Step 3: Implement the compiler** (append to `camera-language.ts`)
+- [x] **Step 3: Implement the compiler** (append to `camera-language.ts`)
 
 ```ts
 import type { ResolvedDirectorCameraKeyframe } from "./film-director-schema";
@@ -1618,12 +1618,12 @@ function allocateWindows(
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes**
+- [x] **Step 4: Run to verify it passes**
 
 Run: `pnpm exec vitest run tests/unit/film-director/camera-language.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS (10 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/camera-language.ts tests/unit/film-director/camera-language.test.ts
@@ -1639,7 +1639,7 @@ git commit -m "feat(film-director): camera move compiler" -- src/routes/test/fil
 - Modify: `src/routes/test/film-director/_lib/director-camera-track.ts`
 - Test: extend `tests/unit/film-director/director-camera-track.test.ts`
 
-- [ ] **Step 1: Write the failing tests** (append to the existing test file; reuse its performer/context fixtures)
+- [x] **Step 1: Write the failing tests** (append to the existing test file; reuse its performer/context fixtures)
 
 ```ts
 it("compiles framing + moves into a keyframe track", () => {
@@ -1683,12 +1683,12 @@ it("rejects mixing a preset with framing grammar", () => {
 
 (`CONTEXT` here means the existing test file's camera-track context fixture — match its actual name when appending.)
 
-- [ ] **Step 2: Run to verify the new tests fail**
+- [x] **Step 2: Run to verify the new tests fail**
 
 Run: `pnpm exec vitest run tests/unit/film-director/director-camera-track.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: new tests FAIL; existing 3 PASS.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Schema (`film-director-schema.ts`), add to `cameraSchema`'s object before `.strict()`:
 
@@ -1766,12 +1766,12 @@ with imports `import { compileCameraMoves, computeCameraFraming } from "./camera
 
 Note: `subject` doubles as the framing target; the existing `target` field remains for presets/keyframes. Add a refine rejecting `subject` + `target` together: message `Use "subject" with framing grammar, "target" with presets/keyframes.`
 
-- [ ] **Step 4: Run camera-track tests, then the full suite**
+- [x] **Step 4: Run camera-track tests, then the full suite**
 
 Run: `pnpm exec vitest run tests/unit/film-director/director-camera-track.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS. Full suite per Ground rules: green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/routes/test/film-director/_lib/film-director-schema.ts src/routes/test/film-director/_lib/director-camera-track.ts tests/unit/film-director/director-camera-track.test.ts
@@ -1785,21 +1785,21 @@ git commit -m "feat(film-director): camera grammar in schema and track resolutio
 **Files:**
 - Modify: `src/routes/test/film-director/_films/sky-is-the-limit.ts`
 
-- [ ] **Step 1: Migrate**
+- [x] **Step 1: Migrate**
 
 Change `version: 1` to `version: 2`. Nothing else — v1's all-literal form is valid v2. Do NOT rewrite the shots with directives; this film is the approved reference and its resolved output must not change.
 
-- [ ] **Step 2: Run the full film-director suite**
+- [x] **Step 2: Run the full film-director suite**
 
 Per Ground rules. Expected: all green.
 
-- [ ] **Step 3: Verify the route renders**
+- [x] **Step 3: Verify the route renders**
 
 The dev server on :5173 is Austen's — do not start/restart it. Confirm it serves:
 `curl -k -g -s -o /dev/null -w "%{http_code}" 'https://[::1]:5173/test/film-director' --max-time 15` → expect `200`.
 Then open `https://localhost:5173/test/film-director` in the in-app Browser pane and confirm the film prepares and plays (canvas mounts, no console errors). If the server is down, ask Austen to restart from Agent Hub — never start it.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/routes/test/film-director/_films/sky-is-the-limit.ts
@@ -1814,11 +1814,11 @@ git commit -m "chore(film-director): sample film to schema v2" -- src/routes/tes
 - Create: `docs/reference/film-director-capability-matrix.md`
 - Test: `tests/unit/film-director/capability-matrix.test.ts`
 
-- [ ] **Step 1: Sweep the real control surface**
+- [x] **Step 1: Sweep the real control surface**
 
 Read `src/routes/test/film-director/_lib/director-viewer-adapter.ts` and the `PerformerState` API it calls (grep `setAvatarModel|setProp|setEffect|setEffort|setStaffLengthCm|setDisplayName|snapFacingAngle` in `node_modules/@austencloud/scene-3d/dist/lib/` and `src/lib/shared/3d/`). List EVERY setter the adapter could call but the schema cannot express (candidate known unknowns: per-performer prop color, avatar scale, per-plane overrides — `customBluePlane`/`customRedPlane` are hardwired to `Plane.WALL` in `buildDirectorViewerSeed`). For each: if the viewer supports it per performer, file it in the matrix's "Real but not yet speakable" section with the setter path — do NOT silently widen the schema in this task. If it does not exist, it belongs in the corpus's unknown-axis rejections.
 
-- [ ] **Step 2: Write the matrix doc**
+- [x] **Step 2: Write the matrix doc**
 
 `docs/reference/film-director-capability-matrix.md` — structure (fill every row from the sweep + the schema as actually landed; the axes comment MUST match `FILM_DIRECTOR_DIRECTIVE_AXES` exactly):
 
@@ -1852,7 +1852,7 @@ prop color per performer (if absent), lighting, avatar scale, 9+ performers, ...
 
 Every `...` row above must be filled in during execution — the matrix must cover ALL schema axes including bpm, duration, transition, stage/audience, sceneFeatures, seed, format, playback.
 
-- [ ] **Step 3: Write the lockstep test**
+- [x] **Step 3: Write the lockstep test**
 
 ```ts
 // tests/unit/film-director/capability-matrix.test.ts
@@ -1876,12 +1876,12 @@ describe("capability matrix lockstep", () => {
 });
 ```
 
-- [ ] **Step 4: Run it**
+- [x] **Step 4: Run it**
 
 Run: `pnpm exec vitest run tests/unit/film-director/capability-matrix.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add docs/reference/film-director-capability-matrix.md tests/unit/film-director/capability-matrix.test.ts
@@ -1895,7 +1895,7 @@ git commit -m "docs(film-director): capability truth matrix with lockstep test" 
 **Files:**
 - Create: `tests/unit/film-director/directive-corpus/_types.ts`, `_helpers.ts`, `distribution.ts`, `pin-exclusion.ts`, `unsatisfiable.ts`, `nonexistent.ts`, `camera.ts`, `boundary.ts`, `unknown-axis.ts`, `corpus-runner.test.ts`
 
-- [ ] **Step 1: Fixture types and helpers**
+- [x] **Step 1: Fixture types and helpers**
 
 ```ts
 // tests/unit/film-director/directive-corpus/_types.ts
@@ -1930,7 +1930,7 @@ export function corpusFilm(
 }
 ```
 
-- [ ] **Step 2: Author the fixtures**
+- [x] **Step 2: Author the fixtures**
 
 Each category file exports `entries: CorpusEntry[]`. Authoring bar (definition of done):
 
@@ -1995,7 +1995,7 @@ export const entries: CorpusEntry[] = [
 ];
 ```
 
-- [ ] **Step 3: Write the runner**
+- [x] **Step 3: Write the runner**
 
 ```ts
 // tests/unit/film-director/directive-corpus/corpus-runner.test.ts
@@ -2056,12 +2056,12 @@ describe("adversarial directive corpus", () => {
 });
 ```
 
-- [ ] **Step 4: Run the corpus, fix what it finds**
+- [x] **Step 4: Run the corpus, fix what it finds**
 
 Run: `pnpm exec vitest run tests/unit/film-director/directive-corpus/corpus-runner.test.ts --exclude ".codex-tmp/**" --exclude ".claude/worktrees/**"`
 Expected: everything passes. Corpus failures are FINDINGS, not test bugs: a `resolves` entry that rejects, or a rejection with a vague message, means the resolver (or a message) needs fixing — fix the implementation, not the fixture, unless the fixture's translation was dishonest. Iterate until green.
 
-- [ ] **Step 5: Run the FULL film-director suite one final time, then commit**
+- [x] **Step 5: Run the FULL film-director suite one final time, then commit**
 
 ```bash
 git add tests/unit/film-director/directive-corpus
@@ -2072,9 +2072,9 @@ git commit -m "test(film-director): adversarial directive corpus (200+ utterance
 
 ### Task 12: Deliver
 
-- [ ] **Step 1:** Run the complete evidence set and capture output: full film-director suite + performer tests (the 27 baseline tests) + all new test files.
-- [ ] **Step 2:** Open `https://localhost:5173/test/film-director` in the in-app Browser pane (never a bare link) and confirm the migrated film still prepares and plays.
-- [ ] **Step 3:** Report to Austen: test counts with output, the corpus size and rejection ratio, the matrix's "Real but not yet speakable" findings (these are HIS decision queue for the next pass), and 2–3 corpus utterances with their resolved output as a demonstration that dictation now round-trips through the machine.
+- [x] **Step 1:** Run the complete evidence set and capture output: full film-director suite + performer tests (the 27 baseline tests) + all new test files.
+- [x] **Step 2:** Open `https://localhost:5173/test/film-director` in the in-app Browser pane (never a bare link) and confirm the migrated film still prepares and plays.
+- [x] **Step 3:** Report to Austen: test counts with output, the corpus size and rejection ratio, the matrix's "Real but not yet speakable" findings (these are HIS decision queue for the next pass), and 2–3 corpus utterances with their resolved output as a demonstration that dictation now round-trips through the machine.
 
 ---
 
