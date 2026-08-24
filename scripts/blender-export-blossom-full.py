@@ -25,7 +25,11 @@ bpy.ops.object.select_all(action="DESELECT")
 
 selected = []
 for obj in bpy.data.objects:
-    if obj.type != "MESH" or any(obj.name.startswith(prefix) for prefix in SKIP_PREFIXES):
+    if (
+        obj.type != "MESH"
+        or obj.hide_render
+        or any(obj.name.startswith(prefix) for prefix in SKIP_PREFIXES)
+    ):
         continue
     obj.select_set(True)
     selected.append(obj.name)

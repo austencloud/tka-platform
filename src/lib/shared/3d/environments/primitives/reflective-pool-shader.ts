@@ -107,7 +107,7 @@ export const ReflectivePoolShader = {
         new Vector2(5, -5),
         new Vector2(5, 5),
         new Vector2(-5, 5),
-        ...Array.from({ length: 12 }, () => new Vector2()),
+        ...Array.from({ length: 28 }, () => new Vector2()),
       ],
     },
     uShorelineEnds: {
@@ -116,7 +116,7 @@ export const ReflectivePoolShader = {
         new Vector2(5, 5),
         new Vector2(-5, 5),
         new Vector2(-5, -5),
-        ...Array.from({ length: 12 }, () => new Vector2()),
+        ...Array.from({ length: 28 }, () => new Vector2()),
       ],
     },
   },
@@ -158,8 +158,8 @@ export const ReflectivePoolShader = {
     uniform float uShoreFade;
     uniform vec2 uWaveAmplitude;
     uniform float uShorelineCount;
-    uniform vec2 uShorelineStarts[16];
-    uniform vec2 uShorelineEnds[16];
+    uniform vec2 uShorelineStarts[32];
+    uniform vec2 uShorelineEnds[32];
 
     varying vec4 vProjectedUv;
     varying vec2 vPlaneUv;
@@ -189,7 +189,7 @@ export const ReflectivePoolShader = {
 
     float shorelineDistance( vec2 point ) {
       float nearest = 10000.0;
-      for ( int index = 0; index < 16; index++ ) {
+      for ( int index = 0; index < 32; index++ ) {
         if ( float( index ) < uShorelineCount ) {
           nearest = min(
             nearest,

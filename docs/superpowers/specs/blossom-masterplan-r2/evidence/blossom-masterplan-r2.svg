@@ -1,0 +1,547 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+<style>
+  text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  .title { fill:#fff4f4; font-size:34px; font-weight:850; letter-spacing:.4px; }
+  .subtitle { fill:#c9bfc8; font-size:15px; }
+  .status { fill:#ffca75; font-size:14px; font-weight:800; letter-spacing:1.2px; }
+  .panel { fill:#13151d; stroke:#343848; stroke-width:2; }
+  .mapPanel { fill:#101921; stroke:#35434e; stroke-width:2; }
+  .terrain { fill:#19231f; stroke:#566f60; stroke-width:2; }
+  .playable { fill:#253127; stroke:#708b73; stroke-width:2; stroke-dasharray:7 6; }
+  .grid { stroke:#4e6657; stroke-width:.8; opacity:.28; }
+  .axis { fill:#718079; font-size:11px; }
+  .viewRay { stroke:#ffd07d; stroke-width:2; stroke-dasharray:7 7; opacity:.55; }
+  .audienceZone { stroke:#d5bf88; stroke-width:2; }
+  .audience-seated-lawn { fill:#77874f; fill-opacity:.72; }
+  .audience-standing-terrace { fill:#80674f; fill-opacity:.8; }
+  .audience-level-viewing-terrace { fill:#8d806b; fill-opacity:.9; }
+  .audienceView { fill:#ffd07d; stroke:#17191c; stroke-width:2; }
+  .zoneLabel { fill:#fff2d5; font-size:10px; font-weight:800; letter-spacing:.4px; }
+  .pathShoulder { fill:none; stroke:#6c5b49; stroke-linecap:round; stroke-linejoin:round; }
+  .path { fill:none; stroke:#c8b79c; stroke-linecap:round; stroke-linejoin:round; }
+  .servicePathShoulder { fill:none; stroke:#4f4853; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:8 6; }
+  .servicePath { fill:none; stroke:#988aa0; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:8 6; }
+  .waterBank { fill:none; stroke:#31483d; stroke-linecap:round; stroke-linejoin:round; }
+  .water { fill:none; stroke:#2d7795; stroke-linecap:round; stroke-linejoin:round; }
+  .waterPool { fill:#2d7795; stroke:#70c1d4; stroke-width:1.4; }
+  .waterHighlight { fill:none; stroke:#70c1d4; stroke-width:2; stroke-dasharray:10 10; opacity:.75; }
+  .fishHabitat { fill:#7bd1dc; fill-opacity:.14; stroke:#8bd8df; stroke-width:1.5; stroke-dasharray:4 4; }
+  .treeCanopy { fill-opacity:.58; stroke-width:2; }
+  .treeMature { fill:#b56f91; stroke:#e2a4c0; }
+  .treeMiddle { fill:#966985; stroke:#c893ad; }
+  .treeYoung { fill:#765d78; stroke:#ab89ac; }
+  .treeTrunk { fill:#4d342f; stroke:#e5c9be; stroke-width:1.5; }
+  .backgroundTree { fill:#a76d8c; fill-opacity:.6; stroke:#d8a0bb; stroke-width:.6; }
+  .stageClear { fill:#e9b65b; fill-opacity:.08; stroke:#f6c86e; stroke-width:2; stroke-dasharray:8 6; }
+  .stage { fill:#6f4434; stroke:#eca66b; stroke-width:3; }
+  .stageLine { stroke:#b47b58; stroke-width:1; }
+  .bridge { fill:#7b4d39; stroke:#f0b37a; stroke-width:3; }
+  .bridgeRail { stroke:#f0b37a; stroke-width:2; }
+  .landing { fill:#d5c2a1; fill-opacity:.25; stroke:#dcc69f; stroke-width:1.5; stroke-dasharray:5 4; }
+  .torii { stroke:#db514a; stroke-width:7; stroke-linecap:round; }
+  .toriiCap { stroke:#f16a60; stroke-width:5; stroke-linecap:round; }
+  .lanternPad { fill:#8f826b; stroke:#cbb98f; stroke-width:1; }
+  .lantern { fill:#ffd06a; stroke:#fff0b3; stroke-width:1.5; }
+  .mapTitle { fill:#fff1e7; font-size:14px; font-weight:800; letter-spacing:1px; }
+  .mapNote { fill:#aebbb3; font-size:11px; }
+  .micro { fill:#d8e8e5; font-size:9px; font-weight:750; }
+  .sectionTitle { fill:#fff1e7; font-size:17px; font-weight:820; }
+  .body { fill:#c3c7cf; font-size:14px; }
+  .metric { fill:#fff4df; font-size:26px; font-weight:850; }
+  .metricLabel { fill:#999fac; font-size:11px; font-weight:700; letter-spacing:.7px; }
+  .ruleGood { fill:#79d69f; font-size:13px; font-weight:750; }
+  .rulePending { fill:#ffca75; font-size:13px; font-weight:750; }
+  .divider { stroke:#343848; stroke-width:1; }
+  .legendText { fill:#d5d8de; font-size:12px; }
+  .phaseNumber { fill:#363a49; }
+  .phaseActive { fill:#d89742; }
+  .phaseNumberText { fill:#11141a; font-size:12px; font-weight:850; text-anchor:middle; }
+  .phaseTitle { fill:#f2edf2; font-size:13px; font-weight:760; }
+  .phaseState { fill:#8f95a1; font-size:9px; font-weight:800; letter-spacing:.9px; }
+  .insetTerrain { fill:#1e2b24; stroke:#738b77; stroke-width:1.5; }
+  .insetOrbit { fill:#d4974a; fill-opacity:.14; stroke:#f2bb63; stroke-width:1.5; stroke-dasharray:5 4; }
+  .insetClearing { fill:#738b77; fill-opacity:.55; }
+</style>
+<rect width="1800" height="1200" fill="#0a0b10"/>
+<text x="50" y="54" class="title">BLOSSOM R2.1 · MOONLIT HANAMI AMPHITHEATER</text>
+<text x="50" y="82" class="subtitle">Adversarially corrected spatial gate · physical access, 3D sightlines, performance safety, living water, grove, and full camera envelope</text>
+<rect x="1454" y="30" width="296" height="52" rx="12" fill="#2d2418" stroke="#7a5c2f"/>
+<text x="1602" y="61" class="status" text-anchor="middle">AWAITING SPATIAL APPROVAL</text>
+
+<rect x="34" y="116" width="950" height="1024" rx="22" class="mapPanel"/>
+<text x="52" y="147" class="mapTitle">TOP-DOWN MASTER PLAN · 5 M GRID · NORTH ↑</text>
+<text x="720" y="147" class="mapNote">X west/east · Y audience/stage/threshold</text>
+<rect x="80.4375" y="188.78787878787878" width="853.125" height="864.2424242424242" rx="24" class="terrain"/>
+<rect x="127.83333333333333" y="207.57575757575756" width="758.3333333333333" height="789.0909090909091" rx="42" class="playable"/>
+<line x1="127.83333333333333" y1="170" x2="127.83333333333333" y2="1100" class="grid"/>
+<text x="127.83333333333333" y="1122" class="axis" text-anchor="middle">-40</text>
+<line x1="175.22916666666666" y1="170" x2="175.22916666666666" y2="1100" class="grid"/>
+<line x1="222.625" y1="170" x2="222.625" y2="1100" class="grid"/>
+<text x="222.625" y="1122" class="axis" text-anchor="middle">-30</text>
+<line x1="270.0208333333333" y1="170" x2="270.0208333333333" y2="1100" class="grid"/>
+<line x1="317.41666666666663" y1="170" x2="317.41666666666663" y2="1100" class="grid"/>
+<text x="317.41666666666663" y="1122" class="axis" text-anchor="middle">-20</text>
+<line x1="364.8125" y1="170" x2="364.8125" y2="1100" class="grid"/>
+<line x1="412.2083333333333" y1="170" x2="412.2083333333333" y2="1100" class="grid"/>
+<text x="412.2083333333333" y="1122" class="axis" text-anchor="middle">-10</text>
+<line x1="459.60416666666663" y1="170" x2="459.60416666666663" y2="1100" class="grid"/>
+<line x1="507" y1="170" x2="507" y2="1100" class="grid"/>
+<text x="507" y="1122" class="axis" text-anchor="middle">0</text>
+<line x1="554.3958333333333" y1="170" x2="554.3958333333333" y2="1100" class="grid"/>
+<line x1="601.7916666666666" y1="170" x2="601.7916666666666" y2="1100" class="grid"/>
+<text x="601.7916666666666" y="1122" class="axis" text-anchor="middle">10</text>
+<line x1="649.1875" y1="170" x2="649.1875" y2="1100" class="grid"/>
+<line x1="696.5833333333333" y1="170" x2="696.5833333333333" y2="1100" class="grid"/>
+<text x="696.5833333333333" y="1122" class="axis" text-anchor="middle">20</text>
+<line x1="743.9791666666666" y1="170" x2="743.9791666666666" y2="1100" class="grid"/>
+<line x1="791.375" y1="170" x2="791.375" y2="1100" class="grid"/>
+<text x="791.375" y="1122" class="axis" text-anchor="middle">30</text>
+<line x1="838.7708333333333" y1="170" x2="838.7708333333333" y2="1100" class="grid"/>
+<line x1="886.1666666666666" y1="170" x2="886.1666666666666" y2="1100" class="grid"/>
+<text x="886.1666666666666" y="1122" class="axis" text-anchor="middle">40</text>
+<line x1="52" y1="1006.0606060606061" x2="962" y2="1006.0606060606061" class="grid"/>
+<line x1="52" y1="959.0909090909091" x2="962" y2="959.0909090909091" class="grid"/>
+<text x="40" y="963.0909090909091" class="axis" text-anchor="end">-30</text>
+<line x1="52" y1="912.1212121212121" x2="962" y2="912.1212121212121" class="grid"/>
+<line x1="52" y1="865.1515151515152" x2="962" y2="865.1515151515152" class="grid"/>
+<text x="40" y="869.1515151515152" class="axis" text-anchor="end">-20</text>
+<line x1="52" y1="818.1818181818182" x2="962" y2="818.1818181818182" class="grid"/>
+<line x1="52" y1="771.2121212121212" x2="962" y2="771.2121212121212" class="grid"/>
+<text x="40" y="775.2121212121212" class="axis" text-anchor="end">-10</text>
+<line x1="52" y1="724.2424242424242" x2="962" y2="724.2424242424242" class="grid"/>
+<line x1="52" y1="677.2727272727273" x2="962" y2="677.2727272727273" class="grid"/>
+<text x="40" y="681.2727272727273" class="axis" text-anchor="end">0</text>
+<line x1="52" y1="630.3030303030303" x2="962" y2="630.3030303030303" class="grid"/>
+<line x1="52" y1="583.3333333333334" x2="962" y2="583.3333333333334" class="grid"/>
+<text x="40" y="587.3333333333334" class="axis" text-anchor="end">10</text>
+<line x1="52" y1="536.3636363636364" x2="962" y2="536.3636363636364" class="grid"/>
+<line x1="52" y1="489.39393939393943" x2="962" y2="489.39393939393943" class="grid"/>
+<text x="40" y="493.39393939393943" class="axis" text-anchor="end">20</text>
+<line x1="52" y1="442.42424242424244" x2="962" y2="442.42424242424244" class="grid"/>
+<line x1="52" y1="395.4545454545455" x2="962" y2="395.4545454545455" class="grid"/>
+<text x="40" y="399.4545454545455" class="axis" text-anchor="end">30</text>
+<line x1="52" y1="348.4848484848485" x2="962" y2="348.4848484848485" class="grid"/>
+<line x1="52" y1="301.5151515151515" x2="962" y2="301.5151515151515" class="grid"/>
+<text x="40" y="305.5151515151515" class="axis" text-anchor="end">40</text>
+<line x1="52" y1="254.54545454545456" x2="962" y2="254.54545454545456" class="grid"/>
+<line x1="52" y1="207.57575757575756" x2="962" y2="207.57575757575756" class="grid"/>
+<text x="40" y="211.57575757575756" class="axis" text-anchor="end">50</text>
+<circle cx="895.6458333333333" cy="630.3030303030303" r="1.5" class="backgroundTree"/>
+<circle cx="926.7844209357421" cy="603.8883631183548" r="1.95" class="backgroundTree"/>
+<circle cx="920.6982607255695" cy="578.0211141217972" r="2.4" class="backgroundTree"/>
+<circle cx="913.2660250426362" cy="552.7864837925126" r="1.5" class="backgroundTree"/>
+<circle cx="904.5395090522007" cy="528.2659900390797" r="1.95" class="backgroundTree"/>
+<circle cx="894.5746153220708" cy="504.5372054571018" r="2.4" class="backgroundTree"/>
+<circle cx="883.4310754220351" cy="481.67351310981564" r="1.5" class="backgroundTree"/>
+<circle cx="871.1721597896073" cy="459.7438815962778" r="1.95" class="backgroundTree"/>
+<circle cx="857.8643771416471" cy="438.81266008913497" r="2.4" class="backgroundTree"/>
+<circle cx="843.5771647416396" cy="418.939393939394" r="1.5" class="backgroundTree"/>
+<circle cx="858.3191434999255" cy="380.66609710162743" r="1.95" class="backgroundTree"/>
+<circle cx="841.0960074123701" cy="361.37537288691556" r="2.4" class="backgroundTree"/>
+<circle cx="823.0188676013489" cy="343.3626413389592" r="1.5" class="backgroundTree"/>
+<circle cx="804.1700166264224" cy="326.672298347837" r="1.95" class="backgroundTree"/>
+<circle cx="784.6333513005851" cy="311.3430759855978" r="2.4" class="backgroundTree"/>
+<circle cx="764.49402073616" cy="297.40797148509046" r="1.5" class="backgroundTree"/>
+<circle cx="743.8380737909225" cy="284.8941994446584" r="1.95" class="backgroundTree"/>
+<circle cx="722.7521073254212" cy="273.82316720435074" r="2.4" class="backgroundTree"/>
+<circle cx="701.3229166666666" cy="264.21047324869943" r="1.5" class="backgroundTree"/>
+<circle cx="695.7181852777102" cy="224.333845737198" r="1.95" class="backgroundTree"/>
+<circle cx="671.9729987185635" cy="216.78858027907563" r="2.4" class="backgroundTree"/>
+<circle cx="648.0947097932826" cy="210.82424438420082" r="1.5" class="backgroundTree"/>
+<circle cx="624.1740582308507" cy="206.43621608125898" r="1.95" class="backgroundTree"/>
+<circle cx="600.3004550061613" cy="203.61400869131776" r="2.4" class="backgroundTree"/>
+<circle cx="576.5616511381883" cy="202.34139203494337" r="1.5" class="backgroundTree"/>
+<circle cx="553.0434171830174" cy="202.59653458011798" r="1.95" class="backgroundTree"/>
+<circle cx="529.8292345860358" cy="204.35216575481485" r="2.4" class="backgroundTree"/>
+<circle cx="507" cy="207.57575757575756" r="1.5" class="backgroundTree"/>
+<circle cx="482.55034171326537" cy="176.7807095291047" r="1.95" class="backgroundTree"/>
+<circle cx="458.6456082451772" cy="183.0026506137542" r="2.4" class="backgroundTree"/>
+<circle cx="435.36433843980234" cy="190.68484935838063" r="1.5" class="backgroundTree"/>
+<circle cx="412.78140555844533" cy="199.77490438375736" r="1.95" class="backgroundTree"/>
+<circle cx="390.9677771393804" cy="210.21592015712193" r="2.4" class="backgroundTree"/>
+<circle cx="369.9902932935634" cy="221.9467879502304" r="1.5" class="backgroundTree"/>
+<circle cx="349.9114641241534" cy="234.9024798420774" r="1.95" class="backgroundTree"/>
+<circle cx="330.78928687550143" cy="249.01435447631178" r="2.4" class="backgroundTree"/>
+<circle cx="312.6770833333334" cy="264.21047324869943" r="1.5" class="backgroundTree"/>
+<circle cx="275.9337643419681" cy="250.74851292187344" r="1.95" class="backgroundTree"/>
+<circle cx="258.274737992994" cy="269.07049646030885" r="2.4" class="backgroundTree"/>
+<circle cx="241.82868475064626" cy="288.3407908947185" r="1.5" class="backgroundTree"/>
+<circle cx="226.63454917865002" cy="308.4732563452095" r="1.95" class="backgroundTree"/>
+<circle cx="212.72583968409037" cy="329.3798335372463" r="2.4" class="backgroundTree"/>
+<circle cx="200.1305757161533" cy="350.9709092281579" r="1.5" class="backgroundTree"/>
+<circle cx="188.87125739340996" cy="373.15568328687056" r="1.95" class="backgroundTree"/>
+<circle cx="178.96485744438877" cy="395.8425359687101" r="2.4" class="backgroundTree"/>
+<circle cx="170.4228352583603" cy="418.939393939394" r="1.5" class="backgroundTree"/>
+<circle cx="131.23119821333984" cy="426.41764273050757" r="1.95" class="backgroundTree"/>
+<circle cx="124.5496008328073" cy="451.9303080298688" r="2.4" class="backgroundTree"/>
+<circle cx="119.34547083845324" cy="477.6252383224517" r="1.5" class="backgroundTree"/>
+<circle cx="115.611388932023" cy="503.4056363389507" r="1.95" class="backgroundTree"/>
+<circle cx="113.33442583879518" cy="529.1758744745543" r="2.4" class="backgroundTree"/>
+<circle cx="112.49627255740334" cy="554.8418467681702" r="1.5" class="backgroundTree"/>
+<circle cx="113.07339033323086" cy="580.3113107004493" r="1.95" class="backgroundTree"/>
+<circle cx="115.03717955008024" cy="605.4942175749916" r="2.4" class="backgroundTree"/>
+<circle cx="118.35416666666666" cy="630.3030303030303" r="1.5" class="backgroundTree"/>
+<circle cx="87.2155790642579" cy="656.7176974877059" r="1.95" class="backgroundTree"/>
+<circle cx="93.30173927443036" cy="682.5849464842635" r="2.4" class="backgroundTree"/>
+<circle cx="100.73397495736376" cy="707.8195768135481" r="1.5" class="backgroundTree"/>
+<circle cx="109.46049094779923" cy="732.340070566981" r="1.95" class="backgroundTree"/>
+<circle cx="119.42538467792902" cy="756.0688551489588" r="2.4" class="backgroundTree"/>
+<circle cx="130.56892457796494" cy="778.9325474962451" r="1.5" class="backgroundTree"/>
+<circle cx="142.8278402103926" cy="800.8621790097828" r="1.95" class="backgroundTree"/>
+<circle cx="156.13562285835286" cy="821.7934005169257" r="2.4" class="backgroundTree"/>
+<circle cx="170.42283525836035" cy="841.6666666666667" r="1.5" class="backgroundTree"/>
+<circle cx="155.6808565000743" cy="879.939963504433" r="1.95" class="backgroundTree"/>
+<circle cx="172.9039925876299" cy="899.230687719145" r="2.4" class="backgroundTree"/>
+<circle cx="190.98113239865089" cy="917.2434192671014" r="1.5" class="backgroundTree"/>
+<circle cx="209.82998337357756" cy="933.9337622582235" r="1.95" class="backgroundTree"/>
+<circle cx="229.3666486994149" cy="949.2629846204629" r="2.4" class="backgroundTree"/>
+<circle cx="249.50597926383986" cy="963.1980891209702" r="1.5" class="backgroundTree"/>
+<circle cx="270.1619262090775" cy="975.7118611614022" r="1.95" class="backgroundTree"/>
+<circle cx="291.2478926745788" cy="986.78289340171" r="2.4" class="backgroundTree"/>
+<circle cx="312.67708333333314" cy="996.3955873573613" r="1.5" class="backgroundTree"/>
+<circle cx="318.2818147222897" cy="1036.2722148688626" r="1.95" class="backgroundTree"/>
+<circle cx="342.0270012814364" cy="1043.8174803269849" r="2.4" class="backgroundTree"/>
+<circle cx="365.90529020671715" cy="1049.78181622186" r="1.5" class="backgroundTree"/>
+<circle cx="389.8259417691491" cy="1054.1698445248016" r="1.95" class="backgroundTree"/>
+<circle cx="413.6995449938386" cy="1056.992051914743" r="2.4" class="backgroundTree"/>
+<circle cx="437.43834886181173" cy="1058.2646685711175" r="1.5" class="backgroundTree"/>
+<circle cx="460.9565828169827" cy="1058.0095260259427" r="1.95" class="backgroundTree"/>
+<circle cx="484.170765413964" cy="1056.253894851246" r="2.4" class="backgroundTree"/>
+<circle cx="506.9999999999999" cy="1053.030303030303" r="1.5" class="backgroundTree"/>
+<circle cx="531.4496582867346" cy="1083.825351076956" r="1.95" class="backgroundTree"/>
+<circle cx="555.3543917548225" cy="1077.6034099923063" r="2.4" class="backgroundTree"/>
+<circle cx="578.6356615601975" cy="1069.92121124768" r="1.5" class="backgroundTree"/>
+<circle cx="601.2185944415545" cy="1060.8311562223034" r="1.95" class="backgroundTree"/>
+<circle cx="623.0322228606196" cy="1050.3901404489388" r="2.4" class="backgroundTree"/>
+<circle cx="644.0097067064366" cy="1038.6592726558304" r="1.5" class="backgroundTree"/>
+<circle cx="664.0885358758464" cy="1025.7035807639834" r="1.95" class="backgroundTree"/>
+<circle cx="683.2107131244985" cy="1011.5917061297488" r="2.4" class="backgroundTree"/>
+<circle cx="701.3229166666666" cy="996.3955873573613" r="1.5" class="backgroundTree"/>
+<circle cx="738.0662356580317" cy="1009.8575476841874" r="1.95" class="backgroundTree"/>
+<circle cx="755.7252620070059" cy="991.5355641457518" r="2.4" class="backgroundTree"/>
+<circle cx="772.1713152493537" cy="972.2652697113422" r="1.5" class="backgroundTree"/>
+<circle cx="787.3654508213497" cy="952.1328042608513" r="1.95" class="backgroundTree"/>
+<circle cx="801.2741603159097" cy="931.2262270688142" r="2.4" class="backgroundTree"/>
+<circle cx="813.8694242838467" cy="909.6351513779027" r="1.5" class="backgroundTree"/>
+<circle cx="825.1287426065899" cy="887.4503773191902" r="1.95" class="backgroundTree"/>
+<circle cx="835.0351425556112" cy="864.7635246373504" r="2.4" class="backgroundTree"/>
+<circle cx="843.5771647416395" cy="841.666666666667" r="1.5" class="backgroundTree"/>
+<circle cx="882.7688017866601" cy="834.1884178755532" r="1.95" class="backgroundTree"/>
+<circle cx="889.4503991671928" cy="808.6757525761918" r="2.4" class="backgroundTree"/>
+<circle cx="894.6545291615465" cy="782.9808222836092" r="1.5" class="backgroundTree"/>
+<circle cx="898.388611067977" cy="757.2004242671102" r="1.95" class="backgroundTree"/>
+<circle cx="900.6655741612047" cy="731.4301861315063" r="2.4" class="backgroundTree"/>
+<circle cx="901.5037274425965" cy="705.7642138378903" r="1.5" class="backgroundTree"/>
+<circle cx="900.926609666769" cy="680.2947499056112" r="1.95" class="backgroundTree"/>
+<circle cx="898.9628204499196" cy="655.1118430310694" r="2.4" class="backgroundTree"/>
+<line x1="507" y1="855.7575757575758" x2="507" y2="677.2727272727273" class="viewRay"/>
+<line x1="326.8958333333333" y1="846.3636363636364" x2="507" y2="677.2727272727273" class="viewRay"/>
+<line x1="687.1041666666666" y1="846.3636363636364" x2="507" y2="677.2727272727273" class="viewRay"/>
+<line x1="649.1875" y1="782.4848484848485" x2="507" y2="677.2727272727273" class="viewRay"/>
+<g>
+      <polygon points="402.72916666666663,780.6060606060606 611.2708333333333,780.6060606060606 649.1875,846.3636363636364 611.2708333333333,921.5151515151515 402.72916666666663,921.5151515151515 364.8125,846.3636363636364" class="audienceZone audience-seated-lawn"/>
+      <circle cx="507" cy="855.7575757575758" r="5" class="audienceView"/>
+      <text x="507" y="843.7575757575758" class="zoneLabel" text-anchor="middle">CENTRAL HANAMI LAWN · 72</text>
+    </g>
+<g>
+      <polygon points="288.97916666666663,790 355.3333333333333,790 364.8125,874.5454545454546 307.9375,912.1212121212121 260.54166666666663,865.1515151515152" class="audienceZone audience-standing-terrace"/>
+      <circle cx="326.8958333333333" cy="846.3636363636364" r="5" class="audienceView"/>
+      <text x="326.8958333333333" y="834.3636363636364" class="zoneLabel" text-anchor="middle">WEST STANDING TERRACE · 28</text>
+    </g>
+<g>
+      <polygon points="658.6666666666666,790 725.0208333333333,790 753.4583333333333,865.1515151515152 706.0625,912.1212121212121 649.1875,874.5454545454546" class="audienceZone audience-standing-terrace"/>
+      <circle cx="687.1041666666666" cy="846.3636363636364" r="5" class="audienceView"/>
+      <text x="687.1041666666666" y="834.3636363636364" class="zoneLabel" text-anchor="middle">EAST STANDING TERRACE · 28</text>
+    </g>
+<g>
+      <polygon points="611.2708333333333,797.5151515151515 687.1041666666666,797.5151515151515 687.1041666666666,767.4545454545455 611.2708333333333,767.4545454545455" class="audienceZone audience-level-viewing-terrace"/>
+      <circle cx="649.1875" cy="782.4848484848485" r="5" class="audienceView"/>
+      <text x="649.1875" y="770.4848484848485" class="zoneLabel" text-anchor="middle">ACCESSIBLE OVERLOOK · 8</text>
+    </g>
+<g>
+      <path d="M 108.875 996.6666666666667 L 194.1875 959.0909090909091 L 270.0208333333333 912.1212121212121 L 336.375 855.7575757575758" class="pathShoulder" stroke-width="31.281249999999996"/>
+      <path d="M 108.875 996.6666666666667 L 194.1875 959.0909090909091 L 270.0208333333333 912.1212121212121 L 336.375 855.7575757575758" class="path" stroke-width="24.645833333333332"/>
+    </g>
+<g>
+      <path d="M 336.375 855.7575757575758 L 374.29166666666663 808.7878787878789 L 402.72916666666663 771.2121212121212 L 421.6875 747.7272727272727" class="pathShoulder" stroke-width="29.38541666666666"/>
+      <path d="M 336.375 855.7575757575758 L 374.29166666666663 808.7878787878789 L 402.72916666666663 771.2121212121212 L 421.6875 747.7272727272727" class="path" stroke-width="22.749999999999996"/>
+    </g>
+<g>
+      <path d="M 336.375 855.7575757575758 L 317.41666666666663 865.1515151515152" class="pathShoulder" stroke-width="25.59375"/>
+      <path d="M 336.375 855.7575757575758 L 317.41666666666663 865.1515151515152" class="path" stroke-width="18.958333333333332"/>
+    </g>
+<g>
+      <path d="M 336.375 855.7575757575758 L 393.25 930.909090909091 L 507 959.0909090909091" class="pathShoulder" stroke-width="27.489583333333336"/>
+      <path d="M 336.375 855.7575757575758 L 393.25 930.909090909091 L 507 959.0909090909091" class="path" stroke-width="20.854166666666668"/>
+    </g>
+<g>
+      <path d="M 507 959.0909090909091 L 507 916.8181818181819" class="pathShoulder" stroke-width="25.59375"/>
+      <path d="M 507 959.0909090909091 L 507 916.8181818181819" class="path" stroke-width="18.958333333333332"/>
+    </g>
+<g>
+      <path d="M 507 959.0909090909091 L 620.75 930.909090909091 L 687.1041666666666 855.7575757575758" class="pathShoulder" stroke-width="27.489583333333336"/>
+      <path d="M 507 959.0909090909091 L 620.75 930.909090909091 L 687.1041666666666 855.7575757575758" class="path" stroke-width="20.854166666666668"/>
+    </g>
+<g>
+      <path d="M 687.1041666666666 855.7575757575758 L 706.0625 865.1515151515152" class="pathShoulder" stroke-width="25.59375"/>
+      <path d="M 687.1041666666666 855.7575757575758 L 706.0625 865.1515151515152" class="path" stroke-width="18.958333333333332"/>
+    </g>
+<g>
+      <path d="M 687.1041666666666 855.7575757575758 L 668.1458333333333 827.5757575757576 L 649.1875 796.5757575757576" class="pathShoulder" stroke-width="27.489583333333336"/>
+      <path d="M 687.1041666666666 855.7575757575758 L 668.1458333333333 827.5757575757576 L 649.1875 796.5757575757576" class="path" stroke-width="20.854166666666668"/>
+    </g>
+<g>
+      <path d="M 649.1875 796.5757575757576 L 725.0208333333333 836.969696969697 L 810.3333333333333 893.3333333333334 L 905.125 940.3030303030304" class="pathShoulder" stroke-width="27.489583333333336"/>
+      <path d="M 649.1875 796.5757575757576 L 725.0208333333333 836.969696969697 L 810.3333333333333 893.3333333333334 L 905.125 940.3030303030304" class="path" stroke-width="20.854166666666668"/>
+    </g>
+<g>
+      <path d="M 421.6875 747.7272727272727 L 412.2083333333333 677.2727272727273 L 397.9895833333333 616.2121212121212 L 374.29166666666663 578.6363636363637" class="pathShoulder" stroke-width="29.38541666666666"/>
+      <path d="M 421.6875 747.7272727272727 L 412.2083333333333 677.2727272727273 L 397.9895833333333 616.2121212121212 L 374.29166666666663 578.6363636363637" class="path" stroke-width="22.749999999999996"/>
+    </g>
+<g>
+      <path d="M 374.29166666666663 484.6969696969697 L 421.6875 442.42424242424244 L 488.04166666666663 404.8484848484849 L 554.3958333333333 376.6666666666667 L 582.8333333333333 348.4848484848485" class="pathShoulder" stroke-width="27.489583333333336"/>
+      <path d="M 374.29166666666663 484.6969696969697 L 421.6875 442.42424242424244 L 488.04166666666663 404.8484848484849 L 554.3958333333333 376.6666666666667 L 582.8333333333333 348.4848484848485" class="path" stroke-width="20.854166666666668"/>
+    </g>
+<g>
+      <path d="M 924.0833333333333 649.0909090909091 L 829.2916666666666 630.3030303030303 L 734.5 620.909090909091 L 649.1875 630.3030303030303 L 597.0520833333333 649.0909090909091" class="servicePathShoulder" stroke-width="29.38541666666666"/>
+      <path d="M 924.0833333333333 649.0909090909091 L 829.2916666666666 630.3030303030303 L 734.5 620.909090909091 L 649.1875 630.3030303030303 L 597.0520833333333 649.0909090909091" class="servicePath" stroke-width="22.749999999999996"/>
+    </g>
+<g>
+      <path d="M 905.125 940.3030303030304 L 772.4166666666666 968.4848484848485 L 649.1875 987.2727272727274 L 535.4375 987.2727272727274" class="servicePathShoulder" stroke-width="25.59375"/>
+      <path d="M 905.125 940.3030303030304 L 772.4166666666666 968.4848484848485 L 649.1875 987.2727272727274 L 535.4375 987.2727272727274" class="servicePath" stroke-width="18.958333333333332"/>
+    </g>
+<path d="M 108.875 536.3636363636364 L 194.1875 513.8181818181819 L 279.5 525.090909090909 L 374.29166666666663 532.6060606060606 L 459.60416666666663 541.060606060606 L 554.3958333333333 525.090909090909 L 649.1875 514.7575757575758 L 753.4583333333333 531.6666666666667 L 838.7708333333333 515.6969696969697 L 914.6041666666666 528.8484848484849" class="waterBank" stroke-width="77.03030303030303"/>
+<path d="M 108.875 536.3636363636364 L 194.1875 513.8181818181819 L 279.5 525.090909090909 L 374.29166666666663 532.6060606060606 L 459.60416666666663 541.060606060606 L 554.3958333333333 525.090909090909 L 649.1875 514.7575757575758 L 753.4583333333333 531.6666666666667 L 838.7708333333333 515.6969696969697 L 914.6041666666666 528.8484848484849" class="water" stroke-width="50.727272727272734"/>
+<circle cx="469.0833333333333" cy="535.4242424242425" r="42.65625" class="waterPool"/>
+<circle cx="658.6666666666666" cy="518.5151515151515" r="45.49999999999999" class="waterPool"/>
+<path d="M 108.875 536.3636363636364 L 194.1875 513.8181818181819 L 279.5 525.090909090909 L 374.29166666666663 532.6060606060606 L 459.60416666666663 541.060606060606 L 554.3958333333333 525.090909090909 L 649.1875 514.7575757575758 L 753.4583333333333 531.6666666666667 L 838.7708333333333 515.6969696969697 L 914.6041666666666 528.8484848484849" class="waterHighlight"/>
+<g>
+      <circle cx="469.0833333333333" cy="535.4242424242425" r="32.229166666666664" class="fishHabitat"/>
+      <text x="469.0833333333333" y="539.4242424242425" class="micro" text-anchor="middle">KOI</text>
+    </g>
+<g>
+      <circle cx="658.6666666666666" cy="518.5151515151515" r="36.02083333333333" class="fishHabitat"/>
+      <text x="658.6666666666666" y="522.5151515151515" class="micro" text-anchor="middle">KOI</text>
+    </g>
+<g>
+      <circle cx="194.1875" cy="724.2424242424242" r="49.291666666666664" class="treeCanopy treeMature"/>
+      <circle cx="194.1875" cy="724.2424242424242" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="184.70833333333331" cy="602.1212121212121" r="42.65625" class="treeCanopy treeMiddle"/>
+      <circle cx="184.70833333333331" cy="602.1212121212121" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="213.14583333333331" cy="404.8484848484849" r="54.979166666666664" class="treeCanopy treeMature"/>
+      <circle cx="213.14583333333331" cy="404.8484848484849" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="307.9375" cy="329.69696969696975" r="41.708333333333336" class="treeCanopy treeMiddle"/>
+      <circle cx="307.9375" cy="329.69696969696975" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="421.6875" cy="245.15151515151516" r="38.86458333333333" class="treeCanopy treeYoung"/>
+      <circle cx="421.6875" cy="245.15151515151516" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="535.4375" cy="226.36363636363637" r="45.49999999999999" class="treeCanopy treeMiddle"/>
+      <circle cx="535.4375" cy="226.36363636363637" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="696.5833333333333" cy="301.5151515151515" r="54.03125" class="treeCanopy treeMature"/>
+      <circle cx="696.5833333333333" cy="301.5151515151515" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="800.8541666666666" cy="404.8484848484849" r="43.60416666666666" class="treeCanopy treeMiddle"/>
+      <circle cx="800.8541666666666" cy="404.8484848484849" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="829.2916666666666" cy="564.5454545454545" r="41.708333333333336" class="treeCanopy treeMiddle"/>
+      <circle cx="829.2916666666666" cy="564.5454545454545" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="819.8125" cy="705.4545454545455" r="48.34374999999999" class="treeCanopy treeMature"/>
+      <circle cx="819.8125" cy="705.4545454545455" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="791.375" cy="846.3636363636364" r="40.760416666666664" class="treeCanopy treeMiddle"/>
+      <circle cx="791.375" cy="846.3636363636364" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="696.5833333333333" cy="959.0909090909091" r="38.86458333333333" class="treeCanopy treeYoung"/>
+      <circle cx="696.5833333333333" cy="959.0909090909091" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="582.8333333333333" cy="1015.4545454545455" r="34.125" class="treeCanopy treeYoung"/>
+      <circle cx="582.8333333333333" cy="1015.4545454545455" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="431.16666666666663" cy="1015.4545454545455" r="35.072916666666664" class="treeCanopy treeYoung"/>
+      <circle cx="431.16666666666663" cy="1015.4545454545455" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="298.4583333333333" cy="959.0909090909091" r="39.8125" class="treeCanopy treeMiddle"/>
+      <circle cx="298.4583333333333" cy="959.0909090909091" r="5.5" class="treeTrunk"/>
+    </g>
+<g>
+      <circle cx="203.66666666666666" cy="865.1515151515152" r="45.49999999999999" class="treeCanopy treeMature"/>
+      <circle cx="203.66666666666666" cy="865.1515151515152" r="5.5" class="treeTrunk"/>
+    </g>
+<rect x="421.6875" y="611.5151515151515" width="170.625" height="155" rx="16" class="stageClear"/>
+<rect x="450.125" y="639.6969696969697" width="113.75" height="75.15151515151516" rx="8" class="stage"/>
+<line x1="469.0833333333333" y1="639.6969696969697" x2="469.0833333333333" y2="714.8484848484849" class="stageLine"/>
+<line x1="507" y1="639.6969696969697" x2="507" y2="714.8484848484849" class="stageLine"/>
+<line x1="544.9166666666666" y1="639.6969696969697" x2="544.9166666666666" y2="714.8484848484849" class="stageLine"/>
+<text x="507" y="682.2727272727273" class="mapTitle" text-anchor="middle">STAGE</text>
+<rect x="349.6458333333333" y="578.6363636363637" width="49.29166666666667" height="18.78787878787879" class="landing"/>
+<rect x="349.6458333333333" y="465.90909090909093" width="49.29166666666667" height="18.78787878787879" class="landing"/>
+<rect x="361.0208333333333" y="484.6969696969697" width="26.541666666666664" height="93.93939393939394" rx="6" class="bridge"/>
+<line x1="365.0208333333333" y1="484.6969696969697" x2="365.0208333333333" y2="578.6363636363636" class="bridgeRail"/>
+<line x1="383.5625" y1="484.6969696969697" x2="383.5625" y2="578.6363636363636" class="bridgeRail"/>
+<text x="350.29166666666663" y="531.6666666666667" class="zoneLabel" text-anchor="end">CLEAR BRIDGE</text>
+<g transform="rotate(-4 582.8333333333333 339.0909090909091)">
+  <line x1="528.328125" y1="320.0909090909091" x2="528.328125" y2="361.0909090909091" class="torii"/>
+  <line x1="637.3385416666666" y1="320.0909090909091" x2="637.3385416666666" y2="361.0909090909091" class="torii"/>
+  <line x1="515.328125" y1="317.0909090909091" x2="650.3385416666666" y2="317.0909090909091" class="toriiCap"/>
+</g>
+<text x="582.8333333333333" y="304.0909090909091" class="zoneLabel" text-anchor="middle">TORII THRESHOLD</text>
+<g>
+      <circle cx="212.4728396292936" cy="917.8553157438711" r="7.109375" class="lanternPad"/>
+      <circle cx="212.4728396292936" cy="917.8553157438711" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="294.504224952278" cy="857.9182492066742" r="7.109375" class="lanternPad"/>
+      <circle cx="294.504224952278" cy="857.9182492066742" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="391.1088768598094" cy="715.9142294356847" r="7.109375" class="lanternPad"/>
+      <circle cx="391.1088768598094" cy="715.9142294356847" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="327.84375" cy="574.878787878788" r="7.583333333333333" class="lanternPad"/>
+      <circle cx="327.84375" cy="574.878787878788" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="327.84375" cy="488.45454545454544" r="7.583333333333333" class="lanternPad"/>
+      <circle cx="327.84375" cy="488.45454545454544" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="439.7894157837313" cy="405.12459287434984" r="7.109375" class="lanternPad"/>
+      <circle cx="439.7894157837313" cy="405.12459287434984" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="533.8715250444542" cy="410.9344666140605" r="7.109375" class="lanternPad"/>
+      <circle cx="533.8715250444542" cy="410.9344666140605" r="4" class="lantern"/>
+    </g>
+<g>
+      <circle cx="713.4904487809969" cy="804.1654876458447" r="7.109375" class="lanternPad"/>
+      <circle cx="713.4904487809969" cy="804.1654876458447" r="4" class="lantern"/>
+    </g>
+<path d="M 507 1071.818181818182 L 497.5208333333333 1053.030303030303 L 516.4791666666666 1053.030303030303 Z" fill="#f7d27e"/>
+<text x="507" y="1097.818181818182" class="zoneLabel" text-anchor="middle">DEFAULT CAMERA</text>
+<path d="M 934 198 L 934 158 L 926 174 M 934 158 L 942 174" stroke="#f7e8dd" stroke-width="2" fill="none"/>
+<text x="934" y="216" class="zoneLabel" text-anchor="middle">N</text>
+
+<rect x="1010" y="116" width="756" height="182" rx="20" class="panel"/>
+<text x="1040" y="152" class="sectionTitle">THE SPATIAL HIERARCHY</text>
+<text class="body"><tspan x="1040" y="181">A performance clearing inside an established</tspan><tspan x="1040" y="200">cherry grove, organized by a real arrival</tspan><tspan x="1040" y="219">sequence, a crescent audience lawn, a broad living</tspan><tspan x="1040" y="238">river, and a shrine threshold beyond the bridge.</tspan></text>
+<line x1="1040" y1="245" x2="1476" y2="245" class="divider"/>
+<text x="1040" y="266" class="ruleGood">✓ Stage and audience read first</text>
+<text x="1040" y="286" class="ruleGood">✓ River threshold · established grove beyond</text>
+<rect x="1506" y="146" width="220" height="126" rx="8" class="insetTerrain"/>
+<rect x="1511.5" y="149.05454545454546" width="209" height="119.89090909090908" rx="5" class="insetOrbit"/>
+<rect x="1581.625" y="189.9090909090909" width="68.75" height="40.09090909090909" rx="3" class="insetClearing"/>
+<text x="1514" y="161" class="micro">FULL TERRAIN · ORBIT ENVELOPE · CLEARING</text>
+
+<rect x="1010" y="316" width="365" height="224" rx="20" class="panel"/>
+<text x="1040" y="352" class="sectionTitle">PEOPLE + MOVEMENT</text>
+<text x="1040" y="397" class="metric">136</text>
+<text x="1040" y="418" class="metricLabel">CAPACITY</text>
+<text x="1160" y="397" class="metric">4</text>
+<text x="1160" y="418" class="metricLabel">ZONES</text>
+<text x="1265" y="397" class="metric">12</text>
+<text x="1265" y="418" class="metricLabel">ROUTES</text>
+<text x="1040" y="460" class="ruleGood">✓ 13 physical public nodes connect</text>
+<text x="1040" y="486" class="ruleGood">✓ 4 wheelchair + companion bays</text>
+<text x="1040" y="512" class="ruleGood">✓ Service route separated from public access</text>
+
+<rect x="1392" y="316" width="374" height="224" rx="20" class="panel"/>
+<text x="1422" y="352" class="sectionTitle">WATER + CROSSING</text>
+<text x="1422" y="397" class="metric">5.4 m</text>
+<text x="1422" y="418" class="metricLabel">RIVER WIDTH</text>
+<text x="1562" y="397" class="metric">10 m</text>
+<text x="1562" y="418" class="metricLabel">BRIDGE SPAN</text>
+<text x="1422" y="460" class="ruleGood">✓ Both bridge landings are tree-free</text>
+<text x="1422" y="486" class="ruleGood">✓ Bed, banks, shallows, reflections required</text>
+<text x="1422" y="512" class="ruleGood">✓ Koi habitats avoid the crossing</text>
+
+<rect x="1010" y="558" width="756" height="218" rx="20" class="panel"/>
+<text x="1040" y="594" class="sectionTitle">GROVE + ATMOSPHERE</text>
+<text x="1040" y="641" class="metric">16 + 108</text>
+<text x="1040" y="662" class="metricLabel">HERO + BACKGROUND TREES</text>
+<text x="1215" y="641" class="metric">11</text>
+<text x="1215" y="662" class="metricLabel">HERO VARIANTS</text>
+<text x="1380" y="641" class="metric">14%</text>
+<text x="1380" y="662" class="metricLabel">MAX STAGE PETALS</text>
+<text x="1584" y="641" class="metric">20:30</text>
+<text x="1584" y="662" class="metricLabel">TIME OF DAY</text>
+<text x="1040" y="700" class="ruleGood">✓ PlantFactory only · no Meshy trees · no blob trees</text>
+<text x="1040" y="723" class="rulePending">○ Approve nine new variants before grove production</text>
+<text x="1040" y="746" class="ruleGood">✓ Petals originate beneath real blossom canopies</text>
+<text x="1040" y="769" class="ruleGood">✓ Full moon and wooded berm close the horizon</text>
+
+<rect x="1010" y="794" width="756" height="306" rx="20" class="panel"/>
+<text x="1040" y="828" class="sectionTitle">DELIVERY GATES · NOTHING GETS PILED ON</text>
+<g>
+      <circle cx="1042" cy="868" r="13" class="phaseNumber phaseActive"/>
+      <text x="1042" y="873" class="phaseNumberText">1</text>
+      <text x="1068" y="869" class="phaseTitle">Spatial contract</text>
+      <text x="1068" y="887" class="phaseState">ACTIVE GATE</text>
+    </g>
+<g>
+      <circle cx="1042" cy="906" r="13" class="phaseNumber "/>
+      <text x="1042" y="911" class="phaseNumberText">2</text>
+      <text x="1068" y="907" class="phaseTitle">Terrain and water graybox</text>
+      <text x="1068" y="925" class="phaseState">PHASE 2</text>
+    </g>
+<g>
+      <circle cx="1042" cy="944" r="13" class="phaseNumber "/>
+      <text x="1042" y="949" class="phaseNumberText">3</text>
+      <text x="1068" y="945" class="phaseTitle">Architecture and access</text>
+      <text x="1068" y="963" class="phaseState">PHASE 3</text>
+    </g>
+<g>
+      <circle cx="1042" cy="982" r="13" class="phaseNumber "/>
+      <text x="1042" y="987" class="phaseNumberText">4</text>
+      <text x="1068" y="983" class="phaseTitle">PlantFactory grove</text>
+      <text x="1068" y="1001" class="phaseState">PHASE 4</text>
+    </g>
+<g>
+      <circle cx="1042" cy="1020" r="13" class="phaseNumber "/>
+      <text x="1042" y="1025" class="phaseNumberText">5</text>
+      <text x="1068" y="1021" class="phaseTitle">Life and atmosphere</text>
+      <text x="1068" y="1039" class="phaseState">PHASE 5</text>
+    </g>
+<g>
+      <circle cx="1042" cy="1058" r="13" class="phaseNumber "/>
+      <text x="1042" y="1063" class="phaseNumberText">6</text>
+      <text x="1068" y="1059" class="phaseTitle">Multi-angle acceptance</text>
+      <text x="1068" y="1077" class="phaseState">PHASE 6</text>
+    </g>
+<line x1="1392" y1="850" x2="1392" y2="1074" class="divider"/>
+<text x="1422" y="875" class="mapTitle">ACCEPTANCE PROOF</text>
+<text x="1422" y="912" class="ruleGood">✓ 13/13 physical nodes connected</text>
+<text x="1422" y="940" class="ruleGood">✓ Bridge center offset 0.1 m</text>
+<text x="1422" y="968" class="ruleGood">✓ 171 3D sightline rays clear</text>
+<text x="1422" y="996" class="ruleGood">✓ Orbit envelope -121.6…121.6 m</text>
+<text x="1422" y="1024" class="ruleGood">✓ Koi footprints contained in widened pools</text>
+<text x="1422" y="1062" class="rulePending">○ Production locked pending approval</text>
+
+<g transform="translate(52 1122)">
+  <circle cx="0" cy="0" r="9" class="treeCanopy treeMature"/><text x="16" y="4" class="legendText">PlantFactory grove</text>
+  <line x1="150" y1="0" x2="196" y2="0" class="path" stroke-width="10"/><text x="207" y="4" class="legendText">Public route</text>
+  <line x1="320" y1="0" x2="366" y2="0" class="water" stroke-width="14"/><text x="377" y="4" class="legendText">Living river</text>
+  <rect x="492" y="-9" width="24" height="18" class="audienceZone audience-seated-lawn"/><text x="526" y="4" class="legendText">Audience</text>
+  <line x1="622" y1="0" x2="668" y2="0" class="viewRay"/><text x="679" y="4" class="legendText">Protected sightline</text>
+</g>
+</svg>

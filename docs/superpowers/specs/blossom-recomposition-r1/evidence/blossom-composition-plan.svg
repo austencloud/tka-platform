@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1120" viewBox="0 0 1600 1120">
+<style>
+  text { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+  .title { fill:#f8eee7; font-size:32px; font-weight:800; letter-spacing:.5px; }
+  .subtitle { fill:#b9c7c5; font-size:15px; }
+  .panel { fill:#111a1b; stroke:#304044; stroke-width:2; }
+  .grid { stroke:#2a393a; stroke-width:1; }
+  .axis { fill:#7f9290; font-size:12px; }
+  .sightline { fill:#7bd7d2; fill-opacity:.11; stroke:#7bd7d2; stroke-opacity:.65; stroke-width:2; stroke-dasharray:8 7; }
+  .ecology { fill:#416a52; fill-opacity:.6; stroke:#75a27c; stroke-width:2; }
+  .stageClear { fill:none; stroke:#e8c77d; stroke-width:2; stroke-dasharray:9 7; }
+  .stage { fill:#5e3c2d; stroke:#d6a86b; stroke-width:4; }
+  .stageLine { stroke:#d6a86b; stroke-width:1; opacity:.65; }
+  .trunk { fill:#4f332f; stroke:#f1d9cc; stroke-width:2; }
+  .water { fill:none; stroke:#3b839d; stroke-opacity:.74; stroke-linecap:round; stroke-linejoin:round; }
+  .bridge { fill:#9d5f3e; stroke:#e4b17e; stroke-width:3; }
+  .torii { stroke:#d34e46; stroke-width:10; stroke-linecap:round; }
+  .toriiCap { stroke:#f06a5b; stroke-width:7; stroke-linecap:round; }
+  .lanternGlow { fill:#ffd37b; fill-opacity:.22; stroke:#ffd37b; stroke-width:2; }
+  .lantern { fill:#b8aaa0; }
+  .featureLabel { fill:#f6dfd1; font-size:13px; font-weight:750; letter-spacing:.7px; }
+  .micro { fill:#b9c7c5; font-size:12px; font-weight:650; }
+  .number { fill:#f1ba69; }
+  .numberText { fill:#1b1b18; font-size:15px; font-weight:850; text-anchor:middle; }
+  .sectionGround { stroke:#839187; stroke-width:3; }
+  .sectionStage { fill:#6d4936; stroke:#d6a86b; stroke-width:2; }
+  .sectionTrunk { stroke:#65505a; stroke-width:10; stroke-linecap:round; }
+  .sectionCrown { fill:#d889ad; fill-opacity:.48; stroke:#f0abc8; stroke-width:2; }
+  .sectionSight { stroke:#7bd7d2; stroke-width:2; stroke-dasharray:7 6; }
+  .routeCard { fill:#192425; stroke:#394a4c; stroke-width:2; }
+  .cardTitle { fill:#f7e8dd; font-size:16px; font-weight:750; }
+  .cardBody { fill:#b9c7c5; font-size:14px; }
+  .budget { fill:#f1ba69; font-size:16px; font-weight:750; }
+</style>
+<rect width="1600" height="1120" fill="#0a1112"/>
+<text x="46" y="50" class="title">BLOSSOM RECOMPOSITION R1 · MEASURED PLACEMENT GATE</text>
+<text x="46" y="78" class="subtitle">Two PlantFactory crowns. Protected performer sightline. Water and threshold revealed through orbit, not piled behind the stage.</text>
+
+<rect x="38" y="94" width="900" height="950" rx="22" class="panel"/>
+<text x="70" y="120" class="featureLabel">TOP-DOWN PLAN · 5 M GRID</text>
+<line x1="106" y1="128" x2="106" y2="776" class="grid"/>
+<text x="106" y="798" class="axis" text-anchor="middle">-20</text>
+<line x1="196" y1="128" x2="196" y2="776" class="grid"/>
+<text x="196" y="798" class="axis" text-anchor="middle">-15</text>
+<line x1="286" y1="128" x2="286" y2="776" class="grid"/>
+<text x="286" y="798" class="axis" text-anchor="middle">-10</text>
+<line x1="376" y1="128" x2="376" y2="776" class="grid"/>
+<text x="376" y="798" class="axis" text-anchor="middle">-5</text>
+<line x1="466" y1="128" x2="466" y2="776" class="grid"/>
+<text x="466" y="798" class="axis" text-anchor="middle">0</text>
+<line x1="556" y1="128" x2="556" y2="776" class="grid"/>
+<text x="556" y="798" class="axis" text-anchor="middle">5</text>
+<line x1="646" y1="128" x2="646" y2="776" class="grid"/>
+<text x="646" y="798" class="axis" text-anchor="middle">10</text>
+<line x1="736" y1="128" x2="736" y2="776" class="grid"/>
+<text x="736" y="798" class="axis" text-anchor="middle">15</text>
+<line x1="826" y1="128" x2="826" y2="776" class="grid"/>
+<text x="826" y="798" class="axis" text-anchor="middle">20</text>
+<line x1="70" y1="776" x2="862" y2="776" class="grid"/>
+<text x="56" y="781" class="axis" text-anchor="end">-10</text>
+<line x1="70" y1="686" x2="862" y2="686" class="grid"/>
+<text x="56" y="691" class="axis" text-anchor="end">-5</text>
+<line x1="70" y1="596" x2="862" y2="596" class="grid"/>
+<text x="56" y="601" class="axis" text-anchor="end">0</text>
+<line x1="70" y1="506" x2="862" y2="506" class="grid"/>
+<text x="56" y="511" class="axis" text-anchor="end">5</text>
+<line x1="70" y1="416" x2="862" y2="416" class="grid"/>
+<text x="56" y="421" class="axis" text-anchor="end">10</text>
+<line x1="70" y1="326" x2="862" y2="326" class="grid"/>
+<text x="56" y="331" class="axis" text-anchor="end">15</text>
+<line x1="70" y1="236" x2="862" y2="236" class="grid"/>
+<text x="56" y="241" class="axis" text-anchor="end">20</text>
+<line x1="70" y1="146" x2="862" y2="146" class="grid"/>
+<text x="56" y="151" class="axis" text-anchor="end">25</text>
+<polygon points="386.8,776 545.2,776 561.4000000000001,218 370.59999999999997,218" class="sightline"/>
+<ellipse cx="329.2" cy="491.59999999999997" rx="30.599999999999998" ry="27" class="ecology"/>
+<ellipse cx="304" cy="295.4" rx="43.199999999999996" ry="32.4" class="ecology"/>
+<ellipse cx="325.6" cy="252.2" rx="36" ry="25.2" class="ecology"/>
+<ellipse cx="606.4" cy="455.59999999999997" rx="36" ry="30.599999999999998" class="ecology"/>
+<ellipse cx="620.8000000000001" cy="263" rx="43.199999999999996" ry="32.4" class="ecology"/>
+<path d="M 214 444.8 L 277 412.40000000000003 L 340 371 L 466 387.2 L 610 347.6 L 655 372.79999999999995 L 718 344" class="water" stroke-width="55.800000000000004"/>
+<rect x="320.2" y="329.59999999999997" width="39.6" height="86.39999999999999" rx="8" class="bridge" transform="rotate(-6 340 372.79999999999995)"/>
+<circle cx="466" cy="596" r="121.5" class="stageClear"/>
+<circle cx="466" cy="596" r="94.5" class="stage"/>
+<line x1="404.8" y1="675.1999999999999" x2="404.8" y2="516.8" class="stageLine"/>
+<line x1="466" y1="675.1999999999999" x2="466" y2="516.8" class="stageLine"/>
+<line x1="527.2" y1="675.1999999999999" x2="527.2" y2="516.8" class="stageLine"/>
+<text x="466" y="601" class="featureLabel" text-anchor="middle">PERFORMANCE DECK · Ø10.5 M</text>
+<g>
+      <ellipse cx="336.40000000000003" cy="426.8" rx="69.48" ry="71.55" fill="#f3a9c5" fill-opacity="0.34" stroke="#f3a9c5" stroke-width="3" transform="rotate(-18 336.40000000000003 426.8)"/>
+      <circle cx="336.40000000000003" cy="426.8" r="9" class="trunk"/>
+      <circle cx="291.40000000000003" cy="384.8" r="15" class="number"/><text x="291.40000000000003" y="390.8" class="numberText">1</text>
+      <text x="336.40000000000003" y="520.35" class="featureLabel" text-anchor="middle">A · HERO CROWN</text>
+    </g>
+<g>
+      <ellipse cx="602.8000000000001" cy="351.20000000000005" rx="78.03" ry="69.75" fill="#d889ad" fill-opacity="0.34" stroke="#d889ad" stroke-width="3" transform="rotate(26 602.8000000000001 351.20000000000005)"/>
+      <circle cx="602.8000000000001" cy="351.20000000000005" r="9" class="trunk"/>
+      <circle cx="557.8000000000001" cy="309.20000000000005" r="15" class="number"/><text x="557.8000000000001" y="315.20000000000005" class="numberText">2</text>
+      <text x="602.8000000000001" y="442.95000000000005" class="featureLabel" text-anchor="middle">B · SECONDARY CROWN</text>
+    </g>
+<g><circle cx="345.40000000000003" cy="491.59999999999997" r="10" class="lanternGlow"/><rect x="341.40000000000003" y="487.59999999999997" width="8" height="12" rx="2" class="lantern"/><text x="358.40000000000003" y="496.59999999999997" class="micro">L1</text></g>
+<g><circle cx="588.4" cy="482.59999999999997" r="10" class="lanternGlow"/><rect x="584.4" y="478.59999999999997" width="8" height="12" rx="2" class="lantern"/><text x="601.4" y="487.59999999999997" class="micro">L2</text></g>
+<g><circle cx="595.6" cy="293.6" r="10" class="lanternGlow"/><rect x="591.6" y="289.6" width="8" height="12" rx="2" class="lantern"/><text x="608.6" y="298.6" class="micro">L3</text></g>
+<g transform="rotate(0 466 155)">
+  <line x1="367" y1="179" x2="367" y2="131" class="torii"/>
+  <line x1="565" y1="179" x2="565" y2="131" class="torii"/>
+  <line x1="354" y1="128" x2="578" y2="128" class="toriiCap"/>
+</g>
+<text x="466" y="111" class="featureLabel" text-anchor="middle">OFF-AXIS TORII</text>
+<path d="M 466 758 L 451.59999999999997 729.1999999999999 L 480.40000000000003 729.1999999999999 Z" fill="#7bd7d2"/>
+<text x="466" y="787" class="micro" text-anchor="middle">DEFAULT VIEW · CAMERA CONTINUES 16 M FRONT</text>
+<text x="466" y="272" class="micro" text-anchor="middle">PROTECTED NEGATIVE SPACE · 8.8 → 10.6 M</text>
+
+<rect x="960" y="94" width="610" height="470" rx="22" class="panel"/>
+<text x="990" y="125" class="featureLabel">LONG SECTION · DEFAULT VIEW HEIGHTS</text>
+<line x1="980" y1="510" x2="1540" y2="510" class="grid"/><text x="970" y="514" class="axis" text-anchor="end">0m</text>
+<line x1="980" y1="420" x2="1540" y2="420" class="grid"/><text x="970" y="424" class="axis" text-anchor="end">3m</text>
+<line x1="980" y1="330" x2="1540" y2="330" class="grid"/><text x="970" y="334" class="axis" text-anchor="end">6m</text>
+<line x1="980" y1="240" x2="1540" y2="240" class="grid"/><text x="970" y="244" class="axis" text-anchor="end">9m</text>
+<line x1="980" y1="150" x2="1540" y2="150" class="grid"/><text x="970" y="154" class="axis" text-anchor="end">12m</text>
+<line x1="980" y1="510" x2="1540" y2="510" class="sectionGround"/>
+<rect x="1053.888888888889" y="499.5" width="163.33333333333326" height="10.5" class="sectionStage"/>
+<circle cx="1135.5555555555557" cy="447" r="8" fill="#f6dfd1"/><line x1="1135.5555555555557" y1="455" x2="1135.5555555555557" y2="499.5" stroke="#f6dfd1" stroke-width="4"/>
+<g><line x1="1281.7777777777778" y1="510" x2="1281.7777777777778" y2="263.99999999999994" class="sectionTrunk"/><ellipse cx="1281.7777777777778" cy="265.99999999999994" rx="55" ry="48" class="sectionCrown"/><text x="1281.7777777777778" y="206.99999999999994" class="micro" text-anchor="middle">9.8 m</text></g>
+<g><line x1="1347.111111111111" y1="510" x2="1347.111111111111" y2="240" class="sectionTrunk"/><ellipse cx="1347.111111111111" cy="242" rx="55" ry="48" class="sectionCrown"/><text x="1347.111111111111" y="183" class="micro" text-anchor="middle">10.6 m</text></g>
+<g><line x1="1516.6666666666667" y1="510" x2="1516.6666666666667" y2="384" class="torii"/><line x1="1494.6666666666667" y1="384" x2="1538.6666666666667" y2="384" class="toriiCap"/></g>
+<line x1="980" y1="165" x2="1415.5555555555557" y2="441" class="sectionSight"/>
+<text x="990" y="157" class="micro">DEFAULT CAMERA CONTINUES 16 M LEFT · 11.5 M HIGH</text>
+<text x="1135.5555555555557" y="538" class="micro" text-anchor="middle">STAGE</text>
+<text x="1516.6666666666667" y="538" class="micro" text-anchor="middle">TORII</text>
+
+<rect x="960" y="585" width="610" height="459" rx="22" class="panel"/>
+<text x="990" y="620" class="featureLabel">ORBIT STORY · WHAT ENTERS THE FRAME</text>
+<g>
+      <rect x="980" y="650" width="270" height="165" rx="18" class="routeCard"/>
+      <circle cx="1010" cy="681" r="18" class="number"/>
+      <text x="1010" y="688" class="numberText">1</text>
+      <text x="1038" y="687" class="cardTitle">Default arrival</text>
+      <text class="cardBody"><tspan x="1002" y="733">Performers first; Crown A</tspan><tspan x="1002" y="754">frames the left and Crown B</tspan><tspan x="1002" y="775">stays on the far-right</tspan><tspan x="1002" y="796">edge.</tspan></text>
+    </g>
+<g>
+      <rect x="1272" y="650" width="270" height="165" rx="18" class="routeCard"/>
+      <circle cx="1302" cy="681" r="18" class="number"/>
+      <text x="1302" y="688" class="numberText">2</text>
+      <text x="1330" y="687" class="cardTitle">Left orbit</text>
+      <text class="cardBody"><tspan x="1294" y="733">The bridge and river appear</tspan><tspan x="1294" y="754">without crossing the</tspan><tspan x="1294" y="775">performer silhouette.</tspan></text>
+    </g>
+<g>
+      <rect x="980" y="840" width="270" height="165" rx="18" class="routeCard"/>
+      <circle cx="1010" cy="871" r="18" class="number"/>
+      <text x="1010" y="878" class="numberText">3</text>
+      <text x="1038" y="877" class="cardTitle">Right orbit</text>
+      <text class="cardBody"><tspan x="1002" y="923">The torii reveals beyond</tspan><tspan x="1002" y="944">the stage while the open</tspan><tspan x="1002" y="965">center remains intact.</tspan></text>
+    </g>
+<g>
+      <rect x="1272" y="840" width="270" height="165" rx="18" class="routeCard"/>
+      <circle cx="1302" cy="871" r="18" class="number"/>
+      <text x="1302" y="878" class="numberText">4</text>
+      <text x="1330" y="877" class="cardTitle">Final wide</text>
+      <text class="cardBody"><tspan x="1294" y="923">Two asymmetric crowns</tspan><tspan x="1294" y="944">contain the garden; no</tspan><tspan x="1294" y="965">blossom wall closes the</tspan><tspan x="1294" y="986">horizon.</tspan></text>
+    </g>
+<text x="990" y="1020" class="budget">DENSITY CEILING · 2 TREES · 3 LANTERNS · 1 BRIDGE</text>
+<text x="990" y="1042" class="budget">1 TORII · 5 PLANTING ISLANDS · 0 EXTRA TREES</text>
+</svg>

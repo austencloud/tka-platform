@@ -35,6 +35,13 @@ export interface BlossomRuntimeConfig {
     hemisphere: number;
     key: number;
   };
+  effects: {
+    shadows: boolean;
+    shadowMapSize: number;
+    reflectiveWater: boolean;
+    lanternLights: number;
+    stars: number;
+  };
   maxPixelRatio: number;
   stage: BlossomStageTransform;
 }
@@ -42,7 +49,7 @@ export interface BlossomRuntimeConfig {
 export interface BlossomStageTransform {
   position: [number, number, number];
   scale: [number, number, number];
-  horizontalScale: number;
+  atmosphereScale: number;
   stageTopY: number;
 }
 
@@ -52,13 +59,16 @@ interface BlossomQualityPreset {
   fireflyScale: number;
   hemisphereLightScale: number;
   keyLightScale: number;
+  shadows: boolean;
+  shadowMapSize: number;
+  reflectiveWater: boolean;
+  lanternLights: number;
+  stars: number;
   maxPixelRatio: number;
 }
 
 const AUTHORING_STAGE_RADIUS = 5;
 const AUTHORING_STAGE_TOP_Y = 0.35;
-const CLEARING_SAFETY_MARGIN = 0.08;
-
 const QUALITY_PRESETS: Record<BlossomQualityTier, BlossomQualityPreset> = {
   high: {
     particleScale: 1,
@@ -66,22 +76,37 @@ const QUALITY_PRESETS: Record<BlossomQualityTier, BlossomQualityPreset> = {
     fireflyScale: 1,
     hemisphereLightScale: 1,
     keyLightScale: 1,
+    shadows: true,
+    shadowMapSize: 2048,
+    reflectiveWater: true,
+    lanternLights: 3,
+    stars: 640,
     maxPixelRatio: 2,
   },
   medium: {
-    particleScale: 0.65,
-    distantPetalScale: 0.65,
-    fireflyScale: 0.6,
+    particleScale: 0.72,
+    distantPetalScale: 0.64,
+    fireflyScale: 0.64,
     hemisphereLightScale: 0.92,
     keyLightScale: 0.9,
+    shadows: false,
+    shadowMapSize: 1024,
+    reflectiveWater: false,
+    lanternLights: 2,
+    stars: 440,
     maxPixelRatio: 1.5,
   },
   low: {
-    particleScale: 0.35,
-    distantPetalScale: 0,
-    fireflyScale: 0,
+    particleScale: 0.4,
+    distantPetalScale: 0.28,
+    fireflyScale: 0.3,
     hemisphereLightScale: 0.82,
     keyLightScale: 0.8,
+    shadows: false,
+    shadowMapSize: 1024,
+    reflectiveWater: false,
+    lanternLights: 0,
+    stars: 260,
     maxPixelRatio: 1,
   },
 };
@@ -115,15 +140,18 @@ export function createBlossomStageTransform(input: {
     input.stageWidth / 2,
     input.stageDepth / 2
   );
-  const horizontalScale = Math.max(
+  const atmosphereScale = Math.max(
     1,
-    stageHalfDiagonal / AUTHORING_STAGE_RADIUS + CLEARING_SAFETY_MARGIN
+    stageHalfDiagonal / AUTHORING_STAGE_RADIUS
   );
 
   return {
     position: [0, input.groundY, input.stageZOffset],
-    scale: [horizontalScale, 1, horizontalScale],
-    horizontalScale,
+    // Formation dimensions may widen the petal field, but never the authored
+    // garden. Scaling the whole GLB stretched tree crowns, moved every hero
+    // prop out of frame, and turned large formations into an empty platform.
+    scale: [1, 1, 1],
+    atmosphereScale,
     stageTopY: input.groundY + AUTHORING_STAGE_TOP_Y,
   };
 }
@@ -153,6 +181,13 @@ export function createBlossomRuntimeConfig(
       hemisphere:
         input.lightIntensities.hemisphere * preset.hemisphereLightScale,
       key: input.lightIntensities.key * preset.keyLightScale,
+    },
+    effects: {
+      shadows: preset.shadows,
+      shadowMapSize: preset.shadowMapSize,
+      reflectiveWater: preset.reflectiveWater,
+      lanternLights: preset.lanternLights,
+      stars: preset.stars,
     },
     maxPixelRatio: preset.maxPixelRatio,
     stage: createBlossomStageTransform(input),

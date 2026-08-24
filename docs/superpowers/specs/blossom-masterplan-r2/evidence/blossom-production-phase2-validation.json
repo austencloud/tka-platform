@@ -1,0 +1,39 @@
+{
+  "planId": "blossom-masterplan-r2.1",
+  "phase": "site-systems",
+  "status": "verified",
+  "checkedAt": "2026-08-23T15:07:17.272Z",
+  "asset": "static/models/blossom/blossom_environment.glb",
+  "assetSizeMiB": 3.82,
+  "terrainEnvelope": {
+    "minX": -128,
+    "maxX": 128,
+    "minY": -122,
+    "maxY": 142
+  },
+  "audience": {
+    "zones": 4,
+    "capacity": 136
+  },
+  "circulation": {
+    "totalPaths": 14,
+    "publicPaths": 12,
+    "servicePaths": 2
+  },
+  "water": {
+    "surfaceWidth": 5.4,
+    "localWidenings": 2,
+    "surfaceElevation": -0.15,
+    "bedDepth": 0.85
+  },
+  "bridgeSlopePercent": 4.5,
+  "lanterns": 8,
+  "gatedDecorationNodes": 0,
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_materials_emissive_strength",
+    "KHR_mesh_quantization"
+  ]
+}

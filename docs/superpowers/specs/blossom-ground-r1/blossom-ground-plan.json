@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "planId": "blossom-ground-r1",
+  "status": "approved",
+  "approval": {
+    "approver": "Austen",
+    "approvedAt": "2026-08-21T12:00:00-05:00",
+    "quote": "Send it brotha"
+  },
+  "units": "metres",
+  "authoringAxes": {
+    "lateral": "x",
+    "depth": "y",
+    "vertical": "z"
+  },
+  "terrain": {
+    "bounds": {
+      "minX": -31,
+      "maxX": 31,
+      "minY": -23,
+      "maxY": 32
+    },
+    "gridSpacing": 0.75,
+    "edgeEllipse": {
+      "radiusX": 31,
+      "radiusY": 28,
+      "centerY": 4
+    },
+    "stageFlatHalfSize": [4.2, 4.2],
+    "riverSplineSubdivisions": 8,
+    "riverChannelDepth": -0.08,
+    "riverWaterHeight": 0.055,
+    "mask": {
+      "worldMin": [-32, -32],
+      "worldMax": [32, 32],
+      "resolution": 512,
+      "red": "compacted-earth",
+      "green": "living-meadow",
+      "blue": "petal-litter",
+      "remainder": "damp-river-soil"
+    }
+  },
+  "stageContact": {
+    "edgeInset": 0.2,
+    "feather": 2.4,
+    "noise": 0.65,
+    "strength": 0.96
+  },
+  "paths": [
+    {
+      "id": "stage-to-bridge",
+      "halfWidth": 0.8,
+      "points": [
+        [-3.8, 3.7],
+        [-5.2, 6.7],
+        [-6.5, 9.7],
+        [-7, 12.4]
+      ]
+    },
+    {
+      "id": "bridge-to-threshold",
+      "halfWidth": 0.72,
+      "points": [
+        [-7, 12.4],
+        [-4.4, 15.8],
+        [-2.2, 19.3],
+        [0, 24.5]
+      ]
+    }
+  ],
+  "grassPatches": [
+    {
+      "id": "audience-left-meadow",
+      "center": [-11.5, -8.5],
+      "radii": [9.5, 7.2],
+      "rotationDegrees": 16,
+      "count": 190,
+      "palette": "moonlit",
+      "form": "meadow"
+    },
+    {
+      "id": "audience-right-meadow",
+      "center": [11.8, -8.0],
+      "radii": [9.2, 7.0],
+      "rotationDegrees": -13,
+      "count": 185,
+      "palette": "living",
+      "form": "meadow"
+    },
+    {
+      "id": "west-stage-bank",
+      "center": [-8.3, 4.8],
+      "radii": [5.8, 6.4],
+      "rotationDegrees": 24,
+      "count": 165,
+      "palette": "deep",
+      "form": "meadow"
+    },
+    {
+      "id": "east-stage-bank",
+      "center": [8.5, 5.6],
+      "radii": [5.5, 6.2],
+      "rotationDegrees": -20,
+      "count": 160,
+      "palette": "living",
+      "form": "meadow"
+    },
+    {
+      "id": "west-river-bank",
+      "center": [-10.5, 14.0],
+      "radii": [7.0, 5.0],
+      "rotationDegrees": 7,
+      "count": 165,
+      "palette": "damp",
+      "form": "bank"
+    },
+    {
+      "id": "east-river-bank",
+      "center": [10.8, 15.0],
+      "radii": [7.2, 5.2],
+      "rotationDegrees": -8,
+      "count": 170,
+      "palette": "damp",
+      "form": "bank"
+    },
+    {
+      "id": "rear-threshold-meadow",
+      "center": [0.5, 23.0],
+      "radii": [11.0, 5.3],
+      "rotationDegrees": 2,
+      "count": 190,
+      "palette": "deep",
+      "form": "meadow"
+    },
+    {
+      "id": "foreground-soft-frame",
+      "center": [0, -17.0],
+      "radii": [18.0, 5.0],
+      "rotationDegrees": -3,
+      "count": 210,
+      "palette": "moonlit",
+      "form": "meadow"
+    }
+  ],
+  "qualityTiers": {
+    "baseFraction": 0.54,
+    "mediumFraction": 0.3,
+    "highFraction": 0.16
+  },
+  "exclusions": {
+    "stageHalfSize": [5.1, 4.9],
+    "pathMargin": 0.42,
+    "waterMargin": 0.28,
+    "grassFootprintRadius": 0.72,
+    "bridgeHalfSize": [2.0, 3.1]
+  },
+  "budgets": {
+    "maximumAssetMiB": 20,
+    "minimumGrassClumps": 900,
+    "minimumGrassBlades": 14000,
+    "maximumGrassPrototypeMeshes": 36
+  }
+}

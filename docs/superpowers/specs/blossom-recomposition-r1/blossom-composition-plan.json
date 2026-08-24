@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "planId": "blossom-recomposition-r1",
+  "status": "approved",
+  "approval": {
+    "approver": "Austen",
+    "approvedAt": "2026-08-20T17:52:39.6491523-05:00",
+    "quote": "Love it. Send it"
+  },
+  "units": "metres",
+  "coordinateSystem": {
+    "lateralAxis": "x",
+    "depthAxis": "y",
+    "verticalAxis": "z",
+    "audienceDirection": "+y"
+  },
+  "bounds": {
+    "minX": -22,
+    "maxX": 22,
+    "minY": -10,
+    "maxY": 26
+  },
+  "stage": {
+    "center": [0, 0, 0],
+    "radius": 5.25,
+    "deckTop": 0.35,
+    "clearRingRadius": 6.75,
+    "performerHeight": 1.75
+  },
+  "defaultView": {
+    "camera": [0, -26, 11.5],
+    "target": [0, 4, 2.3],
+    "lensMm": 42
+  },
+  "primarySightline": {
+    "from": [0, -10],
+    "to": [0, 21],
+    "halfWidthNear": 4.4,
+    "halfWidthFar": 5.3,
+    "rule": "No trunks, lanterns, torii posts, boulders, or ecology islands inside this corridor."
+  },
+  "trees": [
+    {
+      "candidateId": "open-crown-s19",
+      "label": "Mature Open Crown A",
+      "role": "hero",
+      "position": [-7.2, 9.4, 0.12],
+      "rotationDegrees": 18,
+      "height": 9.8,
+      "canopyWidth": 7.72,
+      "canopyDepth": 7.95
+    },
+    {
+      "candidateId": "open-crown-s71",
+      "label": "Mature Open Crown B",
+      "role": "secondary-frame",
+      "position": [7.6, 13.6, 0.12],
+      "rotationDegrees": -26,
+      "height": 10.6,
+      "canopyWidth": 8.67,
+      "canopyDepth": 7.75
+    }
+  ],
+  "water": {
+    "label": "Reflective river ribbon",
+    "width": 3.1,
+    "centerline": [
+      [-14, 8.4],
+      [-10.5, 10.2],
+      [-7, 12.5],
+      [0, 11.6],
+      [8, 13.8],
+      [10.5, 12.4],
+      [14, 14]
+    ]
+  },
+  "bridge": {
+    "center": [-7, 12.4],
+    "length": 4.8,
+    "width": 2.2,
+    "rotationDegrees": 6
+  },
+  "torii": {
+    "center": [0, 24.5],
+    "width": 11,
+    "height": 4.2,
+    "rotationDegrees": 0
+  },
+  "lanterns": [
+    { "position": [-6.7, 5.8], "height": 2.1 },
+    { "position": [6.8, 6.3], "height": 2.1 },
+    { "position": [7.2, 16.8], "height": 2.25 }
+  ],
+  "ecologyIslands": [
+    { "center": [-7.6, 5.8], "radiusX": 1.7, "radiusY": 1.5 },
+    { "center": [-9.0, 16.7], "radiusX": 2.4, "radiusY": 1.8 },
+    { "center": [-7.8, 19.1], "radiusX": 2.0, "radiusY": 1.4 },
+    { "center": [7.8, 7.8], "radiusX": 2.0, "radiusY": 1.7 },
+    { "center": [8.6, 18.5], "radiusX": 2.4, "radiusY": 1.8 }
+  ],
+  "reviewViews": [
+    {
+      "number": 1,
+      "label": "Default arrival",
+      "camera": [0, -26, 11.5],
+      "target": [0, 4, 2.3],
+      "read": "Performers first; Crown A frames the left and Crown B stays on the far-right edge."
+    },
+    {
+      "number": 2,
+      "label": "Left orbit",
+      "camera": [-19, -7, 8],
+      "target": [-3, 7, 2.4],
+      "read": "The bridge and river appear without crossing the performer silhouette."
+    },
+    {
+      "number": 3,
+      "label": "Right orbit",
+      "camera": [19, -5, 8],
+      "target": [4, 9, 2.6],
+      "read": "The torii reveals beyond the stage while the open center remains intact."
+    },
+    {
+      "number": 4,
+      "label": "Final wide",
+      "camera": [0, -32, 14],
+      "target": [0, 7, 2.8],
+      "read": "Two asymmetric crowns contain the garden; no blossom wall closes the horizon."
+    }
+  ],
+  "densityBudget": {
+    "majorTrees": 2,
+    "lanterns": 3,
+    "bridges": 1,
+    "torii": 1,
+    "ecologyIslands": 5,
+    "additionalTrees": 0
+  },
+  "aestheticRules": [
+    "Negative space over and behind the stage is a first-class material.",
+    "Pink is concentrated in two crowns and falling petals, not spread across every surface.",
+    "Warm lantern light is limited to three pools against a moon-blue environment.",
+    "The river is a narrow directional ribbon, not a central decorative pond.",
+    "No prop may compete with a performer head or hand silhouette from the default view."
+  ]
+}

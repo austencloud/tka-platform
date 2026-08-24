@@ -18,10 +18,11 @@ describe("Blossom authored environment runtime", () => {
 
       expect(transform.position).toEqual([0, -1.2, 0]);
       expect(transform.scale).toEqual([1, 1, 1]);
+      expect(transform.atmosphereScale).toBe(1);
       expect(transform.stageTopY).toBeCloseTo(-0.85, 10);
     });
 
-    it("expands an asymmetric stage clearing from its half-diagonal", () => {
+    it("widens only the atmosphere for an asymmetric formation", () => {
       const transform = createBlossomStageTransform({
         stageWidth: 12,
         stageDepth: 8,
@@ -30,13 +31,8 @@ describe("Blossom authored environment runtime", () => {
       });
       const halfDiagonal = Math.hypot(6, 4);
 
-      expect(transform.horizontalScale).toBeCloseTo(
-        halfDiagonal / 5 + 0.08,
-        10
-      );
-      expect(transform.scale[0]).toBe(transform.scale[2]);
-      expect(transform.scale[1]).toBe(1);
-      expect(transform.horizontalScale * 5 - halfDiagonal).toBeCloseTo(0.4, 10);
+      expect(transform.atmosphereScale).toBeCloseTo(halfDiagonal / 5, 10);
+      expect(transform.scale).toEqual([1, 1, 1]);
     });
 
     it("centers the complete authored garden on a negative stage Z offset", () => {
@@ -48,7 +44,7 @@ describe("Blossom authored environment runtime", () => {
       });
 
       expect(transform.position).toEqual([0, -0.4, -3.75]);
-      expect(transform.horizontalScale).toBeCloseTo(1.08, 10);
+      expect(transform.atmosphereScale).toBe(1);
       expect(transform.stageTopY).toBeCloseTo(-0.05, 10);
     });
 
@@ -112,15 +108,35 @@ describe("Blossom authored environment runtime", () => {
       expect(medium.maxPixelRatio).toBeGreaterThan(low.maxPixelRatio);
     });
 
-    it("omits secondary particle tasks on low quality", () => {
+    it("retains every atmospheric family on low quality", () => {
       const low = runtimeFor("low");
 
       expect(low.particles).toEqual({
-        petals: 42,
-        distantPetals: 0,
-        fireflies: 0,
+        petals: 48,
+        distantPetals: 17,
+        fireflies: 6,
       });
+      expect(low.effects.reflectiveWater).toBe(false);
+      expect(low.effects.lanternLights).toBe(0);
+      expect(low.effects.stars).toBeGreaterThan(0);
       expect(low.maxPixelRatio).toBe(1);
+    });
+
+    it("reserves reflections, shadows, and the largest sky for high quality", () => {
+      const high = runtimeFor("high");
+      const medium = runtimeFor("medium");
+
+      expect(high.effects).toEqual({
+        shadows: true,
+        shadowMapSize: 2048,
+        reflectiveWater: true,
+        lanternLights: 3,
+        stars: 640,
+      });
+      expect(medium.effects.shadows).toBe(false);
+      expect(medium.effects.reflectiveWater).toBe(false);
+      expect(medium.effects.lanternLights).toBe(2);
+      expect(high.effects.stars).toBeGreaterThan(medium.effects.stars);
     });
 
     it("suppresses every moving particle layer for reduced motion", () => {

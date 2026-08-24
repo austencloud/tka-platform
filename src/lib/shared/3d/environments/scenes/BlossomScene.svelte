@@ -7,6 +7,8 @@
     Color,
     FogExp2,
     type Camera,
+    type Mesh,
+    type Object3D,
     type Scene,
     type WebGLRenderer,
   } from "three";
@@ -14,15 +16,26 @@
   import { userProportionsState } from "@austencloud/scene-3d";
   import FallingParticles from "../primitives/FallingParticles.svelte";
   import SkyGradient from "../primitives/SkyGradient.svelte";
+  import Starfield from "../primitives/Starfield.svelte";
+  import Stage3D from "../../components/Stage3D.svelte";
   import {
     type BlossomSceneConfig,
     createDefaultBlossomConfig,
+  } from "../domain/models/scene-configs";
+  import type {
+    MoonConfig,
+    StarfieldConfig,
   } from "../domain/models/scene-configs";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
   import {
     createBlossomRuntimeConfig,
     detectBlossomQuality,
   } from "./cherry-blossom/blossom-runtime";
+  import BlossomLighting from "./cherry-blossom/BlossomLighting.svelte";
+  import BlossomGroundDetail from "./cherry-blossom/BlossomGroundDetail.svelte";
+  import BlossomGroundLife from "./cherry-blossom/BlossomGroundLife.svelte";
+  import BlossomRiver from "./cherry-blossom/BlossomRiver.svelte";
+  import { getBlossomActiveProductionPhase } from "./cherry-blossom/blossom-site";
   import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import { tryGetAdaptiveQualityContext } from "../../context/adaptive-quality-context";
 
@@ -41,6 +54,7 @@
   }: Props = $props();
 
   const activeConfig = $derived(config ?? createDefaultBlossomConfig());
+  const decorativeAtmosphereEnabled = getBlossomActiveProductionPhase() >= 5;
   const distantPetals = $derived(activeConfig.distantPetals);
   const fireflies = $derived(activeConfig.fireflies);
   const moonLight = $derived(activeConfig.moonLight);
@@ -57,6 +71,7 @@
     meshoptDecoder: MeshoptDecoder,
   });
   const environmentError = environmentGlb.error;
+  const environmentScene = $derived($environmentGlb?.scene ?? null);
 
   let failed = $state(false);
   let failureReported = false;
@@ -145,16 +160,16 @@
 
   const petalArea = $derived({
     ...activeConfig.petals.area,
-    width: activeConfig.petals.area.width * runtime.stage.horizontalScale,
-    depth: activeConfig.petals.area.depth * runtime.stage.horizontalScale,
+    width: activeConfig.petals.area.width * runtime.stage.atmosphereScale,
+    depth: activeConfig.petals.area.depth * runtime.stage.atmosphereScale,
   });
 
   const distantPetalArea = $derived(
     distantPetals
       ? {
           ...distantPetals.area,
-          width: distantPetals.area.width * runtime.stage.horizontalScale,
-          depth: distantPetals.area.depth * runtime.stage.horizontalScale,
+          width: distantPetals.area.width * runtime.stage.atmosphereScale,
+          depth: distantPetals.area.depth * runtime.stage.atmosphereScale,
         }
       : null
   );
@@ -163,8 +178,8 @@
     fireflies
       ? {
           ...fireflies.area,
-          width: fireflies.area.width * runtime.stage.horizontalScale,
-          depth: fireflies.area.depth * runtime.stage.horizontalScale,
+          width: fireflies.area.width * runtime.stage.atmosphereScale,
+          depth: fireflies.area.depth * runtime.stage.atmosphereScale,
         }
       : null
   );
@@ -177,10 +192,95 @@
       activeConfig.fog.density
     );
     currentScene.fog = ownedFog;
+    currentScene.background = new Color(activeConfig.sky.topColor);
 
     return () => {
       if (currentScene.fog === ownedFog) currentScene.fog = null;
+      currentScene.background = null;
     };
+  });
+
+  const hiddenRuntimeOwners = new Set([
+    "Twilight_Backdrop",
+    "Moon_Disc",
+    "Stage_Base",
+    "Stage_Rim",
+    "Stage_Planks",
+    "Stage_Feet",
+  ]);
+
+  function meshIdentity(object: Object3D): string {
+    const mesh = object as Mesh;
+    return `${object.name} ${mesh.geometry?.name ?? ""}`;
+  }
+
+  // Static geometry remains one authored GLB, while runtime-capable primitives
+  // own the sky, stage, high-tier river, and shadows. Object visibility is
+  // restored on cleanup because useGltf caches the scene between visits.
+  $effect(() => {
+    const root = environmentScene;
+    if (!root) return;
+
+    const visibility = new Map<Object3D, boolean>();
+    root.traverse((child) => {
+      visibility.set(child, child.visible);
+      const identity = meshIdentity(child);
+      if (hiddenRuntimeOwners.has(child.name)) child.visible = false;
+      if (identity.includes("Moonlit River Mesh")) {
+        child.visible = !runtime.effects.reflectiveWater;
+      }
+
+      const mesh = child as Mesh;
+      if (!mesh.isMesh) return;
+      mesh.receiveShadow =
+        identity.includes("Garden Ground") ||
+        identity.includes("Gravel") ||
+        identity.includes("GardenEcology") ||
+        identity.includes("Audience_") ||
+        identity.includes("Path_") ||
+        identity.includes("Operations_") ||
+        identity.includes("Bridge") ||
+        identity.includes("Stone") ||
+        identity.includes("Boulder");
+      mesh.castShadow =
+        runtime.effects.shadows &&
+        (identity.includes("Sakura") ||
+          identity.includes("GardenEcology") ||
+          identity.includes("Torii") ||
+          identity.includes("Bridge") ||
+          identity.includes("Lantern") ||
+          identity.includes("Stone") ||
+          identity.includes("Boulder"));
+    });
+
+    return () => {
+      for (const [child, wasVisible] of visibility) child.visible = wasVisible;
+    };
+  });
+
+  const moonConfig: MoonConfig = {
+    enabled: true,
+    texture: "/textures/moon.png",
+    direction: [-0.42, 0.56, -0.72],
+    angularDiameterDegrees: 3.6,
+    opacity: 0.98,
+    glowScale: 1.72,
+    glowOpacity: 0.1,
+    surfaceLift: 0.3,
+    horizonWarmth: 0.18,
+  };
+
+  const starfieldConfig: StarfieldConfig = $derived({
+    enabled: true,
+    count: runtime.effects.stars,
+    radius: 90,
+    sizeRange: [0.9, 2.7],
+    twinkleSpeed: 0.28,
+    intensity: 1.72,
+    magnitudeFalloff: 1.35,
+    brightnessFloor: 0.52,
+    horizonSpread: 0.5,
+    elevationRangeDegrees: [-5, 18],
   });
 
   // Match Ocean's mobile DPR cap. Blossom is now light on draw calls, but a
@@ -258,23 +358,44 @@
   });
 </script>
 
-{#if failed}
-  <SkyGradient
-    topColor={activeConfig.sky.topColor}
-    midColor={activeConfig.sky.midColor}
-    bottomColor={activeConfig.sky.bottomColor}
-  />
-{:else if $environmentGlb}
+<SkyGradient
+  topColor={activeConfig.sky.topColor}
+  midColor={activeConfig.sky.midColor}
+  bottomColor={activeConfig.sky.bottomColor}
+  gradientStart={0.41}
+  gradientEnd={0.58}
+  moon={moonConfig}
+/>
+<Starfield config={starfieldConfig} />
+
+{#if !failed && environmentScene}
   <T.Group
     position={runtime.stage.position}
     scale={runtime.stage.scale}
+    rotation.y={Math.PI}
     name="BlossomEnvironment"
   >
-    <T is={$environmentGlb.scene} />
+    <T is={environmentScene} />
   </T.Group>
+  <BlossomGroundDetail
+    scene={environmentScene}
+    {stageWidth}
+    {stageDepth}
+    {stageZOffset}
+  />
+  <BlossomGroundLife
+    scene={environmentScene}
+    tier={qualityTier === "low" ? "base" : qualityTier}
+  />
 {/if}
 
-{#if !failed}
+<Stage3D width={stageWidth} depth={stageDepth} overrideGroundY={groundY} />
+
+{#if !failed && runtime.effects.reflectiveWater}
+  <BlossomRiver {groundY} {stageZOffset} />
+{/if}
+
+{#if !failed && decorativeAtmosphereEnabled}
   <T.Group position.z={stageZOffset}>
     {#if runtime.particles.petals > 0}
       {#key runtime.particles.petals}
@@ -320,18 +441,10 @@
   </T.Group>
 {/if}
 
-<T.HemisphereLight
-  color={activeConfig.hemisphereLight.skyColor}
-  groundColor={activeConfig.hemisphereLight.groundColor}
-  intensity={runtime.lights.hemisphere}
+<BlossomLighting
+  {groundY}
+  {stageZOffset}
+  hemisphere={activeConfig.hemisphereLight}
+  moon={moonLight?.enabled ? moonLight : null}
+  {runtime}
 />
-
-{#if moonLight?.enabled}
-  <T.DirectionalLight
-    color={moonLight.color}
-    intensity={runtime.lights.key}
-    position.x={moonLight.position[0]}
-    position.y={moonLight.position[1]}
-    position.z={moonLight.position[2] + stageZOffset}
-  />
-{/if}

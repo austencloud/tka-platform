@@ -1,0 +1,1251 @@
+{
+  "schemaVersion": 3,
+  "planId": "blossom-masterplan-r2.1",
+  "status": "rejected-visual-review",
+  "activeProductionPhase": 2,
+  "rejection": {
+    "date": "2026-08-23",
+    "verdict": "Austen rejected the R2.1 result on visual review: the enlarged technical site never became a believable place. Stage reads as a tiny marker, terrain is an undifferentiated field, the river reads as a flat trench, and the missing grove leaves no canopy, enclosure, or intimacy.",
+    "evidence": "docs/superpowers/specs/handoff-assets/2026-08-23-blossom-scene-rebuild/current-overview.png (commit 03eafb1997e7)",
+    "disposition": "Existing build is preserved and may render for comparison until a replacement composition is approved. No new production authoring on this plan."
+  },
+  "title": "Moonlit Hanami Amphitheater",
+  "designThesis": "A performance clearing inside an established cherry grove, organized by a real arrival sequence, a crescent audience lawn, a broad living river, and a shrine threshold beyond the bridge.",
+  "coordinateSystem": {
+    "units": "metres",
+    "xAxis": "west-to-east",
+    "yAxis": "south-to-north",
+    "zAxis": "down-to-up",
+    "audienceFaces": "north"
+  },
+  "approvalGate": {
+    "productionChangesAllowed": false,
+    "requiredApproval": "Approval revoked 2026-08-23 after Austen's visual rejection of the built result; a replacement composition needs his explicit visual approval",
+    "lockedBeforeApproval": [
+      "terrain and river rebuilding",
+      "new PlantFactory exports",
+      "torii replacement",
+      "lighting and atmospheric production pass",
+      "petal and fish runtime work"
+    ]
+  },
+  "site": {
+    "terrainBounds": {
+      "minX": -128,
+      "maxX": 128,
+      "minY": -122,
+      "maxY": 142
+    },
+    "playableClearingBounds": {
+      "minX": -40,
+      "maxX": 40,
+      "minY": -34,
+      "maxY": 50
+    },
+    "softHorizonBandMetres": 32,
+    "horizonShell": {
+      "minimumRadius": 148,
+      "minimumHeight": 18,
+      "source": "PlantFactory-derived distant grove LODs and wooded berm geometry"
+    },
+    "terrainEdgeRule": "No terrain boundary may enter any approved camera frustum. The playable clearing blends into wooded berms before the outer terrain terminates.",
+    "gradeStrategy": {
+      "stageElevation": 0.35,
+      "audienceLawnSlopePercent": 3.5,
+      "northBankElevation": 0.8,
+      "perimeterBermRange": [2.4, 5.8]
+    }
+  },
+  "stage": {
+    "center": [0, 0],
+    "width": 12,
+    "depth": 8,
+    "deckTop": 0.35,
+    "performanceEnvelope": {
+      "minX": -5.4,
+      "maxX": 5.4,
+      "minY": -3.2,
+      "maxY": 3.2,
+      "minZ": 0.35,
+      "maxZ": 6.85
+    },
+    "protectedClearance": {
+      "minX": -9,
+      "maxX": 9,
+      "minY": -9.5,
+      "maxY": 7
+    },
+    "frontEdgeFaces": "south",
+    "operations": {
+      "supportedModes": [
+        {
+          "id": "ensemble-spin",
+          "maximumPerformers": 12,
+          "formationFootprint": { "width": 10, "depth": 5.6 },
+          "minimumPersonalRadius": 1.1,
+          "maximumPropReachRadius": 1.7,
+          "requiredClearHeight": 3.6
+        },
+        {
+          "id": "ensemble-toss",
+          "maximumPerformers": 8,
+          "formationFootprint": { "width": 9, "depth": 5 },
+          "minimumPersonalRadius": 1.35,
+          "maximumPropReachRadius": 2.1,
+          "requiredClearHeight": 6.5
+        }
+      ],
+      "minimumAudienceSetbackFromDeck": 6.5,
+      "backstageAccessSide": "east",
+      "backstageServicePathId": "backstage-service",
+      "backstageStagingArea": {
+        "minX": 9.5,
+        "maxX": 14.5,
+        "minY": 0,
+        "maxY": 6
+      },
+      "propStorageArea": {
+        "minX": 10,
+        "maxX": 14.5,
+        "minY": -5.5,
+        "maxY": -1
+      },
+      "technicalPosition": {
+        "minX": -3,
+        "maxX": 3,
+        "minY": -35,
+        "maxY": -31.5,
+        "accessPathId": "technical-access"
+      },
+      "emergencyCorridors": [
+        {
+          "id": "west-emergency",
+          "minX": -11.8,
+          "maxX": -9.4,
+          "minY": -8,
+          "maxY": 7
+        },
+        {
+          "id": "east-emergency",
+          "minX": 9.4,
+          "maxX": 11.8,
+          "minY": -8,
+          "maxY": 7
+        }
+      ]
+    }
+  },
+  "audience": {
+    "capacity": 136,
+    "zones": [
+      {
+        "id": "central-hanami-lawn",
+        "label": "Central hanami lawn",
+        "kind": "seated-lawn",
+        "capacity": 72,
+        "polygon": [
+          [-11, -11],
+          [11, -11],
+          [15, -18],
+          [11, -26],
+          [-11, -26],
+          [-15, -18]
+        ],
+        "surface": "short resilient turf",
+        "viewpoint": [0, -19],
+        "accessNodeId": "central-lawn-access",
+        "capacityModel": {
+          "circulationReserveFraction": 0.18,
+          "minimumSquareMetresPerPerson": 4.4
+        },
+        "viewSamples": [
+          [-8, -12, 1.28],
+          [0, -12, 1.28],
+          [8, -12, 1.28],
+          [-7, -19, 1.58],
+          [0, -19, 1.58],
+          [7, -19, 1.58],
+          [-6, -25, 1.88],
+          [0, -25, 1.88],
+          [6, -25, 1.88]
+        ],
+        "sightlineRows": [
+          { "id": "front", "y": -12, "eyeZ": 1.28, "headTopZ": 1.42 },
+          { "id": "middle", "y": -19, "eyeZ": 1.58, "headTopZ": 1.72 },
+          { "id": "rear", "y": -25, "eyeZ": 1.88, "headTopZ": 2.02 }
+        ]
+      },
+      {
+        "id": "west-terrace",
+        "label": "West standing terrace",
+        "kind": "standing-terrace",
+        "capacity": 28,
+        "polygon": [
+          [-23, -12],
+          [-16, -12],
+          [-15, -21],
+          [-21, -25],
+          [-26, -20]
+        ],
+        "surface": "compacted earth with timber seat edges",
+        "viewpoint": [-19, -18],
+        "accessNodeId": "west-terrace-access",
+        "capacityModel": {
+          "circulationReserveFraction": 0.2,
+          "minimumSquareMetresPerPerson": 2.9
+        },
+        "viewSamples": [
+          [-18, -13, 1.75],
+          [-22, -17, 1.82],
+          [-19, -23, 1.94]
+        ]
+      },
+      {
+        "id": "east-terrace",
+        "label": "East standing terrace",
+        "kind": "standing-terrace",
+        "capacity": 28,
+        "polygon": [
+          [16, -12],
+          [23, -12],
+          [26, -20],
+          [21, -25],
+          [15, -21]
+        ],
+        "surface": "compacted earth with timber seat edges",
+        "viewpoint": [19, -18],
+        "accessNodeId": "east-terrace-access",
+        "capacityModel": {
+          "circulationReserveFraction": 0.2,
+          "minimumSquareMetresPerPerson": 2.9
+        },
+        "viewSamples": [
+          [18, -13, 1.75],
+          [22, -17, 1.82],
+          [19, -23, 1.94]
+        ]
+      },
+      {
+        "id": "accessible-overlook",
+        "label": "Accessible overlook",
+        "kind": "level-viewing-terrace",
+        "capacity": 8,
+        "polygon": [
+          [11, -12.8],
+          [19, -12.8],
+          [19, -9.6],
+          [11, -9.6]
+        ],
+        "surface": "firm stone fines",
+        "viewpoint": [15, -11.2],
+        "accessNodeId": "accessible-overlook-access",
+        "accessibleLayout": {
+          "wheelchairBays": 4,
+          "companionPositions": 4,
+          "minimumSquareMetresPerPair": 4.5,
+          "turningCircleDiameter": 1.8,
+          "clearAisleWidth": 1.8
+        },
+        "viewSamples": [
+          [12.2, -11.2, 1.55],
+          [14.1, -11.2, 1.55],
+          [16, -11.2, 1.55],
+          [17.8, -11.2, 1.55]
+        ]
+      }
+    ],
+    "sightlineTargets": [
+      [-5, -2, 1.65],
+      [0, -2, 1.65],
+      [5, -2, 1.65],
+      [-5, 2, 1.65],
+      [0, 2, 1.65],
+      [5, 2, 1.65],
+      [-5, 0, 3.2],
+      [0, 0, 3.2],
+      [5, 0, 3.2]
+    ],
+    "minimumSightlineClearance": 0.25,
+    "minimumRakeHeadClearance": 0.1
+  },
+  "circulation": {
+    "minimumPublicWidth": 2,
+    "minimumAccessibleWidth": 1.8,
+    "maximumAccessibleSlopePercent": 5,
+    "maximumAccessibleCrossSlopePercent": 2,
+    "minimumTreeTrunkEdgeClearance": 0.6,
+    "nodes": [
+      {
+        "id": "southwest-entry",
+        "position": [-42, -34, 0.05],
+        "kind": "public-entry"
+      },
+      {
+        "id": "arrival-junction",
+        "position": [-18, -19, 0.15],
+        "kind": "junction"
+      },
+      {
+        "id": "west-terrace-access",
+        "position": [-20, -20, 0.2],
+        "kind": "audience-access",
+        "zoneId": "west-terrace"
+      },
+      {
+        "id": "south-lawn-junction",
+        "position": [0, -30, 0.15],
+        "kind": "junction"
+      },
+      {
+        "id": "central-lawn-access",
+        "position": [0, -25.5, 0.3],
+        "kind": "audience-access",
+        "zoneId": "central-hanami-lawn"
+      },
+      {
+        "id": "east-audience-junction",
+        "position": [19, -19, 0.18],
+        "kind": "junction"
+      },
+      {
+        "id": "east-terrace-access",
+        "position": [21, -20, 0.2],
+        "kind": "audience-access",
+        "zoneId": "east-terrace"
+      },
+      {
+        "id": "accessible-overlook-access",
+        "position": [15, -12.7, 0.3],
+        "kind": "audience-access",
+        "zoneId": "accessible-overlook"
+      },
+      {
+        "id": "stage-west",
+        "position": [-9, -7.5, 0.35],
+        "kind": "stage-access"
+      },
+      {
+        "id": "south-bridge-landing",
+        "position": [-14, 10.5, 0.35],
+        "kind": "bridge-landing"
+      },
+      {
+        "id": "north-bridge-landing",
+        "position": [-14, 20.5, 0.8],
+        "kind": "bridge-landing"
+      },
+      {
+        "id": "torii-threshold",
+        "position": [8, 35, 1.2],
+        "kind": "destination"
+      },
+      {
+        "id": "southeast-entry",
+        "position": [42, -28, 0.05],
+        "kind": "public-entry"
+      },
+      {
+        "id": "east-service-entry",
+        "position": [44, 3, 0.12],
+        "kind": "service-entry"
+      },
+      {
+        "id": "backstage-staging",
+        "position": [9.5, 3, 0.35],
+        "kind": "backstage"
+      },
+      {
+        "id": "technical-position",
+        "position": [3, -33, 0.15],
+        "kind": "technical"
+      }
+    ],
+    "paths": [
+      {
+        "id": "arrival-promenade",
+        "label": "Arrival promenade",
+        "kind": "primary-accessible",
+        "width": 2.6,
+        "from": "southwest-entry",
+        "to": "arrival-junction",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-42, -34, 0.05],
+          [-33, -30, 0.08],
+          [-25, -25, 0.12],
+          [-18, -19, 0.15]
+        ]
+      },
+      {
+        "id": "arrival-to-stage",
+        "label": "Arrival to stage west",
+        "kind": "primary-accessible",
+        "width": 2.4,
+        "from": "arrival-junction",
+        "to": "stage-west",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-18, -19, 0.15],
+          [-14, -14, 0.22],
+          [-11, -10, 0.3],
+          [-9, -7.5, 0.35]
+        ]
+      },
+      {
+        "id": "west-terrace-spur",
+        "label": "West terrace spur",
+        "kind": "primary-accessible",
+        "width": 2,
+        "from": "arrival-junction",
+        "to": "west-terrace-access",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-18, -19, 0.15],
+          [-20, -20, 0.2]
+        ]
+      },
+      {
+        "id": "audience-loop-west",
+        "label": "West audience crescent",
+        "kind": "primary-accessible",
+        "width": 2.2,
+        "from": "arrival-junction",
+        "to": "south-lawn-junction",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-18, -19, 0.15],
+          [-12, -27, 0.12],
+          [0, -30, 0.15]
+        ]
+      },
+      {
+        "id": "central-lawn-spur",
+        "label": "Firm central lawn access",
+        "kind": "primary-accessible",
+        "width": 2,
+        "from": "south-lawn-junction",
+        "to": "central-lawn-access",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [0, -30, 0.15],
+          [0, -25.5, 0.3]
+        ]
+      },
+      {
+        "id": "audience-loop-east",
+        "label": "East audience crescent",
+        "kind": "primary-accessible",
+        "width": 2.2,
+        "from": "south-lawn-junction",
+        "to": "east-audience-junction",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [0, -30, 0.15],
+          [12, -27, 0.12],
+          [19, -19, 0.18]
+        ]
+      },
+      {
+        "id": "east-terrace-spur",
+        "label": "East terrace spur",
+        "kind": "primary-accessible",
+        "width": 2,
+        "from": "east-audience-junction",
+        "to": "east-terrace-access",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [19, -19, 0.18],
+          [21, -20, 0.2]
+        ]
+      },
+      {
+        "id": "overlook-approach",
+        "label": "Accessible overlook approach",
+        "kind": "primary-accessible",
+        "width": 2.2,
+        "from": "east-audience-junction",
+        "to": "accessible-overlook-access",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [19, -19, 0.18],
+          [17, -16, 0.24],
+          [15, -12.7, 0.3]
+        ]
+      },
+      {
+        "id": "east-egress",
+        "label": "East audience egress",
+        "kind": "primary-accessible",
+        "width": 2.2,
+        "from": "accessible-overlook-access",
+        "to": "southeast-entry",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [15, -12.7, 0.3],
+          [23, -17, 0.22],
+          [32, -23, 0.12],
+          [42, -28, 0.05]
+        ]
+      },
+      {
+        "id": "west-stage-bypass",
+        "label": "Public stage and bridge approach",
+        "kind": "primary-accessible",
+        "width": 2.4,
+        "from": "stage-west",
+        "to": "south-bridge-landing",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-9, -7.5, 0.35],
+          [-10, 0, 0.35],
+          [-11.5, 6.5, 0.35],
+          [-14, 10.5, 0.35]
+        ]
+      },
+      {
+        "id": "bridge-crossing",
+        "label": "Bridge crossing",
+        "kind": "primary-accessible",
+        "width": 2.8,
+        "from": "south-bridge-landing",
+        "to": "north-bridge-landing",
+        "crossSlopePercent": 1,
+        "centerline": [
+          [-14, 10.5, 0.35],
+          [-14, 20.5, 0.8]
+        ]
+      },
+      {
+        "id": "shrine-walk",
+        "label": "North-bank shrine walk",
+        "kind": "primary-accessible",
+        "width": 2.2,
+        "from": "north-bridge-landing",
+        "to": "torii-threshold",
+        "crossSlopePercent": 1.5,
+        "centerline": [
+          [-14, 20.5, 0.8],
+          [-9, 25, 0.9],
+          [-2, 29, 1],
+          [5, 32, 1.1],
+          [8, 35, 1.2]
+        ]
+      },
+      {
+        "id": "backstage-service",
+        "label": "Separate backstage service route",
+        "kind": "restricted-service",
+        "width": 2.4,
+        "from": "east-service-entry",
+        "to": "backstage-staging",
+        "crossSlopePercent": 2,
+        "centerline": [
+          [44, 3, 0.12],
+          [34, 5, 0.16],
+          [24, 6, 0.2],
+          [15, 5, 0.28],
+          [9.5, 3, 0.35]
+        ]
+      },
+      {
+        "id": "technical-access",
+        "label": "Technical position access",
+        "kind": "restricted-service",
+        "width": 2,
+        "from": "southeast-entry",
+        "to": "technical-position",
+        "crossSlopePercent": 2,
+        "centerline": [
+          [42, -28, 0.05],
+          [28, -31, 0.08],
+          [15, -33, 0.12],
+          [3, -33, 0.15]
+        ]
+      }
+    ],
+    "requiredPublicNodes": [
+      "southwest-entry",
+      "arrival-junction",
+      "west-terrace-access",
+      "south-lawn-junction",
+      "central-lawn-access",
+      "east-audience-junction",
+      "east-terrace-access",
+      "accessible-overlook-access",
+      "stage-west",
+      "south-bridge-landing",
+      "north-bridge-landing",
+      "torii-threshold",
+      "southeast-entry"
+    ],
+    "restrictedNodes": [
+      "east-service-entry",
+      "backstage-staging",
+      "technical-position"
+    ]
+  },
+  "water": {
+    "id": "hanami-river",
+    "centerline": [
+      [-42, 15],
+      [-33, 17.4],
+      [-24, 16.2],
+      [-14, 15.4],
+      [-5, 14.5],
+      [5, 16.2],
+      [15, 17.3],
+      [26, 15.5],
+      [35, 17.2],
+      [43, 15.8]
+    ],
+    "surfaceWidth": 5.4,
+    "bankTransitionWidth": 1.4,
+    "bedDepth": 0.85,
+    "surfaceElevation": -0.15,
+    "surfaceRule": "The river requires a visible bed, bank slope, surface reflection, shallow-edge color transition, and moving highlights. A flat opaque ribbon is prohibited.",
+    "localWidenings": [
+      {
+        "id": "west-koi-pool-water",
+        "center": [-4, 15.1],
+        "surfaceRadius": 4.5,
+        "minimumDepth": 1.1
+      },
+      {
+        "id": "east-koi-pool-water",
+        "center": [16, 16.9],
+        "surfaceRadius": 4.8,
+        "minimumDepth": 1.2
+      }
+    ],
+    "fishHabitats": [
+      {
+        "id": "west-koi-pool",
+        "center": [-4, 15.1],
+        "radius": 3.4,
+        "waterWideningId": "west-koi-pool-water",
+        "minimumEdgeClearance": 0.5,
+        "minimumDepth": 1.1,
+        "minimumBridgeClearance": 5,
+        "species": "koi",
+        "countRange": [7, 11]
+      },
+      {
+        "id": "east-koi-pool",
+        "center": [16, 16.9],
+        "radius": 3.8,
+        "waterWideningId": "east-koi-pool-water",
+        "minimumEdgeClearance": 0.5,
+        "minimumDepth": 1.2,
+        "minimumBridgeClearance": 5,
+        "species": "koi",
+        "countRange": [9, 14]
+      }
+    ]
+  },
+  "bridge": {
+    "id": "west-garden-bridge",
+    "center": [-14, 15.5],
+    "width": 2.8,
+    "length": 10,
+    "rotationDegrees": 0,
+    "southLanding": {
+      "minX": -16.6,
+      "maxX": -11.4,
+      "minY": 8.5,
+      "maxY": 10.5
+    },
+    "northLanding": {
+      "minX": -16.6,
+      "maxX": -11.4,
+      "minY": 20.5,
+      "maxY": 22.5
+    },
+    "minimumTrunkClearance": 5,
+    "minimumCanopyEdgeClearance": 1.5,
+    "minimumRouteEdgeFurnitureClearance": 0.6,
+    "minimumLandingEdgeFurnitureClearance": 0.75
+  },
+  "torii": {
+    "center": [8, 36],
+    "width": 11.5,
+    "height": 6.2,
+    "rotationDegrees": -4,
+    "assetRequirement": "Replace the procedural primitive with a detailed timber torii using shaped lintels, joinery, footing stones, weathering, and physically based materials.",
+    "thresholdClearanceRadius": 4.5
+  },
+  "grove": {
+    "story": "A continuous perimeter grove encloses the clearing while leaving the audience-to-stage and stage-to-threshold views open.",
+    "assetPolicy": {
+      "source": "PlantFactory",
+      "currentlyApprovedCandidates": ["open-crown-s19", "open-crown-s71"],
+      "minimumDistinctApprovedVariants": 10,
+      "maximumInstancesPerVariant": 2,
+      "maximumAdjacentInstancesOfSameVariant": 1,
+      "requiredNewApprovedFamilies": [
+        { "id": "broad-mature-cherry", "minimumApprovedVariants": 2 },
+        { "id": "asymmetric-middle-cherry", "minimumApprovedVariants": 2 },
+        { "id": "airy-young-cherry", "minimumApprovedVariants": 3 },
+        { "id": "waterside-weeping-cherry", "minimumApprovedVariants": 2 }
+      ],
+      "newExportsRequireContactSheetApproval": true,
+      "meshyTreesAllowed": false,
+      "proceduralBlobTreesAllowed": false
+    },
+    "trees": [
+      {
+        "id": "tree-west-01",
+        "position": [-33, -5],
+        "variantSlot": "open-crown-s19",
+        "canopyRadius": 5.2,
+        "canopyBottom": 3.2,
+        "trunkRadius": 0.65,
+        "height": 9.6,
+        "ageClass": "mature",
+        "role": "west proscenium"
+      },
+      {
+        "id": "tree-west-02",
+        "position": [-34, 8],
+        "variantSlot": "pf-asymmetric-middle-a",
+        "canopyRadius": 4.5,
+        "canopyBottom": 3,
+        "trunkRadius": 0.58,
+        "height": 8.1,
+        "ageClass": "middle",
+        "role": "west river approach"
+      },
+      {
+        "id": "tree-west-03",
+        "position": [-31, 29],
+        "variantSlot": "pf-broad-mature-a",
+        "canopyRadius": 5.8,
+        "canopyBottom": 3.4,
+        "trunkRadius": 0.72,
+        "height": 10.4,
+        "ageClass": "mature",
+        "role": "northwest enclosure"
+      },
+      {
+        "id": "tree-northwest-01",
+        "position": [-21, 37],
+        "variantSlot": "pf-asymmetric-middle-b",
+        "canopyRadius": 4.4,
+        "canopyBottom": 3.1,
+        "trunkRadius": 0.56,
+        "height": 8.2,
+        "ageClass": "middle",
+        "role": "northwest depth"
+      },
+      {
+        "id": "tree-north-01",
+        "position": [-9, 46],
+        "variantSlot": "pf-airy-young-a",
+        "canopyRadius": 4.1,
+        "canopyBottom": 2.7,
+        "trunkRadius": 0.46,
+        "height": 7.3,
+        "ageClass": "young",
+        "role": "north horizon rhythm"
+      },
+      {
+        "id": "tree-north-02",
+        "position": [3, 48],
+        "variantSlot": "pf-airy-young-b",
+        "canopyRadius": 4.8,
+        "canopyBottom": 3,
+        "trunkRadius": 0.54,
+        "height": 8.7,
+        "ageClass": "middle",
+        "role": "north horizon rhythm"
+      },
+      {
+        "id": "tree-northeast-01",
+        "position": [20, 40],
+        "variantSlot": "open-crown-s71",
+        "canopyRadius": 5.7,
+        "canopyBottom": 3.5,
+        "trunkRadius": 0.72,
+        "height": 10.2,
+        "ageClass": "mature",
+        "role": "northeast enclosure"
+      },
+      {
+        "id": "tree-east-01",
+        "position": [31, 29],
+        "variantSlot": "pf-waterside-weeping-a",
+        "canopyRadius": 4.6,
+        "canopyBottom": 2.4,
+        "trunkRadius": 0.58,
+        "height": 8.6,
+        "ageClass": "middle",
+        "role": "east river frame"
+      },
+      {
+        "id": "tree-east-02",
+        "position": [34, 12],
+        "variantSlot": "pf-asymmetric-middle-a",
+        "canopyRadius": 4.4,
+        "canopyBottom": 3,
+        "trunkRadius": 0.56,
+        "height": 8.0,
+        "ageClass": "middle",
+        "role": "east proscenium"
+      },
+      {
+        "id": "tree-east-03",
+        "position": [33, -3],
+        "variantSlot": "pf-broad-mature-b",
+        "canopyRadius": 5.1,
+        "canopyBottom": 3.3,
+        "trunkRadius": 0.67,
+        "height": 9.4,
+        "ageClass": "mature",
+        "role": "east proscenium"
+      },
+      {
+        "id": "tree-southeast-01",
+        "position": [30, -18],
+        "variantSlot": "pf-asymmetric-middle-b",
+        "canopyRadius": 4.3,
+        "canopyBottom": 3,
+        "trunkRadius": 0.55,
+        "height": 7.7,
+        "ageClass": "middle",
+        "role": "east egress shade"
+      },
+      {
+        "id": "tree-south-01",
+        "position": [20, -30],
+        "variantSlot": "pf-airy-young-a",
+        "canopyRadius": 4.1,
+        "canopyBottom": 2.7,
+        "trunkRadius": 0.45,
+        "height": 7.1,
+        "ageClass": "young",
+        "role": "south grove edge"
+      },
+      {
+        "id": "tree-south-02",
+        "position": [8, -36],
+        "variantSlot": "pf-airy-young-b",
+        "canopyRadius": 3.6,
+        "canopyBottom": 2.5,
+        "trunkRadius": 0.42,
+        "height": 6.4,
+        "ageClass": "young",
+        "role": "south grove edge"
+      },
+      {
+        "id": "tree-south-03",
+        "position": [-8, -36],
+        "variantSlot": "pf-airy-young-c",
+        "canopyRadius": 3.7,
+        "canopyBottom": 2.5,
+        "trunkRadius": 0.43,
+        "height": 6.6,
+        "ageClass": "young",
+        "role": "south grove edge"
+      },
+      {
+        "id": "tree-southwest-01",
+        "position": [-22, -30],
+        "variantSlot": "pf-broad-mature-a",
+        "canopyRadius": 4.2,
+        "canopyBottom": 3,
+        "trunkRadius": 0.55,
+        "height": 7.5,
+        "ageClass": "middle",
+        "role": "arrival frame"
+      },
+      {
+        "id": "tree-southwest-02",
+        "position": [-32, -20],
+        "variantSlot": "pf-waterside-weeping-b",
+        "canopyRadius": 4.8,
+        "canopyBottom": 2.4,
+        "trunkRadius": 0.6,
+        "height": 8.8,
+        "ageClass": "mature",
+        "role": "arrival enclosure"
+      }
+    ],
+    "backgroundLayers": [
+      {
+        "id": "midground-grove",
+        "minimumInstances": 36,
+        "distanceBand": [42, 78],
+        "source": "approved PlantFactory variants at authored LOD1",
+        "minimumDistinctVariants": 8
+      },
+      {
+        "id": "horizon-grove",
+        "minimumInstances": 72,
+        "distanceBand": [76, 148],
+        "source": "approved PlantFactory variants at authored LOD2 or impostor LOD",
+        "minimumDistinctVariants": 8
+      }
+    ],
+    "runtimeBudget": {
+      "maximumHeroTreeDrawCalls": 24,
+      "maximumTotalGroveDrawCalls": 72,
+      "maximumHighTierTriangles": 4200000,
+      "maximumMediumTierTriangles": 2100000,
+      "maximumLowTierTriangles": 750000,
+      "gpuInstancingRequiredForRepeatedVariants": true
+    }
+  },
+  "ground": {
+    "surfaceZones": [
+      {
+        "id": "performance-hardscape",
+        "kind": "timber-and-stone",
+        "rule": "No grass or roots through the stage, apron, or access steps."
+      },
+      {
+        "id": "audience-turf",
+        "kind": "short-turf",
+        "rule": "Low resilient lawn; no tall blade clusters inside viewing zones."
+      },
+      {
+        "id": "path-hardscape",
+        "kind": "compacted-stone-fines",
+        "rule": "Every circulation path owns a grass-free shoulder of 0.35 m."
+      },
+      {
+        "id": "river-bank",
+        "kind": "stone-moss-reed-transition",
+        "rule": "Reeds remain outside the water surface and preserve bridge landings."
+      },
+      {
+        "id": "grove-floor",
+        "kind": "leaf-duff-moss-low-forbs",
+        "rule": "Tree root zones suppress lawn grass and receive layered understory."
+      },
+      {
+        "id": "meadow",
+        "kind": "wind-reactive-mixed-grass",
+        "rule": "Tall grass is limited to non-circulation, non-viewing, non-water areas."
+      }
+    ],
+    "grassExclusions": [
+      "stage protected clearance",
+      "all audience polygons",
+      "all public paths plus 0.35 m shoulders",
+      "river surface plus 0.55 m wet-bank buffer",
+      "bridge body and both bridge landings",
+      "torii threshold clearance",
+      "lantern foundation pads",
+      "tree trunk flare zones"
+    ]
+  },
+  "lanterns": [
+    {
+      "id": "lantern-arrival-01",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "arrival-promenade",
+        "segmentIndex": 1,
+        "progress": 0.42,
+        "side": "left",
+        "pathEdgeClearance": 0.65
+      }
+    },
+    {
+      "id": "lantern-arrival-02",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "arrival-promenade",
+        "segmentIndex": 2,
+        "progress": 0.62,
+        "side": "left",
+        "pathEdgeClearance": 0.65
+      }
+    },
+    {
+      "id": "lantern-stage-west",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "west-stage-bypass",
+        "segmentIndex": 0,
+        "progress": 0.5,
+        "side": "left",
+        "pathEdgeClearance": 0.8
+      }
+    },
+    {
+      "id": "lantern-bridge-south",
+      "padRadius": 0.8,
+      "height": 2.2,
+      "attachment": {
+        "pathId": "bridge-crossing",
+        "segmentIndex": 0,
+        "progress": 0.04,
+        "side": "left",
+        "pathEdgeClearance": 2.7
+      }
+    },
+    {
+      "id": "lantern-bridge-north",
+      "padRadius": 0.8,
+      "height": 2.2,
+      "attachment": {
+        "pathId": "bridge-crossing",
+        "segmentIndex": 0,
+        "progress": 0.96,
+        "side": "left",
+        "pathEdgeClearance": 2.7
+      }
+    },
+    {
+      "id": "lantern-shrine-01",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "shrine-walk",
+        "segmentIndex": 1,
+        "progress": 0.45,
+        "side": "left",
+        "pathEdgeClearance": 0.65
+      }
+    },
+    {
+      "id": "lantern-shrine-02",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "shrine-walk",
+        "segmentIndex": 2,
+        "progress": 0.55,
+        "side": "right",
+        "pathEdgeClearance": 0.65
+      }
+    },
+    {
+      "id": "lantern-east-egress",
+      "padRadius": 0.75,
+      "height": 2.1,
+      "attachment": {
+        "pathId": "east-egress",
+        "segmentIndex": 0,
+        "progress": 0.7,
+        "side": "left",
+        "pathEdgeClearance": 0.65
+      }
+    }
+  ],
+  "petals": {
+    "emissionRule": "Petals emit only beneath or downwind of authored blossom canopies. Global full-volume emission is prohibited.",
+    "sourceTreeIds": [
+      "tree-west-01",
+      "tree-west-03",
+      "tree-northwest-01",
+      "tree-northeast-01",
+      "tree-east-01",
+      "tree-east-03",
+      "tree-southwest-01"
+    ],
+    "prevailingWindXZ": [0.18, -0.65],
+    "maximumStageParticleShare": 0.14,
+    "groundedPetalBias": 0.72
+  },
+  "atmosphere": {
+    "season": "peak spring bloom",
+    "localTime": "20:30",
+    "lightingRead": "moonlit blue hour with warm path lanterns",
+    "moon": {
+      "phase": "full",
+      "azimuthDegrees": 128,
+      "elevationDegrees": 32,
+      "mustBeVisibleFrom": ["central-hanami-lawn", "stage-left orbit"]
+    },
+    "horizon": "Layered cherry silhouettes and wooded berms replace the exposed terrain edge."
+  },
+  "camera": {
+    "default": {
+      "position": [0, -42, 18],
+      "target": [0, 1, 2.2],
+      "fov": 48
+    },
+    "controls": {
+      "minimumDistance": 4.5,
+      "maximumDistance": 82,
+      "minimumPolarAngleDegrees": 18,
+      "maximumPolarAngleDegrees": 84,
+      "frustumGroundMargin": 12,
+      "azimuthValidationSamples": 32,
+      "panTargetBounds": {
+        "minX": -28,
+        "maxX": 28,
+        "minY": -22,
+        "maxY": 42
+      }
+    },
+    "reviewViews": [
+      {
+        "id": "audience-arrival",
+        "position": [0, -42, 18],
+        "target": [0, 1, 2.2],
+        "purpose": "stage, audience lawn, and river hierarchy"
+      },
+      {
+        "id": "west-circulation",
+        "position": [-31, -12, 10],
+        "target": [-8, 9, 1.5],
+        "purpose": "arrival, stage bypass, and bridge clearance"
+      },
+      {
+        "id": "east-context",
+        "position": [34, -8, 13],
+        "target": [3, 8, 2],
+        "purpose": "audience, river width, east grove, and terrain continuity"
+      },
+      {
+        "id": "north-threshold",
+        "position": [5, 47, 12],
+        "target": [0, 4, 1.5],
+        "purpose": "torii, shrine path, bridge, and stage relationship"
+      },
+      {
+        "id": "top-down",
+        "position": [0, 6, 82],
+        "target": [0, 6, 0],
+        "purpose": "circulation and exclusion-mask audit"
+      }
+    ],
+    "validatedOrbitEnvelope": {
+      "minX": -121.6,
+      "maxX": 121.6,
+      "minY": -115.6,
+      "maxY": 135.6,
+      "derivation": "pan target corners plus the 82 m maximum orbit radius projected at 84 degrees, plus a 12 m frustum-ground margin"
+    }
+  },
+  "migration": {
+    "strategy": "Replace the monolithic R1 build contract with plan-owned domain modules while retaining one Environment3D scene entry point.",
+    "newOwners": [
+      {
+        "module": "blossom-site.ts",
+        "owns": [
+          "terrain envelope",
+          "grades",
+          "audience landform",
+          "circulation masks",
+          "destination access geometry"
+        ]
+      },
+      {
+        "module": "blossom-stage-operations.ts",
+        "owns": [
+          "performance modes",
+          "safety volumes",
+          "service access",
+          "prop storage",
+          "technical position"
+        ]
+      },
+      {
+        "module": "blossom-water.ts",
+        "owns": [
+          "river spline",
+          "widened koi pools",
+          "bed and banks",
+          "bridge crossing",
+          "fish habitat bounds"
+        ]
+      },
+      {
+        "module": "blossom-grove.ts",
+        "owns": [
+          "PlantFactory variant assignments",
+          "hero anchors",
+          "midground and horizon layers",
+          "LOD budgets"
+        ]
+      },
+      {
+        "module": "blossom-atmosphere.ts",
+        "owns": [
+          "moon",
+          "lantern lighting",
+          "canopy-local petals",
+          "wind",
+          "fireflies"
+        ]
+      }
+    ],
+    "fieldMigration": [
+      {
+        "from": "blossom-composition-plan.json stage",
+        "to": "stage and stage.operations",
+        "action": "replace"
+      },
+      {
+        "from": "blossom-ground-plan.json terrain and paths",
+        "to": "site and circulation",
+        "action": "replace"
+      },
+      {
+        "from": "blossom-composition-plan.json water and bridge",
+        "to": "water and bridge",
+        "action": "replace"
+      },
+      {
+        "from": "two-tree density budget",
+        "to": "grove trees, backgroundLayers, and runtimeBudget",
+        "action": "retire"
+      },
+      {
+        "from": "procedural torii builder",
+        "to": "approved detailed torii asset",
+        "action": "retire"
+      },
+      {
+        "from": "global petal volume",
+        "to": "petals.sourceTreeIds and canopy emitters",
+        "action": "retire"
+      }
+    ],
+    "retirementOrder": [
+      "Add pure R2.1 geometry modules and parity tests without switching runtime.",
+      "Teach build-blossom-environment.py to consume R2.1 modules instead of the R1 JSON files.",
+      "Switch BlossomScene.svelte to the R2.1 production asset and runtime masks.",
+      "Remove the R1 composition and ground adapters only after multi-angle parity proof."
+    ],
+    "monolithRule": "The builder may orchestrate exports but may not own duplicate coordinates or geometry rules."
+  },
+  "deliveryPhases": [
+    {
+      "id": 1,
+      "name": "Spatial contract",
+      "scope": "Approve this plan and its measured clearances."
+    },
+    {
+      "id": 2,
+      "name": "Terrain and water graybox",
+      "scope": "Build terrain, river volume, paths, audience landform, bridge, and camera envelope with no decorative planting."
+    },
+    {
+      "id": 3,
+      "name": "Architecture and access",
+      "scope": "Replace the torii, finish bridge landings, lantern pads, and accessible surfaces."
+    },
+    {
+      "id": 4,
+      "name": "PlantFactory grove",
+      "scope": "Approve new tree families, then establish the perimeter grove and ecological ground layers."
+    },
+    {
+      "id": 5,
+      "name": "Life and atmosphere",
+      "scope": "Add water motion, koi, localized petals, moonlight, lantern light, and restrained fireflies."
+    },
+    {
+      "id": 6,
+      "name": "Multi-angle acceptance",
+      "scope": "Review the five locked camera views plus mobile and 4K layouts before release."
+    }
+  ]
+}

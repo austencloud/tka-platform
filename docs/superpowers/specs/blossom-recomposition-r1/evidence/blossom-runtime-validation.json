@@ -1,0 +1,40 @@
+{
+  "compositionPlanId": "blossom-recomposition-r1",
+  "groundPlanId": "blossom-ground-r1",
+  "status": "verified",
+  "checkedAt": "2026-08-21T19:44:21.892Z",
+  "asset": "static/models/blossom/blossom_environment.glb",
+  "assetSizeMiB": 13.68,
+  "extensions": [
+    "EXT_mesh_gpu_instancing",
+    "EXT_meshopt_compression",
+    "EXT_texture_webp",
+    "KHR_materials_emissive_strength",
+    "KHR_mesh_quantization"
+  ],
+  "composition": {
+    "plantFactoryTrees": 2,
+    "plantFactoryTriangles": 580409,
+    "lanterns": 3,
+    "ecologyIslands": 5,
+    "legacyTrees": 0,
+    "requiredMajorProps": true,
+    "planPlacementParity": true
+  },
+  "ground": {
+    "continuousTerrainMesh": "Blossom Continuous Garden Ground Mesh",
+    "legacyGroundObjects": 0,
+    "familyMask": "static/textures/blossom-floor/blossom-ground-family-mask.png",
+    "grassClumps": 1435,
+    "grassBlades": 27717,
+    "grassPrototypeMeshes": 36,
+    "grassQualityTiers": {
+      "Base": 775,
+      "Medium": 432,
+      "High": 228
+    },
+    "fullyGpuInstanced": true,
+    "riverSplineSubdivisions": 8,
+    "minimumVisibleWaterClearance": 0.2819
+  }
+}

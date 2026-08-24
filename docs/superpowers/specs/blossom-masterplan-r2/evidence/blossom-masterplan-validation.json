@@ -1,0 +1,34 @@
+{
+  "planId": "blossom-masterplan-r2.1",
+  "status": "verified-for-spatial-review",
+  "checkedAt": "2026-08-22T21:21:47.570Z",
+  "productionUnlocked": false,
+  "approvedPlantFactoryCandidates": [
+    "open-crown-s19",
+    "open-crown-s71"
+  ],
+  "valid": true,
+  "failures": [],
+  "measurements": {
+    "audienceCapacity": 136,
+    "audienceZoneCount": 4,
+    "wheelchairBays": 4,
+    "connectedPublicNodes": 13,
+    "publicPathCount": 12,
+    "restrictedPathCount": 2,
+    "groveHeroAnchors": 16,
+    "groveBackgroundInstances": 108,
+    "distinctHeroVariants": 11,
+    "bridgeCenterlineOffsetMetres": 0.1,
+    "lanternCount": 8,
+    "fishHabitatCount": 2,
+    "sightlineRayCount": 171,
+    "maximumCameraDistance": 82,
+    "cameraEnvelope": {
+      "minX": -121.6,
+      "maxX": 121.6,
+      "minY": -115.6,
+      "maxY": 135.6
+    }
+  }
+}

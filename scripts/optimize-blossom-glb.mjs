@@ -2,11 +2,11 @@
 /**
  * Optimize the authored Blossom garden for mobile WebGL delivery.
  *
- * The source uses shared Blender mesh data for repeated trees, pond stones,
- * lanterns, and path stones. `instance` converts those repeated nodes to
- * EXT_mesh_gpu_instancing while preserving named stage/prop nodes. The scene
- * is texture-free, so the pipeline can stay focused on geometry deduplication,
- * a conservative simplify pass, and meshopt compression.
+ * The source uses the two approved PlantFactory crowns plus shared Blender mesh
+ * data for ecology islands and carved lanterns. `instance` converts repeated
+ * nodes to EXT_mesh_gpu_instancing while preserving named stage and hero-prop
+ * nodes. PBR atlases are resized and WebP-compressed before the final meshopt
+ * pass so close-range material detail survives without shipping raw sources.
  *
  * Input:  static/models/blossom/blossom_environment_raw.glb
  * Output: static/models/blossom/blossom_environment.glb
@@ -171,15 +171,16 @@ console.log(`Input: ${INPUT} (${size(INPUT)})`);
 cleanTemporaryFiles();
 try {
   run(
-    "Deduplicate, instance, weld, and conservatively simplify",
+    "Deduplicate, instance, preserve silhouettes, and compress PBR atlases",
     [
       "npx gltf-transform optimize",
       `"${INPUT}" "${TMP}"`,
       "--compress false",
-      "--texture-compress false",
+      "--texture-compress webp",
+      "--texture-size 1536",
       "--simplify true",
-      "--simplify-ratio 0.82",
-      "--simplify-error 0.002",
+      "--simplify-ratio 0",
+      "--simplify-error 0.001",
       "--instance true",
       "--flatten false",
       "--join false",
@@ -187,7 +188,7 @@ try {
   );
 
   run(
-    "GPU-instance the three placements of each tree prototype",
+    "GPU-instance repeated authored asset families",
     `npx gltf-transform instance "${TMP}" "${TMP_INSTANCED}" --min 2`
   );
   run(

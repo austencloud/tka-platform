@@ -55,7 +55,7 @@
   const props: Props = $props();
 
   const defaults = REFLECTIVE_POOL_DEFAULTS;
-  const MAX_SHORELINE_SEGMENTS = 16;
+  const MAX_SHORELINE_SEGMENTS = 32;
 
   function resolveShoreline(): Array<[number, number]> {
     if (props.outline && props.outline.length >= 3) {

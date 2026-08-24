@@ -1,0 +1,24 @@
+{
+  "planId": "blossom-recomposition-r1",
+  "status": "verified",
+  "checkedAt": "2026-08-20T23:32:26.888Z",
+  "checks": {
+    "exactTreeCount": true,
+    "approvedSelectionParity": true,
+    "densityBudgetParity": true,
+    "stageClearance": true,
+    "trunkSightlines": true,
+    "lanternSightlines": true,
+    "ecologySightlines": true,
+    "toriiSightlines": true
+  },
+  "measurements": {
+    "stageDiameter": 10.5,
+    "stageClearDiameter": 13.5,
+    "sightlineWidthNear": 8.8,
+    "sightlineWidthFar": 10.6,
+    "treeCount": 2,
+    "lanternCount": 3,
+    "ecologyIslandCount": 5
+  }
+}
