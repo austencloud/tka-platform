@@ -119,6 +119,24 @@ describe("stage choreography state", () => {
     state.destroy();
   });
 
+  it("reads playback duration and positions from the formation track", () => {
+    const state = createStageChoreographyState();
+    const secondFormation = state.choreography.formations[1]!;
+
+    for (const performer of state.choreography.performers) {
+      performer.sequenceClips = [];
+    }
+    state.seek(6 / state.maxTotalBeats);
+    const beforeMove = state.interpolatedPositions.map(({ x, z }) => ({ x, z }));
+
+    state.moveFormation(secondFormation.id, 12);
+    state.seek(6 / state.maxTotalBeats);
+
+    expect(state.maxTotalBeats).toBe(12);
+    expect(state.interpolatedPositions).not.toEqual(beforeMove);
+    state.destroy();
+  });
+
   it("keeps the Stage environment in the document and its undo history", () => {
     const state = createStageChoreographyState({
       initialEnvironmentId: SceneEnvironmentId.BLOSSOM,

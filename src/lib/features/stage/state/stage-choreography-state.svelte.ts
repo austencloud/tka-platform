@@ -20,12 +20,14 @@ import { generatePresetPositions } from "./formation-presets";
 import type { UnifiedPlaybackContext } from "$lib/shared/timeline/unified-playback-context";
 import {
   samplePerformerPerformance,
-  sampleStagePerformance,
   type StagePerformanceFrame,
 } from "../domain/stage-performance-sampler";
 import { marksToFormations } from "../domain/formation-migration";
 import { normalizeFormations } from "../domain/formation-invariants";
-import { sampleFormationPerformance } from "../domain/stage-formation-sampler";
+import {
+  sampleFormationPerformance,
+  sampleStageFormations,
+} from "../domain/stage-formation-sampler";
 import { DEFAULT_STAGE_SEQUENCE_ID } from "../services/stage-sequence-loader";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { getPerformerSequenceEndBeat } from "../domain/stage-sequence-timeline";
@@ -301,7 +303,11 @@ export function createStageChoreographyState(
   let lastTimestamp = 0;
 
   const maxTotalBeats = $derived(
-    Math.max(1, ...choreography.performers.map(totalBeatsForPerformer))
+    Math.max(
+      1,
+      choreography.formations.at(-1)?.atBeat ?? 0,
+      ...choreography.performers.map(getPerformerSequenceEndBeat)
+    )
   );
 
   const duration = $derived((maxTotalBeats * 60) / choreography.bpm);
@@ -312,45 +318,27 @@ export function createStageChoreographyState(
   const currentBeat = $derived(overallProgress * maxTotalBeats);
 
   const currentStep = $derived.by(() => {
-    const longestPerformer = choreography.performers.reduce(
-      (best, p) =>
-        totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best,
-      choreography.performers[0]!
-    );
-    const currentBeat = overallProgress * maxTotalBeats;
-    let accumulated = 0;
-    for (let i = 1; i < longestPerformer.marks.length; i++) {
-      accumulated += longestPerformer.marks[i]!.beats;
-      if (accumulated >= currentBeat) return i - 1;
+    for (let i = choreography.formations.length - 1; i >= 0; i -= 1) {
+      if (choreography.formations[i]!.atBeat <= currentBeat) {
+        return Math.max(0, i);
+      }
     }
-    return Math.max(0, longestPerformer.marks.length - 2);
+    return 0;
   });
 
   const totalSteps = $derived(
-    Math.max(
-      1,
-      ...choreography.performers.map((p) => Math.max(0, p.marks.length - 1))
-    )
+    Math.max(1, choreography.formations.length - 1)
   );
 
   const beatMarkerPositions = $derived.by((): readonly number[] => {
     if (maxTotalBeats <= 0) return [];
-    const longestPerformer = choreography.performers.reduce(
-      (best, p) =>
-        totalBeatsForPerformer(p) > totalBeatsForPerformer(best) ? p : best,
-      choreography.performers[0]!
-    );
-    const positions: number[] = [];
-    let accumulated = 0;
-    for (let i = 1; i < longestPerformer.marks.length; i++) {
-      accumulated += longestPerformer.marks[i]!.beats;
-      positions.push(accumulated / maxTotalBeats);
-    }
-    return positions;
+    return choreography.formations
+      .slice(1)
+      .map((formation) => formation.atBeat / maxTotalBeats);
   });
 
   const performanceFrames = $derived(
-    sampleStagePerformance(choreography, currentBeat)
+    sampleStageFormations(choreography, currentBeat)
   );
 
   const interpolatedPositions = $derived(
