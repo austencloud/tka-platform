@@ -12,8 +12,9 @@
     onOpenSavedFilm: (entry: CollectedFilm) => void;
   } = $props();
 
-  // A library film has no stored poster or denormalized meta, so the card's
-  // chips come from resolving it. Five short documents, resolved once.
+  // A library film has no stored poster, so the card is built from the resolved
+  // spec instead: the scene titles are what tells a director which film to
+  // open. Five short documents, resolved once.
   const startingPoints = FILM_LIBRARY.map((entry) => {
     const spec = resolveFilmDirectorSpec(entry.film);
     return {
@@ -21,6 +22,8 @@
       label: entry.label,
       sceneCount: spec.scenes.length,
       durationSeconds: spec.durationSeconds,
+      sceneTitles: spec.scenes.map((scene) => scene.title),
+      performerCount: spec.scenes[0]?.performance.performers.length ?? 0,
     };
   });
 
@@ -35,7 +38,7 @@
   // component mounts in order to resolve a ?film=saved: link.
 </script>
 
-<main class="marquee">
+<main class="marquee" data-film-director-marquee>
   <header class="marquee-header">
     <span class="kicker">Director</span>
     <h1>Films</h1>
@@ -47,11 +50,27 @@
       {#each startingPoints as film (film.key)}
         <li>
           <button type="button" onclick={() => onOpenLibraryFilm(film.key)}>
-            <strong>{film.label}</strong>
-            <span class="meta">
-              {film.sceneCount === 1 ? "1 scene" : `${film.sceneCount} scenes`}
-              <span aria-hidden="true">·</span>
-              {formatDuration(film.durationSeconds)}
+            <span class="card-head">
+              <strong>{film.label}</strong>
+              <span class="meta">
+                {film.sceneCount === 1 ? "1 scene" : `${film.sceneCount} scenes`}
+                <span aria-hidden="true">·</span>
+                {formatDuration(film.durationSeconds)}
+                <span aria-hidden="true">·</span>
+                {film.performerCount === 1
+                  ? "1 performer"
+                  : `${film.performerCount} performers`}
+              </span>
+            </span>
+            <!-- Flow content, not a list: a button may only contain phrasing
+                 content, and an <ol> here is invalid HTML. -->
+            <span class="scenes">
+              {#each film.sceneTitles as title, index (index)}
+                <span class="scene">
+                  <span class="scene-index">{index + 1}</span>
+                  {title}
+                </span>
+              {/each}
             </span>
           </button>
         </li>
@@ -59,18 +78,35 @@
     </ul>
   </section>
 
-  <section aria-labelledby="saved-films">
-    <h2 id="saved-films">Saved films</h2>
-    <FilmCollectionModule onopen={onOpenSavedFilm} />
-  </section>
+  <!-- No heading here: the module carries its own "Saved films" header and count. -->
+  <FilmCollectionModule onopen={onOpenSavedFilm} />
 </main>
 
 <style>
+  /* Nothing else on the page ramps the root, so the marquee carries the same
+     16px→24px lockstep the stage does. Without it a 3840 viewport renders
+     1080p type in the middle of a 2600px band. */
+  @media (min-width: 1680px) {
+    :global(html:has([data-film-director-marquee])) {
+      font-size: clamp(1rem, 0.61rem + 0.37vw, 1.5rem);
+    }
+  }
+
   /* The route pins `body { overflow: hidden }` for the stage, so the marquee
-     owns its own scroll rather than growing a clipped page. */
+     owns its own scroll rather than growing a clipped page. Grid rather than
+     flow: the saved-films shelf is another component's root, which scoped CSS
+     cannot reach with a sibling margin. */
   .marquee {
     position: fixed;
     inset: 0;
+    display: grid;
+    justify-items: center;
+    /* safe center: with an empty shelf the composition is far shorter than a
+       4K viewport, and pinning it to the top dead-ends the page a third of the
+       way down. Once the shelf fills past the viewport, `safe` falls back to
+       start so the top stays reachable. */
+    align-content: safe center;
+    row-gap: clamp(2rem, 4vw, 3.5rem);
     padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(3rem, 8vw, 6rem);
     overflow-y: auto;
     color: var(--theme-text, #fff);
@@ -79,11 +115,6 @@
 
   .marquee > :global(*) {
     width: var(--shell-w, min(1720px, 92vw));
-    margin: 0 auto;
-  }
-
-  .marquee-header {
-    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
   }
 
   .kicker {
@@ -100,56 +131,72 @@
     line-height: 1.1;
   }
 
-  section + section {
-    margin-top: clamp(2rem, 5vw, 3.5rem);
-  }
-
+  /* Matches the saved-films shelf's own heading, which this cannot restyle. */
   h2 {
     margin: 0 0 1rem;
-    font-size: clamp(1.05rem, 1.6vw, 1.4rem);
+    font-size: 1.05rem;
   }
 
   /* Pinned counts, not auto-fill: five known cards against a minmax floor
-     strands the fifth on its own row as the viewport grows. */
+     strands the fifth on its own row as the viewport grows. Three is the only
+     count above one that leaves no orphan — 5 % 3 = 2, while 2 and 4 both
+     strand a single card on the last row. */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     padding: 0;
     margin: 0;
     list-style: none;
   }
 
-  @media (min-width: 48rem) {
+  /* 60rem, not the usual 48rem: three columns at tablet width squeeze a scene
+     title like "The lead and the copies" into a 13rem card. Below this the
+     cards run full width, which 5 items fill without an orphan row. */
+  @media (min-width: 60rem) {
     .card-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-
-  @media (min-width: 105rem) {
-    .card-grid {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1.25rem;
     }
   }
 
   .card-grid button {
     display: grid;
     width: 100%;
-    min-height: 8.5rem;
-    align-content: end;
-    gap: 0.45rem;
-    padding: 1.1rem;
+    height: 100%;
+    align-content: start;
+    gap: 0.9rem;
+    padding: 1.25rem;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: 1rem;
     color: inherit;
-    background: linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--theme-accent, #7869eb) 16%, transparent),
-      var(--theme-card-bg, rgba(255, 255, 255, 0.05))
-    );
+    background:
+      radial-gradient(
+        120% 80% at 12% 0%,
+        color-mix(in srgb, var(--theme-accent, #7869eb) 30%, transparent),
+        transparent 62%
+      ),
+      var(--theme-panel-bg, #10111b);
     font: inherit;
     text-align: left;
     cursor: pointer;
+    transition: border-color 140ms ease;
+  }
+
+  /* One card per row is wide enough that a stacked head-over-list leaves the
+     right half empty. Between the phone stack and the three-column tier the
+     card turns on its side instead. */
+  @media (min-width: 34rem) and (max-width: 59.999rem) {
+    .card-grid button {
+      grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+      gap: 1.5rem;
+    }
+
+    .scenes {
+      padding: 0 0 0 1.5rem;
+      border-top: none;
+      border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
   }
 
   .card-grid button:hover {
@@ -161,15 +208,55 @@
     outline-offset: 2px;
   }
 
+  .card-head {
+    display: grid;
+    align-content: start;
+    gap: 0.3rem;
+  }
+
   .card-grid strong {
-    font-size: clamp(1rem, 1.2vw, 1.2rem);
+    font-size: clamp(1.15rem, 1.1vw, 1.5rem);
+    line-height: 1.15;
   }
 
   .meta {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.3rem;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
     font-size: var(--font-size-compact, 0.75rem);
     font-variant-numeric: tabular-nums;
+  }
+
+  .scenes {
+    display: grid;
+    align-content: start;
+    gap: 0.3rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .scene {
+    display: flex;
+    gap: 0.55rem;
+    align-items: baseline;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.78));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .scene-index {
+    flex: 0 0 auto;
+    color: var(--theme-accent, #b0a4ff);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-grid button {
+      transition: none;
+    }
   }
 </style>

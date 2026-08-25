@@ -18,7 +18,10 @@
 
   let Workbench = $state<WorkbenchComponent | null>(null);
   let loadError = $state<string | null>(null);
-  let stage = $state<Stage | null>(null);
+  // raw, not deep: the director structuredClones the film document it is given,
+  // and a deep $state proxy throws DataCloneError. Nothing mutates a field of
+  // `stage` — entering and leaving replace it whole — so raw loses nothing.
+  let stage = $state.raw<Stage | null>(null);
 
   const requested = parseFilmKey(page.url.searchParams.get("film"));
 
