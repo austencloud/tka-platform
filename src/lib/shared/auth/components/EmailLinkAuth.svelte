@@ -13,31 +13,91 @@
    */
 
   import { httpsCallable } from "firebase/functions";
+  import { signInWithCustomToken } from "firebase/auth";
+  import { onMount } from "svelte";
   import { page } from "$app/state";
-  import { getFunctionsInstance } from "../firebase";
+  import {
+    auth,
+    configureAuthPersistence,
+    getFunctionsInstance,
+  } from "../firebase";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { recordAuthSubmission } from "$lib/shared/auth/services/auth-analytics-bridge";
+  import { recordLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
   import { trackAuthProviderResult } from "$lib/shared/analytics/auth-events";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { db } from "$lib/shared/persistence/database/tka-database";
   import { captureWhenReady } from "$lib/shared/analytics/services/posthog";
+  import { firstRunState } from "$lib/shared/onboarding/state/first-run-state.svelte";
+  import { isRunningAsStandalone } from "$lib/shared/mobile/services/platform-detector";
 
   let email = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
   let submittedEmail = $state("");
-  let deliveryDetails = $state<{
-    subject: string;
-    senderEmail: string;
-  } | null>(null);
+  let acceptedRequestId = $state("");
+  let signInCode = $state("");
+  let codeLoading = $state(false);
+  let codeError = $state<string | null>(null);
+  let codeCompleted = $state(false);
+  let installedApp = $state(false);
   let emailInput: HTMLInputElement;
 
-  const DEFAULT_SUBJECT = "Your Flow Arts Composer sign-in link";
-  const DEFAULT_SENDER = "noreply@tkaflowarts.com";
+  const PENDING_REQUEST_KEY = "pendingMagicLinkCode";
+  const PENDING_REQUEST_LIFETIME_MS = 30 * 60 * 1000;
+  const REQUEST_ID_PATTERN =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  function clearPendingRequest() {
+    window.localStorage.removeItem(PENDING_REQUEST_KEY);
+  }
+
+  function persistPendingRequest(requestId: string, recipient: string) {
+    window.localStorage.setItem(
+      PENDING_REQUEST_KEY,
+      JSON.stringify({
+        requestId,
+        email: recipient,
+        expiresAt: Date.now() + PENDING_REQUEST_LIFETIME_MS,
+      })
+    );
+  }
+
+  onMount(() => {
+    installedApp = isRunningAsStandalone();
+    const raw = window.localStorage.getItem(PENDING_REQUEST_KEY);
+    if (!raw) return;
+
+    try {
+      const pending = JSON.parse(raw) as {
+        requestId?: unknown;
+        email?: unknown;
+        expiresAt?: unknown;
+      };
+      if (
+        typeof pending.requestId !== "string" ||
+        !REQUEST_ID_PATTERN.test(pending.requestId) ||
+        typeof pending.email !== "string" ||
+        !pending.email ||
+        typeof pending.expiresAt !== "number" ||
+        pending.expiresAt <= Date.now()
+      ) {
+        clearPendingRequest();
+        return;
+      }
+
+      acceptedRequestId = pending.requestId;
+      email = pending.email;
+      submittedEmail = pending.email;
+      success = `Email sent to ${pending.email}.`;
+    } catch {
+      clearPendingRequest();
+    }
+  });
 
   // Inside an in-app webview this form is not just one option among several —
   // it is the only sign-in method that completes there, because it needs no
@@ -49,23 +109,9 @@
     detector.isInAppBrowserOrForced(page.url.searchParams)
   );
 
-  // Android's escape hatch is Chrome, iOS's is Safari, and the desktop clients
-  // in the pattern list (WeChat, Telegram, Discord, Slack) are neither — naming
-  // a browser their OS does not have is worse than naming none.
-  // Plain const, not $derived: getPlatform() reads navigator, which cannot
-  // change for the life of the page.
-  const escapeTarget = (() => {
-    const platform = detector.getPlatform();
-    if (platform === "android") return "Chrome";
-    if (platform === "ios") return "Safari";
-    return "your browser";
-  })();
-
-  const hint = $derived(
-    inAppBrowser
-      ? `A sign-in link will arrive by email. Open it in ${escapeTarget} to finish signing in there.`
-      : "No password needed. A sign-in link will arrive by email."
-  );
+  const staysInThisApp = $derived(installedApp || inAppBrowser);
+  const hint =
+    "Enter your email. We'll send you a six-digit code. No password needed.";
 
   // The link is usually opened in a different browser than the one that
   // requested it, and localStorage does not cross that boundary — so an
@@ -110,7 +156,8 @@
     loading = true;
     error = null;
     success = null;
-    deliveryDetails = null;
+    codeCompleted = false;
+    codeError = null;
 
     recordAuthSubmission("magic_link");
     captureWhenReady("magic_link_request_started", {
@@ -130,8 +177,6 @@
           message?: string;
           error?: string;
           requestId?: string;
-          subject?: string;
-          senderEmail?: string;
         }
       >(functions, "sendMagicLink");
 
@@ -144,14 +189,11 @@
       });
 
       if (result.data.success) {
-        const acceptedRequestId = result.data.requestId || requestId;
         // Save the email locally so we can complete sign-in on the same device
         window.localStorage.setItem("emailForSignIn", recipient);
+        acceptedRequestId = result.data.requestId || requestId;
+        persistPendingRequest(acceptedRequestId, recipient);
         success = `Email sent to ${recipient}.`;
-        deliveryDetails = {
-          subject: result.data.subject || DEFAULT_SUBJECT,
-          senderEmail: result.data.senderEmail || DEFAULT_SENDER,
-        };
         captureWhenReady("magic_link_provider_accepted", {
           request_id: acceptedRequestId,
           auth_host: window.location.hostname,
@@ -201,7 +243,7 @@
       } else {
         failureCode = errorCode ? "request_failed" : "network_failed";
         error = "Failed to send email. Please try again.";
-        toast.error("Failed to send magic link. Please try again.");
+        toast.error("Failed to send the email. Please try again.");
       }
 
       console.error("[email-link] Send failed", { code: failureCode });
@@ -227,8 +269,63 @@
     error = null;
     success = null;
     submittedEmail = "";
-    deliveryDetails = null;
+    acceptedRequestId = "";
+    signInCode = "";
+    codeError = null;
+    codeCompleted = false;
+    clearPendingRequest();
     requestAnimationFrame(() => emailInput.focus());
+  }
+
+  function updateSignInCode(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    signInCode = input.value.replace(/\D/g, "").slice(0, 6);
+  }
+
+  async function redeemSignInCode() {
+    if (codeLoading || signInCode.length !== 6 || !acceptedRequestId) {
+      return;
+    }
+
+    codeLoading = true;
+    codeError = null;
+    try {
+      const functions = await getFunctionsInstance();
+      const redeemCode = httpsCallable<
+        { action: "redeem-code"; requestId: string; code: string },
+        { success: true; customToken: string }
+      >(functions, "sendMagicLink");
+      const result = await redeemCode({
+        action: "redeem-code",
+        requestId: acceptedRequestId,
+        code: signInCode,
+      });
+
+      await configureAuthPersistence(auth);
+      await signInWithCustomToken(auth, result.data.customToken);
+      window.localStorage.removeItem("emailForSignIn");
+      clearPendingRequest();
+
+      recordLastAuthMethod("magic-link");
+      trackAuthProviderResult("magic_link", "completed");
+
+      if (auth.currentUser?.uid) {
+        firstRunState.markSkipped(auth.currentUser.uid);
+      }
+
+      codeCompleted = true;
+      acceptedRequestId = "";
+      signInCode = "";
+      toast.success("Signed in! Welcome.");
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code ?? "";
+      codeError = code.includes("already-exists")
+        ? "That email belongs to another account. Contact support so we can merge it without losing your work."
+        : "That code is invalid or expired. Request a new email and try again.";
+      trackAuthProviderResult("magic_link", "failed", "code_redemption_failed");
+    } finally {
+      codeLoading = false;
+    }
   }
 </script>
 
@@ -249,7 +346,7 @@
         <i class="fas fa-triangle-exclamation"></i>
       </span>
       <span class="delivery-copy">
-        <strong>The link was not sent</strong>
+        <strong>The email was not sent</strong>
         <span>{error}</span>
       </span>
     </div>
@@ -278,20 +375,30 @@
       </span>
       <span class="delivery-copy">
         {#if loading}
-          <strong>Sending your link now</strong>
+          <strong>Sending your code</strong>
           <span>
-            Preparing an email for {submittedEmail}. This can take a few
-            seconds.
+            Sending an email to {submittedEmail}. This can take a few seconds.
           </span>
         {:else if success}
-          <strong>Check your email</strong>
-          <span>
-            {success} Look for “{deliveryDetails?.subject || DEFAULT_SUBJECT}”
-            from {deliveryDetails?.senderEmail || DEFAULT_SENDER}. Check Junk or
-            Other if it does not appear.
-          </span>
+          {#if codeCompleted}
+            <strong>Signed in</strong>
+            <span>You can close this screen and keep working.</span>
+          {:else}
+            <strong>Check your email</strong>
+            {#if staysInThisApp}
+              <span>
+                We sent a code to {submittedEmail}. Check your email, then come
+                back here and enter it below.
+              </span>
+            {:else}
+              <span>
+                We sent a code to {submittedEmail}. Enter it below. The email
+                also has a button you can use in this browser.
+              </span>
+            {/if}
+          {/if}
         {:else}
-          <strong>Email sign-in</strong>
+          <strong>Sign in with an email code</strong>
           <span>{hint}</span>
         {/if}
       </span>
@@ -300,8 +407,7 @@
 
   {#if pendingGuestDrafts}
     <p class="drift-warning" role="status">
-      Your unsaved work stays on this browser. Finish signing in here, or it
-      won't follow the link.
+      Your work stays in this app. Check your email, then enter the code here.
     </p>
   {/if}
 
@@ -319,11 +425,48 @@
     />
   </div>
 
+  {#if success && acceptedRequestId}
+    <div class="code-entry">
+      <label for="email-sign-in-code">Six-digit code</label>
+      <div class="code-row">
+        <input
+          id="email-sign-in-code"
+          class="code-input"
+          type="text"
+          inputmode="numeric"
+          enterkeyhint="done"
+          autocomplete="one-time-code"
+          maxlength="6"
+          pattern="[0-9]{6}"
+          value={signInCode}
+          oninput={updateSignInCode}
+          disabled={codeLoading}
+          aria-describedby={codeError ? "email-sign-in-code-error" : undefined}
+        />
+        <button
+          type="button"
+          class="code-submit"
+          onclick={() => void redeemSignInCode()}
+          disabled={codeLoading || signInCode.length !== 6}
+          aria-busy={codeLoading}
+        >
+          {codeLoading ? "Signing in…" : "Sign in"}
+        </button>
+      </div>
+      {#if codeError}
+        <p id="email-sign-in-code-error" class="code-error" role="alert">
+          {codeError}
+        </p>
+      {/if}
+    </div>
+  {/if}
+
   <div class="form-actions" class:form-actions--split={!!success}>
     <button
       type="submit"
       disabled={loading}
       class="submit-button"
+      class:submit-button--secondary={!!success}
       aria-busy={loading}
       aria-describedby="magic-link-status"
     >
@@ -332,7 +475,7 @@
         {t("auth_sending")}
       {:else}
         <i class="fas fa-envelope" aria-hidden="true"></i>
-        {success ? "Send again" : t("auth_send_magic_link")}
+        {success ? "Send another code" : t("auth_send_magic_link")}
       {/if}
     </button>
     {#if success}
@@ -341,7 +484,7 @@
         class="different-email-button"
         onclick={useDifferentEmail}
       >
-        Different email
+        Use a different email
       </button>
     {/if}
   </div>
@@ -478,6 +621,61 @@
     gap: 0.5rem;
   }
 
+  .code-entry {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 8%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #7c6af7) 32%, transparent);
+    border-radius: var(--radius-md, 0.75rem);
+  }
+
+  .code-row {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) minmax(8rem, auto);
+    gap: 0.625rem;
+  }
+
+  .code-input {
+    text-align: center;
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .code-submit {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.625rem 1rem;
+    color: var(--theme-text, white);
+    background: var(--theme-accent, #7c6af7);
+    border: 1px solid var(--theme-accent-strong, var(--theme-accent, #7c6af7));
+    border-radius: var(--radius-sm, 0.5rem);
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .code-submit:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .code-error {
+    margin: 0;
+    color: var(--semantic-error, #ef4444);
+    font-size: var(--font-size-min, 0.875rem);
+    line-height: 1.4;
+  }
+
   label {
     font-size: var(--font-size-min, 0.875rem);
     font-weight: 600;
@@ -485,17 +683,37 @@
   }
 
   input {
+    box-sizing: border-box;
     padding: 0.75rem;
     min-height: var(--min-touch-target, 44px);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border: 2px solid
+      color-mix(in srgb, var(--theme-text, white) 26%, transparent);
     border-radius: 0.5rem;
-    font-size: var(--font-size-sm, 1rem);
+    /* Keep touch controls at WebKit's 16px floor so focus does not trigger
+       viewport zoom or destabilize the software keyboard. */
+    font-size: 16px;
     transition:
       border-color var(--duration-normal, 200ms) ease,
       box-shadow var(--duration-normal, 200ms) ease,
       background var(--duration-normal, 200ms) ease;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+      var(--theme-text, white) 12%
+    );
     color: color-mix(in srgb, var(--theme-text, white) 95%, transparent);
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--theme-text, white) 10%, transparent);
+    cursor: text;
+  }
+
+  input::placeholder {
+    color: color-mix(in srgb, var(--theme-text, white) 54%, transparent);
+    opacity: 1;
+  }
+
+  input:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--theme-text, white) 38%, transparent);
   }
 
   input:focus {
@@ -503,12 +721,20 @@
       color-mix(in srgb, var(--theme-accent, #7c6af7) 38%, transparent);
     outline-offset: 1px;
     border-color: var(--theme-accent-strong, var(--theme-accent, #7c6af7));
-    box-shadow: 0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 15%,
-        transparent
-      );
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #7c6af7) 10%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    box-shadow:
+      0 0 0 3px
+        color-mix(
+          in srgb,
+          var(--theme-accent-strong, var(--theme-accent, #7c6af7)) 18%,
+          transparent
+        ),
+      inset 0 1px 0
+        color-mix(in srgb, var(--theme-text, white) 10%, transparent);
   }
 
   input:disabled {
@@ -593,6 +819,19 @@
     transform: scale(0.98);
   }
 
+  .submit-button.submit-button--secondary {
+    color: var(--theme-text, white);
+    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    box-shadow: none;
+  }
+
+  .submit-button.submit-button--secondary:hover:not(:disabled) {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
+    box-shadow: none;
+  }
+
   .different-email-button {
     min-height: var(--min-touch-target, 44px);
     padding: 0.625rem 1rem;
@@ -638,6 +877,12 @@
     .submit-button,
     .different-email-button {
       transition: none;
+    }
+  }
+
+  @media (max-width: 30rem) {
+    .code-row {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 </style>

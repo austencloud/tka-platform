@@ -316,7 +316,9 @@
     background: var(--theme-card-bg, var(--theme-card-bg));
     border: 1px solid var(--theme-stroke);
     color: var(--theme-text);
-    font-size: clamp(0.75rem, 1.8vh, var(--font-size-sm));
+    /* WebKit's touch keyboard is reliable at the platform's 16px form-control
+       floor. Keep the compact treatment only for a real desktop pointer. */
+    font-size: 16px;
   }
 
   .password-row {
@@ -410,5 +412,11 @@
   .switch:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  @media (min-width: 30rem) and (hover: hover) and (pointer: fine) {
+    .input {
+      font-size: clamp(0.75rem, 1.8vh, var(--font-size-sm));
+    }
   }
 </style>

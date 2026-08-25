@@ -75,7 +75,7 @@
   "auth_name": "Nome",
   "auth_need_account": "Hai bisogno di un account? Registrati",
   "auth_password": "Password",
-  "auth_send_magic_link": "Invia link magico",
+  "auth_send_magic_link": "Inviami un codice via email",
   "auth_sending": "Invio...",
   "auth_show_password": "Mostra password",
   "auth_sign_in": "Accedi",

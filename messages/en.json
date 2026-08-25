@@ -158,7 +158,7 @@
   "auth_name": "Name",
   "auth_need_account": "Need an account? Sign up",
   "auth_password": "Password",
-  "auth_send_magic_link": "Send Magic Link",
+  "auth_send_magic_link": "Email me a code",
   "auth_sending": "Sending...",
   "auth_show_password": "Show password",
   "auth_sign_in": "Sign In",

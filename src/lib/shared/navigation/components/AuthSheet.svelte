@@ -159,7 +159,7 @@
         >
       </div>
 
-      <!-- Email Auth (Password or Magic Link) -->
+      <!-- Email Auth (code or password) -->
       <div class="auth-sheet__email">
         <EmailAuthTabs bind:mode={authMode} />
       </div>

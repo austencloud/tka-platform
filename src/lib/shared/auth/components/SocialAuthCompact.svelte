@@ -87,12 +87,12 @@
     if (platform === "ios") return "Safari";
     return "your browser";
   })();
-  // Names the Magic Link tab rather than pointing a direction: AuthModal's
+  // Names the Email code tab rather than pointing a direction: AuthModal's
   // webview layout puts email above these buttons, but AuthSheet and
   // AuthPrompt both render this component first, so "above" would be wrong
   // from two of the three hosts.
   function blockedProviderMessage(provider: string): string {
-    return `${provider} blocks sign-in inside this browser. Use the Magic Link option, or open this page in ${escapeTarget}.`;
+    return `${provider} blocks sign-in inside this browser. Use Email code, or open this page in ${escapeTarget}.`;
   }
 
   // The escape action (button label + fired URL) for this environment. Revealed

@@ -76,7 +76,7 @@
   "auth_name": "اسم",
   "auth_need_account": "هل تحتاج إلى حساب؟ سجل الآن",
   "auth_password": "كلمة المرور",
-  "auth_send_magic_link": "إرسال رابط سحري",
+  "auth_send_magic_link": "إرسال رمز عبر البريد الإلكتروني",
   "auth_sending": "جارٍ الإرسال...",
   "auth_show_password": "إظهار كلمة المرور",
   "auth_sign_in": "تسجيل الدخول",

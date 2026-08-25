@@ -1,8 +1,11 @@
 import * as functions from "firebase-functions";
+import type { UserRecord } from "firebase-admin/auth";
 import {
+  handleRedeemMagicLinkCode,
   handleResolveMagicLinkEmail,
   handleSendMagicLink,
   type MagicLinkRuntime,
+  type RedeemMagicLinkCodeRuntime,
   type ResolveMagicLinkEmailRuntime,
 } from "./sendMagicLink";
 
@@ -39,6 +42,7 @@ function createRuntime(overrides: RuntimeOverrides = {}) {
     senderName: "Flow Arts Composer",
     appCheckStatus: "missing",
     authStatus: "anonymous",
+    initiatingUid: null,
     now: () => {
       now += 25;
       return now;
@@ -47,6 +51,7 @@ function createRuntime(overrides: RuntimeOverrides = {}) {
     createSignInState: jest.fn().mockResolvedValue({
       state: MAGIC_LINK_STATE,
       expiresAtMs: MAGIC_LINK_EXPIRES_AT,
+      oneTimeCode: "123456",
     }),
     generateLink: jest.fn().mockResolvedValue(MAGIC_LINK),
     fetch: jest
@@ -152,9 +157,9 @@ describe("handleSendMagicLink", () => {
       )
     ).resolves.toEqual({
       success: true,
-      message: "Magic link sent. Check your email.",
+      message: "Email code sent. Check your email.",
       requestId: REQUEST_ID,
-      subject: "Your Flow Arts Composer sign-in link",
+      subject: "Your Flow Arts Composer sign-in code",
       senderEmail: "noreply@tkaflowarts.com",
     });
 
@@ -162,20 +167,37 @@ describe("handleSendMagicLink", () => {
       url: `https://tkaflowarts.com/create?magicLinkState=${MAGIC_LINK_STATE}`,
       handleCodeInApp: true,
     });
+    expect(runtime.createSignInState).toHaveBeenCalledWith(
+      RECIPIENT,
+      REQUEST_ID,
+      null
+    );
     expect(fetch).toHaveBeenCalledWith(
       "https://api.brevo.com/v3/smtp/email",
       expect.objectContaining({ method: "POST" })
     );
     const request = fetch.mock.calls[0]?.[1] as RequestInit;
-    expect(JSON.parse(String(request.body))).toEqual(
+    const payload = JSON.parse(String(request.body)) as {
+      htmlContent: string;
+      textContent: string;
+    };
+    expect(payload).toEqual(
       expect.objectContaining({
         to: [{ email: RECIPIENT }],
-        subject: "Your Flow Arts Composer sign-in link",
+        subject: "Your Flow Arts Composer sign-in code",
         tags: ["authentication", "magic-link"],
         headers: { "X-Mailin-custom": `request_id:${REQUEST_ID}` },
       })
     );
-    expect(String(request.body)).toContain("expires in 30 minutes");
+    expect(payload.htmlContent).toMatch(/expires in\s+30 minutes/);
+    expect(payload.htmlContent).toContain("123456");
+    expect(payload.textContent).toContain("123456");
+    expect(payload.htmlContent.indexOf("123456")).toBeLessThan(
+      payload.htmlContent.indexOf(MAGIC_LINK)
+    );
+    expect(payload.textContent.indexOf("123456")).toBeLessThan(
+      payload.textContent.indexOf(MAGIC_LINK)
+    );
     expect(String(request.body)).not.toContain("expires in 1 hour");
     expect(info).toHaveBeenCalledWith(
       "Magic link provider accepted",
@@ -185,6 +207,17 @@ describe("handleSendMagicLink", () => {
         providerStatus: 201,
       })
     );
+  });
+
+  it("uses the canonical Create route when no continuation is provided", async () => {
+    const { runtime } = createRuntime();
+
+    await handleSendMagicLink({ email: RECIPIENT }, runtime);
+
+    expect(runtime.generateLink).toHaveBeenCalledWith(RECIPIENT, {
+      url: `https://tkaflowarts.com/create?magicLinkState=${MAGIC_LINK_STATE}`,
+      handleCodeInApp: true,
+    });
   });
 
   it("maps a provider timeout to a retryable callable error", async () => {
@@ -216,6 +249,122 @@ describe("handleSendMagicLink", () => {
     expect(serializedLogs).not.toContain(RECIPIENT);
     expect(serializedLogs).not.toContain(MAGIC_LINK);
     expect(serializedLogs).toContain(REQUEST_ID);
+  });
+});
+
+describe("handleRedeemMagicLinkCode", () => {
+  function user(
+    uid: string,
+    email: string | undefined,
+    providerEmails: string[] = [],
+    disabled = false
+  ) {
+    return {
+      uid,
+      email,
+      disabled,
+      providerData: providerEmails.map((providerEmail) => ({
+        providerId: "google.com",
+        email: providerEmail,
+      })),
+    } as UserRecord;
+  }
+
+  function createRedeemRuntime(
+    overrides: Partial<RedeemMagicLinkCodeRuntime> = {}
+  ): RedeemMagicLinkCodeRuntime {
+    return {
+      redeemCode: jest.fn().mockResolvedValue({
+        email: RECIPIENT,
+        initiatingUid: null,
+      }),
+      getUser: jest.fn(),
+      getUserByEmail: jest
+        .fn()
+        .mockResolvedValue(user("existing-1", RECIPIENT)),
+      createUser: jest.fn(),
+      updateUser: jest.fn(),
+      createCustomToken: jest.fn().mockResolvedValue("custom-token"),
+      ...overrides,
+    };
+  }
+
+  it("returns a custom token for the account resolved by the verified code", async () => {
+    const runtime = createRedeemRuntime();
+
+    await expect(
+      handleRedeemMagicLinkCode(
+        { action: "redeem-code", requestId: REQUEST_ID, code: "123456" },
+        runtime
+      )
+    ).resolves.toEqual({ success: true, customToken: "custom-token" });
+    expect(runtime.createCustomToken).toHaveBeenCalledWith("existing-1");
+    expect(runtime.createUser).not.toHaveBeenCalled();
+  });
+
+  it("creates an email-verified account when the code belongs to a new email", async () => {
+    const runtime = createRedeemRuntime({
+      getUserByEmail: jest
+        .fn()
+        .mockRejectedValue({ code: "auth/user-not-found" }),
+      createUser: jest.fn().mockResolvedValue(user("new-1", RECIPIENT)),
+    });
+
+    await handleRedeemMagicLinkCode(
+      { action: "redeem-code", requestId: REQUEST_ID, code: "123456" },
+      runtime
+    );
+
+    expect(runtime.createUser).toHaveBeenCalledWith({
+      email: RECIPIENT,
+      emailVerified: true,
+    });
+    expect(runtime.createCustomToken).toHaveBeenCalledWith("new-1");
+  });
+
+  it("keeps the initiating uid and associates the newly verified email", async () => {
+    const canonical = user("canonical-1", "primary@example.com", [
+      "primary@example.com",
+    ]);
+    const updated = user("canonical-1", RECIPIENT, ["primary@example.com"]);
+    const runtime = createRedeemRuntime({
+      redeemCode: jest.fn().mockResolvedValue({
+        email: RECIPIENT,
+        initiatingUid: "canonical-1",
+      }),
+      getUser: jest.fn().mockResolvedValue(canonical),
+      getUserByEmail: jest
+        .fn()
+        .mockRejectedValue({ code: "auth/user-not-found" }),
+      updateUser: jest.fn().mockResolvedValue(updated),
+    });
+
+    await handleRedeemMagicLinkCode(
+      { action: "redeem-code", requestId: REQUEST_ID, code: "123456" },
+      runtime
+    );
+
+    expect(runtime.updateUser).toHaveBeenCalledWith("canonical-1", {
+      email: RECIPIENT,
+      emailVerified: true,
+    });
+    expect(runtime.createCustomToken).toHaveBeenCalledWith("canonical-1");
+  });
+
+  it("rejects invalid or consumed codes without looking up an account", async () => {
+    const runtime = createRedeemRuntime({
+      redeemCode: jest.fn().mockResolvedValue(null),
+    });
+
+    await expectHttpsError(
+      handleRedeemMagicLinkCode(
+        { action: "redeem-code", requestId: REQUEST_ID, code: "000000" },
+        runtime
+      ),
+      "failed-precondition"
+    );
+    expect(runtime.getUserByEmail).not.toHaveBeenCalled();
+    expect(runtime.createCustomToken).not.toHaveBeenCalled();
   });
 });
 

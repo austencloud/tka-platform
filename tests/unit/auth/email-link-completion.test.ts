@@ -51,7 +51,8 @@ const authRef = vi.hoisted(() => ({
     currentUser: null as {
       isAnonymous: boolean;
       uid: string;
-      providerData: unknown[];
+      email?: string | null;
+      providerData: Array<{ email?: string | null }>;
     } | null,
   },
 }));
@@ -172,13 +173,14 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
     expect(h.signInWithEmailLink).not.toHaveBeenCalled();
   });
 
-  it("consumes the code via signInWithEmailLink once a saved email exists (same-device confirm)", async () => {
+  it("uses signInWithEmailLink when the saved email already belongs to the current user", async () => {
     h.isSignInWithEmailLink.mockReturnValue(true);
     window.localStorage.setItem(EMAIL_KEY, "guest@example.com");
     authRef.current.currentUser = {
       isAnonymous: false,
       uid: "u1",
-      providerData: [],
+      email: "guest@example.com",
+      providerData: [{ email: "guest@example.com" }],
     };
 
     const result = await completeEmailLinkSignIn();
@@ -197,7 +199,8 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
     authRef.current.currentUser = {
       isAnonymous: false,
       uid: "u1",
-      providerData: [],
+      email: "linked@example.com",
+      providerData: [{ email: "linked@example.com" }],
     };
 
     const result = await completeEmailLinkSignIn();
@@ -217,7 +220,8 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
     authRef.current.currentUser = {
       isAnonymous: false,
       uid: "u1",
-      providerData: [],
+      email: "linked@example.com",
+      providerData: [{ email: "linked@example.com" }],
     };
 
     const result = await completeEmailLinkSignIn();
@@ -241,6 +245,28 @@ describe("completeEmailLinkSignIn — the code-consuming call", () => {
     expect(h.linkWithCredential).toHaveBeenCalledTimes(1);
     expect(h.notifyUpgradeSignup).toHaveBeenCalledWith(h.linkedUser);
     expect(h.signInWithEmailLink).not.toHaveBeenCalled();
+  });
+
+  it("links a different verified email onto a permanent current user instead of replacing its uid", async () => {
+    h.isSignInWithEmailLink.mockReturnValue(true);
+    window.localStorage.setItem(EMAIL_KEY, "alias@example.com");
+    authRef.current.currentUser = {
+      isAnonymous: false,
+      uid: "u1",
+      email: "primary@example.com",
+      providerData: [{ email: "primary@example.com" }],
+    };
+
+    const result = await completeEmailLinkSignIn();
+
+    expect(result.completed).toBe(true);
+    expect(h.credentialWithLink).toHaveBeenCalledWith(
+      "alias@example.com",
+      expect.any(String)
+    );
+    expect(h.linkWithCredential).toHaveBeenCalledTimes(1);
+    expect(h.signInWithEmailLink).not.toHaveBeenCalled();
+    expect(h.markFirstRunSkipped).toHaveBeenCalledWith("u1");
   });
 
   it("maps an expired opaque state to an expired action code without consuming Firebase's code", async () => {

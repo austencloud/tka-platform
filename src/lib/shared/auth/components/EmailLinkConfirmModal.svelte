@@ -74,9 +74,19 @@
         result.errorCode === "auth/expired-action-code"
       ) {
         error = "This link is invalid or has expired. Request a new one.";
-        toast.error("That sign-in link is invalid or expired. Request a new one.");
+        toast.error(
+          "That sign-in link is invalid or expired. Request a new one."
+        );
       } else if (result.errorCode === "auth/invalid-email") {
-        error = "That email doesn't match the sign-in link. Check it and try again.";
+        error =
+          "That email doesn't match the sign-in link. Check it and try again.";
+      } else if (
+        result.errorCode === "auth/credential-already-in-use" ||
+        result.errorCode === "auth/email-already-in-use" ||
+        result.errorCode === "auth/provider-already-linked"
+      ) {
+        error =
+          "That email is connected to another account. Contact support and we’ll merge it without losing your work.";
       } else {
         error = result.errorMessage || "Sign-in failed. Please try again.";
         toast.error("Sign-in failed. Please try again.");
@@ -179,8 +189,13 @@
     padding: 0.625rem 0.75rem;
     font-size: var(--font-size-compact, 12px);
     color: #fca5a5;
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 15%,
+      transparent
+    );
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #ef4444) 30%, transparent);
     border-radius: var(--radius-sm, 6px);
     text-align: center;
   }
@@ -192,14 +207,21 @@
     width: 100%;
     min-height: var(--min-touch-target, 44px);
     padding: 0.625rem 1rem;
-    background: linear-gradient(135deg, var(--theme-accent, #6366f1) 0%, var(--theme-accent-strong, #4f46e5) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--theme-accent, #6366f1) 0%,
+      var(--theme-accent-strong, #4f46e5) 100%
+    );
     color: #fff;
-    border: 1px solid color-mix(in srgb, var(--theme-accent-strong, #4f46e5) 70%, transparent);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent-strong, #4f46e5) 70%, transparent);
     border-radius: var(--radius-md, 10px);
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
-    transition: opacity var(--duration-fast, 150ms) ease, transform var(--duration-fast, 150ms) ease;
+    transition:
+      opacity var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
   .email-link-confirm-button:hover:not(:disabled) {

@@ -12,15 +12,17 @@ import * as path from "path";
 import { randomUUID } from "crypto";
 import {
   createMagicLinkSignInState,
+  redeemMagicLinkCode,
   resolveMagicLinkSignInState,
   type MagicLinkSignInState,
+  type RedeemedMagicLinkCode,
   type ResolvedMagicLinkSignInState,
 } from "./auth/magicLinkStateStore";
 
 // Brevo transactional email API endpoint
 const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
-const MAGIC_LINK_SUBJECT = "Your Flow Arts Composer sign-in link";
-const DEFAULT_CONTINUE_URL = "https://tkaflowarts.com/app";
+const MAGIC_LINK_SUBJECT = "Your Flow Arts Composer sign-in code";
+const DEFAULT_CONTINUE_URL = "https://tkaflowarts.com/create";
 const DEFAULT_SENDER_EMAIL = "noreply@tkaflowarts.com";
 const DEFAULT_SENDER_NAME = "Flow Arts Composer";
 const PROVIDER_TIMEOUT_MS = 10_000;
@@ -39,8 +41,10 @@ try {
   emailTemplate = `
     <html>
       <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-        <h1>Sign in to Flow Arts Composer</h1>
-        <p><a href="{{MAGIC_LINK}}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px;">Sign In</a></p>
+        <h1>Your sign-in code</h1>
+        <p style="font-size: 28px;"><strong>{{ONE_TIME_CODE}}</strong></p>
+        <p>Return to Flow Arts Composer and enter the code. It expires in 30 minutes.</p>
+        <p><a href="{{MAGIC_LINK}}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px;">Sign in in a browser</a></p>
         <p style="color: #666; font-size: 12px;">Didn't request this? Ignore it.</p>
       </body>
     </html>
@@ -58,9 +62,16 @@ export interface ResolveMagicLinkEmailRequest {
   state: string;
 }
 
+export interface RedeemMagicLinkCodeRequest {
+  action: "redeem-code";
+  requestId: string;
+  code: string;
+}
+
 type MagicLinkCallableRequest =
   | SendMagicLinkRequest
-  | ResolveMagicLinkEmailRequest;
+  | ResolveMagicLinkEmailRequest
+  | RedeemMagicLinkCodeRequest;
 
 export interface SendMagicLinkResponse {
   success: boolean;
@@ -76,9 +87,15 @@ export interface ResolveMagicLinkEmailResponse {
   email: string;
 }
 
+export interface RedeemMagicLinkCodeResponse {
+  success: true;
+  customToken: string;
+}
+
 type MagicLinkCallableResponse =
   | SendMagicLinkResponse
-  | ResolveMagicLinkEmailResponse;
+  | ResolveMagicLinkEmailResponse
+  | RedeemMagicLinkCodeResponse;
 
 function isResolveMagicLinkEmailRequest(
   data: unknown
@@ -87,6 +104,16 @@ function isResolveMagicLinkEmailRequest(
     typeof data === "object" &&
     data !== null &&
     (data as { action?: unknown }).action === "resolve-email"
+  );
+}
+
+function isRedeemMagicLinkCodeRequest(
+  data: unknown
+): data is RedeemMagicLinkCodeRequest {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    (data as { action?: unknown }).action === "redeem-code"
   );
 }
 
@@ -108,9 +135,14 @@ export interface MagicLinkRuntime {
   senderName: string;
   appCheckStatus: "verified" | "missing";
   authStatus: "authenticated" | "anonymous";
+  initiatingUid: string | null;
   now(): number;
   createRequestId(): string;
-  createSignInState(email: string): Promise<MagicLinkSignInState>;
+  createSignInState(
+    email: string,
+    requestId: string,
+    initiatingUid: string | null
+  ): Promise<MagicLinkSignInState>;
   generateLink(
     email: string,
     settings: { url: string; handleCodeInApp: boolean }
@@ -126,6 +158,23 @@ export interface ResolveMagicLinkEmailRuntime {
   resolveSignInState(
     state: string
   ): Promise<ResolvedMagicLinkSignInState | null>;
+}
+
+export interface RedeemMagicLinkCodeRuntime {
+  redeemCode(
+    requestId: string,
+    code: string
+  ): Promise<RedeemedMagicLinkCode | null>;
+  getUser(uid: string): Promise<admin.auth.UserRecord>;
+  getUserByEmail(email: string): Promise<admin.auth.UserRecord>;
+  createUser(
+    properties: admin.auth.CreateRequest
+  ): Promise<admin.auth.UserRecord>;
+  updateUser(
+    uid: string,
+    properties: admin.auth.UpdateRequest
+  ): Promise<admin.auth.UserRecord>;
+  createCustomToken(uid: string): Promise<string>;
 }
 
 function resolveRequestId(
@@ -188,6 +237,94 @@ export async function handleResolveMagicLinkEmail(
   };
 }
 
+function userOwnsEmail(user: admin.auth.UserRecord, email: string): boolean {
+  const normalized = email.toLowerCase();
+  return (
+    user.email?.toLowerCase() === normalized ||
+    user.providerData.some(
+      (provider) => provider.email?.toLowerCase() === normalized
+    )
+  );
+}
+
+async function findUserByEmail(
+  email: string,
+  runtime: RedeemMagicLinkCodeRuntime
+): Promise<admin.auth.UserRecord | null> {
+  try {
+    return await runtime.getUserByEmail(email);
+  } catch (error) {
+    if ((error as { code?: string })?.code === "auth/user-not-found") {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Exchange the short code from the email for a Firebase custom token. This is
+ * the installed-PWA path: iOS opens email links in the default browser, while
+ * the code lets the original Home Screen app complete in its own storage silo.
+ */
+export async function handleRedeemMagicLinkCode(
+  data: RedeemMagicLinkCodeRequest,
+  runtime: RedeemMagicLinkCodeRuntime
+): Promise<RedeemMagicLinkCodeResponse> {
+  const requestId = typeof data?.requestId === "string" ? data.requestId : "";
+  const code = typeof data?.code === "string" ? data.code : "";
+  const redeemed = await runtime.redeemCode(requestId, code);
+  if (!redeemed) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "This sign-in code is invalid or expired"
+    );
+  }
+
+  let target: admin.auth.UserRecord;
+  if (redeemed.initiatingUid) {
+    target = await runtime.getUser(redeemed.initiatingUid);
+    if (target.disabled) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "This sign-in code is invalid or expired"
+      );
+    }
+
+    if (!userOwnsEmail(target, redeemed.email)) {
+      const existing = await findUserByEmail(redeemed.email, runtime);
+      if (existing && existing.uid !== target.uid) {
+        throw new functions.https.HttpsError(
+          "already-exists",
+          "That email belongs to another account"
+        );
+      }
+      target = await runtime.updateUser(target.uid, {
+        email: redeemed.email,
+        emailVerified: true,
+      });
+    }
+  } else {
+    target =
+      (await findUserByEmail(redeemed.email, runtime)) ??
+      (await runtime.createUser({
+        email: redeemed.email,
+        emailVerified: true,
+      }));
+  }
+
+  if (target.disabled) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "This sign-in code is invalid or expired"
+    );
+  }
+
+  return {
+    success: true,
+    customToken: await runtime.createCustomToken(target.uid),
+  };
+}
+
 /**
  * Testable core for the callable. Logs only opaque request/provider IDs and
  * provider-neutral status; recipient addresses never enter Cloud Logging.
@@ -235,7 +372,11 @@ export async function handleSendMagicLink(
     }
 
     stage = "state_creation";
-    const { state } = await runtime.createSignInState(email);
+    const { state, oneTimeCode } = await runtime.createSignInState(
+      email,
+      requestId,
+      runtime.initiatingUid
+    );
 
     stage = "link_generation";
     const continueUrl = addMagicLinkState(
@@ -247,10 +388,16 @@ export async function handleSendMagicLink(
       handleCodeInApp: true,
     });
 
-    const htmlContent = emailTemplate.replace(/\{\{MAGIC_LINK\}\}/g, magicLink);
-    const textContent = `Sign in to Flow Arts Composer
+    const htmlContent = emailTemplate
+      .replace(/\{\{MAGIC_LINK\}\}/g, magicLink)
+      .replace(/\{\{ONE_TIME_CODE\}\}/g, oneTimeCode);
+    const textContent = `Your Flow Arts Composer sign-in code
 
-Open this link to sign in. It expires in 30 minutes:
+${oneTimeCode}
+
+Return to Flow Arts Composer and enter this code. It expires in 30 minutes.
+
+Signing in in a web browser instead? Use this link:
 ${magicLink}
 
 Didn't request this? Ignore it.
@@ -307,7 +454,7 @@ https://tkaflowarts.com`;
 
     return {
       success: true,
-      message: "Magic link sent. Check your email.",
+      message: "Email code sent. Check your email.",
       requestId,
       subject: MAGIC_LINK_SUBJECT,
       senderEmail: runtime.senderEmail,
@@ -363,12 +510,25 @@ export const sendMagicLink = functions.https.onCall(
       });
     }
 
+    if (isRedeemMagicLinkCodeRequest(data)) {
+      return handleRedeemMagicLinkCode(data, {
+        redeemCode: redeemMagicLinkCode,
+        getUser: (uid) => admin.auth().getUser(uid),
+        getUserByEmail: (email) => admin.auth().getUserByEmail(email),
+        createUser: (properties) => admin.auth().createUser(properties),
+        updateUser: (uid, properties) =>
+          admin.auth().updateUser(uid, properties),
+        createCustomToken: (uid) => admin.auth().createCustomToken(uid),
+      });
+    }
+
     return handleSendMagicLink(data, {
       brevoApiKey: process.env.BREVO_API_KEY,
       senderEmail: process.env.BREVO_SENDER_EMAIL || DEFAULT_SENDER_EMAIL,
       senderName: process.env.BREVO_SENDER_NAME || DEFAULT_SENDER_NAME,
       appCheckStatus: context.app ? "verified" : "missing",
       authStatus: context.auth ? "authenticated" : "anonymous",
+      initiatingUid: context.auth?.uid ?? null,
       now: Date.now,
       createRequestId: randomUUID,
       createSignInState: createMagicLinkSignInState,

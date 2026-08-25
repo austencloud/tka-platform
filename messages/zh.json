@@ -76,7 +76,7 @@
   "auth_name": "姓名",
   "auth_need_account": "需要账号？立即注册",
   "auth_password": "密码",
-  "auth_send_magic_link": "发送魔术链接",
+  "auth_send_magic_link": "通过电子邮件发送验证码",
   "auth_sending": "发送中...",
   "auth_show_password": "显示密码",
   "auth_sign_in": "登入",

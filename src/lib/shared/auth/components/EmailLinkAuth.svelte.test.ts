@@ -18,13 +18,26 @@ const mocks = vi.hoisted(() => ({
   captureWhenReady: vi.fn(),
   trackAuthProviderResult: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
+  signInWithCustomToken: vi.fn(),
+  configureAuthPersistence: vi.fn(),
+  recordLastAuthMethod: vi.fn(),
+  markSkipped: vi.fn(),
+  auth: { currentUser: { uid: "user-1" } },
+  standalone: false,
 }));
 
 vi.mock("firebase/functions", () => ({
   httpsCallable: () => mocks.sendMagicLink,
 }));
 
+vi.mock("firebase/auth", () => ({
+  signInWithCustomToken: mocks.signInWithCustomToken,
+}));
+
 vi.mock("../firebase", () => ({
+  auth: mocks.auth,
+  configureAuthPersistence: mocks.configureAuthPersistence,
   getFunctionsInstance: vi.fn().mockResolvedValue({}),
 }));
 
@@ -34,12 +47,20 @@ vi.mock("$lib/shared/i18n/i18n.svelte", () => ({
       form_email: "Email",
       form_placeholder_email: "you@example.com",
       auth_sending: "Sending...",
-      auth_send_magic_link: "Send Magic Link",
+      auth_send_magic_link: "Email me a code",
     })[key] ?? key,
 }));
 
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
-  toast: { error: mocks.toastError },
+  toast: { error: mocks.toastError, success: mocks.toastSuccess },
+}));
+
+vi.mock("../services/last-auth-method.svelte", () => ({
+  recordLastAuthMethod: mocks.recordLastAuthMethod,
+}));
+
+vi.mock("$lib/shared/onboarding/state/first-run-state.svelte", () => ({
+  firstRunState: { markSkipped: mocks.markSkipped },
 }));
 
 vi.mock("$lib/shared/auth/services/auth-analytics-bridge", () => ({
@@ -61,6 +82,10 @@ vi.mock("$lib/shared/persistence/database/tka-database", () => ({
   db: { sequences: { count: vi.fn().mockResolvedValue(0) } },
 }));
 
+vi.mock("$lib/shared/mobile/services/platform-detector", () => ({
+  isRunningAsStandalone: () => mocks.standalone,
+}));
+
 vi.mock("$lib/shared/analytics/services/posthog", () => ({
   captureWhenReady: mocks.captureWhenReady,
 }));
@@ -76,6 +101,12 @@ describe("EmailLinkAuth delivery feedback", () => {
     mocks.captureWhenReady.mockReset();
     mocks.trackAuthProviderResult.mockReset();
     mocks.toastError.mockReset();
+    mocks.toastSuccess.mockReset();
+    mocks.signInWithCustomToken.mockReset();
+    mocks.configureAuthPersistence.mockReset();
+    mocks.recordLastAuthMethod.mockReset();
+    mocks.markSkipped.mockReset();
+    mocks.standalone = false;
     localStorage.clear();
   });
 
@@ -92,12 +123,12 @@ describe("EmailLinkAuth delivery feedback", () => {
 
     const email = page.getByRole("textbox", { name: "Email" });
     await email.fill("spinner@example.com");
-    await page.getByRole("button", { name: "Send Magic Link" }).click();
+    await page.getByRole("button", { name: "Email me a code" }).click();
 
     const pendingStatus = page.getByRole("status");
     await expect
       .element(pendingStatus)
-      .toHaveTextContent("Sending your link now");
+      .toHaveTextContent("Sending your code");
     await expect
       .element(pendingStatus)
       .toHaveTextContent("spinner@example.com");
@@ -106,8 +137,8 @@ describe("EmailLinkAuth delivery feedback", () => {
     finishSend?.({
       data: {
         success: true,
-        requestId: "request-1",
-        subject: "Your sign-in link",
+        requestId: "47c02573-fd10-4277-92dc-50fdaaf65ce4",
+        subject: "Your sign-in code",
         senderEmail: "noreply@example.com",
       },
     });
@@ -116,9 +147,104 @@ describe("EmailLinkAuth delivery feedback", () => {
       .element(page.getByRole("status"))
       .toHaveTextContent("Check your email");
     await expect
-      .element(page.getByRole("button", { name: "Send again" }))
+      .element(page.getByRole("button", { name: "Send another code" }))
       .toBeEnabled();
     expect(localStorage.getItem("emailForSignIn")).toBe("spinner@example.com");
     expect(mocks.recordAuthSubmission).toHaveBeenCalledWith("magic_link");
+    await expect
+      .element(page.getByRole("textbox", { name: "Six-digit code" }))
+      .toBeVisible();
+    expect(localStorage.getItem("pendingMagicLinkCode")).toContain(
+      "47c02573-fd10-4277-92dc-50fdaaf65ce4"
+    );
+  });
+
+  it("tells an installed-app user to return and enter the code", async () => {
+    mocks.standalone = true;
+    mocks.sendMagicLink.mockResolvedValue({
+      data: {
+        success: true,
+        requestId: "e4f9578d-9c32-42fd-a22d-972b76d2d79e",
+        subject: "Your sign-in code",
+        senderEmail: "noreply@example.com",
+      },
+    });
+
+    render(EmailLinkAuth);
+    await page
+      .getByRole("textbox", { name: "Email" })
+      .fill("spinner@example.com");
+    await page.getByRole("button", { name: "Email me a code" }).click();
+
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent(
+        "Check your email, then come back here and enter it below"
+      );
+  });
+
+  it("restores an unexpired code request after the installed app reloads", async () => {
+    localStorage.setItem(
+      "pendingMagicLinkCode",
+      JSON.stringify({
+        requestId: "a86f0f15-462d-41da-b103-e5d2ee373910",
+        email: "spinner@example.com",
+        expiresAt: Date.now() + 60_000,
+      })
+    );
+
+    render(EmailLinkAuth);
+
+    await expect
+      .element(page.getByRole("textbox", { name: "Six-digit code" }))
+      .toBeVisible();
+    await expect
+      .element(page.getByRole("textbox", { name: "Email" }))
+      .toHaveValue("spinner@example.com");
+    expect(mocks.sendMagicLink).not.toHaveBeenCalled();
+  });
+
+  it("redeems the email code inside the current app surface", async () => {
+    mocks.sendMagicLink
+      .mockResolvedValueOnce({
+        data: {
+          success: true,
+          requestId: "144599f0-7a73-4f38-8f3d-a654dc6c47c6",
+          subject: "Your sign-in code",
+          senderEmail: "noreply@example.com",
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { success: true, customToken: "custom-token" },
+      });
+    mocks.signInWithCustomToken.mockResolvedValue({
+      user: mocks.auth.currentUser,
+    });
+
+    render(EmailLinkAuth);
+    await page
+      .getByRole("textbox", { name: "Email" })
+      .fill("spinner@example.com");
+    await page.getByRole("button", { name: "Email me a code" }).click();
+
+    const code = page.getByRole("textbox", { name: "Six-digit code" });
+    await code.fill("123456");
+    await page.getByRole("button", { name: "Sign in" }).click();
+
+    expect(mocks.sendMagicLink).toHaveBeenLastCalledWith({
+      action: "redeem-code",
+      requestId: "144599f0-7a73-4f38-8f3d-a654dc6c47c6",
+      code: "123456",
+    });
+    expect(mocks.configureAuthPersistence).toHaveBeenCalledWith(mocks.auth);
+    expect(mocks.signInWithCustomToken).toHaveBeenCalledWith(
+      mocks.auth,
+      "custom-token"
+    );
+    expect(mocks.markSkipped).toHaveBeenCalledWith("user-1");
+    expect(localStorage.getItem("pendingMagicLinkCode")).toBeNull();
+    await expect
+      .element(page.getByRole("status"))
+      .toHaveTextContent("Signed in");
   });
 });

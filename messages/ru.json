@@ -76,7 +76,7 @@
   "auth_name": "Имя",
   "auth_need_account": "Нужен аккаунт? Зарегистрируйтесь.",
   "auth_password": "Пароль",
-  "auth_send_magic_link": "Отправить магическую ссылку",
+  "auth_send_magic_link": "Отправить код по электронной почте",
   "auth_sending": "Отправка...",
   "auth_show_password": "Показать пароль",
   "auth_sign_in": "Войти",

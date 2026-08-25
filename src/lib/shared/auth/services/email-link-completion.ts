@@ -42,8 +42,26 @@ export interface EmailLinkCompletionResult {
   errorMessage?: string;
 }
 
+interface EmailIdentity {
+  email?: string | null;
+  providerData?: Array<{ email?: string | null }>;
+}
+
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 const MAGIC_LINK_STATE_PARAM = "magicLinkState";
+
+export function userOwnsSignInEmail(
+  user: EmailIdentity,
+  email: string
+): boolean {
+  const normalized = email.trim().toLowerCase();
+  return (
+    user.email?.trim().toLowerCase() === normalized ||
+    user.providerData?.some(
+      (provider) => provider.email?.trim().toLowerCase() === normalized
+    ) === true
+  );
+}
 
 interface ResolveMagicLinkEmailResponse {
   success: true;
@@ -244,7 +262,22 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
           throw linkErr;
         }
       }
+    } else if (
+      auth.currentUser &&
+      !userOwnsSignInEmail(auth.currentUser, savedEmail)
+    ) {
+      // A permanent session plus a magic link proves control of both
+      // identities. Link the new email credential onto the surviving uid.
+      // Plain signInWithEmailLink would replace the current account and is the
+      // exact path that split John Cloud's Google and Live.com identities.
+      const { EmailAuthProvider, linkWithCredential } =
+        await import("firebase/auth");
+      const credential = EmailAuthProvider.credentialWithLink(savedEmail, link);
+      await linkWithCredential(auth.currentUser, credential);
     } else {
+      // Signed out, or the recipient already belongs to this user's primary or
+      // provider-specific email. Firebase returns the same uid in the latter
+      // case, so the normal sign-in path is safe.
       await signInWithEmailLink(auth, savedEmail, link);
     }
 

@@ -90,7 +90,7 @@
   "auth_name": "Nom",
   "auth_need_account": "Besoin d'un compte ? Inscrivez-vous",
   "auth_password": "Mot de passe",
-  "auth_send_magic_link": "Envoyer le lien magique",
+  "auth_send_magic_link": "M’envoyer un code par e-mail",
   "auth_sending": "Envoi...",
   "auth_show_password": "Afficher le mot de passe",
   "auth_sign_in": "Se connecter",

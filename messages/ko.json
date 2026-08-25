@@ -76,7 +76,7 @@
   "auth_name": "이름",
   "auth_need_account": "계정이 필요하신가요? 가입하세요",
   "auth_password": "비밀번호",
-  "auth_send_magic_link": "매직 링크 전송",
+  "auth_send_magic_link": "이메일로 코드 보내기",
   "auth_sending": "전송 중...",
   "auth_show_password": "비밀번호 표시",
   "auth_sign_in": "로그인",

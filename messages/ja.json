@@ -76,7 +76,7 @@
   "auth_name": "名前",
   "auth_need_account": "アカウントが必要ですか？サインアップ",
   "auth_password": "パスワード",
-  "auth_send_magic_link": "マジックリンクを送信",
+  "auth_send_magic_link": "コードをメールで送信",
   "auth_sending": "送信中...",
   "auth_show_password": "パスワードを表示",
   "auth_sign_in": "サインイン",

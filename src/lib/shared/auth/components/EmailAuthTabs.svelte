@@ -3,8 +3,8 @@
    * EmailAuthTabs
    *
    * Tabbed interface for email authentication methods:
-   * - Password (traditional)
-   * - Magic Link (passwordless)
+   * - Email code (passwordless)
+   * - Password
    */
 
   import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
@@ -21,14 +21,33 @@
 
   const lastMethod = getLastAuthMethod();
 
-  // Email sign-in opens on the familiar credential form. Magic Link remains
-  // available as an alternative without making returning users hunt for the
-  // password field first.
-  let activeTab = $state<"magic" | "password">("password");
+  // A code asks the least of someone who does not know how their account was
+  // created. Returning password users resume where they left off; everyone
+  // else starts on the no-password path.
+  let activeTab = $state<"magic" | "password">(
+    lastMethod === "password" ? "password" : "magic"
+  );
 </script>
 
 <div class="email-auth-tabs">
   <div class="tab-bar" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      aria-selected={activeTab === "magic"}
+      class="tab"
+      class:active={activeTab === "magic"}
+      onclick={() => (activeTab = "magic")}
+      aria-label={lastMethod === "magic-link"
+        ? "Email code, last used on this device"
+        : undefined}
+    >
+      {#if lastMethod === "magic-link"}
+        <LastUsedBadge />
+      {/if}
+      <i class="fas fa-envelope" aria-hidden="true"></i>
+      <span>Email code</span>
+    </button>
     <button
       type="button"
       role="tab"
@@ -45,23 +64,6 @@
       {/if}
       <i class="fas fa-key" aria-hidden="true"></i>
       <span>{t("auth_password")}</span>
-    </button>
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeTab === "magic"}
-      class="tab"
-      class:active={activeTab === "magic"}
-      onclick={() => (activeTab = "magic")}
-      aria-label={lastMethod === "magic-link"
-        ? "Magic Link, last used on this device"
-        : undefined}
-    >
-      {#if lastMethod === "magic-link"}
-        <LastUsedBadge />
-      {/if}
-      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-      <span>Magic Link</span>
     </button>
   </div>
 
