@@ -24,20 +24,27 @@
     initPhysicsWorld,
     disposePhysicsWorld,
   } from "$lib/shared/3d/physics/rapier-world";
-  import type { PhysicsWorldState, PlayerControllerState } from "$lib/shared/3d/physics/types";
+  import type {
+    PhysicsWorldState,
+    PlayerControllerState,
+  } from "$lib/shared/3d/physics/types";
   import { TerrainPhysicsManager } from "$lib/shared/3d/physics/terrain-collider";
   import {
     createPlayerController,
     disposePlayerController,
-    teleportPlayer,
   } from "$lib/shared/3d/physics/player-controller";
-  import { createRapierPhysicsProvider, RapierPhysicsProvider } from "$lib/shared/3d/physics/rapier-physics-provider";
-  import type { PhysicsProvider, AvatarState } from "$lib/shared/3d/camera/types";
+  import {
+    createRapierPhysicsProvider,
+    RapierPhysicsProvider,
+  } from "$lib/shared/3d/physics/rapier-physics-provider";
+  import type {
+    PhysicsProvider,
+    AvatarState,
+  } from "$lib/shared/3d/camera/types";
 
   // Unified camera system
   import { UnifiedCameraController, CameraMode } from "@austencloud/camera-3d";
   import { cameraPreferences } from "$lib/shared/3d/camera/camera-preferences.svelte";
-
 
   // Avatar components
   import { Avatar3D } from "@austencloud/scene-3d";
@@ -48,7 +55,10 @@
 
   // World systems
   import { type ChunkState } from "../core/chunk-manager";
-  import { createHybridChunkManager, type HybridChunkManager } from "../core/hybrid-chunk-manager";
+  import {
+    createHybridChunkManager,
+    type HybridChunkManager,
+  } from "../core/hybrid-chunk-manager";
   import { SeededNoise } from "../generation/seed-generator";
   import { type ImportedTerrainData } from "../generation/real-terrain-zone";
   import { VegetationManager } from "../rendering/instanced-vegetation";
@@ -80,7 +90,11 @@
 
   // Terrain material + game loop services
   import { createTerrainMaterialFactory } from "../services/terrain-material-factory";
-  import { tickWorldGameLoop, type GameLoopContext, type GameLoopState } from "../services/world-game-loop";
+  import {
+    tickWorldGameLoop,
+    type GameLoopContext,
+    type GameLoopState,
+  } from "../services/world-game-loop";
   import { toScenePropType } from "$lib/shared/3d/domain/scene-prop-type";
 
   // Feature flag for terrain texturing system
@@ -96,7 +110,7 @@
     activeConfig: RealmConfig;
     worldSeed: number;
     worldNoise: SeededNoise;
-    autoLoadHannons: boolean;
+    autoLoadRealTerrain: boolean;
 
     /** Enable stage mode - flat performance area with grid planes */
     stageMode?: boolean;
@@ -119,10 +133,20 @@
     fpsTime: number;
     chunkStats: { loaded: number; pending: number; loading: number };
     colliderCount: number;
-    vegetationCount: { trees: number; rocks: number; bushes: number; grass: number };
+    vegetationCount: {
+      trees: number;
+      rocks: number;
+      bushes: number;
+      grass: number;
+    };
     currentBiome: string;
     hannonsLoaded: boolean;
-    zoneBounds: { minX: number; maxX: number; minZ: number; maxZ: number } | null;
+    zoneBounds: {
+      minX: number;
+      maxX: number;
+      minZ: number;
+      maxZ: number;
+    } | null;
     zoneBoundary: Array<{ x: number; z: number }>;
     isInsideZone: boolean;
     showTouchUI: boolean;
@@ -131,7 +155,9 @@
     avatarState: AvatarState;
     showAvatar: boolean;
     showGridPlanes: boolean;
-    inputCapabilities: ReturnType<typeof import("$lib/shared/input/InputCapabilities.svelte").getInputCapabilities>;
+    inputCapabilities: ReturnType<
+      typeof import("$lib/shared/input/InputCapabilities.svelte").getInputCapabilities
+    >;
     onModeChange: (mode: CameraMode) => void;
 
     /** Toggle terrain textures on/off (bindable) */
@@ -144,16 +170,18 @@
       | ((
           origin?: { x: number; y: number; z: number },
           direction?: { x: number; y: number; z: number },
-          maxDistance?: number,
+          maxDistance?: number
         ) => RaycastResult)
       | null;
 
     /** Performer state for sequence playback (optional) */
-    performerState?: import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState | null;
+    performerState?:
+      | import("$lib/shared/3d/state/avatar-instance-state.svelte").AvatarInstanceState
+      | null;
 
-    /** Real-world terrain data for destinations like Hannon's Camp.
+    /** Validated real-world terrain data for Earth destinations.
      *  The engine does not know about specific destinations - callers
-     *  import the JSON and pass it in. Required when autoLoadHannons is true. */
+     *  import the manifest and pass it in. Required when autoLoadRealTerrain is true. */
     terrainData?: ImportedTerrainData | null;
   }
 
@@ -161,7 +189,7 @@
     activeConfig,
     worldSeed,
     worldNoise,
-    autoLoadHannons,
+    autoLoadRealTerrain,
     stageMode = false,
 
     physicsState = $bindable(),
@@ -221,7 +249,7 @@
   function sceneRaycast(
     origin?: { x: number; y: number; z: number },
     direction?: { x: number; y: number; z: number },
-    maxDistance = 100,
+    maxDistance = 100
   ): RaycastResult {
     const cam = camera.current;
     // Default to a camera ray ("what the viewer is looking at").
@@ -250,7 +278,10 @@
     let normal: { x: number; y: number; z: number } | undefined;
     if (first.face) {
       _rayNormalMat.getNormalMatrix(first.object.matrixWorld);
-      _rayNormal.copy(first.face.normal).applyMatrix3(_rayNormalMat).normalize();
+      _rayNormal
+        .copy(first.face.normal)
+        .applyMatrix3(_rayNormalMat)
+        .normalize();
       normal = { x: _rayNormal.x, y: _rayNormal.y, z: _rayNormal.z };
     }
     return {
@@ -319,7 +350,11 @@
 
     // Initialize physics
     physicsState = createPhysicsWorldState();
-    await initPhysicsWorld(physicsState, { x: 0, y: -activeConfig.physics.gravity, z: 0 });
+    await initPhysicsWorld(physicsState, {
+      x: 0,
+      y: -activeConfig.physics.gravity,
+      z: 0,
+    });
 
     // Create terrain physics manager
     terrainPhysics = new TerrainPhysicsManager(physicsState);
@@ -333,13 +368,15 @@
       terrainPhysics.addStageGroundCollider(
         activeConfig.spawnClearing.center.x,
         activeConfig.spawnClearing.center.z,
-        activeConfig.spawnClearing.radius + activeConfig.spawnClearing.blendWidth,
+        activeConfig.spawnClearing.radius +
+          activeConfig.spawnClearing.blendWidth,
         clearingHeight
       );
     } else if (stageMode && activeConfig.stageZone?.enabled) {
       // Legacy stage zone: ground at Y=0
       terrainPhysics.addStageGroundCollider(
-        0, 0,  // Center at origin
+        0,
+        0, // Center at origin
         activeConfig.stageZone.radius + activeConfig.stageZone.blendWidth
       );
     }
@@ -351,7 +388,10 @@
     });
 
     // Create physics provider for UnifiedCameraController
-    physicsProvider = createRapierPhysicsProvider(physicsState, playerController);
+    physicsProvider = createRapierPhysicsProvider(
+      physicsState,
+      playerController
+    );
 
     // Initialize position (will be updated when ground snap happens)
     playerPosition = { x: spawnPos[0], y: 500, z: spawnPos[2] };
@@ -366,7 +406,9 @@
     // Skip outdoor environment systems for indoor scenes (archive cave)
     if (!isArchiveRealm) {
       // Initialize vegetation manager with GLTF models
-      vegetationManager = new VegetationManager(rawScene, { useGLTFModels: true });
+      vegetationManager = new VegetationManager(rawScene, {
+        useGLTFModels: true,
+      });
       await vegetationManager.initWithModels();
 
       // Initialize atmosphere (sky, fog)
@@ -424,120 +466,135 @@
         // Logging disabled - was contributing to console spam
       }
 
-    // Handle chunk loaded
-    // Skip processing during disposal to prevent Rapier WASM errors
-    chunkManager.onChunkLoaded = (key, state) => {
-      if (isDisposed) return;
+      // Handle chunk loaded
+      // Skip processing during disposal to prevent Rapier WASM errors
+      chunkManager.onChunkLoaded = (key, state) => {
+        if (isDisposed) return;
 
-      if (state.meshData) {
-        createChunkMesh(state, key);
+        if (state.meshData) {
+          createChunkMesh(state, key);
 
-        // Create terrain collider (wrapped in try-catch for HMR safety)
-        const chunk = state.entity.chunk;
-        const chunkSize = activeConfig.chunks.size;
-        if (chunk && terrainPhysics) {
-          try {
-            terrainPhysics.addChunkCollider(
+          // Create terrain collider (wrapped in try-catch for HMR safety)
+          const chunk = state.entity.chunk;
+          const chunkSize = activeConfig.chunks.size;
+          if (chunk && terrainPhysics) {
+            try {
+              terrainPhysics.addChunkCollider(
+                chunk.chunkX,
+                chunk.chunkZ,
+                chunkSize,
+                state.meshData
+              );
+            } catch (e) {
+              if (import.meta.hot) {
+                console.debug(
+                  "[WorldSceneContent] Chunk collider creation failed (likely HMR):",
+                  e
+                );
+              }
+            }
+          }
+
+          // Add vegetation (filter out items in water areas)
+          if (
+            chunk &&
+            vegetationManager &&
+            state.meshData.vegetation.length > 0
+          ) {
+            const chunkWorldX = Math.round(chunk.chunkX * chunkSize);
+            const chunkWorldZ = Math.round(chunk.chunkZ * chunkSize);
+
+            // Filter vegetation to exclude water areas
+            let filteredVegetation = state.meshData.vegetation;
+            if (state.meshData.drainage?.waterMask) {
+              const resolution = 33;
+              const step = chunkSize / (resolution - 1);
+              const waterMask = state.meshData.drainage.waterMask;
+
+              filteredVegetation = state.meshData.vegetation.filter((veg) => {
+                // Convert vegetation world position to grid index
+                const localX = veg.x - chunkWorldX;
+                const localZ = veg.z - chunkWorldZ;
+                const gridX = Math.round(localX / step);
+                const gridZ = Math.round(localZ / step);
+                const clampedX = Math.max(0, Math.min(resolution - 1, gridX));
+                const clampedZ = Math.max(0, Math.min(resolution - 1, gridZ));
+                const idx = clampedZ * resolution + clampedX;
+
+                // Keep vegetation only if waterMask is below threshold
+                const water = waterMask[idx] ?? 0;
+                return water < 0.3;
+              });
+            }
+
+            vegetationManager.addChunkVegetation(
+              key,
+              chunkWorldX,
+              chunkWorldZ,
+              filteredVegetation
+            );
+          }
+
+          // Create drainage-based water for this chunk
+          if (chunk && drainageWaterManager && state.meshData.drainage) {
+            const resolution = 33; // Same as chunk generator
+            const mainVertexCount = resolution * resolution; // 1089 vertices (excludes skirts)
+
+            // Extract heights from main terrain vertices only (not skirts)
+            // Skirts are appended after the main grid, so first mainVertexCount vertices are the grid
+            const heights = new Float32Array(mainVertexCount);
+            for (let i = 0; i < mainVertexCount; i++) {
+              heights[i] = state.meshData.vertices[i * 3 + 1]!;
+            }
+            drainageWaterManager.createChunkWater(
               chunk.chunkX,
               chunk.chunkZ,
               chunkSize,
-              state.meshData
+              resolution,
+              state.meshData.drainage,
+              heights
             );
-          } catch (e) {
-            if (import.meta.hot) {
-              console.debug('[WorldSceneContent] Chunk collider creation failed (likely HMR):', e);
-            }
+          }
+        }
+      };
+
+      // Handle chunk unloaded
+      // Skip cleanup during disposal to prevent Rapier WASM errors
+      chunkManager.onChunkUnloaded = (key) => {
+        if (isDisposed) return;
+
+        // Remove mesh from scene
+        const mesh = chunkMeshes.get(key);
+        if (mesh) {
+          rawScene.remove(mesh);
+          mesh.geometry.dispose();
+          if (mesh.material instanceof MeshStandardMaterial) {
+            mesh.material.dispose();
+          }
+          chunkMeshes.delete(key);
+        }
+
+        // Remove terrain collider (wrapped in try-catch for HMR safety)
+        const parts = key.split(",").map(Number);
+        const chunkX = parts[0] ?? 0;
+        const chunkZ = parts[2] ?? 0;
+        try {
+          terrainPhysics?.removeChunkCollider(chunkX, chunkZ);
+        } catch (e) {
+          if (import.meta.hot) {
+            console.debug(
+              "[WorldSceneContent] Chunk collider removal failed (likely HMR):",
+              e
+            );
           }
         }
 
-        // Add vegetation (filter out items in water areas)
-        if (chunk && vegetationManager && state.meshData.vegetation.length > 0) {
-          const chunkWorldX = Math.round(chunk.chunkX * chunkSize);
-          const chunkWorldZ = Math.round(chunk.chunkZ * chunkSize);
+        // Remove vegetation
+        vegetationManager?.removeChunkVegetation(key);
 
-          // Filter vegetation to exclude water areas
-          let filteredVegetation = state.meshData.vegetation;
-          if (state.meshData.drainage?.waterMask) {
-            const resolution = 33;
-            const step = chunkSize / (resolution - 1);
-            const waterMask = state.meshData.drainage.waterMask;
-
-            filteredVegetation = state.meshData.vegetation.filter((veg) => {
-              // Convert vegetation world position to grid index
-              const localX = veg.x - chunkWorldX;
-              const localZ = veg.z - chunkWorldZ;
-              const gridX = Math.round(localX / step);
-              const gridZ = Math.round(localZ / step);
-              const clampedX = Math.max(0, Math.min(resolution - 1, gridX));
-              const clampedZ = Math.max(0, Math.min(resolution - 1, gridZ));
-              const idx = clampedZ * resolution + clampedX;
-
-              // Keep vegetation only if waterMask is below threshold
-              const water = waterMask[idx] ?? 0;
-              return water < 0.3;
-            });
-          }
-
-          vegetationManager.addChunkVegetation(key, chunkWorldX, chunkWorldZ, filteredVegetation);
-        }
-
-        // Create drainage-based water for this chunk
-        if (chunk && drainageWaterManager && state.meshData.drainage) {
-          const resolution = 33; // Same as chunk generator
-          const mainVertexCount = resolution * resolution; // 1089 vertices (excludes skirts)
-
-          // Extract heights from main terrain vertices only (not skirts)
-          // Skirts are appended after the main grid, so first mainVertexCount vertices are the grid
-          const heights = new Float32Array(mainVertexCount);
-          for (let i = 0; i < mainVertexCount; i++) {
-            heights[i] = state.meshData.vertices[i * 3 + 1]!;
-          }
-          drainageWaterManager.createChunkWater(
-            chunk.chunkX,
-            chunk.chunkZ,
-            chunkSize,
-            resolution,
-            state.meshData.drainage,
-            heights
-          );
-        }
-      }
-    };
-
-    // Handle chunk unloaded
-    // Skip cleanup during disposal to prevent Rapier WASM errors
-    chunkManager.onChunkUnloaded = (key) => {
-      if (isDisposed) return;
-
-      // Remove mesh from scene
-      const mesh = chunkMeshes.get(key);
-      if (mesh) {
-        rawScene.remove(mesh);
-        mesh.geometry.dispose();
-        if (mesh.material instanceof MeshStandardMaterial) {
-          mesh.material.dispose();
-        }
-        chunkMeshes.delete(key);
-      }
-
-      // Remove terrain collider (wrapped in try-catch for HMR safety)
-      const parts = key.split(",").map(Number);
-      const chunkX = parts[0] ?? 0;
-      const chunkZ = parts[2] ?? 0;
-      try {
-        terrainPhysics?.removeChunkCollider(chunkX, chunkZ);
-      } catch (e) {
-        if (import.meta.hot) {
-          console.debug('[WorldSceneContent] Chunk collider removal failed (likely HMR):', e);
-        }
-      }
-
-      // Remove vegetation
-      vegetationManager?.removeChunkVegetation(key);
-
-      // Remove drainage water
-      drainageWaterManager?.removeChunkWater(chunkX, chunkZ);
-    };
+        // Remove drainage water
+        drainageWaterManager?.removeChunkWater(chunkX, chunkZ);
+      };
     } // end: skip terrain chunks for archive
 
     isInitialized = true;
@@ -545,31 +602,58 @@
     // DEBUG: expose archive state to console for diagnostics (remove after debugging)
     if (isArchiveRealm) {
       (window as any).__archiveDebug = {
-        get isInitialized() { return isInitialized; },
-        get isReadyToRender() { return isReadyToRender; },
-        get needsGroundSnap() { return needsGroundSnap; },
-        get groundSnapAttempts() { return groundSnapAttempts; },
-        get physicsProvider() { return !!physicsProvider; },
-        get playerController() { return !!playerController; },
-        get playerPosition() { return playerPosition; },
-        get cameraMode() { return cameraMode; },
-        get colliderCount() { return terrainPhysics?.getColliderCount() ?? -1; },
-        get isArchiveRealm() { return isArchiveRealm; },
-        get scene() { return rawScene; },
-        get camera() { return camera.current; },
+        get isInitialized() {
+          return isInitialized;
+        },
+        get isReadyToRender() {
+          return isReadyToRender;
+        },
+        get needsGroundSnap() {
+          return needsGroundSnap;
+        },
+        get groundSnapAttempts() {
+          return groundSnapAttempts;
+        },
+        get physicsProvider() {
+          return !!physicsProvider;
+        },
+        get playerController() {
+          return !!playerController;
+        },
+        get playerPosition() {
+          return playerPosition;
+        },
+        get cameraMode() {
+          return cameraMode;
+        },
+        get colliderCount() {
+          return terrainPhysics?.getColliderCount() ?? -1;
+        },
+        get isArchiveRealm() {
+          return isArchiveRealm;
+        },
+        get scene() {
+          return rawScene;
+        },
+        get camera() {
+          return camera.current;
+        },
       };
       // Debug state exposed on window.__archiveDebug
     }
 
     // Place campground objects (spawn clearing was already set above)
-    if (activeConfig.spawnClearing?.enabled && activeConfig.spawnClearing.campground.enabled) {
+    if (
+      activeConfig.spawnClearing?.enabled &&
+      activeConfig.spawnClearing.campground.enabled
+    ) {
       const waterLvl = activeConfig.terrain.waterLevel ?? 5;
       await placeCampgroundObjects(activeConfig.spawnClearing, waterLvl);
     }
     // Legacy: Initialize stage zone if configured and no spawn clearing
     else if (stageMode && activeConfig.stageZone?.enabled && chunkManager) {
       chunkManager.setStageZone(
-        { x: 0, z: 0 },  // Stage at origin
+        { x: 0, z: 0 }, // Stage at origin
         activeConfig.stageZone.radius,
         activeConfig.stageZone.blendWidth
       );
@@ -577,8 +661,8 @@
     }
 
     // Auto-load terrain if configured
-    if (activeConfig.terrain.type === "real-terrain" || autoLoadHannons) {
-      hannonsLoadTimer = setTimeout(() => loadHannonsCamp(), 100);
+    if (activeConfig.terrain.type === "real-terrain" || autoLoadRealTerrain) {
+      hannonsLoadTimer = setTimeout(() => loadRealTerrain(), 100);
     }
   });
 
@@ -633,7 +717,7 @@
     } catch (e) {
       // Expected during HMR when Rapier WASM is already freed
       if (import.meta.hot) {
-        console.debug('[WorldSceneContent] Rapier cleanup during HMR:', e);
+        console.debug("[WorldSceneContent] Rapier cleanup during HMR:", e);
       }
     }
 
@@ -655,7 +739,11 @@
     outdoorAmbient = ambient;
 
     // Hemisphere light (sky + ground)
-    const hemisphere = new HemisphereLight(0x87ceeb, 0x3d5c3d, isArchiveRealm ? 0 : 0.6);
+    const hemisphere = new HemisphereLight(
+      0x87ceeb,
+      0x3d5c3d,
+      isArchiveRealm ? 0 : 0.6
+    );
     rawScene.add(hemisphere);
     outdoorHemisphere = hemisphere;
 
@@ -836,16 +924,20 @@
   // TERRAIN LOADING
   // ============================================================================
 
-  function loadHannonsCamp(): void {
+  function loadRealTerrain(): void {
     if (!chunkManager) return;
     if (!terrainData) {
-      console.warn("[WorldSceneContent] autoLoadHannons=true but no terrainData prop provided");
+      console.warn(
+        "[WorldSceneContent] real terrain config has no validated terrainData"
+      );
       return;
     }
 
     const boundary = terrainData.boundary;
-    let minX = Infinity, maxX = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minZ = Infinity,
+      maxZ = -Infinity;
 
     for (const p of boundary) {
       minX = Math.min(minX, p.worldX);
@@ -854,20 +946,11 @@
       maxZ = Math.max(maxZ, p.worldZ);
     }
 
-    const centerX = (minX + maxX) / 2;
-    const centerZ = (minZ + maxZ) / 2;
-
     zoneBounds = { minX, maxX, minZ, maxZ };
-    zoneBoundary = boundary.map(p => ({ x: p.worldX, z: p.worldZ }));
+    zoneBoundary = boundary.map((p) => ({ x: p.worldX, z: p.worldZ }));
 
     chunkManager.loadRealTerrainZone(terrainData);
     hannonsLoaded = true;
-
-    // Teleport player to center
-    if (playerController) {
-      teleportPlayer(playerController, { x: centerX, y: 100, z: centerZ });
-      playerPosition = { x: centerX, y: 100, z: centerZ };
-    }
 
     // Logging disabled
   }

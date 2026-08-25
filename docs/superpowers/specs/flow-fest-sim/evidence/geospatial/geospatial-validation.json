@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "siteId": "flow-fest-earth-ohio",
+  "status": "PASS",
+  "failures": [],
+  "terrain": {
+    "samplesPerAxis": 1025,
+    "sampleSpacingMeters": 1,
+    "minimumElevationMeters": 270.7053527832031,
+    "maximumElevationMeters": 298.4906005859375,
+    "reliefMeters": 27.785247802734375,
+    "verticalScale": 1,
+    "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd"
+  },
+  "surfaceEvidence": {
+    "coverageRatio": 0.9956568709101725,
+    "maximumOffsetMeters": 38.4,
+    "sha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+    "pointsInspected": 82147285,
+    "firstReturnsAccepted": 28419018,
+    "horizontalTransformMaximumAccuracyMeters": 0.2,
+    "usesBallparkHorizontalTransform": false,
+    "groundToDtmResidual": {
+      "samples": 11193714,
+      "signedP05Meters": -0.04332853853702545,
+      "signedP50Meters": -0.002579126739874482,
+      "signedP95Meters": 0.03256664425134659,
+      "absoluteP50Meters": 0.009945955127477646,
+      "absoluteP95Meters": 0.05883551016449928,
+      "maximumAbsoluteMeters": 1.5604617595672607
+    }
+  },
+  "orthophoto": {
+    "width": 2048,
+    "height": 2048,
+    "sourceYear": 2023,
+    "sha256": "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f"
+  },
+  "sourceCounts": {
+    "dem": 2,
+    "lidar": 12,
+    "datumTransformationGrids": 4,
+    "orthophoto": 1
+  },
+  "sourceLockSha256": "e5b62dedc4c5be4f880b8787ff740d2a8cfc47f0540efb4ae5578b71beebcbee"
+}

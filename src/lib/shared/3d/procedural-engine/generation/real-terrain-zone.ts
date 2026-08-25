@@ -1,7 +1,7 @@
 /**
  * Real Terrain Zone
  *
- * Handles imported real-world terrain data (e.g., Hannon's Camp).
+ * Handles imported, meter-referenced real-world terrain data.
  * Provides height sampling and boundary checking for chunk generation.
  *
  * Key concepts:
@@ -15,7 +15,7 @@
 // ============================================================================
 
 export interface RealTerrainZone {
-  /** Zone name (e.g., "Hannon's Camp America") */
+  /** Human-readable zone name. */
   name: string;
   /** Boundary polygon vertices in world coordinates */
   boundary: Array<{ x: number; z: number }>;
@@ -25,6 +25,10 @@ export interface RealTerrainZone {
     height: number;
     minElevation: number;
     maxElevation: number;
+    /** Absolute elevation that maps to world Y=0. */
+    verticalOriginMeters: number;
+    /** One source meter must normally remain one world meter. */
+    verticalScale: number;
     heights: Float32Array;
   };
   /** World-space bounds of the zone */
@@ -40,8 +44,8 @@ export interface RealTerrainZone {
   origin: { x: number; z: number };
 }
 
-export interface ImportedTerrainData {
-  version: number;
+export interface LegacyImportedTerrainData {
+  version: 1;
   name: string;
   timestamp: string;
   geoBounds: {
@@ -70,6 +74,47 @@ export interface ImportedTerrainData {
   }>;
 }
 
+/**
+ * Runtime form of a schema-v2 geospatial package. The checked manifest stays
+ * small; geospatial-terrain.ts supplies the separately fetched Float32 field.
+ */
+export interface ImportedTerrainDataV2 {
+  version: 2;
+  name: string;
+  sourceManifestPath: string;
+  worldBounds: {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  };
+  heightmap: {
+    width: number;
+    height: number;
+    minElevation: number;
+    maxElevation: number;
+    verticalOriginMeters: number;
+    verticalScale: 1;
+    heights: Float32Array;
+  };
+  boundary: Array<{
+    worldX: number;
+    worldZ: number;
+  }>;
+  geoReference: {
+    projectedCrs: { authority: "EPSG"; code: number; name: string };
+    requestedAnchorWgs84: { latitude: number; longitude: number };
+    resolvedOriginWgs84: { latitude: number; longitude: number };
+    originProjectedMeters: { easting: number; northing: number };
+    axes: { x: "east"; y: "up"; z: "south" };
+    verticalDatum: string;
+  };
+}
+
+export type ImportedTerrainData =
+  | LegacyImportedTerrainData
+  | ImportedTerrainDataV2;
+
 // ============================================================================
 // ZONE CREATION
 // ============================================================================
@@ -77,36 +122,25 @@ export interface ImportedTerrainData {
 /**
  * Create a RealTerrainZone from imported terrain data
  */
-export function createRealTerrainZone(data: ImportedTerrainData): RealTerrainZone {
-  const { worldDimensions: _worldDimensions, heightmap, boundary, name } = data;
+export function createRealTerrainZone(
+  data: ImportedTerrainData
+): RealTerrainZone {
+  const normalized =
+    data.version === 2
+      ? normalizeGeospatialTerrain(data)
+      : normalizeLegacyTerrain(data);
+  const { heightmap, boundary, name, bounds } = normalized;
+  const heights =
+    heightmap.heights instanceof Float32Array
+      ? heightmap.heights
+      : new Float32Array(heightmap.heights);
 
-  // Convert heights array to Float32Array
-  const heights = new Float32Array(heightmap.heights);
+  validateHeightmap(heightmap.width, heightmap.height, heights, name);
 
-  // Calculate bounds from boundary points
-  let minX = Infinity, maxX = -Infinity;
-  let minZ = Infinity, maxZ = -Infinity;
-
-  for (const point of boundary) {
-    minX = Math.min(minX, point.worldX);
-    maxX = Math.max(maxX, point.worldX);
-    minZ = Math.min(minZ, point.worldZ);
-    maxZ = Math.max(maxZ, point.worldZ);
-  }
-
-  // Convert boundary to world coordinates
-  const boundaryWorld = boundary.map(p => ({
-    x: p.worldX,
-    z: p.worldZ,
+  const boundaryWorld = boundary.map((point) => ({
+    x: point.worldX,
+    z: point.worldZ,
   }));
-
-  // Calculate actual bounds dimensions from the boundary
-  const actualWidth = maxX - minX;
-  const actualDepth = maxZ - minZ;
-
-  // Calculate center of bounds - this is where the heightmap is centered
-  const centerX = (minX + maxX) / 2;
-  const centerZ = (minZ + maxZ) / 2;
 
   return {
     name,
@@ -116,23 +150,144 @@ export function createRealTerrainZone(data: ImportedTerrainData): RealTerrainZon
       height: heightmap.height,
       minElevation: heightmap.minElevation,
       maxElevation: heightmap.maxElevation,
+      verticalOriginMeters: heightmap.verticalOriginMeters,
+      verticalScale: heightmap.verticalScale,
       heights,
     },
     bounds: {
-      minX,
-      maxX,
-      minZ,
-      maxZ,
-      width: actualWidth,
-      depth: actualDepth,
+      ...bounds,
+      width: bounds.maxX - bounds.minX,
+      depth: bounds.maxZ - bounds.minZ,
     },
-    // Origin should be the CENTER of the bounds, not worldDimensions.origin
-    // This ensures UV mapping works correctly
     origin: {
-      x: centerX,
-      z: centerZ,
+      x: (bounds.minX + bounds.maxX) / 2,
+      z: (bounds.minZ + bounds.maxZ) / 2,
     },
   };
+}
+
+interface NormalizedTerrainData {
+  name: string;
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  boundary: Array<{ worldX: number; worldZ: number }>;
+  heightmap: {
+    width: number;
+    height: number;
+    minElevation: number;
+    maxElevation: number;
+    verticalOriginMeters: number;
+    verticalScale: number;
+    heights: number[] | Float32Array;
+  };
+}
+
+function normalizeGeospatialTerrain(
+  data: ImportedTerrainDataV2
+): NormalizedTerrainData {
+  const { worldBounds: bounds, heightmap, boundary, name } = data;
+  validateBounds(bounds, name);
+  if (heightmap.verticalScale !== 1) {
+    throw new Error(
+      `${name} must preserve one source meter as one world meter`
+    );
+  }
+  validateBoundaryWithinBounds(boundary, bounds, name);
+  return { name, bounds, boundary, heightmap };
+}
+
+function normalizeLegacyTerrain(
+  data: LegacyImportedTerrainData
+): NormalizedTerrainData {
+  const { worldDimensions, boundary, heightmap, name } = data;
+  const bounds = {
+    minX: worldDimensions.originX - worldDimensions.width / 2,
+    maxX: worldDimensions.originX + worldDimensions.width / 2,
+    minZ: worldDimensions.originZ - worldDimensions.depth / 2,
+    maxZ: worldDimensions.originZ + worldDimensions.depth / 2,
+  };
+  validateBounds(bounds, name);
+
+  // The old Hannon field was captured in two unrelated coordinate frames.
+  // Rejecting that combination is safer than rendering plausible-looking land
+  // in the wrong place and then authoring every future object against the error.
+  validateBoundaryWithinBounds(boundary, bounds, name);
+  return {
+    name,
+    bounds,
+    boundary,
+    heightmap: {
+      ...heightmap,
+      verticalOriginMeters: heightmap.minElevation,
+      verticalScale: 1,
+    },
+  };
+}
+
+function validateBounds(
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number },
+  name: string
+): void {
+  const values = [bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ];
+  if (
+    !values.every(Number.isFinite) ||
+    bounds.maxX <= bounds.minX ||
+    bounds.maxZ <= bounds.minZ
+  ) {
+    throw new Error(`${name} has invalid world bounds`);
+  }
+}
+
+function validateBoundaryWithinBounds(
+  boundary: Array<{ worldX: number; worldZ: number }>,
+  bounds: { minX: number; maxX: number; minZ: number; maxZ: number },
+  name: string
+): void {
+  if (boundary.length < 3) {
+    throw new Error(`${name} needs at least three terrain boundary points`);
+  }
+  const tolerance = 0.01;
+  const invalid = boundary.find(
+    (point) =>
+      !Number.isFinite(point.worldX) ||
+      !Number.isFinite(point.worldZ) ||
+      point.worldX < bounds.minX - tolerance ||
+      point.worldX > bounds.maxX + tolerance ||
+      point.worldZ < bounds.minZ - tolerance ||
+      point.worldZ > bounds.maxZ + tolerance
+  );
+  if (invalid) {
+    throw new Error(
+      `${name} boundary uses a different coordinate frame than its heightmap bounds`
+    );
+  }
+}
+
+function validateHeightmap(
+  width: number,
+  height: number,
+  heights: Float32Array,
+  name: string
+): void {
+  if (
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width < 2 ||
+    height < 2
+  ) {
+    throw new Error(`${name} has invalid heightmap dimensions`);
+  }
+  if (heights.length !== width * height) {
+    throw new Error(
+      `${name} heightmap has ${heights.length} samples; expected ${width * height}`
+    );
+  }
+  for (const value of heights) {
+    if (!Number.isFinite(value)) {
+      throw new Error(
+        `${name} heightmap contains a missing or non-finite sample`
+      );
+    }
+  }
 }
 
 // ============================================================================
@@ -157,8 +312,8 @@ export function isPointInPolygon(
     const pj = polygon[j]!;
 
     if (
-      ((pi.z > z) !== (pj.z > z)) &&
-      (x < ((pj.x - pi.x) * (z - pi.z)) / (pj.z - pi.z) + pi.x)
+      pi.z > z !== pj.z > z &&
+      x < ((pj.x - pi.x) * (z - pi.z)) / (pj.z - pi.z) + pi.x
     ) {
       inside = !inside;
     }
@@ -191,7 +346,10 @@ export function getSignedDistanceToPolygon(
 
     let t = 0;
     if (lengthSq > 0) {
-      t = Math.max(0, Math.min(1, ((x - p1.x) * dx + (z - p1.z) * dz) / lengthSq));
+      t = Math.max(
+        0,
+        Math.min(1, ((x - p1.x) * dx + (z - p1.z) * dz) / lengthSq)
+      );
     }
 
     const nearestX = p1.x + t * dx;
@@ -240,21 +398,17 @@ export function sampleRealHeight(
   const fy = clampedY - y0;
 
   // Sample four corners
-  const h00 = heightmap.heights[y0 * heightmap.width + x0] ?? 0;
-  const h10 = heightmap.heights[y0 * heightmap.width + x1] ?? 0;
-  const h01 = heightmap.heights[y1 * heightmap.width + x0] ?? 0;
-  const h11 = heightmap.heights[y1 * heightmap.width + x1] ?? 0;
+  const h00 = heightmap.heights[y0 * heightmap.width + x0]!;
+  const h10 = heightmap.heights[y0 * heightmap.width + x1]!;
+  const h01 = heightmap.heights[y1 * heightmap.width + x0]!;
+  const h11 = heightmap.heights[y1 * heightmap.width + x1]!;
 
   // Bilinear interpolation
   const h0 = h00 * (1 - fx) + h10 * fx;
   const h1 = h01 * (1 - fx) + h11 * fx;
   const height = h0 * (1 - fy) + h1 * fy;
 
-  // Normalize to world units (0-50 range for compatibility with procedural terrain)
-  const normalizedHeight =
-    ((height - heightmap.minElevation) / (heightmap.maxElevation - heightmap.minElevation)) * 40;
-
-  return normalizedHeight;
+  return (height - heightmap.verticalOriginMeters) * heightmap.verticalScale;
 }
 
 // ============================================================================
@@ -296,8 +450,9 @@ export function getBlendedHeight(
   // Get signed distance to boundary
   const signedDist = getSignedDistanceToPolygon(worldX, worldZ, zone.boundary);
 
-  // Fully inside the zone (beyond blend distance)
-  if (signedDist >= blendDistance) {
+  // Authoritative terrain owns every point inside its measured footprint.
+  // The compatibility blend exists only outside the boundary.
+  if (signedDist >= 0) {
     return sampleRealHeight(zone, worldX, worldZ);
   }
 
@@ -306,9 +461,9 @@ export function getBlendedHeight(
     return proceduralHeight;
   }
 
-  // In the blend zone - smooth interpolation
+  // In the exterior blend zone, reach full measured height at the boundary.
   const realHeight = sampleRealHeight(zone, worldX, worldZ);
-  const t = (signedDist + blendDistance) / (2 * blendDistance);
+  const t = (signedDist + blendDistance) / blendDistance;
 
   // Smoothstep for smoother transition
   const smoothT = t * t * (3 - 2 * t);
@@ -355,6 +510,8 @@ export function serializeZoneForWorker(zone: RealTerrainZone): {
   heightmapHeight: number;
   minElevation: number;
   maxElevation: number;
+  verticalOriginMeters: number;
+  verticalScale: number;
   heights: Float32Array;
   bounds: RealTerrainZone["bounds"];
   origin: RealTerrainZone["origin"];
@@ -366,6 +523,8 @@ export function serializeZoneForWorker(zone: RealTerrainZone): {
     heightmapHeight: zone.heightmap.height,
     minElevation: zone.heightmap.minElevation,
     maxElevation: zone.heightmap.maxElevation,
+    verticalOriginMeters: zone.heightmap.verticalOriginMeters,
+    verticalScale: zone.heightmap.verticalScale,
     heights: zone.heightmap.heights,
     bounds: zone.bounds,
     origin: zone.origin,
@@ -375,7 +534,9 @@ export function serializeZoneForWorker(zone: RealTerrainZone): {
 /**
  * Deserialize zone data received in worker
  */
-export function deserializeZoneInWorker(data: ReturnType<typeof serializeZoneForWorker>): RealTerrainZone {
+export function deserializeZoneInWorker(
+  data: ReturnType<typeof serializeZoneForWorker>
+): RealTerrainZone {
   return {
     name: data.name,
     boundary: data.boundary,
@@ -384,6 +545,8 @@ export function deserializeZoneInWorker(data: ReturnType<typeof serializeZoneFor
       height: data.heightmapHeight,
       minElevation: data.minElevation,
       maxElevation: data.maxElevation,
+      verticalOriginMeters: data.verticalOriginMeters,
+      verticalScale: data.verticalScale,
       heights: data.heights,
     },
     bounds: data.bounds,

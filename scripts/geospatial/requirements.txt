@@ -1,0 +1,12 @@
+affine==3.0.0
+attrs==26.1.0
+certifi==2026.7.22
+click==8.4.2
+colorama==0.4.6
+laspy==2.7.0
+lazrs==0.8.2
+numpy==2.3.5
+pillow==12.3.0
+pyparsing==3.3.2
+pyproj==3.7.2
+rasterio==1.5.1

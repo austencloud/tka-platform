@@ -69,17 +69,17 @@ export interface TerrainLocation {
  */
 export const TERRAIN_LOCATIONS: Record<string, TerrainLocation> = {
   hannons_camp: {
-    name: "Hannon's Camp America",
-    // Actual GPS: 39.5896, -84.7858 (8501 Camden College Corner Rd)
-    // Property is 27 acres (~330m x 330m)
+    name: "Deprecated Flow Fest prototype",
+    // Historical capture coordinates. The checked v2 manifest is the only
+    // coordinate authority for new work.
     center: { lat: 39.5896, lng: -84.7858 },
     zoom: 17,
     bounds: {
       // Tight bounds around the 27-acre property with small buffer
       // ~400m x 400m area
       nw: { lat: 39.5915, lng: -84.7885 },
-      se: { lat: 39.5875, lng: -84.7830 },
+      se: { lat: 39.5875, lng: -84.783 },
     },
-    description: "Home of Kinetic Fire - flow arts festival in College Corner, OH",
+    description: "Deprecated bounds from the January 2026 terrain experiment",
   },
 };

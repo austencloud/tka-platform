@@ -8,27 +8,24 @@
 import type { RealmConfig } from "./world-config";
 
 // ============================================================================
-// HANNON'S CAMP
+// FLOW FEST SIM EARTH SITE
 // ============================================================================
 
 /**
- * Hannon's Camp America
+ * Flow Fest Sim Earth Site
  *
- * Real-world terrain data from the Kinetic Fire festival site
- * in Southwest Ohio. Features satellite imagery overlay and
- * object placement for event planning.
+ * A neutral festival-simulator landscape built from public, meter-true Earth
+ * data in southwest Ohio. The internal destination id is preserved while the
+ * disabled prototype migrates away from its earlier branded name.
  */
-export const HANNONS_CAMP_CONFIG: RealmConfig = {
-  id: "hannons-camp",
-  name: "Hannon's Camp",
-  description: "Kinetic Fire festival site - real terrain from Southwest Ohio",
+export const FLOW_FEST_SIM_CONFIG: RealmConfig = {
+  id: "flow-fest-sim",
+  name: "Flow Fest Sim",
+  description: "Meter-true Earth terrain for a fictional flow festival",
 
   terrain: {
     type: "real-terrain",
-    // Served from `static/`, fetched at mount. Previously a relative path that
-    // resolved from nowhere, while the destination imported the 4 MB field
-    // directly — this is now the one address for the elevation data.
-    dataPath: "/data/hannons-camp/hannons-camp-terrain.json",
+    dataPath: "/data/flow-fest-sim/terrain.manifest.json",
   },
 
   chunks: {
@@ -40,14 +37,14 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
   features: {
     objectPlacement: true,
     boundaryEditing: true,
-    satelliteImagery: true,
+    satelliteImagery: false,
   },
 
   spawn: {
-    // Main field area - Y ignored, snapToGround finds actual ground
-    position: [231, 50, -96],
-    // Face roughly east (88 degrees)
-    yaw: (88 * Math.PI) / 180,
+    // Gate 1 will move this to the approved arrival route. Until then the
+    // measured origin is the only location the foundation can guarantee.
+    position: [0, 5, 0],
+    yaw: 0,
   },
 
   physics: {
@@ -59,6 +56,9 @@ export const HANNONS_CAMP_CONFIG: RealmConfig = {
     playerHeight: 1.7,
   },
 };
+
+/** @deprecated Internal compatibility name while the disabled feature folder migrates. */
+export const HANNONS_CAMP_CONFIG = FLOW_FEST_SIM_CONFIG;
 
 // ============================================================================
 // PERFORMANCE STAGE
@@ -78,8 +78,8 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
 
   terrain: {
     type: "procedural",
-    seed: 42,  // Forest seed
-    waterLevel: 5,  // Water at Y=5
+    seed: 42, // Forest seed
+    waterLevel: 5, // Water at Y=5
   },
 
   chunks: {
@@ -96,7 +96,7 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 50, 0],  // Center of clearing - Y ignored, snapToGround finds actual ground
+    position: [0, 50, 0], // Center of clearing - Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 
@@ -113,8 +113,8 @@ export const PERFORMANCE_STAGE_CONFIG: RealmConfig = {
   spawnClearing: {
     enabled: true,
     center: { x: 0, z: 0 },
-    radius: 20,       // 20m clear meadow
-    blendWidth: 15,   // 15m transition to forest
+    radius: 20, // 20m clear meadow
+    blendWidth: 15, // 15m transition to forest
     campground: {
       enabled: true,
       firePit: true,
@@ -143,7 +143,7 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   terrain: {
     type: "procedural",
     seed: 42,
-    waterLevel: 5,  // Water at Y=5, prevents spawning in underwater pits
+    waterLevel: 5, // Water at Y=5, prevents spawning in underwater pits
   },
 
   chunks: {
@@ -160,7 +160,7 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 50, 0],  // Y ignored, snapToGround finds actual ground
+    position: [0, 50, 0], // Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 
@@ -177,8 +177,8 @@ export const PROCEDURAL_WORLD_CONFIG: RealmConfig = {
   spawnClearing: {
     enabled: true,
     center: { x: 0, z: 0 },
-    radius: 15,       // 15m clear meadow
-    blendWidth: 10,   // 10m transition to natural terrain
+    radius: 15, // 15m clear meadow
+    blendWidth: 10, // 10m transition to natural terrain
     campground: {
       enabled: false, // No campground objects for procedural world
       firePit: false,
@@ -223,7 +223,7 @@ export const FLAT_TESTING_CONFIG: RealmConfig = {
   },
 
   spawn: {
-    position: [0, 50, 0],  // Y ignored, snapToGround finds actual ground
+    position: [0, 50, 0], // Y ignored, snapToGround finds actual ground
     yaw: 0,
   },
 
@@ -372,7 +372,7 @@ export const ARCHIVE_WING1_CONFIG: RealmConfig = {
  * All available realms
  */
 export const REALM_CONFIGS: Record<string, RealmConfig> = {
-  "hannons-camp": HANNONS_CAMP_CONFIG,
+  "flow-fest-sim": FLOW_FEST_SIM_CONFIG,
   "performance-stage": PERFORMANCE_STAGE_CONFIG,
   procedural: PROCEDURAL_WORLD_CONFIG,
   "flat-testing": FLAT_TESTING_CONFIG,

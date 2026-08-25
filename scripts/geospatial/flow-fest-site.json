@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "siteId": "flow-fest-earth-ohio",
+  "displayName": "Flow Fest Sim Earth site",
+  "requestedAnchorWgs84": {
+    "latitude": 39.589617,
+    "longitude": -84.785764
+  },
+  "grid": {
+    "projectedCrs": "EPSG:26916",
+    "sampleSpacingMeters": 1,
+    "samplesPerAxis": 1025,
+    "sourceMarginMeters": 64,
+    "demSourceEdgeTrimPixels": 2
+  },
+  "worldFrame": {
+    "units": "meter",
+    "metersPerUnit": 1,
+    "handedness": "right",
+    "positiveX": "east",
+    "positiveY": "up",
+    "positiveZ": "south",
+    "verticalDatum": "NAVD88",
+    "verticalScale": 1,
+    "verticalOriginStepMeters": 10
+  },
+  "sourcePolicy": {
+    "demDataset": "Digital Elevation Model (DEM) 1 meter",
+    "demRights": "U.S. Geological Survey 3DEP; public domain",
+    "lidarDataset": "Lidar Point Cloud (LPC)",
+    "lidarRights": "U.S. Geological Survey 3DEP; public domain",
+    "datumTransformationRights": "NOAA NADCON5-derived grids distributed by PROJ; embedded metadata states Public Domain",
+    "datumTransformationGrids": [
+      {
+        "name": "us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+        "url": "https://cdn.proj.org/us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+        "declaredSizeBytes": 3522682
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+        "url": "https://cdn.proj.org/us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+        "declaredSizeBytes": 9111570
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+        "url": "https://cdn.proj.org/us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+        "declaredSizeBytes": 42709110
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+        "url": "https://cdn.proj.org/us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+        "declaredSizeBytes": 39965338
+      }
+    ],
+    "projectTitleIncludes": "OH_Statewide_Phase3_2021_B21",
+    "naipService": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
+    "naipYear": 2023,
+    "naipRights": "USGS and USDA National Agriculture Imagery Program; public domain",
+    "naipSourceResolutionMeters": 0.3,
+    "naipRuntimePixelsPerAxis": 2048
+  },
+  "outputs": {
+    "cacheDirectory": ".cache/flow-fest-sim",
+    "runtimeDirectory": "static/data/flow-fest-sim",
+    "evidenceDirectory": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial",
+    "sourceLock": "scripts/geospatial/flow-fest-source-lock.json"
+  }
+}

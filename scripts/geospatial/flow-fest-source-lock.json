@@ -1,0 +1,431 @@
+{
+  "schemaVersion": 1,
+  "pipelineVersion": 1,
+  "siteId": "flow-fest-earth-ohio",
+  "gridQuery": {
+    "projectedCrs": "EPSG:26916",
+    "originProjectedMeters": {
+      "easting": 690142.0,
+      "northing": 4384552.0
+    },
+    "sampleBoundsProjectedMeters": {
+      "minEasting": 689630.0,
+      "maxEasting": 690654.0,
+      "minNorthing": 4384040.0,
+      "maxNorthing": 4385064.0
+    },
+    "sampleBoundsWgs84": {
+      "west": -84.79186983398299,
+      "south": 39.58488964486135,
+      "east": -84.77965992263844,
+      "north": 39.59433661349942
+    },
+    "queryBoundsWgs84": {
+      "west": -84.79263284872451,
+      "south": 39.584299173153454,
+      "east": -84.77889669844556,
+      "north": 39.59492701285665
+    }
+  },
+  "catalogQueries": {
+    "dem": "https://tnmaccess.nationalmap.gov/api/v1/products?datasets=Digital+Elevation+Model+%28DEM%29+1+meter&bbox=-84.792632848725%2C39.584299173153%2C-84.778896698446%2C39.594927012857&max=100",
+    "lidar": "https://tnmaccess.nationalmap.gov/api/v1/products?datasets=Lidar+Point+Cloud+%28LPC%29&bbox=-84.791869833983%2C39.584889644861%2C-84.779659922638%2C39.594336613499&max=100",
+    "orthophoto": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer/query?f=json&where=Category%3D1&geometry=-84.785764%2C39.589617&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&outFields=%2A&returnGeometry=false"
+  },
+  "dem": [
+    {
+      "sourceId": "68ca18b3d4be0274ff4eb0b1",
+      "title": "USGS 1 Meter 16 x68y439 OH_Statewide_Phase3_2021_B21",
+      "publicationDate": "2025-09-14",
+      "lastUpdated": "2025-09-16T20:10:59.487-06:00",
+      "format": "GeoTIFF",
+      "declaredSizeBytes": 79107152,
+      "downloadUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/OH_Statewide_Phase3_2021_B21/TIFF/USGS_1M_16_x68y439_OH_Statewide_Phase3_2021_B21.tif",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/1_meter/geotiff/OH_Statewide_Phase3_2021_B21/USGS_1M_16_x68y439_OH_Statewide_Phase3_2021_B21.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68ca18b3d4be0274ff4eb0b1",
+      "boundingBoxWgs84": {
+        "minX": -84.90502876099998,
+        "maxX": -84.78585480699996,
+        "minY": 39.54865971600003,
+        "maxY": 39.64085916200003
+      },
+      "sha256": "3260dde338d6b47ba0bacd0e2673a76a9f5872f8fcb381cdd945a03e569d709b",
+      "downloadedSizeBytes": 79107152,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/dem/USGS_1M_16_x68y439_OH_Statewide_Phase3_2021_B21.tif",
+      "metadataSha256": "0920734aededa63f5716a03c49a4b720d5515cce6e98ac4d95797d88e01fd8c6",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68ca18b3d4be0274ff4eb0b1.xml",
+      "metadataSizeBytes": 14633
+    },
+    {
+      "sourceId": "68ca18afd4be0274ff4eb053",
+      "title": "USGS 1 Meter 16 x69y439 OH_Statewide_Phase3_2021_B21",
+      "publicationDate": "2025-09-14",
+      "lastUpdated": "2025-09-16T20:10:55.811-06:00",
+      "format": "GeoTIFF",
+      "declaredSizeBytes": 288894494,
+      "downloadUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/OH_Statewide_Phase3_2021_B21/TIFF/USGS_1M_16_x69y439_OH_Statewide_Phase3_2021_B21.tif",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/1_meter/geotiff/OH_Statewide_Phase3_2021_B21/USGS_1M_16_x69y439_OH_Statewide_Phase3_2021_B21.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68ca18afd4be0274ff4eb053",
+      "boundingBoxWgs84": {
+        "minX": -84.78872068199996,
+        "maxX": -84.66940916399994,
+        "minY": 39.546387878000075,
+        "maxY": 39.63869673000005
+      },
+      "sha256": "630bccfffb46e33251153b7b45f89a524bfacf2e04e4070bb7fb13d7173238e6",
+      "downloadedSizeBytes": 288894494,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/dem/USGS_1M_16_x69y439_OH_Statewide_Phase3_2021_B21.tif",
+      "metadataSha256": "60a32c844af26c2bba9c9a8413501f11cc8c2bf54a67bd7b5df76f66542468ce",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68ca18afd4be0274ff4eb053.xml",
+      "metadataSizeBytes": 14634
+    }
+  ],
+  "lidar": [
+    {
+      "sourceId": "68a5219ad4be02198e363527",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220585",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T21:31:33.329-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 19355045,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220585.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220585.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a5219ad4be02198e363527",
+      "boundingBoxWgs84": {
+        "minX": -84.7924337713,
+        "maxX": -84.7878875534,
+        "minY": 39.5836674448,
+        "maxY": 39.5871851276
+      },
+      "sha256": "61c1fdb64d39bab15939fb54bef273f0951884814dfa9c6108b57e6e48c91cdb",
+      "downloadedSizeBytes": 19355045,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220585.laz",
+      "metadataSha256": "0a2bd011d3991d32d54cf2013ab27a5b63fe5a107140ec29a1284722f1896770",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a5219ad4be02198e363527.xml",
+      "metadataSizeBytes": 13402
+    },
+    {
+      "sourceId": "68a5258ed4be02198e364ff9",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220586",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-20T00:15:00.527-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 23164653,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220586.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220586.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a5258ed4be02198e364ff9",
+      "boundingBoxWgs84": {
+        "minX": -84.792546367,
+        "maxX": -84.7879999204,
+        "minY": 39.5870981525,
+        "maxY": 39.5906158366
+      },
+      "sha256": "81267a68796f053b406ecade8b52f04940b118ab36b9f2240ba6c9b4c0e14392",
+      "downloadedSizeBytes": 23164653,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220586.laz",
+      "metadataSha256": "e191516782c801555dfe7a8da4da58e0b77bee21702e800d7068188953633f47",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a5258ed4be02198e364ff9.xml",
+      "metadataSizeBytes": 13400
+    },
+    {
+      "sourceId": "68a52f49d4be02198e36a250",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220587",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T20:13:29.551-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 40035883,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220587.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220587.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a52f49d4be02198e36a250",
+      "boundingBoxWgs84": {
+        "minX": -84.7926589736,
+        "maxX": -84.7881122984,
+        "minY": 39.5905288573,
+        "maxY": 39.5940465427
+      },
+      "sha256": "e825f8f2a8fad52ebd35d7262e269660cc27dfe6102a0ba92052ce1097ad3625",
+      "downloadedSizeBytes": 40035883,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220587.laz",
+      "metadataSha256": "e27e0a02f4b25f098895481e778b36487ec21f5ba8d652079442dc5be9a2a0d3",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a52f49d4be02198e36a250.xml",
+      "metadataSizeBytes": 13402
+    },
+    {
+      "sourceId": "68a52d9ad4be02198e3686fe",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220588",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T20:06:18.982-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 22368118,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220588.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220588.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a52d9ad4be02198e3686fe",
+      "boundingBoxWgs84": {
+        "minX": -84.7927715914,
+        "maxX": -84.7882246875,
+        "minY": 39.5939595592,
+        "maxY": 39.597477246
+      },
+      "sha256": "48a1118427e474fc862b29c0068f798ddf18c11aefe6cac92c408bae8f49e896",
+      "downloadedSizeBytes": 22368118,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220588.laz",
+      "metadataSha256": "2541cde2401114738e3719c43241468d6440de6a6b2428d4b23a5ccfb60f4cdb",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a52d9ad4be02198e3686fe.xml",
+      "metadataSizeBytes": 13401
+    },
+    {
+      "sourceId": "68a54a69d4be02198e37291e",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230585",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T22:09:13.927-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 19125820,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230585.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230585.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a54a69d4be02198e37291e",
+      "boundingBoxWgs84": {
+        "minX": -84.7879998476,
+        "maxX": -84.7834538362,
+        "minY": 39.583754472,
+        "maxY": 39.5872719905
+      },
+      "sha256": "b1b24593a0d568080f4ff7881754eae314001e1eb7e8771abcff01a121761c8e",
+      "downloadedSizeBytes": 19125820,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230585.laz",
+      "metadataSha256": "d25836c8abde273358a46901264777a236e0413b97a0dee1e479433d1f02f217",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a54a69d4be02198e37291e.xml",
+      "metadataSizeBytes": 13401
+    },
+    {
+      "sourceId": "68a55ce8d4be02198e3756e5",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230586",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T23:28:08.189-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 24228119,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230586.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230586.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a55ce8d4be02198e3756e5",
+      "boundingBoxWgs84": {
+        "minX": -84.7881122257,
+        "maxX": -84.7835659856,
+        "minY": 39.5871851838,
+        "maxY": 39.5907027037
+      },
+      "sha256": "f6e8d5fe6e1bf20320505601d466255107d4d8f508234e872aac41ba09f7eb84",
+      "downloadedSizeBytes": 24228119,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230586.laz",
+      "metadataSha256": "a7fdaeb377169d569186cf1e7c0ee7a23465e5573ad7e7c082a63be1f8fe517d",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a55ce8d4be02198e3756e5.xml",
+      "metadataSizeBytes": 13402
+    },
+    {
+      "sourceId": "68a53ba1d4be02198e36c092",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230587",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T21:06:09.963-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 33683104,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230587.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230587.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a53ba1d4be02198e36c092",
+      "boundingBoxWgs84": {
+        "minX": -84.7882246147,
+        "maxX": -84.7836781461,
+        "minY": 39.5906158929,
+        "maxY": 39.594133414
+      },
+      "sha256": "5362b8a1658d30f279491547a29db9e03248ef6ff672457d9517737b46e95036",
+      "downloadedSizeBytes": 33683104,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230587.laz",
+      "metadataSha256": "c88dfc3ac0d25719afa0faf13b9beee5fa6b7bb6d666a2e908ced19e1370743e",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a53ba1d4be02198e36c092.xml",
+      "metadataSizeBytes": 13401
+    },
+    {
+      "sourceId": "68a56192d4be02198e376fc8",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230588",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T23:48:02.424-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 23113270,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230588.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230588.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a56192d4be02198e376fc8",
+      "boundingBoxWgs84": {
+        "minX": -84.7883370148,
+        "maxX": -84.7837903175,
+        "minY": 39.594046599,
+        "maxY": 39.5975641215
+      },
+      "sha256": "c0291a2fb7557b092bcfc422b14541024e6f32aad11a1ee4f9af73c80d402bfb",
+      "downloadedSizeBytes": 23113270,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230588.laz",
+      "metadataSha256": "daf2c5f37799385f70b76658628cd52c364672bfc2ba49a17f6b0e0fbaf7f795",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a56192d4be02198e376fc8.xml",
+      "metadataSizeBytes": 13401
+    },
+    {
+      "sourceId": "68a5267fd4be02198e36562d",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250585",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T19:35:59.705-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 34913001,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250585.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250585.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a5267fd4be02198e36562d",
+      "boundingBoxWgs84": {
+        "minX": -84.7835659129,
+        "maxX": -84.779020108,
+        "minY": 39.5838413307,
+        "maxY": 39.587358685
+      },
+      "sha256": "f4ec775d0bf68ed9ecb209b27fd38de8660007dcf7f3759a4a9ce79f1bd2bafa",
+      "downloadedSizeBytes": 34913001,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250585.laz",
+      "metadataSha256": "ad1e9c714deccb1b36f9851cd561f8a08cf6807426cf0f1dc5e0e3a0e3b813e5",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a5267fd4be02198e36562d.xml",
+      "metadataSizeBytes": 13399
+    },
+    {
+      "sourceId": "68a528bbd4be02198e3665d4",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250586",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T19:45:31.881-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 43694817,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250586.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250586.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a528bbd4be02198e3665d4",
+      "boundingBoxWgs84": {
+        "minX": -84.7836780733,
+        "maxX": -84.7791320399,
+        "minY": 39.5872720468,
+        "maxY": 39.5907894024
+      },
+      "sha256": "937d07ef638df3f4d4490fb89544f1bcf18a73aef484d3ef1c44b349ecae3f34",
+      "downloadedSizeBytes": 43694817,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250586.laz",
+      "metadataSha256": "f5e5d00e76afa934d8a4563dfd60a2d664caebe11881e77f8db30fe08013ad5e",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a528bbd4be02198e3665d4.xml",
+      "metadataSizeBytes": 13401
+    },
+    {
+      "sourceId": "68a55eded4be02198e375f96",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250587",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T23:36:30.965-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 48681540,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250587.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250587.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a55eded4be02198e375f96",
+      "boundingBoxWgs84": {
+        "minX": -84.7837902448,
+        "maxX": -84.7792439827,
+        "minY": 39.59070276,
+        "maxY": 39.5942201169
+      },
+      "sha256": "8cb47c77703014450a99dd58081241956a5f9d4b054b7ba0f83d64a5a6e74aa3",
+      "downloadedSizeBytes": 48681540,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250587.laz",
+      "metadataSha256": "4847a1e8bbc3dde0f678e808b0c455c417a8cc7f781798be48832992fd5f8757",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a55eded4be02198e375f96.xml",
+      "metadataSizeBytes": 13400
+    },
+    {
+      "sourceId": "68a54553d4be02198e3711d8",
+      "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250588",
+      "publicationDate": "2025-08-15",
+      "lastUpdated": "2025-08-19T21:47:31.105-06:00",
+      "format": "LAZ",
+      "declaredSizeBytes": 46192326,
+      "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250588.laz",
+      "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250588.xml",
+      "catalogUrl": "https://www.sciencebase.gov/catalog/item/68a54553d4be02198e3711d8",
+      "boundingBoxWgs84": {
+        "minX": -84.7839024272,
+        "maxX": -84.7793559365,
+        "minY": 39.5941334703,
+        "maxY": 39.5976508285
+      },
+      "sha256": "be5977b717a5b99135abed824b76548cda6e7ffc40f44971bd3c236e0edc277d",
+      "downloadedSizeBytes": 46192326,
+      "cacheRelativePath": ".cache/flow-fest-sim/sources/lidar/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250588.laz",
+      "metadataSha256": "6b66ff5d14d163a179ae4f62e1725e1c60e1c0393888685a24b0cc57e9b9d3b5",
+      "metadataCacheRelativePath": ".cache/flow-fest-sim/metadata/68a54553d4be02198e3711d8.xml",
+      "metadataSizeBytes": 13401
+    }
+  ],
+  "datumTransformationGrids": [
+    {
+      "name": "us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+      "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+      "declaredSizeBytes": 3522682,
+      "sha256": "e12ac2e886edafe616e0994c610ad3daa01db17c00d0e9938145d956f249fc2f",
+      "downloadedSizeBytes": 3522682,
+      "cacheRelativePath": ".cache/flow-fest-sim/proj-grids/us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif"
+    },
+    {
+      "name": "us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+      "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+      "declaredSizeBytes": 9111570,
+      "sha256": "703434db8e87dd5c35579151410a9e5892d5769f4f2f9c6b0e2b700ae537e2ff",
+      "downloadedSizeBytes": 9111570,
+      "cacheRelativePath": ".cache/flow-fest-sim/proj-grids/us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif"
+    },
+    {
+      "name": "us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+      "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+      "declaredSizeBytes": 42709110,
+      "sha256": "73ea6609fcdbc971771dc0481be19f4d6aa5118ddbd3e0734ff1cf0facf0f40a",
+      "downloadedSizeBytes": 42709110,
+      "cacheRelativePath": ".cache/flow-fest-sim/proj-grids/us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif"
+    },
+    {
+      "name": "us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+      "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+      "declaredSizeBytes": 39965338,
+      "sha256": "560d65e871afdcfed3d736074f5b3b82cb2fd74d25f988cc556824eceeafce96",
+      "downloadedSizeBytes": 39965338,
+      "cacheRelativePath": ".cache/flow-fest-sim/proj-grids/us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif"
+    }
+  ],
+  "orthophoto": {
+    "objectId": 146870,
+    "rasterName": "m_3908426_ne_17_030_20230522",
+    "state": "OH",
+    "year": 2023,
+    "acquisitionDateUnixMilliseconds": 1684713600000,
+    "agency": "USDA",
+    "vendor": "USDA-FSA-APFO",
+    "sourceResolutionMeters": 0.3,
+    "sourceBands": 4,
+    "sensorType": "CNIR",
+    "sourceProjection": "UTM",
+    "sourceProjectionZone": "17N",
+    "sourceDatum": "NAD83",
+    "catalogDownloadUrl": "https://earthexplorer.usgs.gov/download/options/naip/3310342",
+    "serviceUrl": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
+    "exportRequestUrl": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer/exportImage?f=json&bbox=689630.0%2C4384040.0%2C690654.0%2C4385064.0&bboxSR=26916&imageSR=26916&size=3414%2C3414&format=tiff&pixelType=U8&interpolation=RSP_BilinearInterpolation&mosaicRule=%7B%22mosaicMethod%22%3A%22esriMosaicLockRaster%22%2C%22lockRasterIds%22%3A%5B146870%5D%7D",
+    "exportResponse": {
+      "width": 3414,
+      "height": 3414,
+      "extent": {
+        "xmin": 689630,
+        "ymin": 4384040,
+        "xmax": 690654,
+        "ymax": 4385064,
+        "spatialReference": {
+          "wkid": 26916,
+          "latestWkid": 26916
+        }
+      },
+      "scale": 0
+    },
+    "sha256": "a4c987f48ed0e1a601fed39502fe189cc2a6db217ec89e418db3d940c93ee745",
+    "downloadedSizeBytes": 47783213,
+    "cacheRelativePath": ".cache/flow-fest-sim/sources/orthophoto/naip-2023-source.tif"
+  }
+}

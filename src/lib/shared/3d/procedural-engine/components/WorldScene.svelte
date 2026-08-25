@@ -61,7 +61,7 @@
     /** Show debug info overlay */
     showDebug?: boolean;
     /** Auto-load Hannon's Camp terrain on mount (legacy - prefer realmConfig) */
-    autoLoadHannons?: boolean;
+    autoLoadRealTerrain?: boolean;
     /** Enable stage mode - flat performance area with grid planes */
     stageMode?: boolean;
     /** Real-world terrain data (destinations import their own JSON and pass it down) */
@@ -72,7 +72,7 @@
     realmConfig,
     seed,
     showDebug = false,
-    autoLoadHannons = false,
+    autoLoadRealTerrain = false,
     stageMode = false,
     terrainData = null,
   }: Props = $props();
@@ -438,7 +438,7 @@
       {activeConfig}
       {worldSeed}
       {worldNoise}
-      {autoLoadHannons}
+      {autoLoadRealTerrain}
       {stageMode}
       {terrainData}
       bind:physicsState

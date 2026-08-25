@@ -13,6 +13,9 @@
 *.yml text eol=lf
 # Binary files — don't touch
 *.png binary
+*.webp binary
+*.f32 binary
+*.u16 binary
 *.jpg binary
 *.jpeg binary
 *.gif binary

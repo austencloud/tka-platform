@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 2,
+  "pipelineVersion": 1,
+  "siteId": "flow-fest-earth-ohio",
+  "displayName": "Flow Fest Sim Earth site",
+  "toolchain": {
+    "python": "3.12.13",
+    "affine": "3.0.0",
+    "attrs": "26.1.0",
+    "certifi": "2026.7.22",
+    "click": "8.4.2",
+    "colorama": "0.4.6",
+    "laspy": "2.7.0",
+    "lazrs": "0.8.2",
+    "numpy": "2.3.5",
+    "pillow": "12.3.0",
+    "pyparsing": "3.3.2",
+    "pyproj": "3.7.2",
+    "rasterio": "1.5.1"
+  },
+  "sourceLock": {
+    "path": "scripts/geospatial/flow-fest-source-lock.json",
+    "sha256": "e5b62dedc4c5be4f880b8787ff740d2a8cfc47f0540efb4ae5578b71beebcbee"
+  },
+  "worldFrame": {
+    "units": "meter",
+    "metersPerUnit": 1,
+    "handedness": "right",
+    "axes": {
+      "x": "east",
+      "y": "up",
+      "z": "south"
+    },
+    "projectedCrs": {
+      "authority": "EPSG",
+      "code": 26916,
+      "name": "NAD83 / UTM zone 16N",
+      "wkt": "PROJCRS[\"NAD83 / UTM zone 16N\",BASEGEOGCRS[\"NAD83\",DATUM[\"North American Datum 1983\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",4269]],CONVERSION[\"UTM zone 16N\",METHOD[\"Transverse Mercator\",ID[\"EPSG\",9807]],PARAMETER[\"Latitude of natural origin\",0,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8801]],PARAMETER[\"Longitude of natural origin\",-87,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8802]],PARAMETER[\"Scale factor at natural origin\",0.9996,SCALEUNIT[\"unity\",1],ID[\"EPSG\",8805]],PARAMETER[\"False easting\",500000,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8806]],PARAMETER[\"False northing\",0,LENGTHUNIT[\"metre\",1],ID[\"EPSG\",8807]]],CS[Cartesian,2],AXIS[\"(E)\",east,ORDER[1],LENGTHUNIT[\"metre\",1]],AXIS[\"(N)\",north,ORDER[2],LENGTHUNIT[\"metre\",1]],USAGE[SCOPE[\"Engineering survey, topographic mapping.\"],AREA[\"North America - between 90°W and 84°W - onshore and offshore. Canada - Manitoba; Nunavut; Ontario. United States (USA) - Alabama; Arkansas; Florida; Georgia; Indiana; Illinois; Kentucky; Louisiana; Michigan; Minnesota; Mississippi; Missouri; North Carolina; Ohio; Tennessee; Wisconsin.\"],BBOX[23.97,-90,84,-84]],ID[\"EPSG\",26916]]"
+    },
+    "requestedAnchorWgs84": {
+      "latitude": 39.589617,
+      "longitude": -84.785764
+    },
+    "resolvedOriginWgs84": {
+      "latitude": 39.589613265369856,
+      "longitude": -84.78576527257212
+    },
+    "originProjectedMeters": {
+      "easting": 690142.0,
+      "northing": 4384552.0
+    },
+    "vertical": {
+      "datum": "NAVD88",
+      "originElevationMeters": 270.0,
+      "scale": 1
+    },
+    "transform": {
+      "worldX": "projectedEasting - originEasting",
+      "worldZ": "originNorthing - projectedNorthing",
+      "worldY": "navd88Elevation - originElevation"
+    }
+  },
+  "terrain": {
+    "height": {
+      "path": "/data/flow-fest-sim/terrain-height.f32",
+      "productType": "DTM",
+      "encoding": "float32-le",
+      "layout": "row-major",
+      "rowOrder": "north-to-south",
+      "columnOrder": "west-to-east",
+      "width": 1025,
+      "height": 1025,
+      "sampleSpacingMeters": 1.0,
+      "nativeGroundSampleDistanceMeters": 1,
+      "resamplingKernel": "bilinear",
+      "minimumElevationMeters": 270.7053527832031,
+      "maximumElevationMeters": 298.4906005859375,
+      "reliefMeters": 27.785247802734375,
+      "noDataSamples": 0,
+      "byteLength": 4202500,
+      "sha256": "d56f912d24c644156f088b95240c02cb76c1e4548b2990ccd7dd80f0f6eecafd"
+    },
+    "sampleBoundsWorldMeters": {
+      "minX": -512.0,
+      "maxX": 512.0,
+      "minZ": -512.0,
+      "maxZ": 512.0
+    },
+    "coverageBoundaryWorldMeters": [
+      {
+        "x": -512.0,
+        "z": -512.0
+      },
+      {
+        "x": 512.0,
+        "z": -512.0
+      },
+      {
+        "x": 512.0,
+        "z": 512.0
+      },
+      {
+        "x": -512.0,
+        "z": 512.0
+      }
+    ]
+  },
+  "surfaceEvidence": {
+    "path": "/data/flow-fest-sim/surface-offset.u16",
+    "encoding": "uint16-le-centimeters-above-dtm",
+    "noDataValue": 65535,
+    "width": 1025,
+    "height": 1025,
+    "byteLength": 2101250,
+    "sha256": "f014eeef49921037f1a10aff72d40c7f9524fbc4980dfd7578c06f4002f5d879",
+    "coverageRatio": 0.9956568709101725,
+    "maximumOffsetMeters": 38.4,
+    "sampleSpacingMeters": 1.0,
+    "sampleBoundsWorldMeters": {
+      "minX": -512.0,
+      "maxX": 512.0,
+      "minZ": -512.0,
+      "maxZ": 512.0
+    }
+  },
+  "orthophoto": {
+    "path": "/data/flow-fest-sim/ortho.webp",
+    "format": "webp",
+    "width": 2048,
+    "height": 2048,
+    "rowOrder": "north-to-south",
+    "columnOrder": "west-to-east",
+    "sourceYear": 2023,
+    "sourceAcquisitionDateUnixMilliseconds": 1684713600000,
+    "sourceResolutionMeters": 0.3,
+    "runtimePixelSizeMeters": 0.5,
+    "projectedCrs": {
+      "authority": "EPSG",
+      "code": 26916
+    },
+    "sampleBoundsWorldMeters": {
+      "minX": -512.0,
+      "maxX": 512.0,
+      "minZ": -512.0,
+      "maxZ": 512.0
+    },
+    "byteLength": 613448,
+    "sha256": "abbf63d78d4d4cc29f3df591e2c19687cba8ce63811748008a8bc6235e18fd2f"
+  },
+  "sources": {
+    "dem": [
+      {
+        "sourceId": "68ca18b3d4be0274ff4eb0b1",
+        "title": "USGS 1 Meter 16 x68y439 OH_Statewide_Phase3_2021_B21",
+        "publicationDate": "2025-09-14",
+        "downloadUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/OH_Statewide_Phase3_2021_B21/TIFF/USGS_1M_16_x68y439_OH_Statewide_Phase3_2021_B21.tif",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/1_meter/geotiff/OH_Statewide_Phase3_2021_B21/USGS_1M_16_x68y439_OH_Statewide_Phase3_2021_B21.xml",
+        "sha256": "3260dde338d6b47ba0bacd0e2673a76a9f5872f8fcb381cdd945a03e569d709b"
+      },
+      {
+        "sourceId": "68ca18afd4be0274ff4eb053",
+        "title": "USGS 1 Meter 16 x69y439 OH_Statewide_Phase3_2021_B21",
+        "publicationDate": "2025-09-14",
+        "downloadUrl": "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/OH_Statewide_Phase3_2021_B21/TIFF/USGS_1M_16_x69y439_OH_Statewide_Phase3_2021_B21.tif",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/1_meter/geotiff/OH_Statewide_Phase3_2021_B21/USGS_1M_16_x69y439_OH_Statewide_Phase3_2021_B21.xml",
+        "sha256": "630bccfffb46e33251153b7b45f89a524bfacf2e04e4070bb7fb13d7173238e6"
+      }
+    ],
+    "lidar": [
+      {
+        "sourceId": "68a5219ad4be02198e363527",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220585",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220585.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220585.xml",
+        "sha256": "61c1fdb64d39bab15939fb54bef273f0951884814dfa9c6108b57e6e48c91cdb"
+      },
+      {
+        "sourceId": "68a5258ed4be02198e364ff9",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220586",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220586.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220586.xml",
+        "sha256": "81267a68796f053b406ecade8b52f04940b118ab36b9f2240ba6c9b4c0e14392"
+      },
+      {
+        "sourceId": "68a52f49d4be02198e36a250",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220587",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220587.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220587.xml",
+        "sha256": "e825f8f2a8fad52ebd35d7262e269660cc27dfe6102a0ba92052ce1097ad3625"
+      },
+      {
+        "sourceId": "68a52d9ad4be02198e3686fe",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13220588",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220588.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13220588.xml",
+        "sha256": "48a1118427e474fc862b29c0068f798ddf18c11aefe6cac92c408bae8f49e896"
+      },
+      {
+        "sourceId": "68a54a69d4be02198e37291e",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230585",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230585.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230585.xml",
+        "sha256": "b1b24593a0d568080f4ff7881754eae314001e1eb7e8771abcff01a121761c8e"
+      },
+      {
+        "sourceId": "68a55ce8d4be02198e3756e5",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230586",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230586.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230586.xml",
+        "sha256": "f6e8d5fe6e1bf20320505601d466255107d4d8f508234e872aac41ba09f7eb84"
+      },
+      {
+        "sourceId": "68a53ba1d4be02198e36c092",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230587",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230587.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230587.xml",
+        "sha256": "5362b8a1658d30f279491547a29db9e03248ef6ff672457d9517737b46e95036"
+      },
+      {
+        "sourceId": "68a56192d4be02198e376fc8",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13230588",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230588.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13230588.xml",
+        "sha256": "c0291a2fb7557b092bcfc422b14541024e6f32aad11a1ee4f9af73c80d402bfb"
+      },
+      {
+        "sourceId": "68a5267fd4be02198e36562d",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250585",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250585.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250585.xml",
+        "sha256": "f4ec775d0bf68ed9ecb209b27fd38de8660007dcf7f3759a4a9ce79f1bd2bafa"
+      },
+      {
+        "sourceId": "68a528bbd4be02198e3665d4",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250586",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250586.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250586.xml",
+        "sha256": "937d07ef638df3f4d4490fb89544f1bcf18a73aef484d3ef1c44b349ecae3f34"
+      },
+      {
+        "sourceId": "68a55eded4be02198e375f96",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250587",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250587.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250587.xml",
+        "sha256": "8cb47c77703014450a99dd58081241956a5f9d4b054b7ba0f83d64a5a6e74aa3"
+      },
+      {
+        "sourceId": "68a54553d4be02198e3711d8",
+        "title": "USGS Lidar Point Cloud OH_Statewide_Phase3_2021_B21 BS13250588",
+        "publicationDate": "2025-08-15",
+        "downloadUrl": "https://rockyweb.usgs.gov/vdelivery/Datasets/Staged/Elevation/LPC/Projects/OH_Statewide_Phase3_2021_B21/OH_StatewideP3_6_B21/LAZ/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250588.laz",
+        "metadataUrl": "https://thor-f5.er.usgs.gov/ngtoc/metadata/waf/elevation/lidar_point_cloud/laz/OH_StatewideP3_6_B21/USGS_LPC_OH_Statewide_Phase3_2021_B21_BS13250588.xml",
+        "sha256": "be5977b717a5b99135abed824b76548cda6e7ffc40f44971bd3c236e0edc277d"
+      }
+    ],
+    "datumTransformationGrids": [
+      {
+        "name": "us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+        "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_1986_nad83_harn_conus.tif",
+        "declaredSizeBytes": 3522682,
+        "sha256": "e12ac2e886edafe616e0994c610ad3daa01db17c00d0e9938145d956f249fc2f"
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+        "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_harn_nad83_fbn_conus.tif",
+        "declaredSizeBytes": 9111570,
+        "sha256": "703434db8e87dd5c35579151410a9e5892d5769f4f2f9c6b0e2b700ae537e2ff"
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+        "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_fbn_nad83_2007_conus.tif",
+        "declaredSizeBytes": 42709110,
+        "sha256": "73ea6609fcdbc971771dc0481be19f4d6aa5118ddbd3e0734ff1cf0facf0f40a"
+      },
+      {
+        "name": "us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+        "downloadUrl": "https://cdn.proj.org/us_noaa_nadcon5_nad83_2007_nad83_2011_conus.tif",
+        "declaredSizeBytes": 39965338,
+        "sha256": "560d65e871afdcfed3d736074f5b3b82cb2fd74d25f988cc556824eceeafce96"
+      }
+    ],
+    "orthophoto": {
+      "objectId": 146870,
+      "rasterName": "m_3908426_ne_17_030_20230522",
+      "year": 2023,
+      "acquisitionDateUnixMilliseconds": 1684713600000,
+      "agency": "USDA",
+      "vendor": "USDA-FSA-APFO",
+      "sourceResolutionMeters": 0.3,
+      "serviceUrl": "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPPlus/ImageServer",
+      "sha256": "a4c987f48ed0e1a601fed39502fe189cc2a6db217ec89e418db3d940c93ee745"
+    },
+    "rights": {
+      "dem": "U.S. Geological Survey 3DEP; public domain",
+      "lidar": "U.S. Geological Survey 3DEP; public domain",
+      "datumTransformationGrids": "NOAA NADCON5-derived grids distributed by PROJ; embedded metadata states Public Domain",
+      "orthophoto": "USGS and USDA National Agriculture Imagery Program; public domain"
+    }
+  },
+  "evidence": {
+    "dtm": {
+      "sources": [
+        {
+          "sourceId": "68ca18b3d4be0274ff4eb0b1",
+          "crs": "EPSG:26916",
+          "crsWkt": "PROJCS[\"NAD83 / UTM zone 16N\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",-87],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"26916\"]]",
+          "width": 10012,
+          "height": 10012,
+          "dtype": "float32",
+          "noData": -999999.0,
+          "units": [
+            null
+          ],
+          "verticalMetadata": {
+            "surfaceModel": "bare-earth DTM",
+            "verticalUnits": "meter",
+            "verticalDatum": "NAVD88",
+            "metadataSha256": "0920734aededa63f5716a03c49a4b720d5515cce6e98ac4d95797d88e01fd8c6"
+          },
+          "boundsProjectedMeters": {
+            "left": 679993.9996684468,
+            "bottom": 4379994.0002823025,
+            "right": 690005.9996684468,
+            "top": 4390006.0002823025
+          }
+        },
+        {
+          "sourceId": "68ca18afd4be0274ff4eb053",
+          "crs": "EPSG:26916",
+          "crsWkt": "PROJCS[\"NAD83 / UTM zone 16N\",GEOGCS[\"NAD83\",DATUM[\"North_American_Datum_1983\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"6269\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4269\"]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",-87],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],AXIS[\"Easting\",EAST],AXIS[\"Northing\",NORTH],AUTHORITY[\"EPSG\",\"26916\"]]",
+          "width": 10012,
+          "height": 10012,
+          "dtype": "float32",
+          "noData": -999999.0,
+          "units": [
+            null
+          ],
+          "verticalMetadata": {
+            "surfaceModel": "bare-earth DTM",
+            "verticalUnits": "meter",
+            "verticalDatum": "NAVD88",
+            "metadataSha256": "60a32c844af26c2bba9c9a8413501f11cc8c2bf54a67bd7b5df76f66542468ce"
+          },
+          "boundsProjectedMeters": {
+            "left": 689993.999710544,
+            "bottom": 4379994.00032205,
+            "right": 700005.999710544,
+            "top": 4390006.00032205
+          }
+        }
+      ],
+      "sourceEdgeTrimPixels": 2,
+      "overlapSamples": 8200,
+      "overlapP95DeltaMeters": 0.000518798828125,
+      "overlapP99DeltaMeters": 0.001129150390625,
+      "overlapRmseMeters": 0.00024733730242587626,
+      "maximumOverlapDeltaMeters": 0.0028076171875,
+      "minimumElevationMeters": 270.7053527832031,
+      "maximumElevationMeters": 298.4906005859375,
+      "reliefMeters": 27.785247802734375
+    },
+    "lidarSurface": {
+      "sources": [
+        {
+          "sourceId": "68a5219ad4be02198e363527",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 5171748,
+          "firstReturnsAccepted": 2687129
+        },
+        {
+          "sourceId": "68a5258ed4be02198e364ff9",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 5832369,
+          "firstReturnsAccepted": 4373320
+        },
+        {
+          "sourceId": "68a52f49d4be02198e36a250",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 8383359,
+          "firstReturnsAccepted": 3849471
+        },
+        {
+          "sourceId": "68a52d9ad4be02198e3686fe",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 5629074,
+          "firstReturnsAccepted": 328474
+        },
+        {
+          "sourceId": "68a54a69d4be02198e37291e",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 4849269,
+          "firstReturnsAccepted": 2230230
+        },
+        {
+          "sourceId": "68a55ce8d4be02198e3756e5",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 5562557,
+          "firstReturnsAccepted": 3362393
+        },
+        {
+          "sourceId": "68a53ba1d4be02198e36c092",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 6707998,
+          "firstReturnsAccepted": 2685673
+        },
+        {
+          "sourceId": "68a56192d4be02198e376fc8",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 5221685,
+          "firstReturnsAccepted": 106248
+        },
+        {
+          "sourceId": "68a5267fd4be02198e36562d",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 7393346,
+          "firstReturnsAccepted": 2233847
+        },
+        {
+          "sourceId": "68a528bbd4be02198e3665d4",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 8688353,
+          "firstReturnsAccepted": 3167374
+        },
+        {
+          "sourceId": "68a55eded4be02198e375f96",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 9532609,
+          "firstReturnsAccepted": 3379991
+        },
+        {
+          "sourceId": "68a54553d4be02198e3711d8",
+          "crs": "COMPD_CS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCS[\"NAD83(2011) / Ohio South (ftUS)\",GEOGCS[\"NAD83(2011)\",DATUM[\"NAD83_National_Spatial_Reference_System_2011\",SPHEROID[\"GRS 1980\",6378137,298.257222101,AUTHORITY[\"EPSG\",\"7019\"]],AUTHORITY[\"EPSG\",\"1116\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"6318\"]],PROJECTION[\"Lambert_Conformal_Conic_2SP\"],PARAMETER[\"standard_parallel_1\",40.03333333333333],PARAMETER[\"standard_parallel_2\",38.73333333333333],PARAMETER[\"latitude_of_origin\",38],PARAMETER[\"central_meridian\",-82.5],PARAMETER[\"false_easting\",1968500],PARAMETER[\"false_northing\",0],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"X\",EAST],AXIS[\"Y\",NORTH],AUTHORITY[\"EPSG\",\"6551\"]],VERT_CS[\"NAVD88 height - Geoid18 (ftUS)\",VERT_DATUM[\"North American Vertical Datum 1988\",2005,AUTHORITY[\"EPSG\",\"5103\"]],UNIT[\"US survey foot\",0.3048006096012192,AUTHORITY[\"EPSG\",\"9003\"]],AXIS[\"Gravity-related height\",UP],AUTHORITY[\"EPSG\",\"6360\"]]]",
+          "crsWkt": "COMPOUNDCRS[\"NAD83(2011) / Ohio South (ftUS) + NAVD88 height - Geoid18 (ftUS)\",PROJCRS[\"NAD83(2011) / Ohio South (ftUS)\",BASEGEOGCRS[\"NAD83(2011)\",DATUM[\"NAD83 (National Spatial Reference System 2011)\",ELLIPSOID[\"GRS 1980\",6378137,298.257222101,LENGTHUNIT[\"metre\",1]]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],ID[\"EPSG\",6318]],CONVERSION[\"unnamed\",METHOD[\"Lambert Conic Conformal (2SP)\",ID[\"EPSG\",9802]],PARAMETER[\"Latitude of 1st standard parallel\",40.0333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8823]],PARAMETER[\"Latitude of 2nd standard parallel\",38.7333333333333,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8824]],PARAMETER[\"Latitude of false origin\",38,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8821]],PARAMETER[\"Longitude of false origin\",-82.5,ANGLEUNIT[\"degree\",0.0174532925199433],ID[\"EPSG\",8822]],PARAMETER[\"Easting at false origin\",1968500,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8826]],PARAMETER[\"Northing at false origin\",0,LENGTHUNIT[\"US survey foot\",0.304800609601219],ID[\"EPSG\",8827]]],CS[Cartesian,2],AXIS[\"x\",east,ORDER[1],LENGTHUNIT[\"US survey foot\",0.304800609601219]],AXIS[\"y\",north,ORDER[2],LENGTHUNIT[\"US survey foot\",0.304800609601219]],ID[\"EPSG\",6551]],VERTCRS[\"NAVD88 height (ftUS)\",VDATUM[\"North American Vertical Datum 1988\"],CS[vertical,1],AXIS[\"gravity-related height\",up,LENGTHUNIT[\"US survey foot\",0.304800609601219]],GEOIDMODEL[\"GEOID18\"],ID[\"EPSG\",6360]]]",
+          "verticalDatum": "NAVD88",
+          "verticalSourceUnit": "US survey foot",
+          "verticalToMeters": 0.30480060960121924,
+          "horizontalTransform": "Inverse of SPCS83 Ohio South zone (US survey foot) + Inverse of NAD83(NSRS2007) to NAD83(2011) (1) + Inverse of NAD83(FBN) to NAD83(NSRS2007) (1) + Inverse of NAD83(HARN) to NAD83(FBN) (1) + Inverse of NAD83 to NAD83(HARN) (47) + UTM zone 16N",
+          "horizontalTransformAccuracyMeters": 0.2,
+          "horizontalTransformUsesBallparkOffset": false,
+          "pointsInspected": 9174918,
+          "firstReturnsAccepted": 14868
+        }
+      ],
+      "pointsInspected": 82147285,
+      "firstReturnsAccepted": 28419018,
+      "populatedCells": 1046062,
+      "coverageRatio": 0.9956568709101725,
+      "classificationHistogram": {
+        "1": 17220386,
+        "2": 11193714,
+        "17": 4918
+      },
+      "groundToDtmResidual": {
+        "samples": 11193714,
+        "signedP05Meters": -0.04332853853702545,
+        "signedP50Meters": -0.002579126739874482,
+        "signedP95Meters": 0.03256664425134659,
+        "absoluteP50Meters": 0.009945955127477646,
+        "absoluteP95Meters": 0.05883551016449928,
+        "maximumAbsoluteMeters": 1.5604617595672607
+      },
+      "maximumSurfaceOffsetMeters": 38.4
+    },
+    "orthophoto": {
+      "sourceCrs": "EPSG:26916",
+      "sourceWidth": 3414,
+      "sourceHeight": 3414,
+      "sourceBands": 4,
+      "runtimeWidth": 2048,
+      "runtimeHeight": 2048,
+      "runtimePixelSizeMeters": 0.5,
+      "rowOrder": "north-to-south",
+      "columnOrder": "west-to-east",
+      "encoder": "Pillow WebP quality=92 method=6"
+    },
+    "hillshade": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-hillshade.png",
+    "registrationContactSheet": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/terrain-registration-contact-sheet.png",
+    "lidarSurfaceRegistrationContactSheet": {
+      "path": "docs/superpowers/specs/flow-fest-sim/evidence/geospatial/lidar-surface-registration-contact-sheet.png",
+      "sha256": "fff4497ac37ac253962769811a2d6d3c55f102e4b1fac6960f76428dcfb01d83"
+    }
+  }
+}

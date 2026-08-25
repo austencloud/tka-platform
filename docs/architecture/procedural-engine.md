@@ -25,7 +25,7 @@ shared/3d/procedural-engine/
 A destination is a `.svelte` component that composes `WorldScene` (or lower-level engine primitives) with its own world configuration. Each destination lives in its own feature folder:
 
 - `features/campground/CampgroundDestination.svelte` — procedural forest clearing
-- `features/hannons-camp/HannonsCampDestination.svelte` — real-world terrain JSON
+- `features/hannons-camp/HannonsCampDestination.svelte` — Flow Fest Sim's checked geospatial manifest and binary terrain
 - `features/archive/ArchiveDestination.svelte` — curated indoor scene (does not use the procedural engine, uses `IndoorScene` instead)
 - `features/museum/scenes/procedural/MuseumDestination.svelte` — procedural museum walk mode of the museum feature
 - `features/lab/tools/3d-controls/ThreeDControlsLab.svelte` — prop/motion tuning lab
@@ -36,7 +36,7 @@ All are registered in `shared/3d/destinations/definitions.ts`.
 
 ## Data ownership
 
-The engine does not know about destination-specific data. When a destination needs real-world terrain (Hannon's Camp), it imports the JSON and passes it to `WorldScene` as a `terrainData` prop. `WorldSceneContent` consumes the prop; it does not import data files itself.
+The engine does not know about destination-specific data. When a destination needs real-world terrain, it loads and validates its own manifest and binary field, then passes normalized `terrainData` to `WorldScene`. `WorldSceneContent` consumes the prop; it does not import or fetch destination files itself.
 
 ## Why it lives under shared/
 

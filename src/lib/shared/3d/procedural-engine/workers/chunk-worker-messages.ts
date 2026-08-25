@@ -33,6 +33,8 @@ export interface LoadRealZoneMessage {
     heightmapHeight: number;
     minElevation: number;
     maxElevation: number;
+    verticalOriginMeters: number;
+    verticalScale: number;
     heights: Float32Array;
     bounds: {
       minX: number;
@@ -73,7 +75,15 @@ export interface ChunkResultMessage {
 }
 
 export interface VegetationData {
-  type: "tree1" | "tree2" | "tree3" | "rock1" | "rock2" | "bush1" | "bush2" | "grass";
+  type:
+    | "tree1"
+    | "tree2"
+    | "tree3"
+    | "rock1"
+    | "rock2"
+    | "bush1"
+    | "bush2"
+    | "grass";
   x: number;
   y: number;
   z: number;
