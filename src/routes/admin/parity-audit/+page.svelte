@@ -99,7 +99,9 @@
     <i class="fas fa-file-circle-xmark" aria-hidden="true"></i>
     <h1>Report unavailable</h1>
     <p>{error}</p>
-    <a href="/app?tab=notifications">Back to notifications</a>
+    <a href="/create?sheet=inbox&inboxTab=notifications">
+      Back to notifications
+    </a>
   </main>
 {:else if notification}
   <ParityAuditReport {notification} />

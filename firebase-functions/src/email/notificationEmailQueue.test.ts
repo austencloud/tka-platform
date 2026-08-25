@@ -2,6 +2,7 @@ import {
   createFeedbackEmail,
   createMessageEmail,
   createNotificationMailId,
+  createPlatformUpdateEmail,
   getEmailPreferenceForNotificationType,
   queueUserNotificationEmail,
   wantsNotificationEmail,
@@ -163,5 +164,28 @@ describe("notification email content", () => {
     expect(email.html).toContain("Broken &lt;button&gt;");
     expect(email.html).toContain("Fixed &lt;strong&gt;today&lt;/strong&gt;");
     expect(email.html).not.toContain("<strong>today</strong>");
+  });
+
+  it("links each notification to its canonical app route", () => {
+    const message = createMessageEmail("Austen", "conversation-1");
+    const feedback = createFeedbackEmail({
+      type: "feedback-resolved",
+      feedbackId: "feedback-1",
+      message: "Fixed",
+    });
+    const release = createPlatformUpdateEmail({ version: "1.2.3" });
+
+    expect(message.text).toContain(
+      "https://tkaflowarts.com/create?sheet=inbox&conversation=conversation-1"
+    );
+    expect(message.text).toContain(
+      "https://tkaflowarts.com/settings/notifications"
+    );
+    expect(feedback.text).toContain(
+      "https://tkaflowarts.com/feedback/my-feedback?feedback=feedback-1"
+    );
+    expect(release.text).toContain(
+      "https://tkaflowarts.com/settings/release-notes"
+    );
   });
 });

@@ -58,7 +58,7 @@ export const onNewNotification = onDocumentCreated(
     const payload: PushPayload = {
       title,
       body: message,
-      url: actionUrl ?? "/app?tab=notifications",
+      url: actionUrl ?? "/create?sheet=inbox&inboxTab=notifications",
       tag: `notification-${type}`,
       type,
       notificationId,

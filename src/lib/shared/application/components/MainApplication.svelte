@@ -28,6 +28,7 @@
   import ErrorToast from "../../error/components/ErrorToast.svelte";
   import InboxSubscriptionProvider from "../../inbox/components/InboxSubscriptionProvider.svelte";
   import { inboxState } from "../../inbox/state/inbox-state.svelte";
+  import { parseInboxRouteIntent } from "../../inbox/domain/inbox-route-intent";
   import { myFeedbackDetailState } from "$lib/shared/feedback/state/my-feedback-detail-state.svelte";
   import { appEntryState } from "../../onboarding/state/app-entry-state.svelte.ts";
   import { createAccountSetupState } from "../../onboarding/state/account-setup-state.svelte";
@@ -260,9 +261,14 @@
     }
 
     if (sheet === "inbox") {
+      const intent = parseInboxRouteIntent(window.location.search);
       closeSheet();
       currentSheetType = null;
-      inboxState.open("messages");
+      if (intent.conversationId) {
+        inboxState.openToConversationById(intent.conversationId);
+      } else {
+        inboxState.open(intent.tab);
+      }
       return true;
     }
 
@@ -536,9 +542,10 @@
   // mount, then lives as reactive state so the F9 admin panel can switch the
   // ghost on and off without a reload. It still never flickers on from a URL
   // change underneath a running session — nothing re-reads the param.
-  let presenterSwitch = $state<
-    { armed: boolean; seed: number | undefined } | null
-  >(null);
+  let presenterSwitch = $state<{
+    armed: boolean;
+    seed: number | undefined;
+  } | null>(null);
   const presentationMode = $derived(presenterSwitch?.armed ?? false);
   const presentationSeed = $derived(presenterSwitch?.seed);
 

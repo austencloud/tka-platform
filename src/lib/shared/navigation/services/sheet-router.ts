@@ -66,6 +66,8 @@ function updateURL(state: RouteState, mode: "push" | "replace" = "push"): void {
   url.searchParams.delete("animPlaying");
   url.searchParams.delete("animStep");
   url.searchParams.delete("animGrid");
+  url.searchParams.delete("inboxTab");
+  url.searchParams.delete("conversation");
 
   if (state.sheet) {
     url.searchParams.set("sheet", state.sheet);

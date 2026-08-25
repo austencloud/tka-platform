@@ -7,6 +7,7 @@ import {
 } from "$lib/shared/navigation/services/sheet-router";
 import { page } from "$app/state";
 import { pushState, replaceState } from "$app/navigation";
+import { parseInboxRouteIntent } from "$lib/shared/inbox/domain/inbox-route-intent";
 
 vi.mock("$app/environment", () => ({ browser: true }));
 vi.mock("$app/navigation", () => ({
@@ -57,6 +58,31 @@ describe("Inbox sheet deep links", () => {
       "http://localhost:3000/browse/library"
     );
     expect(state).toEqual({ moduleId: "browse", sectionId: "library" });
+  });
+
+  it("reads and clears the destination carried by an inbox deep link", () => {
+    page.state = {
+      moduleId: "create",
+      sectionId: "construct",
+      sheet: "inbox",
+    };
+    history.replaceState(
+      {},
+      "",
+      "/create/construct?sheet=inbox&inboxTab=notifications&conversation=conversation-1&keep=yes"
+    );
+
+    expect(parseInboxRouteIntent(window.location.search)).toEqual({
+      tab: "notifications",
+      conversationId: "conversation-1",
+    });
+
+    closeSheet();
+
+    const [destination] = vi.mocked(replaceState).mock.calls[0] ?? [];
+    expect(new URL(String(destination)).href).toBe(
+      "http://localhost:3000/create/construct?keep=yes"
+    );
   });
 
   it("returns through history when closing a sheet opened in-app", () => {

@@ -67,7 +67,7 @@
 
 <main class="audit-page">
   <section class="handoff" aria-labelledby="audit-title">
-    <a class="back-button" href="/app?tab=notifications">
+    <a class="back-button" href="/create?sheet=inbox&inboxTab=notifications">
       <i class="fas fa-arrow-left" aria-hidden="true"></i>
       Back to notifications
     </a>

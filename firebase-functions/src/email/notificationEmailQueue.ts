@@ -1,8 +1,9 @@
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 
-const APP_URL = "https://tkaflowarts.com/app";
-const SETTINGS_URL = `${APP_URL}?module=settings&tab=notifications`;
+const APP_ORIGIN = "https://tkaflowarts.com";
+const INBOX_URL = `${APP_ORIGIN}/create?sheet=inbox`;
+const SETTINGS_URL = `${APP_ORIGIN}/settings/notifications`;
 
 export type EmailPreferenceKey =
   | "emailMessages"
@@ -113,7 +114,7 @@ export function createMessageEmail(
   senderName: string,
   conversationId: string
 ): NotificationEmail {
-  const conversationUrl = `${APP_URL}?conversation=${encodeURIComponent(conversationId)}`;
+  const conversationUrl = `${INBOX_URL}&conversation=${encodeURIComponent(conversationId)}`;
   const senderLabel = plainTextLabel(senderName, "Someone");
   const safeSenderName = escapeHtml(senderLabel);
   const safeConversationUrl = escapeHtml(conversationUrl);
@@ -146,7 +147,7 @@ export function createFeedbackEmail(input: {
 }): NotificationEmail {
   const status = feedbackStatusLabel(input.type);
   const title = plainTextLabel(input.feedbackTitle || "", "Your feedback");
-  const feedbackUrl = `${APP_URL}?module=feedback&tab=my-feedback&feedback=${encodeURIComponent(input.feedbackId)}`;
+  const feedbackUrl = `${APP_ORIGIN}/feedback/my-feedback?feedback=${encodeURIComponent(input.feedbackId)}`;
   const body = input.message.trim() || `${title}: ${status}`;
 
   return {
@@ -175,7 +176,7 @@ export function createPlatformUpdateEmail(input: {
   highlights?: string[];
 }): NotificationEmail {
   const version = plainTextLabel(input.version, "New version");
-  const releaseUrl = `${APP_URL}?module=settings&tab=release-notes`;
+  const releaseUrl = `${APP_ORIGIN}/settings/release-notes`;
   const detail =
     input.highlights?.filter(Boolean).slice(0, 3).join("\n") ||
     input.releaseNotes?.trim() ||
