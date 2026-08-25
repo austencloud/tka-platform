@@ -226,8 +226,11 @@ export function createStageChoreographyState(
   );
 
   const MAX_UNDO_STACK = 50;
-  let undoStack: string[] = [];
-  let redoStack: string[] = [];
+  // $state, not plain arrays: canUndo/canRedo are read through getters by the
+  // shortcut bridge, and a plain array's push never notifies it — Ctrl+Z stayed
+  // disabled no matter how many edits had been made.
+  let undoStack = $state<string[]>([]);
+  let redoStack = $state<string[]>([]);
 
   function snapshotHistory(): string {
     return JSON.stringify({

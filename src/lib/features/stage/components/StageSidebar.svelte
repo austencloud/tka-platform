@@ -2,9 +2,12 @@
   import CollapsibleSection from "$lib/features/admin/components/feature-flags/shared/CollapsibleSection.svelte";
   import FormationSelector from "$lib/shared/3d/components/controls/FormationSelector.svelte";
   import SceneSelectorPopover from "$lib/shared/3d/components/SceneSelectorPopover.svelte";
-  import MarkProperties from "./MarkProperties.svelte";
+  import SetProperties from "./SetProperties.svelte";
+  import CountStepper from "./CountStepper.svelte";
   import { getStageChoreographyContext } from "../context/stage-choreography-context";
+  import { resolveActiveFormationIndex } from "../domain/active-formation";
   import type { StageEditMode } from "../state/stage-edit-mode.svelte";
+  import { FORMATION_PRESET_INFO } from "@austencloud/scene-3d";
   import type { FormationPreset } from "@austencloud/scene-3d";
   import type { FormationPresetId } from "../domain/stage-types";
 
@@ -16,11 +19,47 @@
 
   const stageState = getStageChoreographyContext();
   const choreography = $derived(stageState.choreography);
-  let activePreset = $state<FormationPreset>("line");
+
+  const activeSetIndex = $derived(
+    resolveActiveFormationIndex(
+      choreography.formations,
+      editMode.selectedFormationId,
+      stageState.currentBeat
+    )
+  );
+
+  const activeSet = $derived(
+    activeSetIndex >= 0 ? choreography.formations[activeSetIndex] : undefined
+  );
+
+  const activeSetName = $derived(
+    activeSet?.label ?? `Set ${activeSetIndex + 1}`
+  );
+
+  // FormationPresetId is the wider union: it also carries shapes the shared
+  // selector has no button for (triangle, diamond, grid, stagger, cluster).
+  // Those read as "custom" here, which is honest — the picker cannot show a
+  // shape it does not offer.
+  const SELECTABLE_PRESETS = new Set<string>(
+    FORMATION_PRESET_INFO.map((preset) => preset.id)
+  );
+
+  // A preset reseeds the set you are looking at, so the picker shows that set's
+  // own shape rather than the last shape anyone clicked.
+  const activePreset = $derived.by((): FormationPreset => {
+    const presetId = activeSet?.presetId;
+    if (presetId && SELECTABLE_PRESETS.has(presetId)) {
+      return presetId as FormationPreset;
+    }
+    return "custom";
+  });
 
   function handlePresetChange(preset: FormationPreset) {
-    activePreset = preset;
-    stageState.applyPreset(preset as FormationPresetId);
+    if (!activeSet) return;
+    stageState.applyPresetToFormation(
+      activeSet.id,
+      preset as FormationPresetId
+    );
   }
 
   function handlePerformerClick(e: MouseEvent, performerId: string) {
@@ -53,44 +92,27 @@
         {/each}
       </div>
       <div class="performer-count-controls">
-        <button
-          type="button"
-          class="count-btn"
-          onclick={() =>
-            stageState.setPerformerCount(choreography.performers.length - 1)}
-          disabled={choreography.performers.length <= 2}
-          aria-label="Remove performer"
-        >
-          <i class="fas fa-minus" aria-hidden="true"></i>
-        </button>
-        <span class="count-display" aria-live="polite"
-          >{choreography.performers.length}</span
-        >
-        <button
-          type="button"
-          class="count-btn"
-          onclick={() =>
-            stageState.setPerformerCount(choreography.performers.length + 1)}
-          disabled={choreography.performers.length >= 8}
-          aria-label="Add performer"
-        >
-          <i class="fas fa-plus" aria-hidden="true"></i>
-        </button>
+        <CountStepper
+          value={choreography.performers.length}
+          min={2}
+          max={8}
+          label="performers"
+          onchange={(count) => stageState.setPerformerCount(count)}
+        />
       </div>
     {/snippet}
   </CollapsibleSection>
 
-  <CollapsibleSection
-    title="Formation Presets"
-    icon="fa-shapes"
-    defaultOpen={true}
-  >
+  <CollapsibleSection title="Shape" icon="fa-shapes" defaultOpen={true}>
     {#snippet children()}
       <FormationSelector
         value={activePreset}
         performerCount={choreography.performers.length}
         onchange={handlePresetChange}
       />
+      {#if activeSet}
+        <p class="preset-target">Reseeds {activeSetName}.</p>
+      {/if}
     {/snippet}
   </CollapsibleSection>
 
@@ -108,9 +130,9 @@
     {/snippet}
   </CollapsibleSection>
 
-  {#if editMode.selectedMarkId}
-    <div class="mark-section">
-      <MarkProperties {editMode} />
+  {#if activeSet}
+    <div class="set-section">
+      <SetProperties {editMode} />
     </div>
   {/if}
 </aside>
@@ -163,55 +185,29 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
     margin-top: 8px;
   }
 
-  .count-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    cursor: pointer;
+  /* One line, always: this text names the set the picker will overwrite, and it
+     sits directly above the Environment section. Wrapping would shove it. */
+  .preset-target {
+    overflow: hidden;
+    margin: 8px 0 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
     font-size: 0.75rem;
-    transition: all 150ms ease;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .count-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    color: var(--theme-text, white);
-  }
-
-  .count-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-
-  .count-display {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--theme-text, white);
-    font-variant-numeric: tabular-nums;
-    min-width: 2ch;
-    text-align: center;
-  }
-
-  .mark-section {
+  .set-section {
     padding: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .performer-btn,
-    .count-btn {
+    .performer-btn {
       transition: none;
     }
   }
