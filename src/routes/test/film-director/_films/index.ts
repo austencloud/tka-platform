@@ -5,12 +5,32 @@ import { understudyNightFilm } from "./understudy-night";
 import { chanceSuiteFilm } from "./chance-suite";
 import { starOfFiveFilm } from "./star-of-five";
 
+/**
+ * The frame the marquee shows for a library film, and the cue that produced it.
+ *
+ * A saved film keeps its poster in its own document, captured from whatever the
+ * user was looking at. A library film has no document to keep one in, so the
+ * cue lives here and `scripts/build-film-posters.mjs` bakes `src` from it.
+ *
+ * The cue is scene-relative rather than an absolute timestamp so that editing
+ * an earlier scene's duration does not silently re-aim every later poster.
+ */
+export interface FilmPosterCue {
+  /** Served from `static/`. */
+  src: string;
+  /** Which scene to capture, by its resolved scene id. */
+  sceneId: string;
+  /** Seconds into that scene. Must land inside its duration. */
+  offsetSeconds: number;
+}
+
 export interface FilmLibraryEntry {
   /** Stable picker value; matches the film's input id without the revision. */
   key: string;
   /** Short picker label. */
   label: string;
   film: FilmDirectorInput;
+  poster: FilmPosterCue;
 }
 
 /**
@@ -19,11 +39,56 @@ export interface FilmLibraryEntry {
  * film that would reject at load time fails CI instead of the picker.
  */
 export const FILM_LIBRARY: readonly FilmLibraryEntry[] = [
-  { key: "sky", label: "Sky Is the Limit", film: skyIsTheLimitFilm },
-  { key: "planes", label: "Nine Planes", film: ninePlanesFilm },
-  { key: "understudy", label: "Understudy Night", film: understudyNightFilm },
-  { key: "chance", label: "Chance Suite", film: chanceSuiteFilm },
-  { key: "star", label: "Star of Five", film: starOfFiveFilm },
+  {
+    key: "sky",
+    label: "Sky Is the Limit",
+    film: skyIsTheLimitFilm,
+    poster: {
+      src: "/films/posters/sky.webp",
+      sceneId: "celestial-canon",
+      offsetSeconds: 5.5,
+    },
+  },
+  {
+    key: "planes",
+    label: "Nine Planes",
+    film: ninePlanesFilm,
+    poster: {
+      src: "/films/posters/planes.webp",
+      sceneId: "shield-wall",
+      offsetSeconds: 5,
+    },
+  },
+  {
+    key: "understudy",
+    label: "Understudy Night",
+    film: understudyNightFilm,
+    poster: {
+      src: "/films/posters/understudy.webp",
+      sceneId: "all-eight-efforts",
+      offsetSeconds: 5,
+    },
+  },
+  {
+    key: "chance",
+    label: "Chance Suite",
+    film: chanceSuiteFilm,
+    poster: {
+      src: "/films/posters/chance.webp",
+      sceneId: "distinct-everything",
+      offsetSeconds: 6,
+    },
+  },
+  {
+    key: "star",
+    label: "Star of Five",
+    film: starOfFiveFilm,
+    poster: {
+      src: "/films/posters/star.webp",
+      sceneId: "star-reveal",
+      offsetSeconds: 11,
+    },
+  },
 ];
 
 export const DEFAULT_FILM_KEY = FILM_LIBRARY[0]!.key;

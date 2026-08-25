@@ -12,19 +12,41 @@
     onOpenSavedFilm: (entry: CollectedFilm) => void;
   } = $props();
 
-  // A library film has no stored poster, so the card is built from the resolved
-  // spec instead: the scene titles are what tells a director which film to
-  // open. Five short documents, resolved once.
+  // Scene titles come from the resolved spec, not the input: a chance film's
+  // scenes only get their real shape once the seed has been rolled. Five short
+  // documents, resolved once.
   const startingPoints = FILM_LIBRARY.map((entry) => {
     const spec = resolveFilmDirectorSpec(entry.film);
     return {
       key: entry.key,
       label: entry.label,
+      poster: entry.poster.src,
       sceneCount: spec.scenes.length,
       durationSeconds: spec.durationSeconds,
       sceneTitles: spec.scenes.map((scene) => scene.title),
       performerCount: spec.scenes[0]?.performance.performers.length ?? 0,
     };
+  });
+
+  // A poster is a baked artifact, so a missing one means the bake has not run
+  // for this film yet. Loud in dev, an icon in production.
+  let posterMissing = $state<Record<string, boolean>>({});
+
+  function handlePosterError(key: string, src: string): void {
+    posterMissing[key] = true;
+    if (import.meta.env.DEV) {
+      console.warn(
+        `[Director] No poster at ${src}. Run: node scripts/build-film-posters.mjs --only ${key}`
+      );
+    }
+  }
+
+  $effect(() => {
+    // Drive seam for scripts/build-film-posters.mjs: the bake reads its cues
+    // from the registry rather than keeping a second copy of them. Dev only.
+    if (!import.meta.env.DEV) return;
+    (window as unknown as Record<string, unknown>).__filmPosterCues =
+      FILM_LIBRARY.map((entry) => ({ key: entry.key, ...entry.poster }));
   });
 
   function formatDuration(seconds: number): string {
@@ -50,6 +72,19 @@
       {#each startingPoints as film (film.key)}
         <li>
           <button type="button" onclick={() => onOpenLibraryFilm(film.key)}>
+            <span class="poster">
+              {#if posterMissing[film.key]}
+                <i class="fas fa-clapperboard" aria-hidden="true"></i>
+              {:else}
+                <img
+                  src={film.poster}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  onerror={() => handlePosterError(film.key, film.poster)}
+                />
+              {/if}
+            </span>
             <span class="card-head">
               <strong>{film.label}</strong>
               <span class="meta">
@@ -192,6 +227,10 @@
       gap: 1.5rem;
     }
 
+    .poster {
+      grid-column: 1 / -1;
+    }
+
     .scenes {
       padding: 0 0 0 1.5rem;
       border-top: none;
@@ -206,6 +245,29 @@
   .card-grid button:focus-visible {
     outline: 3px solid var(--theme-accent, #9d8cff);
     outline-offset: 2px;
+  }
+
+  /* Bleeds to the card edge. A poster inset by the card's own padding reads as
+     a thumbnail stuck onto a list row rather than as the face of the card.
+     aspect-ratio reserves the box before the image decodes, so a card never
+     grows under the cursor. */
+  .poster {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    margin: -1.25rem -1.25rem 0;
+    overflow: hidden;
+    border-radius: calc(1rem - 1px) calc(1rem - 1px) 0 0;
+    color: var(--theme-accent, #b0a4ff);
+    background: color-mix(in srgb, var(--theme-accent, #7869eb) 12%, #05060f);
+    font-size: 1.6rem;
+  }
+
+  .poster img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .card-head {
