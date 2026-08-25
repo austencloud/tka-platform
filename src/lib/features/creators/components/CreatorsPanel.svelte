@@ -972,7 +972,6 @@
     .ph-body {
       grid-template-columns: minmax(0, 1fr) minmax(17em, 24em);
       align-items: center;
-      max-width: max(64em, 55%);
     }
   }
 
@@ -983,7 +982,6 @@
   .map-band-ph.compact .ph-body {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
-    max-width: none;
   }
 
   .bands {

@@ -216,13 +216,16 @@
   }
 
   /*
-   * Wide: the map and the invitation sit side by side, and the pair is capped.
-   * Both halves matter. A full-width stage in a band-height box is a 6:1 strip
-   * of mostly ocean — the map only reads as a map near 2:1 — and a capped pair
-   * under a full-width header rule is an ordinary editorial composition, where
-   * a 3760px row holding one sentence and two buttons is not. The floor grows
-   * with the container so 4K gets a bigger map rather than the same map with
-   * more rail.
+   * Wide: the map and the invitation sit side by side, spanning the band.
+   *
+   * The pair was capped at first, on the theory that a band-height map only
+   * reads as a map near 2:1. Both compositions were rendered at 1920 and 3840
+   * and the theory was wrong. Capped, the map stops around 40% of the band and
+   * the invitation floats in a pocket with 1639px of nothing beside it at 4K,
+   * while every roster row underneath runs the full width — the band stops
+   * looking like part of the page. Spanning, the map is a 3.6:1 continent
+   * strip at 1920 and a 5.8:1 world strip at 3840, which is what a world strip
+   * looks like, and its edges line up with the cards below it.
    *
    * 900 rather than a tablet-ish 640: the slot needs ~17em whatever the
    * container does, so at 820 a two-column body left the map 330px wide beside
@@ -233,7 +236,6 @@
     .band-body {
       grid-template-columns: minmax(0, 1fr) minmax(17em, 24em);
       align-items: center;
-      max-width: max(64em, 55%);
     }
   }
 
@@ -242,11 +244,10 @@
     margin-bottom: 1.25em;
   }
 
-  /* Last, so it wins over the wide rule above: a 960x412 box is wider than
-     640 but has no room to spend on a cap. */
+  /* Last, so it wins over the wide rule above: at 412px tall the slot has to
+     give the map back some width, which the wide rule's 17em floor will not. */
   .map-band.compact .band-body {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     align-items: center;
-    max-width: none;
   }
 </style>
